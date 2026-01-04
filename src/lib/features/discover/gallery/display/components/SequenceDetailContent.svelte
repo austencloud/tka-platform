@@ -14,11 +14,10 @@ Used by both desktop side panel and mobile slide-up overlay.
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
-  import type { IDiscoverThumbnailProvider } from "../services/contracts/IDiscoverThumbnailProvider";
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
   import { galleryPanelManager } from "../../../shared/state/gallery-panel-state.svelte";
-  import SequenceMediaViewer from "./media-viewer/SequenceMediaViewer.svelte";
+  import SequenceMediaViewerUnified from "$lib/shared/sequence-viewer/components/SequenceMediaViewerUnified.svelte";
   import SequenceVideosSection from "$lib/shared/video-collaboration/components/SequenceVideosSection.svelte";
   import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
@@ -47,13 +46,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     onInviteCollaborators?: (video: CollaborativeVideo) => void;
   }>();
 
-  // Services - resolved lazily to ensure feature module is loaded
-  let thumbnailService: IDiscoverThumbnailProvider | null = $state(null);
-
   onMount(() => {
-    thumbnailService = tryResolve<IDiscoverThumbnailProvider>(
-      TYPES.IDiscoverThumbnailProvider
-    );
     hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
   });
 
@@ -150,10 +143,10 @@ Used by both desktop side panel and mobile slide-up overlay.
       </button>
     {/if}
 
-    <SequenceMediaViewer
+    <SequenceMediaViewerUnified
       {sequence}
-      {thumbnailService}
-      onCreatorClick={handleCreatorClick}
+      initialMediaType="image"
+      controlsLevel="standard"
     />
   </div>
 

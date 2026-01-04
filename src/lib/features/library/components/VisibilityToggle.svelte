@@ -70,8 +70,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-base, 16px);
   }
 
   .creator-chip i {
@@ -81,14 +81,14 @@
   .visibility-toggle {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 12px 16px;
-    min-height: 44px; /* WCAG AAA touch target */
+    gap: 8px;
+    padding: 12px 18px;
+    min-height: 48px;
     background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: 20px;
+    border: 1.5px solid var(--theme-stroke-strong);
+    border-radius: 24px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-base, 16px);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -124,14 +124,14 @@
   .visibility-hint {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
+    gap: 10px;
     margin: 0;
-    padding: 10px 12px;
+    padding: 14px 16px;
     background: rgba(255, 255, 255, 0.03);
-    border-radius: var(--radius-2026-sm, 10px);
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    line-height: 1.4;
+    border-radius: var(--radius-2026-sm, 12px);
+    font-size: var(--font-size-base, 16px);
+    color: var(--theme-text-dim);
+    line-height: 1.5;
   }
 
   .visibility-hint i {

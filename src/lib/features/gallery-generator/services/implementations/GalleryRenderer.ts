@@ -193,9 +193,8 @@ export class GalleryRenderer implements IGalleryRenderer {
         showReversals: true,
         showNonRadialPoints: showNonRadial,
         showTurnNumbers: true,
-        // Dark Mode inverts glyph colors for dark backgrounds
-        lightsOff: !lightMode,
-        propGlow: !lightMode, // Enable prop glow when in dark mode
+        // Dark Mode: dark background, inverted grid, white text/outlines
+        darkMode: !lightMode,
       },
     };
 

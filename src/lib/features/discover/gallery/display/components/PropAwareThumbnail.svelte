@@ -304,8 +304,7 @@
         showPositions: false,
         showReversals: true,
         showTurnNumbers: true,
-        lightsOff: !lightMode,
-        propGlow: !lightMode,
+        darkMode: !lightMode,
       },
     };
 

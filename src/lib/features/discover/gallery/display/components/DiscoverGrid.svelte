@@ -61,16 +61,16 @@
     )
   );
 
-  // Get light mode from visibility state (inverse of lightsOff)
-  // lightsOff = true means dark mode, lightMode = true means light background
+  // Get light mode from visibility state (inverse of darkMode)
+  // darkMode= true means dark mode, lightMode = true means light background
   const visibilityManager = getAnimationVisibilityManager();
 
   // Use $state to track lightMode so UI updates when it changes
-  let lightMode = $state(!visibilityManager.isLightsOff());
+  let lightMode = $state(!visibilityManager.isDarkMode());
 
   // Register observer to react to visibility changes (like "L" key toggle)
   function handleVisibilityChange() {
-    lightMode = !visibilityManager.isLightsOff();
+    lightMode = !visibilityManager.isDarkMode();
   }
 
   visibilityManager.registerObserver(handleVisibilityChange);

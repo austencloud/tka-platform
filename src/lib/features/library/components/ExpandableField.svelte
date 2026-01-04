@@ -59,13 +59,14 @@
   .expand-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
+    gap: 8px;
+    padding: 12px 18px;
+    min-height: 48px;
     background: transparent;
-    border: 1px dashed rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    border: 1.5px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 24px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-base, 16px);
     cursor: pointer;
     transition: all 0.2s ease;
   }
@@ -77,7 +78,7 @@
   }
 
   .expand-chip i {
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-base, 16px);
   }
 
   .expandable-field {
@@ -97,9 +98,9 @@
   }
 
   .field-label {
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text, var(--theme-text));
+    font-size: var(--font-size-base, 16px);
+    font-weight: 600;
+    color: var(--theme-text);
   }
 
   .collapse-btn {
