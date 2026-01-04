@@ -11,17 +11,16 @@ Update your imports to use:
   import PictographRenderer from "../shared/components/PictographRenderer.svelte";
 
   // Re-export old prop names
+  // NOTE: darkMode removed - CSS-first approach uses :root.dark class
   let {
     pictograph,
     blueReversal = false,
     redReversal = false,
-    darkMode = false,
   } = $props<{
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
-    darkMode: boolean;
   }>();
 </script>
 
-<PictographRenderer {pictograph} {blueReversal} {redReversal} {darkMode} />
+<PictographRenderer {pictograph} {blueReversal} {redReversal} />

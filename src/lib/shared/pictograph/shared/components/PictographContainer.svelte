@@ -7,10 +7,11 @@ PictographContainer.svelte - Smart pictograph wrapper
 
 Handles:
 - Visibility settings subscription
-- Dark Mode subscription
 - Settings reactivity (prop type changes)
 - Transitions (fade in/out)
 - Preparing raw data via PictographPreparer
+
+Dark mode is handled via CSS-first approach (:root.dark class).
 
 Delegates rendering to PictographRenderer (the dumb primitive).
 
@@ -25,7 +26,6 @@ with pre-prepared data for better performance.
   import { onMount } from "svelte";
   import { resolveAsync, TYPES } from "../../../inversify/di";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
-  import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import type { IPictographPreparer } from "../services/contracts/IPictographPreparer";
   import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
@@ -50,8 +50,6 @@ with pre-prepared data for better performance.
     showVTG = undefined,
     showElemental = undefined,
     showPositions = undefined,
-    // Dark mode override (if undefined, uses global settings)
-    darkMode: darkModeOverride = undefined,
     // Preview mode for visibility settings
     previewMode = false,
     // Show only one hand's prop/arrow (null = show both)
@@ -82,7 +80,6 @@ with pre-prepared data for better performance.
     showVTG?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
-    darkMode?: boolean;
     previewMode?: boolean;
     visibleHand?: "blue" | "red" | null;
     arrowsClickable?: boolean;
@@ -104,9 +101,8 @@ with pre-prepared data for better performance.
   const isStartPosition = $derived(beatNumber === 0);
   const showBeatNumber = $derived(beatNumber !== null && !isStartPosition);
 
-  // Visibility managers
+  // Visibility manager
   const visibilityManager = getVisibilityStateManager();
-  const animationVisibilityManager = getAnimationVisibilityManager();
   let visibilityUpdateCount = $state(0);
 
   function handleVisibilityChange() {
@@ -115,10 +111,8 @@ with pre-prepared data for better performance.
 
   onMount(() => {
     visibilityManager.registerObserver(handleVisibilityChange);
-    animationVisibilityManager.registerObserver(handleVisibilityChange);
     return () => {
       visibilityManager.unregisterObserver(handleVisibilityChange);
-      animationVisibilityManager.unregisterObserver(handleVisibilityChange);
     };
   });
 
@@ -135,12 +129,6 @@ with pre-prepared data for better performance.
     return showReversals !== undefined
       ? showReversals
       : visibilityManager.getGlyphVisibility("reversalIndicators");
-  });
-
-  const darkMode = $derived.by((): boolean => {
-    visibilityUpdateCount;
-    if (darkModeOverride !== undefined) return darkModeOverride;
-    return animationVisibilityManager.isDarkMode();
   });
 
   const effectiveShowNonRadialPoints = $derived.by(() => {
@@ -178,7 +166,6 @@ with pre-prepared data for better performance.
   let preparer: IPictographPreparer | null = null;
 
   // Create a stable key for data preparation dependencies
-  // Include dark mode so props are re-prepared with correct colors when toggling
   const prepareKey = $derived.by(() => {
     if (!pictographData) return null;
     const settings = getSettings();
@@ -187,7 +174,6 @@ with pre-prepared data for better performance.
       letter: pictographData.letter,
       bluePropType: settings.bluePropType,
       redPropType: settings.redPropType,
-      darkMode: darkMode, // Re-prepare when dark mode changes for correct prop colors
     });
   });
 
@@ -245,18 +231,13 @@ with pre-prepared data for better performance.
   });
 </script>
 
-<div
-  class="pictograph-container"
-  class:loading={isLoading}
-  class:dark-mode={darkMode}
->
+<div class="pictograph-container" class:loading={isLoading}>
   {#if preparedData}
     {#if disableTransitions}
       <PictographRenderer
         pictograph={preparedData}
         {blueReversal}
         {redReversal}
-        {darkMode}
         showTKA={effectiveShowTKA}
         showReversals={effectiveShowReversals}
         showNonRadialPoints={effectiveShowNonRadialPoints}
@@ -269,9 +250,6 @@ with pre-prepared data for better performance.
         gridModeOverride={overrideGridMode}
         {visibleHand}
         {arrowsClickable}
-        {propsClickable}
-        {selectedPropHand}
-        {onPropClick}
         {onToggleTKA}
         {onToggleVTG}
         {onToggleElemental}
@@ -290,7 +268,6 @@ with pre-prepared data for better performance.
             pictograph={preparedData}
             {blueReversal}
             {redReversal}
-            {darkMode}
             showTKA={effectiveShowTKA}
             showReversals={effectiveShowReversals}
             showNonRadialPoints={effectiveShowNonRadialPoints}
@@ -303,9 +280,6 @@ with pre-prepared data for better performance.
             gridModeOverride={overrideGridMode}
             {visibleHand}
             {arrowsClickable}
-            {propsClickable}
-            {selectedPropHand}
-            {onPropClick}
             {onToggleTKA}
             {onToggleVTG}
             {onToggleElemental}
@@ -319,11 +293,7 @@ with pre-prepared data for better performance.
   {:else}
     <div class="empty-state">
       <svg width="100%" height="100%" viewBox="0 0 950 950">
-        <rect
-          width="950"
-          height="950"
-          fill={darkMode ? "#0a0a0f" : "#f3f4f6"}
-        />
+        <rect width="950" height="950" fill="var(--dm-pictograph-bg)" />
       </svg>
     </div>
   {/if}

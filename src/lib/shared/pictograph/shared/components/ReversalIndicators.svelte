@@ -7,8 +7,8 @@ colored according to the motion that is reversing between pictographs.
 -->
 <script lang="ts">
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
+  import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { MotionColor } from "../domain/enums/pictograph-enums";
-  import { getMotionColor } from "../../../utils/svg-color-utils";
   import { onMount } from "svelte";
 
   let {
@@ -18,7 +18,6 @@ colored according to the motion that is reversing between pictographs.
     visible = true,
     previewMode = false,
     onToggle = undefined,
-    darkMode = false,
   } = $props<{
     /** Whether to show blue reversal indicator */
     blueReversal?: boolean;
@@ -32,25 +31,37 @@ colored according to the motion that is reversing between pictographs.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
-    /** Dark mode - adds white outline for dark backgrounds */
-    darkMode?: boolean;
   }>();
 
   // Get global visibility manager to respect motion visibility settings
   const visibilityManager = getVisibilityStateManager();
 
+  // Get animation visibility manager for cached colors
+  const animationVisibilityManager = getAnimationVisibilityManager();
+
   // Reactivity counter for visibility changes
   let visibilityUpdateCount = $state(0);
+
+  // Track colors from centralized cache (no getComputedStyle per component)
+  let cachedColors = $state(animationVisibilityManager.getMotionColors());
 
   // Force re-render when visibility changes
   function handleVisibilityChange() {
     visibilityUpdateCount++;
   }
 
+  // Handle color cache updates
+  function handleColorChange() {
+    cachedColors = animationVisibilityManager.getMotionColors();
+  }
+
   onMount(() => {
     visibilityManager.registerObserver(handleVisibilityChange, ["motion"]);
+    animationVisibilityManager.registerObserver(handleColorChange);
+
     return () => {
       visibilityManager.unregisterObserver(handleVisibilityChange);
+      animationVisibilityManager.unregisterObserver(handleColorChange);
     };
   });
 
@@ -83,14 +94,9 @@ colored according to the motion that is reversing between pictographs.
     return render;
   });
 
-  // Match arrow and prop colors for consistency - based on pictograph background mode
-  // darkMode=true (dark background) → use bright colors, darkMode=false (white background) → use original dark colors
-  const BLUE_COLOR = $derived(
-    getMotionColor(MotionColor.BLUE, darkMode ? "dark" : "light")
-  );
-  const RED_COLOR = $derived(
-    getMotionColor(MotionColor.RED, darkMode ? "dark" : "light")
-  );
+  // Get motion colors from centralized cache
+  const BLUE_COLOR = $derived(cachedColors.blue);
+  const RED_COLOR = $derived(cachedColors.red);
 
   // Relative positioning - scales with pictograph size
   // Using percentages of the standard 1000px pictograph dimensions
@@ -136,7 +142,6 @@ colored according to the motion that is reversing between pictographs.
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:dark-mode={darkMode}
     onclick={onToggle}
     {...onToggle
       ? {

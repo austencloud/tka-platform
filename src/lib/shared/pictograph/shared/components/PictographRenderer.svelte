@@ -5,10 +5,12 @@ SINGLE SOURCE OF TRUTH for pictograph SVG rendering.
 This is a PRIMITIVE - it renders prepared data as an SVG.
 No visibility subscriptions, no effects, no async work.
 
+Dark mode is handled via CSS-first approach (:root.dark class).
+Child components (GridSvg, ArrowSvg) detect dark mode via MutationObserver.
+
 Props:
 - pictograph: Pre-calculated pictograph data with positions
 - blueReversal/redReversal: Reversal indicator states
-- darkMode: Dark mode state (controls background, grid, and glyph inversion)
 - All visibility controls (explicit, not from global state)
 
 Usage:
@@ -43,7 +45,6 @@ Usage:
     pictograph,
     blueReversal = false,
     redReversal = false,
-    darkMode = false,
     // Core visibility controls
     showTKA = true,
     showReversals = true,
@@ -62,11 +63,9 @@ Usage:
     visibleHand = null,
     // Enable arrow selection for adjustment (admin feature)
     arrowsClickable = false,
-    // Enable prop selection for variant cycling
+    // Enable prop selection for beat editing
     propsClickable = false,
-    // Currently selected prop hand (for visual feedback)
     selectedPropHand = null,
-    // Callback when a prop is clicked
     onPropClick = undefined,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
@@ -79,7 +78,6 @@ Usage:
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
-    darkMode?: boolean;
     showTKA?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
@@ -189,7 +187,7 @@ Usage:
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
 </script>
 
-<div class="pictograph-renderer" class:dark-mode={darkMode}>
+<div class="pictograph-renderer">
   <svg
     width="100%"
     height="100%"
@@ -198,14 +196,13 @@ Usage:
     role="img"
     aria-label="Pictograph"
   >
-    <!-- Background -->
-    <rect width="950" height="950" fill={darkMode ? "#0a0a0f" : "white"} />
+    <!-- Background - uses CSS variable for dark mode support -->
+    <rect width="950" height="950" fill="var(--dm-pictograph-bg)" />
 
     <!-- Grid -->
     <GridSvg
       {gridMode}
       {showNonRadialPoints}
-      {darkMode}
       {previewMode}
       onLoaded={() => {}}
       onError={() => {}}
@@ -241,7 +238,6 @@ Usage:
           shouldMirror={arrowMirroring[color] || false}
           showArrow={true}
           isClickable={arrowsClickable}
-          {darkMode}
         />
       {/if}
     {/each}
@@ -254,7 +250,6 @@ Usage:
         visible={showTKA}
         {previewMode}
         onToggle={onToggleTKA}
-        {darkMode}
       />
     {/if}
 
@@ -267,7 +262,6 @@ Usage:
       {previewMode}
       standalone={false}
       onToggle={onToggleTKA}
-      {darkMode}
     />
 
     <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
@@ -279,7 +273,6 @@ Usage:
         {letterDimensions}
         visible={showTKA}
         {previewMode}
-        {darkMode}
       />
     {/if}
 
@@ -289,7 +282,6 @@ Usage:
       showBeatNumber={shouldShowBeatNumber}
       {isStartPosition}
       {hasValidData}
-      {darkMode}
     />
 
     <!-- Reversal indicators -->
@@ -300,7 +292,6 @@ Usage:
       visible={showReversals}
       {previewMode}
       onToggle={onToggleReversals}
-      {darkMode}
     />
 
     <!-- Elemental glyph -->
@@ -332,7 +323,6 @@ Usage:
       visible={showPositions}
       {previewMode}
       onToggle={onTogglePositions}
-      {darkMode}
     />
   </svg>
 </div>
@@ -347,7 +337,7 @@ Usage:
   }
 
   /* Subtle white outline in dark mode to distinguish boundaries */
-  .pictograph-renderer.dark-mode {
+  :global(:root.dark) .pictograph-renderer {
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 

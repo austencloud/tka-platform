@@ -9,11 +9,12 @@ Props:
 - letterDimensions: Width and height of the letter SVG (already base letter for dash letters)
 - visible: Visibility control (tied to TKA glyph visibility)
 - previewMode: Show at reduced opacity when not visible
-- darkMode: Invert color on dark backgrounds
 
 Position Calculation (matches legacy):
 - SAME: 10px above letter top, horizontally centered on letter
 - OPP: 10px below letter bottom, horizontally centered on letter
+
+Dark mode: Uses CSS variable --dm-glyph-fill (auto-updates via .dark class on <html>)
 
 NOTE: For dash letters (Type3/Type5), letterDimensions is already the BASE letter dimensions
 because TKAGlyph now loads the base letter SVG and caches it under the full letter key.
@@ -34,7 +35,6 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     scale = 1,
     visible = true,
     previewMode = false,
-    darkMode = false,
   } = $props<{
     /** Direction from parsed turns tuple: "s" (same), "o" (opp), or null */
     direction: DirectionValue;
@@ -52,8 +52,6 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     visible?: boolean;
     /** Show at reduced opacity when not visible */
     previewMode?: boolean;
-    /** Invert to white on dark backgrounds */
-    darkMode?: boolean;
   }>();
 
   // Only show dot for "s" (same) or "o" (opp) directions
@@ -75,9 +73,6 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
 
     return { x: dotX, y: 0 };
   });
-
-  // Dot fill color - black on light, white on dark
-  const dotColor = $derived(darkMode ? "#ffffff" : "#231f20");
 </script>
 
 <!-- Direction Dot - only render when direction is same or opp -->
@@ -91,12 +86,12 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     transform="translate({x}, {y}) scale({scale})"
     data-direction={direction}
   >
-    <!-- Render as inline circle for dark mode color control -->
+    <!-- Fill color via CSS variable - auto-updates with dark mode -->
     <circle
       cx={dotPosition.x + DOT_SIZE / 2}
       cy={dotPosition.y + DOT_SIZE / 2}
       r={DOT_SIZE / 2}
-      fill={dotColor}
+      fill="var(--dm-glyph-fill)"
     />
   </g>
 {/if}
@@ -105,7 +100,7 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   .direction-dot {
     /* Match TKA glyph fade behavior */
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 150ms ease-out;
   }
 
   .direction-dot.visible {
@@ -115,5 +110,10 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   /* Preview mode: show at reduced opacity */
   .direction-dot.preview-mode:not(.visible) {
     opacity: 0.4;
+  }
+
+  /* Animate fill color changes for dark mode transition */
+  .direction-dot circle {
+    transition: fill 150ms ease-out;
   }
 </style>

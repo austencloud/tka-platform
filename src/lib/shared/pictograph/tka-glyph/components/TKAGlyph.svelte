@@ -150,7 +150,6 @@ Uses pure runes instead of stores for reactivity.
     visible = true,
     previewMode = false,
     onToggle = undefined,
-    darkMode = false,
   } = $props<{
     /** The letter to display */
     letter: string | null | undefined;
@@ -168,8 +167,6 @@ Uses pure runes instead of stores for reactivity.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
-    /** Dark mode - inverts letter color for dark backgrounds */
-    darkMode?: boolean;
   }>();
 
   // Letter dimensions state - match legacy behavior
@@ -312,11 +309,8 @@ Uses pure runes instead of stores for reactivity.
     class:visible={visible && imageReady}
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:dark-mode={darkMode}
     data-letter={letter}
-    data-dark-mode={darkMode}
     transform="translate({x}, {y}) scale({scale})"
-    style={darkMode ? "filter: invert(0.9)" : undefined}
     onclick={onToggle}
     {...onToggle
       ? {
@@ -357,7 +351,7 @@ Uses pure runes instead of stores for reactivity.
     z-index: 4;
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 150ms ease-out, filter 150ms ease-out;
   }
 
   .tka-glyph.visible {
@@ -388,13 +382,9 @@ Uses pure runes instead of stores for reactivity.
     image-rendering: optimizeQuality;
   }
 
-  /* Base transition for filter changes */
-  .tka-glyph {
-    transition: filter 150ms ease-out;
-  }
-
   /* Dark mode: invert letter color for dark backgrounds */
-  .tka-glyph.dark-mode {
+  /* Uses CSS-first approach - triggered by .dark class on <html> element */
+  :global(:root.dark) .tka-glyph {
     filter: invert(0.9);
   }
 </style>

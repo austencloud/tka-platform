@@ -28,8 +28,7 @@ Props:
     preloadLetterDimensions,
   } from "./TKAGlyph.svelte";
   import { isDashLetter } from "../utils/letter-image-getter";
-  import { getMotionColor } from "../../../utils/svg-color-utils";
-  import { MotionColor } from "../../shared/domain/enums/pictograph-enums";
+  import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 
   let {
     turnsTuple = "(s, 0, 0)",
@@ -43,7 +42,6 @@ Props:
     y = 800,
     scale = 1,
     onToggle = undefined,
-    darkMode = false,
   } = $props<{
     turnsTuple: string;
     letter: string | null | undefined;
@@ -62,18 +60,26 @@ Props:
     scale?: number;
     /** Toggle callback for interactive mode */
     onToggle?: () => void;
-    /** Dark mode - dark background (does NOT invert colors) */
-    darkMode?: boolean;
   }>();
 
-  // Centralized colors for SVG filters - based on pictograph background mode
-  // darkMode=true (dark background) → use bright colors, darkMode=false (white background) → use original dark colors
-  const BLUE_COLOR = $derived(
-    getMotionColor(MotionColor.BLUE, darkMode ? "dark" : "light")
-  );
-  const RED_COLOR = $derived(
-    getMotionColor(MotionColor.RED, darkMode ? "dark" : "light")
-  );
+  // Get centralized visibility manager for cached colors (no getComputedStyle per component)
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Track colors from centralized cache
+  let cachedColors = $state(visibilityManager.getMotionColors());
+
+  // Register for updates when dark mode changes
+  $effect(() => {
+    const handler = () => {
+      cachedColors = visibilityManager.getMotionColors();
+    };
+    visibilityManager.registerObserver(handler);
+    return () => visibilityManager.unregisterObserver(handler);
+  });
+
+  // Get motion colors from centralized cache
+  const BLUE_COLOR = $derived(cachedColors.blue);
+  const RED_COLOR = $derived(cachedColors.red);
 
   // Service instance for color interpretation
   const colorInterpreter = new TurnColorInterpreter();
@@ -175,9 +181,7 @@ Props:
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:dark-mode={darkMode}
     data-letter={letter}
-    data-dark-mode={darkMode}
     transform="translate({x}, {y}) scale({scale})"
     onclick={onToggle}
     {...onToggle
@@ -266,7 +270,7 @@ Props:
   .turns-column {
     /* Beautiful fade in/out effect matching TKA glyph */
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 150ms ease-out;
   }
 
   .turns-column.visible {

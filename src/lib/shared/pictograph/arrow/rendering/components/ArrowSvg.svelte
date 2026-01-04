@@ -14,12 +14,12 @@ Now with intelligent rotation animation matching prop behavior!
     RotationDirection,
     MotionColor,
   } from "../../../shared/domain/enums/pictograph-enums";
-  import { getMotionColor } from "../../../../utils/svg-color-utils";
   import type {
     ArrowAssets,
     ArrowPosition,
   } from "../../orchestration/domain/arrow-models";
   import { selectedArrowState } from "../../../../../features/create/shared/state/selected-arrow-state.svelte";
+  import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
 
   let {
     motionData,
@@ -30,7 +30,6 @@ Now with intelligent rotation animation matching prop behavior!
     color,
     pictographData = null,
     isClickable = false,
-    darkMode = false,
   } = $props<{
     motionData: MotionData;
     arrowAssets: ArrowAssets;
@@ -40,32 +39,44 @@ Now with intelligent rotation animation matching prop behavior!
     color: string;
     pictographData?: PictographData | null;
     isClickable?: boolean;
-    /** Dark mode - dark pictograph background */
-    darkMode?: boolean;
   }>();
 
-  // Dark mode colors - based on pictograph background mode
-  // darkMode=true (dark background) → use bright colors, darkMode=false (white background) → use original dark colors
-  const DARK_MODE_COLORS = $derived({
-    [MotionColor.BLUE]: getMotionColor(
-      MotionColor.BLUE,
-      darkMode ? "dark" : "light"
-    ),
-    [MotionColor.RED]: getMotionColor(
-      MotionColor.RED,
-      darkMode ? "dark" : "light"
-    ),
+  // Get centralized visibility manager for dark mode state and cached colors
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Track dark mode and colors from centralized cache (no getComputedStyle per component)
+  let isDarkMode = $state(visibilityManager.isDarkMode());
+  let cachedColors = $state(visibilityManager.getMotionColors());
+
+  // Register for updates when dark mode changes
+  $effect(() => {
+    const handler = () => {
+      isDarkMode = visibilityManager.isDarkMode();
+      cachedColors = visibilityManager.getMotionColors();
+    };
+    visibilityManager.registerObserver(handler);
+    return () => visibilityManager.unregisterObserver(handler);
+  });
+
+  // Get motion colors from centralized cache
+  const BLUE_COLOR = $derived(cachedColors.blue);
+  const RED_COLOR = $derived(cachedColors.red);
+
+  // Motion colors map
+  const MOTION_COLORS = $derived({
+    [MotionColor.BLUE]: BLUE_COLOR,
+    [MotionColor.RED]: RED_COLOR,
   });
 
   // Get the glow color based on motion color
   const glowColor = $derived(
-    DARK_MODE_COLORS[motionData.color as MotionColor.BLUE | MotionColor.RED] ??
-      DARK_MODE_COLORS[MotionColor.BLUE]
+    MOTION_COLORS[motionData.color as MotionColor.BLUE | MotionColor.RED] ??
+      MOTION_COLORS[MotionColor.BLUE]
   );
 
   // White stroke for visibility against light backgrounds (when NOT in dark mode)
   const lightModeStroke = $derived(
-    !darkMode ? "drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white)" : ""
+    !isDarkMode ? "drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white)" : ""
   );
 
   // ============================================================================
@@ -317,8 +328,6 @@ Now with intelligent rotation animation matching prop behavior!
     class:mirrored={shouldMirror}
     class:clickable={isClickable}
     class:selected={isSelected}
-    class:dark-mode={darkMode}
-    data-dark-mode={darkMode}
     onclick={isClickable ? handleArrowClick : undefined}
     onkeydown={isClickable
       ? (e) => (e.key === "Enter" || e.key === " ") && handleArrowClick(e)

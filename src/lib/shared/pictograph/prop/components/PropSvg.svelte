@@ -26,11 +26,17 @@ Now with smooth transitions when position or orientation changes!
     propAssets,
     propPosition,
     showProp = true,
+    isClickable = false,
+    isSelected = false,
+    onPropClick,
   } = $props<{
     motionData: MotionData;
     propAssets: PropAssets;
     propPosition: PropPosition;
     showProp?: boolean;
+    isClickable?: boolean;
+    isSelected?: boolean;
+    onPropClick?: () => void;
   }>();
 
   type MotionSnapshot = {
@@ -250,12 +256,29 @@ Now with smooth transitions when position or orientation changes!
 </script>
 
 {#if showProp}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <g
     class="prop-svg {motionData.color}-prop-svg"
+    class:clickable={isClickable}
+    class:selected={isSelected}
     data-prop-type={motionData?.propType}
     style="transform: {transformString};"
+    onclick={isClickable && onPropClick ? onPropClick : undefined}
   >
     {@html propAssets.imageSrc}
+    {#if isSelected}
+      <!-- Selection indicator ring -->
+      <circle
+        class="selection-ring"
+        cx={propPosition.x}
+        cy={propPosition.y}
+        r="32"
+        fill="none"
+        stroke="var(--semantic-info, #3b82f6)"
+        stroke-width="3"
+        opacity="0.8"
+      />
+    {/if}
   </g>
 {/if}
 
@@ -265,5 +288,18 @@ Now with smooth transitions when position or orientation changes!
     /* Smooth transition for position and rotation changes - matches arrow and grid behavior */
     /* IMPORTANT: transform must be a CSS property (not SVG attribute) for transitions to work */
     transition: transform 0.2s ease;
+  }
+
+  .prop-svg.clickable {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .prop-svg.clickable:hover {
+    filter: brightness(1.15);
+  }
+
+  .selection-ring {
+    pointer-events: none;
   }
 </style>

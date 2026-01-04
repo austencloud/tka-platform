@@ -3,27 +3,15 @@ GlyphOverlay.svelte
 
 Cross-fading glyph overlay for AnimatorCanvas.
 Displays TKA glyph and beat number with fade transitions.
+
+Dark mode: Uses CSS-first approach - styles triggered by .dark class on <html> element.
+No JS observer needed - CSS handles the transition automatically.
 -->
 <script lang="ts">
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import BeatNumber from "$lib/shared/pictograph/shared/components/BeatNumber.svelte";
-  import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
-
-  // Track Dark Mode for styling (inverted glyphs)
-  const visibilityManager = getAnimationVisibilityManager();
-  let darkModeEnabled = $state(visibilityManager.isDarkMode());
-
-  // Sync Dark Mode from visibility manager
-  $effect(() => {
-    darkModeEnabled = visibilityManager.isDarkMode();
-    const handler = () => {
-      darkModeEnabled = visibilityManager.isDarkMode();
-    };
-    visibilityManager.registerObserver(handler);
-    return () => visibilityManager.unregisterObserver(handler);
-  });
 
   let {
     // Current glyph state
@@ -54,7 +42,7 @@ Displays TKA glyph and beat number with fade transitions.
   } = $props();
 </script>
 
-<div class="glyph-overlay" data-lights-off={darkModeEnabled ? "true" : "false"}>
+<div class="glyph-overlay">
   <!-- Fading out glyph (previous letter + beat number) -->
   {#if fadingOutLetter || fadingOutBeatNumber !== null}
     <div class="glyph-wrapper fade-out">
@@ -80,14 +68,10 @@ Displays TKA glyph and beat number with fade transitions.
             y={800}
             scale={1}
             visible={true}
-            darkMode={darkModeEnabled}
           />
         {/if}
         {#if beatNumbersVisible}
-          <BeatNumber
-            beatNumber={fadingOutBeatNumber}
-            darkMode={darkModeEnabled}
-          />
+          <BeatNumber beatNumber={fadingOutBeatNumber} />
         {/if}
       </svg>
     </div>
@@ -118,14 +102,10 @@ Displays TKA glyph and beat number with fade transitions.
             y={800}
             scale={1}
             visible={true}
-            darkMode={darkModeEnabled}
           />
         {/if}
         {#if beatNumbersVisible}
-          <BeatNumber
-            beatNumber={displayedBeatNumber}
-            darkMode={darkModeEnabled}
-          />
+          <BeatNumber beatNumber={displayedBeatNumber} />
         {/if}
       </svg>
     </div>
@@ -153,14 +133,15 @@ Displays TKA glyph and beat number with fade transitions.
   }
 
   /* Override TKAGlyph's internal opacity transitions - we control fade at wrapper level */
+  /* Only disable opacity transition, allow filter transition for dark mode */
   .glyph-wrapper :global(.tka-glyph) {
     opacity: 1 !important;
-    transition: none !important;
+    transition: filter 150ms ease-out !important;
   }
 
   .glyph-wrapper :global(.turns-column) {
     opacity: 1 !important;
-    transition: none !important;
+    transition: filter 150ms ease-out !important;
   }
 
   /* Instant transitions - no fade animation for step playback sync */
@@ -178,12 +159,13 @@ Displays TKA glyph and beat number with fade transitions.
   }
 
   /* Dark Mode: invert TKA letter colors (but NOT turns column - keep red/blue) */
-  .glyph-overlay[data-lights-off="true"] :global(.tka-glyph) {
+  /* Uses CSS-first approach - triggered by .dark class on <html> element */
+  :global(:root.dark) .glyph-overlay :global(.tka-glyph) {
     filter: invert(0.9);
   }
 
   /* Dark Mode: add white outline to turns column without inverting colors */
-  .glyph-overlay[data-lights-off="true"] :global(.turns-column) {
+  :global(:root.dark) .glyph-overlay :global(.turns-column) {
     filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
   }
 </style>
