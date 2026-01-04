@@ -20,8 +20,6 @@ Single responsibility: Combine header and grid for a letter type section.
     onSelect: (option: PreparedPictographData) => void;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
-    // Dark mode state - passed from parent to avoid race conditions
-    darkMode?: boolean;
   }
 
   const {
@@ -34,13 +32,12 @@ Single responsibility: Combine header and grid for a letter type section.
     isFading = false,
     onSelect,
     currentSequence = [],
-    darkMode= false,
   }: Props = $props();
 </script>
 
 <div class="option-section" data-letter-type={letterType}>
   {#if showHeader}
-    <OptionSectionHeader {letterType} {darkMode} />
+    <OptionSectionHeader {letterType} />
   {/if}
 
   <OptionGrid
@@ -51,7 +48,6 @@ Single responsibility: Combine header and grid for a letter type section.
     {isFading}
     {onSelect}
     {currentSequence}
-    {darkMode}
   />
 </div>
 

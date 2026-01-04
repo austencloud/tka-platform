@@ -24,8 +24,6 @@ with individual headers for each type.
     onSelect: (option: PreparedPictographData) => void;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
-    // Dark mode state - passed from parent to avoid race conditions
-    darkMode?: boolean;
   }
 
   const {
@@ -36,7 +34,6 @@ with individual headers for each type.
     isFading = false,
     onSelect,
     currentSequence = [],
-    darkMode= false,
   }: Props = $props();
 </script>
 
@@ -45,7 +42,7 @@ with individual headers for each type.
     {#if section.pictographs.length > 0}
       {@const sectionColumns = Math.min(section.pictographs.length, 4)}
       <div class="type-column">
-        <OptionSectionHeader letterType={section.title} {darkMode} />
+        <OptionSectionHeader letterType={section.title} />
         <OptionGrid
           options={section.pictographs}
           {cardSize}
@@ -54,7 +51,6 @@ with individual headers for each type.
           {isFading}
           {onSelect}
           {currentSequence}
-          {darkMode}
         />
       </div>
     {/if}

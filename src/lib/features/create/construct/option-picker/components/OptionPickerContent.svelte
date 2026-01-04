@@ -16,9 +16,6 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionCard from "./OptionCard.svelte";
   import OptionViewerSwipeLayout from "../swipe-layout/components/OptionViewerSwipeLayout.svelte";
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
-  import type { IDarkModeProvider } from "$lib/shared/animation-engine/services/contracts/IDarkModeProvider";
-  import { tryResolve, TYPES } from "$lib/shared/inversify/di";
-  import { onMount } from "svelte";
 
   interface Props {
     options: PreparedPictographData[];
@@ -45,10 +42,6 @@ Uses organizer and sizer services for section grouping and sizing.
     isSideBySideLayout = () => false,
     currentSequence = [],
   }: Props = $props();
-
-  // Subscribe to Dark Mode state via DI
-  let darkMode = $state(false);
-  let darkModeUnsubscribe: (() => void) | null = null;
 
   // Track container dimensions with simple resize observer
   let containerElement: HTMLDivElement | null = $state(null);
@@ -204,29 +197,6 @@ Uses organizer and sizer services for section grouping and sizing.
     gridGap: "8px",
   }));
 
-  // Subscribe to Dark Mode changes via DI
-  $effect(() => {
-    // Use tryResolve to handle HMR gracefully - animator module may not be loaded yet
-    const provider = tryResolve<IDarkModeProvider>(TYPES.IDarkModeProvider);
-    if (!provider) {
-      // Provider not available yet (e.g., during HMR rebuild)
-      // Default to false, will re-run when module loads
-      darkMode = false;
-      return;
-    }
-
-    darkModeUnsubscribe = provider.subscribe((value) => {
-      darkMode = value;
-    });
-
-    return () => {
-      if (darkModeUnsubscribe) {
-        darkModeUnsubscribe();
-        darkModeUnsubscribe = null;
-      }
-    };
-  });
-
   // Simple resize observer - only update after stable
   $effect(() => {
     if (!containerElement) return;
@@ -311,7 +281,6 @@ Uses organizer and sizer services for section grouping and sizing.
             showHeader={false}
             isFadingOut={isFading}
             {currentSequence}
-            {darkMode}
           />
         </div>
       {:else if shouldUseSwipeLayout()}
@@ -323,7 +292,6 @@ Uses organizer and sizer services for section grouping and sizing.
             layoutConfig={mobileLayoutConfig()}
             isFadingOut={isFading}
             {currentSequence}
-            {darkMode}
           />
         </div>
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}
@@ -341,7 +309,6 @@ Uses organizer and sizer services for section grouping and sizing.
               {isFading}
               {onSelect}
               {currentSequence}
-              {darkMode}
             />
           {/each}
 
@@ -355,7 +322,6 @@ Uses organizer and sizer services for section grouping and sizing.
               {isFading}
               {onSelect}
               {currentSequence}
-              {darkMode}
             />
           {/if}
         </div>
@@ -370,7 +336,6 @@ Uses organizer and sizer services for section grouping and sizing.
             showHeader={false}
             isFadingOut={isFading}
             {currentSequence}
-            {darkMode}
           />
         </div>
       {/if}
@@ -392,6 +357,20 @@ Uses organizer and sizer services for section grouping and sizing.
     flex-direction: column;
     align-items: center;
     container-type: size;
+
+    /* Dark mode cascade variables - child components inherit these */
+    --option-header-bg: rgba(255, 255, 255, 0.9);
+    --option-header-border: rgba(0, 0, 0, 0.1);
+    --option-header-shadow: rgba(0, 0, 0, 0.1);
+    --option-header-text: #000000;
+    --option-dark-transition: 150ms ease-out;
+  }
+
+  :global(:root.dark) .option-picker-content {
+    --option-header-bg: rgba(0, 0, 0, 0.75);
+    --option-header-border: rgba(255, 255, 255, 0.15);
+    --option-header-shadow: rgba(0, 0, 0, 0.3);
+    --option-header-text: #ffffff;
   }
 
   .animated-content {

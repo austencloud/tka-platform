@@ -1,30 +1,24 @@
 <!--
 OptionPictographCell.svelte - Mobile option pictograph cell wrapper
 
-Lightweight wrapper that receives darkMode from parent and delegates to shared primitive.
+Lightweight wrapper that delegates to shared OptionPictograph primitive.
 Used by mobile hierarchy: OptionViewerSwipeLayout → OptionViewerSection → OptionPictographCell
 
-DESIGN PHILOSOPHY:
-- Pure rendering component (no state polling, no lifecycle)
-- Receives darkModefrom parent to avoid N subscriptions for N pictographs
-- Delegates actual rendering to shared OptionPictograph
+Dark mode is handled via CSS-first approach (:root.dark class).
 -->
 
 <script lang="ts">
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import OptionPictograph from "$lib/shared/pictograph/option/OptionPictograph.svelte";
 
-  // Props - darkModeis passed from parent to avoid many subscriptions
   let {
     pictographData,
     blueReversal = false,
     redReversal = false,
-    darkMode= false,
   } = $props<{
     pictographData: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
-    darkMode: boolean;
   }>();
 </script>
 
@@ -33,7 +27,6 @@ DESIGN PHILOSOPHY:
     pictograph={pictographData}
     {blueReversal}
     {redReversal}
-    {darkMode}
   />
 </div>
 

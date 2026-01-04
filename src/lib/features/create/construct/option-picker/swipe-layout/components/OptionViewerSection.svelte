@@ -22,7 +22,7 @@ Renders a section with:
   import SectionHeader from "./SectionHeader.svelte";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
 
-  // Props - darkMode is passed down from OptionViewer which manages the subscription
+  // Props - Dark mode is handled via CSS (:root.dark) not prop drilling
   const {
     letterType = "mixed",
     pictographs = [],
@@ -34,7 +34,6 @@ Renders a section with:
     forcedPictographSize,
     showHeader = true,
     fitToViewport = false,
-    darkMode = false,
   } = $props<{
     letterType?: string;
     pictographs?: PictographData[];
@@ -54,7 +53,6 @@ Renders a section with:
     forcedPictographSize?: number;
     showHeader?: boolean;
     fitToViewport?: boolean;
-    darkMode: boolean;
   }>();
 
   // Services
@@ -325,7 +323,7 @@ Renders a section with:
 >
   <!-- Section Header -->
   {#if showHeader}
-    <SectionHeader {letterType} {darkMode} />
+    <SectionHeader {letterType} />
   {/if}
 
   <!-- Section Content - Simple keyed each for component reuse -->
@@ -354,7 +352,6 @@ Renders a section with:
           pictographData={pictograph as PreparedPictographData}
           blueReversal={pictograph.blueReversal || false}
           redReversal={pictograph.redReversal || false}
-          {darkMode}
         />
       </button>
     {/each}

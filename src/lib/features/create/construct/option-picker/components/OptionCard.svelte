@@ -16,8 +16,6 @@ Receives pre-calculated data, just renders it.
     blueReversal?: boolean;
     redReversal?: boolean;
     onSelect: (pictograph: PreparedPictographData) => void;
-    // Dark mode state - passed from parent to avoid race conditions
-    darkMode?: boolean;
   }
 
   const {
@@ -27,7 +25,6 @@ Receives pre-calculated data, just renders it.
     blueReversal = false,
     redReversal = false,
     onSelect,
-    darkMode = false,
   }: Props = $props();
 
   const borderColors = $derived(getLetterBorderColors(pictograph.letter));
@@ -50,7 +47,7 @@ Receives pre-calculated data, just renders it.
   data-testid="option-card"
   data-letter={pictograph.letter}
 >
-  <OptionCardContent {pictograph} {blueReversal} {redReversal} {darkMode} />
+  <OptionCardContent {pictograph} {blueReversal} {redReversal} />
 </button>
 
 <style>

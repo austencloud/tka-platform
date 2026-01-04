@@ -3,13 +3,15 @@ SectionHeader.svelte - Header for option picker sections
 
 Single responsibility: Display section header with colored letter type label.
 Uses LetterTypeTextPainter for consistent text formatting.
+
+Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
+  --option-header-bg, --option-header-border, --option-header-shadow, --option-header-text
 -->
 <script lang="ts">
   import { LetterTypeTextPainter } from "../../utils/letter-type-text-painter";
 
-  const { letterType = "mixed", darkMode = false } = $props<{
+  const { letterType = "mixed" } = $props<{
     letterType?: string;
-    darkMode?: boolean;
   }>();
 
   // Type descriptions mapping
@@ -48,7 +50,7 @@ Uses LetterTypeTextPainter for consistent text formatting.
 <div class="section-header">
   <div class="header-layout">
     <div class="stretch"></div>
-    <div class="type-label" class:dark-mode={darkMode}>
+    <div class="type-label">
       <span class="label-text">
         {@html buttonText}
       </span>
@@ -76,22 +78,21 @@ Uses LetterTypeTextPainter for consistent text formatting.
   }
 
   .type-label {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    /* Use CSS variables from parent container - auto-updates with dark mode */
+    background: var(--option-header-bg, rgba(255, 255, 255, 0.9));
+    border: 1px solid var(--option-header-border, rgba(0, 0, 0, 0.1));
     border-radius: 8px;
     padding: 6px 6px;
     font-weight: 600;
     font-size: var(--font-size-base);
     min-width: 160px;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: background 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out;
-  }
-
-  .type-label.dark-mode {
-    background: rgba(0, 0, 0, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 8px var(--option-header-shadow, rgba(0, 0, 0, 0.1));
+    /* Transitions sync with parent dark mode toggle */
+    transition:
+      background var(--option-dark-transition, 150ms ease-out),
+      border-color var(--option-dark-transition, 150ms ease-out),
+      box-shadow var(--option-dark-transition, 150ms ease-out);
   }
 
   /* Responsive sizing */
@@ -121,11 +122,7 @@ Uses LetterTypeTextPainter for consistent text formatting.
 
   .label-text {
     display: block;
-    color: #000000;
-    transition: color 150ms ease-out;
-  }
-
-  .dark-mode .label-text {
-    color: #ffffff;
+    color: var(--option-header-text, #000000);
+    transition: color var(--option-dark-transition, 150ms ease-out);
   }
 </style>
