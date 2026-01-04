@@ -1,11 +1,12 @@
 <!--
-  SequenceViewerPanel.svelte
+  SequencePreviewPanel.svelte
 
-  Unified sequence viewer panel that works in two modes:
+  Internal sequence preview panel used within Create module and Discover gallery.
+  Works in two modes:
   - preview: Export-focused (Create module) - shows export controls, format selection
   - full: Detail-focused (Discover gallery) - shows metadata, favorites, actions
 
-  Uses SequenceMediaViewer for the core media display with tabs.
+  Uses SequenceMediaViewerUnified for the core media display with tabs.
 -->
 <script lang="ts">
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -62,8 +63,21 @@
 	);
 	const beatCount = $derived(sequence?.beats?.length ?? 0);
 
-	// Export format state (preview mode)
-	let selectedFormat = $state<MediaFormat>("animation");
+	// Track current media type from viewer (syncs with initialMediaType on change)
+	let currentMediaType = $state<MediaType>("image");
+
+	$effect(() => {
+		currentMediaType = initialMediaType;
+	});
+
+	// Export format syncs with media type: image → static, animation → animation
+	const selectedFormat = $derived<MediaFormat>(
+		currentMediaType === "image" ? "static" : "animation"
+	);
+
+	function handleMediaTypeChange(type: MediaType) {
+		currentMediaType = type;
+	}
 </script>
 
 <div class="sequence-viewer-panel" class:preview-mode={mode === "preview"}>
@@ -117,6 +131,7 @@
 			{isExporting}
 			{exportProgress}
 			controlsLevel={mode === "preview" ? "full" : "standard"}
+			onMediaTypeChange={handleMediaTypeChange}
 		/>
 	</div>
 
@@ -124,10 +139,9 @@
 	{#if mode === "preview"}
 		<!-- Export Controls Section -->
 		<ExportControlsSection
-			selectedFormat={selectedFormat}
+			{selectedFormat}
 			{isExporting}
 			{exportProgress}
-			onFormatChange={(format) => (selectedFormat = format)}
 			onExport={(format, settings) => onExport?.(format, settings)}
 		/>
 	{:else}

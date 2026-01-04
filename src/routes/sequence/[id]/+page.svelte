@@ -8,7 +8,7 @@
 
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
+  import SharedSequenceView from "$lib/shared/sequence-viewer/components/SharedSequenceView.svelte";
   import { resolve, TYPES } from "$lib/shared/inversify/di";
   import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -66,7 +66,7 @@
 
 <div class="sequence-page">
   {#if decodedSequence}
-    <SequenceViewer
+    <SharedSequenceView
       initialSequence={decodedSequence}
       onClose={handleClose}
       onOpenInCreate={handleOpenInCreate}

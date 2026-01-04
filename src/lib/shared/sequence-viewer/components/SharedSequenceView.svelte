@@ -1,18 +1,20 @@
 <!--
-  SequenceViewer.svelte - Standalone Sequence Viewer
+  SharedSequenceView.svelte - External Sequence Viewer Page
 
-  Full-page sequence viewer that can be used as a landing page for deep links.
-  Shows sequence details with the ability to edit beats inline.
+  Full-page viewer for sequences received via deep links.
+  Purpose: View a shared sequence and decide what to do with it.
 
-  Features:
-  - Sequence thumbnail with variation navigation
-  - Beat grid with tap-to-edit
-  - Action buttons (Edit, Share, Favorite, Open in Create)
-  - Integrated EditSlidePanel for inline editing
+  Actions available:
+  - Open in Create (loads into Construct tab)
+  - Save to Library
+  - Favorite
+
+  Uses shared primitives:
+  - SequenceMediaViewerUnified for animation/image display
+  - Same animation engine as Create/Discover
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
@@ -23,8 +25,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import EditSlidePanel from "$lib/features/create/edit/components/EditSlidePanel.svelte";
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import SequenceMediaViewerUnified from "./SequenceMediaViewerUnified.svelte";
   import SequenceViewerActions from "./SequenceViewerActions.svelte";
   import VariationNav from "./VariationNav.svelte";
 
@@ -58,28 +59,9 @@
   const isAuthenticated = $derived(!!authState.effectiveUserId);
 
   // Derived
-  const thumbnailUrl = $derived.by(() => {
-    if (!viewerState.sequence) return "";
-    return (
-      viewerService?.getThumbnailUrl(
-        viewerState.sequence,
-        viewerState.currentVariationIndex
-      ) ?? ""
-    );
-  });
-
   const viewerTitle = $derived(
     viewerState.sequence?.word || viewerState.sequence?.name || "Sequence"
   );
-
-  const startPosition = $derived.by(() => {
-    if (!viewerState.sequence) return null;
-    return (
-      viewerState.sequence.startPosition ??
-      viewerState.sequence.startingPositionBeat ??
-      null
-    );
-  });
 
   // Layout detection
   let windowWidth = $state(0);
@@ -120,108 +102,6 @@
   }
 
   // Handlers
-  function handleBeatClick(beatNumber: number) {
-    if (!viewerState.sequence) return;
-    hapticService?.trigger("selection");
-
-    // beatNumber 0 = start position, 1+ = beats array
-    let beatData: BeatData | null = null;
-    if (beatNumber === 0) {
-      const startPos =
-        viewerState.sequence.startPosition ??
-        viewerState.sequence.startingPositionBeat;
-      if (startPos) {
-        beatData = {
-          ...startPos,
-          beatNumber: 0,
-          duration: 1000,
-          blueReversal: false,
-          redReversal: false,
-          isBlank: false,
-        } as BeatData;
-      }
-    } else {
-      beatData = viewerState.sequence.beats[beatNumber - 1] ?? null;
-    }
-
-    if (beatData) {
-      viewerState.selectBeat(beatNumber, beatData);
-      viewerState.openEditPanel();
-    }
-  }
-
-  function handleStartClick() {
-    handleBeatClick(0);
-  }
-
-  function handleEditPanelClose() {
-    viewerState.closeEditPanel();
-    viewerState.clearSelection();
-  }
-
-  function handleOrientationChanged(color: string, orientation: string) {
-    if (
-      !viewerState.sequence ||
-      viewerState.selectedBeatIndex === null ||
-      !viewerService
-    )
-      return;
-
-    const updatedSequence = viewerService.updateBeatOrientation(
-      viewerState.sequence,
-      viewerState.selectedBeatIndex,
-      color,
-      orientation
-    );
-    viewerState.setSequence(updatedSequence);
-
-    // Update selected beat data
-    const newBeatData = viewerService.getBeatData(
-      updatedSequence,
-      viewerState.selectedBeatIndex
-    );
-    if (newBeatData) {
-      viewerState.selectBeat(viewerState.selectedBeatIndex, newBeatData);
-    }
-  }
-
-  function handleTurnAmountChanged(color: string, turnAmount: number) {
-    if (
-      !viewerState.sequence ||
-      viewerState.selectedBeatIndex === null ||
-      !viewerService
-    )
-      return;
-
-    const updatedSequence = viewerService.updateBeatTurns(
-      viewerState.sequence,
-      viewerState.selectedBeatIndex,
-      color,
-      turnAmount
-    );
-    viewerState.setSequence(updatedSequence);
-
-    // Update selected beat data
-    const newBeatData = viewerService.getBeatData(
-      updatedSequence,
-      viewerState.selectedBeatIndex
-    );
-    if (newBeatData) {
-      viewerState.selectBeat(viewerState.selectedBeatIndex, newBeatData);
-    }
-  }
-
-  function handleRemoveBeat(beatNumber: number) {
-    if (!viewerState.sequence || !viewerService) return;
-
-    const updatedSequence = viewerService.removeBeat(
-      viewerState.sequence,
-      beatNumber - 1
-    );
-    viewerState.setSequence(updatedSequence);
-    handleEditPanelClose();
-  }
-
   async function handleSaveToLibrary() {
     if (!viewerState.sequence || !libraryService || !isAuthenticated) return;
 
@@ -369,19 +249,13 @@
         <button onclick={handleClose}>Go Back</button>
       </div>
     {:else if viewerState.sequence}
-      <!-- Thumbnail Section -->
-      <section class="thumbnail-section">
-        {#if thumbnailUrl}
-          <img
-            src={thumbnailUrl}
-            alt={viewerState.sequence.word || "Sequence"}
-            class="thumbnail-image"
-          />
-        {:else}
-          <div class="thumbnail-placeholder">
-            <i class="fas fa-image" aria-hidden="true"></i>
-          </div>
-        {/if}
+      <!-- Media Section - Uses shared primitives -->
+      <section class="media-section">
+        <SequenceMediaViewerUnified
+          sequence={viewerState.sequence}
+          initialMediaType="image"
+          controlsLevel="standard"
+        />
 
         {#if viewerState.hasMultipleVariations}
           <VariationNav
@@ -427,20 +301,6 @@
     {/if}
   </main>
 </div>
-
-<!-- Edit Panel -->
-{#if viewerState.sequence}
-  <EditSlidePanel
-    isOpen={viewerState.isEditPanelOpen}
-    onClose={handleEditPanelClose}
-    selectedBeatNumber={viewerState.selectedBeatIndex}
-    selectedBeatData={viewerState.selectedBeatData}
-    placement="bottom"
-    onOrientationChanged={handleOrientationChanged}
-    onTurnAmountChanged={handleTurnAmountChanged}
-    onRemoveBeat={handleRemoveBeat}
-  />
-{/if}
 
 <style>
   .sequence-viewer {
@@ -551,33 +411,13 @@
     cursor: pointer;
   }
 
-  /* Thumbnail Section */
-  .thumbnail-section {
+  /* Media Section */
+  .media-section {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
-  }
-
-  .thumbnail-image {
-    max-width: 100%;
-    max-height: 300px;
-    object-fit: contain;
-    border-radius: 12px;
-    background: var(--theme-card-bg);
-  }
-
-  .thumbnail-placeholder {
-    width: 200px;
-    height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg);
-    border-radius: 12px;
-    font-size: var(--font-size-3xl);
-    color: rgba(255, 255, 255, 0.75); /* WCAG AAA */
   }
 
   /* Metadata */
@@ -618,7 +458,7 @@
     margin: 0 auto;
   }
 
-  .sequence-viewer.side-by-side .thumbnail-section {
+  .sequence-viewer.side-by-side .media-section {
     flex: 1;
     min-width: 300px;
   }

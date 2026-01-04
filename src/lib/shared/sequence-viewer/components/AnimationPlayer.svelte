@@ -42,6 +42,8 @@
 		isPlaying: externalIsPlaying = false,
 		speed: externalSpeed = 1,
 		currentBeat: externalCurrentBeat = 0,
+		bluePropState: externalBluePropState = null,
+		redPropState: externalRedPropState = null,
 		onPlaybackToggle: externalPlaybackToggle,
 		onSpeedChange: externalSpeedChange,
 		onStepForward,
@@ -87,6 +89,8 @@
 		isPlaying?: boolean;
 		speed?: number;
 		currentBeat?: number;
+		bluePropState?: any;
+		redPropState?: any;
 		onPlaybackToggle?: () => void;
 		onSpeedChange?: (speed: number) => void;
 		onStepForward?: () => void;
@@ -412,8 +416,8 @@
 		<!-- Animation Canvas -->
 		<div class="canvas-container">
 			<AnimatorCanvas
-				blueProp={animationState.bluePropState}
-				redProp={animationState.redPropState}
+				blueProp={externalControl && externalBluePropState ? externalBluePropState : animationState.bluePropState}
+				redProp={externalControl && externalRedPropState ? externalRedPropState : animationState.redPropState}
 				gridVisible={true}
 				{gridMode}
 				letter={currentLetter}

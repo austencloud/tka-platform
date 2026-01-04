@@ -31,6 +31,7 @@
 		isExporting = false,
 		exportProgress = null as ExportProgress | null,
 		onCanvasReady,
+		onMediaTypeChange,
 	}: {
 		sequence: SequenceData;
 		initialMediaType?: MediaType;
@@ -38,6 +39,7 @@
 		isExporting?: boolean;
 		exportProgress?: ExportProgress | null;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+		onMediaTypeChange?: (type: MediaType) => void;
 	} = $props();
 
 	let hapticService: IHapticFeedback | null = null;
@@ -113,52 +115,31 @@
 	function selectMediaType(type: MediaType) {
 		hapticService?.trigger("selection");
 		activeMediaType = type;
+		onMediaTypeChange?.(type);
 	}
 
-	function handleImageClick() {
-		if (hasAnimation) {
-			selectMediaType("animation");
-		}
-	}
 </script>
 
 <div class="media-viewer">
-	<!-- Media Type Tabs -->
+	<!-- Media Type Tabs (pill/chip style) -->
 	{#if availableMediaTypes.length > 1}
-		<div class="media-tabs">
+		<div class="media-tabs" role="radiogroup" aria-label="Media type selection">
 			{#each availableMediaTypes as mediaType}
 				<button
-					class="media-tab"
+					class="media-chip"
 					class:active={activeMediaType === mediaType}
+					role="radio"
+					aria-checked={activeMediaType === mediaType}
 					onclick={() => selectMediaType(mediaType)}
 				>
 					{#if mediaType === "image"}
-						<svg
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-						>
-							<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-							<circle cx="8.5" cy="8.5" r="1.5" />
-							<polyline points="21 15 16 10 5 21" />
-						</svg>
+						<i class="fas fa-image" aria-hidden="true"></i>
 						<span>Image</span>
 					{:else if mediaType === "animation"}
-						<svg viewBox="0 0 24 24" fill="currentColor">
-							<path d="M8 5v14l11-7z" />
-						</svg>
+						<i class="fas fa-play-circle" aria-hidden="true"></i>
 						<span>Animate</span>
 					{:else if mediaType === "video"}
-						<svg
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-						>
-							<polygon points="23 7 16 12 23 17 23 7" />
-							<rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-						</svg>
+						<i class="fas fa-video" aria-hidden="true"></i>
 						<span>Video</span>
 					{/if}
 				</button>
@@ -170,14 +151,7 @@
 	<div class="media-content">
 		{#if activeMediaType === "image"}
 			<!-- Image View -->
-			<div
-				class="image-view"
-				role="button"
-				tabindex="0"
-				aria-label="Click to animate sequence"
-				onclick={handleImageClick}
-				onkeypress={(e) => e.key === "Enter" && handleImageClick()}
-			>
+			<div class="image-view">
 				{#key sequence.id || sequence.word}
 					<PropAwareThumbnail
 						{sequence}
@@ -187,18 +161,6 @@
 						{lightMode}
 					/>
 				{/key}
-
-				<!-- Play overlay hint -->
-				{#if hasAnimation}
-					<div class="play-overlay">
-						<div class="play-icon">
-							<svg viewBox="0 0 24 24" fill="currentColor">
-								<path d="M8 5v14l11-7z" />
-							</svg>
-						</div>
-						<span>Click to animate</span>
-					</div>
-				{/if}
 			</div>
 		{:else if activeMediaType === "animation"}
 			<!-- Animation View - using unified AnimationPlayer -->
@@ -214,6 +176,8 @@
 						isPlaying={animationExportContext.state.isPlaying}
 						speed={animationExportContext.state.speed}
 						currentBeat={animationExportContext.state.currentBeat}
+						bluePropState={animationExportContext.state.bluePropState}
+						redPropState={animationExportContext.state.redPropState}
 						onPlaybackToggle={animationExportContext.actions.onPlaybackToggle}
 						onSpeedChange={animationExportContext.actions.onSpeedChange}
 						onStepForward={animationExportContext.actions.onStepHalfBeatForward}
@@ -300,49 +264,57 @@
 		gap: 8px;
 	}
 
-	/* Media Type Tabs */
+	/* Media Type Tabs (pill/chip style) */
 	.media-tabs {
 		display: flex;
 		justify-content: center;
-		gap: 4px;
-		padding: 4px;
-		background: color-mix(in srgb, var(--theme-shadow) 20%, transparent);
-		border-radius: 10px;
+		gap: 12px;
 		flex-shrink: 0;
 	}
 
-	.media-tab {
+	.media-chip {
 		display: flex;
 		align-items: center;
-		gap: 6px;
-		padding: 8px 14px;
-		background: transparent;
-		border: none;
-		border-radius: 8px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-		font-size: var(--font-size-compact, 12px);
+		gap: 8px;
+		padding: 12px 20px;
+		min-height: 48px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 24px;
+		font-size: var(--font-size-min, 14px);
 		font-weight: 500;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
 		cursor: pointer;
 		transition: all 0.2s ease;
+		white-space: nowrap;
 	}
 
-	.media-tab svg {
-		width: 16px;
-		height: 16px;
+	.media-chip i {
+		font-size: var(--font-size-base, 16px);
 	}
 
-	.media-tab:hover {
-		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
-		color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
-	}
-
-	.media-tab.active {
-		background: color-mix(
-			in srgb,
-			var(--semantic-info, #3b82f6) 25%,
-			transparent
-		);
+	.media-chip:hover {
+		border-color: var(--theme-accent, #6366f1);
 		color: var(--theme-text, white);
+		transform: translateY(-2px);
+	}
+
+	.media-chip:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
+	.media-chip.active {
+		background: var(--theme-accent, #6366f1);
+		border-color: var(--theme-accent, #6366f1);
+		color: white;
+		box-shadow:
+			0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.3)),
+			0 0 0 1px var(--theme-accent-glow, rgba(99, 102, 241, 0.3));
+	}
+
+	.media-chip.active:hover {
+		transform: translateY(-1px) scale(1.02);
 	}
 
 	/* Media Content */
@@ -362,53 +334,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		cursor: pointer;
-	}
-
-	/* Play overlay */
-	.play-overlay {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		background: color-mix(in srgb, var(--theme-shadow) 40%, transparent);
-		opacity: 0;
-		transition: opacity 0.2s ease;
-		pointer-events: none;
-	}
-
-	.image-view:hover .play-overlay {
-		opacity: 1;
-	}
-
-	.play-icon {
-		width: 56px;
-		height: 56px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: color-mix(
-			in srgb,
-			var(--semantic-info, #3b82f6) 90%,
-			transparent
-		);
-		border-radius: 50%;
-		color: var(--theme-text, white);
-	}
-
-	.play-icon svg {
-		width: 28px;
-		height: 28px;
-		margin-left: 3px;
-	}
-
-	.play-overlay span {
-		font-size: var(--font-size-compact, 12px);
-		color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
-		font-weight: 500;
 	}
 
 	/* Animation View */
@@ -474,10 +399,14 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.media-tab,
-		.play-overlay,
+		.media-chip,
 		.back-btn {
 			transition: none;
+		}
+
+		.media-chip:hover,
+		.media-chip.active:hover {
+			transform: none;
 		}
 	}
 </style>

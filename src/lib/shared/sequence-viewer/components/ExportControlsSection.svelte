@@ -1,11 +1,10 @@
 <!--
   ExportControlsSection.svelte
 
-  Reusable export controls for SequenceViewerPanel (preview mode).
-  Wraps the existing ShareHub components for format selection and export.
+  Reusable export controls for SequencePreviewPanel (preview mode).
+  Export format is determined by the parent's media type selection (no duplicate selector).
 
   Features:
-  - Format selector (Animation, Image, Video)
   - Settings button per format
   - Export button with progress
   - Integrates with existing ShareHub settings panels
@@ -13,7 +12,6 @@
 <script lang="ts">
 	import type { MediaFormat } from "$lib/shared/share-hub/domain/models/MediaFormat";
 	import type { ExportProgress, ExportSettings } from "../domain/types";
-	import FormatSelector from "$lib/shared/share-hub/components/shared/FormatSelector.svelte";
 	import ExportButton from "$lib/shared/share-hub/components/shared/ExportButton.svelte";
 	import SettingsPanel from "$lib/shared/share-hub/components/settings/SettingsPanel.svelte";
 	import AnimationSettings from "$lib/shared/share-hub/components/settings/AnimationSettings.svelte";
@@ -26,7 +24,6 @@
 		exportProgress = null as ExportProgress | null,
 		isSequenceSaved = true,
 		isMobile = false,
-		onFormatChange,
 		onExport,
 		onSettingsChange,
 	}: {
@@ -35,25 +32,18 @@
 		exportProgress?: ExportProgress | null;
 		isSequenceSaved?: boolean;
 		isMobile?: boolean;
-		onFormatChange?: (format: MediaFormat) => void;
 		onExport?: (format: MediaFormat, settings: ExportSettings) => void;
 		onSettingsChange?: (format: MediaFormat, settings: any) => void;
 	} = $props();
 
 	// Local state
 	let settingsPanelOpen = $state(false);
-	let currentFormat = $state<MediaFormat>(selectedFormat);
-
-	// Sync with prop
-	$effect(() => {
-		currentFormat = selectedFormat;
-	});
 
 	// Derived labels
 	const formatLabel = $derived(
-		currentFormat === "animation"
+		selectedFormat === "animation"
 			? "Animation"
-			: currentFormat === "static"
+			: selectedFormat === "static"
 				? "Image"
 				: "Video"
 	);
@@ -85,13 +75,8 @@
 		}
 	});
 
-	function handleFormatSelect(format: MediaFormat) {
-		currentFormat = format;
-		onFormatChange?.(format);
-	}
-
 	function handleExport() {
-		onExport?.(currentFormat, { format: currentFormat });
+		onExport?.(selectedFormat, { format: selectedFormat });
 	}
 
 	function openSettings() {
@@ -104,14 +89,6 @@
 </script>
 
 <div class="export-controls-section">
-	<!-- Format Selector -->
-	<div class="format-row">
-		<FormatSelector
-			selectedFormat={currentFormat}
-			onFormatSelect={handleFormatSelect}
-		/>
-	</div>
-
 	<!-- Action Row: Settings + Export -->
 	<div class="action-row">
 		<!-- Settings Button -->
@@ -152,11 +129,11 @@
 			title={settingsTitle}
 			onClose={closeSettings}
 		>
-			{#if currentFormat === "animation"}
+			{#if selectedFormat === "animation"}
 				<AnimationSettings />
-			{:else if currentFormat === "static"}
+			{:else if selectedFormat === "static"}
 				<StaticSettingsPanel />
-			{:else if currentFormat === "performance"}
+			{:else if selectedFormat === "performance"}
 				<PerformanceSettingsPanel />
 			{/if}
 		</SettingsPanel>
@@ -171,11 +148,6 @@
 		padding: 16px;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-	}
-
-	.format-row {
-		display: flex;
-		justify-content: center;
 	}
 
 	.action-row {
