@@ -41,6 +41,31 @@ export interface MessageAttachment {
 }
 
 /**
+ * A reaction on a message (emoji + list of users who reacted)
+ */
+export interface MessageReaction {
+  emoji: string;
+  userIds: string[];
+}
+
+/**
+ * Preview of a replied-to message
+ */
+export interface ReplyPreview {
+  messageId: string;
+  senderName: string;
+  content: string; // Truncated to ~100 chars
+}
+
+/**
+ * A historical edit of a message (for abuse prevention)
+ */
+export interface MessageEdit {
+  content: string;
+  editedAt: Date;
+}
+
+/**
  * A single message in a conversation
  */
 export interface Message {
@@ -55,6 +80,9 @@ export interface Message {
   readBy: string[]; // User IDs who have read this message
   attachments?: MessageAttachment[];
   isDeleted?: boolean; // Soft delete flag
+  reactions?: MessageReaction[]; // Emoji reactions on this message
+  replyTo?: ReplyPreview; // Message this is replying to
+  editHistory?: MessageEdit[]; // Previous versions for abuse prevention
 }
 
 /**
@@ -64,6 +92,7 @@ export interface CreateMessageInput {
   conversationId: string;
   content: string;
   attachments?: MessageAttachment[];
+  replyTo?: ReplyPreview; // Optional reply to another message
 }
 
 /**

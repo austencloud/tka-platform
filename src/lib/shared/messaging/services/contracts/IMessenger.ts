@@ -54,11 +54,35 @@ export interface IMessenger {
   deleteMessage(conversationId: string, messageId: string): Promise<void>;
 
   /**
-   * Edit a message (sender only, within time limit)
+   * Edit a message (sender only, preserves edit history)
    */
   editMessage(
     conversationId: string,
     messageId: string,
     newContent: string
   ): Promise<Message>;
+
+  /**
+   * Toggle a reaction on a message (add if not present, remove if already reacted)
+   */
+  toggleReaction(
+    conversationId: string,
+    messageId: string,
+    emoji: string
+  ): Promise<void>;
+
+  /**
+   * Set typing status for current user in a conversation
+   */
+  setTyping(conversationId: string, isTyping: boolean): Promise<void>;
+
+  /**
+   * Subscribe to typing status changes in a conversation
+   * Callback receives array of display names of users currently typing
+   * Returns unsubscribe function
+   */
+  subscribeToTyping(
+    conversationId: string,
+    callback: (typingUsers: string[]) => void
+  ): () => void;
 }

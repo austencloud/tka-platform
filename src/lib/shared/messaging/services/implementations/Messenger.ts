@@ -22,7 +22,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authState, getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 // Note: Message notifications removed - messages and notifications share same inbox panel
@@ -31,29 +31,41 @@ import type {
   CreateMessageInput,
   MessageFetchOptions,
   MessagePreview,
+  MessageReaction,
+  MessageEdit,
 } from "../../domain/models/message-models";
 import type { IMessenger } from "../contracts/IMessenger";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MESSAGES_SUBCOLLECTION = "messages";
 
+// Typing indicator timeout (3 seconds of inactivity = not typing)
+const TYPING_TIMEOUT_MS = 3000;
+
 @injectable()
 export class Messenger implements IMessenger {
   private messageSubscriptions = new Map<string, () => void>();
+  private typingSubscriptions = new Map<string, () => void>();
+  private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
   /**
    * Get the current user ID or throw if not authenticated.
-   * Supports both preview mode (View As) and legacy impersonation.
+   * Uses getEffectiveUserId which handles both preview mode and actual auth.
    */
   private getCurrentUserId(): string {
-    // Check preview mode first (View As feature)
-    if (userPreviewState.isActive && userPreviewState.data.profile) {
-      return userPreviewState.data.profile.uid;
-    }
-    // Fall back to authState
-    const userId = authState.user?.uid;
+    const userId = getEffectiveUserId();
     if (!userId) {
-      throw new Error("User must be authenticated to send messages");
+      // Provide more context in the error for debugging
+      const isInitialized = authState.initialized;
+      const isLoading = authState.loading;
+      console.error(
+        `[Messenger] Auth state: initialized=${isInitialized}, loading=${isLoading}`
+      );
+      throw new Error(
+        isLoading
+          ? "Authentication still loading. Please wait and try again."
+          : "User must be authenticated to send messages"
+      );
     }
     return userId;
   }
@@ -96,7 +108,7 @@ export class Messenger implements IMessenger {
       const firestore = await getFirestoreInstance();
       const effectiveUser = this.getEffectiveUserInfo();
 
-      const { conversationId, content, attachments } = input;
+      const { conversationId, content, attachments, replyTo } = input;
 
       // Validate conversation exists and user is a participant
       const conversationRef = doc(
@@ -134,6 +146,9 @@ export class Messenger implements IMessenger {
         readBy: [effectiveUser.uid], // Sender has read their own message
         attachments: attachments || null,
         isDeleted: false,
+        replyTo: replyTo || null,
+        reactions: null,
+        editHistory: null,
       };
 
       const docRef = await addDoc(messagesRef, messageData);
@@ -175,6 +190,7 @@ export class Messenger implements IMessenger {
         createdAt: new Date(),
         readBy: [effectiveUser.uid],
         attachments,
+        replyTo,
       };
     } catch (error) {
       console.error("[Messenger] Failed to send message:", error);
@@ -436,7 +452,7 @@ export class Messenger implements IMessenger {
   }
 
   /**
-   * Edit a message (sender only)
+   * Edit a message (sender only, preserves edit history)
    */
   async editMessage(
     conversationId: string,
@@ -465,15 +481,25 @@ export class Messenger implements IMessenger {
         throw new Error("Only the sender can edit a message");
       }
 
+      // Save current content to edit history before updating
+      const currentContent = data["content"] as string;
+      const existingHistory = (data["editHistory"] as MessageEdit[]) || [];
+      const newHistoryEntry: MessageEdit = {
+        content: currentContent,
+        editedAt: new Date(),
+      };
+
       await updateDoc(messageRef, {
         content: newContent,
         editedAt: serverTimestamp(),
+        editHistory: [...existingHistory, newHistoryEntry],
       });
 
       return this.mapDocToMessage(messageId, conversationId, {
         ...data,
         content: newContent,
         editedAt: Timestamp.now(),
+        editHistory: [...existingHistory, newHistoryEntry],
       });
     } catch (error) {
       console.error("[Messenger] Failed to edit message:", error);
@@ -490,6 +516,20 @@ export class Messenger implements IMessenger {
     conversationId: string,
     data: Record<string, unknown>
   ): Message {
+    // Map edit history timestamps
+    const rawEditHistory = data["editHistory"] as
+      | Array<{ content: string; editedAt: Timestamp | Date }>
+      | undefined;
+    const editHistory: MessageEdit[] | undefined = rawEditHistory?.map(
+      (entry) => ({
+        content: entry.content,
+        editedAt:
+          entry.editedAt instanceof Timestamp
+            ? entry.editedAt.toDate()
+            : entry.editedAt,
+      })
+    );
+
     return {
       id,
       conversationId,
@@ -502,6 +542,216 @@ export class Messenger implements IMessenger {
       readBy: (data["readBy"] as string[]) || [],
       attachments: data["attachments"] as Message["attachments"],
       isDeleted: data["isDeleted"] as boolean | undefined,
+      reactions: data["reactions"] as MessageReaction[] | undefined,
+      replyTo: data["replyTo"] as Message["replyTo"],
+      editHistory,
+    };
+  }
+
+  /**
+   * Toggle a reaction on a message (add if not present, remove if already reacted)
+   */
+  async toggleReaction(
+    conversationId: string,
+    messageId: string,
+    emoji: string
+  ): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+
+      const messageRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId,
+        MESSAGES_SUBCOLLECTION,
+        messageId
+      );
+
+      const snapshot = await getDoc(messageRef);
+      if (!snapshot.exists()) {
+        throw new Error("Message not found");
+      }
+
+      const data = snapshot.data();
+      const reactions = (data["reactions"] as MessageReaction[]) || [];
+
+      // Find existing reaction with this emoji
+      const reactionIndex = reactions.findIndex((r) => r.emoji === emoji);
+      const existingReaction = reactionIndex >= 0 ? reactions[reactionIndex] : null;
+
+      if (existingReaction) {
+        // Check if user already reacted
+        const userIndex = existingReaction.userIds.indexOf(currentUserId);
+
+        if (userIndex >= 0) {
+          // Remove user from this reaction
+          existingReaction.userIds.splice(userIndex, 1);
+
+          // Remove entire reaction if no users left
+          if (existingReaction.userIds.length === 0) {
+            reactions.splice(reactionIndex, 1);
+          }
+        } else {
+          // Add user to existing reaction
+          existingReaction.userIds.push(currentUserId);
+        }
+      } else {
+        // Create new reaction with this user
+        reactions.push({ emoji, userIds: [currentUserId] });
+      }
+
+      await updateDoc(messageRef, { reactions });
+    } catch (error) {
+      console.error("[Messenger] Failed to toggle reaction:", error);
+      toast.error("Failed to react to message.");
+      throw error;
+    }
+  }
+
+  /**
+   * Set typing status for current user in a conversation
+   */
+  async setTyping(conversationId: string, isTyping: boolean): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+
+      if (isTyping) {
+        // Set typing timestamp
+        await updateDoc(conversationRef, {
+          [`typing.${currentUserId}`]: serverTimestamp(),
+        });
+
+        // Clear any existing timeout
+        const existingTimeout = this.typingTimeouts.get(conversationId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+        }
+
+        // Set timeout to automatically clear typing status
+        const timeout = setTimeout(async () => {
+          try {
+            await updateDoc(conversationRef, {
+              [`typing.${currentUserId}`]: null,
+            });
+          } catch {
+            // Silent failure for cleanup
+          }
+          this.typingTimeouts.delete(conversationId);
+        }, TYPING_TIMEOUT_MS);
+
+        this.typingTimeouts.set(conversationId, timeout);
+      } else {
+        // Clear typing status immediately
+        await updateDoc(conversationRef, {
+          [`typing.${currentUserId}`]: null,
+        });
+
+        // Clear timeout
+        const existingTimeout = this.typingTimeouts.get(conversationId);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+          this.typingTimeouts.delete(conversationId);
+        }
+      }
+    } catch (error) {
+      // Silent failure for typing indicators - not critical
+      console.error("[Messenger] Failed to set typing status:", error);
+    }
+  }
+
+  /**
+   * Subscribe to typing status changes in a conversation
+   * Callback receives array of display names of users currently typing
+   */
+  subscribeToTyping(
+    conversationId: string,
+    callback: (typingUsers: string[]) => void
+  ): () => void {
+    // Clean up previous subscription
+    const existingUnsubscribe = this.typingSubscriptions.get(conversationId);
+    if (existingUnsubscribe) {
+      existingUnsubscribe();
+    }
+
+    const currentUserId = this.getCurrentUserId();
+
+    (async () => {
+      try {
+        const firestore = await getFirestoreInstance();
+
+        const conversationRef = doc(
+          firestore,
+          CONVERSATIONS_COLLECTION,
+          conversationId
+        );
+
+        const unsubscribe = onSnapshot(
+          conversationRef,
+          (snapshot) => {
+            if (!snapshot.exists()) {
+              callback([]);
+              return;
+            }
+
+            const data = snapshot.data();
+            const typing = data["typing"] as Record<string, Timestamp> | undefined;
+            const participantInfo = data["participantInfo"] as Record<
+              string,
+              { displayName: string }
+            >;
+
+            if (!typing) {
+              callback([]);
+              return;
+            }
+
+            const now = Date.now();
+            const typingUsers: string[] = [];
+
+            for (const [userId, timestamp] of Object.entries(typing)) {
+              // Skip current user and check if typing is recent
+              if (userId === currentUserId) continue;
+              if (!timestamp) continue;
+
+              const typingTime = timestamp.toMillis();
+              const isRecent = now - typingTime < TYPING_TIMEOUT_MS + 1000; // 1s buffer
+
+              if (isRecent) {
+                const displayName =
+                  participantInfo[userId]?.displayName || "Someone";
+                typingUsers.push(displayName);
+              }
+            }
+
+            callback(typingUsers);
+          },
+          (error) => {
+            console.error("[Messenger] Typing subscription error:", error);
+            callback([]);
+          }
+        );
+
+        this.typingSubscriptions.set(conversationId, unsubscribe);
+      } catch (error) {
+        console.error("[Messenger] Failed to subscribe to typing:", error);
+        callback([]);
+      }
+    })();
+
+    return () => {
+      const unsubscribe = this.typingSubscriptions.get(conversationId);
+      if (unsubscribe) {
+        unsubscribe();
+        this.typingSubscriptions.delete(conversationId);
+      }
     };
   }
 
@@ -511,6 +761,12 @@ export class Messenger implements IMessenger {
   cleanup(): void {
     this.messageSubscriptions.forEach((unsubscribe) => unsubscribe());
     this.messageSubscriptions.clear();
+
+    this.typingSubscriptions.forEach((unsubscribe) => unsubscribe());
+    this.typingSubscriptions.clear();
+
+    this.typingTimeouts.forEach((timeout) => clearTimeout(timeout));
+    this.typingTimeouts.clear();
   }
 }
 

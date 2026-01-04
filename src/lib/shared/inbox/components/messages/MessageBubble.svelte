@@ -2,12 +2,17 @@
   /**
    * MessageBubble
    *
-   * Single message bubble with read receipts, animations, and rich attachments
+   * Single message bubble with read receipts, animations, reactions, and rich attachments
    */
 
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import { formatTime } from "../../utils/format";
   import FeedbackMessageCard from "./FeedbackMessageCard.svelte";
+  import ReplyPreview from "./ReplyPreview.svelte";
+  import MessageReactions from "./MessageReactions.svelte";
+  import EditHistorySheet from "./EditHistorySheet.svelte";
+  import MessageActions from "./MessageActions.svelte";
+  import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
 
   interface Props {
     message: Message;
@@ -18,8 +23,16 @@
 
   let { message, isOwn, isNew = false, otherParticipantId }: Props = $props();
 
+  // Edit history sheet state
+  let showEditHistory = $state(false);
+
   // Check if message was edited
   const wasEdited = $derived(message.editedAt !== undefined);
+
+  // Check if message has reactions
+  const hasReactions = $derived(
+    message.reactions && message.reactions.length > 0
+  );
 
   // Check for feedback attachment
   const feedbackAttachment = $derived(
@@ -38,53 +51,106 @@
     // Message is sent (we have an ID)
     return "sent";
   });
+
+  function handleToggleReaction(emoji: string) {
+    messagingService
+      .toggleReaction(message.conversationId, message.id, emoji)
+      .catch((err) => {
+        console.error("Failed to toggle reaction:", err);
+      });
+  }
+
+  function handleEditedClick() {
+    if (message.editHistory && message.editHistory.length > 0) {
+      showEditHistory = true;
+    }
+  }
 </script>
 
-<div
-  class="message-bubble"
-  class:own={isOwn}
-  class:deleted={message.isDeleted}
-  class:is-new={isNew}
-  class:has-attachment={feedbackAttachment}
-  role="article"
-  aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
->
-  <div class="bubble">
-    {#if feedbackAttachment}
-      <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
-      {#if message.content && message.content !== "[Feedback submitted]"}
-        <p class="content attachment-content">{message.content}</p>
+<MessageActions {message} {isOwn}>
+  <div
+    class="message-bubble"
+    class:own={isOwn}
+    class:deleted={message.isDeleted}
+    class:is-new={isNew}
+    class:has-attachment={feedbackAttachment}
+    class:has-reactions={hasReactions}
+    role="article"
+    aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
+  >
+    <div class="bubble">
+      <!-- Reply preview -->
+      {#if message.replyTo}
+        <ReplyPreview reply={message.replyTo} compact />
       {/if}
-    {:else}
-      <p class="content">{message.content}</p>
-    {/if}
-    <div class="meta">
-      <time class="time" datetime={message.createdAt.toISOString()}
-        >{formatTime(message.createdAt)}</time
-      >
-      {#if wasEdited && !message.isDeleted}
-        <span class="edited">(edited)</span>
+
+      {#if feedbackAttachment}
+        <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
+        {#if message.content && message.content !== "[Feedback submitted]"}
+          <p class="content attachment-content">{message.content}</p>
+        {/if}
+      {:else}
+        <p class="content">{message.content}</p>
       {/if}
-      {#if isOwn && !message.isDeleted && readStatus}
-        <span
-          class="read-receipt"
-          class:read={readStatus === "read"}
-          aria-label={readStatus === "read" ? "Read" : "Sent"}
+      <div class="meta">
+        <time class="time" datetime={message.createdAt.toISOString()}
+          >{formatTime(message.createdAt)}</time
         >
-          {#if readStatus === "read"}
-            <i class="fas fa-check-double" aria-hidden="true"></i>
+        {#if wasEdited && !message.isDeleted}
+          {#if message.editHistory && message.editHistory.length > 0}
+            <button
+              type="button"
+              class="edited-button"
+              onclick={handleEditedClick}
+              aria-label="View edit history"
+            >
+              (edited)
+            </button>
           {:else}
-            <i class="fas fa-check" aria-hidden="true"></i>
+            <span class="edited">(edited)</span>
           {/if}
-        </span>
-      {/if}
+        {/if}
+        {#if isOwn && !message.isDeleted && readStatus}
+          <span
+            class="read-receipt"
+            class:read={readStatus === "read"}
+            aria-label={readStatus === "read" ? "Read" : "Sent"}
+          >
+            {#if readStatus === "read"}
+              <i class="fas fa-check-double" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-check" aria-hidden="true"></i>
+            {/if}
+          </span>
+        {/if}
+      </div>
     </div>
+
+    <!-- Reactions -->
+    {#if hasReactions && message.reactions}
+      <div class="reactions-wrapper">
+        <MessageReactions
+          reactions={message.reactions}
+          onToggleReaction={handleToggleReaction}
+        />
+      </div>
+    {/if}
   </div>
-</div>
+</MessageActions>
+
+<!-- Edit History Sheet -->
+{#if message.editHistory && message.editHistory.length > 0}
+  <EditHistorySheet
+    bind:isOpen={showEditHistory}
+    currentContent={message.content}
+    editHistory={message.editHistory}
+  />
+{/if}
 
 <style>
   .message-bubble {
     display: flex;
+    flex-direction: column;
     max-width: 80%;
     animation: slideIn 0.25s ease-out;
     transform-origin: bottom left;
@@ -93,6 +159,15 @@
   .message-bubble.own {
     margin-left: auto;
     transform-origin: bottom right;
+    align-items: flex-end;
+  }
+
+  .message-bubble:not(.own) {
+    align-items: flex-start;
+  }
+
+  .message-bubble.has-reactions {
+    margin-bottom: 4px;
   }
 
   .message-bubble.is-new {
@@ -185,6 +260,27 @@
 
   .edited {
     font-style: italic;
+  }
+
+  .edited-button {
+    font-style: italic;
+    font-size: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+  }
+
+  .edited-button:hover {
+    text-decoration-style: solid;
+  }
+
+  .reactions-wrapper {
+    margin-top: 4px;
   }
 
   /* Read receipts */

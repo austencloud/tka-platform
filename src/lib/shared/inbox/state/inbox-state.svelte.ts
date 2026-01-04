@@ -52,6 +52,15 @@ class InboxState {
   composeRecipientId = $state<string | null>(null);
   composeRecipientName = $state<string | null>(null);
 
+  // Reply state - message being replied to
+  replyToMessage = $state<Message | null>(null);
+
+  // Edit state - message being edited
+  editingMessage = $state<Message | null>(null);
+
+  // Typing indicator state - display names of users currently typing
+  typingUsers = $state<string[]>([]);
+
   // Pending navigation - allows dashboard widgets to request direct navigation
   // The InboxDrawer will pick this up and handle the actual loading
   pendingConversationId = $state<string | null>(null);
@@ -82,6 +91,9 @@ class InboxState {
     this.currentView = "list";
     this.composeRecipientId = null;
     this.composeRecipientName = null;
+    this.replyToMessage = null;
+    this.editingMessage = null;
+    this.typingUsers = [];
   }
 
   setTab(tab: InboxTab) {
@@ -89,6 +101,9 @@ class InboxState {
     this.currentView = "list";
     this.selectedConversation = null;
     this.messages = [];
+    this.replyToMessage = null;
+    this.editingMessage = null;
+    this.typingUsers = [];
   }
 
   selectConversation(conversation: Conversation) {
@@ -143,6 +158,9 @@ class InboxState {
     this.selectedConversation = null;
     this.messages = [];
     this.currentView = "list";
+    this.replyToMessage = null;
+    this.editingMessage = null;
+    this.typingUsers = [];
   }
 
   startCompose(recipientId?: string, recipientName?: string) {
@@ -181,6 +199,42 @@ class InboxState {
   setLoadingNotifications(loading: boolean) {
     this.isLoadingNotifications = loading;
   }
+
+  // Reply actions
+  setReplyTo(message: Message) {
+    this.replyToMessage = message;
+    // Clear edit mode if replying
+    this.editingMessage = null;
+  }
+
+  clearReplyTo() {
+    this.replyToMessage = null;
+  }
+
+  // Edit actions
+  setEditingMessage(message: Message) {
+    this.editingMessage = message;
+    // Clear reply mode if editing
+    this.replyToMessage = null;
+  }
+
+  clearEditingMessage() {
+    this.editingMessage = null;
+  }
+
+  // Typing indicator actions
+  setTypingUsers(users: string[]) {
+    this.typingUsers = users;
+  }
+
+  // Derived state for composer mode
+  isReplying = $derived.by(() => {
+    return this.replyToMessage !== null;
+  });
+
+  isEditing = $derived.by(() => {
+    return this.editingMessage !== null;
+  });
 }
 
 // Export singleton instance

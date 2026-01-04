@@ -6,15 +6,19 @@
    * Uses preview mode state for View As feature support
    */
 
+  import { onMount } from "svelte";
   import type { Conversation } from "$lib/shared/messaging/domain/models/conversation-models";
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
+  import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
+  import { inboxState } from "../../state/inbox-state.svelte";
   import MessageBubble from "./MessageBubble.svelte";
   import MessageComposer from "./MessageComposer.svelte";
   import MessageSkeleton from "../skeletons/MessageSkeleton.svelte";
   import DateSeparator from "./DateSeparator.svelte";
   import EmptyMessages from "../empty-states/EmptyMessages.svelte";
+  import TypingIndicator from "./TypingIndicator.svelte";
 
   interface Props {
     conversation: Conversation;
@@ -25,6 +29,21 @@
   let { conversation, messages, isLoading }: Props = $props();
 
   let messagesContainer: HTMLDivElement | undefined = $state();
+
+  // Subscribe to typing indicators
+  onMount(() => {
+    const unsubscribe = messagingService.subscribeToTyping(
+      conversation.id,
+      (typingUsers) => {
+        inboxState.setTypingUsers(typingUsers);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+      inboxState.setTypingUsers([]);
+    };
+  });
 
   // Get effective user ID (preview mode or actual)
   const currentUserId = $derived(
@@ -111,6 +130,9 @@
       </div>
     {/if}
   </div>
+
+  <!-- Typing indicator -->
+  <TypingIndicator typingUsers={inboxState.typingUsers} />
 
   <!-- Composer -->
   <MessageComposer conversationId={conversation.id} />
