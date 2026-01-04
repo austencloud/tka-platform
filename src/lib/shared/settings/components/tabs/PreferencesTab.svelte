@@ -34,7 +34,7 @@
   let isVisible = $state(false);
 
   // Dark Mode state - derived from AppSettings
-  const lightsOff = $derived(getSettings().lightsOff ?? false);
+  const darkMode = $derived(getSettings().darkMode ?? false);
   const isPreview = $derived(isSettingsPreviewMode());
 
   onMount(async () => {
@@ -59,12 +59,12 @@
     });
   }
 
-  function handleLightsOffToggle() {
+  function handleDarkModeToggle() {
     if (isPreview) return;
     hapticService?.trigger("selection");
-    const newValue = !lightsOff;
-    void updateSettings({ lightsOff: newValue });
-    animationVisibilityManager.setLightsOff(newValue);
+    const newValue = !darkMode;
+    void updateSettings({ darkMode: newValue });
+    animationVisibilityManager.setDarkMode(newValue);
   }
 </script>
 
@@ -93,14 +93,14 @@
         type="button"
         class="toggle-row lights-off-row"
         class:disabled={isPreview}
-        onclick={handleLightsOffToggle}
-        aria-pressed={lightsOff}
+        onclick={handleDarkModeToggle}
+        aria-pressed={darkMode}
         disabled={isPreview}
       >
         <div class="toggle-info">
           <span class="toggle-label">Dark Mode</span>
         </div>
-        <div class="toggle-switch lights-off-switch" class:active={lightsOff}>
+        <div class="toggle-switch lights-off-switch" class:active={darkMode}>
           <div class="toggle-knob"></div>
         </div>
       </button>

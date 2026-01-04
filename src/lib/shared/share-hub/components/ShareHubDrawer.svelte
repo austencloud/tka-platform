@@ -7,10 +7,14 @@
   - Mobile: Bottom drawer, 100dvh height
   - Desktop: Right drawer, full height
   - Context-based animation state (no prop drilling)
+
+  Uses SequenceViewerPanel (mode="preview") for consistent UX
+  with the Discover gallery's full mode.
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import ShareHubPanel from "./ShareHubPanel.svelte";
+  import SequenceViewerPanel from "$lib/shared/sequence-viewer/components/SequenceViewerPanel.svelte";
+  import type { MediaFormat, ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
   import type { ExportSettings } from "../domain/models/ExportSettings";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
@@ -247,6 +251,15 @@
     isOpen = false;
     onClose?.();
   }
+
+  // Pass export request through to parent coordinator
+  function handleExport(format: MediaFormat, settings: SequenceViewerExportSettings) {
+    // Pass through directly - the coordinator handles the actual export
+    onExport?.("single", settings as ExportSettings);
+  }
+
+  // Export progress is passed directly (types align)
+  const viewerExportProgress = $derived(animationExportProgress);
 </script>
 
 <div
@@ -268,7 +281,22 @@
     preventScroll={true}
   >
     <div class="share-hub-content">
-      <ShareHubPanel {sequence} {isSequenceSaved} {isMobile} {onExport} />
+      {#if sequence}
+        <SequenceViewerPanel
+          {sequence}
+          mode="preview"
+          initialMediaType="animation"
+          onClose={handleClose}
+          onExport={handleExport}
+          isExporting={isAnimationExporting}
+          exportProgress={viewerExportProgress}
+        />
+      {:else}
+        <div class="empty-state">
+          <p>No sequence to share</p>
+          <button class="close-btn" onclick={handleClose}>Close</button>
+        </div>
+      {/if}
     </div>
   </Drawer>
 </div>
@@ -323,6 +351,32 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+  }
+
+  /* Empty state fallback */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    height: 100%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .empty-state .close-btn {
+    padding: 10px 20px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .empty-state .close-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
   }
 
   /* Reduced motion */

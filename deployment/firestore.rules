@@ -437,9 +437,12 @@ service cloud.firestore {
         allow create: if isConversationParticipant(conversationId)
           && request.resource.data.senderId == request.auth.uid;
 
-        // Updating messages - only sender can edit (for edit/delete)
+        // Updating messages:
+        // - Sender can update any field (edit content, delete, etc.)
+        // - Any participant can update reactions (to add/remove their reaction)
         allow update: if isConversationParticipant(conversationId)
-          && resource.data.senderId == request.auth.uid;
+          && (resource.data.senderId == request.auth.uid
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']));
 
         // No hard deleting messages (soft delete via isDeleted flag)
         allow delete: if false;

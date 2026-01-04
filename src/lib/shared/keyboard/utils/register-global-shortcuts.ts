@@ -130,11 +130,11 @@ export function registerGlobalShortcuts(
     },
   });
 
-  // l - Toggle Dark Mode (dark background, LED-style display)
+  // l - Toggle Dark Mode (dark background)
   service.register({
     id: "global.toggle-lights",
     label: "Toggle Lights",
-    description: "Toggle Dark Mode (dark background with glowing props)",
+    description: "Toggle Dark Mode (dark background)",
     key: "l",
     modifiers: [],
     context: "global",
@@ -148,15 +148,15 @@ export function registerGlobalShortcuts(
       }
 
       const currentSettings = getSettings();
-      const beforeValue = currentSettings.lightsOff ?? false;
+      const beforeValue = currentSettings.darkMode ?? false;
       const newValue = !beforeValue;
 
       // Update AppSettings (syncs to Firebase)
-      void updateSettings({ lightsOff: newValue });
+      void updateSettings({ darkMode: newValue });
 
       // Also sync to animation visibility manager for immediate visual feedback
       const visibilityManager = getAnimationVisibilityManager();
-      visibilityManager.setLightsOff(newValue);
+      visibilityManager.setDarkMode(newValue);
 
       // Show toast notification
       const message = newValue
@@ -165,7 +165,7 @@ export function registerGlobalShortcuts(
       toast.info(message, 2500);
 
       console.log(
-        `[Keyboard L] Toggled lightsOff: ${beforeValue} -> ${newValue}`
+        `[Keyboard L] Toggled darkMode ${beforeValue} -> ${newValue}`
       );
     },
   });

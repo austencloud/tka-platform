@@ -183,7 +183,7 @@
     pictographMode = mode;
     // Apply mode setting immediately for live preview
     const visibilityManager = getAnimationVisibilityManager();
-    visibilityManager.setLightsOff(mode === "dark");
+    visibilityManager.setDarkMode(mode === "dark");
 
     // If already authenticated (came from LandingPage), complete the wizard
     // Otherwise, go to auth step
@@ -210,7 +210,7 @@
   async function applyPreferencesAndComplete() {
     hapticService?.trigger("success");
 
-    try {
+  try {
       // Update display name if provided
       if (displayName.trim()) {
         await settingsService.updateSetting("userName", displayName.trim());
@@ -224,7 +224,7 @@
 
       // Ensure pictograph mode is set
       const visibilityManager = getAnimationVisibilityManager();
-      visibilityManager.setLightsOff(pictographMode === "dark");
+      visibilityManager.setDarkMode(pictographMode === "dark");
     } catch (error) {
       console.error("Failed to apply first-run settings:", error);
     }
@@ -262,7 +262,7 @@
 
       // Default to lights on (light mode)
       const visibilityManager = getAnimationVisibilityManager();
-      visibilityManager.setLightsOff(false);
+      visibilityManager.setDarkMode(false);
     } catch (error) {
       console.error("Failed to apply default settings:", error);
     }

@@ -3,7 +3,7 @@
 
   Shows real pictographs side by side demonstrating both modes.
   Lights On: standard display on light background
-  Dark Mode: inverted colors, dark background, glow effects
+  Dark Mode: inverted colors, dark background
 -->
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -57,7 +57,7 @@
       <div class="preview-frame light-preview">
         <PictographContainer
           pictographData={examplePictographData}
-          ledMode={false}
+          darkMode={false}
           disableTransitions={true}
         />
       </div>
@@ -79,7 +79,7 @@
       <div class="preview-frame dark-preview">
         <PictographContainer
           pictographData={examplePictographData}
-          ledMode={true}
+          darkMode={true}
           disableTransitions={true}
         />
       </div>

@@ -18,6 +18,8 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { onMount } from "svelte";
 
   const hubState = getShareHubState();
@@ -36,6 +38,7 @@
   let includeStartPosition = $state(imageSettings.includeStartPosition);
   let addDifficultyLevel = $state(imageSettings.addDifficultyLevel);
   let addUserInfo = $state(imageSettings.addUserInfo);
+  let darkMode = $state(imageSettings.darkMode);
 
   // Load render service on mount
   $effect(() => {
@@ -61,6 +64,7 @@
       includeStartPosition = imageSettings.includeStartPosition;
       addDifficultyLevel = imageSettings.addDifficultyLevel;
       addUserInfo = imageSettings.addUserInfo;
+      darkMode = imageSettings.darkMode;
       renderVersion++; // Trigger re-render
     };
 
@@ -78,7 +82,14 @@
     const _start = includeStartPosition;
     const _diff = addDifficultyLevel;
     const _user = addUserInfo;
+    const _darkMode = darkMode;
     const _version = renderVersion;
+    // Track prop type settings for reactivity
+    const _catDogMode = settingsService.settings.catDogMode;
+    const _bluePropType = settingsService.settings.bluePropType;
+    const _redPropType = settingsService.settings.redPropType;
+    // Track user display name for footer
+    const _userName = authState.user?.displayName;
 
     if (!sequence || !service) {
       previewDataUrl = null;
@@ -91,7 +102,7 @@
 
     service
       .generatePreview(sequence, {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: _darkMode ? "#0a0a0f" : "#FFFFFF",
         quality: 1.0,
         beatScale: 1.0,
         includeStartPosition: _start,
@@ -99,6 +110,15 @@
         addWord: _word,
         addUserInfo: _user,
         addDifficultyLevel: _diff,
+        // Pass current user's display name for footer
+        userName: _userName || "",
+        // Include prop type settings so preview updates when prop type changes
+        bluePropTypeOverride: _bluePropType,
+        redPropTypeOverride: _catDogMode ? _redPropType : _bluePropType,
+        // Pass dark mode as visibility override
+        visibilityOverrides: {
+          darkMode: _darkMode,
+        },
       })
       .then((dataUrl) => {
         previewDataUrl = dataUrl;
@@ -132,6 +152,10 @@
   function toggleUserInfo() {
     imageSettings.toggle("addUserInfo");
   }
+
+  function toggleDarkMode() {
+    imageSettings.toggle("darkMode");
+  }
 </script>
 
 <div class="static-preview">
@@ -164,6 +188,15 @@
 
   <!-- Quick Settings Chips -->
   <div class="settings-chips">
+    <button
+      class="chip"
+      class:active={darkMode}
+      onclick={toggleDarkMode}
+      aria-pressed={darkMode}
+      title="Toggle dark mode for export (overrides global setting)"
+    >
+      Dark Mode
+    </button>
     <button
       class="chip"
       class:active={addWord}

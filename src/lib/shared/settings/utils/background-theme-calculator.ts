@@ -218,11 +218,21 @@ function fallbackAccent(mode: ThemeMode, accentColor?: string): string {
   return mode === "light" ? "#2563eb" : "#38bdf8";
 }
 
+/**
+ * Detect if viewport is mobile-sized
+ */
+function isMobile(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth < 768;
+}
+
 export function generateMatteTheme(
   mode: ThemeMode,
   accentColor?: string
 ): MatteTheme {
   const accent = fallbackAccent(mode, accentColor);
+  const mobile = isMobile();
+
   if (mode === "light") {
     return {
       panelBg: "#f5f7fb",
@@ -240,11 +250,13 @@ export function generateMatteTheme(
     };
   }
 
+  // On mobile, increase opacity for better readability
+  // Desktop: 0.75/0.5, Mobile: 0.88/0.7
   return {
-    panelBg: "rgba(0, 0, 0, 0.75)",
-    panelElevatedBg: "rgba(0, 0, 0, 0.5)",
-    cardBg: "rgba(0, 0, 0, 0.75)",
-    cardHoverBg: "rgba(0, 0, 0, 0.55)",
+    panelBg: mobile ? "rgba(0, 0, 0, 0.88)" : "rgba(0, 0, 0, 0.75)",
+    panelElevatedBg: mobile ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)",
+    cardBg: mobile ? "rgba(0, 0, 0, 0.88)" : "rgba(0, 0, 0, 0.75)",
+    cardHoverBg: mobile ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.55)",
     accent,
     accentStrong: accent, // Use same accent for strong variant
     stroke: "rgba(255, 255, 255, 0.08)",

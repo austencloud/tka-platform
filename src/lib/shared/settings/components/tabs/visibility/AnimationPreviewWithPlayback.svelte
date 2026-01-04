@@ -184,9 +184,10 @@
       // Ensure container is fully initialized (handles HMR timing)
       await ensureContainerInitialized();
 
-      // Load required modules
+      // Load required modules (including create for TurnPatternManager)
       await loadFeatureModule("animate");
       await loadFeatureModule("discover");
+      await loadFeatureModule("create");
       await loadAnimationModule();
 
       // Get services

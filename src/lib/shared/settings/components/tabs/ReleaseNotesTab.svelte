@@ -34,9 +34,9 @@
     isPanelOpen = true;
   }
 
-  function handleVersionUpdated() {
+  async function handleVersionUpdated() {
     // Reload versions to get updated changelog
-    versionState.loadVersions();
+    await versionState.loadVersions();
     // Update selected version with fresh data
     if (selectedVersion) {
       const updated = versionState.versions.find(

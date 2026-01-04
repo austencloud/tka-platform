@@ -270,7 +270,8 @@ export class SwipeToDismiss {
       target.closest("a") ||
       target.closest("input") ||
       target.closest("select") ||
-      target.closest("textarea")
+      target.closest("textarea") ||
+      target.closest('[role="button"]')
     );
 
     // Find scrollable container and check if we're at the dismiss boundary

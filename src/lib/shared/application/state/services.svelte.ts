@@ -21,20 +21,20 @@ export async function initializeAppServices(): Promise<void> {
   settingsService = resolve<ISettingsState>(TYPES.ISettingsState);
   isInitialized = true;
 
-  // Sync lightsOff from AppSettings to animation visibility manager
+  // Sync darkMode from AppSettings to animation visibility manager
   // This ensures animations render correctly with the user's persisted setting
-  syncLightsOffToAnimationManager();
+  syncDarkModeToAnimationManager();
 }
 
 /**
- * Sync the lightsOff setting from AppSettings to the animation visibility manager.
+ * Sync the darkMode setting from AppSettings to the animation visibility manager.
  * Called after settings are loaded to ensure animations use the correct setting.
  */
-function syncLightsOffToAnimationManager(): void {
+function syncDarkModeToAnimationManager(): void {
   if (!settingsService) return;
 
-  const lightsOff = settingsService.settings.lightsOff ?? false;
-  getAnimationVisibilityManager().setLightsOff(lightsOff);
+  const darkMode = settingsService.settings.darkMode ?? false;
+  getAnimationVisibilityManager().setDarkMode(darkMode);
 }
 
 export function clearAppServicesCache(): void {

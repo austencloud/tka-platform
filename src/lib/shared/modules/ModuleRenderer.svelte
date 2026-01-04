@@ -48,11 +48,12 @@
     // community module retired - creators moved to discover, challenges to dashboard
     learn: () => import("../../features/learn/LearnTab.svelte"),
     premium: () => import("../../features/premium/PremiumModule.svelte"),
+    // "animate" is a backwards-compat alias - deep links and old bookmarks may use it
     animate: () => import("../../features/compose/ComposeModule.svelte"),
     train: () => import("../../features/train/components/TrainModule.svelte"),
     library: () => import("../../features/library/LibraryModule.svelte"),
     // inbox module retired - Messages/notifications accessible via Dashboard widget drawer
-    edit: () => import("../../features/edit/EditModule.svelte"),
+    // edit module retired - Edit is now a slide-out panel, not a standalone module
     word_card: () =>
       import("../../features/word-card/components/WordCardTab.svelte"),
     write: () => import("../../features/write/components/WriteTab.svelte"),

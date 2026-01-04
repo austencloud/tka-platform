@@ -30,8 +30,23 @@ export class PlatformDetector implements IPlatformDetector {
 
   detectPlatform(): Platform {
     if (typeof navigator === "undefined") return "desktop";
+    if (typeof window === "undefined") return "desktop";
 
     const ua = navigator.userAgent.toLowerCase();
+
+    // First, check if this is actually a desktop device disguised as mobile
+    // (e.g., Chrome DevTools emulation, or just user agent spoofing)
+    // A real mobile device will have touch AND coarse pointer
+    // A desktop with DevTools emulation will have fine pointer (mouse)
+    const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+    const hasHover = window.matchMedia("(hover: hover)").matches;
+    const isLargeScreen = window.innerWidth >= 1024;
+
+    // If the device has a mouse pointer with hover AND large screen,
+    // it's desktop regardless of what the user agent says
+    if (hasFinePointer && hasHover && isLargeScreen) {
+      return "desktop";
+    }
 
     if (/iphone|ipad|ipod/.test(ua)) {
       return "ios";

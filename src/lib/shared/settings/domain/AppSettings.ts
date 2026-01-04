@@ -88,7 +88,17 @@ export interface AppSettings {
   skipClearConfirmation?: boolean; // Skip confirmation when clearing sequence (undo is available)
 
   // Global Visual Effects
-  lightsOff?: boolean; // Dark Mode: dark background, inverted grid, white text/outlines
+  darkMode?: boolean; // Dark Mode: dark background, inverted grid, white text/outlines
+
+  // Image Export Settings
+  imageExport?: {
+    addWord?: boolean;
+    addBeatNumbers?: boolean;
+    addDifficultyLevel?: boolean;
+    includeStartPosition?: boolean;
+    addUserInfo?: boolean;
+    darkMode?: boolean;
+  };
 }
 
 /**

@@ -5,16 +5,15 @@
   - Pictograph, Animation, and Image Export
 
   Dark Mode: Dark background, inverted grid, white text/outlines
-  (Prop glow is automatically enabled for animations when Dark Mode is on)
 -->
 <script lang="ts">
   interface Props {
-    lightsOff: boolean;
-    onLightsOffToggle: () => void;
+    darkMode: boolean;
+    ondarkModeToggle: () => void;
     disabled?: boolean;
   }
 
-  let { lightsOff, onLightsOffToggle, disabled = false }: Props = $props();
+  let { darkMode, ondarkModeToggle, disabled = false }: Props = $props();
 </script>
 
 <section class="global-effects-section">
@@ -22,17 +21,17 @@
   <div class="effects-row">
     <button
       class="effect-btn lights-off"
-      class:active={lightsOff}
+      class:active={darkMode}
       class:disabled
-      onclick={onLightsOffToggle}
+      onclick={ondarkModeToggle}
       {disabled}
       type="button"
-      aria-label={lightsOff ? "Disable Dark Mode" : "Enable Dark Mode"}
-      aria-pressed={lightsOff}
+      aria-label={darkMode ? "Disable Dark Mode" : "Enable Dark Mode"}
+      aria-pressed={darkMode}
     >
       <i class="fas fa-moon" aria-hidden="true"></i>
       <span class="effect-label">Dark Mode</span>
-      <span class="effect-status">{lightsOff ? "ON" : "OFF"}</span>
+      <span class="effect-status">{darkMode ? "ON" : "OFF"}</span>
     </button>
   </div>
 </section>

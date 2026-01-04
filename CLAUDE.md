@@ -535,6 +535,54 @@ When executing a release, you MUST complete ALL of these steps:
 
 ---
 
+## New Module Checklist
+
+**When creating a new module, complete these steps:**
+
+### Step 1: Add to `moduleLoaders` in ModuleRenderer.svelte
+
+```typescript
+// src/lib/shared/modules/ModuleRenderer.svelte
+const moduleLoaders = {
+  // ... existing modules
+  yourmodule: () => import("../../features/your-module/YourModule.svelte"),
+};
+```
+
+### Step 2: Add to MODULE_DEFINITIONS in module-definitions.ts
+
+```typescript
+// src/lib/shared/navigation/config/module-definitions.ts
+{
+  id: "yourmodule",
+  label: "Your Module",
+  icon: '<i class="fas fa-icon" style="color: #hexcolor;" aria-hidden="true"></i>',
+  color: "#hexcolor",
+  description: "What your module does",
+  isMain: true,
+  sections: [], // Or YOUR_MODULE_TABS if it has tabs
+}
+```
+
+### Step 3: Add DI module if needed
+
+If your module has injectable services:
+
+```typescript
+// src/lib/shared/inversify/modules/yourmodule.module.ts
+// Then register in loadFeatureModule() in di.ts
+```
+
+### Navigation is automatic
+
+New modules **automatically get bottom navigation** on mobile. The system uses a blocklist pattern - only modules explicitly added to `MODULES_WITHOUT_NAV` in `layout-state.svelte.ts` will hide navigation.
+
+**You do NOT need to manually add navigation.** Just complete the steps above and your module will have working navigation.
+
+If you need to **hide** navigation for a specific module (rare), add it to `MODULES_WITHOUT_NAV` with a comment explaining why.
+
+---
+
 ## Project-Specific Notes
 
 - TKA Scribe is a Svelte 5 + TypeScript application
@@ -553,7 +601,7 @@ $lib/shared/pictograph/option/OptionPictograph.svelte
 Desktop (≥750px) - wrapper handles state polling:
 OptionCardContent.svelte → OptionPictograph
 
-Mobile (<750px) - wrapper receives lightsOff as prop:
+Mobile (<750px) - wrapper receives darkMode as prop:
 OptionPictographCell.svelte → OptionPictograph
 ```
 
@@ -562,7 +610,7 @@ OptionPictographCell.svelte → OptionPictograph
 - `$lib/shared/pictograph/option/OptionPictograph.svelte` - THE renderer (edit this for rendering changes)
 - `$lib/shared/pictograph/option/PreparedPictographData.ts` - shared type definition
 - `OptionCardContent.svelte` - desktop wrapper (polls for Dark Mode state)
-- `OptionPictographCell.svelte` - mobile wrapper (receives lightsOff prop from parent)
+- `OptionPictographCell.svelte` - mobile wrapper (receives darkMode prop from parent)
 
 **When fixing rendering issues:** Edit `OptionPictograph.svelte` - both desktop and mobile use it.
 
@@ -652,7 +700,7 @@ Unlike app feedback (problem → resolution), terminal items are work logs:
 
 ---
 
-_Last updated: 2026-01-03_
+_Last updated: 2026-01-04_
 
 ---
 

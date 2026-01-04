@@ -75,7 +75,7 @@
   let currentSequenceIndex = $state(0);
   let currentPropType = $state<PropType>(RANDOM_PROPS[0]!);
 
-  // Dark mode (LED/glow effects) - default ON for landing page visual impact
+  // Dark mode - default ON for landing page visual impact
   let darkMode = $state(true);
   const visibilityManager = getAnimationVisibilityManager();
 
