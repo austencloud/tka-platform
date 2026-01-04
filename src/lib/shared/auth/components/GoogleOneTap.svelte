@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Google One Tap Component (FedCM-Ready for 2028+)
+   * Google One Tap Component
    *
    * Provides frictionless Google sign-in with a single tap.
    * No redirects - just a small popup that appears automatically.
@@ -9,12 +9,10 @@
    * - 90% increase in signups reported by implementers
    * - No page redirects - stays in context
    * - Works for both sign-in AND sign-up
-   * - FedCM-native - future-proof, no third-party cookie issues
    *
-   * FedCM Migration Notes:
-   * - Deprecated status methods (isNotDisplayed, isSkippedMoment, etc.) removed
-   * - Uses FedCM-only flow - prompt() callback only fires on success or error
-   * - Users who dismiss can re-enable via browser address bar identity icon
+   * Note: FedCM mode (use_fedcm_for_prompt) is disabled because it has
+   * viewport restrictions that prevent One Tap from showing on tall/narrow
+   * devices like the Galaxy Z Fold 5 cover screen.
    */
 
   import { onMount, onDestroy } from "svelte";
@@ -109,7 +107,9 @@
       return;
     }
 
-    // FedCM-only configuration (future-proof for 2028+)
+    // Configuration for One Tap
+    // Note: use_fedcm_for_prompt can cause issues on some viewport sizes
+    // We'll try with FedCM first, but the callback will tell us if it fails
     const config: GoogleOneTapConfig = {
       client_id: GOOGLE_CLIENT_ID,
       callback: handleCredentialResponse,
@@ -117,7 +117,8 @@
       cancel_on_tap_outside: false,
       context: "signin",
       itp_support: true,
-      use_fedcm_for_prompt: true,
+      // Disable FedCM for now - it has viewport restrictions on tall devices
+      use_fedcm_for_prompt: false,
     };
 
     if (promptParentId) {
@@ -130,11 +131,27 @@
     if (autoPrompt) {
       // Small delay to let the page settle
       setTimeout(() => {
-        // FedCM-compatible: prompt() with no callback arguments
-        // In FedCM mode, success goes through handleCredentialResponse
-        // Failures are silent (user can retry via browser identity icon)
+        // Log viewport dimensions to debug device-specific issues
+        debug.info(`Viewport: ${window.innerWidth}x${window.innerHeight}, ratio: ${(window.innerHeight / window.innerWidth).toFixed(2)}`);
+
         try {
-          window.google?.accounts.id.prompt();
+          // Use callback to see what Google reports (works in non-FedCM mode)
+          window.google?.accounts.id.prompt((notification) => {
+            if (notification.isDisplayed()) {
+              debug.success("One Tap prompt displayed");
+            } else if (notification.isNotDisplayed()) {
+              const reason = notification.getNotDisplayedReason();
+              debug.warn(`One Tap NOT displayed. Reason: ${reason}`);
+              onUnavailable?.();
+            } else if (notification.isSkippedMoment()) {
+              const reason = notification.getSkippedReason();
+              debug.warn(`One Tap skipped. Reason: ${reason}`);
+              onUnavailable?.();
+            } else if (notification.isDismissedMoment()) {
+              const reason = notification.getDismissedReason();
+              debug.info(`One Tap dismissed. Reason: ${reason}`);
+            }
+          });
           debug.info("One Tap prompt requested");
         } catch (error) {
           // FedCM may throw if disabled or on cooldown

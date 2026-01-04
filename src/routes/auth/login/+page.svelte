@@ -73,12 +73,10 @@
 </svelte:head>
 
 <div class="login-container">
-  <!-- Google One Tap container at top of page -->
-  <div id="google-one-tap-container" class="one-tap-container"></div>
-
   <!-- Google One Tap - shows the one-tap prompt automatically -->
+  <!-- Let Google decide positioning: bottom sheet on mobile, corner popup on desktop -->
   {#if isGoogleOneTapConfigured()}
-    <GoogleOneTap autoPrompt={true} promptParentId="google-one-tap-container" />
+    <GoogleOneTap autoPrompt={true} />
   {/if}
 
   <div class="login-card">
@@ -191,14 +189,6 @@
       --gradient-cosmic,
       linear-gradient(135deg, #667eea 0%, #764ba2 100%)
     );
-  }
-
-  /* Google One Tap container - positioned at top of viewport */
-  .one-tap-container {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 9999;
   }
 
   .login-card {

@@ -2,8 +2,11 @@
   /**
    * SocialAuthButton
    *
-   * Branded social auth button wrapper.
-   * Google uses One Tap for seamless authentication (no redirects).
+   * Branded social auth button wrapper using popup authentication.
+   * For Google, cancels any pending One Tap prompt to prevent race conditions.
+   *
+   * Note: Google One Tap is handled separately by GoogleOneTap.svelte
+   * which auto-prompts on page load. This button is the manual fallback.
    */
 
   import { goto } from "$app/navigation";
@@ -15,11 +18,9 @@
     indexedDBLocalPersistence,
     setPersistence,
     signInWithPopup,
-    signInWithRedirect,
     TwitterAuthProvider,
   } from "firebase/auth";
   import { auth } from "../firebase";
-  import { isGoogleOneTapConfigured } from "../config/google-oauth";
 
   let {
     provider,
@@ -33,12 +34,6 @@
 
   let loading = $state(false);
   let error = $state<string | null>(null);
-
-  function isMobileDevice(): boolean {
-    if (typeof window === "undefined") return false;
-    const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    return hasTouch && window.innerWidth < 768;
-  }
 
   function getProvider() {
     switch (provider) {
@@ -58,29 +53,16 @@
     loading = true;
     error = null;
 
-    // For Google, try One Tap first (seamless, no redirects)
-    if (
-      provider === "google" &&
-      isGoogleOneTapConfigured() &&
-      window.google?.accounts?.id
-    ) {
-      window.google.accounts.id.prompt((notification) => {
-        // If One Tap can't display, fall back to popup/redirect
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          console.log("[SocialAuthButton] One Tap unavailable, using fallback");
-          handleLegacyAuth();
-        } else {
-          loading = false;
-        }
-      });
-      return;
+    // Cancel any pending One Tap prompt to prevent race conditions
+    // This avoids the AbortError when popup succeeds while One Tap is still initializing
+    if (provider === "google") {
+      window.google?.accounts?.id?.cancel();
     }
 
-    // For other providers or if One Tap unavailable
-    await handleLegacyAuth();
+    await handlePopupAuth();
   }
 
-  async function handleLegacyAuth() {
+  async function handlePopupAuth() {
     try {
       try {
         await setPersistence(auth, indexedDBLocalPersistence);
@@ -90,43 +72,25 @@
 
       const authProvider = getProvider();
 
-      // Mobile always uses redirect (more reliable)
-      if (isMobileDevice()) {
-        console.log("[SocialAuthButton] Mobile detected, using redirect flow");
-        await signInWithRedirect(auth, authProvider);
-        return;
-      }
-
-      // Desktop: try popup first, fall back to redirect if it fails
-      try {
-        await signInWithPopup(auth, authProvider);
-        await goto("/app");
-      } catch (popupError: unknown) {
-        const errorCode = (popupError as { code?: string })?.code;
-        console.warn(
-          "[SocialAuthButton] Popup failed:",
-          errorCode,
-          "- falling back to redirect"
-        );
-
-        // Popup blocked, closed, or COOP issue - use redirect instead
-        if (
-          errorCode === "auth/popup-blocked" ||
-          errorCode === "auth/popup-closed-by-user" ||
-          errorCode === "auth/cancelled-popup-request" ||
-          errorCode === "auth/internal-error"
-        ) {
-          await signInWithRedirect(auth, authProvider);
-          return;
-        }
-
-        // Re-throw other errors (like auth/account-exists-with-different-credential)
-        throw popupError;
-      }
+      // Use popup for all devices - redirect flow has never worked
+      await signInWithPopup(auth, authProvider);
+      await goto("/app");
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Sign-in failed";
-      error = message;
-      console.error("[SocialAuthButton] Sign-in error:", e);
+      const errorCode = (e as { code?: string })?.code;
+      console.error("[SocialAuthButton] Sign-in error:", errorCode, e);
+
+      // Provide user-friendly error messages
+      if (errorCode === "auth/popup-blocked") {
+        error = "Popup was blocked. Please allow popups for this site.";
+      } else if (errorCode === "auth/popup-closed-by-user") {
+        error = "Sign-in cancelled. Please try again.";
+      } else if (errorCode === "auth/cancelled-popup-request") {
+        error = null; // Silent - user just clicked away
+      } else if (errorCode === "auth/account-exists-with-different-credential") {
+        error = "An account already exists with this email using a different sign-in method.";
+      } else {
+        error = e instanceof Error ? e.message : "Sign-in failed. Please try again.";
+      }
     } finally {
       loading = false;
     }

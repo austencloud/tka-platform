@@ -5,8 +5,8 @@
 
   Auth Flow Priority:
   1. Google One Tap (FedCM-native, no redirects) - via GoogleOneTap.svelte
-  2. Popup-based auth (best UX, opens Google in new window)
-  3. Redirect-based fallback (if popup blocked/fails)
+  2. Popup-based auth (fallback for all providers)
+  3. Error message (no redirect fallback - it never worked)
 -->
 <script lang="ts">
   import FacebookIcon from "./icons/FacebookIcon.svelte";
@@ -18,7 +18,6 @@
     indexedDBLocalPersistence,
     setPersistence,
     signInWithPopup,
-    signInWithRedirect,
   } from "firebase/auth";
   import { auth } from "../firebase";
 
@@ -30,16 +29,13 @@
   let googleError = $state<string | null>(null);
   let isLoading = $state(false);
 
-  function isMobileDevice(): boolean {
-    if (typeof window === "undefined") return false;
-    const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    return hasTouch && window.innerWidth < 768;
-  }
-
   async function handleGoogleClick() {
     if (isLoading) return;
     isLoading = true;
     googleError = null;
+
+    // Cancel any pending One Tap prompt to prevent race conditions
+    window.google?.accounts?.id?.cancel();
 
     try {
       // Set persistence for reliable auth state
@@ -53,39 +49,26 @@
       provider.addScope("email");
       provider.addScope("profile");
 
-      // Mobile always uses redirect (more reliable on mobile browsers)
-      if (isMobileDevice()) {
-        console.log("[SocialAuthCompact] Mobile detected, using redirect flow");
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-
-      // Desktop: try popup first, fall back to redirect if it fails
-      try {
-        await signInWithPopup(auth, provider);
-        console.log("[SocialAuthCompact] Popup sign-in successful");
-        await goto("/app");
-      } catch (popupError: unknown) {
-        const errorCode = (popupError as { code?: string })?.code;
-        console.warn("[SocialAuthCompact] Popup failed:", errorCode, "- falling back to redirect");
-
-        // Popup blocked, closed, or COOP issue - use redirect instead
-        if (
-          errorCode === "auth/popup-blocked" ||
-          errorCode === "auth/popup-closed-by-user" ||
-          errorCode === "auth/cancelled-popup-request" ||
-          errorCode === "auth/internal-error"
-        ) {
-          await signInWithRedirect(auth, provider);
-          return;
-        }
-
-        // Re-throw other errors
-        throw popupError;
-      }
+      // Use popup for all devices - redirect flow has never worked
+      await signInWithPopup(auth, provider);
+      console.log("[SocialAuthCompact] Popup sign-in successful");
+      await goto("/app");
     } catch (error: unknown) {
-      console.error("[SocialAuthCompact] Google sign-in error:", error);
-      googleError = error instanceof Error ? error.message : "Google sign-in failed";
+      const errorCode = (error as { code?: string })?.code;
+      console.error("[SocialAuthCompact] Google sign-in error:", errorCode, error);
+
+      // Provide user-friendly error messages
+      if (errorCode === "auth/popup-blocked") {
+        googleError = "Popup was blocked. Please allow popups for this site.";
+      } else if (errorCode === "auth/popup-closed-by-user") {
+        googleError = "Sign-in cancelled. Please try again.";
+      } else if (errorCode === "auth/cancelled-popup-request") {
+        googleError = null; // Silent - user just clicked away
+      } else if (errorCode === "auth/account-exists-with-different-credential") {
+        googleError = "An account already exists with this email using a different sign-in method.";
+      } else {
+        googleError = error instanceof Error ? error.message : "Google sign-in failed. Please try again.";
+      }
     } finally {
       isLoading = false;
     }

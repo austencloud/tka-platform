@@ -7,7 +7,11 @@
  * - Account linking/unlinking
  * - Email verification utilities
  *
- * Note: Authenticator-app 2FA (TOTP) has been removed from the app.
+ * Auth Flow Priority:
+ * 1. Google One Tap (signInWithGoogleCredential) - seamless, no redirects
+ * 2. Popup flow (signInWithGoogle/signInWithFacebook) - fallback
+ *
+ * Note: Redirect flow was removed - it never worked reliably.
  */
 
 import {
@@ -16,7 +20,6 @@ import {
   GoogleAuthProvider,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
-  getRedirectResult,
   indexedDBLocalPersistence,
   linkWithCredential,
   linkWithPopup,
@@ -25,7 +28,6 @@ import {
   signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithRedirect,
   signOut as firebaseSignOut,
   unlink,
   updateProfile,
@@ -40,7 +42,6 @@ export class Authenticator implements IAuthenticator {
     const provider = new GoogleAuthProvider();
     provider.addScope("email");
     provider.addScope("profile");
-    // Use popup instead of redirect - more reliable and better UX
     await signInWithPopup(auth, provider);
   }
 
@@ -49,31 +50,6 @@ export class Authenticator implements IAuthenticator {
     const credential = GoogleAuthProvider.credential(idToken);
     // Sign in with the credential - no redirects!
     await signInWithCredential(auth, credential);
-  }
-
-  async signInWithGoogleRedirect(): Promise<void> {
-    await this.setPersistence();
-    const provider = new GoogleAuthProvider();
-    provider.addScope("email");
-    provider.addScope("profile");
-    // Redirect-based auth avoids COOP issues that break popup polling
-    // User will be redirected away, then back after auth
-    await signInWithRedirect(auth, provider);
-  }
-
-  async handleRedirectResult(): Promise<boolean> {
-    try {
-      const result = await getRedirectResult(auth);
-      if (result?.user) {
-        // Successfully signed in via redirect
-        return true;
-      }
-      return false;
-    } catch (error) {
-      // Log but don't throw - this runs on every page load
-      console.error("[Authenticator] Redirect result error:", error);
-      return false;
-    }
   }
 
   async signInWithFacebook(): Promise<void> {

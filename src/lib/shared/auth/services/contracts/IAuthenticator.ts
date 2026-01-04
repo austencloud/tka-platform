@@ -3,12 +3,17 @@
  *
  * Provides authentication operations for the application.
  * Handles social auth (Google, Facebook) and email/password authentication.
+ *
+ * Auth Flow Priority:
+ * 1. Google One Tap (signInWithGoogleCredential) - seamless, no redirects
+ * 2. Popup flow (signInWithGoogle) - fallback for all providers
+ *
+ * Note: Redirect flow was removed - it never worked reliably.
  */
 
 export interface IAuthenticator {
   /**
    * Sign in with Google using Firebase popup flow
-   * @deprecated Use signInWithGoogleRedirect for COOP-compatible fallback
    * @throws Error if sign-in fails
    */
   signInWithGoogle(): Promise<void>;
@@ -20,22 +25,6 @@ export interface IAuthenticator {
    * @throws Error if sign-in fails
    */
   signInWithGoogleCredential(idToken: string): Promise<void>;
-
-  /**
-   * Sign in with Google using Firebase redirect flow
-   * FedCM-compatible fallback when One Tap is unavailable.
-   * Avoids COOP issues that break popup-based auth.
-   * Call handleRedirectResult() on app init to complete the flow.
-   * @throws Error if redirect initiation fails
-   */
-  signInWithGoogleRedirect(): Promise<void>;
-
-  /**
-   * Handle the result of a redirect-based sign-in
-   * Call this on app initialization to complete pending auth flows.
-   * @returns true if a redirect result was processed, false otherwise
-   */
-  handleRedirectResult(): Promise<boolean>;
 
   /**
    * Sign in with Facebook using Firebase redirect flow

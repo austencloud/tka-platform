@@ -27,7 +27,6 @@ import {
   sendEmailVerification,
   reauthenticateWithCredential,
   EmailAuthProvider,
-  getRedirectResult,
   type User,
 } from "firebase/auth";
 import { TYPES } from "../../inversify/types";
@@ -217,22 +216,6 @@ export async function initializeAuthListener() {
     // Continue anyway - auth will work, just might have stale state issues
   }
 
-  // Track if we just completed an OAuth redirect (for provider linking)
-  let justCompletedOAuthRedirect = false;
-  let redirectResultUser: User | null = null;
-
-  // Check if we're returning from a link redirect
-  if (typeof window !== "undefined") {
-    try {
-      const linkRedirectMarker = sessionStorage.getItem("tka_link_redirect");
-      if (linkRedirectMarker) {
-        sessionStorage.removeItem("tka_link_redirect");
-      }
-    } catch (e) {
-      console.warn("🔍 [authState] Could not read redirect marker:", e);
-    }
-  }
-
   // Create a promise that resolves when auth state is first determined
   // CRITICAL: Add timeout to prevent infinite hang after cache clearing
   const AUTH_TIMEOUT_MS = 10000; // 10 seconds max wait
@@ -261,39 +244,12 @@ export async function initializeAuthListener() {
     });
   });
 
-  const initialUser = await authReady;
-
-  // NOW check for OAuth redirect result (auth is ready)
-  try {
-    const result = await getRedirectResult(auth);
-
-    if (result?.user) {
-      justCompletedOAuthRedirect = true;
-      redirectResultUser = result.user;
-
-      // Reload to ensure providerData is synced
-      await result.user.reload();
-    }
-  } catch (error: unknown) {
-    const errorCode = (error as { code?: string })?.code;
-    console.error(
-      "❌ [authState] getRedirectResult error:",
-      errorCode || error
-    );
-  }
+  await authReady;
 
   cleanupAuthListener = onAuthStateChanged(
     auth,
     async (user) => {
       _state.loading = true;
-
-      // If we just completed an OAuth redirect, use the redirect result user
-      // because it has the freshest providerData
-      if (justCompletedOAuthRedirect && redirectResultUser) {
-        user = redirectResultUser;
-        justCompletedOAuthRedirect = false;
-        redirectResultUser = null;
-      }
 
       // CRITICAL: Initialize Firestore before any services try to use it
       // This prevents race condition errors with the lazy-loaded Firestore Proxy

@@ -2,7 +2,7 @@
  * Clear Firebase Cache Utility
  *
  * Clears all Firebase-related browser storage to fix authentication issues.
- * Use this when OAuth redirects are failing or auth state is corrupted.
+ * Use this when auth state is corrupted or sessions aren't persisting.
  */
 
 /**
@@ -127,7 +127,8 @@ export async function clearAllFirebaseCache(): Promise<void> {
 }
 
 /**
- * Call this before redirecting to Google sign-in for maximum reliability
+ * Clear cache and reload the page
+ * Call this when auth state seems corrupted or stale
  */
 export async function clearCacheAndReload(): Promise<void> {
   await clearAllFirebaseCache();
