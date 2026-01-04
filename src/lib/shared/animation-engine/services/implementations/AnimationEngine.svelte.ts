@@ -153,8 +153,7 @@ export class AnimationEngine {
       tkaGlyph: true, // TKA Glyph includes turn numbers
       blueMotion: true,
       redMotion: true,
-      lightsOff: false,
-      propGlow: false,
+      darkMode: false,
     },
     isPreRendering: false,
     preRenderProgress: null,
@@ -218,7 +217,7 @@ export class AnimationEngine {
   // Prop type overrides (bypass settings when provided)
   private propTypeOverrideBlue: string | null = null;
   private propTypeOverrideRed: string | null = null;
-  private prevLightsOff: boolean = false;
+  private prevDarkMode: boolean = false;
 
   // Simple reference to last props for initial render (not a copy - avoids GC)
   private lastPropsRef: AnimationEngineProps | null = null;
@@ -267,7 +266,7 @@ export class AnimationEngine {
 
     // Initialize visibility manager
     const visibilityManager = getAnimationVisibilityManager();
-    this.prevLightsOff = visibilityManager.isLightsOff();
+    this.prevDarkMode = visibilityManager.isDarkMode();
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
       beatNumbers: visibilityManager.getVisibility("beatNumbers"),
@@ -276,9 +275,7 @@ export class AnimationEngine {
       tkaGlyph: visibilityManager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       blueMotion: visibilityManager.getVisibility("blueMotion"),
       redMotion: visibilityManager.getVisibility("redMotion"),
-      lightsOff: visibilityManager.isLightsOff(),
-      // Prop glow is automatically enabled when Dark Mode is on (for animations)
-      propGlow: visibilityManager.isLightsOff(),
+      darkMode: visibilityManager.isDarkMode(),
     };
 
     // Initialize services that don't need renderer
@@ -288,10 +285,10 @@ export class AnimationEngine {
         this.state.visibilityState = state;
 
         // Sync Dark Mode to renderer when it changes
-        if (state.lightsOff !== this.prevLightsOff) {
-          this.prevLightsOff = state.lightsOff;
-          // Note: setLedMode on renderer controls the "Dark Mode" effect (dark bg, inverted grid)
-          this.animationRenderer?.setLedMode(state.lightsOff);
+        if (state.darkMode !== this.prevDarkMode) {
+          this.prevDarkMode = state.darkMode;
+          // Note: setDarkMode on renderer controls the "Dark Mode" effect (dark bg, inverted grid)
+          this.animationRenderer?.setDarkMode(state.darkMode);
 
           // CRITICAL: Reload prop textures when dark mode changes
           // Prop colors are theme-dependent (light/dark mode), so textures must be regenerated
@@ -651,7 +648,7 @@ export class AnimationEngine {
         onPixiRendererReady: (renderer) => {
           this.animationRenderer = renderer;
           // Set initial Dark Mode on renderer
-          renderer.setLedMode(this.prevLightsOff);
+          renderer.setDarkMode(this.prevDarkMode);
         },
         onInitialized: (initialized) => {
           this.state.isInitialized = initialized;

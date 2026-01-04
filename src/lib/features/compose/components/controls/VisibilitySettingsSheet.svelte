@@ -96,9 +96,9 @@
     return visibilityManager.getVisibility("tkaGlyph");
   }
 
-  function getLedMode() {
+  function getDarkMode() {
     updateCounter;
-    return visibilityManager.isLedMode();
+    return visibilityManager.isDarkMode();
   }
 
   // Toggle handlers
@@ -139,11 +139,11 @@
     updateCounter++;
   }
 
-  function toggleLedMode() {
-    const current = visibilityManager.isLedMode();
-    visibilityManager.setLedMode(!current);
+  function toggleDarkMode() {
+    const current = visibilityManager.isDarkMode();
+    visibilityManager.setDarkMode(!current);
 
-    // When enabling LED mode, auto-enable neon trail effect
+    // When enabling Dark Mode, auto-enable neon trail effect
     if (!current) {
       animationSettings.setTrailEffect(TrailEffect.NEON);
       // Also set trails to vivid if currently off
@@ -283,13 +283,13 @@
           </button>
           <button
             class="chip-btn led-btn"
-            class:active={getLedMode()}
-            onclick={toggleLedMode}
+            class:active={getDarkMode()}
+            onclick={toggleDarkMode}
             type="button"
-            title="LED Mode: Dark background with glowing props and neon trails"
+            title="Dark Mode: Dark background"
           >
             <i class="fas fa-lightbulb" aria-hidden="true"></i>
-            LED
+            Dark
           </button>
         </div>
       </section>
@@ -522,7 +522,7 @@
     color: rgba(216, 180, 254, 1);
   }
 
-  /* LED Mode - electric cyan/neon accent */
+  /* Dark Mode button - electric cyan/neon accent */
   .chip-btn.led-btn {
     gap: 6px;
   }

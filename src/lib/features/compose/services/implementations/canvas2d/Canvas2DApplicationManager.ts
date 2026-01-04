@@ -10,8 +10,8 @@
  * Single Responsibility: Canvas setup and lifecycle
  */
 
-// LED Mode background color (near-black for light stick effect)
-const LED_MODE_BACKGROUND = "#0a0a0f";
+// Dark Mode background color (near-black)
+const DARK_MODE_BACKGROUND = "#0a0a0f";
 
 export class Canvas2DApplicationManager {
   private canvas: HTMLCanvasElement | null = null;
@@ -19,7 +19,7 @@ export class Canvas2DApplicationManager {
   private currentSize: number = 500;
   private backgroundAlpha: number = 1;
   private isInitialized: boolean = false;
-  private ledModeEnabled: boolean = false;
+  private darkModeEnabled: boolean = false;
 
   async initialize(
     container: HTMLElement,
@@ -83,13 +83,13 @@ export class Canvas2DApplicationManager {
     // Clear entire canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // LED Mode: dark background for glowing light stick effect
-    if (this.ledModeEnabled) {
+    // Dark Mode: dark background
+    if (this.darkModeEnabled) {
       this.ctx.globalAlpha = 1;
-      this.ctx.fillStyle = LED_MODE_BACKGROUND;
+      this.ctx.fillStyle = DARK_MODE_BACKGROUND;
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     } else {
-      this._ledModeLoggedOnce = false;
+      this._darkModeLoggedOnce = false;
       if (this.backgroundAlpha > 0) {
         // Normal mode: white background
         this.ctx.globalAlpha = this.backgroundAlpha;
@@ -99,20 +99,20 @@ export class Canvas2DApplicationManager {
       }
     }
   }
-  private _ledModeLoggedOnce = false;
+  private _darkModeLoggedOnce = false;
 
   /**
-   * Set LED mode (dark background for glowing props)
+   * Set Dark Mode (dark background)
    */
-  setLedMode(enabled: boolean): void {
-    this.ledModeEnabled = enabled;
+  setDarkMode(enabled: boolean): void {
+    this.darkModeEnabled = enabled;
   }
 
   /**
-   * Check if LED mode is enabled
+   * Check if Dark Mode is enabled
    */
-  isLedModeEnabled(): boolean {
-    return this.ledModeEnabled;
+  isDarkModeEnabled(): boolean {
+    return this.darkModeEnabled;
   }
 
   getContext(): CanvasRenderingContext2D | null {

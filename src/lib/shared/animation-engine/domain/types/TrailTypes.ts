@@ -50,7 +50,7 @@ export enum TrackingMode {
 export enum TrailEffect {
   NONE = "none", // No glow effect
   GLOW = "glow", // Simple shadowBlur glow
-  NEON = "neon", // Multi-layer LED ribbon effect (bright core + outer glow)
+  NEON = "neon", // Multi-layer ribbon effect (bright core + outer glow)
 }
 
 /**

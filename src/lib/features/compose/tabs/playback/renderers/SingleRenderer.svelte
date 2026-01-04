@@ -64,7 +64,7 @@
   let lastLoadedSequenceId: string | null = null;
 
   // Trail settings - derive directly from animationSettings for proper reactivity
-  // This ensures changes to trail effect (e.g., LED mode enabling NEON) are picked up
+  // This ensures changes to trail effect settings are picked up
   let trailSettings = $derived(animationSettings.trail);
 
   // Initialize services

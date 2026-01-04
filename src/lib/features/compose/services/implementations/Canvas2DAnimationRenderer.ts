@@ -97,10 +97,10 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   }
 
   /**
-   * Set LED mode for dark background with glowing props
+   * Set Dark Mode for dark background
    */
-  setLedMode(enabled: boolean): void {
-    this.appManager.setLedMode(enabled);
+  setDarkMode(enabled: boolean): void {
+    this.appManager.setDarkMode(enabled);
   }
 
   async loadGlyphTexture(
@@ -134,13 +134,13 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
     // 2. Draw grid (if visible)
     const gridImage = this.imageLoader.getGridImage();
     if (params.visibility.gridVisible && gridImage) {
-      // In LED mode, invert the grid colors so black points become off-white
-      const isLedMode = this.appManager.isLedModeEnabled();
-      if (isLedMode) {
+      // In Dark Mode, invert the grid colors so black points become off-white
+      const isDarkMode = this.appManager.isDarkModeEnabled();
+      if (isDarkMode) {
         ctx.filter = "invert(0.85)"; // Invert to off-white (not pure white)
       }
       ctx.drawImage(gridImage, 0, 0, canvasSize, canvasSize);
-      if (isLedMode) {
+      if (isDarkMode) {
         ctx.filter = "none";
       }
     }

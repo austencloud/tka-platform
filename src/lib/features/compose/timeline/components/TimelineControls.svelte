@@ -45,7 +45,7 @@
   let shuttleSpeed = $state(1);
 
   // Dark Mode state
-  let lightsOffEnabled = $state(false);
+  let darkModeEnabled = $state(false);
   const visibilityManager = getAnimationVisibilityManager();
 
   // Format current time as MM:SS.ms
@@ -88,10 +88,10 @@
 
   // Sync Dark Mode from visibility manager
   $effect(() => {
-    lightsOffEnabled = visibilityManager.isLightsOff();
+    darkModeEnabled = visibilityManager.isDarkMode();
     // Re-check on changes
     const handler = () => {
-      lightsOffEnabled = visibilityManager.isLightsOff();
+      darkModeEnabled = visibilityManager.isDarkMode();
     };
     visibilityManager.registerObserver(handler);
     return () => visibilityManager.unregisterObserver(handler);
@@ -99,14 +99,13 @@
 
   /**
    * Toggle Dark Mode
-   * When enabled: dark background, glowing props, neon trails
+   * When enabled: dark background
    */
-  function toggleLightsOff() {
-    const newState = !lightsOffEnabled;
-    console.log("[TimelineControls] toggleLightsOff:", newState);
-    visibilityManager.setLightsOff(newState);
-    // Prop glow is automatically handled by lightsOff setting
-    lightsOffEnabled = newState;
+  function toggleDarkMode() {
+    const newState = !darkModeEnabled;
+    console.log("[TimelineControls] toggleDarkMode:", newState);
+    visibilityManager.setDarkMode(newState);
+    darkModeEnabled = newState;
 
     // When enabling Dark Mode, also enable neon trail effect
     if (newState) {
@@ -185,11 +184,11 @@
   <!-- Dark Mode Toggle -->
   <button
     class="control-btn lights-off-btn"
-    class:active={lightsOffEnabled}
-    onclick={toggleLightsOff}
-    title={lightsOffEnabled ? "Disable Dark Mode" : "Enable Dark Mode"}
-    aria-label={lightsOffEnabled ? "Disable Dark Mode" : "Enable Dark Mode"}
-    aria-pressed={lightsOffEnabled}
+    class:active={darkModeEnabled}
+    onclick={toggleDarkMode}
+    title={darkModeEnabled ? "Disable Dark Mode" : "Enable Dark Mode"}
+    aria-label={darkModeEnabled ? "Disable Dark Mode" : "Enable Dark Mode"}
+    aria-pressed={darkModeEnabled}
   >
     <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
   </button>

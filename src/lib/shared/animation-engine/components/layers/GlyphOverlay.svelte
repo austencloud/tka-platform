@@ -13,13 +13,13 @@ Displays TKA glyph and beat number with fade transitions.
 
   // Track Dark Mode for styling (inverted glyphs)
   const visibilityManager = getAnimationVisibilityManager();
-  let lightsOffEnabled = $state(visibilityManager.isLightsOff());
+  let darkModeEnabled = $state(visibilityManager.isDarkMode());
 
   // Sync Dark Mode from visibility manager
   $effect(() => {
-    lightsOffEnabled = visibilityManager.isLightsOff();
+    darkModeEnabled = visibilityManager.isDarkMode();
     const handler = () => {
-      lightsOffEnabled = visibilityManager.isLightsOff();
+      darkModeEnabled = visibilityManager.isDarkMode();
     };
     visibilityManager.registerObserver(handler);
     return () => visibilityManager.unregisterObserver(handler);
@@ -54,10 +54,7 @@ Displays TKA glyph and beat number with fade transitions.
   } = $props();
 </script>
 
-<div
-  class="glyph-overlay"
-  data-lights-off={lightsOffEnabled ? "true" : "false"}
->
+<div class="glyph-overlay" data-lights-off={darkModeEnabled ? "true" : "false"}>
   <!-- Fading out glyph (previous letter + beat number) -->
   {#if fadingOutLetter || fadingOutBeatNumber !== null}
     <div class="glyph-wrapper fade-out">
@@ -83,13 +80,13 @@ Displays TKA glyph and beat number with fade transitions.
             y={800}
             scale={1}
             visible={true}
-            ledMode={lightsOffEnabled}
+            darkMode={darkModeEnabled}
           />
         {/if}
         {#if beatNumbersVisible}
           <BeatNumber
             beatNumber={fadingOutBeatNumber}
-            ledMode={lightsOffEnabled}
+            darkMode={darkModeEnabled}
           />
         {/if}
       </svg>
@@ -121,13 +118,13 @@ Displays TKA glyph and beat number with fade transitions.
             y={800}
             scale={1}
             visible={true}
-            ledMode={lightsOffEnabled}
+            darkMode={darkModeEnabled}
           />
         {/if}
         {#if beatNumbersVisible}
           <BeatNumber
             beatNumber={displayedBeatNumber}
-            ledMode={lightsOffEnabled}
+            darkMode={darkModeEnabled}
           />
         {/if}
       </svg>

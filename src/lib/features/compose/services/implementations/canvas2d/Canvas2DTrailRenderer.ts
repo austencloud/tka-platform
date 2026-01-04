@@ -286,7 +286,7 @@ export class Canvas2DTrailRenderer {
       (settings.glowEnabled ? TrailEffect.GLOW : TrailEffect.NONE);
 
     if (effect === TrailEffect.NEON) {
-      // NEON: Multi-layer LED ribbon effect
+      // NEON: Multi-layer ribbon effect
       // Layer 1: Outer glow (wide, diffuse)
       ctx.lineWidth = settings.lineWidth * 4;
       ctx.globalAlpha = avgOpacity * 0.2;
