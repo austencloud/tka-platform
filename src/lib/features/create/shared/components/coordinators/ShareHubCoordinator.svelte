@@ -875,6 +875,7 @@
 {#if showSaveToLibrary}
   <SaveToLibraryPanel
     show={showSaveToLibrary}
+    showShareContext={true}
     onSaveComplete={handleSaveComplete}
     onClose={handleSaveCancel}
   />

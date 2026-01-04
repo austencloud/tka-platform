@@ -32,11 +32,19 @@
   interface Props {
     show: boolean;
     word?: string;
+    /** When true, shows context that saving is needed before sharing */
+    showShareContext?: boolean;
     onClose?: () => void;
     onSaveComplete?: (sequenceId: string) => void;
   }
 
-  let { show, word = "", onClose, onSaveComplete }: Props = $props();
+  let {
+    show,
+    word = "",
+    showShareContext = false,
+    onClose,
+    onSaveComplete,
+  }: Props = $props();
 
   const logger = createComponentLogger("SaveToLibraryPanel");
 
@@ -90,14 +98,41 @@
   let showNotes = $state(false);
   let showTags = $state(false);
 
-  // Derived values
-  const tkaName = $derived(word || sequence?.word || "");
+  // Derive TKA name from word prop, sequence word, or compute from beat letters
+  const derivedWord = $derived.by(() => {
+    // First try props and sequence.word
+    if (word) return word;
+    if (sequence?.word) return sequence.word;
+
+    // If no word available, derive from beat letters
+    if (sequence?.beats && sequence.beats.length > 0) {
+      const letters = sequence.beats
+        .map((beat) => beat?.letter || "")
+        .filter(Boolean)
+        .join("");
+      return letters || "";
+    }
+
+    return "";
+  });
+
+  const tkaName = $derived(derivedWord);
   const visibility = $derived<SequenceVisibility>(
     isPublic ? "public" : "private"
   );
   const currentUser = $derived(authState.user);
   const creatorName = $derived(
     currentUser?.displayName || currentUser?.email || "Anonymous"
+  );
+
+  // Dynamic header content based on context
+  const headerTitle = $derived(
+    showShareContext ? "Save to Share" : "Save to Library"
+  );
+  const headerSubtitle = $derived(
+    showShareContext
+      ? "Save your sequence first, then you can share it"
+      : "Add this sequence to your personal library"
   );
 
   // Sync isOpen with show prop
@@ -211,8 +246,8 @@
     </button>
 
     <div class="panel-header">
-      <h2>Save to Library</h2>
-      <p class="subtitle">Add this sequence to your personal library</p>
+      <h2>{headerTitle}</h2>
+      <p class="subtitle">{headerSubtitle}</p>
     </div>
 
     <div class="panel-body">
@@ -326,12 +361,12 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    width: 48px; /* WCAG AAA touch target */
+    width: 48px;
     height: 48px;
     border: none;
     border-radius: 50%;
     background: var(--theme-card-bg);
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
@@ -356,78 +391,99 @@
     pointer-events: none;
   }
 
+  /* Header - compact, informational */
   .panel-header {
-    padding: 24px 24px 16px;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
+    padding: 32px 32px 24px;
     flex-shrink: 0;
+    text-align: center;
   }
 
   .panel-header h2 {
     margin: 0;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-2xl, 1.5rem);
     font-weight: 600;
     color: var(--theme-text);
   }
 
   .subtitle {
-    margin: 4px 0 0;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    margin: 8px 0 0;
+    font-size: var(--font-size-base, 16px);
+    color: var(--theme-text-dim);
+    line-height: 1.5;
   }
 
+  /* Body - uses flex to distribute space and center content */
   .panel-body {
     flex: 1;
-    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertical centering */
+    padding: 24px 32px;
     overflow-y: auto;
     overscroll-behavior: contain;
+    gap: 32px;
   }
 
+  /* TKA Name - the hero element, draws the eye */
   .form-group {
-    margin-bottom: 20px;
+    margin: 0;
   }
 
   .form-label {
     display: block;
-    margin-bottom: 8px;
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text, var(--theme-text));
+    margin-bottom: 12px;
+    font-size: var(--font-size-base, 16px);
+    font-weight: 600;
+    color: var(--theme-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-align: center;
   }
 
   .tka-name-display {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 16px;
+    padding: 32px 24px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
   }
 
   .tka-badge {
-    font-size: var(--font-size-lg);
-    font-weight: 500;
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 700;
     color: var(--theme-text);
-    letter-spacing: 0.3px;
+    letter-spacing: 2px;
+    font-family: var(--font-mono, monospace);
+    text-align: center;
+    word-break: break-all;
   }
 
   .tka-hint {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    font-size: var(--font-size-base, 16px);
+    color: var(--theme-text-dim);
+    text-align: center;
   }
 
+  /* Optional fields - secondary, collapsed by default */
   .optional-section {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
-    margin-top: 8px;
   }
 
   .input-field,
   .textarea-field {
     width: 100%;
-    padding: 12px 16px;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 8px;
-    color: var(--theme-text, var(--theme-text));
-    font-size: var(--font-size-sm);
+    padding: 14px 18px;
+    background: var(--theme-card-bg);
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 12px;
+    color: var(--theme-text);
+    font-size: var(--font-size-base, 16px);
     font-family: inherit;
     transition: all 0.2s ease;
     box-sizing: border-box;
@@ -439,7 +495,7 @@
     background: var(--theme-card-hover-bg, var(--theme-card-bg));
     border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
     box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--theme-accent) 10%, transparent);
+      color-mix(in srgb, var(--theme-accent) 15%, transparent);
   }
 
   .input-field::placeholder,
@@ -452,68 +508,56 @@
     min-height: 80px;
   }
 
+  /* Footer - anchored at bottom with breathing room */
   .panel-footer {
     display: flex;
     gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--theme-stroke, var(--theme-stroke));
+    padding: 24px 32px;
     flex-shrink: 0;
   }
 
   .button {
     flex: 1;
-    padding: 12px 20px;
+    min-height: 56px; /* Slightly larger for prominence */
+    padding: 16px 24px;
     border: none;
-    border-radius: 8px;
-    font-size: var(--font-size-sm);
+    border-radius: 14px;
+    font-size: var(--font-size-lg, 18px);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   .button-secondary {
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    border: 1.5px solid var(--theme-stroke);
   }
 
   .button-secondary:hover {
     background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
   }
 
   .button-primary {
     background: linear-gradient(
       135deg,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 0%,
-      var(--theme-accent-strong) 100%
+      var(--theme-accent-strong) 0%,
+      color-mix(in srgb, var(--theme-accent-strong) 80%, #000) 100%
     );
     color: white;
-    box-shadow: 0 4px 12px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 40%,
-        transparent
-      );
+    box-shadow: 0 6px 20px
+      color-mix(in srgb, var(--theme-accent-strong) 50%, transparent);
   }
 
   .button-primary:hover:not(:disabled) {
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent-strong) 0%,
-      var(--theme-accent-strong) 100%
-    );
-    box-shadow: 0 6px 16px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 60%,
-        transparent
-      );
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px
+      color-mix(in srgb, var(--theme-accent-strong) 60%, transparent);
   }
 
   .button-primary:active:not(:disabled) {
@@ -526,28 +570,40 @@
     transform: none;
   }
 
+  /* Mobile adjustments */
   @media (max-width: 640px) {
     .panel-header {
-      padding: 20px 20px 12px;
+      padding: 24px 24px 16px;
     }
 
     .panel-header h2 {
-      font-size: var(--font-size-lg);
+      font-size: var(--font-size-xl, 1.25rem);
     }
 
     .panel-body {
-      padding: 16px 20px;
+      padding: 20px 24px;
+      gap: 24px;
+    }
+
+    .tka-name-display {
+      padding: 24px 20px;
     }
 
     .panel-footer {
-      padding: 12px 20px;
+      padding: 20px 24px;
+    }
+
+    .button {
+      min-height: 52px;
+      font-size: var(--font-size-base, 16px);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .button,
     .input-field,
-    .textarea-field {
+    .textarea-field,
+    .close-button {
       transition: none;
     }
   }

@@ -13,6 +13,8 @@ import { SequenceTransformer } from "../../../features/create/shared/services/im
 import { SequenceValidator } from "../../../features/create/shared/services/implementations/SequenceValidator";
 import { UndoManager } from "../../../features/create/shared/services/implementations/UndoManager";
 import { BeatOperator } from "../../../features/create/shared/services/implementations/BeatOperator";
+import { PropClickHandler } from "../../../features/create/shared/services/implementations/PropClickHandler";
+import { ChiralityToggler } from "../../../features/create/shared/services/implementations/ChiralityToggler";
 import { KeyboardArrowAdjuster } from "../../../features/create/shared/services/implementations/KeyboardArrowAdjuster";
 import { CreateModuleInitializer } from "../../../features/create/shared/services/implementations/CreateModuleInitializer";
 import { NavigationSyncer } from "../../../features/create/shared/services/implementations/NavigationSyncer";
@@ -20,7 +22,9 @@ import { ResponsiveLayoutManager } from "../../../features/create/shared/service
 import { CreateModuleEffectCoordinator } from "../../../features/create/shared/services/implementations/CreateModuleEffectCoordinator";
 import { DeepLinkSequenceHandler } from "../../../features/create/shared/services/implementations/DeepLinkSequenceHandler";
 
+import { AspectLayoutPlanner } from "../../../features/create/construct/option-picker/services/implementations/AspectLayoutPlanner";
 import { FilterPersister } from "../../../features/create/construct/option-picker/services/FilterPersister";
+import { OptionGridFitCalculator } from "../../../features/create/construct/option-picker/services/implementations/OptionGridFitCalculator.ts";
 import { LayoutDetector } from "../../../features/create/construct/option-picker/services/implementations/LayoutDetector";
 import { TurnController } from "../../../features/create/edit/services/TurnController";
 
@@ -62,7 +66,6 @@ import { TurnAllocator } from "../../../features/create/generate/shared/services
 import { OptionFilter } from "../../../features/create/construct/option-picker/services/implementations/OptionFilter";
 import { PositionAnalyzer } from "../../../features/create/construct/option-picker/services/implementations/PositionAnalyzer";
 import { OptionSorter } from "../../../features/create/construct/option-picker/services/implementations/OptionSorter";
-import { OptionSizer } from "../../../features/create/construct/option-picker/services/implementations/OptionSizer";
 import { OptionOrganizer } from "../../../features/create/construct/option-picker/services/implementations/OptionOrganizer";
 import { OptionLoader } from "../../../features/create/construct/option-picker/services/implementations/OptionLoader";
 import { OptionTransitionCoordinator } from "../../../features/create/construct/option-picker/services/implementations/OptionTransitionCoordinator";
@@ -111,9 +114,10 @@ export const createModule = new ContainerModule(
     options.bind(TYPES.IUndoManager).to(UndoManager);
     options.bind(TYPES.IBuildConstructTabCoordinator).to(ConstructCoordinator);
     options.bind(TYPES.ITurnController).to(TurnController);
+    options.bind(TYPES.IPropClickHandler).to(PropClickHandler);
+    options.bind(TYPES.IChiralityToggler).to(ChiralityToggler);
 
     // === OPTION PICKER SERVICES ===
-    options.bind(TYPES.IOptionPickerSizingService).to(OptionSizer);
     options.bind(TYPES.IOptionPickerFilterPersister).to(FilterPersister);
     options.bind(TYPES.IReversalChecker).to(ReversalChecker);
     options.bind(TYPES.IPositionAnalyzer).to(PositionAnalyzer);
@@ -126,6 +130,8 @@ export const createModule = new ContainerModule(
       .bind(TYPES.IOptionTransitionCoordinator)
       .to(OptionTransitionCoordinator);
     options.bind(TYPES.ISectionTitleFormatter).to(SectionTitleFormatter);
+    options.bind(TYPES.IGridFitCalculator).to(OptionGridFitCalculator);
+    options.bind(TYPES.IAspectLayoutPlanner).to(AspectLayoutPlanner);
 
     // === START POSITION SERVICES ===
     options

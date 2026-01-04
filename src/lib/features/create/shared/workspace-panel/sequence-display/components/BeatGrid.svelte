@@ -19,6 +19,7 @@
     calculateGridLayout,
   } from "../utils/grid-calculations";
   import BeatCell from "./BeatCell.svelte";
+  import type { PropHand } from "../../../state/selected-prop-state.svelte";
 
   // Services
   let hapticService: IHapticFeedback;
@@ -52,6 +53,7 @@
     selectedBeatNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
+    onPropClick,
   } = $props<{
     beats: ReadonlyArray<BeatData> | BeatData[];
     startPosition?: StartPositionData | BeatData | null;
@@ -80,6 +82,8 @@
     selectedBeatNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
+    // Prop click handler for cycling variants
+    onPropClick?: (beatIndex: number, hand: PropHand) => void;
   }>();
 
   const placeholderBeat = createBeatData({
@@ -449,6 +453,7 @@
             isPracticeBeat={practiceBeatNumber === beat.beatNumber}
             {activeMode}
             highlightStyle={highlightedBeats?.get(beat.beatNumber) ?? null}
+            {onPropClick}
           />
         </div>
       {/each}
@@ -533,6 +538,7 @@
               isPracticeBeat={practiceBeatNumber === beat.beatNumber}
               {activeMode}
               highlightStyle={highlightedBeats?.get(beat.beatNumber) ?? null}
+              {onPropClick}
             />
           </div>
         {/each}
