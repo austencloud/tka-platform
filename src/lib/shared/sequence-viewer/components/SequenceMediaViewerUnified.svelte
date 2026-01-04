@@ -23,6 +23,10 @@
 	import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 	import { isCatDogMode } from "$lib/features/discover/gallery/display/services/implementations/DiscoverThumbnailCache";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
+	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+	import { browser } from "$app/environment";
+
+	const MEDIA_TYPE_STORAGE_KEY = "sequence-viewer-media-type";
 
 	let {
 		sequence,
@@ -52,15 +56,17 @@
 		hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
 	});
 
-	// State
-	let activeMediaType = $state<MediaType>("image");
-
-	// Set initial media type
-	$effect(() => {
-		if (initialMediaType) {
-			activeMediaType = initialMediaType;
+	// State - restore from sessionStorage if available (survives HMR)
+	function getPersistedMediaType(): MediaType {
+		if (!browser) return initialMediaType;
+		const stored = sessionStorage.getItem(MEDIA_TYPE_STORAGE_KEY);
+		if (stored === "image" || stored === "animation" || stored === "video") {
+			return stored;
 		}
-	});
+		return initialMediaType;
+	}
+
+	let activeMediaType = $state<MediaType>(getPersistedMediaType());
 
 	// Get prop settings for PropAwareThumbnail
 	const propSettings = $derived({
@@ -89,7 +95,48 @@
 
 	onDestroy(() => {
 		visibilityManager.unregisterObserver(handleVisibilityChange);
+		imageSettings.unregisterObserver(handleImageSettingsChange);
 	});
+
+	// Image export settings
+	const imageSettings = getImageCompositionManager();
+	let addWord = $state(imageSettings.addWord);
+	let addBeatNumbers = $state(imageSettings.addBeatNumbers);
+	let includeStartPosition = $state(imageSettings.includeStartPosition);
+	let addDifficultyLevel = $state(imageSettings.addDifficultyLevel);
+	let addUserInfo = $state(imageSettings.addUserInfo);
+	let darkMode = $state(imageSettings.darkMode);
+
+	function handleImageSettingsChange() {
+		addWord = imageSettings.addWord;
+		addBeatNumbers = imageSettings.addBeatNumbers;
+		includeStartPosition = imageSettings.includeStartPosition;
+		addDifficultyLevel = imageSettings.addDifficultyLevel;
+		addUserInfo = imageSettings.addUserInfo;
+		darkMode = imageSettings.darkMode;
+	}
+
+	imageSettings.registerObserver(handleImageSettingsChange);
+
+	// Image settings toggle handlers
+	function toggleWord() {
+		imageSettings.toggle("addWord");
+	}
+	function toggleBeatNumbers() {
+		imageSettings.toggle("addBeatNumbers");
+	}
+	function toggleStartPosition() {
+		imageSettings.toggle("includeStartPosition");
+	}
+	function toggleDifficulty() {
+		imageSettings.toggle("addDifficultyLevel");
+	}
+	function toggleUserInfo() {
+		imageSettings.toggle("addUserInfo");
+	}
+	function toggleDarkMode() {
+		imageSettings.toggle("darkMode");
+	}
 
 	// Derived: available media types
 	const hasImages = $derived(!!sequence);
@@ -104,18 +151,18 @@
 		return types;
 	});
 
-	// Reset to image view when sequence changes
-	$effect(() => {
-		if (sequence) {
-			activeMediaType = initialMediaType || "image";
-		}
-	});
+	// Note: We no longer reset media type when sequence changes
+	// because we want to preserve the user's tab selection across HMR and navigation
 
 	// Handlers
 	function selectMediaType(type: MediaType) {
 		hapticService?.trigger("selection");
 		activeMediaType = type;
 		onMediaTypeChange?.(type);
+		// Persist to sessionStorage (survives HMR)
+		if (browser) {
+			sessionStorage.setItem(MEDIA_TYPE_STORAGE_KEY, type);
+		}
 	}
 
 </script>
@@ -151,16 +198,83 @@
 	<div class="media-content">
 		{#if activeMediaType === "image"}
 			<!-- Image View -->
-			<div class="image-view">
-				{#key sequence.id || sequence.word}
-					<PropAwareThumbnail
-						{sequence}
-						bluePropType={propSettings.bluePropType}
-						redPropType={propSettings.redPropType}
-						catDogModeEnabled={isCatDog}
-						{lightMode}
-					/>
-				{/key}
+			<div class="image-view-container">
+				<div class="image-view">
+					{#key sequence.id || sequence.word}
+						<PropAwareThumbnail
+							{sequence}
+							bluePropType={propSettings.bluePropType}
+							redPropType={propSettings.redPropType}
+							catDogModeEnabled={isCatDog}
+							{lightMode}
+						/>
+					{/key}
+				</div>
+
+				<!-- Image Export Settings Chips -->
+				<div class="settings-chips">
+					<button
+						class="chip"
+						class:active={darkMode}
+						onclick={toggleDarkMode}
+						aria-pressed={darkMode}
+						title="Toggle dark mode for export"
+					>
+						Dark Mode
+					</button>
+					<button
+						class="chip"
+						class:active={addWord}
+						onclick={toggleWord}
+						aria-pressed={addWord}
+					>
+						Word
+					</button>
+					<button
+						class="chip"
+						class:active={addBeatNumbers}
+						onclick={toggleBeatNumbers}
+						aria-pressed={addBeatNumbers}
+					>
+						Beat #s
+					</button>
+					<button
+						class="chip"
+						class:active={includeStartPosition}
+						onclick={toggleStartPosition}
+						aria-pressed={includeStartPosition}
+					>
+						Start Pos
+					</button>
+					<button
+						class="chip"
+						class:active={addDifficultyLevel}
+						onclick={toggleDifficulty}
+						aria-pressed={addDifficultyLevel}
+					>
+						Difficulty
+					</button>
+					<button
+						class="chip"
+						class:active={addUserInfo}
+						onclick={toggleUserInfo}
+						aria-pressed={addUserInfo}
+					>
+						User Info
+					</button>
+				</div>
+
+				<!-- Play Animation Button -->
+				{#if hasAnimation}
+					<button
+						class="play-animation-btn"
+						onclick={() => selectMediaType("animation")}
+						aria-label="Play animation"
+					>
+						<i class="fas fa-play" aria-hidden="true"></i>
+						<span>Play Animation</span>
+					</button>
+				{/if}
 			</div>
 		{:else if activeMediaType === "animation"}
 			<!-- Animation View - using unified AnimationPlayer -->
@@ -326,14 +440,99 @@
 		overflow: hidden;
 	}
 
-	/* Image View */
-	.image-view {
-		position: relative;
+	/* Image View Container */
+	.image-view-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
 		width: 100%;
 		height: 100%;
+	}
+
+	.image-view {
+		position: relative;
+		flex: 1;
+		min-height: 0;
+		width: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	/* Settings Chips */
+	.settings-chips {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px;
+		padding: 0 8px;
+	}
+
+	.chip {
+		padding: 8px 14px;
+		min-height: 36px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 18px;
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 500;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.chip:hover {
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		color: var(--theme-text, white);
+	}
+
+	.chip.active {
+		background: var(--theme-accent, #6366f1);
+		border-color: var(--theme-accent, #6366f1);
+		color: white;
+	}
+
+	/* Play Animation Button - larger than touch target to encourage clicking */
+	.play-animation-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		padding: 14px 28px;
+		min-height: 56px;
+		min-width: 180px;
+		background: var(--theme-accent, #6366f1);
+		border: none;
+		border-radius: 28px;
+		font-size: var(--font-size-base, 16px);
+		font-weight: 600;
+		color: white;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		box-shadow:
+			0 4px 12px rgba(99, 102, 241, 0.3),
+			0 0 0 1px rgba(99, 102, 241, 0.2);
+	}
+
+	.play-animation-btn i {
+		font-size: 18px;
+	}
+
+	.play-animation-btn:hover {
+		transform: translateY(-2px) scale(1.02);
+		box-shadow:
+			0 6px 16px rgba(99, 102, 241, 0.4),
+			0 0 0 1px rgba(99, 102, 241, 0.3);
+	}
+
+	.play-animation-btn:active {
+		transform: translateY(0) scale(0.98);
+	}
+
+	.play-animation-btn:focus-visible {
+		outline: 2px solid white;
+		outline-offset: 2px;
 	}
 
 	/* Animation View */
@@ -400,12 +599,16 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.media-chip,
-		.back-btn {
+		.back-btn,
+		.chip,
+		.play-animation-btn {
 			transition: none;
 		}
 
 		.media-chip:hover,
-		.media-chip.active:hover {
+		.media-chip.active:hover,
+		.play-animation-btn:hover,
+		.play-animation-btn:active {
 			transform: none;
 		}
 	}

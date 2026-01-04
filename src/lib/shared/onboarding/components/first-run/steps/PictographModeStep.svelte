@@ -57,7 +57,6 @@
       <div class="preview-frame light-preview">
         <PictographContainer
           pictographData={examplePictographData}
-          darkMode={false}
           disableTransitions={true}
         />
       </div>
@@ -79,7 +78,6 @@
       <div class="preview-frame dark-preview">
         <PictographContainer
           pictographData={examplePictographData}
-          darkMode={true}
           disableTransitions={true}
         />
       </div>
@@ -210,10 +208,19 @@
 
   .light-preview {
     background: white;
+    /* Force light mode CSS variables */
+    --dm-pictograph-bg: white;
   }
 
   .dark-preview {
     background: #0a0a0f;
+    /* Force dark mode CSS variables */
+    --dm-pictograph-bg: #0a0a0f;
+  }
+
+  /* Force dark mode styling on pictograph within dark-preview */
+  .dark-preview :global(.pictograph) {
+    filter: invert(0.9);
   }
 
   /* Make Pictograph fill the preview frame */

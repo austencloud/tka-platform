@@ -166,13 +166,19 @@ const MODULE_ORDER = [
 
 // Module change handler with View Transitions
 // targetTab: Optional tab to navigate to (used when clicking a section in a different module)
+// options.forceViewTransition: Force View Transition even when leaving Dashboard (for keyboard shortcuts)
 export async function handleModuleChange(
   moduleId: ModuleId,
   targetTab?: string,
-  options?: { skipHistory?: boolean; initiatedByHistory?: boolean }
+  options?: {
+    skipHistory?: boolean;
+    initiatedByHistory?: boolean;
+    forceViewTransition?: boolean;
+  }
 ) {
   const currentMod = currentModule();
   const shouldSkipHistory = options?.skipHistory === true;
+  const forceTransition = options?.forceViewTransition === true;
 
   // Skip transition logic if same module
   if (moduleId === currentMod) {
@@ -192,6 +198,7 @@ export async function handleModuleChange(
 
   // Coming FROM dashboard - skip (Dashboard.svelte handles dive-in animation)
   // Exception: settings portal has its own animation that should always play
+  // Exception: forceViewTransition (keyboard shortcuts) should always animate
   const isLeavingDashboard = currentMod === "dashboard";
 
   // Going TO dashboard - use pull-out animation
@@ -204,8 +211,12 @@ export async function handleModuleChange(
   // Allow view transitions when:
   // 1. Not leaving dashboard (normal case)
   // 2. OR entering/exiting settings (settings portal always animates)
+  // 3. OR forceViewTransition is set (keyboard shortcuts)
   const shouldUseViewTransition =
-    !isLeavingDashboard || isEnteringSettings || isExitingSettings;
+    !isLeavingDashboard ||
+    isEnteringSettings ||
+    isExitingSettings ||
+    forceTransition;
 
   if (
     typeof doc.startViewTransition === "function" &&

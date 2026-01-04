@@ -8,12 +8,12 @@
   - Desktop: Right drawer, full height
   - Context-based animation state (no prop drilling)
 
-  Uses SequenceViewerPanel (mode="preview") for consistent UX
+  Uses SequencePreviewPanel (mode="preview") for consistent UX
   with the Discover gallery's full mode.
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import SequenceViewerPanel from "$lib/shared/sequence-viewer/components/SequenceViewerPanel.svelte";
+  import SequencePreviewPanel from "$lib/shared/sequence-viewer/components/SequencePreviewPanel.svelte";
   import type { MediaFormat, ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
   import type { ExportSettings } from "../domain/models/ExportSettings";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -282,7 +282,7 @@
   >
     <div class="share-hub-content">
       {#if sequence}
-        <SequenceViewerPanel
+        <SequencePreviewPanel
           {sequence}
           mode="preview"
           initialMediaType="animation"
