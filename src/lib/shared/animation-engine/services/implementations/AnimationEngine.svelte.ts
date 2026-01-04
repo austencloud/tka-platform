@@ -290,9 +290,15 @@ export class AnimationEngine {
           // Note: setDarkMode on renderer controls the "Dark Mode" effect (dark bg, inverted grid)
           this.animationRenderer?.setDarkMode(state.darkMode);
 
-          // CRITICAL: Reload prop textures when dark mode changes
-          // Prop colors are theme-dependent (light/dark mode), so textures must be regenerated
+          // CRITICAL: Trigger immediate render so dark mode takes effect visually
+          // Don't wait for prop textures - render with existing textures first
           if (this.state.isInitialized) {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+            );
+
+            // THEN reload prop textures (they need theme-aware colors)
+            // This runs async and triggers another render when complete
             this.loadPropTextures().then(() => {
               this.renderLoopService?.triggerRender(() =>
                 this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)

@@ -80,6 +80,8 @@ export class HMRContainerManager {
     new Map();
   private tier1Modules: ContainerModule[] = [];
   private tier2Modules: ContainerModule[] = [];
+  private tier1Loaded = false;
+  private tier2Loaded = false;
 
   // Track which services are singletons for caching
   private singletonServices: Set<symbol> = new Set();
@@ -218,6 +220,20 @@ export class HMRContainerManager {
   }
 
   /**
+   * Check if tier 1 modules are loaded
+   */
+  isTier1Loaded(): boolean {
+    return this.tier1Loaded;
+  }
+
+  /**
+   * Check if tier 2 modules are loaded
+   */
+  isTier2Loaded(): boolean {
+    return this.tier2Loaded;
+  }
+
+  /**
    * Register tier 1 modules (loaded immediately)
    */
   registerTier1Modules(modules: ContainerModule[]): void {
@@ -232,6 +248,20 @@ export class HMRContainerManager {
   }
 
   /**
+   * Mark tier 1 as loaded (call after successful load)
+   */
+  markTier1Loaded(): void {
+    this.tier1Loaded = true;
+  }
+
+  /**
+   * Mark tier 2 as loaded (call after successful load)
+   */
+  markTier2Loaded(): void {
+    this.tier2Loaded = true;
+  }
+
+  /**
    * Register a feature module loader
    */
   registerFeatureModule(
@@ -243,9 +273,25 @@ export class HMRContainerManager {
 
   /**
    * Load modules into the container
+   * Uses isBound check to prevent duplicate bindings during HMR
    */
   async loadModules(modules: ContainerModule[]): Promise<void> {
-    await this.state.activeContainer.load(...modules);
+    // Load modules only if not already loaded
+    // Inversify doesn't have a built-in "isModuleLoaded" check,
+    // so we track loaded modules ourselves
+    for (const module of modules) {
+      try {
+        await this.state.activeContainer.load(module);
+      } catch (error) {
+        // If we get an ambiguous binding error, the module was already loaded
+        const errorMessage = String(error);
+        if (errorMessage.includes("Ambiguous bindings")) {
+          this.log(`Module already loaded, skipping: ${errorMessage}`, "warn");
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   /**
@@ -305,6 +351,11 @@ export class HMRContainerManager {
     if (this.config.preserveSingletons) {
       this.cacheSingletons();
     }
+
+    // Reset tier flags - they'll be set again after rebuild
+    this.tier1Loaded = false;
+    this.tier2Loaded = false;
+    this.loadedModules.clear();
 
     // DON'T unbind the active container yet - it's still serving requests
   }
@@ -510,20 +561,25 @@ export class HMRContainerManager {
     // Load tier 1 modules
     if (this.tier1Modules.length > 0) {
       await this.state.shadowContainer.load(...this.tier1Modules);
+      this.tier1Loaded = true;
     }
 
     // Load tier 2 modules
     if (this.tier2Modules.length > 0) {
       await this.state.shadowContainer.load(...this.tier2Modules);
+      this.tier2Loaded = true;
     }
 
     // Reload previously loaded feature modules
-    for (const moduleName of this.loadedModules) {
+    // Get module names from loaders that were registered
+    const moduleNamesToReload = Array.from(this.moduleLoaders.keys());
+    for (const moduleName of moduleNamesToReload) {
       const loader = this.moduleLoaders.get(moduleName);
       if (loader) {
         try {
           const module = await loader();
           await this.state.shadowContainer.load(module);
+          this.loadedModules.add(moduleName);
         } catch (error) {
           this.log(
             `Failed to reload feature module ${moduleName}: ${error}`,

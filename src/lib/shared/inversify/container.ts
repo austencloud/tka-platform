@@ -53,12 +53,10 @@ export const inversifyContainer = container;
 // ============================================================================
 
 // Track loaded modules to prevent duplicate loading
-// Use HMR data to persist across module reloads
-const loadedModules: Set<string> =
-  import.meta.hot?.data?.loadedModules ?? new Set<string>();
+// Use HMR manager as source of truth for tier1/tier2
+// Feature modules tracked locally since they're on-demand
+const loadedModules: Set<string> = new Set<string>();
 const pendingModules = new Map<string, Promise<void>>();
-let tier1Loaded = import.meta.hot?.data?.tier1Loaded ?? false;
-let tier2Loaded = import.meta.hot?.data?.tier2Loaded ?? false;
 let tier2Promise: Promise<void> | null = null;
 
 // Browser detection utility
@@ -74,40 +72,20 @@ let initializationPromise: Promise<void> | null = null;
 
 if (import.meta.hot) {
   import.meta.hot.accept(async () => {
-    // Capture modules to restore BEFORE clearing
-    const featureModulesToRestore = Array.from(loadedModules).filter(
-      (module) => !getTierModuleNames().includes(module)
-    );
-
-    // Clear loadedModules so loadIfNeeded actually reloads them
-    // (container bindings were cleared, so we need to re-register)
+    // Clear local feature module tracking
+    // HMR manager tracks tier1/tier2 state
     loadedModules.clear();
-    tier1Loaded = false;
-    tier2Loaded = false;
     tier2Promise = null;
 
     // Trigger HMR rebuild through manager
+    // This rebuilds the container with tier1, tier2, and all feature modules
     await hmrManager.onHMRAccept();
-
-    // Restore feature modules
-    for (const module of featureModulesToRestore) {
-      try {
-        await loadFeatureModule(module);
-      } catch (error) {
-        console.warn(`Failed to restore "${module}":`, error);
-      }
-    }
 
     // Reset state after successful rebuild
     isInitialized = true;
   });
 
-  import.meta.hot.dispose((data) => {
-    // Save state for next version
-    data.loadedModules = new Set(loadedModules);
-    data.tier1Loaded = tier1Loaded;
-    data.tier2Loaded = tier2Loaded;
-
+  import.meta.hot.dispose(() => {
     // Trigger dispose on manager (caches singletons, prepares for rebuild)
     hmrManager.onHMRDispose();
 
@@ -230,7 +208,8 @@ export async function ensureContainerInitialized(): Promise<void> {
  * Target: <500ms - Essential for app shell to become interactive
  */
 export async function loadCriticalModules(): Promise<void> {
-  if (tier1Loaded) return;
+  // Use HMR manager as source of truth to prevent double-loading
+  if (hmrManager.isTier1Loaded()) return;
 
   try {
     const [
@@ -269,14 +248,8 @@ export async function loadCriticalModules(): Promise<void> {
       presenceModule,
     ]);
 
-    // Track loaded modules
-    loadedModules.add("core");
-    loadedModules.add("navigation");
-    loadedModules.add("data");
-    loadedModules.add("keyboard");
-    loadedModules.add("analytics");
-    loadedModules.add("presence");
-    tier1Loaded = true;
+    // Mark as loaded in HMR manager (source of truth)
+    hmrManager.markTier1Loaded();
   } catch (error) {
     console.error("❌ Failed to load Tier 1 modules:", error);
     throw error;
@@ -292,7 +265,8 @@ export async function loadCriticalModules(): Promise<void> {
  * Loads in background while user reads content.
  */
 export async function loadSharedModules(): Promise<void> {
-  if (tier2Loaded) return;
+  // Use HMR manager as source of truth to prevent double-loading
+  if (hmrManager.isTier2Loaded()) return;
   if (tier2Promise) {
     await tier2Promise;
     return;
@@ -336,13 +310,8 @@ export async function loadSharedModules(): Promise<void> {
         communityModule,
       ]);
 
-      loadedModules.add("render");
-      loadedModules.add("pictograph");
-      loadedModules.add("admin");
-      loadedModules.add("feedback");
-      loadedModules.add("share");
-      loadedModules.add("community");
-      tier2Loaded = true;
+      // Mark as loaded in HMR manager (source of truth)
+      hmrManager.markTier2Loaded();
     } catch (error) {
       console.error("❌ Failed to load Tier 2 modules:", error);
       tier2Promise = null;
@@ -603,8 +572,6 @@ function initializeContainer(): Promise<void> {
       console.error("❌ Container initialization failed:", error);
       isInitialized = false;
       initializationPromise = null;
-      tier1Loaded = false;
-      tier2Loaded = false;
       loadedModules.clear();
       pendingModules.clear();
       throw error;
