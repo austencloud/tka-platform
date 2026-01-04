@@ -18,8 +18,6 @@ export const CreateTypes = {
   IKeyboardArrowAdjuster: Symbol.for("IKeyboardArrowAdjuster"),
   IUndoManager: Symbol.for("IUndoManager"),
   ITurnController: Symbol.for("ITurnController"),
-  IPropClickHandler: Symbol.for("IPropClickHandler"),
-  IChiralityToggler: Symbol.for("IChiralityToggler"),
 
   // Write Tab
   IActManager: Symbol.for("IActManager"),

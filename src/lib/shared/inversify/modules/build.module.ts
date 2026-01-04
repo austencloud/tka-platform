@@ -13,8 +13,6 @@ import { SequenceTransformer } from "../../../features/create/shared/services/im
 import { SequenceValidator } from "../../../features/create/shared/services/implementations/SequenceValidator";
 import { UndoManager } from "../../../features/create/shared/services/implementations/UndoManager";
 import { BeatOperator } from "../../../features/create/shared/services/implementations/BeatOperator";
-import { PropClickHandler } from "../../../features/create/shared/services/implementations/PropClickHandler";
-import { ChiralityToggler } from "../../../features/create/shared/services/implementations/ChiralityToggler";
 import { KeyboardArrowAdjuster } from "../../../features/create/shared/services/implementations/KeyboardArrowAdjuster";
 import { CreateModuleInitializer } from "../../../features/create/shared/services/implementations/CreateModuleInitializer";
 import { NavigationSyncer } from "../../../features/create/shared/services/implementations/NavigationSyncer";
@@ -114,8 +112,6 @@ export const createModule = new ContainerModule(
     options.bind(TYPES.IUndoManager).to(UndoManager);
     options.bind(TYPES.IBuildConstructTabCoordinator).to(ConstructCoordinator);
     options.bind(TYPES.ITurnController).to(TurnController);
-    options.bind(TYPES.IPropClickHandler).to(PropClickHandler);
-    options.bind(TYPES.IChiralityToggler).to(ChiralityToggler);
 
     // === OPTION PICKER SERVICES ===
     options.bind(TYPES.IOptionPickerFilterPersister).to(FilterPersister);
