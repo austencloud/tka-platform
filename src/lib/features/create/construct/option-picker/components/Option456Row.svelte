@@ -45,7 +45,7 @@ with individual headers for each type.
     {#if section.pictographs.length > 0}
       {@const sectionColumns = Math.min(section.pictographs.length, 4)}
       <div class="type-column">
-        <OptionSectionHeader letterType={section.title} />
+        <OptionSectionHeader letterType={section.title} {darkMode} />
         <OptionGrid
           options={section.pictographs}
           {cardSize}

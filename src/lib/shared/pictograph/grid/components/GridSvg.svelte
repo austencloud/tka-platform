@@ -473,7 +473,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   /* Hand points - use currentColor by default */
   /* Note: strict-hand-point is NOT styled here - it remains fill:none (hidden) as defined in SVG */
   :global(.normal-hand-point) {
-    transition: fill 0.2s ease;
+    transition: fill 150ms ease-out;
   }
 
   /* Dark mode - normal hand points use light color */
@@ -485,7 +485,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   /* Center point */
   :global(#center_point) {
     fill: #000;
-    transition: fill 0.2s ease;
+    transition: fill 150ms ease-out;
   }
 
   /* Dark mode - center point uses light color */

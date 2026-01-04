@@ -7,8 +7,9 @@ Uses LetterTypeTextPainter for consistent text formatting.
 <script lang="ts">
   import { LetterTypeTextPainter } from "../../utils/letter-type-text-painter";
 
-  const { letterType = "mixed" } = $props<{
+  const { letterType = "mixed", darkMode = false } = $props<{
     letterType?: string;
+    darkMode?: boolean;
   }>();
 
   // Type descriptions mapping
@@ -47,7 +48,7 @@ Uses LetterTypeTextPainter for consistent text formatting.
 <div class="section-header">
   <div class="header-layout">
     <div class="stretch"></div>
-    <div class="type-label">
+    <div class="type-label" class:dark-mode={darkMode}>
       <span class="label-text">
         {@html buttonText}
       </span>
@@ -75,8 +76,8 @@ Uses LetterTypeTextPainter for consistent text formatting.
   }
 
   .type-label {
-    background: var(--header-bg-current, rgba(255, 255, 255, 0.15));
-    border: var(--header-border-current, 1px solid rgba(255, 255, 255, 0.2));
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     padding: 6px 6px;
     font-weight: 600;
@@ -84,6 +85,13 @@ Uses LetterTypeTextPainter for consistent text formatting.
     min-width: 160px;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: background 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out;
+  }
+
+  .type-label.dark-mode {
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   /* Responsive sizing */
@@ -113,6 +121,11 @@ Uses LetterTypeTextPainter for consistent text formatting.
 
   .label-text {
     display: block;
-    color: var(--header-text-current, var(--foreground, #000000));
+    color: #000000;
+    transition: color 150ms ease-out;
+  }
+
+  .dark-mode .label-text {
+    color: #ffffff;
   }
 </style>

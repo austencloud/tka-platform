@@ -18,7 +18,6 @@
   import BeatGrid from "../../workspace-panel/sequence-display/components/BeatGrid.svelte";
   import type { BeatData } from "../../domain/models/BeatData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { PropHand } from "../../state/selected-prop-state.svelte";
   import {
     MotionColor,
     MotionType,
@@ -42,7 +41,6 @@
     onOrientationChange: (color: MotionColor, orientation: string) => void;
     onBeatSelect?: (beatNumber: number) => void;
     onDelete?: () => void;
-    onPropClick?: (beatIndex: number, hand: PropHand) => void;
   }
 
   let {
@@ -57,7 +55,6 @@
     onOrientationChange,
     onBeatSelect,
     onDelete,
-    onPropClick,
   }: Props = $props();
 
   // Get layout context for responsive behavior
@@ -253,7 +250,6 @@
           onBeatClick={handleBeatClick}
           onStartClick={() => handleBeatClick(0)}
           onBeatDelete={() => onDelete?.()}
-          {onPropClick}
         />
       </div>
     {/if}
@@ -265,10 +261,6 @@
           <PictographContainer
             pictographData={displayedBeatData}
             disableTransitions={true}
-            propsClickable={!!onPropClick}
-            onPropClick={onPropClick
-              ? (hand) => onPropClick(selectedBeatNumber ?? 0, hand)
-              : undefined}
           />
         </div>
       </div>

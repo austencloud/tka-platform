@@ -16,15 +16,9 @@
   import { resolve, TYPES } from "$lib/shared/inversify/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import BeatEditorPanel from "../sequence-actions/BeatEditorPanel.svelte";
-  import ChiralityDrawer from "../prop-controls/ChiralityDrawer.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IBeatOperator } from "../../services/contracts/IBeatOperator";
-  import type { IPropClickHandler } from "../../services/contracts/IPropClickHandler";
-  import {
-    selectedPropState,
-    type PropHand,
-  } from "../../state/selected-prop-state.svelte";
   import {
     MotionColor,
     RotationDirection,
@@ -40,11 +34,6 @@
   // Services
   let hapticService: IHapticFeedback | null = $state(null);
   let BeatOperator: IBeatOperator | null = $state(null);
-  let propClickHandler: IPropClickHandler | null = $state(null);
-
-  // Chirality drawer state
-  let isChiralityDrawerOpen = $state(false);
-  let chiralityDrawerHand: PropHand | null = $state(null);
 
   onMount(() => {
     try {
@@ -54,11 +43,6 @@
     }
     try {
       BeatOperator = resolve<IBeatOperator>(TYPES.IBeatOperator);
-    } catch {
-      /* Optional service */
-    }
-    try {
-      propClickHandler = resolve<IPropClickHandler>(TYPES.IPropClickHandler);
     } catch {
       /* Optional service */
     }
@@ -198,30 +182,6 @@
     activeSequenceState.selectBeat(beatNumber);
   }
 
-  // Handle prop click - cycle variant and show chirality drawer for Buugeng
-  function handlePropClick(beatIndex: number, hand: PropHand) {
-    if (!propClickHandler) return;
-
-    // PropClickHandler handles:
-    // 1. Updating selection state for visual feedback
-    // 2. Cycling to next variant
-    // 3. Updating settings
-    propClickHandler.handlePropClick(beatIndex, hand);
-
-    // If Buugeng family, show chirality drawer
-    if (propClickHandler.isBuugengFamily(hand)) {
-      chiralityDrawerHand = hand;
-      isChiralityDrawerOpen = true;
-    }
-  }
-
-  // Close chirality drawer and clear prop selection
-  function handleChiralityDrawerClose() {
-    isChiralityDrawerOpen = false;
-    chiralityDrawerHand = null;
-    selectedPropState.clear();
-  }
-
   // Debug effect to track panel visibility
   $effect(() => {
     logger.log(
@@ -243,12 +203,4 @@
   onOrientationChange={handleOrientationChange}
   onBeatSelect={handleBeatSelect}
   onDelete={handleBeatDelete}
-  onPropClick={handlePropClick}
-/>
-
-<!-- Chirality Drawer for Buugeng props -->
-<ChiralityDrawer
-  bind:isOpen={isChiralityDrawerOpen}
-  hand={chiralityDrawerHand}
-  onClose={handleChiralityDrawerClose}
 />

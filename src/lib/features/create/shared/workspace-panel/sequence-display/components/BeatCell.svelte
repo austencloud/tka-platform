@@ -6,13 +6,6 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import { hasVariations } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
-  import {
-    selectedPropState,
-    type PropHand,
-  } from "../../../state/selected-prop-state.svelte";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   let {
     beat,
@@ -27,8 +20,6 @@
     activeMode = null,
     // Custom highlight style (for multi-select, section highlighting, etc.)
     highlightStyle = null,
-    // Callback when a prop is clicked (for variant cycling)
-    onPropClick = undefined,
   } = $props<{
     beat: BeatData;
     index?: number;
@@ -42,8 +33,6 @@
     activeMode?: BuildModeId | null;
     // Custom highlight style
     highlightStyle?: { bg: string; border: string } | null;
-    // Callback when a prop is clicked
-    onPropClick?: (beatIndex: number, hand: PropHand) => void;
   }>();
 
   // Services
@@ -52,32 +41,6 @@
   onMount(() => {
     hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
   });
-
-  // Prop click handling - determine if props should be clickable based on current prop types
-  const propsClickable = $derived.by(() => {
-    // Only enable prop clicks if callback is provided
-    if (!onPropClick) return false;
-
-    const settings = getSettings();
-    const bluePropType = settings.bluePropType ?? PropType.STAFF;
-    const redPropType = settings.redPropType ?? PropType.STAFF;
-
-    // Props are clickable if at least one has variants
-    return hasVariations(bluePropType) || hasVariations(redPropType);
-  });
-
-  // Track which prop in this beat is selected
-  const selectedPropHand = $derived.by(() => {
-    if (!selectedPropState.selectedProp) return null;
-    if (selectedPropState.beatIndex !== index) return null;
-    return selectedPropState.hand;
-  });
-
-  // Handle prop click - delegate to parent
-  function handlePropClick(hand: PropHand) {
-    if (!onPropClick) return;
-    onPropClick(index, hand);
-  }
 
   const isStartPosition = $derived.by(() => {
     return beat.beatNumber === 0;
@@ -336,9 +299,6 @@
   <PictographContainer
     pictographData={beatDataWithSelection}
     disableTransitions={!enableTransitionsForNewData}
-    {propsClickable}
-    {selectedPropHand}
-    onPropClick={handlePropClick}
   />
 </div>
 

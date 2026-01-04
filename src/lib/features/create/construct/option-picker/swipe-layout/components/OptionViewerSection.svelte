@@ -325,7 +325,7 @@ Renders a section with:
 >
   <!-- Section Header -->
   {#if showHeader}
-    <SectionHeader {letterType} />
+    <SectionHeader {letterType} {darkMode} />
   {/if}
 
   <!-- Section Content - Simple keyed each for component reuse -->

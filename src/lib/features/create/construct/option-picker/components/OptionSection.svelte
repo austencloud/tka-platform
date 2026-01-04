@@ -40,7 +40,7 @@ Single responsibility: Combine header and grid for a letter type section.
 
 <div class="option-section" data-letter-type={letterType}>
   {#if showHeader}
-    <OptionSectionHeader {letterType} />
+    <OptionSectionHeader {letterType} {darkMode} />
   {/if}
 
   <OptionGrid

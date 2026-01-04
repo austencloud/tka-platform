@@ -388,6 +388,11 @@ Uses pure runes instead of stores for reactivity.
     image-rendering: optimizeQuality;
   }
 
+  /* Base transition for filter changes */
+  .tka-glyph {
+    transition: filter 150ms ease-out;
+  }
+
   /* Dark mode: invert letter color for dark backgrounds */
   .tka-glyph.dark-mode {
     filter: invert(0.9);

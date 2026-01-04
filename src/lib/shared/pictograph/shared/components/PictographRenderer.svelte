@@ -343,6 +343,7 @@ Usage:
     height: 100%;
     display: block;
     box-sizing: border-box;
+    transition: border-color 150ms ease-out;
   }
 
   /* Subtle white outline in dark mode to distinguish boundaries */
@@ -352,5 +353,10 @@ Usage:
 
   svg {
     display: block;
+  }
+
+  /* Animate SVG background fill changes */
+  svg rect:first-child {
+    transition: fill 150ms ease-out;
   }
 </style>
