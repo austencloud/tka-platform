@@ -1,5 +1,5 @@
 /**
- * LightsOffProvider - DI wrapper for reactive Dark Mode state
+ * DarkModeProvider - DI wrapper for reactive Dark Mode state
  *
  * Wraps the AnimationVisibilityStateManager singleton to provide:
  * 1. Clean DI interface for dependency injection
@@ -8,22 +8,22 @@
  */
 
 import { injectable } from "inversify";
-import type { ILightsOffProvider } from "../contracts/ILightsOffProvider";
+import type { IDarkModeProvider } from "../contracts/IDarkModeProvider";
 import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
 @injectable()
-export class LightsOffProvider implements ILightsOffProvider {
+export class DarkModeProvider implements IDarkModeProvider {
   private manager = getAnimationVisibilityManager();
-  private subscribers = new Map<(lightsOff: boolean) => void, () => void>();
+  private subscribers = new Map<(darkMode: boolean) => void, () => void>();
 
-  isLightsOff(): boolean {
-    return this.manager.isLightsOff();
+  isDarkMode(): boolean {
+    return this.manager.isDarkMode();
   }
 
-  subscribe(callback: (lightsOff: boolean) => void): () => void {
+  subscribe(callback: (darkMode: boolean) => void): () => void {
     // Create an observer that calls our callback with current value
     const observer = () => {
-      callback(this.manager.isLightsOff());
+      callback(this.manager.isDarkMode());
     };
 
     // Register with the manager
@@ -35,7 +35,7 @@ export class LightsOffProvider implements ILightsOffProvider {
     });
 
     // Immediately call with current value
-    callback(this.manager.isLightsOff());
+    callback(this.manager.isDarkMode());
 
     // Return unsubscribe function
     return () => {
@@ -47,7 +47,7 @@ export class LightsOffProvider implements ILightsOffProvider {
     };
   }
 
-  setLightsOff(value: boolean): void {
-    this.manager.setLightsOff(value);
+  setDarkMode(value: boolean): void {
+    this.manager.setDarkMode(value);
   }
 }

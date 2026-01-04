@@ -23,11 +23,7 @@ interface AnimationVisibilitySettings {
 
   // Global Effects (applies to pictograph, animation, and image export)
   // Dark Mode: dark background, inverted grid, white text/outlines
-  // Prop glow is automatically enabled for animations when lightsOff is true
-  lightsOff: boolean;
-
-  // Legacy property - kept for migration only, do not use
-  ledMode?: boolean;
+  darkMode: boolean;
 
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
@@ -61,7 +57,7 @@ export class AnimationVisibilityStateManager {
       speed: 1.0, // Default to 60 BPM
 
       // Global effects
-      lightsOff: false, // Dark Mode disabled by default
+      darkMode: false, // Dark Mode disabled by default
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -81,14 +77,6 @@ export class AnimationVisibilityStateManager {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-
-        // Migration: convert old ledMode to lightsOff
-        if (parsed.ledMode !== undefined && parsed.lightsOff === undefined) {
-          parsed.lightsOff = parsed.ledMode;
-          delete parsed.ledMode;
-          // Save migrated settings
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-        }
 
         // Clean up old propGlow setting if present
         if (parsed.propGlow !== undefined) {
@@ -159,12 +147,12 @@ export class AnimationVisibilityStateManager {
   /**
    * Get specific boolean visibility setting
    * (For gridMode, trailStyle, playbackMode, speed use dedicated getters)
-   * (For ledMode, use isLightsOff() instead)
+   * (For darkMode, use isDarkMode() instead)
    */
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "ledMode"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode"
     >
   ): boolean {
     return this.settings[key];
@@ -336,10 +324,10 @@ export class AnimationVisibilityStateManager {
 
   /**
    * Check if dark mode is enabled
-   * When enabled: dark background, inverted grid colors, white text/outlines, prop glow
+   * When enabled: dark background, inverted grid colors, white text/outlines
    */
   isDarkMode(): boolean {
-    return this.settings.lightsOff;
+    return this.settings.darkMode;
   }
 
   /**
@@ -347,7 +335,7 @@ export class AnimationVisibilityStateManager {
    * @param enabled - true for dark mode, false for light mode
    */
   setDarkMode(enabled: boolean): void {
-    this.settings.lightsOff = enabled;
+    this.settings.darkMode = enabled;
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -356,42 +344,7 @@ export class AnimationVisibilityStateManager {
    * Toggle dark mode
    */
   toggleDarkMode(): void {
-    this.setDarkMode(!this.settings.lightsOff);
-  }
-
-  // Legacy aliases - kept for backwards compatibility
-  /** @deprecated Use isDarkMode() */
-  isLightsOff(): boolean {
-    return this.isDarkMode();
-  }
-
-  /** @deprecated Use setDarkMode() */
-  setLightsOff(enabled: boolean): void {
-    this.setDarkMode(enabled);
-  }
-
-  /** @deprecated Use toggleDarkMode() */
-  toggleLightsOff(): void {
-    this.toggleDarkMode();
-  }
-
-  // ============================================================================
-  // LEGACY COMPATIBILITY (for gradual migration)
-  // ============================================================================
-
-  /** @deprecated Use isDarkMode() */
-  isLedMode(): boolean {
-    return this.isDarkMode();
-  }
-
-  /** @deprecated Use setDarkMode() */
-  setLedMode(enabled: boolean): void {
-    this.setDarkMode(enabled);
-  }
-
-  /** @deprecated Use toggleDarkMode() */
-  toggleLedMode(): void {
-    this.toggleDarkMode();
+    this.setDarkMode(!this.settings.darkMode);
   }
 }
 

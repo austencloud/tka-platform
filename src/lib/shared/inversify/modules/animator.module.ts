@@ -21,7 +21,7 @@ import { SVGGenerator } from "../../../features/compose/services/implementations
 import { TrailCapturer } from "../../../features/compose/services/implementations/TrailCapturer";
 import { TunnelModeSequenceManager } from "../../../features/compose/services/implementations/TunnelModeSequenceManager";
 import { AnimationStorageManager } from "../../../features/compose/services/implementations/AnimationStorageManager";
-import { LightsOffProvider } from "../../animation-engine/services/implementations/LightsOffProvider";
+import { DarkModeProvider } from "../../animation-engine/services/implementations/DarkModeProvider";
 import { Animator } from "../../application/services/implementations/Animator";
 import { TYPES } from "../types";
 
@@ -70,7 +70,7 @@ export const animatorModule = new ContainerModule(
     options.bind(TYPES.IAnimationStorageManager).to(AnimationStorageManager);
 
     // === STATE PROVIDERS ===
-    options.bind(TYPES.ILightsOffProvider).to(LightsOffProvider);
+    options.bind(TYPES.IDarkModeProvider).to(DarkModeProvider);
 
     // ============================================================================
     // ARCHIVED BINDINGS (services moved to archive/animator-unused-services/)

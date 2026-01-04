@@ -1,24 +1,24 @@
 /**
- * ILightsOffProvider - Contract for reactive Dark Mode state access
+ * IDarkModeProvider - Contract for reactive Dark Mode state access
  *
  * Provides a clean DI interface to the global Dark Mode setting.
  * Components can subscribe to changes instead of polling.
  */
 
-export interface ILightsOffProvider {
+export interface IDarkModeProvider {
   /**
    * Get the current Dark Mode state
    */
-  isLightsOff(): boolean;
+  isDarkMode(): boolean;
 
   /**
    * Subscribe to Dark Mode state changes
    * Returns an unsubscribe function
    */
-  subscribe(callback: (lightsOff: boolean) => void): () => void;
+  subscribe(callback: (darkMode: boolean) => void): () => void;
 
   /**
    * Set the Dark Mode state
    */
-  setLightsOff(value: boolean): void;
+  setDarkMode(value: boolean): void;
 }

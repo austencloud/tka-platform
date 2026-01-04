@@ -31,9 +31,7 @@ export class AnimationVisibilitySynchronizer implements IAnimationVisibilitySync
       tkaGlyph: this.manager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       blueMotion: this.manager.getVisibility("blueMotion"),
       redMotion: this.manager.getVisibility("redMotion"),
-      lightsOff: this.manager.isLightsOff(),
-      // Prop glow is automatically enabled when Dark Mode is on (for animations)
-      propGlow: this.manager.isLightsOff(),
+      darkMode: this.manager.isDarkMode(),
     };
   }
 

@@ -47,5 +47,5 @@ export const AnimationTypes = {
   IMotionParameterService: Symbol.for("IMotionParameterService"),
 
   // State Providers
-  ILightsOffProvider: Symbol.for("ILightsOffProvider"),
+  IDarkModeProvider: Symbol.for("IDarkModeProvider"),
 } as const;
