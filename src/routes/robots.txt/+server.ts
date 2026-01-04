@@ -1,12 +1,19 @@
-import { PRIMARY_DOMAIN } from "../../config/domains";
+import { APP_DOMAIN, LANDING_DOMAIN, isAppDomain } from "../../config/domains";
 import type { RequestHandler } from "./$types";
 
-export const GET: RequestHandler = async () => {
-  const robots = `User-agent: *
+export const GET: RequestHandler = async ({ request }) => {
+  // Detect which domain we're serving from
+  const origin = new URL(request.url).origin;
+  const isApp = isAppDomain(origin);
+  const domain = isApp ? APP_DOMAIN : LANDING_DOMAIN;
+
+  // Different robots.txt content based on domain
+  const robots = isApp
+    ? `User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: ${PRIMARY_DOMAIN}/sitemap.xml
+Sitemap: ${domain}/sitemap.xml
 
 # Main application pages
 Allow: /
@@ -21,6 +28,27 @@ Disallow: /test/
 Disallow: /demo/
 Disallow: /_app/
 Disallow: /.svelte-kit/
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1`
+    : `User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: ${domain}/sitemap.xml
+
+# Landing pages
+Allow: /
+Allow: /landing
+
+# Block internal paths
+Disallow: /api/
+Disallow: /admin/
+Disallow: /test/
+Disallow: /demo/
+Disallow: /_app/
+Disallow: /.svelte-kit/
+Disallow: /app/
 
 # Crawl delay for respectful crawling
 Crawl-delay: 1`;

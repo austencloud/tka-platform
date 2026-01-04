@@ -1,7 +1,8 @@
-import { PRIMARY_DOMAIN } from "../../config/domains";
+import { APP_DOMAIN, LANDING_DOMAIN, isAppDomain } from "../../config/domains";
 import type { RequestHandler } from "./$types";
 
-const pages = [
+// Pages for the app domain (tkascribe.com)
+const appPages = [
   // Main Application - Home/Dashboard
   {
     url: "",
@@ -22,8 +23,29 @@ const pages = [
   },
 ];
 
-export const GET: RequestHandler = async () => {
-  const domain = PRIMARY_DOMAIN;
+// Pages for the landing domain (tkaflowarts.com)
+const landingPages = [
+  // Landing page home
+  {
+    url: "",
+    priority: "1.0",
+    changefreq: "weekly",
+  },
+  // Landing page (if accessed directly)
+  {
+    url: "landing",
+    priority: "0.9",
+    changefreq: "weekly",
+  },
+];
+
+export const GET: RequestHandler = async ({ request }) => {
+  // Detect which domain we're serving from
+  const origin = new URL(request.url).origin;
+  const isApp = isAppDomain(origin);
+  const domain = isApp ? APP_DOMAIN : LANDING_DOMAIN;
+  const pages = isApp ? appPages : landingPages;
+
   const now = new Date().toISOString().split("T")[0];
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
