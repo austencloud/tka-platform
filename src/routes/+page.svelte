@@ -41,7 +41,7 @@
   <!-- Open Graph (Facebook, LinkedIn, Pinterest) -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="The Kinetic Alphabet" />
-  <meta property="og:url" content="https://tkascribe.com/" />
+  <meta property="og:url" content="https://tkaflowarts.com/" />
   <meta
     property="og:title"
     content="The Kinetic Alphabet - Digital Sheet Music for Flow Arts"
@@ -52,7 +52,7 @@
   />
   <meta
     property="og:image"
-    content="https://tkascribe.com/branding/og-image.png"
+    content="https://tkaflowarts.com/branding/og-image.png"
   />
   <meta
     property="og:image:alt"
@@ -64,8 +64,8 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:site" content="@thekineticalphabet" />
-  <meta name="twitter:creator" content="@thekineticalphabet" />
+  <meta name="twitter:site" content="@tkaflowarts" />
+  <meta name="twitter:creator" content="@tkaflowarts" />
   <meta
     name="twitter:title"
     content="The Kinetic Alphabet - Digital Sheet Music for Flow Arts"
@@ -76,7 +76,7 @@
   />
   <meta
     name="twitter:image"
-    content="https://tkascribe.com/branding/og-image.png"
+    content="https://tkaflowarts.com/branding/og-image.png"
   />
   <meta
     name="twitter:image:alt"
@@ -84,7 +84,7 @@
   />
 
   <!-- Canonical URL -->
-  <link rel="canonical" href="https://tkascribe.com/" />
+  <link rel="canonical" href="https://tkaflowarts.com/" />
 
   <!-- JSON-LD Structured Data: WebSite with SearchAction -->
   {@html `<script type="application/ld+json">
@@ -93,14 +93,14 @@
 		"@type": "WebSite",
 		"name": "The Kinetic Alphabet",
 		"alternateName": ["TKA", "TKA Scribe", "Kinetic Alphabet"],
-		"url": "https://tkascribe.com/",
+		"url": "https://tkaflowarts.com/",
 		"description": "The universal notation system for flow arts - create, animate, and share prop manipulation sequences",
 		"inLanguage": "en-US",
 		"potentialAction": {
 			"@type": "SearchAction",
 			"target": {
 				"@type": "EntryPoint",
-				"urlTemplate": "https://tkascribe.com/app?search={search_term_string}"
+				"urlTemplate": "https://tkascribe.com/?search={search_term_string}"
 			},
 			"query-input": "required name=search_term_string"
 		}
@@ -114,13 +114,13 @@
 		"@type": "Organization",
 		"name": "The Kinetic Alphabet",
 		"alternateName": "TKA",
-		"url": "https://tkascribe.com/",
-		"logo": "https://tkascribe.com/pwa/icon-512x512.png",
+		"url": "https://tkaflowarts.com/",
+		"logo": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
 		"description": "Creating the universal notation system for flow arts and prop manipulation",
 		"foundingDate": "2024",
 		"sameAs": [
-			"https://instagram.com/thekineticalphabet",
-			"https://facebook.com/thekineticalphabet"
+			"https://instagram.com/tkaflowarts",
+			"https://facebook.com/tkaflowarts"
 		],
 		"contactPoint": {
 			"@type": "ContactPoint",
@@ -144,7 +144,7 @@
 		"browserRequirements": "Requires JavaScript. Works on Chrome, Firefox, Safari, Edge.",
 		"softwareVersion": "1.0",
 		"releaseNotes": "https://tkascribe.com/changelog",
-		"screenshot": "https://tkascribe.com/branding/og-image.png",
+		"screenshot": "https://tkaflowarts.com/branding/og-image.png",
 		"featureList": [
 			"Create sequences with 3 creation modes",
 			"Animate sequences in 2D with motion trails",
@@ -163,7 +163,7 @@
 		"author": {
 			"@type": "Organization",
 			"name": "The Kinetic Alphabet",
-			"url": "https://tkascribe.com/"
+			"url": "https://tkaflowarts.com/"
 		}
 	}
 	</script>`}
@@ -237,8 +237,8 @@
 				"@type": "HowToStep",
 				"position": 1,
 				"name": "Open TKA Scribe",
-				"text": "Visit tkascribe.com and click 'Open App' to launch the free web application.",
-				"url": "https://tkascribe.com/app"
+				"text": "Visit tkascribe.com to launch the free web application.",
+				"url": "https://tkascribe.com/"
 			},
 			{
 				"@type": "HowToStep",

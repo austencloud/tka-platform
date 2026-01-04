@@ -193,20 +193,39 @@
     Cache-Control = "public, max-age=86400"
 
 # ============================================================================
-# DOMAIN REDIRECTS
+# DOMAIN-BASED ROUTING
 # ============================================================================
-# Redirect tkaflowarts.com to tkascribe.com (301 permanent)
+# tkascribe.com: Root serves the app directly
 [[redirects]]
-  from = "https://tkaflowarts.com/*"
-  to = "https://tkascribe.com/:splat"
-  status = 301
+  from = "/"
+  to = "/app"
+  status = 200
   force = true
+  conditions = {Host = ["tkascribe.com", "www.tkascribe.com"]}
 
+# tkascribe.com: Redirect /landing to tkaflowarts.com
 [[redirects]]
-  from = "https://www.tkaflowarts.com/*"
+  from = "/landing"
+  to = "https://tkaflowarts.com/"
+  status = 301
+  force = true
+  conditions = {Host = ["tkascribe.com", "www.tkascribe.com"]}
+
+# tkaflowarts.com: Redirect /app to tkascribe.com
+[[redirects]]
+  from = "/app"
+  to = "https://tkascribe.com/"
+  status = 301
+  force = true
+  conditions = {Host = ["tkaflowarts.com", "www.tkaflowarts.com"]}
+
+# tkaflowarts.com: Redirect /app/* paths to tkascribe.com
+[[redirects]]
+  from = "/app/*"
   to = "https://tkascribe.com/:splat"
   status = 301
   force = true
+  conditions = {Host = ["tkaflowarts.com", "www.tkaflowarts.com"]}
 
 # ============================================================================
 # SPA ROUTING

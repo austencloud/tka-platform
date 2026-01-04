@@ -1,56 +1,94 @@
 /**
  * Domain Config for TKA
  *
- * Handles multiple domains and SEO settings
+ * Two-domain architecture:
+ * - tkaflowarts.com: Brand home, landing page, marketing content
+ * - tkascribe.com: The app (TKA Scribe product)
  */
 
-// Primary domain (canonical)
-export const PRIMARY_DOMAIN = "https://tkascribe.com";
+// Landing/brand domain
+export const LANDING_DOMAIN = "https://tkaflowarts.com";
 
-// Secondary domains (will redirect to primary)
-export const SECONDARY_DOMAINS = [
+// App domain
+export const APP_DOMAIN = "https://tkascribe.com";
+
+// Legacy aliases (will redirect)
+export const LEGACY_DOMAINS = [
   "https://kineticalphabet.com",
-  "https://www.tkascribe.com",
   "https://www.kineticalphabet.com",
 ];
 
 // All valid domains
-export const ALL_DOMAINS = [PRIMARY_DOMAIN, ...SECONDARY_DOMAINS];
+export const ALL_DOMAINS = [
+  LANDING_DOMAIN,
+  APP_DOMAIN,
+  `https://www.tkaflowarts.com`,
+  `https://www.tkascribe.com`,
+  ...LEGACY_DOMAINS,
+];
 
 /**
- * Get the canonical URL for a given path
+ * Get the canonical URL for landing pages
  */
-export function getCanonicalURL(path: string): string {
-  // Remove leading slash if present to avoid double slashes
+export function getLandingCanonicalURL(path: string = ""): string {
   const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-  return `${PRIMARY_DOMAIN}/${cleanPath}`;
+  return cleanPath ? `${LANDING_DOMAIN}/${cleanPath}` : LANDING_DOMAIN;
 }
 
 /**
- * Check if current domain should redirect to primary
+ * Get the canonical URL for app pages
  */
-export function shouldRedirectToPrimary(currentOrigin: string): boolean {
-  return SECONDARY_DOMAINS.some(
-    (domain) => currentOrigin === new URL(domain).origin
+export function getAppCanonicalURL(path: string = ""): string {
+  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+  return cleanPath ? `${APP_DOMAIN}/${cleanPath}` : APP_DOMAIN;
+}
+
+/**
+ * Check if current domain is the landing domain
+ */
+export function isLandingDomain(currentOrigin: string): boolean {
+  return (
+    currentOrigin === new URL(LANDING_DOMAIN).origin ||
+    currentOrigin === "https://www.tkaflowarts.com"
   );
 }
 
 /**
- * Get redirect URL for domain consolidation
+ * Check if current domain is the app domain
  */
-export function getRedirectURL(currentURL: string): string {
-  const url = new URL(currentURL);
-  return `${PRIMARY_DOMAIN}${url.pathname}${url.search}${url.hash}`;
+export function isAppDomain(currentOrigin: string): boolean {
+  return (
+    currentOrigin === new URL(APP_DOMAIN).origin ||
+    currentOrigin === "https://www.tkascribe.com"
+  );
 }
 
 /**
- * Domain-specific meta tags
+ * Landing page SEO config
  */
-export const SEO_CONFIG = {
+export const LANDING_SEO_CONFIG = {
+  siteName: "The Kinetic Alphabet",
+  description:
+    "The universal notation system for flow arts - digital sheet music for poi, staff, hoop, and buugeng choreography.",
+  keywords: "flow arts, notation, poi, staff, hoop, buugeng, choreography",
+  author: "Austen Cloud",
+  language: "en",
+  type: "website",
+  social: {
+    instagram: "@tkaflowarts",
+    facebook: "@tkaflowarts",
+    twitter: "@tkaflowarts",
+  },
+};
+
+/**
+ * App SEO config
+ */
+export const APP_SEO_CONFIG = {
   siteName: "TKA Scribe",
   description:
-    "Revolutionary browser-based tool for creating flow arts sequences",
-  keywords: "flow arts, notation, vtg, tka",
+    "Create, animate, and share flow arts sequences with TKA Scribe - the free choreography app for poi, staff, hoop, and buugeng.",
+  keywords: "flow arts app, sequence creator, poi patterns, staff choreography",
   author: "Austen Cloud",
   language: "en",
   type: "website",
