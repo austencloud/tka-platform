@@ -24,6 +24,9 @@ import {
   isSettingsPreviewMode,
 } from "../../application/state/app-state.svelte";
 import { toast } from "../../toast/state/toast-state.svelte";
+import { backgroundsConfig } from "../../settings/components/tabs/background/background-config";
+import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
 
 export function registerGlobalShortcuts(
   service: IKeyboardShortcutManager,
@@ -87,9 +90,9 @@ export function registerGlobalShortcuts(
     },
   });
 
-  // ==================== Module Switching (Single Keys) ====================
-  // Using single-key shortcuts (numbers 1-5) like Gmail/Notion
-  // These work reliably in Chrome unlike Ctrl+1-9 or Alt+1-5
+  // ==================== Module Switching (Ctrl + Numbers) ====================
+  // Ctrl+1-5 for module navigation
+  // Part of the trifecta: Ctrl=modules, Alt=props, Shift=themes
 
   // Map modules to number keys
   const moduleKeyMap = ["1", "2", "3", "4", "5"];
@@ -101,14 +104,17 @@ export function registerGlobalShortcuts(
     service.register({
       id: `global.switch-to-${module.id}`,
       label: module.label,
-      description: `Navigate to ${module.label}`,
+      description: `Navigate to ${module.label} (Ctrl+${key})`,
       key: key,
-      modifiers: [],
+      modifiers: ["ctrl"],
       context: "global",
       scope: "navigation",
       priority: "high",
       action: async () => {
-        await handleModuleChange(module.id);
+        // Force View Transition for keyboard shortcuts (even when leaving Dashboard)
+        await handleModuleChange(module.id, undefined, {
+          forceViewTransition: true,
+        });
       },
     });
   });
@@ -326,5 +332,67 @@ export function registerGlobalShortcuts(
     action: () => {
       adminToolbarState.toggle();
     },
+  });
+
+  // ==================== Theme/Background Shortcuts (Shift + Numbers) ====================
+  // Shift+1-0 for quick theme switching
+  // Part of the trifecta: Ctrl=modules, Alt=props, Shift=themes
+
+  // Map number keys to background indices (1-9, 0 for 10th)
+  const themeKeyMap = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+
+  backgroundsConfig.slice(0, 10).forEach((bgConfig, index) => {
+    const key = themeKeyMap[index];
+    if (!key) return;
+
+    service.register({
+      id: `global.theme-${bgConfig.type}`,
+      label: bgConfig.name,
+      description: `Switch to ${bgConfig.name} theme (Shift+${key})`,
+      key: key,
+      modifiers: ["shift"],
+      context: "global",
+      scope: "action",
+      priority: "high",
+      action: () => {
+        // Block changes in preview mode
+        if (isSettingsPreviewMode()) {
+          console.log(
+            "[Keyboard Shift+Number] Preview mode active - theme change blocked"
+          );
+          return;
+        }
+
+        // Apply theme colors for UI
+        if (bgConfig.type === BackgroundType.SOLID_COLOR && bgConfig.color) {
+          applyThemeFromColors(bgConfig.color);
+          void updateSettings({
+            backgroundType: bgConfig.type,
+            backgroundColor: bgConfig.color,
+          });
+        } else if (
+          bgConfig.type === BackgroundType.LINEAR_GRADIENT &&
+          bgConfig.colors
+        ) {
+          applyThemeFromColors(undefined, bgConfig.colors);
+          void updateSettings({
+            backgroundType: bgConfig.type,
+            gradientColors: bgConfig.colors,
+            gradientDirection: bgConfig.direction || 135,
+          });
+        } else if (bgConfig.themeColors) {
+          // Animated backgrounds
+          applyThemeFromColors(undefined, bgConfig.themeColors);
+          void updateSettings({
+            backgroundType: bgConfig.type,
+          });
+        }
+
+        toast.info(`Theme: ${bgConfig.name}`, 1500);
+        console.log(
+          `[Keyboard Shift+${key}] Switched to ${bgConfig.name} theme`
+        );
+      },
+    });
   });
 }

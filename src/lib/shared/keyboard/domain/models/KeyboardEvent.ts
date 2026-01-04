@@ -36,6 +36,18 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
     const keyMap: Record<string, string> = {
       " ": "Space",
       Esc: "Escape",
+      // Shifted number keys (US keyboard layout) - map back to numbers
+      // This allows Shift+1 to be detected as Shift+1, not Shift+!
+      "!": "1",
+      "@": "2",
+      "#": "3",
+      $: "4",
+      "%": "5",
+      "^": "6",
+      "&": "7",
+      "*": "8",
+      "(": "9",
+      ")": "0",
     };
 
     return keyMap[key] || key;
