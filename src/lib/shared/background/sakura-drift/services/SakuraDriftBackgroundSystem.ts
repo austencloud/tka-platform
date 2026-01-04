@@ -5,16 +5,18 @@ import type {
 import type { IBackgroundSystem } from "$lib/shared/background/shared/services/contracts/IBackgroundSystem";
 import type { SakuraPetal } from "../domain/models/sakura-models";
 import { createSakuraSystem } from "./SakuraSystem";
+import { createSakuraWindSystem, type SakuraWindSystem } from "./SakuraWindSystem";
 import { SAKURA_BACKGROUND_GRADIENT } from "../domain/constants/sakura-constants";
 
 /**
  * Sakura Drift Background System
  *
  * Renders a soft twilight background with gently falling cherry blossom petals
- * Petals drift and rotate as they fall, creating a serene, peaceful atmosphere
+ * Petals respond to gentle wind gusts for natural, organic movement
  */
 export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
   private sakuraSystem: ReturnType<typeof createSakuraSystem>;
+  private windSystem: SakuraWindSystem;
   private petals: SakuraPetal[] = [];
   private quality: QualityLevel = "medium";
   private isInitialized = false;
@@ -24,11 +26,13 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
 
   constructor() {
     this.sakuraSystem = createSakuraSystem();
+    this.windSystem = createSakuraWindSystem();
   }
 
   public initialize(dimensions: Dimensions, quality: QualityLevel): void {
     this.quality = quality;
     this.petals = this.sakuraSystem.initialize(dimensions, quality);
+    this.windSystem.initialize();
     this.isInitialized = true;
   }
 
@@ -40,10 +44,16 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
     }
 
     if (this.isInitialized) {
+      // Update wind system first
+      this.windSystem.update(frameMultiplier);
+      const windForce = this.windSystem.getWindForce();
+
+      // Update petals with wind force
       this.petals = this.sakuraSystem.update(
         this.petals,
         dimensions,
-        frameMultiplier
+        frameMultiplier,
+        windForce
       );
     }
   }

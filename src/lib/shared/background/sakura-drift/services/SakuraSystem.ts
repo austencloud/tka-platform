@@ -5,8 +5,10 @@ import type {
 import type { SakuraPetal } from "../domain/models/sakura-models";
 import {
   SAKURA_COUNTS,
+  SAKURA_COUNTS_MOBILE,
   SAKURA_DISTRIBUTION,
   SAKURA_PHYSICS,
+  SAKURA_PHYSICS_MOBILE,
   SAKURA_SIZE,
   SAKURA_ROTATION,
   SAKURA_OPACITY,
@@ -15,6 +17,14 @@ import {
   SAKURA_PETAL,
   SAKURA_BOUNDS,
 } from "../domain/constants/sakura-constants";
+
+/**
+ * Detect if viewport is mobile-sized
+ */
+function isMobile(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth < 768;
+}
 
 /**
  * Creates and manages the sakura petal particle system
@@ -246,18 +256,19 @@ export function createSakuraSystem() {
   }
 
   /**
-   * Get petal count based on quality level
+   * Get petal count based on quality level and viewport size
    */
   function getPetalCount(quality: QualityLevel): number {
+    const counts = isMobile() ? SAKURA_COUNTS_MOBILE : SAKURA_COUNTS;
     switch (quality) {
       case "high":
-        return SAKURA_COUNTS.high;
+        return counts.high;
       case "medium":
-        return SAKURA_COUNTS.medium;
+        return counts.medium;
       case "low":
-        return SAKURA_COUNTS.low;
+        return counts.low;
       default:
-        return SAKURA_COUNTS.medium;
+        return counts.medium;
     }
   }
 
@@ -458,21 +469,24 @@ export function createSakuraSystem() {
   }
 
   /**
-   * Update petal positions and properties with organic physics
-   * Creates natural, graceful falling motion with tumble-drag coupling
+   * Update petal positions and properties with wind-driven physics
+   * Wind force replaces rigid sine-wave sway for natural movement
    */
   function update(
     petals: SakuraPetal[],
     dimensions: Dimensions,
-    frameMultiplier: number
+    frameMultiplier: number,
+    windForce: number = 0
   ): SakuraPetal[] {
+    // Use mobile physics if on mobile viewport
+    const physics = isMobile() ? SAKURA_PHYSICS_MOBILE : SAKURA_PHYSICS;
+
     return petals.map((petal) => {
       // Update phase animations
       const newSwayOffset =
-        petal.swayOffset + SAKURA_PHYSICS.SWAY_SPEED * frameMultiplier;
+        petal.swayOffset + physics.SWAY_SPEED * frameMultiplier;
       const newSecondarySwayOffset =
-        petal.secondarySwayOffset +
-        SAKURA_PHYSICS.SECONDARY_SWAY_SPEED * frameMultiplier;
+        petal.secondarySwayOffset + physics.SECONDARY_SWAY_SPEED * frameMultiplier;
       const newTumblePhase =
         petal.tumblePhase + petal.tumbleSpeed * frameMultiplier;
 
@@ -483,38 +497,36 @@ export function createSakuraSystem() {
 
       // Calculate current fall speed based on tumble (tumble-drag coupling)
       // Flat petals (high tumbleFactor) fall slower, edge-on petals fall faster
-      const dragModifier = 1 - tumbleFactor * SAKURA_PHYSICS.TUMBLE_DRAG_FACTOR;
+      const dragModifier = 1 - tumbleFactor * physics.TUMBLE_DRAG_FACTOR;
       const currentVy = petal.baseVy * dragModifier;
 
-      // Primary sway - slow, wide oscillation
-      const primarySway = Math.sin(newSwayOffset) * petal.swayAmplitude * 0.015;
+      // === WIND-DRIVEN HORIZONTAL MOVEMENT ===
+      // Apply wind force as acceleration (scaled by how "flat" the petal is)
+      // Flat petals catch more wind
+      const windCatchFactor = 0.5 + tumbleFactor * 0.5;
+      let newVx = petal.vx + windForce * windCatchFactor * 0.08 * frameMultiplier;
 
-      // Secondary sway - faster, smaller, adds complexity
-      const secondarySway =
-        Math.sin(newSecondarySwayOffset) *
-        petal.swayAmplitude *
-        SAKURA_PHYSICS.SECONDARY_SWAY_FACTOR *
-        0.015;
+      // Air resistance / damping (petals slow down when wind stops)
+      newVx *= 0.992;
 
-      // Flutter effect - rapid micro-movements, more intense for petals
+      // Subtle flutter - very small, just adds life (not the primary motion)
       const flutterPhase =
-        newSwayOffset *
-        (SAKURA_PHYSICS.FLUTTER_SPEED / SAKURA_PHYSICS.SWAY_SPEED);
+        newSwayOffset * (physics.FLUTTER_SPEED / physics.SWAY_SPEED);
       const flutter =
         Math.sin(flutterPhase) *
-        SAKURA_PHYSICS.FLUTTER_AMPLITUDE *
+        physics.FLUTTER_AMPLITUDE *
         petal.flutterIntensity *
-        tumbleFactor; // Flutter more when flat
+        tumbleFactor *
+        0.3; // Reduced flutter intensity
 
-      // Combine all horizontal movement
-      const totalSwayX = primarySway + secondarySway + flutter;
+      // Position update: velocity-based movement + tiny flutter
       let newX =
-        petal.x + (petal.vx + petal.driftBias + totalSwayX) * frameMultiplier;
+        petal.x + (newVx + petal.driftBias * 0.5 + flutter) * frameMultiplier;
       const newY = petal.y + currentVy * frameMultiplier;
 
-      // Rotation varies with tumble - faster rotation when tumbling more
-      const rotationModifier =
-        1 + tumbleFactor * SAKURA_PHYSICS.ROTATION_TUMBLE_FACTOR;
+      // Rotation varies with horizontal velocity - faster movement = more spin
+      const velocityRotationBoost = Math.abs(newVx) * 0.02;
+      const rotationModifier = 1 + tumbleFactor * physics.ROTATION_TUMBLE_FACTOR + velocityRotationBoost;
       const newRotation =
         petal.rotation +
         petal.rotationSpeed * rotationModifier * frameMultiplier;
@@ -535,6 +547,7 @@ export function createSakuraSystem() {
         ...petal,
         x: newX,
         y: newY,
+        vx: newVx,
         vy: currentVy,
         rotation: newRotation,
         swayOffset: newSwayOffset,
@@ -723,6 +736,7 @@ export function createSakuraSystem() {
 
   /**
    * Adjust petals when viewport resizes
+   * Handles edge cases like zero dimensions gracefully
    */
   function adjustToResize(
     petals: SakuraPetal[],
@@ -731,15 +745,45 @@ export function createSakuraSystem() {
     quality: QualityLevel
   ): SakuraPetal[] {
     const targetCount = getPetalCount(quality);
+
+    // Safety check: if old dimensions are invalid, reinitialize completely
+    if (oldDimensions.width <= 0 || oldDimensions.height <= 0) {
+      return initialize(newDimensions, quality);
+    }
+
+    // Safety check: if new dimensions are invalid, keep existing petals
+    if (newDimensions.width <= 0 || newDimensions.height <= 0) {
+      return petals;
+    }
+
     const scaleX = newDimensions.width / oldDimensions.width;
     const scaleY = newDimensions.height / oldDimensions.height;
 
-    // Scale existing petals
-    const adjusted = petals.map((petal) => ({
-      ...petal,
-      x: petal.x * scaleX,
-      y: petal.y * scaleY,
-    }));
+    // Safety check: if scale is unreasonable (>10x change), reinitialize
+    if (scaleX > 10 || scaleX < 0.1 || scaleY > 10 || scaleY < 0.1 ||
+        !isFinite(scaleX) || !isFinite(scaleY)) {
+      return initialize(newDimensions, quality);
+    }
+
+    // Scale existing petals and clamp to valid range
+    const adjusted = petals.map((petal) => {
+      const newX = petal.x * scaleX;
+      const newY = petal.y * scaleY;
+
+      // Clamp positions to valid viewport range (with buffer)
+      const clampedX = Math.max(-SAKURA_BOUNDS.RESPAWN_BUFFER,
+                        Math.min(newDimensions.width + SAKURA_BOUNDS.RESPAWN_BUFFER, newX));
+      const clampedY = Math.max(-SAKURA_BOUNDS.RESPAWN_BUFFER,
+                        Math.min(newDimensions.height + SAKURA_BOUNDS.RESPAWN_BUFFER, newY));
+
+      return {
+        ...petal,
+        x: clampedX,
+        y: clampedY,
+        // Reset velocity on resize to prevent weird momentum
+        vx: petal.vx * 0.5,
+      };
+    });
 
     // Add or remove petals to match target count
     while (adjusted.length < targetCount) {

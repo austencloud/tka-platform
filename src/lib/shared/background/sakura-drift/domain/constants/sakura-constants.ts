@@ -12,6 +12,13 @@ export const SAKURA_COUNTS = {
   low: 60,
 } as const;
 
+/** Mobile particle counts (reduced for performance and visual comfort) */
+export const SAKURA_COUNTS_MOBILE = {
+  high: 75, // 50% of desktop
+  medium: 50,
+  low: 30,
+} as const;
+
 /** Flower vs petal distribution */
 export const SAKURA_DISTRIBUTION = {
   /** Probability of spawning a full flower (vs single petal) */
@@ -47,6 +54,40 @@ export const SAKURA_PHYSICS = {
   /** Horizontal drift */
   DRIFT_AMPLITUDE: 0.25,
   DRIFT_BIAS_RANGE: 0.15, // Tendency to drift one direction
+
+  /** How much rotation speed varies with tumble */
+  ROTATION_TUMBLE_FACTOR: 0.5,
+} as const;
+
+/** Mobile physics (slower wobble for comfort on small screens) */
+export const SAKURA_PHYSICS_MOBILE = {
+  /** Base falling speed */
+  FALLING_SPEED_BASE: 0.3,
+  /** Additional random falling speed range */
+  FALLING_SPEED_RANGE: 0.5,
+
+  /** Tumble-drag coupling - how much tumble affects fall speed */
+  TUMBLE_DRAG_FACTOR: 0.6,
+  /** Tumble speed range */
+  TUMBLE_SPEED_MIN: 0.015,
+  TUMBLE_SPEED_RANGE: 0.025,
+
+  /** Primary sway (slower on mobile - was 0.012) */
+  SWAY_SPEED: 0.006,
+  SWAY_AMPLITUDE_MIN: 25,
+  SWAY_AMPLITUDE_RANGE: 35,
+
+  /** Secondary sway (slower on mobile - was 0.031) */
+  SECONDARY_SWAY_SPEED: 0.015,
+  SECONDARY_SWAY_FACTOR: 0.4,
+
+  /** Flutter effect (rapid micro-movements) */
+  FLUTTER_SPEED: 0.08,
+  FLUTTER_AMPLITUDE: 0.3,
+
+  /** Horizontal drift */
+  DRIFT_AMPLITUDE: 0.25,
+  DRIFT_BIAS_RANGE: 0.15,
 
   /** How much rotation speed varies with tumble */
   ROTATION_TUMBLE_FACTOR: 0.5,
@@ -223,6 +264,37 @@ export const SAKURA_PETAL = {
 export const SAKURA_BOUNDS = {
   /** Buffer distance outside viewport for respawning */
   RESPAWN_BUFFER: 20,
+} as const;
+
+/** Wind gust configuration - very calm, occasional gentle breeze */
+export const SAKURA_WIND = {
+  // Frames between gusts (very long intervals for calm atmosphere)
+  gustIntervalMin: 900,  // ~15 seconds at 60fps
+  gustIntervalMax: 1800, // ~30 seconds at 60fps
+  // Gust duration in frames (longer, gentler gusts)
+  gustDurationMin: 120,
+  gustDurationMax: 240,
+  // Gust strength (horizontal acceleration) - very gentle
+  gustStrengthMin: 0.15,
+  gustStrengthMax: 0.4,
+  // Decay rate per frame
+  gustDecay: 0.01,
+  // Base ambient wind (very subtle constant drift)
+  ambientStrength: 0.015,
+  ambientVariation: 0.008,
+} as const;
+
+/** Mobile wind settings - even calmer */
+export const SAKURA_WIND_MOBILE = {
+  gustIntervalMin: 1200, // ~20 seconds
+  gustIntervalMax: 2400, // ~40 seconds
+  gustDurationMin: 150,
+  gustDurationMax: 300,
+  gustStrengthMin: 0.1,
+  gustStrengthMax: 0.3,
+  gustDecay: 0.008,
+  ambientStrength: 0.01,
+  ambientVariation: 0.005,
 } as const;
 
 /** Soft twilight background gradient */

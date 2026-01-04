@@ -94,8 +94,18 @@ export const createSnowflakeSystem = () => {
   ): Snowflake[] => {
     let adjustedDensity = config.snowflake.density;
 
-    const screenSizeFactor = Math.min(1, (width * height) / (1920 * 1080));
+    const screenArea = width * height;
+    const desktopArea = 1920 * 1080;
+    const screenSizeFactor = Math.min(1, screenArea / desktopArea);
     adjustedDensity *= screenSizeFactor;
+
+    // Mobile boost: smaller screens get higher per-pixel density
+    // so the scene doesn't look empty on phones
+    const isMobile = width < 768;
+    if (isMobile) {
+      // Boost mobile density by 2.5x to compensate for smaller viewport
+      adjustedDensity *= 2.5;
+    }
 
     // Apply quality density adjustments
     if (quality === "low") {
@@ -259,11 +269,17 @@ export const createSnowflakeSystem = () => {
   ): Snowflake[] => {
     const densityMultiplier =
       quality === "low" ? 0.4 : quality === "medium" ? 0.7 : 1;
+
+    // Apply same mobile boost as initialize()
+    const isMobile = newDimensions.width < 768;
+    const mobileBoost = isMobile ? 2.5 : 1;
+
     const targetCount = Math.floor(
       newDimensions.width *
         newDimensions.height *
         config.snowflake.density *
-        densityMultiplier
+        densityMultiplier *
+        mobileBoost
     );
 
     const currentCount = flakes.length;
