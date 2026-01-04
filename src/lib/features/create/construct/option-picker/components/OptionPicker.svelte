@@ -18,11 +18,11 @@ Delegates all rendering to child components.
   import type { IOptionFilter } from "../services/contracts/IOptionFilter";
   import type { IOptionSorter } from "../services/contracts/IOptionSorter";
   import type { IOptionOrganizer } from "../services/contracts/IOptionOrganizer";
-  import type { IOptionSizer } from "../services/contracts/IOptionSizer";
+  import type { IOptionGridFitCalculator } from "../services/contracts/IGridFitCalculator";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import type { IPictographPreparer } from "../services/PictographPreparer";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ILightsOffProvider } from "$lib/shared/animation-engine/services/contracts/ILightsOffProvider";
+  import type { IDarkModeProvider } from "$lib/shared/animation-engine/services/contracts/IDarkModeProvider";
   import OptionPickerContent from "./OptionPickerContent.svelte";
 
   // Props
@@ -65,12 +65,12 @@ Delegates all rendering to child components.
   // Services
   let preparer: IPictographPreparer | null = null;
   let hapticService = $state<IHapticFeedback | null>(null);
-  let sizerService = $state<IOptionSizer | null>(null);
+  let sizerService = $state<IOptionGridFitCalculator | null>(null);
   let organizerService = $state<IOptionOrganizer | null>(null);
 
-  // LED mode tracking - needed to re-prepare props when theme changes
-  let ledMode = $state(false);
-  let lightsOffProvider: ILightsOffProvider | null = null;
+  // Dark Mode tracking - needed to re-prepare props when theme changes
+  let darkMode = $state(false);
+  let darkModeProvider: IDarkModeProvider | null = null;
 
   // Track if we're waiting for new options after a selection
   let pendingFadeIn = $state(false);
@@ -95,8 +95,8 @@ Delegates all rendering to child components.
     }
   });
 
-  // Prepare options when filtered options change, LED mode changes, or prop type changes
-  // LED mode affects prop colors which are baked in during preparation
+  // Prepare options when filtered options change, Dark Mode changes, or prop type changes
+  // Dark Mode affects prop colors which are baked in during preparation
   // Prop type settings determine which prop SVGs to render
   $effect(() => {
     if (!pickerState || !preparer) {
@@ -107,8 +107,8 @@ Delegates all rendering to child components.
     // Access filteredOptions and state (reactive) - tracks when options or filters change
     const filtered = pickerState.filteredOptions;
     const currentState = pickerState.state;
-    // Include ledMode as dependency - prop colors need re-preparation when theme changes
-    const _ledMode = ledMode;
+    // Include darkMode as dependency - prop colors need re-preparation when theme changes
+    const _darkMode = darkMode;
     // Include prop type settings as dependencies - re-prepare when prop type changes (P button)
     const settings = getSettings();
     const _bluePropType = settings.bluePropType;
@@ -162,7 +162,7 @@ Delegates all rendering to child components.
 
   // Initialize services
   onMount(() => {
-    let lightsOffUnsubscribe: (() => void) | null = null;
+    let darkModeUnsubscribe: (() => void) | null = null;
 
     try {
       const loader = resolve<IOptionLoader>(TYPES.IOptionLoader);
@@ -172,17 +172,15 @@ Delegates all rendering to child components.
       organizerService = resolve<IOptionOrganizer>(
         TYPES.IOptionOrganizerService
       );
-      sizerService = resolve<IOptionSizer>(TYPES.IOptionPickerSizingService);
+      sizerService = resolve<IOptionGridFitCalculator>(TYPES.IGridFitCalculator);
       preparer = resolve<IPictographPreparer>(TYPES.IPictographPreparer);
       hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
 
-      // Subscribe to LED mode changes for prop color updates
+      // Subscribe to Dark Mode changes for prop color updates
       try {
-        lightsOffProvider = resolve<ILightsOffProvider>(
-          TYPES.ILightsOffProvider
-        );
-        lightsOffUnsubscribe = lightsOffProvider.subscribe((value) => {
-          ledMode = value;
+        darkModeProvider = resolve<IDarkModeProvider>(TYPES.IDarkModeProvider);
+        darkModeUnsubscribe = darkModeProvider.subscribe((value) => {
+          darkMode = value;
         });
       } catch {
         // Provider not available yet, will default to false
@@ -207,8 +205,8 @@ Delegates all rendering to child components.
     }
 
     return () => {
-      if (lightsOffUnsubscribe) {
-        lightsOffUnsubscribe();
+      if (darkModeUnsubscribe) {
+        darkModeUnsubscribe();
       }
     };
   });

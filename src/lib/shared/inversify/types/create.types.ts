@@ -18,13 +18,14 @@ export const CreateTypes = {
   IKeyboardArrowAdjuster: Symbol.for("IKeyboardArrowAdjuster"),
   IUndoManager: Symbol.for("IUndoManager"),
   ITurnController: Symbol.for("ITurnController"),
+  IPropClickHandler: Symbol.for("IPropClickHandler"),
+  IChiralityToggler: Symbol.for("IChiralityToggler"),
 
   // Write Tab
   IActManager: Symbol.for("IActManager"),
   IMusicPlayer: Symbol.for("IMusicPlayer"),
 
   // Option Picker
-  IOptionPickerSizingService: Symbol.for("IOptionPickerSizingService"),
   IOptionPickerFilterPersister: Symbol.for("IOptionPickerFilterPersister"),
   IReversalChecker: Symbol.for("IReversalChecker"),
   IPositionAnalyzer: Symbol.for("IPositionAnalyzer"),
@@ -36,6 +37,8 @@ export const CreateTypes = {
   IOptionTransitionCoordinator: Symbol.for("IOptionTransitionCoordinator"),
   ISectionTitleFormatter: Symbol.for("ISectionTitleFormatter"),
   IPictographPreparer: Symbol.for("IPictographPreparer"),
+  IGridFitCalculator: Symbol.for("IGridFitCalculator"),
+  IAspectLayoutPlanner: Symbol.for("IAspectLayoutPlanner"),
 
   // Workbench
   IWorkbench: Symbol.for("IWorkbench"),

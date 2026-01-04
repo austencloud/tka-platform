@@ -2,7 +2,7 @@ import { injectable } from "inversify";
 import type {
   SortMethod,
   TypeFilter,
-} from "../swipe-layout/domain/option-picker-types";
+} from "../domain/option-picker-types";
 
 export interface IFilterPersister {
   saveFilters(

@@ -15,16 +15,26 @@ Matches the desktop version exactly:
     getLetterType,
   } from "$lib/shared/foundation/domain/models/Letter";
   import type { IAnimator } from "$lib/shared/application/services/contracts/IAnimator";
+  import type { IAspectLayoutPlanner } from "../../services/contracts/IAspectLayoutPlanner";
+  import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
   import { resolve, TYPES } from "$lib/shared/inversify/di";
   import { onMount } from "svelte";
-  import type { TypeFilter } from "../domain/option-picker-types";
+  import type { TypeFilter } from "../../domain/option-picker-types";
   import OptionViewerSection from "./OptionViewerSection.svelte";
 
   // Services
   let animationService: IAnimator;
+  let aspectLayoutPlanner: IAspectLayoutPlanner;
+  let gridFitCalculator: IOptionGridFitCalculator;
 
   onMount(() => {
     animationService = resolve<IAnimator>(TYPES.IAnimator);
+    aspectLayoutPlanner = resolve<IAspectLayoutPlanner>(
+      TYPES.IAspectLayoutPlanner
+    );
+    gridFitCalculator = resolve<IOptionGridFitCalculator>(
+      TYPES.IGridFitCalculator
+    );
   });
 
   // Animation functions following established app patterns
@@ -61,7 +71,7 @@ Matches the desktop version exactly:
     contentAreaBounds = null,
     forcedPictographSize,
     fitToViewport = false,
-    lightsOff = false,
+    darkMode = false,
   } = $props<{
     pictographs?: PictographData[];
     onPictographSelected?: (pictograph: PictographData) => void;
@@ -75,7 +85,7 @@ Matches the desktop version exactly:
     contentAreaBounds?: { left: number; right: number; width: number } | null;
     forcedPictographSize?: number;
     fitToViewport?: boolean;
-    lightsOff?: boolean;
+    darkMode: boolean;
   }>();
 
   const effectivePictographSize = $derived(
@@ -233,90 +243,15 @@ Matches the desktop version exactly:
     }
   }
 
-  // Aspect-ratio-based layout calculation
-  function calculateOptimalLayout(
-    typeCounts: Array<{ type: string; count: number }>,
-    containerWidth: number,
-    _containerHeight: number,
-    aspectRatio: number,
-    _targetPictographSize: number,
-    _gridGap: string
-  ) {
-    const hasMultipleTypes = typeCounts.length > 1;
-
-    // Single type: always use full width
-    if (!hasMultipleTypes) {
-      return [
-        {
-          types: typeCounts.map((item) => item.type),
-          containerWidth: containerWidth,
-          layout: "single",
-        },
-      ];
-    }
-
-    let result: Array<{
-      types: string[];
-      containerWidth: number;
-      layout: string;
-    }>;
-
-    /**
-     * ASPECT RATIO LAYOUT STRATEGY (adjusted thresholds for better UX):
-     *
-     * Portrait (aspectRatio < 0.6): Stack vertically (3 rows)
-     * - Type 4 on top
-     * - Type 5 in middle
-     * - Type 6 on bottom
-     * - Use stricter threshold so slightly-portrait layouts get 2-row treatment
-     *
-     * Square-ish (0.6 <= aspectRatio < 1.6): 2-row layout
-     * - Row 1: Type 4 (full width)
-     * - Row 2: Types 5 & 6 (side by side)
-     * - Wider range to accommodate more device orientations
-     *
-     * Wide/Landscape (aspectRatio >= 1.6): Single row
-     * - Type 4 | Type 5 | Type 6 (left to right)
-     */
-
-    if (aspectRatio < 0.6) {
-      // Portrait: Stack vertically (only for very tall layouts)
-      result = typeCounts.map((item) => ({
-        types: [item.type],
-        containerWidth: containerWidth,
-        layout: "vertical",
-      }));
-    } else if (aspectRatio < 1.6) {
-      // Square-ish: 2-row layout (Type 4 on top, Types 5&6 below)
-      // This now covers a wider range including slightly portrait/landscape
-      result = [
-        {
-          types: [typeCounts[0]?.type || "Type4"], // Type 4
-          containerWidth: containerWidth,
-          layout: "row-1",
-        },
-        {
-          types: typeCounts.slice(1).map((item) => item.type), // Types 5 & 6
-          containerWidth: containerWidth,
-          layout: "row-2",
-        },
-      ];
-    } else {
-      // Wide/Landscape: Single horizontal row
-      result = [
-        {
-          types: typeCounts.map((item) => item.type),
-          containerWidth: containerWidth,
-          layout: "horizontal",
-        },
-      ];
-    }
-
-    return result;
-  }
+  // Layout calculation now delegated to IAspectLayoutPlanner service
 
   // Smart layout organization based on context and available space
   const layoutSections = $derived(() => {
+    // Service not ready yet
+    if (!aspectLayoutPlanner) {
+      return [];
+    }
+
     // Filter types based on typeFilter state
     const enabledTypes = groupableTypes.filter((type) => isTypeEnabled(type));
 
@@ -338,14 +273,11 @@ Matches the desktop version exactly:
       return [];
     }
 
-    // Calculate optimal layout based on container dimensions and content
-    return calculateOptimalLayout(
+    // Calculate optimal layout using service
+    return aspectLayoutPlanner.calculateOptimalLayout(
       typeCounts,
       effectiveContainerWidth(),
-      effectiveContainerHeight(),
-      containerAspectRatio(),
-      effectivePictographSize(),
-      gridGap
+      effectiveContainerHeight()
     );
   });
 
@@ -366,7 +298,9 @@ Matches the desktop version exactly:
   // This ensures Types 4, 5, 6 all use the same pictograph size
   const uniformPictographSize = $derived(() => {
     const rows = layoutSections();
-    if (rows.length === 0) return effectivePictographSize();
+    if (rows.length === 0 || !gridFitCalculator) {
+      return effectivePictographSize();
+    }
 
     const pictographsByType = currentPictographsByType();
     const gap = parseInt(gridGap.replace("px", "")) || 8;
@@ -386,38 +320,26 @@ Matches the desktop version exactly:
         const numPictographs = pictographsByType[letterType]?.length || 0;
         if (numPictographs === 0) continue;
 
+        // Use GridFitCalculator service for consistent sizing
         const targetSize = effectivePictographSize();
-
-        // Calculate columns based on target size
         const columnsAtTargetSize = Math.max(
           1,
           Math.floor(sectionWidth / (targetSize + gap))
         );
 
-        // Calculate rows needed
-        const rowsNeeded = Math.ceil(numPictographs / columnsAtTargetSize) || 1;
-
-        // Calculate max size that fits in available height
-        const totalVerticalGaps = (rowsNeeded - 1) * gap;
-        const maxHeightBasedSize = Math.floor(
-          (availableHeight - totalVerticalGaps) / rowsNeeded
-        );
-
-        // Calculate max size that fits in available width
-        const totalHorizontalGaps = (columnsAtTargetSize - 1) * gap;
-        const maxWidthBasedSize = Math.floor(
-          (sectionWidth - totalHorizontalGaps) / columnsAtTargetSize
-        );
-
-        // The effective size for this section
-        const sectionSize = Math.max(
-          40,
-          Math.min(targetSize, maxWidthBasedSize, maxHeightBasedSize)
-        );
+        const result = gridFitCalculator.calculateFitSize({
+          itemCount: numPictographs,
+          columnCount: columnsAtTargetSize,
+          availableWidth: sectionWidth,
+          availableHeight,
+          gridGap: gap,
+          maxSize: targetSize,
+          minSize: 40,
+        });
 
         // Track the minimum (most constrained) size
-        if (sectionSize < minSize) {
-          minSize = sectionSize;
+        if (result.pictographSize < minSize) {
+          minSize = result.pictographSize;
         }
       }
     }
@@ -461,8 +383,7 @@ Matches the desktop version exactly:
     return Math.floor(availableWidth / types.length);
   };
 
-  // Create layout config for a specific section
-  // CRITICAL: Constrains pictograph size to fit within BOTH width AND height bounds
+  // Create layout config for a specific section using GridFitCalculator
   const createSectionLayoutConfig = (
     sectionWidth: number,
     _letterType: string,
@@ -483,44 +404,38 @@ Matches the desktop version exactly:
       Math.floor(sectionWidth / (targetSize + gap))
     );
 
-    // Calculate rows needed at this column count
-    const rowsNeeded = Math.ceil(numPictographs / columnsAtTargetSize) || 1;
+    // Use service if available, otherwise fallback to inline calculation
+    if (gridFitCalculator) {
+      const result = gridFitCalculator.calculateFitSize({
+        itemCount: numPictographs,
+        columnCount: columnsAtTargetSize,
+        availableWidth: sectionWidth,
+        availableHeight,
+        gridGap: gap,
+        maxSize: targetSize,
+        minSize: 40,
+      });
 
-    // Calculate max size that fits in available height
-    const totalVerticalGaps = (rowsNeeded - 1) * gap;
-    const maxHeightBasedSize = Math.floor(
-      (availableHeight - totalVerticalGaps) / rowsNeeded
-    );
+      return {
+        optionsPerRow: result.columns,
+        pictographSize: result.pictographSize,
+        spacing: gap,
+        containerWidth: sectionWidth,
+        containerHeight,
+        gridColumns: result.gridColumns,
+        gridGap,
+      };
+    }
 
-    // Calculate max size that fits in available width
-    const totalHorizontalGaps = (columnsAtTargetSize - 1) * gap;
-    const maxWidthBasedSize = Math.floor(
-      (sectionWidth - totalHorizontalGaps) / columnsAtTargetSize
-    );
-
-    // Constrain to the smallest of: target size, width-based, height-based
-    // This ensures pictographs fit within the container
-    const effectiveSize = Math.max(
-      40, // Minimum size
-      Math.min(targetSize, maxWidthBasedSize, maxHeightBasedSize)
-    );
-
-    // Recalculate columns with constrained size for accuracy
-    const pictographsPerRow = Math.max(
-      1,
-      Math.floor(sectionWidth / (effectiveSize + gap))
-    );
-
-    // Use fixed-size columns to prevent stretching
-    const gridColumns = `repeat(${pictographsPerRow}, ${effectiveSize}px)`;
-
+    // Fallback for SSR or before service is ready
+    const effectiveSize = Math.min(targetSize, 100);
     return {
-      optionsPerRow: pictographsPerRow,
+      optionsPerRow: columnsAtTargetSize,
       pictographSize: effectiveSize,
       spacing: gap,
       containerWidth: sectionWidth,
       containerHeight,
-      gridColumns,
+      gridColumns: `repeat(${columnsAtTargetSize}, ${effectiveSize}px)`,
       gridGap,
     };
   };
@@ -569,7 +484,7 @@ Matches the desktop version exactly:
               forcedPictographSize={uniformPictographSize()}
               showHeader={shouldShowHeaders()}
               {fitToViewport}
-              {lightsOff}
+              {darkMode}
             />
           </div>
         {/if}

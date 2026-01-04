@@ -13,15 +13,16 @@ Renders a section with:
   } from "$lib/features/create/shared/services/contracts/IReversalDetector";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
-  import { LetterTypeTextPainter } from "../utils/letter-type-text-painter";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
+  import SectionHeader from "./SectionHeader.svelte";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
 
-  // Props - lightsOff is passed down from OptionViewer which manages the subscription
+  // Props - darkMode is passed down from OptionViewer which manages the subscription
   const {
     letterType = "mixed",
     pictographs = [],
@@ -33,7 +34,7 @@ Renders a section with:
     forcedPictographSize,
     showHeader = true,
     fitToViewport = false,
-    lightsOff = false,
+    darkMode = false,
   } = $props<{
     letterType?: string;
     pictographs?: PictographData[];
@@ -53,46 +54,21 @@ Renders a section with:
     forcedPictographSize?: number;
     showHeader?: boolean;
     fitToViewport?: boolean;
-    lightsOff?: boolean;
+    darkMode: boolean;
   }>();
 
   // Services
   let hapticService: IHapticFeedback | null = null;
   let reversalDetector: IReversalDetector | null = null;
+  let gridFitCalculator: IOptionGridFitCalculator | null = null;
 
   onMount(() => {
     hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
     reversalDetector = resolve<IReversalDetector>(TYPES.IReversalDetector);
+    gridFitCalculator = resolve<IOptionGridFitCalculator>(
+      TYPES.IGridFitCalculator
+    );
   });
-
-  // Get type info using shared infrastructure
-  const typeInfo = $derived.by(() => {
-    const typeDescriptions = {
-      Type1: { description: "Dual-Shift", typeName: "Type 1" },
-      Type2: { description: "Shift", typeName: "Type 2" },
-      Type3: { description: "Cross-Shift", typeName: "Type 3" },
-      Type4: { description: "Dash", typeName: "Type 4" },
-      Type5: { description: "Dual-Dash", typeName: "Type 5" },
-      Type6: { description: "Static", typeName: "Type 6" },
-      mixed: { description: "All Types", typeName: "Options" },
-      "Types 4-6": { description: "Dash Types", typeName: "Types 4-6" },
-    };
-    const result = typeDescriptions[
-      letterType as keyof typeof typeDescriptions
-    ] || {
-      description: "All Types",
-      typeName: "Options",
-    };
-    return result;
-  });
-
-  // Generate colored button text like desktop
-  const buttonText = $derived(
-    LetterTypeTextPainter.formatSectionHeader(
-      typeInfo.typeName,
-      typeInfo.description
-    )
-  );
 
   // Pictographs are already filtered when passed to this component
   const sectionPictographs = $derived(() => pictographs);
@@ -217,37 +193,9 @@ Renders a section with:
     };
   });
 
-  /**
-   * Calculate the max pictograph size for a given column count.
-   * Returns the size that fits all items within the available space.
-   */
-  function calculateFitSize(
-    itemCount: number,
-    columnCount: number,
-    effectiveWidth: number,
-    effectiveHeight: number,
-    gridGapValue: number,
-    maxSize: number
-  ): number {
-    const columns = Math.min(columnCount, itemCount);
-    const rows = Math.ceil(itemCount / columns) || 1;
-    const totalWidthGapSpace = (columns - 1) * gridGapValue;
-    const totalHeightGapSpace = (rows - 1) * gridGapValue;
-
-    const maxWidthBasedSize = Math.floor(
-      (effectiveWidth - totalWidthGapSpace) / columns
-    );
-    const maxHeightBasedSize = Math.floor(
-      (effectiveHeight - totalHeightGapSpace) / rows
-    );
-
-    // Use the smaller of width/height constraints to ensure fit
-    const fitSize = Math.min(maxWidthBasedSize, maxHeightBasedSize, maxSize);
-    return Math.max(fitSize, 40);
-  }
-
   // Calculate optimal pictograph size and grid columns based on available space
   // CRITICAL: Considers BOTH width AND height constraints to prevent overflow
+  // Size calculation delegated to IGridFitCalculator service
   const optimalLayout = $derived(() => {
     const rawItemCount = pictographsWithReversals().length;
     const safeItemCount = Math.max(rawItemCount, 1);
@@ -257,60 +205,47 @@ Renders a section with:
     const gridGapValue = parseInt(layoutConfig?.gridGap || "8px");
     const targetSize = forcedPictographSize ?? basePictographSize;
 
+    // Fallback when service not yet loaded
+    if (!gridFitCalculator) {
+      return {
+        columns,
+        pictographSize: targetSize,
+        gridColumns: `repeat(${columns}, ${targetSize}px)`,
+      };
+    }
+
     // When fitToViewport is true (mobile + continuous filter), calculate size
     // to ensure all options fit within the container without scrolling
-    // CRITICAL: Compare 4-column vs 8-column layouts and pick whichever
-    // produces LARGER pictographs (the user's key requirement)
     if (
       fitToViewport &&
       layoutConfig?.containerHeight &&
       layoutConfig?.containerWidth
     ) {
-      const containerWidth = layoutConfig.containerWidth;
-      const containerHeight = layoutConfig.containerHeight;
-
-      // Account for:
-      // - Section header (~50px) if shown
-      // - Floating filter button (~44px) in fitToViewport mode
-      // - Grid layout padding (8px on each side = 16px total horizontal)
-      // - Additional vertical safety margin
+      // Account for header, floating filter button, and padding
       const headerSpace = showHeader ? 50 : 0;
-      const filterButtonSpace = 44; // The "Continuous" floating filter button
-      const horizontalPadding = 24; // 8px padding on each side + 8px safety margin
-      const verticalPadding = 24; // More padding to account for gaps and button
+      const filterButtonSpace = 44;
+      const horizontalPadding = 24;
+      const verticalPadding = 24;
       const effectiveHeight =
-        containerHeight - headerSpace - filterButtonSpace - verticalPadding;
-      const effectiveWidth = containerWidth - horizontalPadding;
+        layoutConfig.containerHeight -
+        headerSpace -
+        filterButtonSpace -
+        verticalPadding;
+      const effectiveWidth = layoutConfig.containerWidth - horizontalPadding;
 
-      // Calculate optimal size for both 4-column and 8-column layouts
-      const size4Col = calculateFitSize(
-        rawItemCount,
-        4,
-        effectiveWidth,
-        effectiveHeight,
-        gridGapValue,
-        basePictographSize
-      );
-      const size8Col = calculateFitSize(
-        rawItemCount,
-        8,
-        effectiveWidth,
-        effectiveHeight,
-        gridGapValue,
-        basePictographSize
-      );
-
-      // Pick whichever column count produces larger pictographs
-      const use8Columns = size8Col > size4Col;
-      const optimalColumns = use8Columns
-        ? Math.min(8, rawItemCount)
-        : Math.min(4, rawItemCount);
-      const finalSize = use8Columns ? size8Col : size4Col;
+      const result = gridFitCalculator.calculateOptimalColumnLayout({
+        itemCount: rawItemCount,
+        availableWidth: effectiveWidth,
+        availableHeight: effectiveHeight,
+        gridGap: gridGapValue,
+        maxSize: basePictographSize,
+        columnOptions: [4, 8],
+      });
 
       return {
-        columns: optimalColumns,
-        pictographSize: finalSize,
-        gridColumns: `repeat(${optimalColumns}, ${finalSize}px)`,
+        columns: result.columns,
+        pictographSize: result.pictographSize,
+        gridColumns: result.gridColumns,
       };
     }
 
@@ -323,78 +258,46 @@ Renders a section with:
     }
 
     // Use contentAreaBounds directly if available (the actual space between navigation arrows)
-    // This is critical for constraining pictographs to the visible area
     const effectiveWidth = contentAreaBounds?.width || availableWidth;
-    // For height, use availableHeight if measured, otherwise fall back to layoutConfig
     const effectiveHeight =
       availableHeight || layoutConfig?.containerHeight || 0;
 
     // If no available dimensions yet, use conservative fallback
     if (!effectiveWidth || !effectiveHeight) {
-      // Use a conservative fallback size that accounts for potential arrow space
       const containerWidth = layoutConfig?.containerWidth || 800;
       const estimatedAvailableWidth = Math.max(containerWidth - 80, 300);
 
-      // Even for fallback, compare 4 vs 8 columns
-      const size4Col = calculateFitSize(
-        rawItemCount,
-        4,
-        estimatedAvailableWidth,
-        effectiveHeight || 400,
-        gridGapValue,
-        basePictographSize
-      );
-      const size8Col = calculateFitSize(
-        rawItemCount,
-        8,
-        estimatedAvailableWidth,
-        effectiveHeight || 400,
-        gridGapValue,
-        basePictographSize
-      );
-
-      const use8Columns = size8Col > size4Col;
-      const optimalColumns = use8Columns
-        ? Math.min(8, rawItemCount)
-        : Math.min(4, rawItemCount);
-      const fallbackSize = use8Columns ? size8Col : size4Col;
+      const result = gridFitCalculator.calculateOptimalColumnLayout({
+        itemCount: rawItemCount,
+        availableWidth: estimatedAvailableWidth,
+        availableHeight: effectiveHeight || 400,
+        gridGap: gridGapValue,
+        maxSize: basePictographSize,
+        columnOptions: [4, 8],
+      });
 
       return {
-        columns: optimalColumns,
-        pictographSize: fallbackSize,
-        gridColumns: `repeat(${optimalColumns}, ${fallbackSize}px)`,
+        columns: result.columns,
+        pictographSize: result.pictographSize,
+        gridColumns: result.gridColumns,
       };
     }
 
-    // Compare 4-column vs 8-column layouts and pick whichever produces larger pictographs
+    // Compare column layouts and pick whichever produces larger pictographs
     const adjustedHeight = effectiveHeight - actualHeaderHeight;
-    const size4Col = calculateFitSize(
-      rawItemCount,
-      4,
-      effectiveWidth,
-      adjustedHeight,
-      gridGapValue,
-      basePictographSize
-    );
-    const size8Col = calculateFitSize(
-      rawItemCount,
-      8,
-      effectiveWidth,
-      adjustedHeight,
-      gridGapValue,
-      basePictographSize
-    );
-
-    const use8Columns = size8Col > size4Col;
-    const optimalColumns = use8Columns
-      ? Math.min(8, rawItemCount)
-      : Math.min(4, rawItemCount);
-    const finalSize = use8Columns ? size8Col : size4Col;
+    const result = gridFitCalculator.calculateOptimalColumnLayout({
+      itemCount: rawItemCount,
+      availableWidth: effectiveWidth,
+      availableHeight: adjustedHeight,
+      gridGap: gridGapValue,
+      maxSize: basePictographSize,
+      columnOptions: [4, 8],
+    });
 
     return {
-      columns: optimalColumns,
-      pictographSize: finalSize,
-      gridColumns: `repeat(${optimalColumns}, ${finalSize}px)`,
+      columns: result.columns,
+      pictographSize: result.pictographSize,
+      gridColumns: result.gridColumns,
     };
   });
 
@@ -420,24 +323,9 @@ Renders a section with:
     : "100%"}
   data-letter-type={letterType}
 >
-  <!-- Section Header (visual only - no toggle functionality) -->
+  <!-- Section Header -->
   {#if showHeader}
-    <div class="section-header">
-      <div class="header-layout">
-        <!-- Stretch before button -->
-        <div class="stretch"></div>
-
-        <!-- Type label (visual only - no click functionality) -->
-        <div class="type-label">
-          <span class="label-text">
-            {@html buttonText}
-          </span>
-        </div>
-
-        <!-- Stretch after button -->
-        <div class="stretch"></div>
-      </div>
-    </div>
+    <SectionHeader {letterType} />
   {/if}
 
   <!-- Section Content - Simple keyed each for component reuse -->
@@ -466,7 +354,7 @@ Renders a section with:
           pictographData={pictograph as PreparedPictographData}
           blueReversal={pictograph.blueReversal || false}
           redReversal={pictograph.redReversal || false}
-          {lightsOff}
+          {darkMode}
         />
       </button>
     {/each}
@@ -484,63 +372,6 @@ Renders a section with:
     height: 100%; /* Fill available height in parent */
     box-sizing: border-box;
     overflow: hidden; /* Clip any overflow rather than letting it spill */
-  }
-
-  /* Section Header Styles (consolidated from OptionViewerSectionHeader) */
-
-  .header-layout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-    margin-top: 8px;
-    width: 100%;
-  }
-
-  .stretch {
-    flex: 1;
-  }
-
-  .type-label {
-    background: var(--header-bg-current, rgba(255, 255, 255, 0.15));
-    border: var(--header-border-current, 1px solid rgba(255, 255, 255, 0.2));
-    border-radius: 8px;
-    padding: 6px 6px;
-    font-weight: 600;
-    font-size: var(--font-size-base);
-    min-width: 160px;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Responsive header sizing for constrained screens */
-  @media (max-height: 800px) {
-    .type-label {
-      font-size: var(--font-size-sm);
-      padding: 4px 4px;
-      min-width: 140px;
-    }
-  }
-
-  @media (max-height: 700px) {
-    .type-label {
-      font-size: var(--font-size-compact);
-      padding: 3px 3px;
-      min-width: 120px;
-    }
-  }
-
-  @media (max-height: 600px) {
-    .type-label {
-      font-size: var(--font-size-compact);
-      padding: 2px 2px;
-      min-width: 100px;
-    }
-  }
-
-  .label-text {
-    display: block;
-    color: var(--header-text-current, var(--foreground, #000000));
   }
 
   .pictographs-grid {

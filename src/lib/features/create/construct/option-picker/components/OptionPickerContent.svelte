@@ -7,7 +7,7 @@ Uses organizer and sizer services for section grouping and sizing.
 <script lang="ts">
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import type { IOptionOrganizer } from "../services/contracts/IOptionOrganizer";
-  import type { IOptionSizer } from "../services/contracts/IOptionSizer";
+  import type { IOptionGridFitCalculator } from "../services/contracts/IGridFitCalculator";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   // CSS animations used instead of Svelte transitions to avoid carousel dimension issues
   import OptionSection from "./OptionSection.svelte";
@@ -16,14 +16,14 @@ Uses organizer and sizer services for section grouping and sizing.
   import OptionCard from "./OptionCard.svelte";
   import OptionViewerSwipeLayout from "../swipe-layout/components/OptionViewerSwipeLayout.svelte";
   import OptionViewerSection from "../swipe-layout/components/OptionViewerSection.svelte";
-  import type { ILightsOffProvider } from "$lib/shared/animation-engine/services/contracts/ILightsOffProvider";
+  import type { IDarkModeProvider } from "$lib/shared/animation-engine/services/contracts/IDarkModeProvider";
   import { tryResolve, TYPES } from "$lib/shared/inversify/di";
   import { onMount } from "svelte";
 
   interface Props {
     options: PreparedPictographData[];
     organizerService: IOptionOrganizer | null;
-    sizerService: IOptionSizer | null;
+    sizerService: IOptionGridFitCalculator | null;
     isFading?: boolean;
     onSelect: (option: PreparedPictographData) => void;
     // Filter props
@@ -47,8 +47,8 @@ Uses organizer and sizer services for section grouping and sizing.
   }: Props = $props();
 
   // Subscribe to Dark Mode state via DI
-  let lightsOff = $state(false);
-  let lightsOffUnsubscribe: (() => void) | null = null;
+  let darkMode = $state(false);
+  let darkModeUnsubscribe: (() => void) | null = null;
 
   // Track container dimensions with simple resize observer
   let containerElement: HTMLDivElement | null = $state(null);
@@ -153,7 +153,7 @@ Uses organizer and sizer services for section grouping and sizing.
     }
 
     try {
-      const result = sizerService.calculatePictographSize({
+      const result = sizerService.calculateDeviceAwareSize({
         count: options.length,
         containerWidth: containerWidth,
         containerHeight: containerHeight,
@@ -207,22 +207,22 @@ Uses organizer and sizer services for section grouping and sizing.
   // Subscribe to Dark Mode changes via DI
   $effect(() => {
     // Use tryResolve to handle HMR gracefully - animator module may not be loaded yet
-    const provider = tryResolve<ILightsOffProvider>(TYPES.ILightsOffProvider);
+    const provider = tryResolve<IDarkModeProvider>(TYPES.IDarkModeProvider);
     if (!provider) {
       // Provider not available yet (e.g., during HMR rebuild)
       // Default to false, will re-run when module loads
-      lightsOff = false;
+      darkMode = false;
       return;
     }
 
-    lightsOffUnsubscribe = provider.subscribe((value) => {
-      lightsOff = value;
+    darkModeUnsubscribe = provider.subscribe((value) => {
+      darkMode = value;
     });
 
     return () => {
-      if (lightsOffUnsubscribe) {
-        lightsOffUnsubscribe();
-        lightsOffUnsubscribe = null;
+      if (darkModeUnsubscribe) {
+        darkModeUnsubscribe();
+        darkModeUnsubscribe = null;
       }
     };
   });
@@ -311,7 +311,7 @@ Uses organizer and sizer services for section grouping and sizing.
             showHeader={false}
             isFadingOut={isFading}
             {currentSequence}
-            {lightsOff}
+            {darkMode}
           />
         </div>
       {:else if shouldUseSwipeLayout()}
@@ -323,7 +323,7 @@ Uses organizer and sizer services for section grouping and sizing.
             layoutConfig={mobileLayoutConfig()}
             isFadingOut={isFading}
             {currentSequence}
-            {lightsOff}
+            {darkMode}
           />
         </div>
       {:else if shouldUseWideLayout && !isMobileStackedLayout()}
@@ -341,6 +341,7 @@ Uses organizer and sizer services for section grouping and sizing.
               {isFading}
               {onSelect}
               {currentSequence}
+              {darkMode}
             />
           {/each}
 
@@ -354,6 +355,7 @@ Uses organizer and sizer services for section grouping and sizing.
               {isFading}
               {onSelect}
               {currentSequence}
+              {darkMode}
             />
           {/if}
         </div>
@@ -368,7 +370,7 @@ Uses organizer and sizer services for section grouping and sizing.
             showHeader={false}
             isFadingOut={isFading}
             {currentSequence}
-            {lightsOff}
+            {darkMode}
           />
         </div>
       {/if}

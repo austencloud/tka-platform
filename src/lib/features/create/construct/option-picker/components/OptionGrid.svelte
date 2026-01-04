@@ -25,6 +25,8 @@ Computes reversal indicators for options based on current sequence.
     onSelect: (option: PreparedPictographData) => void;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
+    // Dark mode state - passed from parent to avoid race conditions
+    darkMode?: boolean;
   }
 
   const {
@@ -35,6 +37,7 @@ Computes reversal indicators for options based on current sequence.
     isFading = false,
     onSelect,
     currentSequence = [],
+    darkMode= false,
   }: Props = $props();
 
   // Cap columns to actual item count to prevent empty columns causing left-alignment
@@ -65,6 +68,7 @@ Computes reversal indicators for options based on current sequence.
       blueReversal={option.blueReversal || false}
       redReversal={option.redReversal || false}
       onSelect={(p) => onSelect(p)}
+      {darkMode}
     />
   {/each}
 </div>

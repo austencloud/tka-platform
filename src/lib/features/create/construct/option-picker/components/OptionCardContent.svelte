@@ -1,48 +1,34 @@
 <!--
 OptionCardContent.svelte - Desktop option card wrapper
 
-Subscribes to Dark Mode state via DI and delegates rendering to shared primitive.
+Receives darkMode from parent and delegates rendering to shared primitive.
 Used by the desktop hierarchy: OptionSection → OptionGrid → OptionCard → OptionCardContent
+
+Note: darkModeis passed from parent to avoid race conditions where the DI
+container's animator module might not be loaded yet when the component mounts.
 -->
 <script lang="ts">
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
-  import type { ILightsOffProvider } from "$lib/shared/animation-engine/services/contracts/ILightsOffProvider";
   import OptionPictograph from "$lib/shared/pictograph/option/OptionPictograph.svelte";
-  import { tryResolve, TYPES } from "$lib/shared/inversify/di";
-  import { onMount } from "svelte";
 
   interface Props {
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
+    // Dark mode state - passed from parent to ensure consistency
+    darkMode: boolean;
   }
 
   const {
     pictograph,
     blueReversal = false,
     redReversal = false,
+    darkMode = false,
   }: Props = $props();
-
-  // Subscribe to Dark Mode state via DI
-  let lightsOff = $state(false);
-
-  onMount(() => {
-    // Use tryResolve to handle HMR gracefully - animator module may not be loaded yet
-    const provider = tryResolve<ILightsOffProvider>(TYPES.ILightsOffProvider);
-    if (!provider) {
-      // Provider not available yet (e.g., during HMR rebuild)
-      // Default to false
-      return;
-    }
-    const unsubscribe = provider.subscribe((value) => {
-      lightsOff = value;
-    });
-    return unsubscribe;
-  });
 </script>
 
 <div class="option-card-content">
-  <OptionPictograph {pictograph} {blueReversal} {redReversal} {lightsOff} />
+  <OptionPictograph {pictograph} {blueReversal} {redReversal} {darkMode} />
 </div>
 
 <style>

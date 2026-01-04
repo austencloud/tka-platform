@@ -14,7 +14,7 @@ Features:
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
-  import type { OrganizedSection } from "../domain/option-picker-types";
+  import type { OrganizedSection } from "../../domain/option-picker-types";
   import OptionPicker456Group from "./OptionViewer456Group.svelte";
   import OptionViewerSection from "./OptionViewerSection.svelte";
 
@@ -26,7 +26,7 @@ Features:
     layoutConfig,
     currentSequence = [],
     isFadingOut = false,
-    lightsOff = false,
+    darkMode = false,
   } = $props<{
     organizedPictographs?: OrganizedSection[];
     onPictographSelected?: (pictograph: PictographData) => void;
@@ -42,7 +42,7 @@ Features:
     };
     currentSequence?: PictographData[];
     isFadingOut?: boolean;
-    lightsOff?: boolean;
+    darkMode?: boolean;
   }>();
 
   // ===== Panel Position Persistence =====
@@ -140,7 +140,7 @@ Features:
                 {currentSequence}
                 {isFadingOut}
                 {contentAreaBounds}
-                {lightsOff}
+                {darkMode}
               />
             {:else}
               <!-- Individual section (Types 1-3) -->
@@ -153,7 +153,7 @@ Features:
                 {isFadingOut}
                 {contentAreaBounds}
                 showHeader={false}
-                {lightsOff}
+                {darkMode}
               />
             {/if}
           {/if}
