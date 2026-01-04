@@ -41,6 +41,7 @@
     onOrientationChange: (color: MotionColor, orientation: string) => void;
     onBeatSelect?: (beatNumber: number) => void;
     onDelete?: () => void;
+    onOpenPropSheet?: (color: "blue" | "red") => void;
   }
 
   let {
@@ -55,6 +56,7 @@
     onOrientationChange,
     onBeatSelect,
     onDelete,
+    onOpenPropSheet,
   }: Props = $props();
 
   // Get layout context for responsive behavior
@@ -291,6 +293,7 @@
           stacked={!isSideBySideLayout}
           {onTurnsChange}
           {onRotationChange}
+          {onOpenPropSheet}
         />
       {/if}
     </div>

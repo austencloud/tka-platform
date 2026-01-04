@@ -16,6 +16,7 @@
   import { resolve, TYPES } from "$lib/shared/inversify/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import BeatEditorPanel from "../sequence-actions/BeatEditorPanel.svelte";
+  import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IBeatOperator } from "../../services/contracts/IBeatOperator";
@@ -23,6 +24,11 @@
     MotionColor,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import {
+    getSettings,
+    updateSettings,
+  } from "$lib/shared/application/state/app-state.svelte";
   import { UndoOperationType } from "../../services/contracts/IUndoManager";
 
   const logger = createComponentLogger("BeatEditorCoordinator");
@@ -69,6 +75,15 @@
   const removingBeatIndices = $derived.by(() =>
     activeSequenceState.getRemovingBeatIndices()
   );
+
+  // Prop selection sheet state
+  let propSheetOpen = $state(false);
+  let propSheetColor = $state<"blue" | "red">("blue");
+
+  // Get current prop types from settings
+  const settings = $derived(getSettings());
+  const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
+  const redPropType = $derived(settings.redPropType ?? PropType.STAFF);
 
   // Derived state for turns calculations
   const blueMotion = $derived(selectedBeatData?.motions?.[MotionColor.BLUE]);
@@ -182,6 +197,20 @@
     activeSequenceState.selectBeat(beatNumber);
   }
 
+  function handleOpenPropSheet(color: "blue" | "red") {
+    propSheetColor = color;
+    propSheetOpen = true;
+  }
+
+  function handlePropSelect(propType: PropType) {
+    if (propSheetColor === "blue") {
+      updateSettings({ bluePropType: propType });
+    } else {
+      updateSettings({ redPropType: propType });
+    }
+    propSheetOpen = false;
+  }
+
   // Debug effect to track panel visibility
   $effect(() => {
     logger.log(
@@ -203,4 +232,14 @@
   onOrientationChange={handleOrientationChange}
   onBeatSelect={handleBeatSelect}
   onDelete={handleBeatDelete}
+  onOpenPropSheet={handleOpenPropSheet}
+/>
+
+<!-- Prop Selection Sheet - rendered as sibling to BeatEditorPanel -->
+<PropSelectionSheet
+  bind:isOpen={propSheetOpen}
+  selectedPropType={propSheetColor === "blue" ? bluePropType : redPropType}
+  color={propSheetColor}
+  title={propSheetColor === "blue" ? "Select Blue Prop" : "Select Red Prop"}
+  onSelect={handlePropSelect}
 />

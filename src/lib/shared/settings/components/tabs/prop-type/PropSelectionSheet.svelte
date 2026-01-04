@@ -120,6 +120,7 @@
   dismissible={true}
   showHandle={true}
   ariaLabel={title}
+  class="prop-selection-drawer"
   onOpenChange={(open) => {
     if (!open) isOpen = false;
   }}
@@ -143,7 +144,8 @@
 
   <!-- Prop Grid -->
   <div class="sheet-content">
-    <div class="prop-grid">
+    <div class="prop-grid-wrapper">
+      <div class="prop-grid">
       {#each propTypes as propType}
         {@const isSelected = getBasePropType(selectedPropType) === propType}
         <PropTypeButton
@@ -155,11 +157,23 @@
           onImageLoad={handleImageLoadInternal}
         />
       {/each}
+      </div>
     </div>
   </div>
 </Drawer>
 
 <style>
+  /* Bottom sheet constraint - only cover prop controls area, not beat grid */
+  :global(.prop-selection-drawer[data-placement="bottom"]) {
+    max-height: 55vh; /* Covers prop controls, leaves beat grid visible */
+    height: auto;
+  }
+
+  /* Right drawer - full height is fine */
+  :global(.prop-selection-drawer[data-placement="right"]) {
+    width: min(400px, 85vw);
+  }
+
   /* Header */
   .sheet-header {
     display: flex;
@@ -177,19 +191,67 @@
     color: var(--theme-text);
   }
 
-  /* Content */
+  /* Content - uses container queries for responsive grid */
   .sheet-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 20px;
+    container-type: size;
+    container-name: prop-sheet;
+    /* Center grid vertically when there's extra space */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
-  /* Prop Grid */
+  /* Wrapper - let grid fill available space */
+  .prop-grid-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Prop Grid - Default for wide containers (bottom sheet) */
   .prop-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
+    width: 100%;
+  }
+
+  /* TALL containers: aspect-ratio < 1 means height > width */
+  /* Use 3 columns for 5 rows - fills vertical space */
+  @container prop-sheet (aspect-ratio < 1) {
+    .prop-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(12px, 2cqh, 20px);
+    }
+  }
+
+  /* VERY TALL containers (like right drawer) */
+  @container prop-sheet (aspect-ratio < 0.7) {
+    .prop-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(14px, 2.5cqh, 24px);
+    }
+  }
+
+  /* WIDE containers: aspect-ratio > 1 means width > height */
+  @container prop-sheet (aspect-ratio > 1) {
+    .prop-grid {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+  }
+
+  /* Narrow width fallback */
+  @container prop-sheet (max-width: 280px) {
+    .prop-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   /* Variation Toggle */
