@@ -7,6 +7,16 @@
 
 type VisibilityObserver = () => void;
 
+/**
+ * Cached motion colors computed from CSS variables.
+ * Updated once when dark mode changes instead of each component calling getComputedStyle().
+ */
+export interface MotionColorsCache {
+  blue: string;
+  red: string;
+  grid: string;
+}
+
 // 3-state enums for multi-option settings
 export type TrailStyle = "off" | "subtle" | "vivid";
 export type GridMode = "none" | "diamond" | "box";
@@ -38,9 +48,23 @@ export class AnimationVisibilityStateManager {
   private settings: AnimationVisibilitySettings;
   private observers: Set<VisibilityObserver> = new Set();
 
+  /**
+   * Cached motion colors - computed once when dark mode changes.
+   * Components read from this cache instead of each calling getComputedStyle().
+   */
+  private motionColors: MotionColorsCache = {
+    blue: "#3575E2",
+    red: "#ED1C24",
+    grid: "#000000",
+  };
+
   constructor() {
     // Load from localStorage or use defaults
     this.settings = this.loadFromStorage() || this.getDefaultSettings();
+    // Sync the .dark class on <html> to match persisted state
+    this.syncDarkModeClass();
+    // Compute initial motion colors from CSS variables
+    this.updateMotionColorsCache();
   }
 
   /**
@@ -337,7 +361,54 @@ export class AnimationVisibilityStateManager {
   setDarkMode(enabled: boolean): void {
     this.settings.darkMode = enabled;
     this.saveToStorage();
+    this.syncDarkModeClass();
+    // Update motion colors cache - this also notifies observers after colors are computed
+    this.updateMotionColorsCache();
+  }
+
+  /**
+   * Sync the .dark class on <html> element with current darkMode state.
+   * This enables CSS-first dark mode - all components use CSS variables
+   * instead of receiving darkMode as a prop.
+   */
+  private syncDarkModeClass(): void {
+    if (typeof document === "undefined") return;
+
+    const htmlElement = document.documentElement;
+    if (this.settings.darkMode) {
+      htmlElement.classList.add("dark");
+    } else {
+      htmlElement.classList.remove("dark");
+    }
+  }
+
+  /**
+   * Update the motion colors cache from CSS variables.
+   * Called once when dark mode changes instead of each component calling getComputedStyle().
+   * Runs synchronously since .dark class is already applied when this is called.
+   */
+  private updateMotionColorsCache(): void {
+    if (typeof document === "undefined") return;
+
+    // Get computed style synchronously - CSS is already applied after syncDarkModeClass()
+    const style = getComputedStyle(document.documentElement);
+
+    this.motionColors = {
+      blue: style.getPropertyValue("--dm-motion-blue").trim() || "#3575E2",
+      red: style.getPropertyValue("--dm-motion-red").trim() || "#ED1C24",
+      grid: style.getPropertyValue("--dm-grid-color").trim() || "#000000",
+    };
+
+    // Notify observers synchronously for consistent animation timing
     this.notifyObservers();
+  }
+
+  /**
+   * Get cached motion colors.
+   * Components should use this instead of calling getComputedStyle() directly.
+   */
+  getMotionColors(): MotionColorsCache {
+    return this.motionColors;
   }
 
   /**

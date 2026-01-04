@@ -581,6 +581,63 @@ h6 {
   --accent-2026-emerald-soft: rgba(16, 185, 129, 0.12);
   --accent-2026-amber: #f59e0b;
   --accent-2026-amber-soft: rgba(245, 158, 11, 0.12);
+
+  /* ============================================================================
+     DARK MODE SYSTEM - CSS-First Approach
+     Toggle via .dark class on <html> element (L key shortcut)
+     ============================================================================ */
+
+  /* Core backgrounds */
+  --dm-bg: #ffffff;
+  --dm-bg-secondary: #f5f5f5;
+  --dm-pictograph-bg: white;
+
+  /* Text colors */
+  --dm-text: #000000;
+  --dm-text-muted: #666666;
+
+  /* Grid colors */
+  --dm-grid-color: #000000;
+  --dm-grid-line: #cccccc;
+  --dm-grid-line-strong: #999999;
+
+  /* Glyph/SVG colors */
+  --dm-glyph-fill: #231f20;
+  --dm-motion-neutral: #231f20;
+
+  /* Motion colors (blue/red hands) - optimized for background contrast */
+  --dm-motion-blue: #3D44B8;
+  --dm-motion-red: #DC2626;
+
+  /* Beat number overlay - stroke creates outline for visibility */
+  --dm-beat-stroke: white;
+
+  /* Transition timing for dark mode toggle */
+  --dm-transition: 150ms ease-out;
+}
+
+/* Dark Mode Overrides - Applied when .dark class is on <html> */
+:root.dark {
+  --dm-bg: #0a0a0f;
+  --dm-bg-secondary: #1a1a2e;
+  --dm-pictograph-bg: #0a0a0f;
+
+  --dm-text: #ffffff;
+  --dm-text-muted: #aaaaaa;
+
+  --dm-grid-color: #d0d0d0;
+  --dm-grid-line: #333333;
+  --dm-grid-line-strong: #555555;
+
+  --dm-glyph-fill: #ffffff;
+  --dm-motion-neutral: #ffffff;
+
+  /* Motion colors - brighter variants for dark backgrounds */
+  --dm-motion-blue: #3575E2;
+  --dm-motion-red: #ED1C24;
+
+  /* No stroke needed in dark mode - white text is already visible */
+  --dm-beat-stroke: transparent;
 }
 
 /* Light theme support */
