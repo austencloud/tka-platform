@@ -323,7 +323,7 @@ export default defineConfig({
   build: {
     // Source maps disabled in production for security (exposes original source)
     // Enable locally with: VITE_SOURCEMAP=true npm run build
-    sourcemap: process.env.VITE_SOURCEMAP === "true",
+    sourcemap: false,
     target: "esnext",
     minify: "esbuild",
     // 2025: Fast default minification
