@@ -4,8 +4,8 @@
  * Applies color transformations to SVG content.
  * Extracted from ArrowRenderer to improve modularity and reusability.
  *
- * Theme mode is read dynamically from AnimationVisibilityStateManager
- * to ensure colors match the current pictograph background mode.
+ * Theme mode can be passed explicitly (for exports) or defaults to
+ * reading from AnimationVisibilityStateManager (for live display).
  */
 
 import type { ISvgColorTransformer as IArrowSvgColorTransformer } from "../contracts/IArrowSvgColorTransformer";
@@ -45,10 +45,16 @@ export class ArrowSvgColorTransformer implements IArrowSvgColorTransformer {
    * Apply color transformation to SVG content
    * Simple and correct: arrows are blue by default, change to red when needed
    * Also makes CSS class names unique to prevent conflicts between different colored arrows
+   * @param themeMode Optional explicit theme mode. If not provided, uses global state.
    */
-  applyColorToSvg(svgText: string, color: MotionColor): string {
-    const themeMode = this.getCurrentThemeMode();
-    const targetColor = getMotionColor(color, themeMode);
+  applyColorToSvg(
+    svgText: string,
+    color: MotionColor,
+    themeMode?: ThemeMode
+  ): string {
+    // Use explicit theme mode if provided, otherwise fall back to global state
+    const effectiveThemeMode = themeMode ?? this.getCurrentThemeMode();
+    const targetColor = getMotionColor(color, effectiveThemeMode);
 
     // Replace fill colors in both attribute and CSS style formats
     let coloredSvg = svgText.replace(

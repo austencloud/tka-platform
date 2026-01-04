@@ -52,9 +52,7 @@ export interface SequenceExportOptions {
     showNonRadialPoints?: boolean;
     showTurnNumbers?: boolean;
     /** Dark Mode - dark background, inverted grid, white text/outlines */
-    lightsOff?: boolean;
-    /** Prop Glow - glowing drop-shadow effect on props */
-    propGlow?: boolean;
+    darkMode?: boolean;
   };
 
   // User information

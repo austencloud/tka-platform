@@ -76,8 +76,7 @@ export class ImageComposer implements IImageComposer {
         showPositions: overrides.showPositions,
         showReversals: overrides.showReversals,
         showNonRadialPoints: overrides.showNonRadialPoints,
-        lightsOff: overrides.lightsOff,
-        propGlow: overrides.propGlow,
+        darkMode: overrides.darkMode,
       };
     }
 
@@ -85,7 +84,7 @@ export class ImageComposer implements IImageComposer {
     const visibilityManager = getVisibilityStateManager();
     await visibilityManager.ensureSettingsLoaded();
 
-    // Get animation visibility for Dark Mode and Prop Glow settings
+    // Get animation visibility for Dark Mode settings
     const animVisibilityManager = getAnimationVisibilityManager();
 
     const globalSettings: PictographVisibilityOptions = {
@@ -95,9 +94,7 @@ export class ImageComposer implements IImageComposer {
       showPositions: visibilityManager.getGlyphVisibility("positionsGlyph"),
       showReversals: visibilityManager.getGlyphVisibility("reversalIndicators"),
       showNonRadialPoints: visibilityManager.getNonRadialVisibility(),
-      lightsOff: animVisibilityManager.isLightsOff(),
-      // Prop glow is automatically enabled when Dark Mode is on
-      propGlow: animVisibilityManager.isLightsOff(),
+      darkMode: animVisibilityManager.isDarkMode(),
     };
 
     // Merge overrides with global settings (overrides take precedence)
@@ -110,8 +107,7 @@ export class ImageComposer implements IImageComposer {
         showReversals: overrides.showReversals ?? globalSettings.showReversals,
         showNonRadialPoints:
           overrides.showNonRadialPoints ?? globalSettings.showNonRadialPoints,
-        lightsOff: overrides.lightsOff ?? globalSettings.lightsOff,
-        propGlow: overrides.propGlow ?? globalSettings.propGlow,
+        darkMode: overrides.darkMode ?? globalSettings.darkMode,
       };
     }
 
@@ -195,8 +191,8 @@ export class ImageComposer implements IImageComposer {
     // Step 3: Fill background for the grid area (offset by header height)
     // Note: Footer background is drawn by renderUserInfo with gray matching header style
     // Dark Mode uses dark background (#0a0a0f), normal mode uses white
-    const isLightsOff = visibilitySettings.lightsOff ?? false;
-    ctx.fillStyle = isLightsOff ? "#0a0a0f" : "white";
+    const isDarkMode = visibilitySettings.darkMode ?? false;
+    ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
     ctx.fillRect(0, headerHeight, canvasWidth, rows * beatSize);
 
     // Calculate total items to render for progress tracking
@@ -294,7 +290,7 @@ export class ImageComposer implements IImageComposer {
       sequence,
       options,
       headerHeight, // Offset grid below header
-      isLightsOff
+      isDarkMode
     );
 
     // Step 7: Render header with word at the top
@@ -311,7 +307,7 @@ export class ImageComposer implements IImageComposer {
         headerHeight,
         difficultyLevel,
         options.addDifficultyLevel, // Only show badge if toggle is on
-        isLightsOff // LED mode for dark theme styling
+        isDarkMode // Dark Mode for dark theme styling
       );
     }
 
@@ -330,7 +326,7 @@ export class ImageComposer implements IImageComposer {
         },
         footerHeight, // Pass footer height for proper text positioning
         beatCount, // Pass beat count for legacy-matching font sizing
-        isLightsOff // LED mode for dark theme styling
+        isDarkMode // Dark Mode for dark theme styling
       );
     }
 
@@ -447,7 +443,7 @@ export class ImageComposer implements IImageComposer {
     // Include visibility settings in cache key (important for correct caching!)
     if (visibilitySettings) {
       keyParts.push(
-        `vis:${visibilitySettings.showTKA ?? "d"}|${visibilitySettings.showVTG ?? "d"}|${visibilitySettings.showElemental ?? "d"}|${visibilitySettings.showPositions ?? "d"}|${visibilitySettings.showReversals ?? "d"}|${visibilitySettings.showNonRadialPoints ?? "d"}|lightsOff:${visibilitySettings.lightsOff ?? false}|propGlow:${visibilitySettings.propGlow ?? false}`
+        `vis:${visibilitySettings.showTKA ?? "d"}|${visibilitySettings.showVTG ?? "d"}|${visibilitySettings.showElemental ?? "d"}|${visibilitySettings.showPositions ?? "d"}|${visibilitySettings.showReversals ?? "d"}|${visibilitySettings.showNonRadialPoints ?? "d"}|darkMode:${visibilitySettings.darkMode ?? false}`
       );
     }
 
@@ -492,10 +488,10 @@ export class ImageComposer implements IImageComposer {
     sequence: SequenceData,
     options: SequenceExportOptions,
     titleOffset: number = 0,
-    isLightsOff: boolean = false
+    isDarkMode: boolean = false
   ): void {
-    // LED mode uses subtle light borders on dark background
-    ctx.strokeStyle = isLightsOff ? "rgba(255, 255, 255, 0.15)" : "#e0e0e0";
+    // Dark Mode uses subtle light borders on dark background
+    ctx.strokeStyle = isDarkMode ? "rgba(255, 255, 255, 0.15)" : "#e0e0e0";
     ctx.lineWidth = 1;
 
     // Create a map of occupied cells

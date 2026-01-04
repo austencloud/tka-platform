@@ -10,7 +10,7 @@ import { TYPES } from "../../../../../inversify/types";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { IArrowPositioningOrchestrator } from "../../../positioning/services/contracts/IArrowPositioningOrchestrator";
-import type { IArrowRenderer } from "../../../rendering/services/contracts/IArrowRenderer";
+import type { IArrowSvgLoader } from "../../../rendering/services/contracts/IArrowSvgLoader";
 import type {
   ArrowAssets,
   ArrowLifecycleResult,
@@ -23,33 +23,44 @@ import {
   createArrowPosition,
   createArrowState,
 } from "../../domain/arrow-factories";
-import type { IArrowLifecycleManager } from "../contracts/IArrowLifecycleManager";
+import type {
+  IArrowLifecycleManager,
+  ArrowLifecycleOptions,
+} from "../contracts/IArrowLifecycleManager";
 
 @injectable()
 export class ArrowLifecycleManager implements IArrowLifecycleManager {
   constructor(
-    @inject(TYPES.IArrowRenderer) private arrowRenderer: IArrowRenderer,
+    @inject(TYPES.IArrowSvgLoader) private svgLoader: IArrowSvgLoader,
     @inject(TYPES.IArrowPositioningOrchestrator)
     private positioningOrchestrator: IArrowPositioningOrchestrator
   ) {}
 
   /**
    * Load arrow assets for a single motion
+   * @param options Optional settings including themeMode for color selection
    */
-  async loadArrowAssets(motionData: MotionData): Promise<ArrowAssets> {
+  async loadArrowAssets(
+    motionData: MotionData,
+    options?: ArrowLifecycleOptions
+  ): Promise<ArrowAssets> {
     if (!motionData.arrowPlacementData) {
       throw new Error("No arrow placement data available");
     }
 
-    const svgData = await this.arrowRenderer.loadArrowSvg(
+    const svgData = await this.svgLoader.loadArrowSvg(
       motionData.arrowPlacementData,
-      motionData
+      motionData,
+      options?.themeMode ? { themeMode: options.themeMode } : undefined
     );
 
     return createArrowAssets({
       imageSrc: svgData.imageSrc,
-      viewBox: svgData.viewBox,
-      center: svgData.center,
+      viewBox: {
+        width: svgData.dimensions.width,
+        height: svgData.dimensions.height,
+      },
+      center: svgData.center ?? svgData.dimensions.center,
     });
   }
 
@@ -97,15 +108,17 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
 
   /**
    * Get complete arrow state for a single motion
+   * @param options Optional settings including themeMode for color selection
    */
   async getArrowState(
     motionData: MotionData,
-    pictographData: PictographData
+    pictographData: PictographData,
+    options?: ArrowLifecycleOptions
   ): Promise<ArrowState> {
     try {
       // Load assets and calculate position in parallel
       const [assets, position] = await Promise.all([
-        this.loadArrowAssets(motionData),
+        this.loadArrowAssets(motionData, options),
         this.calculateArrowPosition(motionData, pictographData),
       ]);
 
@@ -136,9 +149,11 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
   /**
    * Coordinate complete arrow lifecycle for all motions in pictograph
    * This is the main coordination method that ensures proper loading order
+   * @param options Optional settings including themeMode for color selection
    */
   async coordinateArrowLifecycle(
-    pictographData: PictographData
+    pictographData: PictographData,
+    options?: ArrowLifecycleOptions
   ): Promise<ArrowLifecycleResult> {
     if (!pictographData.motions) {
       return createArrowLifecycleResult({ allReady: true });
@@ -157,7 +172,8 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
         try {
           const arrowState = await this.getArrowState(
             motionData,
-            pictographData
+            pictographData,
+            options
           );
 
           if (arrowState.error) {

@@ -7,7 +7,7 @@ PictographContainer.svelte - Smart pictograph wrapper
 
 Handles:
 - Visibility settings subscription
-- LED mode / Dark Mode subscription
+- Dark Mode subscription
 - Settings reactivity (prop type changes)
 - Transitions (fade in/out)
 - Preparing raw data via PictographPreparer
@@ -50,14 +50,20 @@ with pre-prepared data for better performance.
     showVTG = undefined,
     showElemental = undefined,
     showPositions = undefined,
-    // LED mode
-    ledMode = undefined,
+    // Dark mode override (if undefined, uses global settings)
+    darkMode: darkModeOverride = undefined,
     // Preview mode for visibility settings
     previewMode = false,
     // Show only one hand's prop/arrow (null = show both)
     visibleHand = null,
     // Enable arrow selection for adjustment (admin feature)
     arrowsClickable = false,
+    // Enable prop selection for variant cycling
+    propsClickable = false,
+    // Currently selected prop hand (for visual feedback)
+    selectedPropHand = null,
+    // Callback when a prop is clicked
+    onPropClick = undefined,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
     onToggleVTG = undefined,
@@ -76,10 +82,13 @@ with pre-prepared data for better performance.
     showVTG?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
-    ledMode?: boolean;
+    darkMode?: boolean;
     previewMode?: boolean;
     visibleHand?: "blue" | "red" | null;
     arrowsClickable?: boolean;
+    propsClickable?: boolean;
+    selectedPropHand?: "blue" | "red" | null;
+    onPropClick?: (hand: "blue" | "red") => void;
     onToggleTKA?: () => void;
     onToggleVTG?: () => void;
     onToggleElemental?: () => void;
@@ -128,10 +137,10 @@ with pre-prepared data for better performance.
       : visibilityManager.getGlyphVisibility("reversalIndicators");
   });
 
-  const effectiveLedMode = $derived.by(() => {
+  const darkMode = $derived.by((): boolean => {
     visibilityUpdateCount;
-    if (ledMode !== undefined) return ledMode;
-    return animationVisibilityManager.isLightsOff();
+    if (darkModeOverride !== undefined) return darkModeOverride;
+    return animationVisibilityManager.isDarkMode();
   });
 
   const effectiveShowNonRadialPoints = $derived.by(() => {
@@ -169,7 +178,7 @@ with pre-prepared data for better performance.
   let preparer: IPictographPreparer | null = null;
 
   // Create a stable key for data preparation dependencies
-  // Include LED mode so props are re-prepared with correct colors when toggling
+  // Include dark mode so props are re-prepared with correct colors when toggling
   const prepareKey = $derived.by(() => {
     if (!pictographData) return null;
     const settings = getSettings();
@@ -178,7 +187,7 @@ with pre-prepared data for better performance.
       letter: pictographData.letter,
       bluePropType: settings.bluePropType,
       redPropType: settings.redPropType,
-      ledMode: effectiveLedMode, // Re-prepare when LED mode changes for correct prop colors
+      darkMode: darkMode, // Re-prepare when dark mode changes for correct prop colors
     });
   });
 
@@ -239,7 +248,7 @@ with pre-prepared data for better performance.
 <div
   class="pictograph-container"
   class:loading={isLoading}
-  class:led-mode={effectiveLedMode}
+  class:dark-mode={darkMode}
 >
   {#if preparedData}
     {#if disableTransitions}
@@ -247,7 +256,7 @@ with pre-prepared data for better performance.
         pictograph={preparedData}
         {blueReversal}
         {redReversal}
-        ledMode={effectiveLedMode}
+        {darkMode}
         showTKA={effectiveShowTKA}
         showReversals={effectiveShowReversals}
         showNonRadialPoints={effectiveShowNonRadialPoints}
@@ -260,6 +269,9 @@ with pre-prepared data for better performance.
         gridModeOverride={overrideGridMode}
         {visibleHand}
         {arrowsClickable}
+        {propsClickable}
+        {selectedPropHand}
+        {onPropClick}
         {onToggleTKA}
         {onToggleVTG}
         {onToggleElemental}
@@ -278,7 +290,7 @@ with pre-prepared data for better performance.
             pictograph={preparedData}
             {blueReversal}
             {redReversal}
-            ledMode={effectiveLedMode}
+            {darkMode}
             showTKA={effectiveShowTKA}
             showReversals={effectiveShowReversals}
             showNonRadialPoints={effectiveShowNonRadialPoints}
@@ -291,6 +303,9 @@ with pre-prepared data for better performance.
             gridModeOverride={overrideGridMode}
             {visibleHand}
             {arrowsClickable}
+            {propsClickable}
+            {selectedPropHand}
+            {onPropClick}
             {onToggleTKA}
             {onToggleVTG}
             {onToggleElemental}
@@ -307,7 +322,7 @@ with pre-prepared data for better performance.
         <rect
           width="950"
           height="950"
-          fill={effectiveLedMode ? "#0a0a0f" : "#f3f4f6"}
+          fill={darkMode ? "#0a0a0f" : "#f3f4f6"}
         />
       </svg>
     </div>

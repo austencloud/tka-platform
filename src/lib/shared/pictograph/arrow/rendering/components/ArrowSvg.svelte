@@ -30,7 +30,7 @@ Now with intelligent rotation animation matching prop behavior!
     color,
     pictographData = null,
     isClickable = false,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     motionData: MotionData;
     arrowAssets: ArrowAssets;
@@ -40,32 +40,32 @@ Now with intelligent rotation animation matching prop behavior!
     color: string;
     pictographData?: PictographData | null;
     isClickable?: boolean;
-    /** LED mode - applies glow effect to arrows (dark pictograph background) */
-    ledMode?: boolean;
+    /** Dark mode - dark pictograph background */
+    darkMode?: boolean;
   }>();
 
-  // LED mode glow colors - based on pictograph background mode
-  // ledMode=true (dark background) → use bright colors, ledMode=false (white background) → use original dark colors
-  const LED_GLOW_COLORS = $derived({
+  // Dark mode colors - based on pictograph background mode
+  // darkMode=true (dark background) → use bright colors, darkMode=false (white background) → use original dark colors
+  const DARK_MODE_COLORS = $derived({
     [MotionColor.BLUE]: getMotionColor(
       MotionColor.BLUE,
-      ledMode ? "dark" : "light"
+      darkMode ? "dark" : "light"
     ),
     [MotionColor.RED]: getMotionColor(
       MotionColor.RED,
-      ledMode ? "dark" : "light"
+      darkMode ? "dark" : "light"
     ),
   });
 
   // Get the glow color based on motion color
   const glowColor = $derived(
-    LED_GLOW_COLORS[motionData.color as MotionColor.BLUE | MotionColor.RED] ??
-      LED_GLOW_COLORS[MotionColor.BLUE]
+    DARK_MODE_COLORS[motionData.color as MotionColor.BLUE | MotionColor.RED] ??
+      DARK_MODE_COLORS[MotionColor.BLUE]
   );
 
   // White stroke for visibility against light backgrounds (when NOT in dark mode)
   const lightModeStroke = $derived(
-    !ledMode ? "drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white)" : ""
+    !darkMode ? "drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white)" : ""
   );
 
   // ============================================================================
@@ -317,8 +317,8 @@ Now with intelligent rotation animation matching prop behavior!
     class:mirrored={shouldMirror}
     class:clickable={isClickable}
     class:selected={isSelected}
-    class:led-mode={ledMode}
-    data-led-mode={ledMode}
+    class:dark-mode={darkMode}
+    data-dark-mode={darkMode}
     onclick={isClickable ? handleArrowClick : undefined}
     onkeydown={isClickable
       ? (e) => (e.key === "Enter" || e.key === " ") && handleArrowClick(e)

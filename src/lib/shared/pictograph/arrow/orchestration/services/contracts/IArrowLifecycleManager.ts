@@ -13,6 +13,15 @@ import type {
   ArrowPosition,
   ArrowState,
 } from "../../domain/arrow-models";
+import type { ThemeMode } from "../../../../../utils/svg-color-utils";
+
+/**
+ * Options for arrow lifecycle operations
+ */
+export interface ArrowLifecycleOptions {
+  /** Theme mode for color selection ("dark" or "light"). If not provided, uses global state. */
+  themeMode?: ThemeMode;
+}
 
 /**
  * Arrow Lifecycle Manager - Single point of coordination for all arrow operations
@@ -20,8 +29,12 @@ import type {
 export interface IArrowLifecycleManager {
   /**
    * Load arrow assets for a single motion
+   * @param options Optional settings including themeMode for color selection
    */
-  loadArrowAssets(motionData: MotionData): Promise<ArrowAssets>;
+  loadArrowAssets(
+    motionData: MotionData,
+    options?: ArrowLifecycleOptions
+  ): Promise<ArrowAssets>;
 
   /**
    * Calculate position for a single arrow
@@ -41,18 +54,22 @@ export interface IArrowLifecycleManager {
 
   /**
    * Get complete arrow state for a single motion
+   * @param options Optional settings including themeMode for color selection
    */
   getArrowState(
     motionData: MotionData,
-    pictographData: PictographData
+    pictographData: PictographData,
+    options?: ArrowLifecycleOptions
   ): Promise<ArrowState>;
 
   /**
    * Coordinate complete arrow lifecycle for all motions in pictograph
    * This is the main coordination method that ensures proper loading order
+   * @param options Optional settings including themeMode for color selection
    */
   coordinateArrowLifecycle(
-    pictographData: PictographData
+    pictographData: PictographData,
+    options?: ArrowLifecycleOptions
   ): Promise<ArrowLifecycleResult>;
 
   /**

@@ -43,7 +43,7 @@ Props:
     y = 800,
     scale = 1,
     onToggle = undefined,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     turnsTuple: string;
     letter: string | null | undefined;
@@ -62,17 +62,17 @@ Props:
     scale?: number;
     /** Toggle callback for interactive mode */
     onToggle?: () => void;
-    /** LED mode - adds glow effect (does NOT invert colors) */
-    ledMode?: boolean;
+    /** Dark mode - dark background (does NOT invert colors) */
+    darkMode?: boolean;
   }>();
 
   // Centralized colors for SVG filters - based on pictograph background mode
-  // ledMode=true (dark background) → use bright colors, ledMode=false (white background) → use original dark colors
+  // darkMode=true (dark background) → use bright colors, darkMode=false (white background) → use original dark colors
   const BLUE_COLOR = $derived(
-    getMotionColor(MotionColor.BLUE, ledMode ? "dark" : "light")
+    getMotionColor(MotionColor.BLUE, darkMode ? "dark" : "light")
   );
   const RED_COLOR = $derived(
-    getMotionColor(MotionColor.RED, ledMode ? "dark" : "light")
+    getMotionColor(MotionColor.RED, darkMode ? "dark" : "light")
   );
 
   // Service instance for color interpretation
@@ -175,9 +175,9 @@ Props:
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:led-mode={ledMode}
+    class:dark-mode={darkMode}
     data-letter={letter}
-    data-led-mode={ledMode}
+    data-dark-mode={darkMode}
     transform="translate({x}, {y}) scale({scale})"
     onclick={onToggle}
     {...onToggle

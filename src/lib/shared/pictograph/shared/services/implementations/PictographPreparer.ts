@@ -17,7 +17,10 @@ import type {
   PreparedPictographData,
   PreparedRenderData,
 } from "../../domain/models/PreparedPictographData";
-import type { IPictographPreparer } from "../contracts/IPictographPreparer";
+import type {
+  IPictographPreparer,
+  PrepareOptions,
+} from "../contracts/IPictographPreparer";
 import type { IArrowLifecycleManager } from "../../../arrow/orchestration/services/contracts/IArrowLifecycleManager";
 import type { IPropSvgLoader } from "../../../prop/services/contracts/IPropSvgLoader";
 import type { IPropPlacer } from "../../../prop/services/contracts/IPropPlacer";
@@ -39,12 +42,13 @@ export class PictographPreparer implements IPictographPreparer {
   ) {}
 
   async prepareBatch(
-    pictographs: PictographData[]
+    pictographs: PictographData[],
+    options?: PrepareOptions
   ): Promise<PreparedPictographData[]> {
     return Promise.all(
       pictographs.map(async (p) => {
         try {
-          return await this.prepareSingle(p);
+          return await this.prepareSingle(p, options);
         } catch (error) {
           console.error("Failed to prepare pictograph:", p.id, error);
           // Return unprepared data as fallback
@@ -55,12 +59,19 @@ export class PictographPreparer implements IPictographPreparer {
   }
 
   async prepareSingle(
-    pictograph: PictographData
+    pictograph: PictographData,
+    options?: PrepareOptions
   ): Promise<PreparedPictographData> {
     const gridMode = this.deriveGridMode(pictograph);
-    const arrowResult =
-      await this.arrowManager.coordinateArrowLifecycle(pictograph);
-    const { propPositions, propAssets } = await this.calculateProps(pictograph);
+    // Pass themeMode to arrow lifecycle for correct color selection
+    const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
+      pictograph,
+      options?.themeMode ? { themeMode: options.themeMode } : undefined
+    );
+    const { propPositions, propAssets } = await this.calculateProps(
+      pictograph,
+      options
+    );
 
     const prepared: PreparedRenderData = {
       gridMode,
@@ -91,7 +102,10 @@ export class PictographPreparer implements IPictographPreparer {
     }
   }
 
-  private async calculateProps(pictograph: PictographData): Promise<{
+  private async calculateProps(
+    pictograph: PictographData,
+    options?: PrepareOptions
+  ): Promise<{
     propPositions: Record<string, PropPosition>;
     propAssets: Record<string, PropAssets>;
   }> {
@@ -111,7 +125,12 @@ export class PictographPreparer implements IPictographPreparer {
           if (!motion.propPlacementData) return;
 
           const [renderData, placementData] = await Promise.all([
-            this.propLoader.loadPropSvg(motion.propPlacementData, motion),
+            this.propLoader.loadPropSvg(
+              motion.propPlacementData,
+              motion,
+              false, // useAnimatedVersion
+              options?.themeMode ? { themeMode: options.themeMode } : undefined
+            ),
             this.propPlacer.calculatePlacement(pictograph, motion),
           ]);
 

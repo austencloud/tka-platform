@@ -9,7 +9,7 @@ Props:
 - letterDimensions: Width and height of the letter SVG (already base letter for dash letters)
 - visible: Visibility control (tied to TKA glyph visibility)
 - previewMode: Show at reduced opacity when not visible
-- ledMode: Invert color on dark backgrounds
+- darkMode: Invert color on dark backgrounds
 
 Position Calculation (matches legacy):
 - SAME: 10px above letter top, horizontally centered on letter
@@ -34,7 +34,7 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     scale = 1,
     visible = true,
     previewMode = false,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     /** Direction from parsed turns tuple: "s" (same), "o" (opp), or null */
     direction: DirectionValue;
@@ -53,7 +53,7 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     /** Show at reduced opacity when not visible */
     previewMode?: boolean;
     /** Invert to white on dark backgrounds */
-    ledMode?: boolean;
+    darkMode?: boolean;
   }>();
 
   // Only show dot for "s" (same) or "o" (opp) directions
@@ -77,7 +77,7 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   });
 
   // Dot fill color - black on light, white on dark
-  const dotColor = $derived(ledMode ? "#ffffff" : "#231f20");
+  const dotColor = $derived(darkMode ? "#ffffff" : "#231f20");
 </script>
 
 <!-- Direction Dot - only render when direction is same or opp -->
@@ -91,7 +91,7 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     transform="translate({x}, {y}) scale({scale})"
     data-direction={direction}
   >
-    <!-- Render as inline circle for LED mode color control -->
+    <!-- Render as inline circle for dark mode color control -->
     <circle
       cx={dotPosition.x + DOT_SIZE / 2}
       cy={dotPosition.y + DOT_SIZE / 2}

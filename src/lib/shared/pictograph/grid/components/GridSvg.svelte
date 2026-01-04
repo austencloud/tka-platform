@@ -13,7 +13,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   let {
     gridMode = GridMode.DIAMOND,
     showNonRadialPoints = false,
-    ledMode = false,
+    darkMode = false,
     previewMode = false,
     onLoaded,
     onError,
@@ -23,8 +23,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     gridMode?: GridMode;
     /** Show non-radial points (layer 2 diagonal points) */
     showNonRadialPoints?: boolean;
-    /** LED mode - inverts grid colors to light for dark backgrounds */
-    ledMode?: boolean;
+    /** Dark mode - inverts grid colors to light for dark backgrounds */
+    darkMode?: boolean;
     /** Preview mode: show "off" elements at 40% opacity instead of hidden */
     previewMode?: boolean;
     /** Called when grid is successfully loaded */
@@ -63,7 +63,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     }
   }
 
-  // Styled grid content - reactively updates when gridMode, ledMode, or previewMode changes
+  // Styled grid content - reactively updates when gridMode, darkMode, or previewMode changes
   // In preview mode, we DON'T depend on showNonRadialPoints to avoid re-rendering (CSS handles opacity transitions)
   const styledGridSvg = $derived.by(() => {
     if (!baseGridSvg) return "";
@@ -74,7 +74,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       baseGridSvg,
       gridMode,
       effectiveShowNonRadial,
-      ledMode,
+      darkMode,
       previewMode
     );
   });
@@ -88,11 +88,11 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     svgContent: string,
     mode: GridMode,
     showNonRadial: boolean,
-    isLedMode: boolean,
+    isdarkMode: boolean,
     isPreviewMode: boolean
   ): string {
-    // LED mode uses light colors for dark backgrounds, normal mode uses black
-    const gridColor = isLedMode ? "#d0d0d0" : "#000";
+    // Dark mode uses light colors for dark backgrounds, normal mode uses black
+    const gridColor = isdarkMode ? "#d0d0d0" : "#000";
 
     const outerPointIds = [
       "n_diamond_outer_point",
@@ -321,9 +321,9 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   class:show-non-radial={showNonRadialPoints}
   class:preview-mode={previewMode}
   class:interactive-non-radial={onToggleNonRadial !== undefined}
-  class:led-mode={ledMode}
+  class:dark-mode={darkMode}
   data-grid-mode={gridMode}
-  data-led-mode={ledMode}
+  data-dark-mode={darkMode}
   transform="rotate({cumulativeRotation}, 475, 475)"
 >
   {#if !hasError && styledGridSvg}
@@ -380,11 +380,11 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       stroke 0.2s ease;
   }
 
-  /* LED mode - outer points use light color */
-  :global(.grid-container.led-mode #n_diamond_outer_point),
-  :global(.grid-container.led-mode #e_diamond_outer_point),
-  :global(.grid-container.led-mode #s_diamond_outer_point),
-  :global(.grid-container.led-mode #w_diamond_outer_point) {
+  /* Dark mode - outer points use light color */
+  :global(.grid-container.dark-mode #n_diamond_outer_point),
+  :global(.grid-container.dark-mode #e_diamond_outer_point),
+  :global(.grid-container.dark-mode #s_diamond_outer_point),
+  :global(.grid-container.dark-mode #w_diamond_outer_point) {
     fill: #d0d0d0;
     stroke: #d0d0d0;
   }
@@ -419,11 +419,11 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       fill 0.2s ease;
   }
 
-  /* LED mode - non-radial points use light color */
-  :global(.grid-container.led-mode #ne_diamond_layer2_point),
-  :global(.grid-container.led-mode #se_diamond_layer2_point),
-  :global(.grid-container.led-mode #sw_diamond_layer2_point),
-  :global(.grid-container.led-mode #nw_diamond_layer2_point) {
+  /* Dark mode - non-radial points use light color */
+  :global(.grid-container.dark-mode #ne_diamond_layer2_point),
+  :global(.grid-container.dark-mode #se_diamond_layer2_point),
+  :global(.grid-container.dark-mode #sw_diamond_layer2_point),
+  :global(.grid-container.dark-mode #nw_diamond_layer2_point) {
     fill: #d0d0d0;
   }
 
@@ -476,9 +476,9 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     transition: fill 0.2s ease;
   }
 
-  /* LED mode - normal hand points use light color */
+  /* Dark mode - normal hand points use light color */
   /* Note: strict-hand-point is intentionally excluded - it stays hidden in pictograph */
-  :global(.grid-container.led-mode .normal-hand-point) {
+  :global(.grid-container.dark-mode .normal-hand-point) {
     fill: #d0d0d0;
   }
 
@@ -488,12 +488,12 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     transition: fill 0.2s ease;
   }
 
-  /* LED mode - center point uses light color */
-  :global(.grid-container.led-mode #center_point) {
+  /* Dark mode - center point uses light color */
+  :global(.grid-container.dark-mode #center_point) {
     fill: #d0d0d0;
   }
 
-  /* Strict layer 2 points - intentionally NOT styled for LED mode
+  /* Strict layer 2 points - intentionally NOT styled for dark mode
      These remain fill:none (hidden) as defined in the SVG.
      Strict points are only used for animation mode, not pictograph display. */
 
@@ -503,8 +503,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     transition: stroke 0.2s ease;
   }
 
-  /* LED mode - lines use light color */
-  :global(.grid-container.led-mode line) {
+  /* Dark mode - lines use light color */
+  :global(.grid-container.dark-mode line) {
     stroke: #d0d0d0;
   }
 </style>

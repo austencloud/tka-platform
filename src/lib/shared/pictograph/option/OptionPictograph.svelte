@@ -15,18 +15,13 @@ Update your imports to use:
     pictograph,
     blueReversal = false,
     redReversal = false,
-    lightsOff = false,
+    darkMode = false,
   } = $props<{
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
-    lightsOff?: boolean;
+    darkMode: boolean;
   }>();
 </script>
 
-<PictographRenderer
-  {pictograph}
-  {blueReversal}
-  {redReversal}
-  ledMode={lightsOff}
-/>
+<PictographRenderer {pictograph} {blueReversal} {redReversal} {darkMode} />

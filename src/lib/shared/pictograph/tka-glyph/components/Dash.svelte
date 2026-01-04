@@ -18,7 +18,7 @@ from the letter, allowing the direction dot to center over just the letter.
     letterHeight = 100,
     visible = true,
     previewMode = false,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     /** Width of the letter this dash follows */
     letterWidth: number;
@@ -29,7 +29,7 @@ from the letter, allowing the direction dot to center over just the letter.
     /** Show at reduced opacity when not visible */
     previewMode?: boolean;
     /** Invert to white on dark backgrounds */
-    ledMode?: boolean;
+    darkMode?: boolean;
   }>();
 
   // Position dash to the right of the letter, vertically centered
@@ -37,7 +37,7 @@ from the letter, allowing the direction dot to center over just the letter.
   const dashY = $derived((letterHeight - DASH_HEIGHT) / 2);
 
   // Dash fill color - black on light, white on dark (matches letter inversion)
-  const dashColor = $derived(ledMode ? "#ffffff" : "#231f20");
+  const dashColor = $derived(darkMode ? "#ffffff" : "#231f20");
 </script>
 
 <!-- Dash - only render when visible (or in preview mode) -->
@@ -48,7 +48,7 @@ from the letter, allowing the direction dot to center over just the letter.
     class:preview-mode={previewMode}
     transform="translate({dashX}, {dashY})"
   >
-    <!-- Render dash as inline rect for LED mode color control -->
+    <!-- Render dash as inline rect for dark mode color control -->
     <rect
       x="0"
       y="0"

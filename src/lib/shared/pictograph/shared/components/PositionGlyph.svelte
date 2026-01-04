@@ -18,7 +18,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     visible = true,
     previewMode = false,
     onToggle = undefined,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     /** Start position */
     startPosition?: GridPosition | null;
@@ -34,8 +34,8 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
-    /** LED mode - inverts colors for dark backgrounds */
-    ledMode?: boolean;
+    /** Dark mode - inverts colors for dark backgrounds */
+    darkMode?: boolean;
   }>();
 
   // Static letters that don't show position glyph
@@ -170,10 +170,10 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:led-mode={ledMode}
-    data-led-mode={ledMode}
+    class:dark-mode={darkMode}
+    data-dark-mode={darkMode}
     transform="translate({groupX}, {Y_POSITION})"
-    style={ledMode ? "filter: invert(0.9)" : undefined}
+    style={darkMode ? "filter: invert(0.9)" : undefined}
     onclick={onToggle}
     {...onToggle
       ? {
@@ -249,8 +249,8 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     opacity: 0.5;
   }
 
-  /* LED mode: invert colors for dark backgrounds */
-  .position-glyph.led-mode {
+  /* Dark mode: invert colors for dark backgrounds */
+  .position-glyph.dark-mode {
     filter: invert(0.9);
   }
 </style>

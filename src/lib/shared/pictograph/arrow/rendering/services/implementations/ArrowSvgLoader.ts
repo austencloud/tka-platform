@@ -9,8 +9,8 @@
  * - Performance monitoring (cache hit/miss tracking)
  * - HMR-aware cache persistence (prevents mass refetches on code changes)
  *
- * Theme mode is read dynamically from AnimationVisibilityStateManager
- * to ensure colors match the current pictograph background mode.
+ * Theme mode can be passed explicitly (for exports) or defaults to
+ * reading from AnimationVisibilityStateManager (for live display).
  *
  * Extracted from ArrowRenderer to improve modularity and reusability.
  */
@@ -20,7 +20,10 @@ import type { IArrowSvgParser } from "../contracts/IArrowSvgParser";
 import type { ISvgColorTransformer } from "../contracts/IArrowSvgColorTransformer";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 import type { ArrowSvgData } from "../../../../shared/domain/models/svg-models";
-import type { IArrowSvgLoader } from "../contracts/IArrowSvgLoader";
+import type {
+  IArrowSvgLoader,
+  ArrowSvgLoadOptions,
+} from "../contracts/IArrowSvgLoader";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { TYPES } from "../../../../../inversify/types";
 import { inject, injectable } from "inversify";
@@ -86,10 +89,12 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
   /**
    * Load arrow SVG data with color transformation based on placement data (extracted from Arrow.svelte)
    * 🚀 OPTIMIZED: Checks transformed cache first, then raw cache, then fetches
+   * @param options Optional settings including themeMode for color selection
    */
   async loadArrowSvg(
     arrowData: ArrowPlacementData,
-    motionData: MotionData
+    motionData: MotionData,
+    options?: ArrowSvgLoadOptions
   ): Promise<ArrowSvgData> {
     const path = this.pathResolver.getArrowPath(arrowData, motionData);
 
@@ -100,8 +105,8 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
       throw new Error("No arrow path available - missing motion data");
     }
 
-    // Get current theme mode for color selection
-    const themeMode = this.getCurrentThemeMode();
+    // Use explicit theme mode if provided, otherwise fall back to global state
+    const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
     // Create cache key including color AND theme mode for transformed SVG cache
     const transformedCacheKey = `${path}:${motionData.color}:${themeMode}`;
@@ -119,10 +124,11 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
 
     const parsedSvg = this.svgParser.parseArrowSvg(originalSvgText);
 
-    // Apply color transformation to the SVG
+    // Apply color transformation to the SVG, passing theme mode
     const coloredSvgText = this.colorTransformer.applyColorToSvg(
       originalSvgText,
-      motionData.color
+      motionData.color,
+      themeMode
     );
 
     // Extract just the inner SVG content (no scaling needed - arrows are already correctly sized)

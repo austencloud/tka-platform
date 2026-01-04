@@ -18,7 +18,7 @@ colored according to the motion that is reversing between pictographs.
     visible = true,
     previewMode = false,
     onToggle = undefined,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     /** Whether to show blue reversal indicator */
     blueReversal?: boolean;
@@ -32,8 +32,8 @@ colored according to the motion that is reversing between pictographs.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
-    /** LED mode - adds white outline for dark backgrounds */
-    ledMode?: boolean;
+    /** Dark mode - adds white outline for dark backgrounds */
+    darkMode?: boolean;
   }>();
 
   // Get global visibility manager to respect motion visibility settings
@@ -84,12 +84,12 @@ colored according to the motion that is reversing between pictographs.
   });
 
   // Match arrow and prop colors for consistency - based on pictograph background mode
-  // ledMode=true (dark background) → use bright colors, ledMode=false (white background) → use original dark colors
+  // darkMode=true (dark background) → use bright colors, darkMode=false (white background) → use original dark colors
   const BLUE_COLOR = $derived(
-    getMotionColor(MotionColor.BLUE, ledMode ? "dark" : "light")
+    getMotionColor(MotionColor.BLUE, darkMode ? "dark" : "light")
   );
   const RED_COLOR = $derived(
-    getMotionColor(MotionColor.RED, ledMode ? "dark" : "light")
+    getMotionColor(MotionColor.RED, darkMode ? "dark" : "light")
   );
 
   // Relative positioning - scales with pictograph size
@@ -136,7 +136,7 @@ colored according to the motion that is reversing between pictographs.
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:led-mode={ledMode}
+    class:dark-mode={darkMode}
     onclick={onToggle}
     {...onToggle
       ? {

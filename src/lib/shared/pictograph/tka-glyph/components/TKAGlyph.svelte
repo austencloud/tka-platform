@@ -150,7 +150,7 @@ Uses pure runes instead of stores for reactivity.
     visible = true,
     previewMode = false,
     onToggle = undefined,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     /** The letter to display */
     letter: string | null | undefined;
@@ -168,8 +168,8 @@ Uses pure runes instead of stores for reactivity.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
-    /** LED mode - inverts letter color for dark backgrounds */
-    ledMode?: boolean;
+    /** Dark mode - inverts letter color for dark backgrounds */
+    darkMode?: boolean;
   }>();
 
   // Letter dimensions state - match legacy behavior
@@ -312,11 +312,11 @@ Uses pure runes instead of stores for reactivity.
     class:visible={visible && imageReady}
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:led-mode={ledMode}
+    class:dark-mode={darkMode}
     data-letter={letter}
-    data-led-mode={ledMode}
+    data-dark-mode={darkMode}
     transform="translate({x}, {y}) scale({scale})"
-    style={ledMode ? "filter: invert(0.9)" : undefined}
+    style={darkMode ? "filter: invert(0.9)" : undefined}
     onclick={onToggle}
     {...onToggle
       ? {
@@ -339,7 +339,7 @@ Uses pure runes instead of stores for reactivity.
     />
 
     <!-- Dash for Type3/Type5 letters (rendered separately for dot centering) -->
-    <!-- Note: ledMode NOT passed - parent group already handles inversion via filter -->
+    <!-- Note: darkMode NOT passed - parent group already handles inversion via filter -->
     {#if showDash}
       <Dash
         letterWidth={letterDimensions.width}
@@ -388,8 +388,8 @@ Uses pure runes instead of stores for reactivity.
     image-rendering: optimizeQuality;
   }
 
-  /* LED mode: invert letter color for dark backgrounds */
-  .tka-glyph.led-mode {
+  /* Dark mode: invert letter color for dark backgrounds */
+  .tka-glyph.dark-mode {
     filter: invert(0.9);
   }
 </style>

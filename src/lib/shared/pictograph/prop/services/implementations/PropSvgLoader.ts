@@ -15,7 +15,10 @@ import type { MotionData } from "../../../shared/domain/models/MotionData";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import { injectable } from "inversify";
 import type { PropRenderData } from "../../domain/models/PropRenderData";
-import type { IPropSvgLoader } from "../contracts/IPropSvgLoader";
+import type {
+  IPropSvgLoader,
+  PropSvgLoadOptions,
+} from "../contracts/IPropSvgLoader";
 import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
 import {
   applyMotionColorToSvg,
@@ -81,19 +84,21 @@ export class PropSvgLoader implements IPropSvgLoader {
    * @param propData - Prop placement data
    * @param motionData - Motion data including prop type
    * @param useAnimatedVersion - If true, loads {propType}_animated.svg for animation canvas (300px width)
+   * @param options - Optional settings including themeMode for color selection
    */
   async loadPropSvg(
     propData: PropPlacementData,
     motionData: MotionData,
-    useAnimatedVersion: boolean = false
+    useAnimatedVersion: boolean = false,
+    options?: PropSvgLoadOptions
   ): Promise<PropRenderData> {
     try {
       // Get prop type and color
       const propType = motionData.propType || "staff";
       const color = motionData.color || MotionColor.BLUE;
 
-      // Get current theme mode for color selection
-      const themeMode = this.getCurrentThemeMode();
+      // Use explicit theme mode if provided, otherwise fall back to global state
+      const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
       // Create cache key including color AND theme mode for transformed prop cache
       // Use _animated version for animation canvas (scaled to 300px width)

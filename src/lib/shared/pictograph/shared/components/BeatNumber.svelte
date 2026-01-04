@@ -10,7 +10,7 @@ Based on the legacy BeatNumberLabel.svelte component architecture.
     showBeatNumber = true,
     isStartPosition = false,
     hasValidData = true,
-    ledMode = false,
+    darkMode = false,
   } = $props<{
     /** The beat number to display */
     beatNumber?: number | null;
@@ -20,15 +20,15 @@ Based on the legacy BeatNumberLabel.svelte component architecture.
     isStartPosition?: boolean;
     /** Whether the pictograph has valid data */
     hasValidData?: boolean;
-    /** LED mode - uses white fill without stroke for dark backgrounds */
-    ledMode?: boolean;
+    /** Dark mode - uses white fill without stroke for dark backgrounds */
+    darkMode?: boolean;
   }>();
 
-  // Colors based on LED mode
-  const fillColor = $derived(ledMode ? "#ffffff" : "#000");
-  const strokeColor = $derived(ledMode ? "none" : "#fff");
-  const strokeWidth = $derived(ledMode ? 0 : 6);
-  const startStrokeWidth = $derived(ledMode ? 0 : 5);
+  // Colors based on dark mode
+  const fillColor = $derived(darkMode ? "#ffffff" : "#000");
+  const strokeColor = $derived(darkMode ? "none" : "#fff");
+  const strokeWidth = $derived(darkMode ? 0 : 6);
+  const startStrokeWidth = $derived(darkMode ? 0 : 5);
 
   // Only render beat number if conditions are met
   // Beat number 0 is excluded so it falls through to show "Start" text

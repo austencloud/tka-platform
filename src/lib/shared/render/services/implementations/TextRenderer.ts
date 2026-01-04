@@ -139,7 +139,7 @@ export class TextRenderer implements ITextRenderer {
   /**
    * Render word in a header at the top of the canvas
    * Simple background with optional level badge indicator
-   * @param ledMode - When true, uses dark theme styling (dark bg, light text)
+   * @param darkMode - When true, uses dark theme styling (dark bg, light text)
    */
   renderWordHeader(
     canvas: HTMLCanvasElement,
@@ -148,7 +148,7 @@ export class TextRenderer implements ITextRenderer {
     headerHeight: number,
     difficultyLevel: number = 1,
     showDifficultyBadge: boolean = true,
-    ledMode: boolean = false
+    darkMode: boolean = false
   ): void {
     if (!word || word.trim() === "") {
       console.log("🚫 TextRenderer: No word to render in header");
@@ -161,14 +161,14 @@ export class TextRenderer implements ITextRenderer {
       return;
     }
 
-    // LED mode uses dark background, normal mode uses light gray
-    ctx.fillStyle = ledMode
+    // Dark Mode uses dark background, normal mode uses light gray
+    ctx.fillStyle = darkMode
       ? "rgba(10, 10, 15, 0.98)"
       : "rgba(245, 245, 245, 0.98)";
     ctx.fillRect(0, 0, canvas.width, headerHeight);
 
-    // Draw subtle bottom border (light for LED mode, dark for normal)
-    ctx.strokeStyle = ledMode
+    // Draw subtle bottom border (light for Dark Mode, dark for normal)
+    ctx.strokeStyle = darkMode
       ? "rgba(255, 255, 255, 0.15)"
       : "rgba(0, 0, 0, 0.1)";
     ctx.lineWidth = 1;
@@ -181,9 +181,9 @@ export class TextRenderer implements ITextRenderer {
     const finalFontSize = headerHeight * 0.9;
 
     // Set font properties - bold weight for emphasis
-    // LED mode uses white text, normal mode uses dark gray
+    // Dark Mode uses white text, normal mode uses dark gray
     ctx.font = `700 ${finalFontSize}px ${this.titleFontFamily}`;
-    ctx.fillStyle = ledMode ? "#ffffff" : "#1f2937";
+    ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -438,7 +438,7 @@ export class TextRenderer implements ITextRenderer {
    * - Date (bottom-right) - Georgia Normal
    *
    * Font sizing is now based on footer height to ensure text fits properly.
-   * @param ledMode - When true, uses dark theme styling (dark bg, light text)
+   * @param darkMode - When true, uses dark theme styling (dark bg, light text)
    */
   renderUserInfo(
     canvas: HTMLCanvasElement,
@@ -446,21 +446,21 @@ export class TextRenderer implements ITextRenderer {
     options: TextRenderOptions,
     footerHeight: number = 60,
     beatCount: number = 3,
-    ledMode: boolean = false
+    darkMode: boolean = false
   ): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const footerTop = canvas.height - footerHeight;
 
-    // LED mode uses dark background, normal mode uses light gray
-    ctx.fillStyle = ledMode
+    // Dark Mode uses dark background, normal mode uses light gray
+    ctx.fillStyle = darkMode
       ? "rgba(10, 10, 15, 0.98)"
       : "rgba(245, 245, 245, 0.98)";
     ctx.fillRect(0, footerTop, canvas.width, footerHeight);
 
-    // Draw subtle top border (light for LED mode, dark for normal)
-    ctx.strokeStyle = ledMode
+    // Draw subtle top border (light for Dark Mode, dark for normal)
+    ctx.strokeStyle = darkMode
       ? "rgba(255, 255, 255, 0.15)"
       : "rgba(0, 0, 0, 0.1)";
     ctx.lineWidth = 1;
@@ -477,8 +477,8 @@ export class TextRenderer implements ITextRenderer {
     // Position text lower in footer (65% down) to create space from pictographs above
     const yPosition = footerTop + footerHeight * 0.55;
 
-    // LED mode uses white text, normal mode uses black
-    ctx.fillStyle = ledMode ? "#ffffff" : "black";
+    // Dark Mode uses white text, normal mode uses black
+    ctx.fillStyle = darkMode ? "#ffffff" : "black";
     ctx.textBaseline = "middle"; // Vertically center text
 
     // Username (bottom-left) - Georgia Bold

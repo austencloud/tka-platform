@@ -1,8 +1,12 @@
 <!--
 Simple Prop Component - Just renders a prop with provided data
 Now with smooth transitions when position or orientation changes!
+Now with click interaction for variant cycling and chirality toggling!
 -->
 <script lang="ts">
+  import { resolve } from "../../../inversify/di";
+  import { TYPES } from "../../../inversify/types";
+  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import {
     Orientation,
     MotionColor,
@@ -26,12 +30,59 @@ Now with smooth transitions when position or orientation changes!
     propAssets,
     propPosition,
     showProp = true,
+    isClickable = false,
+    isSelected = false,
+    onPropClick,
   } = $props<{
     motionData: MotionData;
     propAssets: PropAssets;
     propPosition: PropPosition;
     showProp?: boolean;
+    /** When true, prop responds to clicks */
+    isClickable?: boolean;
+    /** When true, shows selection highlight */
+    isSelected?: boolean;
+    /** Callback when prop is clicked (only called if isClickable) */
+    onPropClick?: () => void;
   }>();
+
+  // Haptic service for click feedback (lazy loaded)
+  let hapticService: IHapticFeedback | null = null;
+
+  $effect(() => {
+    if (isClickable && !hapticService) {
+      try {
+        hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      } catch {
+        // Haptic not available - graceful degradation
+      }
+    }
+  });
+
+  function handlePropClick(event: MouseEvent | KeyboardEvent) {
+    if (!isClickable || !onPropClick) return;
+
+    event.stopPropagation();
+    hapticService?.trigger("selection");
+    onPropClick();
+  }
+
+  // Touch event handlers to prevent SwipeToDismiss from capturing the touch
+  function handleTouchStart(event: TouchEvent) {
+    if (!isClickable) return;
+    // Stop propagation so SwipeToDismiss doesn't capture this touch
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  }
+
+  function handleTouchEnd(event: TouchEvent) {
+    if (!isClickable || !onPropClick) return;
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    event.preventDefault(); // Prevent subsequent click event
+    hapticService?.trigger("selection");
+    onPropClick();
+  }
 
   type MotionSnapshot = {
     startOrientation?: Orientation;
@@ -250,12 +301,50 @@ Now with smooth transitions when position or orientation changes!
 </script>
 
 {#if showProp}
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <g
     class="prop-svg {motionData.color}-prop-svg"
+    class:clickable={isClickable}
+    class:selected={isSelected}
     data-prop-type={motionData?.propType}
     style="transform: {transformString};"
+    role={isClickable ? "button" : undefined}
+    tabindex={isClickable ? 0 : undefined}
+    aria-label={isClickable
+      ? `${motionData.color} prop - tap to cycle variant`
+      : undefined}
   >
     {@html propAssets.imageSrc}
+
+    <!-- Transparent hit area for touch/click capture when clickable -->
+    {#if isClickable}
+      <circle
+        cx={propAssets.center.x}
+        cy={propAssets.center.y}
+        r="100"
+        fill="transparent"
+        class="hit-area"
+        onclick={handlePropClick}
+        ontouchstart={handleTouchStart}
+        ontouchend={handleTouchEnd}
+        onkeydown={(e) =>
+          (e.key === "Enter" || e.key === " ") && handlePropClick(e)}
+      />
+    {/if}
+
+    <!-- Selection highlight overlay -->
+    {#if isSelected}
+      <circle
+        cx={propAssets.center.x}
+        cy={propAssets.center.y}
+        r="55"
+        fill="none"
+        stroke="var(--color-accent, var(--semantic-warning))"
+        stroke-width="4"
+        class="selection-glow"
+        opacity="0.8"
+      />
+    {/if}
   </g>
 {/if}
 
@@ -264,6 +353,47 @@ Now with smooth transitions when position or orientation changes!
     pointer-events: none;
     /* Smooth transition for position and rotation changes - matches arrow and grid behavior */
     /* IMPORTANT: transform must be a CSS property (not SVG attribute) for transitions to work */
-    transition: transform 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  .prop-svg.clickable {
+    pointer-events: all;
+    cursor: pointer;
+  }
+
+  /* Transparent hit area that captures touch/click events */
+  .hit-area {
+    pointer-events: all;
+    cursor: pointer;
+  }
+
+  .prop-svg.clickable:hover {
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+  }
+
+  .prop-svg.clickable:active {
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.4));
+  }
+
+  .prop-svg.selected {
+    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.9));
+  }
+
+  .selection-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      opacity: 0.6;
+      stroke-width: 4;
+    }
+    50% {
+      opacity: 1;
+      stroke-width: 6;
+    }
   }
 </style>

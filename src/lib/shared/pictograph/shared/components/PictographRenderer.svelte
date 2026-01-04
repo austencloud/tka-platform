@@ -8,7 +8,7 @@ No visibility subscriptions, no effects, no async work.
 Props:
 - pictograph: Pre-calculated pictograph data with positions
 - blueReversal/redReversal: Reversal indicator states
-- ledMode: Dark mode state (controls background, grid, and glyph inversion)
+- darkMode: Dark mode state (controls background, grid, and glyph inversion)
 - All visibility controls (explicit, not from global state)
 
 Usage:
@@ -43,7 +43,7 @@ Usage:
     pictograph,
     blueReversal = false,
     redReversal = false,
-    ledMode = false,
+    darkMode = false,
     // Core visibility controls
     showTKA = true,
     showReversals = true,
@@ -62,6 +62,12 @@ Usage:
     visibleHand = null,
     // Enable arrow selection for adjustment (admin feature)
     arrowsClickable = false,
+    // Enable prop selection for variant cycling
+    propsClickable = false,
+    // Currently selected prop hand (for visual feedback)
+    selectedPropHand = null,
+    // Callback when a prop is clicked
+    onPropClick = undefined,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
     onToggleVTG = undefined,
@@ -73,7 +79,7 @@ Usage:
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
-    ledMode?: boolean;
+    darkMode?: boolean;
     showTKA?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
@@ -86,6 +92,9 @@ Usage:
     gridModeOverride?: GridMode | null;
     visibleHand?: "blue" | "red" | null;
     arrowsClickable?: boolean;
+    propsClickable?: boolean;
+    selectedPropHand?: "blue" | "red" | null;
+    onPropClick?: (hand: "blue" | "red") => void;
     onToggleTKA?: () => void;
     onToggleVTG?: () => void;
     onToggleElemental?: () => void;
@@ -180,7 +189,7 @@ Usage:
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
 </script>
 
-<div class="pictograph-renderer" class:led-mode={ledMode}>
+<div class="pictograph-renderer" class:dark-mode={darkMode}>
   <svg
     width="100%"
     height="100%"
@@ -190,13 +199,13 @@ Usage:
     aria-label="Pictograph"
   >
     <!-- Background -->
-    <rect width="950" height="950" fill={ledMode ? "#0a0a0f" : "white"} />
+    <rect width="950" height="950" fill={darkMode ? "#0a0a0f" : "white"} />
 
     <!-- Grid -->
     <GridSvg
       {gridMode}
       {showNonRadialPoints}
-      {ledMode}
+      {darkMode}
       {previewMode}
       onLoaded={() => {}}
       onError={() => {}}
@@ -211,6 +220,11 @@ Usage:
           propAssets={propAssets[color]}
           propPosition={propPositions[color]}
           showProp={true}
+          isClickable={propsClickable}
+          isSelected={selectedPropHand === color}
+          onPropClick={propsClickable && onPropClick
+            ? () => onPropClick(color)
+            : undefined}
         />
       {/if}
     {/each}
@@ -227,7 +241,7 @@ Usage:
           shouldMirror={arrowMirroring[color] || false}
           showArrow={true}
           isClickable={arrowsClickable}
-          {ledMode}
+          {darkMode}
         />
       {/if}
     {/each}
@@ -240,7 +254,7 @@ Usage:
         visible={showTKA}
         {previewMode}
         onToggle={onToggleTKA}
-        {ledMode}
+        {darkMode}
       />
     {/if}
 
@@ -253,7 +267,7 @@ Usage:
       {previewMode}
       standalone={false}
       onToggle={onToggleTKA}
-      {ledMode}
+      {darkMode}
     />
 
     <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
@@ -265,7 +279,7 @@ Usage:
         {letterDimensions}
         visible={showTKA}
         {previewMode}
-        {ledMode}
+        {darkMode}
       />
     {/if}
 
@@ -275,7 +289,7 @@ Usage:
       showBeatNumber={shouldShowBeatNumber}
       {isStartPosition}
       {hasValidData}
-      {ledMode}
+      {darkMode}
     />
 
     <!-- Reversal indicators -->
@@ -286,7 +300,7 @@ Usage:
       visible={showReversals}
       {previewMode}
       onToggle={onToggleReversals}
-      {ledMode}
+      {darkMode}
     />
 
     <!-- Elemental glyph -->
@@ -318,7 +332,7 @@ Usage:
       visible={showPositions}
       {previewMode}
       onToggle={onTogglePositions}
-      {ledMode}
+      {darkMode}
     />
   </svg>
 </div>
@@ -332,7 +346,7 @@ Usage:
   }
 
   /* Subtle white outline in dark mode to distinguish boundaries */
-  .pictograph-renderer.led-mode {
+  .pictograph-renderer.dark-mode {
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 

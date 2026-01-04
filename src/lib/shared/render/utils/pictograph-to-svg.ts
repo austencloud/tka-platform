@@ -30,9 +30,7 @@ export interface PictographVisibilityOptions {
   showReversals?: boolean;
   showNonRadialPoints?: boolean;
   /** Dark Mode - dark background, inverted grid, white text/outlines */
-  lightsOff?: boolean;
-  /** Prop Glow - glowing drop-shadow effect on props */
-  propGlow?: boolean;
+  darkMode?: boolean;
 }
 
 /**
@@ -89,8 +87,7 @@ export async function renderPictographToSVG(
       componentProps.showReversals = visibilityOptions.showReversals;
       componentProps.showNonRadialPoints =
         visibilityOptions.showNonRadialPoints;
-      componentProps.ledMode = visibilityOptions.lightsOff; // Dark Mode controls background/grid
-      // Note: propGlow would need to be added to PictographRenderer if needed in the future
+      componentProps.darkMode = visibilityOptions.darkMode; // Dark Mode controls background/grid
     }
 
     // Mount PictographContainer with explicit visibility settings

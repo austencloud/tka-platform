@@ -435,14 +435,14 @@ export class VisibilityStateManager {
   }
 
   // ============================================================================
-  // LED MODE (reads from shared animation visibility state)
+  // DARK MODE (reads from shared animation visibility state)
   // ============================================================================
 
   /**
-   * Get LED mode status from the shared animation visibility state
-   * LED Mode: dark background + glowing props + inverted grid
+   * Get dark mode status from the shared animation visibility state
+   * Dark Mode: dark background + inverted grid
    */
-  getLedMode(): boolean {
+  getDarkMode(): boolean {
     // Import synchronously since animation visibility manager is a singleton
     // that's already initialized when the app starts
     try {
@@ -451,7 +451,7 @@ export class VisibilityStateManager {
       const {
         getAnimationVisibilityManager,
       } = require("../../../animation-engine/state/animation-visibility-state.svelte");
-      return getAnimationVisibilityManager().isLedMode();
+      return getAnimationVisibilityManager().isDarkMode();
     } catch {
       return false;
     }
