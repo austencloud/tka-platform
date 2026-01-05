@@ -15,7 +15,10 @@ import { inject, injectable } from "inversify";
 import type { IDiscoverLoader } from "../contracts/IDiscoverLoader";
 import type { IDiscoverMetadataExtractor } from "../contracts/IDiscoverMetadataExtractor";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
 import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 import {
   GridLocation,
@@ -354,12 +357,12 @@ export class DiscoverLoader implements IDiscoverLoader {
 
   /**
    * Parse start position (beat 0) from bundled metadata
-   * Returns a BeatData-like structure representing the initial prop positions
+   * Returns a StartPositionData structure representing the initial prop positions
    */
   private parseStartPosition(
     sequence: unknown[],
     gridMode: GridMode
-  ): BeatData | null {
+  ): StartPositionData | null {
     const beatObjects = sequence.filter(
       (item): item is Record<string, unknown> =>
         typeof item === "object" && item !== null
@@ -390,11 +393,10 @@ export class DiscoverLoader implements IDiscoverLoader {
       snakeCase: string
     ) => attrs[camelCase] ?? attrs[snakeCase];
 
-    return {
+    return createStartPositionData({
       id: "start-position",
-      letter: String(startPosEntry["letter"] || "α"),
-      startPosition: gridPosition,
-      endPosition: gridPosition,
+      letter: String(startPosEntry["letter"] || "α") as Letter,
+      gridPosition: gridPosition,
       motions: {
         [MotionColor.BLUE]: blueAttrs
           ? createMotionData({
@@ -459,12 +461,7 @@ export class DiscoverLoader implements IDiscoverLoader {
             })
           : undefined,
       },
-      beatNumber: 0,
-      duration: 0,
-      blueReversal: false,
-      redReversal: false,
-      isBlank: false,
-    } as BeatData;
+    });
   }
 
   // Helper methods for parsing motion attributes

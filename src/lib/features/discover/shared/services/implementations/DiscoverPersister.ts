@@ -6,6 +6,8 @@
  */
 
 import type { BeatData } from "../../../../create/shared/domain/models/BeatData";
+import type { StartPositionData } from "../../../../create/shared/domain/models/StartPositionData";
+import { createStartPositionData } from "../../../../create/shared/domain/factories/createStartPositionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -121,14 +123,41 @@ export class DiscoverPersister {
   }
 
   /**
+   * Normalize a start position to ensure all required properties are present
+   */
+  private normalizeStartPosition(
+    startPos: unknown
+  ): StartPositionData | undefined {
+    if (!startPos) return undefined;
+    const posData = startPos as Record<string, unknown>;
+
+    // Handle both old format and new unified format - use posData for all accesses
+    return createStartPositionData({
+      id: (posData["id"] as string) || `start-${crypto.randomUUID()}`,
+      letter: (posData["letter"] as Letter | null | undefined) ?? null,
+      gridPosition:
+        (posData["gridPosition"] as GridPosition | null | undefined) ?? null,
+      startPosition:
+        (posData["startPosition"] as GridPosition | null | undefined) ?? null,
+      endPosition:
+        (posData["endPosition"] as GridPosition | null | undefined) ?? null,
+      motions:
+        (posData["motions"] as Record<string, MotionData> | null | undefined) ??
+        {},
+    });
+  }
+
+  /**
    * Normalize a sequence to ensure all required properties are present
    */
   private normalizeSequence(sequence: unknown): SequenceData {
     const sequenceData = sequence as Record<string, unknown>;
-    const startingPositionBeat = this.normalizeBeat(
+    const startingPositionBeat = this.normalizeStartPosition(
       sequenceData["startingPositionBeat"]
     );
-    const startPosition = this.normalizeBeat(sequenceData["startPosition"]);
+    const startPosition = this.normalizeStartPosition(
+      sequenceData["startPosition"]
+    );
 
     const beatsValue = sequenceData["beats"];
     const beats = Array.isArray(beatsValue) ? beatsValue : [];

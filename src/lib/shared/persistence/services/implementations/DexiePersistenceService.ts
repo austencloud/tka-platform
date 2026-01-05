@@ -8,9 +8,10 @@
 
 import type { AppSettings } from "../../../settings/domain/AppSettings";
 import type { CompleteExploreState } from "../../../../features/discover/shared/domain/models/discover-models";
-import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
+import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { TabId } from "../../../foundation/ui/UITypes";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
+import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import { injectable } from "inversify";
 import { db } from "../../database/TKADatabase";
 import { UserWorkType } from "../../domain/enums/UserWorkType";
@@ -418,7 +419,7 @@ export class DexiePersistenceService implements IPersistenceService {
 
   saveCurrentSequenceState(state: {
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection?: string;
   }): Promise<void> {
@@ -445,7 +446,7 @@ export class DexiePersistenceService implements IPersistenceService {
 
   async loadCurrentSequenceState(mode?: string): Promise<{
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection?: string;
   } | null> {
@@ -494,7 +495,7 @@ export class DexiePersistenceService implements IPersistenceService {
    */
   private isValidSequenceState(obj: unknown): obj is {
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection?: string;
     timestamp?: number;

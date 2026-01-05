@@ -8,10 +8,11 @@
 
 import type { AppSettings } from "../../../settings/domain/AppSettings";
 import type { CompleteExploreState } from "../../../../features/discover/shared/domain/models/discover-models";
-import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
+import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { TabId } from "../../../foundation/ui/UITypes";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { UserProject } from "../../domain/models/UserProject";
+import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 
 // ============================================================================
 // MAIN PERSISTENCE SERVICE
@@ -200,7 +201,7 @@ export interface IPersistenceService {
    */
   saveCurrentSequenceState(state: {
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection?: string;
   }): Promise<void>;
@@ -212,7 +213,7 @@ export interface IPersistenceService {
    */
   loadCurrentSequenceState(mode?: string): Promise<{
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection?: string;
   } | null>;

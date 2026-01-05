@@ -25,9 +25,10 @@ export interface SequenceData {
   readonly beats: readonly BeatData[]; // Only actual beats (beatNumber >= 1), never start position
 
   // Start position storage (CONSOLIDATED):
-  // MIGRATION: Prefer startPosition field. startingPositionBeat is legacy for backward compatibility.
-  readonly startPosition?: StartPositionData | BeatData; // Primary field: use StartPositionData going forward
-  readonly startingPositionBeat?: StartPositionData | BeatData; // Legacy field: kept for backward compatibility
+  // Start positions are semantically distinct from beats - they have no duration, no beat number,
+  // and represent the initial static prop configuration before the sequence begins.
+  readonly startPosition?: StartPositionData;
+  readonly startingPositionBeat?: StartPositionData; // Legacy field name, same type
   readonly startingPositionGroup?: GridPositionGroup; // Position group metadata: "alpha", "beta", "gamma"
 
   readonly thumbnails: readonly string[];
