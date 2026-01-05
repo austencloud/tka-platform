@@ -1,24 +1,32 @@
 <!--
   TransformDetailModal.svelte
 
-  Full-screen step-through modal for learning about a specific transform.
-  Shows progressive panels: intro → single motion → dual motion (+ timeline for rewind)
+  Single-page modal for learning about a specific transform.
+  Shows visual data mapping + interactive pictograph example.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { transformHelpContent } from "../../domain/transforms/transform-help-content";
+  import {
+    actionHelpContent,
+    type ActionHelpId,
+    type TransformId,
+  } from "../../domain/transforms/transform-help-content";
   import { portal } from "$lib/features/create/generate/components/modals/portal";
-  import TransformStepNavigation from "./TransformStepNavigation.svelte";
-  import TransformIntroStep from "./steps/TransformIntroStep.svelte";
-  import TransformSingleStep from "./steps/TransformSingleStep.svelte";
-  import TransformDualStep from "./steps/TransformDualStep.svelte";
-  import RewindTimelineStep from "./steps/RewindTimelineStep.svelte";
-
-  type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
-  type StepType = "intro" | "single" | "dual" | "timeline";
+  import { getRandomPictographForTransform } from "../../domain/transforms/pictograph-example-loader";
+  import {
+    applyMirror,
+    applyFlip,
+    applyInvert,
+    applyRotate,
+    applySwap,
+    applyRewind,
+  } from "../../domain/transforms/transform-functions";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import TransformVisualMapping from "./TransformVisualMapping.svelte";
 
   interface Props {
-    transformId: TransformId;
+    transformId: ActionHelpId;
     onClose: () => void;
   }
 
@@ -32,58 +40,82 @@
     };
   });
 
-  // Get transform content
-  const transform = $derived(
-    transformHelpContent.find((t) => t.id === transformId) ?? transformHelpContent[0]
+  // Get action content
+  const action = $derived(
+    actionHelpContent.find((t) => t.id === transformId) ?? actionHelpContent[0]
   );
 
-  // Step configuration per transform
-  const TRANSFORM_STEPS: Record<TransformId, StepType[]> = {
-    mirror: ["intro", "single", "dual"],
-    flip: ["intro", "single", "dual"],
-    invert: ["intro", "single", "dual"],
-    rotate: ["intro", "single", "dual"],
-    swap: ["intro", "single", "dual"],
-    rewind: ["intro", "timeline", "single", "dual"], // Rewind gets extra timeline step
+  // Check if this is a transform (with animated demo) or pattern/tool (no demo)
+  const isTransform = $derived(action?.category === "transform");
+
+  // Concise descriptions - shorter than fullDesc, but still educational
+  const descriptions: Record<string, string> = {
+    mirror: "Flips horizontally, like looking in a mirror. Left becomes right, clockwise becomes counter-clockwise.",
+    flip: "Flips vertically, like turning upside down. Up becomes down, clockwise becomes counter-clockwise.",
+    invert: "Inverts all rotation directions. Clockwise becomes counter-clockwise, Pro becomes Anti.",
+    rotate: "Pivots 45° around the center.",
+    swap: "Exchanges left and right hand movements. Same pattern, opposite hands perform each motion.",
+    rewind: "Plays backwards. End becomes start, every beat reverses order, turns flip direction.",
   };
 
-  // Current step state
-  let currentStepIndex = $state(0);
-  const steps = $derived(TRANSFORM_STEPS[transformId]);
-  const currentStep = $derived(steps[currentStepIndex]);
-  const progress = $derived(((currentStepIndex + 1) / steps.length) * 100);
+  const description = $derived(descriptions[transformId] ?? action?.fullDesc ?? "");
 
-  // Navigation handlers
-  function goToStep(index: number) {
-    if (index >= 0 && index < steps.length) {
-      currentStepIndex = index;
+  // Pictograph state
+  let displayedPictograph = $state<PictographData | null>(null);
+  let isLoading = $state(true);
+
+  // Load initial example
+  $effect(() => {
+    if (isTransform) {
+      loadInitialExample();
+    } else {
+      isLoading = false;
+    }
+  });
+
+  async function loadInitialExample() {
+    isLoading = true;
+    displayedPictograph = await getRandomPictographForTransform(transformId as TransformId);
+    isLoading = false;
+  }
+
+  // Load new example without resetting - allows smooth transition
+  async function loadNewExample() {
+    const newPictograph = await getRandomPictographForTransform(transformId as TransformId);
+    if (newPictograph) {
+      displayedPictograph = newPictograph;
     }
   }
 
-  function nextStep() {
-    if (currentStepIndex < steps.length - 1) {
-      currentStepIndex++;
+  function applyTransform() {
+    if (!displayedPictograph || !isTransform) return;
+
+    switch (transformId) {
+      case "mirror":
+        displayedPictograph = applyMirror(displayedPictograph);
+        break;
+      case "flip":
+        displayedPictograph = applyFlip(displayedPictograph);
+        break;
+      case "invert":
+        displayedPictograph = applyInvert(displayedPictograph);
+        break;
+      case "rotate":
+        displayedPictograph = applyRotate(displayedPictograph, "cw");
+        break;
+      case "swap":
+        displayedPictograph = applySwap(displayedPictograph);
+        break;
+      case "rewind":
+        displayedPictograph = applyRewind(displayedPictograph);
+        break;
     }
   }
 
-  function prevStep() {
-    if (currentStepIndex > 0) {
-      currentStepIndex--;
-    }
-  }
-
-  // Handle keyboard navigation
+  // Handle keyboard
   function handleKeydown(event: KeyboardEvent) {
-    switch (event.key) {
-      case "Escape":
-        onClose();
-        break;
-      case "ArrowLeft":
-        prevStep();
-        break;
-      case "ArrowRight":
-        nextStep();
-        break;
+    if (event.key === "Escape") {
+      onClose();
     }
   }
 
@@ -104,51 +136,89 @@
   onclick={handleBackdropClick}
   role="dialog"
   aria-modal="true"
-  aria-label="Transform help for {transform?.name ?? 'transform'}"
+  aria-label="Help for {action?.name ?? 'action'}"
   tabindex="-1"
 >
   <div class="modal-container">
     <!-- Header -->
-    <div class="modal-header" style:--transform-color={transform?.color ?? "#3b82f6"}>
+    <div class="modal-header" style:--transform-color={action?.color ?? "#3b82f6"}>
       <div class="header-icon">
-        <i class="fas {transform?.icon ?? 'fa-question'}" aria-hidden="true"></i>
+        <i class="fas {action?.icon ?? 'fa-question'}" aria-hidden="true"></i>
       </div>
       <div class="header-text">
-        <h2 class="header-title">{transform?.name ?? "Transform"}</h2>
-        <p class="header-subtitle">{transform?.shortDesc ?? ""}</p>
+        <h2 class="header-title">{action?.name ?? "Action"}</h2>
+        <p class="header-subtitle">{action?.shortDesc ?? ""}</p>
       </div>
       <button class="close-btn" onclick={onClose} aria-label="Close help">
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
     </div>
 
-    <!-- Progress bar -->
-    <div class="progress-bar">
-      <div class="progress-fill" style:width="{progress}%"></div>
-    </div>
-
-    <!-- Content area -->
+    <!-- Content -->
     <div class="modal-content">
-      {#if currentStep === "intro" && transform}
-        <TransformIntroStep {transformId} {transform} />
-      {:else if currentStep === "single" && transform}
-        <TransformSingleStep {transformId} {transform} />
-      {:else if currentStep === "dual" && transform}
-        <TransformDualStep {transformId} {transform} />
-      {:else if currentStep === "timeline" && transform}
-        <RewindTimelineStep {transform} />
+      <!-- Description -->
+      <p class="description">{description}</p>
+
+      <!-- Visual mapping (transforms only) -->
+      {#if isTransform}
+        <TransformVisualMapping transformId={transformId as TransformId} />
+      {/if}
+
+      <!-- Interactive example (transforms only) -->
+      {#if isTransform}
+        <div class="example-section">
+          <div class="pictograph-frame" style:--transform-color={action?.color}>
+            {#if isLoading}
+              <div class="loading-state" role="status" aria-live="polite">
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span class="sr-only">Loading example...</span>
+              </div>
+            {:else if displayedPictograph}
+              <PictographContainer pictographData={displayedPictograph} />
+            {:else}
+              <div class="empty-state">
+                <i class="fas fa-image" aria-hidden="true"></i>
+              </div>
+            {/if}
+          </div>
+
+          <div class="action-buttons">
+            <button
+              class="action-btn apply"
+              onclick={applyTransform}
+              disabled={isLoading}
+              style:--transform-color={action?.color}
+            >
+              <i class="fas {action?.icon}" aria-hidden="true"></i>
+              <span>Apply</span>
+            </button>
+
+            <button
+              class="action-btn shuffle"
+              onclick={loadNewExample}
+            >
+              <i class="fas fa-shuffle" aria-hidden="true"></i>
+              <span>New</span>
+            </button>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Warning if applicable -->
+      {#if action?.warning}
+        <div class="warning-box">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          <span>{action.warning}</span>
+        </div>
       {/if}
     </div>
 
-    <!-- Step navigation -->
-    <TransformStepNavigation
-      {steps}
-      currentIndex={currentStepIndex}
-      onPrev={prevStep}
-      onNext={nextStep}
-      onGoToStep={goToStep}
-      onExit={onClose}
-    />
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="done-btn" onclick={onClose}>
+        Done
+      </button>
+    </div>
   </div>
 </div>
 
@@ -167,15 +237,15 @@
 
   .modal-container {
     width: 100%;
-    max-width: 500px;
+    max-width: 520px;
     max-height: 90vh;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
   }
 
   /* Header */
@@ -183,7 +253,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 20px;
+    padding: 18px 20px;
     background: linear-gradient(
       180deg,
       rgba(var(--transform-color-rgb, 59, 130, 246), 0.15) 0%,
@@ -196,12 +266,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
     background: var(--transform-color, #3b82f6);
     color: white;
-    font-size: var(--font-size-xl, 20px);
+    font-size: var(--font-size-lg, 18px);
     flex-shrink: 0;
   }
 
@@ -212,30 +282,27 @@
 
   .header-title {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.95);
   }
 
   .header-subtitle {
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     font-size: var(--font-size-min, 14px);
-    color: rgba(255, 255, 255, 0.6);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: rgba(255, 255, 255, 0.85); /* AAA contrast: ~7.5:1 */
   }
 
   .close-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.85); /* AAA contrast */
     cursor: pointer;
     transition: all 0.15s ease;
     flex-shrink: 0;
@@ -246,43 +313,244 @@
     color: white;
   }
 
-  /* Progress bar */
-  .progress-bar {
-    height: 3px;
-    background: rgba(255, 255, 255, 0.1);
-    overflow: hidden;
+  .close-btn:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 2px;
   }
 
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
-    transition: width 0.3s ease;
-  }
-
-  /* Content area */
+  /* Content */
   .modal-content {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    text-align: center;
   }
 
-  .modal-content::-webkit-scrollbar {
-    width: 6px;
+  .description {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.85); /* AAA contrast: ~7.5:1 */
+    max-width: 340px;
   }
 
-  .modal-content::-webkit-scrollbar-track {
-    background: transparent;
+  /* Example section */
+  .example-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
   }
 
-  .modal-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
+  .pictograph-frame {
+    width: 180px;
+    height: 180px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .loading-state,
+  .empty-state {
+    font-size: var(--font-size-2xl, 24px);
+    color: rgba(255, 255, 255, 0.75); /* AAA contrast for icons */
+  }
+
+  .loading-state i {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Screen reader only - visually hidden but accessible */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 18px;
+    min-height: 44px; /* AAA touch target */
+    border-radius: 9px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+  }
+
+  .action-btn.apply {
+    background: var(--transform-color, #3b82f6);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .action-btn.apply:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  .action-btn.apply:focus-visible {
+    outline: 3px solid var(--transform-color, #3b82f6);
+    outline-offset: 3px;
+  }
+
+  .action-btn.shuffle {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85); /* AAA contrast */
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  }
+
+  .action-btn.shuffle:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+  }
+
+  .action-btn.shuffle:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 3px;
+  }
+
+  .action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Warning */
+  .warning-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 20px;
+    font-size: var(--font-size-min, 14px); /* AAA minimum text size */
+    color: #fcd34d; /* Lighter amber for AAA contrast */
+  }
+
+  .warning-box i {
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+
+  /* Footer */
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    display: flex;
+    justify-content: center;
+  }
+
+  .done-btn {
+    padding: 10px 32px;
+    min-height: 44px; /* AAA touch target */
+    border-radius: 9px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .done-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .done-btn:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 3px;
+  }
+
+  /* Desktop: larger pictograph and spacing */
+  @media (min-width: 600px) {
+    .modal-container {
+      max-width: 560px;
+    }
+
+    .pictograph-frame {
+      width: 220px;
+      height: 220px;
+    }
+
+    .modal-content {
+      padding: 28px;
+      gap: 24px;
+    }
+
+    .description {
+      max-width: 400px;
+    }
+  }
+
+  /* Large desktop: even bigger */
+  @media (min-width: 900px) {
+    .modal-container {
+      max-width: 640px;
+    }
+
+    .pictograph-frame {
+      width: 280px;
+      height: 280px;
+    }
+
+    .modal-content {
+      padding: 32px;
+      gap: 28px;
+    }
+
+    .header-icon {
+      width: 52px;
+      height: 52px;
+      font-size: var(--font-size-xl, 20px);
+    }
+
+    .header-title {
+      font-size: 1.4rem;
+    }
+
+    .description {
+      max-width: 440px;
+      font-size: var(--font-size-base, 16px);
+    }
+
+    .action-btn {
+      padding: 12px 24px;
+      font-size: var(--font-size-base, 16px);
+    }
   }
 
   /* Mobile: full screen */
-  @media (max-width: 540px) {
+  @media (max-width: 480px) {
     .modal-backdrop {
       padding: 0;
     }
@@ -293,10 +561,17 @@
       height: 100%;
       border-radius: 0;
     }
+
+    .pictograph-frame {
+      width: 160px;
+      height: 160px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .progress-fill {
+    .action-btn,
+    .close-btn,
+    .done-btn {
       transition: none;
     }
   }

@@ -163,6 +163,87 @@ export async function getRandomPictographForTransform(
 }
 
 /**
+ * Result type for single-motion examples
+ * Returns both the pictograph AND which hand to display
+ */
+export interface SingleMotionExample {
+  pictograph: PictographData;
+  visibleHand: "blue" | "red";
+}
+
+/**
+ * Check if a specific motion is suitable for a transform
+ */
+function isMotionSuitableForTransform(motion: MotionData | undefined, transformId: TransformId): boolean {
+  if (!motion) return false;
+
+  switch (transformId) {
+    case "mirror":
+      return hasEastWestComponent(motion);
+    case "flip":
+      return hasNorthSouthComponent(motion);
+    case "invert":
+      return hasRotation(motion);
+    case "rewind":
+      return hasMovement(motion);
+    case "rotate":
+      // Rotate always visible
+      return true;
+    case "swap":
+      // Swap needs dual motion context - not meaningful for single
+      return true;
+    default:
+      return true;
+  }
+}
+
+/**
+ * Get a random SINGLE motion suitable for demonstrating a specific transform.
+ * Returns the pictograph AND which hand to show.
+ *
+ * This ensures the displayed motion will show a visible change when transformed:
+ * - Mirror: motion has E/W component
+ * - Flip: motion has N/S component
+ * - Invert: motion has rotation
+ * - Rewind: motion has movement (start ≠ end)
+ */
+export async function getRandomSingleMotionForTransform(
+  transformId: TransformId
+): Promise<SingleMotionExample | null> {
+  const allPictographs = await loadAllPictographs();
+
+  // Build a list of (pictograph, hand) pairs where the motion is suitable
+  const candidates: SingleMotionExample[] = [];
+
+  for (const p of allPictographs) {
+    const blue = p.motions?.blue;
+    const red = p.motions?.red;
+
+    // Check blue motion
+    if (blue && isMotionSuitableForTransform(blue, transformId)) {
+      candidates.push({ pictograph: p, visibleHand: "blue" });
+    }
+
+    // Check red motion (even if blue was added, both could be valid)
+    if (red && isMotionSuitableForTransform(red, transformId)) {
+      candidates.push({ pictograph: p, visibleHand: "red" });
+    }
+  }
+
+  if (candidates.length === 0) {
+    // Fallback: pick any pictograph with blue hand visible
+    if (allPictographs.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * allPictographs.length);
+    const fallback = allPictographs[randomIndex];
+    if (!fallback) return null;
+    return { pictograph: fallback, visibleHand: "blue" };
+  }
+
+  const randomIndex = Math.floor(Math.random() * candidates.length);
+  return candidates[randomIndex] ?? null;
+}
+
+/**
  * Get a random pictograph from the dataframe (no filtering)
  * @deprecated Use getRandomPictographForTransform for transform examples
  */
