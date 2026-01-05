@@ -58,22 +58,31 @@ Review both the feedback items AND the commit messages to build a complete pictu
 
 **Rewriting Rules**:
 
-1. **Remove developer jargon**: No "persistence", "endpoints", "state", "components", "services"
+1. **Remove ALL developer jargon** - If a non-coder wouldn't understand it, rewrite it or skip it entirely:
+   - ❌ NO: persistence, endpoints, state, components, services, providers, handlers
+   - ❌ NO: service worker, auth, callbacks, preload, cache, middleware, hooks
+   - ❌ NO: FedCM, CSP, CORS, PWA (spell out or describe the benefit instead)
+   - ❌ NO: API, SDK, DOM, CSS, HMR, DI, injection, pipeline, renderer
+   - ❌ NO: refactor, migrate, deprecate, legacy, fallback, polyfill
+   - ✅ YES: sign-in, save, load, export, share, edit, create, view
 2. **Focus on user benefit**: What can they DO now? What problem is fixed?
 3. **Be specific about WHAT changed**: Don't just say "better" or "improved" - describe the actual change
 4. **Ideal length: 8-15 words**: Long enough to be clear, short enough to scan
 5. **Use active voice**: "You can now..." or "Fixed..."
 6. **Name the feature/area**: Users need context - "in the option picker", "when exporting", etc.
 7. **Avoid vague words**: "better", "improved", "enhanced", "updated" alone aren't helpful
+8. **Skip pure infrastructure changes**: If a commit is only about build config, security headers, or internal cleanup with no user-visible effect, DON'T include it. Users don't care about internal plumbing.
 
 **BAD vs GOOD Examples**:
-| ❌ Too Vague | ✅ Specific |
+| ❌ Bad (vague OR technical) | ✅ Good (specific AND user-friendly) |
 |-------------|------------|
 | "Better option picker" | "Option picker now shows your filter choices immediately" |
-| "Improved drawer animations" | "Drawers slide open/closed more smoothly with less lag" |
-| "Cleaner visuals" | "Props and arrows now render without visible outlines" |
-| "App security improvements" | "Added security headers for safer browsing" |
-| "Enhanced settings" | "Settings now include a Preferences tab for theme and display options" |
+| "Improved drawer animations" | "Drawers slide open/closed more smoothly" |
+| "App security improvements" | SKIP - users don't see this |
+| "Fixed service worker registration" | SKIP - users don't see this |
+| "Added CSP headers" | SKIP - users don't see this |
+| "Fixed legacy auth callbacks" | "Fixed occasional sign-in errors" |
+| "Removed unused Font Awesome preload" | SKIP - users don't see this |
 
 **Transform Examples**:
 | Raw Feedback Title | User-Friendly Version |
@@ -103,9 +112,9 @@ Present a comprehensive preview that includes:
 **Combined changelog preview:**
 
 - **YOUR REWRITTEN changelog** (categorized by fixed/added/improved)
-- Include items from BOTH feedback AND commits
+- Include items from BOTH feedback AND commits that have USER-VISIBLE impact
 - Deduplicate where the same change appears in both sources
-- Infrastructure/build changes from commits that weren't in feedback
+- SKIP infrastructure/build/security changes that users won't notice
 
 **Warnings:**
 
@@ -287,7 +296,6 @@ feedback AND git commits...
 - Settings save properly now
 - Drag gestures work on mobile
 - Animations play smoothly
-- Security headers configured correctly (from commits, not in feedback)
 
 **✨ Added:**
 - Save your favorite sequences
@@ -333,9 +341,9 @@ All done! Release v0.2.0 is live.
 **Key points demonstrated:**
 
 - Both feedback AND commits were gathered
-- Commits revealed a security fix not tracked in feedback
-- Changelog was rewritten in user-friendly language
-- Combined sources give complete picture of changes
+- Technical/infrastructure commits were SKIPPED (not visible to users)
+- Changelog was rewritten in user-friendly language with no jargon
+- Only user-visible changes made it into the release notes
 
 ## Backfilling GitHub Releases
 
