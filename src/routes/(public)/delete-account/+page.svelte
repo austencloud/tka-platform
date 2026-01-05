@@ -77,7 +77,7 @@
     </div>
 
     <footer>
-      <a href="/app" class="button">Open TKA Scribe</a>
+      <a href="/" class="button">Open TKA Scribe</a>
       <p class="help">
         Need help? <a href="mailto:tkaflowarts@gmail.com"
           >tkaflowarts@gmail.com</a

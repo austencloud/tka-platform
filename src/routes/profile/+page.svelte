@@ -171,7 +171,7 @@
       </div>
 
       <div class="profile-actions">
-        <a href="/app" class="button button-secondary">Back to Home</a>
+        <a href="/" class="button button-secondary">Back to Home</a>
       </div>
     </div>
   </div>

@@ -63,7 +63,7 @@
     if (authState.isAuthenticated && authState.initialized && !hasRedirected) {
       console.log("✅ User is authenticated, redirecting to app...");
       hasRedirected = true;
-      goto("/app");
+      goto("/");
     }
   });
 </script>
