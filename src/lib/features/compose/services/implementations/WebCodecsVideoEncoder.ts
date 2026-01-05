@@ -32,8 +32,9 @@ export class WebCodecsVideoEncoder {
   private resizeCtx: CanvasRenderingContext2D | null = null;
 
   constructor(private options: WebCodecsEncoderOptions) {
-    this.width = options.width;
-    this.height = options.height;
+    // Round to integers - canvas dimensions can be decimals from CSS calculations
+    this.width = Math.round(options.width);
+    this.height = Math.round(options.height);
     // H.264 requires even dimensions - round up to nearest even number
     this.encoderWidth = this.width % 2 === 0 ? this.width : this.width + 1;
     this.encoderHeight = this.height % 2 === 0 ? this.height : this.height + 1;

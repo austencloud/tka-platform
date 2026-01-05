@@ -26,8 +26,9 @@ export class WasmVideoEncoder {
   private encoderHeight: number;
 
   constructor(private options: WasmEncoderOptions) {
-    this.width = options.width;
-    this.height = options.height;
+    // Round to integers - canvas dimensions can be decimals from CSS calculations
+    this.width = Math.round(options.width);
+    this.height = Math.round(options.height);
     this.fps = options.fps;
     // h264-mp4-encoder expects dimensions divisible by 2
     this.encoderWidth = this.width % 2 === 0 ? this.width : this.width + 1;

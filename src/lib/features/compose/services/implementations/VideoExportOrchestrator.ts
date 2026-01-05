@@ -86,8 +86,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       : 0;
 
     // Calculate output dimensions (include header height if enabled)
-    const outputWidth = canvas.width;
-    const outputHeight = canvas.height + headerHeight;
+    // Round to integers - headerHeight can be decimal from CSS calculations
+    const outputWidth = Math.round(canvas.width);
+    const outputHeight = Math.round(canvas.height + headerHeight);
 
     // Create video exporter with correct output dimensions
     const exporter = await this.VideoExporter.createManualExporter(

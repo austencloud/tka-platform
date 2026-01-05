@@ -8,6 +8,7 @@ export const ExportTypes = {
   // Core Export
   IExportService: Symbol.for("IExportService"),
   ISharer: Symbol.for("ISharer"),
+  IShareHubExportOrchestrator: Symbol.for("IShareHubExportOrchestrator"),
   IInstagramLinker: Symbol.for("IInstagramLinker"),
   IMediaBundler: Symbol.for("IMediaBundler"),
   IFileExportService: Symbol.for("IFileExportService"),

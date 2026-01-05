@@ -77,6 +77,7 @@ import { SubDrawerStatePersister } from "../../../features/create/shared/service
 import { SequenceTransferHandler } from "../../../features/create/shared/services/implementations/SequenceTransferHandler";
 import { FirstBeatAnalyzer } from "../../../features/create/shared/services/implementations/FirstBeatAnalyzer";
 import { SequenceJsonExporter } from "../../../features/create/shared/services/implementations/SequenceJsonExporter";
+import { ExtensionFlowCoordinator } from "../../../features/create/shared/services/implementations/ExtensionFlowCoordinator";
 import { LetterTransitionGraph } from "../../../features/create/spell/services/implementations/LetterTransitionGraph";
 import { WordSequenceGenerator } from "../../../features/create/spell/services/implementations/WordSequenceGenerator";
 import { VariationExplorer } from "../../../features/create/spell/services/implementations/VariationExplorer";
@@ -245,6 +246,7 @@ export const createModule = new ContainerModule(
     options.bind(TYPES.ISequenceTransferHandler).to(SequenceTransferHandler);
     options.bind(TYPES.IFirstBeatAnalyzer).to(FirstBeatAnalyzer);
     options.bind(TYPES.ISequenceJsonExporter).to(SequenceJsonExporter);
+    options.bind(TYPES.IExtensionFlowCoordinator).to(ExtensionFlowCoordinator);
 
     // === PATTERN MANAGEMENT ===
     options
