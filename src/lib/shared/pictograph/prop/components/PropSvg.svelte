@@ -272,7 +272,7 @@ Now with smooth transitions when position or orientation changes!
 </script>
 
 {#if showProp}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <g
     class="prop-svg {motionData.color}-prop-svg"
     class:clickable={isClickable}
@@ -281,6 +281,8 @@ Now with smooth transitions when position or orientation changes!
     data-prop-type={motionData?.propType}
     style="transform: {transformString};"
     onclick={isClickable && onPropClick ? onPropClick : undefined}
+    role={isClickable ? "button" : undefined}
+    tabindex={isClickable ? 0 : undefined}
   >
     {@html propAssets.imageSrc}
     {#if isSelected}
