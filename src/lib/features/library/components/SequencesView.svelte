@@ -15,8 +15,9 @@
   import { libraryState } from "../state/library-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import SequenceCard from "../../discover/gallery/display/components/SequenceCard/SequenceCard.svelte";
-  import SequenceDetailDrawer from "./SequenceDetailDrawer.svelte";
+  import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import TagFilterChips from "./tags/TagFilterChips.svelte";
   import LibraryHeader from "./LibraryHeader.svelte";
   import SequenceAnalyticsBadge from "./SequenceAnalyticsBadge.svelte";
@@ -183,6 +184,63 @@
   function handleCloseDetail() {
     showDetailDrawer = false;
     selectedSequenceId = null;
+  }
+
+  // Get the selected sequence for the detail drawer
+  const selectedSequence = $derived(
+    selectedSequenceId ? libraryState.getSequenceById(selectedSequenceId) : null
+  );
+
+  // === SHARE HUB DRAWER CALLBACKS ===
+
+  async function handleNotesChange(notes: string) {
+    if (!selectedSequenceId) return;
+    try {
+      await libraryState.updateNotes(selectedSequenceId, notes);
+      toast.success("Notes saved");
+    } catch (error) {
+      console.error("Failed to save notes:", error);
+      toast.error("Failed to save notes");
+    }
+  }
+
+  async function handleTagsChange(tags: string[]) {
+    if (!selectedSequenceId) return;
+    try {
+      await libraryState.updateTags(selectedSequenceId, tags);
+      toast.success("Tags updated");
+    } catch (error) {
+      console.error("Failed to update tags:", error);
+      toast.error("Failed to update tags");
+    }
+  }
+
+  async function handleDrawerVisibilityChange(visibility: "public" | "private") {
+    if (!selectedSequenceId) return;
+    const success = await libraryState.setVisibility(selectedSequenceId, visibility);
+    if (success) {
+      toast.success(
+        visibility === "public"
+          ? "Sequence is now public"
+          : "Sequence is now private"
+      );
+    }
+  }
+
+  async function handleFavoriteToggle() {
+    if (!selectedSequenceId) return;
+    await libraryState.toggleFavorite(selectedSequenceId);
+  }
+
+  async function handleDeleteSequence() {
+    if (!selectedSequenceId) return;
+    const success = await libraryState.deleteSequence(selectedSequenceId);
+    if (success) {
+      toast.success("Sequence deleted");
+      handleCloseDetail();
+    } else {
+      toast.error("Failed to delete sequence");
+    }
   }
 
   // Batch actions
@@ -481,12 +539,27 @@
     {/if}
   </div>
 
-  <!-- Detail Drawer -->
-  <SequenceDetailDrawer
-    bind:isOpen={showDetailDrawer}
-    sequenceId={selectedSequenceId}
-    onClose={handleCloseDetail}
-  />
+  <!-- Unified Sequence Viewer Drawer -->
+  {#if selectedSequence}
+    <ShareHubDrawer
+      bind:isOpen={showDetailDrawer}
+      sequence={selectedSequence}
+      mode="library"
+      notes={selectedSequence.notes || ""}
+      tags={selectedSequence.tagIds || []}
+      visibility={selectedSequence.visibility || "private"}
+      viewCount={selectedSequence.viewCount || 0}
+      forkCount={selectedSequence.forkCount || 0}
+      starCount={selectedSequence.starCount || 0}
+      isFavorite={selectedSequence.isFavorite || false}
+      onNotesChange={handleNotesChange}
+      onTagsChange={handleTagsChange}
+      onVisibilityChange={handleDrawerVisibilityChange}
+      onFavoriteToggle={handleFavoriteToggle}
+      onDelete={handleDeleteSequence}
+      onClose={handleCloseDetail}
+    />
+  {/if}
 
   <!-- Bulk Action Bar (sticky at bottom when selecting) -->
   {#if isSelectMode}

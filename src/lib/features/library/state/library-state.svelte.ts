@@ -569,6 +569,42 @@ class LibraryStateManager {
     }
   }
 
+  async updateNotes(sequenceId: string, notes: string): Promise<boolean> {
+    if (this.isPreviewMode) {
+      toast.warning("Cannot update notes in preview mode");
+      return false;
+    }
+
+    const service = this.getService();
+    if (!service) return false;
+
+    try {
+      await service.updateSequence(sequenceId, { notes });
+      return true;
+    } catch (error) {
+      console.error("📚 [LibraryState] Failed to update notes:", error);
+      return false;
+    }
+  }
+
+  async updateTags(sequenceId: string, tagIds: string[]): Promise<boolean> {
+    if (this.isPreviewMode) {
+      toast.warning("Cannot update tags in preview mode");
+      return false;
+    }
+
+    const service = this.getService();
+    if (!service) return false;
+
+    try {
+      await service.updateSequence(sequenceId, { tagIds });
+      return true;
+    } catch (error) {
+      console.error("📚 [LibraryState] Failed to update tags:", error);
+      return false;
+    }
+  }
+
   // ============================================================
   // SELECTION
   // ============================================================
