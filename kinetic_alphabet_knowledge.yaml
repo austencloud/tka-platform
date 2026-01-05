@@ -32,7 +32,7 @@ positions:
     variations: ["top", "bottom", "left", "right"]
 
   gamma:
-    symbol: "Γ"
+    symbol: "γ"
     description: "Hands form a right angle"
     variations: ["quarter-opp", "quarter-same"]
     modes:
@@ -368,7 +368,7 @@ letters:
       position: "beta"
 
     static_gamma:
-      symbol: "Γ"
+      symbol: "γ"
       motion_type: "Static"
       position: "gamma"
 

@@ -266,7 +266,7 @@ export const INVERTED_LETTER_MAP: Record<string, string> = {
   Λ: "Λ", // Self-inverted
   α: "α", // Self-inverted
   β: "β", // Self-inverted
-  Γ: "Γ", // Self-inverted
+  γ: "γ", // Self-inverted
 
   // Dash variations
   "W-": "X-",
