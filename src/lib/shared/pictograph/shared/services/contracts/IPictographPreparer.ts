@@ -8,6 +8,7 @@
 import type { PictographData } from "../../domain/models/PictographData";
 import type { PreparedPictographData } from "../../domain/models/PreparedPictographData";
 import type { ThemeMode } from "../../../../utils/svg-color-utils";
+import type { PropType } from "../../../prop/domain/enums/PropType";
 
 // Re-export for convenience
 export type { PreparedPictographData };
@@ -18,6 +19,17 @@ export type { PreparedPictographData };
 export interface PrepareOptions {
   /** Theme mode for color selection ("dark" or "light"). If not provided, uses global state. */
   themeMode?: ThemeMode;
+  /**
+   * Explicit prop type for blue hand.
+   * When provided, this value is used directly. When omitted, falls back to global settings.
+   * Export/thumbnail rendering always provides this to ensure consistency during async operations.
+   */
+  bluePropType?: PropType;
+  /**
+   * Explicit prop type for red hand.
+   * When provided, this value is used directly. When omitted, falls back to global settings.
+   */
+  redPropType?: PropType;
 }
 
 export interface IPictographPreparer {

@@ -141,6 +141,9 @@
    * Main thumbnail loading function
    * Tries cloud cache first, then renders locally and uploads
    * When custom settings are provided, skips caching entirely
+   *
+   * IMPORTANT: We snapshot prop values at the start and pass them explicitly
+   * to avoid race conditions where props change during async rendering.
    */
   async function loadThumbnail() {
     if (isLoading || thumbnailUrl) return;
@@ -148,12 +151,33 @@
     isLoading = true;
     hasError = false;
 
+    // CRITICAL: Snapshot prop values at the START to prevent race conditions.
+    // If props change during async rendering, we'll detect it and abort.
+    const snapshotProps = {
+      bluePropType,
+      redPropType,
+      catDogModeEnabled,
+      lightMode,
+      isCatDog,
+      effectivePropType,
+      sequenceName,
+    };
+
     try {
       // When custom settings are provided, skip cloud caching entirely
       // This is used by the sequence viewer to show customized export previews
       if (hasCustomSettings) {
         loadingStatus = "Rendering...";
-        const blob = await renderThumbnail();
+        const blob = await renderThumbnailWithProps(snapshotProps);
+
+        // Check if props changed during render - if so, abort
+        if (propsChangedSince(snapshotProps)) {
+          console.log(
+            `[PropAwareThumbnail] Props changed during render, discarding result`
+          );
+          return;
+        }
+
         thumbnailUrl = URL.createObjectURL(blob);
         hasInitiallyLoaded = true;
         loadingStatus = "";
@@ -167,8 +191,10 @@
         TYPES.ICloudThumbnailCache
       );
 
-      // Determine the cloud cache key based on mode
-      const cloudKey = isCatDog ? getCatDogCloudKey() : getSinglePropCloudKey();
+      // Determine the cloud cache key based on snapshotted props
+      const cloudKey = snapshotProps.isCatDog
+        ? getCatDogCloudKeyWithProps(snapshotProps)
+        : getSinglePropCloudKeyWithProps(snapshotProps);
 
       if (!cloudKey) {
         throw new Error("Could not determine prop configuration");
@@ -176,16 +202,24 @@
 
       // DEBUG: Log what prop type we're requesting
       console.log(`[PropAwareThumbnail] Loading ${sequenceName} with props:`, {
-        isCatDog,
-        effectivePropType,
-        bluePropType,
-        redPropType,
+        isCatDog: snapshotProps.isCatDog,
+        effectivePropType: snapshotProps.effectivePropType,
+        bluePropType: snapshotProps.bluePropType,
+        redPropType: snapshotProps.redPropType,
         cloudKey,
       });
 
       // Step 1: Check Firebase Storage (cloud cache)
       loadingStatus = "Checking cloud...";
       const cloudUrl = await cloudCache.getUrl(cloudKey);
+
+      // Check if props changed during cache check
+      if (propsChangedSince(snapshotProps)) {
+        console.log(
+          `[PropAwareThumbnail] Props changed during cache check, aborting`
+        );
+        return;
+      }
 
       if (cloudUrl) {
         // Found in cloud! Use directly (no blob URL needed)
@@ -196,10 +230,19 @@
         return;
       }
 
-      // Step 2: Not in cloud - render locally
+      // Step 2: Not in cloud - render locally with snapshotted props
       console.log(`[PropAwareThumbnail] Not in cloud, rendering locally...`);
       loadingStatus = "Rendering...";
-      const blob = await renderThumbnail();
+      const blob = await renderThumbnailWithProps(snapshotProps);
+
+      // CRITICAL: Check if props changed during render - if so, discard result
+      // This prevents caching images with wrong props
+      if (propsChangedSince(snapshotProps)) {
+        console.log(
+          `[PropAwareThumbnail] Props changed during render for ${sequenceName}, discarding to prevent cache pollution`
+        );
+        return;
+      }
 
       // Step 3: Create URL for immediate display
       thumbnailUrl = URL.createObjectURL(blob);
@@ -216,15 +259,15 @@
       });
 
       // Step 5: Also cache locally in IndexedDB (for offline access)
-      if (isCatDog) {
+      if (snapshotProps.isCatDog) {
         const localCache = container.get<IDiscoverThumbnailCache>(
           TYPES.IDiscoverThumbnailCache
         );
         const localKey = {
-          sequenceName,
-          bluePropType: bluePropType!,
-          redPropType: redPropType!,
-          lightMode,
+          sequenceName: snapshotProps.sequenceName,
+          bluePropType: snapshotProps.bluePropType!,
+          redPropType: snapshotProps.redPropType!,
+          lightMode: snapshotProps.lightMode,
         };
         localCache.set(localKey, blob).catch((error) => {
           console.warn(`Failed to cache thumbnail locally:`, error);
@@ -241,39 +284,66 @@
     }
   }
 
+  // Type for prop snapshot to prevent race conditions
+  type SnapshotProps = {
+    bluePropType: PropType | undefined;
+    redPropType: PropType | undefined;
+    catDogModeEnabled: boolean;
+    lightMode: boolean;
+    isCatDog: boolean;
+    effectivePropType: PropType | null;
+    sequenceName: string;
+  };
+
   /**
-   * Get cloud cache key for single-prop mode
+   * Check if props have changed since the snapshot was taken
    */
-  function getSinglePropCloudKey() {
-    if (!effectivePropType) return null;
+  function propsChangedSince(snapshot: SnapshotProps): boolean {
+    return (
+      bluePropType !== snapshot.bluePropType ||
+      redPropType !== snapshot.redPropType ||
+      catDogModeEnabled !== snapshot.catDogModeEnabled ||
+      lightMode !== snapshot.lightMode
+    );
+  }
+
+  /**
+   * Get cloud cache key for single-prop mode (using snapshotted props)
+   */
+  function getSinglePropCloudKeyWithProps(props: SnapshotProps) {
+    if (!props.effectivePropType) return null;
     return {
-      sequenceName,
-      propType: effectivePropType,
-      lightMode,
+      sequenceName: props.sequenceName,
+      propType: props.effectivePropType,
+      lightMode: props.lightMode,
     };
   }
 
   /**
-   * Get cloud cache key for cat-dog mode
+   * Get cloud cache key for cat-dog mode (using snapshotted props)
    * Uses a combined prop type identifier with position preserved
    * Blue = left hand, Red = right hand - order matters!
    */
-  function getCatDogCloudKey() {
-    if (!bluePropType || !redPropType) return null;
+  function getCatDogCloudKeyWithProps(props: SnapshotProps) {
+    if (!props.bluePropType || !props.redPropType) return null;
     // For cat-dog, preserve hand positions: blue (left) first, red (right) second
     // staff_club ≠ club_staff - they're different configurations
-    const combinedProp = `catdog_${bluePropType}_${redPropType}` as PropType;
+    const combinedProp =
+      `catdog_${props.bluePropType}_${props.redPropType}` as PropType;
     return {
-      sequenceName,
+      sequenceName: props.sequenceName,
       propType: combinedProp,
-      lightMode,
+      lightMode: props.lightMode,
     };
   }
 
   /**
-   * Render the thumbnail locally
+   * Render the thumbnail locally using SNAPSHOTTED props
+   * This prevents race conditions where props change mid-render
    */
-  async function renderThumbnail(): Promise<Blob> {
+  async function renderThumbnailWithProps(
+    props: SnapshotProps
+  ): Promise<Blob> {
     const container = await getContainerInstance();
     const renderer = container.get<ISequenceRenderer>(TYPES.ISequenceRenderer);
     const startPositionDeriver = container.get<IStartPositionDeriver>(
@@ -288,9 +358,11 @@
     if (!hasBeats) {
       // No beat data in prop - try loading from Gallery index
       const loader = container.get<IDiscoverLoader>(TYPES.IDiscoverLoader);
-      const loadedSequence = await loader.loadFullSequenceData(sequenceName);
+      const loadedSequence = await loader.loadFullSequenceData(
+        props.sequenceName
+      );
       if (!loadedSequence) {
-        throw new Error(`Sequence not found: ${sequenceName}`);
+        throw new Error(`Sequence not found: ${props.sequenceName}`);
       }
       fullSequence = loadedSequence;
     }
@@ -318,13 +390,13 @@
         };
       } catch (err) {
         console.warn(
-          `Failed to derive start position for ${sequenceName}:`,
+          `Failed to derive start position for ${props.sequenceName}:`,
           err
         );
       }
     }
 
-    // Render with appropriate props
+    // Render with appropriate props - USING SNAPSHOTTED VALUES
     // Use custom settings if provided, otherwise use defaults
     const renderOptions = {
       beatSize: 240,
@@ -337,12 +409,15 @@
       addUserInfo: addUserInfo ?? false,
       userName: userName ?? "",
       addReversalSymbols: true,
-      backgroundColor: lightMode ? "#ffffff" : "#1a1a2e",
+      backgroundColor: props.lightMode ? "#ffffff" : "#1a1a2e",
       // For single-prop mode, override all props to the selected type
-      propTypeOverride: isCatDog ? undefined : (effectivePropType ?? undefined),
+      // CRITICAL: Use snapshotted props, not reactive state
+      propTypeOverride: props.isCatDog
+        ? undefined
+        : (props.effectivePropType ?? undefined),
       // For cat-dog mode, override each color independently
-      bluePropTypeOverride: isCatDog ? bluePropType : undefined,
-      redPropTypeOverride: isCatDog ? redPropType : undefined,
+      bluePropTypeOverride: props.isCatDog ? props.bluePropType : undefined,
+      redPropTypeOverride: props.isCatDog ? props.redPropType : undefined,
       visibilityOverrides: {
         showTKA: true,
         showVTG: false,
@@ -350,12 +425,12 @@
         showPositions: false,
         showReversals: true,
         showTurnNumbers: true,
-        darkMode: !lightMode,
+        darkMode: !props.lightMode,
       },
     };
 
     console.log(
-      `[PropAwareThumbnail] Rendering ${sequenceName} with options:`,
+      `[PropAwareThumbnail] Rendering ${props.sequenceName} with options:`,
       {
         propTypeOverride: renderOptions.propTypeOverride,
         bluePropTypeOverride: renderOptions.bluePropTypeOverride,

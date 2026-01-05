@@ -117,7 +117,7 @@ export class PictographPreparer implements IPictographPreparer {
     const assets: Record<string, PropAssets> = {};
     const settings = getSettings();
 
-    const motions = this.getMotionsWithOverrides(pictograph, settings);
+    const motions = this.getMotionsWithOverrides(pictograph, settings, options);
 
     await Promise.all(
       motions.map(async ([color, motion]) => {
@@ -158,7 +158,8 @@ export class PictographPreparer implements IPictographPreparer {
 
   private getMotionsWithOverrides(
     pictograph: PictographData,
-    settings: ReturnType<typeof getSettings>
+    settings: ReturnType<typeof getSettings>,
+    options?: PrepareOptions
   ): [string, MotionData][] {
     return Object.entries(pictograph.motions || {})
       .filter((entry): entry is [string, MotionData] => entry[1] !== undefined)
@@ -168,11 +169,23 @@ export class PictographPreparer implements IPictographPreparer {
           return [color, motion] as [string, MotionData];
         }
 
-        // Otherwise, apply settings override if available
-        const override =
+        // If explicit prop type provided via options, use it directly.
+        // Export/thumbnail rendering always provides this to ensure consistency
+        // during async operations (prevents race conditions from global settings changes).
+        const explicitPropType =
+          color === "blue" ? options?.bluePropType : options?.redPropType;
+        if (explicitPropType !== undefined) {
+          return [color, { ...motion, propType: explicitPropType }] as [
+            string,
+            MotionData,
+          ];
+        }
+
+        // No explicit prop type provided - fall back to global settings
+        const settingsPropType =
           color === "blue" ? settings.bluePropType : settings.redPropType;
-        if (override) {
-          return [color, { ...motion, propType: override }] as [
+        if (settingsPropType) {
+          return [color, { ...motion, propType: settingsPropType }] as [
             string,
             MotionData,
           ];

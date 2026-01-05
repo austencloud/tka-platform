@@ -12,6 +12,7 @@
 
 import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
 import type { BeatData } from "../../../features/create/shared/domain/models/BeatData";
+import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import PictographContainer from "../../pictograph/shared/components/PictographContainer.svelte";
 import { mount, tick, unmount } from "svelte";
 import { resolve as resolveService } from "../../inversify/di";
@@ -31,6 +32,17 @@ export interface PictographVisibilityOptions {
   showNonRadialPoints?: boolean;
   /** Dark Mode - dark background, inverted grid, white text/outlines */
   darkMode?: boolean;
+  /**
+   * Explicit prop type for blue hand.
+   * When provided, passed through to PictographPreparer to ensure consistency
+   * during async rendering. Export/thumbnail rendering always provides this.
+   */
+  bluePropType?: PropType;
+  /**
+   * Explicit prop type for red hand.
+   * When provided, passed through to PictographPreparer for consistency.
+   */
+  redPropType?: PropType;
 }
 
 /**
@@ -88,6 +100,9 @@ export async function renderPictographToSVG(
       componentProps.showNonRadialPoints =
         visibilityOptions.showNonRadialPoints;
       componentProps.darkMode = visibilityOptions.darkMode; // Dark Mode controls background/grid
+      // Pass explicit prop types through to PictographPreparer for consistency during async rendering
+      componentProps.bluePropTypeOverride = visibilityOptions.bluePropType;
+      componentProps.redPropTypeOverride = visibilityOptions.redPropType;
     }
 
     // Mount PictographContainer with explicit visibility settings

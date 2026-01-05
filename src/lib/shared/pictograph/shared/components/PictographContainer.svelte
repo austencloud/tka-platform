@@ -36,6 +36,7 @@ with pre-prepared data for better performance.
   import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
   import type { PictographData } from "../domain/models/PictographData";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { PropType } from "../../prop/domain/enums/PropType";
   import { GridMode } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
 
@@ -76,6 +77,10 @@ with pre-prepared data for better performance.
     onToggleNonRadial = undefined,
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
+    // Explicit prop types for export/thumbnail rendering
+    // When provided, passed to PictographPreparer for consistency during async operations
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   } = $props<{
     pictographData?: (BeatData | PictographData) | null;
     disableTransitions?: boolean;
@@ -101,6 +106,10 @@ with pre-prepared data for better performance.
     onToggleNonRadial?: () => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
+    /** Explicit prop type for blue hand. Export/thumbnail rendering provides this for consistency. */
+    bluePropTypeOverride?: PropType;
+    /** Explicit prop type for red hand. Export/thumbnail rendering provides this for consistency. */
+    redPropTypeOverride?: PropType;
   }>();
 
   // Extract beat context from BeatData if available
@@ -220,14 +229,21 @@ with pre-prepared data for better performance.
       rotation: redMotion.rotationDirection,
     } : null;
 
+    // Use explicit overrides if provided, otherwise use global settings
+    const effectiveBluePropType = bluePropTypeOverride ?? settings.bluePropType;
+    const effectiveRedPropType = redPropTypeOverride ?? settings.redPropType;
+
     return JSON.stringify({
       id: pictographData.id,
       letter: pictographData.letter,
-      bluePropType: settings.bluePropType,
-      redPropType: settings.redPropType,
+      bluePropType: effectiveBluePropType,
+      redPropType: effectiveRedPropType,
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
       blueMotion: blueFingerprint,
       redMotion: redFingerprint,
+      // Include explicit override flags so we re-prepare if they change
+      hasExplicitBlueProp: bluePropTypeOverride !== undefined,
+      hasExplicitRedProp: redPropTypeOverride !== undefined,
     });
   });
 
@@ -255,7 +271,13 @@ with pre-prepared data for better performance.
         // Always pass themeMode based on effectiveDarkMode for correct color selection
         // This ensures colors are correct whether dark mode is from prop (export) or global toggle (live)
         const currentDarkMode = effectiveDarkMode;
-        const prepareOptions = { themeMode: currentDarkMode ? "dark" as const : "light" as const };
+        // Pass explicit prop types to preparer for consistency during async rendering.
+        // When provided, these are used directly; otherwise preparer falls back to global settings.
+        const prepareOptions = {
+          themeMode: currentDarkMode ? "dark" as const : "light" as const,
+          bluePropType: bluePropTypeOverride,
+          redPropType: redPropTypeOverride,
+        };
         const result = await preparer.prepareSingle(data as PictographData, prepareOptions);
         if (!cancelled) {
           preparedData = result;

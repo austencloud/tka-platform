@@ -230,6 +230,12 @@ export class ImageComposer implements IImageComposer {
       options.bluePropTypeOverride ||
       options.redPropTypeOverride;
 
+    // Determine the effective prop types to use for export
+    // CRITICAL: These snapshotted values are passed through the entire render chain
+    // to prevent race conditions where global settings could change during async rendering.
+    const effectiveBluePropType = options.bluePropTypeOverride ?? options.propTypeOverride;
+    const effectiveRedPropType = options.redPropTypeOverride ?? options.propTypeOverride;
+
     // Step 4: Render each pictograph directly onto the canvas (offset by header height)
     // Render start position if needed (always at column 0, row 0)
     if (hasStartPosition && sequence.startPosition) {
@@ -251,7 +257,9 @@ export class ImageComposer implements IImageComposer {
         beatSize,
         startBeatNumber,
         headerHeight, // Offset grid below header
-        visibilitySettings // Pass visibility settings
+        visibilitySettings, // Pass visibility settings
+        effectiveBluePropType, // Pass snapshotted blue prop type
+        effectiveRedPropType // Pass snapshotted red prop type
       );
       renderedCount++;
       onProgress?.({
@@ -291,7 +299,9 @@ export class ImageComposer implements IImageComposer {
         beatSize,
         beatNumber,
         headerHeight, // Offset grid below header
-        visibilitySettings // Pass visibility settings
+        visibilitySettings, // Pass visibility settings
+        effectiveBluePropType, // Pass snapshotted blue prop type
+        effectiveRedPropType // Pass snapshotted red prop type
       );
       renderedCount++;
       onProgress?.({
@@ -361,6 +371,9 @@ export class ImageComposer implements IImageComposer {
   /**
    * Render a single pictograph directly onto the canvas at the specified grid position
    * 🚀 PERF: Uses cache to avoid re-rendering identical pictographs
+   *
+   * @param bluePropType Optional explicit blue prop type override (passed to PictographPreparer to prevent race conditions)
+   * @param redPropType Optional explicit red prop type override (passed to PictographPreparer to prevent race conditions)
    */
   private async renderPictographAt(
     ctx: CanvasRenderingContext2D,
@@ -370,16 +383,27 @@ export class ImageComposer implements IImageComposer {
     beatSize: number,
     beatNumber?: number,
     titleOffset: number = 0,
-    visibilitySettings?: PictographVisibilityOptions
+    visibilitySettings?: PictographVisibilityOptions,
+    bluePropType?: PropType,
+    redPropType?: PropType
   ): Promise<void> {
     try {
+      // CRITICAL: Merge prop type overrides into visibility settings.
+      // This ensures snapshotted prop types are passed through to PictographPreparer,
+      // preventing race conditions where global settings could change during async rendering.
+      const finalVisibilitySettings: PictographVisibilityOptions = {
+        ...visibilitySettings,
+        bluePropType: bluePropType ?? visibilitySettings?.bluePropType,
+        redPropType: redPropType ?? visibilitySettings?.redPropType,
+      };
+
       // 🚀 PERF: Generate cache key and check cache first
       // Include visibility settings in cache key for correct caching
       const cacheKey = this.generatePictographCacheKey(
         pictographData,
         beatSize,
         beatNumber,
-        visibilitySettings
+        finalVisibilitySettings
       );
 
       let img = this.renderedImageCache.get(cacheKey);
@@ -391,12 +415,12 @@ export class ImageComposer implements IImageComposer {
         // Cache miss - render SVG and cache the result
         this.cacheMisses++;
 
-        // Generate SVG with beat number and visibility settings
+        // Generate SVG with beat number and visibility settings (including prop type overrides)
         const svgString = await renderPictographToSVG(
           pictographData,
           beatSize,
           beatNumber,
-          visibilitySettings
+          finalVisibilitySettings
         );
 
         // Convert SVG to image
@@ -468,7 +492,7 @@ export class ImageComposer implements IImageComposer {
     // Include visibility settings in cache key (important for correct caching!)
     if (visibilitySettings) {
       keyParts.push(
-        `vis:${visibilitySettings.showTKA ?? "d"}|${visibilitySettings.showVTG ?? "d"}|${visibilitySettings.showElemental ?? "d"}|${visibilitySettings.showPositions ?? "d"}|${visibilitySettings.showReversals ?? "d"}|${visibilitySettings.showNonRadialPoints ?? "d"}|darkMode:${visibilitySettings.darkMode ?? false}`
+        `vis:${visibilitySettings.showTKA ?? "d"}|${visibilitySettings.showVTG ?? "d"}|${visibilitySettings.showElemental ?? "d"}|${visibilitySettings.showPositions ?? "d"}|${visibilitySettings.showReversals ?? "d"}|${visibilitySettings.showNonRadialPoints ?? "d"}|darkMode:${visibilitySettings.darkMode ?? false}|blueProp:${visibilitySettings.bluePropType ?? "d"}|redProp:${visibilitySettings.redPropType ?? "d"}`
       );
     }
 
