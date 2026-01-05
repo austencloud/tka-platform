@@ -35,6 +35,7 @@
  *   node scripts/release.js --version 0.2.0    - Manual version
  *   node scripts/release.js --confirm          - Execute release (requires prior preview)
  *   node scripts/release.js --changelog file.json - Use custom changelog entries (user-friendly)
+ *   node scripts/release.js --highlights 1,3,4   - Select highlight indices (comma-separated, or "none")
  *   node scripts/release.js --from-main        - Release directly from main (skip branch workflow)
  */
 
@@ -508,8 +509,11 @@ function pushToRemote(branch) {
  * Create git commit and tag
  */
 function createGitRelease(version, changelog) {
-  // Stage package.json and sw.js
-  execSync("git add package.json static/sw.js", { stdio: "inherit" });
+  // Stage package.json (and sw.js only if it exists)
+  execSync("git add package.json", { stdio: "inherit" });
+  if (existsSync("./static/sw.js")) {
+    execSync("git add static/sw.js", { stdio: "inherit" });
+  }
 
   // Create commit message
   const changelogSummary = changelog
@@ -765,6 +769,9 @@ async function main() {
   const changelogFileIndex = args.indexOf("--changelog");
   const changelogFile =
     changelogFileIndex >= 0 ? args[changelogFileIndex + 1] : null;
+  const highlightsIndex = args.indexOf("--highlights");
+  const highlightsArg =
+    highlightsIndex >= 0 ? args[highlightsIndex + 1] : null;
   const fromMain = args.includes("--from-main");
 
   // Show last release mode
@@ -930,10 +937,38 @@ async function main() {
     process.exit(0);
   }
 
-  // 5. Prompt for highlights (only for feedback-based releases with features/improvements)
+  // 5. Get highlights (from CLI flag or interactive prompt)
   let selectedHighlights = [];
   if (!useGitHistory && feedbackItems.length > 0) {
-    selectedHighlights = await promptForHighlights(changelog);
+    // Get potential highlights (features and major improvements)
+    const potentialHighlights = changelog
+      .filter((e) => e.category === "added" || e.category === "improved")
+      .map((e) => e.text);
+
+    if (highlightsArg !== null) {
+      // Use CLI-provided highlights (non-interactive mode for Claude)
+      if (highlightsArg === "none" || highlightsArg === "0") {
+        console.log("✓ No highlights selected (via --highlights flag)\n");
+        selectedHighlights = [];
+      } else {
+        // Parse comma-separated indices (1-based)
+        const indices = highlightsArg
+          .split(",")
+          .map((s) => parseInt(s.trim()) - 1)
+          .filter((i) => i >= 0 && i < potentialHighlights.length);
+
+        selectedHighlights = indices.map((i) => potentialHighlights[i]);
+
+        if (selectedHighlights.length > 0) {
+          console.log("✓ Selected highlights (via --highlights flag):");
+          selectedHighlights.forEach((h) => console.log(`   • ${h}`));
+          console.log("");
+        }
+      }
+    } else {
+      // Interactive mode (fallback)
+      selectedHighlights = await promptForHighlights(changelog);
+    }
   }
 
   // 6. Execute release

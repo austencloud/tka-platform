@@ -158,9 +158,15 @@ cat > .release-changelog.json << 'EOF'
 ]
 EOF
 
-# Execute release with the custom changelog
-node scripts/release.js --confirm --changelog .release-changelog.json
+# Execute release with the custom changelog and highlights
+# --highlights takes 1-based indices of added/improved items, or "none"
+node scripts/release.js --confirm --changelog .release-changelog.json --highlights 1,3,4
 ```
+
+**Highlights flag:** The `--highlights` flag selects which features/improvements appear prominently in the "What's New" modal:
+- Use comma-separated 1-based indices: `--highlights 1,3,4`
+- Use `--highlights none` or `--highlights 0` for no highlights
+- Indices refer to the "added" and "improved" items in order
 
 This will:
 
