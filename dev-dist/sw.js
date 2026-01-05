@@ -78,11 +78,11 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
    * See https://goo.gl/S9QRab
    */
   workbox.precacheAndRoute([{
-    "url": "/",
-    "revision": "0.dujpiuohvrg"
+    "url": "/200.html",
+    "revision": "0.0o6300m6ths"
   }], {});
   workbox.cleanupOutdatedCaches();
-  workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/"), {
+  workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/200.html"), {
     allowlist: [/^\/$/],
     denylist: [/^\/api\//, /^\/auth\//, /^\/firebase/, /firestore\.googleapis\.com/, /firebaseapp\.com/]
   }));

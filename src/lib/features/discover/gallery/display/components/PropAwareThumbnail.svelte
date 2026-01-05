@@ -67,10 +67,10 @@
   // When custom settings are provided, we render fresh (no caching)
   const hasCustomSettings = $derived(
     addWord !== undefined ||
-    addBeatNumbers !== undefined ||
-    includeStartPosition !== undefined ||
-    addDifficultyLevel !== undefined ||
-    addUserInfo !== undefined
+      addBeatNumbers !== undefined ||
+      includeStartPosition !== undefined ||
+      addDifficultyLevel !== undefined ||
+      addUserInfo !== undefined
   );
 
   // State

@@ -139,7 +139,7 @@ export class DiscoverSorter implements IDiscoverSorter {
       char = firstChar.toUpperCase();
     }
 
-    // Check for dash variant (e.g., "Θ-" should return "Θ-" not just "Θ")
+    // Check for dash variant (e.g., "θ-" should return "θ-" not just "θ")
     const secondChar = word[1];
     if (secondChar === "-") {
       return `${char}-`;

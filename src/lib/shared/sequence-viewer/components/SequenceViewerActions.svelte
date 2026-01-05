@@ -86,6 +86,7 @@
     gap: 12px;
     justify-content: center;
     padding-bottom: 24px;
+    flex-shrink: 0; /* Prevent from being squeezed */
   }
 
   .action-button {

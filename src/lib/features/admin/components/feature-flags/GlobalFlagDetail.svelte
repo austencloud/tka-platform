@@ -95,7 +95,7 @@
   .detail-content {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2026-md);
+    gap: 16px;
   }
 
   @media (min-width: 480px) {
@@ -109,29 +109,29 @@
   }
 
   .detail-section h3 {
-    margin: 0 0 var(--radius-2026-sm) 0;
-    font-size: var(--text-2026-caption);
+    margin: 0 0 8px 0;
+    font-size: var(--font-size-sm, 14px);
     font-weight: 600;
-    color: var(--theme-text);
+    color: var(--theme-text, #ffffff);
   }
 
   @media (min-width: 480px) {
     .detail-section h3 {
-      margin: 0 0 var(--space-2026-sm) 0;
-      font-size: var(--text-2026-body);
+      margin: 0 0 12px 0;
+      font-size: var(--font-size-base, 16px);
     }
   }
 
   .detail-section p {
     margin: 0;
-    font-size: var(--text-2026-caption);
-    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     line-height: 1.5;
   }
 
   @media (min-width: 480px) {
     .detail-section p {
-      font-size: var(--text-2026-body);
+      font-size: var(--font-size-base, 16px);
     }
   }
 
@@ -143,7 +143,7 @@
 
   @media (min-width: 480px) {
     .form-fields {
-      gap: var(--space-2026-md);
+      gap: 20px;
     }
   }
 </style>

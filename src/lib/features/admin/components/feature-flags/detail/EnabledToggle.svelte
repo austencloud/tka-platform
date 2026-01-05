@@ -34,20 +34,20 @@
   }
 
   .field-label {
-    font-size: var(--text-2026-caption);
+    font-size: var(--font-size-sm, 14px);
     font-weight: 600;
-    color: var(--theme-text-dim);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
   .toggle-button {
     display: flex;
     align-items: center;
-    gap: var(--space-2026-sm);
+    gap: 12px;
     padding: 0;
     border: none;
     background: transparent;
     cursor: pointer;
-    color: var(--theme-text-dim);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     min-height: var(--min-touch-target);
   }
 
@@ -55,13 +55,13 @@
     position: relative;
     width: var(--min-touch-target);
     height: 28px;
-    background: var(--surface-2026-active);
-    border-radius: var(--radius-2026-md);
-    transition: background var(--transition-fast);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+    transition: background 0.15s ease;
   }
 
   .toggle-button.enabled .toggle-track {
-    background: var(--accent-2026-emerald-soft);
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 20%, transparent);
   }
 
   .toggle-thumb {
@@ -70,26 +70,25 @@
     left: 3px;
     width: 22px;
     height: 22px;
-    background: var(--theme-text-dim);
+    background: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     border-radius: 50%;
-    transition: all var(--transition-fast);
-    box-shadow: var(--shadow-2026-sm);
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .toggle-button.enabled .toggle-thumb {
     left: 27px;
-    background: var(--accent-2026-emerald);
-    box-shadow: 0 2px 8px
-      color-mix(in srgb, var(--accent-2026-emerald) 40%, transparent);
+    background: var(--semantic-success, #10b981);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--semantic-success, #10b981) 40%, transparent);
   }
 
   .toggle-label {
-    font-size: var(--text-2026-body);
+    font-size: var(--font-size-base, 16px);
     font-weight: 500;
-    transition: color var(--transition-fast);
+    transition: color 0.15s ease;
   }
 
   .toggle-button.enabled .toggle-label {
-    color: var(--accent-2026-emerald);
+    color: var(--semantic-success, #10b981);
   }
 </style>

@@ -1769,7 +1769,8 @@
       "Bash(nslookup:*)",
       "Bash(1)",
       "Bash(__NEW_LINE__ echo \"Verification - Γ count after update:\")",
-      "Bash(__NEW_LINE__ echo \"\")"
+      "Bash(__NEW_LINE__ echo \"\")",
+      "Bash(\"src/lib/shared/sequence-viewer/components/SequenceMediaViewerUnified.svelte\")"
     ],
     "deny": [],
     "ask": []

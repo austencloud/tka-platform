@@ -24,60 +24,48 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: var(--radius-2026-sm) var(--radius-2026-md);
+    padding: 8px 12px;
     border-radius: 8px;
     font-weight: 600;
-    font-size: var(--text-2026-caption);
+    font-size: var(--font-size-sm, 14px);
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    border: 2px solid;
+    border: 1.5px solid;
   }
 
   @media (min-width: 480px) {
     .type-indicator {
-      gap: var(--radius-2026-sm);
-      padding: var(--space-2026-sm) var(--space-2026-md);
-      font-size: var(--text-2026-body);
+      gap: 10px;
+      padding: 12px 16px;
+      font-size: var(--font-size-base, 16px);
     }
   }
 
   .type-indicator.module {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 15%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 40%,
-      transparent
-    );
+    background: color-mix(in srgb, #8b5cf6 15%, transparent);
+    border-color: color-mix(in srgb, #8b5cf6 40%, transparent);
     color: #a78bfa;
   }
 
   .type-indicator.tab {
-    background: var(--accent-2026-indigo-soft);
-    border-color: color-mix(
-      in srgb,
-      var(--accent-2026-indigo) 40%,
-      transparent
-    );
-    color: var(--semantic-info);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    color: var(--semantic-info, #6366f1);
   }
 
   .type-indicator.capability {
-    background: var(--accent-2026-amber-soft);
-    border-color: color-mix(in srgb, var(--accent-2026-amber) 40%, transparent);
-    color: var(--semantic-warning);
+    background: color-mix(in srgb, #f59e0b 12%, transparent);
+    border-color: color-mix(in srgb, #f59e0b 40%, transparent);
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .type-indicator i {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-base, 16px);
   }
 
   @media (min-width: 480px) {
     .type-indicator i {
-      font-size: var(--font-size-lg);
+      font-size: var(--font-size-lg, 18px);
     }
   }
 

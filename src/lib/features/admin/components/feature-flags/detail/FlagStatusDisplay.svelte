@@ -32,50 +32,51 @@
 
 <style>
   .status-display h3 {
-    margin: 0 0 var(--radius-2026-sm) 0;
-    font-size: var(--text-2026-caption);
+    margin: 0 0 8px 0;
+    font-size: var(--font-size-sm, 14px);
     font-weight: 600;
-    color: var(--theme-text);
+    color: var(--theme-text, #ffffff);
   }
 
   @media (min-width: 480px) {
     .status-display h3 {
-      margin: 0 0 var(--space-2026-sm) 0;
-      font-size: var(--text-2026-body);
+      margin: 0 0 12px 0;
+      font-size: var(--font-size-base, 16px);
     }
   }
 
   .status-info {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2026-sm);
+    gap: 12px;
   }
 
   .status-item {
     display: flex;
     align-items: center;
-    gap: var(--space-2026-sm);
-    padding: var(--space-2026-sm);
-    background: var(--surface-2026);
-    border-radius: var(--radius-2026-xs);
+    gap: 12px;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 6px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .status-label {
-    font-size: var(--text-2026-caption);
-    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     font-weight: 500;
   }
 
   .status-value {
-    font-size: var(--text-2026-caption);
-    color: var(--theme-text);
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
     font-weight: 500;
     display: flex;
     align-items: center;
-    gap: var(--space-2026-xs);
+    gap: 6px;
   }
 
   .status-value.enabled {
-    color: var(--accent-2026-emerald);
+    color: var(--semantic-success, #10b981);
   }
 </style>

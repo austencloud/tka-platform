@@ -42,15 +42,15 @@
   }
 
   .field-label {
-    font-size: var(--text-2026-caption);
+    font-size: var(--font-size-sm, 14px);
     font-weight: 600;
-    color: var(--theme-text-dim);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
   .role-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2026-xs);
+    gap: 6px;
   }
 
   @media (min-width: 480px) {
@@ -62,52 +62,51 @@
   .role-chip {
     display: flex;
     align-items: center;
-    gap: var(--space-2026-xs);
-    padding: 8px var(--space-2026-sm);
-    border: 2px solid var(--border-2026);
-    border-radius: var(--radius-2026-full);
-    background: var(--surface-2026);
-    color: var(--theme-text-dim);
-    font-size: var(--text-2026-micro);
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.15s ease;
     min-height: var(--min-touch-target);
   }
 
   @media (min-width: 480px) {
     .role-chip {
-      padding: var(--radius-2026-sm) 16px;
-      font-size: var(--text-2026-caption);
+      padding: 10px 16px;
+      font-size: var(--font-size-sm, 14px);
     }
   }
 
   @media (hover: hover) {
     .role-chip:hover {
-      border-color: var(--border-2026-hover);
-      background: var(--surface-2026-hover);
-      color: var(--theme-text);
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+      color: var(--theme-text, #ffffff);
     }
   }
 
   .role-chip:active {
-    transform: scale(var(--active-scale));
+    transform: scale(0.98);
   }
 
   .role-chip.selected {
     border-color: var(--role-color);
     background: color-mix(in srgb, var(--role-color) 15%, transparent);
     color: var(--role-color);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--role-color) 30%, transparent);
   }
 
   .role-chip i {
-    font-size: var(--text-2026-caption);
+    font-size: var(--font-size-sm, 14px);
   }
 
   @media (min-width: 480px) {
     .role-chip i {
-      font-size: var(--font-size-sm);
+      font-size: var(--font-size-sm, 14px);
     }
   }
 </style>

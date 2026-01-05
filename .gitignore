@@ -92,6 +92,9 @@ static/Explore_thumbnails/
 # Generated Explore manifest (auto-generated during build)
 static/Explore-manifest.json
 
+# Store assets (screenshots, promotional images)
+static/store-assets/
+
 *storybook.log
 storybook-static
 
