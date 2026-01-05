@@ -11,13 +11,17 @@ import { type User } from "firebase/auth";
 import { getFirestoreInstance } from "../../firebase";
 import type { IUserDocumentManager } from "../contracts/IUserDocumentManager";
 import type { IProfilePictureManager } from "../contracts/IProfilePictureManager";
+import type { IUsernameValidator } from "../contracts/IUsernameValidator";
+import { formatUsername } from "../../domain/models/UsernameValidation";
 import { TYPES } from "../../../inversify/types";
 
 @injectable()
 export class UserDocumentManager implements IUserDocumentManager {
   constructor(
     @inject(TYPES.IProfilePictureManager)
-    private readonly profilePictureService: IProfilePictureManager
+    private readonly profilePictureService: IProfilePictureManager,
+    @inject(TYPES.IUsernameValidator)
+    private readonly usernameValidator: IUsernameValidator
   ) {}
 
   /**
@@ -35,20 +39,25 @@ export class UserDocumentManager implements IUserDocumentManager {
       const userDocRef = doc(firestore, `users/${user.uid}`);
       const userDoc = await getDoc(userDocRef);
 
-      // Determine display name and username
+      // Determine display name
       const displayName =
         user.displayName || user.email?.split("@")[0] || "Anonymous User";
-      const username = user.email?.split("@")[0] || user.uid.substring(0, 8);
 
       // Get provider IDs for reliable profile picture URLs
       const providerIds = this.profilePictureService.getProviderIds(user);
 
       if (!userDoc.exists()) {
-        // Create new user document
+        // NEW USER: Generate unique username and claim it
+        const baseUsername = user.email?.split("@")[0] || user.uid.substring(0, 8);
+        const username = await this.usernameValidator.generateUniqueUsername(baseUsername);
+        const usernameLowercase = formatUsername(username);
+
+        // Create user document first
         await setDoc(userDocRef, {
           email: user.email,
           displayName,
           username,
+          usernameLowercase,
           photoURL: user.photoURL || null,
           avatar: user.photoURL || null,
           // Store provider IDs for reliable profile picture construction
@@ -56,7 +65,7 @@ export class UserDocumentManager implements IUserDocumentManager {
           facebookId: providerIds.facebookId || null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-          lastActivityDate: serverTimestamp(), // Track activity for analytics
+          lastActivityDate: serverTimestamp(),
           // Initialize counts
           sequenceCount: 0,
           collectionCount: 0,
@@ -71,6 +80,11 @@ export class UserDocumentManager implements IUserDocumentManager {
           isAdmin: false,
         });
 
+        // Claim username in /usernames collection (non-blocking)
+        void this.usernameValidator.claimUsername(user.uid, username).catch((err) => {
+          console.warn(`[UserDocumentManager] Failed to claim username: ${err.message}`);
+        });
+
         // Notify admins of new user signup (async, non-blocking)
         void import("$lib/features/admin/services/implementations/AdminNotifier").then(
           ({ adminNotificationService }) => {
@@ -82,24 +96,28 @@ export class UserDocumentManager implements IUserDocumentManager {
           }
         );
       } else {
-        // Update existing user document with latest auth data
-        // Always update provider IDs and photoURL to keep them fresh
-        await setDoc(
-          userDocRef,
-          {
-            email: user.email,
-            displayName,
-            username,
-            photoURL: user.photoURL || null,
-            avatar: user.photoURL || null,
-            // Always update provider IDs (they don't change but ensures they exist)
-            googleId: providerIds.googleId || null,
-            facebookId: providerIds.facebookId || null,
-            updatedAt: serverTimestamp(),
-            lastActivityDate: serverTimestamp(), // Track activity for analytics
-          },
-          { merge: true } // Merge to preserve existing fields like counts
-        );
+        // EXISTING USER: Preserve username, update other fields
+        const existingData = userDoc.data();
+        const existingUsername = existingData?.username;
+
+        // Build update object - don't overwrite username
+        const updateData: Record<string, unknown> = {
+          email: user.email,
+          displayName,
+          photoURL: user.photoURL || null,
+          avatar: user.photoURL || null,
+          googleId: providerIds.googleId || null,
+          facebookId: providerIds.facebookId || null,
+          updatedAt: serverTimestamp(),
+          lastActivityDate: serverTimestamp(),
+        };
+
+        // Add usernameLowercase if missing (backfill for existing users)
+        if (existingUsername && !existingData?.usernameLowercase) {
+          updateData.usernameLowercase = formatUsername(existingUsername);
+        }
+
+        await setDoc(userDocRef, updateData, { merge: true });
       }
     } catch (error) {
       console.error(

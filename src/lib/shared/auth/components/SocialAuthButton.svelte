@@ -74,7 +74,7 @@
 
       // Use popup for all devices - redirect flow has never worked
       await signInWithPopup(auth, authProvider);
-      await goto("/app");
+      await goto("/");
     } catch (e: unknown) {
       const errorCode = (e as { code?: string })?.code;
       console.error("[SocialAuthButton] Sign-in error:", errorCode, e);

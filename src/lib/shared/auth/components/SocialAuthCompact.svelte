@@ -52,7 +52,7 @@
       // Use popup for all devices - redirect flow has never worked
       await signInWithPopup(auth, provider);
       console.log("[SocialAuthCompact] Popup sign-in successful");
-      await goto("/app");
+      await goto("/");
     } catch (error: unknown) {
       const errorCode = (error as { code?: string })?.code;
       console.error("[SocialAuthCompact] Google sign-in error:", errorCode, error);

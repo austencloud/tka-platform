@@ -117,7 +117,7 @@
         resetAttempts();
       }
 
-      await goto("/app");
+      await goto("/");
     } catch (err: any) {
       // Record failed attempt (only credential errors)
       if (

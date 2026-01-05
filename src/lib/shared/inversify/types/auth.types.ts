@@ -7,6 +7,7 @@ export const AuthTypes = {
   IProfilePictureManager: Symbol.for("IProfilePictureManager"),
   IUserDocumentManager: Symbol.for("IUserDocumentManager"),
   IUserRepository: Symbol.for("IUserRepository"),
+  IUsernameValidator: Symbol.for("IUsernameValidator"),
   ISubscriptionManager: Symbol.for("ISubscriptionManager"),
   IProfileApiClient: Symbol.for("IProfileApiClient"),
   IStepUpAuthCoordinator: Symbol.for("IStepUpAuthCoordinator"),

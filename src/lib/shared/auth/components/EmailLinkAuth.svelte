@@ -130,7 +130,7 @@
 
       // Navigate to app
       console.log(`🔐 [email-link] Navigating to app...`);
-      goto("/app");
+      goto("/");
     } catch (err: any) {
       console.error(`❌ [email-link] Sign-in error:`, err);
       console.error(`❌ [email-link] Error code:`, err.code);

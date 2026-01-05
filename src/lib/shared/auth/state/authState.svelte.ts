@@ -39,6 +39,9 @@ import { auth } from "../firebase";
 // Preview state for admin "View As" feature
 import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
+import type { IUsernameValidator } from "../services/contracts/IUsernameValidator";
+import { doc, getDoc } from "firebase/firestore";
+import { getFirestoreInstance } from "../firebase";
 import { featureFlagService } from "../services/FeatureFlagService.svelte";
 import type { UserRole } from "../domain/models/UserRole";
 
@@ -668,6 +671,12 @@ export async function updateDisplayName(displayName: string) {
       displayName: displayName.trim() || null,
     });
 
+    // Trigger Svelte reactivity by reassigning state with updated user
+    _state = {
+      ..._state,
+      user: auth.currentUser,
+    };
+
     return {
       success: true,
       message: "Display name updated successfully.",
@@ -678,6 +687,56 @@ export async function updateDisplayName(displayName: string) {
       error instanceof Error
         ? error.message
         : "Failed to update display name. Please try again.";
+    throw new Error(message);
+  }
+}
+
+/**
+ * Update user's username
+ * @param newUsername - The new username (case-preserving)
+ */
+export async function updateUsername(newUsername: string) {
+  const user = _state.user;
+  if (!user) {
+    throw new Error("No authenticated user");
+  }
+
+  try {
+    const usernameValidator = tryResolve<IUsernameValidator>(
+      TYPES.IUsernameValidator
+    );
+
+    if (!usernameValidator) {
+      throw new Error("Username validation service not available");
+    }
+
+    // Get current username to release it later
+    const firestore = await getFirestoreInstance();
+    const userDocRef = doc(firestore, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    const currentUsername = userDoc.data()?.username;
+
+    // Claim new username (this validates and updates Firestore atomically)
+    await usernameValidator.claimUsername(user.uid, newUsername.trim());
+
+    // Release old username if different
+    if (
+      currentUsername &&
+      currentUsername.toLowerCase() !== newUsername.toLowerCase()
+    ) {
+      await usernameValidator.releaseUsername(currentUsername);
+    }
+
+    return {
+      success: true,
+      message: "Username updated successfully.",
+    };
+  } catch (error: unknown) {
+    console.error("❌ [authState] Username update error:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to update username. Please try again.";
     throw new Error(message);
   }
 }
@@ -747,6 +806,7 @@ export const authState = {
   signOut,
   changeEmail,
   updateDisplayName,
+  updateUsername,
   refreshUser,
   cleanup,
 };
