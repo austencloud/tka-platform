@@ -5,7 +5,7 @@
   "metadata": {
     "sequence": [
       {
-        "word": "ΓVPZΣ-VPZΣ-VPZΣ-VPZΣ-",
+        "word": "γVPZΣ-VPZΣ-VPZΣ-VPZΣ-",
         "author": "Austen Cloud",
         "level": 2,
         "prop_type": "staff",
@@ -21,7 +21,7 @@
       {
         "beat": 0,
         "sequence_start_position": "gamma",
-        "letter": "Γ",
+        "letter": "γ",
         "end_pos": "gamma12",
         "blue_attributes": {
           "start_loc": "sw",
