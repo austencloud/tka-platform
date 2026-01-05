@@ -1771,7 +1771,19 @@
       "Bash(__NEW_LINE__ echo \"Verification - γ count after update:\")",
       "Bash(__NEW_LINE__ echo \"\")",
       "Bash(\"src/lib/features/admin/components/feature-flags/list/CapabilityChip.svelte\" )",
-      "Bash(\"src/lib/features/admin/components/feature-flags/list/TabChip.svelte\")"
+      "Bash(\"src/lib/features/admin/components/feature-flags/list/TabChip.svelte\")",
+      "WebFetch(domain:claudefa.st)",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(firebase storage:delete:*)",
+      "Bash(firebase storage:*)",
+      "Bash(gcloud storage rm:*)",
+      "Bash(gcloud storage ls:*)",
+      "Bash(src/lib/features/discover/gallery/display/components/PropAwareThumbnail.svelte )",
+      "Bash(src/lib/shared/pictograph/shared/services/contracts/IPictographPreparer.ts )",
+      "Bash(src/lib/shared/pictograph/shared/services/implementations/PictographPreparer.ts )",
+      "Bash(src/lib/shared/render/services/implementations/ImageComposer.ts )",
+      "Bash(src/lib/shared/render/utils/pictograph-to-svg.ts)",
+      "Bash(src/lib/shared/inversify/hmr/HMRContainerManager.ts)"
     ],
     "deny": [],
     "ask": []
@@ -1784,5 +1796,18 @@
     "time",
     "filesystem"
   ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/git-safety-check.js"
+          }
+        ]
+      }
+    ]
+  },
   "outputStyle": "default"
 }
