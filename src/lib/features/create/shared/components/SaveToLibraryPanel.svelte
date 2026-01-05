@@ -29,6 +29,7 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
   import { simplifyAndTruncate } from "../workspace-panel/shared/utils/word-simplifier";
+  import { libraryState } from "$lib/features/library/state/library-state.svelte";
 
   interface Props {
     show: boolean;
@@ -80,10 +81,11 @@
     { icon: "fa-sync", label: "Syncing data" },
   ];
 
-  // Dynamic label for step 1 showing beat progress
+  // Dynamic label for step 1 showing render progress
+  // Uses "frame" instead of "beat" since total includes start position
   const step1Label = $derived(
     saveStep === 1 && renderProgress.total > 0
-      ? `Rendering beat ${renderProgress.current} of ${renderProgress.total}`
+      ? `Rendering frame ${renderProgress.current} of ${renderProgress.total}`
       : "Creating thumbnail"
   );
 
@@ -127,6 +129,15 @@
     currentUser?.displayName || currentUser?.email || "Anonymous"
   );
 
+  // Duplicate detection - check if this word already exists in library
+  const duplicateCheck = $derived.by(() => {
+    if (!tkaName || !show) return { hasDuplicate: false, existingSequences: [] };
+    return libraryState.checkForDuplicate(tkaName);
+  });
+  const hasDuplicate = $derived(duplicateCheck.hasDuplicate);
+  const duplicateCount = $derived(duplicateCheck.existingSequences.length);
+  let acknowledgedDuplicate = $state(false);
+
   // Dynamic header content based on context
   const headerTitle = $derived(
     showShareContext ? "Save to Share" : "Save to Library"
@@ -151,6 +162,7 @@
       showDisplayName = !!sequence.displayName;
       showNotes = false;
       showTags = false;
+      acknowledgedDuplicate = false; // Reset duplicate acknowledgment
     }
   });
 
@@ -262,6 +274,30 @@
         </div>
       </div>
 
+      <!-- Duplicate Warning -->
+      {#if hasDuplicate}
+        <div class="duplicate-warning">
+          <div class="warning-header">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+              {duplicateCount === 1
+                ? "You already have a sequence with this name"
+                : `You have ${duplicateCount} sequences with this name`}
+            </span>
+          </div>
+          <p class="warning-text">
+            Saving will create another variation. Consider using a unique display name to differentiate.
+          </p>
+          <label class="acknowledge-checkbox">
+            <input
+              type="checkbox"
+              bind:checked={acknowledgedDuplicate}
+            />
+            <span>I understand, save as a new variation</span>
+          </label>
+        </div>
+      {/if}
+
       <!-- Creator & Visibility -->
       <VisibilityToggle
         {isPublic}
@@ -335,7 +371,7 @@
         type="button"
         class="button button-primary"
         onclick={handleSave}
-        disabled={!tkaName || isSaving}
+        disabled={!tkaName || isSaving || (hasDuplicate && !acknowledgedDuplicate)}
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -467,6 +503,58 @@
     font-size: var(--font-size-base, 16px);
     color: var(--theme-text-dim);
     text-align: center;
+  }
+
+  /* Duplicate Warning */
+  .duplicate-warning {
+    padding: 16px;
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--semantic-warning) 40%, transparent);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .warning-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--semantic-warning, #f59e0b);
+    font-weight: 600;
+    font-size: var(--font-size-base, 16px);
+  }
+
+  .warning-header i {
+    font-size: 1.2em;
+  }
+
+  .warning-text {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.5;
+  }
+
+  .acknowledge-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text);
+    padding: 8px 0;
+  }
+
+  .acknowledge-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--semantic-warning, #f59e0b);
+  }
+
+  .acknowledge-checkbox span {
+    flex: 1;
   }
 
   /* Optional fields - secondary, collapsed by default */

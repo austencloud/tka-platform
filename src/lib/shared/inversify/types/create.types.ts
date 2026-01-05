@@ -57,6 +57,7 @@ export const CreateTypes = {
   ISequenceTransferHandler: Symbol.for("ISequenceTransferHandler"),
   IFirstBeatAnalyzer: Symbol.for("IFirstBeatAnalyzer"),
   ISequenceJsonExporter: Symbol.for("ISequenceJsonExporter"),
+  IExtensionFlowCoordinator: Symbol.for("IExtensionFlowCoordinator"),
 
   // Pattern Management
   IRotationDirectionPatternManager: Symbol.for(

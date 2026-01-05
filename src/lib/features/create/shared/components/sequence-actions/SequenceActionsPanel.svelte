@@ -9,11 +9,11 @@
   import { resolve, TYPES } from "$lib/shared/inversify/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type {
-    ISequenceExtender,
     ExtensionAnalysis,
     LOOPType,
     CircularizationOption,
   } from "../../services/contracts/ISequenceExtender";
+  import type { IExtensionFlowCoordinator } from "../../services/contracts/IExtensionFlowCoordinator";
   import type {
     ISubDrawerStatePersister,
     SubDrawerType,
@@ -37,8 +37,8 @@
   import TurnPatternDrawer from "./TurnPatternDrawer.svelte";
 
   // Transform help mode types
+  import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
-  type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
   import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
   import ExtendDrawer from "./ExtendDrawer.svelte";
   import BeatGridSection from "./BeatGridSection.svelte";
@@ -96,7 +96,7 @@
 
   // Services
   let hapticService: IHapticFeedback | null = $state(null);
-  let sequenceExtender: ISequenceExtender | null = $state(null);
+  let extensionFlowCoordinator: IExtensionFlowCoordinator | null = $state(null);
   let subDrawerPersister: ISubDrawerStatePersister | null = $state(null);
   let transferHandler: ISequenceTransferHandler | null = $state(null);
   let firstBeatAnalyzer: IFirstBeatAnalyzer | null = $state(null);
@@ -110,7 +110,7 @@
   // Sub-drawer states - initialized to false, restored after parent drawer registers
   // Transform help mode state machine
   let helpMode = $state<HelpMode>("inactive");
-  let selectedTransform = $state<TransformId | null>(null);
+  let selectedTransform = $state<ActionHelpId | null>(null);
   let showTurnPatternDrawer = $state(false);
   let showRotationDirectionDrawer = $state(false);
   let showExtendDrawer = $state(false);
@@ -159,13 +159,8 @@
 
   // Extension availability - check if sequence can be extended
   const canExtend = $derived.by(() => {
-    if (!sequence || !sequenceExtender) return false;
-    try {
-      const analysis = sequenceExtender.analyzeSequence(sequence);
-      return analysis.canExtend;
-    } catch {
-      return false;
-    }
+    if (!sequence || !extensionFlowCoordinator) return false;
+    return extensionFlowCoordinator.canExtend(sequence);
   });
 
   // Shift start availability - need at least 2 beats
@@ -180,7 +175,9 @@
       /* Optional service */
     }
     try {
-      sequenceExtender = resolve<ISequenceExtender>(TYPES.ISequenceExtender);
+      extensionFlowCoordinator = resolve<IExtensionFlowCoordinator>(
+        TYPES.IExtensionFlowCoordinator
+      );
     } catch {
       /* Optional service */
     }
@@ -336,36 +333,19 @@
   }
 
   async function handleExtend() {
-    if (!sequence || !sequenceExtender) return;
+    if (!sequence || !extensionFlowCoordinator) return;
     hapticService?.trigger("selection");
 
-    // Analyze the sequence to get available LOOP options
-    const analysis = sequenceExtender.analyzeSequence(sequence);
+    const result = await extensionFlowCoordinator.startFlow(sequence);
 
-    // Store the analysis
-    extensionAnalysis = analysis;
-
-    // Fetch circularization options (bridge letters) if direct LOOPs aren't available
-    if (!analysis.canExtend || analysis.availableLOOPOptions.length === 0) {
-      try {
-        circularizationOptions =
-          await sequenceExtender.getCircularizationOptions(sequence);
-        if (circularizationOptions.length === 0) {
-          toast.warning("Cannot extend this sequence");
-          return;
-        }
-        directUnavailableReason =
-          "Position groups don't match for direct extension";
-      } catch (error) {
-        console.error("[Extend] Failed to get circularization options:", error);
-        toast.warning("Cannot extend this sequence");
-        return;
-      }
-    } else {
-      circularizationOptions = [];
-      directUnavailableReason = null;
+    if (!result.canExtend) {
+      toast.warning(result.errorMessage || "Cannot extend this sequence");
+      return;
     }
 
+    extensionAnalysis = result.analysis;
+    circularizationOptions = result.circularizationOptions;
+    directUnavailableReason = result.directUnavailableReason;
     showExtendDrawer = true;
   }
 
@@ -374,61 +354,31 @@
    * and re-analyzes to show LOOP options.
    */
   async function handleBridgeAppend(bridgeLetter: Letter) {
-    console.log("[Extend] handleBridgeAppend called with:", bridgeLetter);
-    if (!sequence || !sequenceExtender || isExtending) {
-      console.log(
-        "[Extend] Early return - sequence:",
-        !!sequence,
-        "extender:",
-        !!sequenceExtender,
-        "isExtending:",
-        isExtending
-      );
-      return;
-    }
+    if (!sequence || !extensionFlowCoordinator || isExtending) return;
     isExtending = true;
     hapticService?.trigger("selection");
 
-    try {
-      // Push undo snapshot BEFORE appending bridge
-      CreateModuleState.pushUndoSnapshot(UndoOperationType.ADD_BEAT);
+    // Push undo snapshot BEFORE appending bridge
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.ADD_BEAT);
 
-      // Append the bridge beat to the sequence
-      console.log("[Extend] Calling appendBridgeBeat...");
-      const sequenceWithBridge = await sequenceExtender.appendBridgeBeat(
-        sequence,
-        bridgeLetter
-      );
-      console.log(
-        "[Extend] Got extended sequence with",
-        sequenceWithBridge.beats?.length,
-        "beats"
-      );
+    const result = await extensionFlowCoordinator.appendBridge(
+      sequence,
+      bridgeLetter
+    );
 
-      // Update the sequence - this will show the new beat immediately
-      activeSequenceState.setCurrentSequence(sequenceWithBridge);
-      hapticService?.trigger("success");
-
-      // Re-analyze the sequence (should now be directly loopable)
-      const analysis = sequenceExtender.analyzeSequence(sequenceWithBridge);
-      console.log(
-        "[Extend] Re-analyzed - canExtend:",
-        analysis.canExtend,
-        "LOOPs:",
-        analysis.availableLOOPOptions.length
-      );
-      extensionAnalysis = analysis;
+    if (result.success && result.sequence) {
+      activeSequenceState.setCurrentSequence(result.sequence);
+      extensionAnalysis = result.analysis;
       circularizationOptions = []; // Clear bridge options since we now have LOOPs
       directUnavailableReason = null;
-
-      toast.success(`Added "${bridgeLetter}" - now choose LOOP pattern`);
-    } catch (error) {
-      console.error("[Extend] Failed to append bridge:", error);
-      toast.error("Could not add bridge letter");
+      hapticService?.trigger("success");
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
       hapticService?.trigger("error");
-    } finally {
-      isExtending = false;
     }
+
+    isExtending = false;
   }
 
   /**
@@ -436,45 +386,31 @@
    * Bridge letter (if any) has already been appended by handleBridgeAppend.
    */
   async function handleExtendApply(loopType: LOOPType) {
-    if (!sequence || !sequenceExtender || isExtending) return;
+    if (!sequence || !extensionFlowCoordinator || isExtending) return;
     isExtending = true;
     hapticService?.trigger("selection");
 
-    try {
-      // Direct extension (bridge already appended if needed)
-      const extendedSequence = await sequenceExtender.extendSequence(sequence, {
-        loopType,
-      });
+    // Push undo snapshot BEFORE applying extension
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.EXTEND_SEQUENCE);
 
-      if (extendedSequence.beats?.length === sequence.beats?.length) {
-        console.warn("[Extend] No new beats were added!");
-        toast.warning("No extension beats generated");
-        return;
-      }
+    const result = await extensionFlowCoordinator.applyLoop(sequence, loopType);
 
-      // Push undo snapshot BEFORE applying extension
-      CreateModuleState.pushUndoSnapshot(UndoOperationType.EXTEND_SEQUENCE);
-
-      activeSequenceState.setCurrentSequence(extendedSequence);
+    if (result.success && result.sequence) {
+      activeSequenceState.setCurrentSequence(result.sequence);
       hapticService?.trigger("success");
-
-      const beatsAdded =
-        (extendedSequence.beats?.length || 0) - (sequence.beats?.length || 0);
-      const loopName = loopType.replace(/_/g, " ");
-      toast.success(`Extended with ${loopName}! Added ${beatsAdded} beats`);
+      toast.success(result.message);
 
       // Close the drawer on success
       showExtendDrawer = false;
       extensionAnalysis = null;
       circularizationOptions = [];
       directUnavailableReason = null;
-    } catch (error) {
-      console.error("[Extend] Failed:", error);
-      toast.error("Could not extend sequence");
+    } else {
+      toast.warning(result.message);
       hapticService?.trigger("error");
-    } finally {
-      isExtending = false;
     }
+
+    isExtending = false;
   }
 
   function handleEditInConstructor() {
@@ -619,18 +555,35 @@
   }
 
   // ===== HELP MODE HANDLERS =====
+  // Toggle body class for z-index boosting (drawer needs to be above backdrop)
+  $effect(() => {
+    if (helpMode === "selecting") {
+      document.body.classList.add("help-mode-active");
+    } else {
+      document.body.classList.remove("help-mode-active");
+    }
+    return () => document.body.classList.remove("help-mode-active");
+  });
+
   function enterHelpMode() {
     hapticService?.trigger("selection");
     helpMode = "selecting";
   }
 
-  function selectTransformHelp(transformId: TransformId) {
+  function selectTransformHelp(actionId: ActionHelpId) {
     hapticService?.trigger("selection");
-    selectedTransform = transformId;
+    selectedTransform = actionId;
     helpMode = "viewing";
   }
 
+  function closeDetailModal() {
+    // Return to selection state so user can explore other transforms
+    helpMode = "selecting";
+    selectedTransform = null;
+  }
+
   function exitHelpMode() {
+    // Fully exit help mode (backdrop click or escape from selection)
     helpMode = "inactive";
     selectedTransform = null;
   }
@@ -648,9 +601,9 @@
   ariaLabel="Sequence actions panel"
   onClose={handleClose}
 >
-  <div class="editor-panel">
+  <div class="editor-panel" class:help-active={helpMode === "selecting"}>
     <!-- Simple header with title and actions -->
-    <div class="compact-header">
+    <div class="compact-header" class:dimmed={helpMode === "selecting"}>
       <h2 class="panel-title">Sequence Actions</h2>
 
       <div class="header-actions">
@@ -679,27 +632,31 @@
     </div>
 
     <!-- Hand selector for single-hand transforms -->
-    <HandSelector
-      value={panelState.targetHand}
-      onChange={(hand) => panelState.setTargetHand(hand)}
-    />
+    <div class:dimmed={helpMode === "selecting"}>
+      <HandSelector
+        value={panelState.targetHand}
+        onChange={(hand) => panelState.setTargetHand(hand)}
+      />
+    </div>
 
     <!-- Beat grid display: shows on mobile at 50% height -->
     {#if hasSequence && isSideBySideLayout === false && sequence}
-      <BeatGridSection
-        beats={sequence.beats}
-        startPosition={sequence.startPosition ||
-          sequence.startingPositionBeat ||
-          null}
-        {selectedBeatNumber}
-        isShiftMode={isShiftStartMode}
-        onBeatClick={isShiftStartMode
-          ? handleShiftStartBeatSelect
-          : handleBeatSelect}
-        onStartClick={() => (isShiftStartMode ? null : handleBeatSelect(0))}
-        onBeatLongPress={handlePreview}
-        onCancelShiftMode={cancelShiftStart}
-      />
+      <div class:dimmed={helpMode === "selecting"}>
+        <BeatGridSection
+          beats={sequence.beats}
+          startPosition={sequence.startPosition ||
+            sequence.startingPositionBeat ||
+            null}
+          {selectedBeatNumber}
+          isShiftMode={isShiftStartMode}
+          onBeatClick={isShiftStartMode
+            ? handleShiftStartBeatSelect
+            : handleBeatSelect}
+          onStartClick={() => (isShiftStartMode ? null : handleBeatSelect(0))}
+          onBeatLongPress={handlePreview}
+          onCancelShiftMode={cancelShiftStart}
+        />
+      </div>
     {/if}
 
     <div class="controls-content">
@@ -740,7 +697,7 @@
 {:else if helpMode === "viewing" && selectedTransform}
   <TransformDetailModal
     transformId={selectedTransform}
-    onClose={exitHelpMode}
+    onClose={closeDetailModal}
   />
 {/if}
 
@@ -937,5 +894,17 @@
     .icon-btn {
       transition: none;
     }
+  }
+
+  /* Help mode dimming for non-interactive sections */
+  .dimmed {
+    opacity: 0.3;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  /* Boost drawer z-index when help mode is active (above backdrop at 200) */
+  :global(body.help-mode-active .sequence-actions-panel-container) {
+    z-index: 210 !important;
   }
 </style>

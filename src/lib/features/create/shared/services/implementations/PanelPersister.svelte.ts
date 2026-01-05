@@ -15,7 +15,6 @@ export class PanelPersister implements IPanelPersister {
   getCurrentOpenPanel(panelState: PanelCoordinationState): PanelId | null {
     if (panelState.isAnimationPanelOpen) return "animation";
     if (panelState.isEditPanelOpen) return "edit";
-    if (panelState.isSharePanelOpen) return "share";
     if (panelState.isVideoRecordPanelOpen) return "videoRecord";
     if (panelState.isFilterPanelOpen) return "filter";
     if (panelState.isSequenceActionsPanelOpen) return "sequenceActions";
@@ -27,7 +26,6 @@ export class PanelPersister implements IPanelPersister {
   closeAllPanels(panelState: PanelCoordinationState): void {
     panelState.closeEditPanel();
     panelState.closeAnimationPanel();
-    panelState.closeSharePanel();
     panelState.closeVideoRecordPanel();
     panelState.closeFilterPanel();
     panelState.closeSequenceActionsPanel();
@@ -42,9 +40,6 @@ export class PanelPersister implements IPanelPersister {
     switch (panelId) {
       case "animation":
         panelState.openAnimationPanel();
-        break;
-      case "share":
-        panelState.openSharePanel();
         break;
       case "videoRecord":
         panelState.openVideoRecordPanel();

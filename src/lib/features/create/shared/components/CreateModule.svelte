@@ -65,7 +65,6 @@
   import CustomizeCoordinator from "./coordinators/CustomizeCoordinator.svelte";
   import SequenceActionsCoordinator from "./coordinators/SequenceActionsCoordinator.svelte";
   import BeatEditorCoordinator from "./coordinators/BeatEditorCoordinator.svelte";
-  import ShareCoordinator from "./coordinators/ShareCoordinator.svelte";
   import VideoRecordCoordinator from "./coordinators/VideoRecordCoordinator.svelte";
   import ShareHubCoordinator from "./coordinators/ShareHubCoordinator.svelte";
   import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
@@ -372,19 +371,10 @@
           hasDeepLink = true;
         }
 
-        // Check if there's a share deep link waiting to be processed by ShareCoordinator
-        // If so, don't restore panels from localStorage - let the share deep link take priority
-        const hasShareDeepLink = initService.hasShareDeepLink?.() ?? false;
-
         // Restore previously open panel if returning to create module
         // Only restore if no deep link was processed (deep link takes priority)
-        // AND no share deep link is waiting (share coordinator will handle it)
         // AND there's actually a sequence to work with (canAccessEditTab)
-        if (
-          !hasDeepLink &&
-          !hasShareDeepLink &&
-          CreateModuleState.canAccessEditTab
-        ) {
+        if (!hasDeepLink && CreateModuleState.canAccessEditTab) {
           const currentTab = navigationState.activeTab;
           const savedPanel = navigationState.getLastPanelForTab(
             "create",
@@ -627,9 +617,6 @@
 
   <!-- Edit Coordinator -->
   <EditCoordinator />
-
-  <!-- Share Coordinator -->
-  <ShareCoordinator />
 
   <!-- Video Record Coordinator -->
   <VideoRecordCoordinator />

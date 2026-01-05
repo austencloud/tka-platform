@@ -1,6 +1,7 @@
 ﻿<!--
 CardBasedSettingsContainer - Minimal card grid renderer
 Delegates ALL logic to services (SRP compliant)
+Supports help mode: when active, clicking cards opens help instead of normal action
 -->
 <script lang="ts">
   import { resolve } from "$lib/shared/inversify/di";
@@ -24,6 +25,7 @@ Delegates ALL logic to services (SRP compliant)
     LOOPType,
     SliceSize,
   } from "../circular/domain/models/circular-models";
+  import type { GeneratorHelpId } from "../domain/generator-help-content";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -48,6 +50,8 @@ Delegates ALL logic to services (SRP compliant)
     isGenerating,
     onGenerateClicked,
     customizeState,
+    helpMode = false,
+    onHelpSelect,
   } = $props<{
     config: UIGenerationConfig;
     isFreeformMode: boolean;
@@ -55,7 +59,34 @@ Delegates ALL logic to services (SRP compliant)
     isGenerating: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
     customizeState?: CustomizeOptionsState;
+    helpMode?: boolean;
+    onHelpSelect?: (controlId: GeneratorHelpId) => void;
   }>();
+
+  // Map card IDs to help IDs (most are the same, but generate-button has no help)
+  const cardIdToHelpId: Record<string, GeneratorHelpId | null> = {
+    "level": "level",
+    "length": "length",
+    "generation-mode": "generation-mode",
+    "grid-mode": "grid-mode",
+    "prop-continuity": "prop-continuity",
+    "turn-intensity": "turn-intensity",
+    "loop-type": "loop-type",
+    "slice-size": "slice-size",
+    "customize": "customize",
+    "generate-button": null, // No help for generate button
+  };
+
+  function handleCardClick(cardId: string, event: MouseEvent) {
+    if (!helpMode || !onHelpSelect) return;
+
+    const helpId = cardIdToHelpId[cardId];
+    if (helpId) {
+      event.preventDefault();
+      event.stopPropagation();
+      onHelpSelect(helpId);
+    }
+  }
 
   // Services - use $state to make them reactive
   let typographyService = $state<IResponsiveTypographer | null>(null);
@@ -192,14 +223,18 @@ Delegates ALL logic to services (SRP compliant)
   });
 </script>
 
-<div class="card-settings-container">
+<div class="card-settings-container" class:help-mode={helpMode}>
   {#each cards as card (card.id)}
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div
       class="card-wrapper"
+      class:help-clickable={helpMode && cardIdToHelpId[card.id] !== null}
+      class:help-disabled={helpMode && cardIdToHelpId[card.id] === null}
       style:grid-column="span {card.gridColumnSpan}"
       animate:flip={{ duration: 300, easing: quintOut }}
       in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
       out:scale={{ start: 0.95, duration: 250, easing: quintOut }}
+      onclick={(e) => handleCardClick(card.id, e)}
     >
       <!-- Props are dynamically typed by CardConfigurator - type assertion needed -->
       <!-- Colors are overridden based on current background for visibility -->
@@ -280,12 +315,46 @@ Delegates ALL logic to services (SRP compliant)
     min-width: 0;
     overflow: visible; /* Allow cards to pop over neighbors */
     transition: grid-column 350ms ease;
+    position: relative;
   }
 
   .card-wrapper > :global(*) {
     flex: 1;
     min-height: 0;
     min-width: 0;
+  }
+
+  /* Help mode styles */
+  .card-settings-container.help-mode .card-wrapper.help-clickable {
+    cursor: pointer;
+  }
+
+  /* Highlight effect on clickable cards in help mode */
+  .card-settings-container.help-mode .card-wrapper.help-clickable::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    border: 2px solid rgba(59, 130, 246, 0.6);
+    pointer-events: none;
+    animation: help-card-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes help-card-pulse {
+    0%, 100% {
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+    }
+    50% {
+      border-color: rgba(59, 130, 246, 0.8);
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+    }
+  }
+
+  /* Dim non-helpable cards (generate button) */
+  .card-settings-container.help-mode .card-wrapper.help-disabled {
+    opacity: 0.4;
+    pointer-events: none;
   }
 
   /*

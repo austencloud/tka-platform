@@ -8,18 +8,26 @@ Card-based architecture with integrated Generate button:
 - Generation actions: generateActionsState.svelte.ts
 - Device state: generateDeviceState.svelte.ts
 - Responsive padding: State-driven for sync with workspace animation
+- Help mode: Info button triggers learning mode for settings
 -->
 <script lang="ts">
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { createDeviceState } from "../state/generate-device.svelte";
   import { createGenerationActionsState } from "../state/generate-actions.svelte";
   import { createGenerationConfigState } from "../state/generate-config.svelte";
   import { createCustomizeOptionsState } from "../state/customize-options-state.svelte";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
+  import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
+  import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
+  import type { GeneratorHelpId } from "../domain/generator-help-content";
+
+  // Help mode types
+  type HelpMode = "inactive" | "selecting" | "viewing";
 
   // Props
   let {
@@ -42,6 +50,44 @@ Card-based architecture with integrated Generate button:
   const deviceState = createDeviceState();
   const customizeState = createCustomizeOptionsState();
 
+  // ===== Help Mode State =====
+  let helpMode = $state<HelpMode>("inactive");
+  let selectedControl = $state<GeneratorHelpId | null>(null);
+  let hapticService = $state<IHapticFeedback | null>(null);
+
+  // Toggle body class for z-index boosting when help mode active
+  $effect(() => {
+    if (helpMode === "selecting") {
+      document.body.classList.add("generator-help-mode-active");
+    } else {
+      document.body.classList.remove("generator-help-mode-active");
+    }
+    return () => document.body.classList.remove("generator-help-mode-active");
+  });
+
+  function enterHelpMode() {
+    hapticService?.trigger("selection");
+    helpMode = "selecting";
+  }
+
+  function selectControlHelp(controlId: GeneratorHelpId) {
+    hapticService?.trigger("selection");
+    selectedControl = controlId;
+    helpMode = "viewing";
+  }
+
+  function closeHelpModal() {
+    // Return to selection state so user can explore other controls
+    helpMode = "selecting";
+    selectedControl = null;
+  }
+
+  function exitHelpMode() {
+    // Fully exit help mode
+    helpMode = "inactive";
+    selectedControl = null;
+  }
+
   // ===== Device Service Integration =====
   onMount(() => {
     try {
@@ -50,16 +96,32 @@ Card-based architecture with integrated Generate button:
     } catch (error) {
       // Fallback handled in deviceState
     }
+    try {
+      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    } catch {
+      // Optional service
+    }
   });
 </script>
 
 <div
   class="generate-panel"
+  class:help-active={helpMode === "selecting"}
   data-layout={deviceState.layoutMode}
   data-allow-scroll={deviceState.shouldAllowScrolling}
   data-is-desktop={isDesktop}
   style="--min-touch-target: {deviceState.minTouchTarget}px; --element-spacing: {deviceState.elementSpacing}px;"
 >
+  <!-- Help button in corner -->
+  <button
+    class="help-btn"
+    class:active={helpMode === "selecting"}
+    onclick={enterHelpMode}
+    aria-label="Help with generator settings"
+  >
+    <i class="fas fa-circle-question" aria-hidden="true"></i>
+  </button>
+
   <div class="generate-panel-inner">
     <CardBasedSettingsContainer
       config={configState.config}
@@ -68,9 +130,18 @@ Card-based architecture with integrated Generate button:
       isGenerating={actionsState.isGenerating}
       onGenerateClicked={actionsState.onGenerateClicked}
       {customizeState}
+      helpMode={helpMode === "selecting"}
+      onHelpSelect={selectControlHelp}
     />
   </div>
 </div>
+
+<!-- Help mode overlays -->
+{#if helpMode === "selecting"}
+  <GeneratorHelpOverlay onClose={exitHelpMode} />
+{:else if helpMode === "viewing" && selectedControl}
+  <GeneratorHelpModal controlId={selectedControl} onClose={closeHelpModal} />
+{/if}
 
 <style>
   .generate-panel {
@@ -83,6 +154,58 @@ Card-based architecture with integrated Generate button:
     width: 100%;
     overflow: visible;
     gap: 0;
+  }
+
+  /* Help button - positioned in top-right corner */
+  .help-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: var(--font-size-base, 16px);
+  }
+
+  .help-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--theme-text, white);
+  }
+
+  .help-btn.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: rgba(59, 130, 246, 1);
+    border-color: rgba(59, 130, 246, 0.5);
+    animation: help-pulse 1.5s ease-in-out infinite;
+  }
+
+  .help-btn:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: 2px;
+  }
+
+  @keyframes help-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
+    }
+  }
+
+  /* Boost panel z-index when help mode is active (above backdrop at 200) */
+  :global(body.generator-help-mode-active) .generate-panel {
+    z-index: 210;
   }
 
   .generate-panel-inner {

@@ -12,7 +12,7 @@
  * **PERSISTED PANEL STATES:**
  * - Sequence Actions Panel: open/closed state and mode (turns/transforms)
  * - Video Record Panel: open/closed state
- * - Share Panel: open/closed state
+ * - Share Hub Panel: open/closed state
  * Other panels reset on page refresh for predictable UX.
  *
  * Domain: Create module - Panel State Management for Sequence Construction
@@ -43,11 +43,6 @@ const sequenceActionsPanelPersistence = createPersistenceHelper({
 
 const videoRecordPanelPersistence = createPersistenceHelper({
   key: "tka_video_record_panel_open",
-  defaultValue: false,
-});
-
-const sharePanelPersistence = createPersistenceHelper({
-  key: "tka_share_panel_open",
   defaultValue: false,
 });
 
@@ -97,12 +92,6 @@ export interface PanelCoordinationState {
   get shouldOrbitAroundCenter(): boolean;
 
   triggerOrbitAnimation(): void;
-
-  // Share Panel State (Image Export)
-  get isSharePanelOpen(): boolean;
-
-  openSharePanel(): void;
-  closeSharePanel(): void;
 
   // Share Hub Panel State (Multi-format sharing)
   get isShareHubPanelOpen(): boolean;
@@ -229,9 +218,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let shouldOrbitAroundCenter = $state(false);
   let orbitAnimationTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Share panel state (Image Export - persisted)
-  let isSharePanelOpen = $state(sharePanelPersistence.load());
-
   // Share Hub panel state (Multi-format sharing - persisted)
   let isShareHubPanelOpen = $state(shareHubPanelPersistence.load());
   let requestedShareHubFormat = $state<"animation" | "static" | null>(null);
@@ -266,11 +252,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     $effect(() => {
       void isSequenceActionsPanelOpen;
       sequenceActionsPanelPersistence.setupAutoSave(isSequenceActionsPanelOpen);
-    });
-
-    $effect(() => {
-      void isSharePanelOpen;
-      sharePanelPersistence.setupAutoSave(isSharePanelOpen);
     });
 
     $effect(() => {
@@ -328,7 +309,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isAnimationPanelOpen = false;
     isAnimating = false;
 
-    isSharePanelOpen = false;
     isShareHubPanelOpen = false;
     requestedShareHubFormat = null;
     isSaveToLibraryPanelOpen = false;
@@ -449,20 +429,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       orbitAnimationTimeout = setTimeout(() => {
         shouldOrbitAroundCenter = false;
       }, 200);
-    },
-
-    // Share Panel Getters
-    get isSharePanelOpen() {
-      return isSharePanelOpen;
-    },
-
-    openSharePanel() {
-      closeAllPanels();
-      isSharePanelOpen = true;
-    },
-
-    closeSharePanel() {
-      isSharePanelOpen = false;
     },
 
     // Share Hub Panel Getters
@@ -742,7 +708,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return (
         isEditPanelOpen ||
         isAnimationPanelOpen ||
-        isSharePanelOpen ||
         isShareHubPanelOpen ||
         isSaveToLibraryPanelOpen ||
         isVideoRecordPanelOpen ||

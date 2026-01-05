@@ -14,7 +14,6 @@ import type { PanelCoordinationState } from "../../state/panel-coordination-stat
 export type PanelId =
   | "animation"
   | "edit"
-  | "share"
   | "videoRecord"
   | "filter"
   | "sequenceActions"

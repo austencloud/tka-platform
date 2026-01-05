@@ -289,11 +289,4 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     await this.StartPositionManager.getDefaultStartPositions(gridMode);
   }
 
-  /**
-   * Check if there's a share deep link waiting to be processed.
-   * This checks if the navigation DeepLinker has data stored for the "share" module.
-   */
-  hasShareDeepLink(): boolean {
-    return this.navigationDeepLinker.hasDataForModule("share");
-  }
 }
