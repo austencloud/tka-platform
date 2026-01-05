@@ -221,6 +221,9 @@ export default defineConfig({
     // ============================================================================
     SvelteKitPWA({
       registerType: "autoUpdate",
+      // Force service worker to root scope - prevents relative path issues on nested routes
+      scope: "/",
+      base: "/",
       devOptions: {
         enabled: true, // Enable in dev for PWA install testing
         type: "module",
