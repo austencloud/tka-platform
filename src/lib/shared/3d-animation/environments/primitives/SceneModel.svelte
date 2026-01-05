@@ -33,9 +33,8 @@
     receiveShadow = false,
   }: Props = $props();
 
-  // Load the model
-  // svelte-ignore state_referenced_locally
-  const gltf = useGltf(src);
+  // Load the model - reactive to src changes
+  const gltf = $derived(useGltf(src));
 
   // Normalize scale to array
   const scaleArray = $derived(

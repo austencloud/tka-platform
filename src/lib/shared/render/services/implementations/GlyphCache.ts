@@ -84,7 +84,7 @@ export class GlyphCache implements IGlyphCache {
 
   // All possible TKA letters across all types
   private readonly LETTERS_TO_CACHE: Letter[] = [
-    // Type1: Latin letters A-V + lowercase gamma
+    // Type1: Latin letters A-V
     Letter.A,
     Letter.B,
     Letter.C,
@@ -107,7 +107,6 @@ export class GlyphCache implements IGlyphCache {
     Letter.T,
     Letter.U,
     Letter.V,
-    Letter.GAMMA_LOWERCASE,
     // Type2: W-Z + Greek uppercase + μ, ν
     Letter.W,
     Letter.X,
@@ -136,7 +135,7 @@ export class GlyphCache implements IGlyphCache {
     Letter.PHI_DASH,
     Letter.PSI_DASH,
     Letter.LAMBDA_DASH,
-    // Type6: Static Greek letters (α, β, Γ, ζ, η, τ, ⊕)
+    // Type6: Static Greek letters (α, β, γ, ζ, η, τ, ⊕)
     Letter.ALPHA,
     Letter.BETA,
     Letter.GAMMA,

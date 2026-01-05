@@ -272,33 +272,62 @@ Now with smooth transitions when position or orientation changes!
 </script>
 
 {#if showProp}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <g
-    class="prop-svg {motionData.color}-prop-svg"
-    class:clickable={isClickable}
-    class:selected={isSelected}
-    class:no-transition={isTransforming}
-    data-prop-type={motionData?.propType}
-    style="transform: {transformString};"
-    onclick={isClickable && onPropClick ? onPropClick : undefined}
-    role={isClickable ? "button" : undefined}
-    tabindex={isClickable ? 0 : undefined}
-  >
-    {@html propAssets.imageSrc}
-    {#if isSelected}
-      <!-- Selection indicator ring -->
-      <circle
-        class="selection-ring"
-        cx={propPosition.x}
-        cy={propPosition.y}
-        r="32"
-        fill="none"
-        stroke="var(--semantic-info, #3b82f6)"
-        stroke-width="3"
-        opacity="0.8"
-      />
-    {/if}
-  </g>
+  {#if isClickable && onPropClick}
+    <!-- Interactive prop - clickable button -->
+    <g
+      class="prop-svg {motionData.color}-prop-svg clickable"
+      class:selected={isSelected}
+      class:no-transition={isTransforming}
+      data-prop-type={motionData?.propType}
+      style="transform: {transformString};"
+      onclick={onPropClick}
+      onkeydown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onPropClick();
+        }
+      }}
+      role="button"
+      tabindex="0"
+    >
+      {@html propAssets.imageSrc}
+      {#if isSelected}
+        <circle
+          class="selection-ring"
+          cx={propPosition.x}
+          cy={propPosition.y}
+          r="32"
+          fill="none"
+          stroke="var(--semantic-info, #3b82f6)"
+          stroke-width="3"
+          opacity="0.8"
+        />
+      {/if}
+    </g>
+  {:else}
+    <!-- Non-interactive prop - display only -->
+    <g
+      class="prop-svg {motionData.color}-prop-svg"
+      class:selected={isSelected}
+      class:no-transition={isTransforming}
+      data-prop-type={motionData?.propType}
+      style="transform: {transformString};"
+    >
+      {@html propAssets.imageSrc}
+      {#if isSelected}
+        <circle
+          class="selection-ring"
+          cx={propPosition.x}
+          cy={propPosition.y}
+          r="32"
+          fill="none"
+          stroke="var(--semantic-info, #3b82f6)"
+          stroke-width="3"
+          opacity="0.8"
+        />
+      {/if}
+    </g>
+  {/if}
 {/if}
 
 <style>

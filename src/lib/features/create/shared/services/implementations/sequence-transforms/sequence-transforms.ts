@@ -419,10 +419,10 @@ function truncateToNewStart(
 }
 
 /**
- * Derive the static letter (α, β, Γ) from a grid position.
+ * Derive the static letter (α, β, γ) from a grid position.
  * Alpha positions → Letter.ALPHA (α)
  * Beta positions → Letter.BETA (β)
- * Gamma positions → Letter.GAMMA (Γ)
+ * Gamma positions → Letter.GAMMA (γ)
  */
 function getStaticLetterFromGridPosition(
   position: GridPosition | null | undefined

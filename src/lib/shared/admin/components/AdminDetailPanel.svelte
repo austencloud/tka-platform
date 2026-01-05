@@ -95,7 +95,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: rgba(0, 0, 0, 0.2);
+    background: transparent;
   }
 
   /* Header */
@@ -103,12 +103,8 @@
     position: relative;
     padding: 32px 24px;
     text-align: center;
-    background: linear-gradient(
-      to bottom,
-      var(--theme-card-bg) 0%,
-      transparent 100%
-    );
-    border-bottom: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .close-btn {
@@ -118,8 +114,8 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     color: var(--theme-text-dim);
     cursor: pointer;
     display: flex;
@@ -140,8 +136,9 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #ffffff);
   }
 
   .header-icon {
@@ -182,23 +179,23 @@
   }
 
   .detail-content::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .detail-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 3px;
   }
 
   .detail-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
   }
 
   /* Footer */
   .detail-footer {
     padding: 16px 24px;
-    border-top: 1px solid var(--theme-stroke);
-    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     display: flex;
     gap: 12px;
     justify-content: flex-end;

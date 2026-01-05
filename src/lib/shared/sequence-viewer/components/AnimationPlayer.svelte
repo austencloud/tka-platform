@@ -51,16 +51,17 @@
 		previewDarkMode?: boolean | null;
 	} = $props();
 
-	// Context for external control mode
-	const ctx = externalControl ? tryGetAnimationExportContext() : null;
-	const useContext = externalControl && !!ctx;
+	// Context for external control mode - use $derived so these update if props change
+	const ctx = $derived(externalControl ? tryGetAnimationExportContext() : null);
+	const useContext = $derived(externalControl && !!ctx);
 
 	// Services (standalone mode only)
 	let controller: IAnimationPlaybackController | null = null;
 	let sequenceRepo: ISequenceRepository | null = null;
 
-	// State (standalone mode only)
-	const animState = !useContext ? createAnimationPanelState() : null;
+	// State (standalone mode only) - created once, not reactive to useContext changes
+	// (if useContext changes mid-lifecycle, animState persists for cleanup)
+	const animState = createAnimationPanelState();
 
 	// UI state
 	let loading = $state(true);

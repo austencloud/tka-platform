@@ -31,8 +31,14 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="tour-prompt-backdrop" onclick={handleBackdropClick}>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+  class="tour-prompt-backdrop"
+  onclick={handleBackdropClick}
+  role="button"
+  tabindex="0"
+  aria-label="Dismiss welcome prompt"
+>
   <div
     class="tour-prompt-modal"
     role="dialog"

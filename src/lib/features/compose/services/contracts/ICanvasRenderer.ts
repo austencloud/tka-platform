@@ -43,12 +43,14 @@ export interface ICanvasRenderer {
    * Render a beat number onto the canvas at the standard position (top-left)
    * @param beatNumber - The beat number to render (0 = "Start", null = no render)
    * @param opacity - Optional opacity for crossfade effects (0-1, default: 1)
+   * @param darkMode - When true, uses light text for dark backgrounds
    */
   renderBeatNumberToCanvas(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     beatNumber: number | null,
-    opacity?: number
+    opacity?: number,
+    darkMode?: boolean
   ): void;
 
   /**
@@ -62,4 +64,10 @@ export interface ICanvasRenderer {
     word: string | null,
     darkMode?: boolean
   ): void;
+
+  /**
+   * Get the header height for a given canvas size
+   * Used to calculate total canvas dimensions for video export
+   */
+  getHeaderHeight(canvasSize: number): number;
 }

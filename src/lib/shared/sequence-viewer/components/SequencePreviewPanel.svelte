@@ -66,7 +66,12 @@
 
   // Track current media type - updated by SequenceMediaViewerUnified via callback
   // Child is source of truth (handles sessionStorage persistence)
-  let currentMediaType = $state<MediaType>(initialMediaType);
+  let currentMediaType = $state<MediaType>("animation");
+
+  // Sync currentMediaType with initialMediaType prop
+  $effect(() => {
+    currentMediaType = initialMediaType;
+  });
 
   // Export format syncs with media type: image → static, animation → animation
   const selectedFormat = $derived<MediaFormat>(
@@ -75,7 +80,14 @@
 
   // Name editing
   let isEditingName = $state(false);
-  let editedName = $state(sequence?.displayName || "");
+  let editedName = $state("");
+
+  // Sync editedName with sequence displayName when not editing
+  $effect(() => {
+    if (!isEditingName) {
+      editedName = sequence?.displayName || "";
+    }
+  });
 
   function handleMediaTypeChange(type: MediaType) {
     currentMediaType = type;

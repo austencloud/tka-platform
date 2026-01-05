@@ -61783,7 +61783,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -61948,7 +61948,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -62268,7 +62268,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -62438,7 +62438,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -62930,7 +62930,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -63098,7 +63098,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -63366,7 +63366,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -63847,7 +63847,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -64323,7 +64323,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -64492,7 +64492,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma13",
             "blueAttributes": {
               "startLoc": "w",
@@ -64970,7 +64970,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -65555,7 +65555,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -65843,7 +65843,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -66695,7 +66695,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -67621,7 +67621,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -67789,7 +67789,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -67954,7 +67954,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -68223,7 +68223,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma13",
             "blueAttributes": {
               "startLoc": "w",
@@ -68700,7 +68700,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -69177,7 +69177,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -69652,7 +69652,7 @@
           },
           {
             "beat": 0,
-            "letter": "Γ",
+            "letter": "γ",
             "letterType": "Type6",
             "startPos": "gamma13",
             "endPos": "gamma13",
@@ -69915,9 +69915,9 @@
     },
     {
       "id": "oγλ-t",
-      "name": "OΓΛ-T Sequence",
-      "word": "OΓΛ-T",
-      "thumbnails": ["/gallery/OΓΛ-T/OΓΛ-T_ver1.webp"],
+      "name": "OγΛ-T Sequence",
+      "word": "OγΛ-T",
+      "thumbnails": ["/gallery/OγΛ-T/OγΛ-T_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-06T10:01:27.802Z",
@@ -69932,7 +69932,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "OΓΛ-T",
+            "word": "OγΛ-T",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -69942,7 +69942,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -69991,7 +69991,7 @@
           },
           {
             "beat": 2,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma1",
             "endPos": "gamma1",
             "timing": "none",
@@ -70095,7 +70095,7 @@
           },
           {
             "beat": 6,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -70199,7 +70199,7 @@
           },
           {
             "beat": 10,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma5",
             "endPos": "gamma5",
             "timing": "none",
@@ -70303,7 +70303,7 @@
           },
           {
             "beat": 14,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -70383,7 +70383,7 @@
         "dateAdded": "2024-08-08T16:52:51.476249"
       },
       "metadataBundled": true,
-      "metadataSource": "OΓΛ-T_ver1.meta.json",
+      "metadataSource": "OγΛ-T_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -70419,7 +70419,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -70688,7 +70688,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -71167,7 +71167,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -71902,7 +71902,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -72275,7 +72275,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -72650,7 +72650,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -73130,7 +73130,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -73399,7 +73399,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -73670,7 +73670,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma6",
             "blueAttributes": {
               "startLoc": "s",
@@ -74154,7 +74154,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -74631,7 +74631,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -74900,7 +74900,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -75388,7 +75388,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -76348,7 +76348,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma13",
             "timing": "none",
             "direction": "none",
@@ -76846,7 +76846,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -77118,7 +77118,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -77595,7 +77595,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -77973,7 +77973,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -78244,7 +78244,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -78713,9 +78713,9 @@
     },
     {
       "id": "rλγ",
-      "name": "RΛΓ Sequence",
-      "word": "RΛΓ",
-      "thumbnails": ["/gallery/RΛΓ/RΛΓ_ver1.webp"],
+      "name": "RΛγ Sequence",
+      "word": "RΛγ",
+      "thumbnails": ["/gallery/RΛγ/RΛγ_ver1.webp"],
       "sequenceLength": 12,
       "author": "Austen Cloud",
       "dateAdded": "2025-06-07T09:34:44.478Z",
@@ -78730,7 +78730,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "RΛΓ",
+            "word": "RΛγ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -78742,7 +78742,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -78821,7 +78821,7 @@
           },
           {
             "beat": 3,
-            "letter": "Γ",
+            "letter": "γ",
             "duration": 1,
             "startPos": "gamma9",
             "endPos": "gamma9",
@@ -78902,7 +78902,7 @@
           },
           {
             "beat": 6,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -78983,7 +78983,7 @@
           },
           {
             "beat": 9,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -79064,7 +79064,7 @@
           },
           {
             "beat": 12,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -79094,7 +79094,7 @@
         "isFavorite": true
       },
       "metadataBundled": true,
-      "metadataSource": "RΛΓ_ver1.meta.json",
+      "metadataSource": "RΛγ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -79129,7 +79129,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -79297,7 +79297,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma13",
             "blueAttributes": {
               "startLoc": "w",
@@ -79566,7 +79566,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -79835,7 +79835,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -80314,7 +80314,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -80840,7 +80840,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -81317,7 +81317,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -81490,7 +81490,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -81967,7 +81967,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -82238,7 +82238,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma12",
             "blueAttributes": {
               "startLoc": "sw",
@@ -82730,7 +82730,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -82998,7 +82998,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -83166,7 +83166,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -83650,7 +83650,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -84170,7 +84170,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -84338,7 +84338,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -84814,7 +84814,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -85084,7 +85084,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma12",
             "blueAttributes": {
               "startLoc": "sw",
@@ -85571,7 +85571,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΓVPZΣ-VPZΣ-VPZΣ-VPZΣ-",
+            "word": "γVPZΣ-VPZΣ-VPZΣ-VPZΣ-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -85583,7 +85583,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma12",
             "blueAttributes": {
               "startLoc": "sw",
@@ -86064,7 +86064,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -86542,7 +86542,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -87054,7 +87054,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -87558,7 +87558,7 @@
           },
           {
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -87836,7 +87836,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -88115,7 +88115,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -88591,7 +88591,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -89123,7 +89123,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -89620,7 +89620,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -90103,7 +90103,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -90585,7 +90585,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -91100,7 +91100,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -91577,7 +91577,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -91846,7 +91846,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -92322,7 +92322,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -92902,7 +92902,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -93173,7 +93173,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma12",
             "timing": "none",
             "direction": "none",
@@ -93453,7 +93453,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -94392,7 +94392,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -94665,7 +94665,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -95154,7 +95154,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -95658,7 +95658,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma12",
             "blueAttributes": {
               "startLoc": "sw",
@@ -96157,7 +96157,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma13",
             "timing": "none",
             "direction": "none",
@@ -96653,7 +96653,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -96895,9 +96895,9 @@
     },
     {
       "id": "y-σ-λ-γ",
-      "name": "Y-Σ-Λ-Γ Sequence",
-      "word": "Y-Σ-Λ-Γ",
-      "thumbnails": ["/gallery/Y-Σ-Λ-Γ/Y-Σ-Λ-Γ_ver1.webp"],
+      "name": "Y-Σ-Λ-γ Sequence",
+      "word": "Y-Σ-Λ-γ",
+      "thumbnails": ["/gallery/Y-Σ-Λ-γ/Y-Σ-Λ-γ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-01-07T15:40:42.654Z",
@@ -96912,7 +96912,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Y-Σ-Λ-Γ",
+            "word": "Y-Σ-Λ-γ",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -96924,7 +96924,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -97030,7 +97030,7 @@
           },
           {
             "beat": 4,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -97138,7 +97138,7 @@
           },
           {
             "beat": 8,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -97246,7 +97246,7 @@
           },
           {
             "beat": 12,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -97354,7 +97354,7 @@
           },
           {
             "beat": 16,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -97383,7 +97383,7 @@
         "dateAdded": "2025-02-06T03:38:01.163012"
       },
       "metadataBundled": true,
-      "metadataSource": "Y-Σ-Λ-Γ_ver1.meta.json",
+      "metadataSource": "Y-Σ-Λ-γ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -97419,7 +97419,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -97690,7 +97690,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -97969,7 +97969,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -98483,7 +98483,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -98977,7 +98977,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -99249,7 +99249,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -99520,7 +99520,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -100033,7 +100033,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -103574,9 +103574,9 @@
     },
     {
       "id": "γnγm",
-      "name": "ΓNΓM Sequence",
-      "word": "ΓNΓM",
-      "thumbnails": ["/gallery/ΓNΓM/ΓNΓM_ver1.webp"],
+      "name": "γNγM Sequence",
+      "word": "γNγM",
+      "thumbnails": ["/gallery/γNγM/γNγM_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-05-06T06:52:22.107Z",
@@ -103591,7 +103591,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΓNΓM",
+            "word": "γNγM",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -103601,7 +103601,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -103624,7 +103624,7 @@
           },
           {
             "beat": 1,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -103676,7 +103676,7 @@
           },
           {
             "beat": 3,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma1",
             "endPos": "gamma1",
             "timing": "none",
@@ -103728,7 +103728,7 @@
           },
           {
             "beat": 5,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -103780,7 +103780,7 @@
           },
           {
             "beat": 7,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma1",
             "endPos": "gamma1",
             "timing": "none",
@@ -103834,7 +103834,7 @@
         "dateAdded": "2024-08-09T16:46:04.669447"
       },
       "metadataBundled": true,
-      "metadataSource": "ΓNΓM_ver1.meta.json",
+      "metadataSource": "γNγM_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -103843,9 +103843,9 @@
     },
     {
       "id": "γλ-γλ-s",
-      "name": "ΓΛ-ΓΛ-S Sequence",
-      "word": "ΓΛ-ΓΛ-S",
-      "thumbnails": ["/gallery/ΓΛ-ΓΛ-S/ΓΛ-ΓΛ-S_ver1.webp"],
+      "name": "γΛ-γΛ-S Sequence",
+      "word": "γΛ-γΛ-S",
+      "thumbnails": ["/gallery/γΛ-γΛ-S/γΛ-γΛ-S_ver1.webp"],
       "sequenceLength": 20,
       "author": "Austen Cloud",
       "dateAdded": "2024-12-11T13:52:08.839Z",
@@ -103860,7 +103860,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΓΛ-ΓΛ-S",
+            "word": "γΛ-γΛ-S",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -103870,7 +103870,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -103893,7 +103893,7 @@
           },
           {
             "beat": 1,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -103945,7 +103945,7 @@
           },
           {
             "beat": 3,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -104023,7 +104023,7 @@
           },
           {
             "beat": 6,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -104075,7 +104075,7 @@
           },
           {
             "beat": 8,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -104153,7 +104153,7 @@
           },
           {
             "beat": 11,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -104205,7 +104205,7 @@
           },
           {
             "beat": 13,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -104283,7 +104283,7 @@
           },
           {
             "beat": 16,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -104335,7 +104335,7 @@
           },
           {
             "beat": 18,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -104415,7 +104415,7 @@
         "dateAdded": "2024-08-09T17:18:38.991271"
       },
       "metadataBundled": true,
-      "metadataSource": "ΓΛ-ΓΛ-S_ver1.meta.json",
+      "metadataSource": "γΛ-γΛ-S_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -123365,7 +123365,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -123540,7 +123540,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -123809,7 +123809,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -124078,7 +124078,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -124590,7 +124590,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -125095,7 +125095,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma7",
             "timing": "none",
             "direction": "none",
@@ -125671,9 +125671,9 @@
     },
     {
       "id": "λ-γλ-sγ",
-      "name": "Λ-ΓΛ-SΓ Sequence",
-      "word": "Λ-ΓΛ-SΓ",
-      "thumbnails": ["/gallery/Λ-ΓΛ-SΓ/Λ-ΓΛ-SΓ_ver1.webp"],
+      "name": "Λ-γΛ-Sγ Sequence",
+      "word": "Λ-γΛ-Sγ",
+      "thumbnails": ["/gallery/Λ-γΛ-Sγ/Λ-γΛ-Sγ_ver1.webp"],
       "sequenceLength": 20,
       "author": "Austen Cloud",
       "dateAdded": "2025-02-17T13:47:49.493Z",
@@ -125688,7 +125688,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Λ-ΓΛ-SΓ",
+            "word": "Λ-γΛ-Sγ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -125698,7 +125698,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -125747,7 +125747,7 @@
           },
           {
             "beat": 2,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -125825,7 +125825,7 @@
           },
           {
             "beat": 5,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -125877,7 +125877,7 @@
           },
           {
             "beat": 7,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -125955,7 +125955,7 @@
           },
           {
             "beat": 10,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -126007,7 +126007,7 @@
           },
           {
             "beat": 12,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -126085,7 +126085,7 @@
           },
           {
             "beat": 15,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -126137,7 +126137,7 @@
           },
           {
             "beat": 17,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -126215,7 +126215,7 @@
           },
           {
             "beat": 20,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -126243,7 +126243,7 @@
         "dateAdded": "2024-08-09T17:11:52.196751"
       },
       "metadataBundled": true,
-      "metadataSource": "Λ-ΓΛ-SΓ_ver1.meta.json",
+      "metadataSource": "Λ-γΛ-Sγ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -126252,9 +126252,9 @@
     },
     {
       "id": "λ-γλ-u",
-      "name": "Λ-ΓΛ-U Sequence",
-      "word": "Λ-ΓΛ-U",
-      "thumbnails": ["/gallery/Λ-ΓΛ-U/Λ-ΓΛ-U_ver1.webp"],
+      "name": "Λ-γΛ-U Sequence",
+      "word": "Λ-γΛ-U",
+      "thumbnails": ["/gallery/Λ-γΛ-U/Λ-γΛ-U_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-11-12T04:04:04.465Z",
@@ -126269,7 +126269,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Λ-ΓΛ-U",
+            "word": "Λ-γΛ-U",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "staff",
@@ -126281,7 +126281,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -126333,7 +126333,7 @@
           },
           {
             "beat": 2,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -126441,7 +126441,7 @@
           },
           {
             "beat": 6,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -126549,7 +126549,7 @@
           },
           {
             "beat": 10,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -126657,7 +126657,7 @@
           },
           {
             "beat": 14,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -126740,7 +126740,7 @@
         "dateAdded": "2024-12-29T20:07:51.756511"
       },
       "metadataBundled": true,
-      "metadataSource": "Λ-ΓΛ-U_ver1.meta.json",
+      "metadataSource": "Λ-γΛ-U_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -126776,7 +126776,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -127253,7 +127253,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -127522,7 +127522,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -128180,9 +128180,9 @@
     },
     {
       "id": "λsλγ",
-      "name": "ΛSΛΓ Sequence",
-      "word": "ΛSΛΓ",
-      "thumbnails": ["/gallery/ΛSΛΓ/ΛSΛΓ_ver1.webp"],
+      "name": "ΛSΛγ Sequence",
+      "word": "ΛSΛγ",
+      "thumbnails": ["/gallery/ΛSΛγ/ΛSΛγ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-10-25T17:30:32.853Z",
@@ -128197,7 +128197,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΛSΛΓ",
+            "word": "ΛSΛγ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -128207,7 +128207,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -128308,7 +128308,7 @@
           },
           {
             "beat": 4,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma13",
             "endPos": "gamma13",
             "timing": "none",
@@ -128412,7 +128412,7 @@
           },
           {
             "beat": 8,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma15",
             "endPos": "gamma15",
             "timing": "none",
@@ -128516,7 +128516,7 @@
           },
           {
             "beat": 12,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma9",
             "endPos": "gamma9",
             "timing": "none",
@@ -128620,7 +128620,7 @@
           },
           {
             "beat": 16,
-            "letter": "Γ",
+            "letter": "γ",
             "startPos": "gamma11",
             "endPos": "gamma11",
             "timing": "none",
@@ -128648,7 +128648,7 @@
         "dateAdded": "2024-08-09T16:39:56.217801"
       },
       "metadataBundled": true,
-      "metadataSource": "ΛSΛΓ_ver1.meta.json",
+      "metadataSource": "ΛSΛγ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -128684,7 +128684,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -129056,7 +129056,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "blueAttributes": {
               "startLoc": "s",
@@ -129324,7 +129324,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma13",
             "blueAttributes": {
               "startLoc": "w",
@@ -129593,7 +129593,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma11",
             "timing": "none",
             "direction": "none",
@@ -130105,7 +130105,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma12",
             "blueAttributes": {
               "startLoc": "sw",
@@ -130608,7 +130608,7 @@
           {
             "beat": 0,
             "sequenceStartPosition": "gamma",
-            "letter": "Γ",
+            "letter": "γ",
             "endPos": "gamma9",
             "blueAttributes": {
               "startLoc": "e",

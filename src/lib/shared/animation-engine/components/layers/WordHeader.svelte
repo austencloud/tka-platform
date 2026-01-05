@@ -28,7 +28,7 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
 </script>
 
 {#if visible && displayText}
-  <div class="word-header" class:dark-mode={darkMode}>
+  <div class="word-header" class:dark-mode={darkMode} data-controlled="true">
     <span class="word-text">{displayText}</span>
   </div>
 {/if}
@@ -50,6 +50,10 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
       rgba(240, 240, 240, 0.98)
     );
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    /* Smooth transition synced with canvas background (150ms) */
+    transition:
+      background 150ms ease-out,
+      border-color 150ms ease-out;
   }
 
   .word-text {
@@ -60,6 +64,8 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
     text-align: center;
     /* Light mode: dark text, no pill background */
     color: #1f2937;
+    /* Smooth transition synced with canvas background (150ms) */
+    transition: color 150ms ease-out;
   }
 
   /* Dark mode: dark background with light text (via prop) */
@@ -76,8 +82,9 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
     color: #ffffff;
   }
 
-  /* Fallback: Also support global .dark class for non-preview usage */
-  :global(:root.dark) .word-header:not(.dark-mode) {
+  /* Fallback: Global .dark class only applies when NOT controlled by prop */
+  /* data-controlled attribute marks prop-controlled instances */
+  :global(:root.dark) .word-header:not([data-controlled]) {
     background: linear-gradient(
       to bottom,
       rgba(15, 15, 20, 0.98),
@@ -86,7 +93,7 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  :global(:root.dark) .word-header:not(.dark-mode) .word-text {
+  :global(:root.dark) .word-header:not([data-controlled]) .word-text {
     color: #ffffff;
   }
 </style>

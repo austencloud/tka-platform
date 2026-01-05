@@ -1,8 +1,8 @@
 <!--
-  PictographModeStep - Choose lights on or Dark Mode
+  PictographModeStep - Choose Light Mode or Dark Mode
 
   Shows real pictographs side by side demonstrating both modes.
-  Lights On: standard display on light background
+  Light Mode: standard display on light background
   Dark Mode: inverted colors, dark background
 -->
 <script lang="ts">
@@ -25,8 +25,15 @@
     onSkip,
   }: Props = $props();
 
-  // svelte-ignore state_referenced_locally
-  let selectedMode = $state<"light" | "dark" | null>(initialValue ?? null);
+  // Initialize with null, sync with initialValue when provided
+  let selectedMode = $state<"light" | "dark" | null>(null);
+
+  // Sync with initialValue when component mounts or value changes
+  $effect(() => {
+    if (initialValue !== undefined) {
+      selectedMode = initialValue;
+    }
+  });
 
   function handleSelect(mode: "light" | "dark") {
     selectedMode = mode;
@@ -44,10 +51,10 @@
     <i class="fas fa-lightbulb" aria-hidden="true"></i>
   </div>
 
-  <h1 class="title">Lights on or Dark Mode?</h1>
+  <h1 class="title">Light Mode or Dark Mode?</h1>
 
   <div class="mode-options">
-    <!-- Lights On Option -->
+    <!-- Light Mode Option -->
     <button
       class="mode-card"
       class:selected={selectedMode === "light"}
@@ -58,9 +65,10 @@
         <PictographContainer
           pictographData={examplePictographData}
           disableTransitions={true}
+          darkMode={false}
         />
       </div>
-      <span class="mode-label">Lights On</span>
+      <span class="mode-label">Light Mode</span>
       {#if selectedMode === "light"}
         <div class="selected-badge">
           <i class="fas fa-check" aria-hidden="true"></i>
@@ -79,6 +87,7 @@
         <PictographContainer
           pictographData={examplePictographData}
           disableTransitions={true}
+          darkMode={true}
         />
       </div>
       <span class="mode-label">Dark Mode</span>
@@ -208,19 +217,10 @@
 
   .light-preview {
     background: white;
-    /* Force light mode CSS variables */
-    --dm-pictograph-bg: white;
   }
 
   .dark-preview {
     background: #0a0a0f;
-    /* Force dark mode CSS variables */
-    --dm-pictograph-bg: #0a0a0f;
-  }
-
-  /* Force dark mode styling on pictograph within dark-preview */
-  .dark-preview :global(.pictograph) {
-    filter: invert(0.9);
   }
 
   /* Make Pictograph fill the preview frame */

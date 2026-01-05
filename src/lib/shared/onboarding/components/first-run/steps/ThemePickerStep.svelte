@@ -21,10 +21,15 @@
 
   const { initialValue, onNext, onBack, onSkip, onPreview }: Props = $props();
 
-  // svelte-ignore state_referenced_locally
-  let selectedTheme = $state<BackgroundType>(
-    initialValue ?? BackgroundType.SNOWFALL
-  );
+  // Initialize with default, sync with initialValue when provided
+  let selectedTheme = $state<BackgroundType>(BackgroundType.SNOWFALL);
+
+  // Sync with initialValue when component mounts or value changes
+  $effect(() => {
+    if (initialValue !== undefined) {
+      selectedTheme = initialValue;
+    }
+  });
 
   // Animated backgrounds for the main grid
   const animatedBackgrounds = $derived(

@@ -33,13 +33,12 @@
 
   const { moduleId, tabId, forceShow = false, onDismiss }: Props = $props();
 
-  // Get content from config
-  // svelte-ignore state_referenced_locally
-  const introContent = getTabIntroContent(moduleId, tabId);
-  const pages = introContent?.pages ?? [];
-  const icon = introContent?.icon ?? "fa-circle-info";
-  const color = introContent?.color ?? "#6366f1";
-  const title = introContent?.title ?? "Welcome";
+  // Get content from config - use $derived so these update if props change
+  const introContent = $derived(getTabIntroContent(moduleId, tabId));
+  const pages = $derived(introContent?.pages ?? []);
+  const icon = $derived(introContent?.icon ?? "fa-circle-info");
+  const color = $derived(introContent?.color ?? "#6366f1");
+  const title = $derived(introContent?.title ?? "Welcome");
 
   // Sidebar-aware positioning
   // When desktop sidebar is visible, offset overlay to center content in the content area
@@ -47,9 +46,8 @@
     desktopSidebarState.isVisible ? desktopSidebarState.width : 0
   );
 
-  // Persistence key
-  // svelte-ignore state_referenced_locally
-  const storageKey = `tabIntroSeen:${moduleId}:${tabId}`;
+  // Persistence key - use $derived so it updates if props change
+  const storageKey = $derived(`tabIntroSeen:${moduleId}:${tabId}`);
 
   // State
   let hasSeenIntro = $state(false);
@@ -59,9 +57,9 @@
 
   // Derived
   const currentPage = $derived(pages[currentPageIndex]);
-  const isMultiPage = pages.length > 1;
+  const isMultiPage = $derived(pages.length > 1);
   const isLastPage = $derived(currentPageIndex === pages.length - 1);
-  const hasContent = pages.length > 0;
+  const hasContent = $derived(pages.length > 0);
 
   // Check if user has seen this intro before
   onMount(() => {

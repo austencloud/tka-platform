@@ -22,7 +22,7 @@ export class SVGGenerator implements ISVGGenerator {
   /**
    * Get the current theme mode based on animation visibility settings
    * Dark Mode (dark mode) = "dark" theme colors (brighter props for contrast)
-   * Lights On (light mode) = "light" theme colors (darker props for contrast)
+   * Light Mode (light mode) = "light" theme colors (darker props for contrast)
    */
   private getCurrentThemeMode(): ThemeMode {
     try {
@@ -161,9 +161,20 @@ export class SVGGenerator implements ISVGGenerator {
   /**
    * Generate blue prop SVG with dynamic prop type
    * Color adapts to theme: dark backgrounds get bright blue, light backgrounds get darker blue
+   * @param propType - Type of prop to generate
+   * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
-  async generateBluePropSvg(propType: string = "staff"): Promise<PropSvgData> {
-    const themeMode = this.getCurrentThemeMode();
+  async generateBluePropSvg(
+    propType: string = "staff",
+    darkMode?: boolean
+  ): Promise<PropSvgData> {
+    // Use passed darkMode if provided, otherwise read from global state
+    const themeMode =
+      darkMode !== undefined
+        ? darkMode
+          ? "dark"
+          : "light"
+        : this.getCurrentThemeMode();
     return this.generatePropSvg(
       propType,
       getMotionColor(MotionColor.BLUE, themeMode)
@@ -173,9 +184,20 @@ export class SVGGenerator implements ISVGGenerator {
   /**
    * Generate red prop SVG with dynamic prop type
    * Color adapts to theme: dark backgrounds get bright red, light backgrounds get darker red
+   * @param propType - Type of prop to generate
+   * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
-  async generateRedPropSvg(propType: string = "staff"): Promise<PropSvgData> {
-    const themeMode = this.getCurrentThemeMode();
+  async generateRedPropSvg(
+    propType: string = "staff",
+    darkMode?: boolean
+  ): Promise<PropSvgData> {
+    // Use passed darkMode if provided, otherwise read from global state
+    const themeMode =
+      darkMode !== undefined
+        ? darkMode
+          ? "dark"
+          : "light"
+        : this.getCurrentThemeMode();
     return this.generatePropSvg(
       propType,
       getMotionColor(MotionColor.RED, themeMode)

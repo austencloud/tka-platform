@@ -20,15 +20,18 @@
   const authDisplayName = $derived(authState.user?.displayName || "");
 
   // Pre-fill with auth name, or use any previously entered value
-  // svelte-ignore state_referenced_locally
-  let displayName = $state(initialValue || authDisplayName);
+  let displayName = $state("");
   let isEditing = $state(false);
   let inputElement: HTMLInputElement | null = $state(null);
 
-  // Sync auth name when it becomes available (initial load)
+  // Sync with initialValue or authDisplayName (initial load only, not while editing)
   $effect(() => {
-    if (!displayName && authDisplayName) {
-      displayName = authDisplayName;
+    if (!isEditing) {
+      if (initialValue) {
+        displayName = initialValue;
+      } else if (authDisplayName && !displayName) {
+        displayName = authDisplayName;
+      }
     }
   });
 

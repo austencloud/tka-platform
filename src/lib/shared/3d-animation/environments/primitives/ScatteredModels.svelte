@@ -51,9 +51,8 @@
   // Use dynamic ground Y from user proportions, or override if provided
   const groundY = $derived(overrideGroundY ?? userProportionsState.groundY);
 
-  // Load the model
-  // svelte-ignore state_referenced_locally
-  const gltf = useGltf(src);
+  // Load the model - reactive to src changes
+  const gltf = $derived(useGltf(src));
 
   // Seeded random number generator for reproducible results
   function seededRandom(s: number): () => number {

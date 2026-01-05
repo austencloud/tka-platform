@@ -31,7 +31,7 @@ export class RotationAngleOverrideKeyGenerator implements IRotationAngleOverride
    *
    * Follows exact logic from legacy ArrowRotAngleOverrideKeyGenerator:
    * 1. Mixed orientation ALWAYS uses motion_type_from_layer (takes priority)
-   * 2. Special letters (α, β, Γ, Φ-, Ψ-, Λ-) in standard orientation use color-based key
+   * 2. Special letters (α, β, γ, Φ-, Ψ-, Λ-) in standard orientation use color-based key
    * 3. Standard→Mixed uses motion_type_from_layer
    * 4. Default uses motion_type only
    *
@@ -63,7 +63,7 @@ export class RotationAngleOverrideKeyGenerator implements IRotationAngleOverride
     }
 
     // PRIORITY 3: Special letters in standard orientation use color-based key
-    const specialLetters = ["α", "β", "Γ", "Φ-", "Ψ-", "Λ-"];
+    const specialLetters = ["α", "β", "γ", "Φ-", "Ψ-", "Λ-"];
     if (specialLetters.includes(letter)) {
       return `${color}_rot_angle_override`;
     }

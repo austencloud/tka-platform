@@ -41,10 +41,9 @@
   }: Props = $props();
 
   // Position history ring buffer
-  // svelte-ignore state_referenced_locally
   let positionHistory = $state<Vector3[]>([]);
-  // svelte-ignore state_referenced_locally
-  const maxHistoryLength = trailCount + 1;
+  // Max history length derived from trailCount prop
+  const maxHistoryLength = $derived(trailCount + 1);
 
   // Calculate velocity (distance between frames)
   const velocity = $derived(currentPosition.distanceTo(previousPosition));

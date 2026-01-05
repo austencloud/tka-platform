@@ -260,7 +260,7 @@
         redPropType: PropType.STAFF,
       });
 
-      // Default to lights on (light mode)
+      // Default to Light Mode
       const visibilityManager = getAnimationVisibilityManager();
       visibilityManager.setDarkMode(false);
     } catch (error) {

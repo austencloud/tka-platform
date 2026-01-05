@@ -119,9 +119,9 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
       case "letter": {
         // Sub-group by letter AND beat count for consistent row heights
         // Handle letter types: "W" vs "W-" (type 3 letters)
-        // Type 6 letters: α, β, Γ, ζ, η, τ, ⊕
+        // Type 6 letters: α, β, γ, ζ, η, τ, ⊕
         const firstChar = sequence.word.charAt(0);
-        const TYPE6_LETTERS = ["α", "β", "Γ", "ζ", "η", "τ", "⊕"];
+        const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
 
         let char: string;
         if (TYPE6_LETTERS.includes(firstChar)) {
@@ -365,7 +365,7 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
       // Type 6: Static
       "α",
       "β",
-      "Γ",
+      "γ",
       // Advanced Type 6s
       "ζ",
       "η",

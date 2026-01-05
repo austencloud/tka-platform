@@ -91,7 +91,7 @@
       <!-- Dark Mode -->
       <button
         type="button"
-        class="toggle-row lights-off-row"
+        class="toggle-row dark-mode-row"
         class:disabled={isPreview}
         onclick={handleDarkModeToggle}
         aria-pressed={darkMode}
@@ -100,7 +100,7 @@
         <div class="toggle-info">
           <span class="toggle-label">Dark Mode</span>
         </div>
-        <div class="toggle-switch lights-off-switch" class:active={darkMode}>
+        <div class="toggle-switch dark-mode-switch" class:active={darkMode}>
           <div class="toggle-knob"></div>
         </div>
       </button>
@@ -305,30 +305,30 @@
   }
 
   /* Dark Mode Toggle - Cyan glow effect */
-  .lights-off-row.disabled {
+  .dark-mode-row.disabled {
     opacity: 0.6;
     cursor: not-allowed;
     pointer-events: none;
   }
 
-  .lights-off-switch.active {
+  .dark-mode-switch.active {
     background: rgba(0, 255, 255, 0.4);
     box-shadow:
       0 0 12px rgba(0, 255, 255, 0.4),
       0 0 24px rgba(0, 255, 255, 0.2);
   }
 
-  .lights-off-row:has(.lights-off-switch.active) {
+  .dark-mode-row:has(.dark-mode-switch.active) {
     background: rgba(0, 255, 255, 0.08);
     border-color: rgba(0, 255, 255, 0.3);
   }
 
-  .lights-off-row:has(.lights-off-switch.active):hover {
+  .dark-mode-row:has(.dark-mode-switch.active):hover {
     background: rgba(0, 255, 255, 0.12);
     border-color: rgba(0, 255, 255, 0.4);
   }
 
-  .lights-off-row:has(.lights-off-switch.active) .toggle-label {
+  .dark-mode-row:has(.dark-mode-switch.active) .toggle-label {
     color: #00ffff;
     text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
   }

@@ -82,10 +82,12 @@ export interface IAnimationRenderer {
    * Load different prop types for blue and red props
    * @param bluePropType - Type of prop for blue hand
    * @param redPropType - Type of prop for red hand
+   * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
   loadPerColorPropTextures(
     bluePropType: string,
-    redPropType: string
+    redPropType: string,
+    darkMode?: boolean
   ): Promise<void>;
 
   /**

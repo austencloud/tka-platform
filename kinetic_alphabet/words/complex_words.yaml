@@ -55,7 +55,7 @@ type_2_cap_words:
     letters: ["B", "Σ", "T", "X"]
     description: "Type 1 and Type 2 combination"
     cap_type: "Rotated LOOP"
-    pattern: "Travel between α/β and Γ"
+    pattern: "Travel between α/β and γ"
 
   EΔUZ:
     letters: ["E", "Δ", "U", "Z"]

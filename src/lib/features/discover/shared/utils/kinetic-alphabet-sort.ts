@@ -7,7 +7,7 @@
 /**
  * Complete kinetic alphabet letter order
  * Organized by type in the canonical sequence
- * Types 1-5: UPPERCASE, Type 6: Static letters (α, β, Γ, etc.)
+ * Types 1-5: UPPERCASE, Type 6: Static letters (α, β, γ, etc.)
  */
 const KINETIC_ALPHABET_ORDER = [
   // Type 1: Dual-Shift
@@ -65,7 +65,7 @@ const KINETIC_ALPHABET_ORDER = [
   // Type 6: Static
   "α",
   "β",
-  "Γ",
+  "γ",
   // Advanced Type 6s
   "ζ",
   "η",
@@ -83,7 +83,7 @@ function getLetterSortIndex(letter: string): number {
 
 /**
  * Extract the base letter from a word (first letter or first letter+dash)
- * Type 6 letters: α, β, Γ, ζ, η, τ, ⊕
+ * Type 6 letters: α, β, γ, ζ, η, τ, ⊕
  */
 function extractBaseLetter(word: string): string {
   if (!word || word.length === 0) return "";
@@ -91,7 +91,7 @@ function extractBaseLetter(word: string): string {
   const firstChar = word[0]!;
 
   // Type 6 static letters (these should not be uppercased)
-  const TYPE6_LETTERS = ["α", "β", "Γ", "ζ", "η", "τ", "⊕"];
+  const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
 
   let char: string;
   if (TYPE6_LETTERS.includes(firstChar)) {

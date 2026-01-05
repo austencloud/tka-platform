@@ -640,12 +640,12 @@ Z-,gamma5,beta1,none,none,anti,cw,e,n,dash,noRotation,s,n
 β,beta1,beta1,none,none,static,noRotation,n,n,static,noRotation,n,n
 β,beta7,beta7,none,none,static,noRotation,w,w,static,noRotation,w,w
 
-Γ,gamma11,gamma11,none,none,static,noRotation,s,s,static,noRotation,e,e
-Γ,gamma3,gamma3,none,none,static,noRotation,n,n,static,noRotation,e,e
-Γ,gamma13,gamma13,none,none,static,noRotation,w,w,static,noRotation,s,s
-Γ,gamma5,gamma5,none,none,static,noRotation,e,e,static,noRotation,s,s
-Γ,gamma9,gamma9,none,none,static,noRotation,e,e,static,noRotation,n,n
-Γ,gamma1,gamma1,none,none,static,noRotation,w,w,static,noRotation,n,n
-Γ,gamma15,gamma15,none,none,static,noRotation,n,n,static,noRotation,w,w
-Γ,gamma7,gamma7,none,none,static,noRotation,s,s,static,noRotation,w,w
+γ,gamma11,gamma11,none,none,static,noRotation,s,s,static,noRotation,e,e
+γ,gamma3,gamma3,none,none,static,noRotation,n,n,static,noRotation,e,e
+γ,gamma13,gamma13,none,none,static,noRotation,w,w,static,noRotation,s,s
+γ,gamma5,gamma5,none,none,static,noRotation,e,e,static,noRotation,s,s
+γ,gamma9,gamma9,none,none,static,noRotation,e,e,static,noRotation,n,n
+γ,gamma1,gamma1,none,none,static,noRotation,w,w,static,noRotation,n,n
+γ,gamma15,gamma15,none,none,static,noRotation,n,n,static,noRotation,w,w
+γ,gamma7,gamma7,none,none,static,noRotation,s,s,static,noRotation,w,w
 

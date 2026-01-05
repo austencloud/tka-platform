@@ -78,7 +78,7 @@ Matches the desktop Python app navigation pattern exactly.
       // Extract the letter portion before the hyphen (handles "A - 4 beats" format)
       const parts = cleanText.split(" - ");
       if (parts.length > 1 && parts[0]) {
-        return parts[0].trim(); // Return just "A" or "Γ" etc.
+        return parts[0].trim(); // Return just "A" or "γ" etc.
       }
 
       // Fallback: Remove any emoji prefixes and extract the first letter (English or Unicode)

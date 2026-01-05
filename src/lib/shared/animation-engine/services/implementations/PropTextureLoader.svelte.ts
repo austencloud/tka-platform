@@ -43,7 +43,8 @@ export class PropTextureLoader implements IPropTextureLoader {
 
   async loadPropTextures(
     bluePropType: string,
-    redPropType: string
+    redPropType: string,
+    darkMode?: boolean
   ): Promise<void> {
     if (!this.renderer || !this.svgGenerator) {
       console.warn(
@@ -63,12 +64,18 @@ export class PropTextureLoader implements IPropTextureLoader {
 
     try {
       // Load textures for both prop colors
-      await this.renderer.loadPerColorPropTextures(bluePropType, redPropType);
+      // Pass darkMode to use local preview state instead of global
+      await this.renderer.loadPerColorPropTextures(
+        bluePropType,
+        redPropType,
+        darkMode
+      );
 
       // Get prop dimensions for each color (may be different types!)
+      // Pass darkMode for consistent color generation
       const [bluePropData, redPropData] = await Promise.all([
-        this.svgGenerator.generateBluePropSvg(bluePropType),
-        this.svgGenerator.generateRedPropSvg(redPropType),
+        this.svgGenerator.generateBluePropSvg(bluePropType, darkMode),
+        this.svgGenerator.generateRedPropSvg(redPropType, darkMode),
       ]);
 
       // Update own state - no callbacks needed

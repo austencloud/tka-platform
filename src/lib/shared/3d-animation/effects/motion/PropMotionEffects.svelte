@@ -41,9 +41,17 @@
   const colorHex = $derived(color === "blue" ? "#3b82f6" : "#ef4444");
   const colorLight = $derived(color === "blue" ? "#60a5fa" : "#f87171");
 
-  // Track previous position internally
-  // svelte-ignore state_referenced_locally
-  let previousPosition = $state(position.clone());
+  // Track previous position internally - synced with position on mount
+  let previousPosition = $state(new Vector3());
+  let hasInitializedPosition = $state(false);
+
+  // Initialize previousPosition when position first becomes available
+  $effect(() => {
+    if (!hasInitializedPosition) {
+      previousPosition = position.clone();
+      hasInitializedPosition = true;
+    }
+  });
 
   // Update previous position when current position changes
   $effect(() => {

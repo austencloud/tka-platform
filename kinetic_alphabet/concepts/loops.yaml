@@ -56,12 +56,12 @@ position_caps:
     examples: ["DJII", "BBLF", "KIEC"]
 
   gamma_caps:
-    gamma_focus: "Γ→Γ letters connecting to other Γ→Γ letters"
+    gamma_focus: "γ→γ letters connecting to other γ→γ letters"
     examples: ["SOTR", "VPUQ", "MVNU"]
     rotated_pattern: "Pictographs rotated 180° in second repetition"
 
   type_2_caps:
-    travel_focus: "Using Type 2 letters to travel between α/β and Γ"
+    travel_focus: "Using Type 2 letters to travel between α/β and γ"
     examples: ["BΣTX", "EΔUZ", "OYHθ"]
     rotation_pattern: "Each repetition rotated 180°"
 

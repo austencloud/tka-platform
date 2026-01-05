@@ -25,7 +25,7 @@ export class PropRotationStateTracker {
    * Determine prop rotation state (opening/closing) for blue motion.
    *
    * Used for:
-   * - Gamma (Γ): blue_static motion
+   * - Gamma (γ): blue_static motion
    * - Lambda Dash (Λ-): blue_dash motion
    *
    * @param blueEndLoc Blue motion's end location
@@ -46,7 +46,7 @@ export class PropRotationStateTracker {
    * Determine prop rotation state (opening/closing) for red motion.
    *
    * Used for:
-   * - Gamma (Γ): red_static motion
+   * - Gamma (γ): red_static motion
    * - Lambda Dash (Λ-): red_dash motion
    *
    * @param blueEndLoc Blue motion's end location

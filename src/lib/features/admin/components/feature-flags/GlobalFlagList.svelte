@@ -88,12 +88,12 @@
   }
 
   .list-controls {
-    padding: var(--space-2026-sm);
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: var(--radius-2026-sm);
-    background: var(--surface-2026);
-    border-bottom: 1px solid var(--border-2026);
+    gap: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .bento-grid {
@@ -101,8 +101,8 @@
     overflow-y: auto;
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-2026-sm);
-    padding: var(--space-2026-sm);
+    gap: 12px;
+    padding: 12px;
     align-content: start;
   }
 
@@ -133,12 +133,12 @@
     align-items: center;
     justify-content: center;
     padding: 48px 24px;
-    gap: var(--space-2026-sm);
-    color: var(--theme-text-dim);
+    gap: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
   .loading-state i {
-    font-size: var(--text-2026-headline);
+    font-size: 24px;
   }
 
   .bento-grid > :global(.admin-empty-state) {

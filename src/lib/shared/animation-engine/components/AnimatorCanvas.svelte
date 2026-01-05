@@ -204,7 +204,7 @@ Last audit: 2025-12-27
 <!-- Outer container centers the content -->
 <div class="animation-container">
   <!-- Inner wrapper constrains to canvas width so header matches -->
-  <div class="content-wrapper" data-lights-off={darkModeEnabled ? "true" : "false"}>
+  <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
     <!-- Word header lives ABOVE the canvas (not overlaid) -->
     <WordHeader {word} visible={wordHeaderVisible} darkMode={darkModeEnabled} />
 
@@ -213,7 +213,7 @@ Last audit: 2025-12-27
       class="canvas-wrapper"
       bind:this={containerElement}
       data-transparent={backgroundAlpha === 0 ? "true" : "false"}
-      data-lights-off={darkModeEnabled ? "true" : "false"}
+      data-dark-mode={darkModeEnabled ? "true" : "false"}
     >
       <GlyphOverlay
         {letter}
@@ -249,33 +249,40 @@ Last audit: 2025-12-27
     container-type: size;
   }
 
-  /* Inner wrapper: constrains to canvas width so header matches */
+  /* Inner wrapper: sizes to canvas width so header matches */
   .content-wrapper {
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    /* Size to fit children - canvas determines width */
+    width: fit-content;
     max-height: 100%;
     max-width: 100%;
+    /* Border around entire content (header + canvas) */
+    border: 1.5px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 150ms ease-out;
   }
 
-  /* Canvas wrapper maintains 1:1 aspect ratio for animation content only */
+  /* Dark Mode: lighter visible border */
+  .content-wrapper[data-dark-mode="true"] {
+    border-color: rgba(0, 255, 255, 0.25);
+  }
+
+  /* Canvas wrapper maintains 1:1 aspect ratio, sized to available space minus header */
   .canvas-wrapper {
     position: relative;
     aspect-ratio: 1 / 1;
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    max-width: 100cqw;
-    /* Height constrained by container minus header space */
-    max-height: min(100cqh, 100cqw);
+    /* Size based on container, accounting for header height (~48px) and border (3px) */
+    width: min(100cqw, calc(100cqh - 3rem - 3px));
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .canvas-wrapper :global(canvas) {
-    border: 1px solid rgba(229, 231, 235, 0.4);
-    border-radius: 2px;
     /* Background is drawn via JavaScript fillRect for smooth transitions */
     /* CSS background is only a fallback before first render */
     background: var(--canvas-bg, #ffffff);
@@ -283,18 +290,10 @@ Last audit: 2025-12-27
     width: 100%;
     height: 100%;
     object-fit: contain;
-    /* Only transition border - background is handled by JS interpolation */
-    transition: border-color 150ms ease-out;
   }
 
   .canvas-wrapper[data-transparent="true"] :global(canvas) {
     background: transparent !important;
-    border: none !important;
     --canvas-bg: transparent;
-  }
-
-  /* Dark Mode: border color only - background is handled by JS interpolation */
-  .canvas-wrapper[data-lights-off="true"] :global(canvas) {
-    border-color: rgba(0, 255, 255, 0.2);
   }
 </style>

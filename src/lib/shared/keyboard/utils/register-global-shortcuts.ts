@@ -138,8 +138,8 @@ export function registerGlobalShortcuts(
 
   // l - Toggle Dark Mode (dark background)
   service.register({
-    id: "global.toggle-lights",
-    label: "Toggle Lights",
+    id: "global.toggle-dark-mode",
+    label: "Toggle Dark Mode",
     description: "Toggle Dark Mode (dark background)",
     key: "l",
     modifiers: [],
@@ -149,7 +149,7 @@ export function registerGlobalShortcuts(
     action: () => {
       // Block changes in preview mode - don't modify the previewed user's settings
       if (isSettingsPreviewMode()) {
-        console.log("[Keyboard L] Preview mode active - lights toggle blocked");
+        console.log("[Keyboard L] Preview mode active - dark mode toggle blocked");
         return;
       }
 

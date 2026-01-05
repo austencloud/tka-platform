@@ -89,7 +89,8 @@ export class Canvas2DImageLoader {
 
   async loadPerColorPropImages(
     bluePropType: string,
-    redPropType: string
+    redPropType: string,
+    darkMode?: boolean
   ): Promise<{
     blue: HTMLImageElement;
     red: HTMLImageElement;
@@ -100,9 +101,10 @@ export class Canvas2DImageLoader {
       const svgGenerator = resolve<ISVGGenerator>(TYPES.ISVGGenerator);
 
       // Generate blue and red prop SVGs with different types
+      // Pass darkMode to use local preview state instead of global
       const [bluePropData, redPropData] = await Promise.all([
-        svgGenerator.generateBluePropSvg(bluePropType),
-        svgGenerator.generateRedPropSvg(redPropType),
+        svgGenerator.generateBluePropSvg(bluePropType, darkMode),
+        svgGenerator.generateRedPropSvg(redPropType, darkMode),
       ]);
 
       // Create new images

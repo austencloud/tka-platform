@@ -56,9 +56,8 @@
     onClose,
   }: Props = $props();
 
-  // Swipe-to-dismiss gesture
-  // svelte-ignore state_referenced_locally
-  const swipe = createSwipeDismiss({ threshold: 100, onDismiss: onClose });
+  // Swipe-to-dismiss gesture - reactive to onClose changes
+  const swipe = $derived(createSwipeDismiss({ threshold: 100, onDismiss: onClose }));
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->

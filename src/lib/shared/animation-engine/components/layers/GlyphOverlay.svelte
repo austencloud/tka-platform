@@ -46,7 +46,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   } = $props();
 </script>
 
-<div class="glyph-overlay" class:dark-mode={darkMode}>
+<div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
   <!-- Fading out glyph (previous letter + beat number) -->
   {#if fadingOutLetter || fadingOutBeatNumber !== null}
     <div class="glyph-wrapper fade-out">
@@ -63,6 +63,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             y={800}
             scale={1}
             visible={true}
+            {darkMode}
           />
           <TurnsColumn
             turnsTuple={fadingOutTurnsTuple ?? "(s, 0, 0)"}
@@ -72,6 +73,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             y={800}
             scale={1}
             visible={true}
+            {darkMode}
           />
         {/if}
         {#if beatNumbersVisible}
@@ -97,6 +99,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             y={800}
             scale={1}
             visible={true}
+            {darkMode}
           />
           <TurnsColumn
             turnsTuple={displayedTurnsTuple}
@@ -106,6 +109,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             y={800}
             scale={1}
             visible={true}
+            {darkMode}
           />
         {/if}
         {#if beatNumbersVisible}
@@ -171,12 +175,13 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
   }
 
-  /* Fallback: Also support global .dark class for non-preview usage */
-  :global(:root.dark) .glyph-overlay:not(.dark-mode) :global(.tka-glyph) {
+  /* Fallback: Global .dark class only applies when NOT controlled by prop */
+  /* data-controlled attribute marks prop-controlled instances */
+  :global(:root.dark) .glyph-overlay:not([data-controlled]) :global(.tka-glyph) {
     filter: invert(0.9);
   }
 
-  :global(:root.dark) .glyph-overlay:not(.dark-mode) :global(.turns-column) {
+  :global(:root.dark) .glyph-overlay:not([data-controlled]) :global(.turns-column) {
     filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
   }
 </style>

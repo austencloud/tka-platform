@@ -112,7 +112,7 @@ export const GREEK_LETTER_DISPLAY: Record<string, string> = {
   [Letter.LAMBDA_DASH]: "Λ-",
   [Letter.ALPHA]: "α",
   [Letter.BETA]: "β",
-  [Letter.GAMMA]: "Γ",
+  [Letter.GAMMA]: "γ",
 };
 
 /**

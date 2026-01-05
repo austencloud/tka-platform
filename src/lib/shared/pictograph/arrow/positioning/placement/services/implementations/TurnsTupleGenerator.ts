@@ -38,7 +38,7 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
    * - TYPE3: "(direction, shift_turns, dash_turns)"
    * - TYPE4: "(direction, dash_turns, static_turns)" or with prop rotation for Λ
    * - TYPE5: "(direction, blue_turns, red_turns)" or with prop rotation for Λ-
-   * - TYPE6: "(direction, blue_turns, red_turns)" or with prop rotation for Γ
+   * - TYPE6: "(direction, blue_turns, red_turns)" or with prop rotation for γ
    */
   generateTurnsTuple(pictographData: PictographData): string {
     try {
@@ -136,8 +136,8 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
         return "TYPE5";
       }
 
-      // TYPE6: Beta letters (α, β, Γ)
-      if (["α", "β", "Γ"].includes(letter)) {
+      // TYPE6: Beta letters (α, β, γ)
+      if (["α", "β", "γ"].includes(letter)) {
         return "TYPE6";
       }
 
@@ -540,9 +540,9 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
 
   /**
    * Generate TYPE6 tuple: (direction, blue_turns, red_turns)
-   * Used for Beta letters (α, β, Γ)
+   * Used for Beta letters (α, β, γ)
    *
-   * Special case for Γ (Gamma): includes prop rotation state (opening/closing)
+   * Special case for γ (Gamma): includes prop rotation state (opening/closing)
    * For α and β: uses standard TYPE5 logic
    */
   private generateType6Tuple(
@@ -563,8 +563,8 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
     //   redMotionType: redMotion.motionType
     // });
 
-    // Gamma (Γ) requires prop rotation state
-    if (letter === "Γ") {
+    // Gamma (γ) requires prop rotation state
+    if (letter === "γ") {
       return this.generateGammaTuple(
         blueMotion,
         redMotion,
@@ -598,7 +598,7 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
   }
 
   /**
-   * Generate Gamma (Γ) specific tuple with prop rotation state.
+   * Generate Gamma (γ) specific tuple with prop rotation state.
    * Format: (direction, blue_turns, red_turns, blue_open_close, red_open_close)
    */
   private generateGammaTuple(

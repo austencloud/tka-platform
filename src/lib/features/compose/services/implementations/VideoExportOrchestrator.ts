@@ -78,10 +78,21 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       exportFormat
     );
 
-    // Create video exporter
+    // Check visibility settings early to calculate output dimensions
+    const visibilityManager = getAnimationVisibilityManager();
+    const showWordHeader = visibilityManager.getVisibility("wordHeader");
+    const headerHeight = showWordHeader
+      ? this.canvasRenderer.getHeaderHeight(canvas.width)
+      : 0;
+
+    // Calculate output dimensions (include header height if enabled)
+    const outputWidth = canvas.width;
+    const outputHeight = canvas.height + headerHeight;
+
+    // Create video exporter with correct output dimensions
     const exporter = await this.VideoExporter.createManualExporter(
-      canvas.width,
-      canvas.height,
+      outputWidth,
+      outputHeight,
       {
         format: exportFormat as "webm" | "mp4",
         fps: options.fps ?? VIDEO_EXPORT_FPS,
@@ -147,6 +158,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // getBoundingClientRect().width would give the CSS display size which is different
       const actualCanvasSize = canvas.width;
 
+      // Get additional visibility settings (showWordHeader already checked above)
+      const showTkaGlyph = visibilityManager.getVisibility("tkaGlyph");
+      const showBeatNumbers = visibilityManager.getVisibility("beatNumbers");
+      const isDarkMode = visibilityManager.isDarkMode();
+
       // Create offscreen canvas for compositing (so we don't touch the visible canvas)
       const offscreenCanvas = document.createElement("canvas");
 
@@ -156,8 +172,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         offscreenCanvas.width = compositeDims.width;
         offscreenCanvas.height = compositeDims.height;
       } else {
-        offscreenCanvas.width = canvas.width;
-        offscreenCanvas.height = canvas.height;
+        offscreenCanvas.width = outputWidth;
+        offscreenCanvas.height = outputHeight;
       }
       const offscreenCtx = offscreenCanvas.getContext("2d", {
         willReadFrequently: false,
@@ -216,7 +232,15 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             offscreenCanvas.width,
             offscreenCanvas.height
           );
-          offscreenCtx.drawImage(canvas, 0, 0);
+
+          // If word header is enabled, fill the header area with appropriate background
+          if (showWordHeader && headerHeight > 0) {
+            // Draw header background first (will be drawn over with text later)
+            // The animation content goes below the header
+            offscreenCtx.drawImage(canvas, 0, headerHeight);
+          } else {
+            offscreenCtx.drawImage(canvas, 0, 0);
+          }
         }
 
         // Get the letter for the current beat
@@ -260,55 +284,79 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         const fadeOutOpacity = Math.max(0, 1 - fadeProgress); // 1 → 0
         const fadeInOpacity = Math.min(1, fadeProgress); // 0 → 1
 
-        // Render fading-out glyph (if in crossfade and previous exists)
-        if (inCrossfade && previousGlyph?.image && fadeOutOpacity > 0) {
-          this.canvasRenderer.renderLetterToCanvas(
-            offscreenCtx,
-            actualCanvasSize,
-            previousGlyph.image,
-            previousGlyph.dimensions,
-            fadeOutOpacity
-          );
+        // Apply translation offset for header when rendering overlays
+        if (headerHeight > 0 && !isCompositeMode) {
+          offscreenCtx.save();
+          offscreenCtx.translate(0, headerHeight);
         }
 
-        // Render fading-in glyph (current glyph)
-        if (currentGlyph?.image) {
-          const opacity = inCrossfade ? fadeInOpacity : 1;
-          this.canvasRenderer.renderLetterToCanvas(
-            offscreenCtx,
-            actualCanvasSize,
-            currentGlyph.image,
-            currentGlyph.dimensions,
-            opacity
-          );
+        // Render TKA glyph if enabled
+        if (showTkaGlyph) {
+          // Apply dark mode inversion filter for glyphs
+          if (isDarkMode) {
+            offscreenCtx.filter = "invert(0.9)";
+          }
+
+          // Render fading-out glyph (if in crossfade and previous exists)
+          if (inCrossfade && previousGlyph?.image && fadeOutOpacity > 0) {
+            this.canvasRenderer.renderLetterToCanvas(
+              offscreenCtx,
+              actualCanvasSize,
+              previousGlyph.image,
+              previousGlyph.dimensions,
+              fadeOutOpacity
+            );
+          }
+
+          // Render fading-in glyph (current glyph)
+          if (currentGlyph?.image) {
+            const opacity = inCrossfade ? fadeInOpacity : 1;
+            this.canvasRenderer.renderLetterToCanvas(
+              offscreenCtx,
+              actualCanvasSize,
+              currentGlyph.image,
+              currentGlyph.dimensions,
+              opacity
+            );
+          }
+
+          // Reset filter after glyph rendering
+          offscreenCtx.filter = "none";
         }
 
-        // Render fading-out beat number (if in crossfade and previous exists)
-        if (inCrossfade && previousBeatNumber !== null && fadeOutOpacity > 0) {
-          this.canvasRenderer.renderBeatNumberToCanvas(
-            offscreenCtx,
-            actualCanvasSize,
-            previousBeatNumber,
-            fadeOutOpacity
-          );
+        // Render beat numbers if enabled
+        if (showBeatNumbers) {
+          // Render fading-out beat number (if in crossfade and previous exists)
+          if (inCrossfade && previousBeatNumber !== null && fadeOutOpacity > 0) {
+            this.canvasRenderer.renderBeatNumberToCanvas(
+              offscreenCtx,
+              actualCanvasSize,
+              previousBeatNumber,
+              fadeOutOpacity,
+              isDarkMode
+            );
+          }
+
+          // Render fading-in beat number (current beat number)
+          if (currentBeatNumber !== null) {
+            const opacity = inCrossfade ? fadeInOpacity : 1;
+            this.canvasRenderer.renderBeatNumberToCanvas(
+              offscreenCtx,
+              actualCanvasSize,
+              currentBeatNumber,
+              opacity,
+              isDarkMode
+            );
+          }
         }
 
-        // Render fading-in beat number (current beat number)
-        if (currentBeatNumber !== null) {
-          const opacity = inCrossfade ? fadeInOpacity : 1;
-          this.canvasRenderer.renderBeatNumberToCanvas(
-            offscreenCtx,
-            actualCanvasSize,
-            currentBeatNumber,
-            opacity
-          );
+        // Restore context if we applied header offset
+        if (headerHeight > 0 && !isCompositeMode) {
+          offscreenCtx.restore();
         }
 
-        // Render word header if enabled
-        const visibilityManager = getAnimationVisibilityManager();
-        const showWordHeader = visibilityManager.getVisibility("wordHeader");
+        // Render word header if enabled (at top of canvas, no offset)
         if (showWordHeader) {
-          const isDarkMode = visibilityManager.isDarkMode();
           this.canvasRenderer.renderWordHeaderToCanvas(
             offscreenCtx,
             actualCanvasSize,

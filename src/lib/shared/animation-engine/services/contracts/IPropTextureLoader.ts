@@ -131,8 +131,13 @@ export interface IPropTextureLoader {
    * Load textures for both prop colors
    * @param bluePropType - Type of blue prop
    * @param redPropType - Type of red prop
+   * @param darkMode - When provided, uses this instead of global dark mode state (for preview isolation)
    */
-  loadPropTextures(bluePropType: string, redPropType: string): Promise<void>;
+  loadPropTextures(
+    bluePropType: string,
+    redPropType: string,
+    darkMode?: boolean
+  ): Promise<void>;
 
   /**
    * Clean up resources

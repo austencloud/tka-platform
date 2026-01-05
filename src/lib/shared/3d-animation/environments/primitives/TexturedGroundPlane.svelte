@@ -41,10 +41,9 @@
 
   const groundY = $derived(userProportionsState.groundY);
 
-  // Load texture using Threlte's useLoader
+  // Load texture using Threlte's useLoader - reactive to diffuseMap changes
   const textureLoader = useLoader(TextureLoader);
-  // svelte-ignore state_referenced_locally
-  const texture = textureLoader.load(diffuseMap);
+  const texture = $derived(textureLoader.load(diffuseMap));
 
   // Reference to material for direct manipulation
   let materialRef = $state<MeshStandardMaterialType | undefined>(undefined);

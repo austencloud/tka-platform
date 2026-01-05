@@ -1767,7 +1767,9 @@
       "Bash(Set-Content 'src/lib/shared/pictograph/grid/components/GridSvg.svelte' -NoNewline)",
       "Bash(xxd:*)",
       "Bash(nslookup:*)",
-      "Bash(1)"
+      "Bash(1)",
+      "Bash(__NEW_LINE__ echo \"Verification - Γ count after update:\")",
+      "Bash(__NEW_LINE__ echo \"\")"
     ],
     "deny": [],
     "ask": []

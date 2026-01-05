@@ -3,11 +3,44 @@
  *
  * Manages the "What's New" modal that shows after version updates.
  * Tracks whether user has seen the current version's changelog.
+ *
+ * Uses OnboardingPersister for Firebase sync so the seen version
+ * persists across devices and browser data clearing.
  */
 
 import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
+import { TYPES } from "$lib/shared/inversify/types";
+import type { IOnboardingPersister } from "$lib/shared/onboarding/services/contracts/IOnboardingPersister";
 
 const STORAGE_KEY = "tka-last-seen-version";
+
+// Lazy service resolution to avoid circular dependencies
+let _onboardingService: IOnboardingPersister | null = null;
+let _serviceResolved = false;
+
+function getOnboardingService(): IOnboardingPersister | null {
+  if (_serviceResolved) return _onboardingService;
+
+  // Try to resolve synchronously if container is ready
+  try {
+    // Dynamic import to avoid circular deps at load time
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const di = require("$lib/shared/inversify/di") as {
+      resolve: <T>(type: symbol) => T;
+      isContainerReady: () => boolean;
+    };
+    if (di.isContainerReady()) {
+      _onboardingService = di.resolve<IOnboardingPersister>(
+        TYPES.IOnboardingPersister
+      );
+      _serviceResolved = true;
+    }
+  } catch {
+    // Container not ready yet, will use localStorage
+  }
+
+  return _onboardingService;
+}
 
 class WhatsNewState {
   isOpen = $state(false);
@@ -16,20 +49,37 @@ class WhatsNewState {
   error = $state<string | null>(null);
 
   /**
-   * Check if user has seen the current version
+   * Check if user has seen the current version.
+   * Uses OnboardingPersister if available, falls back to localStorage.
    */
   hasSeenVersion(version: string): boolean {
+    // Try service first for cached cloud data
+    const service = getOnboardingService();
+    if (service) {
+      return service.hasSeenVersion(version);
+    }
+
+    // Fall back to localStorage for synchronous access
     if (typeof localStorage === "undefined") return true;
     const lastSeen = localStorage.getItem(STORAGE_KEY);
     return lastSeen === version;
   }
 
   /**
-   * Mark current version as seen
+   * Mark current version as seen.
+   * Updates localStorage immediately and syncs to Firebase via OnboardingPersister.
    */
   markVersionAsSeen(version: string): void {
     if (typeof localStorage === "undefined") return;
+
+    // Update localStorage immediately for synchronous access
     localStorage.setItem(STORAGE_KEY, version);
+
+    // Sync to Firebase via service (non-blocking)
+    const service = getOnboardingService();
+    if (service) {
+      void service.markVersionAsSeen(version);
+    }
   }
 
   /**

@@ -100,9 +100,10 @@ export class CanvasRenderer implements ICanvasRenderer {
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     beatNumber: number | null,
-    opacity: number = 1
+    opacity: number = 1,
+    darkMode: boolean = false
   ): void {
-    this.drawBeatNumber(ctx, canvasSize, beatNumber, opacity);
+    this.drawBeatNumber(ctx, canvasSize, beatNumber, opacity, darkMode);
   }
 
   /**
@@ -228,13 +229,14 @@ export class CanvasRenderer implements ICanvasRenderer {
   /**
    * Draw beat number in the top-left area of the canvas
    * Position matches BeatNumber.svelte: x=50, y=50 in 950px viewBox
-   * Style matches: Georgia serif, bold, black fill with white stroke
+   * Style matches: Georgia serif, bold, fill only (no stroke) with dark mode support
    */
   private drawBeatNumber(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     beatNumber: number | null,
-    opacity: number = 1
+    opacity: number = 1,
+    darkMode: boolean = false
   ): void {
     if (beatNumber === null) return;
 
@@ -247,7 +249,6 @@ export class CanvasRenderer implements ICanvasRenderer {
     // Font size matches BeatNumber.svelte: 100 for numbers, 80 for "Start"
     const isStart = beatNumber === 0;
     const fontSize = (isStart ? 80 : 100) * gridScaleFactor;
-    const strokeWidth = (isStart ? 5 : 6) * gridScaleFactor;
     const displayText = isStart ? "Start" : beatNumber.toString();
 
     ctx.save();
@@ -260,27 +261,24 @@ export class CanvasRenderer implements ICanvasRenderer {
     ctx.textBaseline = "hanging";
     ctx.textAlign = "start";
 
-    // Draw stroke first (white outline)
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = strokeWidth;
-    ctx.lineJoin = "round";
-    ctx.strokeText(displayText, x, y);
-
-    // Draw fill (black text)
-    ctx.fillStyle = "#000000";
+    // Fill color based on dark mode (matches BeatNumber.svelte)
+    // Dark mode: white (#ffffff), Light mode: dark gray (#231f20)
+    ctx.fillStyle = darkMode ? "#ffffff" : "#231f20";
     ctx.fillText(displayText, x, y);
 
     ctx.restore();
   }
 
   /**
-   * Draw word header at the top center of the canvas
-   * Style matches WordHeader.svelte: Georgia Bold, uppercase, pill-shaped background
-   * Light mode: dark text on light background
-   * Dark mode: white text on dark background
+   * Draw word header as a full-width bar at the top of the canvas
+   * Style matches WordHeader.svelte: full-width gradient background, centered Georgia Bold text
+   * Light mode: dark text on light gradient background
+   * Dark mode: white text on dark gradient background
    *
    * Uses simplifyRepeatedWord to handle repeated words (e.g., "ABAB" → "AB")
    * Does NOT truncate - allows full word length when needed for uniqueness.
+   *
+   * @param headerHeight - Height of the header bar (typically ~5% of canvas width)
    */
   private drawWordHeader(
     ctx: CanvasRenderingContext2D,
@@ -292,58 +290,51 @@ export class CanvasRenderer implements ICanvasRenderer {
 
     // Simplify repeated patterns (no truncation), then uppercase
     const displayText = simplifyRepeatedWord(word).toUpperCase();
-    const gridScaleFactor = canvasSize / 950;
 
-    // Font size: ~5% of canvas (matches clamp in WordHeader.svelte)
-    const fontSize = canvasSize * 0.05;
-    const paddingX = fontSize * 0.8;
-    const paddingY = fontSize * 0.4;
-    const borderRadius = 6 * gridScaleFactor;
+    // Header height matches WordHeader.svelte padding + font size (~5% of width)
+    const headerHeight = canvasSize * 0.05;
+    const fontSize = headerHeight * 0.55; // Font takes ~55% of header height
 
     ctx.save();
 
-    // Set font style to match WordHeader.svelte
+    // Draw full-width gradient background
+    const gradient = ctx.createLinearGradient(0, 0, 0, headerHeight);
+    if (darkMode) {
+      gradient.addColorStop(0, "rgba(15, 15, 20, 0.98)");
+      gradient.addColorStop(1, "rgba(10, 10, 15, 0.98)");
+    } else {
+      gradient.addColorStop(0, "rgba(248, 248, 248, 0.98)");
+      gradient.addColorStop(1, "rgba(240, 240, 240, 0.98)");
+    }
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvasSize, headerHeight);
+
+    // Draw bottom border
+    ctx.strokeStyle = darkMode
+      ? "rgba(255, 255, 255, 0.08)"
+      : "rgba(0, 0, 0, 0.08)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, headerHeight);
+    ctx.lineTo(canvasSize, headerHeight);
+    ctx.stroke();
+
+    // Draw centered text
     ctx.font = `bold ${fontSize}px Georgia, serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-
-    // Measure text to calculate background pill size
-    const textMetrics = ctx.measureText(displayText);
-    const textWidth = textMetrics.width;
-    const textHeight = fontSize;
-
-    // Position: top center with some padding from edge (3% top padding)
-    const topPadding = canvasSize * 0.03;
-    const centerX = canvasSize / 2;
-    const centerY = topPadding + paddingY + textHeight / 2;
-
-    // Draw pill-shaped background
-    const pillWidth = textWidth + paddingX * 2;
-    const pillHeight = textHeight + paddingY * 2;
-    const pillX = centerX - pillWidth / 2;
-    const pillY = centerY - pillHeight / 2;
-
-    // Set background color based on dark mode
-    ctx.fillStyle = darkMode
-      ? "rgba(10, 10, 15, 0.92)"
-      : "rgba(245, 245, 245, 0.92)";
-
-    // Draw rounded rectangle background
-    ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillWidth, pillHeight, borderRadius);
-    ctx.fill();
-
-    // Draw subtle border
-    ctx.strokeStyle = darkMode
-      ? "rgba(255, 255, 255, 0.1)"
-      : "rgba(0, 0, 0, 0.05)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Draw text
+    ctx.letterSpacing = `${fontSize * 0.08}px`; // 0.08em letter-spacing
     ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
-    ctx.fillText(displayText, centerX, centerY);
+    ctx.fillText(displayText, canvasSize / 2, headerHeight / 2);
 
     ctx.restore();
+  }
+
+  /**
+   * Get the header height for a given canvas size
+   * Used by VideoExportOrchestrator to calculate total canvas dimensions
+   */
+  getHeaderHeight(canvasSize: number): number {
+    return canvasSize * 0.05;
   }
 }

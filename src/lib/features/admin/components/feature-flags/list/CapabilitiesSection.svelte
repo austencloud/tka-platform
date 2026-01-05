@@ -33,26 +33,26 @@
   .capabilities-card {
     grid-column: 1 / -1;
     padding: 16px;
-    background: var(--surface-2026);
-    border-radius: var(--radius-2026-lg);
-    border: 1px solid var(--border-2026);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .section-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: var(--space-2026-sm);
-    font-size: var(--text-2026-caption);
+    margin-bottom: 12px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: var(--theme-text-dim);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .section-header i {
-    font-size: var(--font-size-sm);
-    color: var(--accent-2026-amber);
+    font-size: var(--font-size-sm, 14px);
+    color: #f59e0b;
   }
 
   .capabilities-grid {

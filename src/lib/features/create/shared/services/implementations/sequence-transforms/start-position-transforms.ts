@@ -34,7 +34,7 @@ import type { TargetHand } from "../../../state/panel-coordination-state.svelte"
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 /**
- * Derive the static letter (α, β, Γ) from a grid position.
+ * Derive the static letter (α, β, γ) from a grid position.
  * Start positions always have static letters based on location.
  */
 function deriveLetterFromGridPosition(

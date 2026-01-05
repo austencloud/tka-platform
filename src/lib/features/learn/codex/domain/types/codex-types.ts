@@ -12,6 +12,6 @@ export type LetterCategory =
   | "dash" // W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-
   | "special" // Φ, Ψ, Λ
   | "dual_dash" // Φ-, Ψ-, Λ-
-  | "static"; // α, β, Γ
+  | "static"; // α, β, γ
 
 export type CodexTransformationOperation = "rotate" | "mirror" | "colorSwap";

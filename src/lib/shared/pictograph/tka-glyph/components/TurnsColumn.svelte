@@ -42,6 +42,9 @@ Props:
     y = 800,
     scale = 1,
     onToggle = undefined,
+    // Dark mode override for preview isolation
+    // When provided, uses static colors instead of CSS-variable-derived colors
+    darkMode = undefined,
   } = $props<{
     turnsTuple: string;
     letter: string | null | undefined;
@@ -60,15 +63,25 @@ Props:
     scale?: number;
     /** Toggle callback for interactive mode */
     onToggle?: () => void;
+    /** Dark mode override - when provided, uses static colors for preview isolation */
+    darkMode?: boolean;
   }>();
 
   // Get centralized visibility manager for cached colors (no getComputedStyle per component)
   const visibilityManager = getAnimationVisibilityManager();
 
-  // Track colors from centralized cache
+  // Static colors for when darkMode is explicitly controlled (preview isolation)
+  // Light mode: standard blue/red
+  // Dark mode: brighter versions for visibility on dark background
+  const STATIC_COLORS = {
+    light: { blue: "#2E77AE", red: "#ED1C24" },
+    dark: { blue: "#3575E2", red: "#ED1C24" },
+  };
+
+  // Track colors from centralized cache (only used when darkMode is not explicitly provided)
   let cachedColors = $state(visibilityManager.getMotionColors());
 
-  // Register for updates when dark mode changes
+  // Register for updates when dark mode changes (only affects global mode)
   $effect(() => {
     const handler = () => {
       cachedColors = visibilityManager.getMotionColors();
@@ -77,9 +90,22 @@ Props:
     return () => visibilityManager.unregisterObserver(handler);
   });
 
-  // Get motion colors from centralized cache
-  const BLUE_COLOR = $derived(cachedColors.blue);
-  const RED_COLOR = $derived(cachedColors.red);
+  // Get motion colors - use static colors when darkMode is explicitly provided (preview isolation)
+  // Otherwise use centralized cache (global mode)
+  const BLUE_COLOR = $derived(
+    darkMode !== undefined
+      ? darkMode
+        ? STATIC_COLORS.dark.blue
+        : STATIC_COLORS.light.blue
+      : cachedColors.blue
+  );
+  const RED_COLOR = $derived(
+    darkMode !== undefined
+      ? darkMode
+        ? STATIC_COLORS.dark.red
+        : STATIC_COLORS.light.red
+      : cachedColors.red
+  );
 
   // Service instance for color interpretation
   const colorInterpreter = new TurnColorInterpreter();

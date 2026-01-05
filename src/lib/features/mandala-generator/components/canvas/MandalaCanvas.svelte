@@ -226,10 +226,19 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+<!-- Mandala Canvas: ARIA "application" role widget - requires tabindex & event handlers per WAI-ARIA spec -->
 <div
   class="mandala-canvas-container"
   class:drag-over={isExternalDragOver}
   bind:this={canvasContainer}
+  onclick={handleCanvasClick}
+  onkeydown={(e) => {
+    if (e.key === "Escape") {
+      onElementSelect?.(null);
+      mandalaState.setSelectedElementId(null);
+    }
+  }}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerUp}
@@ -237,12 +246,13 @@
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
   role="application"
-  aria-label="Mandala canvas"
+  tabindex="0"
+  aria-label="Mandala design canvas - click to place elements, press Escape to deselect"
 >
   <svg
     class="mandala-canvas"
     viewBox="0 0 {CANVAS_SIZE} {CANVAS_SIZE}"
-    onclick={handleCanvasClick}
+    aria-hidden="true"
   >
     <!-- Background -->
     <rect

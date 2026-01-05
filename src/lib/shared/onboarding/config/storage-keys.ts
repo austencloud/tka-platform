@@ -64,9 +64,17 @@ export const SIDEBAR_TOUR_COMPLETED_KEY = "tka-sidebar-tour-completed";
 export const SIDEBAR_TOUR_SKIPPED_KEY = "tka-sidebar-tour-skipped";
 
 /**
- * Check if sidebar tour has been completed or skipped
+ * Check if sidebar tour has been completed or skipped.
+ * Uses OnboardingPersister if available, falls back to localStorage.
  */
 export function hasCompletedSidebarTour(): boolean {
+  // Try service first for cached cloud data
+  const service = getOnboardingService();
+  if (service) {
+    return service.hasCompletedSidebarTour();
+  }
+
+  // Fall back to localStorage for synchronous access
   if (typeof localStorage === "undefined") return true; // SSR safety
   return (
     localStorage.getItem(SIDEBAR_TOUR_COMPLETED_KEY) === "true" ||
@@ -75,33 +83,60 @@ export function hasCompletedSidebarTour(): boolean {
 }
 
 /**
- * Mark sidebar tour as completed
+ * Mark sidebar tour as completed.
+ * Updates localStorage immediately and syncs to Firebase via OnboardingPersister.
  */
 export function markSidebarTourCompleted(): void {
   if (typeof localStorage === "undefined") return;
+
+  // Update localStorage immediately for synchronous access
   localStorage.setItem(SIDEBAR_TOUR_COMPLETED_KEY, "true");
   localStorage.setItem(
     `${SIDEBAR_TOUR_COMPLETED_KEY}-at`,
     new Date().toISOString()
   );
+
+  // Sync to Firebase via service (non-blocking)
+  const service = getOnboardingService();
+  if (service) {
+    void service.markSidebarTourCompleted();
+  }
 }
 
 /**
- * Mark sidebar tour as skipped (user chose "Explore on my own")
+ * Mark sidebar tour as skipped (user chose "Explore on my own").
+ * Updates localStorage immediately and syncs to Firebase via OnboardingPersister.
  */
 export function markSidebarTourSkipped(): void {
   if (typeof localStorage === "undefined") return;
+
+  // Update localStorage immediately
   localStorage.setItem(SIDEBAR_TOUR_SKIPPED_KEY, "true");
+
+  // Sync to Firebase via service (non-blocking)
+  const service = getOnboardingService();
+  if (service) {
+    void service.markSidebarTourSkipped();
+  }
 }
 
 /**
- * Reset sidebar tour (for testing/replaying)
+ * Reset sidebar tour (for testing/replaying).
+ * Clears localStorage and syncs to Firebase via OnboardingPersister.
  */
 export function resetSidebarTour(): void {
   if (typeof localStorage === "undefined") return;
+
+  // Clear localStorage immediately
   localStorage.removeItem(SIDEBAR_TOUR_COMPLETED_KEY);
   localStorage.removeItem(`${SIDEBAR_TOUR_COMPLETED_KEY}-at`);
   localStorage.removeItem(SIDEBAR_TOUR_SKIPPED_KEY);
+
+  // Sync to Firebase via service (non-blocking)
+  const service = getOnboardingService();
+  if (service) {
+    void service.resetSidebarTour();
+  }
 }
 
 // ============================================================================

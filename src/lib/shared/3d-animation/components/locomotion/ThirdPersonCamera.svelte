@@ -59,13 +59,27 @@
   // Mouse sensitivity
   const SENSITIVITY = 0.002;
 
-  // Smoothed camera position
-  // svelte-ignore state_referenced_locally
-  let smoothedTarget = $state({ x: target.x, y: target.y ?? 0, z: target.z });
+  // Smoothed camera position - synced with target on mount/change
+  let smoothedTarget = $state({ x: 0, y: 0, z: 0 });
+  let hasInitializedTarget = $state(false);
+
+  // Initialize smoothedTarget when target first becomes available or changes identity
+  $effect(() => {
+    if (!hasInitializedTarget) {
+      smoothedTarget = { x: target.x, y: target.y ?? 0, z: target.z };
+      hasInitializedTarget = true;
+    }
+  });
 
   // Camera position - computed each frame in useTask since refs don't trigger reactivity
-  // svelte-ignore state_referenced_locally
-  let cameraPosition = $state({ x: 0, y: height, z: -distance });
+  let cameraPosition = $state({ x: 0, y: 0, z: 0 });
+
+  // Initialize camera position when height/distance props are ready
+  $effect(() => {
+    if (cameraPosition.y === 0 && cameraPosition.z === 0) {
+      cameraPosition = { x: 0, y: height, z: -distance };
+    }
+  });
 
   // Look-at point (slightly above avatar center)
   const lookAtPoint = $derived({

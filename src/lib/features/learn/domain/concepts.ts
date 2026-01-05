@@ -118,7 +118,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     concepts: [
       "One hand shifts, one static",
       "Opening vs closing shifts",
-      "Γ ↔ α/β transitions",
+      "γ ↔ α/β transitions",
     ],
   },
   {
@@ -307,15 +307,15 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     order: 17,
     category: "letters",
     name: "Type 1: MP, NQ, OR",
-    shortName: "Γ Compound",
+    shortName: "γ Compound",
     description: "Quarter-Opp gamma compound letters",
     icon: "fa-m",
     pdfPages: [24],
     prerequisites: ["type1-compound"],
     estimatedMinutes: 12,
     concepts: [
-      "M, N, O (Γ→Γ opp)",
-      "P, Q, R (Γ→Γ opp mirror)",
+      "M, N, O (γ→γ opp)",
+      "P, Q, R (γ→γ opp mirror)",
       "Magic Potion, Never Quit, Open Road",
     ],
   },
@@ -331,7 +331,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     prerequisites: ["type1-gamma-compound"],
     estimatedMinutes: 10,
     concepts: [
-      "S, T (Γ→Γ same)",
+      "S, T (γ→γ same)",
       "U - leads with isolation (round)",
       "V - leads with antispin (spiky)",
       "Leading vs following hand",
@@ -349,10 +349,10 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     prerequisites: ["type1-stuv"],
     estimatedMinutes: 10,
     concepts: [
-      "W, X (Γ→α open)",
-      "Y, Z (Γ→β close)",
-      "Σ, Δ (α→Γ close)",
-      "θ, Ω (β→Γ open)",
+      "W, X (γ→α open)",
+      "Y, Z (γ→β close)",
+      "Σ, Δ (α→γ close)",
+      "θ, Ω (β→γ open)",
     ],
   },
   {
@@ -387,9 +387,9 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     concepts: [
       "Φ - Dash (β→α)",
       "Ψ - Dash (α→β)",
-      "Λ - Dash (Γ→Γ)",
+      "Λ - Dash (γ→γ)",
       "Dual-dash (-) variants",
-      "α, β, Γ static positions",
+      "α, β, γ static positions",
     ],
   },
 
@@ -438,7 +438,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     order: 24,
     category: "combinations",
     name: "Gamma Words",
-    shortName: "Γ Words",
+    shortName: "γ Words",
     description: "Four-letter gamma sequences",
     icon: "fa-diagram-project",
     pdfPages: [25],
@@ -448,7 +448,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
       "MPMP, NQNQ, OROR patterns",
       "SSSS, TTTT sequences",
       "UUUU, VVVV sequences",
-      "Γ→Γ continuous motion",
+      "γ→γ continuous motion",
     ],
   },
   {

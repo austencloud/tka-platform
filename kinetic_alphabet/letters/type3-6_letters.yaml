@@ -97,7 +97,7 @@ type_6_static:
       description: "Static hold in Beta position"
 
     static_gamma:
-      symbol: "Γ"
+      symbol: "γ"
       motion_type: "Static"
       position: "gamma"
       description: "Static hold in Gamma position"

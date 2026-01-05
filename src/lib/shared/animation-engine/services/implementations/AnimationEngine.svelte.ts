@@ -781,7 +781,13 @@ export class AnimationEngine {
       this.state.currentPropType = bluePropType;
     }
 
-    await this.propTextureService.loadPropTextures(bluePropType, redPropType);
+    // Pass dark mode state for prop color selection
+    // This allows preview isolation - local preview dark mode instead of global
+    await this.propTextureService.loadPropTextures(
+      bluePropType,
+      redPropType,
+      this.prevDarkMode
+    );
 
     // CRITICAL: Sync dimensions to engine state immediately after loading
     // This ensures getFrameParams() has correct dimensions for the first render

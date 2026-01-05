@@ -129,8 +129,8 @@ export class TurnColorInterpreter {
       return "TYPE5";
     }
 
-    // TYPE6: Beta letters (α, β, Γ)
-    if (["α", "β", "Γ"].includes(letter)) {
+    // TYPE6: Beta letters (α, β, γ)
+    if (["α", "β", "γ"].includes(letter)) {
       return "TYPE6";
     }
 

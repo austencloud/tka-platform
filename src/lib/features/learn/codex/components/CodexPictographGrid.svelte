@@ -90,7 +90,7 @@
       endRow: 10,
       primaryColor: "#eb7d00",
       secondaryColor: "#eb7d00",
-    }, // α,β,Γ (row 10)
+    }, // α,β,γ (row 10)
   ];
 
   // Function to get section for a given row index

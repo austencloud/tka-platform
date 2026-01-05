@@ -183,7 +183,7 @@
 
   <!-- Dark Mode Toggle -->
   <button
-    class="control-btn lights-off-btn"
+    class="control-btn dark-mode-btn"
     class:active={darkModeEnabled}
     onclick={toggleDarkMode}
     title={darkModeEnabled ? "Disable Dark Mode" : "Enable Dark Mode"}
@@ -355,7 +355,7 @@
   }
 
   /* Dark Mode button - electric cyan glow when active */
-  .lights-off-btn.active {
+  .dark-mode-btn.active {
     background: rgba(0, 255, 255, 0.15);
     border-color: #00ffff;
     color: #00ffff;
@@ -366,7 +366,7 @@
     text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
   }
 
-  .lights-off-btn.active:hover {
+  .dark-mode-btn.active:hover {
     background: rgba(0, 255, 255, 0.25);
     box-shadow:
       0 0 16px rgba(0, 255, 255, 0.5),

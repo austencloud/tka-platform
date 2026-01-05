@@ -13,7 +13,7 @@ export type TypeFilter = {
   type3: boolean; // Cross-Shift (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-)
   type4: boolean; // Dash (Φ, Ψ, Λ)
   type5: boolean; // Dual-Dash (Φ-, Ψ-, Λ-)
-  type6: boolean; // Static (α, β, Γ)
+  type6: boolean; // Static (α, β, γ)
 };
 
 // Type for end position filter

@@ -25,9 +25,13 @@ import {
   ONBOARDING_COMPLETED_KEY,
   ONBOARDING_COMPLETED_AT_KEY,
   ONBOARDING_SKIPPED_KEY,
+  SIDEBAR_TOUR_COMPLETED_KEY,
+  SIDEBAR_TOUR_SKIPPED_KEY,
   getModuleOnboardingKey,
   getModuleOnboardingTimestampKey,
 } from "../../config/storage-keys";
+
+const LAST_SEEN_VERSION_KEY = "tka-last-seen-version";
 
 const MODULES_WITH_ONBOARDING = [
   "discover",
@@ -68,6 +72,12 @@ export class OnboardingPersister implements IOnboardingPersister {
       appSkipped: false,
       appCompletedAt: null,
       modules,
+      sidebarTour: {
+        completed: false,
+        skipped: false,
+        completedAt: null,
+      },
+      lastSeenVersion: null,
     };
   }
 
@@ -95,11 +105,28 @@ export class OnboardingPersister implements IOnboardingPersister {
       };
     }
 
+    // Sidebar tour status
+    const sidebarTourCompleted =
+      localStorage.getItem(SIDEBAR_TOUR_COMPLETED_KEY) === "true";
+    const sidebarTourSkipped =
+      localStorage.getItem(SIDEBAR_TOUR_SKIPPED_KEY) === "true";
+    const sidebarTourCompletedAt =
+      localStorage.getItem(`${SIDEBAR_TOUR_COMPLETED_KEY}-at`) || null;
+
+    // Last seen version
+    const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY) || null;
+
     return {
       appCompleted,
       appSkipped,
       appCompletedAt,
       modules,
+      sidebarTour: {
+        completed: sidebarTourCompleted,
+        skipped: sidebarTourSkipped,
+        completedAt: sidebarTourCompletedAt,
+      },
+      lastSeenVersion,
     };
   }
 
@@ -145,6 +172,37 @@ export class OnboardingPersister implements IOnboardingPersister {
         localStorage.removeItem(timestampKey);
       }
     }
+
+    // Sidebar tour
+    if (status.sidebarTour) {
+      if (status.sidebarTour.completed) {
+        localStorage.setItem(SIDEBAR_TOUR_COMPLETED_KEY, "true");
+      } else {
+        localStorage.removeItem(SIDEBAR_TOUR_COMPLETED_KEY);
+      }
+
+      if (status.sidebarTour.skipped) {
+        localStorage.setItem(SIDEBAR_TOUR_SKIPPED_KEY, "true");
+      } else {
+        localStorage.removeItem(SIDEBAR_TOUR_SKIPPED_KEY);
+      }
+
+      if (status.sidebarTour.completedAt) {
+        localStorage.setItem(
+          `${SIDEBAR_TOUR_COMPLETED_KEY}-at`,
+          status.sidebarTour.completedAt
+        );
+      } else {
+        localStorage.removeItem(`${SIDEBAR_TOUR_COMPLETED_KEY}-at`);
+      }
+    }
+
+    // Last seen version
+    if (status.lastSeenVersion) {
+      localStorage.setItem(LAST_SEEN_VERSION_KEY, status.lastSeenVersion);
+    } else {
+      localStorage.removeItem(LAST_SEEN_VERSION_KEY);
+    }
   }
 
   /**
@@ -163,7 +221,7 @@ export class OnboardingPersister implements IOnboardingPersister {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data() as OnboardingStatus;
-        // Ensure all modules are present
+        // Ensure all fields are present with defaults
         const status = this.createDefaultStatus();
         status.appCompleted = data.appCompleted ?? false;
         status.appSkipped = data.appSkipped ?? false;
@@ -175,6 +233,17 @@ export class OnboardingPersister implements IOnboardingPersister {
             }
           }
         }
+        // Sidebar tour
+        if (data.sidebarTour) {
+          status.sidebarTour = {
+            completed: data.sidebarTour.completed ?? false,
+            skipped: data.sidebarTour.skipped ?? false,
+            completedAt: data.sidebarTour.completedAt ?? null,
+          };
+        }
+        // Last seen version
+        status.lastSeenVersion = data.lastSeenVersion ?? null;
+
         this.cachedStatus = status;
         // Also sync to localStorage for fast access
         this.saveToLocalStorage(status);
@@ -346,6 +415,17 @@ export class OnboardingPersister implements IOnboardingPersister {
               }
             }
           }
+          // Sidebar tour
+          if (data.sidebarTour) {
+            status.sidebarTour = {
+              completed: data.sidebarTour.completed ?? false,
+              skipped: data.sidebarTour.skipped ?? false,
+              completedAt: data.sidebarTour.completedAt ?? null,
+            };
+          }
+          // Last seen version
+          status.lastSeenVersion = data.lastSeenVersion ?? null;
+
           this.cachedStatus = status;
           this.saveToLocalStorage(status);
           callback(status);
@@ -397,6 +477,27 @@ export class OnboardingPersister implements IOnboardingPersister {
           };
         }
 
+        // Sidebar tour: prefer completed/skipped
+        const localTour = localStatus.sidebarTour;
+        const cloudTour = cloudStatus.sidebarTour;
+        mergedStatus.sidebarTour = {
+          completed: localTour?.completed || cloudTour?.completed || false,
+          skipped: localTour?.skipped || cloudTour?.skipped || false,
+          completedAt:
+            localTour?.completedAt || cloudTour?.completedAt || null,
+        };
+
+        // Last seen version: prefer the newer version (lexicographically higher)
+        const localVersion = localStatus.lastSeenVersion;
+        const cloudVersion = cloudStatus.lastSeenVersion;
+        if (localVersion && cloudVersion) {
+          // Compare versions - keep the higher one
+          mergedStatus.lastSeenVersion =
+            localVersion > cloudVersion ? localVersion : cloudVersion;
+        } else {
+          mergedStatus.lastSeenVersion = localVersion || cloudVersion || null;
+        }
+
         await this.saveStatus(mergedStatus);
       } else {
         // No cloud data - push local to cloud
@@ -405,5 +506,109 @@ export class OnboardingPersister implements IOnboardingPersister {
     } catch (error) {
       console.error("❌ [OnboardingPersister] Failed to sync:", error);
     }
+  }
+
+  // ===========================================================================
+  // Sidebar Tour Methods
+  // ===========================================================================
+
+  /**
+   * Check if sidebar tour has been completed or skipped.
+   * Uses cached status if available, otherwise checks localStorage.
+   */
+  hasCompletedSidebarTour(): boolean {
+    if (this.cachedStatus) {
+      return (
+        this.cachedStatus.sidebarTour.completed ||
+        this.cachedStatus.sidebarTour.skipped
+      );
+    }
+
+    // Fall back to localStorage for synchronous access
+    if (typeof localStorage === "undefined") return false;
+    return (
+      localStorage.getItem(SIDEBAR_TOUR_COMPLETED_KEY) === "true" ||
+      localStorage.getItem(SIDEBAR_TOUR_SKIPPED_KEY) === "true"
+    );
+  }
+
+  /**
+   * Mark sidebar tour as completed.
+   */
+  async markSidebarTourCompleted(): Promise<void> {
+    const status = this.cachedStatus || (await this.loadStatus());
+    const now = new Date().toISOString();
+    status.sidebarTour = {
+      completed: true,
+      skipped: false,
+      completedAt: now,
+    };
+    await this.saveStatus(status);
+  }
+
+  /**
+   * Mark sidebar tour as skipped (user chose "Explore on my own").
+   */
+  async markSidebarTourSkipped(): Promise<void> {
+    const status = this.cachedStatus || (await this.loadStatus());
+    status.sidebarTour = {
+      completed: false,
+      skipped: true,
+      completedAt: null,
+    };
+    await this.saveStatus(status);
+  }
+
+  /**
+   * Reset sidebar tour status (for replay).
+   */
+  async resetSidebarTour(): Promise<void> {
+    const status = this.cachedStatus || (await this.loadStatus());
+    status.sidebarTour = {
+      completed: false,
+      skipped: false,
+      completedAt: null,
+    };
+    await this.saveStatus(status);
+  }
+
+  // ===========================================================================
+  // What's New Version Tracking Methods
+  // ===========================================================================
+
+  /**
+   * Check if user has seen the given version in What's New.
+   */
+  hasSeenVersion(version: string): boolean {
+    if (this.cachedStatus) {
+      return this.cachedStatus.lastSeenVersion === version;
+    }
+
+    // Fall back to localStorage for synchronous access
+    if (typeof localStorage === "undefined") return true;
+    const lastSeen = localStorage.getItem(LAST_SEEN_VERSION_KEY);
+    return lastSeen === version;
+  }
+
+  /**
+   * Mark a version as seen in What's New.
+   */
+  async markVersionAsSeen(version: string): Promise<void> {
+    const status = this.cachedStatus || (await this.loadStatus());
+    status.lastSeenVersion = version;
+    await this.saveStatus(status);
+  }
+
+  /**
+   * Get the last seen version (for debugging/display).
+   */
+  getLastSeenVersion(): string | null {
+    if (this.cachedStatus) {
+      return this.cachedStatus.lastSeenVersion;
+    }
+
+    // Fall back to localStorage
+    if (typeof localStorage === "undefined") return null;
+    return localStorage.getItem(LAST_SEEN_VERSION_KEY);
   }
 }

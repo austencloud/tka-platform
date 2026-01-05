@@ -3,12 +3,16 @@
 
   Runs on app load to check if user has seen the current version.
   If not, loads version data and triggers the What's New modal.
+
+  IMPORTANT: Defers to sidebar tour - first-time users see the tour first,
+  not release notes. What's New only shows after tour is completed/skipped.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { whatsNewState } from "../state/whats-new-state.svelte";
   import { versionService } from "$lib/features/feedback/services/implementations/VersionManager";
+  import { hasCompletedSidebarTour } from "$lib/shared/onboarding/config/storage-keys";
   import WhatsNewModal from "./WhatsNewModal.svelte";
 
   // Configuration
@@ -36,6 +40,12 @@
     // Prevent multiple checks
     if (hasChecked) return;
     hasChecked = true;
+
+    // Defer to sidebar tour - first-time users see the tour first, not release notes
+    // (Everything is "new" to them anyway!)
+    if (!hasCompletedSidebarTour()) {
+      return;
+    }
 
     // Check if user has already seen this version
     const currentVersion = __APP_VERSION__;

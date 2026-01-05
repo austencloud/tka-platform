@@ -73,9 +73,14 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
 
   async loadPerColorPropTextures(
     bluePropType: string,
-    redPropType: string
+    redPropType: string,
+    darkMode?: boolean
   ): Promise<void> {
-    await this.imageLoader.loadPerColorPropImages(bluePropType, redPropType);
+    await this.imageLoader.loadPerColorPropImages(
+      bluePropType,
+      redPropType,
+      darkMode
+    );
   }
 
   async loadSecondaryPropTextures(

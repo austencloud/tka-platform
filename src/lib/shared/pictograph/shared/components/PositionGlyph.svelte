@@ -1,8 +1,8 @@
 <!--
 PositionGlyph.svelte - Position Glyph Component
 
-Renders start → end position indicators showing position groups (α, β, Γ)
-centered at the top of pictographs. Not shown for static letters (α, β, Γ).
+Renders start → end position indicators showing position groups (α, β, γ)
+centered at the top of pictographs. Not shown for static letters (α, β, γ).
 
 Based on legacy start_to_end_pos_glyph.py implementation.
 -->
@@ -58,7 +58,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     if (!hasValidData || !startPosition || !endPosition) {
       return false;
     }
-    // Don't show for static letters (α, β, Γ)
+    // Don't show for static letters (α, β, γ)
     if (letter && STATIC_LETTERS.includes(letter)) {
       return false;
     }
@@ -82,7 +82,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   const GROUP_TO_SVG: Record<string, string> = {
     alpha: "/images/letters_trimmed/Type6/α.svg",
     beta: "/images/letters_trimmed/Type6/β.svg",
-    gamma: "/images/letters_trimmed/Type6/Γ.svg",
+    gamma: "/images/letters_trimmed/Type6/γ.svg",
   };
 
   // Actual SVG viewBox dimensions from the source files

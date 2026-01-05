@@ -132,28 +132,13 @@
     if (autoPrompt) {
       // Small delay to let the page settle
       setTimeout(() => {
-        // Log viewport dimensions to debug device-specific issues
-        debug.info(`Viewport: ${window.innerWidth}x${window.innerHeight}, ratio: ${(window.innerHeight / window.innerWidth).toFixed(2)}`);
-
         try {
-          // Use callback to see what Google reports (works in non-FedCM mode)
-          window.google?.accounts.id.prompt((notification) => {
-            if (!notification.isNotDisplayed()) {
-              debug.success("One Tap prompt displayed");
-            } else if (notification.isNotDisplayed()) {
-              const reason = notification.getNotDisplayedReason();
-              debug.warn(`One Tap NOT displayed. Reason: ${reason}`);
-              onUnavailable?.();
-            } else if (notification.isSkippedMoment()) {
-              const reason = notification.getSkippedReason();
-              debug.warn(`One Tap skipped. Reason: ${reason}`);
-              onUnavailable?.();
-            } else if (notification.isDismissedMoment()) {
-              const reason = notification.getDismissedReason();
-              debug.info(`One Tap dismissed. Reason: ${reason}`);
-            }
-          });
-          debug.info("One Tap prompt requested");
+          // With FedCM enabled, don't use the notification callback
+          // The legacy moment-based methods (isNotDisplayed, isSkippedMoment, etc.)
+          // don't work reliably with FedCM and trigger deprecation warnings.
+          // The credential response is still handled via the config callback.
+          window.google?.accounts.id.prompt();
+          debug.info("One Tap prompt requested (FedCM mode)");
         } catch (error) {
           // FedCM may throw if disabled or on cooldown
           debug.warn("One Tap prompt unavailable:", error);

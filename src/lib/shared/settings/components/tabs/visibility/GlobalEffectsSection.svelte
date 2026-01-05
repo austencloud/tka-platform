@@ -20,7 +20,7 @@
   <span class="section-label">Global Effects</span>
   <div class="effects-row">
     <button
-      class="effect-btn lights-off"
+      class="effect-btn dark-mode"
       class:active={darkMode}
       class:disabled
       onclick={ondarkModeToggle}
@@ -119,7 +119,7 @@
   }
 
   /* Dark Mode Active - Electric cyan glow */
-  .effect-btn.lights-off.active {
+  .effect-btn.dark-mode.active {
     background: rgba(0, 255, 255, 0.12);
     border-color: rgba(0, 255, 255, 0.4);
     color: #00ffff;
@@ -129,17 +129,17 @@
       inset 0 0 8px rgba(0, 255, 255, 0.08);
   }
 
-  .effect-btn.lights-off.active i {
+  .effect-btn.dark-mode.active i {
     text-shadow: 0 0 10px rgba(0, 255, 255, 0.9);
   }
 
-  .effect-btn.lights-off.active .effect-status {
+  .effect-btn.dark-mode.active .effect-status {
     color: #00ffff;
     opacity: 1;
     text-shadow: 0 0 6px rgba(0, 255, 255, 0.6);
   }
 
-  .effect-btn.lights-off.active:hover {
+  .effect-btn.dark-mode.active:hover {
     background: rgba(0, 255, 255, 0.18);
     border-color: rgba(0, 255, 255, 0.55);
     box-shadow:
@@ -164,7 +164,7 @@
       border-width: 2px;
     }
 
-    .effect-btn.lights-off.active {
+    .effect-btn.dark-mode.active {
       border-color: #00ffff;
     }
 

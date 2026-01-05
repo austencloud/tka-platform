@@ -24,8 +24,8 @@
     $props();
 
   // Display name editing state
-  // svelte-ignore state_referenced_locally
-  let editedName = $state(user.displayName || "");
+  // Initialize empty - $effect below syncs with user.displayName when not editing
+  let editedName = $state("");
   let isEditingName = $state(false);
   let isSavingName = $state(false);
 

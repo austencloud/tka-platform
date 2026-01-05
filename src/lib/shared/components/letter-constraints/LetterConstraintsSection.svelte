@@ -48,7 +48,6 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
         Letter.T,
         Letter.U,
         Letter.V,
-        Letter.GAMMA_LOWERCASE,
       ],
     },
     {

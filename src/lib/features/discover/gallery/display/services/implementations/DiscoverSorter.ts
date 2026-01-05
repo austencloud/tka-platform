@@ -127,8 +127,8 @@ export class DiscoverSorter implements IDiscoverSorter {
 
     const firstChar = word[0]!;
 
-    // Type 6 letters: α, β, Γ, ζ, η, τ, ⊕
-    const TYPE6_LETTERS = ["α", "β", "Γ", "ζ", "η", "τ", "⊕"];
+    // Type 6 letters: α, β, γ, ζ, η, τ, ⊕
+    const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
 
     let char: string;
     if (TYPE6_LETTERS.includes(firstChar)) {

@@ -178,14 +178,19 @@
 
   // Auto-focus when this cell becomes selected (e.g., after deleting another beat)
   // This enables continuous Delete key presses to delete beats one by one
-  // svelte-ignore state_referenced_locally
-  let wasSelected = isSelected; // Initialize to current state to avoid focus on mount
+  // Use null as sentinel to detect first run and initialize to isSelected's value
+  let wasSelected: boolean | null = null;
   let hasMounted = false;
   onMount(() => {
     hasMounted = true;
   });
 
   $effect(() => {
+    // First run: initialize wasSelected to current isSelected to avoid focus on mount
+    if (wasSelected === null) {
+      wasSelected = isSelected;
+      return;
+    }
     if (hasMounted && isSelected && !wasSelected && cellElement) {
       // Small delay to ensure DOM is settled after deletion animation
       requestAnimationFrame(() => {

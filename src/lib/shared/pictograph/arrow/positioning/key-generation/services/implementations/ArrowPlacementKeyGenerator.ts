@@ -242,7 +242,7 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
       // Type5 dual-dash
       "Λ-",
       // Type6 static - uppercase Greek gamma and new letters
-      "Γ",
+      "γ",
       "ζ",
       "η",
       "τ",

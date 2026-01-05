@@ -125,10 +125,7 @@
     filter: drop-shadow(0 0 4px var(--theme-accent, #4a9eff));
   }
 
-  .svg-content {
-    /* SVG content inherits color */
-  }
-
+  /* SVG content inherits color */
   .svg-content :global(svg) {
     overflow: visible;
   }

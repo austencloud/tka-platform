@@ -38,7 +38,7 @@ positions:
       tog_opp: "Hands move in opposite directions (for Beta<->Alpha transitions)"
 
   gamma:
-    symbol: "Γ"
+    symbol: "γ"
     name: "Gamma"
     description: "Hands form a right angle"
     characteristics:

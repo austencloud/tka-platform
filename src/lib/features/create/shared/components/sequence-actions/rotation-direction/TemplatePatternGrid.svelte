@@ -20,10 +20,8 @@
 
   let { beatCount, isMobile, onApplyTemplate }: Props = $props();
 
-  // svelte-ignore state_referenced_locally
-  let categoryFilter = $state<TemplateCategory | "all">(
-    isMobile ? "alternating" : "all"
-  );
+  // Initialize with default - $effect below will sync with isMobile immediately
+  let categoryFilter = $state<TemplateCategory | "all">("all");
 
   // Get all templates for the beat count, excluding uniform (handled separately)
   const allTemplates = $derived(getTemplatesForBeatCount(beatCount));

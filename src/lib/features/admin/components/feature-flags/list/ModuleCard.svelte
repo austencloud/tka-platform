@@ -76,22 +76,21 @@
 
 <style>
   .bento-card {
-    background: var(--surface-2026);
-    border-radius: var(--radius-2026-lg);
-    border: 1px solid var(--border-2026);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow: hidden;
-    transition: all var(--transition-normal);
+    transition: all 0.2s ease;
   }
 
   .bento-card:hover {
-    border-color: var(--border-2026-hover);
-    box-shadow: var(--shadow-2026-lg);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .module-header {
     display: flex;
     align-items: flex-start;
-    gap: var(--space-2026-sm);
+    gap: 12px;
     width: 100%;
     padding: 16px;
     border: none;
@@ -99,17 +98,17 @@
     color: inherit;
     cursor: pointer;
     text-align: left;
-    transition: background var(--transition-fast);
+    transition: background 0.15s ease;
     min-height: var(--min-touch-target);
   }
 
   .module-header:hover {
-    background: var(--surface-2026-hover);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
   }
 
   .module-header.selected {
-    background: var(--accent-2026-indigo-soft);
-    border-left: 3px solid var(--accent-2026-indigo);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
+    border-left: 3px solid var(--theme-accent, #6366f1);
   }
 
   .module-icon {
@@ -130,14 +129,14 @@
 
   .module-info h3 {
     margin: 0 0 4px 0;
-    font-size: var(--text-2026-body);
+    font-size: var(--font-size-base, 16px);
     font-weight: 600;
-    color: var(--theme-text);
+    color: var(--theme-text, #ffffff);
   }
 
   .module-description {
-    font-size: var(--text-2026-micro);
-    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -148,7 +147,7 @@
   .module-meta {
     display: flex;
     align-items: center;
-    gap: var(--space-2026-xs);
+    gap: 4px;
     flex-shrink: 0;
   }
 
@@ -157,14 +156,14 @@
     align-items: center;
     gap: 4px;
     padding: 4px 8px;
-    border-radius: var(--radius-2026-xs);
-    font-size: var(--font-size-compact);
+    border-radius: 6px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     text-transform: capitalize;
   }
 
   .role-badge i {
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
   }
 
   .disabled-badge {
@@ -173,14 +172,10 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    border-radius: var(--radius-2026-xs);
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, var(--semantic-error)) 15%,
-      transparent
-    );
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
     color: var(--semantic-error);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
   }
 
   .tabs-grid {

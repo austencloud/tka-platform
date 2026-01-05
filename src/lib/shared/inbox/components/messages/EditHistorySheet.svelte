@@ -195,7 +195,7 @@
     word-break: break-word;
   }
 
-  .sr-only {
+  :global(.sr-only) {
     position: absolute;
     width: 1px;
     height: 1px;

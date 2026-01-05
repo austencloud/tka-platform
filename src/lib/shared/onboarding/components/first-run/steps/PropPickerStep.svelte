@@ -17,8 +17,15 @@
 
   const { initialValue, onNext, onBack, onSkip }: Props = $props();
 
-  // svelte-ignore state_referenced_locally
-  let selectedProp = $state<PropType | null>(initialValue ?? null);
+  // Initialize with null, sync with initialValue when provided
+  let selectedProp = $state<PropType | null>(null);
+
+  // Sync with initialValue when component mounts or value changes
+  $effect(() => {
+    if (initialValue !== undefined) {
+      selectedProp = initialValue;
+    }
+  });
 
   // Curated list of 8 main prop types for first-run selection
   const FEATURED_PROPS: PropType[] = [
