@@ -416,32 +416,69 @@
 		max-width: none;
 	}
 
-	/* Horizontal sidebar - full height, shows all settings */
+	/* Horizontal sidebar - fill container height, distribute content evenly */
 	.horizontal-sidebar {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
-		width: 240px;
+		justify-content: stretch;
+		gap: clamp(12px, 3cqh, 24px);
+		width: clamp(240px, 32%, 300px);
 		min-width: 240px;
+		height: 100%;
 		flex-shrink: 0;
-		padding: 12px;
+		padding: clamp(14px, 3cqh, 24px);
 		box-sizing: border-box;
 		background: var(--theme-card-bg);
 		border: 1.5px solid var(--theme-stroke);
 		border-radius: 14px;
 		overflow-y: auto;
+		container-type: size;
+		container-name: sidebar;
 	}
 
-	/* Sidebar sections */
+	/* Sidebar sections - flex to fill and distribute space evenly */
 	.sidebar-section {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		flex: 1;
+		min-height: 0;
 	}
 
 	.sidebar-section + .sidebar-section {
-		padding-top: 10px;
+		padding-top: clamp(12px, 2.5cqh, 20px);
 		border-top: 1px solid var(--theme-stroke);
+	}
+
+	/* Make child panes fill their section and distribute space */
+	.horizontal-sidebar :global(.playback-pane),
+	.horizontal-sidebar :global(.visual-pane) {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		flex: 1;
+		gap: clamp(10px, 2.5cqh, 18px);
+	}
+
+	/* All button groups stretch to fill available space */
+	.horizontal-sidebar :global(.style-toggle),
+	.horizontal-sidebar :global(.motion-toggles),
+	.horizontal-sidebar :global(.element-grid),
+	.horizontal-sidebar :global(.trail-presets),
+	.horizontal-sidebar :global(.ends-selector) {
+		flex: 1;
+		display: flex;
+		gap: 8px;
+	}
+
+	/* All interactive buttons - 48px minimum height, fill available space */
+	.horizontal-sidebar :global(.style-btn),
+	.horizontal-sidebar :global(.motion-btn),
+	.horizontal-sidebar :global(.element-btn),
+	.horizontal-sidebar :global(.trail-btn),
+	.horizontal-sidebar :global(.ends-btn) {
+		flex: 1;
+		min-height: 48px;
+		height: 100%;
 	}
 
 	/* Transport row: step buttons + play button */

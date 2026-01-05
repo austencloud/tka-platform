@@ -71,7 +71,11 @@
   );
 
   // Sort options - includes analytics sorts unique to Library
-  const sortOptions = [
+  const sortOptions: {
+    field: "updatedAt" | "createdAt" | "name" | "word" | "viewCount" | "forkCount" | "starCount";
+    label: string;
+    icon?: string;
+  }[] = [
     { field: "updatedAt", label: "Recently Updated" },
     { field: "createdAt", label: "Date Created" },
     { field: "name", label: "Name" },
@@ -79,7 +83,7 @@
     { field: "viewCount", label: "Most Viewed", icon: "fa-eye" },
     { field: "forkCount", label: "Most Forked", icon: "fa-code-branch" },
     { field: "starCount", label: "Most Starred", icon: "fa-star" },
-  ] as const;
+  ];
 
   function handleSearchInput(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -133,8 +137,9 @@
         break;
       case "Enter":
         event.preventDefault();
-        if (focusedSortIndex >= 0) {
-          handleSortChange(sortOptions[focusedSortIndex].field);
+        const focusedOption = sortOptions[focusedSortIndex];
+        if (focusedSortIndex >= 0 && focusedOption) {
+          handleSortChange(focusedOption.field);
         }
         break;
       case "Escape":
@@ -546,8 +551,8 @@
       sequence={selectedSequence}
       mode="library"
       notes={selectedSequence.notes || ""}
-      tags={selectedSequence.tagIds || []}
-      visibility={selectedSequence.visibility || "private"}
+      tags={[...(selectedSequence.tagIds || [])]}
+      visibility={selectedSequence.visibility === "unlisted" ? "private" : (selectedSequence.visibility || "private")}
       viewCount={selectedSequence.viewCount || 0}
       forkCount={selectedSequence.forkCount || 0}
       starCount={selectedSequence.starCount || 0}

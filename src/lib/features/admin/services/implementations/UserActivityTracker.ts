@@ -84,7 +84,7 @@ export class UserActivityTracker implements IUserActivityTracker {
   subscribeToAllUsers(
     callback: (users: UserPresenceWithId[]) => void
   ): () => void {
-    let allFirestoreUsers: Map<
+    const allFirestoreUsers: Map<
       string,
       { displayName: string; email: string; photoURL: string | null }
     > = new Map();

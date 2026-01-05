@@ -103,12 +103,16 @@
         event.timestamp.getDate()
       );
 
+      const todayGroup = groups[0];
+      const weekGroup = groups[1];
+      const earlierGroup = groups[2];
+
       if (eventDate.getTime() >= today.getTime()) {
-        groups[0].events.push(event);
+        todayGroup?.events.push(event);
       } else if (eventDate.getTime() >= weekAgo.getTime()) {
-        groups[1].events.push(event);
+        weekGroup?.events.push(event);
       } else {
-        groups[2].events.push(event);
+        earlierGroup?.events.push(event);
       }
     }
 

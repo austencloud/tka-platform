@@ -106,7 +106,7 @@ export function validateUsernameFormat(username: string): UsernameValidationResu
 
 	// Check reserved usernames
 	const lower = formatUsername(trimmed);
-	if (USERNAME_RULES.RESERVED.includes(lower)) {
+	if ((USERNAME_RULES.RESERVED as readonly string[]).includes(lower)) {
 		return {
 			isValid: false,
 			error: 'This username is reserved'

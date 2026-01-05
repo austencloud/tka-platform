@@ -12,7 +12,7 @@ node_modules/
 /build/**
 .netlify/
 dist/
-dev-dist/                       # Vite PWA dev mode output
+/dev-dist/                      # Vite PWA dev mode output
 .output/
 /_app/
 
