@@ -16,6 +16,14 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequencePreviewPanel from "$lib/shared/sequence-viewer/components/SequencePreviewPanel.svelte";
+
+  // Context-specific section components
+  import AnalyticsSection from "./sections/AnalyticsSection.svelte";
+  import MetadataSection from "./sections/MetadataSection.svelte";
+  import VisibilitySection from "./sections/VisibilitySection.svelte";
+  import CreatorSection from "./sections/CreatorSection.svelte";
+  import ActionButtons from "./sections/ActionButtons.svelte";
+
   import type {
     MediaFormat,
     ExportSettings as SequenceViewerExportSettings,
@@ -340,21 +348,73 @@
   >
     <div class="share-hub-content">
       {#if sequence}
-        <SequencePreviewPanel
-          {sequence}
-          mode="preview"
-          initialMediaType="animation"
-          onClose={handleClose}
-          onExport={handleExport}
-          isExporting={isAnimationExporting}
-          exportProgress={viewerExportProgress}
-          onNameChange={(value) => {
-            if (sequence) {
-              // Update displayName on the sequence (cast to allow mutation of readonly)
-              (sequence as { displayName?: string }).displayName = value;
-            }
-          }}
-        />
+        <!-- Main viewer with export controls -->
+        <div class="viewer-section">
+          <SequencePreviewPanel
+            {sequence}
+            mode="preview"
+            initialMediaType="animation"
+            onClose={handleClose}
+            onExport={handleExport}
+            isExporting={isAnimationExporting}
+            exportProgress={viewerExportProgress}
+            onNameChange={(value) => {
+              if (sequence) {
+                // Update displayName on the sequence (cast to allow mutation of readonly)
+                (sequence as { displayName?: string }).displayName = value;
+              }
+            }}
+          />
+        </div>
+
+        <!-- Context-specific sections (Library/Discover only) -->
+        {#if mode !== "create"}
+          <div class="context-sections">
+            <!-- Discover: Creator info (when viewing others' sequences) -->
+            {#if mode === "discover" && !isOwned && creatorInfo}
+              <CreatorSection
+                ownerId={creatorInfo.ownerId}
+                displayName={creatorInfo.displayName}
+                avatarUrl={creatorInfo.avatarUrl}
+              />
+            {/if}
+
+            <!-- Library & Discover (owned): Analytics (when public with metrics) -->
+            {#if (mode === "library" || (mode === "discover" && isOwned)) && visibility === "public"}
+              <AnalyticsSection {viewCount} {forkCount} {starCount} />
+            {/if}
+
+            <!-- Library: Visibility toggle / Publish CTA -->
+            {#if mode === "library"}
+              <VisibilitySection {visibility} {onVisibilityChange} />
+            {/if}
+
+            <!-- Library: Notes & Tags editing -->
+            {#if mode === "library"}
+              <MetadataSection
+                {notes}
+                {tags}
+                {onNotesChange}
+                {onTagsChange}
+              />
+            {/if}
+
+            <!-- Action buttons (context-aware) -->
+            <ActionButtons
+              {mode}
+              {isOwned}
+              {isFavorite}
+              {onFavoriteToggle}
+              {onFork}
+              {onStar}
+              onEdit={() => {
+                // Close drawer and navigate to edit mode
+                handleClose();
+              }}
+              {onDelete}
+            />
+          </div>
+        {/if}
       {:else}
         <div class="empty-state">
           <p>No sequence to share</p>
@@ -437,6 +497,27 @@
     /* Container context for responsive children */
     container-type: size;
     container-name: share-hub-content;
+  }
+
+  /* Viewer section - takes majority of space but allows sections below */
+  .viewer-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Context sections - scrollable area for Library/Discover features */
+  .context-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow-y: auto;
+    flex-shrink: 0;
+    max-height: 50%; /* Limit height so viewer still has room */
   }
 
   /* Empty state fallback */
