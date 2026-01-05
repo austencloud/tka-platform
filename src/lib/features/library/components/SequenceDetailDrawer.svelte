@@ -13,11 +13,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import PropAwareThumbnail from "../../discover/gallery/display/components/PropAwareThumbnail.svelte";
+  import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import TagAutocompleteInput from "./tags/TagAutocompleteInput.svelte";
   import VisibilityToggle from "./VisibilityToggle.svelte";
   import { libraryState } from "../state/library-state.svelte";
-  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
@@ -44,11 +43,6 @@
   const sequence = $derived(
     sequenceId ? libraryState.getSequenceById(sequenceId) : undefined
   );
-
-  // Prop type from settings
-  const bluePropType = $derived(settingsService.settings.bluePropType);
-  const redPropType = $derived(settingsService.settings.redPropType);
-  const catDogModeEnabled = $derived(settingsService.settings.catDogMode);
 
   // Format dates nicely
   function formatDate(date: Date | undefined): string {
@@ -179,83 +173,104 @@
 >
   {#if sequence}
     <div class="drawer-content">
-      <!-- Header -->
+      <!-- Header with quick actions -->
       <header class="drawer-header">
         <h2 class="sequence-title">{sequence.word || sequence.name}</h2>
-        <button
-          class="close-btn"
-          onclick={handleClose}
-          aria-label="Close drawer"
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
+        <div class="header-actions">
+          <button
+            class="header-action-btn"
+            class:active={sequence.isFavorite}
+            onclick={handleToggleFavorite}
+            aria-label={sequence.isFavorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            <i class="fas fa-star" aria-hidden="true"></i>
+          </button>
+          <button
+            class="header-action-btn"
+            class:public={sequence.visibility === "public"}
+            onclick={handleToggleVisibility}
+            aria-label={sequence.visibility === "public" ? "Make private" : "Make public"}
+          >
+            <i class="fas fa-{sequence.visibility === 'public' ? 'globe' : 'lock'}" aria-hidden="true"></i>
+          </button>
+          <button
+            class="close-btn"
+            onclick={handleClose}
+            aria-label="Close drawer"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
       </header>
 
-      <!-- Thumbnail -->
-      <div class="thumbnail-section">
-        <PropAwareThumbnail
+      <!-- Media Viewer - Fixed height section -->
+      <div class="media-section">
+        <SequenceViewer
           {sequence}
-          {bluePropType}
-          {redPropType}
-          {catDogModeEnabled}
-          lightMode={false}
+          initialMediaType="image"
+          controlsLevel="minimal"
         />
       </div>
 
-      <!-- Quick Actions -->
-      <div class="quick-actions">
-        <button
-          class="action-chip"
-          class:active={sequence.isFavorite}
-          onclick={handleToggleFavorite}
-          aria-label={sequence.isFavorite
-            ? "Remove from favorites"
-            : "Add to favorites"}
-        >
-          <i class="fas fa-star" aria-hidden="true"></i>
-          <span>{sequence.isFavorite ? "Favorited" : "Favorite"}</span>
-        </button>
-
-        <button
-          class="action-chip"
-          class:public={sequence.visibility === "public"}
-          onclick={handleToggleVisibility}
-          aria-label={sequence.visibility === "public"
-            ? "Make private"
-            : "Make public"}
-        >
-          <i
-            class="fas fa-{sequence.visibility === 'public' ? 'globe' : 'lock'}"
-            aria-hidden="true"
-          ></i>
-          <span>{sequence.visibility === "public" ? "Public" : "Private"}</span>
-        </button>
-      </div>
-
-      <!-- Stats -->
-      <div class="stats-section">
-        <div class="stat-row">
-          <span class="stat-label">
-            <i class="fas fa-calendar-plus" aria-hidden="true"></i>
-            Created
-          </span>
-          <span class="stat-value">{formatDate(sequence.createdAt)}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">
-            <i class="fas fa-clock" aria-hidden="true"></i>
-            Updated
-          </span>
-          <span class="stat-value">{formatDate(sequence.updatedAt)}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">
+      <!-- Scrollable details section -->
+      <div class="details-section">
+        <!-- Compact stats row -->
+        <div class="stats-row">
+          <span class="stat-chip">
             <i class="fas fa-layer-group" aria-hidden="true"></i>
-            Beats
+            {sequence.beats?.length || 0} beats
           </span>
-          <span class="stat-value">{sequence.beats?.length || 0}</span>
+          <span class="stat-chip">
+            <i class="fas fa-calendar" aria-hidden="true"></i>
+            {formatDate(sequence.createdAt)}
+          </span>
         </div>
-      </div>
+
+      <!-- Analytics Section (unique to Library) -->
+      {#if sequence.visibility === "public" && (sequence.viewCount > 0 || sequence.forkCount > 0 || sequence.starCount > 0)}
+        <div class="analytics-section">
+          <h3 class="section-title">
+            <i class="fas fa-chart-line" aria-hidden="true"></i>
+            Analytics
+          </h3>
+          <div class="analytics-grid">
+            <div class="analytics-card views">
+              <div class="analytics-value">{sequence.viewCount || 0}</div>
+              <div class="analytics-label">
+                <i class="fas fa-eye" aria-hidden="true"></i>
+                Views
+              </div>
+            </div>
+            <div class="analytics-card forks">
+              <div class="analytics-value">{sequence.forkCount || 0}</div>
+              <div class="analytics-label">
+                <i class="fas fa-code-branch" aria-hidden="true"></i>
+                Forks
+              </div>
+            </div>
+            <div class="analytics-card stars">
+              <div class="analytics-value">{sequence.starCount || 0}</div>
+              <div class="analytics-label">
+                <i class="fas fa-star" aria-hidden="true"></i>
+                Stars
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else if sequence.visibility === "private"}
+        <div class="publish-cta">
+          <div class="cta-content">
+            <i class="fas fa-rocket" aria-hidden="true"></i>
+            <div class="cta-text">
+              <strong>Ready to share?</strong>
+              <span>Publish to the Gallery to see how your sequence performs</span>
+            </div>
+          </div>
+          <button class="cta-btn" onclick={handleToggleVisibility}>
+            Publish
+          </button>
+        </div>
+      {/if}
 
       <!-- Notes Section -->
       <div class="section">
@@ -331,6 +346,7 @@
           </button>
         </div>
       {/if}
+      </div><!-- End details-section -->
 
       <!-- Danger Zone -->
       <div class="danger-zone">
@@ -369,34 +385,75 @@
   :global(.sequence-detail-drawer) {
     --sheet-bg: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     --sheet-filter: none;
-    width: min(400px, 90vw) !important;
-    max-width: 400px !important;
+    width: min(480px, 95vw) !important;
+    max-width: 480px !important;
   }
 
   .drawer-content {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 20px;
+    gap: 16px;
+    padding: 16px;
     height: 100%;
-    overflow-y: auto;
+    overflow: hidden;
   }
 
   .drawer-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
+    flex-shrink: 0;
   }
 
   .sequence-title {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
     color: var(--theme-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm, 10px);
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .header-action-btn:hover {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
+  .header-action-btn.active {
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-warning) 40%, transparent);
+    color: var(--semantic-warning);
+  }
+
+  .header-action-btn.public {
+    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 40%, transparent);
+    color: var(--semantic-success);
   }
 
   .close-btn {
@@ -411,7 +468,6 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     transition: all 0.2s ease;
-    flex-shrink: 0;
   }
 
   .close-btn:hover {
@@ -419,85 +475,201 @@
     color: var(--theme-text);
   }
 
-  .thumbnail-section {
+  /* Media Section - Flexible height to fit content */
+  .media-section {
     border-radius: var(--radius-2026-md, 14px);
     overflow: hidden;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
+    flex-shrink: 0;
+    /* Use min/max height instead of fixed height */
+    min-height: 300px;
+    max-height: 50vh;
   }
 
-  /* Quick Actions */
-  .quick-actions {
+  /* Hide the settings chips in the compact drawer view */
+  .media-section :global(.settings-chips) {
+    display: none !important;
+  }
+
+  /* Also hide the sequence title in the viewer since we show it in header */
+  .media-section :global(.sequence-title-display) {
+    display: none !important;
+  }
+
+  /* Make the mode switch row more compact */
+  .media-section :global(.mode-switch-row) {
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+
+  .media-section :global(.mode-switch-btn) {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  /* Scrollable details section */
+  .details-section {
     display: flex;
-    gap: 12px;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
   }
 
-  .action-chip {
+  /* Compact stats row */
+  .stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stat-chip {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
+    gap: 6px;
+    padding: 6px 12px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 999px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-height: 44px;
+    font-size: var(--font-size-compact, 12px);
   }
 
-  .action-chip:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-  }
-
-  .action-chip.active {
-    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-warning) 40%, transparent);
-    color: var(--semantic-warning);
-  }
-
-  .action-chip.public {
-    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success) 40%, transparent);
-    color: var(--semantic-success);
-  }
-
-  /* Stats Section */
-  .stats-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-md, 14px);
-  }
-
-  .stat-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: var(--font-size-sm, 14px);
-  }
-
-  .stat-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--theme-text-dim);
-  }
-
-  .stat-label i {
-    width: 16px;
-    text-align: center;
+  .stat-chip i {
+    font-size: 10px;
     opacity: 0.7;
   }
 
-  .stat-value {
+  /* Analytics Section */
+  .analytics-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .analytics-section .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .analytics-section .section-title i {
+    color: var(--theme-accent);
+  }
+
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .analytics-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 12px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-md, 14px);
+    text-align: center;
+  }
+
+  .analytics-value {
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--theme-text);
-    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .analytics-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+  }
+
+  .analytics-label i {
+    font-size: 10px;
+  }
+
+  .analytics-card.views .analytics-label i {
+    color: rgba(96, 165, 250, 0.95);
+  }
+
+  .analytics-card.forks .analytics-label i {
+    color: var(--semantic-success);
+  }
+
+  .analytics-card.stars .analytics-label i {
+    color: rgba(250, 204, 21, 0.95);
+  }
+
+  /* Publish CTA */
+  .publish-cta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-success) 10%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-info) 10%, transparent) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border-radius: var(--radius-2026-md, 14px);
+  }
+
+  .cta-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cta-content > i {
+    font-size: 1.25rem;
+    color: var(--semantic-success);
+    flex-shrink: 0;
+  }
+
+  .cta-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .cta-text strong {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text);
+  }
+
+  .cta-text span {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
+  }
+
+  .cta-btn {
+    padding: 10px 20px;
+    background: var(--semantic-success);
+    border: none;
+    border-radius: var(--radius-2026-sm, 10px);
+    color: white;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-height: var(--min-touch-target);
+  }
+
+  .cta-btn:hover {
+    filter: brightness(1.1);
   }
 
   /* Section */

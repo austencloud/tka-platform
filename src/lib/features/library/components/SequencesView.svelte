@@ -18,6 +18,21 @@
   import SequenceDetailDrawer from "./SequenceDetailDrawer.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import TagFilterChips from "./tags/TagFilterChips.svelte";
+  import LibraryHeader from "./LibraryHeader.svelte";
+  import SequenceAnalyticsBadge from "./SequenceAnalyticsBadge.svelte";
+  import BulkActionBar from "./BulkActionBar.svelte";
+  import type { LibrarySequence } from "../domain/models/LibrarySequence";
+
+  // Visibility toggle handler
+  async function handleVisibilityToggle(
+    event: MouseEvent,
+    sequence: LibrarySequence
+  ) {
+    event.stopPropagation();
+    const newVisibility =
+      sequence.visibility === "public" ? "private" : "public";
+    await libraryState.setVisibility(sequence.id, newVisibility);
+  }
 
   // Local UI state
   let showOnlyFavorites = $state(false);
@@ -25,6 +40,12 @@
   let showSortMenu = $state(false);
   let showDetailDrawer = $state(false);
   let selectedSequenceId = $state<string | null>(null);
+
+  // Search debounce timer
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Sort menu keyboard navigation
+  let focusedSortIndex = $state(-1);
 
   // Derived from library state
   const isLoading = $derived(libraryState.isLoading);
@@ -48,29 +69,92 @@
     libraryState.sequences.filter((s) => s.isFavorite).length
   );
 
-  // Sort options
+  // Sort options - includes analytics sorts unique to Library
   const sortOptions = [
     { field: "updatedAt", label: "Recently Updated" },
     { field: "createdAt", label: "Date Created" },
     { field: "name", label: "Name" },
     { field: "word", label: "Word" },
+    { field: "viewCount", label: "Most Viewed", icon: "fa-eye" },
+    { field: "forkCount", label: "Most Forked", icon: "fa-code-branch" },
+    { field: "starCount", label: "Most Starred", icon: "fa-star" },
   ] as const;
 
   function handleSearchInput(event: Event) {
     const target = event.target as HTMLInputElement;
     searchQuery = target.value;
-    libraryState.setSearchQuery(searchQuery);
+
+    // Debounce search to avoid filtering on every keystroke
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      libraryState.setSearchQuery(searchQuery);
+    }, 300);
   }
 
   function handleSortChange(
-    field: "updatedAt" | "createdAt" | "name" | "word"
+    field:
+      | "updatedAt"
+      | "createdAt"
+      | "name"
+      | "word"
+      | "viewCount"
+      | "forkCount"
+      | "starCount"
   ) {
     if (libraryState.filters.sortBy === field) {
       libraryState.toggleSortDirection();
     } else {
+      // Analytics sorts default to descending (highest first)
+      if (
+        field === "viewCount" ||
+        field === "forkCount" ||
+        field === "starCount"
+      ) {
+        libraryState.setSortDirection("desc");
+      }
       libraryState.setSortBy(field);
     }
     showSortMenu = false;
+    focusedSortIndex = -1;
+  }
+
+  function handleSortMenuKeydown(event: KeyboardEvent) {
+    if (!showSortMenu) return;
+
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        focusedSortIndex = Math.min(focusedSortIndex + 1, sortOptions.length - 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        focusedSortIndex = Math.max(focusedSortIndex - 1, 0);
+        break;
+      case "Enter":
+        event.preventDefault();
+        if (focusedSortIndex >= 0) {
+          handleSortChange(sortOptions[focusedSortIndex].field);
+        }
+        break;
+      case "Escape":
+        event.preventDefault();
+        showSortMenu = false;
+        focusedSortIndex = -1;
+        break;
+    }
+  }
+
+  function openSortMenu() {
+    showSortMenu = !showSortMenu;
+    if (showSortMenu) {
+      // Find currently selected option to focus
+      const currentIndex = sortOptions.findIndex(
+        (opt) => opt.field === libraryState.filters.sortBy
+      );
+      focusedSortIndex = currentIndex >= 0 ? currentIndex : 0;
+    } else {
+      focusedSortIndex = -1;
+    }
   }
 
   // Selection handlers
@@ -136,6 +220,7 @@
 
   onDestroy(() => {
     libraryState.dispose();
+    if (debounceTimer) clearTimeout(debounceTimer);
   });
 
   // Re-initialize only when auth state CHANGES (not on every render)
@@ -158,7 +243,16 @@
 </script>
 
 <div class="sequences-view">
-  <!-- Header with Search & Actions -->
+  <!-- Library Identity Header -->
+  {#if isAuthenticated && !isLoading}
+    <LibraryHeader
+      sequences={libraryState.sequences}
+      onOrganize={() => (isSelectMode ? exitSelectMode() : enterSelectMode())}
+      isOrganizing={isSelectMode}
+    />
+  {/if}
+
+  <!-- Search & Actions Bar -->
   <div class="header-bar">
     <!-- Search -->
     <div class="search-container">
@@ -187,23 +281,32 @@
     <!-- Actions -->
     <div class="header-actions">
       <!-- Sort button -->
-      <div class="sort-dropdown">
+      <div class="sort-dropdown" onkeydown={handleSortMenuKeydown}>
         <button
           class="action-btn"
           aria-label="Sort sequences"
-          onclick={() => (showSortMenu = !showSortMenu)}
+          aria-haspopup="listbox"
+          aria-expanded={showSortMenu}
+          onclick={openSortMenu}
           title="Sort sequences"
         >
           <i class="fas fa-sort-amount-down" aria-hidden="true"></i>
         </button>
         {#if showSortMenu}
-          <div class="sort-menu">
-            {#each sortOptions as option}
+          <div class="sort-menu" role="listbox" aria-label="Sort options">
+            {#each sortOptions as option, index}
               <button
                 class="sort-option"
                 class:active={libraryState.filters.sortBy === option.field}
+                class:focused={focusedSortIndex === index}
+                class:analytics-sort={option.icon}
+                role="option"
+                aria-selected={libraryState.filters.sortBy === option.field}
                 onclick={() => handleSortChange(option.field)}
               >
+                {#if option.icon}
+                  <i class="fas {option.icon} sort-icon" aria-hidden="true"></i>
+                {/if}
                 <span>{option.label}</span>
                 {#if libraryState.filters.sortBy === option.field}
                   <i
@@ -268,50 +371,16 @@
   <!-- Tag Filter Chips -->
   <TagFilterChips />
 
-  <!-- Selection Bar (when in select mode) -->
+  <!-- Selection indicator in header area (minimal) -->
   {#if isSelectMode}
-    <div class="selection-bar">
-      <div class="selection-info">
-        <span>{selectedCount} selected</span>
-        <button class="text-btn" onclick={handleSelectAll}>Select All</button>
-        <button class="text-btn" onclick={() => libraryState.clearSelection()}>
-          Clear
-        </button>
-      </div>
-      <div class="selection-actions">
-        <button
-          class="batch-btn"
-          aria-label="Make selected sequences public"
-          onclick={handlePublishSelected}
-          disabled={selectedCount === 0}
-          title="Make public"
-        >
-          <i class="fas fa-globe" aria-hidden="true"></i>
-        </button>
-        <button
-          class="batch-btn"
-          aria-label="Make selected sequences private"
-          onclick={handleUnpublishSelected}
-          disabled={selectedCount === 0}
-          title="Make private"
-        >
-          <i class="fas fa-lock" aria-hidden="true"></i>
-        </button>
-        <button
-          class="batch-btn danger"
-          aria-label="Delete selected sequences"
-          onclick={handleDeleteSelected}
-          disabled={selectedCount === 0}
-          title="Delete"
-        >
-          <i class="fas fa-trash" aria-hidden="true"></i>
-        </button>
-      </div>
+    <div class="selection-hint">
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      <span>Tap sequences to select them</span>
     </div>
   {/if}
 
   <!-- Content Area -->
-  <div class="content-area">
+  <div class="content-area" class:selecting={isSelectMode}>
     {#if !isAuthenticated}
       <div class="auth-required">
         <i class="fas fa-lock" aria-hidden="true"></i>
@@ -366,11 +435,47 @@
     {:else}
       <div class="sequences-grid">
         {#each displayedSequences() as sequence (sequence.id)}
-          <SequenceCard
-            {sequence}
-            onPrimaryAction={handleCardClick}
-            selected={libraryState.isSelected(sequence.id)}
-          />
+          {@const libSeq = sequence as LibrarySequence}
+          <div class="library-card-wrapper">
+            <SequenceCard
+              {sequence}
+              onPrimaryAction={handleCardClick}
+              selected={libraryState.isSelected(sequence.id)}
+            />
+            <!-- Analytics overlay - unique to Library -->
+            <div class="analytics-overlay">
+              <SequenceAnalyticsBadge
+                viewCount={libSeq.viewCount}
+                forkCount={libSeq.forkCount}
+                starCount={libSeq.starCount}
+              />
+            </div>
+            <!-- Visibility toggle button -->
+            {#if !isSelectMode}
+              <button
+                class="visibility-toggle"
+                class:public={libSeq.visibility === "public"}
+                class:private={libSeq.visibility === "private"}
+                class:unlisted={libSeq.visibility === "unlisted"}
+                onclick={(e) => handleVisibilityToggle(e, libSeq)}
+                title={libSeq.visibility === "public"
+                  ? "Public - Click to make private"
+                  : "Private - Click to publish"}
+                aria-label={libSeq.visibility === "public"
+                  ? "Make private"
+                  : "Make public"}
+              >
+                <i
+                  class="fas fa-{libSeq.visibility === 'public'
+                    ? 'globe'
+                    : libSeq.visibility === 'unlisted'
+                      ? 'link'
+                      : 'lock'}"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            {/if}
+          </div>
         {/each}
       </div>
     {/if}
@@ -382,6 +487,19 @@
     sequenceId={selectedSequenceId}
     onClose={handleCloseDetail}
   />
+
+  <!-- Bulk Action Bar (sticky at bottom when selecting) -->
+  {#if isSelectMode}
+    <BulkActionBar
+      {selectedCount}
+      onPublish={handlePublishSelected}
+      onUnpublish={handleUnpublishSelected}
+      onDelete={handleDeleteSelected}
+      onSelectAll={handleSelectAll}
+      onClearSelection={() => libraryState.clearSelection()}
+      onExit={exitSelectMode}
+    />
+  {/if}
 </div>
 
 <style>
@@ -435,7 +553,7 @@
 
   .search-input:focus {
     outline: none;
-    border-color: rgba(16, 185, 129, 0.4);
+    border-color: var(--theme-accent);
     background: var(--theme-card-bg);
   }
 
@@ -480,9 +598,9 @@
   }
 
   .action-btn.active {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.4);
-    color: rgba(16, 185, 129, 0.9);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-accent);
   }
 
   /* Sort Dropdown */
@@ -524,8 +642,33 @@
   }
 
   .sort-option.active {
-    background: rgba(16, 185, 129, 0.15);
-    color: rgba(16, 185, 129, 0.9);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    color: var(--theme-accent);
+  }
+
+  .sort-option.focused {
+    background: rgba(255, 255, 255, 0.12);
+    outline: 2px solid var(--theme-accent);
+    outline-offset: -2px;
+  }
+
+  /* Analytics sort options (unique to Library) */
+  .sort-option.analytics-sort {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .sort-option.analytics-sort:first-of-type {
+    margin-top: 4px;
+    padding-top: calc(var(--spacing-sm) + 4px);
+  }
+
+  .sort-icon {
+    width: 14px;
+    opacity: 0.7;
+  }
+
+  .sort-option.analytics-sort .sort-icon {
+    color: var(--semantic-success);
   }
 
   /* Filter Bar */
@@ -573,77 +716,19 @@
     font-size: 0.875rem;
   }
 
-  /* Selection Bar */
-  .selection-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(16, 185, 129, 0.1);
-    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
-  }
-
-  .selection-info {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    color: var(--theme-text);
-    font-size: 0.875rem;
-  }
-
-  .text-btn {
-    background: none;
-    border: none;
-    color: rgba(16, 185, 129, 0.9);
-    font-size: 0.875rem;
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .text-btn:hover {
-    text-decoration: underline;
-  }
-
-  .selection-actions {
-    display: flex;
-    gap: var(--spacing-xs);
-  }
-
-  .batch-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: var(--radius-2026-sm, 10px);
-    color: rgba(255, 255, 255, 0.8);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .batch-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .batch-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .batch-btn.danger:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.3);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: rgba(239, 68, 68, 0.9);
-  }
-
   /* Content Area */
   .content-area {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--spacing-lg);
+  }
+
+  /* Add padding for sticky BulkActionBar when selecting */
+  .content-area.selecting {
+    padding-bottom: calc(
+      var(--spacing-lg) + 100px + env(safe-area-inset-bottom, 0px)
+    );
   }
 
   /* Loading State */
@@ -660,7 +745,7 @@
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     border: 3px solid var(--theme-stroke);
-    border-top-color: rgba(16, 185, 129, 0.8);
+    border-top-color: var(--theme-accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin-bottom: var(--spacing-md);
@@ -764,8 +849,8 @@
     align-items: center;
     gap: var(--spacing-xs);
     padding: var(--spacing-sm) var(--spacing-lg);
-    background: rgba(16, 185, 129, 0.2);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
     border-radius: var(--radius-2026-sm, 10px);
     color: var(--theme-text);
     font-size: 0.875rem;
@@ -775,8 +860,8 @@
   }
 
   .retry-button:hover {
-    background: rgba(16, 185, 129, 0.3);
-    border-color: rgba(16, 185, 129, 0.5);
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
   /* Sequences Grid */
@@ -784,6 +869,102 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: var(--spacing-md);
+  }
+
+  /* Library Card Wrapper - positions analytics overlay */
+  .library-card-wrapper {
+    position: relative;
+  }
+
+  .analytics-overlay {
+    position: absolute;
+    bottom: var(--spacing-xs);
+    left: var(--spacing-xs);
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  /* Visibility Toggle Button */
+  .visibility-toggle {
+    position: absolute;
+    top: var(--spacing-xs);
+    left: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    border: 1px solid transparent;
+    border-radius: 50%;
+    z-index: 5;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .visibility-toggle i {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .visibility-toggle.public {
+    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 50%, transparent);
+  }
+
+  .visibility-toggle.public i {
+    color: var(--semantic-success);
+  }
+
+  .visibility-toggle.private i {
+    color: rgba(156, 163, 175, 0.95);
+  }
+
+  .visibility-toggle.unlisted i {
+    color: rgba(96, 165, 250, 0.95);
+  }
+
+  .visibility-toggle:hover {
+    transform: scale(1.1);
+    background: rgba(0, 0, 0, 0.9);
+  }
+
+  .visibility-toggle.public:hover {
+    background: rgba(156, 163, 175, 0.4);
+    border-color: rgba(156, 163, 175, 0.6);
+  }
+
+  .visibility-toggle.public:hover i {
+    color: rgba(156, 163, 175, 0.95);
+  }
+
+  .visibility-toggle.private:hover,
+  .visibility-toggle.unlisted:hover {
+    background: color-mix(in srgb, var(--semantic-success) 40%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
+  }
+
+  .visibility-toggle.private:hover i,
+  .visibility-toggle.unlisted:hover i {
+    color: var(--semantic-success);
+  }
+
+  /* Selection Hint */
+  .selection-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    color: var(--theme-accent);
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .selection-hint i {
+    font-size: 0.875rem;
   }
 
   /* Responsive adjustments */

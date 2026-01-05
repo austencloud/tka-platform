@@ -30,7 +30,14 @@ export type LibraryViewSection =
   | "acts"
   | "favorites"
   | "videos";
-export type LibrarySortField = "updatedAt" | "createdAt" | "name" | "word";
+export type LibrarySortField =
+  | "updatedAt"
+  | "createdAt"
+  | "name"
+  | "word"
+  | "viewCount"
+  | "forkCount"
+  | "starCount";
 export type LibrarySortDirection = "asc" | "desc";
 
 interface LibraryFilters {
@@ -307,6 +314,18 @@ class LibraryStateManager {
         case "createdAt":
           aVal = a.createdAt.getTime() ?? 0;
           bVal = b.createdAt.getTime() ?? 0;
+          break;
+        case "viewCount":
+          aVal = a.viewCount ?? 0;
+          bVal = b.viewCount ?? 0;
+          break;
+        case "forkCount":
+          aVal = a.forkCount ?? 0;
+          bVal = b.forkCount ?? 0;
+          break;
+        case "starCount":
+          aVal = a.starCount ?? 0;
+          bVal = b.starCount ?? 0;
           break;
         case "updatedAt":
         default:
@@ -718,6 +737,33 @@ class LibraryStateManager {
 
   getSequenceById(sequenceId: string): LibrarySequence | undefined {
     return this.state.sequences.find((s) => s.id === sequenceId);
+  }
+
+  /**
+   * Find sequences by word (TKA name)
+   * Used for duplicate detection before saving
+   */
+  findSequencesByWord(word: string): LibrarySequence[] {
+    if (!word) return [];
+    const normalizedWord = word.toLowerCase().trim();
+    return this.state.sequences.filter(
+      (s) => s.word?.toLowerCase().trim() === normalizedWord
+    );
+  }
+
+  /**
+   * Check if a sequence with the same word already exists
+   * Returns the existing sequences if found
+   */
+  checkForDuplicate(word: string): {
+    hasDuplicate: boolean;
+    existingSequences: LibrarySequence[];
+  } {
+    const existing = this.findSequencesByWord(word);
+    return {
+      hasDuplicate: existing.length > 0,
+      existingSequences: existing,
+    };
   }
 
   reset() {

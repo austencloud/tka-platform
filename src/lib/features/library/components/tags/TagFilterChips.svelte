@@ -140,13 +140,13 @@
     border: none;
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: var(--font-size-compact);
-    color: rgba(16, 185, 129, 0.9);
+    color: var(--theme-accent);
     cursor: pointer;
     transition: color 0.15s ease;
   }
 
   .clear-btn:hover {
-    color: rgba(16, 185, 129, 1);
+    color: var(--theme-accent-strong);
     text-decoration: underline;
   }
 

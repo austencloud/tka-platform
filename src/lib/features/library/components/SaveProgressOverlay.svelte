@@ -3,6 +3,10 @@
 
   Full-screen overlay showing save progress with step indicators,
   granular beat progress, and success animation.
+
+  Supports two modes:
+  - compact: Simple "Saving..." with spinner and progress bar
+  - detailed (default): Shows all step indicators and beat progress
 -->
 <script lang="ts">
   interface SaveStep {
@@ -14,8 +18,10 @@
     currentStep: number;
     steps: SaveStep[];
     renderProgress?: { current: number; total: number };
-    /** Dynamic label for step 1 (e.g., "Rendering beat 3 of 8") */
+    /** Dynamic label for step 1 (e.g., "Rendering frame 3 of 8") */
     step1Label?: string;
+    /** Compact mode: shows simple "Saving..." message instead of detailed steps */
+    compact?: boolean;
   }
 
   let {
@@ -23,6 +29,7 @@
     steps,
     renderProgress = { current: 0, total: 0 },
     step1Label = "Creating thumbnail",
+    compact = true, // Default to compact for simpler UX
   }: Props = $props();
 
   const isComplete = $derived(currentStep === 6);
@@ -45,8 +52,19 @@
         <h3>Saved!</h3>
         <p>Your sequence is now in your library</p>
       </div>
+    {:else if compact}
+      <!-- Compact Mode: Simple "Saving..." with progress bar -->
+      <div class="compact-progress">
+        <div class="compact-spinner">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        </div>
+        <h3>Saving to library...</h3>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" style="width: {progressPercent}%"></div>
+        </div>
+      </div>
     {:else}
-      <!-- Progress Steps -->
+      <!-- Detailed Mode: All steps visible -->
       <div class="progress-header">
         <div class="progress-icon-wrapper">
           <div class="progress-icon-ring"></div>
@@ -188,6 +206,37 @@
   }
 
   .progress-header h3 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  /* Compact Mode */
+  .compact-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .compact-spinner {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.15);
+    border-radius: 50%;
+  }
+
+  .compact-spinner i {
+    font-size: 28px;
+    color: var(--theme-accent-strong, #8b5cf6);
+  }
+
+  .compact-progress h3 {
     margin: 0;
     font-size: var(--font-size-lg);
     font-weight: 600;

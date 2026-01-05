@@ -24,6 +24,8 @@
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import CollaborativeVideoCard from "$lib/shared/video-collaboration/components/CollaborativeVideoCard.svelte";
+  import ActivityTimeline from "./ActivityTimeline.svelte";
+  import SequenceAnalyticsBadge from "./SequenceAnalyticsBadge.svelte";
 
   interface Props {
     onNavigate?: (section: LibraryViewSection) => void;
@@ -58,6 +60,26 @@
   const totalFavorites = $derived(
     libraryState.sequences.filter((s) => s.isFavorite).length
   );
+  const publicCount = $derived(
+    libraryState.sequences.filter((s) => s.visibility === "public").length
+  );
+
+  // Aggregate analytics
+  const totalViews = $derived(
+    libraryState.sequences.reduce((sum, s) => sum + (s.viewCount || 0), 0)
+  );
+  const totalForks = $derived(
+    libraryState.sequences.reduce((sum, s) => sum + (s.forkCount || 0), 0)
+  );
+
+  // Created this week
+  const createdThisWeek = $derived(() => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return libraryState.sequences.filter(
+      (s) => s.createdAt && s.createdAt.getTime() >= weekAgo.getTime()
+    );
+  });
 
   // Video state
   let videoService = $state<ICollaborativeVideoManager | null>(null);
@@ -188,22 +210,68 @@
           <span class="stat-value">{totalSequences}</span>
           <span class="stat-label">Sequences</span>
         </div>
+        <div class="stat-item highlight">
+          <span class="stat-value">{publicCount}</span>
+          <span class="stat-label">Published</span>
+        </div>
         <div class="stat-item">
           <span class="stat-value">{totalFavorites}</span>
           <span class="stat-label">Favorites</span>
         </div>
-        <div class="stat-item">
-          <span class="stat-value">{totalVideos}</span>
-          <span class="stat-label">Videos</span>
-        </div>
+        {#if totalViews > 0}
+          <div class="stat-item views">
+            <span class="stat-value">{totalViews}</span>
+            <span class="stat-label">Views</span>
+          </div>
+        {/if}
+        {#if totalForks > 0}
+          <div class="stat-item forks">
+            <span class="stat-value">{totalForks}</span>
+            <span class="stat-label">Forks</span>
+          </div>
+        {/if}
       </div>
+
+      <!-- Created This Week Section -->
+      {#if createdThisWeek().length > 0}
+        <section class="dashboard-section highlight-section">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fas fa-sparkles" aria-hidden="true"></i>
+              <h2>Created This Week</h2>
+              <span class="count-badge">{createdThisWeek().length}</span>
+            </div>
+          </div>
+
+          <div class="sequences-grid compact">
+            {#each createdThisWeek().slice(0, 4) as sequence (sequence.id)}
+              <div class="sequence-card-wrapper">
+                <SequenceCard
+                  {sequence}
+                  coverUrl={getCoverUrl(sequence)}
+                  onPrimaryAction={handleSequenceClick}
+                />
+                {#if sequence.visibility === "public" && (sequence.viewCount > 0 || sequence.forkCount > 0 || sequence.starCount > 0)}
+                  <div class="card-analytics">
+                    <SequenceAnalyticsBadge
+                      viewCount={sequence.viewCount}
+                      forkCount={sequence.forkCount}
+                      starCount={sequence.starCount}
+                    />
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </section>
+      {/if}
 
       <!-- Recent Sequences Section -->
       <section class="dashboard-section">
         <div class="section-header">
           <div class="section-title">
             <i class="fas fa-clock" aria-hidden="true"></i>
-            <h2>Recent Sequences</h2>
+            <h2>Recently Updated</h2>
           </div>
           {#if totalSequences > 0}
             <button class="see-all-btn" onclick={handleSeeAllSequences}>
@@ -215,11 +283,22 @@
         {#if recentSequences().length > 0}
           <div class="sequences-grid">
             {#each recentSequences() as sequence (sequence.id)}
-              <SequenceCard
-                {sequence}
-                coverUrl={getCoverUrl(sequence)}
-                onPrimaryAction={handleSequenceClick}
-              />
+              <div class="sequence-card-wrapper">
+                <SequenceCard
+                  {sequence}
+                  coverUrl={getCoverUrl(sequence)}
+                  onPrimaryAction={handleSequenceClick}
+                />
+                {#if sequence.visibility === "public" && (sequence.viewCount > 0 || sequence.forkCount > 0 || sequence.starCount > 0)}
+                  <div class="card-analytics">
+                    <SequenceAnalyticsBadge
+                      viewCount={sequence.viewCount}
+                      forkCount={sequence.forkCount}
+                      starCount={sequence.starCount}
+                    />
+                  </div>
+                {/if}
+              </div>
             {/each}
           </div>
         {:else}
@@ -298,6 +377,22 @@
         </section>
       {/if}
 
+      <!-- Activity Timeline Section -->
+      {#if totalSequences > 0}
+        <section class="dashboard-section">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="fas fa-history" aria-hidden="true"></i>
+              <h2>Recent Activity</h2>
+            </div>
+          </div>
+
+          <div class="activity-container">
+            <ActivityTimeline sequences={libraryState.sequences} maxItems={8} />
+          </div>
+        </section>
+      {/if}
+
       <!-- Collections & Acts will be added in future updates -->
     </div>
   {/if}
@@ -328,7 +423,7 @@
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     border: 3px solid var(--theme-stroke);
-    border-top-color: rgba(16, 185, 129, 0.8);
+    border-top-color: var(--theme-accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin-bottom: var(--spacing-md, 16px);
@@ -395,8 +490,8 @@
     align-items: center;
     gap: var(--spacing-xs, 4px);
     padding: var(--spacing-sm, 8px) var(--spacing-lg, 24px);
-    background: rgba(16, 185, 129, 0.2);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
     border-radius: var(--radius-2026-sm, 10px);
     color: var(--theme-text);
     font-size: 0.875rem;
@@ -407,8 +502,8 @@
   }
 
   .retry-btn:hover {
-    background: rgba(16, 185, 129, 0.3);
-    border-color: rgba(16, 185, 129, 0.5);
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
   /* Dashboard Content */
@@ -445,7 +540,7 @@
   .stat-value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: rgba(16, 185, 129, 0.9);
+    color: var(--theme-accent);
   }
 
   .stat-label {
@@ -455,11 +550,69 @@
     letter-spacing: 0.05em;
   }
 
+  .stat-item.highlight .stat-value {
+    color: var(--semantic-success);
+  }
+
+  .stat-item.views .stat-value {
+    color: var(--semantic-info);
+  }
+
+  .stat-item.forks .stat-value {
+    color: var(--semantic-success);
+  }
+
   /* Dashboard Section */
   .dashboard-section {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md, 16px);
+  }
+
+  .dashboard-section.highlight-section {
+    padding: var(--spacing-md);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent) 8%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent) 2%, transparent) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-radius: var(--radius-2026-md, 14px);
+  }
+
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-radius: 999px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-accent);
+  }
+
+  /* Sequence Card Wrapper for Analytics Overlay */
+  .sequence-card-wrapper {
+    position: relative;
+  }
+
+  .card-analytics {
+    position: absolute;
+    bottom: var(--spacing-xs);
+    left: var(--spacing-xs);
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  /* Activity Container */
+  .activity-container {
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-md, 14px);
+    padding: var(--spacing-md);
   }
 
   .section-header {
@@ -477,7 +630,7 @@
 
   .section-title i {
     font-size: 1.25rem;
-    color: rgba(16, 185, 129, 0.8);
+    color: var(--theme-accent);
   }
 
   .section-title h2 {
@@ -494,7 +647,7 @@
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
     background: transparent;
     border: none;
-    color: rgba(16, 185, 129, 0.9);
+    color: var(--theme-accent);
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
@@ -502,7 +655,7 @@
   }
 
   .see-all-btn:hover {
-    color: rgba(16, 185, 129, 1);
+    color: var(--theme-accent-strong);
     transform: translateX(2px);
   }
 

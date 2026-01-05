@@ -115,9 +115,10 @@ export class LibrarySaveService implements ILibrarySaveService {
       6: "Complete",
     };
 
-    // Dynamic label for step 1 with beat progress
+    // Dynamic label for step 1 with render progress
+    // Uses "frame" instead of "beat" since total includes start position
     if (step === 1 && renderProgress && renderProgress.total > 0) {
-      return `Rendering beat ${renderProgress.current} of ${renderProgress.total}`;
+      return `Rendering frame ${renderProgress.current} of ${renderProgress.total}`;
     }
 
     return labels[step] || "Processing...";
