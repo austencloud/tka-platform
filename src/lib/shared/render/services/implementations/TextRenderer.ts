@@ -150,14 +150,16 @@ export class TextRenderer implements ITextRenderer {
     showDifficultyBadge: boolean = true,
     darkMode: boolean = false
   ): void {
-    if (!word || word.trim() === "") {
-      console.log("🚫 TextRenderer: No word to render in header");
-      return;
-    }
-
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       console.log("🚫 TextRenderer: No canvas context");
+      return;
+    }
+
+    // Allow rendering even with empty word if we need to show the difficulty badge
+    const hasWord = word && word.trim() !== "";
+    if (!hasWord && !showDifficultyBadge) {
+      console.log("🚫 TextRenderer: No word and no difficulty badge to render");
       return;
     }
 
@@ -193,8 +195,10 @@ export class TextRenderer implements ITextRenderer {
     const centerX = canvas.width / 2;
     const centerY = headerHeight / 2;
 
-    // Render the word text
-    ctx.fillText(word, centerX, centerY);
+    // Render the word text (only if we have a word)
+    if (hasWord) {
+      ctx.fillText(word, centerX, centerY);
+    }
 
     // Render level badge on the left side (only if showDifficultyBadge is true)
     if (showDifficultyBadge) {

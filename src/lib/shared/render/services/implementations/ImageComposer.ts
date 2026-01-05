@@ -16,7 +16,7 @@ import {
   renderPictographToSVG,
   type PictographVisibilityOptions,
 } from "../../utils/pictograph-to-svg";
-import { simplifyRepeatedWord } from "../../utils/word-simplifier";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 
@@ -32,7 +32,7 @@ import type { ITextRenderer } from "../contracts/ITextRenderer";
 
 // HMR-aware cache: Store cache in module scope so HMR can invalidate it
 // Without this, cached images from before code changes would persist
-let globalImageCache = new Map<string, HTMLImageElement>();
+const globalImageCache = new Map<string, HTMLImageElement>();
 
 // HMR: Clear cache when this module reloads (code changes in GridSvg, etc.)
 if (import.meta.hot) {
@@ -80,8 +80,7 @@ export class ImageComposer implements IImageComposer {
   ): Promise<PictographVisibilityOptions> {
     // If all required overrides are provided, use them directly (no async needed)
     if (
-      overrides &&
-      overrides.showTKA !== undefined &&
+      overrides?.showTKA !== undefined &&
       overrides.showVTG !== undefined &&
       overrides.showElemental !== undefined &&
       overrides.showPositions !== undefined &&
@@ -177,7 +176,7 @@ export class ImageComposer implements IImageComposer {
         .join("");
 
     // Simplify repeated patterns (e.g., "ABCABCABC" → "ABC")
-    // This matches the behavior of the WordLabel component in the workspace
+    // Does NOT truncate - allows full word length when needed for uniqueness
     const derivedWord = simplifyRepeatedWord(rawWord);
 
     // Calculate header height if word OR difficulty should be included
@@ -320,8 +319,9 @@ export class ImageComposer implements IImageComposer {
     const showHeader = (options.addWord && (derivedWord || options.customName)) || options.addDifficultyLevel;
     if (showHeader && headerHeight > 0) {
       const difficultyLevel = this.getDifficultyLevel(sequence);
-      // Use custom name if provided, otherwise use derived word
-      const displayName = options.customName || derivedWord;
+      // Only show word if addWord is enabled
+      // Use custom name if provided and addWord is enabled, otherwise use derived word if addWord is enabled
+      const displayName = options.addWord ? (options.customName || derivedWord) : "";
       this.TextRenderer.renderWordHeader(
         canvas,
         displayName,
