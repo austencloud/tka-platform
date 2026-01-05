@@ -420,11 +420,11 @@
 	.horizontal-sidebar {
 		display: flex;
 		flex-direction: column;
-		gap: 20px;
-		width: 280px;
-		min-width: 280px;
+		gap: 12px;
+		width: 240px;
+		min-width: 240px;
 		flex-shrink: 0;
-		padding: 16px;
+		padding: 12px;
 		box-sizing: border-box;
 		background: var(--theme-card-bg);
 		border: 1.5px solid var(--theme-stroke);
@@ -436,11 +436,11 @@
 	.sidebar-section {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 8px;
 	}
 
 	.sidebar-section + .sidebar-section {
-		padding-top: 16px;
+		padding-top: 10px;
 		border-top: 1px solid var(--theme-stroke);
 	}
 
@@ -488,43 +488,52 @@
 		height: 28px;
 	}
 
-	/* Override PlaybackPane styles in sidebar - vertical stacking */
+	/* Override PlaybackPane styles in sidebar - stack Flow/Step vertically */
 	.horizontal-sidebar :global(.style-toggle) {
 		flex-direction: column;
 		gap: 8px;
 	}
 
 	.horizontal-sidebar :global(.style-btn) {
-		min-height: 48px;
-	}
-
-	/* BPM presets vertical stack */
-	.horizontal-sidebar :global(.bpm-presets) {
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.horizontal-sidebar :global(.preset-chip) {
-		flex: none;
-		width: 100%;
 		min-height: 44px;
 	}
 
-	/* BPM adjuster vertical */
+	/* BPM adjuster - KEEP HORIZONTAL (don't override, just tighten) */
 	.horizontal-sidebar :global(.bpm-adjuster) {
-		flex-direction: column;
-		gap: 10px;
+		gap: 8px;
 	}
 
 	.horizontal-sidebar :global(.bpm-display) {
-		order: 0;
-		min-height: 56px;
+		min-height: 44px;
+		min-width: 70px;
+		padding: 0 12px;
 	}
 
 	.horizontal-sidebar :global(.bpm-btn) {
-		width: 100%;
-		height: 44px;
-		border-radius: 10px;
+		width: 36px;
+		height: 36px;
+	}
+
+	/* BPM presets - compact 3-column grid */
+	.horizontal-sidebar :global(.bpm-presets) {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 6px;
+	}
+
+	.horizontal-sidebar :global(.preset-chip) {
+		min-height: 36px;
+		padding: 6px 8px;
+		font-size: 0.8rem;
+	}
+
+	/* Make sidebar sections more compact */
+	.horizontal-sidebar :global(.bpm-control) {
+		gap: 8px;
+	}
+
+	.horizontal-sidebar :global(.playback-pane) {
+		gap: 10px;
 	}
 
 	.canvas-wrap {
