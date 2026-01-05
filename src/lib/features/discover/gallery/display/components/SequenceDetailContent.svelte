@@ -17,7 +17,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
   import { galleryPanelManager } from "../../../shared/state/gallery-panel-state.svelte";
-  import SequenceMediaViewerUnified from "$lib/shared/sequence-viewer/components/SequenceMediaViewerUnified.svelte";
+  import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import SequenceVideosSection from "$lib/shared/video-collaboration/components/SequenceVideosSection.svelte";
   import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
@@ -143,7 +143,7 @@ Used by both desktop side panel and mobile slide-up overlay.
       </button>
     {/if}
 
-    <SequenceMediaViewerUnified
+    <SequenceViewer
       {sequence}
       initialMediaType="image"
       controlsLevel="standard"

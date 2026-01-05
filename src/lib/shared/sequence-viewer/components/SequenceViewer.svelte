@@ -1,5 +1,5 @@
 <!--
-  SequenceMediaViewerUnified.svelte
+  SequenceViewer.svelte
 
   Unified media viewer with CTA button to switch between Image and Animation modes.
   Uses sessionStorage for persistence (survives HMR and page refresh).
@@ -78,9 +78,8 @@
 
 	// Animation visibility settings
 	const animationSettings = getAnimationVisibilityManager();
-	// Note: Dark mode is LOCAL to this preview - doesn't affect global app state
-	// This is intentional so the preview shows what the export will look like
-	let animDarkMode = $state(false); // Local preview dark mode state
+	// Note: Dark mode uses imageSettings for persistence - shared between image & animation tabs
+	// This is separate from the global app dark mode
 	let animGridVisible = $state(animationSettings.getGridMode() !== "none");
 	let animBeatNumbers = $state(animationSettings.getVisibility("beatNumbers"));
 	let animTkaGlyph = $state(animationSettings.getVisibility("tkaGlyph"));
@@ -88,7 +87,6 @@
 	let animTrails = $state(animationSettings.getTrailStyle() !== "off");
 
 	function handleAnimationSettingsChange() {
-		// Note: We don't update animDarkMode here - it's local to this preview
 		animGridVisible = animationSettings.getGridMode() !== "none";
 		animBeatNumbers = animationSettings.getVisibility("beatNumbers");
 		animTkaGlyph = animationSettings.getVisibility("tkaGlyph");
@@ -99,10 +97,6 @@
 	animationSettings.registerObserver(handleAnimationSettingsChange);
 
 	// Animation toggle handlers
-	// Dark mode toggles LOCAL preview state only - doesn't affect global app
-	function toggleAnimDarkMode() {
-		animDarkMode = !animDarkMode;
-	}
 	function toggleAnimGrid() {
 		// Toggle between diamond and none
 		const current = animationSettings.getGridMode();
@@ -167,6 +161,11 @@
 		imageSettings.toggle("darkMode");
 	}
 
+	// Container width for responsive layout detection
+	let containerWidth = $state(0);
+	// Use horizontal layout when container is wide enough (600px+)
+	const useHorizontalLayout = $derived(containerWidth >= 600);
+
 	// Derived: available media types
 	const hasImages = $derived(!!sequence);
 	const hasAnimation = $derived(!!sequence);
@@ -196,7 +195,7 @@
 
 </script>
 
-<div class="media-viewer">
+<div class="media-viewer" bind:clientWidth={containerWidth}>
 	<!-- Mode Switch Button (at top, where tabs used to be) -->
 	<div class="mode-switch-row">
 		{#if activeMediaType === "image" && hasAnimation}
@@ -219,14 +218,12 @@
 			</button>
 		{/if}
 
-		<!-- Dark Mode Lamp Button -->
+		<!-- Dark Mode Lamp Button - unified for both image & animation tabs -->
 		<button
 			class="lamp-btn"
-			class:lit={activeMediaType === "image" ? !darkMode : !animDarkMode}
-			onclick={activeMediaType === "image" ? toggleDarkMode : toggleAnimDarkMode}
-			aria-label={activeMediaType === "image"
-				? darkMode ? "Switch to light mode" : "Switch to dark mode"
-				: animDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+			class:lit={!darkMode}
+			onclick={toggleDarkMode}
+			aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
 			title="Toggle dark/light mode"
 		>
 			<i class="fas fa-lightbulb" aria-hidden="true"></i>
@@ -310,7 +307,8 @@
 						{controlsLevel}
 						externalControl={useExternalControl}
 						{onCanvasReady}
-						previewDarkMode={animDarkMode}
+						previewDarkMode={darkMode}
+						layout={useHorizontalLayout ? "horizontal" : "vertical"}
 					/>
 				</div>
 
@@ -715,6 +713,7 @@
 			flex-shrink: 0;
 		}
 	}
+
 
 	@media (prefers-reduced-motion: reduce) {
 		.mode-switch-btn,

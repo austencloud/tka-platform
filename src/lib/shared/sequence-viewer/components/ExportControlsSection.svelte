@@ -17,7 +17,6 @@
   import AnimationSettings from "$lib/shared/share-hub/components/settings/AnimationSettings.svelte";
   import StaticSettingsPanel from "$lib/shared/share-hub/components/settings/StaticSettings.svelte";
   import PerformanceSettingsPanel from "$lib/shared/share-hub/components/settings/PerformanceSettings.svelte";
-  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   let {
     selectedFormat = "animation" as MediaFormat,
@@ -25,20 +24,16 @@
     exportProgress = null as ExportProgress | null,
     isSequenceSaved = true,
     isMobile = false,
-    sequence = null as any,
     onExport,
     onSettingsChange,
-    onCustomNameChange,
   }: {
     selectedFormat?: MediaFormat;
     isExporting?: boolean;
     exportProgress?: ExportProgress | null;
     isSequenceSaved?: boolean;
     isMobile?: boolean;
-    sequence?: any;
     onExport?: (format: MediaFormat, settings: ExportSettings) => void;
     onSettingsChange?: (format: MediaFormat, settings: any) => void;
-    onCustomNameChange?: (value: string) => void;
   } = $props();
 
   // Local state
@@ -92,35 +87,6 @@
 </script>
 
 <div class="export-controls-section">
-  <!-- Custom Name Input - prominent, centered, matches chip row style -->
-  {#if sequence}
-    <div class="custom-name-row">
-      <label for="export-custom-name" class="custom-name-label">
-        <i class="fas fa-file-export" aria-hidden="true"></i>
-        <span>Export as:</span>
-      </label>
-      <input
-        id="export-custom-name"
-        type="text"
-        class="custom-name-input"
-        value={sequence.customName || ""}
-        oninput={(e) => {
-          onCustomNameChange?.((e.target as HTMLInputElement).value);
-        }}
-        placeholder={simplifyRepeatedWord(sequence.word ?? "") || "sequence name"}
-        maxlength="50"
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck="false"
-        data-lpignore="true"
-        data-1p-ignore="true"
-        data-form-type="other"
-        name="sequence-export-name"
-      />
-    </div>
-  {/if}
-
   <!-- Action Row: Settings + Export -->
   <div class="action-row">
     <!-- Settings Button -->
@@ -180,70 +146,6 @@
     padding: 16px;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-  }
-
-  /* Custom Name Row - matches settings-chips pattern from SequenceMediaViewerUnified */
-  .custom-name-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    transition: border-color 0.15s ease;
-  }
-
-  .custom-name-row:focus-within {
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-  }
-
-  .custom-name-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 4px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text, rgba(255, 255, 255, 0.9));
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .custom-name-label i {
-    font-size: 16px;
-    color: var(--theme-accent, rgba(155, 135, 245, 1));
-  }
-
-  .custom-name-input {
-    flex: 1;
-    min-width: 0;
-    padding: 12px 18px;
-    min-height: 48px; /* WCAG AAA touch target */
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 24px;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    transition: all 0.15s ease;
-  }
-
-  .custom-name-input::placeholder {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-weight: 400;
-  }
-
-  .custom-name-input:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .custom-name-input:focus {
-    outline: none;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
-    border-color: var(--theme-accent, #6366f1);
   }
 
   .action-row {
@@ -313,9 +215,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .settings-btn,
-    .custom-name-row,
-    .custom-name-input {
+    .settings-btn {
       transition: none;
     }
 

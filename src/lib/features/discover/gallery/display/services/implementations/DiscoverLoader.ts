@@ -202,7 +202,9 @@ export class DiscoverLoader implements IDiscoverLoader {
         this.parseGridMode(gridModeFromMeta) ??
         this.parseGridMode(rawSeq.gridMode) ??
         GridMode.BOX;
-      const dateAdded = this.parseDate(rawSeq.dateAdded) ?? new Date();
+      // Prefer fullMetadata.dateAdded (original birth date) over rawSeq.dateAdded (when added to Scribe)
+      const birthDate = fullMetadata.dateAdded as string | undefined;
+      const dateAdded = this.parseDate(birthDate) ?? this.parseDate(rawSeq.dateAdded) ?? new Date();
       const difficultyLevel = this.parseDifficulty(rawSeq.difficultyLevel);
       const calculatedLevel = this.difficultyStringToLevel(difficultyLevel);
 

@@ -40,7 +40,8 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 16px;
+    /* Scale padding with container width for constrained contexts */
+    padding: clamp(6px, 3cqw, 12px) clamp(8px, 4cqw, 16px);
     box-sizing: border-box;
     flex-shrink: 0;
     /* Light mode: subtle gray background matching image export */
@@ -59,13 +60,19 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
   .word-text {
     font-family: Georgia, "Times New Roman", serif;
     font-weight: 700;
-    font-size: clamp(16px, 5cqw, 28px);
+    /* Scale font with container width (now references content-wrapper which matches canvas) */
+    font-size: clamp(12px, 6cqw, 28px);
     letter-spacing: 0.08em;
     text-align: center;
     /* Light mode: dark text, no pill background */
     color: #1f2937;
     /* Smooth transition synced with canvas background (150ms) */
     transition: color 150ms ease-out;
+    /* Prevent text from overflowing - truncate if needed */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* Dark mode: dark background with light text (via prop) */

@@ -64,14 +64,29 @@
     userName,
   }: Props = $props();
 
-  // When custom settings are provided, we render fresh (no caching)
-  const hasCustomSettings = $derived(
-    addWord !== undefined ||
-      addBeatNumbers !== undefined ||
-      includeStartPosition !== undefined ||
-      addDifficultyLevel !== undefined ||
-      addUserInfo !== undefined
-  );
+  // Cloud-cached thumbnails are rendered with these default settings.
+  // Only re-render if user's settings differ from these defaults.
+  const CLOUD_CACHE_DEFAULTS = {
+    addWord: true,
+    addBeatNumbers: true,
+    includeStartPosition: true,
+    addDifficultyLevel: true,
+    addUserInfo: false,
+  };
+
+  // Check if current settings differ from cloud cache defaults
+  // If they match (or are undefined), we can use the cached version
+  const settingsDifferFromDefaults = $derived(() => {
+    // If setting is undefined, it uses the default (no difference)
+    // If setting is defined but matches default, no difference
+    // If setting is defined and differs from default, must re-render
+    if (addWord !== undefined && addWord !== CLOUD_CACHE_DEFAULTS.addWord) return true;
+    if (addBeatNumbers !== undefined && addBeatNumbers !== CLOUD_CACHE_DEFAULTS.addBeatNumbers) return true;
+    if (includeStartPosition !== undefined && includeStartPosition !== CLOUD_CACHE_DEFAULTS.includeStartPosition) return true;
+    if (addDifficultyLevel !== undefined && addDifficultyLevel !== CLOUD_CACHE_DEFAULTS.addDifficultyLevel) return true;
+    if (addUserInfo !== undefined && addUserInfo !== CLOUD_CACHE_DEFAULTS.addUserInfo) return true;
+    return false;
+  });
 
   // State
   let containerRef = $state<HTMLDivElement | null>(null);
@@ -148,6 +163,28 @@
   async function loadThumbnail() {
     if (isLoading || thumbnailUrl) return;
 
+    // Early validation: need a usable sequence name
+    if (!sequenceName) {
+      console.warn(
+        "[PropAwareThumbnail] Cannot load thumbnail: sequence has no word or name"
+      );
+      hasError = true;
+      return;
+    }
+
+    // Early validation: need either beat data OR IDiscoverLoader
+    const hasBeats = sequence.beats && sequence.beats.length > 0;
+    if (!hasBeats) {
+      const container = await getContainerInstance();
+      if (!container.isBound(TYPES.IDiscoverLoader)) {
+        console.warn(
+          `[PropAwareThumbnail] Cannot render "${sequenceName}": no beat data and IDiscoverLoader unavailable`
+        );
+        hasError = true;
+        return;
+      }
+    }
+
     isLoading = true;
     hasError = false;
 
@@ -164,9 +201,9 @@
     };
 
     try {
-      // When custom settings are provided, skip cloud caching entirely
-      // This is used by the sequence viewer to show customized export previews
-      if (hasCustomSettings) {
+      // Only skip cloud cache if settings differ from the cached defaults
+      // This allows the drawer to use cached images when settings match
+      if (settingsDifferFromDefaults()) {
         loadingStatus = "Rendering...";
         const blob = await renderThumbnailWithProps(snapshotProps);
 
@@ -357,6 +394,12 @@
     const hasBeats = sequence.beats && sequence.beats.length > 0;
     if (!hasBeats) {
       // No beat data in prop - try loading from Gallery index
+      // IDiscoverLoader may not be available outside of Discover module context
+      if (!container.isBound(TYPES.IDiscoverLoader)) {
+        throw new Error(
+          `Cannot render thumbnail for "${props.sequenceName}": sequence has no beat data and IDiscoverLoader is not available in this context.`
+        );
+      }
       const loader = container.get<IDiscoverLoader>(TYPES.IDiscoverLoader);
       const loadedSequence = await loader.loadFullSequenceData(
         props.sequenceName
@@ -546,7 +589,7 @@
     flex-shrink: 1;
   }
 
-  /* Container query adaptive sizing - when inside SequenceMediaViewerUnified's image-container */
+  /* Container query adaptive sizing - when inside SequenceViewer's image-container */
   @container image-container (aspect-ratio > 4/3) {
     /* Container is wider than 4:3 - constrain by height to fit */
     .prop-thumbnail {

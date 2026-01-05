@@ -6,7 +6,7 @@
   - preview: Export-focused (Create module) - shows export controls, format selection
   - full: Detail-focused (Discover gallery) - shows metadata, favorites, actions
 
-  Uses SequenceMediaViewerUnified for the core media display with tabs.
+  Uses SequenceViewer for the core media display with tabs.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -18,7 +18,7 @@
     ExportSettings,
     CreatorInfo,
   } from "../domain/types";
-  import SequenceMediaViewerUnified from "./SequenceMediaViewerUnified.svelte";
+  import SequenceViewer from "./SequenceViewer.svelte";
   import ExportControlsSection from "./ExportControlsSection.svelte";
 
   let {
@@ -34,7 +34,6 @@
     onExport,
     isExporting = false,
     exportProgress = null as ExportProgress | null,
-    onCustomNameChange,
 
     // Full mode props
     onFavorite,
@@ -52,7 +51,6 @@
     onExport?: (format: MediaFormat, settings: ExportSettings) => void;
     isExporting?: boolean;
     exportProgress?: ExportProgress | null;
-    onCustomNameChange?: (value: string) => void;
     onFavorite?: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
@@ -64,7 +62,7 @@
   // Derived display values
   const beatCount = $derived(sequence?.beats?.length ?? 0);
 
-  // Track current media type - updated by SequenceMediaViewerUnified via callback
+  // Track current media type - updated by SequenceViewer via callback
   // Child is source of truth (handles sessionStorage persistence)
   let currentMediaType = $state<MediaType>("animation");
 
@@ -132,8 +130,9 @@
           </svg>
         </button>
       {/if}
-      <h2 class="title">Sequence Viewer</h2>
     </div>
+
+    <h2 class="title">Sequence Viewer</h2>
 
     <div class="header-right">
       {#if mode === "full" && onFavorite}
@@ -163,7 +162,7 @@
 
   <!-- Media Viewer -->
   <div class="media-section">
-    <SequenceMediaViewerUnified
+    <SequenceViewer
       {sequence}
       {initialMediaType}
       controlsLevel={mode === "preview" ? "full" : "standard"}
@@ -175,12 +174,10 @@
   {#if mode === "preview"}
     <!-- Export Controls Section -->
     <ExportControlsSection
-      {sequence}
       {selectedFormat}
       {isExporting}
       {exportProgress}
       onExport={(format, settings) => onExport?.(format, settings)}
-      onCustomNameChange={(value) => onCustomNameChange?.(value)}
     />
   {:else}
     <!-- Full Mode: Metadata & Actions -->
@@ -299,6 +296,7 @@
     padding: 12px 16px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     flex-shrink: 0;
+    position: relative;
   }
 
   .header-left,
@@ -306,15 +304,25 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    z-index: 1; /* Keep buttons above the centered title */
+  }
+
+  .header-left {
+    min-width: 56px; /* Reserve space for close button */
   }
 
   .title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: var(--font-size-lg);
     font-weight: 600;
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: calc(100% - 160px); /* Prevent overlap with buttons */
+    text-align: center;
   }
 
   .icon-btn {

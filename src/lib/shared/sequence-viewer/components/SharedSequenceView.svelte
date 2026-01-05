@@ -10,7 +10,7 @@
   - Favorite
 
   Uses shared primitives:
-  - SequenceMediaViewerUnified for animation/image display
+  - SequenceViewer for animation/image display
   - Same animation engine as Create/Discover
 -->
 <script lang="ts">
@@ -25,7 +25,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import SequenceMediaViewerUnified from "./SequenceMediaViewerUnified.svelte";
+  import SequenceViewer from "./SequenceViewer.svelte";
   import SequenceViewerActions from "./SequenceViewerActions.svelte";
   import VariationNav from "./VariationNav.svelte";
 
@@ -189,7 +189,7 @@
       if (history.length > 1) {
         history.back();
       } else {
-        goto("/app");
+        goto("/");
       }
     }
   }
@@ -251,7 +251,7 @@
     {:else if viewerState.sequence}
       <!-- Media Section - Uses shared primitives -->
       <section class="media-section">
-        <SequenceMediaViewerUnified
+        <SequenceViewer
           sequence={viewerState.sequence}
           initialMediaType="image"
           controlsLevel="standard"

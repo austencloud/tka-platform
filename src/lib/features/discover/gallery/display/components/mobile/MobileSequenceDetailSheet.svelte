@@ -15,7 +15,7 @@
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
-  import SequenceMediaViewerUnified from "$lib/shared/sequence-viewer/components/SequenceMediaViewerUnified.svelte";
+  import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import MobileDetailSheet from "./MobileDetailSheet.svelte";
   import FloatingActionCluster from "./FloatingActionCluster.svelte";
 
@@ -52,7 +52,7 @@
 <div class="mobile-detail">
   <!-- Full-bleed media viewer -->
   <div class="media-fullbleed">
-    <SequenceMediaViewerUnified {sequence} initialMediaType="image" controlsLevel="standard" />
+    <SequenceViewer {sequence} initialMediaType="image" controlsLevel="standard" />
   </div>
 
   <!-- Gradient fade at bottom for readability -->

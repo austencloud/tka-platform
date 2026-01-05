@@ -20,6 +20,8 @@
 	import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
 	import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
 	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
+	import PlaybackPane from "$lib/features/compose/components/controls/settings-panel/PlaybackPane.svelte";
+	import VisualPane from "$lib/features/compose/components/controls/settings-panel/VisualPane.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
@@ -41,6 +43,9 @@
 		onCanvasReady,
 		// Preview-only dark mode - when provided, bypasses global setting
 		previewDarkMode = null,
+		// Layout mode: "vertical" (default) stacks controls below canvas,
+		// "horizontal" places controls to the right of canvas
+		layout = "vertical" as "vertical" | "horizontal",
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -49,6 +54,7 @@
 		externalControl?: boolean;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 		previewDarkMode?: boolean | null;
+		layout?: "vertical" | "horizontal";
 	} = $props();
 
 	// Context for external control mode - use $derived so these update if props change
@@ -198,44 +204,129 @@
 	);
 </script>
 
-<div class="animation-player">
+<div class="animation-player" class:horizontal={layout === "horizontal"}>
 	{#if loading}
 		<div class="state-msg"><div class="spinner"></div><span>Loading...</span></div>
 	{:else if error}
 		<div class="state-msg error"><span>{error}</span></div>
 	{:else}
-		<div class="canvas-wrap">
-			<AnimatorCanvas
-				blueProp={bluePropState}
-				redProp={redPropState}
-				gridVisible={true}
-				{gridMode}
-				{letter}
-				{beatData}
-				{sequenceData}
-				{isPlaying}
-				word={sequenceData?.word ?? sequence?.word ?? null}
-				onPlaybackToggle={togglePlayback}
-				trailSettings={animationSettings.trail}
-				onCanvasReady={handleCanvasReady}
-				{previewDarkMode}
-			/>
+		{#if layout === "horizontal" && controlsLevel === "full" && useContext}
+			<!-- Horizontal mode: canvas + sidebar in a row -->
+			<div class="horizontal-row">
+				<div class="canvas-wrap">
+					<AnimatorCanvas
+						blueProp={bluePropState}
+						redProp={redPropState}
+						gridVisible={true}
+						{gridMode}
+						{letter}
+						{beatData}
+						{sequenceData}
+						{isPlaying}
+						word={sequenceData?.word ?? sequence?.word ?? null}
+						onPlaybackToggle={togglePlayback}
+						trailSettings={animationSettings.trail}
+						onCanvasReady={handleCanvasReady}
+						{previewDarkMode}
+					/>
 
-			{#if isExporting && exportProgress}
-				<div class="export-overlay">
-					<div class="export-card">
-						<span>{progressLabel} {progressPct}%</span>
-						<div class="progress-bar"><div style="width:{progressPct}%"></div></div>
-						{#if exportProgress.stage !== "complete"}
-							<button onclick={cancelExport}>Cancel</button>
-						{/if}
+					{#if isExporting && exportProgress}
+						<div class="export-overlay">
+							<div class="export-card">
+								<span>{progressLabel} {progressPct}%</span>
+								<div class="progress-bar"><div style="width:{progressPct}%"></div></div>
+								{#if exportProgress.stage !== "complete"}
+									<button onclick={cancelExport}>Cancel</button>
+								{/if}
+							</div>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Sidebar with settings (no step controls - they're in the transport row below) -->
+				<div class="horizontal-sidebar">
+					<!-- Playback Settings -->
+					<div class="sidebar-section">
+						<PlaybackPane
+							bind:bpm
+							{playbackMode}
+							stepPlaybackStepSize={stepSize}
+							{isPlaying}
+							onBpmChange={handleBpmChange}
+							onPlaybackModeChange={setPlaybackMode}
+							onStepPlaybackStepSizeChange={setStepSize}
+							onPlaybackToggle={togglePlayback}
+						/>
+					</div>
+
+					<!-- Visual Settings -->
+					<div class="sidebar-section">
+						<VisualPane propType={null} bluePropType={null} redPropType={null} />
 					</div>
 				</div>
-			{/if}
-		</div>
+			</div>
 
-		{#if showControls}
-			{#if controlsLevel === "full" && useContext}
+			<!-- Transport row: step controls + play button -->
+			{#if showControls}
+				<div class="horizontal-transport-row">
+					<button class="step-btn" onclick={stepFullBack} aria-label="Previous beat">
+						<i class="fas fa-angles-left" aria-hidden="true"></i>
+					</button>
+					<button class="step-btn" onclick={stepHalfBack} aria-label="Previous half beat">
+						<i class="fas fa-chevron-left" aria-hidden="true"></i>
+					</button>
+
+					<button class="play-btn large" onclick={togglePlayback} aria-label={isPlaying ? "Pause" : "Play"}>
+						{#if isPlaying}
+							<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+						{:else}
+							<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+						{/if}
+					</button>
+
+					<button class="step-btn" onclick={stepHalfFwd} aria-label="Next half beat">
+						<i class="fas fa-chevron-right" aria-hidden="true"></i>
+					</button>
+					<button class="step-btn" onclick={stepFullFwd} aria-label="Next beat">
+						<i class="fas fa-angles-right" aria-hidden="true"></i>
+					</button>
+				</div>
+			{/if}
+		{:else}
+			<!-- Vertical mode: original layout -->
+			<div class="canvas-wrap">
+				<AnimatorCanvas
+					blueProp={bluePropState}
+					redProp={redPropState}
+					gridVisible={true}
+					{gridMode}
+					{letter}
+					{beatData}
+					{sequenceData}
+					{isPlaying}
+					word={sequenceData?.word ?? sequence?.word ?? null}
+					onPlaybackToggle={togglePlayback}
+					trailSettings={animationSettings.trail}
+					onCanvasReady={handleCanvasReady}
+					{previewDarkMode}
+				/>
+
+				{#if isExporting && exportProgress}
+					<div class="export-overlay">
+						<div class="export-card">
+							<span>{progressLabel} {progressPct}%</span>
+							<div class="progress-bar"><div style="width:{progressPct}%"></div></div>
+							{#if exportProgress.stage !== "complete"}
+								<button onclick={cancelExport}>Cancel</button>
+							{/if}
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			{#if showControls}
+				{#if controlsLevel === "full" && useContext}
+				<!-- Vertical mode: original tabbed layout -->
 				<div class="controls-full">
 					<TransportControls
 						{isPlaying}
@@ -272,6 +363,7 @@
 				</div>
 			{/if}
 		{/if}
+		{/if}
 	{/if}
 </div>
 
@@ -287,6 +379,154 @@
 		box-sizing: border-box;
 	}
 
+	/* Horizontal layout: canvas on left, controls on right */
+	.animation-player.horizontal {
+		flex-direction: row;
+		gap: 16px;
+	}
+
+	.animation-player.horizontal .canvas-wrap {
+		flex: 1;
+		min-width: 0;
+	}
+
+	/* ========================================
+	   HORIZONTAL LAYOUT
+	   ======================================== */
+
+	/* Horizontal mode: column layout with row inside */
+	.animation-player.horizontal {
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	/* Canvas + Sidebar row */
+	.horizontal-row {
+		display: flex;
+		flex-direction: row;
+		gap: 16px;
+		flex: 1;
+		min-height: 0;
+	}
+
+	/* Canvas takes remaining space after sidebar */
+	.horizontal-row .canvas-wrap {
+		flex: 1;
+		min-width: 0;
+		max-width: none;
+	}
+
+	/* Horizontal sidebar - full height, shows all settings */
+	.horizontal-sidebar {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+		width: 280px;
+		min-width: 280px;
+		flex-shrink: 0;
+		padding: 16px;
+		box-sizing: border-box;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 14px;
+		overflow-y: auto;
+	}
+
+	/* Sidebar sections */
+	.sidebar-section {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.sidebar-section + .sidebar-section {
+		padding-top: 16px;
+		border-top: 1px solid var(--theme-stroke);
+	}
+
+	/* Transport row: step buttons + play button */
+	.horizontal-transport-row {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 12px;
+		padding: 12px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 14px;
+		flex-shrink: 0;
+	}
+
+	.horizontal-transport-row .step-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 50%;
+		color: var(--theme-text-dim);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.horizontal-transport-row .step-btn:hover {
+		background: var(--theme-card-hover-bg);
+		border-color: var(--theme-stroke-strong);
+		color: var(--theme-text);
+		transform: scale(1.05);
+	}
+
+	.horizontal-transport-row .play-btn {
+		width: 64px;
+		height: 64px;
+	}
+
+	.horizontal-transport-row .play-btn svg {
+		width: 28px;
+		height: 28px;
+	}
+
+	/* Override PlaybackPane styles in sidebar - vertical stacking */
+	.horizontal-sidebar :global(.style-toggle) {
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.horizontal-sidebar :global(.style-btn) {
+		min-height: 48px;
+	}
+
+	/* BPM presets vertical stack */
+	.horizontal-sidebar :global(.bpm-presets) {
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.horizontal-sidebar :global(.preset-chip) {
+		flex: none;
+		width: 100%;
+		min-height: 44px;
+	}
+
+	/* BPM adjuster vertical */
+	.horizontal-sidebar :global(.bpm-adjuster) {
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.horizontal-sidebar :global(.bpm-display) {
+		order: 0;
+		min-height: 56px;
+	}
+
+	.horizontal-sidebar :global(.bpm-btn) {
+		width: 100%;
+		height: 44px;
+		border-radius: 10px;
+	}
+
 	.canvas-wrap {
 		position: relative;
 		flex: 1;
@@ -296,8 +536,11 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 12px;
-		overflow: hidden;
-		background: rgba(0, 0, 0, 0.2);
+		overflow: visible; /* Allow AnimatorCanvas border to show */
+		background: transparent;
+		/* Add padding so AnimatorCanvas border isn't clipped by parent overflow:hidden */
+		padding: 4px;
+		box-sizing: border-box;
 	}
 
 	/* ========================================
@@ -443,6 +686,39 @@
 		flex-shrink: 0;
 		max-height: 200px;
 		overflow-y: auto;
+	}
+
+	/* ========================================
+	   WIDESCREEN OPTIMIZATIONS
+	   ======================================== */
+	@media (min-width: 1200px) {
+		.animation-player {
+			gap: 8px;
+			padding: 4px;
+		}
+
+		.controls-simple {
+			padding: 8px 10px;
+			gap: 10px;
+		}
+
+		.play-btn {
+			width: 44px;
+			height: 44px;
+			min-width: 44px;
+			min-height: 44px;
+		}
+
+		.play-btn svg {
+			width: 20px;
+			height: 20px;
+		}
+
+		.controls-full {
+			gap: 8px;
+			padding: 10px;
+			max-height: 180px;
+		}
 	}
 
 	/* ========================================

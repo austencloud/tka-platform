@@ -249,33 +249,40 @@ Last audit: 2025-12-27
     container-type: size;
   }
 
-  /* Inner wrapper: sizes to canvas width so header matches */
+  /* Inner wrapper: sized to canvas width, header constrained within */
   .content-wrapper {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    /* Size to fit children - canvas determines width */
-    width: fit-content;
-    max-height: 100%;
-    max-width: 100%;
-    /* Border around entire content (header + canvas) */
-    border: 1.5px solid rgba(0, 0, 0, 0.3);
+    /*
+     * Width = canvas side = min(container_width, container_height - header - overhead)
+     * Be conservative to ensure border is never clipped:
+     * - header: ~2.5rem (~40px)
+     * - border: 3px
+     * - safety margin: 12px
+     */
+    width: min(calc(100cqw - 12px), calc(100cqh - 3rem - 12px));
+    /* Create container query context so header font scales with THIS width, not outer container */
+    container-type: inline-size;
+    /* Solid opaque border for consistency across header and canvas */
+    border: 1.5px solid #1a1a2e;
     border-radius: 4px;
     overflow: hidden;
     transition: border-color 150ms ease-out;
   }
 
-  /* Dark Mode: lighter visible border */
+  /* Dark Mode: solid cyan border (not transparent) */
   .content-wrapper[data-dark-mode="true"] {
-    border-color: rgba(0, 255, 255, 0.25);
+    border-color: #00b8b8;
   }
 
-  /* Canvas wrapper maintains 1:1 aspect ratio, sized to available space minus header */
+  /* Canvas wrapper: square matching parent width */
   .canvas-wrapper {
     position: relative;
-    aspect-ratio: 1 / 1;
-    /* Size based on container, accounting for header height (~48px) and border (3px) */
-    width: min(100cqw, calc(100cqh - 3rem - 3px));
+    /* Width fills parent, height matches width for square */
+    width: 100%;
+    /* Use container query width (100cqw now references content-wrapper) for height */
+    height: 100cqw;
     flex-shrink: 0;
     display: flex;
     align-items: center;
