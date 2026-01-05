@@ -1,8 +1,8 @@
 <!--
   AccountSettingsSection Component
 
-  Allows users to update their display name and (if they have password auth) change their password.
-  Display name editing is always available; password section is conditional.
+  Allows users to update their display name, username, and (if they have password auth) change their password.
+  Display name and username editing are always available; password section is conditional.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
@@ -11,7 +11,15 @@
     resetPasswordForm,
     uiState,
   } from "../../state/profile-settings-state.svelte";
-  import { updateProfile, type User } from "firebase/auth";
+  import type { User } from "firebase/auth";
+  import { authState } from "../../../auth/state/authState.svelte";
+  import { tryResolve } from "../../../inversify/resolve-utils";
+  import { TYPES } from "../../../inversify/types";
+  import type { IUsernameValidator } from "../../../auth/services/contracts/IUsernameValidator";
+  import { toast } from "../../../toast/state/toast-state.svelte";
+  import { doc, getDoc } from "firebase/firestore";
+  import { getFirestoreInstance } from "../../../auth/firebase";
+  import { onMount } from "svelte";
 
   interface Props {
     user: User;
@@ -24,14 +32,41 @@
     $props();
 
   // Display name editing state
-  // Initialize empty - $effect below syncs with user.displayName when not editing
   let editedName = $state("");
   let isEditingName = $state(false);
   let isSavingName = $state(false);
 
+  // Username editing state
+  let currentUsername = $state("");
+  let editedUsername = $state("");
+  let isEditingUsername = $state(false);
+  let isSavingUsername = $state(false);
+  let isCheckingUsername = $state(false);
+  let usernameError = $state("");
+  let usernameAvailable = $state(false);
+  let usernameSuggestions = $state<string[]>([]);
+  let checkTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
   // Password visibility toggles
   let showCurrentPassword = $state(false);
   let showNewPassword = $state(false);
+
+  // Get username validator service
+  const usernameValidator = tryResolve<IUsernameValidator>(TYPES.IUsernameValidator);
+
+  // Load current username from Firestore on mount
+  onMount(async () => {
+    try {
+      const firestore = await getFirestoreInstance();
+      const userDocRef = doc(firestore, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        currentUsername = userDoc.data()?.username || "";
+      }
+    } catch (error) {
+      console.error("Failed to load username:", error);
+    }
+  });
 
   // Sync editedName when user changes
   $effect(() => {
@@ -60,7 +95,7 @@
 
     isSavingName = true;
     try {
-      await updateProfile(user, { displayName: trimmedName });
+      await authState.updateDisplayName(trimmedName);
       hapticService?.trigger("success");
       isEditingName = false;
     } catch (error) {
@@ -110,6 +145,129 @@
   const isPasswordWeak = $derived(
     passwordState.new && passwordState.new.length < 8
   );
+
+  // Username editing functions
+  function startEditingUsername() {
+    editedUsername = currentUsername;
+    isEditingUsername = true;
+    usernameError = "";
+    usernameAvailable = false;
+    usernameSuggestions = [];
+    hapticService?.trigger("selection");
+  }
+
+  function cancelEditingUsername() {
+    isEditingUsername = false;
+    editedUsername = "";
+    usernameError = "";
+    usernameAvailable = false;
+    usernameSuggestions = [];
+    if (checkTimeoutId) {
+      clearTimeout(checkTimeoutId);
+      checkTimeoutId = null;
+    }
+  }
+
+  function handleUsernameInput() {
+    // Clear previous timeout
+    if (checkTimeoutId) {
+      clearTimeout(checkTimeoutId);
+    }
+
+    usernameError = "";
+    usernameAvailable = false;
+    usernameSuggestions = [];
+
+    const username = editedUsername.trim();
+    if (!username) return;
+
+    // Debounce the availability check
+    checkTimeoutId = setTimeout(() => {
+      checkUsernameAvailability(username);
+    }, 500);
+  }
+
+  async function checkUsernameAvailability(username: string) {
+    if (!usernameValidator) {
+      usernameError = "Username validation unavailable";
+      return;
+    }
+
+    // Skip check if unchanged
+    if (username.toLowerCase() === currentUsername.toLowerCase()) {
+      usernameAvailable = true;
+      return;
+    }
+
+    isCheckingUsername = true;
+    try {
+      const result = await usernameValidator.checkAvailability(username, user.uid);
+      if (result.isValid) {
+        usernameAvailable = true;
+        usernameError = "";
+      } else {
+        usernameAvailable = false;
+        usernameError = result.error || "Username unavailable";
+        usernameSuggestions = result.suggestions || [];
+      }
+    } catch (error) {
+      console.error("Failed to check username:", error);
+      usernameError = "Unable to check availability";
+    } finally {
+      isCheckingUsername = false;
+    }
+  }
+
+  async function saveUsername() {
+    const trimmedUsername = editedUsername.trim();
+    if (!trimmedUsername || !usernameAvailable) {
+      cancelEditingUsername();
+      return;
+    }
+
+    // Don't save if unchanged
+    if (trimmedUsername.toLowerCase() === currentUsername.toLowerCase()) {
+      cancelEditingUsername();
+      return;
+    }
+
+    isSavingUsername = true;
+    try {
+      await authState.updateUsername(trimmedUsername);
+      currentUsername = trimmedUsername;
+      hapticService?.trigger("success");
+      toast.success("Username updated successfully");
+      isEditingUsername = false;
+    } catch (error) {
+      console.error("Failed to update username:", error);
+      hapticService?.trigger("error");
+      toast.error(error instanceof Error ? error.message : "Failed to update username");
+    } finally {
+      isSavingUsername = false;
+    }
+  }
+
+  function handleUsernameKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter" && usernameAvailable && !isCheckingUsername) {
+      e.preventDefault();
+      saveUsername();
+    } else if (e.key === "Escape") {
+      cancelEditingUsername();
+    }
+  }
+
+  function selectSuggestion(suggestion: string) {
+    editedUsername = suggestion;
+    handleUsernameInput();
+  }
+
+  const isUsernameSaveDisabled = $derived(
+    isSavingUsername ||
+    isCheckingUsername ||
+    !usernameAvailable ||
+    !editedUsername.trim() ||
+    editedUsername.trim().toLowerCase() === currentUsername.toLowerCase()
+  );
 </script>
 
 <div class="account-settings">
@@ -158,6 +316,100 @@
           class="edit-btn"
           onclick={startEditingName}
           aria-label="Edit display name"
+        >
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          Edit
+        </button>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Username Section -->
+  <div class="divider"></div>
+  <div class="section">
+    <label class="label" for="username">Username</label>
+    {#if isEditingUsername}
+      <div class="input-row">
+        <div class="username-input-wrapper">
+          <span class="username-prefix">@</span>
+          <input
+            id="username"
+            type="text"
+            class="input username-input"
+            class:error={usernameError}
+            class:success={usernameAvailable && !isCheckingUsername}
+            bind:value={editedUsername}
+            oninput={handleUsernameInput}
+            onkeydown={handleUsernameKeydown}
+            maxlength="20"
+            placeholder="your_username"
+            disabled={isSavingUsername}
+            aria-invalid={usernameError ? "true" : "false"}
+            aria-describedby={usernameError ? "username-error" : undefined}
+          />
+        </div>
+        <div class="inline-actions">
+          <button
+            class="icon-btn save"
+            onclick={saveUsername}
+            disabled={isUsernameSaveDisabled}
+            aria-label="Save username"
+          >
+            {#if isSavingUsername}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-check" aria-hidden="true"></i>
+            {/if}
+          </button>
+          <button
+            class="icon-btn cancel"
+            onclick={cancelEditingUsername}
+            disabled={isSavingUsername}
+            aria-label="Cancel editing"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-time feedback -->
+      {#if isCheckingUsername}
+        <p class="hint-message checking">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Checking availability...
+        </p>
+      {:else if usernameError}
+        <p id="username-error" class="hint-message error" role="alert">
+          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+          {usernameError}
+        </p>
+        {#if usernameSuggestions.length > 0}
+          <div class="suggestions">
+            <span class="suggestions-label">Try:</span>
+            {#each usernameSuggestions as suggestion}
+              <button
+                type="button"
+                class="suggestion-btn"
+                onclick={() => selectSuggestion(suggestion)}
+              >
+                @{suggestion}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      {:else if usernameAvailable && editedUsername.trim()}
+        <p class="hint-message success">
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          Username available
+        </p>
+      {/if}
+    {:else}
+      <div class="value-row">
+        <span class="current-value">@{currentUsername || "Not set"}</span>
+        <button
+          class="edit-btn"
+          onclick={startEditingUsername}
+          aria-label="Edit username"
         >
           <i class="fas fa-pen" aria-hidden="true"></i>
           Edit
@@ -482,6 +734,109 @@
   .hint-message.subtle {
     color: var(--theme-text-dim);
     font-weight: 500;
+  }
+
+  .hint-message.checking {
+    color: var(--theme-text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hint-message.error {
+    color: rgba(239, 68, 68, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hint-message.success {
+    color: rgba(34, 197, 94, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Username input styles */
+  .username-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .username-input-wrapper:focus-within {
+    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
+    background: var(--theme-card-hover-bg);
+  }
+
+  .username-prefix {
+    padding: 12px 0 12px 16px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    user-select: none;
+  }
+
+  .username-input {
+    border: none;
+    background: transparent;
+    padding-left: 4px;
+  }
+
+  .username-input:focus {
+    border: none;
+    background: transparent;
+    outline: none;
+  }
+
+  .input.error {
+    border-color: rgba(239, 68, 68, 0.6);
+  }
+
+  .input.success {
+    border-color: rgba(34, 197, 94, 0.6);
+  }
+
+  .username-input-wrapper:has(.error) {
+    border-color: rgba(239, 68, 68, 0.6);
+  }
+
+  .username-input-wrapper:has(.success) {
+    border-color: rgba(34, 197, 94, 0.6);
+  }
+
+  /* Suggestions */
+  .suggestions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .suggestions-label {
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+  }
+
+  .suggestion-btn {
+    padding: 4px 10px;
+    font-size: var(--font-size-compact);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .suggestion-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: var(--theme-text);
   }
 
   .optional {

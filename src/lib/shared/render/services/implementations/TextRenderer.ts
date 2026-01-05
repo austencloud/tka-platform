@@ -502,8 +502,9 @@ export class TextRenderer implements ITextRenderer {
     ctx.fillText(notes, canvas.width / 2, yPosition);
 
     // Date (bottom-right) - Georgia Normal, format: M-D-YYYY
-    const now = new Date();
-    const dateStr = `${now.getMonth() + 1}-${now.getDate()}-${now.getFullYear()}`;
+    // Use the passed-in exportDate (sequence birth date) instead of current date
+    const dateToUse = userInfo.exportDate ? new Date(userInfo.exportDate) : new Date();
+    const dateStr = `${dateToUse.getMonth() + 1}-${dateToUse.getDate()}-${dateToUse.getFullYear()}`;
     ctx.textAlign = "right";
     ctx.fillText(dateStr, canvas.width - margin, yPosition);
   }

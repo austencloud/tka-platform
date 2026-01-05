@@ -243,8 +243,8 @@
     width: 100%;
     max-width: 520px;
     max-height: calc(100vh - 40px);
-    background: var(--theme-panel-bg, rgb(18, 18, 28));
-    border: 1px solid var(--theme-stroke-strong);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
     overflow: hidden;
     box-shadow:
@@ -280,7 +280,7 @@
       color-mix(in srgb, var(--theme-accent) 8%, transparent) 0%,
       transparent 100%
     );
-    border-bottom: 1px solid var(--theme-stroke);
+    border-bottom: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .version-badge {
@@ -328,18 +328,18 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
-    color: var(--theme-text-dim);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     transition: all 0.2s;
   }
 
   .close-btn:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
-    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   /* ============================================================================
@@ -352,6 +352,25 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+
+  /* Modern scrollbar styling - matches system drawer scrollbars */
+  .modal-body::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .modal-body::-webkit-scrollbar-thumb {
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   /* Highlights Section */
@@ -371,7 +390,8 @@
       color-mix(in srgb, var(--theme-accent) 10%, transparent) 0%,
       color-mix(in srgb, var(--theme-accent) 5%, transparent) 100%
     );
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    border: 1.5px solid
+      color-mix(in srgb, var(--theme-accent) 25%, transparent);
     border-radius: 14px;
   }
 
@@ -425,7 +445,7 @@
   .category-card {
     padding: 16px;
     background: var(--cat-bg);
-    border: 1px solid color-mix(in srgb, var(--cat-color) 20%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--cat-color) 20%, transparent);
     border-radius: 14px;
     transition: all 0.2s;
   }
@@ -525,8 +545,8 @@
     display: flex;
     gap: 12px;
     padding: 16px 24px;
-    border-top: 1px solid var(--theme-stroke);
-    background: var(--theme-card-bg);
+    border-top: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .footer-btn {
@@ -568,13 +588,13 @@
 
   .footer-btn.secondary {
     background: transparent;
-    border: 1px solid var(--theme-stroke);
-    color: var(--theme-text);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, #ffffff);
   }
 
   .footer-btn.secondary:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   /* ============================================================================
