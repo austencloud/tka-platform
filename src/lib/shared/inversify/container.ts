@@ -342,16 +342,27 @@ export async function loadFeatureModule(feature: string): Promise<void> {
     name: string,
     importFn: () => Promise<{ [key: string]: ContainerModule }>
   ): Promise<void> => {
-    if (loadedModules.has(name)) return;
+    if (loadedModules.has(name)) {
+      // Already loaded, skip
+      return;
+    }
 
     const pending = pendingModules.get(name);
-    if (pending) return pending;
+    if (pending) {
+      // Already loading, wait for it
+      return pending;
+    }
 
     const loadPromise = (async () => {
       try {
         const moduleExports = await importFn();
         const module = Object.values(moduleExports)[0] as ContainerModule;
         if (!module) throw new Error(`Module ${name} export is undefined`);
+
+        // Double-check after async import
+        if (loadedModules.has(name)) {
+          return; // Race condition: another call loaded it while we were importing
+        }
 
         // Register with HMR manager for rebuild
         hmrManager.registerFeatureModule(name, async () => {

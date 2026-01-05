@@ -286,9 +286,12 @@ export class HMRContainerManager {
         // If we get an ambiguous binding error, the module was already loaded
         const errorMessage = String(error);
         if (errorMessage.includes("Ambiguous bindings")) {
-          this.log(`Module already loaded, skipping: ${errorMessage}`, "warn");
+          this.log(`Module already loaded, skipping duplicate: ${errorMessage.substring(0, 200)}`, "warn");
+          // Don't throw - just skip this module
           continue;
         }
+        // For other errors, throw
+        this.log(`Failed to load module: ${errorMessage}`, "error");
         throw error;
       }
     }
