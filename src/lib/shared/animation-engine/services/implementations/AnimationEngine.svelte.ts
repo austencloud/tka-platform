@@ -154,6 +154,7 @@ export class AnimationEngine {
       blueMotion: true,
       redMotion: true,
       darkMode: false,
+      wordHeader: true,
     },
     isPreRendering: false,
     preRenderProgress: null,
@@ -276,6 +277,7 @@ export class AnimationEngine {
       blueMotion: visibilityManager.getVisibility("blueMotion"),
       redMotion: visibilityManager.getVisibility("redMotion"),
       darkMode: visibilityManager.isDarkMode(),
+      wordHeader: visibilityManager.getVisibility("wordHeader"),
     };
 
     // Initialize services that don't need renderer

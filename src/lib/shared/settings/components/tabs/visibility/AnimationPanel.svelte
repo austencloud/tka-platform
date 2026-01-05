@@ -23,6 +23,7 @@
     playbackMode: PlaybackMode;
     bpm: number;
     tkaGlyphVisible: boolean;
+    wordHeaderVisible: boolean;
     onToggle: (key: string) => void;
     onTrailStyleChange: (style: string) => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
@@ -37,6 +38,7 @@
     playbackMode,
     bpm,
     tkaGlyphVisible,
+    wordHeaderVisible,
     onToggle,
     onTrailStyleChange,
     onPlaybackModeChange,
@@ -181,6 +183,15 @@
         >
           <i class="fas fa-font" aria-hidden="true"></i>
           <span>TKA</span>
+        </button>
+        <button
+          class="compact-btn"
+          class:active={wordHeaderVisible}
+          onclick={() => onToggle("wordHeader")}
+          type="button"
+        >
+          <i class="fas fa-heading" aria-hidden="true"></i>
+          <span>Word</span>
         </button>
       </div>
 
@@ -347,6 +358,11 @@
             class="toggle-btn"
             class:active={tkaGlyphVisible}
             onclick={() => onToggle("tka")}>TKA Glyph</button
+          >
+          <button
+            class="toggle-btn"
+            class:active={wordHeaderVisible}
+            onclick={() => onToggle("wordHeader")}>Word</button
           >
         </div>
       </div>

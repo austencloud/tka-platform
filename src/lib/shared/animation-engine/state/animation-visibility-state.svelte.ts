@@ -30,6 +30,7 @@ interface AnimationVisibilitySettings {
   trailStyle: TrailStyle; // Trail visualization style (3-state)
   playbackMode: PlaybackMode; // Continuous flow vs step-by-step
   speed: number; // Speed multiplier (1.0 = 60 BPM, range 0.1-3.0)
+  wordHeader: boolean; // Word/sequence name header at top
 
   // Global Effects (applies to pictograph, animation, and image export)
   // Dark Mode: dark background, inverted grid, white text/outlines
@@ -86,6 +87,7 @@ export class AnimationVisibilityStateManager {
       trailStyle: "subtle", // Default to subtle trails
       playbackMode: "continuous", // Default to continuous playback
       speed: 1.0, // Default to 60 BPM
+      wordHeader: true, // Show word/sequence name by default
 
       // Global effects
       darkMode: false, // Dark Mode disabled by default
@@ -423,6 +425,18 @@ export class AnimationVisibilityStateManager {
    */
   toggleDarkMode(): void {
     this.setDarkMode(!this.settings.darkMode);
+  }
+
+  /**
+   * Toggle a boolean visibility setting
+   */
+  toggleVisibility(
+    key: Exclude<
+      keyof AnimationVisibilitySettings,
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode"
+    >
+  ): void {
+    this.setVisibility(key, !this.settings[key]);
   }
 
   // ============================================================================

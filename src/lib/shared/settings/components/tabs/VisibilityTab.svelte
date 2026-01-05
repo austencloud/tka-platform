@@ -62,6 +62,7 @@
   let animPlaybackMode = $state<PlaybackMode>("continuous");
   let animBpm = $state(60);
   let animTkaGlyphVisible = $state(true);
+  let animWordHeaderVisible = $state(true);
 
   // Image composition state
   let imgAddWord = $state(true);
@@ -145,6 +146,13 @@
           animTkaGlyphVisible
         );
         break;
+      case "wordHeader":
+        animWordHeaderVisible = !animWordHeaderVisible;
+        animationVisibilityManager.setVisibility(
+          "wordHeader",
+          animWordHeaderVisible
+        );
+        break;
     }
   }
 
@@ -216,6 +224,8 @@
     animPlaybackMode = animationVisibilityManager.getPlaybackMode();
     animBpm = animationVisibilityManager.getBpm();
     animTkaGlyphVisible = animationVisibilityManager.getVisibility("tkaGlyph");
+    animWordHeaderVisible =
+      animationVisibilityManager.getVisibility("wordHeader");
 
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
@@ -246,6 +256,8 @@
       animBpm = animationVisibilityManager.getBpm();
       animTkaGlyphVisible =
         animationVisibilityManager.getVisibility("tkaGlyph");
+      animWordHeaderVisible =
+        animationVisibilityManager.getVisibility("wordHeader");
     };
 
     const imageObserver = () => {
@@ -300,6 +312,7 @@
       playbackMode={animPlaybackMode}
       bpm={animBpm}
       tkaGlyphVisible={animTkaGlyphVisible}
+      wordHeaderVisible={animWordHeaderVisible}
       onToggle={handleAnimationToggle}
       onTrailStyleChange={handleTrailStyleChange}
       onPlaybackModeChange={handlePlaybackModeChange}

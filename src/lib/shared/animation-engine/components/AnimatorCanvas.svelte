@@ -35,9 +35,11 @@ Last audit: 2025-12-27
   import type { TrailSettings } from "../domain/types/TrailTypes";
   import GlyphRenderer from "./GlyphRenderer.svelte";
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
+  import WordHeader from "./layers/WordHeader.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
-  import { onMount, untrack } from "svelte";
+  import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
+  import { onMount, onDestroy, untrack } from "svelte";
 
   // Props
   let {
@@ -59,6 +61,11 @@ Last audit: 2025-12-27
     // Prop type overrides - bypass settings when provided (useful for demos/previews)
     bluePropType = null,
     redPropType = null,
+    // Word for header display
+    word = null,
+    // Preview-only dark mode override - when provided, bypasses global setting
+    // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
+    previewDarkMode = null,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -77,6 +84,8 @@ Last audit: 2025-12-27
     trailSettings?: TrailSettings;
     bluePropType?: string | null;
     redPropType?: string | null;
+    word?: string | null;
+    previewDarkMode?: boolean | null;
   } = $props();
 
   // Container element
@@ -85,12 +94,37 @@ Last audit: 2025-12-27
   // Engine instance
   const engine = new AnimationEngine();
 
-  // Derived state from engine
+  // Visibility manager - direct observation for reliable reactivity
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Local visibility state updated via observer (more reliable than engine state propagation)
+  let tkaGlyphVisible = $state(visibilityManager.getVisibility("tkaGlyph"));
+  let beatNumbersVisible = $state(visibilityManager.getVisibility("beatNumbers"));
+  let globalDarkMode = $state(visibilityManager.isDarkMode());
+  let wordHeaderVisible = $state(visibilityManager.getVisibility("wordHeader"));
+
+  // Effective dark mode: use preview override if provided, otherwise global
+  const darkModeEnabled = $derived(
+    previewDarkMode !== null ? previewDarkMode : globalDarkMode
+  );
+
+  function handleVisibilityChange() {
+    tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
+    beatNumbersVisible = visibilityManager.getVisibility("beatNumbers");
+    globalDarkMode = visibilityManager.isDarkMode();
+    wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
+  }
+
+  visibilityManager.registerObserver(handleVisibilityChange);
+
+  onDestroy(() => {
+    visibilityManager.unregisterObserver(handleVisibilityChange);
+  });
+
+  // Derived state from engine (non-visibility state)
   const rendererLoading = $derived(engine.state.rendererLoading);
   const rendererError = $derived(engine.state.rendererError);
   const isInitialized = $derived(engine.state.isInitialized);
-  const tkaGlyphVisible = $derived(engine.state.visibilityState.tkaGlyph);
-  const beatNumbersVisible = $derived(engine.state.visibilityState.beatNumbers);
   const isPreRendering = $derived(engine.state.isPreRendering);
   const preRenderProgress = $derived(engine.state.preRenderProgress);
   const preRenderedFramesReady = $derived(engine.state.preRenderedFramesReady);
@@ -101,7 +135,6 @@ Last audit: 2025-12-27
   const fadingOutTurnsTuple = $derived(engine.state.fadingOutTurnsTuple);
   const fadingOutBeatNumber = $derived(engine.state.fadingOutBeatNumber);
   const isNewLetter = $derived(engine.state.isNewLetter);
-  const darkModeEnabled = $derived(engine.state.visibilityState.darkMode);
 
   // Initialize engine when container mounts
   onMount(() => {
@@ -166,39 +199,59 @@ Last audit: 2025-12-27
   <GlyphRenderer {letter} {beatData} onSvgReady={handleGlyphSvgReady} />
 {/if}
 
-<div
-  class="canvas-wrapper"
-  bind:this={containerElement}
-  data-transparent={backgroundAlpha === 0 ? "true" : "false"}
-  data-lights-off={darkModeEnabled ? "true" : "false"}
->
-  <GlyphOverlay
-    {letter}
-    {displayedLetter}
-    {displayedTurnsTuple}
-    {displayedBeatNumber}
-    {fadingOutLetter}
-    {fadingOutTurnsTuple}
-    {fadingOutBeatNumber}
-    {isNewLetter}
-    {tkaGlyphVisible}
-    {beatNumbersVisible}
-  />
+<!-- Outer container: word header above + canvas area below -->
+<div class="animation-container" data-lights-off={darkModeEnabled ? "true" : "false"}>
+  <!-- Word header lives ABOVE the canvas (not overlaid) -->
+  <WordHeader {word} visible={wordHeaderVisible} />
 
-  <ProgressOverlay
-    {isPreRendering}
-    {preRenderProgress}
-    {preRenderedFramesReady}
-  />
+  <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
+  <div
+    class="canvas-wrapper"
+    bind:this={containerElement}
+    data-transparent={backgroundAlpha === 0 ? "true" : "false"}
+    data-lights-off={darkModeEnabled ? "true" : "false"}
+  >
+    <GlyphOverlay
+      {letter}
+      {displayedLetter}
+      {displayedTurnsTuple}
+      {displayedBeatNumber}
+      {fadingOutLetter}
+      {fadingOutTurnsTuple}
+      {fadingOutBeatNumber}
+      {isNewLetter}
+      {tkaGlyphVisible}
+      {beatNumbersVisible}
+    />
+
+    <ProgressOverlay
+      {isPreRendering}
+      {preRenderProgress}
+      {preRenderedFramesReady}
+    />
+  </div>
 </div>
 
 <style>
+  /* Outer container: column layout with word header above canvas */
+  .animation-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    container-type: size;
+  }
+
+  /* Canvas wrapper maintains 1:1 aspect ratio for animation content only */
   .canvas-wrapper {
     position: relative;
     aspect-ratio: 1 / 1;
-    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     width: auto;
     max-width: 100%;
+    max-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;

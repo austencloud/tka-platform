@@ -32,6 +32,7 @@ export class AnimationVisibilitySynchronizer implements IAnimationVisibilitySync
       blueMotion: this.manager.getVisibility("blueMotion"),
       redMotion: this.manager.getVisibility("redMotion"),
       darkMode: this.manager.isDarkMode(),
+      wordHeader: this.manager.getVisibility("wordHeader"),
     };
   }
 
