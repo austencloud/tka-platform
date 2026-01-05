@@ -1,8 +1,9 @@
 <script lang="ts">
   import LegalSheet from "$lib/shared/legal/components/LegalSheet.svelte";
+  import { APP_DOMAIN } from "../../../config/domains";
 
   const footerLinks = [
-    { href: "/app", label: "App" },
+    { href: APP_DOMAIN, label: "App" },
     { href: "#features", label: "Features" },
     { href: "#notation", label: "Notation" },
     { href: "#loops", label: "LOOPs" },
@@ -40,7 +41,7 @@
       tools, expand the community.
     </p>
 
-    <a href="/app" class="btn btn-primary btn-large">
+    <a href={APP_DOMAIN} class="btn btn-primary btn-large">
       Open TKA Scribe
       <span class="arrow">→</span>
     </a>

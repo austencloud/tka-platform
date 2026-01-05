@@ -19,6 +19,7 @@
     Platform,
     InAppBrowser,
   } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
+  import { APP_DOMAIN } from "../../../config/domains";
   import InAppBrowserModal from "./InAppBrowserModal.svelte";
   import IOSInstallInstructions from "./IOSInstallInstructions.svelte";
 
@@ -121,7 +122,7 @@
       <p class="installed-instruction">
         Open <strong>TKA Scribe</strong> from your home screen
       </p>
-      <a href="/app" class="link-secondary"> Or continue in browser → </a>
+      <a href={APP_DOMAIN} class="link-secondary"> Or continue in browser → </a>
     </div>
   {:else if installState === "in-app-browser"}
     <!-- In-app browser -->
@@ -166,10 +167,10 @@
       bind:isExpanded={showIOSInstructions}
       onToggle={() => (showIOSInstructions = !showIOSInstructions)}
     />
-    <a href="/app" class="link-secondary"> Or continue in browser → </a>
+    <a href={APP_DOMAIN} class="link-secondary"> Or continue in browser → </a>
   {:else}
     <!-- Desktop - just open in browser -->
-    <a href="/app" class="btn btn-primary">
+    <a href={APP_DOMAIN} class="btn btn-primary">
       <i class="fas fa-rocket" aria-hidden="true"></i>
       <span>Launch App</span>
       <span class="arrow">→</span>
