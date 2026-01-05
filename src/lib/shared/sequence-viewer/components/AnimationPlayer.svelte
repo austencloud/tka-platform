@@ -39,6 +39,8 @@
 		controlsLevel = "minimal" as ControlsLevel,
 		externalControl = false,
 		onCanvasReady,
+		// Preview-only dark mode - when provided, bypasses global setting
+		previewDarkMode = null,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -46,6 +48,7 @@
 		controlsLevel?: ControlsLevel;
 		externalControl?: boolean;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+		previewDarkMode?: boolean | null;
 	} = $props();
 
 	// Context for external control mode
@@ -73,8 +76,6 @@
 	const sequenceData = $derived(useContext ? ctx!.state.sequenceData ?? sequence : animState?.sequenceData ?? sequence);
 	const playbackMode = $derived(useContext ? ctx!.state.playbackMode : "continuous" as const);
 	const stepSize = $derived(useContext ? ctx!.state.stepPlaybackStepSize : 1 as const);
-	const isCircular = $derived(useContext ? ctx!.state.isCircular : false);
-	const loopCount = $derived(useContext ? ctx!.state.exportLoopCount : 1);
 	const isExporting = $derived(useContext ? ctx!.state.isExporting : false);
 	const exportProgress = $derived(useContext ? ctx!.state.exportProgress : null);
 
@@ -86,6 +87,9 @@
 		const idx = Math.min(Math.max(0, Math.floor(currentBeat) - 1), (seq.beats?.length ?? 1) - 1);
 		return seq.beats?.[idx] ?? null;
 	});
+
+	// Derived: current letter for TKA glyph display
+	const letter = $derived(beatData?.letter ?? null);
 
 	const gridMode = $derived(sequenceData?.gridMode ?? sequence?.gridMode);
 
@@ -182,7 +186,6 @@
 	const stepFullFwd = () => ctx?.actions.onStepFullBeatForward();
 	const setPlaybackMode = (m: any) => ctx?.actions.onPlaybackModeChange(m);
 	const setStepSize = (s: any) => ctx?.actions.onStepPlaybackStepSizeChange(s);
-	const setLoopCount = (c: number) => ctx?.actions.onLoopCountChange(c);
 	const cancelExport = () => ctx?.actions.onCancelExport();
 
 	// Export progress display
@@ -206,12 +209,15 @@
 				redProp={redPropState}
 				gridVisible={true}
 				{gridMode}
+				{letter}
 				{beatData}
 				{sequenceData}
 				{isPlaying}
+				word={sequenceData?.word ?? sequence?.word ?? null}
 				onPlaybackToggle={togglePlayback}
 				trailSettings={animationSettings.trail}
 				onCanvasReady={handleCanvasReady}
+				{previewDarkMode}
 			/>
 
 			{#if isExporting && exportProgress}
@@ -251,14 +257,6 @@
 						onStepPlaybackStepSizeChange={setStepSize}
 						onPlaybackToggle={togglePlayback}
 					/>
-					{#if isCircular}
-						<div class="loop-row">
-							<span>Loops:</span>
-							<button onclick={() => setLoopCount(Math.max(1, loopCount - 1))} disabled={loopCount <= 1}>−</button>
-							<span>{loopCount}</span>
-							<button onclick={() => setLoopCount(Math.min(10, loopCount + 1))} disabled={loopCount >= 10}>+</button>
-						</div>
-					{/if}
 				</div>
 			{:else}
 				<div class="controls-simple">
@@ -616,45 +614,6 @@
 		flex-shrink: 0;
 	}
 
-	.loop-row {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 10px;
-		padding: 10px 12px;
-		background: color-mix(in srgb, var(--theme-card-bg) 50%, transparent);
-		border: 1px solid var(--theme-stroke);
-		border-radius: 10px;
-		font-size: var(--font-size-min);
-		color: var(--theme-text-dim);
-	}
-
-	.loop-row button {
-		width: 36px;
-		height: 36px;
-		min-width: 36px;
-		background: var(--theme-card-bg);
-		border: 1px solid var(--theme-stroke);
-		border-radius: 8px;
-		color: var(--theme-text);
-		cursor: pointer;
-		font-size: 18px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: all 0.15s ease;
-	}
-
-	.loop-row button:hover:not(:disabled) {
-		background: var(--theme-stroke);
-		border-color: var(--theme-stroke-strong);
-	}
-
-	.loop-row button:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
 	/* ========================================
 	   ACCESSIBILITY & MOTION
 	   ======================================== */
@@ -664,7 +623,6 @@
 		}
 
 		.play-btn,
-		.loop-row button,
 		.export-card .progress-bar div {
 			transition: none;
 		}

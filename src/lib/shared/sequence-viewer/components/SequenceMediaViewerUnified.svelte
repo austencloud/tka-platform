@@ -24,6 +24,7 @@
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+	import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 	import { authState } from "$lib/shared/auth/state/authState.svelte";
 	import { browser } from "$app/environment";
 
@@ -69,10 +70,59 @@
 
 	onDestroy(() => {
 		imageSettings.unregisterObserver(handleImageSettingsChange);
+		animationSettings.unregisterObserver(handleAnimationSettingsChange);
 	});
 
 	// Image export settings from ImageCompositionManager
 	const imageSettings = getImageCompositionManager();
+
+	// Animation visibility settings
+	const animationSettings = getAnimationVisibilityManager();
+	// Note: Dark mode is LOCAL to this preview - doesn't affect global app state
+	// This is intentional so the preview shows what the export will look like
+	let animDarkMode = $state(false); // Local preview dark mode state
+	let animGridVisible = $state(animationSettings.getGridMode() !== "none");
+	let animBeatNumbers = $state(animationSettings.getVisibility("beatNumbers"));
+	let animTkaGlyph = $state(animationSettings.getVisibility("tkaGlyph"));
+	let animWordHeader = $state(animationSettings.getVisibility("wordHeader"));
+	let animTrails = $state(animationSettings.getTrailStyle() !== "off");
+
+	function handleAnimationSettingsChange() {
+		// Note: We don't update animDarkMode here - it's local to this preview
+		animGridVisible = animationSettings.getGridMode() !== "none";
+		animBeatNumbers = animationSettings.getVisibility("beatNumbers");
+		animTkaGlyph = animationSettings.getVisibility("tkaGlyph");
+		animWordHeader = animationSettings.getVisibility("wordHeader");
+		animTrails = animationSettings.getTrailStyle() !== "off";
+	}
+
+	animationSettings.registerObserver(handleAnimationSettingsChange);
+
+	// Animation toggle handlers
+	// Dark mode toggles LOCAL preview state only - doesn't affect global app
+	function toggleAnimDarkMode() {
+		animDarkMode = !animDarkMode;
+	}
+	function toggleAnimGrid() {
+		// Toggle between diamond and none
+		const current = animationSettings.getGridMode();
+		animationSettings.setGridMode(current === "none" ? "diamond" : "none");
+	}
+	function toggleAnimBeatNumbers() {
+		animationSettings.toggleVisibility("beatNumbers");
+	}
+	function toggleAnimTkaGlyph() {
+		animationSettings.toggleVisibility("tkaGlyph");
+	}
+	function toggleAnimWordHeader() {
+		animationSettings.toggleVisibility("wordHeader");
+	}
+	function toggleAnimTrails() {
+		// Toggle between subtle and off
+		const current = animationSettings.getTrailStyle();
+		animationSettings.setTrailStyle(current === "off" ? "subtle" : "off");
+	}
+
 	let addWord = $state(imageSettings.addWord);
 	let addBeatNumbers = $state(imageSettings.addBeatNumbers);
 	let includeStartPosition = $state(imageSettings.includeStartPosition);
@@ -247,15 +297,71 @@
 		{:else if activeMediaType === "animation"}
 			<!-- Animation View - using unified AnimationPlayer -->
 			<!-- AnimationPlayer consumes AnimationExportContext internally when externalControl=true -->
-			<div class="animation-view">
-				<AnimationPlayer
-					{sequence}
-					autoPlay={!useExternalControl}
-					showControls={true}
-					{controlsLevel}
-					externalControl={useExternalControl}
-					{onCanvasReady}
-				/>
+			<div class="animation-view-container">
+				<div class="animation-view">
+					<AnimationPlayer
+						{sequence}
+						autoPlay={!useExternalControl}
+						showControls={true}
+						{controlsLevel}
+						externalControl={useExternalControl}
+						{onCanvasReady}
+						previewDarkMode={animDarkMode}
+					/>
+				</div>
+
+				<!-- Animation Visibility Settings Chips -->
+				<div class="settings-chips">
+					<button
+						class="chip"
+						class:active={animDarkMode}
+						onclick={toggleAnimDarkMode}
+						aria-pressed={animDarkMode}
+						title="Toggle dark mode"
+					>
+						Dark Mode
+					</button>
+					<button
+						class="chip"
+						class:active={animGridVisible}
+						onclick={toggleAnimGrid}
+						aria-pressed={animGridVisible}
+					>
+						Grid
+					</button>
+					<button
+						class="chip"
+						class:active={animBeatNumbers}
+						onclick={toggleAnimBeatNumbers}
+						aria-pressed={animBeatNumbers}
+					>
+						Beat #s
+					</button>
+					<button
+						class="chip"
+						class:active={animTkaGlyph}
+						onclick={toggleAnimTkaGlyph}
+						aria-pressed={animTkaGlyph}
+					>
+						TKA Glyph
+					</button>
+					<button
+						class="chip"
+						class:active={animWordHeader}
+						onclick={toggleAnimWordHeader}
+						aria-pressed={animWordHeader}
+					>
+						Word
+					</button>
+					<button
+						class="chip"
+						class:active={animTrails}
+						onclick={toggleAnimTrails}
+						aria-pressed={animTrails}
+					>
+						Trails
+					</button>
+				</div>
 			</div>
 		{:else if activeMediaType === "video"}
 			<!-- Video View -->
@@ -467,13 +573,27 @@
 		outline-offset: 2px;
 	}
 
+	/* Animation View Container - matches image-view-container structure */
+	.animation-view-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		overflow: hidden;
+		container-type: size;
+		container-name: animation-container;
+	}
+
 	/* Animation View - sized to available space for container queries */
 	.animation-view {
 		flex: 1;
 		min-height: 0;
 		min-width: 0; /* Critical for flex width containment */
 		width: 100%;
-		height: 100%;
+		max-height: 100%;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden; /* Contain children */
