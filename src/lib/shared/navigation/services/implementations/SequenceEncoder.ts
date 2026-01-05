@@ -22,6 +22,7 @@ import LZString from "lz-string";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
+import { createStartPositionData } from "../../../../features/create/shared/domain/factories/createStartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
@@ -241,6 +242,16 @@ export class SequenceEncoder implements ISequenceEncoder {
       const startPositionEncoding = parts[0]!;
       const startingPositionBeat = this.decodeBeat(startPositionEncoding, 0);
 
+      // Convert BeatData to StartPositionData using the factory function
+      const startPosition = createStartPositionData({
+        id: startingPositionBeat.id || crypto.randomUUID(),
+        letter: startingPositionBeat.letter,
+        gridPosition: startingPositionBeat.startPosition,
+        startPosition: startingPositionBeat.startPosition,
+        endPosition: startingPositionBeat.endPosition,
+        motions: startingPositionBeat.motions,
+      });
+
       const beatEncodings = parts.slice(1).filter((e) => e && e.length > 0);
 
       beats = beatEncodings.map((encoding, index) =>
@@ -252,8 +263,8 @@ export class SequenceEncoder implements ISequenceEncoder {
         name: "Shared Sequence",
         word: "",
         beats,
-        startingPositionBeat,
-        startPosition: startingPositionBeat,
+        startingPositionBeat: startPosition,
+        startPosition,
         thumbnails: [],
         isFavorite: false,
         isCircular: false,

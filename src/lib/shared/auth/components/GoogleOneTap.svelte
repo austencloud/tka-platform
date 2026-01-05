@@ -137,7 +137,7 @@
         try {
           // Use callback to see what Google reports (works in non-FedCM mode)
           window.google?.accounts.id.prompt((notification) => {
-            if (notification.isDisplayed()) {
+            if (!notification.isNotDisplayed()) {
               debug.success("One Tap prompt displayed");
             } else if (notification.isNotDisplayed()) {
               const reason = notification.getNotDisplayedReason();

@@ -20,8 +20,8 @@
   interface Props {
     sequence: SequenceData | null;
     onTransform: (newSequence: SequenceData) => void;
-    handleMirror: () => SequenceData | null;
-    handleRotate: (direction: "cw" | "ccw") => SequenceData | null;
+    handleMirror: () => Promise<SequenceData | null>;
+    handleRotate: (direction: "cw" | "ccw") => Promise<SequenceData | null>;
     handleSwapColors: () => SequenceData | null;
     handleRewind: () => Promise<SequenceData | null>;
   }
@@ -53,17 +53,17 @@
   }
 
   async function doMirror() {
-    const result = handleMirror();
+    const result = await handleMirror();
     if (result) onTransform(result);
   }
 
   async function doRotateCW() {
-    const result = handleRotate("cw");
+    const result = await handleRotate("cw");
     if (result) onTransform(result);
   }
 
   async function doRotateCCW() {
-    const result = handleRotate("ccw");
+    const result = await handleRotate("ccw");
     if (result) onTransform(result);
   }
 

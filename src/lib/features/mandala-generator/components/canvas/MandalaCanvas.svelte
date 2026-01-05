@@ -190,25 +190,29 @@
         if (data.type === "arrow") {
           // Add the arrow element at the exact drop position
           mandalaState.addElement({
+            id: crypto.randomUUID(),
             type: "arrow",
-            motionType: data.motionType,
-            turns: data.turns,
+            arrowSpec: {
+              motionType: data.motionType,
+              turns: data.turns,
+            },
             position: dropPosition,
             rotation: 0,
             scale: 1,
             color: data.color,
-            svgPath: data.path,
             zIndex: mandalaState.elements.length,
           });
         } else if (data.type === "staff") {
           mandalaState.addElement({
+            id: crypto.randomUUID(),
             type: "staff",
-            staffType: data.staffType,
+            staffSpec: {
+              variant: "simple",
+            },
             position: dropPosition,
             rotation: 0,
             scale: 1,
             color: data.color,
-            svgPath: data.path,
             zIndex: mandalaState.elements.length,
           });
         }

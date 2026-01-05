@@ -51,21 +51,23 @@ export class LetterDeriver implements ILetterDeriver {
     )) as BeatData[];
 
     // Derive letter for start position if it exists
-    let updatedStartPosition: StartPositionData | BeatData | null | undefined =
+    let updatedStartPosition: StartPositionData | null | undefined =
       sequence.startPosition;
-    let updatedStartingPositionBeat: StartPositionData | BeatData | undefined =
+    let updatedStartingPositionBeat: StartPositionData | undefined =
       sequence.startingPositionBeat;
 
     if (sequence.startPosition) {
-      updatedStartPosition = await this.deriveLetterForBeat(
+      // Cast is safe - we pass StartPositionData so we get StartPositionData back
+      updatedStartPosition = (await this.deriveLetterForBeat(
         sequence.startPosition
-      );
+      )) as StartPositionData;
     }
 
     if (sequence.startingPositionBeat) {
-      updatedStartingPositionBeat = await this.deriveLetterForBeat(
+      // Cast is safe - we pass StartPositionData so we get StartPositionData back
+      updatedStartingPositionBeat = (await this.deriveLetterForBeat(
         sequence.startingPositionBeat
-      );
+      )) as StartPositionData;
     }
 
     // Build the word from the letters

@@ -40,13 +40,13 @@
   }
 
   const ALL_ARROW_VARIATIONS: ArrowVariation[] = MOTION_TYPES.flatMap(
-    (motion) => {
+    (motion): ArrowVariation[] => {
       if (motion.id === "float") {
         // Float has no turn variations
         return [
           {
             id: "float",
-            motionType: "float",
+            motionType: "float" as string,
             motionLabel: "Float",
             turns: null,
             label: "Float",
@@ -57,9 +57,9 @@
       // All other motion types have turn variations
       return TURN_VALUES.map((turn) => ({
         id: `${motion.id}_${turn}`,
-        motionType: motion.id,
+        motionType: motion.id as string,
         motionLabel: motion.label,
-        turns: turn,
+        turns: turn as number | null,
         label: `${motion.label} ${turn}`,
         path: `/images/arrows/${motion.id}/from_radial/${motion.id}_${turn.toFixed(1)}.svg`,
       }));
@@ -264,7 +264,7 @@
         {@const svgContent = staffSvgCache.get(staff.path)}
         <button
           class="asset-item"
-          onclick={() => handleAssetClick("staff", staff.id)}
+          onclick={() => handleAssetClick("staff", staff.id, null, selectedColor)}
           draggable="true"
           ondragstart={(e) => {
             e.dataTransfer?.setData(

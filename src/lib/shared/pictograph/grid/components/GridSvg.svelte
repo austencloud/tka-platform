@@ -1,7 +1,7 @@
 <!--
 GridSvg.svelte - Grid Component with Beautiful Rotation Animation
 
-Loads diamond grid and rotates it 45° with cumulative rotation.
+Loads diamond grid and rotates it 45 deg with cumulative rotation.
 Pure reactive approach - grid mode determines styling, rotation provides animation.
 -->
 <script lang="ts">
@@ -132,7 +132,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
     let modifiedSvg = svgContent;
 
-    // CRITICAL: Strip the embedded <style> block when exporting
+    // CRITICAL: Strip the embedded style block when exporting
     // The SVG has CSS like .normal-hand-point{fill:currentColor} which has higher
     // specificity than fill attributes. Remove it so our inline fills work.
     if (shouldInlineColors) {
@@ -308,7 +308,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     return ((ay * x + by) * x + cy) * x;
   }
 
-  // Increment cumulative rotation by 45° with smooth animation whenever gridMode changes
+  // Increment cumulative rotation by 45 deg with smooth animation whenever gridMode changes
   // Use global rotation direction to determine clockwise (+45) or counterclockwise (-45)
   $effect(() => {
     // First render - set initial rotation without animation
@@ -363,7 +363,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   });
 </script>
 
-<!-- Grid Container - Rotates cumulatively by 45° each time -->
+<!-- Grid Container - Rotates cumulatively by 45 deg each time -->
 <!-- When darkMode is explicitly set (for export), apply inline color override -->
 <g
   bind:this={gridContainerElement}
@@ -490,17 +490,17 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   /* Preview mode: show "off" non-radial points at 40% opacity instead of hidden */
   :global(
-    .grid-container.preview-mode:not(.show-non-radial) #ne_diamond_layer2_point
-  ),
+      .grid-container.preview-mode:not(.show-non-radial) #ne_diamond_layer2_point
+    ),
   :global(
-    .grid-container.preview-mode:not(.show-non-radial) #se_diamond_layer2_point
-  ),
+      .grid-container.preview-mode:not(.show-non-radial) #se_diamond_layer2_point
+    ),
   :global(
-    .grid-container.preview-mode:not(.show-non-radial) #sw_diamond_layer2_point
-  ),
+      .grid-container.preview-mode:not(.show-non-radial) #sw_diamond_layer2_point
+    ),
   :global(
-    .grid-container.preview-mode:not(.show-non-radial) #nw_diamond_layer2_point
-  ) {
+      .grid-container.preview-mode:not(.show-non-radial) #nw_diamond_layer2_point
+    ) {
     opacity: 0.4;
   }
 

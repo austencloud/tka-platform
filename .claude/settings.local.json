@@ -1763,7 +1763,10 @@
       "Bash(\"src/lib/shared/keyboard/utils/register-global-shortcuts.ts\")",
       "Bash(\"src/lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte\")",
       "Bash(\"src/lib/shared/inversify/hmr/HMRContainerManager.ts\" )",
-      "Bash(\"src/lib/shared/share-hub/components/ShareHubDrawer.svelte\")"
+      "Bash(\"src/lib/shared/share-hub/components/ShareHubDrawer.svelte\")",
+      "Bash(Set-Content 'src/lib/shared/pictograph/grid/components/GridSvg.svelte' -NoNewline)",
+      "Bash(xxd:*)",
+      "Bash(nslookup:*)"
     ],
     "deny": [],
     "ask": []

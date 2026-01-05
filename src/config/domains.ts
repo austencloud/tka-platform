@@ -41,7 +41,7 @@ export function detectSiteMode(origin: string): SiteMode {
 
     // Check direct mapping
     if (hostname in DOMAIN_MODE_MAP) {
-      return DOMAIN_MODE_MAP[hostname];
+      return DOMAIN_MODE_MAP[hostname] as SiteMode;
     }
 
     // Localhost/dev defaults to app mode

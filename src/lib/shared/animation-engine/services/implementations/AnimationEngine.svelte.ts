@@ -78,6 +78,9 @@ export interface AnimationEngineProps {
   // Prop type overrides - bypass settings when provided (useful for demos/previews)
   bluePropType?: string | null;
   redPropType?: string | null;
+  // Preview-only dark mode override - when provided, bypasses global setting
+  // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
+  previewDarkMode?: boolean | null;
 }
 
 /**
@@ -490,6 +493,31 @@ export class AnimationEngine {
             this.getFrameParams(props)
           );
         });
+    }
+
+    // Handle preview dark mode override
+    // When previewDarkMode is provided (not null), it overrides global dark mode
+    // This allows the sequence viewer preview to control dark mode locally
+    if (props.previewDarkMode !== undefined && props.previewDarkMode !== null) {
+      const previewDarkMode = props.previewDarkMode;
+      if (previewDarkMode !== this.prevDarkMode) {
+        this.prevDarkMode = previewDarkMode;
+        this.animationRenderer?.setDarkMode(previewDarkMode);
+
+        // Trigger render with new dark mode
+        if (this.state.isInitialized) {
+          this.renderLoopService?.triggerRender(() =>
+            this.getFrameParams(props)
+          );
+
+          // Reload prop textures (they need theme-aware colors)
+          this.loadPropTextures().then(() => {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(props)
+            );
+          });
+        }
+      }
     }
 
     // Handle prop visibility changes - clear trails when both hidden

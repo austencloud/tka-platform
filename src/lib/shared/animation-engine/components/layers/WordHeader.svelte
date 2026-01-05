@@ -6,7 +6,7 @@ Displays ABOVE the canvas as a full-width header (matches image export style).
 
 Uses simplifyRepeatedWord to handle repeated words (e.g., "ABAB" → "AB").
 Does NOT truncate - allows full word length when needed for uniqueness.
-Dark mode: Uses CSS-first approach - styles triggered by .dark class on <html> element.
+Dark mode: Controlled via prop (for preview isolation) or falls back to :root.dark class.
 -->
 <script lang="ts">
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -14,9 +14,11 @@ Dark mode: Uses CSS-first approach - styles triggered by .dark class on <html> e
   let {
     word = null,
     visible = true,
+    darkMode = false,
   }: {
     word?: string | null;
     visible?: boolean;
+    darkMode?: boolean;
   } = $props();
 
   // Derive display text - simplify repeated patterns (no truncation), then uppercase
@@ -26,7 +28,7 @@ Dark mode: Uses CSS-first approach - styles triggered by .dark class on <html> e
 </script>
 
 {#if visible && displayText}
-  <div class="word-header">
+  <div class="word-header" class:dark-mode={darkMode}>
     <span class="word-text">{displayText}</span>
   </div>
 {/if}
@@ -60,8 +62,8 @@ Dark mode: Uses CSS-first approach - styles triggered by .dark class on <html> e
     color: #1f2937;
   }
 
-  /* Dark mode: dark background with light text */
-  :global(:root.dark) .word-header {
+  /* Dark mode: dark background with light text (via prop) */
+  .word-header.dark-mode {
     background: linear-gradient(
       to bottom,
       rgba(15, 15, 20, 0.98),
@@ -70,7 +72,21 @@ Dark mode: Uses CSS-first approach - styles triggered by .dark class on <html> e
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  :global(:root.dark) .word-text {
+  .word-header.dark-mode .word-text {
+    color: #ffffff;
+  }
+
+  /* Fallback: Also support global .dark class for non-preview usage */
+  :global(:root.dark) .word-header:not(.dark-mode) {
+    background: linear-gradient(
+      to bottom,
+      rgba(15, 15, 20, 0.98),
+      rgba(10, 10, 15, 0.98)
+    );
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  :global(:root.dark) .word-header:not(.dark-mode) .word-text {
     color: #ffffff;
   }
 </style>

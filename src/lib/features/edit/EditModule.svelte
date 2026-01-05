@@ -179,18 +179,18 @@
   /**
    * Transformation handlers that use the resolved service
    */
-  function handleMirror(): SequenceData | null {
+  async function handleMirror(): Promise<SequenceData | null> {
     const sequence = editState.editingSequence;
     if (!sequence || !transformService) return null;
-    return transformService.mirrorSequence(sequence);
+    return await transformService.mirrorSequence(sequence);
   }
 
-  function handleRotate(direction: "cw" | "ccw"): SequenceData | null {
+  async function handleRotate(direction: "cw" | "ccw"): Promise<SequenceData | null> {
     const sequence = editState.editingSequence;
     if (!sequence || !transformService) return null;
     // Rotate 45 degrees (one step)
     const amount = direction === "cw" ? 1 : -1;
-    return transformService.rotateSequence(sequence, amount);
+    return await transformService.rotateSequence(sequence, amount);
   }
 
   function handleSwapColors(): SequenceData | null {

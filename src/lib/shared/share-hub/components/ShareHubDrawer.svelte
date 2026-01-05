@@ -14,7 +14,10 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequencePreviewPanel from "$lib/shared/sequence-viewer/components/SequencePreviewPanel.svelte";
-  import type { MediaFormat, ExportSettings as SequenceViewerExportSettings } from "$lib/shared/sequence-viewer/domain/types";
+  import type {
+    MediaFormat,
+    ExportSettings as SequenceViewerExportSettings,
+  } from "$lib/shared/sequence-viewer/domain/types";
   import type { ExportSettings } from "../domain/models/ExportSettings";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
@@ -123,46 +126,48 @@
   // This eliminates prop drilling through ShareHubPanel → SingleMediaView → AnimationExportView
   //
   // IMPORTANT: Context must be set during initialization, not reactively.
-  // We create a reactive state object that gets updated, and set the context once.
+  // We create a reactive state object with defaults, then update via $effect.
+  // This avoids state_referenced_locally warnings from Svelte 5.
+  const noop = () => {};
   const animationContext = $state({
     state: {
-      sequenceData: animationSequenceData,
-      isCircular,
-      isPlaying: isAnimationPlaying,
-      currentBeat: animationCurrentBeat,
-      speed: animationSpeed,
-      playbackMode,
-      stepPlaybackPauseMs,
-      stepPlaybackStepSize,
-      blueMotionVisible,
-      redMotionVisible,
-      bluePropState: animationBluePropState,
-      redPropState: animationRedPropState,
-      exportLoopCount,
-      isExporting: isAnimationExporting,
-      exportProgress: animationExportProgress,
-      servicesReady: animationServicesReady,
-      loading: animationLoading,
-      isSideBySideLayout,
-      selectedFormat,
+      sequenceData: null as SequenceData | null,
+      isCircular: false,
+      isPlaying: false,
+      currentBeat: 0,
+      speed: 1,
+      playbackMode: "continuous" as PlaybackMode,
+      stepPlaybackPauseMs: 300,
+      stepPlaybackStepSize: 1 as StepPlaybackStepSize,
+      blueMotionVisible: true,
+      redMotionVisible: true,
+      bluePropState: null as any,
+      redPropState: null as any,
+      exportLoopCount: 1,
+      isExporting: false,
+      exportProgress: null as VideoExportProgress | null,
+      servicesReady: false,
+      loading: false,
+      isSideBySideLayout: false,
+      selectedFormat: "animation" as "animation" | "static" | "performance",
     },
     actions: {
-      onPlaybackToggle: onPlaybackToggle ?? (() => {}),
-      onSpeedChange: onSpeedChange ?? (() => {}),
-      onPlaybackModeChange: onPlaybackModeChange ?? (() => {}),
-      onStepPlaybackPauseMsChange: onStepPlaybackPauseMsChange ?? (() => {}),
-      onStepPlaybackStepSizeChange: onStepPlaybackStepSizeChange ?? (() => {}),
-      onStepHalfBeatForward: onStepHalfBeatForward ?? (() => {}),
-      onStepHalfBeatBackward: onStepHalfBeatBackward ?? (() => {}),
-      onStepFullBeatForward: onStepFullBeatForward ?? (() => {}),
-      onStepFullBeatBackward: onStepFullBeatBackward ?? (() => {}),
-      onToggleBlue: onToggleBlue ?? (() => {}),
-      onToggleRed: onToggleRed ?? (() => {}),
-      onLoopCountChange: onLoopCountChange ?? (() => {}),
-      onExportVideo: onExportVideo ?? (() => {}),
-      onCancelExport: onCancelExport ?? (() => {}),
-      onCanvasReady: onCanvasReady ?? (() => {}),
-      onFormatChange: onFormatChange ?? (() => {}),
+      onPlaybackToggle: noop as () => void,
+      onSpeedChange: noop as (speed: number) => void,
+      onPlaybackModeChange: noop as (mode: PlaybackMode) => void,
+      onStepPlaybackPauseMsChange: noop as (pauseMs: number) => void,
+      onStepPlaybackStepSizeChange: noop as (stepSize: StepPlaybackStepSize) => void,
+      onStepHalfBeatForward: noop as () => void,
+      onStepHalfBeatBackward: noop as () => void,
+      onStepFullBeatForward: noop as () => void,
+      onStepFullBeatBackward: noop as () => void,
+      onToggleBlue: noop as () => void,
+      onToggleRed: noop as () => void,
+      onLoopCountChange: noop as (count: number) => void,
+      onExportVideo: noop as () => void,
+      onCancelExport: noop as () => void,
+      onCanvasReady: noop as (canvas: HTMLCanvasElement | null) => void,
+      onFormatChange: noop as (format: "animation" | "static" | "performance") => void,
     },
   });
 
@@ -239,7 +244,10 @@
   }
 
   // Pass export request through to parent coordinator
-  function handleExport(format: MediaFormat, settings: SequenceViewerExportSettings) {
+  function handleExport(
+    format: MediaFormat,
+    settings: SequenceViewerExportSettings
+  ) {
     // Pass through directly - the coordinator handles the actual export
     onExport?.("single", settings as ExportSettings);
   }
@@ -267,27 +275,28 @@
     preventScroll={true}
   >
     <div class="share-hub-content">
-        {#if sequence}
-          <SequencePreviewPanel
-            {sequence}
-            mode="preview"
-            initialMediaType="animation"
-            onClose={handleClose}
-            onExport={handleExport}
-            isExporting={isAnimationExporting}
-            exportProgress={viewerExportProgress}
-            onCustomNameChange={(value) => {
-              if (sequence) {
-                sequence.customName = value;
-              }
-            }}
-          />
-        {:else}
-          <div class="empty-state">
-            <p>No sequence to share</p>
-            <button class="close-btn" onclick={handleClose}>Close</button>
-          </div>
-        {/if}
+      {#if sequence}
+        <SequencePreviewPanel
+          {sequence}
+          mode="preview"
+          initialMediaType="animation"
+          onClose={handleClose}
+          onExport={handleExport}
+          isExporting={isAnimationExporting}
+          exportProgress={viewerExportProgress}
+          onNameChange={(value) => {
+            if (sequence) {
+              // Update displayName on the sequence (cast to allow mutation of readonly)
+              (sequence as { displayName?: string }).displayName = value;
+            }
+          }}
+        />
+      {:else}
+        <div class="empty-state">
+          <p>No sequence to share</p>
+          <button class="close-btn" onclick={handleClose}>Close</button>
+        </div>
+      {/if}
     </div>
   </Drawer>
 </div>
@@ -364,57 +373,6 @@
     /* Container context for responsive children */
     container-type: size;
     container-name: share-hub-content;
-  }
-
-  /* Custom Name Section */
-  .custom-name-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 16px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    flex-shrink: 0;
-  }
-
-  .custom-name-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    margin: 0;
-  }
-
-  .custom-name-label i {
-    font-size: 16px;
-  }
-
-  .custom-name-input {
-    width: 100%;
-    padding: 10px 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-md, 15px);
-    outline: none;
-    transition: border-color 0.2s ease;
-  }
-
-  .custom-name-input:focus {
-    border-color: var(--theme-accent, rgba(59, 130, 246, 0.5));
-  }
-
-  .custom-name-input::placeholder {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  .custom-name-hint {
-    font-size: var(--font-size-xs, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    margin: 0;
   }
 
   /* Empty state fallback */

@@ -8,6 +8,7 @@
 import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionConfig3D } from "../../domain/models/MotionData3D";
 import { Plane } from "../../domain/enums/Plane";
@@ -48,17 +49,23 @@ export class SequenceConverter implements ISequenceConverter {
   }
 
   /**
-   * Extract motion configs from a BeatData object
+   * Extract motion configs from a BeatData or StartPositionData object
    */
   beatDataToConfigs(
-    beat: BeatData,
+    beat: BeatData | StartPositionData,
     plane: Plane = Plane.WALL
   ): BeatMotionConfigs {
     const blueMotion = beat.motions?.[MotionColor.BLUE];
     const redMotion = beat.motions?.[MotionColor.RED];
 
+    // Start positions use 0 for beatNumber, regular beats use their beatNumber
+    const beatNumber =
+      "isStartPosition" in beat && beat.isStartPosition
+        ? 0
+        : (beat as BeatData).beatNumber ?? 0;
+
     return {
-      beatNumber: beat.beatNumber ?? 0,
+      beatNumber,
       blue:
         blueMotion && blueMotion.isVisible !== false
           ? this.motionDataToConfig3D(blueMotion, plane)
@@ -97,7 +104,7 @@ export class SequenceConverter implements ISequenceConverter {
   ): BeatMotionConfigs | null {
     // Try startPosition field first
     if (sequence.startPosition) {
-      return this.beatDataToConfigs(sequence.startPosition as BeatData, plane);
+      return this.beatDataToConfigs(sequence.startPosition, plane);
     }
 
     // Fall back to beat 0 in beats array

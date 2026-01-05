@@ -170,6 +170,8 @@ Last audit: 2025-12-27
       externalTrailSettings,
       bluePropType,
       redPropType,
+      // Pass preview dark mode override to engine for background rendering
+      previewDarkMode,
     };
     untrack(() => {
       engine.update(props);
@@ -199,48 +201,60 @@ Last audit: 2025-12-27
   <GlyphRenderer {letter} {beatData} onSvgReady={handleGlyphSvgReady} />
 {/if}
 
-<!-- Outer container: word header above + canvas area below -->
-<div class="animation-container" data-lights-off={darkModeEnabled ? "true" : "false"}>
-  <!-- Word header lives ABOVE the canvas (not overlaid) -->
-  <WordHeader {word} visible={wordHeaderVisible} />
+<!-- Outer container centers the content -->
+<div class="animation-container">
+  <!-- Inner wrapper constrains to canvas width so header matches -->
+  <div class="content-wrapper" data-lights-off={darkModeEnabled ? "true" : "false"}>
+    <!-- Word header lives ABOVE the canvas (not overlaid) -->
+    <WordHeader {word} visible={wordHeaderVisible} darkMode={darkModeEnabled} />
 
-  <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
-  <div
-    class="canvas-wrapper"
-    bind:this={containerElement}
-    data-transparent={backgroundAlpha === 0 ? "true" : "false"}
-    data-lights-off={darkModeEnabled ? "true" : "false"}
-  >
-    <GlyphOverlay
-      {letter}
-      {displayedLetter}
-      {displayedTurnsTuple}
-      {displayedBeatNumber}
-      {fadingOutLetter}
-      {fadingOutTurnsTuple}
-      {fadingOutBeatNumber}
-      {isNewLetter}
-      {tkaGlyphVisible}
-      {beatNumbersVisible}
-    />
+    <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
+    <div
+      class="canvas-wrapper"
+      bind:this={containerElement}
+      data-transparent={backgroundAlpha === 0 ? "true" : "false"}
+      data-lights-off={darkModeEnabled ? "true" : "false"}
+    >
+      <GlyphOverlay
+        {letter}
+        {displayedLetter}
+        {displayedTurnsTuple}
+        {displayedBeatNumber}
+        {fadingOutLetter}
+        {fadingOutTurnsTuple}
+        {fadingOutBeatNumber}
+        {isNewLetter}
+        {tkaGlyphVisible}
+        {beatNumbersVisible}
+      />
 
-    <ProgressOverlay
-      {isPreRendering}
-      {preRenderProgress}
-      {preRenderedFramesReady}
-    />
+      <ProgressOverlay
+        {isPreRendering}
+        {preRenderProgress}
+        {preRenderedFramesReady}
+      />
+    </div>
   </div>
 </div>
 
 <style>
-  /* Outer container: column layout with word header above canvas */
+  /* Outer container: centers content */
   .animation-container {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100%;
     width: 100%;
     container-type: size;
+  }
+
+  /* Inner wrapper: constrains to canvas width so header matches */
+  .content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    max-height: 100%;
+    max-width: 100%;
   }
 
   /* Canvas wrapper maintains 1:1 aspect ratio for animation content only */
@@ -249,9 +263,10 @@ Last audit: 2025-12-27
     aspect-ratio: 1 / 1;
     flex: 1 1 auto;
     min-height: 0;
-    width: auto;
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
+    max-width: 100cqw;
+    /* Height constrained by container minus header space */
+    max-height: min(100cqh, 100cqw);
     display: flex;
     align-items: center;
     justify-content: center;

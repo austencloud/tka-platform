@@ -40,21 +40,23 @@ export class PositionDeriver implements IPositionDeriver {
     ) as BeatData[];
 
     // Derive positions for start position if it exists
-    let updatedStartPosition: StartPositionData | BeatData | null | undefined =
+    let updatedStartPosition: StartPositionData | null | undefined =
       sequence.startPosition;
-    let updatedStartingPositionBeat: StartPositionData | BeatData | undefined =
+    let updatedStartingPositionBeat: StartPositionData | undefined =
       sequence.startingPositionBeat;
 
     if (sequence.startPosition) {
+      // Cast is safe - we pass StartPositionData so we get StartPositionData back
       updatedStartPosition = this.derivePositionsForBeat(
         sequence.startPosition
-      );
+      ) as StartPositionData;
     }
 
     if (sequence.startingPositionBeat) {
+      // Cast is safe - we pass StartPositionData so we get StartPositionData back
       updatedStartingPositionBeat = this.derivePositionsForBeat(
         sequence.startingPositionBeat
-      );
+      ) as StartPositionData;
     }
 
     return {
