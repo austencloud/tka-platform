@@ -69,8 +69,8 @@ export function isAppDomain(currentOrigin: string): boolean {
 export const LANDING_SEO_CONFIG = {
   siteName: "The Kinetic Alphabet",
   description:
-    "The universal notation system for flow arts - digital sheet music for poi, staff, hoop, and buugeng choreography.",
-  keywords: "flow arts, notation, poi, staff, hoop, buugeng, choreography",
+    "The universal notation system for flow arts - digital sheet music for props like staff, hoop, fans, clubs, and buugeng.",
+  keywords: "flow arts, notation, staff, clubs, fans, hoop, buugeng, swords, choreography",
   author: "Austen Cloud",
   language: "en",
   type: "website",
@@ -87,8 +87,8 @@ export const LANDING_SEO_CONFIG = {
 export const APP_SEO_CONFIG = {
   siteName: "TKA Scribe",
   description:
-    "Create, animate, and share flow arts sequences with TKA Scribe - the free choreography app for poi, staff, hoop, and buugeng.",
-  keywords: "flow arts app, sequence creator, poi patterns, staff choreography",
+    "Create, animate, and share flow arts sequences with TKA Scribe - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
+  keywords: "flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
   author: "Austen Cloud",
   language: "en",
   type: "website",

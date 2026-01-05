@@ -16,6 +16,7 @@ export interface ShareOptions {
   addUserInfo: boolean;
   addWord: boolean;
   addDifficultyLevel: boolean;
+  customName?: string; // Optional custom name for header
 
   // === VISUAL OPTIONS ===
   beatSize: number; // Size of each beat in pixels

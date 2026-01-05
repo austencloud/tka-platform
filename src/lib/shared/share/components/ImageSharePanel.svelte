@@ -289,6 +289,27 @@
         </button>
       {/each}
     </div>
+
+    <!-- Custom Name Input (only show when Word is enabled) -->
+    {#if shareState?.options.addWord}
+      <div class="custom-name-input">
+        <label for="custom-name">
+          <i class="fas fa-pencil" aria-hidden="true"></i>
+          <span>Custom Name</span>
+        </label>
+        <input
+          id="custom-name"
+          type="text"
+          placeholder={currentSequence?.name || "Enter custom name..."}
+          value={shareState?.options.customName || ""}
+          oninput={(e) => {
+            const value = (e.target as HTMLInputElement).value;
+            shareState?.updateOptions({ customName: value || undefined });
+          }}
+          disabled={!canShare()}
+        />
+      </div>
+    {/if}
   </section>
 
   <!-- PRIMARY ACTIONS - Main buttons -->
@@ -577,6 +598,58 @@
   }
 
   .chip:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* ============================================
+     CUSTOM NAME INPUT
+     ============================================ */
+  .custom-name-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .custom-name-input label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    font-weight: 600;
+  }
+
+  .custom-name-input label i {
+    font-size: var(--font-size-sm);
+    color: var(--theme-accent);
+  }
+
+  .custom-name-input input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 10px;
+    color: var(--theme-text);
+    font-size: var(--font-size-compact);
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .custom-name-input input::placeholder {
+    color: var(--theme-text-dim);
+    opacity: 0.6;
+  }
+
+  .custom-name-input input:focus {
+    outline: none;
+    border-color: var(--theme-accent);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+
+  .custom-name-input input:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }

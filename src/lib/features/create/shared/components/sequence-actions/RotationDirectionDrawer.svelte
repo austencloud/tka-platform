@@ -22,6 +22,7 @@
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IRotationDirectionPatternManager } from "../../services/contracts/IRotationDirectionPatternManager";
+  import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
   // Child components
   import SaveModePanel from "./rotation-direction/SaveModePanel.svelte";
@@ -32,6 +33,8 @@
   interface Props {
     isOpen: boolean;
     sequence: SequenceData | null;
+    /** Which hand(s) to apply patterns to - controlled by parent panel */
+    targetHand: TargetHand;
     toolPanelWidth?: number;
     onClose: () => void;
     onApply: (result: {
@@ -43,6 +46,7 @@
   let {
     isOpen = $bindable(),
     sequence,
+    targetHand,
     toolPanelWidth = 0,
     onClose,
     onApply,
@@ -113,7 +117,8 @@
     try {
       const result = await rotationPatternService.applyPattern(
         pattern,
-        sequence
+        sequence,
+        targetHand
       );
 
       if (result.success && result.sequence) {
@@ -199,6 +204,22 @@
           Save Current
         </button>
       </div>
+
+      <!-- Hand indicator (read-only - controlled by parent panel) -->
+      {#if mode === "apply"}
+        <div class="hand-indicator">
+          <span class="indicator-label">Applying to:</span>
+          <span class="indicator-value" class:both={targetHand === "both"}>
+            {#if targetHand === "blue"}
+              <span class="hand-dot blue"></span>Blue hand
+            {:else if targetHand === "red"}
+              <span class="hand-dot red"></span>Red hand
+            {:else}
+              Both hands
+            {/if}
+          </span>
+        </div>
+      {/if}
 
       {#if errorMessage}
         <div class="error-message">
@@ -353,5 +374,47 @@
     gap: 8px;
     padding: 32px;
     color: var(--theme-text-muted);
+  }
+
+  /* Hand indicator (read-only display) */
+  .hand-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--theme-stroke);
+    background: var(--theme-card-bg);
+    font-size: 0.85rem;
+  }
+
+  .indicator-label {
+    color: var(--theme-text-muted);
+    white-space: nowrap;
+  }
+
+  .indicator-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--theme-text);
+    font-weight: 500;
+  }
+
+  .indicator-value.both {
+    color: var(--theme-text-muted);
+  }
+
+  .hand-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .hand-dot.blue {
+    background: var(--prop-blue);
+  }
+
+  .hand-dot.red {
+    background: var(--prop-red);
   }
 </style>

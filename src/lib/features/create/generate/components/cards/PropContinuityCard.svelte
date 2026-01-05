@@ -9,7 +9,8 @@ Shows BOTH continuity options vertically with clear active/inactive states
   let {
     currentContinuity,
     onContinuityChange,
-    color = "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)", // Cyan teal gradient
+    // 🎨 Luminance-aware cyan gradient - adapts to background brightness
+    color = "linear-gradient(135deg, var(--card-cyan, #06b6d4) 0%, var(--card-cyan-end, #0891b2) 100%)",
     shadowColor = "190deg 80% 50%", // Cyan-matched shadow
     gridColumnSpan = 2,
     cardIndex = 0,

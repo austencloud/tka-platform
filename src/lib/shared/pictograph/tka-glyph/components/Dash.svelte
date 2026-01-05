@@ -7,13 +7,20 @@ Positioned to the right of the letter with a small gap.
 This component exists because legacy architecture renders the dash separately
 from the letter, allowing the direction dot to center over just the letter.
 
-Dark mode: Uses CSS variable --dm-glyph-fill (auto-updates via .dark class on <html>)
+Dark mode: This component is rendered INSIDE TKAGlyph's group, which applies
+filter: invert(0.9) for dark mode. Therefore, Dash should ALWAYS be black
+(like the letter SVGs) and let the parent's filter handle the inversion.
+DO NOT add dark mode color logic here - it would cause double-inversion!
 -->
 <script lang="ts">
   // Constants from legacy implementation and dash.svg viewBox
   const DASH_WIDTH = 70;
   const DASH_HEIGHT = 20;
   const DASH_GAP = 10; // Gap between letter and dash
+
+  // Dash fill color - always black like letter SVGs
+  // TKAGlyph's filter: invert(0.9) handles dark mode inversion
+  const DASH_FILL = "#231f20";
 
   let {
     letterWidth = 100,
@@ -44,7 +51,7 @@ Dark mode: Uses CSS variable --dm-glyph-fill (auto-updates via .dark class on <h
     class:preview-mode={previewMode}
     transform="translate({dashX}, {dashY})"
   >
-    <!-- Fill color via CSS variable - auto-updates with dark mode -->
+    <!-- Always black fill - TKAGlyph's filter handles dark mode inversion -->
     <rect
       x="0"
       y="0"
@@ -52,7 +59,7 @@ Dark mode: Uses CSS variable --dm-glyph-fill (auto-updates via .dark class on <h
       height={DASH_HEIGHT}
       rx="9.5"
       ry="9.5"
-      fill="var(--dm-glyph-fill)"
+      fill={DASH_FILL}
     />
   </g>
 {/if}
@@ -71,10 +78,5 @@ Dark mode: Uses CSS variable --dm-glyph-fill (auto-updates via .dark class on <h
   /* Preview mode: show at reduced opacity */
   .letter-dash.preview-mode:not(.visible) {
     opacity: 0.4;
-  }
-
-  /* Animate fill color changes for dark mode transition */
-  .letter-dash rect {
-    transition: fill 150ms ease-out;
   }
 </style>

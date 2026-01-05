@@ -366,6 +366,13 @@ export function applyThemeFromColors(
   // Apply to document root
   const root = document.documentElement;
 
+  // Set data attribute for CSS-based background luminance awareness
+  // "bright" = luminous backgrounds (Aurora, etc.) - cards need deeper colors to pop
+  // "dim" = darker backgrounds (Night Sky, etc.) - standard vibrant colors work well
+  // NOTE: This is separate from "dark mode" (L key) which controls pictograph rendering
+  const luminanceClass = mode === "light" ? "bright" : "dim";
+  root.setAttribute("data-theme-luminance", luminanceClass);
+
   // ═══════════════════════════════════════════════════════════════════════════
   // LEGACY VARIABLES - Still used by 30+ components. DO NOT REMOVE.
   // Migration to --theme-* variables is ongoing.
@@ -475,6 +482,51 @@ export function applyThemeFromColors(
   root.style.setProperty("--prop-red-bg", "rgba(237, 28, 36, 0.15)");
   root.style.setProperty("--prop-red-border", "rgba(237, 28, 36, 0.4)");
   root.style.setProperty("--prop-red-text", "#f87171");
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LAYER 4: Generate Card Colors (luminance-aware)
+  // Changes based on background brightness for optimal contrast.
+  // "bright" backgrounds (Aurora, etc.) use deeper, more saturated colors.
+  // "dim" backgrounds use standard vibrant colors.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const isBright = mode === "light";
+
+  // Level/Length card (blue)
+  root.style.setProperty("--card-blue", isBright ? "#1e40af" : "#3b82f6");
+  root.style.setProperty("--card-blue-end", isBright ? "#1e3a8a" : "#1d4ed8");
+
+  // Generation Mode card (purple)
+  root.style.setProperty("--card-purple", isBright ? "#5b21b6" : "#8b5cf6");
+  root.style.setProperty("--card-purple-end", isBright ? "#4c1d95" : "#6d28d9");
+
+  // Grid Mode card (emerald green)
+  root.style.setProperty("--card-emerald", isBright ? "#047857" : "#10b981");
+  root.style.setProperty("--card-emerald-end", isBright ? "#065f46" : "#059669");
+
+  // Prop Continuity card (cyan)
+  root.style.setProperty("--card-cyan", isBright ? "#0e7490" : "#06b6d4");
+  root.style.setProperty("--card-cyan-end", isBright ? "#155e75" : "#0891b2");
+
+  // Slice Size card (pink)
+  root.style.setProperty("--card-pink", isBright ? "#9d174d" : "#ec4899");
+  root.style.setProperty("--card-pink-end", isBright ? "#831843" : "#be185d");
+
+  // Customize card (slate gray)
+  root.style.setProperty("--card-slate", isBright ? "#334155" : "#64748b");
+  root.style.setProperty("--card-slate-end", isBright ? "#1e293b" : "#475569");
+
+  // Generate button (green)
+  root.style.setProperty("--card-green", isBright ? "#047857" : "#10b981");
+  root.style.setProperty("--card-green-end", isBright ? "#065f46" : "#059669");
+
+  // Turn Intensity card (amber/orange)
+  root.style.setProperty("--card-amber", isBright ? "#b45309" : "#f59e0b");
+  root.style.setProperty("--card-amber-end", isBright ? "#92400e" : "#d97706");
+
+  // LOOP Type card (rainbow gradient)
+  root.style.setProperty("--card-loop-start", isBright ? "#7c3aed" : "#a855f7");
+  root.style.setProperty("--card-loop-mid", isBright ? "#0891b2" : "#06b6d4");
+  root.style.setProperty("--card-loop-end", isBright ? "#059669" : "#10b981");
 }
 
 /**

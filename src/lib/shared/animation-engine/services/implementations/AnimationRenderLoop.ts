@@ -136,10 +136,16 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // 1. One-shot render is needed (needsRender)
     // 2. Trails are enabled and need continuous updates
     // 3. Animation is actively playing (props are interpolating)
+    // 4. Background is transitioning (dark mode toggle animation)
     const trailsNeedContinuousRender =
       trailSettings.enabled && trailSettings.mode !== TrailMode.OFF;
+    const backgroundTransitioning =
+      this.renderer?.isBackgroundTransitioning() ?? false;
     const shouldContinueLoop =
-      this.needsRender || trailsNeedContinuousRender || isPlaying;
+      this.needsRender ||
+      trailsNeedContinuousRender ||
+      isPlaying ||
+      backgroundTransitioning;
 
     if (shouldContinueLoop) {
       this.render(params, currentTime);

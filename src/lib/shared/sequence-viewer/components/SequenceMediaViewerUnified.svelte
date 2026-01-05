@@ -1,29 +1,30 @@
 <!--
   SequenceMediaViewerUnified.svelte
 
-  Unified media viewer using the new AnimationPlayer.
-  Provides tabs for Image, Animation, and Video views.
+  Unified media viewer with CTA button to switch between Image and Animation modes.
+  Uses sessionStorage for persistence (survives HMR and page refresh).
 
-  Key differences from gallery's SequenceMediaViewer:
+  Key features:
+  - Single CTA button at top to switch modes (no tabs)
+  - "Play Animation" button when in Image view
+  - "View Image" button when in Animation view
   - Uses unified AnimationPlayer with configurable controls
   - Supports export progress overlay
-  - Configurable controls level
   - Integrates with AnimationExportContext when used in ShareHub
 -->
 <script lang="ts">
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-	import type { ControlsLevel, ExportProgress, MediaType } from "../domain/types";
+	import type { ControlsLevel, MediaType } from "../domain/types";
 	import { tryResolve } from "$lib/shared/inversify/di";
 	import { TYPES } from "$lib/shared/inversify/types";
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/features/discover/gallery/display/components/PropAwareThumbnail.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-	import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-	import { isCatDogMode } from "$lib/features/discover/gallery/display/services/implementations/DiscoverThumbnailCache";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+	import { authState } from "$lib/shared/auth/state/authState.svelte";
 	import { browser } from "$app/environment";
 
 	const MEDIA_TYPE_STORAGE_KEY = "sequence-viewer-media-type";
@@ -32,16 +33,12 @@
 		sequence,
 		initialMediaType = "image" as MediaType,
 		controlsLevel = "standard" as ControlsLevel,
-		isExporting = false,
-		exportProgress = null as ExportProgress | null,
 		onCanvasReady,
 		onMediaTypeChange,
 	}: {
 		sequence: SequenceData;
 		initialMediaType?: MediaType;
 		controlsLevel?: ControlsLevel;
-		isExporting?: boolean;
-		exportProgress?: ExportProgress | null;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 		onMediaTypeChange?: (type: MediaType) => void;
 	} = $props();
@@ -54,6 +51,8 @@
 
 	onMount(() => {
 		hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+		// Notify parent of initial/persisted media type so export button label syncs
+		onMediaTypeChange?.(activeMediaType);
 	});
 
 	// State - restore from sessionStorage if available (survives HMR)
@@ -68,37 +67,11 @@
 
 	let activeMediaType = $state<MediaType>(getPersistedMediaType());
 
-	// Get prop settings for PropAwareThumbnail
-	const propSettings = $derived({
-		bluePropType: settingsService.settings.bluePropType,
-		redPropType: settingsService.settings.redPropType,
-		catDogMode: settingsService.settings.catDogMode,
-	});
-
-	const isCatDog = $derived(
-		isCatDogMode(
-			propSettings.bluePropType,
-			propSettings.redPropType,
-			propSettings.catDogMode
-		)
-	);
-
-	// Get light mode from visibility state
-	const visibilityManager = getAnimationVisibilityManager();
-	let lightMode = $state(!visibilityManager.isDarkMode());
-
-	function handleVisibilityChange() {
-		lightMode = !visibilityManager.isDarkMode();
-	}
-
-	visibilityManager.registerObserver(handleVisibilityChange);
-
 	onDestroy(() => {
-		visibilityManager.unregisterObserver(handleVisibilityChange);
 		imageSettings.unregisterObserver(handleImageSettingsChange);
 	});
 
-	// Image export settings
+	// Image export settings from ImageCompositionManager
 	const imageSettings = getImageCompositionManager();
 	let addWord = $state(imageSettings.addWord);
 	let addBeatNumbers = $state(imageSettings.addBeatNumbers);
@@ -117,6 +90,12 @@
 	}
 
 	imageSettings.registerObserver(handleImageSettingsChange);
+
+	// Prop type settings for PropAwareThumbnail
+	const bluePropType = $derived(settingsService.settings.bluePropType);
+	const redPropType = $derived(settingsService.settings.redPropType);
+	const catDogMode = $derived(settingsService.settings.catDogMode);
+	const userName = $derived(authState.user?.displayName ?? "");
 
 	// Image settings toggle handlers
 	function toggleWord() {
@@ -168,47 +147,48 @@
 </script>
 
 <div class="media-viewer">
-	<!-- Media Type Tabs (pill/chip style) -->
-	{#if availableMediaTypes.length > 1}
-		<div class="media-tabs" role="radiogroup" aria-label="Media type selection">
-			{#each availableMediaTypes as mediaType}
-				<button
-					class="media-chip"
-					class:active={activeMediaType === mediaType}
-					role="radio"
-					aria-checked={activeMediaType === mediaType}
-					onclick={() => selectMediaType(mediaType)}
-				>
-					{#if mediaType === "image"}
-						<i class="fas fa-image" aria-hidden="true"></i>
-						<span>Image</span>
-					{:else if mediaType === "animation"}
-						<i class="fas fa-play-circle" aria-hidden="true"></i>
-						<span>Animate</span>
-					{:else if mediaType === "video"}
-						<i class="fas fa-video" aria-hidden="true"></i>
-						<span>Video</span>
-					{/if}
-				</button>
-			{/each}
-		</div>
-	{/if}
+	<!-- Mode Switch Button (at top, where tabs used to be) -->
+	<div class="mode-switch-row">
+		{#if activeMediaType === "image" && hasAnimation}
+			<button
+				class="mode-switch-btn primary"
+				onclick={() => selectMediaType("animation")}
+				aria-label="Play animation"
+			>
+				<i class="fas fa-play" aria-hidden="true"></i>
+				<span>Play Animation</span>
+			</button>
+		{:else if activeMediaType === "animation" && hasImages}
+			<button
+				class="mode-switch-btn secondary"
+				onclick={() => selectMediaType("image")}
+				aria-label="View image"
+			>
+				<i class="fas fa-image" aria-hidden="true"></i>
+				<span>View Image</span>
+			</button>
+		{/if}
+	</div>
 
 	<!-- Media Content Area -->
 	<div class="media-content">
 		{#if activeMediaType === "image"}
-			<!-- Image View -->
+			<!-- Image View - using PropAwareThumbnail with custom settings -->
 			<div class="image-view-container">
 				<div class="image-view">
-					{#key sequence.id || sequence.word}
-						<PropAwareThumbnail
-							{sequence}
-							bluePropType={propSettings.bluePropType}
-							redPropType={propSettings.redPropType}
-							catDogModeEnabled={isCatDog}
-							{lightMode}
-						/>
-					{/key}
+					<PropAwareThumbnail
+						{sequence}
+						{bluePropType}
+						redPropType={catDogMode ? redPropType : bluePropType}
+						catDogModeEnabled={catDogMode}
+						lightMode={!darkMode}
+						{addWord}
+						{addBeatNumbers}
+						{includeStartPosition}
+						{addDifficultyLevel}
+						{addUserInfo}
+						{userName}
+					/>
 				</div>
 
 				<!-- Image Export Settings Chips -->
@@ -263,74 +243,19 @@
 						User Info
 					</button>
 				</div>
-
-				<!-- Play Animation Button -->
-				{#if hasAnimation}
-					<button
-						class="play-animation-btn"
-						onclick={() => selectMediaType("animation")}
-						aria-label="Play animation"
-					>
-						<i class="fas fa-play" aria-hidden="true"></i>
-						<span>Play Animation</span>
-					</button>
-				{/if}
 			</div>
 		{:else if activeMediaType === "animation"}
 			<!-- Animation View - using unified AnimationPlayer -->
+			<!-- AnimationPlayer consumes AnimationExportContext internally when externalControl=true -->
 			<div class="animation-view">
-				{#if useExternalControl && animationExportContext}
-					<!-- External control mode (ShareHub context) -->
-					<AnimationPlayer
-						sequence={animationExportContext.state.sequenceData ?? sequence}
-						autoPlay={false}
-						showControls={true}
-						{controlsLevel}
-						externalControl={true}
-						isPlaying={animationExportContext.state.isPlaying}
-						speed={animationExportContext.state.speed}
-						currentBeat={animationExportContext.state.currentBeat}
-						bluePropState={animationExportContext.state.bluePropState}
-						redPropState={animationExportContext.state.redPropState}
-						onPlaybackToggle={animationExportContext.actions.onPlaybackToggle}
-						onSpeedChange={animationExportContext.actions.onSpeedChange}
-						onStepForward={animationExportContext.actions.onStepHalfBeatForward}
-						onStepBackward={animationExportContext.actions.onStepHalfBeatBackward}
-						onStepHalfBeatForward={animationExportContext.actions.onStepHalfBeatForward}
-						onStepHalfBeatBackward={animationExportContext.actions.onStepHalfBeatBackward}
-						onStepFullBeatForward={animationExportContext.actions.onStepFullBeatForward}
-						onStepFullBeatBackward={animationExportContext.actions.onStepFullBeatBackward}
-						playbackMode={animationExportContext.state.playbackMode}
-						stepPlaybackPauseMs={animationExportContext.state.stepPlaybackPauseMs}
-						stepPlaybackStepSize={animationExportContext.state.stepPlaybackStepSize}
-						onPlaybackModeChange={animationExportContext.actions.onPlaybackModeChange}
-						onStepPlaybackPauseMsChange={animationExportContext.actions.onStepPlaybackPauseMsChange}
-						onStepPlaybackStepSizeChange={animationExportContext.actions.onStepPlaybackStepSizeChange}
-						blueMotionVisible={animationExportContext.state.blueMotionVisible}
-						redMotionVisible={animationExportContext.state.redMotionVisible}
-						onToggleBlue={animationExportContext.actions.onToggleBlue}
-						onToggleRed={animationExportContext.actions.onToggleRed}
-						isCircular={animationExportContext.state.isCircular}
-						loopCount={animationExportContext.state.exportLoopCount}
-						onLoopCountChange={animationExportContext.actions.onLoopCountChange}
-						isExporting={animationExportContext.state.isExporting}
-						exportProgress={animationExportContext.state.exportProgress}
-						onExport={animationExportContext.actions.onExportVideo}
-						onCancelExport={animationExportContext.actions.onCancelExport}
-						onCanvasReady={animationExportContext.actions.onCanvasReady}
-					/>
-				{:else}
-					<!-- Standalone mode (internal state) -->
-					<AnimationPlayer
-						{sequence}
-						autoPlay={true}
-						showControls={true}
-						{controlsLevel}
-						{isExporting}
-						{exportProgress}
-						{onCanvasReady}
-					/>
-				{/if}
+				<AnimationPlayer
+					{sequence}
+					autoPlay={!useExternalControl}
+					showControls={true}
+					{controlsLevel}
+					externalControl={useExternalControl}
+					{onCanvasReady}
+				/>
 			</div>
 		{:else if activeMediaType === "video"}
 			<!-- Video View -->
@@ -375,72 +300,93 @@
 		flex-direction: column;
 		width: 100%;
 		height: 100%;
+		min-height: 0;
+		min-width: 0; /* Critical for flex width containment chain */
+		flex: 1;
 		gap: 8px;
+		overflow: hidden;
 	}
 
-	/* Media Type Tabs (pill/chip style) */
-	.media-tabs {
+	/* Mode Switch Row (at top) */
+	.mode-switch-row {
 		display: flex;
 		justify-content: center;
-		gap: 12px;
 		flex-shrink: 0;
 	}
 
-	.media-chip {
+	/* Mode Switch Button - single CTA at top */
+	.mode-switch-btn {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 12px 20px;
-		min-height: 48px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 24px;
-		font-size: var(--font-size-min, 14px);
-		font-weight: 500;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+		justify-content: center;
+		gap: 10px;
+		padding: 14px 28px;
+		min-height: 56px;
+		min-width: 180px;
+		border-radius: 28px;
+		font-size: var(--font-size-base, 16px);
+		font-weight: 600;
 		cursor: pointer;
 		transition: all 0.2s ease;
-		white-space: nowrap;
 	}
 
-	.media-chip i {
-		font-size: var(--font-size-base, 16px);
+	.mode-switch-btn i {
+		font-size: 18px;
 	}
 
-	.media-chip:hover {
-		border-color: var(--theme-accent, #6366f1);
+	/* Primary style (Play Animation) */
+	.mode-switch-btn.primary {
+		background: var(--theme-accent, #6366f1);
+		border: none;
+		color: white;
+		box-shadow:
+			0 4px 12px rgba(99, 102, 241, 0.3),
+			0 0 0 1px rgba(99, 102, 241, 0.2);
+	}
+
+	.mode-switch-btn.primary:hover {
+		transform: translateY(-2px) scale(1.02);
+		box-shadow:
+			0 6px 16px rgba(99, 102, 241, 0.4),
+			0 0 0 1px rgba(99, 102, 241, 0.3);
+	}
+
+	/* Secondary style (View Image) */
+	.mode-switch-btn.secondary {
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 		color: var(--theme-text, white);
-		transform: translateY(-2px);
 	}
 
-	.media-chip:focus-visible {
+	.mode-switch-btn.secondary:hover {
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+		border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+		transform: translateY(-2px) scale(1.02);
+	}
+
+	.mode-switch-btn:active {
+		transform: translateY(0) scale(0.98);
+	}
+
+	.mode-switch-btn:focus-visible {
 		outline: 2px solid var(--theme-accent, #6366f1);
 		outline-offset: 2px;
 	}
 
-	.media-chip.active {
-		background: var(--theme-accent, #6366f1);
-		border-color: var(--theme-accent, #6366f1);
-		color: white;
-		box-shadow:
-			0 2px 8px var(--theme-shadow, rgba(0, 0, 0, 0.3)),
-			0 0 0 1px var(--theme-accent-glow, rgba(99, 102, 241, 0.3));
-	}
-
-	.media-chip.active:hover {
-		transform: translateY(-1px) scale(1.02);
-	}
-
-	/* Media Content */
+	/* Media Content - fills available space for animation/image */
 	.media-content {
 		flex: 1;
 		min-height: 0;
+		min-width: 0; /* Critical for flex width containment chain */
+		width: 100%;
+		display: flex;
+		flex-direction: column;
 		position: relative;
 		border-radius: 10px;
 		overflow: hidden;
 	}
 
-	/* Image View Container */
+	/* Image View Container - properly contained with overflow hidden */
 	.image-view-container {
 		display: flex;
 		flex-direction: column;
@@ -448,16 +394,25 @@
 		gap: 16px;
 		width: 100%;
 		height: 100%;
+		min-height: 0;
+		overflow: hidden;
+		/* Container query context for responsive children */
+		container-type: size;
+		container-name: image-container;
 	}
 
 	.image-view {
 		position: relative;
 		flex: 1;
 		min-height: 0;
+		min-width: 0; /* Critical for flex overflow containment */
 		width: 100%;
+		max-width: 100%;
+		max-height: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		overflow: hidden;
 	}
 
 	/* Settings Chips */
@@ -466,79 +421,62 @@
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: 8px;
-		padding: 0 8px;
+		padding: 12px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 12px;
+		flex-shrink: 0;
 	}
 
 	.chip {
-		padding: 8px 14px;
-		min-height: 36px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 12px 16px;
+		min-height: 48px; /* WCAG 2.1 AAA touch target */
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 18px;
-		font-size: var(--font-size-compact, 12px);
+		border-radius: 24px;
+		font-size: var(--font-size-min, 14px);
 		font-weight: 500;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
 		cursor: pointer;
 		transition: all 0.15s ease;
+		-webkit-tap-highlight-color: transparent;
 	}
 
 	.chip:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
 		color: var(--theme-text, white);
 	}
 
 	.chip.active {
-		background: var(--theme-accent, #6366f1);
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+		border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+		color: white;
+	}
+
+	.chip.active:hover {
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
 		border-color: var(--theme-accent, #6366f1);
-		color: white;
 	}
 
-	/* Play Animation Button - larger than touch target to encourage clicking */
-	.play-animation-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 10px;
-		padding: 14px 28px;
-		min-height: 56px;
-		min-width: 180px;
-		background: var(--theme-accent, #6366f1);
-		border: none;
-		border-radius: 28px;
-		font-size: var(--font-size-base, 16px);
-		font-weight: 600;
-		color: white;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		box-shadow:
-			0 4px 12px rgba(99, 102, 241, 0.3),
-			0 0 0 1px rgba(99, 102, 241, 0.2);
-	}
-
-	.play-animation-btn i {
-		font-size: 18px;
-	}
-
-	.play-animation-btn:hover {
-		transform: translateY(-2px) scale(1.02);
-		box-shadow:
-			0 6px 16px rgba(99, 102, 241, 0.4),
-			0 0 0 1px rgba(99, 102, 241, 0.3);
-	}
-
-	.play-animation-btn:active {
-		transform: translateY(0) scale(0.98);
-	}
-
-	.play-animation-btn:focus-visible {
-		outline: 2px solid white;
+	.chip:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
 		outline-offset: 2px;
 	}
 
-	/* Animation View */
+	/* Animation View - sized to available space for container queries */
 	.animation-view {
+		flex: 1;
+		min-height: 0;
+		min-width: 0; /* Critical for flex width containment */
 		width: 100%;
 		height: 100%;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden; /* Contain children */
 	}
 
 	/* Video View */
@@ -597,18 +535,33 @@
 		font-size: var(--font-size-sm, 14px);
 	}
 
+	/* Mobile: horizontal scroll if needed, but maintain touch targets */
+	@media (max-width: 600px) {
+		.settings-chips {
+			padding: 10px;
+			gap: 8px;
+			overflow-x: auto;
+			flex-wrap: nowrap;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.chip {
+			padding: 10px 14px;
+			min-height: 48px; /* Maintain WCAG touch target on mobile */
+			white-space: nowrap;
+			flex-shrink: 0;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
-		.media-chip,
+		.mode-switch-btn,
 		.back-btn,
-		.chip,
-		.play-animation-btn {
+		.chip {
 			transition: none;
 		}
 
-		.media-chip:hover,
-		.media-chip.active:hover,
-		.play-animation-btn:hover,
-		.play-animation-btn:active {
+		.mode-switch-btn:hover,
+		.mode-switch-btn:active {
 			transform: none;
 		}
 	}

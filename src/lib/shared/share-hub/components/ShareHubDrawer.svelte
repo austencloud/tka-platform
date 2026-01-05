@@ -228,20 +228,6 @@
     createModuleContext ? createModuleContext.panelState.toolPanelWidth : 0
   );
 
-  // Detect viewport width for placement
-  let isDesktop = $state(false);
-
-  $effect(() => {
-    function updateLayout() {
-      isDesktop = window.innerWidth >= 1024;
-    }
-    updateLayout();
-    window.addEventListener("resize", updateLayout);
-    return () => window.removeEventListener("resize", updateLayout);
-  });
-
-  const placement = $derived(isDesktop ? "right" : "bottom");
-
   // CSS variable for measured width (null means use CSS fallback)
   const measuredWidth = $derived(
     toolPanelWidth > 0 ? `${toolPanelWidth}px` : null
@@ -271,32 +257,37 @@
     ariaLabel="Share Hub - Choose export format"
     onclose={handleClose}
     closeOnBackdrop={false}
-    showHandle={!isDesktop}
+    showHandle={true}
     dismissible={true}
     respectLayoutMode={true}
-    {placement}
+    placement="right"
     class="share-hub-drawer"
     backdropClass="share-hub-backdrop"
     trapFocus={false}
     preventScroll={true}
   >
     <div class="share-hub-content">
-      {#if sequence}
-        <SequencePreviewPanel
-          {sequence}
-          mode="preview"
-          initialMediaType="animation"
-          onClose={handleClose}
-          onExport={handleExport}
-          isExporting={isAnimationExporting}
-          exportProgress={viewerExportProgress}
-        />
-      {:else}
-        <div class="empty-state">
-          <p>No sequence to share</p>
-          <button class="close-btn" onclick={handleClose}>Close</button>
-        </div>
-      {/if}
+        {#if sequence}
+          <SequencePreviewPanel
+            {sequence}
+            mode="preview"
+            initialMediaType="animation"
+            onClose={handleClose}
+            onExport={handleExport}
+            isExporting={isAnimationExporting}
+            exportProgress={viewerExportProgress}
+            onCustomNameChange={(value) => {
+              if (sequence) {
+                sequence.customName = value;
+              }
+            }}
+          />
+        {:else}
+          <div class="empty-state">
+            <p>No sequence to share</p>
+            <button class="close-btn" onclick={handleClose}>Close</button>
+          </div>
+        {/if}
     </div>
   </Drawer>
 </div>
@@ -330,10 +321,26 @@
     height: 100dvh;
   }
 
-  /* Mobile (bottom placement) - Full viewport */
+  /* Mobile (bottom placement) - Full viewport height */
   :global(.drawer-content.share-hub-drawer[data-placement="bottom"]) {
-    height: 100dvh;
-    max-height: 100dvh;
+    /* Explicit height for full viewport coverage */
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    /* Remove border radius at full height for cleaner look */
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+
+  /* Ensure drawer-inner fills properly in both placements */
+  :global(.drawer-content.share-hub-drawer .drawer-inner) {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   /* Backdrop - Completely transparent */
@@ -344,13 +351,70 @@
     pointer-events: none !important;
   }
 
-  /* Content wrapper */
+  /* Content wrapper - ensure it fills the drawer and provides container context */
   .share-hub-content {
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
+    min-height: 0;
+    min-width: 0;
+    flex: 1;
     overflow: hidden;
+    /* Container context for responsive children */
+    container-type: size;
+    container-name: share-hub-content;
+  }
+
+  /* Custom Name Section */
+  .custom-name-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    flex-shrink: 0;
+  }
+
+  .custom-name-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    margin: 0;
+  }
+
+  .custom-name-label i {
+    font-size: 16px;
+  }
+
+  .custom-name-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-md, 15px);
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .custom-name-input:focus {
+    border-color: var(--theme-accent, rgba(59, 130, 246, 0.5));
+  }
+
+  .custom-name-input::placeholder {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .custom-name-hint {
+    font-size: var(--font-size-xs, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    margin: 0;
   }
 
   /* Empty state fallback */

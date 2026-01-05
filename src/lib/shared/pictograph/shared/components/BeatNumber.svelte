@@ -4,14 +4,18 @@ BeatNumber.svelte - Beat Number Overlay Component
 Renders beat numbers as SVG text overlays on pictographs.
 Based on the legacy BeatNumberLabel.svelte component architecture.
 
-Dark mode: Uses CSS variables (--dm-text, --dm-bg) via :root.dark class on <html>
+Dark mode: Polls visibility manager for dark mode state (supports pictograph
+dark mode independent of app dark mode). Export uses explicit darkMode prop.
 -->
 <script lang="ts">
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+
   let {
     beatNumber = null,
     showBeatNumber = true,
     isStartPosition = false,
     hasValidData = true,
+    darkMode = undefined,
   } = $props<{
     /** The beat number to display */
     beatNumber?: number | null;
@@ -21,7 +25,32 @@ Dark mode: Uses CSS variables (--dm-text, --dm-bg) via :root.dark class on <html
     isStartPosition?: boolean;
     /** Whether the pictograph has valid data */
     hasValidData?: boolean;
+    /** Dark mode override for export. When set, overrides visibility manager state. */
+    darkMode?: boolean;
   }>();
+
+  // Get centralized visibility manager for dark mode state
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Track dark mode from centralized state (polls visibility manager)
+  let localDarkMode = $state(visibilityManager.isDarkMode());
+
+  // Register for updates when dark mode changes
+  $effect(() => {
+    const handler = () => {
+      localDarkMode = visibilityManager.isDarkMode();
+    };
+    visibilityManager.registerObserver(handler);
+    return () => visibilityManager.unregisterObserver(handler);
+  });
+
+  // Effective dark mode: prop override takes precedence, then visibility manager state
+  const effectiveDarkMode = $derived(darkMode ?? localDarkMode);
+
+  // Fill color based on effective dark mode (no stroke used)
+  const fillColor = $derived(
+    effectiveDarkMode ? "#ffffff" : "#231f20"
+  );
 
   // Only render beat number if conditions are met
   // Beat number 0 is excluded so it falls through to show "Start" text
@@ -61,10 +90,7 @@ Dark mode: Uses CSS variables (--dm-text, --dm-bg) via :root.dark class on <html
     font-size="100"
     font-family="Georgia, serif"
     font-weight="bold"
-    fill="var(--dm-glyph-fill)"
-    stroke="var(--dm-beat-stroke)"
-    stroke-width="4"
-    paint-order="stroke"
+    fill={fillColor}
   >
     {beatNumber}
   </text>
@@ -78,10 +104,7 @@ Dark mode: Uses CSS variables (--dm-text, --dm-bg) via :root.dark class on <html
     font-size="80"
     font-family="Georgia, serif"
     font-weight="bold"
-    fill="var(--dm-glyph-fill)"
-    stroke="var(--dm-beat-stroke)"
-    stroke-width="6"
-    paint-order="stroke"
+    fill={fillColor}
   >
     {displayText}
   </text>
@@ -90,8 +113,6 @@ Dark mode: Uses CSS variables (--dm-text, --dm-bg) via :root.dark class on <html
 <style>
   /* Smooth color transitions for dark mode toggle */
   .beat-number {
-    transition:
-      fill 150ms ease-out,
-      stroke 150ms ease-out;
+    transition: fill 150ms ease-out;
   }
 </style>

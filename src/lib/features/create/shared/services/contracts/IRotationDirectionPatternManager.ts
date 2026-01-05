@@ -5,6 +5,11 @@ import type {
 } from "../../domain/models/RotationDirectionPatternData";
 
 /**
+ * Specifies which hand(s) to apply pattern changes to
+ */
+export type TargetHand = "blue" | "red" | "both";
+
+/**
  * Result of applying a rotation direction pattern to a sequence
  */
 export interface RotationDirectionPatternApplyResult {
@@ -73,11 +78,13 @@ export interface IRotationDirectionPatternManager {
    *
    * @param pattern - The pattern to apply
    * @param sequence - The target sequence
+   * @param targetHand - Which hand(s) to apply to: 'blue', 'red', or 'both' (default: 'both')
    * @returns Result with modified sequence or error
    */
   applyPattern(
     pattern: RotationDirectionPattern,
-    sequence: SequenceData
+    sequence: SequenceData,
+    targetHand?: TargetHand
   ): Promise<RotationDirectionPatternApplyResult>;
 
   /**

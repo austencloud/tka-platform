@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { isAppDomain } from "../config/domains";
   import HeroSection from "./landing/components/HeroSection.svelte";
   import WhatIsTKASection from "./landing/components/WhatIsTKASection.svelte";
   import FeaturesSection from "./landing/components/FeaturesSection.svelte";
@@ -7,22 +10,29 @@
   import PropsSection from "./landing/components/PropsSection.svelte";
   import EducatorsSection from "./landing/components/EducatorsSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
+
+  // Redirect to /app if we're on tkascribe.com
+  onMount(() => {
+    if (typeof window !== "undefined" && isAppDomain(window.location.origin)) {
+      goto("/app", { replaceState: true });
+    }
+  });
 </script>
 
 <svelte:head>
   <title
-    >The Kinetic Alphabet - Digital Sheet Music for Flow Arts | Poi, Staff, Hoop
+    >The Kinetic Alphabet - Digital Sheet Music for Flow Arts | Staff, Clubs, Fans, Hoops
     Choreography</title
   >
   <meta
     name="description"
-    content="Free flow arts choreography app. Create, animate, and share poi, staff, hoop, and buugeng sequences with TKA Scribe - the first universal notation system for prop manipulation."
+    content="Free flow arts choreography app. Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences with TKA Scribe - the first universal notation system for prop manipulation."
   />
 
   <!-- Keywords for search engines and AI systems -->
   <meta
     name="keywords"
-    content="flow arts, poi spinning, staff spinning, hoop dance, buugeng, prop manipulation, choreography app, sequence creator, flow arts tutorials, poi patterns, antispin, isolation, flower patterns, tech spinning, fire dancing, LED poi, contact staff, double staff, flow toys, movement notation, dance notation, circus arts, juggling, object manipulation, flow state, spinning tutorials, poi lessons"
+    content="flow arts, staff spinning, club manipulation, fan spinning, hoop dance, buugeng, prop manipulation, choreography app, sequence creator, flow arts tutorials, staff patterns, antispin, isolation, flower patterns, tech spinning, fire dancing, contact staff, double staff, flow toys, movement notation, dance notation, circus arts, juggling, object manipulation, flow state, spinning tutorials"
   />
 
   <!-- Additional SEO meta tags -->
@@ -48,7 +58,7 @@
   />
   <meta
     property="og:description"
-    content="Free app to create, animate, and share poi, staff, and hoop sequences. The universal notation system for flow artists worldwide."
+    content="Free app to create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. The universal notation system for flow artists worldwide."
   />
   <meta
     property="og:image"
@@ -56,7 +66,7 @@
   />
   <meta
     property="og:image:alt"
-    content="TKA Scribe - Flow arts choreography app showing poi sequence animation"
+    content="TKA Scribe - Flow arts choreography app showing staff sequence animation"
   />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -137,7 +147,7 @@
 		"@type": "SoftwareApplication",
 		"name": "TKA Scribe",
 		"alternateName": "The Kinetic Alphabet Scribe",
-		"description": "Digital sheet music for flow arts. Create, animate, and share poi, staff, hoop, and buugeng sequences with the first universal notation system for prop manipulation.",
+		"description": "Digital sheet music for flow arts. Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences with the first universal notation system for prop manipulation.",
 		"url": "https://tkascribe.com/",
 		"applicationCategory": ["EducationalApplication", "EntertainmentApplication", "DesignApplication"],
 		"operatingSystem": "Any (Web Browser)",
@@ -179,7 +189,7 @@
 				"name": "What is The Kinetic Alphabet?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "The Kinetic Alphabet (TKA) is a universal notation system for flow arts - like sheet music for dancers. It allows flow artists to document, share, and learn poi, staff, hoop, and buugeng choreography using standardized pictographs and symbols."
+					"text": "The Kinetic Alphabet (TKA) is a universal notation system for flow arts - like sheet music for dancers. It allows flow artists to document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using standardized pictographs and symbols."
 				}
 			},
 			{
@@ -187,7 +197,7 @@
 				"name": "What props does TKA Scribe support?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA Scribe supports 11+ flow arts props including poi, staff, contact staff, double staff, hoop, mini hoop, buugeng, fans, clubs, triads, and swords. Each prop is rendered accurately with proper rotations and hand positions."
+					"text": "TKA Scribe supports 20+ flow arts props including staff, contact staff, double staff, clubs, fans, triads, hoops, mini hoops, buugeng, swords, guitars, chickens, doublestars, eightrings, and quiads. Each prop is rendered accurately with proper rotations and hand positions."
 				}
 			},
 			{
@@ -224,7 +234,7 @@
 		"@context": "https://schema.org",
 		"@type": "HowTo",
 		"name": "How to Create Flow Arts Choreography with TKA Scribe",
-		"description": "Learn to create, animate, and share poi, staff, and hoop sequences using The Kinetic Alphabet notation system.",
+		"description": "Learn to create, animate, and share staff, clubs, fans, and hoop sequences using The Kinetic Alphabet notation system.",
 		"totalTime": "PT10M",
 		"tool": [
 			{

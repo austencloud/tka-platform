@@ -34,11 +34,13 @@
 		onExport,
 		isExporting = false,
 		exportProgress = null as ExportProgress | null,
+		onCustomNameChange,
 
 		// Full mode props
 		onFavorite,
 		onEdit,
 		onDelete,
+		onNameChange,
 		isFavorited = false,
 		creatorInfo = null as CreatorInfo | null,
 	}: {
@@ -50,33 +52,50 @@
 		onExport?: (format: MediaFormat, settings: ExportSettings) => void;
 		isExporting?: boolean;
 		exportProgress?: ExportProgress | null;
+		onCustomNameChange?: (value: string) => void;
 		onFavorite?: () => void;
 		onEdit?: () => void;
 		onDelete?: () => void;
+		onNameChange?: (newName: string) => void;
 		isFavorited?: boolean;
 		creatorInfo?: CreatorInfo | null;
 	} = $props();
 
 	// Derived display values
-	const sequenceTitle = $derived(
-		sequence?.word || sequence?.name || "Untitled Sequence"
-	);
 	const beatCount = $derived(sequence?.beats?.length ?? 0);
 
-	// Track current media type from viewer (syncs with initialMediaType on change)
-	let currentMediaType = $state<MediaType>("image");
-
-	$effect(() => {
-		currentMediaType = initialMediaType;
-	});
+	// Track current media type - updated by SequenceMediaViewerUnified via callback
+	// Child is source of truth (handles sessionStorage persistence)
+	let currentMediaType = $state<MediaType>(initialMediaType);
 
 	// Export format syncs with media type: image → static, animation → animation
 	const selectedFormat = $derived<MediaFormat>(
 		currentMediaType === "image" ? "static" : "animation"
 	);
 
+	// Name editing
+	let isEditingName = $state(false);
+	let editedName = $state(sequence?.customName || "");
+
 	function handleMediaTypeChange(type: MediaType) {
 		currentMediaType = type;
+	}
+
+	function startEditingName() {
+		editedName = sequence?.customName || "";
+		isEditingName = true;
+	}
+
+	function saveNameChange() {
+		if (editedName.trim() && editedName !== sequence?.customName) {
+			onNameChange?.(editedName.trim());
+		}
+		isEditingName = false;
+	}
+
+	function cancelNameEdit() {
+		editedName = sequence?.customName || "";
+		isEditingName = false;
 	}
 </script>
 
@@ -96,7 +115,7 @@
 					</svg>
 				</button>
 			{/if}
-			<h2 class="title">{sequenceTitle}</h2>
+			<h2 class="title">Sequence Viewer</h2>
 		</div>
 
 		<div class="header-right">
@@ -128,8 +147,6 @@
 		<SequenceMediaViewerUnified
 			{sequence}
 			{initialMediaType}
-			{isExporting}
-			{exportProgress}
 			controlsLevel={mode === "preview" ? "full" : "standard"}
 			onMediaTypeChange={handleMediaTypeChange}
 		/>
@@ -139,14 +156,67 @@
 	{#if mode === "preview"}
 		<!-- Export Controls Section -->
 		<ExportControlsSection
+			{sequence}
 			{selectedFormat}
 			{isExporting}
 			{exportProgress}
 			onExport={(format, settings) => onExport?.(format, settings)}
+			onCustomNameChange={(value) => onCustomNameChange?.(value)}
 		/>
 	{:else}
 		<!-- Full Mode: Metadata & Actions -->
 		<div class="metadata-section">
+			<!-- Custom Name Editor -->
+			{#if onNameChange}
+				<div class="name-editor-section">
+					<label for="custom-name" class="name-label">
+						<i class="fas fa-tag" aria-hidden="true"></i>
+						<span>Custom Name</span>
+					</label>
+					{#if isEditingName}
+						<div class="name-edit-container">
+							<input
+								id="custom-name"
+								type="text"
+								class="name-input"
+								bind:value={editedName}
+								placeholder={sequence?.word || "Enter custom name"}
+								maxlength="50"
+							/>
+							<div class="name-edit-actions">
+								<button
+									class="name-action-btn save"
+									onclick={saveNameChange}
+									aria-label="Save name"
+								>
+									<i class="fas fa-check" aria-hidden="true"></i>
+								</button>
+								<button
+									class="name-action-btn cancel"
+									onclick={cancelNameEdit}
+									aria-label="Cancel"
+								>
+									<i class="fas fa-times" aria-hidden="true"></i>
+								</button>
+							</div>
+						</div>
+					{:else}
+						<div class="name-display-container">
+							<span class="name-display">
+								{sequence?.customName || sequence?.word || "Unnamed Sequence"}
+							</span>
+							<button
+								class="name-edit-btn"
+								onclick={startEditingName}
+								aria-label="Edit custom name"
+							>
+								<i class="fas fa-edit" aria-hidden="true"></i>
+							</button>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			{#if creatorInfo}
 				<div class="creator-info">
 					{#if creatorInfo.avatarUrl}
@@ -194,7 +264,10 @@
 	.sequence-viewer-panel {
 		display: flex;
 		flex-direction: column;
+		/* Ensure panel fills parent completely */
 		height: 100%;
+		min-height: 0;
+		flex: 1;
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
 		color: var(--theme-text, white);
 	}
@@ -259,23 +332,150 @@
 		border-color: var(--semantic-error, #ef4444);
 	}
 
-	/* Media Section */
+	/* Media Section - fills remaining space after header and controls */
 	.media-section {
 		flex: 1;
 		min-height: 0;
+		min-width: 0; /* Critical for flex overflow containment */
+		display: flex;
+		flex-direction: column;
 		padding: 12px 16px;
+		overflow: hidden; /* Contain all children within bounds */
 	}
 
 	/* Metadata Section (full mode) */
 	.metadata-section {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
+		flex-direction: column;
+		gap: 16px;
 		padding: 12px 16px;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		flex-shrink: 0;
 	}
 
+	/* Name Editor */
+	.name-editor-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.name-label {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 500;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+		margin: 0;
+	}
+
+	.name-label i {
+		font-size: 16px;
+	}
+
+	.name-display-container {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 14px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 8px;
+	}
+
+	.name-display {
+		flex: 1;
+		font-size: var(--font-size-md, 15px);
+		color: var(--theme-text, white);
+	}
+
+	.name-edit-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		background: transparent;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 6px;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.name-edit-btn:hover {
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+		color: var(--theme-text, white);
+	}
+
+	.name-edit-container {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.name-input {
+		flex: 1;
+		padding: 10px 14px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-accent, rgba(59, 130, 246, 0.5));
+		border-radius: 8px;
+		color: var(--theme-text, white);
+		font-size: var(--font-size-md, 15px);
+		outline: none;
+		transition: border-color 0.2s ease;
+	}
+
+	.name-input:focus {
+		border-color: var(--theme-accent, rgba(59, 130, 246, 1));
+	}
+
+	.name-input::placeholder {
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.name-edit-actions {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+	}
+
+	.name-action-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 6px;
+		color: var(--theme-text, white);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.name-action-btn.save {
+		background: var(--semantic-success, rgba(34, 197, 94, 0.15));
+		border-color: var(--semantic-success, #22c55e);
+		color: var(--semantic-success, #22c55e);
+	}
+
+	.name-action-btn.save:hover {
+		background: var(--semantic-success, rgba(34, 197, 94, 0.25));
+	}
+
+	.name-action-btn.cancel {
+		background: var(--semantic-error, rgba(239, 68, 68, 0.15));
+		border-color: var(--semantic-error, #ef4444);
+		color: var(--semantic-error, #ef4444);
+	}
+
+	.name-action-btn.cancel:hover {
+		background: var(--semantic-error, rgba(239, 68, 68, 0.25));
+	}
+
+	/* Creator Info */
 	.creator-info {
 		display: flex;
 		align-items: center;

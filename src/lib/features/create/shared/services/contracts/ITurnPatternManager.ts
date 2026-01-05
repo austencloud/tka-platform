@@ -5,6 +5,11 @@ import type {
 } from "../../domain/models/TurnPatternData";
 
 /**
+ * Specifies which hand(s) to apply pattern changes to
+ */
+export type TargetHand = "blue" | "red" | "both";
+
+/**
  * Result of applying a turn pattern to a sequence
  */
 export interface TurnPatternApplyResult {
@@ -56,6 +61,7 @@ export interface ITurnPatternManager {
    *
    * @param pattern - The pattern to apply
    * @param sequence - The target sequence
+   * @param targetHand - Which hand(s) to apply to: 'blue', 'red', or 'both' (default: 'both')
    * @returns Result with modified sequence or error
    *
    * @example
@@ -68,7 +74,8 @@ export interface ITurnPatternManager {
    */
   applyPattern(
     pattern: TurnPattern,
-    sequence: SequenceData
+    sequence: SequenceData,
+    targetHand?: TargetHand
   ): TurnPatternApplyResult;
 
   /**

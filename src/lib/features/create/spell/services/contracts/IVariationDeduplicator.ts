@@ -18,27 +18,27 @@ export interface IVariationDeduplicator {
    * Sequences with the same canonical hash are rotationally equivalent.
    *
    * @param sequence - The sequence to normalize
-   * @returns Canonical hash string
+   * @returns Promise resolving to canonical hash string
    */
-  getCanonicalHash(sequence: SequenceData): string;
+  getCanonicalHash(sequence: SequenceData): Promise<string>;
 
   /**
    * Check if a sequence is a duplicate of one already seen.
    * Uses canonical hash for comparison.
    *
    * @param sequence - The sequence to check
-   * @returns true if a rotationally equivalent sequence was already seen
+   * @returns Promise resolving to true if a rotationally equivalent sequence was already seen
    */
-  isDuplicate(sequence: SequenceData): boolean;
+  isDuplicate(sequence: SequenceData): Promise<boolean>;
 
   /**
    * Try to add a sequence to the seen set.
    * Returns false if the sequence is a rotational duplicate.
    *
    * @param sequence - The sequence to add
-   * @returns true if added (was unique), false if duplicate
+   * @returns Promise resolving to true if added (was unique), false if duplicate
    */
-  tryAdd(sequence: SequenceData): boolean;
+  tryAdd(sequence: SequenceData): Promise<boolean>;
 
   /**
    * Get the number of unique sequences seen so far.

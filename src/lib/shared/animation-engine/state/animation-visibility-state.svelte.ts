@@ -58,6 +58,13 @@ export class AnimationVisibilityStateManager {
     grid: "#000000",
   };
 
+  /**
+   * Transient flag indicating a sequence transform is in progress.
+   * When true, arrow/prop components should disable CSS transitions
+   * to avoid janky animation when the final state is applied.
+   */
+  private transforming: boolean = false;
+
   constructor() {
     // Load from localStorage or use defaults
     this.settings = this.loadFromStorage() || this.getDefaultSettings();
@@ -416,6 +423,29 @@ export class AnimationVisibilityStateManager {
    */
   toggleDarkMode(): void {
     this.setDarkMode(!this.settings.darkMode);
+  }
+
+  // ============================================================================
+  // TRANSFORM STATE (transient, not persisted)
+  // ============================================================================
+
+  /**
+   * Check if a sequence transform is currently in progress.
+   * Arrow/prop components use this to disable CSS transitions.
+   */
+  isTransforming(): boolean {
+    return this.transforming;
+  }
+
+  /**
+   * Set the transforming flag.
+   * Call with `true` before starting a transform, `false` after completion.
+   * @param transforming - true when transform is in progress
+   */
+  setTransforming(transforming: boolean): void {
+    this.transforming = transforming;
+    // Notify observers so arrow/prop components can update their transition state
+    this.notifyObservers();
   }
 }
 

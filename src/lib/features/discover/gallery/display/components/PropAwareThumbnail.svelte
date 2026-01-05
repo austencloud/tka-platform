@@ -39,6 +39,14 @@
     redPropType?: PropType;
     catDogModeEnabled?: boolean;
     lightMode?: boolean;
+    // Image composition settings - when provided, skips cloud caching and renders fresh
+    // This enables the sequence viewer to show customized export previews
+    addWord?: boolean;
+    addBeatNumbers?: boolean;
+    includeStartPosition?: boolean;
+    addDifficultyLevel?: boolean;
+    addUserInfo?: boolean;
+    userName?: string;
   }
 
   const {
@@ -47,7 +55,23 @@
     redPropType,
     catDogModeEnabled = false,
     lightMode = false,
+    // Image composition settings - undefined means use defaults
+    addWord,
+    addBeatNumbers,
+    includeStartPosition,
+    addDifficultyLevel,
+    addUserInfo,
+    userName,
   }: Props = $props();
+
+  // When custom settings are provided, we render fresh (no caching)
+  const hasCustomSettings = $derived(
+    addWord !== undefined ||
+    addBeatNumbers !== undefined ||
+    includeStartPosition !== undefined ||
+    addDifficultyLevel !== undefined ||
+    addUserInfo !== undefined
+  );
 
   // State
   let containerRef = $state<HTMLDivElement | null>(null);
@@ -76,6 +100,12 @@
   let prevRedProp = $state<PropType | undefined>(undefined);
   let prevCatDogMode = $state(false);
   let prevLightMode = $state(false);
+  // Track previous image composition settings
+  let prevAddWord = $state<boolean | undefined>(undefined);
+  let prevAddBeatNumbers = $state<boolean | undefined>(undefined);
+  let prevIncludeStartPosition = $state<boolean | undefined>(undefined);
+  let prevAddDifficultyLevel = $state<boolean | undefined>(undefined);
+  let prevAddUserInfo = $state<boolean | undefined>(undefined);
   let hasInitiallyLoaded = $state(false);
 
   onMount(() => {
@@ -110,15 +140,28 @@
   /**
    * Main thumbnail loading function
    * Tries cloud cache first, then renders locally and uploads
+   * When custom settings are provided, skips caching entirely
    */
   async function loadThumbnail() {
     if (isLoading || thumbnailUrl) return;
 
     isLoading = true;
     hasError = false;
-    loadingStatus = "Checking cache...";
 
     try {
+      // When custom settings are provided, skip cloud caching entirely
+      // This is used by the sequence viewer to show customized export previews
+      if (hasCustomSettings) {
+        loadingStatus = "Rendering...";
+        const blob = await renderThumbnail();
+        thumbnailUrl = URL.createObjectURL(blob);
+        hasInitiallyLoaded = true;
+        loadingStatus = "";
+        return;
+      }
+
+      // Standard flow: try cloud cache first
+      loadingStatus = "Checking cache...";
       const container = await getContainerInstance();
       const cloudCache = container.get<ICloudThumbnailCache>(
         TYPES.ICloudThumbnailCache
@@ -282,14 +325,17 @@
     }
 
     // Render with appropriate props
+    // Use custom settings if provided, otherwise use defaults
     const renderOptions = {
       beatSize: 240,
       format: "WebP" as const,
       quality: 0.9,
-      includeStartPosition: true,
-      addBeatNumbers: true,
-      addWord: true,
-      addDifficultyLevel: true,
+      includeStartPosition: includeStartPosition ?? true,
+      addBeatNumbers: addBeatNumbers ?? true,
+      addWord: addWord ?? true,
+      addDifficultyLevel: addDifficultyLevel ?? true,
+      addUserInfo: addUserInfo ?? false,
+      userName: userName ?? "",
       addReversalSymbols: true,
       backgroundColor: lightMode ? "#ffffff" : "#1a1a2e",
       // For single-prop mode, override all props to the selected type
@@ -339,6 +385,12 @@
     const currentRed = redPropType;
     const currentCatDog = catDogModeEnabled;
     const currentLight = lightMode;
+    // Read image composition settings
+    const currentAddWord = addWord;
+    const currentAddBeatNumbers = addBeatNumbers;
+    const currentIncludeStartPosition = includeStartPosition;
+    const currentAddDifficultyLevel = addDifficultyLevel;
+    const currentAddUserInfo = addUserInfo;
 
     // Check if props actually changed (not just initial render)
     const propsChanged =
@@ -346,13 +398,23 @@
       (currentBlue !== prevBlueProp ||
         currentRed !== prevRedProp ||
         currentCatDog !== prevCatDogMode ||
-        currentLight !== prevLightMode);
+        currentLight !== prevLightMode ||
+        currentAddWord !== prevAddWord ||
+        currentAddBeatNumbers !== prevAddBeatNumbers ||
+        currentIncludeStartPosition !== prevIncludeStartPosition ||
+        currentAddDifficultyLevel !== prevAddDifficultyLevel ||
+        currentAddUserInfo !== prevAddUserInfo);
 
     // Update previous values
     prevBlueProp = currentBlue;
     prevRedProp = currentRed;
     prevCatDogMode = currentCatDog;
     prevLightMode = currentLight;
+    prevAddWord = currentAddWord;
+    prevAddBeatNumbers = currentAddBeatNumbers;
+    prevIncludeStartPosition = currentIncludeStartPosition;
+    prevAddDifficultyLevel = currentAddDifficultyLevel;
+    prevAddUserInfo = currentAddUserInfo;
 
     // Only reload if props actually changed while visible
     if (propsChanged && isVisible && !isLoading) {
@@ -393,7 +455,10 @@
 
 <style>
   .prop-thumbnail {
+    /* Default: fill width, maintain aspect ratio */
     width: 100%;
+    max-width: 100%;
+    max-height: 100%;
     aspect-ratio: 4 / 3;
     display: flex;
     align-items: center;
@@ -401,6 +466,28 @@
     background: var(--theme-card-bg);
     overflow: hidden;
     position: relative;
+    box-sizing: border-box;
+    /* Allow shrinking to fit container */
+    flex-shrink: 1;
+  }
+
+  /* Container query adaptive sizing - when inside SequenceMediaViewerUnified's image-container */
+  @container image-container (aspect-ratio > 4/3) {
+    /* Container is wider than 4:3 - constrain by height to fit */
+    .prop-thumbnail {
+      width: auto;
+      height: 100cqh;
+      max-height: 100%;
+    }
+  }
+
+  @container image-container (aspect-ratio <= 4/3) {
+    /* Container is taller than 4:3 - constrain by width to fit */
+    .prop-thumbnail {
+      width: 100cqw;
+      height: auto;
+      max-width: 100%;
+    }
   }
 
   .prop-thumbnail img {
@@ -408,6 +495,9 @@
     height: 100%;
     display: block;
     object-fit: contain;
+    /* Prevent image from exceeding thumbnail bounds */
+    max-width: 100%;
+    max-height: 100%;
   }
 
   .loading-placeholder,

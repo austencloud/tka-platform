@@ -2,8 +2,11 @@
   TransformsGridMode.svelte
 
   Grid of transform action buttons: Mirror, Swap, Rotate, Reverse, Preview, Edit.
+  Supports help mode where clicking buttons shows educational content instead of applying transforms.
 -->
 <script lang="ts">
+  type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
+
   interface Props {
     hasSequence: boolean;
     hasSelection: boolean;
@@ -11,11 +14,17 @@
     canExtend?: boolean;
     isExtending?: boolean;
     canShiftStart?: boolean;
+    /** Disable swap button (only works when both hands are selected) */
+    swapDisabled?: boolean;
     showEditInConstructor: boolean;
     /** True when panel is desktop side-panel (2 cols), false for mobile bottom drawer (3 cols) */
     isDesktopPanel?: boolean;
     /** True to use compact horizontal layout (icon left, text right) for very small screens */
     compactMode?: boolean;
+    /** True when help mode is active - buttons show help instead of applying transforms */
+    helpMode?: boolean;
+    /** Callback when a transform is selected in help mode */
+    onHelpSelect?: (transformId: TransformId) => void;
     onTurns: () => void;
     onMirror: () => void;
     onFlip: () => void;
@@ -38,9 +47,12 @@
     canExtend = false,
     isExtending = false,
     canShiftStart = false,
+    swapDisabled = false,
     showEditInConstructor,
     isDesktopPanel = false,
     compactMode = false,
+    helpMode = false,
+    onHelpSelect,
     onTurns,
     onMirror,
     onFlip,
@@ -55,6 +67,15 @@
     onShiftStart,
     onEditInConstructor,
   }: Props = $props();
+
+  // In help mode, clicking a transform button shows help instead of applying
+  function handleTransformClick(transformId: TransformId, normalAction: () => void) {
+    if (helpMode && onHelpSelect) {
+      onHelpSelect(transformId);
+    } else {
+      normalAction();
+    }
+  }
 
   const disabled = $derived(isTransforming || isExtending || !hasSequence);
 
@@ -98,9 +119,10 @@
     <div class="section-grid">
       <button
         class="grid-btn mirror"
-        onclick={onMirror}
-        {disabled}
-        aria-label="Mirror sequence: flip left and right"
+        class:help-active={helpMode}
+        onclick={() => handleTransformClick("mirror", onMirror)}
+        disabled={disabled && !helpMode}
+        aria-label={helpMode ? "Learn about Mirror" : "Mirror sequence: flip left and right"}
       >
         <div class="btn-icon">
           <i class="fas fa-left-right" aria-hidden="true"></i>
@@ -112,9 +134,10 @@
       </button>
       <button
         class="grid-btn flip"
-        onclick={onFlip}
-        {disabled}
-        aria-label="Flip sequence: flip up and down"
+        class:help-active={helpMode}
+        onclick={() => handleTransformClick("flip", onFlip)}
+        disabled={disabled && !helpMode}
+        aria-label={helpMode ? "Learn about Flip" : "Flip sequence: flip up and down"}
       >
         <div class="btn-icon">
           <i class="fas fa-up-down" aria-hidden="true"></i>
@@ -126,23 +149,32 @@
       </button>
       <button
         class="grid-btn swap"
-        onclick={onSwap}
-        {disabled}
-        aria-label="Swap hands in sequence"
+        class:unavailable={swapDisabled && !helpMode}
+        class:help-active={helpMode}
+        onclick={() => handleTransformClick("swap", onSwap)}
+        disabled={(disabled || swapDisabled) && !helpMode}
+        aria-label={helpMode
+          ? "Learn about Swap Hands"
+          : swapDisabled
+            ? "Swap requires both hands selected"
+            : "Swap hands in sequence"}
       >
         <div class="btn-icon">
           <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
         </div>
         <div class="btn-text">
           <span class="btn-label">Swap</span>
-          <span class="btn-desc">Switch hands</span>
+          <span class="btn-desc"
+            >{swapDisabled ? "Needs both hands" : "Switch hands"}</span
+          >
         </div>
       </button>
       <button
         class="grid-btn invert"
-        onclick={onInvert}
-        {disabled}
-        aria-label="Invert sequence: reverse turn directions"
+        class:help-active={helpMode}
+        onclick={() => handleTransformClick("invert", onInvert)}
+        disabled={disabled && !helpMode}
+        aria-label={helpMode ? "Learn about Invert" : "Invert sequence: reverse turn directions"}
       >
         <div class="btn-icon">
           <i class="fas fa-repeat" aria-hidden="true"></i>
@@ -154,9 +186,10 @@
       </button>
       <button
         class="grid-btn rotate-ccw"
-        onclick={onRotateCCW}
-        {disabled}
-        aria-label="Rotate sequence left 45 degrees"
+        class:help-active={helpMode}
+        onclick={() => handleTransformClick("rotate", onRotateCCW)}
+        disabled={disabled && !helpMode}
+        aria-label={helpMode ? "Learn about Rotate" : "Rotate sequence left 45 degrees"}
       >
         <div class="btn-icon">
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
@@ -168,9 +201,10 @@
       </button>
       <button
         class="grid-btn rotate-cw"
-        onclick={onRotateCW}
-        {disabled}
-        aria-label="Rotate sequence right 45 degrees"
+        class:help-active={helpMode}
+        onclick={() => handleTransformClick("rotate", onRotateCW)}
+        disabled={disabled && !helpMode}
+        aria-label={helpMode ? "Learn about Rotate" : "Rotate sequence right 45 degrees"}
       >
         <div class="btn-icon">
           <i class="fas fa-rotate-right" aria-hidden="true"></i>
@@ -256,9 +290,10 @@
       {/if}
       <button
         class="grid-btn rewind"
-        onclick={onRewind}
-        {disabled}
-        aria-label="Rewind: add reversed sequence to the end"
+        class:help-active={helpMode}
+        onclick={() => handleTransformClick("rewind", onRewind)}
+        disabled={disabled && !helpMode}
+        aria-label={helpMode ? "Learn about Rewind" : "Rewind: add reversed sequence to the end"}
       >
         <div class="btn-icon">
           <i class="fas fa-backward" aria-hidden="true"></i>
@@ -539,6 +574,15 @@
     background: rgba(100, 100, 100, 0.4);
   }
 
+  /* Swap unavailable (single-hand mode) */
+  .grid-btn.swap.unavailable {
+    --btn-color: 100, 100, 100;
+    opacity: 0.5;
+  }
+  .grid-btn.swap.unavailable .btn-icon {
+    background: rgba(100, 100, 100, 0.4);
+  }
+
   /* Edit Turns highlighted (beat selected) */
   .grid-btn.edit-turns.highlighted {
     background: linear-gradient(
@@ -564,6 +608,44 @@
     }
     .grid-btn:active:not(:disabled) {
       transform: none;
+    }
+  }
+
+  /* ===== HELP MODE ACTIVE STATE ===== */
+  .grid-btn.help-active {
+    opacity: 1 !important;
+    cursor: help;
+    animation: help-pulse 1.5s ease-in-out infinite;
+    position: relative;
+  }
+
+  .grid-btn.help-active::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    border: 2px solid rgba(59, 130, 246, 0.5);
+    pointer-events: none;
+    animation: border-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes help-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 12px 2px rgba(59, 130, 246, 0.4);
+    }
+  }
+
+  @keyframes border-pulse {
+    0%,
+    100% {
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    50% {
+      border-color: rgba(59, 130, 246, 0.7);
     }
   }
 

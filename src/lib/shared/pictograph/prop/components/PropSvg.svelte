@@ -13,6 +13,7 @@ Now with smooth transitions when position or orientation changes!
   import type { PropAssets } from "../domain/models/PropAssets";
   import type { PropPosition } from "../domain/models/PropPosition";
   import { getSettings } from "../../../application/state/app-state.svelte";
+  import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 
   // Buugeng family - asymmetric props that can be flipped
   const BUUGENG_FAMILY = new Set([
@@ -20,6 +21,21 @@ Now with smooth transitions when position or orientation changes!
     PropType.BIGBUUGENG,
     PropType.FRACTALGENG,
   ]);
+
+  // Get centralized visibility manager for transform state
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Track transform state to disable transitions during sequence transforms
+  let isTransforming = $state(visibilityManager.isTransforming());
+
+  // Register for updates when visibility state changes
+  $effect(() => {
+    const handler = () => {
+      isTransforming = visibilityManager.isTransforming();
+    };
+    visibilityManager.registerObserver(handler);
+    return () => visibilityManager.unregisterObserver(handler);
+  });
 
   let {
     motionData,
@@ -261,6 +277,7 @@ Now with smooth transitions when position or orientation changes!
     class="prop-svg {motionData.color}-prop-svg"
     class:clickable={isClickable}
     class:selected={isSelected}
+    class:no-transition={isTransforming}
     data-prop-type={motionData?.propType}
     style="transform: {transformString};"
     onclick={isClickable && onPropClick ? onPropClick : undefined}
@@ -288,6 +305,11 @@ Now with smooth transitions when position or orientation changes!
     /* Smooth transition for position and rotation changes - matches arrow and grid behavior */
     /* IMPORTANT: transform must be a CSS property (not SVG attribute) for transitions to work */
     transition: transform 0.2s ease;
+  }
+
+  /* Disable transitions during sequence transforms to prevent janky mid-calculation animation */
+  .prop-svg.no-transition {
+    transition: none;
   }
 
   .prop-svg.clickable {

@@ -51,7 +51,7 @@ export class CardConfigurator implements ICardConfigurator {
         currentLength: config.length,
         currentMode: config.mode,
         onLengthChange: handlers.handleLengthChange,
-        color: "#3b82f6",
+        // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
         headerFontSize,
       },
@@ -63,7 +63,7 @@ export class CardConfigurator implements ICardConfigurator {
       props: {
         currentMode: config.mode,
         onModeChange: handlers.handleGenerationModeChange,
-        color: "#8b5cf6",
+        // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
         headerFontSize,
       },
@@ -77,7 +77,7 @@ export class CardConfigurator implements ICardConfigurator {
       props: {
         currentMode: config.gridMode,
         onModeChange: handlers.handleGridModeChange,
-        color: "#10b981",
+        // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
         headerFontSize,
       },
@@ -89,7 +89,7 @@ export class CardConfigurator implements ICardConfigurator {
       props: {
         currentContinuity: config.propContinuity,
         onContinuityChange: handlers.handlePropContinuityChange,
-        color: "#06b6d4",
+        // Color now handled via CSS variables in component
         cardIndex: cardIndex++,
         headerFontSize,
       },
@@ -131,7 +131,7 @@ export class CardConfigurator implements ICardConfigurator {
         props: {
           currentSliceSize: config.sliceSize,
           onSliceSizeChange: handlers.handleSliceSizeChange,
-          color: "#ec4899",
+          // Color now handled via CSS variables in component
           cardIndex: cardIndex++,
           headerFontSize,
         },

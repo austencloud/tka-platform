@@ -84,7 +84,10 @@
   .transport-controls {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    width: fit-content;
+    margin: 0 auto;
   }
 
   /* Step buttons - 48px for WCAG AAA touch target */

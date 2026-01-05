@@ -27,6 +27,11 @@ import type { Letter } from "../../../../shared/foundation/domain/models/Letter"
 import { GridMode } from "../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "../../../../shared/state/utils/persistent-state";
 
+/**
+ * Target hand for transforms - which hand(s) to apply operations to
+ */
+export type TargetHand = "blue" | "red" | "both";
+
 // ============================================================================
 // PERSISTENCE HELPERS
 // ============================================================================
@@ -131,6 +136,10 @@ export interface PanelCoordinationState {
 
   openSequenceActionsPanel(): void;
   closeSequenceActionsPanel(): void;
+
+  // Target Hand Selection (for single-hand transforms)
+  get targetHand(): TargetHand;
+  setTargetHand(hand: TargetHand): void;
 
   // Beat Editor Panel State (non-modal - allows click-through to pictographs)
   get isBeatEditorPanelOpen(): boolean;
@@ -240,6 +249,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let isSequenceActionsPanelOpen = $state(
     sequenceActionsPanelPersistence.load()
   );
+
+  // Target hand selection for single-hand transforms (default: both)
+  let targetHand = $state<TargetHand>("both");
 
   // Beat Editor panel state (non-modal - doesn't participate in closeAllPanels)
   let isBeatEditorPanelOpen = $state(false);
@@ -559,6 +571,15 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         new Error().stack
       );
       isSequenceActionsPanelOpen = false;
+    },
+
+    // Target Hand Selection
+    get targetHand() {
+      return targetHand;
+    },
+
+    setTargetHand(hand: TargetHand) {
+      targetHand = hand;
     },
 
     // Beat Editor Panel Getters (non-modal)

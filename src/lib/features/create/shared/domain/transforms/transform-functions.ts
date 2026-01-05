@@ -94,7 +94,7 @@ export function applyMirror(data: PictographData): PictographData {
       });
     }
   }
-  return { ...data, id: `${data.id}-mirrored`, motions: newMotions };
+  return { ...data, motions: newMotions };
 }
 
 /** Apply rotate transform to pictograph */
@@ -115,11 +115,7 @@ export function applyRotate(
       });
     }
   }
-  return {
-    ...data,
-    id: `${data.id}-rotated-${direction}`,
-    motions: newMotions,
-  };
+  return { ...data, motions: newMotions };
 }
 
 /** Apply swap hands transform to pictograph */
@@ -137,7 +133,7 @@ export function applySwap(data: PictographData): PictographData {
       ...red,
       color: MotionColor.BLUE,
     });
-  return { ...data, id: `${data.id}-swapped`, motions: newMotions };
+  return { ...data, motions: newMotions };
 }
 
 /** Apply rewind transform to pictograph */
@@ -155,7 +151,7 @@ export function applyRewind(data: PictographData): PictographData {
       });
     }
   }
-  return { ...data, id: `${data.id}-rewound`, motions: newMotions };
+  return { ...data, motions: newMotions };
 }
 
 /** Apply flip transform to pictograph (flip north/south) */
@@ -174,7 +170,7 @@ export function applyFlip(data: PictographData): PictographData {
       });
     }
   }
-  return { ...data, id: `${data.id}-flipped`, motions: newMotions };
+  return { ...data, motions: newMotions };
 }
 
 /** Apply invert transform to pictograph (flip rotation directions and motion types) */
@@ -197,5 +193,5 @@ export function applyInvert(data: PictographData): PictographData {
       });
     }
   }
-  return { ...data, id: `${data.id}-inverted`, motions: newMotions };
+  return { ...data, motions: newMotions };
 }

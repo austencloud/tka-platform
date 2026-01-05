@@ -17,6 +17,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     onLoaded,
     onError,
     onToggleNonRadial = undefined,
+    // Dark Mode override for export (when set, applies inline colors)
+    darkMode = undefined,
   } = $props<{
     /** Grid mode - derived from motion data */
     gridMode?: GridMode;
@@ -30,6 +32,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     onError?: (error: string) => void;
     /** Callback when non-radial points are clicked to toggle visibility */
     onToggleNonRadial?: () => void;
+    /** Dark Mode override for export. When set, applies inline colors. */
+    darkMode?: boolean;
   }>();
 
   // State
@@ -65,6 +69,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   // Styled grid content - reactively updates when gridMode or previewMode changes
   // IMPORTANT: Does NOT depend on gridColor - CSS handles color transitions for smooth animation
   // In preview mode, we DON'T depend on showNonRadialPoints to avoid re-rendering (CSS handles opacity transitions)
+  // EXCEPTION: When darkMode is explicitly set (for export), inline colors ARE applied
   const styledGridSvg = $derived.by(() => {
     if (!baseGridSvg) return "";
     // In preview mode, always pass false for showNonRadial since CSS classes handle visibility
@@ -74,7 +79,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       baseGridSvg,
       gridMode,
       effectiveShowNonRadial,
-      previewMode
+      previewMode,
+      darkMode
     );
   });
 
@@ -83,13 +89,20 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   // Apply grid mode styling directly to SVG elements as inline attributes
   // COLORS are handled by CSS with transitions - only structure/opacity is set inline
+  // EXCEPTION: When darkMode is explicitly set (for export), colors ARE inlined
   // This allows smooth dark mode color transitions while maintaining correct exports
   function applyGridModeStyles(
     svgContent: string,
     mode: GridMode,
     showNonRadial: boolean,
-    isPreviewMode: boolean
+    isPreviewMode: boolean,
+    exportDarkMode?: boolean
   ): string {
+    // When darkMode is explicitly set (for export), inline the colors
+    // CSS rules won't be captured in outerHTML, so we must embed colors inline
+    const shouldInlineColors = exportDarkMode !== undefined;
+    const gridColor = exportDarkMode === true ? "#d0d0d0" : "#000000";
+
     const outerPointIds = [
       "n_diamond_outer_point",
       "e_diamond_outer_point",
@@ -104,7 +117,27 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       "nw_diamond_layer2_point",
     ];
 
+    // Strict points - ALWAYS hidden in pictograph mode (only for animation)
+    // These have fill:none in CSS, but when we strip the style block they need explicit hiding
+    const strictPointIds = [
+      "ne_diamond_layer2_point_strict",
+      "se_diamond_layer2_point_strict",
+      "sw_diamond_layer2_point_strict",
+      "nw_diamond_layer2_point_strict",
+      "n_diamond_hand_point_strict",
+      "e_diamond_hand_point_strict",
+      "s_diamond_hand_point_strict",
+      "w_diamond_hand_point_strict",
+    ];
+
     let modifiedSvg = svgContent;
+
+    // CRITICAL: Strip the embedded <style> block when exporting
+    // The SVG has CSS like .normal-hand-point{fill:currentColor} which has higher
+    // specificity than fill attributes. Remove it so our inline fills work.
+    if (shouldInlineColors) {
+      modifiedSvg = modifiedSvg.replace(/<style[\s\S]*?<\/style>/gi, "");
+    }
 
     // For outer points, set structural attributes (opacity values for mode switching)
     // Colors are handled by CSS for smooth dark mode transitions
@@ -114,19 +147,28 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     const strokeOpacity = mode === GridMode.DIAMOND ? "0" : "1";
 
     for (const id of outerPointIds) {
+      // CRITICAL: Use [^/>]* to avoid consuming the "/" before ">" in self-closing tags
       const circlePattern = new RegExp(
-        `(<circle[^>]*id="${id}"[^>]*)(/>)`,
+        `(<circle[^>]*id="${id}"[^/>]*)(/>)`,
         "g"
       );
 
       modifiedSvg = modifiedSvg.replace(
         circlePattern,
         (match, opening, closing) => {
-          // Remove existing opacity and stroke attributes (not fill/stroke colors - CSS handles those)
+          // Remove existing attributes that we'll be setting
           let cleaned = opening.replace(/\s*fill-opacity="[^"]*"/g, "");
           cleaned = cleaned.replace(/\s*stroke-opacity="[^"]*"/g, "");
           cleaned = cleaned.replace(/\s*stroke-width="[^"]*"/g, "");
           cleaned = cleaned.replace(/\s*stroke-miterlimit="[^"]*"/g, "");
+          // Also remove any existing fill/stroke (they may not exist, but clean anyway)
+          cleaned = cleaned.replace(/\s*fill="[^"]*"/g, "");
+          cleaned = cleaned.replace(/\s*stroke="[^"]*"/g, "");
+
+          // When exporting, inline fill/stroke colors (CSS won't be in outerHTML)
+          if (shouldInlineColors) {
+            return `${cleaned} fill="${gridColor}" stroke="${gridColor}" fill-opacity="${fillOpacity}" stroke-opacity="${strokeOpacity}" stroke-width="13" stroke-miterlimit="10"${closing}`;
+          }
 
           // Add structural attributes - CSS handles fill/stroke colors
           return `${cleaned} fill-opacity="${fillOpacity}" stroke-opacity="${strokeOpacity}" stroke-width="13" stroke-miterlimit="10"${closing}`;
@@ -140,16 +182,29 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     const nonRadialOpacity = showNonRadial ? "1" : "0";
 
     for (const id of nonRadialPointIds) {
+      // CRITICAL: Use [^/>]* to avoid consuming the "/" before ">" in self-closing tags
       const circlePattern = new RegExp(
-        `(<circle[^>]*id="${id}"[^>]*)(/>)`,
+        `(<circle[^>]*id="${id}"[^/>]*)(/>)`,
         "g"
       );
 
       modifiedSvg = modifiedSvg.replace(
         circlePattern,
         (match, opening, closing) => {
-          // Remove any existing opacity attribute
+          // Remove any existing opacity and fill attributes
           let cleaned = opening.replace(/\s*opacity="[^"]*"/g, "");
+          cleaned = cleaned.replace(/\s*fill="[^"]*"/g, "");
+
+          // When exporting, inline fill color (CSS class won't work in exported SVG)
+          if (shouldInlineColors) {
+            if (showNonRadial) {
+              // Show points with proper color
+              return `${cleaned} fill="${gridColor}" opacity="1"${closing}`;
+            } else {
+              // Hide points completely - use fill="none" for safety even with opacity="0"
+              return `${cleaned} fill="none" opacity="0"${closing}`;
+            }
+          }
 
           // In preview mode, skip inline opacity to allow CSS transitions
           // Colors handled by CSS regardless
@@ -161,11 +216,58 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       );
     }
 
-    // Hand points and center point: CSS handles their colors via :global selectors
-    // No inline color modification needed - CSS transitions will work
+    // Strict points - ALWAYS hidden when exporting (pictograph mode)
+    // Without the style block, these would default to black fill
+    if (shouldInlineColors) {
+      for (const id of strictPointIds) {
+        const circlePattern = new RegExp(
+          `(<circle[^>]*id="${id}"[^/>]*)(/>)`,
+          "g"
+        );
 
-    // Lines: CSS handles their stroke colors via :global selectors
-    // No inline stroke modification needed - CSS transitions will work
+        modifiedSvg = modifiedSvg.replace(
+          circlePattern,
+          (match, opening, closing) => {
+            let cleaned = opening.replace(/\s*fill="[^"]*"/g, "");
+            // Always hide strict points in pictograph export
+            return `${cleaned} fill="none"${closing}`;
+          }
+        );
+      }
+    }
+
+    // Hand points and center point: CSS handles their colors via :global selectors
+    // EXCEPTION: When exporting, inline the colors (CSS won't be in outerHTML)
+    if (shouldInlineColors) {
+      // Hand points - class="normal-hand-point"
+      // CRITICAL: Use [^/>]* to avoid consuming the "/" before ">" in self-closing tags
+      // Without this, the greedy [^>]* would consume "/" leaving malformed SVG like: <circle ... / fill="...">
+      modifiedSvg = modifiedSvg.replace(
+        /(<circle[^>]*class="[^"]*normal-hand-point[^"]*"[^/>]*)(\/?>)/g,
+        (match, opening, closing) => {
+          let cleaned = opening.replace(/\s*fill="[^"]*"/g, "");
+          return `${cleaned} fill="${gridColor}"${closing}`;
+        }
+      );
+
+      // Center point - id="center_point"
+      modifiedSvg = modifiedSvg.replace(
+        /(<circle[^>]*id="center_point"[^/>]*)(\/?>)/g,
+        (match, opening, closing) => {
+          let cleaned = opening.replace(/\s*fill="[^"]*"/g, "");
+          return `${cleaned} fill="${gridColor}"${closing}`;
+        }
+      );
+
+      // Lines - inline stroke color
+      modifiedSvg = modifiedSvg.replace(
+        /(<line[^/>]*)(\/?>)/g,
+        (match, opening, closing) => {
+          let cleaned = opening.replace(/\s*stroke="[^"]*"/g, "");
+          return `${cleaned} stroke="${gridColor}"${closing}`;
+        }
+      );
+    }
 
     return modifiedSvg;
   }
@@ -262,6 +364,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 </script>
 
 <!-- Grid Container - Rotates cumulatively by 45° each time -->
+<!-- When darkMode is explicitly set (for export), apply inline color override -->
 <g
   bind:this={gridContainerElement}
   class="grid-container"
@@ -269,6 +372,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   class:show-non-radial={showNonRadialPoints}
   class:preview-mode={previewMode}
   class:interactive-non-radial={onToggleNonRadial !== undefined}
+  class:dark-mode-override={darkMode === true}
+  class:light-mode-override={darkMode === false}
   data-grid-mode={gridMode}
   transform="rotate({cumulativeRotation}, 475, 475)"
 >
@@ -311,6 +416,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
      For now, grid rotation changes are instant (which is fine for export). */
 
   /* Outer points - animate opacity for smooth morph */
+  /* Transition timing synced with pictograph/canvas (150ms ease-out) */
   :global(#n_diamond_outer_point),
   :global(#e_diamond_outer_point),
   :global(#s_diamond_outer_point),
@@ -320,10 +426,10 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     stroke-width: 13;
     stroke-miterlimit: 10;
     transition:
-      fill-opacity 0.2s ease,
-      stroke-opacity 0.2s ease,
-      fill 0.2s ease,
-      stroke 0.2s ease;
+      fill-opacity 150ms ease-out,
+      stroke-opacity 150ms ease-out,
+      fill 150ms ease-out,
+      stroke 150ms ease-out;
   }
 
   /* Dark mode - outer points use light color */
@@ -354,6 +460,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   }
 
   /* Non-radial points - layer 2 diagonal points */
+  /* Transition timing synced with pictograph/canvas (150ms ease-out) */
   :global(#ne_diamond_layer2_point),
   :global(#se_diamond_layer2_point),
   :global(#sw_diamond_layer2_point),
@@ -361,8 +468,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     fill: #000;
     opacity: 0;
     transition:
-      opacity 0.2s ease,
-      fill 0.2s ease;
+      opacity 150ms ease-out,
+      fill 150ms ease-out;
   }
 
   /* Dark mode - non-radial points use light color */
@@ -444,13 +551,76 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
      Strict points are only used for animation mode, not pictograph display. */
 
   /* Lines between grid points */
+  /* Transition timing synced with pictograph/canvas (150ms ease-out) */
   :global(.grid-container line) {
     stroke: #000;
-    transition: stroke 0.2s ease;
+    transition: stroke 150ms ease-out;
   }
 
   /* Dark mode - lines use light color */
   :global(:root.dark .grid-container line) {
     stroke: var(--dm-grid-color, #d0d0d0);
+  }
+
+  /* ====================================================================
+     EXPORT MODE OVERRIDES
+     When darkMode prop is explicitly set, override CSS-based detection.
+     These rules take precedence over :root.dark selectors for export.
+   ==================================================================== */
+
+  /* Light mode override (for export with darkMode=false) */
+  :global(.grid-container.light-mode-override #n_diamond_outer_point),
+  :global(.grid-container.light-mode-override #e_diamond_outer_point),
+  :global(.grid-container.light-mode-override #s_diamond_outer_point),
+  :global(.grid-container.light-mode-override #w_diamond_outer_point) {
+    fill: #000000;
+    stroke: #000000;
+  }
+
+  :global(.grid-container.light-mode-override #ne_diamond_layer2_point),
+  :global(.grid-container.light-mode-override #se_diamond_layer2_point),
+  :global(.grid-container.light-mode-override #sw_diamond_layer2_point),
+  :global(.grid-container.light-mode-override #nw_diamond_layer2_point) {
+    fill: #000000;
+  }
+
+  :global(.grid-container.light-mode-override .normal-hand-point) {
+    fill: #000000;
+  }
+
+  :global(.grid-container.light-mode-override #center_point) {
+    fill: #000000;
+  }
+
+  :global(.grid-container.light-mode-override line) {
+    stroke: #000000;
+  }
+
+  /* Dark mode override (for export with darkMode=true) */
+  :global(.grid-container.dark-mode-override #n_diamond_outer_point),
+  :global(.grid-container.dark-mode-override #e_diamond_outer_point),
+  :global(.grid-container.dark-mode-override #s_diamond_outer_point),
+  :global(.grid-container.dark-mode-override #w_diamond_outer_point) {
+    fill: #d0d0d0;
+    stroke: #d0d0d0;
+  }
+
+  :global(.grid-container.dark-mode-override #ne_diamond_layer2_point),
+  :global(.grid-container.dark-mode-override #se_diamond_layer2_point),
+  :global(.grid-container.dark-mode-override #sw_diamond_layer2_point),
+  :global(.grid-container.dark-mode-override #nw_diamond_layer2_point) {
+    fill: #d0d0d0;
+  }
+
+  :global(.grid-container.dark-mode-override .normal-hand-point) {
+    fill: #d0d0d0;
+  }
+
+  :global(.grid-container.dark-mode-override #center_point) {
+    fill: #d0d0d0;
+  }
+
+  :global(.grid-container.dark-mode-override line) {
+    stroke: #d0d0d0;
   }
 </style>

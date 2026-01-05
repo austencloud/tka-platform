@@ -3,17 +3,20 @@
  *
  * Injectable facade that composes pure transform functions.
  * Provides DI integration while delegating to pure functions.
+ *
+ * For single-hand transforms (blue or red), this service passes the required
+ * services to derive new positions and look up correct letters.
  */
 
 import { injectable, inject } from "inversify";
 import { TYPES } from "$lib/shared/inversify/types";
-import { resolve } from "$lib/shared/inversify/di";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceTransformer } from "../../contracts/ISequenceTransformer";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 import type { IReversalDetector } from "../../contracts/IReversalDetector";
+import type { TargetHand } from "../../../state/panel-coordination-state.svelte";
 
 import {
   clearSequence,
@@ -25,6 +28,7 @@ import {
   invertSequence,
   rewindSequence,
   shiftStartPosition,
+  deriveSequenceLetters,
 } from "./sequence-transforms";
 
 @injectable()
@@ -35,7 +39,9 @@ export class SequenceTransformer implements ISequenceTransformer {
     @inject(TYPES.IOrientationCalculator)
     private readonly orientationCalculator: IOrientationCalculator,
     @inject(TYPES.IReversalDetector)
-    private readonly reversalDetector: IReversalDetector
+    private readonly reversalDetector: IReversalDetector,
+    @inject(TYPES.IGridPositionDeriver)
+    private readonly positionDeriver: IGridPositionDeriver
   ) {}
 
   clearSequence(sequence: SequenceData): SequenceData {
@@ -46,38 +52,70 @@ export class SequenceTransformer implements ISequenceTransformer {
     return duplicateSequence(sequence, newName);
   }
 
-  mirrorSequence(sequence: SequenceData): SequenceData {
-    return mirrorSequence(sequence);
+  async mirrorSequence(
+    sequence: SequenceData,
+    targetHand: TargetHand = "both"
+  ): Promise<SequenceData> {
+    return mirrorSequence(
+      sequence,
+      this.positionDeriver,
+      this.motionQueryHandler,
+      targetHand
+    );
   }
 
-  flipSequence(sequence: SequenceData): SequenceData {
-    return flipSequence(sequence);
+  async flipSequence(
+    sequence: SequenceData,
+    targetHand: TargetHand = "both"
+  ): Promise<SequenceData> {
+    return flipSequence(
+      sequence,
+      this.positionDeriver,
+      this.motionQueryHandler,
+      targetHand
+    );
   }
 
   swapColors(sequence: SequenceData): SequenceData {
+    // Note: swapColors always operates on both hands - that's its purpose
     return colorSwapSequence(sequence);
   }
 
-  rotateSequence(sequence: SequenceData, rotationAmount: number): SequenceData {
-    const positionDeriver = resolve<IGridPositionDeriver>(
-      TYPES.IGridPositionDeriver
+  async rotateSequence(
+    sequence: SequenceData,
+    rotationAmount: number,
+    targetHand: TargetHand = "both"
+  ): Promise<SequenceData> {
+    return rotateSequence(
+      sequence,
+      rotationAmount,
+      this.positionDeriver,
+      this.motionQueryHandler,
+      targetHand
     );
-    return rotateSequence(sequence, rotationAmount, positionDeriver);
   }
 
-  async invertSequence(sequence: SequenceData): Promise<SequenceData> {
+  async invertSequence(
+    sequence: SequenceData,
+    targetHand: TargetHand = "both"
+  ): Promise<SequenceData> {
     return invertSequence(
       sequence,
       this.motionQueryHandler,
-      this.orientationCalculator
+      this.orientationCalculator,
+      targetHand
     );
   }
 
-  async rewindSequence(sequence: SequenceData): Promise<SequenceData> {
+  async rewindSequence(
+    sequence: SequenceData,
+    targetHand: TargetHand = "both"
+  ): Promise<SequenceData> {
     // First, apply the rewind transformation (reverses beat order, swaps start/end positions)
     const rewoundSequence = await rewindSequence(
       sequence,
-      this.motionQueryHandler
+      this.motionQueryHandler,
+      targetHand
     );
 
     // Then recalculate reversals based on the new beat order
@@ -91,5 +129,9 @@ export class SequenceTransformer implements ISequenceTransformer {
     targetBeatNumber: number
   ): SequenceData {
     return shiftStartPosition(sequence, targetBeatNumber);
+  }
+
+  async deriveSequenceLetters(sequence: SequenceData): Promise<SequenceData> {
+    return deriveSequenceLetters(sequence, this.motionQueryHandler);
   }
 }

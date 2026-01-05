@@ -1,16 +1,18 @@
 <!--
   AnimationPlayer.svelte
 
-  Unified animation player component for use in both SequenceViewer contexts:
-  - Gallery detail panels (standalone mode with minimal controls)
-  - ShareHub/Export panels (external control mode with full controls)
+  Thin coordinator for sequence animation playback.
+  Composes existing primitives - does NOT duplicate their functionality.
 
-  Features:
-  - Configurable controls level: minimal, standard, full
-  - Can manage its own state (standalone) or use external callbacks
-  - Lazy-loads animation services on demand
-  - Supports all playback modes and BPM presets
-  - Full mode includes: playback mode, visibility toggles, loop count, step settings
+  Modes:
+  - Standalone: Creates own AnimationPanelState, loads services internally
+  - External: Consumes AnimationExportContext from parent
+
+  Primitives used:
+  - AnimatorCanvas (rendering)
+  - TransportControls (play/step buttons)
+  - BpmChips (speed selection)
+  - SettingsTogglePanel (full mode settings)
 -->
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from "svelte";
@@ -21,13 +23,12 @@
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
-	import type { PlaybackMode, StepPlaybackStepSize } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
 	import { TYPES } from "$lib/shared/inversify/types";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-	import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-	import type { ControlsLevel, ExportProgress } from "../domain/types";
+	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
+	import type { ControlsLevel } from "../domain/types";
 
 	const DEFAULT_BPM = 60;
 
@@ -36,49 +37,7 @@
 		autoPlay = true,
 		showControls = true,
 		controlsLevel = "minimal" as ControlsLevel,
-
-		// External control mode
 		externalControl = false,
-		isPlaying: externalIsPlaying = false,
-		speed: externalSpeed = 1,
-		currentBeat: externalCurrentBeat = 0,
-		bluePropState: externalBluePropState = null,
-		redPropState: externalRedPropState = null,
-		onPlaybackToggle: externalPlaybackToggle,
-		onSpeedChange: externalSpeedChange,
-		onStepForward,
-		onStepBackward,
-
-		// Full step controls (for full mode)
-		onStepHalfBeatForward,
-		onStepHalfBeatBackward,
-		onStepFullBeatForward,
-		onStepFullBeatBackward,
-
-		// Playback mode controls (full mode)
-		playbackMode = "continuous" as PlaybackMode,
-		stepPlaybackPauseMs = 300,
-		stepPlaybackStepSize = 1 as StepPlaybackStepSize,
-		onPlaybackModeChange,
-		onStepPlaybackPauseMsChange,
-		onStepPlaybackStepSizeChange,
-
-		// Visibility toggles (full mode)
-		blueMotionVisible = true,
-		redMotionVisible = true,
-		onToggleBlue,
-		onToggleRed,
-
-		// Loop count (full mode)
-		isCircular = false,
-		loopCount = 1,
-		onLoopCountChange,
-
-		// Export controls (full mode only)
-		isExporting = false,
-		exportProgress = null as ExportProgress | null,
-		onExport,
-		onCancelExport,
 		onCanvasReady,
 	}: {
 		sequence: SequenceData;
@@ -86,170 +45,62 @@
 		showControls?: boolean;
 		controlsLevel?: ControlsLevel;
 		externalControl?: boolean;
-		isPlaying?: boolean;
-		speed?: number;
-		currentBeat?: number;
-		bluePropState?: any;
-		redPropState?: any;
-		onPlaybackToggle?: () => void;
-		onSpeedChange?: (speed: number) => void;
-		onStepForward?: () => void;
-		onStepBackward?: () => void;
-		// Full step controls
-		onStepHalfBeatForward?: () => void;
-		onStepHalfBeatBackward?: () => void;
-		onStepFullBeatForward?: () => void;
-		onStepFullBeatBackward?: () => void;
-		// Playback mode
-		playbackMode?: PlaybackMode;
-		stepPlaybackPauseMs?: number;
-		stepPlaybackStepSize?: StepPlaybackStepSize;
-		onPlaybackModeChange?: (mode: PlaybackMode) => void;
-		onStepPlaybackPauseMsChange?: (pauseMs: number) => void;
-		onStepPlaybackStepSizeChange?: (stepSize: StepPlaybackStepSize) => void;
-		// Visibility
-		blueMotionVisible?: boolean;
-		redMotionVisible?: boolean;
-		onToggleBlue?: () => void;
-		onToggleRed?: () => void;
-		// Loop count
-		isCircular?: boolean;
-		loopCount?: number;
-		onLoopCountChange?: (count: number) => void;
-		// Export
-		isExporting?: boolean;
-		exportProgress?: ExportProgress | null;
-		onExport?: () => void;
-		onCancelExport?: () => void;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 	} = $props();
 
-	// Services
-	let sequenceService: ISequenceRepository | null = null;
-	let playbackController: IAnimationPlaybackController | null = null;
-	let servicesReady = $state(false);
+	// Context for external control mode
+	const ctx = externalControl ? tryGetAnimationExportContext() : null;
+	const useContext = externalControl && !!ctx;
+
+	// Services (standalone mode only)
+	let controller: IAnimationPlaybackController | null = null;
+	let sequenceRepo: ISequenceRepository | null = null;
+
+	// State (standalone mode only)
+	const animState = !useContext ? createAnimationPanelState() : null;
+
+	// UI state
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-
-	// Internal animation state (used in standalone mode)
-	const animationState = createAnimationPanelState();
-
-	// Track last loaded sequence
-	let lastLoadedSequenceId: string | null = null;
-
-	// Local reactive state
-	let internalIsPlaying = $state(false);
 	let bpm = $state(DEFAULT_BPM);
+	let lastSequenceId: string | null = null;
 
-	// Effective state - uses external or internal based on mode
-	const isPlaying = $derived(
-		externalControl ? externalIsPlaying : internalIsPlaying
-	);
-	const currentBeat = $derived(
-		externalControl ? externalCurrentBeat : animationState.currentBeat
-	);
+	// Derived: effective state from context or internal
+	const isPlaying = $derived(useContext ? ctx!.state.isPlaying : animState?.isPlaying ?? false);
+	const currentBeat = $derived(useContext ? ctx!.state.currentBeat : animState?.currentBeat ?? 0);
+	const bluePropState = $derived(useContext ? ctx!.state.bluePropState : animState?.bluePropState);
+	const redPropState = $derived(useContext ? ctx!.state.redPropState : animState?.redPropState);
+	const sequenceData = $derived(useContext ? ctx!.state.sequenceData ?? sequence : animState?.sequenceData ?? sequence);
+	const playbackMode = $derived(useContext ? ctx!.state.playbackMode : "continuous" as const);
+	const stepSize = $derived(useContext ? ctx!.state.stepPlaybackStepSize : 1 as const);
+	const isCircular = $derived(useContext ? ctx!.state.isCircular : false);
+	const loopCount = $derived(useContext ? ctx!.state.exportLoopCount : 1);
+	const isExporting = $derived(useContext ? ctx!.state.isExporting : false);
+	const exportProgress = $derived(useContext ? ctx!.state.exportProgress : null);
 
-	// Sync playing state from animation state in standalone mode
-	$effect(() => {
-		if (externalControl) return;
-		const checkPlaying = () => {
-			const current = animationState.isPlaying;
-			if (current !== internalIsPlaying) {
-				internalIsPlaying = current;
-			}
-		};
-		checkPlaying();
-		const interval = setInterval(checkPlaying, 50);
-		return () => clearInterval(interval);
+	// Derived: current beat data for canvas
+	const beatData = $derived.by(() => {
+		const seq = sequenceData;
+		if (!seq) return null;
+		if (currentBeat < 1) return seq.startPosition ?? null;
+		const idx = Math.min(Math.max(0, Math.floor(currentBeat) - 1), (seq.beats?.length ?? 1) - 1);
+		return seq.beats?.[idx] ?? null;
 	});
 
-	// Derive current letter for display
-	let currentLetter = $derived.by(() => {
-		const seqData = externalControl
-			? sequence
-			: animationState.sequenceData || sequence;
-		if (!seqData) return null;
+	const gridMode = $derived(sequenceData?.gridMode ?? sequence?.gridMode);
 
-		if (currentBeat < 1) {
-			return getStartPositionLetter(seqData);
-		}
-
-		if (seqData.beats?.length > 0) {
-			const beatIndex = Math.max(0, Math.floor(currentBeat) - 1);
-			const clampedIndex = Math.min(beatIndex, seqData.beats.length - 1);
-			return seqData.beats[clampedIndex]?.letter || null;
-		}
-
-		return null;
-	});
-
-	// Derive current beat data for canvas
-	let currentBeatData = $derived.by(() => {
-		const seqData = externalControl
-			? sequence
-			: animationState.sequenceData || sequence;
-		if (!seqData) return null;
-
-		if (currentBeat < 1 && seqData.startPosition) {
-			return seqData.startPosition;
-		}
-
-		if (seqData.beats?.length > 0) {
-			const beatIndex = Math.max(0, Math.floor(currentBeat) - 1);
-			const clampedIndex = Math.min(beatIndex, seqData.beats.length - 1);
-			return seqData.beats[clampedIndex] || null;
-		}
-
-		return null;
-	});
-
-	// Grid mode from sequence
-	let gridMode = $derived(
-		sequence?.gridMode ?? animationState.sequenceData?.gridMode
-	);
-
-	// Get Greek letter for start position
-	function getStartPositionLetter(seq: SequenceData): Letter | null {
-		if (seq.startingPositionGroup) {
-			const group = seq.startingPositionGroup.toLowerCase();
-			if (group === "alpha") return Letter.ALPHA;
-			if (group === "beta") return Letter.BETA;
-			if (group === "gamma") return Letter.GAMMA;
-		}
-
-		const spLetter = seq.startPosition?.letter;
-		if (
-			spLetter === Letter.ALPHA ||
-			spLetter === Letter.BETA ||
-			spLetter === Letter.GAMMA
-		) {
-			return spLetter;
-		}
-
-		const firstBeat = seq.beats?.[0];
-		if (firstBeat) {
-			const startPos = firstBeat.startPosition || (firstBeat as any).startPos;
-			if (startPos && typeof startPos === "string") {
-				const posLower = startPos.toLowerCase();
-				if (posLower.startsWith("alpha")) return Letter.ALPHA;
-				if (posLower.startsWith("beta")) return Letter.BETA;
-				if (posLower.startsWith("gamma")) return Letter.GAMMA;
-			}
-		}
-
-		return null;
-	}
-
-	// Load services on mount
+	// Service initialization (standalone mode)
 	onMount(async () => {
+		if (useContext) {
+			loading = false;
+			return;
+		}
+
 		try {
 			await loadFeatureModule("animate");
-
-			sequenceService = resolve<ISequenceRepository>(TYPES.ISequenceRepository);
-			playbackController = resolve<IAnimationPlaybackController>(
-				TYPES.IAnimationPlaybackController
-			);
-			servicesReady = true;
+			sequenceRepo = resolve<ISequenceRepository>(TYPES.ISequenceRepository);
+			controller = resolve<IAnimationPlaybackController>(TYPES.IAnimationPlaybackController);
+			loading = false;
 		} catch (err) {
 			console.error("Failed to initialize animation player:", err);
 			error = "Failed to load animation";
@@ -258,305 +109,167 @@
 	});
 
 	onDestroy(() => {
-		if (!externalControl) {
-			playbackController?.dispose();
-			animationState.dispose();
+		if (!useContext) {
+			controller?.dispose();
+			animState?.dispose();
 		}
 	});
 
-	// Watch for sequence changes - load animation data in both modes
-	// External control mode: load data but don't auto-play (parent controls playback)
-	// Standalone mode: load data and optionally auto-play
+	// Watch sequence changes (standalone mode)
 	$effect(() => {
-		const sequenceId = sequence?.id || sequence?.word || sequence?.name;
+		if (useContext || !controller || !sequenceRepo) return;
+		const seqId = sequence?.id || sequence?.word || sequence?.name;
+		if (seqId === lastSequenceId) return;
 
-		if (sequence && servicesReady && sequenceId !== lastLoadedSequenceId) {
-			untrack(() => {
-				if (animationState.isPlaying) {
-					playbackController?.togglePlayback();
-				}
-				animationState.reset();
-				lastLoadedSequenceId = sequenceId ?? null;
-				// In external control mode, never auto-play (parent controls playback)
-				// In standalone mode, respect the autoPlay prop
-				loadAnimation(externalControl ? false : autoPlay);
-			});
-		}
+		untrack(async () => {
+			lastSequenceId = seqId ?? null;
+			if (animState?.isPlaying) controller?.togglePlayback();
+			animState?.reset();
+
+			// Load full sequence data if needed
+			const fullSeq = await loadFullSequence(sequence);
+			if (!fullSeq) {
+				error = "Failed to load sequence";
+				return;
+			}
+
+			animState?.setShouldLoop(true);
+			const ok = controller!.initialize(fullSeq, animState!);
+			if (!ok) {
+				error = "Failed to initialize playback";
+				return;
+			}
+
+			if (autoPlay) {
+				setTimeout(() => controller?.togglePlayback(), 300);
+			}
+		});
 	});
 
-	async function loadAnimation(shouldAutoPlay: boolean = false) {
-		if (!sequenceService || !playbackController || !sequence) return;
+	async function loadFullSequence(seq: SequenceData): Promise<SequenceData | null> {
+		if (!sequenceRepo) return seq;
+		const hasMotions = seq.beats?.some(b => b?.motions?.blue && b?.motions?.red);
+		if (hasMotions) return seq;
 
-		loading = true;
-		error = null;
-
-		try {
-			const fullSequence = await loadSequenceData(sequence);
-
-			if (!fullSequence) {
-				throw new Error("Failed to load sequence data");
-			}
-
-			animationState.setShouldLoop(true);
-			const success = playbackController.initialize(
-				fullSequence,
-				animationState
-			);
-
-			if (!success) {
-				throw new Error("Failed to initialize playback");
-			}
-
-			if (shouldAutoPlay) {
-				setTimeout(() => {
-					playbackController?.togglePlayback();
-				}, 300);
-			}
-		} catch (err) {
-			console.error("Failed to load animation:", err);
-			error = err instanceof Error ? err.message : "Failed to load animation";
-		} finally {
-			loading = false;
+		const id = seq.word || seq.name || seq.id;
+		if (id) {
+			const loaded = await sequenceRepo.getSequence(id);
+			if (loaded?.beats?.some(b => b?.motions?.blue && b?.motions?.red)) return loaded;
 		}
-	}
-
-	async function loadSequenceData(
-		seq: SequenceData
-	): Promise<SequenceData | null> {
-		if (!sequenceService) return null;
-
-		const hasMotionData = (s: SequenceData) =>
-			Array.isArray(s.beats) &&
-			s.beats.length > 0 &&
-			s.beats.some((beat) => beat?.motions?.blue && beat?.motions?.red);
-
-		if (hasMotionData(seq)) {
-			return seq;
-		}
-
-		const identifier = seq.word || seq.name || seq.id;
-		if (identifier) {
-			const loaded = await sequenceService.getSequence(identifier);
-			if (loaded && hasMotionData(loaded)) {
-				return loaded;
-			}
-		}
-
 		return seq;
 	}
 
-	// Playback handlers
+	// Action handlers - delegate to context or controller
 	function togglePlayback() {
-		if (externalControl && externalPlaybackToggle) {
-			externalPlaybackToggle();
-		} else {
-			playbackController?.togglePlayback();
-		}
+		useContext ? ctx!.actions.onPlaybackToggle() : controller?.togglePlayback();
 	}
 
 	function handleBpmChange(newBpm: number) {
 		bpm = newBpm;
-		const newSpeed = newBpm / DEFAULT_BPM;
-		if (externalControl && externalSpeedChange) {
-			externalSpeedChange(newSpeed);
-		} else {
-			playbackController?.setSpeed(newSpeed);
-		}
-	}
-
-	function handleStepForward() {
-		if (externalControl && onStepForward) {
-			onStepForward();
-		} else {
-			// Internal step logic would go here
-		}
-	}
-
-	function handleStepBackward() {
-		if (externalControl && onStepBackward) {
-			onStepBackward();
-		} else {
-			// Internal step logic would go here
-		}
+		const speed = newBpm / DEFAULT_BPM;
+		useContext ? ctx!.actions.onSpeedChange(speed) : controller?.setSpeed(speed);
 	}
 
 	function handleCanvasReady(canvas: HTMLCanvasElement | null) {
 		onCanvasReady?.(canvas);
+		if (useContext) ctx!.actions.onCanvasReady(canvas);
 	}
 
-	// Export progress helpers
-	const progressPercent = $derived(
-		exportProgress ? Math.round(exportProgress.progress * 100) : 0
-	);
-	const progressStage = $derived(
-		exportProgress?.stage === "capturing"
-			? "Capturing frames..."
-			: exportProgress?.stage === "encoding"
-				? "Encoding video..."
-				: exportProgress?.stage === "complete"
-					? "Complete!"
-					: exportProgress?.stage === "error"
-						? "Error"
-						: ""
+	// Context-only handlers for full mode
+	const stepHalfBack = () => ctx?.actions.onStepHalfBeatBackward();
+	const stepHalfFwd = () => ctx?.actions.onStepHalfBeatForward();
+	const stepFullBack = () => ctx?.actions.onStepFullBeatBackward();
+	const stepFullFwd = () => ctx?.actions.onStepFullBeatForward();
+	const setPlaybackMode = (m: any) => ctx?.actions.onPlaybackModeChange(m);
+	const setStepSize = (s: any) => ctx?.actions.onStepPlaybackStepSizeChange(s);
+	const setLoopCount = (c: number) => ctx?.actions.onLoopCountChange(c);
+	const cancelExport = () => ctx?.actions.onCancelExport();
+
+	// Export progress display
+	const progressPct = $derived(exportProgress ? Math.round(exportProgress.progress * 100) : 0);
+	const progressLabel = $derived(
+		exportProgress?.stage === "capturing" ? "Capturing..." :
+		exportProgress?.stage === "encoding" ? "Encoding..." :
+		exportProgress?.stage === "complete" ? "Done!" : ""
 	);
 </script>
 
-<div class="animation-player" class:has-controls={showControls}>
+<div class="animation-player">
 	{#if loading}
-		<div class="loading-state">
-			<div class="spinner"></div>
-			<span>Loading animation...</span>
-		</div>
+		<div class="state-msg"><div class="spinner"></div><span>Loading...</span></div>
 	{:else if error}
-		<div class="error-state">
-			<span>{error}</span>
-			<button class="retry-btn" onclick={() => loadAnimation()}>Retry</button>
-		</div>
+		<div class="state-msg error"><span>{error}</span></div>
 	{:else}
-		<!-- Animation Canvas -->
-		<div class="canvas-container">
+		<div class="canvas-wrap">
 			<AnimatorCanvas
-				blueProp={externalControl && externalBluePropState ? externalBluePropState : animationState.bluePropState}
-				redProp={externalControl && externalRedPropState ? externalRedPropState : animationState.redPropState}
+				blueProp={bluePropState}
+				redProp={redPropState}
 				gridVisible={true}
 				{gridMode}
-				letter={currentLetter}
-				beatData={currentBeatData}
-				sequenceData={externalControl ? sequence : animationState.sequenceData}
+				{beatData}
+				{sequenceData}
 				{isPlaying}
 				onPlaybackToggle={togglePlayback}
 				trailSettings={animationSettings.trail}
 				onCanvasReady={handleCanvasReady}
 			/>
 
-			<!-- Export Progress Overlay -->
 			{#if isExporting && exportProgress}
 				<div class="export-overlay">
-					<div class="export-progress-card">
-						<div class="progress-header">
-							<span class="progress-stage">{progressStage}</span>
-							{#if exportProgress.stage !== "complete" && exportProgress.stage !== "error"}
-								<button
-									class="cancel-button"
-									onclick={() => onCancelExport?.()}
-									aria-label="Cancel export"
-								>
-									<i class="fas fa-times" aria-hidden="true"></i>
-								</button>
-							{/if}
-						</div>
-						<div class="progress-bar-container">
-							<div class="progress-bar" style="width: {progressPercent}%"
-							></div>
-						</div>
-						<span class="progress-percent">{progressPercent}%</span>
+					<div class="export-card">
+						<span>{progressLabel} {progressPct}%</span>
+						<div class="progress-bar"><div style="width:{progressPct}%"></div></div>
+						{#if exportProgress.stage !== "complete"}
+							<button onclick={cancelExport}>Cancel</button>
+						{/if}
 					</div>
 				</div>
 			{/if}
 		</div>
 
-		<!-- Controls -->
 		{#if showControls}
-			{#if controlsLevel === "full"}
-				<!-- Full Controls Mode (for ShareHub/Export) -->
+			{#if controlsLevel === "full" && useContext}
 				<div class="controls-full">
-					<!-- Transport Controls Row -->
-					<div class="control-row playback-row">
-						<TransportControls
-							{isPlaying}
-							onPlaybackToggle={togglePlayback}
-							onStepHalfBeatBackward={onStepHalfBeatBackward ?? handleStepBackward}
-							onStepHalfBeatForward={onStepHalfBeatForward ?? handleStepForward}
-							onStepFullBeatBackward={onStepFullBeatBackward}
-							onStepFullBeatForward={onStepFullBeatForward}
-						/>
-					</div>
-
-					<!-- Settings Toggle Panel (BPM, Playback Mode, Step Settings) -->
+					<TransportControls
+						{isPlaying}
+						onPlaybackToggle={togglePlayback}
+						onStepHalfBeatBackward={stepHalfBack}
+						onStepHalfBeatForward={stepHalfFwd}
+						onStepFullBeatBackward={stepFullBack}
+						onStepFullBeatForward={stepFullFwd}
+					/>
 					<SettingsTogglePanel
 						propType={null}
 						bluePropType={null}
 						redPropType={null}
 						{bpm}
 						{playbackMode}
-						{stepPlaybackStepSize}
+						stepPlaybackStepSize={stepSize}
 						{isPlaying}
 						onBpmChange={handleBpmChange}
-						onPlaybackModeChange={onPlaybackModeChange}
-						onStepPlaybackStepSizeChange={onStepPlaybackStepSizeChange}
+						onPlaybackModeChange={setPlaybackMode}
+						onStepPlaybackStepSizeChange={setStepSize}
 						onPlaybackToggle={togglePlayback}
 					/>
-
-					<!-- Loop Count (for circular sequences) -->
-					{#if isCircular && onLoopCountChange}
-						<div class="control-row loop-count-row">
-							<span class="loop-label">Loops:</span>
-							<div class="loop-stepper">
-								<button
-									class="loop-btn"
-									onclick={() => onLoopCountChange?.(Math.max(1, loopCount - 1))}
-									disabled={loopCount <= 1}
-									aria-label="Decrease loop count"
-								>−</button>
-								<span class="loop-value">{loopCount}</span>
-								<button
-									class="loop-btn"
-									onclick={() => onLoopCountChange?.(Math.min(10, loopCount + 1))}
-									disabled={loopCount >= 10}
-									aria-label="Increase loop count"
-								>+</button>
-							</div>
+					{#if isCircular}
+						<div class="loop-row">
+							<span>Loops:</span>
+							<button onclick={() => setLoopCount(Math.max(1, loopCount - 1))} disabled={loopCount <= 1}>−</button>
+							<span>{loopCount}</span>
+							<button onclick={() => setLoopCount(Math.min(10, loopCount + 1))} disabled={loopCount >= 10}>+</button>
 						</div>
 					{/if}
 				</div>
 			{:else}
-				<!-- Minimal/Standard Controls -->
-				<div class="controls" class:minimal={controlsLevel === "minimal"}>
-					<!-- Play/Pause Button -->
-					<button
-						class="control-btn play-btn"
-						onclick={togglePlayback}
-						aria-label={isPlaying ? "Pause" : "Play"}
-					>
+				<div class="controls-simple">
+					<button class="play-btn" onclick={togglePlayback} aria-label={isPlaying ? "Pause" : "Play"}>
 						{#if isPlaying}
-							<svg viewBox="0 0 24 24" fill="currentColor">
-								<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-							</svg>
+							<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
 						{:else}
-							<svg viewBox="0 0 24 24" fill="currentColor">
-								<path d="M8 5v14l11-7z" />
-							</svg>
+							<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
 						{/if}
 					</button>
-
-					<!-- Step Controls (standard only) -->
-					{#if controlsLevel === "standard"}
-						<div class="step-controls">
-							<button
-								class="control-btn step-btn"
-								onclick={handleStepBackward}
-								aria-label="Step backward"
-							>
-								<svg viewBox="0 0 24 24" fill="currentColor">
-									<path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z" />
-								</svg>
-							</button>
-							<button
-								class="control-btn step-btn"
-								onclick={handleStepForward}
-								aria-label="Step forward"
-							>
-								<svg viewBox="0 0 24 24" fill="currentColor">
-									<path d="M18 6h-2v12h2V6zm-3.5 6L6 6v12l8.5-6z" />
-								</svg>
-							</button>
-						</div>
-					{/if}
-
-					<!-- BPM Controls -->
-					<div class="bpm-controls">
-						<BpmChips {bpm} variant="compact" onBpmChange={handleBpmChange} />
-					</div>
+					<BpmChips {bpm} variant="compact" onBpmChange={handleBpmChange} />
 				</div>
 			{/if}
 		{/if}
@@ -564,183 +277,233 @@
 </div>
 
 <style>
+	/*
+	 * Container-Query-Based Responsive Layout System
+	 *
+	 * Uses golden ratio (~62%) for canvas allocation.
+	 * Adapts layout flow based on container aspect ratio:
+	 * - Portrait (tall): vertical flow, canvas top
+	 * - Square: balanced vertical flow
+	 * - Landscape (wide): horizontal flow, canvas left
+	 * - Ultra-wide (bottom sheet): compact horizontal
+	 */
+
 	.animation-player {
+		/* Enable container queries */
+		container-type: size;
+		container-name: animation-player;
+
+		/* Base layout - vertical by default */
 		display: flex;
 		flex-direction: column;
 		width: 100%;
 		height: 100%;
-		gap: 8px;
-	}
-
-	.canvas-container {
-		flex: 1;
-		min-height: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: rgba(0, 0, 0, 0.2);
-		border-radius: 8px;
-		overflow: hidden;
-		position: relative;
-	}
-
-	/* Full Controls Mode */
-	.controls-full {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		padding: 10px;
-		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-		border: 1.5px solid var(--theme-stroke);
-		border-radius: 14px;
-		box-shadow:
-			0 4px 20px var(--theme-shadow),
-			inset 0 1px 0 var(--theme-card-bg);
-	}
-
-	.control-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.playback-row {
-		justify-content: center;
-		gap: 8px;
-	}
-
-	/* Loop Count Row */
-	.loop-count-row {
-		justify-content: center;
-		gap: 12px;
-		padding: 8px 12px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border-radius: 10px;
-	}
-
-	.loop-label {
-		font-size: var(--font-size-min, 14px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-		font-weight: 500;
-	}
-
-	.loop-stepper {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.loop-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 32px;
-		height: 32px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-		border-radius: 8px;
-		color: var(--theme-text, white);
-		font-size: 18px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.loop-btn:hover:not(:disabled) {
-		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-	}
-
-	.loop-btn:active:not(:disabled) {
-		transform: scale(0.95);
-	}
-
-	.loop-btn:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
-	.loop-value {
-		font-size: var(--font-size-lg, 18px);
-		font-weight: 600;
-		color: var(--theme-text, white);
-		min-width: 24px;
-		text-align: center;
-	}
-
-	/* Standard/Minimal Controls */
-	.controls {
-		display: flex;
-		align-items: center;
 		gap: 12px;
 		padding: 8px;
-		background: rgba(0, 0, 0, 0.3);
-		border-radius: 8px;
+		box-sizing: border-box;
+
+		/* Golden ratio proportions as CSS custom properties */
+		--golden-major: 0.618;
+		--golden-minor: 0.382;
+		--canvas-max-ratio: 0.65; /* Max space for canvas */
+		--controls-min: 100px; /* Minimum space for controls */
 	}
 
-	.controls.minimal {
-		gap: 8px;
-		padding: 6px;
+	/* ========================================
+	   CANVAS WRAPPER - Intelligent sizing
+	   ======================================== */
+	.canvas-wrap {
+		position: relative;
+		border-radius: 12px;
+		overflow: hidden;
+		background: rgba(0, 0, 0, 0.2);
+
+		/* Default: take available space but respect aspect ratio */
+		flex: 0 1 auto;
+		width: 100%;
+		aspect-ratio: 1; /* Canvas content is always square */
+
+		/* Constrain to leave room for controls */
+		max-height: calc(100cqh - var(--controls-min) - 24px);
+		max-width: 100%;
+
+		/* Center within available space */
+		align-self: center;
 	}
 
-	.step-controls {
+	/* ========================================
+	   PORTRAIT CONTAINERS (tall panels)
+	   aspect-ratio < 0.85
+	   ======================================== */
+	@container animation-player (aspect-ratio < 0.85) {
+		.animation-player {
+			/* Vertical flow - canvas top, controls bottom */
+			flex-direction: column;
+			justify-content: flex-start;
+			gap: 16px;
+		}
+
+		.canvas-wrap {
+			/* Size canvas to ~60% of height, but respect width */
+			max-height: calc(100cqh * var(--golden-major) - 20px);
+			max-width: calc(100cqw - 16px);
+			width: min(100%, calc(100cqh * var(--golden-major) - 20px));
+		}
+
+		.controls-simple,
+		.controls-full {
+			/* Controls get comfortable space at bottom */
+			flex-shrink: 0;
+			width: 100%;
+		}
+	}
+
+	/* ========================================
+	   SQUARE-ISH CONTAINERS
+	   0.85 <= aspect-ratio <= 1.3
+	   ======================================== */
+	@container animation-player (0.85 <= aspect-ratio <= 1.3) {
+		.animation-player {
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			gap: 16px;
+		}
+
+		.canvas-wrap {
+			/* Balanced sizing - ~58% of smaller dimension */
+			--size: min(100cqw - 16px, calc(100cqh * 0.58));
+			width: var(--size);
+			max-width: var(--size);
+			max-height: var(--size);
+		}
+
+		.controls-simple,
+		.controls-full {
+			width: 100%;
+		}
+	}
+
+	/* ========================================
+	   LANDSCAPE CONTAINERS (wide panels)
+	   aspect-ratio > 1.3
+	   ======================================== */
+	@container animation-player (aspect-ratio > 1.3) {
+		.animation-player {
+			/* Horizontal flow - canvas left, controls right */
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+			gap: 20px;
+		}
+
+		.canvas-wrap {
+			/* Size to height, leave room for controls on right */
+			--size: min(calc(100cqh - 24px), calc(100cqw * var(--golden-major) - 30px));
+			width: var(--size);
+			max-width: var(--size);
+			max-height: var(--size);
+			flex-shrink: 0;
+		}
+
+		.controls-simple {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 12px;
+			width: auto;
+			min-width: 140px;
+			max-width: 200px;
+		}
+
+		.controls-full {
+			flex: 1;
+			min-width: 180px;
+			max-width: 280px;
+			height: auto;
+			max-height: calc(100cqh - 24px);
+			overflow-y: auto;
+		}
+	}
+
+	/* ========================================
+	   ULTRA-WIDE / BOTTOM SHEET (very short)
+	   height < 280px
+	   ======================================== */
+	@container animation-player (max-height: 280px) {
+		.animation-player {
+			flex-direction: row;
+			align-items: center;
+			padding: 8px 12px;
+			gap: 16px;
+		}
+
+		.canvas-wrap {
+			/* Compact canvas sized to height */
+			--size: calc(100cqh - 24px);
+			width: var(--size);
+			max-width: var(--size);
+			max-height: var(--size);
+			flex-shrink: 0;
+		}
+
+		.controls-simple {
+			flex-direction: row;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			flex: 1;
+		}
+
+		.controls-full {
+			flex: 1;
+			flex-direction: row;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			padding: 8px;
+			max-height: none;
+			overflow: visible;
+		}
+	}
+
+	/* ========================================
+	   STATE MESSAGES (loading/error)
+	   ======================================== */
+	.state-msg {
 		display: flex;
-		gap: 4px;
-	}
-
-	.control-btn {
-		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.2);
+		gap: 12px;
+		width: 100%;
+		height: 100%;
+		min-height: 120px;
+		color: var(--theme-text-dim);
+		font-size: var(--font-size-sm);
+	}
+
+	.state-msg.error {
+		color: var(--semantic-error, #fca5a5);
+	}
+
+	.spinner {
+		width: 32px;
+		height: 32px;
+		border: 3px solid var(--theme-stroke);
+		border-top-color: var(--theme-accent, #3b82f6);
 		border-radius: 50%;
-		color: white;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		flex-shrink: 0;
+		animation: spin 1s linear infinite;
 	}
 
-	.control-btn svg {
-		width: 20px;
-		height: 20px;
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
-	.control-btn:hover {
-		background: rgba(255, 255, 255, 0.2);
-	}
-
-	.control-btn:active {
-		transform: scale(0.95);
-	}
-
-	.play-btn {
-		width: var(--min-touch-target, 44px);
-		height: var(--min-touch-target, 44px);
-		background: linear-gradient(135deg, var(--semantic-info) 0%, #2563eb 100%);
-		border-color: transparent;
-	}
-
-	.play-btn:hover {
-		background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-	}
-
-	.step-btn {
-		width: 36px;
-		height: 36px;
-	}
-
-	.step-btn svg {
-		width: 16px;
-		height: 16px;
-	}
-
-	.bpm-controls {
-		flex: 1;
-		min-width: 0;
-	}
-
-	/* Export Progress Overlay */
+	/* ========================================
+	   EXPORT OVERLAY
+	   ======================================== */
 	.export-overlay {
 		position: absolute;
 		inset: 0;
@@ -749,194 +512,160 @@
 		align-items: center;
 		justify-content: center;
 		z-index: 10;
+		border-radius: inherit;
 	}
 
-	.export-progress-card {
+	.export-card {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 12px;
-		padding: 24px 32px;
+		padding: 24px;
 		background: var(--theme-card-bg);
 		border: 1px solid var(--theme-stroke);
-		border-radius: 16px;
-		min-width: 200px;
-	}
-
-	.progress-header {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		width: 100%;
-		justify-content: space-between;
-	}
-
-	.progress-stage {
-		font-size: var(--font-size-min);
+		border-radius: 12px;
 		color: var(--theme-text);
-		font-weight: 500;
 	}
 
-	.cancel-button {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		background: transparent;
-		border: 1px solid var(--theme-stroke);
-		border-radius: 6px;
-		color: var(--theme-text-dim);
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-
-	.cancel-button:hover {
-		background: var(--semantic-error);
-		border-color: var(--semantic-error);
-		color: white;
-	}
-
-	.progress-bar-container {
-		width: 100%;
+	.export-card .progress-bar {
+		width: 160px;
 		height: 6px;
 		background: var(--theme-stroke);
 		border-radius: 3px;
 		overflow: hidden;
 	}
 
-	.progress-bar {
+	.export-card .progress-bar div {
 		height: 100%;
 		background: var(--theme-accent);
-		transition: width 0.1s ease;
+		transition: width 0.15s ease;
 	}
 
-	.progress-percent {
-		font-size: var(--font-size-lg);
-		font-weight: 600;
-		color: var(--theme-text);
+	.export-card button {
+		padding: 8px 16px;
+		background: transparent;
+		border: 1px solid var(--theme-stroke);
+		border-radius: 6px;
+		color: var(--theme-text-dim);
+		cursor: pointer;
+		min-height: 36px;
 	}
 
-	/* Landscape layout */
-	@media (orientation: landscape) and (min-width: 600px) and (min-height: 400px) {
-		.animation-player {
-			flex-direction: row;
-			gap: 12px;
-		}
-
-		.canvas-container {
-			flex: 1;
-			min-width: 0;
-			border-radius: 12px;
-		}
-
-		.controls {
-			flex-direction: column;
-			width: 140px;
-			flex-shrink: 0;
-			padding: 12px;
-			border-radius: 12px;
-			gap: 12px;
-			justify-content: flex-start;
-			align-items: stretch;
-		}
-
-		.controls.minimal {
-			width: 120px;
-		}
-
-		.control-btn.play-btn {
-			width: 100%;
-			height: 48px;
-			border-radius: 10px;
-		}
-
-		.step-controls {
-			justify-content: center;
-		}
-
-		.bpm-controls {
-			flex: none;
-			width: 100%;
-		}
-
-		.bpm-controls :global(.bpm-chips.compact) {
-			flex-wrap: wrap;
-			gap: 6px;
-		}
-
-		.bpm-controls :global(.preset-chip) {
-			flex: 1 1 calc(50% - 3px);
-			min-width: 0;
-			padding: 10px 4px;
-		}
-
-		.bpm-controls :global(.custom-chip) {
-			flex: 1 1 100%;
-			max-width: none;
-		}
+	.export-card button:hover {
+		background: var(--semantic-error);
+		border-color: var(--semantic-error);
+		color: white;
 	}
 
-	/* Loading/Error states */
-	.loading-state,
-	.error-state {
+	/* ========================================
+	   SIMPLE CONTROLS (minimal mode)
+	   ======================================== */
+	.controls-simple {
 		display: flex;
-		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 12px;
+		background: var(--theme-card-bg, rgba(0, 0, 0, 0.3));
+		border: 1px solid var(--theme-stroke);
+		border-radius: 12px;
+		flex-shrink: 0;
+	}
+
+	.play-btn {
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
+		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 12px;
-		padding: 32px;
-		height: 100%;
-		color: var(--theme-text-dim);
-		font-size: var(--font-size-sm);
-	}
-
-	.spinner {
-		width: 32px;
-		height: 32px;
-		border: 3px solid var(--theme-stroke);
-		border-top-color: rgba(59, 130, 246, 0.8);
+		background: linear-gradient(135deg, var(--theme-accent, #3b82f6) 0%, color-mix(in srgb, var(--theme-accent, #3b82f6) 80%, black) 100%);
+		border: none;
 		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.error-state {
-		color: rgba(252, 165, 165, 1);
-	}
-
-	.retry-btn {
-		padding: 8px 16px;
-		background: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		border-radius: 6px;
 		color: white;
-		font-size: var(--font-size-compact);
 		cursor: pointer;
-		transition: all 0.2s ease;
+		flex-shrink: 0;
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
 	}
 
-	.retry-btn:hover {
-		background: rgba(255, 255, 255, 0.2);
+	.play-btn svg {
+		width: 22px;
+		height: 22px;
 	}
 
+	.play-btn:hover {
+		transform: scale(1.05);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+	}
+
+	.play-btn:active {
+		transform: scale(0.98);
+	}
+
+	/* ========================================
+	   FULL CONTROLS (export mode)
+	   ======================================== */
+	.controls-full {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 12px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 14px;
+		flex-shrink: 0;
+	}
+
+	.loop-row {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		padding: 10px 12px;
+		background: color-mix(in srgb, var(--theme-card-bg) 50%, transparent);
+		border: 1px solid var(--theme-stroke);
+		border-radius: 10px;
+		font-size: var(--font-size-min);
+		color: var(--theme-text-dim);
+	}
+
+	.loop-row button {
+		width: 36px;
+		height: 36px;
+		min-width: 36px;
+		background: var(--theme-card-bg);
+		border: 1px solid var(--theme-stroke);
+		border-radius: 8px;
+		color: var(--theme-text);
+		cursor: pointer;
+		font-size: 18px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.15s ease;
+	}
+
+	.loop-row button:hover:not(:disabled) {
+		background: var(--theme-stroke);
+		border-color: var(--theme-stroke-strong);
+	}
+
+	.loop-row button:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	/* ========================================
+	   ACCESSIBILITY & MOTION
+	   ======================================== */
 	@media (prefers-reduced-motion: reduce) {
-		.control-btn,
-		.retry-btn,
-		.cancel-button {
-			transition: none;
-		}
-
 		.spinner {
 			animation: none;
 		}
 
-		.progress-bar {
+		.play-btn,
+		.loop-row button,
+		.export-card .progress-bar div {
 			transition: none;
 		}
 	}

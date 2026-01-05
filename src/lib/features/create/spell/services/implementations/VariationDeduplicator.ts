@@ -12,6 +12,7 @@
 import { inject, injectable } from "inversify";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IVariationDeduplicator } from "../contracts/IVariationDeduplicator";
 import { generateSequenceHash } from "$lib/features/create/shared/utils/sequence-hash";
@@ -30,7 +31,9 @@ export class VariationDeduplicator implements IVariationDeduplicator {
 
   constructor(
     @inject(TYPES.IGridPositionDeriver)
-    private positionDeriver: IGridPositionDeriver
+    private positionDeriver: IGridPositionDeriver,
+    @inject(TYPES.IMotionQueryHandler)
+    private motionQueryHandler: IMotionQueryHandler
   ) {}
 
   /**
@@ -38,7 +41,7 @@ export class VariationDeduplicator implements IVariationDeduplicator {
    * This is the minimum hash across all 8 possible rotations.
    * Sequences with the same canonical hash are rotationally equivalent.
    */
-  getCanonicalHash(sequence: SequenceData): string {
+  async getCanonicalHash(sequence: SequenceData): Promise<string> {
     if (!sequence || !sequence.beats || sequence.beats.length === 0) {
       return "";
     }
@@ -50,7 +53,12 @@ export class VariationDeduplicator implements IVariationDeduplicator {
       const rotated =
         rotation === 0
           ? sequence
-          : rotateSequence(sequence, rotation, this.positionDeriver);
+          : await rotateSequence(
+              sequence,
+              rotation,
+              this.positionDeriver,
+              this.motionQueryHandler
+            );
 
       const hash = generateSequenceHash(rotated);
       hashes.push(hash);
@@ -64,8 +72,8 @@ export class VariationDeduplicator implements IVariationDeduplicator {
    * Check if a sequence is a duplicate of one already seen.
    * Uses canonical hash for comparison.
    */
-  isDuplicate(sequence: SequenceData): boolean {
-    const canonicalHash = this.getCanonicalHash(sequence);
+  async isDuplicate(sequence: SequenceData): Promise<boolean> {
+    const canonicalHash = await this.getCanonicalHash(sequence);
     if (!canonicalHash) return false;
 
     return this.seenHashes.has(canonicalHash);
@@ -75,10 +83,10 @@ export class VariationDeduplicator implements IVariationDeduplicator {
    * Try to add a sequence to the seen set.
    * Returns false if the sequence is a rotational duplicate.
    */
-  tryAdd(sequence: SequenceData): boolean {
+  async tryAdd(sequence: SequenceData): Promise<boolean> {
     this.totalCount++;
 
-    const canonicalHash = this.getCanonicalHash(sequence);
+    const canonicalHash = await this.getCanonicalHash(sequence);
     if (!canonicalHash) return false;
 
     if (this.seenHashes.has(canonicalHash)) {

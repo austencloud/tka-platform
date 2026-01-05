@@ -150,6 +150,8 @@ Uses pure runes instead of stores for reactivity.
     visible = true,
     previewMode = false,
     onToggle = undefined,
+    // Dark Mode override for export (when set, applies filter override)
+    darkMode = undefined,
   } = $props<{
     /** The letter to display */
     letter: string | null | undefined;
@@ -167,6 +169,8 @@ Uses pure runes instead of stores for reactivity.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
+    /** Dark Mode override for export. When set, applies filter override. */
+    darkMode?: boolean;
   }>();
 
   // Letter dimensions state - match legacy behavior
@@ -302,13 +306,18 @@ Uses pure runes instead of stores for reactivity.
 <!-- TKA Glyph Group - only render when dimensions are loaded AND when visible
      NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
      CSS classes don't carry over - only the raw SVG markup is captured.
-     Preview mode allows rendering at reduced opacity even when not visible. -->
+     Preview mode allows rendering at reduced opacity even when not visible.
+     CRITICAL: When darkMode is explicitly set (for export), we apply inline style
+     because CSS filter won't be captured in outerHTML. -->
 {#if hasLetter && dimensionsLoaded && (visible || previewMode)}
   <g
     class="tka-glyph"
     class:visible={visible && imageReady}
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
+    class:dark-mode-override={darkMode === true}
+    class:light-mode-override={darkMode === false}
+    style={darkMode === true ? "filter: invert(0.9)" : darkMode === false ? "filter: none" : undefined}
     data-letter={letter}
     transform="translate({x}, {y}) scale({scale})"
     onclick={onToggle}
@@ -333,7 +342,7 @@ Uses pure runes instead of stores for reactivity.
     />
 
     <!-- Dash for Type3/Type5 letters (rendered separately for dot centering) -->
-    <!-- Note: darkMode NOT passed - parent group already handles inversion via filter -->
+    <!-- Note: Dash is inside this TKAGlyph group, so the filter: invert() handles dark mode -->
     {#if showDash}
       <Dash
         letterWidth={letterDimensions.width}
@@ -386,5 +395,15 @@ Uses pure runes instead of stores for reactivity.
   /* Uses CSS-first approach - triggered by .dark class on <html> element */
   :global(:root.dark) .tka-glyph {
     filter: invert(0.9);
+  }
+
+  /* Dark mode override (for export with darkMode=true) */
+  .tka-glyph.dark-mode-override {
+    filter: invert(0.9);
+  }
+
+  /* Light mode override (for export with darkMode=false) - overrides :root.dark */
+  .tka-glyph.light-mode-override {
+    filter: none !important;
   }
 </style>

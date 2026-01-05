@@ -107,15 +107,18 @@
     }
   });
 
-  // Enable transitions ONLY when pictograph signature changes (new pictograph selected)
-  // Do NOT enable transitions for transformations (mirror, rotate, color swap)
-  // which only change arrow locations/rotations but keep the same structural signature
+  // Enable fade transitions ONLY when loading a DIFFERENT beat (id changes)
+  // Do NOT enable for transforms on the SAME beat (id stays same, letter/positions change)
+  // Transforms should use CSS animations on props/arrows, not fade transitions
+  let previousIdForTransitions = "";
   $effect(() => {
     const currentSignature = getPictographSignature(beat);
     const signatureChanged = currentSignature !== previousSignature;
+    const idChanged = beat.id !== previousIdForTransitions;
 
-    if (signatureChanged && !beat.isBlank) {
-      // New pictograph selected (structure changed) - enable transitions for fade-in
+    // Only enable fade transitions when loading genuinely different content
+    // (id changed AND signature changed). Transforms keep same id.
+    if (idChanged && signatureChanged && !beat.isBlank) {
       enableTransitionsForNewData = true;
 
       // Disable transitions after animation completes
@@ -125,6 +128,7 @@
     }
 
     previousSignature = currentSignature;
+    previousIdForTransitions = beat.id;
   });
 
   const shouldAnimateIn = $derived.by(() => {

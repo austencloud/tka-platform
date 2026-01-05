@@ -44,15 +44,17 @@ Now with intelligent rotation animation matching prop behavior!
   // Get centralized visibility manager for dark mode state and cached colors
   const visibilityManager = getAnimationVisibilityManager();
 
-  // Track dark mode and colors from centralized cache (no getComputedStyle per component)
+  // Track dark mode, colors, and transform state from centralized cache
   let isDarkMode = $state(visibilityManager.isDarkMode());
   let cachedColors = $state(visibilityManager.getMotionColors());
+  let isTransforming = $state(visibilityManager.isTransforming());
 
-  // Register for updates when dark mode changes
+  // Register for updates when visibility state changes
   $effect(() => {
     const handler = () => {
       isDarkMode = visibilityManager.isDarkMode();
       cachedColors = visibilityManager.getMotionColors();
+      isTransforming = visibilityManager.isTransforming();
     };
     visibilityManager.registerObserver(handler);
     return () => visibilityManager.unregisterObserver(handler);
@@ -328,6 +330,7 @@ Now with intelligent rotation animation matching prop behavior!
     class:mirrored={shouldMirror}
     class:clickable={isClickable}
     class:selected={isSelected}
+    class:no-transition={isTransforming}
     onclick={isClickable ? handleArrowClick : undefined}
     onkeydown={isClickable
       ? (e) => (e.key === "Enter" || e.key === " ") && handleArrowClick(e)
@@ -374,6 +377,11 @@ Now with intelligent rotation animation matching prop behavior!
     transition:
       transform 0.2s ease,
       filter 0.2s ease;
+  }
+
+  /* Disable transitions during sequence transforms to prevent janky mid-calculation animation */
+  .arrow-svg.no-transition {
+    transition: none;
   }
 
   .arrow-svg.clickable {

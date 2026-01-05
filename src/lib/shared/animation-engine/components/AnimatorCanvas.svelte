@@ -207,11 +207,15 @@ Last audit: 2025-12-27
   .canvas-wrapper :global(canvas) {
     border: 1px solid rgba(229, 231, 235, 0.4);
     border-radius: 2px;
+    /* Background is drawn via JavaScript fillRect for smooth transitions */
+    /* CSS background is only a fallback before first render */
     background: var(--canvas-bg, #ffffff);
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
+    /* Only transition border - background is handled by JS interpolation */
+    transition: border-color 150ms ease-out;
   }
 
   .canvas-wrapper[data-transparent="true"] :global(canvas) {
@@ -220,9 +224,8 @@ Last audit: 2025-12-27
     --canvas-bg: transparent;
   }
 
-  /* Dark Mode: dark background */
+  /* Dark Mode: border color only - background is handled by JS interpolation */
   .canvas-wrapper[data-lights-off="true"] :global(canvas) {
-    background: #0a0a0f !important;
     border-color: rgba(0, 255, 255, 0.2);
   }
 </style>

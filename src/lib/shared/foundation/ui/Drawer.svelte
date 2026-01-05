@@ -291,6 +291,9 @@
     }
   });
 
+  // Layout change subscription cleanup
+  let layoutUnsubscribe: (() => void) | null = null;
+
   // Initialize layout service if responsive layout is enabled
   onMount(() => {
     mounted = true;
@@ -300,14 +303,30 @@
       layoutService = tryResolve<IResponsiveLayoutManager>(
         TYPES.IResponsiveLayoutManager
       );
+
+      if (layoutService) {
+        // Get initial value
+        isSideBySideLayout = layoutService.shouldUseSideBySideLayout();
+
+        // Subscribe to layout changes for reactive updates on resize
+        layoutUnsubscribe = layoutService.onLayoutChange(() => {
+          isSideBySideLayout = layoutService!.shouldUseSideBySideLayout();
+        });
+      } else {
+        // Fallback: direct resize listener when layoutService not available
+        const handleResize = () => {
+          isSideBySideLayout = window.innerWidth >= 1024;
+        };
+        handleResize(); // Initial value
+        window.addEventListener("resize", handleResize);
+        layoutUnsubscribe = () => window.removeEventListener("resize", handleResize);
+      }
     }
   });
 
-  // Reactive layout detection
-  $effect(() => {
-    if (respectLayoutMode && layoutService) {
-      isSideBySideLayout = layoutService.shouldUseSideBySideLayout();
-    }
+  // Cleanup layout subscription
+  onDestroy(() => {
+    layoutUnsubscribe?.();
   });
 
   // Track open state changes and notify parent

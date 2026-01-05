@@ -20,6 +20,7 @@ export interface SequenceExportOptions {
   addWord: boolean;
   combinedGrids: boolean;
   addDifficultyLevel: boolean;
+  customName?: string; // Optional custom name for header (overrides word when provided)
 
   // Prop type override (optional)
   // If provided, overrides the prop type for all beats in the sequence

@@ -1,6 +1,30 @@
 # GitHub Copilot Instructions - TKA Scribe
 
-> Movement notation software for creating visual "pictographs" showing dance/flow art sequences. Think musical notation for physical movement - props, grid positions, arrows, timing, orientations.
+> Movement notation software for flow artists. Creates visual "pictographs" showing dance/flow art sequences - think musical notation for physical movement with props, grid positions, arrows, timing, and orientations.
+
+---
+
+## CATASTROPHIC DATA LOSS PREVENTION
+
+**On January 2, 2026, an AI ran `git checkout -- .` and DESTROYED 8 HOURS OF USER WORK. The changes were UNRECOVERABLE.**
+
+### FORBIDDEN COMMANDS - NEVER RUN WITHOUT EXPLICIT USER CONFIRMATION:
+
+```bash
+git checkout -- .
+git checkout -- <any-file>
+git reset --hard
+git reset HEAD~
+git clean -fd
+git clean -f
+rm -rf (on code directories)
+```
+
+**Mental model:** Every file in `git status` that shows as modified = HOURS OF USER WORK
+
+**ALWAYS ASK** before running any command that discards uncommitted changes.
+
+---
 
 ## Core Architecture
 
@@ -9,7 +33,7 @@
 - **SvelteKit 2.0** with **Svelte 5** (runes: `$state`, `$derived`, `$effect`)
 - **TypeScript 5.0** with strict mode
 - **InversifyJS 7.9** for dependency injection
-- **Firebase** for auth, persistence, and cloud storage
+- **Firebase** for auth, persistence, cloud storage
 - **Vite 6.0** for build tooling
 - **Netlify** for deployment
 
@@ -20,29 +44,102 @@ src/lib/
 ├── features/           # Feature modules (create, learn, library, etc.)
 │   └── [feature]/
 │       ├── components/ # UI components
-│       ├── services/   # Business logic (implementations + contracts)
-│       ├── state/      # Svelte 5 runes state
+│       ├── services/   # Business logic (contracts + implementations)
+│       ├── state/      # Svelte 5 runes state (.svelte.ts files)
 │       └── domain/     # Types, models, enums
 ├── shared/            # Cross-cutting infrastructure
 │   ├── inversify/     # DI container & modules
 │   ├── pictograph/    # Core rendering engine
 │   ├── auth/          # Authentication
-│   └── utils/         # Helpers
+│   └── [domain]/      # Other shared domains
 └── routes/            # SvelteKit pages
 ```
 
-### Dependency Injection (InversifyJS)
+---
 
-**Critical Pattern:** Services are resolved via DI container, NOT imported directly.
+## CRITICAL: No Barrel Exports
+
+**NEVER use barrel exports (index.ts files that re-export other modules).**
+
+**Why:**
+
+- Barrel exports cause massive bundle bloat in Vite
+- Importing one item from a barrel loads the ENTIRE barrel
+- Tree-shaking doesn't work reliably with re-exports
+- Network requests skyrocket in dev mode
+
+**Do this:**
+
+```typescript
+// ✅ CORRECT - Direct imports
+import { MyComponent } from "../../components/MyComponent.svelte";
+import { MyService } from "../../services/implementations/MyService";
+```
+
+**NOT this:**
+
+```typescript
+// ❌ WRONG - Barrel imports
+import { MyComponent } from "../../components";
+import { MyService } from "../../services";
+```
+
+**Rules:**
+
+- Never create `index.ts` files in `src/` directory
+- If you see an `index.ts` that re-exports, flag it for removal
+- Direct imports are more verbose but vastly better for performance
+
+---
+
+## Service Naming Convention (CRITICAL)
+
+**Never use the word "Service" in service names.** Use descriptive, verb-based names.
+
+The word "Service" is redundant - everything in `services/` is already a service.
+
+| If the service does...  | Name it...      | Example                                |
+| ----------------------- | --------------- | -------------------------------------- |
+| Detection/checking      | `*Detector`     | `LOOPDetector`, `ReversalDetector`     |
+| Management/coordination | `*Manager`      | `TurnManager`, `CollectionManager`     |
+| Configuration           | `*Configurator` | `CardConfigurator`                     |
+| Orchestration           | `*Orchestrator` | `GenerationOrchestrator`               |
+| Persistence/storage     | `*Persister`    | `SequencePersister`, `FilterPersister` |
+| Loading data            | `*Loader`       | `SequenceLoader`, `OptionLoader`       |
+| Filtering               | `*Filter`       | `OptionFilter`, `DiscoverFilter`       |
+| Sorting                 | `*Sorter`       | `OptionSorter`, `DiscoverSorter`       |
+| Validation              | `*Validator`    | `SequenceValidator`                    |
+| Transformation          | `*Transformer`  | `SequenceTransformer`                  |
+| Analysis                | `*Analyzer`     | `SequenceAnalyzer`, `PositionAnalyzer` |
+| Calculation             | `*Calculator`   | `SequenceStatsCalculator`              |
+| Export/conversion       | `*Exporter`     | `SequenceExporter`, `CocoExporter`     |
+| Repository/CRUD         | `*Repository`   | `LibraryRepository`                    |
+| Caching                 | `*Cache`        | `DiscoverCache`, `SequenceCache`       |
+
+```typescript
+// ✅ CORRECT
+class LOOPDetector implements ILOOPDetector {}
+class SequencePersister implements ISequencePersister {}
+
+// ❌ WRONG
+class LOOPDetectionService implements ILOOPDetectionService {}
+class SequencePersistenceService implements ISequencePersistenceService {}
+```
+
+---
+
+## Dependency Injection (InversifyJS)
+
+**Services are resolved via DI container, NOT imported directly.**
 
 ```typescript
 // ✅ CORRECT - Use DI
 import { resolve, TYPES } from "$lib/shared/inversify/di";
-
 const myService = resolve<IMyService>(TYPES.IMyService);
 
 // ❌ WRONG - Don't import services directly
 import { MyService } from "./services/MyService";
+const myService = new MyService();
 ```
 
 **Container Architecture:**
@@ -50,7 +147,6 @@ import { MyService } from "./services/MyService";
 - **3-tier loading:** Core (Tier 1) → Shared (Tier 2) → Features (Tier 3, on-demand)
 - **HMR-aware:** Container rebuilds on hot reload
 - **Lazy loading:** Heavy libraries (PixiJS) loaded when needed
-- **Module registration:** Each feature has a `*.module.ts` file that binds services
 
 **When adding new services:**
 
@@ -58,6 +154,8 @@ import { MyService } from "./services/MyService";
 2. Create implementation in `implementations/MyService.ts` with `@injectable()` decorator
 3. Add binding in appropriate `*.module.ts`: `bind(TYPES.IMyService).to(MyService)`
 4. Add symbol to `types.ts`: `IMyService: Symbol.for('IMyService')`
+
+---
 
 ## Svelte 5 Patterns
 
@@ -80,6 +178,8 @@ import { writable, derived } from "svelte/store";
 const count = writable(0);
 ```
 
+**Prefer `$derived` over `$effect`** when computing values. Only use `$effect` for side effects.
+
 **State Factory Pattern:**
 
 ```typescript
@@ -99,7 +199,6 @@ export function createMyState() {
 **Context Pattern for Shared State:**
 
 ```typescript
-// Use context, not stores
 import { getContext, setContext } from "svelte";
 
 const key = Symbol("myState");
@@ -107,111 +206,30 @@ export const getMyState = () => getContext<MyState>(key);
 export const setMyState = (state: MyState) => setContext(key, state);
 ```
 
-## Environment & Release Management
-
-### Context-Aware Development
-
-#### When User is in VSCode (Default Mode)
-
-- **Assume**: Development environment
-- **All modules accessible** - don't add production checks in components
-- **Help freely**: Build features without worrying about visibility
-
-#### When User Types `/release`
-
-- **Trigger**: Release workflow
-- **Action**: Run `node scripts/release-to-production.js`
-- **Purpose**: Update production module visibility in `netlify.toml`
-- **Outcome**: Create PR or push to main
-
-### Two-Layer Access Control
-
-1. **Environment Layer** (netlify.toml): Production vs Development visibility
-2. **Role Layer** (FeatureFlagService): User/Tester/Admin permissions
-
-**Access Formula:** `Visible = Environment allows AND Role permits`
-
-**Development Mode (default):**
-
-```typescript
-// ✅ Good - let system handle visibility
-const canAccess = featureFlagService.canAccessModule("learn");
-
-// ❌ Avoid - don't add manual checks
-if (import.meta.env.PROD && module === "learn") return false;
-```
-
-**Commands to recognize:**
-
-- `/release` - Start production release workflow
-- `/fb` - Run feedback workflow
-- `/check-env` - Display current environment status
-- `/dev` - Switch to development mode
-- `/prod` - Switch to production mode (for testing)
-
-### Release Workflow Triggers
-
-Recognize these as release intent:
-
-- `/release`
-- "push to production"
-- "release to users"
-- "make this live"
-- "deploy to prod"
-- "push to main" (ask for confirmation first)
-
-### Smart Defaults
-
-When user asks for help:
-
-- **Default assumption**: Building features (dev mode)
-- **Default environment**: Development (all features visible)
-- **Default branch**: Development branch (not main)
-- **Default action**: Help code (don't restrict)
-
-### Behavior Rules
-
-1. **Default to development mode** unless explicitly told otherwise
-2. **Ask before production changes** (netlify.toml edits, main branch pushes)
-3. **Use release script** for production visibility changes
-4. **Don't add manual checks** - use FeatureFlagService
-5. **Help freely** when developing
-6. **Guide carefully** when releasing
-
-### Context Clues
-
-**User is developing when:**
-
-- Editing files in VSCode
-- On feature/develop branch
-- Implementing new functionality
-- Fixing bugs
-- No mention of "release" or "production"
-
-**User is releasing when:**
-
-- Says "release", "deploy prod", "push live"
-- Types `/release`
-- On main branch asking to push
-- Talking about making features public
-
-### Error Prevention
-
-**Never:**
-
-- Add manual environment checks in component code
-- Edit netlify.toml without explicit release intent
-- Restrict features in development mode
-- Assume production mode by default
-
-**Always:**
-
-- Use FeatureFlagService for access checks
-- Ask before production changes
-- Suggest testing on preview first
-- Follow release workflow for visibility changes
+---
 
 ## CSS & Styling
+
+### NEVER Create Global CSS Utility Classes in Svelte
+
+**Svelte scopes styles for good reasons. Do not fight the framework.**
+
+**The mistake:** Seeing "duplicated" CSS like `.container { max-width: 1200px }` in multiple components and thinking "I should extract this!"
+
+**Why it's wrong:**
+
+- Svelte scopes styles intentionally - each component is self-contained
+- "Duplication" in scoped styles isn't a problem - it's explicit, isolated
+- Global utility classes create coupling - change the global, break N components
+
+| ✅ SHARE (via CSS variables)             | ❌ DON'T SHARE (keep scoped)            |
+| ---------------------------------------- | --------------------------------------- |
+| Colors: `var(--theme-card-bg)`           | Layout: `.container { max-width }`      |
+| Spacing tokens: `var(--spacing-md)`      | Typography: `h2 { font-size }`          |
+| Border radii: `var(--radius-lg)`         | Section padding: `.section { padding }` |
+| Semantic colors: `var(--semantic-error)` | Grid definitions                        |
+
+**Rule:** Share design tokens (values), not layout classes (rules).
 
 ### 3-Layer CSS Variable Hierarchy
 
@@ -225,8 +243,7 @@ When user asks for help:
 
 - Injected by `background-theme-calculator.ts` based on luminance
 - Adapt to light/dark backgrounds automatically
-- Use for surfaces, text, borders, accents, shadows
-- Variables: `--theme-panel-bg`, `--theme-card-bg`, `--theme-accent`, `--theme-text`, etc.
+- Variables: `--theme-panel-bg`, `--theme-card-bg`, `--theme-accent`, `--theme-text`, `--theme-stroke`
 
 **Layer 3: Semantic Colors (`--semantic-*`, `--prop-*`)**
 
@@ -247,14 +264,71 @@ When user asks for help:
 }
 ```
 
-**Legacy note:** `--*-current` variables still used in 30+ components, migration ongoing.
+### Unified Panel Background System
 
-### Styling Patterns
+**NO blur effects on content panels.** Use theme variables exclusively.
 
-- **Component-scoped** `<style>` blocks (no global styles in components)
-- **Container queries** for responsive design: `cqw`, `cqh` units
-- **Mobile-first** with progressive enhancement
-- **Hardware-accelerated animations**: Use `transform` and `opacity` (GPU-friendly)
+```css
+/* Main Panels */
+background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+
+/* Cards/Sub-panels */
+background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+```
+
+**Override Drawer Glassmorphism:**
+
+```css
+:global(.your-drawer-class) {
+  --sheet-bg: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+  --sheet-filter: none; /* Disable blur */
+}
+```
+
+**When to use blur:** ONLY for modal backdrops to dim content behind. Never for content panels, drawers, forms.
+
+### Typography System (Accessibility-First)
+
+**Tier 1: Essential Text (14px minimum)**
+
+- Use `var(--font-size-min)` or `var(--font-size-sm)`
+- For: body text, form labels, buttons, links, error messages
+
+**Tier 2: Supplementary Text (12px minimum)**
+
+- Use `var(--font-size-compact)` or `var(--font-size-xs)`
+- For: navigation labels under icons, badges, timestamps, metadata
+
+**NEVER go below 12px for any user-visible text.**
+
+---
+
+## Testing Philosophy: "Earned Tests"
+
+**Tests are earned, not given.** Code must prove it deserves a test.
+
+**When to write tests:**
+
+| Scenario                   | Write Test? | Why                              |
+| -------------------------- | ----------- | -------------------------------- |
+| Pure algorithm/calculation | ✅ Yes      | Math is stable, bugs are subtle  |
+| Silent data corruption     | ✅ Yes      | Won't notice until it's too late |
+| Bug that regressed twice   | ✅ Yes      | Proven problem                   |
+| New feature, still evolving| ❌ No       | Will change, test will die       |
+| UI component               | ❌ No       | You'll see if it's broken        |
+| Glue code / wiring         | ❌ No       | Obvious when broken              |
+
+**The "silent bug" test:** Ask "If this breaks, will I notice immediately, or will it silently produce wrong output?" Only test the silent ones.
+
+**Current test files in `tests/unit/`:**
+
+- `DimensionCalculationService.test.ts` - Export dimension math
+- `GridPositionDeriver.test.ts` - Grid position calculations
+- `ReversalDetectionService.test.ts` - Prop reversal detection
+- `DataTransformer.test.ts` - Pictograph data transforms
+
+---
 
 ## File Organization & Composition
 
@@ -264,12 +338,11 @@ When user asks for help:
 - **Composition over consolidation** - build features by composing services
 - **Don't warn about "too many files"** - AI navigation makes file count a non-issue
 - **Extract when there are multiple responsibilities** - not to hit arbitrary line counts
-- **Service-based architecture** - logic lives in services, components orchestrate
 
 **Why this matters:**
 
 - Smaller files = smaller context windows = faster/cheaper AI assistance
-- Cleaner git diffs, easier reviews
+- Cleaner git diffs
 - Each file fully readable in one screen
 - Easier to test, modify, and reason about
 
@@ -278,35 +351,64 @@ When user asks for help:
 - Re-export files that just forward imports
 - Wrapper components with no logic
 - Splitting cohesive logic just to reduce line count
-- Utility functions that belong together
 
-## Testing Strategy
+---
 
-### Test Structure
+## New Module Checklist
 
-```
-tests/
-├── unit/              # Fast isolated tests (Vitest)
-├── integration/       # Service integration tests
-├── e2e/              # End-to-end tests (Playwright)
-└── performance/      # Performance benchmarks
-```
+When creating a new module, complete these steps:
 
-### Key Commands
+### Step 1: Add to `moduleLoaders` in ModuleRenderer.svelte
 
-```bash
-npm run test           # Unit + integration tests
-npm run test:e2e       # Playwright E2E tests
-npm run check          # TypeScript checking
-npm run flows          # Critical user flow tests
+```typescript
+// src/lib/shared/modules/ModuleRenderer.svelte
+const moduleLoaders = {
+  // ... existing modules
+  yourmodule: () => import("../../features/your-module/YourModule.svelte"),
+};
 ```
 
-### Testing Patterns
+### Step 2: Add to MODULE_DEFINITIONS in module-definitions.ts
 
-- **Unit tests**: Test services in isolation with mocked dependencies
-- **E2E tests**: Test critical user journeys (construct → generate → share)
-- **No E2E for implementation details** - test user behavior, not internals
-- **Mock browser APIs** in unit tests (see `tests/setup/vitest-setup.ts`)
+```typescript
+// src/lib/shared/navigation/config/module-definitions.ts
+{
+  id: "yourmodule",
+  label: "Your Module",
+  icon: '<i class="fas fa-icon" style="color: #hexcolor;" aria-hidden="true"></i>',
+  color: "#hexcolor",
+  description: "What your module does",
+  isMain: true,
+  sections: [],
+}
+```
+
+### Step 3: Add DI module if needed
+
+If your module has injectable services, create `src/lib/shared/inversify/modules/yourmodule.module.ts` and register in `loadFeatureModule()` in `di.ts`.
+
+**Navigation is automatic** - new modules get bottom navigation on mobile by default.
+
+---
+
+## Option Picker Architecture
+
+The option picker uses a **shared rendering primitive** with two layout branches:
+
+```
+Shared Primitive (single source of truth):
+$lib/shared/pictograph/option/OptionPictograph.svelte
+
+Desktop (≥750px):
+OptionCardContent.svelte → OptionPictograph
+
+Mobile (<750px):
+OptionPictographCell.svelte → OptionPictograph
+```
+
+**When fixing rendering issues:** Edit `OptionPictograph.svelte` - both layouts use it.
+
+---
 
 ## Development Workflows
 
@@ -314,198 +416,87 @@ npm run flows          # Critical user flow tests
 
 ```bash
 npm run dev           # Start dev server (all features visible)
-npm run dev:clean     # Clean cache and restart (after deleting files)
+npm run dev:clean     # Clean cache and restart
 npm run build         # Production build
 npm run check         # Type check all files
-npm run lint:fix      # Fix linting issues
+npm run test          # Unit + integration tests
 npm run validate      # Lint + check + test
 ```
 
-### HMR (Hot Module Replacement)
+### Feedback Script Syntax (CRITICAL)
 
-- **Vite handles HMR** - fast updates without full reload
-- **Container rebuilds on HMR** - InversifyJS container is HMR-aware
-- **If HMR breaks**: Use `npm run dev:clean` to clear cache
-- **After deleting files**: Always run `dev:clean` to prevent stale imports
-
-### Mobile Development
+**The feedback script uses POSITIONAL arguments, NOT flags.**
 
 ```bash
-npm run dev:mobile    # Set up ADB reverse proxy for mobile testing
+# ✅ CORRECT - Positional arguments
+node scripts/fetch-feedback.js create "Title" "Description" feature module tab
+
+# ❌ WRONG - Do NOT use flag syntax
+node scripts/fetch-feedback.js create --title "Title" --description "Desc"
 ```
 
-- Mobile connects via IP, requires CORS headers for fonts (handled by Vite plugin)
-- Test on actual devices, not just browser DevTools
+**Create syntax:**
+
+```bash
+node scripts/fetch-feedback.js create "title" "description" [type] [module] [tab]
+```
+
+**Update status:**
+
+```bash
+node scripts/fetch-feedback.js <id> <status> "resolution notes"
+```
+
+---
 
 ## Feedback & Release Workflows
 
-### Feedback Workflow (`/fb`)
+### Feedback Workflow
 
 - **5 statuses**: `new → in-progress → in-review → completed → archived`
 - **Kanban phase**: Active development (new/in-progress/in-review)
 - **Staging phase**: Ready for next release (completed)
 - **Release phase**: Shipped and versioned (archived)
 
-**CRITICAL:** Display feedback verbatim before any analysis
-
-- Show: ID, type, priority, user, timestamp, module/tab, description, notes, subtasks
-- Then provide assessment and recommendations
-
-**What goes in release notes:**
-
-- ✅ User-facing features, bug fixes, UX improvements
-- ❌ Dev tooling, admin features, internal refactoring, architecture changes
-- **Test:** "Would a flow artist who doesn't code care about this?"
-
 ### Release Workflow
 
 ```bash
-node scripts/release.js -p      # Preview next release
-node scripts/release-to-production.js  # Execute release
+node scripts/release.js -p              # Preview next release
+node scripts/release.js --version X.Y.Z --confirm  # Execute release
 ```
 
-**Integration Points:**
-
-- **VSCode Tasks**: "🚀 Release to Production" task launches release workflow
-- **Git Hooks**: Auto environment switching
-- **Firebase Admin**: Version management
-- **Netlify**: Auto-deployment with preview URLs for every PR
-
-**Testing Before Release:**
+**A release is NOT complete until the GitHub Release is created:**
 
 ```bash
-# Local development - all features visible
-npm run dev
-
-# Production simulation - test what users see
-node scripts/switch-environment.js prod
-npm run dev
+gh release create vX.Y.Z --title "vX.Y.Z" --notes "changelog here"
 ```
 
-### Example Interactions
+### What Goes in Release Notes
 
-**User:** "Add a new feature to Learn module"  
-**Agent:** _Helps implement feature, assumes dev environment_
+**Release notes are for FLOW ARTISTS, not developers.**
 
-**User:** "This is ready for users"  
-**Agent:** "Great! Let's release this to production. I'll guide you through the release workflow..."
+- ✅ Include: Features flow artists will use, bug fixes that impact workflow, UX improvements
+- ❌ Mark internal-only: Dev tooling, admin features, internal refactoring, documentation
 
-**User:** `/release`  
-**Agent:** _Immediately runs release script_
+**Test:** "Would a flow artist who doesn't code care about this?"
 
-**User:** "git push origin main"  
-**Agent:** "⚠️ Pushing to main will deploy to production. Are you ready to release these changes to users?"
+---
 
-## Key Files & Conventions
-
-### Import Patterns
-
-```typescript
-// ✅ Use path aliases
-import { MyService } from "$lib/services/MyService";
-import { goto } from "$app/navigation";
-
-// ❌ Avoid relative paths
-import { MyService } from "../../../services/MyService";
-```
-
-### File Naming
-
-- Components: `PascalCase.svelte`
-- Services: `PascalCase.ts`
-- State: `kebab-case.svelte.ts` (runes files)
-- Types: `PascalCase.ts` or `kebab-case.ts`
-- Tests: `*.test.ts` (unit), `*.spec.ts` (E2E)
-
-### Service Naming Convention (CRITICAL)
-
-**Never use the word "Service" in service names.** Use descriptive, verb-based names instead.
-
-This is a core architectural decision. The word "Service" is redundant - everything in the `services/` folder is already a service. Using action-oriented names makes the codebase more readable and intention-revealing.
-
-**Naming patterns:**
-
-| If the service does...  | Name it...      | Example                                   |
-| ----------------------- | --------------- | ----------------------------------------- |
-| Detection/checking      | `*Detector`     | `LOOPDetector`, `ReversalDetector`        |
-| Management/coordination | `*Manager`      | `TurnManager`, `CollectionManager`        |
-| Configuration           | `*Configurator` | `CardConfigurator`                        |
-| Orchestration           | `*Orchestrator` | `GenerationOrchestrator`                  |
-| Persistence/storage     | `*Persister`    | `SequencePersister`, `FilterPersister`    |
-| Loading data            | `*Loader`       | `SequenceLoader`, `OptionLoader`          |
-| Filtering               | `*Filter`       | `OptionFilter`, `DiscoverFilter`          |
-| Sorting                 | `*Sorter`       | `OptionSorter`, `DiscoverSorter`          |
-| Validation              | `*Validator`    | `SequenceValidator`                       |
-| Transformation          | `*Transformer`  | `SequenceTransformer`                     |
-| Analysis                | `*Analyzer`     | `SequenceAnalyzer`, `PositionAnalyzer`    |
-| Calculation             | `*Calculator`   | `SequenceStatsCalculator`                 |
-| Export/conversion       | `*Exporter`     | `SequenceExporter`, `CocoExporter`        |
-| Import                  | `*Importer`     | `SequenceImporter`                        |
-| Indexing                | `*Indexer`      | `SequenceIndexer`                         |
-| Repository/CRUD         | `*Repository`   | `LibraryRepository`, `FeedbackRepository` |
-| Playing media           | `*Player`       | `MusicPlayer`                             |
-| Recording               | `*Recorder`     | `PerformanceRecorder`                     |
-| Tracking                | `*Tracker`      | `SessionTracker`, `ActivityTracker`       |
-| Handling events         | `*Handler`      | `DeepLinkSequenceHandler`                 |
-| Notifying               | `*Notifier`     | `AdminNotifier`                           |
-| Caching                 | `*Cache`        | `DiscoverCache`, `SequenceCache`          |
-
-**Examples:**
-
-```typescript
-// ✅ CORRECT - Descriptive, action-oriented names
-class LOOPDetector implements ILOOPDetector {}
-class SequencePersister implements ISequencePersister {}
-class TurnManager implements ITurnManager {}
-class OptionFilter implements IOptionFilter {}
-
-// ❌ WRONG - Redundant "Service" suffix
-class LOOPDetectionService implements ILOOPDetectionService {}
-class SequencePersistenceService implements ISequencePersistenceService {}
-class TurnManagementService implements ITurnManagementService {}
-class OptionFilterService implements IOptionFilterService {}
-```
-
-**Interface naming:** Interfaces follow the same pattern with `I` prefix:
-
-- `ISequencePersister` (not `ISequencePersistenceService`)
-- `ILOOPDetector` (not `ILOOPDetectionService`)
-
-**When creating new services:**
-
-1. Think: "What does this service DO?"
-2. Name it after that action: Detector, Manager, Loader, etc.
-3. Never append "Service" - it adds no information
-
-### Critical Files
+## Key Files
 
 - `src/lib/shared/inversify/container.ts` - DI container initialization
 - `src/lib/shared/inversify/types.ts` - Service symbols
-- `netlify.toml` - Deployment config (production module visibility)
+- `src/lib/shared/settings/utils/background-theme-calculator.ts` - Theme variables
+- `netlify.toml` - Deployment config
 - `vite.config.ts` - Build configuration
-- `svelte.config.js` - SvelteKit configuration
 
-## Error Handling
+---
 
-### `/check` Command Behavior
-
-When running type checks:
-
-1. Analyze errors to determine strategy:
-   - **<10 simple errors**: Fix immediately in single session
-   - **10-50 errors**: Launch parallel subagents for file groups
-   - **>50 or cascading errors**: Generate scoped prompts for separate sessions
-2. **Present analysis first** - show error summary, strategy, rationale
-3. **Get confirmation** before proceeding with fixes
-4. **Look for root causes** - don't just count errors, understand cascading issues
-
-## Project-Specific Context
+## Project Context
 
 - **Primary developer**: Austen Cloud (austencloud@gmail.com)
-- **Purpose**: Movement notation for flow artists (not dancers, not general choreography)
-- **User base**: Flow artists creating prop sequences (staff, poi, fans, etc.)
-- **Domain**: "Pictographs" are the visual diagrams showing movement sequences
-- **Firebase** is the backend - auth, Firestore, storage
-- **Netlify** handles deployment - preview URLs for every PR
+- **Purpose**: Movement notation for flow artists (staff, clubs, fans, etc.)
+- **Domain**: "Pictographs" are visual diagrams showing movement sequences
+- **User base**: Flow artists creating prop sequences, NOT general dancers
 
-**When in doubt, assume development mode and help the user build!**
+**When in doubt, assume development mode and help build features!**

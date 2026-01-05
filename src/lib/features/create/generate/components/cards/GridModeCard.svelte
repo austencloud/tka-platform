@@ -9,7 +9,8 @@ Shows BOTH grid mode options vertically with clear active/inactive states
   let {
     currentMode,
     onModeChange,
-    color = "linear-gradient(135deg, var(--semantic-success) 0%, #059669 100%)", // Emerald green gradient
+    // 🎨 Luminance-aware emerald gradient - adapts to background brightness
+    color = "linear-gradient(135deg, var(--card-emerald, #10b981) 0%, var(--card-emerald-end, #059669) 100%)",
     shadowColor = "160deg 75% 45%", // Green-matched shadow
     gridColumnSpan = 2,
     cardIndex = 0,

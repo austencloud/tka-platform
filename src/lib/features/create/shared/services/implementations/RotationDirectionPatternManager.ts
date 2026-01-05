@@ -39,6 +39,7 @@ import type {
 import type {
   IRotationDirectionPatternManager,
   RotationDirectionPatternApplyResult,
+  TargetHand,
 } from "../contracts/IRotationDirectionPatternManager";
 import {
   createMotionData,
@@ -141,7 +142,8 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
    */
   async applyPattern(
     pattern: RotationDirectionPattern,
-    sequence: SequenceData
+    sequence: SequenceData,
+    targetHand: TargetHand = "both"
   ): Promise<RotationDirectionPatternApplyResult> {
     // Validate beat count match
     const validation = this.validateForSequence(pattern, sequence);
@@ -161,8 +163,12 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       let beatModified = false;
       const updatedMotions = { ...beat.motions };
 
-      // Apply blue rotation direction
-      if (entry.blue !== null && beat.motions?.blue) {
+      // Apply blue rotation direction (if targeting blue or both)
+      if (
+        (targetHand === "both" || targetHand === "blue") &&
+        entry.blue !== null &&
+        beat.motions?.blue
+      ) {
         const result = this.applyRotationToMotion(
           entry.blue,
           beat.motions.blue,
@@ -178,8 +184,12 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
         }
       }
 
-      // Apply red rotation direction
-      if (entry.red !== null && beat.motions?.red) {
+      // Apply red rotation direction (if targeting red or both)
+      if (
+        (targetHand === "both" || targetHand === "red") &&
+        entry.red !== null &&
+        beat.motions?.red
+      ) {
         const result = this.applyRotationToMotion(
           entry.red,
           beat.motions.red,

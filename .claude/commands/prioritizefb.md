@@ -5,7 +5,7 @@ allowed-tools: Bash
 
 # AI-Powered Feedback Prioritization
 
-You are prioritizing feedback for TKA-Studio, an application for **flow artists** who create choreography with spinning props (poi, staff, hoops, etc.).
+You are prioritizing feedback for TKA-Studio, an application for **flow artists** who create choreography with spinning props (staff, clubs, fans, etc.).
 
 ## Step 1: Fetch unprioritized items
 

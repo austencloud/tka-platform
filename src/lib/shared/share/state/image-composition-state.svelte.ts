@@ -19,6 +19,7 @@ export interface ImageCompositionSettings {
   includeStartPosition: boolean;
   addUserInfo: boolean;
   darkMode: boolean;
+  customName?: string; // Optional custom name for header
 }
 
 const DEFAULT_SETTINGS: ImageCompositionSettings = {
@@ -138,6 +139,10 @@ class ImageCompositionStateManager {
     return this.settings.darkMode;
   }
 
+  get customName(): string | undefined {
+    return this.settings.customName;
+  }
+
   // Get all settings (for passing to share service)
   getSettings(): ImageCompositionSettings {
     return { ...this.settings };
@@ -180,11 +185,20 @@ class ImageCompositionStateManager {
     this.notifyObservers();
   }
 
-  // Toggle helpers
-  toggle(key: keyof ImageCompositionSettings): void {
-    this.settings[key] = !this.settings[key];
+  setCustomName(value: string | undefined): void {
+    this.settings.customName = value;
     this.saveToStorage();
     this.notifyObservers();
+  }
+
+  // Toggle helpers (only for boolean fields)
+  toggle(key: Exclude<keyof ImageCompositionSettings, 'customName'>): void {
+    const currentValue = this.settings[key];
+    if (typeof currentValue === 'boolean') {
+      (this.settings[key] as boolean) = !currentValue;
+      this.saveToStorage();
+      this.notifyObservers();
+    }
   }
 
   // Observer pattern for reactivity

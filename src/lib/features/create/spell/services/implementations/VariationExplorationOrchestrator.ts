@@ -139,7 +139,7 @@ export class VariationExplorationOrchestrator implements IVariationExplorationOr
         callbacks.onProgress(totalExplored);
 
         // Deduplicate using canonical hash
-        if (!deduplicator.tryAdd(variation.sequence)) {
+        if (!(await deduplicator.tryAdd(variation.sequence))) {
           continue; // Skip rotational duplicate
         }
 

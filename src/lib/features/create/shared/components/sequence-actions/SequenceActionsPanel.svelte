@@ -32,12 +32,18 @@
   import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import SequencePreviewDialog from "./SequencePreviewDialog.svelte";
   import TransformsGridMode from "./TransformsGridMode.svelte";
-  import TransformHelpSheet from "../transform-help/TransformHelpSheet.svelte";
+  import TransformHelpOverlay from "../transform-help/TransformHelpOverlay.svelte";
+  import TransformDetailModal from "../transform-help/TransformDetailModal.svelte";
   import TurnPatternDrawer from "./TurnPatternDrawer.svelte";
+
+  // Transform help mode types
+  type HelpMode = "inactive" | "selecting" | "viewing";
+  type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
   import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
   import ExtendDrawer from "./ExtendDrawer.svelte";
   import BeatGridSection from "./BeatGridSection.svelte";
   import FirstBeatConfirmDialog from "./FirstBeatConfirmDialog.svelte";
+  import HandSelector from "./HandSelector.svelte";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 
   interface Props {
@@ -65,6 +71,9 @@
   let viewportWidth = $state(
     typeof window !== "undefined" ? window.innerWidth : 1000
   );
+
+  // Swap is disabled when only one hand is selected (swap requires both hands)
+  const isSwapDisabled = $derived(panelState.targetHand !== "both");
 
   $effect(() => {
     if (typeof window === "undefined") return;
@@ -99,7 +108,9 @@
   let showConfirmDialog = $state(false);
   let pendingSequenceTransfer = $state<any>(null);
   // Sub-drawer states - initialized to false, restored after parent drawer registers
-  let showHelpSheet = $state(false);
+  // Transform help mode state machine
+  let helpMode = $state<HelpMode>("inactive");
+  let selectedTransform = $state<TransformId | null>(null);
   let showTurnPatternDrawer = $state(false);
   let showRotationDirectionDrawer = $state(false);
   let showExtendDrawer = $state(false);
@@ -122,7 +133,7 @@
     if (showTurnPatternDrawer) activeDrawer = "turnPattern";
     else if (showRotationDirectionDrawer) activeDrawer = "rotationDirection";
     else if (showExtendDrawer) activeDrawer = "extend";
-    else if (showHelpSheet) activeDrawer = "help";
+    else if (helpMode !== "inactive") activeDrawer = "help";
 
     if (activeDrawer) {
       subDrawerPersister.setActiveSubDrawer(activeDrawer);
@@ -210,7 +221,7 @@
       const restoredSubDrawer = subDrawerPersister.getActiveSubDrawer();
       // Wait for parent drawer to fully register, then open sub-drawer
       setTimeout(() => {
-        if (restoredSubDrawer === "help") showHelpSheet = true;
+        if (restoredSubDrawer === "help") helpMode = "selecting";
         else if (restoredSubDrawer === "turnPattern")
           showTurnPatternDrawer = true;
         else if (restoredSubDrawer === "rotationDirection")
@@ -244,39 +255,39 @@
     }
   }
 
-  // Transform handlers - clean one-liners using the helper
+  // Transform handlers - pass targetHand from panel state
   const handleMirror = () =>
     withTransform(UndoOperationType.MIRROR_SEQUENCE, () =>
-      activeSequenceState.mirrorSequence()
+      activeSequenceState.mirrorSequence(panelState.targetHand)
     );
   const handleSwap = () =>
     withTransform(UndoOperationType.SWAP_COLORS, () =>
       activeSequenceState.swapColors()
-    );
+    ); // Swap always operates on both hands
   const handleRewind = () =>
     withTransform(UndoOperationType.REWIND_SEQUENCE, () =>
-      activeSequenceState.rewindSequence()
+      activeSequenceState.rewindSequence(panelState.targetHand)
     );
   const handleFlip = () =>
     withTransform(UndoOperationType.FLIP_SEQUENCE, () =>
-      activeSequenceState.flipSequence()
+      activeSequenceState.flipSequence(panelState.targetHand)
     );
   const handleInvert = () =>
     withTransform(UndoOperationType.INVERT_SEQUENCE, () =>
-      activeSequenceState.invertSequence()
+      activeSequenceState.invertSequence(panelState.targetHand)
     );
 
   // Rotation handlers set grid animation direction before transform
   const handleRotateCW = () =>
     withTransform(
       UndoOperationType.ROTATE_SEQUENCE,
-      () => activeSequenceState.rotateSequence("clockwise"),
+      () => activeSequenceState.rotateSequence("clockwise", panelState.targetHand),
       () => setGridRotationDirection(1)
     );
   const handleRotateCCW = () =>
     withTransform(
       UndoOperationType.ROTATE_SEQUENCE,
-      () => activeSequenceState.rotateSequence("counterclockwise"),
+      () => activeSequenceState.rotateSequence("counterclockwise", panelState.targetHand),
       () => setGridRotationDirection(-1)
     );
 
@@ -606,6 +617,23 @@
       toast.error("Failed to copy to clipboard");
     }
   }
+
+  // ===== HELP MODE HANDLERS =====
+  function enterHelpMode() {
+    hapticService?.trigger("selection");
+    helpMode = "selecting";
+  }
+
+  function selectTransformHelp(transformId: TransformId) {
+    hapticService?.trigger("selection");
+    selectedTransform = transformId;
+    helpMode = "viewing";
+  }
+
+  function exitHelpMode() {
+    helpMode = "inactive";
+    selectedTransform = null;
+  }
 </script>
 
 <CreatePanelDrawer
@@ -638,8 +666,9 @@
         {/if}
         <button
           class="icon-btn help"
-          onclick={() => (showHelpSheet = true)}
-          aria-label="Help"
+          class:active={helpMode === "selecting"}
+          onclick={enterHelpMode}
+          aria-label="Help with transform actions"
         >
           <i class="fas fa-circle-question" aria-hidden="true"></i>
         </button>
@@ -648,6 +677,12 @@
         </button>
       </div>
     </div>
+
+    <!-- Hand selector for single-hand transforms -->
+    <HandSelector
+      value={panelState.targetHand}
+      onChange={(hand) => panelState.setTargetHand(hand)}
+    />
 
     <!-- Beat grid display: shows on mobile at 50% height -->
     {#if hasSequence && isSideBySideLayout === false && sequence}
@@ -675,9 +710,12 @@
         {canExtend}
         {isExtending}
         {canShiftStart}
+        swapDisabled={isSwapDisabled}
         showEditInConstructor={!isInConstructTab}
         isDesktopPanel={isSideBySideLayout}
         compactMode={useCompactMode}
+        helpMode={helpMode === "selecting"}
+        onHelpSelect={selectTransformHelp}
         onTurns={handleOpenBeatEditor}
         onMirror={handleMirror}
         onFlip={handleFlip}
@@ -696,11 +734,17 @@
   </div>
 </CreatePanelDrawer>
 
-<!-- Render help sheet outside drawer so it can be a true full-viewport overlay -->
-<TransformHelpSheet
-  show={showHelpSheet}
-  onClose={() => (showHelpSheet = false)}
-/>
+<!-- Help mode: overlay when selecting, modal when viewing -->
+{#if helpMode === "selecting"}
+  <TransformHelpOverlay onClose={exitHelpMode} />
+{:else if helpMode === "viewing" && selectedTransform}
+  <TransformDetailModal
+    transformId={selectedTransform}
+    onClose={exitHelpMode}
+  />
+{/if}
+
+
 
 <SequencePreviewDialog
   bind:isOpen={showConfirmDialog}
@@ -718,6 +762,7 @@
 <TurnPatternDrawer
   bind:isOpen={showTurnPatternDrawer}
   {sequence}
+  targetHand={panelState.targetHand}
   toolPanelWidth={panelState.toolPanelWidth}
   onClose={() => (showTurnPatternDrawer = false)}
   onApply={handleTurnPatternApply}
@@ -726,6 +771,7 @@
 <RotationDirectionDrawer
   bind:isOpen={showRotationDirectionDrawer}
   {sequence}
+  targetHand={panelState.targetHand}
   toolPanelWidth={panelState.toolPanelWidth}
   onClose={() => (showRotationDirectionDrawer = false)}
   onApply={handleRotationDirectionApply}
@@ -825,6 +871,23 @@
   .icon-btn.help:hover {
     background: rgba(255, 255, 255, 0.12);
     color: var(--theme-text);
+  }
+
+  .icon-btn.help.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: rgba(59, 130, 246, 1);
+    border-color: rgba(59, 130, 246, 0.5);
+    animation: help-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes help-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
+    }
   }
 
   .icon-btn.close {

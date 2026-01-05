@@ -25,6 +25,7 @@ Usage:
   import ArrowSvg from "../../arrow/rendering/components/ArrowSvg.svelte";
   import TKAGlyph, {
     getLetterDimensions,
+    preloadLetterDimensions,
   } from "../../tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "../../tka-glyph/components/TurnsColumn.svelte";
   import DirectionDot from "../../tka-glyph/components/DirectionDot.svelte";
@@ -67,6 +68,8 @@ Usage:
     propsClickable = false,
     selectedPropHand = null,
     onPropClick = undefined,
+    // Dark Mode override for export (when set, overrides CSS-based detection)
+    darkMode = undefined,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
     onToggleVTG = undefined,
@@ -93,6 +96,8 @@ Usage:
     propsClickable?: boolean;
     selectedPropHand?: "blue" | "red" | null;
     onPropClick?: (hand: "blue" | "red") => void;
+    /** Dark Mode override for export. When set, overrides CSS-based detection. */
+    darkMode?: boolean;
     onToggleTKA?: () => void;
     onToggleVTG?: () => void;
     onToggleElemental?: () => void;
@@ -177,11 +182,38 @@ Usage:
     !!pictograph?.motions?.blue || !!pictograph?.motions?.red
   );
 
-  // Get letter dimensions for direction dot positioning
-  // NOTE: For dash letters (Type3/Type5), getLetterDimensions returns the BASE letter dimensions
-  // because TKAGlyph now loads the base letter SVG (e.g., X.svg) and caches it under the
-  // full letter key (e.g., "X-"). This means letterDimensions is already correct for dot centering.
-  const letterDimensions = $derived(getLetterDimensions(pictograph?.letter));
+  // Track loaded letter dimensions with $state for reactivity
+  // This allows async loading to trigger re-renders when dimensions become available
+  let loadedLetterDimensions = $state<{ width: number; height: number }>({
+    width: 100,
+    height: 100,
+  });
+
+  // Load letter dimensions when letter changes
+  // Uses the same cache as TKAGlyph to ensure consistency
+  $effect(() => {
+    const currentLetter = pictograph?.letter;
+    if (!currentLetter) {
+      loadedLetterDimensions = { width: 100, height: 100 };
+      return;
+    }
+
+    // Check cache first (synchronous)
+    const cachedDims = getLetterDimensions(currentLetter);
+    if (cachedDims.width !== 100 || cachedDims.height !== 100) {
+      // Already cached - use immediately
+      loadedLetterDimensions = cachedDims;
+    } else {
+      // Not cached yet - trigger async load and wait for it
+      preloadLetterDimensions([currentLetter]).then(() => {
+        // After loading completes, get from cache and update state
+        loadedLetterDimensions = getLetterDimensions(currentLetter);
+      });
+    }
+  });
+
+  // Use loaded dimensions for DirectionDot positioning
+  const letterDimensions = $derived(loadedLetterDimensions);
 
   // Parse direction from turns tuple for direction dot
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
@@ -196,14 +228,15 @@ Usage:
     role="img"
     aria-label="Pictograph"
   >
-    <!-- Background - uses CSS variable for dark mode support -->
-    <rect width="950" height="950" fill="var(--dm-pictograph-bg)" />
+    <!-- Background - uses prop override if set, otherwise CSS variable for dark mode support -->
+    <rect width="950" height="950" fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "white" : "var(--dm-pictograph-bg)"} />
 
     <!-- Grid -->
     <GridSvg
       {gridMode}
       {showNonRadialPoints}
       {previewMode}
+      {darkMode}
       onLoaded={() => {}}
       onError={() => {}}
       {onToggleNonRadial}
@@ -249,6 +282,7 @@ Usage:
         pictographData={pictograph}
         visible={showTKA}
         {previewMode}
+        {darkMode}
         onToggle={onToggleTKA}
       />
     {/if}
@@ -273,6 +307,7 @@ Usage:
         {letterDimensions}
         visible={showTKA}
         {previewMode}
+        {darkMode}
       />
     {/if}
 
@@ -282,6 +317,7 @@ Usage:
       showBeatNumber={shouldShowBeatNumber}
       {isStartPosition}
       {hasValidData}
+      {darkMode}
     />
 
     <!-- Reversal indicators -->

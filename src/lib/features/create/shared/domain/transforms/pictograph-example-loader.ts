@@ -81,3 +81,11 @@ export function isPictographsLoaded(): boolean {
 export function getPictographCount(): number {
   return cachedPictographs.length;
 }
+
+/**
+ * Get a random dual-motion pictograph (both hands active)
+ * This is essentially the same as getRandomPictograph since we filter for dual-motion
+ */
+export async function getRandomDualMotionPictograph(): Promise<PictographData | null> {
+  return getRandomPictograph();
+}

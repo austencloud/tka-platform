@@ -98,6 +98,7 @@ export interface AppSettings {
     includeStartPosition?: boolean;
     addUserInfo?: boolean;
     darkMode?: boolean;
+    customName?: string; // Optional custom name for header
   };
 }
 

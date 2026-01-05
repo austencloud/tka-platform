@@ -28,6 +28,7 @@
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
+  import { simplifyAndTruncate } from "../workspace-panel/shared/utils/word-simplifier";
 
   interface Props {
     show: boolean;
@@ -117,6 +118,7 @@
   });
 
   const tkaName = $derived(derivedWord);
+  const displayTkaName = $derived(simplifyAndTruncate(tkaName, 8));
   const visibility = $derived<SequenceVisibility>(
     isPublic ? "public" : "private"
   );
@@ -255,7 +257,7 @@
       <div class="form-group">
         <span class="form-label">TKA Name</span>
         <div class="tka-name-display">
-          <span class="tka-badge">{tkaName || "..."}</span>
+          <span class="tka-badge">{displayTkaName || "..."}</span>
           <span class="tka-hint">Auto-generated from sequence letters</span>
         </div>
       </div>

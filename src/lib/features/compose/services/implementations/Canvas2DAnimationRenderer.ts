@@ -98,9 +98,18 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
 
   /**
    * Set Dark Mode for dark background
+   * @param animate - Whether to animate the transition (default: true)
    */
-  setDarkMode(enabled: boolean): void {
-    this.appManager.setDarkMode(enabled);
+  setDarkMode(enabled: boolean, animate: boolean = true): void {
+    this.appManager.setDarkMode(enabled, animate);
+  }
+
+  /**
+   * Check if background is currently transitioning
+   * Used by render loop to continue rendering during smooth color transitions
+   */
+  isBackgroundTransitioning(): boolean {
+    return this.appManager.isBackgroundTransitioning();
   }
 
   async loadGlyphTexture(

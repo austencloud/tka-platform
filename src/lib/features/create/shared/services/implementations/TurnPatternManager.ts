@@ -28,6 +28,7 @@ import type {
 import type {
   ITurnPatternManager,
   TurnPatternApplyResult,
+  TargetHand,
 } from "../contracts/ITurnPatternManager";
 import {
   createMotionData,
@@ -81,7 +82,8 @@ export class TurnPatternManager implements ITurnPatternManager {
    */
   applyPattern(
     pattern: TurnPattern,
-    sequence: SequenceData
+    sequence: SequenceData,
+    targetHand: TargetHand = "both"
   ): TurnPatternApplyResult {
     // Validate beat count match
     const validation = this.validateForSequence(pattern, sequence);
@@ -100,8 +102,12 @@ export class TurnPatternManager implements ITurnPatternManager {
       let beatModified = false;
       const updatedMotions = { ...beat.motions };
 
-      // Apply blue turns
-      if (entry.blue !== null && beat.motions?.blue) {
+      // Apply blue turns (if targeting blue or both)
+      if (
+        (targetHand === "both" || targetHand === "blue") &&
+        entry.blue !== null &&
+        beat.motions?.blue
+      ) {
         const result = this.applyTurnToMotion(
           entry.blue,
           beat.motions.blue,
@@ -118,8 +124,12 @@ export class TurnPatternManager implements ITurnPatternManager {
         }
       }
 
-      // Apply red turns
-      if (entry.red !== null && beat.motions?.red) {
+      // Apply red turns (if targeting red or both)
+      if (
+        (targetHand === "both" || targetHand === "red") &&
+        entry.red !== null &&
+        beat.motions?.red
+      ) {
         const result = this.applyTurnToMotion(
           entry.red,
           beat.motions.red,

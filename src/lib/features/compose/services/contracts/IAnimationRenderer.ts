@@ -137,6 +137,13 @@ export interface IAnimationRenderer {
   /**
    * Set Dark Mode for dark background
    * @param enabled - Whether Dark Mode is enabled
+   * @param animate - Whether to animate the transition (default: true)
    */
-  setDarkMode(enabled: boolean): void;
+  setDarkMode(enabled: boolean, animate?: boolean): void;
+
+  /**
+   * Check if background is currently transitioning
+   * Used by render loop to continue rendering during smooth transitions
+   */
+  isBackgroundTransitioning(): boolean;
 }

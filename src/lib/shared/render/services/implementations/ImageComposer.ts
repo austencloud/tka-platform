@@ -30,6 +30,22 @@ import type {
 import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
 import type { ITextRenderer } from "../contracts/ITextRenderer";
 
+// HMR-aware cache: Store cache in module scope so HMR can invalidate it
+// Without this, cached images from before code changes would persist
+let globalImageCache = new Map<string, HTMLImageElement>();
+
+// HMR: Clear cache when this module reloads (code changes in GridSvg, etc.)
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    console.log("🔥 ImageComposer HMR: Clearing image cache");
+    globalImageCache.clear();
+  });
+  // Also clear on dispose
+  import.meta.hot.dispose(() => {
+    globalImageCache.clear();
+  });
+}
+
 @injectable()
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
@@ -38,7 +54,10 @@ export class ImageComposer implements IImageComposer {
   // 🚀 PERF: Cache rendered pictograph images to avoid re-rendering identical pictographs
   // Key: hash of pictograph data + size + beatNumber
   // Value: rendered HTMLImageElement ready for canvas drawing
-  private readonly renderedImageCache = new Map<string, HTMLImageElement>();
+  // Uses module-scoped cache for HMR awareness
+  private get renderedImageCache() {
+    return globalImageCache;
+  }
   private cacheHits = 0;
   private cacheMisses = 0;
 
@@ -161,10 +180,12 @@ export class ImageComposer implements IImageComposer {
     // This matches the behavior of the WordLabel component in the workspace
     const derivedWord = simplifyRepeatedWord(rawWord);
 
-    // Calculate header height if word should be included
+    // Calculate header height if word OR difficulty should be included
     // Header is at the TOP of the image - proportional to beat size for balanced layout
-    const headerHeight =
-      options.addWord && derivedWord
+    // Show header when either word or difficulty level is enabled
+    // (Will be recalculated with custom name logic later)
+    const showHeaderForLayout = (options.addWord && (derivedWord || options.customName)) || options.addDifficultyLevel;
+    const headerHeight = showHeaderForLayout
         ? this.calculateHeaderHeight(beatCount, beatSize)
         : 0;
 
@@ -295,11 +316,15 @@ export class ImageComposer implements IImageComposer {
 
     // Step 7: Render header with word at the top
     // The header has a level badge indicator (only if addDifficultyLevel is true)
-    if (options.addWord && derivedWord && headerHeight > 0) {
+    // Show header when either word or difficulty is enabled
+    const showHeader = (options.addWord && (derivedWord || options.customName)) || options.addDifficultyLevel;
+    if (showHeader && headerHeight > 0) {
       const difficultyLevel = this.getDifficultyLevel(sequence);
+      // Use custom name if provided, otherwise use derived word
+      const displayName = options.customName || derivedWord;
       this.TextRenderer.renderWordHeader(
         canvas,
-        derivedWord,
+        displayName,
         {
           margin: options.margin || 0,
           beatScale: options.beatScale || 1,

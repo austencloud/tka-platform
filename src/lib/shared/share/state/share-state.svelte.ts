@@ -121,7 +121,7 @@ export function createShareState(shareService: ISharer): ShareState {
    */
   function getCacheKey(sequenceId: string, opts: ShareOptions): string {
     const propTypes = getCurrentPropTypes();
-    return `${sequenceId}-${opts.format}-${opts.addWord}-${opts.addBeatNumbers}-${opts.includeStartPosition}-${opts.addDifficultyLevel}-${opts.addUserInfo}-${propTypes.blue}-${propTypes.red}`;
+    return `${sequenceId}-${opts.format}-${opts.addWord}-${opts.addBeatNumbers}-${opts.includeStartPosition}-${opts.addDifficultyLevel}-${opts.addUserInfo}-${opts.customName || ""}-${propTypes.blue}-${propTypes.red}`;
   }
 
   return {
@@ -177,6 +177,9 @@ export function createShareState(shareService: ISharer): ShareState {
       }
       if (newOptions.addUserInfo !== undefined) {
         imageCompositionManager.setAddUserInfo(newOptions.addUserInfo);
+      }
+      if (newOptions.customName !== undefined) {
+        imageCompositionManager.setCustomName(newOptions.customName);
       }
     },
 

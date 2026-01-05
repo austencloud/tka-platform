@@ -653,8 +653,8 @@ export class AnimationEngine {
         },
         onPixiRendererReady: (renderer) => {
           this.animationRenderer = renderer;
-          // Set initial Dark Mode on renderer
-          renderer.setDarkMode(this.prevDarkMode);
+          // Set initial Dark Mode on renderer (no animation for initial sync)
+          renderer.setDarkMode(this.prevDarkMode, false);
         },
         onInitialized: (initialized) => {
           this.state.isInitialized = initialized;

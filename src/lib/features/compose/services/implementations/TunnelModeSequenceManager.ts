@@ -142,11 +142,11 @@ export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
 
       switch (operation) {
         case "mirror":
-          transformed = this.transformationService.mirrorSequence(sequence);
+          transformed = await this.transformationService.mirrorSequence(sequence);
           break;
 
         case "rotate":
-          transformed = this.transformationService.rotateSequence(sequence, 1);
+          transformed = await this.transformationService.rotateSequence(sequence, 1);
           break;
 
         case "colorSwap":

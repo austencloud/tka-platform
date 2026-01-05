@@ -14,13 +14,15 @@ Position Calculation (matches legacy):
 - SAME: 10px above letter top, horizontally centered on letter
 - OPP: 10px below letter bottom, horizontally centered on letter
 
-Dark mode: Uses CSS variable --dm-glyph-fill (auto-updates via .dark class on <html>)
+Dark mode: Polls visibility manager for dark mode state (supports pictograph
+dark mode independent of app dark mode). Export uses explicit darkMode prop.
 
 NOTE: For dash letters (Type3/Type5), letterDimensions is already the BASE letter dimensions
 because TKAGlyph now loads the base letter SVG and caches it under the full letter key.
 -->
 <script lang="ts">
   import type { DirectionValue } from "../utils/turn-tuple-parser";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   // Constants from legacy implementation
   const DOT_PADDING = 10;
@@ -35,6 +37,7 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     scale = 1,
     visible = true,
     previewMode = false,
+    darkMode = undefined,
   } = $props<{
     /** Direction from parsed turns tuple: "s" (same), "o" (opp), or null */
     direction: DirectionValue;
@@ -52,7 +55,32 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     visible?: boolean;
     /** Show at reduced opacity when not visible */
     previewMode?: boolean;
+    /** Dark mode override for export. When set, overrides visibility manager state. */
+    darkMode?: boolean;
   }>();
+
+  // Get centralized visibility manager for dark mode state
+  const visibilityManager = getAnimationVisibilityManager();
+
+  // Track dark mode from centralized state (polls visibility manager)
+  let localDarkMode = $state(visibilityManager.isDarkMode());
+
+  // Register for updates when dark mode changes
+  $effect(() => {
+    const handler = () => {
+      localDarkMode = visibilityManager.isDarkMode();
+    };
+    visibilityManager.registerObserver(handler);
+    return () => visibilityManager.unregisterObserver(handler);
+  });
+
+  // Effective dark mode: prop override takes precedence, then visibility manager state
+  const effectiveDarkMode = $derived(darkMode ?? localDarkMode);
+
+  // Fill color based on effective dark mode
+  const fillColor = $derived(
+    effectiveDarkMode ? "#ffffff" : "#231f20"
+  );
 
   // Only show dot for "s" (same) or "o" (opp) directions
   const shouldShow = $derived(direction === "s" || direction === "o");
@@ -86,12 +114,12 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
     transform="translate({x}, {y}) scale({scale})"
     data-direction={direction}
   >
-    <!-- Fill color via CSS variable - auto-updates with dark mode -->
+    <!-- Fill color via CSS variable or explicit override for export -->
     <circle
       cx={dotPosition.x + DOT_SIZE / 2}
       cy={dotPosition.y + DOT_SIZE / 2}
       r={DOT_SIZE / 2}
-      fill="var(--dm-glyph-fill)"
+      fill={fillColor}
     />
   </g>
 {/if}

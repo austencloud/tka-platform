@@ -1,7 +1,7 @@
 {
   "name": "TKA Scribe - Flow Arts Choreography",
   "short_name": "TKA Scribe",
-  "description": "Create, animate, and share poi, staff, hoop, and buugeng sequences. The universal notation system for flow arts - digital sheet music for prop manipulation.",
+  "description": "Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. The universal notation system for flow arts - digital sheet music for prop manipulation.",
   "theme_color": "#0b1d2a",
   "background_color": "#0b1d2a",
   "display": "standalone",

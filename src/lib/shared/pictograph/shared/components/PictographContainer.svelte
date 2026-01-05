@@ -8,10 +8,14 @@ PictographContainer.svelte - Smart pictograph wrapper
 Handles:
 - Visibility settings subscription
 - Settings reactivity (prop type changes)
+- Dark mode reactivity (re-prepares with correct colors when toggled)
 - Transitions (fade in/out)
 - Preparing raw data via PictographPreparer
 
-Dark mode is handled via CSS-first approach (:root.dark class).
+Dark mode flow:
+- Subscribes to AnimationVisibilityStateManager for dark mode changes
+- When toggled (L key), re-prepares pictograph with correct motion colors
+- For exports: darkMode prop overrides global state for consistent colors
 
 Delegates rendering to PictographRenderer (the dumb primitive).
 
@@ -26,6 +30,7 @@ with pre-prepared data for better performance.
   import { onMount } from "svelte";
   import { resolveAsync, TYPES } from "../../../inversify/di";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
+  import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
   import type { IPictographPreparer } from "../services/contracts/IPictographPreparer";
   import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
@@ -69,6 +74,8 @@ with pre-prepared data for better performance.
     onTogglePositions = undefined,
     onToggleReversals = undefined,
     onToggleNonRadial = undefined,
+    // Dark Mode override for export (when set, overrides CSS-based detection)
+    darkMode = undefined,
   } = $props<{
     pictographData?: (BeatData | PictographData) | null;
     disableTransitions?: boolean;
@@ -92,6 +99,8 @@ with pre-prepared data for better performance.
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
     onToggleNonRadial?: () => void;
+    /** Dark Mode override for export. When set, overrides CSS-based detection. */
+    darkMode?: boolean;
   }>();
 
   // Extract beat context from BeatData if available
@@ -101,7 +110,7 @@ with pre-prepared data for better performance.
   const isStartPosition = $derived(beatNumber === 0);
   const showBeatNumber = $derived(beatNumber !== null && !isStartPosition);
 
-  // Visibility manager
+  // Visibility manager (for glyph visibility)
   const visibilityManager = getVisibilityStateManager();
   let visibilityUpdateCount = $state(0);
 
@@ -109,11 +118,27 @@ with pre-prepared data for better performance.
     visibilityUpdateCount++;
   }
 
+  // Animation visibility manager (for dark mode)
+  const animVisibilityManager = getAnimationVisibilityManager();
+  let darkModeUpdateCount = $state(0);
+
+  function handleDarkModeChange() {
+    darkModeUpdateCount++;
+  }
+
   onMount(() => {
     visibilityManager.registerObserver(handleVisibilityChange);
+    animVisibilityManager.registerObserver(handleDarkModeChange);
     return () => {
       visibilityManager.unregisterObserver(handleVisibilityChange);
+      animVisibilityManager.unregisterObserver(handleDarkModeChange);
     };
+  });
+
+  // Effective dark mode: use prop if set, otherwise use global state
+  const effectiveDarkMode = $derived.by(() => {
+    darkModeUpdateCount; // Subscribe to dark mode changes
+    return darkMode !== undefined ? darkMode : animVisibilityManager.isDarkMode();
   });
 
   // Effective visibility values
@@ -166,14 +191,43 @@ with pre-prepared data for better performance.
   let preparer: IPictographPreparer | null = null;
 
   // Create a stable key for data preparation dependencies
+  // Include effectiveDarkMode so that when it changes (via prop OR global toggle), we re-prepare with correct colors
+  // CRITICAL: Include motion data so transforms trigger re-preparation with new positions
   const prepareKey = $derived.by(() => {
     if (!pictographData) return null;
     const settings = getSettings();
+
+    // Extract motion fingerprints for change detection
+    // These are the properties that transforms modify
+    const blueMotion = pictographData.motions?.blue;
+    const redMotion = pictographData.motions?.red;
+
+    const blueFingerprint = blueMotion ? {
+      startLoc: blueMotion.startLocation,
+      endLoc: blueMotion.endLocation,
+      startPos: blueMotion.startPosition,
+      endPos: blueMotion.endPosition,
+      motionType: blueMotion.motionType,
+      rotation: blueMotion.rotationDirection,
+    } : null;
+
+    const redFingerprint = redMotion ? {
+      startLoc: redMotion.startLocation,
+      endLoc: redMotion.endLocation,
+      startPos: redMotion.startPosition,
+      endPos: redMotion.endPosition,
+      motionType: redMotion.motionType,
+      rotation: redMotion.rotationDirection,
+    } : null;
+
     return JSON.stringify({
       id: pictographData.id,
       letter: pictographData.letter,
       bluePropType: settings.bluePropType,
       redPropType: settings.redPropType,
+      darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
+      blueMotion: blueFingerprint,
+      redMotion: redFingerprint,
     });
   });
 
@@ -198,7 +252,11 @@ with pre-prepared data for better performance.
             TYPES.IPictographPreparer
           );
         }
-        const result = await preparer.prepareSingle(data as PictographData);
+        // Always pass themeMode based on effectiveDarkMode for correct color selection
+        // This ensures colors are correct whether dark mode is from prop (export) or global toggle (live)
+        const currentDarkMode = effectiveDarkMode;
+        const prepareOptions = { themeMode: currentDarkMode ? "dark" as const : "light" as const };
+        const result = await preparer.prepareSingle(data as PictographData, prepareOptions);
         if (!cancelled) {
           preparedData = result;
         }
@@ -219,15 +277,13 @@ with pre-prepared data for better performance.
     };
   });
 
-  // Content key for transitions
+  // Content key for fade transitions (when loading different pictographs)
+  // CRITICAL: Do NOT include motion data - we want CSS animations for transforms
+  // Only trigger fade when the pictograph itself changes (different id)
   const contentKey = $derived.by(() => {
     if (!pictographData) return "empty";
-    return JSON.stringify({
-      id: pictographData.id,
-      letter: pictographData.letter,
-      blueMotion: pictographData.motions?.blue,
-      redMotion: pictographData.motions?.red,
-    });
+    // Just use id - transforms keep same id, loading different sequence changes id
+    return pictographData.id || "no-id";
   });
 </script>
 
@@ -250,6 +306,7 @@ with pre-prepared data for better performance.
         gridModeOverride={overrideGridMode}
         {visibleHand}
         {arrowsClickable}
+        darkMode={effectiveDarkMode}
         {onToggleTKA}
         {onToggleVTG}
         {onToggleElemental}
@@ -280,6 +337,7 @@ with pre-prepared data for better performance.
             gridModeOverride={overrideGridMode}
             {visibleHand}
             {arrowsClickable}
+            darkMode={effectiveDarkMode}
             {onToggleTKA}
             {onToggleVTG}
             {onToggleElemental}
@@ -293,7 +351,7 @@ with pre-prepared data for better performance.
   {:else}
     <div class="empty-state">
       <svg width="100%" height="100%" viewBox="0 0 950 950">
-        <rect width="950" height="950" fill="var(--dm-pictograph-bg)" />
+        <rect width="950" height="950" fill={effectiveDarkMode ? "#0a0a0f" : "white"} />
       </svg>
     </div>
   {/if}

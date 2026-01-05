@@ -24,6 +24,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
+import type { TargetHand } from "./panel-coordination-state.svelte";
 import { tryResolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
@@ -615,16 +616,22 @@ export function createSequenceState(services: SequenceStateServices) {
     getBeat: (index: number) => beatOperations.getBeat(index),
     hasContent: () => beatOperations.hasContent(),
 
-    // Transform operations - delegate to facade
+    // Transform operations - delegate to facade (with targetHand support)
     setStartPosition: (startPosition: BeatData | null) =>
       transformOperations.setStartPosition(startPosition),
-    mirrorSequence: () => transformOperations.mirrorSequence(),
-    flipSequence: () => transformOperations.flipSequence(),
-    invertSequence: () => transformOperations.invertSequence(),
+    mirrorSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.mirrorSequence(targetHand),
+    flipSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.flipSequence(targetHand),
+    invertSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.invertSequence(targetHand),
     swapColors: () => transformOperations.swapColors(),
-    rotateSequence: (direction: "clockwise" | "counterclockwise") =>
-      transformOperations.rotateSequence(direction),
-    rewindSequence: () => transformOperations.rewindSequence(),
+    rotateSequence: (
+      direction: "clockwise" | "counterclockwise",
+      targetHand: TargetHand = "both"
+    ) => transformOperations.rotateSequence(direction, targetHand),
+    rewindSequence: (targetHand: TargetHand = "both") =>
+      transformOperations.rewindSequence(targetHand),
     shiftStartPosition: (targetBeatNumber: number) =>
       transformOperations.shiftStartPosition(targetBeatNumber),
     duplicateSequence: (newName?: string) =>
