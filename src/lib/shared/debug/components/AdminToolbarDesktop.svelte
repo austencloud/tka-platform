@@ -504,12 +504,6 @@
     color: var(--semantic-info);
   }
 
-  .search-btn.mini {
-    width: 28px;
-    height: 28px;
-    font-size: var(--font-size-compact);
-  }
-
   /* Debug Actions Dropdown */
   .actions-menu {
     position: relative;
@@ -656,10 +650,6 @@
       max-width: 350px;
     }
 
-    .preview-name {
-      max-width: 80px;
-    }
-
     .trigger-label {
       display: none;
     }
@@ -686,14 +676,6 @@
 
     .chip-name {
       max-width: 60px;
-    }
-
-    .preview-badge {
-      padding: 0 8px;
-    }
-
-    .preview-name {
-      display: none;
     }
   }
 </style>
