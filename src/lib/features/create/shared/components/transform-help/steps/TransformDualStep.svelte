@@ -7,7 +7,7 @@
 <script lang="ts">
   import type { TransformHelpItem } from "../../../domain/transforms/transform-help-content";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { getRandomDualMotionPictograph } from "../../../domain/transforms/pictograph-example-loader";
+  import { getRandomDualMotionPictographForTransform } from "../../../domain/transforms/pictograph-example-loader";
   import {
     applyMirror,
     applyFlip,
@@ -37,7 +37,7 @@
 
   async function loadExample() {
     isLoading = true;
-    displayedPictograph = await getRandomDualMotionPictograph();
+    displayedPictograph = await getRandomDualMotionPictographForTransform(transformId);
     isLoading = false;
   }
 

@@ -9,7 +9,7 @@
  */
 
 import type { IPersistenceService } from "$lib/shared/persistence/services/contracts/IPersistenceService";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 import { TYPES } from "$lib/shared/inversify/types";
@@ -52,7 +52,7 @@ export class SequencePersister implements ISequencePersister {
 
   async saveCurrentState(state: {
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection: ActiveCreateModule;
   }): Promise<void> {
@@ -69,7 +69,7 @@ export class SequencePersister implements ISequencePersister {
 
   async loadCurrentState(mode?: string): Promise<{
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection: ActiveCreateModule;
   } | null> {

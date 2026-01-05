@@ -18,6 +18,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 const debug = createComponentLogger("ConstructTabState");
 import type { BeatData } from "../domain/models/BeatData";
+import { createStartPositionData } from "../domain/factories/createStartPositionData";
 import type { ICreateModuleOrchestrator } from "../services/contracts/ICreateModuleOrchestrator";
 import type { ISequencePersister } from "../services/contracts/ISequencePersister";
 import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
@@ -171,23 +172,19 @@ export function createConstructTabState(
     setShowStartPositionPicker(false);
     setSelectedStartPosition(pictographData);
 
+    // Create proper StartPositionData from the selected pictograph
+    const startPositionData = createStartPositionData({
+      ...pictographData,
+      id: `start-${Date.now()}`,
+    });
+
     if (sequenceState) {
-      sequenceState.setSelectedStartPosition(pictographData);
+      sequenceState.setSelectedStartPosition(startPositionData);
     }
 
     if (source !== "user" || !sequenceState) {
       return;
     }
-
-    const beatData: BeatData = {
-      ...pictographData,
-      id: `beat-${Date.now()}`,
-      beatNumber: 0,
-      duration: 1000,
-      blueReversal: false,
-      redReversal: false,
-      isBlank: false,
-    };
 
     // Get the current grid mode from the start position picker to ensure
     // the sequence is created with the correct grid mode (Diamond or Box)
@@ -208,7 +205,7 @@ export function createConstructTabState(
           };
           sequenceState.setCurrentSequence(sequenceWithGridMode);
           try {
-            sequenceState.setStartPosition(beatData);
+            sequenceState.setStartPosition(startPositionData);
           } catch (error) {
             console.error(
               "? ConstructTabState: Error setting start position:",

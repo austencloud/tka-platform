@@ -7,6 +7,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../../domain/models/BeatData";
+import type { StartPositionData } from "../../../../domain/models/StartPositionData";
 
 export interface IWorkbench {
   /**
@@ -47,12 +48,12 @@ export interface IWorkbench {
   /**
    * Set construction start position
    * @param sequenceId - Sequence identifier
-   * @param startPosition - Start position beat data
+   * @param startPosition - Start position data
    * @returns Promise resolving to updated sequence
    */
   setConstructionStartPosition(
     sequenceId: string,
-    startPosition: BeatData
+    startPosition: StartPositionData
   ): Promise<SequenceData>;
 
   /**

@@ -2,17 +2,114 @@
  * Pictograph Example Loader
  *
  * Fetches real pictographs from the dataframe for transform examples.
- * Provides random selection for interactive demonstrations.
+ * Provides random selection with transform-specific filtering to ensure
+ * the selected example will show a visible change when transformed.
  */
 
 import { resolve, TYPES } from "$lib/shared/inversify/di";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+export type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
 
 // Cache loaded pictographs to avoid repeated fetches
 let cachedPictographs: PictographData[] = [];
 let loadingPromise: Promise<PictographData[]> | null = null;
+
+// Locations with east/west components (Mirror needs these)
+const EW_LOCATIONS = new Set([
+  GridLocation.EAST,
+  GridLocation.WEST,
+  GridLocation.NORTHEAST,
+  GridLocation.NORTHWEST,
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTHWEST,
+]);
+
+// Locations with north/south components (Flip needs these)
+const NS_LOCATIONS = new Set([
+  GridLocation.NORTH,
+  GridLocation.SOUTH,
+  GridLocation.NORTHEAST,
+  GridLocation.NORTHWEST,
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTHWEST,
+]);
+
+/**
+ * Check if a motion has E/W components (for Mirror visibility)
+ */
+function hasEastWestComponent(motion: MotionData): boolean {
+  return EW_LOCATIONS.has(motion.startLocation) || EW_LOCATIONS.has(motion.endLocation);
+}
+
+/**
+ * Check if a motion has N/S components (for Flip visibility)
+ */
+function hasNorthSouthComponent(motion: MotionData): boolean {
+  return NS_LOCATIONS.has(motion.startLocation) || NS_LOCATIONS.has(motion.endLocation);
+}
+
+/**
+ * Check if a motion has rotation (for Invert visibility)
+ */
+function hasRotation(motion: MotionData): boolean {
+  return motion.rotationDirection === RotationDirection.CLOCKWISE ||
+         motion.rotationDirection === RotationDirection.COUNTER_CLOCKWISE;
+}
+
+/**
+ * Check if a motion moves (start ≠ end, for Rewind visibility)
+ */
+function hasMovement(motion: MotionData): boolean {
+  return motion.startLocation !== motion.endLocation;
+}
+
+/**
+ * Filter pictographs suitable for a specific transform
+ */
+function filterForTransform(pictographs: PictographData[], transformId: TransformId): PictographData[] {
+  return pictographs.filter(p => {
+    const blue = p.motions?.blue;
+    const red = p.motions?.red;
+    if (!blue || !red) return false;
+
+    switch (transformId) {
+      case "mirror":
+        // Need E/W components so mirror produces visible change
+        return hasEastWestComponent(blue) || hasEastWestComponent(red);
+
+      case "flip":
+        // Need N/S components so flip produces visible change
+        return hasNorthSouthComponent(blue) || hasNorthSouthComponent(red);
+
+      case "invert":
+        // Need rotation so invert produces visible change
+        return hasRotation(blue) || hasRotation(red);
+
+      case "rewind":
+        // Need movement so rewind produces visible change
+        return hasMovement(blue) || hasMovement(red);
+
+      case "rotate":
+        // Rotate always produces visible change
+        return true;
+
+      case "swap":
+        // Swap always produces visible change (colors switch)
+        // But filter out symmetric patterns where blue and red are identical
+        return blue.startLocation !== red.startLocation ||
+               blue.endLocation !== red.endLocation ||
+               blue.rotationDirection !== red.rotationDirection;
+
+      default:
+        return true;
+    }
+  });
+}
 
 /**
  * Load all pictographs from the dataframe (cached)
@@ -29,7 +126,7 @@ export async function loadAllPictographs(): Promise<PictographData[]> {
       const pictographs = await letterQueryHandler.getAllPictographVariations(
         GridMode.DIAMOND
       );
-      // Filter out any invalid pictographs
+      // Filter out any invalid pictographs (need both motions)
       cachedPictographs = pictographs.filter(
         (p: PictographData) => p.motions?.blue && p.motions?.red
       );
@@ -46,7 +143,28 @@ export async function loadAllPictographs(): Promise<PictographData[]> {
 }
 
 /**
- * Get a random pictograph from the dataframe
+ * Get a random pictograph suitable for demonstrating a specific transform
+ */
+export async function getRandomPictographForTransform(
+  transformId: TransformId
+): Promise<PictographData | null> {
+  const allPictographs = await loadAllPictographs();
+  const suitable = filterForTransform(allPictographs, transformId);
+
+  if (suitable.length === 0) {
+    // Fallback to any pictograph if no suitable ones found
+    if (allPictographs.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * allPictographs.length);
+    return allPictographs[randomIndex] ?? null;
+  }
+
+  const randomIndex = Math.floor(Math.random() * suitable.length);
+  return suitable[randomIndex] ?? null;
+}
+
+/**
+ * Get a random pictograph from the dataframe (no filtering)
+ * @deprecated Use getRandomPictographForTransform for transform examples
  */
 export async function getRandomPictograph(): Promise<PictographData | null> {
   const pictographs = await loadAllPictographs();
@@ -83,8 +201,16 @@ export function getPictographCount(): number {
 }
 
 /**
- * Get a random dual-motion pictograph (both hands active)
- * This is essentially the same as getRandomPictograph since we filter for dual-motion
+ * Get a random dual-motion pictograph suitable for a specific transform
+ */
+export async function getRandomDualMotionPictographForTransform(
+  transformId: TransformId
+): Promise<PictographData | null> {
+  return getRandomPictographForTransform(transformId);
+}
+
+/**
+ * @deprecated Use getRandomDualMotionPictographForTransform
  */
 export async function getRandomDualMotionPictograph(): Promise<PictographData | null> {
   return getRandomPictograph();

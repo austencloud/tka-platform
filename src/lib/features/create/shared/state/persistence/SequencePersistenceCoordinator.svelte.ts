@@ -9,7 +9,7 @@
  * RESPONSIBILITY: Persistence coordination, observes state changes
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
 import { tryResolve } from "$lib/shared/inversify/di";
@@ -19,7 +19,7 @@ import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
 export interface PersistenceState {
   currentSequence: SequenceData | null;
-  selectedStartPosition: PictographData | null;
+  selectedStartPosition: StartPositionData | null;
   hasStartPosition: boolean;
   activeBuildSection: ActiveCreateModule;
 }
@@ -112,7 +112,7 @@ export function createSequencePersistenceCoordinator(
 
     async saveSequenceOnly(
       currentSequence: SequenceData | null,
-      selectedStartPosition: PictographData | null,
+      selectedStartPosition: StartPositionData | null,
       hasStartPosition: boolean
     ): Promise<void> {
       if (!persistenceService || !state.autoSaveEnabled) return;

@@ -14,7 +14,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { ISequenceStatsCalculator } from "../../services/contracts/ISequenceStatsCalculator";
 import type { ISequenceTransformer } from "../../services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "../../services/contracts/ISequenceValidator";
@@ -54,7 +54,7 @@ export function createSequenceTransformOperations(
   }
 
   return {
-    setStartPosition(startPosition: BeatData | null) {
+    setStartPosition(startPosition: StartPositionData | null) {
       if (!coreState.currentSequence) return;
 
       try {

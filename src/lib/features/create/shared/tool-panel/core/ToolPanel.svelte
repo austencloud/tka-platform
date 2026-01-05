@@ -22,6 +22,7 @@
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { createBeatData } from "../../domain/factories/createBeatData";
+  import { createStartPositionData } from "../../domain/factories/createStartPositionData";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import GeneratePanel from "../../../generate/components/GeneratePanel.svelte";
@@ -301,10 +302,8 @@
                     isCircular: false,
                     metadata: {},
                     tags: [],
-                    startingPositionBeat: createBeatData({
+                    startingPositionBeat: createStartPositionData({
                       ...startPosition,
-                      beatNumber: 0,
-                      duration: 0,
                     }),
                   };
                   createModuleState.sequenceState.setCurrentSequence(
@@ -316,10 +315,8 @@
                   createModuleState.sequenceState.updateSequence({
                     ...currentSeq,
                     beats: [], // Clear beats when setting new start position
-                    startingPositionBeat: createBeatData({
+                    startingPositionBeat: createStartPositionData({
                       ...startPosition,
-                      beatNumber: 0,
-                      duration: 0,
                     }),
                   });
                 }

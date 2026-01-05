@@ -12,6 +12,7 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { createBeatData } from "../domain/factories/createBeatData";
+  import { createStartPositionData } from "../domain/factories/createStartPositionData";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { getCreateModuleContext } from "../context/create-module-context";
   import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
@@ -196,10 +197,8 @@
                     isCircular: false,
                     metadata: {},
                     tags: [],
-                    startingPositionBeat: createBeatData({
+                    startingPositionBeat: createStartPositionData({
                       ...startPosition,
-                      beatNumber: 0,
-                      duration: 0,
                     }),
                   };
                   assemblerSequenceState.setCurrentSequence(currentSeq);
@@ -210,10 +209,8 @@
                   );
                   assemblerSequenceState.updateSequence({
                     ...currentSeq,
-                    startingPositionBeat: createBeatData({
+                    startingPositionBeat: createStartPositionData({
                       ...startPosition,
-                      beatNumber: 0,
-                      duration: 0,
                     }),
                   });
                 }

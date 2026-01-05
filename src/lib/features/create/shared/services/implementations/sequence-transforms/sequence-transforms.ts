@@ -18,6 +18,7 @@ import {
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createBeatData } from "../../../domain/factories/createBeatData";
+import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionColor,
@@ -26,7 +27,6 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { isBeat } from "../../../domain/type-guards/pictograph-type-guards";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
@@ -102,44 +102,14 @@ export async function mirrorSequence(
     )
   );
 
-  // Handle start position - could be BeatData or StartPositionData
-  // Only transform start position when both hands are selected
-  let mirroredStartPosition = sequence.startPosition;
-  if (sequence.startPosition && targetHand === "both") {
-    if (isBeat(sequence.startPosition)) {
-      // Start position stored as BeatData - use mirrorBeat
-      mirroredStartPosition = await mirrorBeat(
-        sequence.startPosition,
-        gridMode,
-        positionDeriver,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use mirrorStartPosition
-      mirroredStartPosition = mirrorStartPosition(sequence.startPosition);
-    }
-  }
+  // Transform start positions (always StartPositionData, never BeatData)
+  const mirroredStartPosition = sequence.startPosition
+    ? mirrorStartPosition(sequence.startPosition, targetHand, positionDeriver)
+    : undefined;
 
-  // Handle startingPositionBeat - could be BeatData or StartPositionData
-  let mirroredStartingPositionBeat = sequence.startingPositionBeat;
-  if (sequence.startingPositionBeat && targetHand === "both") {
-    if (isBeat(sequence.startingPositionBeat)) {
-      // Start position stored as BeatData - use mirrorBeat
-      mirroredStartingPositionBeat = await mirrorBeat(
-        sequence.startingPositionBeat,
-        gridMode,
-        positionDeriver,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use mirrorStartPosition
-      mirroredStartingPositionBeat = mirrorStartPosition(
-        sequence.startingPositionBeat
-      );
-    }
-  }
+  const mirroredStartingPositionBeat = sequence.startingPositionBeat
+    ? mirrorStartPosition(sequence.startingPositionBeat, targetHand, positionDeriver)
+    : undefined;
 
   return updateSequenceData(sequence, {
     beats: mirroredBeats,
@@ -169,44 +139,14 @@ export async function flipSequence(
     )
   );
 
-  // Handle start position - could be BeatData or StartPositionData
-  // Only transform start position when both hands are selected
-  let flippedStartPosition = sequence.startPosition;
-  if (sequence.startPosition && targetHand === "both") {
-    if (isBeat(sequence.startPosition)) {
-      // Start position stored as BeatData - use flipBeat
-      flippedStartPosition = await flipBeat(
-        sequence.startPosition,
-        gridMode,
-        positionDeriver,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use flipStartPosition
-      flippedStartPosition = flipStartPosition(sequence.startPosition);
-    }
-  }
+  // Transform start positions (always StartPositionData, never BeatData)
+  const flippedStartPosition = sequence.startPosition
+    ? flipStartPosition(sequence.startPosition, targetHand, positionDeriver)
+    : undefined;
 
-  // Handle startingPositionBeat - could be BeatData or StartPositionData
-  let flippedStartingPositionBeat = sequence.startingPositionBeat;
-  if (sequence.startingPositionBeat && targetHand === "both") {
-    if (isBeat(sequence.startingPositionBeat)) {
-      // Start position stored as BeatData - use flipBeat
-      flippedStartingPositionBeat = await flipBeat(
-        sequence.startingPositionBeat,
-        gridMode,
-        positionDeriver,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use flipStartPosition
-      flippedStartingPositionBeat = flipStartPosition(
-        sequence.startingPositionBeat
-      );
-    }
-  }
+  const flippedStartingPositionBeat = sequence.startingPositionBeat
+    ? flipStartPosition(sequence.startingPositionBeat, targetHand, positionDeriver)
+    : undefined;
 
   return updateSequenceData(sequence, {
     beats: flippedBeats,
@@ -244,52 +184,14 @@ export async function rotateSequence(
     )
   );
 
-  // Handle start position - could be BeatData or StartPositionData
-  // Only transform start position when both hands are selected
-  let rotatedStartPosition = sequence.startPosition;
-  if (sequence.startPosition && targetHand === "both") {
-    if (isBeat(sequence.startPosition)) {
-      // Start position stored as BeatData - use rotateBeat
-      rotatedStartPosition = await rotateBeat(
-        sequence.startPosition,
-        rotationAmount,
-        gridMode,
-        positionDeriver,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use rotateStartPosition
-      rotatedStartPosition = rotateStartPosition(
-        sequence.startPosition,
-        rotationAmount,
-        positionDeriver
-      );
-    }
-  }
+  // Transform start positions (always StartPositionData, never BeatData)
+  const rotatedStartPosition = sequence.startPosition
+    ? rotateStartPosition(sequence.startPosition, rotationAmount, positionDeriver, targetHand)
+    : undefined;
 
-  // Handle startingPositionBeat - could be BeatData or StartPositionData
-  let rotatedStartingPositionBeat = sequence.startingPositionBeat;
-  if (sequence.startingPositionBeat && targetHand === "both") {
-    if (isBeat(sequence.startingPositionBeat)) {
-      // Start position stored as BeatData - use rotateBeat
-      rotatedStartingPositionBeat = await rotateBeat(
-        sequence.startingPositionBeat,
-        rotationAmount,
-        gridMode,
-        positionDeriver,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use rotateStartPosition
-      rotatedStartingPositionBeat = rotateStartPosition(
-        sequence.startingPositionBeat,
-        rotationAmount,
-        positionDeriver
-      );
-    }
-  }
+  const rotatedStartingPositionBeat = sequence.startingPositionBeat
+    ? rotateStartPosition(sequence.startingPositionBeat, rotationAmount, positionDeriver, targetHand)
+    : undefined;
 
   // Only toggle grid mode when both hands are rotated
   const newGridMode =
@@ -313,33 +215,14 @@ export async function rotateSequence(
 export function colorSwapSequence(sequence: SequenceData): SequenceData {
   const swappedBeats = sequence.beats.map(colorSwapBeat);
 
-  // Handle start position - could be BeatData or StartPositionData
-  let swappedStartPosition = sequence.startPosition;
-  if (sequence.startPosition) {
-    if (isBeat(sequence.startPosition)) {
-      // Start position stored as BeatData - use colorSwapBeat
-      swappedStartPosition = colorSwapBeat(sequence.startPosition);
-    } else {
-      // Start position stored as StartPositionData - use colorSwapStartPosition
-      swappedStartPosition = colorSwapStartPosition(sequence.startPosition);
-    }
-  }
+  // Transform start positions (always StartPositionData, never BeatData)
+  const swappedStartPosition = sequence.startPosition
+    ? colorSwapStartPosition(sequence.startPosition)
+    : undefined;
 
-  // Handle startingPositionBeat - could be BeatData or StartPositionData
-  let swappedStartingPositionBeat = sequence.startingPositionBeat;
-  if (sequence.startingPositionBeat) {
-    if (isBeat(sequence.startingPositionBeat)) {
-      // Start position stored as BeatData - use colorSwapBeat
-      swappedStartingPositionBeat = colorSwapBeat(
-        sequence.startingPositionBeat
-      );
-    } else {
-      // Start position stored as StartPositionData - use colorSwapStartPosition
-      swappedStartingPositionBeat = colorSwapStartPosition(
-        sequence.startingPositionBeat
-      );
-    }
-  }
+  const swappedStartingPositionBeat = sequence.startingPositionBeat
+    ? colorSwapStartPosition(sequence.startingPositionBeat)
+    : undefined;
 
   return updateSequenceData(sequence, {
     beats: swappedBeats,
@@ -375,46 +258,14 @@ export async function invertSequence(
     invertedBeats.push(invertedBeat);
   }
 
-  // Handle start position - could be BeatData or StartPositionData
-  // Only transform start position when both hands are selected
-  let invertedStartPosition = sequence.startPosition;
-  if (sequence.startPosition && targetHand === "both") {
-    if (isBeat(sequence.startPosition)) {
-      // Start position stored as BeatData - use invertBeat
-      invertedStartPosition = await invertBeat(
-        sequence.startPosition,
-        gridMode,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use invertStartPosition
-      invertedStartPosition = invertStartPosition(
-        sequence.startPosition,
-        orientationCalculator
-      );
-    }
-  }
+  // Transform start positions (always StartPositionData, never BeatData)
+  const invertedStartPosition = sequence.startPosition
+    ? invertStartPosition(sequence.startPosition, orientationCalculator, targetHand)
+    : undefined;
 
-  // Handle startingPositionBeat - could be BeatData or StartPositionData
-  let invertedStartingPositionBeat = sequence.startingPositionBeat;
-  if (sequence.startingPositionBeat && targetHand === "both") {
-    if (isBeat(sequence.startingPositionBeat)) {
-      // Start position stored as BeatData - use invertBeat
-      invertedStartingPositionBeat = await invertBeat(
-        sequence.startingPositionBeat,
-        gridMode,
-        motionQueryHandler,
-        targetHand
-      );
-    } else {
-      // Start position stored as StartPositionData - use invertStartPosition
-      invertedStartingPositionBeat = invertStartPosition(
-        sequence.startingPositionBeat,
-        orientationCalculator
-      );
-    }
-  }
+  const invertedStartingPositionBeat = sequence.startingPositionBeat
+    ? invertStartPosition(sequence.startingPositionBeat, orientationCalculator, targetHand)
+    : undefined;
 
   const invertedSequence = updateSequenceData(sequence, {
     beats: invertedBeats,
@@ -635,24 +486,21 @@ export async function deriveSequenceLetters(
 
 /**
  * Create a start position from a beat's end state.
+ * Returns StartPositionData (not BeatData) - start positions are semantically distinct from beats.
  */
-export function createStartPositionFromBeatEnd(beat: BeatData): BeatData {
+export function createStartPositionFromBeatEnd(beat: BeatData): StartPositionData {
   const blueMotion = beat.motions[MotionColor.BLUE];
   const redMotion = beat.motions[MotionColor.RED];
 
   // Derive the correct letter from the end position (alpha, beta, or gamma)
   const letter = getStaticLetterFromGridPosition(beat.endPosition);
 
-  return createBeatData({
-    id: `beat-${Date.now()}`,
+  return createStartPositionData({
+    id: `start-${Date.now()}`,
     letter: letter,
     startPosition: beat.endPosition ?? null,
     endPosition: beat.endPosition ?? null,
-    beatNumber: 0,
-    duration: 1000,
-    blueReversal: false,
-    redReversal: false,
-    isBlank: false,
+    gridPosition: beat.endPosition ?? null,
     motions: {
       [MotionColor.BLUE]: blueMotion
         ? {

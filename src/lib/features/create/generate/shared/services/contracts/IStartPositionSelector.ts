@@ -3,7 +3,6 @@
  *
  * Responsible for selecting random start positions for sequence generation.
  */
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 
@@ -11,9 +10,7 @@ export interface IStartPositionSelector {
   /**
    * Select a random start position for sequence generation
    * @param gridMode - Grid mode (diamond/box)
-   * @returns Promise resolving to StartPositionData (or BeatData for backward compatibility)
+   * @returns Promise resolving to StartPositionData
    */
-  selectStartPosition(
-    gridMode: GridMode
-  ): Promise<StartPositionData | BeatData>;
+  selectStartPosition(gridMode: GridMode): Promise<StartPositionData>;
 }

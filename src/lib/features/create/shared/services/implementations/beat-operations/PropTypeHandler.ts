@@ -4,6 +4,8 @@
  */
 
 import type { BeatData } from "../../../domain/models/BeatData";
+import type { StartPositionData } from "../../../domain/models/StartPositionData";
+import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -53,7 +55,15 @@ export function updateBeatPropType(
   };
 
   if (beatNumber === START_POSITION_BEAT_NUMBER) {
-    createModuleState.sequenceState.setStartPosition(updatedBeatData);
+    // Convert to proper StartPositionData when updating start position
+    const updatedStartPosition = createStartPositionData({
+      ...beatData,
+      motions: {
+        ...beatData.motions,
+        [color]: updatedMotion,
+      },
+    });
+    createModuleState.sequenceState.setStartPosition(updatedStartPosition);
     logger.log(`Updated start position ${color} prop type to ${propType}`);
   } else {
     const arrayIndex = beatNumber - 1;
@@ -80,13 +90,13 @@ export function bulkUpdatePropType(
         ...currentMotion,
         propType: propType,
       };
-      const updatedStartPosition = {
+      const updatedStartPosition = createStartPositionData({
         ...startPosition,
         motions: {
           ...startPosition.motions,
           [color]: updatedMotion,
         },
-      } as BeatData;
+      });
       createModuleState.sequenceState.setStartPosition(updatedStartPosition);
       logger.log(`Updated start position ${color} prop type to ${propType}`);
     }

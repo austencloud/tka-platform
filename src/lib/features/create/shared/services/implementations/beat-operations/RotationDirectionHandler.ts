@@ -11,6 +11,8 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../domain/models/BeatData";
+import type { StartPositionData } from "../../../domain/models/StartPositionData";
+import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
@@ -127,8 +129,8 @@ export function updateRotationDirection(
   // Get current sequence and start position for propagation calculation
   const currentSequence: SequenceData | null =
     createModuleState.sequenceState.currentSequence;
-  const startPosition: BeatData | null = createModuleState.sequenceState
-    .selectedStartPosition as unknown as BeatData | null;
+  const startPosition: StartPositionData | null = createModuleState.sequenceState
+    .selectedStartPosition ?? null;
 
   if (!currentSequence) {
     logger.warn("Cannot update rotation direction - no current sequence");
@@ -137,10 +139,16 @@ export function updateRotationDirection(
 
   // Build the updated sequence with the beat update + propagated orientations
   let updatedSequence = currentSequence;
-  let updatedStartPosition = startPosition;
+  let updatedStartPosition: StartPositionData | null = startPosition;
 
   if (beatNumber === START_POSITION_BEAT_NUMBER) {
-    updatedStartPosition = updatedBeatData as BeatData;
+    // Create updated start position with new motions
+    updatedStartPosition = startPosition
+      ? createStartPositionData({
+          ...startPosition,
+          motions: updatedBeatData.motions,
+        })
+      : null;
     logger.log(
       `Updated start position ${color}: rotation=${newRotationDirection}, motionType=${newMotionType}, endOri=${newEndOrientation}`
     );
@@ -217,7 +225,7 @@ export function updateRotationDirection(
  */
 async function recalculateLetterAsync(
   beatNumber: number,
-  beatToCheck: BeatData,
+  beatToCheck: BeatData | StartPositionData,
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler,
   gridModeDeriver: IGridModeDeriver
@@ -242,10 +250,10 @@ async function recalculateLetterAsync(
 
       // Update the beat with the new letter
       if (beatNumber === START_POSITION_BEAT_NUMBER) {
-        const updatedStart = {
+        const updatedStart = createStartPositionData({
           ...beatToCheck,
           letter: newLetter as Letter,
-        } as BeatData;
+        });
         createModuleState.sequenceState.setStartPosition(updatedStart);
       } else {
         const arrayIndex = beatNumber - 1;
@@ -319,15 +327,20 @@ export async function recalculateLetterForBeat(
           `Letter changed: "${beatData.letter}" → "${newLetter}" for beat ${beatNumber}`
         );
 
-        const updatedBeatData: BeatData = {
-          ...beatData,
-          letter: newLetter,
-          beatNumber: beatData.beatNumber ?? beatNumber,
-        };
-
         if (beatNumber === START_POSITION_BEAT_NUMBER) {
-          createModuleState.sequenceState.setStartPosition(updatedBeatData);
+          // Use createStartPositionData for start positions
+          const updatedStartPosition = createStartPositionData({
+            ...beatData,
+            letter: newLetter,
+          });
+          createModuleState.sequenceState.setStartPosition(updatedStartPosition);
         } else {
+          // Use BeatData for regular beats
+          const updatedBeatData: BeatData = {
+            ...beatData,
+            letter: newLetter,
+            beatNumber: beatData.beatNumber ?? beatNumber,
+          } as BeatData;
           const arrayIndex = beatNumber - 1;
           createModuleState.sequenceState.updateBeat(
             arrayIndex,

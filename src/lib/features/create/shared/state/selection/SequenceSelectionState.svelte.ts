@@ -16,7 +16,7 @@
  * - beatNumber 2 = beats[1] (second beat in array)
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
 
 export type SelectionMode = "single" | "multi";
 
@@ -31,7 +31,7 @@ export interface SequenceSelectionStateData {
   selectedBeatNumbers: Set<number>; // Multiple beat numbers for batch operations
 
   // Start position
-  selectedStartPosition: PictographData | null;
+  selectedStartPosition: StartPositionData | null;
   hasStartPosition: boolean;
 }
 
@@ -200,7 +200,7 @@ export function createSequenceSelectionState() {
     },
 
     // Start position management
-    setStartPosition(startPosition: PictographData | null) {
+    setStartPosition(startPosition: StartPositionData | null) {
       state.selectedStartPosition = startPosition;
       state.hasStartPosition = startPosition !== null;
     },

@@ -5,6 +5,8 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../domain/models/BeatData";
+import type { StartPositionData } from "../../../domain/models/StartPositionData";
+import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import {
@@ -76,8 +78,8 @@ export function updateBeatOrientation(
   // Get current sequence and start position for propagation calculation
   const currentSequence: SequenceData | null =
     createModuleState.sequenceState.currentSequence;
-  const startPosition: BeatData | null = createModuleState.sequenceState
-    .selectedStartPosition as unknown as BeatData | null;
+  const startPosition: StartPositionData | null = createModuleState.sequenceState
+    .selectedStartPosition ?? null;
 
   if (!currentSequence) {
     logger.warn("Cannot update beat orientation - no current sequence");
@@ -86,10 +88,16 @@ export function updateBeatOrientation(
 
   // Build the updated sequence with the beat update + propagated orientations
   let updatedSequence = currentSequence;
-  let updatedStartPosition = startPosition;
+  let updatedStartPosition: StartPositionData | null = startPosition;
 
   if (beatNumber === START_POSITION_BEAT_NUMBER) {
-    updatedStartPosition = updatedBeatData as BeatData;
+    // Create updated start position data with new orientation
+    updatedStartPosition = startPosition
+      ? createStartPositionData({
+          ...startPosition,
+          motions: updatedBeatData.motions,
+        })
+      : null;
     logger.log(
       `Updated start position ${color} orientation to ${orientation}, endOrientation to ${newEndOrientation}`
     );
@@ -105,8 +113,8 @@ export function updateBeatOrientation(
       ...currentSequence,
       beats: propagatedBeats,
       // Include updated start position in the sequence so it propagates to selection state
-      startPosition: updatedStartPosition,
-      startingPositionBeat: updatedStartPosition,
+      startPosition: updatedStartPosition ?? undefined,
+      startingPositionBeat: updatedStartPosition ?? undefined,
     };
   } else {
     const arrayIndex = beatNumber - 1;
@@ -142,7 +150,7 @@ export function calculatePropagatedBeats(
   startingBeatNumber: number,
   color: string,
   currentSequence: SequenceData,
-  startPosition: BeatData | null
+  startPosition: StartPositionData | null
 ): BeatData[] {
   if (!currentSequence?.beats || currentSequence.beats.length === 0) {
     logger.log("No sequence beats to propagate through");

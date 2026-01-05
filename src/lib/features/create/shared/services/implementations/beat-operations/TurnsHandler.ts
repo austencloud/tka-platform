@@ -5,6 +5,8 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../domain/models/BeatData";
+import type { StartPositionData } from "../../../domain/models/StartPositionData";
+import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import {
@@ -142,8 +144,8 @@ export function updateBeatTurns(
   // Get current sequence and start position for propagation calculation
   const currentSequence: SequenceData | null =
     createModuleState.sequenceState.currentSequence;
-  const startPosition: BeatData | null = createModuleState.sequenceState
-    .selectedStartPosition as unknown as BeatData | null;
+  const startPosition: StartPositionData | null = createModuleState.sequenceState
+    .selectedStartPosition ?? null;
 
   if (!currentSequence) {
     logger.warn("Cannot update beat - no current sequence");
@@ -152,10 +154,16 @@ export function updateBeatTurns(
 
   // Build the updated sequence with the beat update + propagated orientations
   let updatedSequence = currentSequence;
-  let updatedStartPosition = startPosition;
+  let updatedStartPosition: StartPositionData | null = startPosition;
 
   if (beatNumber === START_POSITION_BEAT_NUMBER) {
-    updatedStartPosition = updatedBeatData as BeatData;
+    // Create updated start position with new motions
+    updatedStartPosition = startPosition
+      ? createStartPositionData({
+          ...startPosition,
+          motions: updatedBeatData.motions,
+        })
+      : null;
     logger.log(
       `Updated start position ${color} turns to ${turnAmount} (rotationDirection: ${updatedRotationDirection}, endOrientation: ${newEndOrientation})`
     );

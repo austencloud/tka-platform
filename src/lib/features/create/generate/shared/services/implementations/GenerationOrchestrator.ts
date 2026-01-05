@@ -2,6 +2,7 @@
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { createStartPositionFromBeatEnd } from "../../../../shared/services/implementations/sequence-transforms/sequence-transforms";
 import { inject, injectable } from "inversify";
 // Import TYPES directly from inversify/types to avoid HMR issues with re-exports
 import { TYPES } from "$lib/shared/inversify/types";
@@ -79,7 +80,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     options: GenerationOptions
   ): Promise<SequenceData> {
     // Step 1: Get start position (use customized if provided, otherwise random)
-    let startPosition: StartPositionData | BeatData;
+    let startPosition: StartPositionData;
     if (options.startPosition) {
       // Use the customized start position - convert PictographData to StartPositionData
       startPosition = this.convertPictographToStartPosition(
@@ -281,12 +282,18 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
 
     const { createSequenceData } =
       await import("$lib/shared/foundation/domain/models/SequenceData");
+
+    // Convert first beat (start position stored as BeatData) to proper StartPositionData
+    const startPositionBeat = circularBeats[0]
+      ? createStartPositionFromBeatEnd(circularBeats[0])
+      : undefined;
+
     const sequence = createSequenceData({
       name: `Circular ${word}`,
       word,
       beats: circularBeats.slice(1), // Exclude start position beat
-      ...(circularBeats[0] && { startingPositionBeat: circularBeats[0] }),
-      ...(circularBeats[0] && { startPosition: circularBeats[0] }),
+      ...(startPositionBeat && { startingPositionBeat: startPositionBeat }),
+      ...(startPositionBeat && { startPosition: startPositionBeat }),
       gridMode: options.gridMode,
       propType: options.propType,
       difficultyLevel: options.difficulty,

@@ -6,7 +6,7 @@
  * smooth clear sequence functionality.
  */
 
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
@@ -22,7 +22,7 @@ export interface ISequencePersister {
    */
   saveCurrentState(state: {
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection: ActiveCreateModule;
   }): Promise<void>;
@@ -35,7 +35,7 @@ export interface ISequencePersister {
    */
   loadCurrentState(mode?: string): Promise<{
     currentSequence: SequenceData | null;
-    selectedStartPosition: PictographData | null;
+    selectedStartPosition: StartPositionData | null;
     hasStartPosition: boolean;
     activeBuildSection: ActiveCreateModule;
   } | null>;

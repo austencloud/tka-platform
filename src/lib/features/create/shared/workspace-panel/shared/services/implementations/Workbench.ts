@@ -13,6 +13,7 @@ import { TYPES } from "$lib/shared/inversify/types";
 import { inject, injectable } from "inversify";
 import { createBeatData } from "../../../../domain/factories/createBeatData";
 import type { BeatData } from "../../../../domain/models/BeatData";
+import type { StartPositionData } from "../../../../domain/models/StartPositionData";
 import type { IPersistenceService } from "../../../../services/contracts/IPersister";
 import type { ISequenceRepository } from "../../../../services/contracts/ISequenceRepository";
 import type { IWorkbench } from "../contracts/IWorkbench";
@@ -117,7 +118,7 @@ export class Workbench implements IWorkbench {
    */
   async setConstructionStartPosition(
     sequenceId: string,
-    startPosition: BeatData
+    startPosition: StartPositionData
   ): Promise<SequenceData> {
     try {
       const sequence = await this.sequenceService.getSequence(sequenceId);

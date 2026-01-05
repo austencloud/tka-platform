@@ -19,6 +19,7 @@
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { ArrowPosition } from "$lib/shared/pictograph/arrow/orchestration/domain/arrow-models";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
@@ -305,7 +306,7 @@ export function createSequenceState(services: SequenceStateServices) {
   }
 
   function setSelectedStartPosition(
-    startPosition: PictographData | null
+    startPosition: StartPositionData | null
   ): void {
     selectionState.setStartPosition(startPosition);
 
@@ -617,7 +618,7 @@ export function createSequenceState(services: SequenceStateServices) {
     hasContent: () => beatOperations.hasContent(),
 
     // Transform operations - delegate to facade (with targetHand support)
-    setStartPosition: (startPosition: BeatData | null) =>
+    setStartPosition: (startPosition: StartPositionData | null) =>
       transformOperations.setStartPosition(startPosition),
     mirrorSequence: (targetHand: TargetHand = "both") =>
       transformOperations.mirrorSequence(targetHand),

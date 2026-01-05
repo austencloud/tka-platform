@@ -7,6 +7,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { BeatData } from "../domain/models/BeatData";
+import type { StartPositionData } from "../domain/models/StartPositionData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
 import type {
@@ -58,7 +59,7 @@ export interface IConstructTabState {
     | null;
 
   // Selection state
-  readonly selectedStartPosition: PictographData | null;
+  readonly selectedStartPosition: StartPositionData | null;
 
   // Filter state
   readonly isContinuousOnly: boolean;
@@ -72,7 +73,7 @@ export interface IConstructTabState {
   setError: (errorMessage: string | null) => void;
   clearError: () => void;
   setShowStartPositionPicker: (show: boolean | null) => void;
-  setSelectedStartPosition: (position: PictographData | null) => void;
+  setSelectedStartPosition: (position: StartPositionData | null) => void;
   setContinuousOnly: (continuous: boolean) => void;
   clearSequenceCompletely: () => Promise<void>;
   restorePickerStateAfterUndo: () => void;
