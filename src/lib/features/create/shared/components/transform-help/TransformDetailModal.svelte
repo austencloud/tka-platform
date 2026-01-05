@@ -105,6 +105,7 @@
   role="dialog"
   aria-modal="true"
   aria-label="Transform help for {transform?.name ?? 'transform'}"
+  tabindex="-1"
 >
   <div class="modal-container">
     <!-- Header -->

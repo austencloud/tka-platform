@@ -127,8 +127,14 @@
   />
 
   <!-- Semi-transparent backdrop (doesn't block sidebar) -->
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="tour-backdrop" onclick={handleDismiss}></div>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="tour-backdrop"
+    onclick={handleDismiss}
+    role="button"
+    tabindex="0"
+    aria-label="Dismiss tour"
+  ></div>
 {/if}
 
 <style>
