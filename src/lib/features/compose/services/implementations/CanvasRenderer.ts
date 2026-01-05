@@ -6,6 +6,7 @@
 import { injectable } from "inversify";
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 // Constants from standalone_animator.html
 // Using "strict" hand point offset (actual hand position, further from center)
@@ -102,6 +103,19 @@ export class CanvasRenderer implements ICanvasRenderer {
     opacity: number = 1
   ): void {
     this.drawBeatNumber(ctx, canvasSize, beatNumber, opacity);
+  }
+
+  /**
+   * Render a word/sequence header onto the canvas at the top center
+   * Matches WordHeader.svelte styling: semi-transparent background, centered Georgia Bold text
+   */
+  renderWordHeaderToCanvas(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    word: string | null,
+    darkMode: boolean = false
+  ): void {
+    this.drawWordHeader(ctx, canvasSize, word, darkMode);
   }
 
   /**
@@ -255,6 +269,80 @@ export class CanvasRenderer implements ICanvasRenderer {
     // Draw fill (black text)
     ctx.fillStyle = "#000000";
     ctx.fillText(displayText, x, y);
+
+    ctx.restore();
+  }
+
+  /**
+   * Draw word header at the top center of the canvas
+   * Style matches WordHeader.svelte: Georgia Bold, uppercase, pill-shaped background
+   * Light mode: dark text on light background
+   * Dark mode: white text on dark background
+   *
+   * Uses simplifyRepeatedWord to handle repeated words (e.g., "ABAB" → "AB")
+   * Does NOT truncate - allows full word length when needed for uniqueness.
+   */
+  private drawWordHeader(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    word: string | null,
+    darkMode: boolean
+  ): void {
+    if (!word || word.trim() === "") return;
+
+    // Simplify repeated patterns (no truncation), then uppercase
+    const displayText = simplifyRepeatedWord(word).toUpperCase();
+    const gridScaleFactor = canvasSize / 950;
+
+    // Font size: ~5% of canvas (matches clamp in WordHeader.svelte)
+    const fontSize = canvasSize * 0.05;
+    const paddingX = fontSize * 0.8;
+    const paddingY = fontSize * 0.4;
+    const borderRadius = 6 * gridScaleFactor;
+
+    ctx.save();
+
+    // Set font style to match WordHeader.svelte
+    ctx.font = `bold ${fontSize}px Georgia, serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Measure text to calculate background pill size
+    const textMetrics = ctx.measureText(displayText);
+    const textWidth = textMetrics.width;
+    const textHeight = fontSize;
+
+    // Position: top center with some padding from edge (3% top padding)
+    const topPadding = canvasSize * 0.03;
+    const centerX = canvasSize / 2;
+    const centerY = topPadding + paddingY + textHeight / 2;
+
+    // Draw pill-shaped background
+    const pillWidth = textWidth + paddingX * 2;
+    const pillHeight = textHeight + paddingY * 2;
+    const pillX = centerX - pillWidth / 2;
+    const pillY = centerY - pillHeight / 2;
+
+    // Set background color based on dark mode
+    ctx.fillStyle = darkMode
+      ? "rgba(10, 10, 15, 0.92)"
+      : "rgba(245, 245, 245, 0.92)";
+
+    // Draw rounded rectangle background
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillWidth, pillHeight, borderRadius);
+    ctx.fill();
+
+    // Draw subtle border
+    ctx.strokeStyle = darkMode
+      ? "rgba(255, 255, 255, 0.1)"
+      : "rgba(0, 0, 0, 0.05)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Draw text
+    ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
+    ctx.fillText(displayText, centerX, centerY);
 
     ctx.restore();
   }

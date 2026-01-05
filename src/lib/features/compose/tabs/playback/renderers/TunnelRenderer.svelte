@@ -404,6 +404,11 @@
 
     return null;
   });
+
+  // Derived: Word for header display (use primary sequence's word)
+  let sequenceWord = $derived(
+    primaryAnimationState.sequenceData?.word || primarySequence?.word || null
+  );
 </script>
 
 <div class="tunnel-renderer">
@@ -438,6 +443,7 @@
       beatData={primaryBeatData}
       currentBeat={primaryAnimationState.currentBeat}
       sequenceData={primaryAnimationState.sequenceData}
+      word={sequenceWord}
       {trailSettings}
     />
   {:else}

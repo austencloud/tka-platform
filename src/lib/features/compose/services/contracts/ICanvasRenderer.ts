@@ -50,4 +50,16 @@ export interface ICanvasRenderer {
     beatNumber: number | null,
     opacity?: number
   ): void;
+
+  /**
+   * Render a word/sequence header onto the canvas at the top center
+   * @param word - The word/sequence name to render (null/empty = no render)
+   * @param darkMode - When true, uses dark background with light text
+   */
+  renderWordHeaderToCanvas(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    word: string | null,
+    darkMode?: boolean
+  ): void;
 }

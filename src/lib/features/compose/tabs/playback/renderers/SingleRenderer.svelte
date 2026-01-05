@@ -240,6 +240,11 @@
   let currentLetter = $derived.by(() => {
     return currentBeatData?.letter || null;
   });
+
+  // Derived: Word for header display
+  let sequenceWord = $derived(
+    animationState.sequenceData?.word || sequence?.word || null
+  );
 </script>
 
 <div class="single-renderer">
@@ -264,6 +269,7 @@
       beatData={currentBeatData}
       currentBeat={animationState.currentBeat}
       sequenceData={animationState.sequenceData}
+      word={sequenceWord}
       {trailSettings}
     />
   {:else}

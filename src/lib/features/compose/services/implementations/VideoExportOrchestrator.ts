@@ -25,6 +25,7 @@ import type {
 } from "../contracts/IVideoExportOrchestrator";
 import type { IVideoExporter } from "../contracts/IVideoExporter";
 import type { ICompositeVideoRenderer } from "../contracts/ICompositeVideoRenderer";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 interface LetterOverlayAssets {
   image: HTMLImageElement | null;
@@ -300,6 +301,19 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
             actualCanvasSize,
             currentBeatNumber,
             opacity
+          );
+        }
+
+        // Render word header if enabled
+        const visibilityManager = getAnimationVisibilityManager();
+        const showWordHeader = visibilityManager.getVisibility("wordHeader");
+        if (showWordHeader) {
+          const isDarkMode = visibilityManager.isDarkMode();
+          this.canvasRenderer.renderWordHeaderToCanvas(
+            offscreenCtx,
+            actualCanvasSize,
+            panelState.sequenceWord,
+            isDarkMode
           );
         }
 

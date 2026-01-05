@@ -2,8 +2,7 @@
  * Sequence Normalization Service
  *
  * Handles normalization of sequence data for consistent consumption by UI components.
- *
- * MIGRATION NOTE: Now properly handles StartPositionData type with type guards.
+ * Always returns StartPositionData (never BeatData) for start positions.
  */
 
 import { injectable } from "inversify";
@@ -12,7 +11,9 @@ import type {
   ISequenceNormalizer,
   NormalizedSequenceData,
 } from "../contracts/ISequenceNormalizer";
-import { isStartPosition } from "../../../create/shared/domain/type-guards/pictograph-type-guards";
+import type { BeatData } from "../../../create/shared/domain/models/BeatData";
+import type { StartPositionData } from "../../../create/shared/domain/models/StartPositionData";
+import { createStartPositionData } from "../../../create/shared/domain/factories/createStartPositionData";
 
 @injectable()
 export class SequenceNormalizer implements ISequenceNormalizer {
@@ -21,13 +22,15 @@ export class SequenceNormalizer implements ISequenceNormalizer {
    *
    * Handles three storage patterns:
    * 1. startPosition field (modern, uses StartPositionData)
-   * 2. startingPositionBeat field (legacy, may be BeatData with beatNumber: 0)
+   * 2. startingPositionBeat field (legacy, may need conversion)
    * 3. Mixed in beats array (oldest, beatNumber: 0)
+   *
+   * Always returns StartPositionData, converting legacy BeatData if needed.
    */
   separateBeatsFromStartPosition(
     sequence: SequenceData
   ): NormalizedSequenceData {
-    // Pattern 1: Modern approach - separate startPosition field
+    // Pattern 1: Modern approach - separate startPosition field (already StartPositionData)
     if (sequence.startPosition) {
       return {
         beats: sequence.beats || [],
@@ -35,7 +38,7 @@ export class SequenceNormalizer implements ISequenceNormalizer {
       };
     }
 
-    // Pattern 2: Legacy approach - startingPositionBeat field
+    // Pattern 2: Legacy approach - startingPositionBeat field (may need conversion)
     if (sequence.startingPositionBeat) {
       return {
         beats: sequence.beats || [],
@@ -46,15 +49,34 @@ export class SequenceNormalizer implements ISequenceNormalizer {
     // Pattern 3: Oldest approach - beat 0 is mixed in the beats array
     const allBeats = sequence.beats || [];
 
-    // Find start position using type guard (works for both old beatNumber===0 and new isStartPosition)
-    const startPos = allBeats.find((beat) => isStartPosition(beat)) || null;
+    // Find legacy start position (beatNumber === 0)
+    const legacyStartPos = allBeats.find(
+      (beat) => beat.beatNumber === 0
+    ) as BeatData | undefined;
 
     // Filter out start position from beats array (keep only actual beats)
-    const beats = allBeats.filter((beat) => !isStartPosition(beat));
+    const beats = allBeats.filter((beat) => beat.beatNumber !== 0);
+
+    // Convert legacy BeatData to StartPositionData if found
+    const startPosition: StartPositionData | null = legacyStartPos
+      ? this.convertBeatToStartPosition(legacyStartPos)
+      : null;
 
     return {
       beats,
-      startPosition: startPos,
+      startPosition,
     };
+  }
+
+  /**
+   * Convert legacy BeatData (beatNumber: 0) to proper StartPositionData
+   */
+  private convertBeatToStartPosition(beat: BeatData): StartPositionData {
+    return createStartPositionData({
+      id: beat.id || `start-${Date.now()}`,
+      letter: beat.letter ?? null,
+      gridPosition: beat.endPosition ?? beat.startPosition ?? null,
+      motions: beat.motions,
+    });
   }
 }

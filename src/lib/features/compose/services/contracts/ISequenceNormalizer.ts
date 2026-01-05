@@ -16,10 +16,9 @@ export interface NormalizedSequenceData {
   beats: readonly BeatData[];
 
   /**
-   * Start position (properly typed, not a beat)
-   * May be BeatData temporarily during migration for backward compatibility
+   * Start position (always StartPositionData, never BeatData)
    */
-  startPosition: StartPositionData | BeatData | null;
+  startPosition: StartPositionData | null;
 }
 
 export interface ISequenceNormalizer {
