@@ -16,6 +16,7 @@ Orchestrator component that manages navigation between 5 lesson pages:
   import Type1AntispinPage from "./pages/Type1AntispinPage.svelte";
   import Type1HybridPage from "./pages/Type1HybridPage.svelte";
   import Type1QuizPage from "./pages/Type1QuizPage.svelte";
+  import ExperienceProgressIndicator from "../../ExperienceProgressIndicator.svelte";
 
   let { onComplete }: { onComplete?: () => void } = $props();
 
@@ -63,6 +64,8 @@ Orchestrator component that manages navigation between 5 lesson pages:
       onPrevious={state.previousPage}
     />
   {/if}
+
+  <ExperienceProgressIndicator currentStep={state.currentPage} totalSteps={state.totalPages} />
 </div>
 
 <style>

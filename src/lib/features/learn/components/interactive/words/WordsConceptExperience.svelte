@@ -7,12 +7,13 @@ Orchestrator component that manages page navigation and state
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
 
-  import WordsProgressIndicator from "./components/WordsProgressIndicator.svelte";
+  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
   import WordsIntroPage from "./pages/WordsIntroPage.svelte";
   import AlphaBetaPage from "./pages/AlphaBetaPage.svelte";
   import AABBDemoPage from "./pages/AABBDemoPage.svelte";
   import MorePatternsPage from "./pages/MorePatternsPage.svelte";
   import QuizPage from "./pages/QuizPage.svelte";
+  import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
 
   let { onComplete } = $props<{
     onComplete?: () => void;
@@ -20,10 +21,13 @@ Orchestrator component that manages page navigation and state
 
   const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
 
-  let currentPage = $state(1);
+  // Persistence for HMR/refresh survival
+  const persistence = getExperiencePersistence("words");
+
+  let currentPage = $state(persistence.load().step || 1);
   const totalPages = 5;
 
-  // Animation state for demos
+  // Animation state for demos (ephemeral - resets on page change)
   let aabbBeatIndex = $state(0);
   let ggggBeatIndex = $state(0);
   let ccccBeatIndex = $state(0);
@@ -33,9 +37,10 @@ Orchestrator component that manages page navigation and state
     hapticService?.trigger("selection");
     if (currentPage < totalPages) {
       currentPage++;
+      persistence.saveStep(currentPage);
       resetAnimationState();
     } else {
-      onComplete?.();
+      handleComplete();
     }
   }
 
@@ -43,12 +48,18 @@ Orchestrator component that manages page navigation and state
     hapticService?.trigger("selection");
     if (currentPage > 1) {
       currentPage--;
+      persistence.saveStep(currentPage);
     }
+  }
+
+  function handleComplete() {
+    persistence.reset();
+    onComplete?.();
   }
 
   function handleQuizComplete() {
     hapticService?.trigger("success");
-    onComplete?.();
+    handleComplete();
   }
 
   function toggleAnimation() {
@@ -91,7 +102,7 @@ Orchestrator component that manages page navigation and state
     <QuizPage onComplete={handleQuizComplete} />
   {/if}
 
-  <WordsProgressIndicator {currentPage} {totalPages} />
+  <ExperienceProgressIndicator currentStep={currentPage} totalSteps={totalPages} />
 </div>
 
 <style>

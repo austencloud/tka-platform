@@ -20,6 +20,12 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import CodexTab from "./codex/components/CodexTab.svelte";
   import QuizTab from "./quiz/components/QuizTab.svelte";
   import type { LearnConcept } from "./domain/types";
+  import { getConceptById } from "./domain/concepts";
+  import {
+    getActiveConceptId,
+    setActiveConceptId,
+    clearActiveConceptId,
+  } from "./state/experience-persistence.svelte";
 
   type LearnMode = "concepts" | "play" | "codex";
 
@@ -119,17 +125,29 @@ Navigation via bottom tabs (mobile-first UX pattern)
     if (!navMode) {
       navigationState.setLearnMode("concepts");
     }
+
+    // Restore active concept from persistence (survives refresh)
+    const activeConceptId = getActiveConceptId();
+    if (activeConceptId) {
+      const concept = getConceptById(activeConceptId);
+      if (concept) {
+        conceptOpenCount++;
+        selectedConcept = concept;
+      }
+    }
   });
 
   // Handle concept selection
   function handleConceptClick(concept: LearnConcept) {
     conceptOpenCount++; // Increment to force fresh mount
     selectedConcept = concept;
+    setActiveConceptId(concept.id); // Persist for refresh survival
   }
 
   // Handle back from detail view
   function handleBackToPath() {
     selectedConcept = null;
+    clearActiveConceptId(); // Clear persistence when closing
   }
 
   // Check if mode is active

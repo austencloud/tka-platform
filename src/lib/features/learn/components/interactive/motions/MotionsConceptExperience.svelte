@@ -13,23 +13,31 @@ Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
   import MotionsIntroPage from "./motions-experience/MotionsIntroPage.svelte";
   import MotionTypePage from "./motions-experience/MotionTypePage.svelte";
   import MotionsQuizPage from "./motions-experience/MotionsQuizPage.svelte";
+  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
   const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
 
-  let currentPage = $state(1);
+  // Persistence for HMR/refresh survival
+  const persistence = getExperiencePersistence("motions");
+  const initialState = persistence.load();
+
+  let currentPage = $state(initialState.step || 1);
   const totalPages = 8;
 
-  // Example indices for each type
-  let exampleIndices = $state<Record<number, number>>({
-    1: 0,
-    2: 0,
-    3: 0,
-    4: 0,
-    5: 0,
-    6: 0,
-  });
+  // Example indices for each type (persisted)
+  let exampleIndices = $state<Record<number, number>>(
+    (initialState.phaseData?.exampleIndices as Record<number, number>) ?? {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+      6: 0,
+    }
+  );
 
   function getCurrentExample(type: number) {
     return TYPE_EXAMPLES[type]![exampleIndices[type]!]!;
@@ -38,6 +46,7 @@ Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
   function cycleExample(type: number) {
     const examples = TYPE_EXAMPLES[type]!;
     exampleIndices[type] = (exampleIndices[type]! + 1) % examples.length;
+    persistence.savePhaseData("exampleIndices", exampleIndices);
     hapticService?.trigger("selection");
   }
 
@@ -45,14 +54,20 @@ Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
     hapticService?.trigger("selection");
     if (currentPage < totalPages) {
       currentPage++;
+      persistence.saveStep(currentPage);
     } else {
-      onComplete?.();
+      handleComplete();
     }
+  }
+
+  function handleComplete() {
+    persistence.reset();
+    onComplete?.();
   }
 
   function handleQuizComplete() {
     hapticService?.trigger("success");
-    onComplete?.();
+    handleComplete();
   }
 </script>
 
@@ -78,6 +93,8 @@ Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
   {:else if currentPage === 8}
     <MotionsQuizPage onComplete={handleQuizComplete} />
   {/if}
+
+  <ExperienceProgressIndicator currentStep={currentPage} totalSteps={totalPages} />
 </div>
 
 <style>

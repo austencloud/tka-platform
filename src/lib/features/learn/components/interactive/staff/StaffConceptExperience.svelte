@@ -17,6 +17,8 @@ Manages navigation through 5 pages:
   import ProspinPage from "./pages/ProspinPage.svelte";
   import AntispinPage from "./pages/AntispinPage.svelte";
   import StaffQuizPage from "./pages/StaffQuizPage.svelte";
+  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
 
   let { onComplete } = $props<{
     onComplete?: () => void;
@@ -31,21 +33,30 @@ Manages navigation through 5 pages:
       }
     : undefined;
 
-  let currentPage = $state(1);
+  // Persistence for HMR/refresh survival
+  const persistence = getExperiencePersistence("staff");
+
+  let currentPage = $state(persistence.load().step || 1);
   const totalPages = 5;
 
   function handleNext() {
     hapticServiceRaw?.trigger("selection");
     if (currentPage < totalPages) {
       currentPage++;
+      persistence.saveStep(currentPage);
     } else {
-      onComplete?.();
+      handleComplete();
     }
+  }
+
+  function handleComplete() {
+    persistence.reset();
+    onComplete?.();
   }
 
   function handleQuizComplete() {
     hapticServiceRaw?.trigger("success");
-    onComplete?.();
+    handleComplete();
   }
 </script>
 
@@ -61,6 +72,8 @@ Manages navigation through 5 pages:
   {:else if currentPage === 5}
     <StaffQuizPage onComplete={handleQuizComplete} />
   {/if}
+
+  <ExperienceProgressIndicator currentStep={currentPage} totalSteps={totalPages} />
 </div>
 
 <style>

@@ -21,12 +21,15 @@ Uses the actual GridSvg component for consistency with the rest of the app.
     labels = null,
     size = "medium",
     pulsing = false,
+    animateEntrance = false,
   } = $props<{
     type?: GridType;
     showLabels?: boolean;
     labels?: Record<string, LabelPosition> | null;
     size?: SizeType;
     pulsing?: boolean;
+    /** Animate points appearing one by one (pedagogical entrance) */
+    animateEntrance?: boolean;
   }>();
 
   const gridMode = $derived(type === "box" ? GridMode.BOX : GridMode.DIAMOND);
@@ -62,10 +65,10 @@ Uses the actual GridSvg component for consistency with the rest of the app.
   );
 </script>
 
-<div class="lesson-grid-display {sizeClass}" class:pulsing>
+<div class="lesson-grid-display {sizeClass}" class:pulsing class:animate-entrance={animateEntrance}>
   <svg viewBox="0 0 950 950" class="grid-svg">
-    <!-- White background like real pictographs -->
-    <rect width="950" height="950" fill="white" rx="8" />
+    <!-- Background that respects light/dark mode -->
+    <rect class="grid-background" width="950" height="950" rx="8" />
 
     {#if showMerged}
       <!-- Show both diamond and box grids overlaid for 8-point view -->
@@ -114,6 +117,99 @@ Uses the actual GridSvg component for consistency with the rest of the app.
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Background respects light/dark mode - matches PictographRenderer */
+  .grid-background {
+    fill: #ffffff;
+    transition: fill 150ms ease-out;
+  }
+
+  :global(:root.dark) .grid-background {
+    fill: var(--dm-pictograph-bg, #0a0a0f);
+  }
+
+  /* Border to make grid stand out against dark backgrounds */
+  :global(:root.dark) .grid-svg {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ============================================
+     Animated Entrance - Points appear one by one
+     Teaches "4-point grid" through animation
+     ============================================ */
+
+  /* Hide all points initially when animate-entrance is active */
+  .animate-entrance :global(#center_point),
+  .animate-entrance :global(#n_diamond_outer_point),
+  .animate-entrance :global(#e_diamond_outer_point),
+  .animate-entrance :global(#s_diamond_outer_point),
+  .animate-entrance :global(#w_diamond_outer_point),
+  .animate-entrance :global(.normal-hand-point),
+  .animate-entrance :global(line) {
+    opacity: 0;
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  /* Pop-in animation */
+  @keyframes pointPopIn {
+    0% {
+      opacity: 0;
+      transform: scale(0);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.3);
+    }
+    80% {
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Fade in for lines */
+  @keyframes linesFadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* Staggered entrance: Center first, then N, E, S, W */
+  .animate-entrance :global(#center_point) {
+    animation: pointPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+  }
+
+  .animate-entrance :global(#n_diamond_outer_point) {
+    animation: pointPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards;
+  }
+
+  .animate-entrance :global(#e_diamond_outer_point) {
+    animation: pointPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.7s forwards;
+  }
+
+  .animate-entrance :global(#s_diamond_outer_point) {
+    animation: pointPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s forwards;
+  }
+
+  .animate-entrance :global(#w_diamond_outer_point) {
+    animation: pointPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s forwards;
+  }
+
+  /* Hand points appear after outer points */
+  .animate-entrance :global(.normal-hand-point) {
+    animation: pointPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s forwards;
+  }
+
+  /* Lines fade in last */
+  .animate-entrance :global(line) {
+    animation: linesFadeIn 0.6s ease-out 1.6s forwards;
   }
 
   /* Size variants - applied to the container */

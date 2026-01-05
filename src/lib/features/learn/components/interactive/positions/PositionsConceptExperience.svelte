@@ -16,6 +16,8 @@ Page 4: Interactive quiz
   } from "../../../domain/constants/positions-experience-data";
   import PositionPage from "./positions-experience/PositionPage.svelte";
   import PositionsQuizPage from "./positions-experience/PositionsQuizPage.svelte";
+  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
 
   let { onComplete } = $props<{
     onComplete?: () => void;
@@ -23,21 +25,30 @@ Page 4: Interactive quiz
 
   const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
 
-  let currentPage = $state(1);
+  // Persistence for HMR/refresh survival
+  const persistence = getExperiencePersistence("positions");
+
+  let currentPage = $state(persistence.load().step || 1);
   const totalPages = 4;
 
   function handleNext() {
     hapticService?.trigger("selection");
     if (currentPage < totalPages) {
       currentPage++;
+      persistence.saveStep(currentPage);
     } else {
-      onComplete?.();
+      handleComplete();
     }
+  }
+
+  function handleComplete() {
+    persistence.reset();
+    onComplete?.();
   }
 
   function handleQuizComplete() {
     hapticService?.trigger("success");
-    onComplete?.();
+    handleComplete();
   }
 </script>
 
@@ -56,6 +67,8 @@ Page 4: Interactive quiz
   {:else if currentPage === 4}
     <PositionsQuizPage onComplete={handleQuizComplete} />
   {/if}
+
+  <ExperienceProgressIndicator currentStep={currentPage} totalSteps={totalPages} />
 </div>
 
 <style>

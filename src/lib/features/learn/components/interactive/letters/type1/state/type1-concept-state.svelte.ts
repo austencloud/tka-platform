@@ -1,6 +1,7 @@
 /**
  * Type1ConceptState - Centralized state management for Type 1 concept lesson
  * Manages page navigation and letter cycling for each motion type category
+ * Includes persistence for HMR/refresh survival
  */
 
 import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -9,6 +10,7 @@ import {
   ANTISPIN_LETTERS,
   HYBRID_LETTERS,
 } from "../domain/type1-letter-data";
+import { getExperiencePersistence } from "../../../../../state/experience-persistence.svelte";
 
 export interface Type1ConceptStateOptions {
   hapticService: IHapticFeedback | null;
@@ -54,11 +56,21 @@ export function createType1ConceptState(
   const { hapticService, getOnComplete } = options;
   const totalPages = 5;
 
-  // Core state
-  let currentPage = $state(1);
-  let prospinIndex = $state(0);
-  let antispinIndex = $state(0);
-  let hybridIndex = $state(0);
+  // Persistence for HMR/refresh survival
+  const persistence = getExperiencePersistence("type1");
+  const initialState = persistence.load();
+
+  // Core state (initialized from persistence)
+  let currentPage = $state(initialState.step || 1);
+  let prospinIndex = $state(
+    (initialState.phaseData?.prospinIndex as number) ?? 0
+  );
+  let antispinIndex = $state(
+    (initialState.phaseData?.antispinIndex as number) ?? 0
+  );
+  let hybridIndex = $state(
+    (initialState.phaseData?.hybridIndex as number) ?? 0
+  );
 
   // Derived state
   const canGoNext = $derived(currentPage < totalPages);
@@ -74,6 +86,7 @@ export function createType1ConceptState(
     hapticService?.trigger("selection");
     if (currentPage < totalPages) {
       currentPage++;
+      persistence.saveStep(currentPage);
     } else {
       getOnComplete?.()?.();
     }
@@ -83,6 +96,7 @@ export function createType1ConceptState(
     hapticService?.trigger("selection");
     if (currentPage > 1) {
       currentPage--;
+      persistence.saveStep(currentPage);
     }
   }
 
@@ -90,11 +104,13 @@ export function createType1ConceptState(
     if (page >= 1 && page <= totalPages) {
       hapticService?.trigger("selection");
       currentPage = page;
+      persistence.saveStep(currentPage);
     }
   }
 
   function complete() {
     hapticService?.trigger("success");
+    persistence.reset();
     getOnComplete?.()?.();
   }
 
@@ -103,6 +119,7 @@ export function createType1ConceptState(
     const newIndex = prospinIndex + direction;
     if (newIndex >= 0 && newIndex < PROSPIN_LETTERS.length) {
       prospinIndex = newIndex;
+      persistence.savePhaseData("prospinIndex", prospinIndex);
       hapticService?.trigger("selection");
     }
   }
@@ -111,6 +128,7 @@ export function createType1ConceptState(
     const newIndex = antispinIndex + direction;
     if (newIndex >= 0 && newIndex < ANTISPIN_LETTERS.length) {
       antispinIndex = newIndex;
+      persistence.savePhaseData("antispinIndex", antispinIndex);
       hapticService?.trigger("selection");
     }
   }
@@ -119,6 +137,7 @@ export function createType1ConceptState(
     const newIndex = hybridIndex + direction;
     if (newIndex >= 0 && newIndex < HYBRID_LETTERS.length) {
       hybridIndex = newIndex;
+      persistence.savePhaseData("hybridIndex", hybridIndex);
       hapticService?.trigger("selection");
     }
   }
@@ -126,6 +145,7 @@ export function createType1ConceptState(
   function selectProspinLetter(index: number) {
     if (index >= 0 && index < PROSPIN_LETTERS.length) {
       prospinIndex = index;
+      persistence.savePhaseData("prospinIndex", prospinIndex);
       hapticService?.trigger("selection");
     }
   }
@@ -133,6 +153,7 @@ export function createType1ConceptState(
   function selectAntispinLetter(index: number) {
     if (index >= 0 && index < ANTISPIN_LETTERS.length) {
       antispinIndex = index;
+      persistence.savePhaseData("antispinIndex", antispinIndex);
       hapticService?.trigger("selection");
     }
   }
@@ -140,6 +161,7 @@ export function createType1ConceptState(
   function selectHybridLetter(index: number) {
     if (index >= 0 && index < HYBRID_LETTERS.length) {
       hybridIndex = index;
+      persistence.savePhaseData("hybridIndex", hybridIndex);
       hapticService?.trigger("selection");
     }
   }

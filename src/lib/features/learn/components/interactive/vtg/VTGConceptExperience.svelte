@@ -13,6 +13,8 @@ Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
   import VTGIntroPage from "./vtg-experience/VTGIntroPage.svelte";
   import VTGModePage from "./vtg-experience/VTGModePage.svelte";
   import VTGQuizPage from "./vtg-experience/VTGQuizPage.svelte";
+  import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
+  import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
 
   let { onComplete } = $props<{
     onComplete?: () => void;
@@ -20,21 +22,30 @@ Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
 
   const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
 
-  let currentPage = $state(1);
+  // Persistence for HMR/refresh survival
+  const persistence = getExperiencePersistence("vtg");
+
+  let currentPage = $state(persistence.load().step || 1);
   const totalPages = 8; // Intro + 6 modes + Quiz
 
   function handleNext() {
     hapticService?.trigger("selection");
     if (currentPage < totalPages) {
       currentPage++;
+      persistence.saveStep(currentPage);
     } else {
-      onComplete?.();
+      handleComplete();
     }
+  }
+
+  function handleComplete() {
+    persistence.reset();
+    onComplete?.();
   }
 
   function handleQuizComplete() {
     hapticService?.trigger("success");
-    onComplete?.();
+    handleComplete();
   }
 
   function getCurrentMode(): VTGMode | null {
@@ -56,6 +67,8 @@ Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
   {:else if currentPage === 8}
     <VTGQuizPage onComplete={handleQuizComplete} />
   {/if}
+
+  <ExperienceProgressIndicator currentStep={currentPage} totalSteps={totalPages} />
 </div>
 
 <style>

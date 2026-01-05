@@ -10,6 +10,9 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
   import { onMount } from "svelte";
   import LessonGridDisplay from "./LessonGridDisplay.svelte";
   import GridIdentificationQuiz from "./GridIdentificationQuiz.svelte";
+  import GridMergeAnimation from "./GridMergeAnimation.svelte";
+  import ExperienceProgressIndicator from "./ExperienceProgressIndicator.svelte";
+  import { getExperiencePersistence } from "../../state/experience-persistence.svelte";
 
   let { onComplete, onBack } = $props<{
     onComplete?: () => void;
@@ -18,11 +21,30 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
 
   const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
 
-  // Current step in the experience
-  let step = $state(0);
+  // Persistence for HMR/refresh survival
+  const persistence = getExperiencePersistence("grid");
+  const initialState = persistence.load();
+
+  // Current step in the experience (persisted)
+  let step = $state(initialState.step);
+  const totalSteps = 4; // intro, modes, points, quiz
 
   // Animation state - triggers CSS animations
   let animateIn = $state(false);
+
+  // Step 1 internal phase: "diamond" → "both" → "merged" (persisted)
+  // diamond: Only diamond grid shown, centered
+  // both: Diamond slides left, Box appears on right with point animation
+  // merged: Both grids animate to center and overlay
+  let mergePhase = $state<"diamond" | "both" | "merged">(
+    (initialState.phaseData?.mergePhase as "diamond" | "both" | "merged") ?? "diamond"
+  );
+
+  // Handle completion - reset experience state and call parent callback
+  function handleComplete() {
+    persistence.reset();
+    onComplete?.();
+  }
 
   // Point types from PDF page 7
   const pointTypes = [
@@ -46,10 +68,31 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
 
   function handleNext() {
     hapticService?.trigger("selection");
+
+    // Special handling for step 1 merge phases
+    if (step === 1) {
+      if (mergePhase === "diamond") {
+        // Show box grid alongside diamond
+        mergePhase = "both";
+        persistence.savePhaseData("mergePhase", "both");
+        return;
+      } else if (mergePhase === "both") {
+        // Merge the grids together
+        mergePhase = "merged";
+        persistence.savePhaseData("mergePhase", "merged");
+        return;
+      } else if (mergePhase === "merged") {
+        // Reset merge phase for next time and proceed to next step
+        mergePhase = "diamond";
+        persistence.savePhaseData("mergePhase", "diamond");
+      }
+    }
+
     // Reset animation state, change step, then re-animate
     animateIn = false;
     requestAnimationFrame(() => {
       step++;
+      persistence.saveStep(step);
       requestAnimationFrame(() => {
         animateIn = true;
       });
@@ -58,10 +101,33 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
 
   function handleBack() {
     hapticService?.trigger("selection");
+
+    // Special handling for step 1 merge phases
+    if (step === 1) {
+      if (mergePhase === "merged") {
+        // Go back to both grids side-by-side
+        mergePhase = "both";
+        persistence.savePhaseData("mergePhase", "both");
+        return;
+      } else if (mergePhase === "both") {
+        // Go back to diamond only
+        mergePhase = "diamond";
+        persistence.savePhaseData("mergePhase", "diamond");
+        return;
+      }
+      // If in diamond phase, continue to go back to step 0
+    }
+
     if (step > 0) {
       animateIn = false;
       requestAnimationFrame(() => {
         step--;
+        persistence.saveStep(step);
+        // Reset merge phase when returning to step 1
+        if (step === 1) {
+          mergePhase = "diamond";
+          persistence.savePhaseData("mergePhase", "diamond");
+        }
         requestAnimationFrame(() => {
           animateIn = true;
         });
@@ -86,7 +152,7 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
       </p>
 
       <div class="grid-container anim-item" style="--anim-order: 2">
-        <LessonGridDisplay type="diamond" size="large" />
+        <LessonGridDisplay type="diamond" size="large" animateEntrance={true} />
       </div>
 
       <button
@@ -98,21 +164,44 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
       </button>
     </div>
   {:else if step === 1}
-    <!-- Step 1: Diamond Mode -->
-    <div class="step-content step-intro">
-      <h1 class="title anim-item" style="--anim-order: 0">Diamond Mode</h1>
+    <!-- Step 1: Diamond → Box → Merge (three phases) -->
+    <div class="step-content step-modes">
+      <!-- Title transitions based on merge phase -->
+      <h1 class="title anim-item" style="--anim-order: 0">
+        {#if mergePhase === "diamond"}
+          Diamond Mode
+        {:else if mergePhase === "both"}
+          Box Mode
+        {:else}
+          The 8-Point Grid
+        {/if}
+      </h1>
 
+      <!-- Description transitions based on merge phase -->
       <p class="description anim-item" style="--anim-order: 1">
-        In <strong>diamond mode</strong>, the 4 outer points are the cardinal
-        directions.
+        {#if mergePhase === "diamond"}
+          In <strong>diamond mode</strong>, the outer points are the cardinal directions - N, E, S, W. 
+        {:else if mergePhase === "both"}
+          In <strong>box mode</strong>, the outer points are the intercardinal directions.
+        {:else}
+          <strong>Diamond + Box</strong> creates the full 8-point grid.
+        {/if}
       </p>
 
-      <div class="grid-container anim-item" style="--anim-order: 2">
-        <LessonGridDisplay type="diamond" size="large" showLabels={true} />
+      <!-- Custom merge animation component -->
+      <div class="merge-animation-container anim-item" style="--anim-order: 2">
+        <GridMergeAnimation phase={mergePhase} />
       </div>
 
+      <!-- Secondary text -->
       <p class="description secondary anim-item" style="--anim-order: 3">
-        North, East, South, and West
+        {#if mergePhase === "diamond"}
+          North, East, South, and West
+        {:else if mergePhase === "both"}
+          Northeast, Southeast, Southwest, and Northwest
+        {:else}
+          We'll use diamond mode to learn each concept.
+        {/if}
       </p>
 
       <button
@@ -124,58 +213,7 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
       </button>
     </div>
   {:else if step === 2}
-    <!-- Step 2: Box Mode -->
-    <div class="step-content step-intro">
-      <h1 class="title anim-item" style="--anim-order: 0">Box Mode</h1>
-
-      <p class="description anim-item" style="--anim-order: 1">
-        In <strong>box mode</strong>, the 4 outer points are the intercardinal
-        directions.
-      </p>
-
-      <div class="grid-container anim-item" style="--anim-order: 2">
-        <LessonGridDisplay type="box" size="large" showLabels={true} />
-      </div>
-
-      <p class="description secondary anim-item" style="--anim-order: 3">
-        Northeast, Southeast, Southwest, and Northwest
-      </p>
-
-      <button
-        class="next-button anim-item"
-        style="--anim-order: 4"
-        onclick={handleNext}
-      >
-        Next
-      </button>
-    </div>
-  {:else if step === 3}
-    <!-- Step 3: 8-Point Combined Grid -->
-    <div class="step-content step-intro">
-      <h1 class="title anim-item" style="--anim-order: 0">The 8-Point Grid</h1>
-
-      <p class="description anim-item" style="--anim-order: 1">
-        <strong>Diamond + Box</strong> creates the full 8-point grid.
-      </p>
-
-      <div class="grid-container anim-item" style="--anim-order: 2">
-        <LessonGridDisplay type="merged" size="large" />
-      </div>
-
-      <p class="description secondary anim-item" style="--anim-order: 3">
-        We'll use diamond mode to learn each concept.
-      </p>
-
-      <button
-        class="next-button anim-item"
-        style="--anim-order: 4"
-        onclick={handleNext}
-      >
-        Next
-      </button>
-    </div>
-  {:else if step === 4}
-    <!-- Step 4: Point Types -->
+    <!-- Step 2: Point Types -->
     <div class="step-content step-points">
       <h1 class="title anim-item" style="--anim-order: 0">Point Types</h1>
 
@@ -216,17 +254,19 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
         </div>
       </div>
     </div>
-  {:else if step === 5}
-    <!-- Step 5: Quiz -->
+  {:else if step === 3}
+    <!-- Step 3: Quiz -->
     <div class="step-content step-quiz">
       <h1 class="title anim-item" style="--anim-order: 0">
         Test Your Knowledge
       </h1>
       <div class="quiz-container anim-item" style="--anim-order: 1">
-        <GridIdentificationQuiz {onComplete} />
+        <GridIdentificationQuiz onComplete={handleComplete} />
       </div>
     </div>
   {/if}
+
+  <ExperienceProgressIndicator currentStep={step + 1} {totalSteps} />
 </div>
 
 <style>
@@ -337,6 +377,19 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
   .step-quiz .quiz-container {
     width: 100%;
     max-width: none;
+  }
+
+  /* Step 1: Grid modes layout */
+  .step-modes {
+    max-width: 900px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Container for the merge animation component */
+  .merge-animation-container {
+    width: 100%;
+    max-width: 700px;
   }
 
   /* Split layout for side-by-side content */
@@ -502,6 +555,11 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
       padding: 0.875rem 2.5rem;
       font-size: 1rem;
     }
+
+    /* Merge animation responsive */
+    .merge-animation-container {
+      max-width: 100%;
+    }
   }
 
   /* ============================================
@@ -523,5 +581,6 @@ Uses CSS animations with staggered delays for smooth, layout-stable animations.
     .next-button {
       transition: none;
     }
+
   }
 </style>
