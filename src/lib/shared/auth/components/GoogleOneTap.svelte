@@ -10,9 +10,10 @@
    * - No page redirects - stays in context
    * - Works for both sign-in AND sign-up
    *
-   * Note: FedCM mode (use_fedcm_for_prompt) is disabled because it has
-   * viewport restrictions that prevent One Tap from showing on tall/narrow
-   * devices like the Galaxy Z Fold 5 cover screen.
+   * FedCM (Federated Credential Management) is enabled as it becomes
+   * mandatory in August 2025. With FedCM, the browser controls prompt
+   * position and shows the domain name instead of app name.
+   * See: https://developers.google.com/identity/gsi/web/guides/fedcm-migration
    */
 
   import { onMount, onDestroy } from "svelte";
@@ -107,9 +108,9 @@
       return;
     }
 
-    // Configuration for One Tap
-    // Note: use_fedcm_for_prompt can cause issues on some viewport sizes
-    // We'll try with FedCM first, but the callback will tell us if it fails
+    // Configuration for One Tap with FedCM enabled
+    // FedCM becomes mandatory in August 2025
+    // With FedCM: browser controls position, shows domain instead of app name
     const config: GoogleOneTapConfig = {
       client_id: GOOGLE_CLIENT_ID,
       callback: handleCredentialResponse,
@@ -117,8 +118,8 @@
       cancel_on_tap_outside: false,
       context: "signin",
       itp_support: true,
-      // Disable FedCM for now - it has viewport restrictions on tall devices
-      use_fedcm_for_prompt: false,
+      // Enable FedCM - mandatory starting August 2025
+      use_fedcm_for_prompt: true,
     };
 
     if (promptParentId) {
@@ -126,7 +127,7 @@
     }
 
     window.google.accounts.id.initialize(config);
-    debug.success("Google One Tap initialized (FedCM mode)");
+    debug.success("Google One Tap initialized with FedCM enabled");
 
     if (autoPrompt) {
       // Small delay to let the page settle

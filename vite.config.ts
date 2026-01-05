@@ -237,6 +237,8 @@ export default defineConfig({
         ],
         // Increase limit for larger chunks (3MB)
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        // SPA fallback - serve 200.html for all navigation requests (matches adapter-static config)
+        navigateFallback: "/200.html",
         // Don't cache API calls or Firebase
         navigateFallbackDenylist: [
           /^\/api\//,
