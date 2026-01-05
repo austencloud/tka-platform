@@ -14,6 +14,7 @@ import { UserDocumentManager } from "../../auth/services/implementations/UserDoc
 import { ProfileApiClient } from "../../auth/services/implementations/ProfileApiClient";
 import { StepUpAuthCoordinator } from "../../auth/services/implementations/StepUpAuthCoordinator.svelte";
 import { AccountManager } from "../../auth/services/implementations/AccountManager";
+import { UsernameValidator } from "../../auth/services/implementations/UsernameValidator";
 import { SubscriptionManager } from "../../subscription/services/implementations/SubscriptionManager";
 import { createAppState } from "../../application/state/app-state-factory.svelte";
 import { createPerformanceMetricsState } from "../../application/state/PerformanceMetricsState.svelte";
@@ -68,6 +69,10 @@ export const coreModule = new ContainerModule(
       .to(StepUpAuthCoordinator)
       .inSingletonScope();
     options.bind(TYPES.IAccountManager).to(AccountManager);
+    options
+      .bind(TYPES.IUsernameValidator)
+      .to(UsernameValidator)
+      .inSingletonScope();
 
     // === MOBILE SERVICES ===
     options.bind(TYPES.IMobileFullscreenManager).to(MobileFullscreenManager);

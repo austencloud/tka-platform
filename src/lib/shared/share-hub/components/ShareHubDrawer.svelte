@@ -1,15 +1,17 @@
 <!--
   ShareHubDrawer.svelte
 
-  Drawer wrapper for unified Share Hub panel.
+  UNIFIED Sequence Viewer Drawer - used across Create, Discover, and Library modules.
+
   Provides AnimationExportContext to eliminate prop drilling.
+  Shows context-appropriate features based on `mode`:
+
+  - 'create': Export-focused (animation/image/video export, share to social)
+  - 'discover': Gallery browsing (creator info, fork, star, export)
+  - 'library': Personal collection (notes, tags, visibility, analytics, delete)
 
   - Mobile: Bottom drawer, 100dvh height
   - Desktop: Right drawer, full height
-  - Context-based animation state (no prop drilling)
-
-  Uses SequencePreviewPanel (mode="preview") for consistent UX
-  with the Discover gallery's full mode.
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -21,6 +23,16 @@
   import type { ExportSettings } from "../domain/models/ExportSettings";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+
+  // Unified mode for context-aware rendering
+  export type ShareHubMode = "create" | "discover" | "library";
+
+  // Creator info for Discover mode
+  export interface CreatorInfo {
+    ownerId: string;
+    displayName: string;
+    avatarUrl?: string;
+  }
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
@@ -38,6 +50,32 @@
     isMobile = false,
     onClose,
     onExport,
+
+    // === UNIFIED MODE ===
+    mode = "create" as ShareHubMode,
+    isOwned = true, // For Discover: viewing own vs others' sequences
+
+    // === DISCOVER MODE: Creator Info ===
+    creatorInfo = null as CreatorInfo | null,
+
+    // === LIBRARY MODE: Metadata ===
+    notes = "",
+    tags = [] as string[],
+    visibility = "private" as "public" | "private",
+    viewCount = 0,
+    forkCount = 0,
+    starCount = 0,
+    isFavorite = false,
+
+    // === CONTEXT-SPECIFIC CALLBACKS ===
+    onNotesChange,
+    onTagsChange,
+    onVisibilityChange,
+    onFavoriteToggle,
+    onFork,
+    onStar,
+    onDelete,
+
     // Animation props (converted to context)
     animationSequenceData = null,
     isAnimationPlaying = false,
@@ -81,9 +119,35 @@
     isMobile?: boolean;
     onClose?: () => void;
     onExport?: (
-      mode: "single" | "composite",
+      exportMode: "single" | "composite",
       settings?: ExportSettings
     ) => Promise<void>;
+
+    // === UNIFIED MODE ===
+    mode?: ShareHubMode;
+    isOwned?: boolean;
+
+    // === DISCOVER MODE: Creator Info ===
+    creatorInfo?: CreatorInfo | null;
+
+    // === LIBRARY MODE: Metadata ===
+    notes?: string;
+    tags?: string[];
+    visibility?: "public" | "private";
+    viewCount?: number;
+    forkCount?: number;
+    starCount?: number;
+    isFavorite?: boolean;
+
+    // === CONTEXT-SPECIFIC CALLBACKS ===
+    onNotesChange?: (notes: string) => void;
+    onTagsChange?: (tags: string[]) => void;
+    onVisibilityChange?: (visibility: "public" | "private") => void;
+    onFavoriteToggle?: () => void;
+    onFork?: () => void;
+    onStar?: () => void;
+    onDelete?: () => void;
+
     // Animation props
     animationSequenceData?: SequenceData | null;
     isAnimationPlaying?: boolean;
