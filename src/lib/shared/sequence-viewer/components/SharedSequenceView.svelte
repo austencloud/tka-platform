@@ -363,7 +363,6 @@
   /* Content */
   .viewer-content {
     flex: 1;
-    min-height: 0; /* Critical for flex overflow containment */
     overflow-y: auto;
     padding: 16px;
     display: flex;
@@ -419,11 +418,8 @@
     flex-direction: column;
     align-items: center;
     gap: 12px;
-    flex: 1; /* Allow it to grow */
-    min-height: 0; /* Critical for flex overflow containment */
-    max-height: 55%; /* Use percentage to leave MORE room for other content */
-    width: 100%;
-    overflow: hidden; /* Prevent any overflow */
+    flex: 1;
+    min-height: 0;
   }
 
   /* Metadata */
@@ -432,7 +428,6 @@
     flex-wrap: wrap;
     gap: 16px;
     justify-content: center;
-    flex-shrink: 0; /* Prevent from being squeezed */
   }
 
   .metadata-item {
@@ -466,10 +461,8 @@
   }
 
   .sequence-viewer.side-by-side .media-section {
-    flex: 1; /* Allow natural sizing */
+    flex: 1;
     min-width: 300px;
-    max-width: 600px; /* Constrain maximum width in side-by-side */
-    max-height: 60%; /* Leave room for other content */
   }
 
   .sequence-viewer.side-by-side .metadata-section {

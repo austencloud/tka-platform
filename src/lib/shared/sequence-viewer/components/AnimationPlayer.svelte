@@ -276,113 +276,29 @@
 </div>
 
 <style>
-	/*
-	 * Container-Query-Based Responsive Layout System
-	 *
-	 * Uses golden ratio (~62%) for canvas allocation.
-	 * Adapts layout flow based on container aspect ratio:
-	 * - Portrait (tall): vertical flow, canvas top
-	 * - Square: balanced vertical flow
-	 * - Landscape (wide): horizontal flow, canvas left
-	 * - Ultra-wide (bottom sheet): compact horizontal
-	 */
-
 	.animation-player {
-		/* Enable container queries */
-		container-type: size;
-		container-name: animation-player;
-
-		/* Base layout - vertical by default */
 		display: flex;
 		flex-direction: column;
 		width: 100%;
 		height: 100%;
+		min-height: 0;
 		gap: 12px;
 		padding: 8px;
 		box-sizing: border-box;
-
-		/* Golden ratio proportions as CSS custom properties */
-		--golden-major: 0.618;
-		--golden-minor: 0.382;
-		--canvas-max-ratio: 0.65; /* Max space for canvas */
-		--controls-min: 100px; /* Minimum space for controls */
 	}
 
-	/* ========================================
-	   CANVAS WRAPPER - Intelligent sizing
-	   ======================================== */
 	.canvas-wrap {
 		position: relative;
+		flex: 1;
+		min-height: 0;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		border-radius: 12px;
 		overflow: hidden;
 		background: rgba(0, 0, 0, 0.2);
-
-		/* Default: take available space but respect aspect ratio */
-		flex: 0 1 auto;
-		width: 100%;
-		aspect-ratio: 1; /* Canvas content is always square */
-
-		/* Constrain to leave room for controls */
-		max-height: calc(100cqh - var(--controls-min) - 24px);
-		max-width: 100%;
-
-		/* Center within available space */
-		align-self: center;
 	}
-
-	/* ========================================
-	   PORTRAIT CONTAINERS (tall panels)
-	   aspect-ratio < 0.85
-	   ======================================== */
-	@container animation-player (aspect-ratio < 0.85) {
-		.animation-player {
-			/* Vertical flow - canvas top, controls bottom */
-			flex-direction: column;
-			justify-content: flex-start;
-			gap: 16px;
-		}
-
-		.canvas-wrap {
-			/* Size canvas to ~60% of height, but respect width */
-			max-height: calc(100cqh * var(--golden-major) - 20px);
-			max-width: calc(100cqw - 16px);
-			width: min(100%, calc(100cqh * var(--golden-major) - 20px));
-		}
-
-		.controls-simple,
-		.controls-full {
-			/* Controls get comfortable space at bottom */
-			flex-shrink: 0;
-			width: 100%;
-		}
-	}
-
-	/* ========================================
-	   SQUARE-ISH CONTAINERS
-	   0.85 <= aspect-ratio <= 1.3
-	   ======================================== */
-	@container animation-player (0.85 <= aspect-ratio <= 1.3) {
-		.animation-player {
-			flex-direction: column;
-			justify-content: center;
-			align-items: center;
-			gap: 16px;
-		}
-
-		.canvas-wrap {
-			/* Balanced sizing - ~58% of smaller dimension */
-			--size: min(100cqw - 16px, calc(100cqh * 0.58));
-			width: var(--size);
-			max-width: var(--size);
-			max-height: var(--size);
-		}
-
-		.controls-simple,
-		.controls-full {
-			width: 100%;
-		}
-	}
-
 
 	/* ========================================
 	   STATE MESSAGES (loading/error)
@@ -473,12 +389,10 @@
 		color: white;
 	}
 
-	/* ========================================
-	   SIMPLE CONTROLS (minimal mode)
-	   ======================================== */
 	.controls-simple {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 12px;
 		padding: 10px 12px;
 		background: var(--theme-card-bg, rgba(0, 0, 0, 0.3));
@@ -518,9 +432,6 @@
 		transform: scale(0.98);
 	}
 
-	/* ========================================
-	   FULL CONTROLS (export mode)
-	   ======================================== */
 	.controls-full {
 		display: flex;
 		flex-direction: column;
@@ -530,6 +441,8 @@
 		border: 1.5px solid var(--theme-stroke);
 		border-radius: 14px;
 		flex-shrink: 0;
+		max-height: 200px;
+		overflow-y: auto;
 	}
 
 	/* ========================================

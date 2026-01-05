@@ -438,14 +438,9 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="%sveltekit.assets%/pwa/manifest.webmanifest" />
 
-    <!-- Font Awesome CSS with preload for critical font -->
-    <link
-      rel="preload"
-      href="/fonts/webfonts/fa-solid-900.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
+    <!-- Font Awesome CSS -->
+    <!-- Note: Preload removed - SPA initialization delays icon rendering,
+         causing "preloaded but not used" warnings. CSS handles font loading. -->
     <link rel="stylesheet" href="/fonts/css/all.min.css" />
 
     <!-- Google Identity Services -->

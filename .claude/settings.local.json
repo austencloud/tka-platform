@@ -1770,7 +1770,8 @@
       "Bash(1)",
       "Bash(__NEW_LINE__ echo \"Verification - Γ count after update:\")",
       "Bash(__NEW_LINE__ echo \"\")",
-      "Bash(\"src/lib/shared/sequence-viewer/components/SequenceMediaViewerUnified.svelte\")"
+      "Bash(\"src/lib/features/admin/components/feature-flags/list/CapabilityChip.svelte\" )",
+      "Bash(\"src/lib/features/admin/components/feature-flags/list/TabChip.svelte\")"
     ],
     "deny": [],
     "ask": []
