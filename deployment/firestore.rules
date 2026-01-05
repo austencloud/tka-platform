@@ -142,6 +142,31 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // USERNAME INDEX (Uniqueness Enforcement)
+    // ============================================================================
+
+    // Username index - maps lowercase username to userId for uniqueness enforcement
+    // Document ID is the lowercase username, document contains userId of owner
+    match /usernames/{usernameLowercase} {
+      // Anyone authenticated can check username availability
+      allow read: if isAuthenticated();
+
+      // Create: User can claim an unclaimed username for themselves
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      // Update: Only the owner can update their username claim
+      // (e.g., to update timestamps or reclaim after releasing)
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+
+      // Delete: Only owner can release their username, or admin for cleanup
+      allow delete: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================================================
     // USER DATA COLLECTIONS
     // ============================================================================
 

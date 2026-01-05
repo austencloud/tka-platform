@@ -17,6 +17,110 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+const ADMIN_USER_ID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
+
+/**
+ * Generate a deterministic conversation ID from two user IDs
+ */
+function generateConversationId(userId1, userId2) {
+  const sorted = [userId1, userId2].sort();
+  return `${sorted[0]}_${sorted[1]}`;
+}
+
+/**
+ * Send a direct message to a user notifying them their feedback was released
+ */
+async function sendReleaseMessage(userId, feedbackId, feedbackTitle, version) {
+  if (!userId || userId === ADMIN_USER_ID) {
+    return null;
+  }
+
+  try {
+    const conversationId = generateConversationId(ADMIN_USER_ID, userId);
+    const conversationRef = db.collection("conversations").doc(conversationId);
+    const conversationSnap = await conversationRef.get();
+
+    // Get or create conversation
+    if (!conversationSnap.exists) {
+      const userDoc = await db.collection("users").doc(userId).get();
+      const userData = userDoc.exists ? userDoc.data() : {};
+      const userDisplayName = userData.displayName || userData.username || "User";
+      const userPhotoURL = userData.photoURL || null;
+
+      const participants = [ADMIN_USER_ID, userId].sort();
+      const now = new Date();
+      await conversationRef.set({
+        participants,
+        participantInfo: {
+          [ADMIN_USER_ID]: {
+            userId: ADMIN_USER_ID,
+            displayName: "Austen Cloud",
+            avatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+            joinedAt: now,
+          },
+          [userId]: {
+            userId,
+            displayName: userDisplayName,
+            ...(userPhotoURL && { avatar: userPhotoURL }),
+            joinedAt: now,
+          },
+        },
+        unreadCount: { [ADMIN_USER_ID]: 0, [userId]: 0 },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Create the message
+    const messagesRef = conversationRef.collection("messages");
+    const messageContent = `🚀 Your feedback was included in version ${version}! Thank you for helping improve TKA Scribe.`;
+
+    const messageData = {
+      senderId: ADMIN_USER_ID,
+      senderName: "Austen Cloud",
+      senderAvatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+      content: messageContent,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      readBy: [ADMIN_USER_ID],
+      attachments: [
+        {
+          type: "feedback",
+          url: `/feedback/${feedbackId}`,
+          metadata: {
+            feedbackId,
+            feedbackTitle: feedbackTitle || "Your feedback",
+            feedbackStatus: "archived",
+            fixedInVersion: version,
+          },
+        },
+      ],
+      isDeleted: false,
+      replyTo: null,
+      reactions: null,
+      editHistory: null,
+    };
+
+    await messagesRef.add(messageData);
+
+    // Update conversation metadata
+    await conversationRef.update({
+      lastMessage: {
+        content: messageContent,
+        senderId: ADMIN_USER_ID,
+        senderName: "Austen Cloud",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        hasAttachment: true,
+      },
+      [`unreadCount.${userId}`]: admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return true;
+  } catch (error) {
+    console.error(`  ⚠️  Failed to message user ${userId}:`, error.message);
+    return null;
+  }
+}
 
 async function archiveFeedback() {
   const version = process.argv[2];
@@ -120,6 +224,27 @@ async function archiveFeedback() {
   console.log(
     `  (${summary.bugs} bugs, ${summary.features} features, ${summary.general} general)`
   );
+
+  // Send messages to users who submitted feedback
+  const usersToNotify = [...new Set(items.filter(i => i.userId).map(i => i.userId))];
+  if (usersToNotify.length > 0) {
+    console.log(`\n📬 Notifying ${usersToNotify.length} user(s) of release...`);
+
+    let messaged = 0;
+    for (const item of items) {
+      if (item.userId && item.userId !== ADMIN_USER_ID) {
+        const success = await sendReleaseMessage(
+          item.userId,
+          item.id,
+          item.title,
+          version
+        );
+        if (success) messaged++;
+      }
+    }
+
+    console.log(`✓ Sent ${messaged} release notification(s)`);
+  }
 }
 
 archiveFeedback().catch((error) => {

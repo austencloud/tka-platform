@@ -31,6 +31,125 @@ const db = admin.firestore();
 // Stale claim threshold (2 hours) - items claimed longer than this can be reclaimed
 const STALE_CLAIM_MS = 2 * 60 * 60 * 1000;
 
+const ADMIN_USER_ID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
+
+/**
+ * Generate a deterministic conversation ID from two user IDs
+ */
+function generateConversationId(userId1, userId2) {
+  const sorted = [userId1, userId2].sort();
+  return `${sorted[0]}_${sorted[1]}`;
+}
+
+/**
+ * Send a direct message to a user (in their conversation with admin)
+ * This mirrors the message they receive when submitting feedback
+ */
+async function sendDirectMessageToUser(
+  userId,
+  feedbackId,
+  feedbackTitle,
+  feedbackStatus,
+  messageContent
+) {
+  if (!userId) {
+    console.log("  ⚠️  No userId - skipping message");
+    return null;
+  }
+
+  // Don't send messages to yourself
+  if (userId === ADMIN_USER_ID) {
+    console.log("  ℹ️  Skipping message to admin (self)");
+    return null;
+  }
+
+  try {
+    const conversationId = generateConversationId(ADMIN_USER_ID, userId);
+    const conversationRef = db.collection("conversations").doc(conversationId);
+    const conversationSnap = await conversationRef.get();
+
+    // Get or create conversation
+    if (!conversationSnap.exists) {
+      // Fetch user info
+      const userDoc = await db.collection("users").doc(userId).get();
+      const userData = userDoc.exists ? userDoc.data() : {};
+      const userDisplayName = userData.displayName || userData.username || "User";
+      const userPhotoURL = userData.photoURL || null;
+
+      // Create new conversation
+      const participants = [ADMIN_USER_ID, userId].sort();
+      const now = new Date();
+      await conversationRef.set({
+        participants,
+        participantInfo: {
+          [ADMIN_USER_ID]: {
+            userId: ADMIN_USER_ID,
+            displayName: "Austen Cloud",
+            avatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+            joinedAt: now,
+          },
+          [userId]: {
+            userId,
+            displayName: userDisplayName,
+            ...(userPhotoURL && { avatar: userPhotoURL }),
+            joinedAt: now,
+          },
+        },
+        unreadCount: { [ADMIN_USER_ID]: 0, [userId]: 0 },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Create the message with feedback attachment
+    const messagesRef = conversationRef.collection("messages");
+    const messageData = {
+      senderId: ADMIN_USER_ID,
+      senderName: "Austen Cloud",
+      senderAvatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+      content: messageContent,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      readBy: [ADMIN_USER_ID],
+      attachments: [
+        {
+          type: "feedback",
+          url: `/feedback/${feedbackId}`,
+          metadata: {
+            feedbackId,
+            feedbackTitle: feedbackTitle || "Your feedback",
+            feedbackStatus,
+          },
+        },
+      ],
+      isDeleted: false,
+      replyTo: null,
+      reactions: null,
+      editHistory: null,
+    };
+
+    const messageRef = await messagesRef.add(messageData);
+
+    // Update conversation metadata
+    await conversationRef.update({
+      lastMessage: {
+        content: messageContent,
+        senderId: ADMIN_USER_ID,
+        senderName: "Austen Cloud",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        hasAttachment: true,
+      },
+      [`unreadCount.${userId}`]: admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`  💬 Direct message sent to user`);
+    return messageRef.id;
+  } catch (error) {
+    console.error("  ⚠️  Failed to send direct message:", error.message);
+    return null;
+  }
+}
+
 /**
  * Send notification to user when their feedback is resolved/completed
  */
@@ -597,15 +716,33 @@ async function updateFeedbackById(docId, status, resolutionNotes) {
       console.log(`  Resolution: ${resolutionNotes}`);
     }
 
-    // Send notification to user when marking as completed
-    if (normalizedStatus === "completed" && item.userId) {
+    // Send direct message to user when marking as completed or archived
+    if (["completed", "archived"].includes(normalizedStatus) && item.userId) {
       console.log("─".repeat(70));
-      await notifyUserFeedbackResolved(
+
+      let messageContent;
+      if (normalizedStatus === "completed") {
+        messageContent = resolutionNotes
+          ? `✅ Your feedback has been addressed: ${resolutionNotes}`
+          : "✅ Your feedback has been addressed and is ready for the next release!";
+      } else if (normalizedStatus === "archived") {
+        // Check if there's a version tag
+        const version = item.fixedInVersion || null;
+        if (version) {
+          messageContent = `🚀 Your feedback was included in version ${version}! Thank you for helping improve TKA Scribe.`;
+        } else {
+          messageContent = resolutionNotes
+            ? `📦 Your feedback has been resolved: ${resolutionNotes}`
+            : "📦 Your feedback has been resolved. Thank you for your input!";
+        }
+      }
+
+      await sendDirectMessageToUser(
         item.userId,
         docId,
         item.title,
-        resolutionNotes ||
-          "Your feedback has been addressed and is ready for the next release!"
+        normalizedStatus,
+        messageContent
       );
     }
 
