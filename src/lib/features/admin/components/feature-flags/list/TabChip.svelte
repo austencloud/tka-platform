@@ -44,32 +44,27 @@
   .tab-chip {
     display: flex;
     align-items: center;
-    gap: var(--space-2026-xs);
-    padding: 8px var(--space-2026-sm);
-    background: var(--surface-glass);
-    border: 1px solid var(--theme-stroke);
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
-    font-size: var(--text-2026-micro);
-    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.15s ease;
     min-height: var(--min-touch-target);
   }
 
   .tab-chip:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    transform: translateY(var(--hover-lift-sm));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .tab-chip.selected {
-    background: var(--accent-2026-indigo-soft);
-    border-color: color-mix(
-      in srgb,
-      var(--accent-2026-indigo) 40%,
-      transparent
-    );
-    color: var(--accent-2026-indigo);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    color: var(--theme-accent, #6366f1);
   }
 
   .tab-chip.disabled {
@@ -77,11 +72,11 @@
   }
 
   .tab-chip.elevated {
-    border-color: color-mix(in srgb, var(--accent-2026-amber) 30%, transparent);
+    border-color: color-mix(in srgb, #f59e0b 30%, transparent);
   }
 
   .tab-chip i {
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
   }
 
   .tab-name {
@@ -89,13 +84,13 @@
   }
 
   .tab-role {
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
     margin-left: 2px;
   }
 
   .disabled-icon {
-    color: var(--semantic-error, var(--semantic-error));
-    font-size: var(--font-size-compact);
+    color: var(--semantic-error);
+    font-size: var(--font-size-compact, 12px);
     margin-left: 2px;
   }
 </style>

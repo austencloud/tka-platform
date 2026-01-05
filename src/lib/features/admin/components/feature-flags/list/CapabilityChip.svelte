@@ -42,31 +42,26 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: var(--radius-2026-sm) var(--radius-2026-md);
-    background: var(--surface-2026);
-    border: 1px solid var(--border-2026);
-    border-radius: var(--radius-2026-sm);
-    font-size: var(--text-2026-caption);
-    color: var(--theme-text-dim);
+    padding: 8px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all 0.15s ease;
     min-height: var(--min-touch-target);
   }
 
   .capability-chip:hover {
-    background: var(--surface-2026-hover);
-    border-color: var(--border-2026-hover);
-    transform: translateY(var(--hover-lift-sm));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .capability-chip.selected {
-    background: var(--accent-2026-indigo-soft);
-    border-color: color-mix(
-      in srgb,
-      var(--accent-2026-indigo) 35%,
-      transparent
-    );
-    color: var(--accent-2026-indigo);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+    color: var(--theme-accent, #6366f1);
   }
 
   .capability-chip.disabled {
@@ -74,7 +69,7 @@
   }
 
   .capability-chip i {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-sm, 14px);
   }
 
   .capability-name {
@@ -84,18 +79,18 @@
   .role-badge {
     display: flex;
     align-items: center;
-    padding: 3px var(--space-2026-xs);
-    border-radius: var(--radius-2026-xs);
-    font-size: var(--font-size-compact);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .role-badge i {
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-compact, 12px);
   }
 
   .disabled-icon {
-    color: var(--semantic-error, var(--semantic-error));
-    font-size: var(--font-size-compact);
+    color: var(--semantic-error);
+    font-size: var(--font-size-compact, 12px);
     margin-left: 2px;
   }
 </style>
