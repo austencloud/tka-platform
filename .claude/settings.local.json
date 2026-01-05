@@ -1766,7 +1766,8 @@
       "Bash(\"src/lib/shared/share-hub/components/ShareHubDrawer.svelte\")",
       "Bash(Set-Content 'src/lib/shared/pictograph/grid/components/GridSvg.svelte' -NoNewline)",
       "Bash(xxd:*)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(1)"
     ],
     "deny": [],
     "ask": []

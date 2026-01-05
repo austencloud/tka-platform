@@ -4,8 +4,9 @@ GlyphOverlay.svelte
 Cross-fading glyph overlay for AnimatorCanvas.
 Displays TKA glyph and beat number with fade transitions.
 
-Dark mode: Uses CSS-first approach - styles triggered by .dark class on <html> element.
-No JS observer needed - CSS handles the transition automatically.
+Dark mode: Uses prop-based approach for preview isolation.
+When darkMode prop is provided, it overrides global state.
+CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
 -->
 <script lang="ts">
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -28,6 +29,8 @@ No JS observer needed - CSS handles the transition automatically.
     // Visibility
     tkaGlyphVisible = true,
     beatNumbersVisible = true,
+    // Dark mode - when provided, overrides global state (for preview isolation)
+    darkMode = false,
   }: {
     letter?: Letter | null;
     displayedLetter?: Letter | null;
@@ -39,10 +42,11 @@ No JS observer needed - CSS handles the transition automatically.
     isNewLetter?: boolean;
     tkaGlyphVisible?: boolean;
     beatNumbersVisible?: boolean;
+    darkMode?: boolean;
   } = $props();
 </script>
 
-<div class="glyph-overlay">
+<div class="glyph-overlay" class:dark-mode={darkMode}>
   <!-- Fading out glyph (previous letter + beat number) -->
   {#if fadingOutLetter || fadingOutBeatNumber !== null}
     <div class="glyph-wrapper fade-out">
@@ -71,7 +75,7 @@ No JS observer needed - CSS handles the transition automatically.
           />
         {/if}
         {#if beatNumbersVisible}
-          <BeatNumber beatNumber={fadingOutBeatNumber} />
+          <BeatNumber beatNumber={fadingOutBeatNumber} {darkMode} />
         {/if}
       </svg>
     </div>
@@ -105,7 +109,7 @@ No JS observer needed - CSS handles the transition automatically.
           />
         {/if}
         {#if beatNumbersVisible}
-          <BeatNumber beatNumber={displayedBeatNumber} />
+          <BeatNumber beatNumber={displayedBeatNumber} {darkMode} />
         {/if}
       </svg>
     </div>
@@ -158,14 +162,21 @@ No JS observer needed - CSS handles the transition automatically.
     height: 100%;
   }
 
-  /* Dark Mode: invert TKA letter colors (but NOT turns column - keep red/blue) */
-  /* Uses CSS-first approach - triggered by .dark class on <html> element */
-  :global(:root.dark) .glyph-overlay :global(.tka-glyph) {
+  /* Dark Mode via prop (preview isolation) */
+  .glyph-overlay.dark-mode :global(.tka-glyph) {
     filter: invert(0.9);
   }
 
-  /* Dark Mode: add white outline to turns column without inverting colors */
-  :global(:root.dark) .glyph-overlay :global(.turns-column) {
+  .glyph-overlay.dark-mode :global(.turns-column) {
+    filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
+  }
+
+  /* Fallback: Also support global .dark class for non-preview usage */
+  :global(:root.dark) .glyph-overlay:not(.dark-mode) :global(.tka-glyph) {
+    filter: invert(0.9);
+  }
+
+  :global(:root.dark) .glyph-overlay:not(.dark-mode) :global(.turns-column) {
     filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
   }
 </style>

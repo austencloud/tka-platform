@@ -226,6 +226,7 @@ Last audit: 2025-12-27
         {isNewLetter}
         {tkaGlyphVisible}
         {beatNumbersVisible}
+        darkMode={darkModeEnabled}
       />
 
       <ProgressOverlay
