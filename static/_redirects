@@ -6,9 +6,5 @@
 #
 # Netlify automatically serves 200.html for any path that doesn't match a file.
 
-# Domain redirects - redirect tkaflowarts.com to tkascribe.com (301 permanent)
-https://tkaflowarts.com/*  https://tkascribe.com/:splat  301!
-https://www.tkaflowarts.com/*  https://tkascribe.com/:splat  301!
-
 # Catch-all: serve the SPA fallback for all routes
 /*  /200.html  200

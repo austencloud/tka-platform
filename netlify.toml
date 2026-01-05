@@ -193,15 +193,10 @@
     Cache-Control = "public, max-age=86400"
 
 # ============================================================================
-# DOMAIN-BASED ROUTING
+# CROSS-DOMAIN ROUTING (convenience redirects)
 # ============================================================================
-# tkascribe.com: Root serves the app directly
-[[redirects]]
-  from = "/"
-  to = "/app"
-  status = 200
-  force = true
-  conditions = {Host = ["tkascribe.com", "www.tkascribe.com"]}
+# Note: Root (/) is handled by SiteMode detection in the app itself.
+# These redirects help users who manually type /app or /landing on wrong domain.
 
 # tkascribe.com: Redirect /landing to tkaflowarts.com
 [[redirects]]
