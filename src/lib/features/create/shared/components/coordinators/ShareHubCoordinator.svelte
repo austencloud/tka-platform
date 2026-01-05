@@ -25,16 +25,14 @@
   import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
   import SaveToLibraryPanel from "../SaveToLibraryPanel.svelte";
+  import SavePromptDialog from "../dialogs/SavePromptDialog.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
-  import type { ShareOptions } from "$lib/shared/share/domain/models/ShareOptions";
-  import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
+  import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
   import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
@@ -44,7 +42,6 @@
     IVideoExportOrchestrator,
     VideoExportProgress,
   } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-  import type { IVideoExporter } from "$lib/features/compose/services/contracts/IVideoExporter";
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import type {
@@ -58,11 +55,7 @@
     type StepPlaybackStepSize,
   } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
-  import {
-    ANIMATION_LOAD_DELAY_MS,
-    ANIMATION_AUTO_START_DELAY_MS,
-    VIDEO_EXPORT_SUCCESS_DELAY_MS,
-  } from "$lib/features/compose/shared/domain/constants/timing";
+  import { ANIMATION_AUTO_START_DELAY_MS } from "$lib/features/compose/shared/domain/constants/timing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -73,7 +66,7 @@
 
   // Core services (resolved immediately)
   let hapticService: IHapticFeedback | null = null;
-  let shareService: ISharer | null = null;
+  let exportOrchestrator: IShareHubExportOrchestrator | null = null;
   let platformService: IPlatformDetector | null = null;
   let sheetRouterService: ISheetRouter | null = null;
   let sequenceService: ISequenceRepository | null = null;
@@ -81,7 +74,6 @@
   // Animation services (lazy-loaded when Animation format selected)
   let playbackController: IAnimationPlaybackController | null = null;
   let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
-  let videoExporter: IVideoExporter | null = null;
   let loopabilityChecker: ISequenceLoopabilityChecker | null = null;
   let layoutService: IResponsiveLayoutManager | null = null;
   let animationCanvas: HTMLCanvasElement | null = null;
@@ -119,9 +111,11 @@
   }
 
   try {
-    shareService = resolve<ISharer>(TYPES.ISharer);
+    exportOrchestrator = resolve<IShareHubExportOrchestrator>(
+      TYPES.IShareHubExportOrchestrator
+    );
   } catch (error) {
-    console.warn("⚠️ Failed to resolve share service:", error);
+    console.warn("⚠️ Failed to resolve export orchestrator:", error);
   }
 
   try {
@@ -147,7 +141,8 @@
   const isMobile = platform === "ios" || platform === "android";
 
   // State
-  let showSaveToLibrary = $state(false);
+  let showSavePrompt = $state(false); // Step 1: Confirmation dialog
+  let showSaveToLibrary = $state(false); // Step 2: Full save panel
   let pendingExport = $state<{
     mode: "single" | "composite";
     settings?: ExportSettings;
@@ -302,7 +297,6 @@
       videoExportOrchestrator = resolve<IVideoExportOrchestrator>(
         TYPES.IVideoExportOrchestrator
       );
-      videoExporter = resolve<IVideoExporter>(TYPES.IVideoExporter);
       loopabilityChecker = resolve<ISequenceLoopabilityChecker>(
         TYPES.ISequenceLoopabilityChecker
       );
@@ -310,6 +304,11 @@
         TYPES.IResponsiveLayoutManager
       );
       setAnimationPlaybackRef(playbackController);
+
+      // Pass video orchestrator to export orchestrator for animation exports
+      if (exportOrchestrator && videoExportOrchestrator) {
+        (exportOrchestrator as any).setVideoOrchestrator(videoExportOrchestrator);
+      }
 
       // Update layout detection
       if (layoutService) {
@@ -650,7 +649,8 @@
     // Check if sequence is saved
     if (!isSequenceSaved) {
       pendingExport = { mode, settings };
-      showSaveToLibrary = true;
+      // Step 1: Show confirmation prompt first
+      showSavePrompt = true;
       hapticService?.trigger("selection");
       return;
     }
@@ -668,35 +668,55 @@
       return;
     }
 
+    if (!exportOrchestrator) {
+      showToast("Export service not available", "error");
+      return;
+    }
+
+    if (mode === "composite") {
+      // Composite export - TODO: implement full composite rendering
+      showToast("Composite export coming soon!", "info");
+      hapticService?.trigger("selection");
+      return;
+    }
+
+    if (!settings) {
+      showToast("Export settings required", "error");
+      return;
+    }
+
     isExporting = true;
 
     try {
-      if (mode === "single" && settings) {
-        switch (settings.format) {
-          case "animation":
-            await exportAnimation(settings);
-            break;
-          case "static":
-            await exportStatic(settings);
-            break;
-          case "performance":
-            await exportPerformance(settings);
-            break;
-          default:
-            throw new Error(`Unknown format: ${settings.format}`);
-        }
-      } else if (mode === "composite") {
-        // Composite export - TODO: implement full composite rendering
-        showToast("Composite export coming soon!", "info");
-        hapticService?.trigger("selection");
-        return;
-      } else {
-        throw new Error("Export settings required for single media export");
-      }
+      // Build animation dependencies if needed
+      const animationDependencies =
+        settings.format === "animation" && playbackController && animationCanvas
+          ? {
+              canvas: animationCanvas,
+              playbackController,
+              animationState: animationPanelState,
+            }
+          : undefined;
 
-      hapticService?.trigger("success");
-      showToast("Export complete!", "success");
-      panelState.closeShareHubPanel();
+      const result = await exportOrchestrator.export(currentSequence, settings, {
+        animationDependencies,
+        userInfo: { displayName: authState.user?.displayName ?? null },
+        isMobile,
+        onProgress: (progress) => {
+          exportProgress = progress;
+          if (progress.stage === "error") {
+            showToast(progress.error || "Export failed", "error");
+          }
+        },
+      });
+
+      if (result.success) {
+        hapticService?.trigger("success");
+        showToast("Export complete!", "success");
+        panelState.closeShareHubPanel();
+      } else {
+        throw new Error(result.error || "Export failed");
+      }
     } catch (error) {
       console.error("Export failed:", error);
       hapticService?.trigger("error");
@@ -706,85 +726,12 @@
       );
     } finally {
       isExporting = false;
-    }
-  }
-
-  async function exportStatic(settings: ExportSettings) {
-    if (!shareService || !currentSequence) {
-      throw new Error("Share service not available");
-    }
-
-    // Get user's saved image composition settings
-    const imageSettings = getImageCompositionManager();
-    const compositionSettings = imageSettings.getSettings();
-
-    // Use user's saved settings for export
-    const shareOptions: ShareOptions = {
-      ...DEFAULT_SHARE_OPTIONS,
-      format: "PNG",
-      quality: 1.0,
-      backgroundColor: "#FFFFFF",
-      includeStartPosition: compositionSettings.includeStartPosition,
-      addBeatNumbers: compositionSettings.addBeatNumbers,
-      addWord: compositionSettings.addWord,
-      addUserInfo: compositionSettings.addUserInfo,
-      addDifficultyLevel: compositionSettings.addDifficultyLevel,
-      userName: authState.user?.displayName ?? "",
-    };
-
-    // Use native share on mobile, download on desktop
-    if (isMobile) {
-      await shareService.shareViaDevice(currentSequence, shareOptions);
-    } else {
-      await shareService.downloadImage(currentSequence, shareOptions);
-    }
-  }
-
-  async function exportAnimation(settings: ExportSettings) {
-    if (!currentSequence) {
-      throw new Error("No sequence to export");
-    }
-
-    if (!videoExportOrchestrator || !playbackController || !animationCanvas) {
-      throw new Error(
-        "Animation services not ready. Please wait for preview to load."
-      );
-    }
-
-    // Pause playback during export
-    if (isPlayingLocal) {
-      playbackController.togglePlayback();
-    }
-
-    try {
-      await videoExportOrchestrator.executeExport(
-        animationCanvas,
-        playbackController,
-        animationPanelState,
-        (progress) => {
-          exportProgress = progress;
-          if (progress.stage === "error") {
-            showToast(progress.error || "Export failed", "error");
-          }
-        },
-        {
-          filename: currentSequence.word || currentSequence.name || "sequence",
-          fps: 50,
-          format: "mp4",
-        }
-      );
-
-      // Short delay before closing for success feedback
-      await new Promise((resolve) =>
-        setTimeout(resolve, VIDEO_EXPORT_SUCCESS_DELAY_MS)
-      );
-    } finally {
       exportProgress = null;
     }
   }
 
   function handleCancelExport() {
-    videoExportOrchestrator?.cancelExport();
+    exportOrchestrator?.cancelExport();
     exportProgress = null;
     showToast("Export cancelled", "info");
   }
@@ -795,7 +742,8 @@
     // Check if sequence is saved first
     if (!isSequenceSaved) {
       pendingExport = { mode: "single", settings: { format: "animation" } };
-      showSaveToLibrary = true;
+      // Step 1: Show confirmation prompt first
+      showSavePrompt = true;
       hapticService?.trigger("selection");
       return;
     }
@@ -804,12 +752,19 @@
     await performExport("single", { format: "animation" });
   }
 
-  async function exportPerformance(settings: ExportSettings) {
-    // Performance video should be recorded/uploaded in the PerformancePreview
-    // This just needs to finalize the upload
-    showToast("Performance video saved!", "success");
+  // Step 1: User confirmed they want to save → show full save panel
+  function handleSavePromptConfirm() {
+    showSavePrompt = false;
+    showSaveToLibrary = true;
   }
 
+  // Step 1: User cancelled the save prompt → don't proceed
+  function handleSavePromptCancel() {
+    showSavePrompt = false;
+    pendingExport = null;
+  }
+
+  // Step 2: Save completed → proceed with export
   function handleSaveComplete(savedSequenceId: string) {
     showSaveToLibrary = false;
 
@@ -822,6 +777,7 @@
     hapticService?.trigger("success");
   }
 
+  // Step 2: User cancelled from save panel
   function handleSaveCancel() {
     showSaveToLibrary = false;
     pendingExport = null;
@@ -872,6 +828,16 @@
   onToggleRed={handleToggleRedMotion}
 />
 
+<!-- Step 1: Confirmation dialog asking if they want to save -->
+<SavePromptDialog
+  bind:show={showSavePrompt}
+  title="Save to Library First?"
+  message="Before sharing, your sequence needs to be saved to your library. This lets you access shared content later."
+  on:save={handleSavePromptConfirm}
+  on:cancel={handleSavePromptCancel}
+/>
+
+<!-- Step 2: Full save panel with options -->
 {#if showSaveToLibrary}
   <SaveToLibraryPanel
     show={showSaveToLibrary}

@@ -84,7 +84,8 @@ export class Sharer implements ISharer {
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
     // Convert ShareOptions to SequenceExportOptions for render service
-    const renderOptions = this.convertToRenderOptions(options);
+    // Pass sequence birth date so it appears on the exported image
+    const renderOptions = this.convertToRenderOptions(options, sequence.dateAdded);
 
     // Use render service to generate blob (with progress callback)
     return await this.renderService.renderSequenceToBlob(
@@ -201,8 +202,11 @@ export class Sharer implements ISharer {
     }
   }
 
-  private convertToRenderOptions(shareOptions: ShareOptions) {
+  private convertToRenderOptions(shareOptions: ShareOptions, sequenceBirthDate?: Date) {
     // Convert our simple ShareOptions to the render service's SequenceExportOptions
+    // Use sequence birth date for the footer, falling back to current date
+    const dateToUse = sequenceBirthDate ?? new Date();
+
     return {
       // Core export settings
       includeStartPosition: shareOptions.includeStartPosition,
@@ -224,7 +228,7 @@ export class Sharer implements ISharer {
 
       // User information
       userName: shareOptions.userName || "TKA Scribe User",
-      exportDate: new Date()
+      exportDate: dateToUse
         .toLocaleDateString("en-US", {
           year: "numeric",
           month: "numeric",

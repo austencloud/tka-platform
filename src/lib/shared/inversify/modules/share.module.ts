@@ -13,12 +13,14 @@ import { FirebaseVideoUploader } from "../../share/services/implementations/Fire
 import { RecordingPersister } from "../../video-record/services/implementations/RecordingPersister";
 import { CollaborativeVideoManager } from "../../video-collaboration/services/implementations/CollaborativeVideoManager";
 import { CloudThumbnailCache } from "../../../features/discover/gallery/display/services/implementations/CloudThumbnailCache";
+import { ShareHubExportOrchestrator } from "../../share-hub/services/implementations/ShareHubExportOrchestrator";
 import { TYPES } from "../types";
 
 export const shareModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
     // === SHARE SERVICES ===
     options.bind(TYPES.ISharer).to(Sharer);
+    options.bind(TYPES.IShareHubExportOrchestrator).to(ShareHubExportOrchestrator);
     options.bind(TYPES.IInstagramLinker).to(InstagramLinker);
     options.bind(TYPES.IMediaBundler).to(MediaBundler);
     options.bind(TYPES.IFirebaseVideoUploader).to(FirebaseVideoUploader);
