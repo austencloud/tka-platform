@@ -3,6 +3,9 @@ TurnIntensityCard.svelte - Card for selecting turn intensity
 Uses stepper pattern for direct increment/decrement interaction
 -->
 <script lang="ts">
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { isBrightBackground } from "../../shared/domain/card-colors";
   import StepperCard from "./StepperCard/StepperCard.svelte";
 
   let {
@@ -22,6 +25,9 @@ Uses stepper pattern for direct increment/decrement interaction
     cardIndex?: number;
     headerFontSize?: string;
   }>();
+
+  // Check if we're on a bright background (Aurora, Snowfall, etc.)
+  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
 
   // Find current index in allowed values
   const currentIndex = $derived(allowedValues.indexOf(currentIntensity));
@@ -63,54 +69,76 @@ Uses stepper pattern for direct increment/decrement interaction
     return "Intense turns";
   }
 
-  // 🎨 ENHANCED: Dynamic color with RADIAL gradients for 3D depth
-  // Green (safe) → Yellow → Orange → Red (dangerous)
-  function getColor(value: number): string {
+  // 🎨 Default colors for normal backgrounds - Green → Yellow → Orange → Red
+  function getDefaultColor(value: number): string {
     if (value <= 0.5) {
-      // Minimal (0.5x) - Light Fresh Green with radial depth
       return "radial-gradient(ellipse at top left, #a7f3d0 0%, #6ee7b7 40%, #34d399 100%)";
     } else if (value <= 1.0) {
-      // Gentle (1.0x) - Solid Green with depth
       return "radial-gradient(ellipse at top left, #4ade80 0%, var(--semantic-success) 40%, #16a34a 100%)";
     } else if (value <= 1.5) {
-      // Light (1.5x) - Lime Green with vibrant depth
       return "radial-gradient(ellipse at top left, #bef264 0%, #a3e635 40%, #84cc16 100%)";
     } else if (value <= 2.0) {
-      // Moderate (2.0x) - Amber with warm depth
       return "radial-gradient(ellipse at top left, var(--semantic-warning) 0%, var(--semantic-warning) 40%, #d97706 100%)";
     } else if (value <= 2.5) {
-      // Strong (2.5x) - Orange-Red with intense depth
       return "radial-gradient(ellipse at top left, #fb923c 0%, #f97316 40%, #ea580c 100%)";
     } else {
-      // Intense (3.0x) - Deep Red with danger depth
       return "radial-gradient(ellipse at top left, var(--semantic-error) 0%, var(--semantic-error) 40%, var(--semantic-error) 100%)";
     }
   }
 
-  // 🎨 Dynamic text color with smooth transition based on background lightness
-  function getTextColor(value: number): string {
-    // Define transition zone between 2.0x and 2.5x
+  // 🎨 Vibrant but darker colors for bright/glowing backgrounds (Aurora, Ember Glow)
+  function getBrightBgColor(value: number): string {
+    if (value <= 0.5) {
+      // Rich emerald - vibrant but darker
+      return "radial-gradient(ellipse at top left, #34d399 0%, #10b981 40%, #059669 100%)";
+    } else if (value <= 1.0) {
+      // Rich green
+      return "radial-gradient(ellipse at top left, #22c55e 0%, #16a34a 40%, #15803d 100%)";
+    } else if (value <= 1.5) {
+      // Rich lime
+      return "radial-gradient(ellipse at top left, #a3e635 0%, #84cc16 40%, #65a30d 100%)";
+    } else if (value <= 2.0) {
+      // Rich amber
+      return "radial-gradient(ellipse at top left, #fbbf24 0%, #f59e0b 40%, #d97706 100%)";
+    } else if (value <= 2.5) {
+      // Rich orange
+      return "radial-gradient(ellipse at top left, #fb923c 0%, #f97316 40%, #ea580c 100%)";
+    } else {
+      // Rich red
+      return "radial-gradient(ellipse at top left, #f87171 0%, #ef4444 40%, #dc2626 100%)";
+    }
+  }
+
+  // 🎨 Dynamic text color based on background lightness
+  function getDefaultTextColor(value: number): string {
     const transitionStart = 2.0;
     const transitionEnd = 2.5;
 
     if (value <= transitionStart) {
-      // Light backgrounds (green, lime, amber) - pure black
       return "rgb(0, 0, 0)";
     } else if (value >= transitionEnd) {
-      // Darker backgrounds (orange-red, deep red) - pure white
       return "rgb(255, 255, 255)";
     } else {
-      // Smooth transition zone - interpolate between black and white
-      const progress =
-        (value - transitionStart) / (transitionEnd - transitionStart);
+      const progress = (value - transitionStart) / (transitionEnd - transitionStart);
       const grayValue = Math.round(progress * 255);
       return `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
     }
   }
 
+  // Bright background text color - black for lighter shades, white for darker
+  function getBrightBgTextColor(value: number): string {
+    // Most bright-bg colors are still vibrant enough to need black text
+    // Only the darkest red values need white
+    return value > 2.5 ? "rgb(255, 255, 255)" : "rgb(0, 0, 0)";
+  }
+
   const description = $derived(getDescription(currentIntensity));
-  const dynamicColor = $derived(getColor(currentIntensity));
-  const textColor = $derived(getTextColor(currentIntensity));
+  const dynamicColor = $derived(
+    useDarkColors ? getBrightBgColor(currentIntensity) : getDefaultColor(currentIntensity)
+  );
+  const textColor = $derived(
+    useDarkColors ? getBrightBgTextColor(currentIntensity) : getDefaultTextColor(currentIntensity)
+  );
 </script>
 
 <StepperCard

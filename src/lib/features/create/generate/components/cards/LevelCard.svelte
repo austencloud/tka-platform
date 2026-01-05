@@ -4,6 +4,9 @@ Uses stepper pattern for space-efficient level selection
 -->
 <script lang="ts">
   import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { isBrightBackground } from "../../shared/domain/card-colors";
   import StepperCard from "./StepperCard/StepperCard.svelte";
 
   let {
@@ -20,15 +23,17 @@ Uses stepper pattern for space-efficient level selection
     headerFontSize?: string;
   }>();
 
-  // 🎨 ENHANCED: Level display data with PRONOUNCED gradient colors for visibility
-  const levelData: Record<
+  // Check if we're on a bright background (Aurora, Snowfall, etc.)
+  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
+
+  // 🎨 Level display data - default colors for normal backgrounds
+  const defaultLevelData: Record<
     DifficultyLevel,
     { name: string; number: number; color: string; textColor: string }
   > = {
     [DifficultyLevel.BEGINNER]: {
       name: "No Turns",
       number: 1,
-      // 🌟 ENHANCED: Bright sky blue gradient with radial depth
       color: `radial-gradient(ellipse at top left,
         rgb(186, 230, 253) 0%,
         rgb(125, 211, 252) 30%,
@@ -39,7 +44,6 @@ Uses stepper pattern for space-efficient level selection
     [DifficultyLevel.INTERMEDIATE]: {
       name: "Whole Turns",
       number: 2,
-      // 🌟 ENHANCED: Metallic silver gradient with strong contrast
       color: `radial-gradient(ellipse at top left,
         rgb(226, 232, 240) 0%,
         rgb(148, 163, 184) 30%,
@@ -50,7 +54,6 @@ Uses stepper pattern for space-efficient level selection
     [DifficultyLevel.ADVANCED]: {
       name: "Half Turns",
       number: 3,
-      // 🌟 ENHANCED: Rich gold gradient with warm depth
       color: `radial-gradient(ellipse at top left,
         rgb(254, 240, 138) 0%,
         rgb(253, 224, 71) 20%,
@@ -61,6 +64,51 @@ Uses stepper pattern for space-efficient level selection
       textColor: "black",
     },
   };
+
+  // 🎨 Vibrant but darker colors for bright/glowing backgrounds (Aurora, Ember Glow)
+  const brightBgLevelData: Record<
+    DifficultyLevel,
+    { name: string; number: number; color: string; textColor: string }
+  > = {
+    [DifficultyLevel.BEGINNER]: {
+      name: "No Turns",
+      number: 1,
+      // Slightly darker baby blue - still light but with a touch more depth
+      color: `radial-gradient(ellipse at top left,
+        rgb(165, 218, 250) 0%,
+        rgb(105, 195, 248) 30%,
+        rgb(45, 175, 240) 70%,
+        rgb(8, 145, 210) 100%)`,
+      textColor: "black",
+    },
+    [DifficultyLevel.INTERMEDIATE]: {
+      name: "Whole Turns",
+      number: 2,
+      // Rich cool slate - not too dark
+      color: `radial-gradient(ellipse at top left,
+        rgb(148, 163, 184) 0%,
+        rgb(100, 116, 139) 30%,
+        rgb(71, 85, 105) 70%,
+        rgb(51, 65, 85) 100%)`,
+      textColor: "white",
+    },
+    [DifficultyLevel.ADVANCED]: {
+      name: "Half Turns",
+      number: 3,
+      // Rich gold - stays in gold family, doesn't drift to orange
+      color: `radial-gradient(ellipse at top left,
+        rgb(253, 224, 71) 0%,
+        rgb(250, 204, 21) 20%,
+        rgb(234, 179, 8) 40%,
+        rgb(217, 155, 6) 60%,
+        rgb(202, 138, 4) 80%,
+        rgb(180, 115, 5) 100%)`,
+      textColor: "black",
+    },
+  };
+
+  // Use appropriate color set based on background
+  const levelData = $derived(useDarkColors ? brightBgLevelData : defaultLevelData);
 
   // Convert DifficultyLevel to numeric value for stepper
   const levelToNumber: Record<DifficultyLevel, number> = {

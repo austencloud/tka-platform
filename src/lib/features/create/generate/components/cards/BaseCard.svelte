@@ -159,15 +159,15 @@ Provides consistent styling and interaction patterns for all generation setting 
     /* Modern 2025 border-radius (16px sweet spot) */
     border-radius: 16px;
     background: var(--card-color);
-    border: none;
 
     /* Touch optimization: eliminates 300ms tap delay, allows clicks with slight movement */
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 
     /* Layered shadows with color-matching (Josh Comeau technique) */
-    /* Base elevation - subtle, realistic depth with color-matched shadows */
+    /* First shadow creates subtle outline for definition on bright backgrounds */
     box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.12),
       0 1px 2px hsl(var(--shadow-color) / 0.15),
       0 2px 4px hsl(var(--shadow-color) / 0.12),
       0 4px 8px hsl(var(--shadow-color) / 0.1),

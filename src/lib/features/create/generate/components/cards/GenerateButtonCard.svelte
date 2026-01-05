@@ -94,7 +94,6 @@ Integrates the "Generate New" button into the card grid layout so it scales with
       meshGradientFlow 8s ease infinite,
       subtlePulse 2s ease-in-out infinite;
 
-    border: 3px solid var(--theme-stroke-strong);
     color: var(--theme-text, white);
     border-radius: 20px;
 

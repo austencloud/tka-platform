@@ -25,6 +25,9 @@ Delegates ALL logic to services (SRP compliant)
     SliceSize,
   } from "../circular/domain/models/circular-models";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { getCardColors } from "../shared/domain/card-colors";
   // Card components
   import LOOPCard from "./cards/LOOPCard.svelte";
   import GenerationModeCard from "./cards/GenerationModeCard.svelte";
@@ -72,6 +75,9 @@ Delegates ALL logic to services (SRP compliant)
       ? loopParamProvider.getAllowedTurnsForLevel(currentLevel)
       : []
   );
+
+  // Get card colors based on current background (reactive to background changes)
+  let cardColors = $derived(getCardColors(settingsService.settings.backgroundType ?? BackgroundType.SNOWFALL));
 
   // Initialize services
   onMount(() => {
@@ -196,24 +202,25 @@ Delegates ALL logic to services (SRP compliant)
       out:scale={{ start: 0.95, duration: 250, easing: quintOut }}
     >
       <!-- Props are dynamically typed by CardConfigurator - type assertion needed -->
+      <!-- Colors are overridden based on current background for visibility -->
       {#if card.id === "level"}
-        <LevelCard {...card.props as any} />
+        <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
       {:else if card.id === "length"}
-        <LengthCard {...card.props as any} />
+        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
       {:else if card.id === "generation-mode"}
-        <GenerationModeCard {...card.props as any} />
+        <GenerationModeCard {...card.props as any} color={cardColors.mode.color} shadowColor={cardColors.mode.shadowColor} />
       {:else if card.id === "grid-mode"}
-        <GridModeCard {...card.props as any} />
+        <GridModeCard {...card.props as any} color={cardColors.gridMode.color} shadowColor={cardColors.gridMode.shadowColor} />
       {:else if card.id === "prop-continuity"}
-        <PropContinuityCard {...card.props as any} />
+        <PropContinuityCard {...card.props as any} color={cardColors.continuity.color} shadowColor={cardColors.continuity.shadowColor} />
       {:else if card.id === "slice-size"}
-        <SliceSizeCard {...card.props as any} />
+        <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
       {:else if card.id === "turn-intensity"}
-        <TurnIntensityCard {...card.props as any} />
+        <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
       {:else if card.id === "loop-type"}
         <LOOPCard {...card.props as any} />
       {:else if card.id === "customize"}
-        <CustomizeCard {...card.props as any} />
+        <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
       {:else if card.id === "generate-button"}
         <GenerateButtonCard {...card.props as any} />
       {/if}

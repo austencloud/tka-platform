@@ -121,7 +121,6 @@ Hides header when card height is below 65px for space optimization
     /* Modern border-radius matching BaseCard */
     border-radius: 16px;
     background: var(--card-color);
-    border: none;
 
     /* Touch optimization: eliminates 300ms tap delay, allows clicks with slight movement */
     touch-action: manipulation;

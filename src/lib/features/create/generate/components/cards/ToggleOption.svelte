@@ -70,7 +70,7 @@ Presentational component for a single toggle option with icon and label
     min-height: 0;
     border-radius: 10px;
     background: transparent;
-    border: 1.5px solid var(--theme-stroke);
+    border: none;
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-weight: 600;
     transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -81,8 +81,6 @@ Presentational component for a single toggle option with icon and label
 
   .toggle-option.active {
     background: var(--theme-stroke-strong);
-    border-color: var(--theme-text, white);
-    border-width: 3px;
     color: var(--theme-text, white);
     font-weight: 700;
     box-shadow: 0 2px 8px var(--theme-shadow, var(--theme-shadow));
@@ -91,7 +89,6 @@ Presentational component for a single toggle option with icon and label
 
   .toggle-option.inactive {
     background: rgba(0, 0, 0, 0.3);
-    border-color: var(--theme-stroke);
     color: var(--theme-text-dim, var(--theme-text-dim));
   }
 

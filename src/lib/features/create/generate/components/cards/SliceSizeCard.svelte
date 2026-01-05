@@ -9,8 +9,8 @@ Shows BOTH slice size options vertically with clear active/inactive states
   let {
     currentSliceSize,
     onSliceSizeChange,
-    // 🎨 EXTREME: Super vibrant pink gradient with HUGE contrast
-    color = "radial-gradient(ellipse at top left, #fce7f3 0%, #fbcfe8 20%, #f9a8d4 40%, #f472b6 60%, #ec4899 80%, #be185d 100%)",
+    // 🎨 Vibrant pink gradient
+    color = "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%)",
     shadowColor = "330deg 75% 55%", // Pink-matched shadow
     gridColumnSpan = 2,
     cardIndex = 0,
