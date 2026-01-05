@@ -1,24 +1,5 @@
 # TKA Scribe - Claude Code Guidelines
 
-## CATASTROPHIC DATA LOSS PREVENTION
-
-**On January 2, 2026, Claude destroyed 8 HOURS of uncommitted work with `git checkout -- .`**
-
-### FORBIDDEN - Never run without explicit user confirmation:
-```
-git checkout -- .
-git checkout -- <file>
-git reset --hard
-git reset HEAD~
-git clean -f
-```
-
-### REQUIRED: Ask and wait for "yes" before any command that discards changes.
-
-**Mental model:** Every modified file in `git status` = hours of work. When uncertain, ASK.
-
----
-
 ## Rules
 
 `.claude/rules/` contains:
