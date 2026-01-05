@@ -1,16 +1,66 @@
 /**
  * Domain Config for TKA
  *
- * Two-domain architecture:
+ * Multi-domain architecture:
  * - tkaflowarts.com: Brand home, landing page, marketing content
  * - tkascribe.com: The app (TKA Scribe product)
+ * - Future: embed.tkascribe.com, kiosk.tkascribe.com, edu.tkascribe.com, etc.
  */
+
+/**
+ * Site mode determines which experience to render.
+ * Extensible for future portals without breaking changes.
+ */
+export type SiteMode = "loading" | "app" | "landing" | "embed" | "kiosk" | "edu";
 
 // Landing/brand domain
 export const LANDING_DOMAIN = "https://tkaflowarts.com";
 
 // App domain
 export const APP_DOMAIN = "https://tkascribe.com";
+
+// Domain-to-mode mapping (extensible for future portals)
+const DOMAIN_MODE_MAP: Record<string, SiteMode> = {
+  "tkascribe.com": "app",
+  "www.tkascribe.com": "app",
+  "tkaflowarts.com": "landing",
+  "www.tkaflowarts.com": "landing",
+  // Future portals:
+  // "embed.tkascribe.com": "embed",
+  // "kiosk.tkascribe.com": "kiosk",
+  // "edu.tkascribe.com": "edu",
+};
+
+/**
+ * Detect site mode from current origin.
+ * Returns the appropriate mode for rendering.
+ */
+export function detectSiteMode(origin: string): SiteMode {
+  try {
+    const hostname = new URL(origin).hostname;
+
+    // Check direct mapping
+    if (hostname in DOMAIN_MODE_MAP) {
+      return DOMAIN_MODE_MAP[hostname];
+    }
+
+    // Localhost/dev defaults to app mode
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "app";
+    }
+
+    // Netlify preview deploys
+    if (hostname.endsWith(".netlify.app")) {
+      // tkaflowarts.netlify.app → landing, otherwise app
+      return hostname.includes("tkaflowarts") ? "landing" : "app";
+    }
+
+    // Unknown domain defaults to app
+    return "app";
+  } catch {
+    return "app";
+  }
+}
 
 // Legacy aliases (will redirect)
 export const LEGACY_DOMAINS = [

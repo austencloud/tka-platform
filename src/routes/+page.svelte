@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
-  import { isAppDomain } from "../config/domains";
+  import { detectSiteMode, type SiteMode } from "../config/domains";
   import HeroSection from "./landing/components/HeroSection.svelte";
   import WhatIsTKASection from "./landing/components/WhatIsTKASection.svelte";
   import FeaturesSection from "./landing/components/FeaturesSection.svelte";
@@ -10,20 +9,28 @@
   import PropsSection from "./landing/components/PropsSection.svelte";
   import EducatorsSection from "./landing/components/EducatorsSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
+  import MainApplication from "$lib/shared/application/components/MainApplication.svelte";
 
-  // Redirect to /app if we're on tkascribe.com
+  /**
+   * Site mode determines which experience to render based on domain.
+   * Extensible for future portals (embed, kiosk, edu, etc.)
+   */
+  let siteMode = $state<SiteMode>("loading");
+
   onMount(() => {
-    if (typeof window !== "undefined" && isAppDomain(window.location.origin)) {
-      goto("/app", { replaceState: true });
-    }
+    siteMode = detectSiteMode(window.location.origin);
   });
 </script>
 
 <svelte:head>
-  <title
-    >The Kinetic Alphabet - Digital Sheet Music for Flow Arts | Staff, Clubs, Fans, Hoops
-    Choreography</title
-  >
+  {#if siteMode === "app"}
+    <title>TKA Scribe - The Flow Arts Choreography Toolbox</title>
+  {:else}
+    <title
+      >The Kinetic Alphabet - Digital Sheet Music for Flow Arts | Staff, Clubs,
+      Fans, Hoops Choreography</title
+    >
+  {/if}
   <meta
     name="description"
     content="Free flow arts choreography app. Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences with TKA Scribe - the first universal notation system for prop manipulation."
@@ -279,22 +286,61 @@
 	</script>`}
 </svelte:head>
 
-<a href="#main-content" class="skip-link">Skip to main content</a>
+{#if siteMode === "loading"}
+  <!-- Brief loading state while determining domain -->
+  <div class="loading-screen">
+    <div class="loading-spinner"></div>
+  </div>
+{:else if siteMode === "app"}
+  <!-- App domain: render the application directly -->
+  <MainApplication />
+{:else if siteMode === "landing"}
+  <!-- Landing domain: render the marketing page -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
-<div class="landing-page">
-  <HeroSection />
-  <main id="main-content">
-    <WhatIsTKASection />
-    <FeaturesSection />
-    <NotationSection />
-    <LOOPsSection />
-    <PropsSection />
-    <EducatorsSection />
-  </main>
-  <LandingFooter />
-</div>
+  <div class="landing-page">
+    <HeroSection />
+    <main id="main-content">
+      <WhatIsTKASection />
+      <FeaturesSection />
+      <NotationSection />
+      <LOOPsSection />
+      <PropsSection />
+      <EducatorsSection />
+    </main>
+    <LandingFooter />
+  </div>
+{:else}
+  <!-- Future: other site modes (embed, kiosk, edu, etc.) -->
+  <MainApplication />
+{/if}
 
 <style>
+  /* Loading screen - brief flash while determining domain */
+  .loading-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a0f;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   /* Skip link - visible only on focus for keyboard users */
   .skip-link {
     position: absolute;
