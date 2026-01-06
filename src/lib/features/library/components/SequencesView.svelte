@@ -20,33 +20,49 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import TagFilterChips from "./tags/TagFilterChips.svelte";
   import LibraryHeader from "./LibraryHeader.svelte";
+  import LibraryViewPresets, {
+    type LibraryPreset,
+  } from "./LibraryViewPresets.svelte";
+  import LibrarySectionHeader from "./LibrarySectionHeader.svelte";
   import SequenceAnalyticsBadge from "./SequenceAnalyticsBadge.svelte";
   import BulkActionBar from "./BulkActionBar.svelte";
   import type { LibrarySequence } from "../domain/models/LibrarySequence";
-
-  // Visibility toggle handler
-  async function handleVisibilityToggle(
-    event: MouseEvent,
-    sequence: LibrarySequence
-  ) {
-    event.stopPropagation();
-    const newVisibility =
-      sequence.visibility === "public" ? "private" : "public";
-    await libraryState.setVisibility(sequence.id, newVisibility);
-  }
+  import type {
+    LibrarySortField,
+    LibrarySortDirection,
+  } from "../state/library-state.svelte";
+  import {
+    groupSequencesIntoSections,
+    type GroupByMethod,
+    type LibrarySection,
+  } from "../utils/section-grouper";
 
   // Local UI state
   let showOnlyFavorites = $state(false);
   let searchQuery = $state("");
-  let showSortMenu = $state(false);
   let showDetailDrawer = $state(false);
   let selectedSequenceId = $state<string | null>(null);
+  let currentPreset = $state<LibraryPreset>("all");
+  let groupBy = $state<GroupByMethod>("none");
+  let expandedSections = $state<Set<string>>(new Set());
 
   // Search debounce timer
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Sort menu keyboard navigation
-  let focusedSortIndex = $state(-1);
+  // Grid responsive sizing
+  let gridRef = $state<HTMLElement | null>(null);
+  let containerWidth = $state(0);
+  let resizeObserver: ResizeObserver | null = null;
+
+  // Dynamic column count based on container width (matches Gallery)
+  const columnCount = $derived.by(() => {
+    if (containerWidth === 0) return 3; // Default while measuring
+    if (containerWidth >= 1600) return 6;
+    if (containerWidth >= 1200) return 5;
+    if (containerWidth >= 800) return 4;
+    if (containerWidth >= 481) return 3;
+    return 2;
+  });
 
   // Derived from library state
   const isLoading = $derived(libraryState.isLoading);
@@ -69,21 +85,15 @@
   const favoritesCount = $derived(
     libraryState.sequences.filter((s) => s.isFavorite).length
   );
+  const hasForkedSequences = $derived(
+    libraryState.sequences.some((s) => s.source === "forked")
+  );
 
-  // Sort options - includes analytics sorts unique to Library
-  const sortOptions: {
-    field: "updatedAt" | "createdAt" | "name" | "word" | "viewCount" | "forkCount" | "starCount";
-    label: string;
-    icon?: string;
-  }[] = [
-    { field: "updatedAt", label: "Recently Updated" },
-    { field: "createdAt", label: "Date Created" },
-    { field: "name", label: "Name" },
-    { field: "word", label: "Word" },
-    { field: "viewCount", label: "Most Viewed", icon: "fa-eye" },
-    { field: "forkCount", label: "Most Forked", icon: "fa-code-branch" },
-    { field: "starCount", label: "Most Starred", icon: "fa-star" },
-  ];
+  // Sections for grouped display
+  const sections = $derived.by(() => {
+    if (groupBy === "none") return [];
+    return groupSequencesIntoSections(displayedSequences(), groupBy);
+  });
 
   function handleSearchInput(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -96,71 +106,62 @@
     }, 300);
   }
 
-  function handleSortChange(
-    field:
-      | "updatedAt"
-      | "createdAt"
-      | "name"
-      | "word"
-      | "viewCount"
-      | "forkCount"
-      | "starCount"
+  // Sort controls callback
+  function handleSortChange(field: LibrarySortField, direction: LibrarySortDirection) {
+    libraryState.setSortBy(field);
+    libraryState.setSortDirection(direction);
+  }
+
+  // View preset callback
+  function handlePresetChange(
+    preset: LibraryPreset,
+    config: {
+      sortBy?: LibrarySortField;
+      sortDirection?: LibrarySortDirection;
+      source?: "created" | "forked" | "all";
+      favoritesOnly?: boolean;
+    }
   ) {
-    if (libraryState.filters.sortBy === field) {
-      libraryState.toggleSortDirection();
-    } else {
-      // Analytics sorts default to descending (highest first)
-      if (
-        field === "viewCount" ||
-        field === "forkCount" ||
-        field === "starCount"
-      ) {
-        libraryState.setSortDirection("desc");
-      }
-      libraryState.setSortBy(field);
+    currentPreset = preset;
+
+    // Apply preset configuration
+    if (config.sortBy) {
+      libraryState.setSortBy(config.sortBy);
     }
-    showSortMenu = false;
-    focusedSortIndex = -1;
-  }
-
-  function handleSortMenuKeydown(event: KeyboardEvent) {
-    if (!showSortMenu) return;
-
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        focusedSortIndex = Math.min(focusedSortIndex + 1, sortOptions.length - 1);
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        focusedSortIndex = Math.max(focusedSortIndex - 1, 0);
-        break;
-      case "Enter":
-        event.preventDefault();
-        const focusedOption = sortOptions[focusedSortIndex];
-        if (focusedSortIndex >= 0 && focusedOption) {
-          handleSortChange(focusedOption.field);
-        }
-        break;
-      case "Escape":
-        event.preventDefault();
-        showSortMenu = false;
-        focusedSortIndex = -1;
-        break;
+    if (config.sortDirection) {
+      libraryState.setSortDirection(config.sortDirection);
+    }
+    if (config.source !== undefined) {
+      libraryState.setSourceFilter(config.source);
+    }
+    if (config.favoritesOnly !== undefined) {
+      showOnlyFavorites = config.favoritesOnly;
+    } else {
+      showOnlyFavorites = false;
     }
   }
 
-  function openSortMenu() {
-    showSortMenu = !showSortMenu;
-    if (showSortMenu) {
-      // Find currently selected option to focus
-      const currentIndex = sortOptions.findIndex(
-        (opt) => opt.field === libraryState.filters.sortBy
-      );
-      focusedSortIndex = currentIndex >= 0 ? currentIndex : 0;
-    } else {
-      focusedSortIndex = -1;
+  // Section grouping
+  function setGroupBy(method: GroupByMethod) {
+    groupBy = method;
+    // Expand first section by default when switching to grouped view
+    if (method !== "none") {
+      expandedSections = new Set();
     }
+  }
+
+  function toggleSection(sectionId: string) {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(sectionId)) {
+      newExpanded.delete(sectionId);
+    } else {
+      newExpanded.add(sectionId);
+    }
+    expandedSections = newExpanded;
+  }
+
+  function isSectionExpanded(sectionId: string): boolean {
+    return expandedSections.has(sectionId);
   }
 
   // Selection handlers
@@ -220,18 +221,6 @@
     }
   }
 
-  async function handleDrawerVisibilityChange(visibility: "public" | "private") {
-    if (!selectedSequenceId) return;
-    const success = await libraryState.setVisibility(selectedSequenceId, visibility);
-    if (success) {
-      toast.success(
-        visibility === "public"
-          ? "Sequence is now public"
-          : "Sequence is now private"
-      );
-    }
-  }
-
   async function handleFavoriteToggle() {
     if (!selectedSequenceId) return;
     await libraryState.toggleFavorite(selectedSequenceId);
@@ -261,14 +250,6 @@
     }
   }
 
-  async function handlePublishSelected() {
-    await libraryState.setVisibilityBatch("public");
-  }
-
-  async function handleUnpublishSelected() {
-    await libraryState.setVisibilityBatch("private");
-  }
-
   // Track previous auth state to detect changes
   let prevIsAuthenticated: boolean | undefined;
 
@@ -279,11 +260,55 @@
     if (isAuthenticated) {
       libraryState.initialize();
     }
+
+    // Set up ResizeObserver for responsive grid columns
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const newWidth = entry.contentRect.width;
+        if (newWidth > 0) {
+          containerWidth = newWidth;
+        }
+      }
+    });
+
+    // Initial width measurement when grid becomes available
+    const measureInitialWidth = () => {
+      if (gridRef) {
+        resizeObserver?.observe(gridRef);
+        // Use RAF for accurate initial measurement
+        requestAnimationFrame(() => {
+          const width = gridRef?.getBoundingClientRect().width ?? 0;
+          if (width > 0) {
+            containerWidth = width;
+          }
+        });
+      }
+    };
+
+    // If grid is already available, measure immediately
+    if (gridRef) {
+      measureInitialWidth();
+    }
+  });
+
+  // Set up observer when gridRef becomes available
+  $effect(() => {
+    if (gridRef && resizeObserver) {
+      resizeObserver.observe(gridRef);
+      const width = gridRef.getBoundingClientRect().width;
+      if (width > 0) {
+        containerWidth = width;
+      }
+    }
   });
 
   onDestroy(() => {
     libraryState.dispose();
     if (debounceTimer) clearTimeout(debounceTimer);
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
   });
 
   // Re-initialize only when auth state CHANGES (not on every render)
@@ -343,49 +368,6 @@
 
     <!-- Actions -->
     <div class="header-actions">
-      <!-- Sort button -->
-      <div class="sort-dropdown" onkeydown={handleSortMenuKeydown}>
-        <button
-          class="action-btn"
-          aria-label="Sort sequences"
-          aria-haspopup="listbox"
-          aria-expanded={showSortMenu}
-          onclick={openSortMenu}
-          title="Sort sequences"
-        >
-          <i class="fas fa-sort-amount-down" aria-hidden="true"></i>
-        </button>
-        {#if showSortMenu}
-          <div class="sort-menu" role="listbox" aria-label="Sort options">
-            {#each sortOptions as option, index}
-              <button
-                class="sort-option"
-                class:active={libraryState.filters.sortBy === option.field}
-                class:focused={focusedSortIndex === index}
-                class:analytics-sort={option.icon}
-                role="option"
-                aria-selected={libraryState.filters.sortBy === option.field}
-                onclick={() => handleSortChange(option.field)}
-              >
-                {#if option.icon}
-                  <i class="fas {option.icon} sort-icon" aria-hidden="true"></i>
-                {/if}
-                <span>{option.label}</span>
-                {#if libraryState.filters.sortBy === option.field}
-                  <i
-                    class="fas fa-arrow-{libraryState.filters.sortDirection ===
-                    'asc'
-                      ? 'up'
-                      : 'down'}"
-                    aria-hidden="true"
-                  ></i>
-                {/if}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-
       <!-- Select mode toggle -->
       {#if !isSelectMode}
         <button
@@ -411,25 +393,116 @@
 
   <!-- Filter Bar -->
   <div class="filter-bar">
-    <div class="sequence-count">
-      {#if showOnlyFavorites}
-        <span>{favoritesCount} favorite{favoritesCount !== 1 ? "s" : ""}</span>
-      {:else}
-        <span>{totalCount} sequence{totalCount !== 1 ? "s" : ""}</span>
-      {/if}
+    <div class="filter-bar-left">
+      <div class="sequence-count">
+        {#if showOnlyFavorites}
+          <span>{favoritesCount} favorite{favoritesCount !== 1 ? "s" : ""}</span>
+        {:else}
+          <span>{totalCount} sequence{totalCount !== 1 ? "s" : ""}</span>
+        {/if}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Control Chips Bar -->
+  <div class="controls-bar">
+    <!-- Group By chips -->
+    <div class="control-group">
+      <span class="control-label">Group:</span>
+      <div class="control-chips">
+        <button
+          class="control-chip"
+          class:active={groupBy === "none"}
+          onclick={() => (groupBy = "none")}
+        >
+          None
+        </button>
+        <button
+          class="control-chip"
+          class:active={groupBy === "date"}
+          onclick={() => (groupBy = "date")}
+        >
+          <i class="fas fa-calendar" aria-hidden="true"></i>
+          Date
+        </button>
+        <button
+          class="control-chip"
+          class:active={groupBy === "letter"}
+          onclick={() => (groupBy = "letter")}
+        >
+          <i class="fas fa-font" aria-hidden="true"></i>
+          Letter
+        </button>
+        <button
+          class="control-chip"
+          class:active={groupBy === "length"}
+          onclick={() => (groupBy = "length")}
+        >
+          <i class="fas fa-ruler" aria-hidden="true"></i>
+          Length
+        </button>
+      </div>
     </div>
 
-    {#if favoritesCount > 0}
+    <!-- Sort chips -->
+    <div class="control-group">
+      <span class="control-label">Sort:</span>
+      <div class="control-chips">
+        <button
+          class="control-chip"
+          class:active={libraryState.filters.sortBy === "updatedAt"}
+          onclick={() => handleSortChange("updatedAt", "desc")}
+        >
+          <i class="fas fa-clock" aria-hidden="true"></i>
+          Updated
+        </button>
+        <button
+          class="control-chip"
+          class:active={libraryState.filters.sortBy === "createdAt"}
+          onclick={() => handleSortChange("createdAt", "desc")}
+        >
+          <i class="fas fa-calendar-plus" aria-hidden="true"></i>
+          Created
+        </button>
+        <button
+          class="control-chip"
+          class:active={libraryState.filters.sortBy === "word"}
+          onclick={() => handleSortChange("word", "asc")}
+        >
+          <i class="fas fa-spell-check" aria-hidden="true"></i>
+          TKA
+        </button>
+        <button
+          class="control-chip"
+          class:active={libraryState.filters.sortBy === "viewCount"}
+          onclick={() => handleSortChange("viewCount", "desc")}
+        >
+          <i class="fas fa-eye" aria-hidden="true"></i>
+          Views
+        </button>
+      </div>
+      <!-- Direction toggle -->
       <button
-        class="favorites-toggle"
-        class:active={showOnlyFavorites}
-        onclick={() => (showOnlyFavorites = !showOnlyFavorites)}
+        class="direction-chip"
+        onclick={() => libraryState.toggleSortDirection()}
+        aria-label={libraryState.filters.sortDirection === "asc" ? "Ascending" : "Descending"}
       >
-        <i class="fas fa-star" aria-hidden="true"></i>
-        <span>{showOnlyFavorites ? "Show All" : "Favorites"}</span>
+        {#if libraryState.filters.sortDirection === "asc"}
+          <i class="fas fa-arrow-up" aria-hidden="true"></i>
+        {:else}
+          <i class="fas fa-arrow-down" aria-hidden="true"></i>
+        {/if}
       </button>
-    {/if}
+    </div>
   </div>
+
+  <!-- View Presets -->
+  <LibraryViewPresets
+    {currentPreset}
+    onPresetChange={handlePresetChange}
+    {hasForkedSequences}
+  />
 
   <!-- Tag Filter Chips -->
   <TagFilterChips />
@@ -495,8 +568,51 @@
           {/if}
         </p>
       </div>
+    {:else if groupBy !== "none" && sections.length > 0}
+      <!-- Sectioned View -->
+      <div class="sections-container" bind:this={gridRef}>
+        {#each sections as section (section.id)}
+          <div class="section">
+            <LibrarySectionHeader
+              title={section.title}
+              count={section.count}
+              isExpanded={isSectionExpanded(section.id)}
+              onToggle={() => toggleSection(section.id)}
+            />
+            {#if isSectionExpanded(section.id)}
+              <div
+                class="sequences-grid"
+                style:grid-template-columns="repeat({columnCount}, 1fr)"
+              >
+                {#each section.sequences as sequence (sequence.id)}
+                  {@const libSeq = sequence as LibrarySequence}
+                  <div class="library-card-wrapper">
+                    <SequenceCard
+                      {sequence}
+                      onPrimaryAction={handleCardClick}
+                      selected={libraryState.isSelected(sequence.id)}
+                    />
+                    <div class="analytics-overlay">
+                      <SequenceAnalyticsBadge
+                        viewCount={libSeq.viewCount}
+                        forkCount={libSeq.forkCount}
+                        starCount={libSeq.starCount}
+                      />
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
     {:else}
-      <div class="sequences-grid">
+      <!-- Flat Grid View -->
+      <div
+        class="sequences-grid"
+        bind:this={gridRef}
+        style:grid-template-columns="repeat({columnCount}, 1fr)"
+      >
         {#each displayedSequences() as sequence (sequence.id)}
           {@const libSeq = sequence as LibrarySequence}
           <div class="library-card-wrapper">
@@ -513,31 +629,6 @@
                 starCount={libSeq.starCount}
               />
             </div>
-            <!-- Visibility toggle button -->
-            {#if !isSelectMode}
-              <button
-                class="visibility-toggle"
-                class:public={libSeq.visibility === "public"}
-                class:private={libSeq.visibility === "private"}
-                class:unlisted={libSeq.visibility === "unlisted"}
-                onclick={(e) => handleVisibilityToggle(e, libSeq)}
-                title={libSeq.visibility === "public"
-                  ? "Public - Click to make private"
-                  : "Private - Click to publish"}
-                aria-label={libSeq.visibility === "public"
-                  ? "Make private"
-                  : "Make public"}
-              >
-                <i
-                  class="fas fa-{libSeq.visibility === 'public'
-                    ? 'globe'
-                    : libSeq.visibility === 'unlisted'
-                      ? 'link'
-                      : 'lock'}"
-                  aria-hidden="true"
-                ></i>
-              </button>
-            {/if}
           </div>
         {/each}
       </div>
@@ -552,14 +643,12 @@
       mode="library"
       notes={selectedSequence.notes || ""}
       tags={[...(selectedSequence.tagIds || [])]}
-      visibility={selectedSequence.visibility === "unlisted" ? "private" : (selectedSequence.visibility || "private")}
       viewCount={selectedSequence.viewCount || 0}
       forkCount={selectedSequence.forkCount || 0}
       starCount={selectedSequence.starCount || 0}
       isFavorite={selectedSequence.isFavorite || false}
       onNotesChange={handleNotesChange}
       onTagsChange={handleTagsChange}
-      onVisibilityChange={handleDrawerVisibilityChange}
       onFavoriteToggle={handleFavoriteToggle}
       onDelete={handleDeleteSequence}
       onClose={handleCloseDetail}
@@ -570,8 +659,6 @@
   {#if isSelectMode}
     <BulkActionBar
       {selectedCount}
-      onPublish={handlePublishSelected}
-      onUnpublish={handleUnpublishSelected}
       onDelete={handleDeleteSelected}
       onSelectAll={handleSelectAll}
       onClearSelection={() => libraryState.clearSelection()}
@@ -681,83 +768,23 @@
     color: var(--theme-accent);
   }
 
-  /* Sort Dropdown */
-  .sort-dropdown {
-    position: relative;
-  }
-
-  .sort-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: var(--spacing-xs);
-    background: rgba(30, 30, 40, 0.98);
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: var(--radius-2026-sm, 10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    z-index: 100;
-    min-width: 180px;
-    overflow: hidden;
-  }
-
-  .sort-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: none;
-    border: none;
-    color: var(--theme-text-dim);
-    font-size: 0.875rem;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-
-  .sort-option:hover {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .sort-option.active {
-    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
-    color: var(--theme-accent);
-  }
-
-  .sort-option.focused {
-    background: rgba(255, 255, 255, 0.12);
-    outline: 2px solid var(--theme-accent);
-    outline-offset: -2px;
-  }
-
-  /* Analytics sort options (unique to Library) */
-  .sort-option.analytics-sort {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .sort-option.analytics-sort:first-of-type {
-    margin-top: 4px;
-    padding-top: calc(var(--spacing-sm) + 4px);
-  }
-
-  .sort-icon {
-    width: 14px;
-    opacity: 0.7;
-  }
-
-  .sort-option.analytics-sort .sort-icon {
-    color: var(--semantic-success);
-  }
-
   /* Filter Bar */
   .filter-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--spacing-md);
     padding: var(--spacing-sm) var(--spacing-md);
     background: rgba(255, 255, 255, 0.02);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .filter-bar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
   }
 
   .sequence-count {
@@ -765,33 +792,123 @@
     color: var(--theme-text-dim);
   }
 
-  .favorites-toggle {
+  /* Controls Bar */
+  .controls-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .control-group {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-md);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 999px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-    transition: all 0.2s ease;
   }
 
-  .favorites-toggle:hover {
-    background: rgba(255, 255, 255, 0.1);
+  .control-label {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim);
+    margin-right: 4px;
+  }
+
+  .control-chips {
+    display: flex;
+    gap: 4px;
+  }
+
+  .control-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .control-chip:hover {
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 25%, transparent);
     color: var(--theme-text);
   }
 
-  .favorites-toggle.active {
-    background: rgba(250, 204, 21, 0.2);
-    border-color: rgba(250, 204, 21, 0.4);
-    color: rgba(250, 204, 21, 1);
+  .control-chip.active {
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    color: var(--theme-accent);
   }
 
-  .favorites-toggle i {
-    font-size: 0.875rem;
+  .control-chip i {
+    font-size: 0.7rem;
+  }
+
+  .direction-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    color: var(--theme-accent);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-left: 4px;
+  }
+
+  .direction-chip:hover {
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+  }
+
+  .direction-chip i {
+    font-size: 0.8rem;
+  }
+
+  /* Mobile: stack controls */
+  @media (max-width: 600px) {
+    .controls-bar {
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .control-group {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .control-chips {
+      flex: 1;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .control-chip span {
+      display: none;
+    }
+  }
+
+  /* Sections Container */
+  .sections-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
   }
 
   /* Content Area */
@@ -942,10 +1059,11 @@
     border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
-  /* Sequences Grid */
+  /* Sequences Grid - columns set dynamically via style binding */
   .sequences-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    /* Fallback for SSR/initial render - overridden by style:grid-template-columns */
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-md);
   }
 
@@ -960,72 +1078,6 @@
     left: var(--spacing-xs);
     z-index: 5;
     pointer-events: none;
-  }
-
-  /* Visibility Toggle Button */
-  .visibility-toggle {
-    position: absolute;
-    top: var(--spacing-xs);
-    left: var(--spacing-xs);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
-    border: 1px solid transparent;
-    border-radius: 50%;
-    z-index: 5;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .visibility-toggle i {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .visibility-toggle.public {
-    background: color-mix(in srgb, var(--semantic-success) 30%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success) 50%, transparent);
-  }
-
-  .visibility-toggle.public i {
-    color: var(--semantic-success);
-  }
-
-  .visibility-toggle.private i {
-    color: rgba(156, 163, 175, 0.95);
-  }
-
-  .visibility-toggle.unlisted i {
-    color: rgba(96, 165, 250, 0.95);
-  }
-
-  .visibility-toggle:hover {
-    transform: scale(1.1);
-    background: rgba(0, 0, 0, 0.9);
-  }
-
-  .visibility-toggle.public:hover {
-    background: rgba(156, 163, 175, 0.4);
-    border-color: rgba(156, 163, 175, 0.6);
-  }
-
-  .visibility-toggle.public:hover i {
-    color: rgba(156, 163, 175, 0.95);
-  }
-
-  .visibility-toggle.private:hover,
-  .visibility-toggle.unlisted:hover {
-    background: color-mix(in srgb, var(--semantic-success) 40%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success) 60%, transparent);
-  }
-
-  .visibility-toggle.private:hover i,
-  .visibility-toggle.unlisted:hover i {
-    color: var(--semantic-success);
   }
 
   /* Selection Hint */
@@ -1045,14 +1097,4 @@
     font-size: 0.875rem;
   }
 
-  /* Responsive adjustments */
-  @container (max-width: 600px) {
-    .sequences-grid {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
-
-    .favorites-toggle span {
-      display: none;
-    }
-  }
 </style>

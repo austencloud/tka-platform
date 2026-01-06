@@ -5,7 +5,6 @@
   Sticky at bottom for easy access on mobile.
 
   Actions:
-  - Change Visibility (Public/Private)
   - Add Tags
   - Delete
 -->
@@ -14,8 +13,6 @@
 
   interface Props {
     selectedCount: number;
-    onPublish: () => void;
-    onUnpublish: () => void;
     onDelete: () => void;
     onSelectAll: () => void;
     onClearSelection: () => void;
@@ -24,8 +21,6 @@
 
   let {
     selectedCount,
-    onPublish,
-    onUnpublish,
     onDelete,
     onSelectAll,
     onClearSelection,
@@ -56,26 +51,6 @@
 
     <!-- Center: Actions -->
     <div class="action-buttons">
-      <button
-        class="action-btn publish"
-        onclick={onPublish}
-        disabled={!hasSelection}
-        title="Make selected sequences public"
-      >
-        <i class="fas fa-globe" aria-hidden="true"></i>
-        <span class="btn-label">Public</span>
-      </button>
-
-      <button
-        class="action-btn unpublish"
-        onclick={onUnpublish}
-        disabled={!hasSelection}
-        title="Make selected sequences private"
-      >
-        <i class="fas fa-lock" aria-hidden="true"></i>
-        <span class="btn-label">Private</span>
-      </button>
-
       <button
         class="action-btn delete"
         onclick={onDelete}
@@ -204,17 +179,6 @@
   .action-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
-  }
-
-  .action-btn.publish:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success) 40%, transparent);
-    color: var(--semantic-success);
-  }
-
-  .action-btn.unpublish:hover:not(:disabled) {
-    background: rgba(156, 163, 175, 0.2);
-    border-color: rgba(156, 163, 175, 0.4);
   }
 
   .action-btn.delete:hover:not(:disabled) {

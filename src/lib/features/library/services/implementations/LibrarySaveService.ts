@@ -54,7 +54,6 @@ export class LibrarySaveService implements ILibrarySaveService {
     onProgress?: (progress: SaveProgress) => void
   ): Promise<SaveResult> {
     const { name, displayName, visibility, tags, notes } = options;
-    let thumbnailUrl: string | undefined;
 
     const emitProgress = (
       step: number,
@@ -69,7 +68,7 @@ export class LibrarySaveService implements ILibrarySaveService {
 
     // Step 1: Generate thumbnail image
     emitProgress(1);
-    thumbnailUrl = await this.generateAndUploadThumbnail(
+    const thumbnailUrl = await this.generateAndUploadThumbnail(
       sequence,
       emitProgress
     );

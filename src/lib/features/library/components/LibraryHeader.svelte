@@ -1,14 +1,8 @@
 <!--
   LibraryHeader.svelte - Personal Library Header
 
-  Shows ownership identity and stats that differentiate Library from Gallery.
-  This is the first thing users see - makes it clear "this is YOUR space".
-
-  Features:
-  - "My Library" branding
-  - Quick stats: Total, Public, Private, Favorites
-  - Publishing summary (total views, forks)
-  - Organize button (enters select mode)
+  Compact header showing library identity and key engagement metrics.
+  Stats shown inline to avoid redundancy with filter bar counts.
 -->
 <script lang="ts">
   import type { LibrarySequence } from "../domain/models/LibrarySequence";
@@ -24,8 +18,6 @@
   // Compute stats from sequences
   const stats = $derived(() => {
     const total = sequences.length;
-    const publicCount = sequences.filter((s) => s.visibility === "public").length;
-    const privateCount = sequences.filter((s) => s.visibility === "private").length;
     const favorites = sequences.filter((s) => s.isFavorite).length;
 
     // Aggregate engagement metrics
@@ -35,8 +27,6 @@
 
     return {
       total,
-      publicCount,
-      privateCount,
       favorites,
       totalViews,
       totalForks,
@@ -61,14 +51,27 @@
       </h1>
       {#if stats().total > 0}
         <p class="subtitle">
-          {stats().publicCount} published
+          <!-- Engagement metrics inline -->
           {#if stats().totalViews > 0}
-            <span class="separator">·</span>
-            {formatNumber(stats().totalViews)} views
+            <span class="metric">
+              <i class="fas fa-eye" aria-hidden="true"></i>
+              {formatNumber(stats().totalViews)}
+            </span>
           {/if}
           {#if stats().totalForks > 0}
-            <span class="separator">·</span>
-            {formatNumber(stats().totalForks)} forks
+            <span class="metric">
+              <i class="fas fa-code-branch" aria-hidden="true"></i>
+              {formatNumber(stats().totalForks)}
+            </span>
+          {/if}
+          {#if stats().totalStars > 0}
+            <span class="metric">
+              <i class="fas fa-star" aria-hidden="true"></i>
+              {formatNumber(stats().totalStars)}
+            </span>
+          {/if}
+          {#if stats().totalViews === 0 && stats().totalForks === 0 && stats().totalStars === 0}
+            <span class="no-engagement">No engagement yet</span>
           {/if}
         </p>
       {/if}
@@ -91,54 +94,24 @@
       </button>
     {/if}
   </div>
-
-  <!-- Quick Stats Row -->
-  {#if stats().total > 0}
-    <div class="stats-row">
-      <div class="stat-chip" title="Total sequences">
-        <i class="fas fa-film" aria-hidden="true"></i>
-        <span class="stat-value">{stats().total}</span>
-        <span class="stat-label">Total</span>
-      </div>
-
-      <div class="stat-chip public" title="Published to Gallery">
-        <i class="fas fa-globe" aria-hidden="true"></i>
-        <span class="stat-value">{stats().publicCount}</span>
-        <span class="stat-label">Public</span>
-      </div>
-
-      <div class="stat-chip private" title="Private sequences">
-        <i class="fas fa-lock" aria-hidden="true"></i>
-        <span class="stat-value">{stats().privateCount}</span>
-        <span class="stat-label">Private</span>
-      </div>
-
-      <div class="stat-chip favorites" title="Your favorites">
-        <i class="fas fa-star" aria-hidden="true"></i>
-        <span class="stat-value">{stats().favorites}</span>
-        <span class="stat-label">Favorites</span>
-      </div>
-    </div>
-  {/if}
 </header>
 
 <style>
   .library-header {
-    padding: var(--spacing-lg) var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-md);
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--theme-accent) 8%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent) 2%, transparent) 100%
+      color-mix(in srgb, var(--theme-accent) 6%, transparent) 0%,
+      transparent 100%
     );
-    border-bottom: 1px solid color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-accent) 12%, transparent);
   }
 
   .header-content {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
   }
 
   .title-section {
@@ -150,7 +123,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--theme-text);
     margin: 0;
@@ -158,18 +131,36 @@
 
   .title i {
     color: var(--theme-accent);
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
 
   .subtitle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
     margin: var(--spacing-xs) 0 0 0;
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim);
   }
 
-  .separator {
-    margin: 0 var(--spacing-xs);
-    opacity: 0.5;
+  .metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .metric i {
+    font-size: 0.75rem;
+    opacity: 0.7;
+  }
+
+  .metric i.fa-star {
+    color: rgba(250, 204, 21, 0.9);
+  }
+
+  .no-engagement {
+    opacity: 0.6;
+    font-style: italic;
   }
 
   .organize-btn {
@@ -199,72 +190,22 @@
     border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
   }
 
-  /* Stats Row */
-  .stats-row {
-    display: flex;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
-  }
-
-  .stat-chip {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 999px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim);
-  }
-
-  .stat-chip i {
-    font-size: 0.75rem;
-    opacity: 0.7;
-  }
-
-  .stat-value {
-    font-weight: 600;
-    color: var(--theme-text);
-  }
-
-  .stat-label {
-    opacity: 0.7;
-  }
-
-  /* Stat chip variants */
-  .stat-chip.public i {
-    color: var(--semantic-success);
-  }
-
-  .stat-chip.private i {
-    color: rgba(156, 163, 175, 0.9);
-  }
-
-  .stat-chip.favorites i {
-    color: rgba(250, 204, 21, 0.9);
-  }
-
   /* Mobile adjustments */
   @media (max-width: 480px) {
     .library-header {
-      padding: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
     }
 
     .title {
-      font-size: 1.25rem;
+      font-size: 1.1rem;
     }
 
     .organize-btn span {
       display: none;
     }
 
-    .stat-label {
-      display: none;
-    }
-
-    .stat-chip {
-      padding: var(--spacing-xs) var(--spacing-sm);
+    .subtitle {
+      gap: var(--spacing-sm);
     }
   }
 </style>

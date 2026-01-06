@@ -23,6 +23,7 @@ import type {
   SequenceVisibility,
 } from "../domain/models/LibrarySequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { compareKineticLetters } from "$lib/features/discover/shared/utils/kinetic-alphabet-sort";
 
 export type LibraryViewSection =
   | "sequences"
@@ -42,7 +43,6 @@ export type LibrarySortDirection = "asc" | "desc";
 
 interface LibraryFilters {
   searchQuery: string;
-  visibility: SequenceVisibility | "all";
   source: "created" | "forked" | "all";
   collectionId: string | null;
   tagIds: string[];
@@ -134,7 +134,6 @@ class LibraryStateManager {
       isSelectMode: false,
       filters: persisted?.filters || {
         searchQuery: "",
-        visibility: "all",
         source: "all",
         collectionId: null,
         tagIds: [],
@@ -268,11 +267,6 @@ class LibraryStateManager {
       );
     }
 
-    // Filter by visibility
-    if (filters.visibility !== "all") {
-      result = result.filter((seq) => seq.visibility === filters.visibility);
-    }
-
     // Filter by source
     if (filters.source !== "all") {
       result = result.filter((seq) => seq.source === filters.source);
@@ -299,6 +293,37 @@ class LibraryStateManager {
 
     // Sort
     result.sort((a, b) => {
+      // Special handling for "word" sort - use kinetic alphabet order
+      if (filters.sortBy === "word") {
+        const aWord = a.word ?? "";
+        const bWord = b.word ?? "";
+
+        // Extract first letter (handling dash variants like "W-")
+        const getBaseLetter = (word: string): string => {
+          if (!word) return "";
+          const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
+          const firstChar = word.charAt(0);
+          const char = TYPE6_LETTERS.includes(firstChar)
+            ? firstChar
+            : firstChar.toUpperCase();
+          const secondChar = word.charAt(1);
+          return secondChar === "-" ? `${char}-` : char;
+        };
+
+        const letterA = getBaseLetter(aWord);
+        const letterB = getBaseLetter(bWord);
+
+        let comparison = compareKineticLetters(letterA, letterB);
+        if (comparison === 0) {
+          // Same letter, sort by word length then alphabetically
+          const lengthDiff = aWord.length - bWord.length;
+          comparison = lengthDiff !== 0 ? lengthDiff : aWord.localeCompare(bWord);
+        }
+
+        return filters.sortDirection === "asc" ? comparison : -comparison;
+      }
+
+      // Standard sorting for other fields
       let aVal: string | number;
       let bVal: string | number;
 
@@ -306,10 +331,6 @@ class LibraryStateManager {
         case "name":
           aVal = a.name ?? "";
           bVal = b.name ?? "";
-          break;
-        case "word":
-          aVal = a.word ?? "";
-          bVal = b.word ?? "";
           break;
         case "createdAt":
           aVal = a.createdAt.getTime() ?? 0;
@@ -512,63 +533,6 @@ class LibraryStateManager {
     }
   }
 
-  async setVisibility(
-    sequenceId: string,
-    visibility: SequenceVisibility
-  ): Promise<boolean> {
-    if (this.isPreviewMode) {
-      toast.warning("Cannot change visibility in preview mode");
-      return false;
-    }
-
-    const service = this.getService();
-    if (!service) return false;
-
-    try {
-      await service.setVisibility(sequenceId, visibility);
-      return true;
-    } catch (error) {
-      console.error("📚 [LibraryState] Failed to set visibility:", error);
-      return false;
-    }
-  }
-
-  async publishSequence(sequenceId: string): Promise<boolean> {
-    if (this.isPreviewMode) {
-      toast.warning("Cannot publish sequences in preview mode");
-      return false;
-    }
-
-    const service = this.getService();
-    if (!service) return false;
-
-    try {
-      await service.publishSequence(sequenceId);
-      return true;
-    } catch (error) {
-      console.error("📚 [LibraryState] Failed to publish sequence:", error);
-      return false;
-    }
-  }
-
-  async unpublishSequence(sequenceId: string): Promise<boolean> {
-    if (this.isPreviewMode) {
-      toast.warning("Cannot unpublish sequences in preview mode");
-      return false;
-    }
-
-    const service = this.getService();
-    if (!service) return false;
-
-    try {
-      await service.unpublishSequence(sequenceId);
-      return true;
-    } catch (error) {
-      console.error("📚 [LibraryState] Failed to unpublish sequence:", error);
-      return false;
-    }
-  }
-
   async updateNotes(sequenceId: string, notes: string): Promise<boolean> {
     if (this.isPreviewMode) {
       toast.warning("Cannot update notes in preview mode");
@@ -665,38 +629,12 @@ class LibraryStateManager {
     }
   }
 
-  async setVisibilityBatch(visibility: SequenceVisibility): Promise<boolean> {
-    if (this.isPreviewMode) {
-      toast.warning("Cannot change visibility in preview mode");
-      return false;
-    }
-
-    const service = this.getService();
-    if (!service || this.state.selectedIds.size === 0) return false;
-
-    try {
-      await service.setVisibilityBatch(
-        Array.from(this.state.selectedIds),
-        visibility
-      );
-      return true;
-    } catch (error) {
-      console.error("📚 [LibraryState] Failed to set visibility batch:", error);
-      return false;
-    }
-  }
-
   // ============================================================
   // FILTERS
   // ============================================================
 
   setSearchQuery(query: string) {
     this.state.filters.searchQuery = query;
-    this.persistState();
-  }
-
-  setVisibilityFilter(visibility: SequenceVisibility | "all") {
-    this.state.filters.visibility = visibility;
     this.persistState();
   }
 
@@ -749,7 +687,6 @@ class LibraryStateManager {
   resetFilters() {
     this.state.filters = {
       searchQuery: "",
-      visibility: "all",
       source: "all",
       collectionId: null,
       tagIds: [],
@@ -813,7 +750,6 @@ class LibraryStateManager {
       isSelectMode: false,
       filters: {
         searchQuery: "",
-        visibility: "all",
         source: "all",
         collectionId: null,
         tagIds: [],

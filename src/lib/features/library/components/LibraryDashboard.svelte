@@ -57,11 +57,11 @@
 
   // Stats
   const totalSequences = $derived(libraryState.sequences.length);
-  const totalFavorites = $derived(
-    libraryState.sequences.filter((s) => s.isFavorite).length
-  );
   const publicCount = $derived(
     libraryState.sequences.filter((s) => s.visibility === "public").length
+  );
+  const totalFavorites = $derived(
+    libraryState.sequences.filter((s) => s.isFavorite).length
   );
 
   // Aggregate analytics
@@ -251,7 +251,7 @@
                   coverUrl={getCoverUrl(sequence)}
                   onPrimaryAction={handleSequenceClick}
                 />
-                {#if sequence.visibility === "public" && (sequence.viewCount > 0 || sequence.forkCount > 0 || sequence.starCount > 0)}
+                {#if sequence.viewCount > 0 || sequence.forkCount > 0 || sequence.starCount > 0}
                   <div class="card-analytics">
                     <SequenceAnalyticsBadge
                       viewCount={sequence.viewCount}
@@ -289,7 +289,7 @@
                   coverUrl={getCoverUrl(sequence)}
                   onPrimaryAction={handleSequenceClick}
                 />
-                {#if sequence.visibility === "public" && (sequence.viewCount > 0 || sequence.forkCount > 0 || sequence.starCount > 0)}
+                {#if sequence.viewCount > 0 || sequence.forkCount > 0 || sequence.starCount > 0}
                   <div class="card-analytics">
                     <SequenceAnalyticsBadge
                       viewCount={sequence.viewCount}
@@ -314,7 +314,7 @@
         <section class="dashboard-section">
           <div class="section-header">
             <div class="section-title">
-              <i class="fas fa-star" aria-hidden="true"></i>
+              <i class="fas fa-heart" aria-hidden="true"></i>
               <h2>Favorites</h2>
             </div>
             <button class="see-all-btn" onclick={handleSeeAllFavorites}>
