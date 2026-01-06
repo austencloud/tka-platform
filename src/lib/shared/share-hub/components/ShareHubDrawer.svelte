@@ -8,7 +8,7 @@
 
   - 'create': Export-focused (animation/image/video export, share to social)
   - 'discover': Gallery browsing (creator info, fork, star, export)
-  - 'library': Personal collection (notes, tags, visibility, analytics, delete)
+  - 'library': Personal collection (notes, tags, analytics, delete)
 
   - Mobile: Bottom drawer, 100dvh height
   - Desktop: Right drawer, full height
@@ -20,7 +20,6 @@
   // Context-specific section components
   import AnalyticsSection from "./sections/AnalyticsSection.svelte";
   import MetadataSection from "./sections/MetadataSection.svelte";
-  import VisibilitySection from "./sections/VisibilitySection.svelte";
   import CreatorSection from "./sections/CreatorSection.svelte";
   import ActionButtons from "./sections/ActionButtons.svelte";
 
@@ -54,7 +53,6 @@
   let {
     isOpen = $bindable(false),
     sequence,
-    isSequenceSaved = true,
     isMobile = false,
     onClose,
     onExport,
@@ -69,7 +67,6 @@
     // === LIBRARY MODE: Metadata ===
     notes = "",
     tags = [] as string[],
-    visibility = "private" as "public" | "private",
     viewCount = 0,
     forkCount = 0,
     starCount = 0,
@@ -78,7 +75,6 @@
     // === CONTEXT-SPECIFIC CALLBACKS ===
     onNotesChange,
     onTagsChange,
-    onVisibilityChange,
     onFavoriteToggle,
     onFork,
     onStar,
@@ -123,7 +119,6 @@
   }: {
     isOpen?: boolean;
     sequence: SequenceData | null;
-    isSequenceSaved?: boolean;
     isMobile?: boolean;
     onClose?: () => void;
     onExport?: (
@@ -141,7 +136,6 @@
     // === LIBRARY MODE: Metadata ===
     notes?: string;
     tags?: string[];
-    visibility?: "public" | "private";
     viewCount?: number;
     forkCount?: number;
     starCount?: number;
@@ -150,7 +144,6 @@
     // === CONTEXT-SPECIFIC CALLBACKS ===
     onNotesChange?: (notes: string) => void;
     onTagsChange?: (tags: string[]) => void;
-    onVisibilityChange?: (visibility: "public" | "private") => void;
     onFavoriteToggle?: () => void;
     onFork?: () => void;
     onStar?: () => void;
@@ -379,14 +372,9 @@
               />
             {/if}
 
-            <!-- Library & Discover (owned): Analytics (when public with metrics) -->
-            {#if (mode === "library" || (mode === "discover" && isOwned)) && visibility === "public"}
+            <!-- Library & Discover (owned): Analytics -->
+            {#if mode === "library" || (mode === "discover" && isOwned)}
               <AnalyticsSection {viewCount} {forkCount} {starCount} />
-            {/if}
-
-            <!-- Library: Visibility toggle / Publish CTA -->
-            {#if mode === "library"}
-              <VisibilitySection {visibility} {onVisibilityChange} />
             {/if}
 
             <!-- Library: Notes & Tags editing -->

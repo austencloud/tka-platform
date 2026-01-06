@@ -16,6 +16,7 @@ import type {
   PlaybackMode,
   StepPlaybackStepSize,
 } from "$lib/features/compose/state/animation-panel-state.svelte";
+import type { PropState3D } from "$lib/shared/3d-animation/domain/models/PropState3D";
 
 const CONTEXT_KEY = Symbol("animation-export-context");
 
@@ -38,8 +39,8 @@ export interface AnimationExportState {
   // Visibility
   blueMotionVisible: boolean;
   redMotionVisible: boolean;
-  bluePropState: any;
-  redPropState: any;
+  bluePropState: PropState3D | null;
+  redPropState: PropState3D | null;
 
   // Export
   exportLoopCount: number;
@@ -188,8 +189,8 @@ export function createAnimationExportContext(props: {
   stepPlaybackStepSize?: StepPlaybackStepSize;
   blueMotionVisible?: boolean;
   redMotionVisible?: boolean;
-  animationBluePropState?: any;
-  animationRedPropState?: any;
+  animationBluePropState?: PropState3D | null;
+  animationRedPropState?: PropState3D | null;
   exportLoopCount?: number;
   isAnimationExporting?: boolean;
   animationExportProgress?: VideoExportProgress | null;

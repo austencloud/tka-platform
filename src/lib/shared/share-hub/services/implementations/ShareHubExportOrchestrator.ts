@@ -160,31 +160,27 @@ export class ShareHubExportOrchestrator implements IShareHubExportOrchestrator {
       playbackController.togglePlayback();
     }
 
-    try {
-      await this.videoOrchestrator.executeExport(
-        canvas,
-        playbackController,
-        animationState,
-        (progress) => {
-          onProgress?.(progress);
-          if (progress.stage === "error") {
-            throw new Error(progress.error || "Export failed");
-          }
-        },
-        {
-          filename: sequence.word || sequence.name || "sequence",
-          fps: 50,
-          format: "mp4",
+    await this.videoOrchestrator.executeExport(
+      canvas,
+      playbackController,
+      animationState,
+      (progress) => {
+        onProgress?.(progress);
+        if (progress.stage === "error") {
+          throw new Error(progress.error || "Export failed");
         }
-      );
+      },
+      {
+        filename: sequence.word || sequence.name || "sequence",
+        fps: 50,
+        format: "mp4",
+      }
+    );
 
-      // Short delay before completing for success feedback
-      await new Promise((resolve) =>
-        setTimeout(resolve, VIDEO_EXPORT_SUCCESS_DELAY_MS)
-      );
-    } catch (error) {
-      throw error;
-    }
+    // Short delay before completing for success feedback
+    await new Promise((resolve) =>
+      setTimeout(resolve, VIDEO_EXPORT_SUCCESS_DELAY_MS)
+    );
   }
 
   /**
