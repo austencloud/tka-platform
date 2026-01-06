@@ -8,7 +8,7 @@
 
   import { T, useTask } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
-  import { CanvasTexture } from "three";
+  import { CanvasTexture, LinearFilter, ClampToEdgeWrapping } from "three";
   import type { Exhibit } from "../../domain/models/Exhibit";
   import type { ExhibitSlot } from "../../domain/models/GalleryLayout";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -21,8 +21,8 @@
   import {
     FRAME_WIDTH,
     FRAME_HEIGHT,
-    ANIMATION_SCREEN_OFFSET,
   } from "../../domain/constants/gallery-dimensions";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   interface Props {
     /** The exhibit containing the sequence to animate */
@@ -50,14 +50,20 @@
   let accumulatedTime = $state(0);
   const BEAT_DURATION = 0.5; // seconds per beat
 
-  // Screen dimensions
-  const screenWidth = FRAME_WIDTH * 0.8;
-  const screenHeight = FRAME_HEIGHT * 0.8;
+  // Screen dimensions - position to the right of the frame with good spacing
+  const screenWidth = FRAME_WIDTH * 0.9;
+  const screenHeight = FRAME_HEIGHT * 0.9;
   const canvasSize = 512;
+
+  // Horizontal offset from frame center (positive = to the right when facing wall)
+  const SCREEN_OFFSET_X = FRAME_WIDTH * 1.2; // Space between frame and screen
 
   // Get sequence data
   const sequence = exhibit.sequence as SequenceData;
   const totalBeats = sequence.beats?.length ?? 0;
+
+  // Get dark mode from settings (reactive)
+  const darkMode = $derived(getSettings().darkMode ?? false);
 
   // Initialize renderer and load textures
   async function initializeRenderer() {
@@ -89,17 +95,28 @@
       // Initialize renderer
       await renderer.initialize(offscreenContainer, canvasSize, 1.0);
 
-      // Load textures
-      await renderer.loadPerColorPropTextures("staff", "staff", true);
+      // Set dark mode based on user settings
+      renderer.setDarkMode(darkMode, false);
+
+      // Load textures with dark mode setting
+      await renderer.loadPerColorPropTextures("staff", "staff", darkMode);
       await renderer.loadGridTexture("diamond");
 
       // Initialize orchestrator with sequence
       orchestrator.initializeWithDomainData(sequence);
 
-      // Create Three.js texture from canvas
+      // Create Three.js texture from canvas with proper settings
       const canvas = renderer.getCanvas();
       if (canvas) {
         texture = new CanvasTexture(canvas);
+        // Disable mipmaps for dynamic canvas textures
+        texture.generateMipmaps = false;
+        // Use linear filtering for smooth scaling
+        texture.minFilter = LinearFilter;
+        texture.magFilter = LinearFilter;
+        // Clamp to edge to prevent texture bleeding
+        texture.wrapS = ClampToEdgeWrapping;
+        texture.wrapT = ClampToEdgeWrapping;
         texture.needsUpdate = true;
       }
 
@@ -209,31 +226,36 @@
       initializeRenderer();
     }
   });
+
+  // Update dark mode when settings change
+  $effect(() => {
+    if (renderer && initialized) {
+      renderer.setDarkMode(darkMode, false);
+      // Re-render with new dark mode setting
+      renderCurrentFrame();
+    }
+  });
 </script>
 
 {#if texture && initialized}
   <T.Group
-    position={[
-      slot.position.x + Math.sin(slot.rotation) * ANIMATION_SCREEN_OFFSET,
-      slot.position.y,
-      slot.position.z + Math.cos(slot.rotation) * ANIMATION_SCREEN_OFFSET,
-    ]}
+    position={[slot.position.x, slot.position.y, slot.position.z]}
     rotation.y={slot.rotation}
   >
-    <!-- Screen backing (dark panel) -->
-    <T.Mesh position={[FRAME_WIDTH * 0.7, 0, -2]}>
+    <!-- Screen backing (dark panel) - offset to the right of frame -->
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 3]}>
       <T.BoxGeometry args={[screenWidth + 20, screenHeight + 20, 4]} />
       <T.MeshStandardMaterial color="#111118" roughness={0.8} />
     </T.Mesh>
 
     <!-- Animation display plane -->
-    <T.Mesh position={[FRAME_WIDTH * 0.7, 0, 1]}>
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 6]}>
       <T.PlaneGeometry args={[screenWidth, screenHeight]} />
       <T.MeshBasicMaterial map={texture} />
     </T.Mesh>
 
     <!-- Screen frame/bezel -->
-    <T.Mesh position={[FRAME_WIDTH * 0.7, 0, 0]}>
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 5]}>
       <T.BoxGeometry args={[screenWidth + 10, screenHeight + 10, 2]} />
       <T.MeshStandardMaterial color="#1a1a24" roughness={0.5} metalness={0.3} />
     </T.Mesh>
@@ -241,14 +263,10 @@
 {:else if initError}
   <!-- Show error indicator -->
   <T.Group
-    position={[
-      slot.position.x + Math.sin(slot.rotation) * ANIMATION_SCREEN_OFFSET,
-      slot.position.y,
-      slot.position.z + Math.cos(slot.rotation) * ANIMATION_SCREEN_OFFSET,
-    ]}
+    position={[slot.position.x, slot.position.y, slot.position.z]}
     rotation.y={slot.rotation}
   >
-    <T.Mesh position={[FRAME_WIDTH * 0.7, 0, 0]}>
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 5]}>
       <T.PlaneGeometry args={[screenWidth, screenHeight]} />
       <T.MeshBasicMaterial color="#331111" />
     </T.Mesh>
