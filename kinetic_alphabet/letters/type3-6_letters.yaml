@@ -21,7 +21,7 @@ type_3_cross_shift:
       - "Σ-" # Sigma Dash
       - "Δ-" # Delta Dash
     beta_to_gamma:
-      - "θ-" # Theta Dash
+      - "Θ-" # Theta Dash
       - "Ω-" # Omega Dash
 
   spoken_forms:
@@ -31,7 +31,7 @@ type_3_cross_shift:
     "Z-": "Z Dash"
     "Σ-": "Sigma Dash"
     "Δ-": "Delta Dash"
-    "θ-": "Theta Dash"
+    "Θ-": "Theta Dash"
     "Ω-": "Omega Dash"
 
 # Type 4 - Dash

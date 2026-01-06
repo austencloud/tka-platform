@@ -62,16 +62,16 @@ type_2_cap_words:
     description: "Compound and Type 2 mix"
     cap_type: "Rotated LOOP"
 
-  OYHθ:
-    letters: ["O", "Y", "H", "θ"]
+  OYHΘ:
+    letters: ["O", "Y", "H", "Θ"]
     description: "Gamma and Type 2 combination"
     cap_type: "Rotated LOOP"
 
 # 16-Count Sequences
 sixteen_count_sequences:
   four_letter_repeated_four_times:
-    GθOZ:
-      letters: ["G", "θ", "O", "Z"]
+    GΘOZ:
+      letters: ["G", "Θ", "O", "Z"]
       repetitions: 4
       total_beats: 16
       cap_type: "Rotated+Swapped LOOP"
@@ -93,8 +93,8 @@ eight_letter_words:
     cap_type: "Rotated LOOP"
     complexity: "Mixed Type 1, Type 2, and compound letters"
 
-  CΣNZIθVW:
-    letters: ["C", "Σ", "N", "Z", "I", "θ", "V", "W"]
+  CΣNZIΘVW:
+    letters: ["C", "Σ", "N", "Z", "I", "Θ", "V", "W"]
     repetitions: 2
     total_beats: 16
     cap_type: "Mirrored + Swapped LOOP"
@@ -139,8 +139,8 @@ prop_reversal_caps:
     cap_type: "Rotated LOOP"
     reversal_pattern: "Includes prop-reversals"
 
-  TWKθ:
-    letters: ["T", "W", "K", "θ"]
+  TWKΘ:
+    letters: ["T", "W", "K", "Θ"]
     cap_type: "Rotated LOOP"
     reversal_pattern: "Prop-reversals integrated"
 
@@ -154,7 +154,7 @@ prop_reversal_caps:
 construction_principles:
   word_length_flexibility:
     description: "Words can be any length"
-    examples: ["3-letter: DAK", "4-letter: AABB", "8-letter: CΣNZIθVW"]
+    examples: ["3-letter: DAK", "4-letter: AABB", "8-letter: CΣNZIΘVW"]
 
   cap_requirements:
     ending_position: "Word must end on variation of start position"

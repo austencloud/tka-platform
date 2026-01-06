@@ -67,13 +67,13 @@ alpha_to_gamma:
 # Beta -> Gamma (Opening movements)
 beta_to_gamma:
   Theta:
-    symbol: "θ"
+    symbol: "Θ"
     motion_type: "Shift"
     start_position: "beta"
     end_position: "gamma"
     category: "open"
     rotation: "prospin"
-    cross_shift_form: "θ-"
+    cross_shift_form: "Θ-"
     spoken_as: "Theta"
 
   Omega:
@@ -88,8 +88,8 @@ beta_to_gamma:
 
 # Word combinations using continuous Type 2 motions
 continuous_words:
-  WΣYθ:
-    letters: ["W", "Σ", "Y", "θ"]
+  WΣYΘ:
+    letters: ["W", "Σ", "Y", "Θ"]
     description: "Continuous motion sequence"
 
   XΔZΩ:
@@ -100,7 +100,7 @@ continuous_words:
 movement_categories:
   opening:
     description: "Movements that open or expand from compact positions"
-    letters: ["W", "X", "θ", "Ω"]
+    letters: ["W", "X", "Θ", "Ω"]
 
   closing:
     description: "Movements that close or compact from expanded positions"
@@ -114,7 +114,7 @@ pattern_recognition:
       - "W(prospin) - X(antispin): Gamma→Alpha"
       - "Y(prospin) - Z(antispin): Gamma→Beta"
       - "Σ(prospin) - Δ(antispin): Alpha→Gamma"
-      - "θ(prospin) - Ω(antispin): Beta→Gamma"
+      - "Θ(prospin) - Ω(antispin): Beta→Gamma"
 
   rotation_mechanics:
     prospin_rule: "Handpath direction matches staff rotation direction"

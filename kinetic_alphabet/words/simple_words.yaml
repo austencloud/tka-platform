@@ -135,8 +135,8 @@ gamma_quarter_same_words:
 
 # Type 2 Continuous Words
 type_2_continuous:
-  WΣYθ:
-    letters: ["W", "Σ", "Y", "θ"]
+  WΣYΘ:
+    letters: ["W", "Σ", "Y", "Θ"]
     description: "Continuous Type 2 Shift sequence"
     pattern: "Gamma->Alpha->Gamma->Beta->Gamma"
 
