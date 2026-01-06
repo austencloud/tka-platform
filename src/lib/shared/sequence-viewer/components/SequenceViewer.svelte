@@ -34,12 +34,15 @@
 		sequence,
 		initialMediaType = "image" as MediaType,
 		controlsLevel = "standard" as ControlsLevel,
+		showVisibilitySettings = true,
 		onCanvasReady,
 		onMediaTypeChange,
 	}: {
 		sequence: SequenceData;
 		initialMediaType?: MediaType;
 		controlsLevel?: ControlsLevel;
+		/** Show visibility chips and dark mode toggle. False = use global settings (browse mode). */
+		showVisibilitySettings?: boolean;
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 		onMediaTypeChange?: (type: MediaType) => void;
 	} = $props();
@@ -117,23 +120,36 @@
 		animationSettings.setTrailStyle(current === "off" ? "subtle" : "off");
 	}
 
-	let addWord = $state(imageSettings.addWord);
-	let addBeatNumbers = $state(imageSettings.addBeatNumbers);
-	let includeStartPosition = $state(imageSettings.includeStartPosition);
-	let addDifficultyLevel = $state(imageSettings.addDifficultyLevel);
-	let addUserInfo = $state(imageSettings.addUserInfo);
-	let darkMode = $state(imageSettings.darkMode);
+	// Local export settings (for Share Hub mode)
+	let localAddWord = $state(imageSettings.addWord);
+	let localAddBeatNumbers = $state(imageSettings.addBeatNumbers);
+	let localIncludeStartPosition = $state(imageSettings.includeStartPosition);
+	let localAddDifficultyLevel = $state(imageSettings.addDifficultyLevel);
+	let localAddUserInfo = $state(imageSettings.addUserInfo);
+	let localDarkMode = $state(imageSettings.darkMode);
 
 	function handleImageSettingsChange() {
-		addWord = imageSettings.addWord;
-		addBeatNumbers = imageSettings.addBeatNumbers;
-		includeStartPosition = imageSettings.includeStartPosition;
-		addDifficultyLevel = imageSettings.addDifficultyLevel;
-		addUserInfo = imageSettings.addUserInfo;
-		darkMode = imageSettings.darkMode;
+		localAddWord = imageSettings.addWord;
+		localAddBeatNumbers = imageSettings.addBeatNumbers;
+		localIncludeStartPosition = imageSettings.includeStartPosition;
+		localAddDifficultyLevel = imageSettings.addDifficultyLevel;
+		localAddUserInfo = imageSettings.addUserInfo;
+		localDarkMode = imageSettings.darkMode;
 	}
 
 	imageSettings.registerObserver(handleImageSettingsChange);
+
+	// Global settings (for browse mode - Sequence Details panel)
+	const globalImageExport = $derived(settingsService.settings.imageExport);
+	const globalDarkMode = $derived(settingsService.settings.darkMode ?? false);
+
+	// Effective settings - use global when browsing, local when customizing for export
+	const addWord = $derived(showVisibilitySettings ? localAddWord : (globalImageExport?.addWord ?? true));
+	const addBeatNumbers = $derived(showVisibilitySettings ? localAddBeatNumbers : (globalImageExport?.addBeatNumbers ?? true));
+	const includeStartPosition = $derived(showVisibilitySettings ? localIncludeStartPosition : (globalImageExport?.includeStartPosition ?? true));
+	const addDifficultyLevel = $derived(showVisibilitySettings ? localAddDifficultyLevel : (globalImageExport?.addDifficultyLevel ?? false));
+	const addUserInfo = $derived(showVisibilitySettings ? localAddUserInfo : (globalImageExport?.addUserInfo ?? false));
+	const darkMode = $derived(showVisibilitySettings ? localDarkMode : globalDarkMode);
 
 	// Prop type settings for PropAwareThumbnail
 	const bluePropType = $derived(settingsService.settings.bluePropType);
@@ -218,16 +234,18 @@
 			</button>
 		{/if}
 
-		<!-- Dark Mode Lamp Button - unified for both image & animation tabs -->
-		<button
-			class="lamp-btn"
-			class:lit={!darkMode}
-			onclick={toggleDarkMode}
-			aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-			title="Toggle dark/light mode"
-		>
-			<i class="fas fa-lightbulb" aria-hidden="true"></i>
-		</button>
+		<!-- Dark Mode Lamp Button - only shown when visibility settings are enabled (Share Hub) -->
+		{#if showVisibilitySettings}
+			<button
+				class="lamp-btn"
+				class:lit={!darkMode}
+				onclick={toggleDarkMode}
+				aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+				title="Toggle dark/light mode"
+			>
+				<i class="fas fa-lightbulb" aria-hidden="true"></i>
+			</button>
+		{/if}
 	</div>
 
 	<!-- Media Content Area -->
@@ -251,49 +269,51 @@
 					/>
 				</div>
 
-				<!-- Image Export Settings Chips -->
-				<div class="settings-chips">
-					<button
-						class="chip"
-						class:active={addWord}
-						onclick={toggleWord}
-						aria-pressed={addWord}
-					>
-						Word
-					</button>
-					<button
-						class="chip"
-						class:active={addBeatNumbers}
-						onclick={toggleBeatNumbers}
-						aria-pressed={addBeatNumbers}
-					>
-						Beat #s
-					</button>
-					<button
-						class="chip"
-						class:active={includeStartPosition}
-						onclick={toggleStartPosition}
-						aria-pressed={includeStartPosition}
-					>
-						Start Pos
-					</button>
-					<button
-						class="chip"
-						class:active={addDifficultyLevel}
-						onclick={toggleDifficulty}
-						aria-pressed={addDifficultyLevel}
-					>
-						Difficulty
-					</button>
-					<button
-						class="chip"
-						class:active={addUserInfo}
-						onclick={toggleUserInfo}
-						aria-pressed={addUserInfo}
-					>
-						User Info
-					</button>
-				</div>
+				<!-- Image Export Settings Chips - only shown when visibility settings are enabled (Share Hub) -->
+				{#if showVisibilitySettings}
+					<div class="settings-chips">
+						<button
+							class="chip"
+							class:active={addWord}
+							onclick={toggleWord}
+							aria-pressed={addWord}
+						>
+							Word
+						</button>
+						<button
+							class="chip"
+							class:active={addBeatNumbers}
+							onclick={toggleBeatNumbers}
+							aria-pressed={addBeatNumbers}
+						>
+							Beat #s
+						</button>
+						<button
+							class="chip"
+							class:active={includeStartPosition}
+							onclick={toggleStartPosition}
+							aria-pressed={includeStartPosition}
+						>
+							Start Pos
+						</button>
+						<button
+							class="chip"
+							class:active={addDifficultyLevel}
+							onclick={toggleDifficulty}
+							aria-pressed={addDifficultyLevel}
+						>
+							Difficulty
+						</button>
+						<button
+							class="chip"
+							class:active={addUserInfo}
+							onclick={toggleUserInfo}
+							aria-pressed={addUserInfo}
+						>
+							User Info
+						</button>
+					</div>
+				{/if}
 			</div>
 		{:else if activeMediaType === "animation"}
 			<!-- Animation View - using unified AnimationPlayer -->
@@ -312,49 +332,52 @@
 					/>
 				</div>
 
-				<!-- Animation Visibility Settings Chips -->
-				<div class="settings-chips">
-					<button
-						class="chip"
-						class:active={animGridVisible}
-						onclick={toggleAnimGrid}
-						aria-pressed={animGridVisible}
-					>
-						Grid
-					</button>
-					<button
-						class="chip"
-						class:active={animBeatNumbers}
-						onclick={toggleAnimBeatNumbers}
-						aria-pressed={animBeatNumbers}
-					>
-						Beat #s
-					</button>
-					<button
-						class="chip"
-						class:active={animTkaGlyph}
-						onclick={toggleAnimTkaGlyph}
-						aria-pressed={animTkaGlyph}
-					>
-						TKA Glyph
-					</button>
-					<button
-						class="chip"
-						class:active={animWordHeader}
-						onclick={toggleAnimWordHeader}
-						aria-pressed={animWordHeader}
-					>
-						Word
-					</button>
-					<button
-						class="chip"
-						class:active={animTrails}
-						onclick={toggleAnimTrails}
-						aria-pressed={animTrails}
-					>
-						Trails
-					</button>
-				</div>
+				<!-- Animation Visibility Settings Chips (only shown in Share Hub, not browse mode) -->
+				<!-- When controlsLevel="full", these are redundant with AnimationPlayer's Visual tab -->
+				{#if showVisibilitySettings && controlsLevel !== "full"}
+					<div class="settings-chips">
+						<button
+							class="chip"
+							class:active={animGridVisible}
+							onclick={toggleAnimGrid}
+							aria-pressed={animGridVisible}
+						>
+							Grid
+						</button>
+						<button
+							class="chip"
+							class:active={animBeatNumbers}
+							onclick={toggleAnimBeatNumbers}
+							aria-pressed={animBeatNumbers}
+						>
+							Beat #s
+						</button>
+						<button
+							class="chip"
+							class:active={animTkaGlyph}
+							onclick={toggleAnimTkaGlyph}
+							aria-pressed={animTkaGlyph}
+						>
+							TKA Glyph
+						</button>
+						<button
+							class="chip"
+							class:active={animWordHeader}
+							onclick={toggleAnimWordHeader}
+							aria-pressed={animWordHeader}
+						>
+							Word
+						</button>
+						<button
+							class="chip"
+							class:active={animTrails}
+							onclick={toggleAnimTrails}
+							aria-pressed={animTrails}
+						>
+							Trails
+						</button>
+					</div>
+				{/if}
 			</div>
 		{:else if activeMediaType === "video"}
 			<!-- Video View -->

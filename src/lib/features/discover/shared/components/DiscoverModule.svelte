@@ -386,6 +386,7 @@
         {drawerWidth}
         {galleryState}
         {error}
+        isAnimationPanelOpen={showAnimator}
         onSequenceAction={(action, sequence) =>
           eventHandlerService?.handleSequenceAction(action, sequence) ??
           Promise.resolve()}

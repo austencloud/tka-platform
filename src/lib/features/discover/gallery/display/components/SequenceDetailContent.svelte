@@ -147,6 +147,7 @@ Used by both desktop side panel and mobile slide-up overlay.
       {sequence}
       initialMediaType="image"
       controlsLevel="standard"
+      showVisibilitySettings={false}
     />
   </div>
 

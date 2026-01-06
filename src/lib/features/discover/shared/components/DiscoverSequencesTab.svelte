@@ -12,6 +12,7 @@
     drawerWidth: string;
     galleryState: any;
     error: string | null;
+    isAnimationPanelOpen?: boolean;
     onSequenceAction: (action: string, sequence: SequenceData) => Promise<void>;
     onDetailPanelAction: (
       action: string,
@@ -28,11 +29,17 @@
     drawerWidth,
     galleryState,
     error,
+    isAnimationPanelOpen = false,
     onSequenceAction,
     onDetailPanelAction,
     onCloseDetailPanel,
     onContainerScroll,
   }: Props = $props();
+
+  // Panel is "open" when either the detail panel OR animation panel is showing (desktop only)
+  const isPanelOpen = $derived(
+    !isMobile && (galleryPanelManager.isOpen || isAnimationPanelOpen)
+  );
 </script>
 
 <DiscoverLayout>
@@ -40,7 +47,7 @@
     <div class="sequences-with-detail">
       <div
         class="sequences-main"
-        class:panel-open={galleryPanelManager.isOpen && !isMobile}
+        class:panel-open={isPanelOpen}
         style:--drawer-width={drawerWidth}
       >
         <SequenceDisplayPanel

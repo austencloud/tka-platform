@@ -170,4 +170,13 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true, // Main module button on dashboard
     sections: SETTINGS_TABS, // Profile, Props, Background, Visibility, Misc, AI tabs
   },
+  {
+    id: "gallery",
+    label: "Gallery",
+    icon: '<i class="fas fa-image" style="color: #f59e0b;" aria-hidden="true"></i>',
+    color: "#f59e0b", // Amber - art/gallery
+    description: "Walk through sequences in a virtual 3D museum",
+    isMain: true, // Visibility controlled by feature flags (admin-only for now)
+    sections: [], // Single-page immersive experience
+  },
 ];

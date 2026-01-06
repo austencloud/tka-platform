@@ -24,7 +24,7 @@
 	import VisualPane from "$lib/features/compose/components/controls/settings-panel/VisualPane.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-	import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
+	import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
 	import { TYPES } from "$lib/shared/inversify/types";
@@ -63,7 +63,7 @@
 
 	// Services (standalone mode only)
 	let controller: IAnimationPlaybackController | null = null;
-	let sequenceRepo: ISequenceRepository | null = null;
+	let discoverLoader: IDiscoverLoader | null = null;
 
 	// State (standalone mode only) - created once, not reactive to useContext changes
 	// (if useContext changes mid-lifecycle, animState persists for cleanup)
@@ -74,6 +74,22 @@
 	let error = $state<string | null>(null);
 	let bpm = $state(DEFAULT_BPM);
 	let lastSequenceId: string | null = null;
+
+	// Sidebar space detection - switch to compact mode if not enough room
+	let sidebarRef: HTMLDivElement | null = $state(null);
+	let sidebarHeight = $state(0);
+	const COMPACT_THRESHOLD = 420; // px - below this, use tabbed compact mode
+	const useCompactSidebar = $derived(sidebarHeight > 0 && sidebarHeight < COMPACT_THRESHOLD);
+
+	// ResizeObserver for sidebar height
+	$effect(() => {
+		if (!sidebarRef) return;
+		const observer = new ResizeObserver((entries) => {
+			sidebarHeight = entries[0]?.contentRect.height ?? 0;
+		});
+		observer.observe(sidebarRef);
+		return () => observer.disconnect();
+	});
 
 	// Derived: effective state from context or internal
 	const isPlaying = $derived(useContext ? ctx!.state.isPlaying : animState?.isPlaying ?? false);
@@ -109,7 +125,7 @@
 
 		try {
 			await loadFeatureModule("animate");
-			sequenceRepo = resolve<ISequenceRepository>(TYPES.ISequenceRepository);
+			discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
 			controller = resolve<IAnimationPlaybackController>(TYPES.IAnimationPlaybackController);
 			loading = false;
 		} catch (err) {
@@ -128,7 +144,7 @@
 
 	// Watch sequence changes (standalone mode)
 	$effect(() => {
-		if (useContext || !controller || !sequenceRepo) return;
+		if (useContext || !controller || !discoverLoader) return;
 		const seqId = sequence?.id || sequence?.word || sequence?.name;
 		if (seqId === lastSequenceId) return;
 
@@ -158,15 +174,26 @@
 	});
 
 	async function loadFullSequence(seq: SequenceData): Promise<SequenceData | null> {
-		if (!sequenceRepo) return seq;
+		if (!discoverLoader) return seq;
+
+		// Check if sequence already has motion data
 		const hasMotions = seq.beats?.some(b => b?.motions?.blue && b?.motions?.red);
 		if (hasMotions) return seq;
 
-		const id = seq.word || seq.name || seq.id;
-		if (id) {
-			const loaded = await sequenceRepo.getSequence(id);
-			if (loaded?.beats?.some(b => b?.motions?.blue && b?.motions?.red)) return loaded;
+		// Try to load from gallery using word/name (gallery sequences)
+		const galleryId = seq.word || seq.name;
+		if (galleryId) {
+			try {
+				const loaded = await discoverLoader.loadFullSequenceData(galleryId);
+				if (loaded?.beats?.some(b => b?.motions?.blue && b?.motions?.red)) {
+					return loaded;
+				}
+			} catch (err) {
+				console.warn(`Could not load sequence from gallery: ${galleryId}`, err);
+			}
 		}
+
+		// Return original sequence if we couldn't load motion data
 		return seq;
 	}
 
@@ -243,12 +270,15 @@
 					{/if}
 				</div>
 
-				<!-- Sidebar with settings (no step controls - they're in the transport row below) -->
-				<div class="horizontal-sidebar">
-					<!-- Playback Settings -->
-					<div class="sidebar-section">
-						<PlaybackPane
-							bind:bpm
+				<!-- Sidebar with settings - adapts based on available height -->
+				<div class="horizontal-sidebar" bind:this={sidebarRef}>
+					{#if useCompactSidebar}
+						<!-- Compact mode: tabbed panel when space is limited -->
+						<SettingsTogglePanel
+							propType={null}
+							bluePropType={null}
+							redPropType={null}
+							{bpm}
 							{playbackMode}
 							stepPlaybackStepSize={stepSize}
 							{isPlaying}
@@ -257,12 +287,25 @@
 							onStepPlaybackStepSizeChange={setStepSize}
 							onPlaybackToggle={togglePlayback}
 						/>
-					</div>
+					{:else}
+						<!-- Expanded mode: both panes visible when space allows -->
+						<div class="sidebar-section">
+							<PlaybackPane
+								bind:bpm
+								{playbackMode}
+								stepPlaybackStepSize={stepSize}
+								{isPlaying}
+								onBpmChange={handleBpmChange}
+								onPlaybackModeChange={setPlaybackMode}
+								onStepPlaybackStepSizeChange={setStepSize}
+								onPlaybackToggle={togglePlayback}
+							/>
+						</div>
 
-					<!-- Visual Settings -->
-					<div class="sidebar-section">
-						<VisualPane propType={null} bluePropType={null} redPropType={null} />
-					</div>
+						<div class="sidebar-section">
+							<VisualPane propType={null} bluePropType={null} redPropType={null} />
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -400,10 +443,11 @@
 		gap: 12px;
 	}
 
-	/* Canvas + Sidebar row */
+	/* Canvas + Sidebar row - both items stretch to fill height */
 	.horizontal-row {
 		display: flex;
 		flex-direction: row;
+		align-items: stretch;
 		gap: 16px;
 		flex: 1;
 		min-height: 0;
@@ -416,11 +460,10 @@
 		max-width: none;
 	}
 
-	/* Horizontal sidebar - fill container height, distribute content evenly */
+	/* Horizontal sidebar - adapts between expanded and compact modes */
 	.horizontal-sidebar {
 		display: flex;
 		flex-direction: column;
-		justify-content: stretch;
 		gap: clamp(12px, 3cqh, 24px);
 		width: clamp(240px, 32%, 300px);
 		min-width: 240px;
@@ -431,54 +474,110 @@
 		background: var(--theme-card-bg);
 		border: 1.5px solid var(--theme-stroke);
 		border-radius: 14px;
-		overflow-y: auto;
+		overflow: hidden; /* Prevent overflow while measuring */
 		container-type: size;
 		container-name: sidebar;
 	}
 
-	/* Sidebar sections - flex to fill and distribute space evenly */
+	/* Compact mode: SettingsTogglePanel (.settings-panel) fills the sidebar */
+	.horizontal-sidebar :global(.settings-panel) {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
+	/* Compact mode: Make panes use vertical layout */
+	.horizontal-sidebar :global(.settings-panel .visual-pane),
+	.horizontal-sidebar :global(.settings-panel .playback-pane) {
+		gap: 12px;
+	}
+
+	/* Compact mode: Element grid - 2x2 layout instead of 4 across */
+	.horizontal-sidebar :global(.settings-panel .element-grid) {
+		display: grid !important;
+		grid-template-columns: repeat(2, 1fr) !important;
+		gap: 8px;
+	}
+
+	/* Compact mode: Motion toggles */
+	.horizontal-sidebar :global(.settings-panel .motion-toggles) {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	/* Compact mode: Trail presets */
+	.horizontal-sidebar :global(.settings-panel .trail-presets) {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	/* Compact mode: Style toggle (Flow/Step) */
+	.horizontal-sidebar :global(.settings-panel .style-toggle) {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	/* Compact mode: BPM presets - 2 columns for narrow sidebar */
+	.horizontal-sidebar :global(.settings-panel .bpm-presets) {
+		display: grid !important;
+		grid-template-columns: repeat(2, 1fr) !important;
+		gap: 8px;
+	}
+
+	/* Compact mode: Ensure all buttons meet touch targets */
+	.horizontal-sidebar :global(.settings-panel .element-btn),
+	.horizontal-sidebar :global(.settings-panel .motion-btn),
+	.horizontal-sidebar :global(.settings-panel .trail-btn),
+	.horizontal-sidebar :global(.settings-panel .style-btn),
+	.horizontal-sidebar :global(.settings-panel .preset-chip) {
+		min-height: 48px;
+		flex: 1 1 auto;
+	}
+
+	/* Sidebar sections - natural height, don't force stretch */
 	.sidebar-section {
 		display: flex;
 		flex-direction: column;
-		flex: 1;
 		min-height: 0;
 	}
 
 	.sidebar-section + .sidebar-section {
-		padding-top: clamp(12px, 2.5cqh, 20px);
+		padding-top: clamp(14px, 3cqh, 24px);
+		margin-top: auto; /* Push second section down if there's extra space */
 		border-top: 1px solid var(--theme-stroke);
 	}
 
-	/* Make child panes fill their section and distribute space */
+	/* Child panes - space between sections, not stretched buttons */
 	.horizontal-sidebar :global(.playback-pane),
 	.horizontal-sidebar :global(.visual-pane) {
 		display: flex;
 		flex-direction: column;
-		justify-content: space-between;
+		justify-content: flex-start;
 		flex: 1;
-		gap: clamp(10px, 2.5cqh, 18px);
+		gap: clamp(12px, 3cqh, 24px); /* Extra space goes to gaps between groups */
 	}
 
-	/* All button groups stretch to fill available space */
-	.horizontal-sidebar :global(.style-toggle),
-	.horizontal-sidebar :global(.motion-toggles),
-	.horizontal-sidebar :global(.element-grid),
-	.horizontal-sidebar :global(.trail-presets),
-	.horizontal-sidebar :global(.ends-selector) {
-		flex: 1;
+	/* EXPANDED MODE ONLY: Button groups (scoped via .sidebar-section) */
+	.horizontal-sidebar .sidebar-section :global(.style-toggle),
+	.horizontal-sidebar .sidebar-section :global(.motion-toggles),
+	.horizontal-sidebar .sidebar-section :global(.element-grid),
+	.horizontal-sidebar .sidebar-section :global(.trail-presets),
+	.horizontal-sidebar .sidebar-section :global(.ends-selector) {
 		display: flex;
 		gap: 8px;
+		flex-shrink: 0;
 	}
 
-	/* All interactive buttons - 48px minimum height, fill available space */
-	.horizontal-sidebar :global(.style-btn),
-	.horizontal-sidebar :global(.motion-btn),
-	.horizontal-sidebar :global(.element-btn),
-	.horizontal-sidebar :global(.trail-btn),
-	.horizontal-sidebar :global(.ends-btn) {
+	/* EXPANDED MODE ONLY: Button sizing */
+	.horizontal-sidebar .sidebar-section :global(.style-btn),
+	.horizontal-sidebar .sidebar-section :global(.motion-btn),
+	.horizontal-sidebar .sidebar-section :global(.element-btn),
+	.horizontal-sidebar .sidebar-section :global(.trail-btn),
+	.horizontal-sidebar .sidebar-section :global(.ends-btn) {
 		flex: 1;
 		min-height: 48px;
-		height: 100%;
+		max-height: 56px;
+		height: 48px;
 	}
 
 	/* Transport row: step buttons + play button */
@@ -500,12 +599,15 @@
 		justify-content: center;
 		width: 48px;
 		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
 		background: var(--theme-card-bg);
 		border: 1.5px solid var(--theme-stroke);
 		border-radius: 50%;
 		color: var(--theme-text-dim);
 		cursor: pointer;
 		transition: all 0.2s ease;
+		flex-shrink: 0;
 	}
 
 	.horizontal-transport-row .step-btn:hover {
@@ -518,6 +620,9 @@
 	.horizontal-transport-row .play-btn {
 		width: 64px;
 		height: 64px;
+		min-width: 64px;
+		min-height: 64px;
+		flex-shrink: 0;
 	}
 
 	.horizontal-transport-row .play-btn svg {
@@ -525,52 +630,76 @@
 		height: 28px;
 	}
 
-	/* Override PlaybackPane styles in sidebar - stack Flow/Step vertically */
-	.horizontal-sidebar :global(.style-toggle) {
+	/* BPM control container - fills available space */
+	.horizontal-sidebar :global(.bpm-control) {
+		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		flex: 1;
+		gap: clamp(8px, 2cqh, 14px);
 	}
 
-	.horizontal-sidebar :global(.style-btn) {
-		min-height: 44px;
-	}
-
-	/* BPM adjuster - KEEP HORIZONTAL (don't override, just tighten) */
+	/* BPM adjuster - stays horizontal with 48px minimum */
 	.horizontal-sidebar :global(.bpm-adjuster) {
-		gap: 8px;
+		gap: 10px;
+		min-height: 48px;
 	}
 
 	.horizontal-sidebar :global(.bpm-display) {
-		min-height: 44px;
-		min-width: 70px;
-		padding: 0 12px;
+		min-height: 48px;
+		min-width: 80px;
+		padding: 0 14px;
+		font-size: clamp(1rem, 3cqh, 1.25rem);
 	}
 
 	.horizontal-sidebar :global(.bpm-btn) {
-		width: 36px;
-		height: 36px;
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
 	}
 
-	/* BPM presets - compact 3-column grid */
+	/* BPM presets - 3-column grid, fixed heights */
 	.horizontal-sidebar :global(.bpm-presets) {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 6px;
-	}
-
-	.horizontal-sidebar :global(.preset-chip) {
-		min-height: 36px;
-		padding: 6px 8px;
-		font-size: 0.8rem;
-	}
-
-	/* Make sidebar sections more compact */
-	.horizontal-sidebar :global(.bpm-control) {
 		gap: 8px;
 	}
 
-	.horizontal-sidebar :global(.playback-pane) {
-		gap: 10px;
+	.horizontal-sidebar :global(.preset-chip) {
+		min-height: 48px;
+		max-height: 52px;
+		height: 48px;
+		padding: 8px 10px;
+		font-size: 0.85rem;
+	}
+
+	/* Step size row in playback pane */
+	.horizontal-sidebar :global(.step-size-row) {
+		min-height: 48px;
+		max-height: 56px;
+		flex-shrink: 0;
+	}
+
+	.horizontal-sidebar :global(.step-chip) {
+		min-height: 48px;
+		height: 48px;
+	}
+
+	/* Container queries - adjust gaps, not button sizes */
+	@container sidebar (max-height: 450px) {
+		/* Tight mode: reduce gaps */
+		.horizontal-sidebar :global(.playback-pane),
+		.horizontal-sidebar :global(.visual-pane) {
+			gap: 10px;
+		}
+	}
+
+	@container sidebar (min-height: 550px) {
+		/* Roomy mode: more generous gaps */
+		.horizontal-sidebar :global(.playback-pane),
+		.horizontal-sidebar :global(.visual-pane) {
+			gap: 20px;
+		}
 	}
 
 	.canvas-wrap {
@@ -748,16 +877,17 @@
 			gap: 10px;
 		}
 
+		/* Keep 48px minimum for WCAG AAA compliance */
 		.play-btn {
-			width: 44px;
-			height: 44px;
-			min-width: 44px;
-			min-height: 44px;
+			width: 48px;
+			height: 48px;
+			min-width: 48px;
+			min-height: 48px;
 		}
 
 		.play-btn svg {
-			width: 20px;
-			height: 20px;
+			width: 22px;
+			height: 22px;
 		}
 
 		.controls-full {
