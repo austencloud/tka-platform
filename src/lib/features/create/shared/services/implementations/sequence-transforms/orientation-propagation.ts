@@ -9,9 +9,10 @@ import type { BeatData } from "../../../domain/models/BeatData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type {
+  Orientation} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  MotionColor,
-  Orientation,
+  MotionColor
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 

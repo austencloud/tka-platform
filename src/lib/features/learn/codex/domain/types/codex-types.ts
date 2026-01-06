@@ -8,8 +8,8 @@
 export type LetterCategory =
   | "basic" // A-F, G-L, M-R, S-V
   | "extended" // W-Z
-  | "greek" // Σ, Δ, θ, Ω
-  | "dash" // W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-
+  | "greek" // Σ, Δ, Θ, Ω
+  | "dash" // W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-
   | "special" // Φ, Ψ, Λ
   | "dual_dash" // Φ-, Ψ-, Λ-
   | "static"; // α, β, γ

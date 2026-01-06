@@ -1,8 +1,5 @@
 import type { ComponentId } from "../../domain/constants/loop-components";
-import type {
-  CandidateDesignation,
-  TransformationIntervals,
-} from "../../domain/models/label-models";
+import type { CandidateDesignation } from "../../domain/models/label-models";
 import type {
   CandidateInfo,
   InternalBeatPair,

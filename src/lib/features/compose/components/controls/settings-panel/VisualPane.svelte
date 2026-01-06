@@ -46,6 +46,12 @@
     return () => visibilityManager.unregisterObserver(handleChange);
   });
 
+  // Show Blue/Red toggles only when Props is visible
+  const showMotionToggles = $derived.by(() => {
+    updateCounter; // trigger reactivity
+    return visibilityManager.getVisibility("props");
+  });
+
   // Both ends toggle for bilateral props
   const showBothEndsToggle = $derived.by(() => {
     const blue = bluePropType ?? propType;
@@ -93,13 +99,25 @@
     updateCounter++;
   }
   function toggleBlueMotion() {
-    const current = visibilityManager.getVisibility("blueMotion");
-    visibilityManager.setVisibility("blueMotion", !current);
+    const blueOn = visibilityManager.getVisibility("blueMotion");
+    const redOn = visibilityManager.getVisibility("redMotion");
+
+    // If trying to turn off the last active one, turn the other on instead
+    if (blueOn && !redOn) {
+      visibilityManager.setVisibility("redMotion", true);
+    }
+    visibilityManager.setVisibility("blueMotion", !blueOn);
     updateCounter++;
   }
   function toggleRedMotion() {
-    const current = visibilityManager.getVisibility("redMotion");
-    visibilityManager.setVisibility("redMotion", !current);
+    const blueOn = visibilityManager.getVisibility("blueMotion");
+    const redOn = visibilityManager.getVisibility("redMotion");
+
+    // If trying to turn off the last active one, turn the other on instead
+    if (redOn && !blueOn) {
+      visibilityManager.setVisibility("blueMotion", true);
+    }
+    visibilityManager.setVisibility("redMotion", !redOn);
     updateCounter++;
   }
   function toggleProps() {
@@ -157,29 +175,31 @@
 </script>
 
 <div class="visual-pane">
-  <!-- Motion Visibility -->
-  <div class="motion-toggles">
-    <button
-      class="motion-btn blue"
-      class:active={getBlueMotion()}
-      onclick={toggleBlueMotion}
-      type="button"
-    >
-      <i class="fas fa-eye{getBlueMotion() ? '' : '-slash'}" aria-hidden="true"
-      ></i>
-      <span>Blue</span>
-    </button>
-    <button
-      class="motion-btn red"
-      class:active={getRedMotion()}
-      onclick={toggleRedMotion}
-      type="button"
-    >
-      <i class="fas fa-eye{getRedMotion() ? '' : '-slash'}" aria-hidden="true"
-      ></i>
-      <span>Red</span>
-    </button>
-  </div>
+  <!-- Motion Visibility (only when Props is on) -->
+  {#if showMotionToggles}
+    <div class="motion-toggles">
+      <button
+        class="motion-btn blue"
+        class:active={getBlueMotion()}
+        onclick={toggleBlueMotion}
+        type="button"
+      >
+        <i class="fas fa-eye{getBlueMotion() ? '' : '-slash'}" aria-hidden="true"
+        ></i>
+        <span>Blue</span>
+      </button>
+      <button
+        class="motion-btn red"
+        class:active={getRedMotion()}
+        onclick={toggleRedMotion}
+        type="button"
+      >
+        <i class="fas fa-eye{getRedMotion() ? '' : '-slash'}" aria-hidden="true"
+        ></i>
+        <span>Red</span>
+      </button>
+    </div>
+  {/if}
 
   <!-- Element Toggles -->
   <div class="element-grid">

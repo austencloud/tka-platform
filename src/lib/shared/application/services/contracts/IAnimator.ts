@@ -23,6 +23,7 @@ export interface FadeTransitionParams {
   delay?: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AnimationSettings {
   // Animations are always enabled, this interface kept for compatibility
 }

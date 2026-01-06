@@ -340,7 +340,7 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
       "Z",
       "Σ",
       "Δ",
-      "θ",
+      "Θ",
       "Ω",
       // Advanced Type 2s (spelled out for readability)
       "Mu",
@@ -352,7 +352,7 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
       "Z-",
       "Σ-",
       "Δ-",
-      "θ-",
+      "Θ-",
       "Ω-",
       // Type 4: Dash
       "Φ",

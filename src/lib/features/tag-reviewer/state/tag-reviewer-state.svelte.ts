@@ -18,9 +18,12 @@ import type {
   TagReviewStats,
 } from "../domain/models/tag-review-models";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { SequenceEntry, RawBeatData } from "$lib/features/loop-labeler/services/contracts/IBeatDataConverter";
 
 // Clear any old persisted reviews from localStorage
-const OLD_STORAGE_KEY = "tka-tag-reviews";
+const _OLD_STORAGE_KEY = "tka-tag-reviews";
 
 /**
  * Create the tag reviewer state
@@ -45,7 +48,7 @@ export function createTagReviewerState() {
       case "pending":
         return sequences.filter((seq) => {
           const review = reviews.get(seq.word);
-          return !review || !review.isFullyReviewed;
+          return !review?.isFullyReviewed;
         });
       case "reviewed":
         return sequences.filter((seq) => {
@@ -123,10 +126,21 @@ export function createTagReviewerState() {
     }
 
     try {
-      const gridMode = conversionService.getAuthoritativeGridMode(seq as any);
+      // Convert TaggedSequenceEntry to SequenceEntry format for the converter
+      const sequenceEntry: SequenceEntry = {
+        id: seq.id,
+        word: seq.word,
+        isCircular: seq.isCircular ?? false,
+        loopType: seq.loopType,
+        thumbnails: seq.thumbnails,
+        sequenceLength: seq.sequenceLength,
+        gridMode: seq.gridMode,
+        fullMetadata: seq.fullMetadata as { sequence?: RawBeatData[] },
+      };
+      const gridMode = conversionService.getAuthoritativeGridMode(sequenceEntry);
       const { beats, startPosition } = conversionService.convertRawToBeats(
         seq.word,
-        seq.fullMetadata.sequence as any[],
+        (seq.fullMetadata.sequence ?? []) as RawBeatData[],
         gridMode
       );
 
@@ -135,10 +149,10 @@ export function createTagReviewerState() {
       const sequenceData = createSequenceData({
         word: seq.word,
         beats,
-        gridMode: gridMode as any,
+        gridMode: gridMode as GridMode,
         isCircular: seq.isCircular,
         startPosition: startPosition ?? undefined,
-        loopType: (seq.loopType as any) ?? undefined,
+        loopType: (seq.loopType as LOOPType) ?? undefined,
       });
 
       // Extract features and generate tags
@@ -173,7 +187,7 @@ export function createTagReviewerState() {
 
     // Clear old persisted reviews from localStorage
     try {
-      localStorage.removeItem(OLD_STORAGE_KEY);
+      localStorage.removeItem(_OLD_STORAGE_KEY);
     } catch {
       // Ignore errors
     }
@@ -397,7 +411,7 @@ export function createTagReviewerState() {
     reviews = newReviews;
   }
 
-  function addCustomTag(tag: string, category: string) {
+  function addCustomTag(tag: string, _category: string) {
     if (!currentSequence) return;
 
     const existingReview = reviews.get(currentSequence.word);

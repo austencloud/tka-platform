@@ -18,22 +18,22 @@ interface SearchIndex {
 
 @injectable()
 export class SequenceIndexer implements ISequenceIndexer {
-  buildIndex(sequences: SequenceData[]): void {
+  buildIndex(_sequences: SequenceData[]): void {
     // Build search index for sequences - placeholder implementation
     // TODO: Implement full-text search indexing when needed
   }
 
-  getSequencesByTag(tag: string): SequenceData[] {
+  getSequencesByTag(_tag: string): SequenceData[] {
     // Get sequences by tag - placeholder implementation
     return [];
   }
 
-  updateIndex(sequence: SequenceData): void {
+  updateIndex(_sequence: SequenceData): void {
     // Update index with new/modified sequence - placeholder implementation
     // TODO: Implement incremental index updates when needed
   }
 
-  removeFromIndex(sequenceId: string): void {
+  removeFromIndex(_sequenceId: string): void {
     // Remove sequence from search index - placeholder implementation
     // TODO: Implement index cleanup when needed
   }

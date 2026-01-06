@@ -35,7 +35,7 @@ export enum Letter {
   Z = "Z",
   SIGMA = "Σ",
   DELTA = "Δ",
-  THETA = "θ",
+  THETA = "Θ",
   OMEGA = "Ω",
   MU = "μ",
   NU = "ν",
@@ -47,7 +47,7 @@ export enum Letter {
   Z_DASH = "Z-",
   SIGMA_DASH = "Σ-",
   DELTA_DASH = "Δ-",
-  THETA_DASH = "θ-",
+  THETA_DASH = "Θ-",
   OMEGA_DASH = "Ω-",
 
   // Type4: Dash (3 Greek dash letters)

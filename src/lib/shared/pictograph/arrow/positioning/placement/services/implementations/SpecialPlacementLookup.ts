@@ -115,7 +115,7 @@ export class SpecialPlacementLookup implements ISpecialPlacementLookup {
    * Try alternative tuple format for legacy JSON compatibility.
    * Desktop JSON files sometimes use different direction prefix rules.
    *
-   * IMPORTANT: For TYPE2+ letters (W, X, Y, Z, Σ, Δ, θ, Ω, etc.), the direction
+   * IMPORTANT: For TYPE2+ letters (W, X, Y, Z, Σ, Δ, Θ, Ω, etc.), the direction
    * prefix (s/o) is semantically meaningful - it indicates whether motions rotate
    * in the same or opposite direction. We should NOT strip this prefix as a fallback
    * because (s, 0, 1) and (0, 1) represent different configurations.

@@ -27,6 +27,7 @@ import { toast } from "../../toast/state/toast-state.svelte";
 import { backgroundsConfig } from "../../settings/components/tabs/background/background-config";
 import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
 import { applyThemeFromColors } from "../../settings/utils/background-theme-calculator";
+import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 
 export function registerGlobalShortcuts(
   service: IKeyboardShortcutManager,
@@ -256,14 +257,14 @@ export function registerGlobalShortcuts(
   // ==================== Prop Type Cycle Shortcuts ====================
 
   // Common prop types to cycle through (subset of most used props)
-  const cyclePropTypes = [
-    "staff",
-    "club",
-    "fan",
-    "triad",
-    "minihoop",
-    "buugeng",
-    "hand",
+  const cyclePropTypes: PropType[] = [
+    PropType.STAFF,
+    PropType.CLUB,
+    PropType.FAN,
+    PropType.TRIAD,
+    PropType.MINIHOOP,
+    PropType.BUUGENG,
+    PropType.HAND,
   ];
 
   // P - Cycle to next prop type
@@ -277,14 +278,14 @@ export function registerGlobalShortcuts(
     scope: "action",
     priority: "high",
     action: () => {
-      const currentPropType = settingsService.settings.bluePropType || "staff";
-      const currentIndex = cyclePropTypes.indexOf(currentPropType);
+      const currentPropType = settingsService.settings.bluePropType || PropType.STAFF;
+      const currentIndex = cyclePropTypes.indexOf(currentPropType as PropType);
       const nextIndex = (currentIndex + 1) % cyclePropTypes.length;
       const nextPropType = cyclePropTypes[nextIndex];
 
       settingsService.updateSettings({
-        bluePropType: nextPropType as any,
-        redPropType: nextPropType as any,
+        bluePropType: nextPropType,
+        redPropType: nextPropType,
       });
       toast.info(`Prop: ${nextPropType}`, 1500);
     },
@@ -301,15 +302,15 @@ export function registerGlobalShortcuts(
     scope: "action",
     priority: "high",
     action: () => {
-      const currentPropType = settingsService.settings.bluePropType || "staff";
-      const currentIndex = cyclePropTypes.indexOf(currentPropType);
+      const currentPropType = settingsService.settings.bluePropType || PropType.STAFF;
+      const currentIndex = cyclePropTypes.indexOf(currentPropType as PropType);
       const prevIndex =
         currentIndex <= 0 ? cyclePropTypes.length - 1 : currentIndex - 1;
       const prevPropType = cyclePropTypes[prevIndex];
 
       settingsService.updateSettings({
-        bluePropType: prevPropType as any,
-        redPropType: prevPropType as any,
+        bluePropType: prevPropType,
+        redPropType: prevPropType,
       });
       toast.info(`Prop: ${prevPropType}`, 1500);
     },

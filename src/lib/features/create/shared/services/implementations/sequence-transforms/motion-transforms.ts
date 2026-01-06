@@ -9,7 +9,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   VERTICAL_MIRROR_LOCATION_MAP,
   HORIZONTAL_MIRROR_LOCATION_MAP,

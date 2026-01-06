@@ -9,6 +9,7 @@ import type {
   SpellGenerationOptions,
   SpellResult,
 } from "../../domain/models/spell-models";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
 export interface IWordSequenceGenerator {
   /**
@@ -27,7 +28,7 @@ export interface IWordSequenceGenerator {
   parseWord(
     word: string
   ): {
-    letters: import("$lib/shared/foundation/domain/models/Letter").Letter[];
+    letters: Letter[];
     error?: string;
   } | null;
 

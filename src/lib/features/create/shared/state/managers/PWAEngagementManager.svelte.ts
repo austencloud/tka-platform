@@ -51,7 +51,7 @@ export function createPWAEngagementEffect(
         engagementService.recordInteraction(); // Also count as interaction
         hasTrackedSequenceCreation = true;
         getLogger().log("PWA engagement: sequence created");
-      } catch (error) {
+      } catch {
         // Service may not be available, that's ok
       }
     });

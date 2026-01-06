@@ -48,6 +48,11 @@ import type { ICreateModuleState } from "../../types/create-module-types";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IPanelPersister } from "../contracts/IPanelPersister";
 import type { BeatData } from "../../domain/models/BeatData";
+import type {
+  UndoOperationType} from "../contracts/IUndoManager";
+import {
+  type UndoMetadata,
+} from "../contracts/IUndoManager";
 
 @injectable()
 export class CreateModuleInitializer implements ICreateModuleInitializer {
@@ -252,11 +257,24 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
 
     // Set up undo snapshot callback
     CreateModuleEventHandler.setPushUndoSnapshotCallback((type, metadata) =>
-      CreateModuleState.pushUndoSnapshot(type as any, metadata as any)
+      CreateModuleState.pushUndoSnapshot(
+        type as UndoOperationType,
+        metadata as UndoMetadata
+      )
     );
 
     // Configure panel state callbacks on sequenceState
-    const seqState = CreateModuleState.sequenceState as any;
+    type SequenceStateWithCallbacks = typeof CreateModuleState.sequenceState & {
+      onEditPanelOpen?: (
+        beatIndex: number,
+        beatData: unknown,
+        beatsData: unknown[]
+      ) => void;
+      onEditPanelClose?: () => void;
+      onAnimationStart?: () => void;
+      onAnimationEnd?: () => void;
+    };
+    const seqState = CreateModuleState.sequenceState as SequenceStateWithCallbacks;
 
     seqState.onEditPanelOpen = (
       beatIndex: number,

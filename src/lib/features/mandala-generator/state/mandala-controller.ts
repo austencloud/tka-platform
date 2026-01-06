@@ -7,11 +7,9 @@
 
 import type { MandalaState } from "./mandala-state.svelte";
 import type {
-  MandalaElement,
   Point,
   ArrowSpec,
 } from "../domain/models/mandala-element";
-import type { MandalaConfig } from "../domain/models/mandala-config";
 import type { MandalaPreset } from "../domain/models/mandala-preset";
 import type {
   SymmetryFold,
@@ -20,7 +18,6 @@ import type {
   ArrowTurns,
 } from "../domain/enums/mandala-enums";
 import { createMandalaElement } from "../domain/models/mandala-element";
-import { CANVAS_CENTER } from "../domain/constants/symmetry-constants";
 
 export class MandalaController {
   constructor(private state: MandalaState) {}

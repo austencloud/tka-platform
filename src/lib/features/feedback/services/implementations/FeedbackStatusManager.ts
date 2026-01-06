@@ -191,7 +191,7 @@ export class FeedbackStatusService implements IFeedbackStatusService {
           );
       }
     } else {
-      if (updates.description !== undefined && updates.description.trim()) {
+      if (updates.description?.trim()) {
         const timestamp = new Date().toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",

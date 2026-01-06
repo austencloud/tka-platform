@@ -18,7 +18,8 @@ import type { ISequenceTransformer } from "../services/contracts/ISequenceTransf
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
-import type { IUndoManager } from "../services/contracts/IUndoManager";
+import type { IUndoManager, UndoMetadata } from "../services/contracts/IUndoManager";
+import type { UndoOperationType } from "../services/contracts/IUndoManager";
 import { createUndoController } from "./create-module/undo-controller.svelte";
 import { resolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
@@ -69,7 +70,7 @@ export function createGeneratorTabState(
         UndoManager,
         sequenceState,
         getActiveSection: () => "generator",
-        setActiveSectionInternal: async (panel, addToHistory) => {
+        setActiveSectionInternal: async (_panel, _addToHistory) => {
           // Generator tab doesn't need to change active section since it's always generator
           // This is just for compatibility with the undo controller interface
         },
@@ -196,7 +197,7 @@ export function createGeneratorTabState(
     get undoHistory() {
       return undoController?.undoHistory || [];
     },
-    pushUndoSnapshot: (type: any, metadata?: any) => {
+    pushUndoSnapshot: (type: UndoOperationType, metadata?: UndoMetadata) => {
       undoController?.pushUndoSnapshot(type, metadata);
     },
     undo: () => {

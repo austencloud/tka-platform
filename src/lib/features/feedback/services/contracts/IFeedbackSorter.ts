@@ -1,7 +1,4 @@
-import type {
-  FeedbackItem,
-  FeedbackStatus,
-} from "../../domain/models/feedback-models";
+import type { FeedbackItem } from "../../domain/models/feedback-models";
 
 export interface IFeedbackSorter {
   /**

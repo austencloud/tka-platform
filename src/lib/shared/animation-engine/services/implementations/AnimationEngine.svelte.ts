@@ -331,8 +331,6 @@ export class AnimationEngine {
     this.lastPropsRef = props;
 
     // Track only what we actually compare (avoid object spread GC pressure)
-    const prevBeatData = this.prevBeatData;
-    const prevSequenceData = this.prevSequenceData;
     this.prevBeatData = props.beatData ?? null;
     this.prevSequenceData = props.sequenceData ?? null;
     this.prevIsPlaying = props.isPlaying ?? false;
@@ -912,8 +910,7 @@ export class AnimationEngine {
 
   private calculateTurnsTuple(props: AnimationEngineProps): string {
     if (
-      !props.beatData ||
-      !props.beatData.motions?.blue ||
+      !props.beatData?.motions?.blue ||
       !props.beatData.motions?.red
     ) {
       return "(s, 0, 0)";

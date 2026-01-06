@@ -5,7 +5,7 @@
  * All durations and easings align with the CSS design tokens in app.css.
  */
 
-import { cubicOut, quintOut, backOut, elasticOut } from "svelte/easing";
+import { cubicOut, quintOut, backOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
 
 // ============================================================================

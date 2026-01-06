@@ -143,8 +143,12 @@ export class AudioStorageManager implements IAudioStorageManager {
 
       await getMetadata(storageRef);
       return true;
-    } catch (error: any) {
-      if (error.code === "storage/object-not-found") {
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "storage/object-not-found"
+      ) {
         return false;
       }
       throw error;

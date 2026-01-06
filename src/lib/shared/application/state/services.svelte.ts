@@ -1,10 +1,5 @@
 import type { IPersistenceService } from "../../persistence/services/contracts/IPersistenceService";
-import {
-  resolve,
-  tryResolve,
-  isContainerReady,
-  waitForContainer,
-} from "../../inversify/resolve-utils";
+import { resolve, waitForContainer } from "../../inversify/resolve-utils";
 import { TYPES } from "../../inversify/types";
 import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";

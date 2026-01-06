@@ -66,12 +66,8 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
     // Use the same approach as StartPositionManager to create a proper Type 6 motion
     const { MotionType, MotionColor, Orientation, RotationDirection } =
       await import("$lib/shared/pictograph/shared/domain/enums/pictograph-enums");
-    const { PropType } =
-      await import("$lib/shared/pictograph/prop/domain/enums/PropType");
     const { Letter } =
       await import("$lib/shared/foundation/domain/models/Letter");
-    const { GridPosition } =
-      await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
     const { createMotionData } =
       await import("$lib/shared/pictograph/shared/domain/models/MotionData");
     const { createPictographData } =

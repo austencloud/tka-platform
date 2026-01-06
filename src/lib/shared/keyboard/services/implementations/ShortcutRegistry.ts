@@ -15,11 +15,7 @@ import type {
   ShortcutContext,
 } from "../../domain/types/keyboard-types";
 import { keyboardShortcutState } from "../../state/keyboard-shortcut-state.svelte";
-import {
-  keyComboEquals,
-  parseKeyCombo,
-  buildKeyCombo,
-} from "../../utils/key-combo-utils";
+import { keyComboEquals, buildKeyCombo } from "../../utils/key-combo-utils";
 
 @injectable()
 export class ShortcutRegistry implements IShortcutRegistry {

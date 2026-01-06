@@ -2,11 +2,7 @@ import type {
   SkillProgression,
   UserSkillProgress,
 } from "../../../domain/models/challenge-models";
-import type {
-  ISkillProgressionTracker,
-  SkillProgressActionType,
-  SkillProgressMetadata,
-} from "../../contracts/ISkillProgressionTracker";
+import type { ISkillProgressionTracker } from "../../contracts/ISkillProgressionTracker";
 import type { IAchievementManager } from "../../contracts/IAchievementManager";
 import { computeSkillProgressUpdate } from "./SkillProgressionUpdate";
 import {

@@ -4,7 +4,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../domain/models/BeatData";
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
@@ -13,8 +12,9 @@ import {
   createMotionData,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type {
+  MotionColor} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
-  MotionColor,
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

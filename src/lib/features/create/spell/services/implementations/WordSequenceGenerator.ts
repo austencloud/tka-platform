@@ -24,7 +24,6 @@ import type {
   LetterSource,
   CircularizationOption,
 } from "../../domain/models/spell-models";
-import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   GREEK_LETTER_ALIASES,
   MAX_WORD_LENGTH,
@@ -103,7 +102,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       }
 
       // Generate beats for each letter
-      let beats = await this.generateBeats(
+      const beats = await this.generateBeats(
         expandedLetters,
         startPosition,
         gridMode
@@ -643,7 +642,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     }
 
     // For each unique bridge variation, check available LOOPs
-    for (const [key, variation] of uniqueBridges) {
+    for (const [_key, variation] of uniqueBridges) {
       const bridgeLetter = variation.letter as Letter;
       const bridgeEndPos = variation.endPosition || "";
 

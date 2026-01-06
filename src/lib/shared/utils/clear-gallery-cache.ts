@@ -35,7 +35,7 @@ export async function clearAllGalleryCaches(): Promise<void> {
           };
           request.onerror = () => reject(request.error);
         });
-      } catch (err) {
+      } catch {
         // No IndexedDB to clear
       }
     }

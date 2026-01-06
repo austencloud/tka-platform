@@ -201,7 +201,7 @@ export class DeepLinker implements IDeepLinker {
   }
 
   consumeData(moduleId: string): DeepLinkData | null {
-    if (!this.storedData || this.storedData.moduleId !== moduleId) {
+    if (this.storedData?.moduleId !== moduleId) {
       return null;
     }
 
@@ -223,7 +223,7 @@ export class DeepLinker implements IDeepLinker {
   }
 
   hasDataForModule(moduleId: string): boolean {
-    if (!this.storedData || this.storedData.moduleId !== moduleId) {
+    if (this.storedData?.moduleId !== moduleId) {
       return false;
     }
 

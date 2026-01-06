@@ -125,7 +125,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Use fixed high frame rate for smooth playback at any BPM
       // This ensures visual quality is consistent regardless of tempo
       const fps = options.fps ?? VIDEO_EXPORT_FPS;
-      const frameDelay = Math.floor(1000 / fps); // Fixed ~20ms at 50fps
       const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
 
       // Apply loop count for circular sequences
@@ -189,8 +188,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       let currentGlyph: LetterOverlayAssets | null = null;
       let currentBeatNumber: number | null = null;
 
-      // Track previous frame's letter and beat number for crossfade
-      let previousLetter: Letter | null = null;
+      // Track previous frame's glyph and beat number for crossfade
       let previousGlyph: LetterOverlayAssets | null = null;
       let previousBeatNumber: number | null = null;
 
@@ -257,7 +255,6 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
         if (transitionDetected) {
           // Store previous state for crossfade
-          previousLetter = currentLetter;
           previousGlyph = currentGlyph;
           previousBeatNumber = currentBeatNumber;
 
@@ -546,7 +543,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const result = { image, dimensions: { width, height } };
       this.letterGlyphCache.set(letter, result);
       return result;
-    } catch (error) {
+    } catch {
       const result = { image: null, dimensions: { width: 0, height: 0 } };
       this.letterGlyphCache.set(letter, result);
       return result;

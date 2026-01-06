@@ -6,7 +6,7 @@
  */
 
 import { injectable, inject } from "inversify";
-import { Vector3 } from "three";
+import type { Vector3 } from "three";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
 import type { PropState3D } from "../../domain/models/PropState3D";

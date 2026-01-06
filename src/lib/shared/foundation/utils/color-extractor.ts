@@ -32,7 +32,7 @@ export async function extractDominantColor(
     const color = await extractColorFromImage(imageUrl);
     colorCache.set(imageUrl, color);
     return color;
-  } catch (error) {
+  } catch {
     // CORS errors, load failures, etc. - fall back to name-based color
     const fallback = generateColorFromName(fallbackName);
     colorCache.set(imageUrl, fallback);

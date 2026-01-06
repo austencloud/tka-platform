@@ -17,6 +17,7 @@ import {
 import type { Firestore } from "firebase/firestore";
 import type { Analytics } from "firebase/analytics";
 import type { Database } from "firebase/database";
+import type { FirebaseStorage } from "firebase/storage";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("Firebase");
@@ -70,7 +71,7 @@ let firestoreInitPromise: Promise<Firestore> | null = null;
 // Track if we're using fallback memory cache (for debugging)
 let usingMemoryCache = false;
 // Track if Firestore was terminated (for HMR recovery)
-let firestoreTerminated = false;
+let _firestoreTerminated = false;
 
 /**
  * Check if an error is the known IndexedDB/persistence corruption error
@@ -142,7 +143,7 @@ async function terminateFirestore(): Promise<void> {
   } finally {
     firestoreInstance = null;
     firestoreInitPromise = null;
-    firestoreTerminated = true;
+    _firestoreTerminated = true;
   }
 }
 
@@ -176,10 +177,10 @@ export async function getFirestoreInstance(): Promise<Firestore> {
         if (existingInstance && typeof existingInstance === "object") {
           // Check if the instance has the expected internal structure
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const existingObj = existingInstance as any;
           const hasAsyncQueue =
-            (existingInstance as any)._firestoreClient !== undefined ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (existingInstance as any)._queue !== undefined;
+            existingObj._firestoreClient !== undefined ||
+            existingObj._queue !== undefined;
 
           if (!hasAsyncQueue) {
             debug.warn(
@@ -248,7 +249,7 @@ export async function getFirestoreInstance(): Promise<Firestore> {
           usingMemoryCache = true;
           debug.success("Firestore initialized with memory cache (fallback)");
           return firestoreInstance;
-        } catch (memoryError) {
+        } catch {
           // Last resort
           debug.error("Memory cache also failed, trying bare Firestore");
           firestoreInstance = getFirestore(app);
@@ -313,9 +314,7 @@ export async function getDatabaseInstance(): Promise<Database> {
  * Use this for file uploads (profile photos, sequence thumbnails, etc.)
  * Storage is loaded on-demand to reduce initial bundle size (~84KB saved)
  */
-export async function getStorageInstance(): Promise<
-  import("firebase/storage").FirebaseStorage
-> {
+export async function getStorageInstance(): Promise<FirebaseStorage> {
   const { getStorage } = await import("firebase/storage");
   return getStorage(app);
 }

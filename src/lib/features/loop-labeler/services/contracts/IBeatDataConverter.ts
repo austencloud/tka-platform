@@ -1,11 +1,11 @@
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import {
+import type {
   GridLocation,
   GridPosition,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import {
+import type {
   MotionType,
   Orientation,
   RotationDirection,

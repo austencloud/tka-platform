@@ -100,12 +100,6 @@ class ImageCompositionStateManager {
    * Save settings to Firebase for authenticated users
    */
   private saveToFirebase(): void {
-    const currentSettings = settingsService.currentSettings;
-    const updatedSettings = {
-      ...currentSettings,
-      imageExport: { ...this.settings },
-    };
-
     // Use updateSetting to trigger Firebase persistence
     void settingsService.updateSetting("imageExport", this.settings);
   }

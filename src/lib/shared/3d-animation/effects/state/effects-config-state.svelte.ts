@@ -168,7 +168,7 @@ export function createEffectsConfigState(
 
   $effect(() => {
     // Access all config properties to track them
-    const snapshot = JSON.stringify(config);
+    JSON.stringify(config);
 
     // Debounce persistence to avoid excessive writes
     if (persistTimeout) clearTimeout(persistTimeout);
@@ -181,7 +181,7 @@ export function createEffectsConfigState(
   // Derived States - Count of enabled effects
   // =============================================================================
 
-  let enabledCount = $derived(
+  const enabledCount = $derived(
     [
       config.trails.enabled,
       config.fire.enabled,
@@ -215,7 +215,10 @@ export function createEffectsConfigState(
       right: "right_end",
       both: "both_ends",
     } as const;
-    config.trails = { ...config.trails, trackingMode: modeMap[mode] as any };
+    config.trails = {
+      ...config.trails,
+      trackingMode: modeMap[mode] as (typeof config.trails)["trackingMode"],
+    };
   }
 
   function getTrackingModeLabel(): "left" | "right" | "both" {

@@ -14,6 +14,7 @@ import {
   deleteDoc,
   addDoc,
   serverTimestamp,
+  type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { injectable } from "inversify";
@@ -464,7 +465,7 @@ export class TurnPatternManager implements ITurnPatternManager {
       userId,
       beatCount: data.beatCount,
       entries: data.entries,
-      createdAt: null as any, // Will be populated by Firestore
+      createdAt: null as unknown as Timestamp, // Will be populated by Firestore
     };
   }
 

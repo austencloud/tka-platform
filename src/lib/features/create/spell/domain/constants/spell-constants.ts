@@ -98,11 +98,11 @@ export const GREEK_LETTER_PALETTE = {
 export const GREEK_LETTER_DISPLAY: Record<string, string> = {
   [Letter.SIGMA]: "Σ",
   [Letter.DELTA]: "Δ",
-  [Letter.THETA]: "θ",
+  [Letter.THETA]: "Θ",
   [Letter.OMEGA]: "Ω",
   [Letter.SIGMA_DASH]: "Σ-",
   [Letter.DELTA_DASH]: "Δ-",
-  [Letter.THETA_DASH]: "θ-",
+  [Letter.THETA_DASH]: "Θ-",
   [Letter.OMEGA_DASH]: "Ω-",
   [Letter.PHI]: "Φ",
   [Letter.PSI]: "Ψ",

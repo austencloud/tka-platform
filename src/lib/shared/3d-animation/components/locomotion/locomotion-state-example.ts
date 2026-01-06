@@ -13,16 +13,16 @@
 // ============================================
 
 /** Default Z position for avatars */
-const FIGURE_Z = -80;
+const _FIGURE_Z = -80;
 
 /** Movement speed in scene units per second */
-const MOVE_SPEED = 150;
+const _MOVE_SPEED = 150;
 
 /** Rotation speed for smooth turning (radians per second equivalent) */
-const ROTATION_SPEED = 8;
+const _ROTATION_SPEED = 8;
 
 /** Scene bounds to keep avatars within visible area */
-const SCENE_BOUNDS = {
+const _SCENE_BOUNDS = {
   minX: -400,
   maxX: 400,
   minZ: -400,
@@ -68,7 +68,7 @@ const SCENE_BOUNDS = {
  * @param input.x - Strafe: -1 (A/left) to 1 (D/right)
  * @param input.z - Forward/back: -1 (S/back) to 1 (W/forward)
  */
-function setMoveInput(input: { x: number; z: number }): void {
+function _setMoveInput(_input: { x: number; z: number }): void {
   // moveInput = input;
   // isMoving = input.x !== 0 || input.z !== 0;
   // Pause sequence playback while moving
@@ -84,7 +84,7 @@ function setMoveInput(input: { x: number; z: number }): void {
  * @param delta - Time since last frame in seconds
  * @param cameraAngle - Camera's Y rotation in radians (for camera-relative movement)
  */
-function updateMovement(delta: number, cameraAngle: number): void {
+function _updateMovement(_delta: number, _cameraAngle: number): void {
   // if (!isMoving) return;
   // Transform input by camera rotation for camera-relative movement
   // const sin = Math.sin(cameraAngle);
@@ -120,7 +120,7 @@ function updateMovement(delta: number, cameraAngle: number): void {
 /**
  * Stop all movement immediately.
  */
-function stopMovement(): void {
+function _stopMovement(): void {
   // moveInput = { x: 0, z: 0 };
   // isMoving = false;
 }

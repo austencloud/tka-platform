@@ -6,7 +6,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { SpellPreferences } from "../domain/models/spell-models";
 import type { VariationScore } from "../services/contracts/IVariationScorer";
 
 /**

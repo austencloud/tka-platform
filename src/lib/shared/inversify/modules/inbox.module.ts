@@ -1,5 +1,4 @@
 import { ContainerModule, type ContainerModuleLoadOptions } from "inversify";
-import { TYPES } from "../types";
 
 /**
  * Inbox Module
@@ -9,7 +8,7 @@ import { TYPES } from "../types";
  * (NotificationService, ConversationManager) so this module is lightweight.
  */
 export const inboxModule = new ContainerModule(
-  (options: ContainerModuleLoadOptions) => {
+  (_options: ContainerModuleLoadOptions) => {
     // === INBOX SERVICES ===
     // Inbox uses shared services from notifications and messaging modules
     // No inbox-specific services to register at this time

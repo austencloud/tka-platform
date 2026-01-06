@@ -13,7 +13,7 @@ import {
   createMotionData,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { resolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -206,7 +206,7 @@ export function calculatePropagatedBeats(
     if (!beat) continue;
 
     // Runtime safety check - motions should always exist but validate to be safe
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+     
     if (!beat.motions) {
       logger.warn(`No motions data at beat ${i + 1}, stopping propagation`);
       break;

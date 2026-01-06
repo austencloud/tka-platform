@@ -9,10 +9,7 @@ import { injectable, inject } from "inversify";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { BeatData } from "../../domain/models/BeatData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import {
-  GridPosition,
-  GridMode,
-} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
   ISequenceExtender,
   ExtensionAnalysis,
@@ -28,14 +25,15 @@ import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/service
 import type { ILOOPValidator } from "../contracts/ILOOPValidator";
 import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
 import type { IBridgeFinder } from "../contracts/IBridgeFinder";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { recalculateAllOrientations } from "./sequence-transforms/orientation-propagation";
 import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+import type {
+  LOOPType} from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
-  LOOPType,
   SliceSize,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 

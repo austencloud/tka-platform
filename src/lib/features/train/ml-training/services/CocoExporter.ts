@@ -12,7 +12,6 @@ import {
 import type {
   CaptureSession,
   CapturedFrame,
-  PropAnnotation,
   COCODataset,
   COCOImage,
   COCOAnnotation,

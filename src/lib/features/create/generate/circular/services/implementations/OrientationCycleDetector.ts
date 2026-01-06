@@ -21,7 +21,6 @@ import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../../shared/domain/models/BeatData";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { StartPositionData } from "../../../../shared/domain/models/StartPositionData";
 
 export interface OrientationCycleResult {

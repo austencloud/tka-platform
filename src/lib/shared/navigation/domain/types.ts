@@ -39,7 +39,8 @@ export type ModuleId =
   | "admin"
   | "settings"
   | "3d-viewer"
-  | "mandala";
+  | "mandala"
+  | "gallery";
 
 /**
  * Module Definition

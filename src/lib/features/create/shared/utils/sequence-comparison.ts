@@ -6,6 +6,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { BeatData } from "../domain/models/BeatData";
+import type { StartPositionData } from "../domain/models/StartPositionData";
 
 /**
  * Compare two sequences for deep equality.
@@ -46,7 +48,10 @@ export function areSequencesEqual(
 /**
  * Deep compare two beat/pictograph objects
  */
-function areBeatsEqual(beat1: any, beat2: any): boolean {
+function areBeatsEqual(
+  beat1: BeatData | undefined,
+  beat2: BeatData | undefined
+): boolean {
   if (!beat1 && !beat2) return true;
   if (!beat1 || !beat2) return false;
 
@@ -63,7 +68,10 @@ function areBeatsEqual(beat1: any, beat2: any): boolean {
 /**
  * Deep compare two start position objects
  */
-function areStartPositionsEqual(pos1: any, pos2: any): boolean {
+function areStartPositionsEqual(
+  pos1: StartPositionData | undefined,
+  pos2: StartPositionData | undefined
+): boolean {
   if (!pos1 && !pos2) return true;
   if (!pos1 || !pos2) return false;
 

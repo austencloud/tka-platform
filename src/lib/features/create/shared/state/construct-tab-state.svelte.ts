@@ -14,10 +14,9 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { createHMRState } from "$lib/shared/utils/hmr-state-backup";
 import { createSimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 const debug = createComponentLogger("ConstructTabState");
-import type { BeatData } from "../domain/models/BeatData";
 import { createStartPositionData } from "../domain/factories/createStartPositionData";
 import type { ICreateModuleOrchestrator } from "../services/contracts/ICreateModuleOrchestrator";
 import type { ISequencePersister } from "../services/contracts/ISequencePersister";
@@ -27,7 +26,7 @@ import type { ISequenceTransformer } from "../services/contracts/ISequenceTransf
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
-import type { IUndoManager } from "../services/contracts/IUndoManager";
+import type { IUndoManager, UndoMetadata } from "../services/contracts/IUndoManager";
 import { UndoOperationType } from "../services/contracts/IUndoManager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { IFilterPersister } from "../../construct/option-picker/services/FilterPersister";
@@ -135,7 +134,7 @@ export function createConstructTabState(
         sequenceState,
         getActiveSection: () =>
           createModuleState?.activeSection || "constructor",
-        setActiveSectionInternal: async (panel, addToHistory) => {
+        setActiveSectionInternal: async (_panel, _addToHistory) => {
           // Construct tab doesn't need to change active section since it's always constructor
           // This is just for compatibility with the undo controller interface
         },
@@ -339,7 +338,7 @@ export function createConstructTabState(
           sequenceState.getCurrentSequenceData()
         );
 
-        if (savedState && savedState.hasStartPosition) {
+        if (savedState?.hasStartPosition) {
           debug.log(
             "Persisted state has start position, setting showStartPositionPicker = false"
           );
@@ -628,7 +627,7 @@ export function createConstructTabState(
     get undoHistory() {
       return undoController?.undoHistory || [];
     },
-    pushUndoSnapshot: (type: any, metadata?: any) => {
+    pushUndoSnapshot: (type: UndoOperationType, metadata?: UndoMetadata) => {
       undoController?.pushUndoSnapshot(type, metadata);
     },
     undo: () => {

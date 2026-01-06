@@ -46,7 +46,7 @@ export class ShortcutCustomizer implements IShortcutCustomizer {
   ): ShortcutConflict | null {
     // Check for conflicts first
     const conflict = this.detectConflict(shortcutId, keyCombo);
-    if (conflict && conflict.severity === "error") {
+    if (conflict?.severity === "error") {
       return conflict;
     }
 

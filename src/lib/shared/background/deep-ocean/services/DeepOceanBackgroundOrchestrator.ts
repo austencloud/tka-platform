@@ -7,11 +7,7 @@ import type {
 } from "../../shared/domain/types/background-types";
 import type { IBackgroundSystem } from "../../shared/services/contracts/IBackgroundSystem";
 import { TYPES } from "../../../inversify/types";
-import type {
-  DeepOceanState,
-  FishMarineLife,
-  JellyfishMarineLife,
-} from "../domain/models/DeepOceanModels";
+import type { DeepOceanState } from "../domain/models/DeepOceanModels";
 
 // Physics & Animation contracts
 import type { IBubblePhysics } from "./contracts/IBubblePhysics";

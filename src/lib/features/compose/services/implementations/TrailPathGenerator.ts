@@ -130,10 +130,6 @@ export class TrailPathGenerator {
     // Sample through the entire sequence
     const totalSamples = totalBeats * samplesPerBeat;
 
-    // Debug: Log first few samples to verify calculation
-    const DEBUG_SAMPLES = true;
-    const DEBUG_SAMPLE_INTERVAL = samplesPerBeat; // Log once per beat
-
     for (let i = 0; i <= totalSamples; i++) {
       const beat = i / samplesPerBeat;
       const timestamp = beat / totalBeats; // Normalized 0-1

@@ -266,7 +266,7 @@ export class DashLocationCalculator implements IDashLocationCalculator {
       ? pictographData.motions.red
       : pictographData.motions.blue;
 
-    if (!motion || motion.motionType.toLowerCase() !== "dash") {
+    if (motion?.motionType.toLowerCase() !== "dash") {
       // If not a dash motion, return start location as fallback
       return motion?.startLocation || GridLocation.NORTH;
     }

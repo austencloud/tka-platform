@@ -12,7 +12,6 @@
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SequenceState } from "../SequenceStateOrchestrator.svelte";
 import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
-import type { IUndoManager } from "../../services/contracts/IUndoManager";
 import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
 import type { IDeepLinkSequenceHandler } from "../../services/contracts/IDeepLinkSequenceHandler";
 import type { OptionHistoryManager } from "./option-history-manager.svelte";

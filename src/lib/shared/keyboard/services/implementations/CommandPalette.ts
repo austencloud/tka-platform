@@ -84,7 +84,7 @@ export class CommandPalette implements ICommandPalette {
 
     for (const id of this.recentCommandIds.slice(0, limit)) {
       const command = this.commands.get(id);
-      if (command && command.available) {
+      if (command?.available) {
         recent.push(command);
       }
     }

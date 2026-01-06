@@ -8,6 +8,15 @@
  * - Calculate available module sections based on context
  * - Synchronize navigation state changes
  */
+
+/**
+ * Document with optional View Transition API support
+ * Uses the native ViewTransition type from lib.dom.d.ts when available
+ */
+type DocumentWithViewTransition = Document & {
+  startViewTransition?: (callback: () => void | Promise<void>) => ViewTransition;
+};
+
 import type { ModuleId } from "../navigation/domain/types";
 import {
   MODULE_DEFINITIONS,
@@ -194,7 +203,7 @@ export async function handleModuleChange(
   const newIndex = MODULE_ORDER.indexOf(moduleId);
   const goingRight = newIndex > currentIndex;
 
-  const doc = document as any;
+  const doc = document as DocumentWithViewTransition;
 
   // Coming FROM dashboard - skip (Dashboard.svelte handles dive-in animation)
   // Exception: settings portal has its own animation that should always play
@@ -361,7 +370,7 @@ export function handleSectionChange(
   // Don't switch if same section
   if (sectionId === currentSectionId) return;
 
-  const doc = document as any;
+  const doc = document as DocumentWithViewTransition;
   const tabOrder = TAB_ORDERS[module] || [];
   const currentIndex = tabOrder.indexOf(currentSectionId);
   const newIndex = tabOrder.indexOf(sectionId);

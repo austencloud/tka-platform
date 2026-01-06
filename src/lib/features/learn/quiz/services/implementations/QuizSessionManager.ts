@@ -66,7 +66,7 @@ export class QuizSessionManager implements IQuizSessionManager {
     timeElapsed?: number
   ): QuizSession | null {
     const session = this.getSession(sessionId);
-    if (!session || !session.isActive) {
+    if (!session?.isActive) {
       return null;
     }
 
@@ -206,14 +206,14 @@ export class QuizSessionManager implements IQuizSessionManager {
     onTick?: (timeRemaining: number) => void
   ): void {
     const session = this.getSession(sessionId);
-    if (!session || session.quizMode !== QuizMode.COUNTDOWN) return;
+    if (session?.quizMode !== QuizMode.COUNTDOWN) return;
 
     // Clear existing timer
     this.stopTimer(sessionId);
 
     const timer = setInterval(() => {
       const currentSession = this.getSession(sessionId);
-      if (!currentSession || !currentSession.isActive) {
+      if (!currentSession?.isActive) {
         this.stopTimer(sessionId);
         return;
       }

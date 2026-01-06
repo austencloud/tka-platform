@@ -19,7 +19,7 @@ export function removeBeat(
   const selectedBeat = createModuleState.sequenceState.selectedBeatData;
 
   // Special case: Removing start position (beatNumber === 0) clears entire sequence
-  if (selectedBeat && selectedBeat.beatNumber === 0) {
+  if (selectedBeat?.beatNumber === 0) {
     logger.log("Removing start position - clearing entire sequence");
 
     createModuleState.pushUndoSnapshot(UndoOperationType.CLEAR_SEQUENCE, {

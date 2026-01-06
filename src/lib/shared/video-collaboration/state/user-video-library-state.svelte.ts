@@ -25,10 +25,7 @@
 
 import { getContext } from "svelte";
 import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
-import type {
-  ICollaborativeVideoManager,
-  UserVideoLibrary,
-} from "../services/contracts/ICollaborativeVideoManager";
+import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { Container } from "inversify";
 

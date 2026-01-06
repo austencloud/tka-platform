@@ -149,7 +149,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       quality = 0.9,
     } = body;
 
-    if (!sequence || !sequence.beats || sequence.beats.length === 0) {
+    if (!sequence?.beats || sequence.beats.length === 0) {
       return json({ error: "Invalid sequence data" }, { status: 400 });
     }
 

@@ -473,8 +473,7 @@ export class TrailCapturer implements ITrailCapturer {
         if (
           hasLargeBeatGap &&
           trailSettings.usePathCache &&
-          this.animationCacheService &&
-          this.animationCacheService.isValid()
+          this.animationCacheService?.isValid()
         ) {
           // CACHE BACKFILL: Device stuttered - fill gap with pre-computed points
           // Map all prop indices to primary props (0/1) for cache lookup
@@ -491,7 +490,6 @@ export class TrailCapturer implements ITrailCapturer {
           // Add cached points but apply distance filtering to maintain consistent spacing
           let lastAddedX = lastPoint.x;
           let lastAddedY = lastPoint.y;
-          let addedCount = 0;
 
           for (const cachedPoint of cachedPoints) {
             const dist = Math.hypot(
@@ -504,7 +502,6 @@ export class TrailCapturer implements ITrailCapturer {
               this.totalPointsCaptured++; // Track backfilled points too
               lastAddedX = cachedPoint.x;
               lastAddedY = cachedPoint.y;
-              addedCount++;
             }
           }
 

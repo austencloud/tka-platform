@@ -12,7 +12,7 @@ export function requireStepUpOrRecentAuth(
   const token = event.cookies.get(STEP_UP_COOKIE);
   const claims = secret ? verifyStepUpToken({ token, secret }) : null;
 
-  if (claims && claims.uid === params.uid) {
+  if (claims?.uid === params.uid) {
     return;
   }
 

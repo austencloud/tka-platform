@@ -4,7 +4,7 @@
  * Uses the centralized svg-color-utils for color transformation.
  */
 
-import { MotionColor } from "../../../../pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionColor } from "../../../../pictograph/shared/domain/enums/pictograph-enums";
 import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
 import type { PropType } from "../../../../pictograph/prop/domain/enums/PropType";
 import { applyMotionColorToSvg } from "../../../../utils/svg-color-utils";

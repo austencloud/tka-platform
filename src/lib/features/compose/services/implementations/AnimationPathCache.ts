@@ -209,7 +209,7 @@ export class AnimationPathCache {
     startBeat: number,
     endBeat: number
   ): TrailPoint[] {
-    if (!this.cacheData || !this.cacheData.isValid) {
+    if (!this.cacheData?.isValid) {
       return [];
     }
 
@@ -271,7 +271,7 @@ export class AnimationPathCache {
     startTimeMs: number,
     endTimeMs: number
   ): TrailPoint[] {
-    if (!this.cacheData || !this.cacheData.isValid) {
+    if (!this.cacheData?.isValid) {
       return [];
     }
 
@@ -317,7 +317,7 @@ export class AnimationPathCache {
     propIndex: 0 | 1,
     beat: number
   ): PrecomputedPropPosition | null {
-    if (!this.cacheData || !this.cacheData.isValid) {
+    if (!this.cacheData?.isValid) {
       return null;
     }
 
@@ -348,7 +348,7 @@ export class AnimationPathCache {
    * @returns Array of all pre-computed positions
    */
   getAllPositions(propIndex: 0 | 1): readonly PrecomputedPropPosition[] {
-    if (!this.cacheData || !this.cacheData.isValid) {
+    if (!this.cacheData?.isValid) {
       return [];
     }
 
@@ -364,7 +364,7 @@ export class AnimationPathCache {
    * Check if cache is valid and ready
    */
   isValid(): boolean {
-    return this.cacheData !== null && this.cacheData.isValid;
+    return this.cacheData?.isValid ?? false;
   }
 
   /**

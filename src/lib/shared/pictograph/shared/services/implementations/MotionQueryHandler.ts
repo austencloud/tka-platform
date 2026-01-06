@@ -133,7 +133,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
           row as unknown as CSVRow,
           gridMode
         );
-        if (pictograph && pictograph.id === motionId) {
+        if (pictograph?.id === motionId) {
           return pictograph;
         }
       }

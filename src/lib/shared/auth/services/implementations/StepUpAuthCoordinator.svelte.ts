@@ -54,7 +54,7 @@ export class StepUpAuthCoordinator implements IStepUpAuthCoordinator {
       return;
     } catch (e: unknown) {
       const code =
-        typeof e === "object" && e && "code" in e ? (e as any).code : null;
+        typeof e === "object" && e && "code" in e ? (e as { code: string }).code : null;
       if (code !== "step_up_required") throw e;
     }
 

@@ -41,7 +41,7 @@ export function createAppState(): IAppState {
     },
 
     get canUseApp() {
-      return true && !showSettings; // isReady replaced with true for now
+      return !showSettings; // isReady check removed since app is always ready
     },
 
     // ============================================================================

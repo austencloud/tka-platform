@@ -10,7 +10,7 @@ export interface ILetterClassifier {
   /**
    * Check if letter is HYBRID (uses motion type keys for special placement).
    * HYBRID letters: C, F, I, L, O, R, U, V, W, X, Y, Z, W-, X-, Y-, Z-,
-   * Σ, Δ, θ, Ω, Σ-, Δ-, θ-, Ω-, Φ, Ψ, Λ
+   * Σ, Δ, Θ, Ω, Σ-, Δ-, Θ-, Ω-, Φ, Ψ, Λ
    *
    * @param letter Letter to check
    * @returns true if letter is HYBRID

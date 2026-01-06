@@ -27,7 +27,6 @@ import {
   flipMotion,
   rotateMotion,
   swapMotionColor,
-  invertMotion,
 } from "./motion-transforms";
 import { invertMotionType, reverseRotationDirection } from "./rotation-helpers";
 import type { TargetHand } from "../../../state/panel-coordination-state.svelte";

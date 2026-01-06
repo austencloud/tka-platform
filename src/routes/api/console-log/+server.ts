@@ -11,9 +11,11 @@ import {
  * Removes newlines, carriage returns, and ANSI escape sequences.
  */
 function sanitizeLogInput(input: string): string {
+  // eslint-disable-next-line no-control-regex
+  const ansiEscapeRegex = /\x1b\[[0-9;]*m/g;
   return input
     .replace(/[\r\n]/g, " ") // Replace newlines with spaces
-    .replace(/\x1b\[[0-9;]*m/g, "") // Remove ANSI escape sequences
+    .replace(ansiEscapeRegex, "") // Remove ANSI escape sequences
     .slice(0, 1000); // Limit length to prevent log flooding
 }
 

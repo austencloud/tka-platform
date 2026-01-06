@@ -4,6 +4,8 @@
  * Manages tester notifications for feedback updates.
  */
 
+import type {
+  Timestamp} from "firebase/firestore";
 import {
   collection,
   query,
@@ -15,15 +17,11 @@ import {
   deleteDoc,
   where,
   onSnapshot,
-  Timestamp,
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import type {
-  UserNotification,
-  TesterNotification,
-} from "../../domain/models/notification-models";
+import type { UserNotification } from "../../domain/models/notification-models";
 
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";

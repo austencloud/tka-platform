@@ -74,8 +74,8 @@ export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
 
     // Get a valid gallery-compatible identifier (word preferred, or non-UUID id)
     const getGalleryIdentifier = (s: SequenceData): string | null => {
-      if (s.word && s.word.trim()) return s.word;
-      if (s.name && s.name.trim() && !isUUID(s.name)) return s.name;
+      if (s.word?.trim()) return s.word;
+      if (s.name?.trim() && !isUUID(s.name)) return s.name;
       if (s.id && !isUUID(s.id)) return s.id;
       return null; // No gallery-compatible identifier available
     };

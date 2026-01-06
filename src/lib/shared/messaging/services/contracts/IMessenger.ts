@@ -7,7 +7,6 @@ import type {
   Message,
   CreateMessageInput,
   MessageFetchOptions,
-  MessageAttachment,
 } from "../../domain/models/message-models";
 
 export interface IMessenger {

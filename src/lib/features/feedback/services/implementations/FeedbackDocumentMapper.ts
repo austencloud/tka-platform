@@ -5,7 +5,7 @@
  * Handles type validation, timestamp conversion, and nested object mapping.
  */
 
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 import type { IFeedbackDocumentMapper } from "../contracts/IFeedbackDocumentMapper";
 import type {
   FeedbackItem,

@@ -12,10 +12,7 @@ import { resolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { IPropPlacer } from "$lib/shared/pictograph/prop/services/contracts/IPropPlacer";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import {
-  MotionColor,
-  Orientation,
-} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isBuugengFamilyProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
 export async function formatMotionText(

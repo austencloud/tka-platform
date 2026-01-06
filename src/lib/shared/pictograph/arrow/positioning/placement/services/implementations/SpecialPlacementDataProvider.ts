@@ -49,7 +49,7 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
           string[]
         >;
         this.manifests.set(gridMode, manifest);
-      } catch (error) {
+      } catch {
         // If manifest doesn't exist, cache empty object (no special placements for this gridMode)
         this.manifests.set(gridMode, {});
       } finally {
@@ -122,7 +122,7 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
         // Clean up the promise from cache when done
         this.loadingPromises.delete(cacheKey);
       }
-    } catch (error) {
+    } catch {
       // Missing special placement files are expected - return empty object (interpreted as zero adjustment)
       return {};
     }
@@ -164,7 +164,7 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
       if (this.cache[gridMode]?.[oriKey]) {
         this.cache[gridMode][oriKey][letter] = data;
       }
-    } catch (error) {
+    } catch {
       // If file doesn't exist, store empty object
       if (this.cache[gridMode]?.[oriKey]) {
         this.cache[gridMode][oriKey][letter] = {};

@@ -11,6 +11,7 @@
  * - split-half: First/second half of sequence have different directions
  */
 
+import type { Timestamp } from "firebase/firestore";
 import type {
   RotationDirectionPatternEntry,
   RotationDirectionValue,
@@ -256,7 +257,7 @@ export function templateToPattern(
     userId,
     beatCount,
     entries: template.generator(beatCount),
-    createdAt: null as any, // Not stored in Firebase
+    createdAt: null as unknown as Timestamp, // Not stored in Firebase
   };
 }
 

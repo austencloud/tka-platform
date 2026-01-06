@@ -221,7 +221,7 @@ class SettingsState implements ISettingsState {
    * Get settings without internal metadata fields for persistence
    */
   private getSettingsForPersistence(): AppSettings {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { _localTimestamp, ...settings } = settingsState;
     return settings as AppSettings;
   }
@@ -236,7 +236,7 @@ class SettingsState implements ISettingsState {
    */
   private applyRemoteSettings(remoteSettings: AppSettings): void {
     // Merge with defaults first, then layer remote settings
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { _localTimestamp: _remoteTs, ...remoteWithoutMeta } = remoteSettings;
     const merged = { ...DEFAULT_SETTINGS, ...remoteWithoutMeta };
 
@@ -571,7 +571,7 @@ class SettingsState implements ISettingsState {
 
     try {
       // Filter out _localTimestamp - it's only for in-memory conflict resolution
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       const { _localTimestamp, ...settingsToSave } = settings;
       localStorage.setItem(
         SETTINGS_STORAGE_KEY,

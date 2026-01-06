@@ -447,7 +447,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       // Clean up on error
       try {
         canvasRenderer.destroy();
-      } catch (_e) {
+      } catch {
         // Ignore cleanup errors
       }
       offscreenContainer.remove();

@@ -5,7 +5,6 @@
  * Designed for sequence-based animation - load sequences from the library.
  */
 
-import type { PropState3D } from "../domain/models/PropState3D";
 import type { MotionConfig3D } from "../domain/models/MotionData3D";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { Plane } from "../domain/enums/Plane";
@@ -82,30 +81,30 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
   }
 
   // Whether a sequence is loaded
-  let hasSequence = $derived(loadedSequence !== null);
+  const hasSequence = $derived(loadedSequence !== null);
 
   // Current beat info for display
-  let currentBeat = $derived<BeatMotionConfigs | null>(
+  const currentBeat = $derived<BeatMotionConfigs | null>(
     beatConfigs.length > 0 ? (beatConfigs[currentBeatIndex] ?? null) : null
   );
-  let totalBeats = $derived(beatConfigs.length);
+  const totalBeats = $derived(beatConfigs.length);
 
   // Active configs from current beat (null if no sequence)
-  let activeBlueConfig = $derived<MotionConfig3D | null>(
+  const activeBlueConfig = $derived<MotionConfig3D | null>(
     currentBeat?.blue ?? null
   );
 
-  let activeRedConfig = $derived<MotionConfig3D | null>(
+  const activeRedConfig = $derived<MotionConfig3D | null>(
     currentBeat?.red ?? null
   );
 
   // Computed prop states (only valid when config exists)
-  let bluePropState = $derived(
+  const bluePropState = $derived(
     activeBlueConfig
       ? propInterpolator.calculatePropState(activeBlueConfig, playback.progress)
       : null
   );
-  let redPropState = $derived(
+  const redPropState = $derived(
     activeRedConfig
       ? propInterpolator.calculatePropState(activeRedConfig, playback.progress)
       : null

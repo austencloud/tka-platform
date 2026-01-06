@@ -7,7 +7,6 @@
 <script lang="ts" module>
   export interface SaveMetadata {
     name: string;
-    visibility: "public" | "private" | "unlisted";
     tags: string[];
     collectionIds: string[];
     notes: string;
@@ -20,11 +19,9 @@
   import TagAutocompleteInput from "$lib/features/library/components/tags/TagAutocompleteInput.svelte";
   import SaveProgressOverlay from "$lib/features/library/components/SaveProgressOverlay.svelte";
   import ExpandableField from "$lib/features/library/components/ExpandableField.svelte";
-  import VisibilityToggle from "$lib/features/library/components/VisibilityToggle.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import type { SequenceVisibility } from "$lib/features/library/domain/models/LibrarySequence";
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
@@ -93,7 +90,6 @@
   let customDisplayName = $state("");
   let tags = $state<string[]>([]);
   let notes = $state("");
-  let isPublic = $state(true);
   let tagResetTrigger = $state(0);
 
   // Expandable sections
@@ -121,9 +117,6 @@
 
   const tkaName = $derived(derivedWord);
   const displayTkaName = $derived(simplifyAndTruncate(tkaName, 8));
-  const visibility = $derived<SequenceVisibility>(
-    isPublic ? "public" : "private"
-  );
   const currentUser = $derived(authState.user);
   const creatorName = $derived(
     currentUser?.displayName || currentUser?.email || "Anonymous"
@@ -140,12 +133,12 @@
 
   // Dynamic header content based on context
   const headerTitle = $derived(
-    showShareContext ? "Save to Share" : "Save to Library"
+    showShareContext ? "Add to Gallery" : "Add to Gallery"
   );
   const headerSubtitle = $derived(
     showShareContext
-      ? "Save your sequence first, then you can share it"
-      : "Add this sequence to your personal library"
+      ? "Add your sequence to the gallery to share it"
+      : "Publish this sequence to the gallery"
   );
 
   // Sync isOpen with show prop
@@ -193,7 +186,7 @@
         {
           name: tkaName,
           displayName: customDisplayName.trim() || undefined,
-          visibility,
+          visibility: "public", // All sequences are public
           tags,
           notes: notes.trim(),
         },
@@ -236,7 +229,7 @@
   showHandle={true}
   closeOnBackdrop={true}
   onClose={handleClose}
-  ariaLabel="Save to Library"
+  ariaLabel="Add to Gallery"
 >
   <div class="panel-inner">
     <SheetDragHandle />
@@ -298,12 +291,11 @@
         </div>
       {/if}
 
-      <!-- Creator & Visibility -->
-      <VisibilityToggle
-        {isPublic}
-        onToggle={() => (isPublic = !isPublic)}
-        {creatorName}
-      />
+      <!-- Creator Attribution -->
+      <div class="creator-section">
+        <i class="fas fa-user" aria-hidden="true"></i>
+        <span>By {creatorName}</span>
+      </div>
 
       <!-- Optional Fields -->
       <div class="optional-section">
@@ -375,10 +367,10 @@
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Saving...
+          Publishing...
         {:else}
-          <i class="fas fa-save" aria-hidden="true"></i>
-          Save to Library
+          <i class="fas fa-globe" aria-hidden="true"></i>
+          Add to Gallery
         {/if}
       </button>
     </div>
@@ -555,6 +547,20 @@
 
   .acknowledge-checkbox span {
     flex: 1;
+  }
+
+  /* Creator Attribution */
+  .creator-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-base, 16px);
+  }
+
+  .creator-section i {
+    opacity: 0.6;
   }
 
   /* Optional fields - secondary, collapsed by default */

@@ -34,8 +34,8 @@ function getProperFactors(n: number): number[] {
 /**
  * Calculate greatest common divisor
  */
-function gcd(a: number, b: number): number {
-  return b === 0 ? a : gcd(b, a % b);
+function _gcd(a: number, b: number): number {
+  return b === 0 ? a : _gcd(b, a % b);
 }
 
 /**
@@ -130,7 +130,6 @@ export class LayeredPathDetector implements ILayeredPathDetector {
       }
     } else if (blueCycle || redCycle) {
       // Only one hand has a clear cycle - still counts as layered path
-      const cycle = blueCycle || redCycle;
       rhythmType = "isorhythmic"; // Default assumption
     }
 
@@ -332,10 +331,10 @@ export class LayeredPathDetector implements ILayeredPathDetector {
         "Complete coverage: each half visits all 4 positional categories";
     } else {
       const missingFirst = Object.entries(firstHalf)
-        .filter(([_, count]) => count === 0)
+        .filter(([, count]) => count === 0)
         .map(([cat]) => cat);
       const missingSecond = Object.entries(secondHalf)
-        .filter(([_, count]) => count === 0)
+        .filter(([, count]) => count === 0)
         .map(([cat]) => cat);
       summary = `Partial coverage: first half missing ${missingFirst.join(", ") || "none"}, second half missing ${missingSecond.join(", ") || "none"}`;
     }

@@ -13,7 +13,7 @@
  * Direct TypeScript mirror of reference/modern/application/services/positioning/arrows/placement/special_placement_service.py
  */
 
-import type { Point } from "fabric";
+import type { Point as FabricPoint } from "fabric";
 import { inject, injectable } from "inversify";
 import { resolve } from "../../../../../../inversify/resolve-utils";
 import { TYPES } from "../../../../../../inversify/types";
@@ -64,7 +64,7 @@ export class SpecialPlacer implements ISpecialPlacer {
     pictographData: PictographData,
     arrowColor?: string,
     attributeKey?: string
-  ): Promise<Point | null> {
+  ): Promise<FabricPoint | null> {
     if (!motionData || !pictographData.letter) {
       return null;
     }
@@ -226,7 +226,7 @@ export class SpecialPlacer implements ISpecialPlacer {
       if (override === true) return true;
       if (override === false) return false;
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }

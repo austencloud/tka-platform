@@ -2,6 +2,7 @@ import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type {
   ISequenceTransferHandler,
   TransferCheckResult,
@@ -40,11 +41,11 @@ export class SequenceTransferHandler implements ISequenceTransferHandler {
     constructTabState: {
       sequenceState: {
         setCurrentSequence: (seq: SequenceData) => void;
-        setStartPosition: (pos: any) => void;
+        setStartPosition: (pos: StartPositionData | null) => void;
         saveCurrentState: (tab: BuildModeId) => Promise<void>;
       };
       syncGridModeFromSequence?: (mode: GridMode | undefined) => void;
-      setSelectedStartPosition: (pos: any) => void;
+      setSelectedStartPosition: (pos: StartPositionData | null) => void;
       setShowStartPositionPicker: (show: boolean) => void;
       syncPickerStateWithSequence?: () => void;
     }
@@ -62,8 +63,8 @@ export class SequenceTransferHandler implements ISequenceTransferHandler {
     constructTabState.sequenceState.setCurrentSequence(sequenceCopy);
 
     // Sync start position
-    const startPos =
-      sequenceCopy.startPosition || (sequenceCopy as any).startingPositionBeat;
+    const startPos: StartPositionData | undefined =
+      sequenceCopy.startPosition || sequenceCopy.startingPositionBeat;
     if (startPos) {
       constructTabState.sequenceState.setStartPosition(startPos);
       constructTabState.setSelectedStartPosition(startPos);

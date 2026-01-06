@@ -11,8 +11,9 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { injectable } from "inversify";
 import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { IDiscoverFilter } from "../contracts/IDiscoverFilter";
+import type {
+  LOOPType} from "$lib/features/create/generate/circular/domain/models/circular-models";
 import {
-  LOOPType,
   LOOP_TYPE_LABELS,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 

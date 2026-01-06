@@ -30,7 +30,7 @@ interface SidebarTourState {
  * Reactive tour state
  */
 function createSidebarTourState() {
-  let state = $state<SidebarTourState>({
+  const state = $state<SidebarTourState>({
     phase: "idle",
     currentStep: 0,
     wasCollapsed: false,

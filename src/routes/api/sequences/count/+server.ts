@@ -69,7 +69,7 @@ export const GET: RequestHandler = async () => {
         if (hasPng) {
           count++;
         }
-      } catch (error) {
+      } catch {
         // Skip directories we can't read
         continue;
       }

@@ -29,7 +29,7 @@
   import type { IVideoExporter } from "$lib/features/compose/services/contracts/IVideoExporter";
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
+  import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
   import { resolve, loadFeatureModule } from "../inversify/di";
   import { TYPES } from "../inversify/types";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
@@ -63,7 +63,7 @@
   } = $props();
 
   // Services
-  let sequenceService: ISequenceRepository | null = null;
+  let discoverLoader: IDiscoverLoader | null = null;
   let playbackController: IAnimationPlaybackController | null = null;
   let hapticService: IHapticFeedback | null = null;
   let videoExportOrchestrator: IVideoExportOrchestrator | null = null;
@@ -217,9 +217,6 @@
     (async () => {
       // Resolve core services immediately (Tier 1 - navigation module)
       try {
-        sequenceService = resolve<ISequenceRepository>(
-          TYPES.ISequenceRepository
-        );
         hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
         sheetRouterService = resolve<ISheetRouter>(TYPES.ISheetRouter);
         debug.success("Core services resolved");
@@ -232,6 +229,8 @@
         await loadFeatureModule("animate");
         debug.success("Animator module loaded");
 
+        // IDiscoverLoader is in discover.module which is loaded with "animate"
+        discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
         playbackController = resolve<IAnimationPlaybackController>(
           TYPES.IAnimationPlaybackController
         );
@@ -319,7 +318,7 @@
         (b) => b?.motions?.blue && b?.motions?.red
       ),
       hasPlaybackController: !!playbackController,
-      hasSequenceService: !!sequenceService,
+      hasDiscoverLoader: !!discoverLoader,
     });
 
     // Wait for services to be ready AND panel to be open AND sequence to exist
@@ -327,7 +326,7 @@
       isOpen &&
       servicesReady &&
       sequence &&
-      sequenceService &&
+      discoverLoader &&
       playbackController
     ) {
       // Check if this is the same sequence (prop type change only)
@@ -360,14 +359,14 @@
   });
 
   async function loadAndStartAnimation(seq: SequenceData, sequenceId: string) {
-    if (!sequenceService || !playbackController) return;
+    if (!discoverLoader || !playbackController) return;
 
     animationPanelState.setLoading(true);
     animationPanelState.setError(null);
 
     try {
       // Inline sequence loading
-      const loadedSequence = await loadSequenceData(seq, sequenceService);
+      const loadedSequence = await loadSequenceData(seq, discoverLoader);
 
       if (!loadedSequence) {
         throw new Error("Failed to load sequence");
@@ -408,7 +407,7 @@
    */
   async function loadSequenceData(
     sequence: SequenceData | null,
-    service: ISequenceRepository
+    loader: IDiscoverLoader
   ): Promise<SequenceData | null> {
     if (!sequence) return null;
 
@@ -417,67 +416,44 @@
       s.beats.length > 0 &&
       s.beats.some((beat) => beat?.motions?.blue && beat?.motions?.red);
 
-    // Check if identifier looks like a UUID (user-created sequence)
-    // UUIDs: 8-4-4-4-12 hex pattern, gallery words are letters like "DKIIEJII"
-    const isUUID = (id: string) =>
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        id
-      );
-
-    // Get a valid gallery-compatible identifier (word preferred, or non-UUID id)
-    const getGalleryIdentifier = (s: SequenceData): string | null => {
-      if (s.word && s.word.trim()) return s.word;
-      if (s.name && s.name.trim() && !isUUID(s.name)) return s.name;
-      if (s.id && !isUUID(s.id)) return s.id;
-      return null; // No gallery-compatible identifier available
-    };
-
-    let fullSequence = sequence;
-
     // If sequence already has motion data, use it directly
     if (hasMotionData(sequence)) {
-      fullSequence = sequence;
+      // Normalize startPosition and return
+      return normalizeStartPosition(sequence);
     }
-    // Load from database/gallery if needed (empty beats)
-    else if (sequence.id && (!sequence.beats || sequence.beats.length === 0)) {
-      const galleryId = getGalleryIdentifier(sequence);
-      if (galleryId) {
-        const loaded = await service.getSequence(galleryId);
-        if (loaded) {
-          fullSequence = loaded;
-        } else {
-          console.warn(`⚠️ Could not load sequence from gallery: ${galleryId}`);
+
+    // Try to load from gallery using word/name (gallery sequences)
+    const galleryId = sequence.word || sequence.name;
+    if (galleryId) {
+      try {
+        const loaded = await loader.loadFullSequenceData(galleryId);
+        if (loaded && hasMotionData(loaded)) {
+          return normalizeStartPosition(loaded);
         }
-      } else {
-        console.log(
-          `ℹ️ User-created sequence ${sequence.id} has no gallery entry`
-        );
-      }
-    }
-    // Hydrate if missing motion data (try gallery lookup)
-    else if (fullSequence && !hasMotionData(fullSequence)) {
-      const galleryId = getGalleryIdentifier(fullSequence);
-      if (galleryId) {
-        const hydrated = await service.getSequence(galleryId);
-        if (hydrated && hasMotionData(hydrated)) {
-          fullSequence = hydrated;
-        }
+      } catch (err) {
+        console.warn(`Could not load sequence from gallery: ${galleryId}`, err);
       }
     }
 
-    // Normalize startPosition
-    const withStarting = fullSequence as unknown as {
+    // Return original sequence if we couldn't load motion data
+    return normalizeStartPosition(sequence);
+  }
+
+  /**
+   * Normalize startPosition field from legacy formats
+   */
+  function normalizeStartPosition(sequence: SequenceData): SequenceData {
+    const withStarting = sequence as unknown as {
       startingPositionBeat?: unknown;
     };
-    if (!fullSequence.startPosition && withStarting.startingPositionBeat) {
-      fullSequence = {
-        ...fullSequence,
+    if (!sequence.startPosition && withStarting.startingPositionBeat) {
+      return {
+        ...sequence,
         startPosition:
           withStarting.startingPositionBeat as SequenceData["startPosition"],
       };
     }
-
-    return fullSequence;
+    return sequence;
   }
 
   /**

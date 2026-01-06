@@ -37,7 +37,7 @@ export function createSpotlightState() {
   // Helper functions
   function updateNavigationState(): void {
     const totalVariations = currentSequence?.thumbnails?.length ?? 0;
-    const currentIndex = displayState.currentVariationIndex;
+    const _currentIndex = displayState.currentVariationIndex;
 
     navigationState = {
       hasMultipleVariations: totalVariations > 1,

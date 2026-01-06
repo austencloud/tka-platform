@@ -30,10 +30,7 @@ import { PlatformDetector } from "../../mobile/services/implementations/Platform
 import { GestureHandler } from "../../mobile/services/implementations/GestureHandler";
 import { PWAEngagementTracker } from "../../mobile/services/implementations/PWAEngagementTracker";
 import { PWAInstallDismissalManager } from "../../mobile/services/implementations/PWAInstallDismissalManager";
-import {
-  SettingsState,
-  settingsService,
-} from "../../settings/state/SettingsState.svelte";
+import { settingsService } from "../../settings/state/SettingsState.svelte";
 import { FirebaseSettingsPersister } from "../../settings/services/implementations/FirebaseSettingsPersister";
 import { OnboardingPersister } from "../../onboarding/services/implementations/OnboardingPersister";
 import { TagManager } from "../../../features/library/services/implementations/TagManager";

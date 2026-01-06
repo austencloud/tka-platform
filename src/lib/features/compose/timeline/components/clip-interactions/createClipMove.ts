@@ -28,9 +28,7 @@ export function createClipMove(
   callbacks: ClipMoveCallbacks
 ): ClipMoveHandlers {
   let dragStartX = 0;
-  let dragStartY = 0;
   let dragStartValue = 0;
-  let originalTrackId = "";
   let currentTargetTrackId: string | null = null;
   let dragClipId: string | null = null; // Store clip ID for lookup during drag
 
@@ -149,9 +147,7 @@ export function createClipMove(
     // Store clip ID for lookup during drag (survives component remount)
     dragClipId = clip.id;
     dragStartX = e.clientX;
-    dragStartY = e.clientY;
     dragStartValue = clip.startTime;
-    originalTrackId = clip.trackId;
     currentTargetTrackId = null;
 
     // Initialize snap service for this drag operation

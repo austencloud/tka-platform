@@ -272,7 +272,7 @@ export class UniversalMetadataExtractor {
     const result = await this.extractMetadata(sequenceName, basePath);
 
     // Return in original format (without extraction metadata)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const {
       extractionSource: _extractionSource,
       extractionTime: _extractionTime,

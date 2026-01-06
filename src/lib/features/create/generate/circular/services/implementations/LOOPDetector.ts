@@ -14,7 +14,8 @@
 import { inject, injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../../shared/domain/models/BeatData";
-import { LOOPType, SliceSize } from "../../domain/models/circular-models";
+import type { LOOPType } from "../../domain/models/circular-models";
+import { SliceSize } from "../../domain/models/circular-models";
 import { LOOPComponent } from "../../../shared/domain/models/generate-models";
 import type {
   ILOOPDetector,
@@ -25,15 +26,12 @@ import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services
 import type { ILOOPTypeResolver } from "../../../shared/services/contracts/ILOOPTypeResolver";
 import { TYPES } from "$lib/shared/inversify/types";
 import {
-  HALVED_LOOPS,
-  QUARTERED_LOOPS,
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
   HALF_POSITION_MAP,
 } from "../../domain/constants/circular-position-maps";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
-  SWAPPED_POSITION_MAP,
   INVERTED_LETTER_MAP,
 } from "../../domain/constants/strict-loop-position-maps";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

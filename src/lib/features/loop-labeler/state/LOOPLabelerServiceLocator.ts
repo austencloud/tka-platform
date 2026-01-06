@@ -61,10 +61,10 @@ export class LOOPLabelerServiceLocator {
   /** Pre-cache all services (call after DI module is loaded) */
   cacheAll(): void {
     // Access each getter to trigger caching
-    this.sequenceLoader;
-    this.labelsRepository;
-    this.navigator;
-    this.detector;
+    void this.sequenceLoader;
+    void this.labelsRepository;
+    void this.navigator;
+    void this.detector;
   }
 
   /** Clear all cached services */

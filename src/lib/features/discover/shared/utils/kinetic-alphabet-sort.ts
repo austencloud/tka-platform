@@ -40,7 +40,7 @@ const KINETIC_ALPHABET_ORDER = [
   "Z",
   "Σ",
   "Δ",
-  "θ",
+  "Θ",
   "Ω",
   // Advanced Type 2s (spelled out for readability)
   "Mu",
@@ -52,7 +52,7 @@ const KINETIC_ALPHABET_ORDER = [
   "Z-",
   "Σ-",
   "Δ-",
-  "θ-",
+  "Θ-",
   "Ω-",
   // Type 4: Dash
   "Φ",

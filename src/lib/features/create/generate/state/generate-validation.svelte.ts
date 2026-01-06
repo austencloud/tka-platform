@@ -210,8 +210,7 @@ export function createGenerationValidationState() {
     // Warn about complex LOOP types for beginners
     if (
       config.level === 1 &&
-      config.loopType &&
-      config.loopType.includes("INVERTED")
+      config.loopType?.includes("INVERTED")
     ) {
       warnings.push({
         field: "loopType",

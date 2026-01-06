@@ -8,8 +8,9 @@
 import { injectable, inject } from "inversify";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type {
+  GridPosition} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
-  GridPosition,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
@@ -23,7 +24,7 @@ import type { IPositionAnalyzer } from "$lib/features/create/construct/option-pi
 import type { ILOOPValidator } from "../contracts/ILOOPValidator";
 import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
 import type { IOrientationAlignmentCalculator } from "../contracts/IOrientationAlignmentCalculator";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   LOOPType,
   SliceSize,
@@ -32,6 +33,7 @@ import {
   HALVED_LOOPS,
   QUARTERED_LOOPS,
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
+import type { LOOPOption } from "../contracts/ISequenceExtender";
 
 @injectable()
 export class BridgeFinder implements IBridgeFinder {
@@ -193,7 +195,7 @@ export class BridgeFinder implements IBridgeFinder {
     startPosition: GridPosition,
     newEndPosition: GridPosition
   ): {
-    available: import("../contracts/ISequenceExtender").LOOPOption[];
+    available: LOOPOption[];
     sliceSize: SliceSize;
   } {
     const positionPair = `${startPosition},${newEndPosition}`;

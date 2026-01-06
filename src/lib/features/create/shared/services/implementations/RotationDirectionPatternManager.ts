@@ -15,6 +15,7 @@
  * - DASH/STATIC at 0 turns are skipped (don't add rotation)
  */
 
+import type { Timestamp } from "firebase/firestore";
 import {
   collection,
   query,
@@ -55,7 +56,7 @@ import { resolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createBeatData } from "../../domain/factories/createBeatData";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
@@ -255,7 +256,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       motionQueryHandler = resolve<IMotionQueryHandler>(
         TYPES.IMotionQueryHandler
       );
-    } catch (e) {
+    } catch {
       logger.warn(
         "Could not resolve IMotionQueryHandler - letters will not be updated"
       );
@@ -510,7 +511,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       userId,
       beatCount: data.beatCount,
       entries: data.entries,
-      createdAt: null as any, // Will be populated by Firestore
+      createdAt: null as Timestamp | null, // Will be populated by Firestore
     };
   }
 

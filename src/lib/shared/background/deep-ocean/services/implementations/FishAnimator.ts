@@ -1,11 +1,7 @@
 import { inject, injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import { TYPES } from "../../../../inversify/types";
-import type {
-  FishMarineLife,
-  DepthLayer,
-  FishBehavior,
-} from "../../domain/models/DeepOceanModels";
+import type { FishMarineLife, DepthLayer } from "../../domain/models/DeepOceanModels";
 import type { IFishSpriteManager } from "../contracts/IFishSpriteManager";
 import type { IFishAnimator } from "../contracts/IFishAnimator";
 import {
@@ -294,7 +290,7 @@ export class FishAnimator implements IFishAnimator {
     fish: FishMarineLife,
     deltaSeconds: number,
     frameMultiplier: number,
-    dimensions: Dimensions
+    _dimensions: Dimensions
   ): void {
     switch (fish.behavior) {
       case "cruising":

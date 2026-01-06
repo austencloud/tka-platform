@@ -386,7 +386,7 @@ export class PageImageExportService implements IPageImageExportService {
       }
 
       return html2canvas;
-    } catch (error) {
+    } catch {
       throw new Error(
         "Failed to load html2canvas library. Check internet connection."
       );

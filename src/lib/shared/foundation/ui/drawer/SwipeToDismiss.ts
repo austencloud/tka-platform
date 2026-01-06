@@ -250,18 +250,16 @@ export class SwipeToDismiss {
     }
 
     // Only process if this drawer is the top drawer (prevents nested drawer conflicts)
-    // If not the top drawer, delegate swipe to dismiss the top drawer instead
+    // If not the top drawer, don't start tracking at all - let the top drawer handle it
     if (this.options.drawerId && !isTopDrawer(this.options.drawerId)) {
       console.log(
-        "[SwipeToDismiss] not top drawer, delegating to dismissTopDrawer"
+        "[SwipeToDismiss] not top drawer, ignoring gesture"
       );
-      // Don't start a drag on this drawer - instead, when gesture completes,
-      // we'll dismiss the top drawer. For now, track the gesture but don't
-      // apply visuals to this drawer.
-      this.delegatingToTopDrawer = true;
-    } else {
-      this.delegatingToTopDrawer = false;
+      // Don't track gesture on non-top drawer - the top drawer will handle it
+      // This prevents the bug where both parent and child drawers process the same swipe
+      return;
     }
+    this.delegatingToTopDrawer = false;
 
     // Track if we started on an interactive element
     const target = event.target as HTMLElement;

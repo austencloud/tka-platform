@@ -136,7 +136,7 @@ export class AudioLibrary implements IAudioLibrary {
   private async uploadToCloudBackground(
     trackId: string,
     file: File,
-    title: string
+    _title: string
   ): Promise<void> {
     try {
       const cloudUrl = await this.audioStorage.uploadAudioFile(trackId, file);

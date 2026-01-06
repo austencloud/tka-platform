@@ -87,8 +87,7 @@ export class GalleryRenderer implements IGalleryRenderer {
     // Check if existing start position is valid (has motion data for both hands)
     const existingStartPos = sequence.startPosition;
     const hasValidStartPosition =
-      existingStartPos &&
-      existingStartPos.motions?.blue &&
+      existingStartPos?.motions?.blue &&
       existingStartPos.motions?.red;
 
     // Check if first beat has valid motion data for derivation

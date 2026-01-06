@@ -10,6 +10,7 @@
  * - Complex: Higher turns, half-turns, high variance, floats - advanced
  */
 
+import type { Timestamp } from "firebase/firestore";
 import type {
   TurnPattern,
   TurnPatternEntry,
@@ -558,7 +559,7 @@ export function templateToPattern(
     id: `template-${template.name.toLowerCase().replace(/\s+/g, "-")}`,
     name: template.name,
     userId,
-    createdAt: null as any,
+    createdAt: null as unknown as Timestamp, // Not stored in Firebase
     beatCount: template.beatCount,
     entries: template.entries,
   };

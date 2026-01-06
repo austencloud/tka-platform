@@ -9,7 +9,6 @@
 
 import type {
   CustomBinding,
-  KeyModifier,
   ParsedKeyCombo,
   ShortcutConflict,
   ShortcutRegistrationOptions,

@@ -1,6 +1,6 @@
 import type { RequestHandler } from "@sveltejs/kit";
 import { json } from "@sveltejs/kit";
-import admin from "firebase-admin";
+import type admin from "firebase-admin";
 import { requireFirebaseUser } from "$lib/server/auth/requireFirebaseUser";
 import { getAdminAuth, getAdminDb } from "$lib/server/firebaseAdmin";
 import { requireStepUpOrRecentAuth } from "$lib/server/security/requireStepUp";

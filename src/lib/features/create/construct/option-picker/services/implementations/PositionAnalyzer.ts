@@ -66,7 +66,7 @@ export class PositionAnalyzer implements IPositionAnalyzer {
    */
   getPositionNumber(position: GridPosition): number | null {
     const match = position.toString().match(/(\d+)$/);
-    return match && match[1] ? parseInt(match[1], 10) : null;
+    return match?.[1] ? parseInt(match[1], 10) : null;
   }
 
   /**

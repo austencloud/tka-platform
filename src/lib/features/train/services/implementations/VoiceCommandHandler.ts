@@ -8,20 +8,25 @@
 import { injectable } from "inversify";
 import type { IVoiceCommandHandler } from "../contracts/IVoiceCommandHandler";
 
+// Augment Window interface for webkit prefixed SpeechRecognition
+interface WindowWithSpeechRecognition extends Window {
+  SpeechRecognition?: new () => SpeechRecognition;
+  webkitSpeechRecognition?: new () => SpeechRecognition;
+}
+
 @injectable()
 export class VoiceCommandHandler implements IVoiceCommandHandler {
-  private recognition: any = null;
+  private recognition: SpeechRecognition | null = null;
   private listening = false;
   private currentKeyword = "";
   private currentCallback: (() => void) | null = null;
 
   constructor() {
-    // Check for browser support
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      this.recognition = new SpeechRecognition();
+    // Check for browser support - use the global SpeechRecognition or webkit prefix
+    const win = window as WindowWithSpeechRecognition;
+    const SpeechRecognitionCtor = win.SpeechRecognition || win.webkitSpeechRecognition;
+    if (SpeechRecognitionCtor) {
+      this.recognition = new SpeechRecognitionCtor();
       this.setupRecognition();
     }
   }
@@ -36,23 +41,24 @@ export class VoiceCommandHandler implements IVoiceCommandHandler {
     this.recognition.maxAlternatives = 1;
 
     // Handle results
-    this.recognition.onresult = (event: any) => {
+    this.recognition.onresult = (event) => {
       const lastResultIndex = event.results.length - 1;
-      const transcript = event.results[lastResultIndex][0].transcript
-        .trim()
-        .toLowerCase();
+      const result = event.results[lastResultIndex];
+      if (result?.[0]) {
+        const transcript = result[0].transcript.trim().toLowerCase();
 
-      // Check if transcript contains the keyword
-      if (
-        this.currentKeyword &&
-        transcript.includes(this.currentKeyword.toLowerCase())
-      ) {
-        this.currentCallback?.();
+        // Check if transcript contains the keyword
+        if (
+          this.currentKeyword &&
+          transcript.includes(this.currentKeyword.toLowerCase())
+        ) {
+          this.currentCallback?.();
+        }
       }
     };
 
     // Handle errors
-    this.recognition.onerror = (event: any) => {
+    this.recognition.onerror = (event) => {
       console.error("[VoiceCommandHandler] Error:", event.error);
 
       // Auto-restart on certain errors
@@ -95,7 +101,7 @@ export class VoiceCommandHandler implements IVoiceCommandHandler {
     this.listening = true;
 
     try {
-      this.recognition.start();
+      this.recognition?.start();
     } catch (error) {
       console.error("[VoiceCommandHandler] Failed to start:", error);
       this.listening = false;
@@ -117,7 +123,8 @@ export class VoiceCommandHandler implements IVoiceCommandHandler {
   }
 
   isSupported(): boolean {
-    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    const win = window as WindowWithSpeechRecognition;
+    return !!(win.SpeechRecognition || win.webkitSpeechRecognition);
   }
 
   isListening(): boolean {

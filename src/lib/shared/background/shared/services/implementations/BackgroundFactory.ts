@@ -12,7 +12,7 @@ import { TYPES } from "../../../../inversify/types";
 import type { Container } from "inversify";
 
 // BackgroundFactoryParams doesn't exist in domain - define locally
-interface BackgroundFactoryParams {
+export interface BackgroundFactoryParams {
   type: BackgroundType;
   quality: QualityLevel;
   initialQuality: QualityLevel;
@@ -25,7 +25,7 @@ interface BackgroundFactoryParams {
 }
 
 // detectAppropriateQuality function doesn't exist - define locally
-function detectAppropriateQuality(): QualityLevel {
+function _detectAppropriateQuality(): QualityLevel {
   return "medium";
 }
 
@@ -49,8 +49,8 @@ const backgroundLoaders = {
 };
 
 // Track if DI modules are loaded
-let deepOceanModuleLoaded = false;
-let nightSkyModuleLoaded = false;
+let _deepOceanModuleLoaded = false;
+let _nightSkyModuleLoaded = false;
 
 export class BackgroundFactory {
   // Default accessibility settings
@@ -73,7 +73,7 @@ export class BackgroundFactory {
     const { nightSkyBackgroundModule } =
       await import("../../../night-sky/inversify/NightSkyModule");
     await container.load(nightSkyBackgroundModule);
-    nightSkyModuleLoaded = true;
+    _nightSkyModuleLoaded = true;
   }
 
   /**
@@ -87,7 +87,7 @@ export class BackgroundFactory {
       const { deepOceanBackgroundModule } =
         await import("../../../deep-ocean/inversify/DeepOceanModule");
       await container.load(deepOceanBackgroundModule);
-      deepOceanModuleLoaded = true;
+      _deepOceanModuleLoaded = true;
     }
     return container;
   }
@@ -97,6 +97,7 @@ export class BackgroundFactory {
   ): Promise<BackgroundSystem> {
     // Quality detection logic
     const quality: QualityLevel = options.initialQuality;
+    void quality; // Used for initial quality setup
 
     // Accessibility detection for window environments
     const accessibility: AccessibilitySettings = {
@@ -113,8 +114,8 @@ export class BackgroundFactory {
         if (prefersReducedMotion.matches) {
           accessibility.reducedMotion = true;
         }
-      } catch (error) {
-        console.warn("Could not detect reduced motion preference:", error);
+      } catch (_error) {
+        console.warn("Could not detect reduced motion preference:", _error);
       }
     }
 
@@ -234,7 +235,7 @@ export class BackgroundFactory {
   }
 
   public static async createOptimalBackgroundSystem(): Promise<BackgroundSystem> {
-    const quality = detectAppropriateQuality();
+    const quality = _detectAppropriateQuality();
 
     // Default to nightSky as the preferred background
     return await this.createBackgroundSystem({
@@ -245,7 +246,7 @@ export class BackgroundFactory {
   }
 
   public static isBackgroundSupported(type: BackgroundType): boolean {
-    const quality = detectAppropriateQuality();
+    const quality = _detectAppropriateQuality();
 
     switch (type) {
       case BackgroundType.SNOWFALL:

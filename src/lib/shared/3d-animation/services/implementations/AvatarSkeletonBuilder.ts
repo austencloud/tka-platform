@@ -6,7 +6,8 @@
  */
 
 import { injectable } from "inversify";
-import { Object3D, Bone, SkinnedMesh, Skeleton, Vector3, Box3 } from "three";
+import type { Object3D, Bone, SkinnedMesh, Skeleton} from "three";
+import { Vector3, Box3 } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type {
   IAvatarSkeletonBuilder,

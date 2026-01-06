@@ -76,20 +76,8 @@ function humanizeMessage(parsed: ParsedCommit): string {
   // Capitalize first letter
   msg = msg.charAt(0).toUpperCase() + msg.slice(1);
 
-  // Clean up scope references
-  if (parsed.scope) {
-    const scopeMap: Record<string, string> = {
-      nav: "navigation",
-      auth: "authentication",
-      ui: "interface",
-      discover: "discovery",
-      animate: "animations",
-      create: "creation tools",
-      feedback: "feedback system",
-      settings: "settings",
-    };
-    // Don't include scope in message, it's too technical
-  }
+  // Don't include scope in message, it's too technical
+  // (scope info from parsed.scope is intentionally ignored)
 
   // Add appropriate prefix based on type
   switch (parsed.type) {

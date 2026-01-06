@@ -17,7 +17,6 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  Timestamp,
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
@@ -31,10 +30,7 @@ import type {
   TrainChallengeFilters,
   TrainChallengeScore,
 } from "../../domain/models/TrainChallengeModels";
-import {
-  isChallengeAvailable,
-  isChallengeExpired,
-} from "../../domain/models/TrainChallengeModels";
+import { isChallengeAvailable } from "../../domain/models/TrainChallengeModels";
 import type { ITrainChallengeManager } from "../contracts/ITrainChallengeManager";
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import { TYPES } from "$lib/shared/inversify/types";
@@ -405,6 +401,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
   // PRIVATE HELPERS
   // ============================================================================
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _convertFirestoreChallenge(data: any, docId: string): TrainChallenge {
     return {
       ...data,
@@ -415,6 +412,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     } as TrainChallenge;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _convertFirestoreProgress(data: any): UserTrainChallengeProgress {
     return {
       ...data,

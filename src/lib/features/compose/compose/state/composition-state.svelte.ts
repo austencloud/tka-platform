@@ -16,11 +16,7 @@ import {
 import { createCellsFromTemplate, getTemplateById } from "../domain/templates";
 
 // Import types and helpers
-import type {
-  WorkflowPhase,
-  BeatMarker,
-  TempoRegion,
-} from "./composition-types";
+import type { WorkflowPhase } from "./composition-types";
 import { STORAGE_KEYS } from "./composition-types";
 import {
   createDefaultComposition,

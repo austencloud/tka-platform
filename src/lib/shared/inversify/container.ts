@@ -13,7 +13,7 @@
  * @module container
  */
 
-import { Container } from "inversify";
+import type { Container } from "inversify";
 import type { ContainerModule } from "inversify";
 import { HMRContainerManager } from "./hmr/HMRContainerManager";
 
@@ -25,11 +25,11 @@ export { TYPES } from "./types";
 // ============================================================================
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __TKA_CONTAINER__: Container | undefined;
-  // eslint-disable-next-line no-var
+   
   var __TKA_CONTAINER_INITIALIZED__: boolean | undefined;
-  // eslint-disable-next-line no-var
+   
   var __TKA_HMR_MANAGER__: HMRContainerManager | undefined;
 }
 
@@ -96,7 +96,7 @@ if (import.meta.hot) {
 /**
  * Get names of tier 1 and tier 2 modules
  */
-function getTierModuleNames(): string[] {
+function _getTierModuleNames(): string[] {
   return [
     // Tier 1: Core infrastructure
     "core",
@@ -528,6 +528,25 @@ export async function loadFeatureModule(feature: string): Promise<void> {
         // Wait for tier 2 (pictograph module has arrow loading services)
         if (tier2Promise) await tier2Promise;
         await loadIfNeeded("mandala", () => import("./modules/mandala.module"));
+        break;
+
+      case "gallery":
+        // Gallery needs library services (which depends on build module for OrientationCycleDetector)
+        // and 3D animation. Build module requires tier2 services.
+        if (tier2Promise) await tier2Promise;
+        await Promise.all([
+          loadIfNeeded("create", () => import("./modules/build.module")),
+          loadIfNeeded("library", () => import("./modules/library.module")),
+          loadIfNeeded(
+            "gallery",
+            () => import("../../features/gallery/inversify/gallery.module")
+          ),
+          loadIfNeeded(
+            "animation-3d",
+            () =>
+              import("../../shared/3d-animation/inversify/animation-3d.module")
+          ),
+        ]);
         break;
 
       default:

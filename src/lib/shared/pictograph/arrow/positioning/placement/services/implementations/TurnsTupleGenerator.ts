@@ -117,7 +117,7 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
 
       // Fallback
       return this.generateType1NonHybridTuple(blueMotion, redMotion);
-    } catch (error) {
+    } catch {
       return "(0, 0)";
     }
   }
@@ -151,8 +151,8 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
         return "TYPE4";
       }
 
-      // TYPE2: Shift-only letters (W, X, Y, Z, Σ, Δ, θ, Ω)
-      if (["W", "X", "Y", "Z", "Σ", "Δ", "θ", "Ω"].includes(letter)) {
+      // TYPE2: Shift-only letters (W, X, Y, Z, Σ, Δ, Θ, Ω)
+      if (["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"].includes(letter)) {
         return "TYPE2";
       }
 
@@ -211,7 +211,7 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
 
   /**
    * Generate TYPE2 tuple: (shift_turns, static_turns) or (direction, shift_turns, static_turns)
-   * Used for: W, X, Y, Z, Σ, Δ, θ, Ω
+   * Used for: W, X, Y, Z, Σ, Δ, Θ, Ω
    */
   private generateType2Tuple(
     blueMotion: MotionData,
@@ -274,7 +274,7 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
 
   /**
    * Generate TYPE3 tuple: (direction, shift_turns, dash_turns)
-   * Used for Cross-Shift letters (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-)
+   * Used for Cross-Shift letters (W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-)
    */
   private generateType3Tuple(
     blueMotion: MotionData,

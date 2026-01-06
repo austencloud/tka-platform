@@ -15,7 +15,7 @@ import type { IArrowPlacementKeyGenerator } from "../contracts/IArrowPlacementKe
 export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
   // Letter condition mappings from desktop
   private readonly dashLetterConditions = {
-    TYPE3: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "θ-", "Ω-"],
+    TYPE3: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
     TYPE5: ["Φ-", "Ψ-", "Λ-"],
   };
 
@@ -230,12 +230,12 @@ export class ArrowPlacementKeyGenerator implements IArrowPlacementKeyGenerator {
       // Type2 Greek letters
       "Σ",
       "Δ",
-      "θ",
+      "Θ",
       "Ω",
       // Type3 cross-shift Greek
       "Σ-",
       "Δ-",
-      "θ-",
+      "Θ-",
       "Ω-",
       // Type4 dash
       "Λ",

@@ -8,6 +8,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
 
 export type TransferCheckResult =
   | { action: "transfer"; sequence: SequenceData }
@@ -38,11 +39,11 @@ export interface ISequenceTransferHandler {
     constructTabState: {
       sequenceState: {
         setCurrentSequence: (seq: SequenceData) => void;
-        setStartPosition: (pos: any) => void;
+        setStartPosition: (pos: StartPositionData | null) => void;
         saveCurrentState: (tab: BuildModeId) => Promise<void>;
       };
       syncGridModeFromSequence?: (mode: GridMode | undefined) => void;
-      setSelectedStartPosition: (pos: any) => void;
+      setSelectedStartPosition: (pos: StartPositionData | null) => void;
       setShowStartPositionPicker: (show: boolean) => void;
       syncPickerStateWithSequence?: () => void;
     }

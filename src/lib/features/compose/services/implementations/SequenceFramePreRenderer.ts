@@ -182,8 +182,6 @@ export class SequenceFramePreRenderer {
       const viewBoxMatch = svgText.match(
         /viewBox\s*=\s*"([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)\s+([\d.-]+)"/i
       );
-      const viewBoxX = viewBoxMatch?.[1] ? parseFloat(viewBoxMatch[1]) : 0;
-      const viewBoxY = viewBoxMatch?.[2] ? parseFloat(viewBoxMatch[2]) : 0;
       const viewBoxWidth = viewBoxMatch?.[3]
         ? parseFloat(viewBoxMatch[3])
         : 100;
@@ -564,7 +562,7 @@ export class SequenceFramePreRenderer {
    * @returns Frame bitmap or null if not available
    */
   getFrameAtTimestamp(timestamp: number): ImageBitmap | null {
-    if (!this.currentRender || !this.currentRender.isComplete) {
+    if (!this.currentRender?.isComplete) {
       return null;
     }
 
@@ -581,7 +579,7 @@ export class SequenceFramePreRenderer {
    * @returns Frame bitmap or null if not available
    */
   getFrameAtBeat(beat: number): ImageBitmap | null {
-    if (!this.currentRender || !this.currentRender.isComplete) {
+    if (!this.currentRender?.isComplete) {
       return null;
     }
 
@@ -687,7 +685,7 @@ export class SequenceFramePreRenderer {
       for (const frame of this.currentRender.frames) {
         try {
           frame.bitmap.close();
-        } catch (e) {
+        } catch {
           // ImageBitmap may already be closed
         }
       }

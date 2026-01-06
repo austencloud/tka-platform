@@ -15,6 +15,7 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  type FieldValue,
 } from "firebase/firestore";
 import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
 import type {
@@ -59,7 +60,7 @@ export async function saveTrackMetadata(
   const docRef = doc(collectionRef, trackId);
 
   const trackData: Omit<AudioTrack, "addedAt"> & {
-    addedAt: ReturnType<typeof serverTimestamp>;
+    addedAt: FieldValue;
   } = {
     trackId,
     title: metadata.title,
@@ -67,7 +68,7 @@ export async function saveTrackMetadata(
     thumbnailUrl: metadata.thumbnailUrl,
     duration: metadata.duration,
     source: metadata.source,
-    addedAt: serverTimestamp() as any,
+    addedAt: serverTimestamp(),
     downloadCount: 1,
     fileSize: metadata.fileSize,
     bpm: metadata.bpm,
@@ -88,7 +89,7 @@ export async function updateTrackMetadata(
   const collectionRef = await getUserAudioCollection();
   const docRef = doc(collectionRef, trackId);
 
-  await updateDoc(docRef, updates as any);
+  await updateDoc(docRef, updates as Record<string, unknown>);
 }
 
 /**

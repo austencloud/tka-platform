@@ -1,4 +1,5 @@
 import type { MandalaConfig } from "./mandala-config";
+import type { SerializedMandalaElement } from "./mandala-element";
 
 /**
  * A preset style configuration for quick mandala creation.
@@ -40,7 +41,7 @@ export interface SavedMandala {
   config: MandalaConfig;
 
   /** Serialized source elements */
-  elements: import("./mandala-element").SerializedMandalaElement[];
+  elements: SerializedMandalaElement[];
 
   /** Thumbnail data URI */
   thumbnailDataUri?: string;
@@ -68,7 +69,7 @@ export function createSavedMandala(
   userId: string,
   name: string,
   config: MandalaConfig,
-  elements: import("./mandala-element").SerializedMandalaElement[]
+  elements: SerializedMandalaElement[]
 ): Omit<SavedMandala, "id"> {
   const now = new Date().toISOString();
   return {

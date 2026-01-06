@@ -344,7 +344,7 @@ export function registerCreateShortcuts(
       // Check if start position (beat 0) is selected
       const selectedBeatData = sequenceState.selectedBeatData;
 
-      if (selectedBeatData && selectedBeatData.beatNumber === 0) {
+      if (selectedBeatData?.beatNumber === 0) {
         // Start position is selected - clear entire sequence using the same workflow as clear button
         try {
           await executeClearSequenceWorkflow({

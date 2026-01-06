@@ -5,12 +5,7 @@
  * for displaying error modals/toasts to users.
  */
 
-import type {
-  AppError,
-  ErrorContext,
-  ErrorSeverity,
-  ShowErrorOptions,
-} from "../domain/error-models";
+import type { AppError, ErrorSeverity, ShowErrorOptions } from "../domain/error-models";
 
 // Reactive error state
 let currentError = $state<AppError | null>(null);

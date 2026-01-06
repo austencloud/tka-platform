@@ -46,7 +46,8 @@ export interface InfoPanelContent {
   subtitle: string;
 }
 
-export interface InfoSupportContent extends InfoPanelContent {}
+// Type alias - same structure as InfoPanelContent
+export type InfoSupportContent = InfoPanelContent;
 
 export interface InfoDevContent extends InfoPanelContent {
   message: string;

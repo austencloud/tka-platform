@@ -22,7 +22,7 @@ import type {
   TesterConfirmationStatus,
   FeedbackStatus,
 } from "../../domain/models/feedback-models";
-import type { NotificationType } from "../../domain/models/notification-models";
+import type { FeedbackNotification } from "../../domain/models/notification-models";
 import { notificationTriggerService } from "./NotificationTrigger";
 import type { IFeedbackQueryService } from "../contracts/IFeedbackQueryService";
 import { feedbackQueryService } from "./FeedbackQuerier";
@@ -158,7 +158,7 @@ export class FeedbackTesterWorkflowService implements IFeedbackTesterWorkflowSer
     userId: string,
     feedbackId: string,
     feedbackTitle: string,
-    type: NotificationType,
+    type: FeedbackNotification["type"],
     message: string
   ): Promise<void> {
     const admin = authState.user;
@@ -166,7 +166,7 @@ export class FeedbackTesterWorkflowService implements IFeedbackTesterWorkflowSer
 
     await notificationTriggerService.createFeedbackNotification(
       userId,
-      type as any,
+      type,
       feedbackId,
       feedbackTitle,
       message,

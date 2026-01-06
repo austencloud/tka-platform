@@ -5,9 +5,9 @@
  */
 
 import { injectable } from "inversify";
-import { Vector3, Quaternion } from "three";
+import type { Vector3, Quaternion } from "three";
 import type { IPlaneCoordinateMapper } from "../contracts/IPlaneCoordinateMapper";
-import { Plane } from "../../domain/enums/Plane";
+import type { Plane } from "../../domain/enums/Plane";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   GRID_RADIUS_3D,

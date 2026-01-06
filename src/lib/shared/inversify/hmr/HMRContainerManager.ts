@@ -663,7 +663,7 @@ export class HMRContainerManager {
 // ============================================================================
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __TKA_HMR_MANAGER__: HMRContainerManager | undefined;
 }
 

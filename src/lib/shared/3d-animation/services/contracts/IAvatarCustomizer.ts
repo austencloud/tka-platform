@@ -5,7 +5,7 @@
  * skin tone, proportions, and accessories.
  */
 
-import type { Color, Material, Texture } from "three";
+import type { Material } from "three";
 
 /**
  * Body type preset

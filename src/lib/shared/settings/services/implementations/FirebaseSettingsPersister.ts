@@ -53,7 +53,7 @@ export class FirebaseSettingsPersister implements ISettingsPersister {
       if (docSnap.exists()) {
         const data = docSnap.data();
         // Remove Firestore metadata fields
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const {
           updatedAt: _updatedAt,
           createdAt: _createdAt,
@@ -171,7 +171,7 @@ export class FirebaseSettingsPersister implements ISettingsPersister {
             if (snapshot.exists()) {
               const data = snapshot.data();
               // Remove Firestore metadata fields
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+               
               const {
                 updatedAt: _updatedAt,
                 createdAt: _createdAt,

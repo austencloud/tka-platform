@@ -64,7 +64,6 @@ export function createSakuraWindSystem(): SakuraWindSystem {
   };
 
   function initialize(): void {
-    const wind = getWindConstants();
     state.framesSinceLastGust = 0;
     state.nextGustIn = getNextGustInterval();
     state.ambientPhase = Math.random() * Math.PI * 2;

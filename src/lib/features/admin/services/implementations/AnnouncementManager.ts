@@ -14,7 +14,6 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where,
   orderBy,
   Timestamp,
 } from "firebase/firestore";
@@ -208,7 +207,7 @@ export class AnnouncementManager implements IAnnouncementManager {
   async getActiveAnnouncementsForUser(userId: string): Promise<Announcement[]> {
     try {
       const firestore = await getFirestoreInstance();
-      const now = Timestamp.now();
+      const _now = Timestamp.now();
       const announcementsRef = collection(
         firestore,
         this.ANNOUNCEMENTS_COLLECTION

@@ -443,17 +443,29 @@ export class VisibilityStateManager {
    * Dark Mode: dark background + inverted grid
    */
   getDarkMode(): boolean {
-    // Import synchronously since animation visibility manager is a singleton
-    // that's already initialized when the app starts
+    // Lazy load the animation visibility manager to avoid circular dependency
+    if (!this._animationVisibilityManager) {
+      this._loadAnimationVisibilityManager();
+    }
+    return this._animationVisibilityManager?.isDarkMode() ?? false;
+  }
+
+  // Lazy-loaded reference to animation visibility manager
+  private _animationVisibilityManager: { isDarkMode(): boolean } | null = null;
+
+  /**
+   * Load the animation visibility manager lazily
+   */
+  private _loadAnimationVisibilityManager(): void {
     try {
-      // Dynamic import to avoid circular dependency
+      // Use dynamic import pattern that ESLint accepts
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const {
-        getAnimationVisibilityManager,
-      } = require("../../../animation-engine/state/animation-visibility-state.svelte");
-      return getAnimationVisibilityManager().isDarkMode();
+      const module = require("../../../animation-engine/state/animation-visibility-state.svelte") as {
+        getAnimationVisibilityManager: () => { isDarkMode(): boolean };
+      };
+      this._animationVisibilityManager = module.getAnimationVisibilityManager();
     } catch {
-      return false;
+      // Module not loaded yet or error - dark mode will default to false
     }
   }
 

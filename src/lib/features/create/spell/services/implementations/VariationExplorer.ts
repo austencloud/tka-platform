@@ -6,8 +6,8 @@
  */
 
 import { inject, injectable } from "inversify";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";

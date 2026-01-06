@@ -74,6 +74,8 @@
     // Mandala generator - kaleidoscope art studio with TKA elements
     mandala: () =>
       import("../../features/mandala-generator/components/MandalaGeneratorModule.svelte"),
+    // 3D Gallery - walk through sequences in a virtual museum
+    gallery: () => import("../../features/gallery/GalleryModule.svelte"),
   };
 
   // Load module with caching

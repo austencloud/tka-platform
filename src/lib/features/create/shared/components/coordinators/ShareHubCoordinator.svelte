@@ -24,8 +24,6 @@
   import { onMount, onDestroy } from "svelte";
   import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
   import type { ExportSettings } from "$lib/shared/share-hub/domain/models/ExportSettings";
-  import SaveToLibraryPanel from "../SaveToLibraryPanel.svelte";
-  import SavePromptDialog from "../dialogs/SavePromptDialog.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
   import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
@@ -141,12 +139,6 @@
   const isMobile = platform === "ios" || platform === "android";
 
   // State
-  let showSavePrompt = $state(false); // Step 1: Confirmation dialog
-  let showSaveToLibrary = $state(false); // Step 2: Full save panel
-  let pendingExport = $state<{
-    mode: "single" | "composite";
-    settings?: ExportSettings;
-  } | null>(null);
   let isExporting = $state(false);
   let exportProgress = $state<VideoExportProgress | null>(null);
 
@@ -166,11 +158,6 @@
   // Derived: Get current sequence from active tab
   const currentSequence = $derived(
     CreateModuleState.sequenceState.currentSequence
-  );
-
-  // Check if sequence is saved to library
-  const isSequenceSaved = $derived(
-    ctx.sessionManager?.getCurrentSession()?.isSaved ?? false
   );
 
   // Animation-specific derived values
@@ -645,17 +632,6 @@
     settings?: ExportSettings
   ) {
     if (isExporting) return;
-
-    // Check if sequence is saved
-    if (!isSequenceSaved) {
-      pendingExport = { mode, settings };
-      // Step 1: Show confirmation prompt first
-      showSavePrompt = true;
-      hapticService?.trigger("selection");
-      return;
-    }
-
-    // Sequence is saved, proceed with export
     await performExport(mode, settings);
   }
 
@@ -738,56 +714,14 @@
 
   async function handleExportVideo() {
     if (isExporting) return;
-
-    // Check if sequence is saved first
-    if (!isSequenceSaved) {
-      pendingExport = { mode: "single", settings: { format: "animation" } };
-      // Step 1: Show confirmation prompt first
-      showSavePrompt = true;
-      hapticService?.trigger("selection");
-      return;
-    }
-
-    // Proceed with animation export
     await performExport("single", { format: "animation" });
   }
 
-  // Step 1: User confirmed they want to save → show full save panel
-  function handleSavePromptConfirm() {
-    showSavePrompt = false;
-    showSaveToLibrary = true;
-  }
-
-  // Step 1: User cancelled the save prompt → don't proceed
-  function handleSavePromptCancel() {
-    showSavePrompt = false;
-    pendingExport = null;
-  }
-
-  // Step 2: Save completed → proceed with export
-  function handleSaveComplete(savedSequenceId: string) {
-    showSaveToLibrary = false;
-
-    // Proceed with pending export
-    if (pendingExport) {
-      performExport(pendingExport.mode, pendingExport.settings);
-      pendingExport = null;
-    }
-
-    hapticService?.trigger("success");
-  }
-
-  // Step 2: User cancelled from save panel
-  function handleSaveCancel() {
-    showSaveToLibrary = false;
-    pendingExport = null;
-  }
 </script>
 
 <ShareHubDrawer
   isOpen={panelState.isShareHubPanelOpen}
   sequence={currentSequence}
-  {isSequenceSaved}
   {isMobile}
   onClose={handleClose}
   onExport={handleExport}
@@ -827,22 +761,3 @@
   onToggleBlue={handleToggleBlueMotion}
   onToggleRed={handleToggleRedMotion}
 />
-
-<!-- Step 1: Confirmation dialog asking if they want to save -->
-<SavePromptDialog
-  bind:show={showSavePrompt}
-  title="Save to Library First?"
-  message="Before sharing, your sequence needs to be saved to your library. This lets you access shared content later."
-  on:save={handleSavePromptConfirm}
-  on:cancel={handleSavePromptCancel}
-/>
-
-<!-- Step 2: Full save panel with options -->
-{#if showSaveToLibrary}
-  <SaveToLibraryPanel
-    show={showSaveToLibrary}
-    showShareContext={true}
-    onSaveComplete={handleSaveComplete}
-    onClose={handleSaveCancel}
-  />
-{/if}

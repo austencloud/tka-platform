@@ -18,7 +18,7 @@ import type { BeatData } from "../../../domain/models/BeatData";
 import { createBeatData } from "../../../domain/factories/createBeatData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 import {
@@ -171,7 +171,8 @@ export async function rotateBeat(
 
   const currentGridMode =
     beat.motions[MotionColor.BLUE]?.gridMode ?? GridMode.DIAMOND;
-  const newGridMode = getToggledGridMode(currentGridMode, rotationAmount);
+  // Note: newGridMode is calculated but not used - positions are derived from motion locations
+  void getToggledGridMode(currentGridMode, rotationAmount);
 
   const rotatedMotions = { ...beat.motions };
   if (

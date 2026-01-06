@@ -62,7 +62,7 @@ export function createWordCardState(
 
     // Simple client-side filtering for now
     return allSequences.filter(
-      (seq) => seq.beats && seq.beats.length === displayState.selectedLength
+      (seq) => seq.beats?.length === displayState.selectedLength
     );
   });
 

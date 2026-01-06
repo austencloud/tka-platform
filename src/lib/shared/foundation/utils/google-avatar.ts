@@ -56,7 +56,7 @@ export function extractGoogleIdFromUrl(
 
   // Match patterns like /a/ACg8ocJ... or /a-/ACg8ocJ...
   const match = url.match(/\/a[-]?\/([^=?/]+)/);
-  if (match && match[1]) {
+  if (match?.[1]) {
     return match[1];
   }
 

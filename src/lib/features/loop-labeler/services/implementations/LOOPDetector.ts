@@ -650,7 +650,7 @@ export class LOOPDetector implements ILOOPDetector {
       4
     );
 
-    if (!modularAnalysis || !modularAnalysis.isModular) {
+    if (!modularAnalysis?.isModular) {
       return null;
     }
 

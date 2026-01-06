@@ -259,8 +259,8 @@ export const INVERTED_LETTER_MAP: Record<string, string> = {
   // Greek letters
   Σ: "Δ",
   Δ: "Σ",
-  θ: "Ω",
-  Ω: "θ",
+  Θ: "Ω",
+  Ω: "Θ",
   Φ: "Φ", // Self-inverted
   Ψ: "Ψ", // Self-inverted
   Λ: "Λ", // Self-inverted
@@ -275,8 +275,8 @@ export const INVERTED_LETTER_MAP: Record<string, string> = {
   "Z-": "Y-",
   "Σ-": "Δ-",
   "Δ-": "Σ-",
-  "θ-": "Ω-",
-  "Ω-": "θ-",
+  "Θ-": "Ω-",
+  "Ω-": "Θ-",
   "Φ-": "Φ-", // Self-inverted
   "Ψ-": "Ψ-", // Self-inverted
   "Λ-": "Λ-", // Self-inverted
@@ -302,7 +302,7 @@ export function getInvertedLetter(letter: string): string {
  * Also called "Cross-Section Complementary" relationships.
  *
  * Pattern:
- * - Letters ending at gamma from different origins: Σ↔θ (α→γ ↔ β→γ), Δ↔Ω (α→γ ↔ β→γ)
+ * - Letters ending at gamma from different origins: Σ↔Θ (α→γ ↔ β→γ), Δ↔Ω (α→γ ↔ β→γ)
  * - Letters starting from gamma to different destinations: W↔Y (γ→α ↔ γ→β), X↔Z (γ→α ↔ γ→β)
  *
  * This differs from standard inversion (pro↔anti) - these pairs share the same rotation
@@ -311,8 +311,8 @@ export function getInvertedLetter(letter: string): string {
 export const ALPHA_BETA_COUNTERPART_LETTER_MAP: Record<string, string> = {
   // Type 2 Shift letters sharing gamma endpoint
   // Origin swap (both end at gamma, start from α vs β)
-  Σ: "θ", // α→γ ↔ β→γ
-  θ: "Σ", // β→γ ↔ α→γ
+  Σ: "Θ", // α→γ ↔ β→γ
+  Θ: "Σ", // β→γ ↔ α→γ
   Δ: "Ω", // α→γ ↔ β→γ (anti versions)
   Ω: "Δ", // β→γ ↔ α→γ
 
@@ -323,8 +323,8 @@ export const ALPHA_BETA_COUNTERPART_LETTER_MAP: Record<string, string> = {
   Z: "X", // γ→β ↔ γ→α
 
   // Type 3 Cross-Shift dash variants follow same pattern
-  "Σ-": "θ-",
-  "θ-": "Σ-",
+  "Σ-": "Θ-",
+  "Θ-": "Σ-",
   "Δ-": "Ω-",
   "Ω-": "Δ-",
   "W-": "Y-",
@@ -371,7 +371,7 @@ export const COMPOUND_LETTER_MAP: Record<string, string> = {
 export enum LetterTransformationType {
   INVERSION = "inversion", // Pro ↔ Anti (A↔B, Σ↔Δ)
   COMPOUND = "compound", // Section transition pairs (D↔J, M↔P)
-  ALPHA_BETA_COUNTERPART = "alpha_beta_counterpart", // Gamma endpoint sharing (Σ↔θ, W↔Y)
+  ALPHA_BETA_COUNTERPART = "alpha_beta_counterpart", // Gamma endpoint sharing (Σ↔Θ, W↔Y)
 }
 
 /**

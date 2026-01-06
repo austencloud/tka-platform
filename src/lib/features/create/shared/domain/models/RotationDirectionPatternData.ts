@@ -43,8 +43,8 @@ export interface RotationDirectionPattern {
   readonly name: string;
   /** Owner's user ID */
   readonly userId: string;
-  /** When the pattern was created */
-  readonly createdAt: Timestamp;
+  /** When the pattern was created (null until Firestore assigns server timestamp) */
+  readonly createdAt: Timestamp | null;
   /** Number of beats in this pattern (must match target sequence) */
   readonly beatCount: number;
   /** Rotation direction values for each beat */

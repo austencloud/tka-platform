@@ -9,7 +9,7 @@
  */
 
 import type { ISvgColorTransformer as IArrowSvgColorTransformer } from "../contracts/IArrowSvgColorTransformer";
-import { MotionColor } from "../../../../shared/domain/enums/pictograph-enums";
+import type { MotionColor } from "../../../../shared/domain/enums/pictograph-enums";
 import {
   getMotionColor,
   type ThemeMode,

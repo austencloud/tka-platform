@@ -42,12 +42,12 @@ export class ProfilePictureManager implements IProfilePictureManager {
 
       // Check if we need to update the profile picture
       // If photoURL already contains graph.facebook.com, skip
-      if (user.photoURL && user.photoURL.includes("graph.facebook.com")) {
+      if (user.photoURL?.includes("graph.facebook.com")) {
         return; // Already using Facebook picture
       }
 
       // If user already has a Google photo URL, don't overwrite it
-      if (user.photoURL && user.photoURL.includes("googleusercontent.com")) {
+      if (user.photoURL?.includes("googleusercontent.com")) {
         return; // Keep the Google photo
       }
 

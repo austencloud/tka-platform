@@ -5,7 +5,7 @@
  * Supports multiple IK algorithms and constraint systems.
  */
 
-import type { Vector3, Quaternion, Bone } from "three";
+import type { Vector3, Quaternion } from "three";
 import type { BoneChain } from "./IAvatarSkeletonBuilder";
 
 /**

@@ -294,7 +294,7 @@ export function createNavigationState() {
   function setCurrentModule(moduleId: ModuleId, targetTab?: string) {
     if (MODULE_DEFINITIONS.some((m) => m.id === moduleId)) {
       const previousModuleLocal = currentModule;
-      const previousTabLocal = activeTab;
+      const _previousTabLocal = activeTab;
 
       // Track previous module/tab for feedback context
       // Save current location when LEAVING it (unless leaving feedback/settings)

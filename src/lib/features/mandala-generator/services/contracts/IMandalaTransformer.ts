@@ -4,10 +4,7 @@ import type {
   TransformedElement,
 } from "../../domain/models/mandala-element";
 import type { MandalaConfig } from "../../domain/models/mandala-config";
-import type {
-  SymmetryFold,
-  MirrorAxis,
-} from "../../domain/enums/mandala-enums";
+import type { SymmetryFold } from "../../domain/enums/mandala-enums";
 
 /**
  * Result of a single transformation operation.

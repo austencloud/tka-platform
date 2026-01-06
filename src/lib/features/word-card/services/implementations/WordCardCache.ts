@@ -198,24 +198,18 @@ export class WordCardCache implements IWordCardCache {
   cleanup(): void {
     try {
       const now = new Date();
-      let removedCount = 0;
-      let freedSpace = 0;
 
       // Clean up image cache
       for (const [key, entry] of this.imageCache.entries()) {
         if (this.isExpired(entry)) {
-          freedSpace += entry.size;
           this.imageCache.delete(key);
-          removedCount++;
         }
       }
 
       // Clean up data cache
       for (const [key, entry] of this.dataCache.entries()) {
         if (this.isExpired(entry)) {
-          freedSpace += entry.size;
           this.dataCache.delete(key);
-          removedCount++;
         }
       }
 
@@ -318,7 +312,6 @@ export class WordCardCache implements IWordCardCache {
     );
 
     let freedSpace = 0;
-    let removedCount = 0;
 
     for (const { key, entry, type } of allEntries) {
       if (freedSpace >= requiredSpace) {
@@ -332,7 +325,6 @@ export class WordCardCache implements IWordCardCache {
       }
 
       freedSpace += entry.size;
-      removedCount++;
     }
   }
 
@@ -402,10 +394,4 @@ export class WordCardCache implements IWordCardCache {
     }
   }
 
-  private formatBytes(bytes: number): string {
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    if (bytes === 0) return "0 Bytes";
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
-  }
 }

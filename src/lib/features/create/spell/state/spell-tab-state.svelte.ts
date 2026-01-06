@@ -18,7 +18,12 @@ import type { ISequenceTransformer } from "$lib/features/create/shared/services/
 import type { ISequenceValidator } from "$lib/features/create/shared/services/contracts/ISequenceValidator";
 import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
-import type { IUndoManager } from "$lib/features/create/shared/services/contracts/IUndoManager";
+import type {
+  UndoOperationType} from "$lib/features/create/shared/services/contracts/IUndoManager";
+import {
+  type IUndoManager,
+  type UndoMetadata
+} from "$lib/features/create/shared/services/contracts/IUndoManager";
 import { createUndoController } from "$lib/features/create/shared/state/create-module/undo-controller.svelte";
 import { resolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
@@ -407,7 +412,7 @@ export function createSpellTabState(
     get undoHistory() {
       return undoController?.undoHistory || [];
     },
-    pushUndoSnapshot: (type: any, metadata?: any) => {
+    pushUndoSnapshot: (type: UndoOperationType, metadata?: UndoMetadata) => {
       undoController?.pushUndoSnapshot(type, metadata);
     },
     undo: () => {

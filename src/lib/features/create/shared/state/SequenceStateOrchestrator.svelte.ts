@@ -20,7 +20,6 @@ import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { ArrowPosition } from "$lib/shared/pictograph/arrow/orchestration/domain/arrow-models";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -372,7 +371,7 @@ export function createSequenceState(services: SequenceStateServices) {
         }
         // If it's a StartPositionData, don't include it in the beats array
         // (Start positions are not beats)
-        // eslint-disable-next-line no-unreachable
+         
         return [];
       }
     }

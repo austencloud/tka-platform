@@ -1,11 +1,17 @@
 import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { BeatData } from "../../domain/models/BeatData";
+import type { StartPositionData } from "../../domain/models/StartPositionData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type {
   ISequenceJsonExporter,
   MinimalSequence,
   MinimalBeat,
   MinimalMotion,
 } from "../contracts/ISequenceJsonExporter";
+
+/** Union type for beat-like objects that can be exported */
+type BeatLike = BeatData | StartPositionData | null | undefined;
 
 /**
  * SequenceJsonExporter
@@ -23,7 +29,7 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
       gridMode: sequence.gridMode || "",
       propType: sequence.propType || "",
       startPosition: this.minimalBeat(
-        sequence.startPosition || (sequence as any).startingPositionBeat
+        sequence.startPosition || sequence.startingPositionBeat
       ),
       beats: (sequence.beats || []).map((beat) => this.minimalBeat(beat)),
     };
@@ -45,23 +51,25 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
     }
   }
 
-  private minimalMotion(motion: any): MinimalMotion | null {
+  private minimalMotion(motion: MotionData | null | undefined): MinimalMotion | null {
     if (!motion) return null;
     return {
       type: motion.motionType || "",
       dir: motion.rotationDirection || "",
       start: motion.startLocation || "",
       end: motion.endLocation || "",
-      turns: motion.turns ?? 0,
+      turns: typeof motion.turns === "number" ? motion.turns : 0,
       startOri: motion.startOrientation || "",
       endOri: motion.endOrientation || "",
     };
   }
 
-  private minimalBeat(beat: any): MinimalBeat | null {
+  private minimalBeat(beat: BeatLike): MinimalBeat | null {
     if (!beat) return null;
+    // Handle both BeatData (has beatNumber) and StartPositionData (no beatNumber)
+    const beatNumber = "beatNumber" in beat ? beat.beatNumber : 0;
     return {
-      beat: beat.beatNumber ?? 0,
+      beat: beatNumber ?? 0,
       letter: beat.letter || "",
       start: beat.startPosition || "",
       end: beat.endPosition || "",

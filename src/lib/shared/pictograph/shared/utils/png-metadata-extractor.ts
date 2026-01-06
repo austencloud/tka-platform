@@ -201,7 +201,7 @@ export class PngMetadataExtractor {
               })
             );
           }
-        } catch (error) {
+        } catch {
           // Fall back to version guessing if the specific version fails
         }
       }
@@ -231,7 +231,7 @@ export class PngMetadataExtractor {
             })
           );
         }
-      } catch (error) {
+      } catch {
         // Continue to next version silently
         continue;
       }
@@ -249,14 +249,14 @@ export class PngMetadataExtractor {
         try {
           response = await fetch(filePath);
           if (!response.ok) response = null;
-        } catch (error) {
+        } catch {
           // Continue to try other versions
         }
       }
     }
 
     // If we still don't have a response, try common versions for PNG
-    if (!response || !response.ok) {
+    if (!response?.ok) {
       for (const version of versionsToTry) {
         const filePath = `/gallery/${encodedSequenceName}/${encodedSequenceName}_ver${version}.png`;
         try {
@@ -264,14 +264,14 @@ export class PngMetadataExtractor {
           if (response.ok) {
             break;
           }
-        } catch (error) {
+        } catch {
           // Continue to next version silently
           continue;
         }
       }
     }
 
-    if (!response || !response.ok) {
+    if (!response?.ok) {
       throw new Error(
         `Failed to fetch metadata for ${sequenceName}: No valid version found (tried both .meta.json and .png)`
       );

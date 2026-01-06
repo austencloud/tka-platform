@@ -14,6 +14,8 @@ import {
   onSnapshot,
   getDocsFromServer,
   type Unsubscribe,
+  type QuerySnapshot,
+  type DocumentData,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -162,7 +164,9 @@ export class FeedbackSubscriptionService implements IFeedbackSubscriptionService
     };
   }
 
-  private mapSnapshotToItems(snapshot: { docs: any[] }): FeedbackItem[] {
+  private mapSnapshotToItems(
+    snapshot: QuerySnapshot<DocumentData, DocumentData>
+  ): FeedbackItem[] {
     const items: FeedbackItem[] = [];
     snapshot.docs.forEach((docSnap) => {
       try {

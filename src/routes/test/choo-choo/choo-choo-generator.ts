@@ -25,10 +25,7 @@ import {
   Orientation,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import {
-  createMotionData,
-  type MotionData,
-} from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
@@ -79,16 +76,6 @@ const CCW_FLOAT_ORIENTATION_CYCLE: Orientation[] = [
   Orientation.OUT, // N - pointing outward
   Orientation.CLOCK, // W - pointing clockwise
 ];
-
-// Grid position mapping for start/end positions
-const POSITION_MAP: Record<string, GridPosition> = {
-  beta_s: GridPosition.BETA5,
-  gamma_sw: GridPosition.GAMMA7,
-  alpha_n: GridPosition.ALPHA1,
-  gamma_ne: GridPosition.GAMMA11,
-  gamma_se: GridPosition.GAMMA13,
-  gamma_nw: GridPosition.GAMMA9,
-};
 
 export interface ChooChooConfig {
   /** Which prop is static (rotates in place) */

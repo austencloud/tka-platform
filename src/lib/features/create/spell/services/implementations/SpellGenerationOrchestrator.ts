@@ -7,13 +7,13 @@
 
 import { inject, injectable } from "inversify";
 import { SPELL_TYPES } from "./spell-types";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { ISpellServiceLoader } from "../contracts/ISpellServiceLoader";
 import type {
   ISpellGenerationOrchestrator,
   SpellGenerationOutcome,
 } from "../contracts/ISpellGenerationOrchestrator";
 import type { SpellPreferences } from "../../domain/models/spell-models";
+import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 
 @injectable()
 export class SpellGenerationOrchestrator implements ISpellGenerationOrchestrator {
@@ -48,8 +48,7 @@ export class SpellGenerationOrchestrator implements ISpellGenerationOrchestrator
       }
 
       // Fetch ALL extension options (pictograph-first UX)
-      let extensionOptions: import("$lib/features/create/shared/services/contracts/ISequenceExtender").CircularizationOption[] =
-        [];
+      let extensionOptions: CircularizationOption[] = [];
       try {
         const extender = await this.serviceLoader.getSequenceExtender();
         extensionOptions = await extender.getAllExtensionOptions({

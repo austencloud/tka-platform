@@ -10,6 +10,7 @@ import type { ITurnPatternManager } from "../services/contracts/ITurnPatternMana
 import { resolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 const logger = createComponentLogger("TurnPatternState");
 
@@ -78,7 +79,7 @@ export const turnPatternState = {
   async savePattern(
     name: string,
     userId: string,
-    sequence: { beats: readonly any[] }
+    sequence: SequenceData
   ): Promise<TurnPattern | null> {
     if (!userId) {
       _error = "Must be logged in to save patterns";
@@ -90,7 +91,7 @@ export const turnPatternState = {
 
     try {
       const patternData = getTurnPatternManager().extractPattern(
-        sequence as any,
+        sequence,
         name
       );
       const saved = await getTurnPatternManager().savePattern(

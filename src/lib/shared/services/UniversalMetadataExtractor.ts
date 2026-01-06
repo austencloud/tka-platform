@@ -59,7 +59,7 @@ export class UniversalMetadataExtractor {
       if (sidecarResult.success) {
         return sidecarResult;
       }
-    } catch (error) {
+    } catch {
       // Silent fallback to legacy formats
     }
 
@@ -70,7 +70,7 @@ export class UniversalMetadataExtractor {
         console.warn(`⚠️ Using legacy WebP format for ${sequenceName}`);
         return webpResult;
       }
-    } catch (error) {
+    } catch {
       // Continue to PNG fallback
     }
 
@@ -81,7 +81,7 @@ export class UniversalMetadataExtractor {
         console.warn(`⚠️ Using legacy PNG format for ${sequenceName}`);
         return pngResult;
       }
-    } catch (error) {
+    } catch {
       // All fallbacks exhausted
     }
 
@@ -291,7 +291,7 @@ export class UniversalMetadataExtractor {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }

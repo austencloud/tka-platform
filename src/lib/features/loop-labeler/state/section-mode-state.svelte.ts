@@ -8,7 +8,6 @@
 import { tryResolve } from "$lib/shared/inversify/di";
 import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
-import type { ILOOPDesignator } from "../services/contracts/ILOOPDesignator";
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { LabeledSequence } from "../domain/models/label-models";
 import type { ComponentId } from "../domain/constants/loop-components";
@@ -69,9 +68,6 @@ export function createSectionModeState(): SectionModeState {
   // Services
   const labelsService = tryResolve<ILOOPLabelsFirebaseRepository>(
     LOOPLabelerTypes.ILOOPLabelsFirebaseRepository
-  );
-  const designationService = tryResolve<ILOOPDesignator>(
-    LOOPLabelerTypes.ILOOPDesignator
   );
 
   // Actions

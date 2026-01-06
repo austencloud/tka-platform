@@ -1,7 +1,7 @@
 // WindSystem.ts - Wind gust management for autumn leaves
 // Handles periodic wind gusts that affect leaf movement
 
-import type { WindState, WindGust } from "../domain/models/autumn-models";
+import type { WindState } from "../domain/models/autumn-models";
 import { AUTUMN_WIND } from "../domain/constants/autumn-constants";
 
 export interface WindSystem {

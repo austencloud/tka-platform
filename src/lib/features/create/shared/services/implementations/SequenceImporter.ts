@@ -33,7 +33,7 @@ export class SequenceImporter implements ISequenceImporter {
   async importFromPNG(id: string): Promise<SequenceData | null> {
     try {
       // Extract metadata from PNG file using the reliable extractor
-      // NOTE: Don't uppercase the ID - Greek letters like θ would become θ,
+      // NOTE: Don't uppercase the ID - Greek letters like Θ would become Θ,
       // which won't match the filesystem directory names
       const pngMetadata =
         await PngMetadataExtractor.extractSequenceMetadata(id);
@@ -151,10 +151,10 @@ export class SequenceImporter implements ISequenceImporter {
     });
 
     // Create sequence data with validated structure - final validation
-    // NOTE: Don't uppercase the name - Greek letters like θ would become θ
+    // NOTE: Don't uppercase the name - Greek letters like Θ would become Θ
     const sequenceData: Partial<SequenceData> = {
       id: crypto.randomUUID(), // Generate proper UUID for validation
-      name: id, // Keep original case to preserve Greek letters (θ, etc.)
+      name: id, // Keep original case to preserve Greek letters (Θ, etc.)
       word: id, // Ensure word is always a string
       beats,
       thumbnails: [], // Empty array as default - schema requires URLs

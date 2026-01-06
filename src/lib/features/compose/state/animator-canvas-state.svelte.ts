@@ -12,7 +12,7 @@ import {
   loadTrailSettings,
   saveTrailSettings,
 } from "../utils/animation-panel-persistence";
-import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 // ============================================================================
 // CONSTANTS

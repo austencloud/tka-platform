@@ -21,7 +21,7 @@ export class ComponentManager implements IComponentManager {
   getRequiredComponents(data: PictographData | null): string[] {
     const components = ["grid"];
 
-    if (!data || !data.motions) return components;
+    if (!data?.motions) return components;
 
     const motions = data.motions;
 

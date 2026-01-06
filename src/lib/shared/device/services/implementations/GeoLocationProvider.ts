@@ -17,7 +17,7 @@ const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 const STORAGE_KEY = "tka_user_geolocation";
 
 // Default location (NYC area - 40.7°N, represents "typical" northern hemisphere user)
-const DEFAULT_LOCATION: UserLocation = {
+const _DEFAULT_LOCATION: UserLocation = {
   latitude: 40.7,
   longitude: -74.0,
   timestamp: 0,

@@ -1,7 +1,4 @@
-import type {
-  SkillCategory,
-  UserSkillProgress,
-} from "../../../domain/models/challenge-models";
+import type { UserSkillProgress } from "../../../domain/models/challenge-models";
 import type { SkillProgression } from "../../../domain/models/challenge-models";
 
 export function getUserProgressByCategory(params: {

@@ -13,14 +13,8 @@
  */
 
 import { injectable } from "inversify";
-import {
-  AnimationMixer,
-  AnimationClip,
-  AnimationAction,
-  LoopRepeat,
-  Object3D,
-  KeyframeTrack,
-} from "three";
+import type { AnimationAction, Object3D, KeyframeTrack } from "three";
+import { AnimationMixer, AnimationClip, LoopRepeat } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
   ILegAnimator,
@@ -457,7 +451,7 @@ export class LegAnimator implements ILegAnimator {
    */
   private updateDirectionalBlend(
     input: LocomotionInput,
-    wasMoving: boolean
+    _wasMoving: boolean
   ): void {
     const dir = input.moveDirection ?? { x: 0, z: 1 };
 

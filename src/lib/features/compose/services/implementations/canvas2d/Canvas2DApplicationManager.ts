@@ -21,7 +21,7 @@ const BACKGROUND_TRANSITION_DURATION = 150;
  */
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result || !result[1] || !result[2] || !result[3]) {
+  if (!result?.[1] || !result[2] || !result[3]) {
     return { r: 255, g: 255, b: 255 };
   }
   return {

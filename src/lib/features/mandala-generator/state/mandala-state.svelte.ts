@@ -5,10 +5,7 @@
  * Manages canvas elements, symmetry configuration, and saved mandalas.
  */
 
-import type {
-  MandalaElement,
-  TransformedElement,
-} from "../domain/models/mandala-element";
+import type { MandalaElement } from "../domain/models/mandala-element";
 import type { MandalaConfig } from "../domain/models/mandala-config";
 import type { SavedMandala } from "../domain/models/mandala-preset";
 import type { MandalaPreset } from "../domain/models/mandala-preset";

@@ -150,19 +150,22 @@ export class DeepOceanPerformanceMonitor implements IDeepOceanPerformanceMonitor
 }
 
 // Singleton instance for console access
-let monitorInstance: DeepOceanPerformanceMonitor | null = null;
+let _monitorInstance: DeepOceanPerformanceMonitor | null = null;
 
 export function setMonitorInstance(monitor: DeepOceanPerformanceMonitor): void {
-  monitorInstance = monitor;
+  _monitorInstance = monitor;
 
   // Expose to console for debugging
   if (typeof window !== "undefined") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).enableDeepOceanPerf = () => {
       monitor.setEnabled(true);
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).disableDeepOceanPerf = () => {
       monitor.setEnabled(false);
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).getDeepOceanMetrics = () => {
       const m = monitor.getMetrics();
       console.table({

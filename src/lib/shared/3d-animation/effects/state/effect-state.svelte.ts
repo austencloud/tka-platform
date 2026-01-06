@@ -5,7 +5,7 @@
  * Maintains a rolling buffer of recent positions with velocity calculations.
  */
 
-import { Vector3 } from "three";
+import type { Vector3 } from "three";
 import type { TrailPoint, PropPositionHistory, PropId } from "../types";
 
 // =============================================================================
@@ -50,20 +50,20 @@ export function createEffectState(config: Partial<EffectStateConfig> = {}) {
   let prevRedPos: Vector3 | null = null;
 
   // Derived current velocities
-  let blueVelocity = $derived(
+  const blueVelocity = $derived(
     blueHistory.length > 0 ? (blueHistory[0]?.velocity ?? 0) : 0
   );
-  let redVelocity = $derived(
+  const redVelocity = $derived(
     redHistory.length > 0 ? (redHistory[0]?.velocity ?? 0) : 0
   );
 
   // Derived full history objects
-  let bluePositionHistory = $derived<PropPositionHistory>({
+  const bluePositionHistory = $derived<PropPositionHistory>({
     points: blueHistory,
     currentVelocity: blueVelocity,
   });
 
-  let redPositionHistory = $derived<PropPositionHistory>({
+  const redPositionHistory = $derived<PropPositionHistory>({
     points: redHistory,
     currentVelocity: redVelocity,
   });

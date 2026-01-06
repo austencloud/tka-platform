@@ -104,7 +104,7 @@ export async function analyzeAudioBpm(
           startTime: currentStart,
           endTime: sectionEnd,
         });
-      } catch (err) {
+      } catch {
         // Skip failed sections
       }
 
@@ -202,7 +202,7 @@ function extractSection(
 async function analyzeSection(
   audioBuffer: AudioBuffer,
   startTime: number,
-  endTime: number,
+  _endTime: number,
   _audioContext: AudioContext,
   _sampleRate: number
 ): Promise<BpmResult> {

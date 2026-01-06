@@ -3,7 +3,7 @@ import { tryResolve, TYPES } from "../../../inversify/di";
 import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
 import { SwipeToDismiss } from "./SwipeToDismiss";
 import { FocusTrap } from "./FocusTrap";
-import { SnapPoints, type SnapPointValue } from "./SnapPoints";
+import { SnapPoints } from "./SnapPoints";
 import { DrawerEffects } from "./DrawerEffects";
 import {
   generateDrawerId,
@@ -12,8 +12,9 @@ import {
   isTopDrawer,
 } from "./DrawerStack";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useDrawer(props: any) {
-  let { isOpen, activeSnapPoint } = props;
+  let { isOpen, activeSnapPoint: _activeSnapPoint } = props;
   const {
     closeOnBackdrop,
     closeOnEscape,
@@ -143,7 +144,7 @@ export function useDrawer(props: any) {
         defaultSnapPoint: snapPoints.length - 1, // Start fully open
         onSnapPointChange: (index, valuePx) => {
           currentSnapIndex = index;
-          activeSnapPoint = index;
+          _activeSnapPoint = index;
           onSnapPointChange?.(index, valuePx);
 
           // Close drawer if snapping to zero and closeOnSnapToZero is true
@@ -236,6 +237,7 @@ export function useDrawer(props: any) {
     }
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function emitClose(reason: any) {
     if (onclose) {
       onclose(new CustomEvent("close", { detail: { reason } }));

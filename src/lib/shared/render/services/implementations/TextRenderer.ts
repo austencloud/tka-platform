@@ -88,7 +88,7 @@ export class TextRenderer implements ITextRenderer {
   renderWordFooter(
     canvas: HTMLCanvasElement,
     word: string,
-    options: TextRenderOptions,
+    _options: TextRenderOptions,
     footerHeight: number,
     difficultyLevel: number = 1
   ): void {
@@ -144,7 +144,7 @@ export class TextRenderer implements ITextRenderer {
   renderWordHeader(
     canvas: HTMLCanvasElement,
     word: string,
-    options: TextRenderOptions,
+    _options: TextRenderOptions,
     headerHeight: number,
     difficultyLevel: number = 1,
     showDifficultyBadge: boolean = true,
@@ -447,9 +447,9 @@ export class TextRenderer implements ITextRenderer {
   renderUserInfo(
     canvas: HTMLCanvasElement,
     userInfo: UserExportInfo,
-    options: TextRenderOptions,
+    _options: TextRenderOptions,
     footerHeight: number = 60,
-    beatCount: number = 3,
+    _beatCount: number = 3,
     darkMode: boolean = false
   ): void {
     const ctx = canvas.getContext("2d");

@@ -12,8 +12,13 @@
   Use CreatePanelDrawer with bind:isOpen, provide panel content via children slot
 -->
 <script lang="ts">
+  import { browser } from "$app/environment";
+  import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { tryGetCreateModuleContext } from "../context/create-module-context";
+  import { tryResolve } from "$lib/shared/inversify/di";
+  import { TYPES } from "$lib/shared/inversify/types";
+  import type { IResponsiveLayoutManager } from "../services/contracts/IResponsiveLayoutManager";
   import type { Snippet } from "svelte";
 
   let {
@@ -50,12 +55,51 @@
     children: Snippet;
   } = $props();
 
-  // Get layout context
+  // Get layout context (may be null when used outside Create module)
   const createModuleContext = tryGetCreateModuleContext();
+
+  // Fallback layout detection for when CreateModuleContext isn't available
+  // (e.g., when AnimationSheetCoordinator is used in Discover module)
+  let fallbackIsSideBySide = $state(false);
+  let layoutService: IResponsiveLayoutManager | null = null;
+
+  onMount(() => {
+    if (!createModuleContext && browser) {
+      // Try to use the layout service if available
+      layoutService = tryResolve<IResponsiveLayoutManager>(
+        TYPES.IResponsiveLayoutManager
+      );
+
+      if (layoutService) {
+        fallbackIsSideBySide = layoutService.shouldUseSideBySideLayout();
+      } else {
+        // Direct viewport check as last resort
+        fallbackIsSideBySide = window.innerWidth >= 1024;
+      }
+    }
+  });
+
+  // Update fallback on resize when no context
+  $effect(() => {
+    if (createModuleContext || !browser) return;
+
+    const handleResize = () => {
+      if (layoutService) {
+        fallbackIsSideBySide = layoutService.shouldUseSideBySideLayout();
+      } else {
+        fallbackIsSideBySide = window.innerWidth >= 1024;
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  });
+
+  // Use context if available, otherwise use fallback detection
   const isSideBySideLayout = $derived.by(() =>
     createModuleContext
       ? createModuleContext.layout.shouldUseSideBySideLayout
-      : false
+      : fallbackIsSideBySide
   );
 
   // Get measured tool panel width for accurate panel sizing

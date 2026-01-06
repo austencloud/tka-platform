@@ -37,16 +37,12 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { DetectionFrame } from "../domain/models/DetectionFrame";
-import type {
-  PerformanceData,
-  PerformanceScore,
-} from "../domain/models/PerformanceData";
+import type { PerformanceData } from "../domain/models/PerformanceData";
 import {
   TrainMode,
   VisualizationMode,
   DetectionMethod,
 } from "../domain/enums/TrainEnums";
-import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export interface TrainStateConfig {
   defaultBpm: number;
@@ -108,8 +104,7 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
   // Current expected positions (derived from sequence and beat index)
   const expectedPositions = $derived.by(() => {
     if (
-      !sequence ||
-      !sequence.beats ||
+      !sequence?.beats ||
       currentBeatIndex >= sequence.beats.length
     ) {
       return null;

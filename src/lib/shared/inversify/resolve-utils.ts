@@ -20,9 +20,9 @@ import type { HMRContainerManager } from "./hmr/HMRContainerManager";
 
 // Re-declare globals (type-only, no runtime import)
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __TKA_CONTAINER__: Container | undefined;
-  // eslint-disable-next-line no-var
+   
   var __TKA_HMR_MANAGER__: HMRContainerManager | undefined;
 }
 

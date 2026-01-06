@@ -13,10 +13,7 @@ import type { TrailSettings } from "../../domain/types/TrailTypes";
 import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import {
-  AnimationPathCache,
-  type AnimationPathCacheData,
-} from "$lib/features/compose/services/implementations/AnimationPathCache";
+import { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import {
   SequenceFramePreRenderer,
   type PreRenderProgress,
@@ -105,7 +102,9 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
         });
 
         // Wire cache to trail capture service for backfill support
-        this.TrailCapturer.setAnimationCacheService(this.pathCache as any);
+        this.TrailCapturer.setAnimationCacheService(
+          this.pathCache as AnimationPathCache
+        );
       }
 
       // CRITICAL: Initialize orchestrator with sequence data BEFORE pre-computation!
@@ -133,11 +132,9 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
         beatDurationMs
       );
 
-      const computeTime = performance.now() - startTime;
-
       this.state.pathCacheData = cacheData;
       console.log(
-        `✅ [${this.instanceId}] Cache precomputation complete in ${computeTime.toFixed(1)}ms, isValid=${this.pathCache?.isValid()}`
+        `✅ [${this.instanceId}] Cache precomputation complete in ${(performance.now() - startTime).toFixed(1)}ms, isValid=${this.pathCache?.isValid()}`
       );
     } catch (error) {
       console.error(

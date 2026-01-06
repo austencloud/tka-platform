@@ -57,9 +57,9 @@ export function createCurrentWordDisplayEffect(
 
       // CRITICAL: Access the current sequence to ensure effect tracks changes
       // Variables are used for side effects (dependency tracking)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       const _currentSequence = CreateModuleState.sequenceState.currentSequence;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       const _beatCount = CreateModuleState.getCurrentBeatCount();
 
       let displayText = "";

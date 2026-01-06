@@ -16,7 +16,6 @@ import {
   userPreviewState,
   loadPreviewSection,
   isSectionLoaded,
-  type UserPreviewData,
   type PreviewUserProfile,
   type PreviewGamification,
   type PreviewSequence,

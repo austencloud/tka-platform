@@ -9,8 +9,6 @@ import { injectable, inject } from "inversify";
 import {
   collection,
   getDocs,
-  query,
-  where,
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";

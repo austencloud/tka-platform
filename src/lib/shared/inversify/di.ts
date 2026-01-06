@@ -27,11 +27,11 @@ import type { HMRContainerManager } from "./hmr/HMRContainerManager";
 // ============================================================================
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __TKA_CONTAINER__: InversifyContainer | undefined;
-  // eslint-disable-next-line no-var
+   
   var __TKA_CONTAINER_INITIALIZED__: boolean | undefined;
-  // eslint-disable-next-line no-var
+   
   var __TKA_HMR_MANAGER__: HMRContainerManager | undefined;
 }
 
@@ -255,9 +255,7 @@ export const loadPixiModule = loadAnimationModule;
  * IMPORTANT: This waits for container initialization to complete before returning.
  * The container will have all Tier 1 (critical) modules loaded.
  */
-export async function getContainerInstance(): Promise<
-  (typeof import("./container"))["container"]
-> {
+export async function getContainerInstance(): Promise<InversifyContainer> {
   // Wait for initialization to complete before returning the container
   await ensureContainerInitialized();
   const { container } = await import("./container");

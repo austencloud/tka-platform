@@ -213,11 +213,8 @@ export class MandalaTransformer implements IMandalaTransformer {
    */
   private getMirrorAngles(
     mirrorAxis: string,
-    foldCount: SymmetryFold
+    _foldCount: SymmetryFold
   ): number[] {
-    const segmentAngle = 360 / foldCount;
-    const halfSegment = segmentAngle / 2;
-
     switch (mirrorAxis) {
       case "vertical":
         // Mirror across vertical axis (angle = 90)

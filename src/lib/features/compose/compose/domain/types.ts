@@ -102,7 +102,7 @@ export function parseCellId(
   cellId: string
 ): { row: number; col: number } | null {
   const match = cellId.match(/^cell-(\d+)-(\d+)$/);
-  if (!match || !match[1] || !match[2]) return null;
+  if (!match?.[1] || !match[2]) return null;
   return { row: parseInt(match[1], 10), col: parseInt(match[2], 10) };
 }
 

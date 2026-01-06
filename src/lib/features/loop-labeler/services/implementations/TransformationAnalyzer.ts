@@ -16,6 +16,9 @@ import {
 } from "../../domain/constants/transformation-families";
 import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
 
+// Suppressing unused import - keeping for future use
+void TRANSFORMATION_PRIORITY;
+
 /**
  * Service for analyzing transformation patterns across beat pairs.
  */
@@ -438,7 +441,7 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     const swappedPositions = columnBehaviors
       .filter((c) => c.isSwapped)
       .map((c) => c.position);
-    const notSwappedPositions = columnBehaviors
+    const _notSwappedPositions = columnBehaviors
       .filter((c) => !c.isSwapped)
       .map((c) => c.position);
 

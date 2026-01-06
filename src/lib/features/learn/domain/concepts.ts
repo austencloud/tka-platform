@@ -341,7 +341,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     id: "type2-wxyz",
     order: 19,
     category: "letters",
-    name: "Type 2: WXYZ, ΣΔθΩ",
+    name: "Type 2: WXYZ, ΣΔΘΩ",
     shortName: "Type 2",
     description: "Shift letters - one shifts, one static",
     icon: "fa-w",
@@ -352,7 +352,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
       "W, X (γ→α open)",
       "Y, Z (γ→β close)",
       "Σ, Δ (α→γ close)",
-      "θ, Ω (β→γ open)",
+      "Θ, Ω (β→γ open)",
     ],
   },
   {
@@ -369,7 +369,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     concepts: [
       "Dash notation explained",
       "W-, X-, Y-, Z- variations",
-      "Σ-, Δ-, θ-, Ω- variations",
+      "Σ-, Δ-, Θ-, Ω- variations",
       "Halfway point timing",
     ],
   },

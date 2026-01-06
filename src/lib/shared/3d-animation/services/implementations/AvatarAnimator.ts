@@ -6,14 +6,13 @@
  */
 
 import { injectable, inject } from "inversify";
-import { Vector3, Quaternion } from "three";
+import { Vector3 } from "three";
 import type {
   IAvatarAnimator,
   HandPose,
   BodyPose,
   AnimationLayer,
   TransitionConfig,
-  BlendMode,
   PositionOffset,
 } from "../contracts/IAvatarAnimator";
 import type { IIKSolver } from "../contracts/IIKSolver";

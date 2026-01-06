@@ -10,7 +10,7 @@ import type { IStorageManager } from "$lib/shared/foundation/services/contracts/
 type KanbanStatus = "new" | "in-progress" | "in-review" | "completed";
 
 const STORAGE_KEY = "tka-feedback-manage-active-status";
-const KANBAN_STATUSES: KanbanStatus[] = [
+const _KANBAN_STATUSES: KanbanStatus[] = [
   "new",
   "in-progress",
   "in-review",

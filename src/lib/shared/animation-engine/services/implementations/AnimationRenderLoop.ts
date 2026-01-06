@@ -7,7 +7,7 @@
 
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
-import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
+import type { TrailPoint } from "../../domain/types/TrailTypes";
 import { TrailMode } from "../../domain/types/TrailTypes";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type {

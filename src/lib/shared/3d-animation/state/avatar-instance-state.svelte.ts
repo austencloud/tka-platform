@@ -5,7 +5,6 @@
  * Each avatar has independent sequence loading, playback, and locomotion.
  */
 
-import type { PropState3D } from "../domain/models/PropState3D";
 import type { MotionConfig3D } from "../domain/models/MotionData3D";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { Plane } from "../domain/enums/Plane";
@@ -123,7 +122,7 @@ export function createAvatarInstanceState(
   // ============================================
 
   // Full 3D position (replacing positionX)
-  let position = $state({
+  const position = $state({
     x: config.positionX,
     y: 0,
     z: config.positionZ ?? FIGURE_Z,

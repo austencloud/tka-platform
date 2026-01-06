@@ -4,17 +4,16 @@
  * Firestore operations for app versioning and release tracking.
  */
 
+import type { Timestamp } from "firebase/firestore";
 import {
   collection,
   query,
   orderBy,
   getDocs,
   doc,
-  setDoc,
   updateDoc,
   where,
   serverTimestamp,
-  Timestamp,
   writeBatch,
   limit,
   getDoc,
@@ -79,7 +78,7 @@ export class VersionService implements IVersionService {
       return bTime - aTime;
     });
 
-    return items.map(({ createdAt, ...rest }) => rest);
+    return items.map(({ createdAt: _createdAt, ...rest }) => rest);
   }
 
   async getLatestVersion(): Promise<string | null> {
@@ -391,7 +390,7 @@ export class VersionService implements IVersionService {
       return bTime - aTime;
     });
 
-    return items.map(({ createdAt, ...rest }) => rest);
+    return items.map(({ createdAt: _createdAt, ...rest }) => rest);
   }
 
   // Legacy alias

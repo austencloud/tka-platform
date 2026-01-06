@@ -136,9 +136,9 @@ Allows user to set name, visibility, tags, collections, and notes.
 
     <!-- Header -->
     <div class="dialog-header">
-      <h2 id="save-to-library-title">Save & Share</h2>
+      <h2 id="save-to-library-title">Add to Gallery</h2>
       <p class="subtitle">
-        Your sequence will be saved publicly to the gallery
+        Your sequence will be published to the gallery
       </p>
     </div>
 
@@ -249,8 +249,8 @@ Allows user to set name, visibility, tags, collections, and notes.
         onclick={handleSave}
         disabled={!name.trim()}
       >
-        <i class="fas fa-save" aria-hidden="true"></i>
-        Save & Continue
+        <i class="fas fa-globe" aria-hidden="true"></i>
+        Publish & Continue
       </button>
     </div>
   </div>

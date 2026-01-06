@@ -45,7 +45,7 @@ class DebugLogger {
         const parsed = JSON.parse(stored);
         this.config = { ...this.config, ...parsed };
       }
-    } catch (e) {
+    } catch {
       // Ignore localStorage errors
     }
   }
@@ -53,7 +53,7 @@ class DebugLogger {
   private saveConfig(): void {
     try {
       localStorage.setItem("tka-debug-config", JSON.stringify(this.config));
-    } catch (e) {
+    } catch {
       // Ignore localStorage errors
     }
   }

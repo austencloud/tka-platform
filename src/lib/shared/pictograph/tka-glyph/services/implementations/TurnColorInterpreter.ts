@@ -144,8 +144,8 @@ export class TurnColorInterpreter {
       return "TYPE4";
     }
 
-    // TYPE2: Shift-only letters (W, X, Y, Z, Σ, Δ, θ, Ω)
-    if (["W", "X", "Y", "Z", "Σ", "Δ", "θ", "Ω"].includes(letter)) {
+    // TYPE2: Shift-only letters (W, X, Y, Z, Σ, Δ, Θ, Ω)
+    if (["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"].includes(letter)) {
       return "TYPE2";
     }
 

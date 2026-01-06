@@ -10,6 +10,22 @@ import type {
 } from "@simplewebauthn/types";
 import { auth } from "../firebase";
 
+/**
+ * API response error with status and code
+ */
+interface ApiErrorResponse {
+  error?: string;
+  code?: string;
+}
+
+/**
+ * Extended Error with HTTP status and API error code
+ */
+interface ApiError extends Error {
+  status?: number;
+  code?: string;
+}
+
 async function getIdToken(): Promise<string> {
   const user = auth.currentUser;
   if (!user) {
@@ -35,11 +51,11 @@ async function apiFetch<T>(
     body: init?.json !== undefined ? JSON.stringify(init.json) : init?.body,
   });
 
-  const data = (await res.json().catch(() => ({}))) as any;
+  const data = (await res.json().catch(() => ({}))) as (T & ApiErrorResponse);
   if (!res.ok) {
-    const err = new Error(data?.error || `Request failed: ${res.status}`);
-    (err as any).status = res.status;
-    (err as any).code = data?.code;
+    const err: ApiError = new Error(data?.error || `Request failed: ${res.status}`);
+    err.status = res.status;
+    err.code = data?.code;
     throw err;
   }
   return data as T;

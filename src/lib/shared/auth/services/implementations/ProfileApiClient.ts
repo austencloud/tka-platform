@@ -3,6 +3,22 @@ import { auth } from "../../firebase";
 import type { IProfileApiClient } from "../contracts/IProfileApiClient";
 
 /**
+ * API response error with status and code
+ */
+interface ApiErrorResponse {
+  error?: string;
+  code?: string;
+}
+
+/**
+ * Extended Error with HTTP status and API error code
+ */
+interface ApiError extends Error {
+  status?: number;
+  code?: string;
+}
+
+/**
  * Client for making authenticated API calls to /api/account/* endpoints
  */
 @injectable()
@@ -23,11 +39,11 @@ export class ProfileApiClient implements IProfileApiClient {
       body: body ? JSON.stringify(body) : "{}",
     });
 
-    const data = (await res.json().catch(() => ({}))) as any;
+    const data = (await res.json().catch(() => ({}))) as (T & ApiErrorResponse);
     if (!res.ok) {
-      const err = new Error(data?.error || `Request failed: ${res.status}`);
-      (err as any).status = res.status;
-      (err as any).code = data?.code;
+      const err: ApiError = new Error(data?.error || `Request failed: ${res.status}`);
+      err.status = res.status;
+      err.code = data?.code;
       throw err;
     }
     return data as T;

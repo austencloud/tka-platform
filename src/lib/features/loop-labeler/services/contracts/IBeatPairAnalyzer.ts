@@ -10,7 +10,7 @@ export interface LetterRelationshipInfo {
   relationships: {
     isInverted: boolean; // Pro ↔ Anti (A↔B, Σ↔Δ)
     isCompound: boolean; // Section transition pairs (D↔J, M↔P)
-    isAlphaBetaCounterpart: boolean; // Gamma endpoint sharing (Σ↔θ, W↔Y)
+    isAlphaBetaCounterpart: boolean; // Gamma endpoint sharing (Σ↔Θ, W↔Y)
   };
   /** Human-readable summary of the relationship */
   summary: string;

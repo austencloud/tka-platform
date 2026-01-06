@@ -23,10 +23,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { IAnimationStorageManager } from "../contracts/IAnimationStorageManager";
 import type { Animation } from "../../shared/domain/Animation";
-import {
-  createAnimation,
-  updateAnimation,
-} from "../../shared/domain/Animation";
+import { createAnimation } from "../../shared/domain/Animation";
 
 /**
  * Firestore collection path constants

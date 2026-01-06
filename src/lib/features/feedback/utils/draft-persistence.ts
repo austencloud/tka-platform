@@ -62,7 +62,7 @@ export function clearDraft(): void {
 export function hasDraft(): boolean {
   try {
     return localStorage.getItem(DRAFT_KEY) !== null;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

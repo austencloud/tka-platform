@@ -10,11 +10,8 @@ import type { BeatData } from "../domain/models/BeatData";
 import type { StartPositionData } from "../domain/models/StartPositionData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
-import type {
-  UndoHistoryEntry,
-  UndoMetadata,
-} from "../services/contracts/IUndoManager";
 import type { createCreateModuleState } from "../state/create-module-state.svelte";
+import type { SequenceState } from "../state/SequenceStateOrchestrator.svelte";
 
 /**
  * Create Module State type (actual state object from factory)
@@ -54,9 +51,7 @@ export interface IConstructTabState {
   readonly isPersistenceInitialized: boolean;
 
   // Sequence state - each tab has its own independent sequence state
-  readonly sequenceState:
-    | import("../state/SequenceStateOrchestrator.svelte").SequenceState
-    | null;
+  readonly sequenceState: SequenceState | null;
 
   // Selection state
   readonly selectedStartPosition: StartPositionData | null;
