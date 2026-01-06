@@ -11,6 +11,7 @@ export default tseslint.config(
       "build/",
       ".svelte-kit/",
       "dist/",
+      "dev-dist/",
       ".netlify/",
       "node_modules/",
       "**/*.generated.*",
@@ -28,9 +29,12 @@ export default tseslint.config(
       ".storybook/",
       "coverage/",
       "archive/",
-      "deployment/functions/",
+      "deployment/",
       "functions/",
       "docs/migrations/",
+      ".claude/hooks/",
+      // Has .json in folder name which confuses TypeScript parser
+      "src/routes/.well-known/assetlinks.json/",
     ],
   },
 

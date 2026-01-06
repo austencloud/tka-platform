@@ -145,7 +145,13 @@
       "Bash(\"src/lib/features/create/shared/components/coordinators/ShareCoordinator.svelte\" )",
       "Bash(\"src/lib/features/create/shared/components/coordinators/ShareHubCoordinator.svelte\" )",
       "Bash(\"src/lib/shared/share-hub/services/\" )",
-      "Bash(\"src/lib/shared/inversify/modules/share.module.ts\")"
+      "Bash(\"src/lib/shared/inversify/modules/share.module.ts\")",
+      "Skill(submitfb)",
+      "Bash(kinetic_alphabet/concepts/loops.yaml )",
+      "Bash(kinetic_alphabet/letters/type2_letters.yaml )",
+      "Bash(kinetic_alphabet/letters/type3-6_letters.yaml )",
+      "Bash(kinetic_alphabet/words/complex_words.yaml )",
+      "Bash(kinetic_alphabet/words/simple_words.yaml)"
     ]
   }
 }
