@@ -1,0 +1,464 @@
+{
+  "extractedAt": "2025-09-22T22:53:27.449Z",
+  "extractedBy": "extract-metadata-to-sidecars.js",
+  "version": "1.0",
+  "metadata": {
+    "sequence": [
+      {
+        "word": "HΘOY",
+        "author": "Austen Cloud",
+        "level": 1,
+        "prop_type": "unknown",
+        "is_circular": true,
+        "is_permutable": true,
+        "is_strictly_rotational_permutation": false,
+        "is_strictly_mirrored_permutation": false,
+        "is_strictly_colorswapped_permutation": false,
+        "is_mirrored_color_swapped_permutation": false,
+        "is_rotational_colorswapped_permutation": false,
+        "grid_mode": "diamond"
+      },
+      {
+        "beat": 0,
+        "sequence_start_position": "beta",
+        "letter": "β",
+        "end_pos": "beta5",
+        "blue_attributes": {
+          "start_loc": "s",
+          "end_loc": "s",
+          "start_ori": "in",
+          "end_ori": "in",
+          "prop_rot_dir": "no_rot",
+          "turns": 0,
+          "motion_type": "static"
+        },
+        "red_attributes": {
+          "start_loc": "s",
+          "end_loc": "s",
+          "start_ori": "in",
+          "end_ori": "in",
+          "prop_rot_dir": "no_rot",
+          "turns": 0,
+          "motion_type": "static"
+        }
+      },
+      {
+        "beat": 1,
+        "letter": "H",
+        "start_pos": "beta5",
+        "end_pos": "beta7",
+        "timing": "tog",
+        "direction": "same",
+        "blue_attributes": {
+          "motion_type": "anti",
+          "start_ori": "in",
+          "prop_rot_dir": "ccw",
+          "start_loc": "s",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "anti",
+          "start_ori": "in",
+          "prop_rot_dir": "ccw",
+          "start_loc": "s",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 2,
+        "letter": "Θ",
+        "start_pos": "beta7",
+        "end_pos": "gamma13",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "static",
+          "start_ori": "out",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "w",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "pro",
+          "start_ori": "out",
+          "prop_rot_dir": "ccw",
+          "start_loc": "w",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 3,
+        "letter": "O",
+        "start_pos": "gamma13",
+        "end_pos": "gamma3",
+        "timing": "quarter",
+        "direction": "opp",
+        "blue_attributes": {
+          "motion_type": "anti",
+          "start_ori": "out",
+          "prop_rot_dir": "ccw",
+          "start_loc": "w",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "pro",
+          "start_ori": "out",
+          "prop_rot_dir": "ccw",
+          "start_loc": "s",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 4,
+        "letter": "Y",
+        "start_pos": "gamma3",
+        "end_pos": "beta1",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "static",
+          "start_ori": "in",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "n",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "pro",
+          "start_ori": "out",
+          "prop_rot_dir": "ccw",
+          "start_loc": "e",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 5,
+        "letter": "H",
+        "start_pos": "beta1",
+        "end_pos": "beta3",
+        "timing": "tog",
+        "direction": "same",
+        "blue_attributes": {
+          "motion_type": "anti",
+          "start_ori": "in",
+          "prop_rot_dir": "ccw",
+          "start_loc": "n",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "anti",
+          "start_ori": "out",
+          "prop_rot_dir": "ccw",
+          "start_loc": "n",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      },
+      {
+        "beat": 6,
+        "letter": "Θ",
+        "start_pos": "beta3",
+        "end_pos": "gamma9",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "static",
+          "start_ori": "out",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "e",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "pro",
+          "start_ori": "in",
+          "prop_rot_dir": "ccw",
+          "start_loc": "e",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      },
+      {
+        "beat": 7,
+        "letter": "O",
+        "start_pos": "gamma9",
+        "end_pos": "gamma7",
+        "timing": "quarter",
+        "direction": "opp",
+        "blue_attributes": {
+          "motion_type": "anti",
+          "start_ori": "out",
+          "prop_rot_dir": "ccw",
+          "start_loc": "e",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "pro",
+          "start_ori": "in",
+          "prop_rot_dir": "ccw",
+          "start_loc": "n",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      },
+      {
+        "beat": 8,
+        "letter": "Y",
+        "start_pos": "gamma7",
+        "end_pos": "beta5",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "static",
+          "start_ori": "in",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "s",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "pro",
+          "start_ori": "in",
+          "prop_rot_dir": "ccw",
+          "start_loc": "w",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      },
+      {
+        "beat": 9,
+        "letter": "H",
+        "start_pos": "beta5",
+        "end_pos": "beta3",
+        "timing": "tog",
+        "direction": "same",
+        "blue_attributes": {
+          "motion_type": "anti",
+          "start_ori": "in",
+          "prop_rot_dir": "cw",
+          "start_loc": "s",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "anti",
+          "start_ori": "in",
+          "prop_rot_dir": "cw",
+          "start_loc": "s",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 10,
+        "letter": "Θ",
+        "start_pos": "beta3",
+        "end_pos": "gamma11",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "pro",
+          "start_ori": "out",
+          "prop_rot_dir": "cw",
+          "start_loc": "e",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "static",
+          "start_ori": "out",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "e",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 11,
+        "letter": "O",
+        "start_pos": "gamma11",
+        "end_pos": "gamma1",
+        "timing": "quarter",
+        "direction": "opp",
+        "blue_attributes": {
+          "motion_type": "pro",
+          "start_ori": "out",
+          "prop_rot_dir": "cw",
+          "start_loc": "s",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "anti",
+          "start_ori": "out",
+          "prop_rot_dir": "cw",
+          "start_loc": "e",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      },
+      {
+        "beat": 12,
+        "letter": "Y",
+        "start_pos": "gamma1",
+        "end_pos": "beta1",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "pro",
+          "start_ori": "out",
+          "prop_rot_dir": "cw",
+          "start_loc": "w",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "out"
+        },
+        "red_attributes": {
+          "motion_type": "static",
+          "start_ori": "in",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "n",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      },
+      {
+        "beat": 13,
+        "letter": "H",
+        "start_pos": "beta1",
+        "end_pos": "beta7",
+        "timing": "tog",
+        "direction": "same",
+        "blue_attributes": {
+          "motion_type": "anti",
+          "start_ori": "out",
+          "prop_rot_dir": "cw",
+          "start_loc": "n",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "anti",
+          "start_ori": "in",
+          "prop_rot_dir": "cw",
+          "start_loc": "n",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 14,
+        "letter": "Θ",
+        "start_pos": "beta7",
+        "end_pos": "gamma15",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "pro",
+          "start_ori": "in",
+          "prop_rot_dir": "cw",
+          "start_loc": "w",
+          "end_loc": "n",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "static",
+          "start_ori": "out",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "w",
+          "end_loc": "w",
+          "turns": 0,
+          "end_ori": "out"
+        }
+      },
+      {
+        "beat": 15,
+        "letter": "O",
+        "start_pos": "gamma15",
+        "end_pos": "gamma5",
+        "timing": "quarter",
+        "direction": "opp",
+        "blue_attributes": {
+          "motion_type": "pro",
+          "start_ori": "in",
+          "prop_rot_dir": "cw",
+          "start_loc": "n",
+          "end_loc": "e",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "anti",
+          "start_ori": "out",
+          "prop_rot_dir": "cw",
+          "start_loc": "w",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      },
+      {
+        "beat": 16,
+        "letter": "Y",
+        "start_pos": "gamma5",
+        "end_pos": "beta5",
+        "timing": "none",
+        "direction": "none",
+        "blue_attributes": {
+          "motion_type": "pro",
+          "start_ori": "in",
+          "prop_rot_dir": "cw",
+          "start_loc": "e",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "in"
+        },
+        "red_attributes": {
+          "motion_type": "static",
+          "start_ori": "in",
+          "prop_rot_dir": "no_rot",
+          "start_loc": "s",
+          "end_loc": "s",
+          "turns": 0,
+          "end_ori": "in"
+        }
+      }
+    ],
+    "date_added": "2024-08-05T23:53:06.613237"
+  }
+}

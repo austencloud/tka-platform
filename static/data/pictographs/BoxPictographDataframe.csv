@@ -395,23 +395,23 @@ Z,gamma16,beta8,none,none,anti,cw,ne,nw,static,noRotation,nw,nw
 Δ,alpha6,gamma6,none,none,anti,ccw,ne,se,static,noRotation,sw,sw
 Δ,alpha8,gamma8,none,none,anti,ccw,se,sw,static,noRotation,nw,nw
 
-θ,beta2,gamma4,none,none,static,noRotation,ne,ne,pro,cw,ne,se
-θ,beta4,gamma6,none,none,static,noRotation,se,se,pro,cw,se,sw
-θ,beta6,gamma8,none,none,static,noRotation,sw,sw,pro,cw,sw,nw
-θ,beta8,gamma2,none,none,static,noRotation,nw,nw,pro,cw,nw,ne
-θ,beta2,gamma16,none,none,static,noRotation,ne,ne,pro,ccw,ne,nw
-θ,beta4,gamma10,none,none,static,noRotation,se,se,pro,ccw,se,ne
-θ,beta6,gamma12,none,none,static,noRotation,sw,sw,pro,ccw,sw,se
-θ,beta8,gamma14,none,none,static,noRotation,nw,nw,pro,ccw,nw,sw
+Θ,beta2,gamma4,none,none,static,noRotation,ne,ne,pro,cw,ne,se
+Θ,beta4,gamma6,none,none,static,noRotation,se,se,pro,cw,se,sw
+Θ,beta6,gamma8,none,none,static,noRotation,sw,sw,pro,cw,sw,nw
+Θ,beta8,gamma2,none,none,static,noRotation,nw,nw,pro,cw,nw,ne
+Θ,beta2,gamma16,none,none,static,noRotation,ne,ne,pro,ccw,ne,nw
+Θ,beta4,gamma10,none,none,static,noRotation,se,se,pro,ccw,se,ne
+Θ,beta6,gamma12,none,none,static,noRotation,sw,sw,pro,ccw,sw,se
+Θ,beta8,gamma14,none,none,static,noRotation,nw,nw,pro,ccw,nw,sw
 
-θ,beta2,gamma2,none,none,pro,ccw,ne,nw,static,noRotation,ne,ne
-θ,beta4,gamma4,none,none,pro,ccw,se,ne,static,noRotation,se,se
-θ,beta6,gamma6,none,none,pro,ccw,sw,se,static,noRotation,sw,sw
-θ,beta8,gamma8,none,none,pro,ccw,nw,sw,static,noRotation,nw,nw
-θ,beta2,gamma10,none,none,pro,cw,ne,se,static,noRotation,ne,ne
-θ,beta4,gamma12,none,none,pro,cw,se,sw,static,noRotation,se,se
-θ,beta6,gamma14,none,none,pro,cw,sw,nw,static,noRotation,sw,sw
-θ,beta8,gamma16,none,none,pro,cw,nw,ne,static,noRotation,nw,nw
+Θ,beta2,gamma2,none,none,pro,ccw,ne,nw,static,noRotation,ne,ne
+Θ,beta4,gamma4,none,none,pro,ccw,se,ne,static,noRotation,se,se
+Θ,beta6,gamma6,none,none,pro,ccw,sw,se,static,noRotation,sw,sw
+Θ,beta8,gamma8,none,none,pro,ccw,nw,sw,static,noRotation,nw,nw
+Θ,beta2,gamma10,none,none,pro,cw,ne,se,static,noRotation,ne,ne
+Θ,beta4,gamma12,none,none,pro,cw,se,sw,static,noRotation,se,se
+Θ,beta6,gamma14,none,none,pro,cw,sw,nw,static,noRotation,sw,sw
+Θ,beta8,gamma16,none,none,pro,cw,nw,ne,static,noRotation,nw,nw
 
 Ω,beta2,gamma4,none,none,static,noRotation,ne,ne,anti,ccw,ne,se
 Ω,beta4,gamma6,none,none,static,noRotation,se,se,anti,ccw,se,sw
@@ -539,23 +539,23 @@ Z-,gamma16,beta4,none,none,anti,ccw,ne,se,dash,noRotation,nw,se
 Δ-,beta6,gamma10,none,none,anti,cw,sw,se,dash,noRotation,sw,ne
 Δ-,beta8,gamma12,none,none,anti,cw,nw,sw,dash,noRotation,nw,se
 
-θ-,alpha2,gamma4,none,none,dash,noRotation,sw,ne,pro,cw,ne,se
-θ-,alpha4,gamma6,none,none,dash,noRotation,nw,se,pro,cw,se,sw
-θ-,alpha6,gamma8,none,none,dash,noRotation,ne,sw,pro,cw,sw,nw
-θ-,alpha8,gamma2,none,none,dash,noRotation,se,nw,pro,cw,nw,ne
-θ-,alpha2,gamma16,none,none,dash,noRotation,sw,ne,pro,ccw,ne,nw
-θ-,alpha4,gamma10,none,none,dash,noRotation,nw,se,pro,ccw,se,ne
-θ-,alpha6,gamma12,none,none,dash,noRotation,ne,sw,pro,ccw,sw,se
-θ-,alpha8,gamma14,none,none,dash,noRotation,se,nw,pro,ccw,nw,sw
+Θ-,alpha2,gamma4,none,none,dash,noRotation,sw,ne,pro,cw,ne,se
+Θ-,alpha4,gamma6,none,none,dash,noRotation,nw,se,pro,cw,se,sw
+Θ-,alpha6,gamma8,none,none,dash,noRotation,ne,sw,pro,cw,sw,nw
+Θ-,alpha8,gamma2,none,none,dash,noRotation,se,nw,pro,cw,nw,ne
+Θ-,alpha2,gamma16,none,none,dash,noRotation,sw,ne,pro,ccw,ne,nw
+Θ-,alpha4,gamma10,none,none,dash,noRotation,nw,se,pro,ccw,se,ne
+Θ-,alpha6,gamma12,none,none,dash,noRotation,ne,sw,pro,ccw,sw,se
+Θ-,alpha8,gamma14,none,none,dash,noRotation,se,nw,pro,ccw,nw,sw
 
-θ-,alpha2,gamma14,none,none,pro,cw,sw,nw,dash,noRotation,ne,sw
-θ-,alpha4,gamma16,none,none,pro,cw,nw,ne,dash,noRotation,se,nw
-θ-,alpha6,gamma10,none,none,pro,cw,ne,se,dash,noRotation,sw,ne
-θ-,alpha8,gamma12,none,none,pro,cw,se,sw,dash,noRotation,nw,se
-θ-,alpha2,gamma6,none,none,pro,ccw,sw,se,dash,noRotation,ne,sw
-θ-,alpha4,gamma8,none,none,pro,ccw,nw,sw,dash,noRotation,se,nw
-θ-,alpha6,gamma2,none,none,pro,ccw,ne,nw,dash,noRotation,sw,ne
-θ-,alpha8,gamma4,none,none,pro,ccw,se,ne,dash,noRotation,nw,se
+Θ-,alpha2,gamma14,none,none,pro,cw,sw,nw,dash,noRotation,ne,sw
+Θ-,alpha4,gamma16,none,none,pro,cw,nw,ne,dash,noRotation,se,nw
+Θ-,alpha6,gamma10,none,none,pro,cw,ne,se,dash,noRotation,sw,ne
+Θ-,alpha8,gamma12,none,none,pro,cw,se,sw,dash,noRotation,nw,se
+Θ-,alpha2,gamma6,none,none,pro,ccw,sw,se,dash,noRotation,ne,sw
+Θ-,alpha4,gamma8,none,none,pro,ccw,nw,sw,dash,noRotation,se,nw
+Θ-,alpha6,gamma2,none,none,pro,ccw,ne,nw,dash,noRotation,sw,ne
+Θ-,alpha8,gamma4,none,none,pro,ccw,se,ne,dash,noRotation,nw,se
 
 Ω-,alpha2,gamma4,none,none,dash,noRotation,sw,ne,anti,ccw,ne,se
 Ω-,alpha4,gamma6,none,none,dash,noRotation,nw,se,anti,ccw,se,sw

@@ -117,7 +117,7 @@
     "2.5": [-20, 105],
     "3": [100, 100]
   },
-  "dash_to_radial_layer3_gamma_θ_dash": {
+  "dash_to_radial_layer3_gamma_Θ_dash": {
     "0": [0, 0],
     "0.5": [85, 10],
     "1": [50, 70],
@@ -180,7 +180,7 @@
     "2.5": [60, 10],
     "3": [35, 80]
   },
-  "dash_to_layer1_gamma_θ_dash": {
+  "dash_to_layer1_gamma_Θ_dash": {
     "0": [0, 0],
     "0.5": [75, 20],
     "1": [50, 70],

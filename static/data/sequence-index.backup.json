@@ -10780,10 +10780,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "bθ-z-θwlφb",
-      "name": "Bθ-Z-θWLΦB Sequence",
-      "word": "Bθ-Z-θWLΦB",
-      "thumbnails": ["/gallery/Bθ-Z-θWLΦB/Bθ-Z-θWLΦB_ver1.webp"],
+      "id": "bΘ-z-Θwlφb",
+      "name": "BΘ-Z-ΘWLΦB Sequence",
+      "word": "BΘ-Z-ΘWLΦB",
+      "thumbnails": ["/gallery/BΘ-Z-ΘWLΦB/BΘ-Z-ΘWLΦB_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-08-17T13:54:46.283Z",
@@ -10798,7 +10798,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Bθ-Z-θWLΦB",
+            "word": "BΘ-Z-ΘWLΦB",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "staff",
@@ -10861,7 +10861,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha3",
             "endPos": "gamma9",
@@ -10917,7 +10917,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta5",
             "endPos": "gamma11",
@@ -11085,7 +11085,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "duration": 1,
             "startPos": "alpha3",
@@ -11141,7 +11141,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "duration": 1,
             "startPos": "beta5",
@@ -11283,7 +11283,7 @@
         "dateAdded": "2025-03-06T17:38:42.895658"
       },
       "metadataBundled": true,
-      "metadataSource": "Bθ-Z-θWLΦB_ver1.meta.json",
+      "metadataSource": "BΘ-Z-ΘWLΦB_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -11291,11 +11291,11 @@
       "level": 1
     },
     {
-      "id": "bθ-z-θwlφbaω-y-ωxlφa",
-      "name": "Bθ-Z-θWLΦBAΩ-Y-ΩXLΦA Sequence",
-      "word": "Bθ-Z-θWLΦBAΩ-Y-ΩXLΦA",
+      "id": "bΘ-z-Θwlφbaω-y-ωxlφa",
+      "name": "BΘ-Z-ΘWLΦBAΩ-Y-ΩXLΦA Sequence",
+      "word": "BΘ-Z-ΘWLΦBAΩ-Y-ΩXLΦA",
       "thumbnails": [
-        "/gallery/Bθ-Z-θWLΦBAΩ-Y-ΩXLΦA/Bθ-Z-θWLΦBAΩ-Y-ΩXLΦA_ver1.webp"
+        "/gallery/BΘ-Z-ΘWLΦBAΩ-Y-ΩXLΦA/BΘ-Z-ΘWLΦBAΩ-Y-ΩXLΦA_ver1.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -11311,7 +11311,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Bθ-Z-θWLΦBAΩ-Y-ΩXLΦA",
+            "word": "BΘ-Z-ΘWLΦBAΩ-Y-ΩXLΦA",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "staff",
@@ -11374,7 +11374,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha3",
             "endPos": "gamma9",
@@ -11430,7 +11430,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta5",
             "endPos": "gamma11",
@@ -11796,7 +11796,7 @@
         "dateAdded": "2025-03-06T17:39:26.074630"
       },
       "metadataBundled": true,
-      "metadataSource": "Bθ-Z-θWLΦBAΩ-Y-ΩXLΦA_ver1.meta.json",
+      "metadataSource": "BΘ-Z-ΘWLΦBAΩ-Y-ΩXLΦA_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -16693,10 +16693,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "cθ-ze",
-      "name": "Cθ-ZE Sequence",
-      "word": "Cθ-ZE",
-      "thumbnails": ["/gallery/Cθ-ZE/Cθ-ZE_ver1.webp"],
+      "id": "cΘ-ze",
+      "name": "CΘ-ZE Sequence",
+      "word": "CΘ-ZE",
+      "thumbnails": ["/gallery/CΘ-ZE/CΘ-ZE_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-02-14T22:41:22.389Z",
@@ -16711,7 +16711,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Cθ-ZE",
+            "word": "CΘ-ZE",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -16775,7 +16775,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -16894,7 +16894,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -16998,7 +16998,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma5",
             "timing": "none",
@@ -17102,7 +17102,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma3",
             "timing": "none",
@@ -17182,7 +17182,7 @@
         "dateAdded": "2024-09-07T11:00:48.207227"
       },
       "metadataBundled": true,
-      "metadataSource": "Cθ-ZE_ver1.meta.json",
+      "metadataSource": "CΘ-ZE_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -17190,10 +17190,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "cσnziθuw",
-      "name": "CΣNZIθUW Sequence",
-      "word": "CΣNZIθUW",
-      "thumbnails": ["/gallery/CΣNZIθUW/CΣNZIθUW_ver1.webp"],
+      "id": "cσnziΘuw",
+      "name": "CΣNZIΘUW Sequence",
+      "word": "CΣNZIΘUW",
+      "thumbnails": ["/gallery/CΣNZIΘUW/CΣNZIΘUW_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-12-16T20:21:29.220Z",
@@ -17208,7 +17208,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "CΣNZIθUW",
+            "word": "CΣNZIΘUW",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -17374,7 +17374,7 @@
             "blueEndOri": "in"
           },
           {
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma7",
             "timing": "none",
@@ -17590,7 +17590,7 @@
             "blueEndOri": "out"
           },
           {
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma5",
             "timing": "none",
@@ -17674,7 +17674,7 @@
         "dateAdded": "2024-07-26T10:18:44.450879"
       },
       "metadataBundled": true,
-      "metadataSource": "CΣNZIθUW_ver1.meta.json",
+      "metadataSource": "CΣNZIΘUW_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -18158,13 +18158,13 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "cψθx-",
-      "name": "CΨθX- Sequence",
-      "word": "CΨθX-",
+      "id": "cψΘx-",
+      "name": "CΨΘX- Sequence",
+      "word": "CΨΘX-",
       "thumbnails": [
-        "/gallery/CΨθX-/CΨθX-_ver4.webp",
-        "/gallery/CΨθX-/CΨθX-_ver5.webp",
-        "/gallery/CΨθX-/CΨθX-_ver6.webp"
+        "/gallery/CΨΘX-/CΨΘX-_ver4.webp",
+        "/gallery/CΨΘX-/CΨΘX-_ver5.webp",
+        "/gallery/CΨΘX-/CΨΘX-_ver6.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -18180,7 +18180,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "CΨθX-",
+            "word": "CΨΘX-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -18271,7 +18271,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta7",
             "endPos": "gamma1",
@@ -18383,7 +18383,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta5",
             "endPos": "gamma7",
@@ -18495,7 +18495,7 @@
           },
           {
             "beat": 11,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta3",
             "endPos": "gamma3",
@@ -18607,7 +18607,7 @@
           },
           {
             "beat": 15,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta5",
             "endPos": "gamma5",
@@ -18665,7 +18665,7 @@
         "dateAdded": "2025-03-06T20:59:56.862470"
       },
       "metadataBundled": true,
-      "metadataSource": "CΨθX-_ver4.meta.json",
+      "metadataSource": "CΨΘX-_ver4.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -20138,10 +20138,10 @@
       "level": 2
     },
     {
-      "id": "dθ-qy",
-      "name": "Dθ-QY Sequence",
-      "word": "Dθ-QY",
-      "thumbnails": ["/gallery/Dθ-QY/Dθ-QY_ver1.webp"],
+      "id": "dΘ-qy",
+      "name": "DΘ-QY Sequence",
+      "word": "DΘ-QY",
+      "thumbnails": ["/gallery/DΘ-QY/DΘ-QY_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-10-02T06:50:17.830Z",
@@ -20156,7 +20156,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Dθ-QY",
+            "word": "DΘ-QY",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -20220,7 +20220,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma3",
             "timing": "none",
@@ -20324,7 +20324,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma1",
             "timing": "none",
@@ -20428,7 +20428,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma7",
             "timing": "none",
@@ -20532,7 +20532,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma5",
             "timing": "none",
@@ -20612,7 +20612,7 @@
         "dateAdded": "2024-09-09T17:29:09.767979"
       },
       "metadataBundled": true,
-      "metadataSource": "Dθ-QY_ver1.meta.json",
+      "metadataSource": "DΘ-QY_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -20620,10 +20620,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "dθ-uy-",
-      "name": "Dθ-UY- Sequence",
-      "word": "Dθ-UY-",
-      "thumbnails": ["/gallery/Dθ-UY-/Dθ-UY-_ver1.webp"],
+      "id": "dΘ-uy-",
+      "name": "DΘ-UY- Sequence",
+      "word": "DΘ-UY-",
+      "thumbnails": ["/gallery/DΘ-UY-/DΘ-UY-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-07-07T21:11:44.753Z",
@@ -20638,7 +20638,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Dθ-UY-",
+            "word": "DΘ-UY-",
             "author": "Betsy Dz",
             "level": 2,
             "propType": "staff",
@@ -20697,7 +20697,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma15",
             "timing": "none",
@@ -20801,7 +20801,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma13",
             "timing": "none",
@@ -20905,7 +20905,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma11",
             "timing": "none",
@@ -21009,7 +21009,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma9",
             "timing": "none",
@@ -21089,7 +21089,7 @@
         "dateAdded": "2024-09-03T19:34:03.750693"
       },
       "metadataBundled": true,
-      "metadataSource": "Dθ-UY-_ver1.meta.json",
+      "metadataSource": "DΘ-UY-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -21097,10 +21097,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "dσpmydjθmpwj",
-      "name": "DΣPMYDJθMPWJ Sequence",
-      "word": "DΣPMYDJθMPWJ",
-      "thumbnails": ["/gallery/DΣPMYDJθMPWJ/DΣPMYDJθMPWJ_ver2.webp"],
+      "id": "dσpmydjΘmpwj",
+      "name": "DΣPMYDJΘMPWJ Sequence",
+      "word": "DΣPMYDJΘMPWJ",
+      "thumbnails": ["/gallery/DΣPMYDJΘMPWJ/DΣPMYDJΘMPWJ_ver2.webp"],
       "sequenceLength": 12,
       "author": "Austen Cloud",
       "dateAdded": "2025-06-15T12:28:50.561Z",
@@ -21115,7 +21115,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "DΣPMYDJθMPWJ",
+            "word": "DΣPMYDJΘMPWJ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -21346,7 +21346,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta3",
             "endPos": "gamma11",
@@ -21488,7 +21488,7 @@
         "dateAdded": "2025-03-10T02:55:14.481935"
       },
       "metadataBundled": true,
-      "metadataSource": "DΣPMYDJθMPWJ_ver2.meta.json",
+      "metadataSource": "DΣPMYDJΘMPWJ_ver2.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -27547,12 +27547,12 @@
       "loopType": "strict_rotated_halved"
     },
     {
-      "id": "eθ-nw-bθ-ty-",
-      "name": "Eθ-NW-Bθ-TY- Sequence",
-      "word": "Eθ-NW-Bθ-TY-",
+      "id": "eΘ-nw-bΘ-ty-",
+      "name": "EΘ-NW-BΘ-TY- Sequence",
+      "word": "EΘ-NW-BΘ-TY-",
       "thumbnails": [
-        "/gallery/Eθ-NW-Bθ-TY-/Eθ-NW-Bθ-TY-_ver1.webp",
-        "/gallery/Eθ-NW-Bθ-TY-/Eθ-NW-Bθ-TY-_ver2.webp"
+        "/gallery/EΘ-NW-BΘ-TY-/EΘ-NW-BΘ-TY-_ver1.webp",
+        "/gallery/EΘ-NW-BΘ-TY-/EΘ-NW-BΘ-TY-_ver2.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -27568,7 +27568,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Eθ-NW-Bθ-TY-",
+            "word": "EΘ-NW-BΘ-TY-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -27627,7 +27627,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -27731,7 +27731,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -27835,7 +27835,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -27939,7 +27939,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -28019,17 +28019,17 @@
         "dateAdded": "2024-08-09T17:21:47.444651"
       },
       "metadataBundled": true,
-      "metadataSource": "Eθ-NW-Bθ-TY-_ver1.meta.json",
+      "metadataSource": "EΘ-NW-BΘ-TY-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
       "level": 2
     },
     {
-      "id": "eθ-nw-kς-qy-",
-      "name": "Eθ-NW-KΣ-QY- Sequence",
-      "word": "Eθ-NW-KΣ-QY-",
-      "thumbnails": ["/gallery/Eθ-NW-KΣ-QY-/Eθ-NW-KΣ-QY-_ver1.webp"],
+      "id": "eΘ-nw-kς-qy-",
+      "name": "EΘ-NW-KΣ-QY- Sequence",
+      "word": "EΘ-NW-KΣ-QY-",
+      "thumbnails": ["/gallery/EΘ-NW-KΣ-QY-/EΘ-NW-KΣ-QY-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-02-15T00:48:40.539Z",
@@ -28044,7 +28044,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Eθ-NW-KΣ-QY-",
+            "word": "EΘ-NW-KΣ-QY-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -28103,7 +28103,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -28311,7 +28311,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -28495,7 +28495,7 @@
         "dateAdded": "2024-08-09T16:31:29.013106"
       },
       "metadataBundled": true,
-      "metadataSource": "Eθ-NW-KΣ-QY-_ver1.meta.json",
+      "metadataSource": "EΘ-NW-KΣ-QY-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -31715,10 +31715,10 @@
       "loopType": "strict_rotated_halved"
     },
     {
-      "id": "eω-z-θy-dθ-z",
-      "name": "EΩ-Z-θY-Dθ-Z Sequence",
-      "word": "EΩ-Z-θY-Dθ-Z",
-      "thumbnails": ["/gallery/EΩ-Z-θY-Dθ-Z/EΩ-Z-θY-Dθ-Z_ver1.webp"],
+      "id": "eω-z-Θy-dΘ-z",
+      "name": "EΩ-Z-ΘY-DΘ-Z Sequence",
+      "word": "EΩ-Z-ΘY-DΘ-Z",
+      "thumbnails": ["/gallery/EΩ-Z-ΘY-DΘ-Z/EΩ-Z-ΘY-DΘ-Z_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-05-29T04:48:48.344Z",
@@ -31733,7 +31733,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "EΩ-Z-θY-Dθ-Z",
+            "word": "EΩ-Z-ΘY-DΘ-Z",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -31854,7 +31854,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma5",
             "timing": "none",
@@ -31935,7 +31935,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma7",
             "timing": "none",
@@ -32075,7 +32075,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ",
+            "letter": "Θ",
             "duration": 1,
             "startPos": "beta7",
             "endPos": "gamma7",
@@ -32156,7 +32156,7 @@
           },
           {
             "beat": 15,
-            "letter": "θ-",
+            "letter": "Θ-",
             "duration": 1,
             "startPos": "alpha3",
             "endPos": "gamma5",
@@ -32212,7 +32212,7 @@
         "dateAdded": "2024-10-14T17:22:52.374029"
       },
       "metadataBundled": true,
-      "metadataSource": "EΩ-Z-θY-Dθ-Z_ver1.meta.json",
+      "metadataSource": "EΩ-Z-ΘY-DΘ-Z_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -36368,10 +36368,10 @@
       "level": 1
     },
     {
-      "id": "geθ-y-",
-      "name": "GEθ-Y- Sequence",
-      "word": "GEθ-Y-",
-      "thumbnails": ["/gallery/GEθ-Y-/GEθ-Y-_ver1.webp"],
+      "id": "geΘ-y-",
+      "name": "GEΘ-Y- Sequence",
+      "word": "GEΘ-Y-",
+      "thumbnails": ["/gallery/GEΘ-Y-/GEΘ-Y-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-10-23T17:44:15.823Z",
@@ -36386,7 +36386,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "GEθ-Y-",
+            "word": "GEΘ-Y-",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -36471,7 +36471,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma9",
             "timing": "none",
@@ -36575,7 +36575,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma11",
             "timing": "none",
@@ -36679,7 +36679,7 @@
           },
           {
             "beat": 11,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma13",
             "timing": "none",
@@ -36783,7 +36783,7 @@
           },
           {
             "beat": 15,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma15",
             "timing": "none",
@@ -36837,7 +36837,7 @@
         "dateAdded": "2024-08-05T23:34:56.173212"
       },
       "metadataBundled": true,
-      "metadataSource": "GEθ-Y-_ver1.meta.json",
+      "metadataSource": "GEΘ-Y-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -37322,12 +37322,12 @@
       "level": 1
     },
     {
-      "id": "giωz-θmoz-",
-      "name": "GIΩZ-θMOZ- Sequence",
-      "word": "GIΩZ-θMOZ-",
+      "id": "giωz-Θmoz-",
+      "name": "GIΩZ-ΘMOZ- Sequence",
+      "word": "GIΩZ-ΘMOZ-",
       "thumbnails": [
-        "/gallery/GIΩZ-θMOZ-/GIΩZ-θMOZ-_ver1.webp",
-        "/gallery/GIΩZ-θMOZ-/GIΩZ-θMOZ-_ver2.webp"
+        "/gallery/GIΩZ-ΘMOZ-/GIΩZ-ΘMOZ-_ver1.webp",
+        "/gallery/GIΩZ-ΘMOZ-/GIΩZ-ΘMOZ-_ver2.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -37343,7 +37343,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "GIΩZ-θMOZ-",
+            "word": "GIΩZ-ΘMOZ-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -37490,7 +37490,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "duration": 1,
             "startPos": "beta5",
@@ -37714,7 +37714,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta1",
             "endPos": "gamma15",
@@ -37828,7 +37828,7 @@
         "dateAdded": "2025-05-25T19:50:58.557137"
       },
       "metadataBundled": true,
-      "metadataSource": "GIΩZ-θMOZ-_ver1.meta.json",
+      "metadataSource": "GIΩZ-ΘMOZ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -37836,10 +37836,10 @@
       "loopType": "strict_rotated_halved"
     },
     {
-      "id": "gθoz",
-      "name": "GθOZ Sequence",
-      "word": "GθOZ",
-      "thumbnails": ["/gallery/GθOZ/GθOZ_ver1.webp"],
+      "id": "gΘoz",
+      "name": "GΘOZ Sequence",
+      "word": "GΘOZ",
+      "thumbnails": ["/gallery/GΘOZ/GΘOZ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-11-13T17:05:10.698Z",
@@ -37854,7 +37854,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "GθOZ",
+            "word": "GΘOZ",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -37913,7 +37913,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma3",
             "timing": "none",
@@ -38017,7 +38017,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma11",
             "timing": "none",
@@ -38121,7 +38121,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -38225,7 +38225,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma1",
             "timing": "none",
@@ -38306,7 +38306,7 @@
         "isFavorite": false
       },
       "metadataBundled": true,
-      "metadataSource": "GθOZ_ver1.meta.json",
+      "metadataSource": "GΘOZ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -38314,10 +38314,10 @@
       "level": 1
     },
     {
-      "id": "gθuz",
-      "name": "GθUZ Sequence",
-      "word": "GθUZ",
-      "thumbnails": ["/gallery/GθUZ/GθUZ_ver1.webp"],
+      "id": "gΘuz",
+      "name": "GΘUZ Sequence",
+      "word": "GΘUZ",
+      "thumbnails": ["/gallery/GΘUZ/GΘUZ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-19T16:46:55.387Z",
@@ -38332,7 +38332,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "GθUZ",
+            "word": "GΘUZ",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -38391,7 +38391,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma3",
             "timing": "none",
@@ -38495,7 +38495,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -38599,7 +38599,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -38703,7 +38703,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma11",
             "timing": "none",
@@ -38783,7 +38783,7 @@
         "dateAdded": "2024-08-07T14:48:16.262376"
       },
       "metadataBundled": true,
-      "metadataSource": "GθUZ_ver1.meta.json",
+      "metadataSource": "GΘUZ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -41163,10 +41163,10 @@
       "loopType": "strict_rotated_halved"
     },
     {
-      "id": "hθoy",
-      "name": "HθOY Sequence",
-      "word": "HθOY",
-      "thumbnails": ["/gallery/HθOY/HθOY_ver1.webp"],
+      "id": "hΘoy",
+      "name": "HΘOY Sequence",
+      "word": "HΘOY",
+      "thumbnails": ["/gallery/HΘOY/HΘOY_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-01-11T06:28:25.794Z",
@@ -41181,7 +41181,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "HθOY",
+            "word": "HΘOY",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -41240,7 +41240,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -41344,7 +41344,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma9",
             "timing": "none",
@@ -41448,7 +41448,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma11",
             "timing": "none",
@@ -41552,7 +41552,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma15",
             "timing": "none",
@@ -41632,7 +41632,7 @@
         "dateAdded": "2024-08-05T23:53:06.613237"
       },
       "metadataBundled": true,
-      "metadataSource": "HθOY_ver1.meta.json",
+      "metadataSource": "HΘOY_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -41640,10 +41640,10 @@
       "level": 1
     },
     {
-      "id": "hθλ-z",
-      "name": "HθΛ-Z Sequence",
-      "word": "HθΛ-Z",
-      "thumbnails": ["/gallery/HθΛ-Z/HθΛ-Z_ver1.webp"],
+      "id": "hΘλ-z",
+      "name": "HΘΛ-Z Sequence",
+      "word": "HΘΛ-Z",
+      "thumbnails": ["/gallery/HΘΛ-Z/HΘΛ-Z_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-06-18T21:18:00.055Z",
@@ -41658,7 +41658,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "HθΛ-Z",
+            "word": "HΘΛ-Z",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -41717,7 +41717,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma7",
             "timing": "none",
@@ -41821,7 +41821,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma5",
             "timing": "none",
@@ -41925,7 +41925,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma3",
             "timing": "none",
@@ -42029,7 +42029,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma1",
             "timing": "none",
@@ -42109,7 +42109,7 @@
         "dateAdded": "2024-08-23T01:14:19.619453"
       },
       "metadataBundled": true,
-      "metadataSource": "HθΛ-Z_ver1.meta.json",
+      "metadataSource": "HΘΛ-Z_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -42117,10 +42117,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "hς-yfθ-wθ-rz-",
-      "name": "HΣ-YFθ-Wθ-RZ- Sequence",
-      "word": "HΣ-YFθ-Wθ-RZ-",
-      "thumbnails": ["/gallery/HΣ-YFθ-Wθ-RZ-/HΣ-YFθ-Wθ-RZ-_ver1.webp"],
+      "id": "hς-yfΘ-wΘ-rz-",
+      "name": "HΣ-YFΘ-WΘ-RZ- Sequence",
+      "word": "HΣ-YFΘ-WΘ-RZ-",
+      "thumbnails": ["/gallery/HΣ-YFΘ-WΘ-RZ-/HΣ-YFΘ-WΘ-RZ-_ver1.webp"],
       "sequenceLength": 36,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-25T05:05:31.022Z",
@@ -42135,7 +42135,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "HΣ-YFθ-Wθ-RZ-",
+            "word": "HΣ-YFΘ-WΘ-RZ-",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -42289,7 +42289,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha8",
             "endPos": "gamma12",
             "timing": "none",
@@ -42353,7 +42353,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha4",
             "endPos": "gamma16",
             "timing": "none",
@@ -42547,7 +42547,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha2",
             "endPos": "gamma14",
             "timing": "none",
@@ -42601,7 +42601,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha6",
             "endPos": "gamma10",
             "timing": "none",
@@ -42790,7 +42790,7 @@
           },
           {
             "beat": 23,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha4",
             "endPos": "gamma16",
             "timing": "none",
@@ -42844,7 +42844,7 @@
           },
           {
             "beat": 25,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha8",
             "endPos": "gamma12",
             "timing": "none",
@@ -43033,7 +43033,7 @@
           },
           {
             "beat": 32,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha6",
             "endPos": "gamma10",
             "timing": "none",
@@ -43087,7 +43087,7 @@
           },
           {
             "beat": 34,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha2",
             "endPos": "gamma14",
             "timing": "none",
@@ -43171,7 +43171,7 @@
         "isFavorite": false
       },
       "metadataBundled": true,
-      "metadataSource": "HΣ-YFθ-Wθ-RZ-_ver1.meta.json",
+      "metadataSource": "HΣ-YFΘ-WΘ-RZ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -43855,10 +43855,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "ielθvyθu",
-      "name": "IELθVYθU Sequence",
-      "word": "IELθVYθU",
-      "thumbnails": ["/gallery/IELθVYθU/IELθVYθU_ver1.webp"],
+      "id": "ielΘvyΘu",
+      "name": "IELΘVYΘU Sequence",
+      "word": "IELΘVYΘU",
+      "thumbnails": ["/gallery/IELΘVYΘU/IELΘVYΘU_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-06-17T03:40:39.220Z",
@@ -43873,7 +43873,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "IELθVYθU",
+            "word": "IELΘVYΘU",
             "author": "Doc Womp",
             "level": 1,
             "propType": "staff",
@@ -43986,7 +43986,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma11",
             "timing": "none",
@@ -44064,7 +44064,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma15",
             "timing": "none",
@@ -44119,7 +44119,7 @@
         "isFavorite": false
       },
       "metadataBundled": true,
-      "metadataSource": "IELθVYθU_ver1.meta.json",
+      "metadataSource": "IELΘVYΘU_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -53965,10 +53965,10 @@
       "level": 1
     },
     {
-      "id": "kiθx-",
-      "name": "KIθX- Sequence",
-      "word": "KIθX-",
-      "thumbnails": ["/gallery/KIθX-/KIθX-_ver1.webp"],
+      "id": "kiΘx-",
+      "name": "KIΘX- Sequence",
+      "word": "KIΘX-",
+      "thumbnails": ["/gallery/KIΘX-/KIΘX-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-28T03:21:48.903Z",
@@ -53983,7 +53983,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "KIθX-",
+            "word": "KIΘX-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -54068,7 +54068,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma15",
             "timing": "none",
@@ -54172,7 +54172,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma9",
             "timing": "none",
@@ -54276,7 +54276,7 @@
           },
           {
             "beat": 11,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma11",
             "timing": "none",
@@ -54380,7 +54380,7 @@
           },
           {
             "beat": 15,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -54434,7 +54434,7 @@
         "dateAdded": "2024-08-08T02:17:44.713718"
       },
       "metadataBundled": true,
-      "metadataSource": "KIθX-_ver1.meta.json",
+      "metadataSource": "KIΘX-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -54919,10 +54919,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "kθy-φ",
-      "name": "KθY-Φ Sequence",
-      "word": "KθY-Φ",
-      "thumbnails": ["/gallery/KθY-Φ/KθY-Φ_ver1.webp"],
+      "id": "kΘy-φ",
+      "name": "KΘY-Φ Sequence",
+      "word": "KΘY-Φ",
+      "thumbnails": ["/gallery/KΘY-Φ/KΘY-Φ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-08T22:21:40.437Z",
@@ -54937,7 +54937,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "KθY-Φ",
+            "word": "KΘY-Φ",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -54996,7 +54996,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -55100,7 +55100,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma7",
             "timing": "none",
@@ -55204,7 +55204,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma5",
             "timing": "none",
@@ -55308,7 +55308,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma3",
             "timing": "none",
@@ -55388,7 +55388,7 @@
         "dateAdded": "2024-08-01T03:07:46.169852"
       },
       "metadataBundled": true,
-      "metadataSource": "KθY-Φ_ver1.meta.json",
+      "metadataSource": "KΘY-Φ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -55396,10 +55396,10 @@
       "level": 1
     },
     {
-      "id": "kθλ-w",
-      "name": "KθΛ-W Sequence",
-      "word": "KθΛ-W",
-      "thumbnails": ["/gallery/KθΛ-W/KθΛ-W_ver1.webp"],
+      "id": "kΘλ-w",
+      "name": "KΘΛ-W Sequence",
+      "word": "KΘΛ-W",
+      "thumbnails": ["/gallery/KΘΛ-W/KΘΛ-W_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-08-24T00:58:58.106Z",
@@ -55414,7 +55414,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "KθΛ-W",
+            "word": "KΘΛ-W",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -55473,7 +55473,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma9",
             "timing": "none",
@@ -55577,7 +55577,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma11",
             "timing": "none",
@@ -55681,7 +55681,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -55785,7 +55785,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma15",
             "timing": "none",
@@ -55865,7 +55865,7 @@
         "dateAdded": "2024-08-19T04:32:48.638488"
       },
       "metadataBundled": true,
-      "metadataSource": "KθΛ-W_ver1.meta.json",
+      "metadataSource": "KΘΛ-W_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -69625,10 +69625,10 @@
       "level": 1
     },
     {
-      "id": "oyhθ",
-      "name": "OYHθ Sequence",
-      "word": "OYHθ",
-      "thumbnails": ["/gallery/OYHθ/OYHθ_ver1.webp"],
+      "id": "oyhΘ",
+      "name": "OYHΘ Sequence",
+      "word": "OYHΘ",
+      "thumbnails": ["/gallery/OYHΘ/OYHΘ_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-17T23:00:37.779Z",
@@ -69643,7 +69643,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "OYHθ",
+            "word": "OYHΘ",
             "author": "Austen",
             "level": 1,
             "propType": "staff",
@@ -69765,7 +69765,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "duration": 1,
             "startPos": "beta3",
@@ -69877,7 +69877,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "duration": 1,
             "startPos": "beta7",
@@ -69907,7 +69907,7 @@
         "dateAdded": "2025-05-03T22:02:54.925551"
       },
       "metadataBundled": true,
-      "metadataSource": "OYHθ_ver1.meta.json",
+      "metadataSource": "OYHΘ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -73640,10 +73640,10 @@
       "level": 2
     },
     {
-      "id": "qλ-z-θ",
-      "name": "QΛ-Z-θ Sequence",
-      "word": "QΛ-Z-θ",
-      "thumbnails": ["/gallery/QΛ-Z-θ/QΛ-Z-θ_ver1.webp"],
+      "id": "qλ-z-Θ",
+      "name": "QΛ-Z-Θ Sequence",
+      "word": "QΛ-Z-Θ",
+      "thumbnails": ["/gallery/QΛ-Z-Θ/QΛ-Z-Θ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-10-30T09:50:00.867Z",
@@ -73658,7 +73658,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "QΛ-Z-θ",
+            "word": "QΛ-Z-Θ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -73776,7 +73776,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma9",
             "timing": "none",
@@ -73880,7 +73880,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma15",
             "timing": "none",
@@ -73984,7 +73984,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -74088,7 +74088,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma11",
             "timing": "none",
@@ -74116,7 +74116,7 @@
         "dateAdded": "2024-09-23T19:33:42.414998"
       },
       "metadataBundled": true,
-      "metadataSource": "QΛ-Z-θ_ver1.meta.json",
+      "metadataSource": "QΛ-Z-Θ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -76815,12 +76815,12 @@
       "level": 2
     },
     {
-      "id": "rz-fθ-",
-      "name": "RZ-Fθ- Sequence",
-      "word": "RZ-Fθ-",
+      "id": "rz-fΘ-",
+      "name": "RZ-FΘ- Sequence",
+      "word": "RZ-FΘ-",
       "thumbnails": [
-        "/gallery/RZ-Fθ-/RZ-Fθ-_ver1.webp",
-        "/gallery/RZ-Fθ-/RZ-Fθ-_ver2.webp"
+        "/gallery/RZ-FΘ-/RZ-FΘ-_ver1.webp",
+        "/gallery/RZ-FΘ-/RZ-FΘ-_ver2.webp"
       ],
       "sequenceLength": 8,
       "author": "Austen Cloud",
@@ -76836,7 +76836,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "RZ-Fθ-",
+            "word": "RZ-FΘ-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -76947,7 +76947,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma15",
             "timing": "none",
@@ -77051,7 +77051,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma11",
             "timing": "none",
@@ -77079,7 +77079,7 @@
         "dateAdded": "2024-08-08T16:31:54.246139"
       },
       "metadataBundled": true,
-      "metadataSource": "RZ-Fθ-_ver1.meta.json",
+      "metadataSource": "RZ-FΘ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -79807,10 +79807,10 @@
       "level": 1
     },
     {
-      "id": "sz-θλ",
-      "name": "SZ-θΛ Sequence",
-      "word": "SZ-θΛ",
-      "thumbnails": ["/gallery/SZ-θΛ/SZ-θΛ_ver1.webp"],
+      "id": "sz-Θλ",
+      "name": "SZ-ΘΛ Sequence",
+      "word": "SZ-ΘΛ",
+      "thumbnails": ["/gallery/SZ-ΘΛ/SZ-ΘΛ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-09-02T14:50:50.930Z",
@@ -79825,7 +79825,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "SZ-θΛ",
+            "word": "SZ-ΘΛ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -79910,7 +79910,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma11",
             "timing": "none",
@@ -80014,7 +80014,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma13",
             "timing": "none",
@@ -80118,7 +80118,7 @@
           },
           {
             "beat": 11,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -80222,7 +80222,7 @@
           },
           {
             "beat": 15,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma3",
             "timing": "none",
@@ -80276,7 +80276,7 @@
         "dateAdded": "2024-08-09T16:17:57.347956"
       },
       "metadataBundled": true,
-      "metadataSource": "SZ-θΛ_ver1.meta.json",
+      "metadataSource": "SZ-ΘΛ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -80284,10 +80284,10 @@
       "level": 2
     },
     {
-      "id": "szeθ-",
-      "name": "SZEθ- Sequence",
-      "word": "SZEθ-",
-      "thumbnails": ["/gallery/SZEθ-/SZEθ-_ver1.webp"],
+      "id": "szeΘ-",
+      "name": "SZEΘ- Sequence",
+      "word": "SZEΘ-",
+      "thumbnails": ["/gallery/SZEΘ-/SZEΘ-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-12-10T16:35:28.267Z",
@@ -80302,7 +80302,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "SZEθ-",
+            "word": "SZEΘ-",
             "author": "",
             "level": 3,
             "propType": "staff",
@@ -80428,7 +80428,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ-",
+            "letter": "Θ-",
             "duration": 1,
             "startPos": "alpha3",
             "endPos": "gamma7",
@@ -80544,7 +80544,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ-",
+            "letter": "Θ-",
             "duration": 1,
             "startPos": "alpha1",
             "endPos": "gamma15",
@@ -80660,7 +80660,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ-",
+            "letter": "Θ-",
             "duration": 1,
             "startPos": "alpha7",
             "endPos": "gamma3",
@@ -80776,7 +80776,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ-",
+            "letter": "Θ-",
             "duration": 1,
             "startPos": "alpha5",
             "endPos": "gamma11",
@@ -80805,7 +80805,7 @@
         "dateAdded": "2025-02-08T23:44:20.444134"
       },
       "metadataBundled": true,
-      "metadataSource": "SZEθ-_ver1.meta.json",
+      "metadataSource": "SZEΘ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -81939,10 +81939,10 @@
       "level": 2
     },
     {
-      "id": "twkθ",
-      "name": "TWKθ Sequence",
-      "word": "TWKθ",
-      "thumbnails": ["/gallery/TWKθ/TWKθ_ver1.webp"],
+      "id": "twkΘ",
+      "name": "TWKΘ Sequence",
+      "word": "TWKΘ",
+      "thumbnails": ["/gallery/TWKΘ/TWKΘ_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-05-25T19:53:52.054Z",
@@ -81957,7 +81957,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "TWKθ",
+            "word": "TWKΘ",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -82068,7 +82068,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -82172,7 +82172,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma11",
             "timing": "none",
@@ -82200,7 +82200,7 @@
         "dateAdded": "2024-08-05T23:22:43.740000"
       },
       "metadataBundled": true,
-      "metadataSource": "TWKθ_ver1.meta.json",
+      "metadataSource": "TWKΘ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -82208,10 +82208,10 @@
       "level": 1
     },
     {
-      "id": "tyhθ",
-      "name": "TYHθ Sequence",
-      "word": "TYHθ",
-      "thumbnails": ["/gallery/TYHθ/TYHθ_ver1.webp"],
+      "id": "tyhΘ",
+      "name": "TYHΘ Sequence",
+      "word": "TYHΘ",
+      "thumbnails": ["/gallery/TYHΘ/TYHΘ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-08-03T12:23:35.892Z",
@@ -82342,7 +82342,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta8",
             "endPos": "gamma14",
             "timing": "none",
@@ -82450,7 +82450,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta2",
             "endPos": "gamma16",
             "timing": "none",
@@ -82558,7 +82558,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta4",
             "endPos": "gamma10",
             "timing": "none",
@@ -82666,7 +82666,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta6",
             "endPos": "gamma12",
             "timing": "none",
@@ -82695,7 +82695,7 @@
         "dateAdded": "2024-09-30T14:40:08.885779"
       },
       "metadataBundled": true,
-      "metadataSource": "TYHθ_ver1.meta.json",
+      "metadataSource": "TYHΘ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -86036,10 +86036,10 @@
       "level": 2
     },
     {
-      "id": "w-cbθ-",
-      "name": "W-CBθ- Sequence",
-      "word": "W-CBθ-",
-      "thumbnails": ["/gallery/W-CBθ-/W-CBθ-_ver1.webp"],
+      "id": "w-cbΘ-",
+      "name": "W-CBΘ- Sequence",
+      "word": "W-CBΘ-",
+      "thumbnails": ["/gallery/W-CBΘ-/W-CBΘ-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-06-16T10:03:35.419Z",
@@ -86054,7 +86054,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "W-CBθ-",
+            "word": "W-CBΘ-",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -86165,7 +86165,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -86269,7 +86269,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma15",
             "timing": "none",
@@ -86373,7 +86373,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -86477,7 +86477,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma11",
             "timing": "none",
@@ -86505,7 +86505,7 @@
         "dateAdded": "2024-08-05T23:54:22.286069"
       },
       "metadataBundled": true,
-      "metadataSource": "W-CBθ-_ver1.meta.json",
+      "metadataSource": "W-CBΘ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -87531,10 +87531,10 @@
       "level": 3
     },
     {
-      "id": "w-θ-",
-      "name": "W-θ- Sequence",
-      "word": "W-θ-",
-      "thumbnails": ["/gallery/W-θ-/W-θ-_ver1.webp"],
+      "id": "w-Θ-",
+      "name": "W-Θ- Sequence",
+      "word": "W-Θ-",
+      "thumbnails": ["/gallery/W-Θ-/W-Θ-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-14T22:37:47.986Z",
@@ -87549,7 +87549,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "W-θ-",
+            "word": "W-Θ-",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -87607,7 +87607,7 @@
             "blueEndOri": "in"
           },
           {
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma3",
             "timing": "none",
@@ -87661,7 +87661,7 @@
             "blueEndOri": "out"
           },
           {
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma15",
             "timing": "none",
@@ -87715,7 +87715,7 @@
             "blueEndOri": "in"
           },
           {
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma7",
             "timing": "none",
@@ -87769,7 +87769,7 @@
             "blueEndOri": "out"
           },
           {
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma11",
             "timing": "none",
@@ -87799,7 +87799,7 @@
         "dateAdded": "2024-07-26T10:18:55.734127"
       },
       "metadataBundled": true,
-      "metadataSource": "W-θ-_ver1.meta.json",
+      "metadataSource": "W-Θ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -89093,10 +89093,10 @@
       "level": 2
     },
     {
-      "id": "wω-z-θ",
-      "name": "WΩ-Z-θ Sequence",
-      "word": "WΩ-Z-θ",
-      "thumbnails": ["/gallery/WΩ-Z-θ/WΩ-Z-θ_ver1.webp"],
+      "id": "wω-z-Θ",
+      "name": "WΩ-Z-Θ Sequence",
+      "word": "WΩ-Z-Θ",
+      "thumbnails": ["/gallery/WΩ-Z-Θ/WΩ-Z-Θ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-09-26T06:32:18.960Z",
@@ -89111,7 +89111,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "WΩ-Z-θ",
+            "word": "WΩ-Z-Θ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -89229,7 +89229,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -89337,7 +89337,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma15",
             "timing": "none",
@@ -89445,7 +89445,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma9",
             "timing": "none",
@@ -89553,7 +89553,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma11",
             "timing": "none",
@@ -89583,7 +89583,7 @@
         "isFavorite": true
       },
       "metadataBundled": true,
-      "metadataSource": "WΩ-Z-θ_ver1.meta.json",
+      "metadataSource": "WΩ-Z-Θ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -90073,10 +90073,10 @@
       "level": 2
     },
     {
-      "id": "x-bφ-θ-",
-      "name": "X-BΦ-θ- Sequence",
-      "word": "X-BΦ-θ-",
-      "thumbnails": ["/gallery/X-BΦ-θ-/X-BΦ-θ-_ver1.webp"],
+      "id": "x-bφ-Θ-",
+      "name": "X-BΦ-Θ- Sequence",
+      "word": "X-BΦ-Θ-",
+      "thumbnails": ["/gallery/X-BΦ-Θ-/X-BΦ-Θ-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-05-21T17:10:01.172Z",
@@ -90091,7 +90091,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "X-BΦ-θ-",
+            "word": "X-BΦ-Θ-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -90209,7 +90209,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -90313,7 +90313,7 @@
           },
           {
             "beat": 8,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma15",
             "timing": "none",
@@ -90417,7 +90417,7 @@
           },
           {
             "beat": 12,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -90521,7 +90521,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma11",
             "timing": "none",
@@ -90550,17 +90550,17 @@
         "isFavorite": true
       },
       "metadataBundled": true,
-      "metadataSource": "X-BΦ-θ-_ver1.meta.json",
+      "metadataSource": "X-BΦ-Θ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
       "level": 2
     },
     {
-      "id": "x-θ-qn",
-      "name": "X-θ-QN Sequence",
-      "word": "X-θ-QN",
-      "thumbnails": ["/gallery/X-θ-QN/X-θ-QN_ver1.webp"],
+      "id": "x-Θ-qn",
+      "name": "X-Θ-QN Sequence",
+      "word": "X-Θ-QN",
+      "thumbnails": ["/gallery/X-Θ-QN/X-Θ-QN_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-06-21T19:48:33.729Z",
@@ -90575,7 +90575,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "X-θ-QN",
+            "word": "X-Θ-QN",
             "author": "John",
             "level": 2,
             "propType": "staff",
@@ -90638,7 +90638,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha7",
             "endPos": "gamma13",
@@ -90750,7 +90750,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha1",
             "endPos": "gamma15",
@@ -90862,7 +90862,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha3",
             "endPos": "gamma9",
@@ -90974,7 +90974,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha1",
             "endPos": "gamma15",
@@ -91060,21 +91060,21 @@
         "dateAdded": "2025-03-15T00:02:21.780067"
       },
       "metadataBundled": true,
-      "metadataSource": "X-θ-QN_ver1.meta.json",
+      "metadataSource": "X-Θ-QN_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
       "level": 2
     },
     {
-      "id": "x-θ-vλ",
-      "name": "X-θ-VΛ Sequence",
-      "word": "X-θ-VΛ",
+      "id": "x-Θ-vλ",
+      "name": "X-Θ-VΛ Sequence",
+      "word": "X-Θ-VΛ",
       "thumbnails": [
-        "/gallery/X-θ-VΛ/X-θ-VΛ_ver1.webp",
-        "/gallery/X-θ-VΛ/X-θ-VΛ_ver2.webp",
-        "/gallery/X-θ-VΛ/X-θ-VΛ_ver3.webp",
-        "/gallery/X-θ-VΛ/X-θ-VΛ_ver4.webp"
+        "/gallery/X-Θ-VΛ/X-Θ-VΛ_ver1.webp",
+        "/gallery/X-Θ-VΛ/X-Θ-VΛ_ver2.webp",
+        "/gallery/X-Θ-VΛ/X-Θ-VΛ_ver3.webp",
+        "/gallery/X-Θ-VΛ/X-Θ-VΛ_ver4.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -91090,7 +91090,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "X-θ-VΛ",
+            "word": "X-Θ-VΛ",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "unknown",
@@ -91149,7 +91149,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -91253,7 +91253,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma5",
             "timing": "none",
@@ -91357,7 +91357,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma3",
             "timing": "none",
@@ -91461,7 +91461,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -91541,7 +91541,7 @@
         "dateAdded": "2024-07-30T15:26:00.447473"
       },
       "metadataBundled": true,
-      "metadataSource": "X-θ-VΛ_ver1.meta.json",
+      "metadataSource": "X-Θ-VΛ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -91549,10 +91549,10 @@
       "level": 3
     },
     {
-      "id": "x-θ-y-δ-",
-      "name": "X-θ-Y-Δ- Sequence",
-      "word": "X-θ-Y-Δ-",
-      "thumbnails": ["/gallery/X-θ-Y-Δ-/X-θ-Y-Δ-_ver1.webp"],
+      "id": "x-Θ-y-δ-",
+      "name": "X-Θ-Y-Δ- Sequence",
+      "word": "X-Θ-Y-Δ-",
+      "thumbnails": ["/gallery/X-Θ-Y-Δ-/X-Θ-Y-Δ-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-08T03:18:20.947Z",
@@ -91567,7 +91567,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "X-θ-Y-Δ-",
+            "word": "X-Θ-Y-Δ-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -91626,7 +91626,7 @@
           },
           {
             "beat": 2,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -91730,7 +91730,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -91810,7 +91810,7 @@
         "dateAdded": "2024-08-09T16:08:26.544707"
       },
       "metadataBundled": true,
-      "metadataSource": "X-θ-Y-Δ-_ver1.meta.json",
+      "metadataSource": "X-Θ-Y-Δ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -98451,11 +98451,11 @@
       "level": 2
     },
     {
-      "id": "yψ-φδx-ψgfφ-θ-toλ-y-σ-λ",
-      "name": "YΨ-ΦΔX-ΨGFΦ-θ-TOΛ-Y-Σ-Λ Sequence",
-      "word": "YΨ-ΦΔX-ΨGFΦ-θ-TOΛ-Y-Σ-Λ",
+      "id": "yψ-φδx-ψgfφ-Θ-toλ-y-σ-λ",
+      "name": "YΨ-ΦΔX-ΨGFΦ-Θ-TOΛ-Y-Σ-Λ Sequence",
+      "word": "YΨ-ΦΔX-ΨGFΦ-Θ-TOΛ-Y-Σ-Λ",
       "thumbnails": [
-        "/gallery/YΨ-ΦΔX-ΨGFΦ-θ-TOΛ-Y-Σ-Λ/YΨ-ΦΔX-ΨGFΦ-θ-TOΛ-Y-Σ-Λ_ver1.webp"
+        "/gallery/YΨ-ΦΔX-ΨGFΦ-Θ-TOΛ-Y-Σ-Λ/YΨ-ΦΔX-ΨGFΦ-Θ-TOΛ-Y-Σ-Λ_ver1.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -98471,7 +98471,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "YΨ-ΦΔX-ΨGFΦ-θ-TOΛ-Y-Σ-Λ",
+            "word": "YΨ-ΦΔX-ΨGFΦ-Θ-TOΛ-Y-Σ-Λ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "triquetra",
@@ -98751,7 +98751,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -98942,7 +98942,7 @@
         "dateAdded": "2025-01-30T21:08:12.681688"
       },
       "metadataBundled": true,
-      "metadataSource": "YΨ-ΦΔX-ΨGFΦ-θ-TOΛ-Y-Σ-Λ_ver1.meta.json",
+      "metadataSource": "YΨ-ΦΔX-ΨGFΦ-Θ-TOΛ-Y-Σ-Λ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -100003,11 +100003,11 @@
       "level": 2
     },
     {
-      "id": "zψ-δ-z-θryς-yψ-σ-y-ωrzδ-",
-      "name": "ZΨ-Δ-Z-θRYΣ-YΨ-Σ-Y-ΩRZΔ- Sequence",
-      "word": "ZΨ-Δ-Z-θRYΣ-YΨ-Σ-Y-ΩRZΔ-",
+      "id": "zψ-δ-z-Θryς-yψ-σ-y-ωrzδ-",
+      "name": "ZΨ-Δ-Z-ΘRYΣ-YΨ-Σ-Y-ΩRZΔ- Sequence",
+      "word": "ZΨ-Δ-Z-ΘRYΣ-YΨ-Σ-Y-ΩRZΔ-",
       "thumbnails": [
-        "/gallery/ZΨ-Δ-Z-θRYΣ-YΨ-Σ-Y-ΩRZΔ-/ZΨ-Δ-Z-θRYΣ-YΨ-Σ-Y-ΩRZΔ-_ver1.webp"
+        "/gallery/ZΨ-Δ-Z-ΘRYΣ-YΨ-Σ-Y-ΩRZΔ-/ZΨ-Δ-Z-ΘRYΣ-YΨ-Σ-Y-ΩRZΔ-_ver1.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -100023,7 +100023,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ZΨ-Δ-Z-θRYΣ-YΨ-Σ-Y-ΩRZΔ-",
+            "word": "ZΨ-Δ-Z-ΘRYΣ-YΨ-Σ-Y-ΩRZΔ-",
             "author": "Austen",
             "level": 2,
             "propType": "staff",
@@ -100170,7 +100170,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta1",
             "endPos": "gamma3",
@@ -100508,7 +100508,7 @@
         "dateAdded": "2025-03-24T00:46:37.918322"
       },
       "metadataBundled": true,
-      "metadataSource": "ZΨ-Δ-Z-θRYΣ-YΨ-Σ-Y-ΩRZΔ-_ver1.meta.json",
+      "metadataSource": "ZΨ-Δ-Z-ΘRYΣ-YΨ-Σ-Y-ΩRZΔ-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -104423,10 +104423,10 @@
       "level": 2
     },
     {
-      "id": "δ-ow-bθ-tx-l",
-      "name": "Δ-OW-Bθ-TX-L Sequence",
-      "word": "Δ-OW-Bθ-TX-L",
-      "thumbnails": ["/gallery/Δ-OW-Bθ-TX-L/Δ-OW-Bθ-TX-L_ver1.webp"],
+      "id": "δ-ow-bΘ-tx-l",
+      "name": "Δ-OW-BΘ-TX-L Sequence",
+      "word": "Δ-OW-BΘ-TX-L",
+      "thumbnails": ["/gallery/Δ-OW-BΘ-TX-L/Δ-OW-BΘ-TX-L_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-06-15T00:28:23.314Z",
@@ -104441,7 +104441,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Δ-OW-Bθ-TX-L",
+            "word": "Δ-OW-BΘ-TX-L",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -104578,7 +104578,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -104786,7 +104786,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma5",
             "timing": "none",
@@ -104892,7 +104892,7 @@
         "dateAdded": "2024-08-06T00:01:03.808948"
       },
       "metadataBundled": true,
-      "metadataSource": "Δ-OW-Bθ-TX-L_ver1.meta.json",
+      "metadataSource": "Δ-OW-BΘ-TX-L_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -105854,10 +105854,10 @@
       "level": 2
     },
     {
-      "id": "δ-syθwψ",
-      "name": "Δ-SYθWΨ Sequence",
-      "word": "Δ-SYθWΨ",
-      "thumbnails": ["/gallery/Δ-SYθWΨ/Δ-SYθWΨ_ver1.webp"],
+      "id": "δ-syΘwψ",
+      "name": "Δ-SYΘWΨ Sequence",
+      "word": "Δ-SYΘWΨ",
+      "thumbnails": ["/gallery/Δ-SYΘWΨ/Δ-SYΘWΨ_ver1.webp"],
       "sequenceLength": 24,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-22T18:12:43.892Z",
@@ -105872,7 +105872,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Δ-SYθWΨ",
+            "word": "Δ-SYΘWΨ",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -105985,7 +105985,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -106145,7 +106145,7 @@
           },
           {
             "beat": 10,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma1",
             "timing": "none",
@@ -106305,7 +106305,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma3",
             "timing": "none",
@@ -106465,7 +106465,7 @@
           },
           {
             "beat": 22,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma11",
             "timing": "none",
@@ -106550,7 +106550,7 @@
         "isFavorite": true
       },
       "metadataBundled": true,
-      "metadataSource": "Δ-SYθWΨ_ver1.meta.json",
+      "metadataSource": "Δ-SYΘWΨ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -109014,10 +109014,10 @@
       "level": 2
     },
     {
-      "id": "δ-w-θ-y-",
-      "name": "Δ-W-θ-Y- Sequence",
-      "word": "Δ-W-θ-Y-",
-      "thumbnails": ["/gallery/Δ-W-θ-Y-/Δ-W-θ-Y-_ver1.webp"],
+      "id": "δ-w-Θ-y-",
+      "name": "Δ-W-Θ-Y- Sequence",
+      "word": "Δ-W-Θ-Y-",
+      "thumbnails": ["/gallery/Δ-W-Θ-Y-/Δ-W-Θ-Y-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-20T02:53:20.615Z",
@@ -109032,7 +109032,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Δ-W-θ-Y-",
+            "word": "Δ-W-Θ-Y-",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "unknown",
@@ -109117,7 +109117,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -109221,7 +109221,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -109275,7 +109275,7 @@
         "dateAdded": "2024-08-14T12:23:33.004760"
       },
       "metadataBundled": true,
-      "metadataSource": "Δ-W-θ-Y-_ver1.meta.json",
+      "metadataSource": "Δ-W-Θ-Y-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -114344,10 +114344,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "θ-mλw",
-      "name": "θ-MΛW Sequence",
-      "word": "θ-MΛW",
-      "thumbnails": ["/gallery/θ-MΛW/θ-MΛW_ver1.webp"],
+      "id": "Θ-mλw",
+      "name": "Θ-MΛW Sequence",
+      "word": "Θ-MΛW",
+      "thumbnails": ["/gallery/Θ-MΛW/Θ-MΛW_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-09-18T08:05:21.191Z",
@@ -114362,7 +114362,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-MΛW",
+            "word": "Θ-MΛW",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -114395,7 +114395,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma15",
             "timing": "none",
@@ -114499,7 +114499,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -114603,7 +114603,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma11",
             "timing": "none",
@@ -114707,7 +114707,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -114813,7 +114813,7 @@
         "dateAdded": "2024-08-05T23:33:46.475136"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-MΛW_ver1.meta.json",
+      "metadataSource": "Θ-MΛW_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -114821,10 +114821,10 @@
       "level": 1
     },
     {
-      "id": "θ-qvw-",
-      "name": "θ-QVW- Sequence",
-      "word": "θ-QVW-",
-      "thumbnails": ["/gallery/θ-QVW-/θ-QVW-_ver1.webp"],
+      "id": "Θ-qvw-",
+      "name": "Θ-QVW- Sequence",
+      "word": "Θ-QVW-",
+      "thumbnails": ["/gallery/Θ-QVW-/Θ-QVW-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-10-22T23:17:36.776Z",
@@ -114839,7 +114839,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-QVW-",
+            "word": "Θ-QVW-",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -114876,7 +114876,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma15",
             "timing": "none",
@@ -114989,7 +114989,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -115097,7 +115097,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma11",
             "timing": "none",
@@ -115205,7 +115205,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -115315,7 +115315,7 @@
         "dateAdded": "2024-11-05T14:40:13.405627"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-QVW-_ver1.meta.json",
+      "metadataSource": "Θ-QVW-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -115323,10 +115323,10 @@
       "level": 3
     },
     {
-      "id": "θ-qλ-λw",
-      "name": "θ-QΛ-ΛW Sequence",
-      "word": "θ-QΛ-ΛW",
-      "thumbnails": ["/gallery/θ-QΛ-ΛW/θ-QΛ-ΛW_ver1.webp"],
+      "id": "Θ-qλ-λw",
+      "name": "Θ-QΛ-ΛW Sequence",
+      "word": "Θ-QΛ-ΛW",
+      "thumbnails": ["/gallery/Θ-QΛ-ΛW/Θ-QΛ-ΛW_ver1.webp"],
       "sequenceLength": 20,
       "author": "Austen Cloud",
       "dateAdded": "2025-02-20T09:12:24.817Z",
@@ -115341,7 +115341,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-QΛ-ΛW",
+            "word": "Θ-QΛ-ΛW",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -115376,7 +115376,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha2",
             "endPos": "gamma14",
             "timing": "none",
@@ -115521,7 +115521,7 @@
           },
           {
             "beat": 6,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha4",
             "endPos": "gamma16",
             "timing": "none",
@@ -115656,7 +115656,7 @@
           },
           {
             "beat": 11,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha6",
             "endPos": "gamma10",
             "timing": "none",
@@ -115791,7 +115791,7 @@
           },
           {
             "beat": 16,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha8",
             "endPos": "gamma12",
             "timing": "none",
@@ -115929,7 +115929,7 @@
         "isFavorite": false
       },
       "metadataBundled": true,
-      "metadataSource": "θ-QΛ-ΛW_ver1.meta.json",
+      "metadataSource": "Θ-QΛ-ΛW_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -115937,10 +115937,10 @@
       "level": 3
     },
     {
-      "id": "θ-w-",
-      "name": "θ-W- Sequence",
-      "word": "θ-W-",
-      "thumbnails": ["/gallery/θ-W-/θ-W-_ver1.webp"],
+      "id": "Θ-w-",
+      "name": "Θ-W- Sequence",
+      "word": "Θ-W-",
+      "thumbnails": ["/gallery/Θ-W-/Θ-W-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-05-30T01:16:18.424Z",
@@ -115955,7 +115955,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-W-",
+            "word": "Θ-W-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -115988,7 +115988,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma3",
             "timing": "none",
@@ -116040,7 +116040,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -116092,7 +116092,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -116144,7 +116144,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma5",
             "timing": "none",
@@ -116198,7 +116198,7 @@
         "dateAdded": "2024-08-08T22:42:01.788829"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-W-_ver1.meta.json",
+      "metadataSource": "Θ-W-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -116206,11 +116206,11 @@
       "level": 2
     },
     {
-      "id": "θ-wσλ-z-ejφω-xδλ-y-dkφ",
-      "name": "θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ Sequence",
-      "word": "θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ",
+      "id": "Θ-wσλ-z-ejφω-xδλ-y-dkφ",
+      "name": "Θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ Sequence",
+      "word": "Θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ",
       "thumbnails": [
-        "/gallery/θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ/θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ_ver1.webp"
+        "/gallery/Θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ/Θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ_ver1.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -116226,7 +116226,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ",
+            "word": "Θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -116261,7 +116261,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha1",
             "endPos": "gamma5",
@@ -116711,17 +116711,17 @@
         "dateAdded": "2025-03-06T13:35:17.233212"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ_ver1.meta.json",
+      "metadataSource": "Θ-WΣΛ-Z-EJΦΩ-XΔΛ-Y-DKΦ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
       "level": 2
     },
     {
-      "id": "θ-x-",
-      "name": "θ-X- Sequence",
-      "word": "θ-X-",
-      "thumbnails": ["/gallery/θ-X-/θ-X-_ver1.webp"],
+      "id": "Θ-x-",
+      "name": "Θ-X- Sequence",
+      "word": "Θ-X-",
+      "thumbnails": ["/gallery/Θ-X-/Θ-X-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-23T03:44:54.125Z",
@@ -116736,7 +116736,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-X-",
+            "word": "Θ-X-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -116769,7 +116769,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma3",
             "timing": "none",
@@ -116821,7 +116821,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -116873,7 +116873,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -116925,7 +116925,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma5",
             "timing": "none",
@@ -116979,7 +116979,7 @@
         "dateAdded": "2024-08-08T16:53:57.276204"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-X-_ver1.meta.json",
+      "metadataSource": "Θ-X-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -116987,10 +116987,10 @@
       "level": 2
     },
     {
-      "id": "θ-x-δx-ψς-nw",
-      "name": "θ-X-ΔX-ΨΣ-NW Sequence",
-      "word": "θ-X-ΔX-ΨΣ-NW",
-      "thumbnails": ["/gallery/θ-X-ΔX-ΨΣ-NW/θ-X-ΔX-ΨΣ-NW_ver1.webp"],
+      "id": "Θ-x-δx-ψς-nw",
+      "name": "Θ-X-ΔX-ΨΣ-NW Sequence",
+      "word": "Θ-X-ΔX-ΨΣ-NW",
+      "thumbnails": ["/gallery/Θ-X-ΔX-ΨΣ-NW/Θ-X-ΔX-ΨΣ-NW_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-02-02T07:44:49.050Z",
@@ -117005,7 +117005,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-X-ΔX-ΨΣ-NW",
+            "word": "Θ-X-ΔX-ΨΣ-NW",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "staff",
@@ -117040,7 +117040,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "startPos": "alpha1",
             "endPos": "gamma15",
@@ -117264,7 +117264,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "letterType": "Type3",
             "duration": 1,
             "startPos": "alpha1",
@@ -117490,7 +117490,7 @@
         "dateAdded": "2025-03-06T17:30:44.102165"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-X-ΔX-ΨΣ-NW_ver1.meta.json",
+      "metadataSource": "Θ-X-ΔX-ΨΣ-NW_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -117498,10 +117498,10 @@
       "level": 1
     },
     {
-      "id": "θ-x-ω-w-",
-      "name": "θ-X-Ω-W- Sequence",
-      "word": "θ-X-Ω-W-",
-      "thumbnails": ["/gallery/θ-X-Ω-W-/θ-X-Ω-W-_ver1.webp"],
+      "id": "Θ-x-ω-w-",
+      "name": "Θ-X-Ω-W- Sequence",
+      "word": "Θ-X-Ω-W-",
+      "thumbnails": ["/gallery/Θ-X-Ω-W-/Θ-X-Ω-W-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-12T19:45:25.018Z",
@@ -117516,7 +117516,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-X-Ω-W-",
+            "word": "Θ-X-Ω-W-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -117549,7 +117549,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma3",
             "timing": "none",
@@ -117653,7 +117653,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -117759,7 +117759,7 @@
         "dateAdded": "2024-08-09T16:28:19.649540"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-X-Ω-W-_ver1.meta.json",
+      "metadataSource": "Θ-X-Ω-W-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -117767,10 +117767,10 @@
       "level": 2
     },
     {
-      "id": "θ-y-σ-w-",
-      "name": "θ-Y-Σ-W- Sequence",
-      "word": "θ-Y-Σ-W-",
-      "thumbnails": ["/gallery/θ-Y-Σ-W-/θ-Y-Σ-W-_ver1.webp"],
+      "id": "Θ-y-σ-w-",
+      "name": "Θ-Y-Σ-W- Sequence",
+      "word": "Θ-Y-Σ-W-",
+      "thumbnails": ["/gallery/Θ-Y-Σ-W-/Θ-Y-Σ-W-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2024-09-02T19:54:51.483Z",
@@ -117785,7 +117785,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-Y-Σ-W-",
+            "word": "Θ-Y-Σ-W-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -117818,7 +117818,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma3",
             "timing": "none",
@@ -117922,7 +117922,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma7",
             "timing": "none",
@@ -118028,7 +118028,7 @@
         "dateAdded": "2024-08-10T01:02:44.365108"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-Y-Σ-W-_ver1.meta.json",
+      "metadataSource": "Θ-Y-Σ-W-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -118036,10 +118036,10 @@
       "level": 2
     },
     {
-      "id": "θ-zfα",
-      "name": "θ-ZFα Sequence",
-      "word": "θ-ZFα",
-      "thumbnails": ["/gallery/θ-ZFα/θ-ZFα_ver1.webp"],
+      "id": "Θ-zfα",
+      "name": "Θ-ZFα Sequence",
+      "word": "Θ-ZFα",
+      "thumbnails": ["/gallery/Θ-ZFα/Θ-ZFα_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-02-22T15:50:47.245Z",
@@ -118054,7 +118054,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-ZFα",
+            "word": "Θ-ZFα",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -118089,7 +118089,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma13",
             "timing": "none",
@@ -118193,7 +118193,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma11",
             "timing": "none",
@@ -118297,7 +118297,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma9",
             "timing": "none",
@@ -118401,7 +118401,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma15",
             "timing": "none",
@@ -118508,7 +118508,7 @@
         "isFavorite": false
       },
       "metadataBundled": true,
-      "metadataSource": "θ-ZFα_ver1.meta.json",
+      "metadataSource": "Θ-ZFα_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -118516,10 +118516,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "θ-λ-mw-",
-      "name": "θ-Λ-MW- Sequence",
-      "word": "θ-Λ-MW-",
-      "thumbnails": ["/gallery/θ-Λ-MW-/θ-Λ-MW-_ver1.webp"],
+      "id": "Θ-λ-mw-",
+      "name": "Θ-Λ-MW- Sequence",
+      "word": "Θ-Λ-MW-",
+      "thumbnails": ["/gallery/Θ-Λ-MW-/Θ-Λ-MW-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-07-14T11:53:07.231Z",
@@ -118534,7 +118534,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-Λ-MW-",
+            "word": "Θ-Λ-MW-",
             "author": "Robert Bershadsky",
             "level": 2,
             "propType": "staff",
@@ -118569,7 +118569,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma5",
             "timing": "none",
@@ -118688,7 +118688,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma3",
             "timing": "none",
@@ -118792,7 +118792,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma1",
             "timing": "none",
@@ -118896,7 +118896,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma7",
             "timing": "none",
@@ -119003,7 +119003,7 @@
         "isFavorite": true
       },
       "metadataBundled": true,
-      "metadataSource": "θ-Λ-MW-_ver1.meta.json",
+      "metadataSource": "Θ-Λ-MW-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -119011,10 +119011,10 @@
       "level": 2
     },
     {
-      "id": "θ-λ-z-φ",
-      "name": "θ-Λ-Z-Φ Sequence",
-      "word": "θ-Λ-Z-Φ",
-      "thumbnails": ["/gallery/θ-Λ-Z-Φ/θ-Λ-Z-Φ_ver1.webp"],
+      "id": "Θ-λ-z-φ",
+      "name": "Θ-Λ-Z-Φ Sequence",
+      "word": "Θ-Λ-Z-Φ",
+      "thumbnails": ["/gallery/Θ-Λ-Z-Φ/Θ-Λ-Z-Φ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-11-04T08:25:30.038Z",
@@ -119029,7 +119029,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θ-Λ-Z-Φ",
+            "word": "Θ-Λ-Z-Φ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -119064,7 +119064,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha1",
             "endPos": "gamma15",
             "timing": "none",
@@ -119178,7 +119178,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma9",
             "timing": "none",
@@ -119282,7 +119282,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha5",
             "endPos": "gamma11",
             "timing": "none",
@@ -119386,7 +119386,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma13",
             "timing": "none",
@@ -119492,7 +119492,7 @@
         "dateAdded": "2024-09-19T13:14:36.445174"
       },
       "metadataBundled": true,
-      "metadataSource": "θ-Λ-Z-Φ_ver1.meta.json",
+      "metadataSource": "Θ-Λ-Z-Φ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -119500,10 +119500,10 @@
       "level": 2
     },
     {
-      "id": "θw-ψ",
-      "name": "θW-Ψ Sequence",
-      "word": "θW-Ψ",
-      "thumbnails": ["/gallery/θW-Ψ/θW-Ψ_ver1.webp"],
+      "id": "Θw-ψ",
+      "name": "ΘW-Ψ Sequence",
+      "word": "ΘW-Ψ",
+      "thumbnails": ["/gallery/ΘW-Ψ/ΘW-Ψ_ver1.webp"],
       "sequenceLength": 12,
       "author": "Austen Cloud",
       "dateAdded": "2025-07-27T06:53:56.232Z",
@@ -119518,7 +119518,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θW-Ψ",
+            "word": "ΘW-Ψ",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -119549,7 +119549,7 @@
             }
           },
           {
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma7",
             "timing": "none",
@@ -119630,7 +119630,7 @@
             "blueEndOri": "in"
           },
           {
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -119711,7 +119711,7 @@
             "blueEndOri": "in"
           },
           {
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma3",
             "timing": "none",
@@ -119792,7 +119792,7 @@
             "blueEndOri": "in"
           },
           {
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma5",
             "timing": "none",
@@ -119876,17 +119876,17 @@
         "dateAdded": "2024-07-26T10:18:57.019834"
       },
       "metadataBundled": true,
-      "metadataSource": "θW-Ψ_ver1.meta.json",
+      "metadataSource": "ΘW-Ψ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
       "level": 1
     },
     {
-      "id": "θx-cj",
-      "name": "θX-CJ Sequence",
-      "word": "θX-CJ",
-      "thumbnails": ["/gallery/θX-CJ/θX-CJ_ver1.webp"],
+      "id": "Θx-cj",
+      "name": "ΘX-CJ Sequence",
+      "word": "ΘX-CJ",
+      "thumbnails": ["/gallery/ΘX-CJ/ΘX-CJ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-08-12T06:41:30.581Z",
@@ -119901,7 +119901,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θX-CJ",
+            "word": "ΘX-CJ",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -119936,7 +119936,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta4",
             "endPos": "gamma6",
             "timing": "none",
@@ -120054,7 +120054,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta2",
             "endPos": "gamma4",
             "timing": "none",
@@ -120162,7 +120162,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta8",
             "endPos": "gamma2",
             "timing": "none",
@@ -120270,7 +120270,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta6",
             "endPos": "gamma8",
             "timing": "none",
@@ -120380,7 +120380,7 @@
         "dateAdded": "2024-10-21T23:44:26.473332"
       },
       "metadataBundled": true,
-      "metadataSource": "θX-CJ_ver1.meta.json",
+      "metadataSource": "ΘX-CJ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -120388,10 +120388,10 @@
       "level": 3
     },
     {
-      "id": "θx-σz",
-      "name": "θX-ΣZ Sequence",
-      "word": "θX-ΣZ",
-      "thumbnails": ["/gallery/θX-ΣZ/θX-ΣZ_ver1.webp"],
+      "id": "Θx-σz",
+      "name": "ΘX-ΣZ Sequence",
+      "word": "ΘX-ΣZ",
+      "thumbnails": ["/gallery/ΘX-ΣZ/ΘX-ΣZ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-06T02:18:27.113Z",
@@ -120406,7 +120406,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θX-ΣZ",
+            "word": "ΘX-ΣZ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -120439,7 +120439,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma7",
             "timing": "none",
@@ -120543,7 +120543,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma5",
             "timing": "none",
@@ -120647,7 +120647,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma3",
             "timing": "none",
@@ -120751,7 +120751,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -120857,7 +120857,7 @@
         "dateAdded": "2024-09-07T16:25:01.122070"
       },
       "metadataBundled": true,
-      "metadataSource": "θX-ΣZ_ver1.meta.json",
+      "metadataSource": "ΘX-ΣZ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -120865,10 +120865,10 @@
       "level": 2
     },
     {
-      "id": "θzfl",
-      "name": "θZFL Sequence",
-      "word": "θZFL",
-      "thumbnails": ["/gallery/θZFL/θZFL_ver1.webp"],
+      "id": "Θzfl",
+      "name": "ΘZFL Sequence",
+      "word": "ΘZFL",
+      "thumbnails": ["/gallery/ΘZFL/ΘZFL_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-08-19T02:06:23.835Z",
@@ -120883,7 +120883,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θZFL",
+            "word": "ΘZFL",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "unknown",
@@ -120916,7 +120916,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma13",
             "timing": "none",
@@ -121020,7 +121020,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -121124,7 +121124,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma3",
             "timing": "none",
@@ -121228,7 +121228,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma11",
             "timing": "none",
@@ -121334,7 +121334,7 @@
         "dateAdded": "2024-08-05T23:24:54.932344"
       },
       "metadataBundled": true,
-      "metadataSource": "θZFL_ver1.meta.json",
+      "metadataSource": "ΘZFL_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -121342,10 +121342,10 @@
       "level": 1
     },
     {
-      "id": "θzς-z",
-      "name": "θZΣ-Z Sequence",
-      "word": "θZΣ-Z",
-      "thumbnails": ["/gallery/θZΣ-Z/θZΣ-Z_ver1.webp"],
+      "id": "Θzς-z",
+      "name": "ΘZΣ-Z Sequence",
+      "word": "ΘZΣ-Z",
+      "thumbnails": ["/gallery/ΘZΣ-Z/ΘZΣ-Z_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-30T16:02:05.756Z",
@@ -121360,7 +121360,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θZΣ-Z",
+            "word": "ΘZΣ-Z",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -121395,7 +121395,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma7",
             "timing": "none",
@@ -121509,7 +121509,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma15",
             "timing": "none",
@@ -121613,7 +121613,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma3",
             "timing": "none",
@@ -121717,7 +121717,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma11",
             "timing": "none",
@@ -121824,7 +121824,7 @@
         "isFavorite": true
       },
       "metadataBundled": true,
-      "metadataSource": "θZΣ-Z_ver1.meta.json",
+      "metadataSource": "ΘZΣ-Z_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -121832,10 +121832,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "θλ-x-ψ",
-      "name": "θΛ-X-Ψ Sequence",
-      "word": "θΛ-X-Ψ",
-      "thumbnails": ["/gallery/θΛ-X-Ψ/θΛ-X-Ψ_ver1.webp"],
+      "id": "Θλ-x-ψ",
+      "name": "ΘΛ-X-Ψ Sequence",
+      "word": "ΘΛ-X-Ψ",
+      "thumbnails": ["/gallery/ΘΛ-X-Ψ/ΘΛ-X-Ψ_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-03-15T22:58:39.743Z",
@@ -121850,7 +121850,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θΛ-X-Ψ",
+            "word": "ΘΛ-X-Ψ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -121885,7 +121885,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma11",
             "timing": "none",
@@ -122008,7 +122008,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma13",
             "timing": "none",
@@ -122116,7 +122116,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "duration": 1,
             "startPos": "beta1",
             "endPos": "gamma1",
@@ -122224,7 +122224,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "duration": 1,
             "startPos": "beta3",
             "endPos": "gamma3",
@@ -122334,7 +122334,7 @@
         "dateAdded": "2024-10-22T10:58:50.995334"
       },
       "metadataBundled": true,
-      "metadataSource": "θΛ-X-Ψ_ver1.meta.json",
+      "metadataSource": "ΘΛ-X-Ψ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -122342,10 +122342,10 @@
       "level": 2
     },
     {
-      "id": "θλ-zg",
-      "name": "θΛ-ZG Sequence",
-      "word": "θΛ-ZG",
-      "thumbnails": ["/gallery/θΛ-ZG/θΛ-ZG_ver1.webp"],
+      "id": "Θλ-zg",
+      "name": "ΘΛ-ZG Sequence",
+      "word": "ΘΛ-ZG",
+      "thumbnails": ["/gallery/ΘΛ-ZG/ΘΛ-ZG_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-11-03T09:49:18.861Z",
@@ -122360,7 +122360,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θΛ-ZG",
+            "word": "ΘΛ-ZG",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -122393,7 +122393,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma7",
             "timing": "none",
@@ -122499,7 +122499,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma5",
             "timing": "none",
@@ -122603,7 +122603,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma3",
             "timing": "none",
@@ -122707,7 +122707,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma1",
             "timing": "none",
@@ -122814,7 +122814,7 @@
         "isFavorite": true
       },
       "metadataBundled": true,
-      "metadataSource": "θΛ-ZG_ver1.meta.json",
+      "metadataSource": "ΘΛ-ZG_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -122822,10 +122822,10 @@
       "level": 3
     },
     {
-      "id": "θλ-λy-",
-      "name": "θΛ-ΛY- Sequence",
-      "word": "θΛ-ΛY-",
-      "thumbnails": ["/gallery/θΛ-ΛY-/θΛ-ΛY-_ver1.webp"],
+      "id": "Θλ-λy-",
+      "name": "ΘΛ-ΛY- Sequence",
+      "word": "ΘΛ-ΛY-",
+      "thumbnails": ["/gallery/ΘΛ-ΛY-/ΘΛ-ΛY-_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2025-01-10T00:28:35.359Z",
@@ -122840,7 +122840,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "θΛ-ΛY-",
+            "word": "ΘΛ-ΛY-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -122875,7 +122875,7 @@
           },
           {
             "beat": 1,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta5",
             "endPos": "gamma5",
             "timing": "none",
@@ -123003,7 +123003,7 @@
           },
           {
             "beat": 5,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta7",
             "endPos": "gamma7",
             "timing": "none",
@@ -123111,7 +123111,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta1",
             "endPos": "gamma1",
             "timing": "none",
@@ -123219,7 +123219,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta3",
             "endPos": "gamma3",
             "timing": "none",
@@ -123329,7 +123329,7 @@
         "dateAdded": "2024-10-30T19:01:04.389594"
       },
       "metadataBundled": true,
-      "metadataSource": "θΛ-ΛY-_ver1.meta.json",
+      "metadataSource": "ΘΛ-ΛY-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -130075,10 +130075,10 @@
       "level": 2
     },
     {
-      "id": "λy-θo",
-      "name": "ΛY-θO Sequence",
-      "word": "ΛY-θO",
-      "thumbnails": ["/gallery/ΛY-θO/ΛY-θO_ver1.webp"],
+      "id": "λy-Θo",
+      "name": "ΛY-ΘO Sequence",
+      "word": "ΛY-ΘO",
+      "thumbnails": ["/gallery/ΛY-ΘO/ΛY-ΘO_ver1.webp"],
       "sequenceLength": 16,
       "author": "Austen Cloud",
       "dateAdded": "2024-09-18T06:36:59.892Z",
@@ -130187,7 +130187,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta2",
             "endPos": "gamma4",
             "timing": "none",
@@ -130300,7 +130300,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta4",
             "endPos": "gamma6",
             "timing": "none",
@@ -130408,7 +130408,7 @@
           },
           {
             "beat": 11,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta6",
             "endPos": "gamma8",
             "timing": "none",
@@ -130516,7 +130516,7 @@
           },
           {
             "beat": 15,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta8",
             "endPos": "gamma2",
             "timing": "none",
@@ -130572,7 +130572,7 @@
         "dateAdded": "2024-10-01T15:15:35.435133"
       },
       "metadataBundled": true,
-      "metadataSource": "ΛY-θO_ver1.meta.json",
+      "metadataSource": "ΛY-ΘO_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -132786,10 +132786,10 @@
       "level": 3
     },
     {
-      "id": "σ-rw-θ-z-",
-      "name": "Σ-RW-θ-Z- Sequence",
-      "word": "Σ-RW-θ-Z-",
-      "thumbnails": ["/gallery/Σ-RW-θ-Z-/Σ-RW-θ-Z-_ver1.webp"],
+      "id": "σ-rw-Θ-z-",
+      "name": "Σ-RW-Θ-Z- Sequence",
+      "word": "Σ-RW-Θ-Z-",
+      "thumbnails": ["/gallery/Σ-RW-Θ-Z-/Σ-RW-Θ-Z-_ver1.webp"],
       "sequenceLength": 20,
       "author": "Austen Cloud",
       "dateAdded": "2025-02-23T04:09:43.134Z",
@@ -132804,7 +132804,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Σ-RW-θ-Z-",
+            "word": "Σ-RW-Θ-Z-",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -132920,7 +132920,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha4",
             "endPos": "gamma16",
             "timing": "none",
@@ -133055,7 +133055,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha6",
             "endPos": "gamma10",
             "timing": "none",
@@ -133190,7 +133190,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha8",
             "endPos": "gamma12",
             "timing": "none",
@@ -133325,7 +133325,7 @@
           },
           {
             "beat": 19,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha2",
             "endPos": "gamma14",
             "timing": "none",
@@ -133381,7 +133381,7 @@
         "dateAdded": "2024-10-03T12:58:48.995869"
       },
       "metadataBundled": true,
-      "metadataSource": "Σ-RW-θ-Z-_ver1.meta.json",
+      "metadataSource": "Σ-RW-Θ-Z-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -134995,10 +134995,10 @@
       "level": 2
     },
     {
-      "id": "σ-w-θ-y-",
-      "name": "Σ-W-θ-Y- Sequence",
-      "word": "Σ-W-θ-Y-",
-      "thumbnails": ["/gallery/Σ-W-θ-Y-/Σ-W-θ-Y-_ver1.webp"],
+      "id": "σ-w-Θ-y-",
+      "name": "Σ-W-Θ-Y- Sequence",
+      "word": "Σ-W-Θ-Y-",
+      "thumbnails": ["/gallery/Σ-W-Θ-Y-/Σ-W-Θ-Y-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2024-08-29T10:37:02.680Z",
@@ -135013,7 +135013,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Σ-W-θ-Y-",
+            "word": "Σ-W-Θ-Y-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -135098,7 +135098,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma7",
             "timing": "none",
@@ -135202,7 +135202,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma3",
             "timing": "none",
@@ -135256,7 +135256,7 @@
         "dateAdded": "2024-08-09T16:28:49.833445"
       },
       "metadataBundled": true,
-      "metadataSource": "Σ-W-θ-Y-_ver1.meta.json",
+      "metadataSource": "Σ-W-Θ-Y-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -138953,11 +138953,11 @@
       "level": 2
     },
     {
-      "id": "σoxlωy-ψ-φδowlθz-ψ-φ",
-      "name": "ΣOXLΩY-Ψ-ΦΔOWLθZ-Ψ-Φ Sequence",
-      "word": "ΣOXLΩY-Ψ-ΦΔOWLθZ-Ψ-Φ",
+      "id": "σoxlωy-ψ-φδowlΘz-ψ-φ",
+      "name": "ΣOXLΩY-Ψ-ΦΔOWLΘZ-Ψ-Φ Sequence",
+      "word": "ΣOXLΩY-Ψ-ΦΔOWLΘZ-Ψ-Φ",
       "thumbnails": [
-        "/gallery/ΣOXLΩY-Ψ-ΦΔOWLθZ-Ψ-Φ/ΣOXLΩY-Ψ-ΦΔOWLθZ-Ψ-Φ_ver1.webp"
+        "/gallery/ΣOXLΩY-Ψ-ΦΔOWLΘZ-Ψ-Φ/ΣOXLΩY-Ψ-ΦΔOWLΘZ-Ψ-Φ_ver1.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -138973,7 +138973,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΣOXLΩY-Ψ-ΦΔOWLθZ-Ψ-Φ",
+            "word": "ΣOXLΩY-Ψ-ΦΔOWLΘZ-Ψ-Φ",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -139346,7 +139346,7 @@
           },
           {
             "beat": 13,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "duration": 1,
             "startPos": "beta3",
@@ -139461,7 +139461,7 @@
         "isFavorite": false
       },
       "metadataBundled": true,
-      "metadataSource": "ΣOXLΩY-Ψ-ΦΔOWLθZ-Ψ-Φ_ver1.meta.json",
+      "metadataSource": "ΣOXLΩY-Ψ-ΦΔOWLΘZ-Ψ-Φ_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -141456,10 +141456,10 @@
       "level": 1
     },
     {
-      "id": "σyθw",
-      "name": "ΣYθW Sequence",
-      "word": "ΣYθW",
-      "thumbnails": ["/gallery/ΣYθW/ΣYθW_ver1.webp"],
+      "id": "σyΘw",
+      "name": "ΣYΘW Sequence",
+      "word": "ΣYΘW",
+      "thumbnails": ["/gallery/ΣYΘW/ΣYΘW_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2025-04-08T16:58:20.433Z",
@@ -141474,7 +141474,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΣYθW",
+            "word": "ΣYΘW",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -141566,7 +141566,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ",
+            "letter": "Θ",
             "duration": 1,
             "startPos": "beta5",
             "endPos": "gamma11",
@@ -141674,7 +141674,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ",
+            "letter": "Θ",
             "duration": 1,
             "startPos": "beta1",
             "endPos": "gamma1",
@@ -141730,7 +141730,7 @@
         "dateAdded": "2024-12-06T17:57:38.989936"
       },
       "metadataBundled": true,
-      "metadataSource": "ΣYθW_ver1.meta.json",
+      "metadataSource": "ΣYΘW_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -143201,10 +143201,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "σλz-θx-",
-      "name": "ΣΛZ-θX- Sequence",
-      "word": "ΣΛZ-θX-",
-      "thumbnails": ["/gallery/ΣΛZ-θX-/ΣΛZ-θX-_ver1.webp"],
+      "id": "σλz-Θx-",
+      "name": "ΣΛZ-ΘX- Sequence",
+      "word": "ΣΛZ-ΘX-",
+      "thumbnails": ["/gallery/ΣΛZ-ΘX-/ΣΛZ-ΘX-_ver1.webp"],
       "sequenceLength": 20,
       "author": "Austen Cloud",
       "dateAdded": "2025-05-03T10:46:24.505Z",
@@ -143219,7 +143219,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΣΛZ-θX-",
+            "word": "ΣΛZ-ΘX-",
             "author": "Austen Cloud",
             "level": 3,
             "propType": "staff",
@@ -143345,7 +143345,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta4",
             "endPos": "gamma10",
             "timing": "none",
@@ -143490,7 +143490,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta6",
             "endPos": "gamma12",
             "timing": "none",
@@ -143625,7 +143625,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta8",
             "endPos": "gamma14",
             "timing": "none",
@@ -143760,7 +143760,7 @@
           },
           {
             "beat": 19,
-            "letter": "θ",
+            "letter": "Θ",
             "startPos": "beta2",
             "endPos": "gamma16",
             "timing": "none",
@@ -143816,7 +143816,7 @@
         "dateAdded": "2024-10-03T14:45:51.553340"
       },
       "metadataBundled": true,
-      "metadataSource": "ΣΛZ-θX-_ver1.meta.json",
+      "metadataSource": "ΣΛZ-ΘX-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -148929,10 +148929,10 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "ψ-fφ-θ-y-",
-      "name": "Ψ-FΦ-θ-Y- Sequence",
-      "word": "Ψ-FΦ-θ-Y-",
-      "thumbnails": ["/gallery/Ψ-FΦ-θ-Y-/Ψ-FΦ-θ-Y-_ver1.webp"],
+      "id": "ψ-fφ-Θ-y-",
+      "name": "Ψ-FΦ-Θ-Y- Sequence",
+      "word": "Ψ-FΦ-Θ-Y-",
+      "thumbnails": ["/gallery/Ψ-FΦ-Θ-Y-/Ψ-FΦ-Θ-Y-_ver1.webp"],
       "sequenceLength": 20,
       "author": "Austen Cloud",
       "dateAdded": "2025-08-16T04:07:38.171Z",
@@ -148947,7 +148947,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Ψ-FΦ-θ-Y-",
+            "word": "Ψ-FΦ-Θ-Y-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "staff",
@@ -149073,7 +149073,7 @@
           },
           {
             "beat": 4,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha6",
             "endPos": "gamma2",
             "timing": "none",
@@ -149213,7 +149213,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha8",
             "endPos": "gamma4",
             "timing": "none",
@@ -149348,7 +149348,7 @@
           },
           {
             "beat": 14,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha2",
             "endPos": "gamma6",
             "timing": "none",
@@ -149483,7 +149483,7 @@
           },
           {
             "beat": 19,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha4",
             "endPos": "gamma8",
             "timing": "none",
@@ -149539,7 +149539,7 @@
         "dateAdded": "2024-10-03T03:30:41.276289"
       },
       "metadataBundled": true,
-      "metadataSource": "Ψ-FΦ-θ-Y-_ver1.meta.json",
+      "metadataSource": "Ψ-FΦ-Θ-Y-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -154094,10 +154094,10 @@
       "level": 2
     },
     {
-      "id": "ω-w-θ-x-",
-      "name": "Ω-W-θ-X- Sequence",
-      "word": "Ω-W-θ-X-",
-      "thumbnails": ["/gallery/Ω-W-θ-X-/Ω-W-θ-X-_ver1.webp"],
+      "id": "ω-w-Θ-x-",
+      "name": "Ω-W-Θ-X- Sequence",
+      "word": "Ω-W-Θ-X-",
+      "thumbnails": ["/gallery/Ω-W-Θ-X-/Ω-W-Θ-X-_ver1.webp"],
       "sequenceLength": 8,
       "author": "Austen Cloud",
       "dateAdded": "2024-10-28T16:18:29.710Z",
@@ -154112,7 +154112,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "Ω-W-θ-X-",
+            "word": "Ω-W-Θ-X-",
             "author": "Austen Cloud",
             "level": 2,
             "propType": "unknown",
@@ -154197,7 +154197,7 @@
           },
           {
             "beat": 3,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha7",
             "endPos": "gamma1",
             "timing": "none",
@@ -154301,7 +154301,7 @@
           },
           {
             "beat": 7,
-            "letter": "θ-",
+            "letter": "Θ-",
             "startPos": "alpha3",
             "endPos": "gamma5",
             "timing": "none",
@@ -154355,7 +154355,7 @@
         "dateAdded": "2024-08-09T16:41:04.678641"
       },
       "metadataBundled": true,
-      "metadataSource": "Ω-W-θ-X-_ver1.meta.json",
+      "metadataSource": "Ω-W-Θ-X-_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
@@ -155109,11 +155109,11 @@
       "loopType": "strict_rotated_quartered"
     },
     {
-      "id": "ωnzς-yψ-iiθmyδ-zψ-ii",
-      "name": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II Sequence",
-      "word": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II",
+      "id": "ωnzς-yψ-iiΘmyδ-zψ-ii",
+      "name": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II Sequence",
+      "word": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II",
       "thumbnails": [
-        "/gallery/ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II/ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II_ver1.webp"
+        "/gallery/ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II/ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II_ver1.webp"
       ],
       "sequenceLength": 16,
       "author": "Austen Cloud",
@@ -155129,7 +155129,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II",
+            "word": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "staff",
@@ -155388,7 +155388,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "duration": 1,
             "startPos": "beta5",
@@ -155614,18 +155614,18 @@
         "dateAdded": "2025-03-06T17:50:30.129100"
       },
       "metadataBundled": true,
-      "metadataSource": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-II_ver1.meta.json",
+      "metadataSource": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-II_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
       "level": 1
     },
     {
-      "id": "ωnzς-yψ-iiθmyδ-zψ-iiθmyδ-zψ-iiωnzς-yψ-ii",
-      "name": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-IIθMYΔ-ZΨ-IIΩNZΣ-YΨ-II Sequence",
-      "word": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-IIθMYΔ-ZΨ-IIΩNZΣ-YΨ-II",
+      "id": "ωnzς-yψ-iiΘmyδ-zψ-iiΘmyδ-zψ-iiωnzς-yψ-ii",
+      "name": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-IIΘMYΔ-ZΨ-IIΩNZΣ-YΨ-II Sequence",
+      "word": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-IIΘMYΔ-ZΨ-IIΩNZΣ-YΨ-II",
       "thumbnails": [
-        "/gallery/ΩNZΣ-YΨ-IIθMYΔ-ZΨ-IIθMYΔ-ZΨ-IIΩNZΣ-YΨ-II/ΩNZΣ-YΨ-IIθMYΔ-ZΨ-IIθMYΔ-ZΨ-IIΩNZΣ-YΨ-II_ver1.webp"
+        "/gallery/ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-IIΘMYΔ-ZΨ-IIΩNZΣ-YΨ-II/ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-IIΘMYΔ-ZΨ-IIΩNZΣ-YΨ-II_ver1.webp"
       ],
       "sequenceLength": 32,
       "author": "Austen Cloud",
@@ -155641,7 +155641,7 @@
       "fullMetadata": {
         "sequence": [
           {
-            "word": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-IIθMYΔ-ZΨ-IIΩNZΣ-YΨ-II",
+            "word": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-IIΘMYΔ-ZΨ-IIΩNZΣ-YΨ-II",
             "author": "Austen Cloud",
             "level": 1,
             "propType": "staff",
@@ -155900,7 +155900,7 @@
           },
           {
             "beat": 9,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "duration": 1,
             "startPos": "beta5",
@@ -156124,7 +156124,7 @@
           },
           {
             "beat": 17,
-            "letter": "θ",
+            "letter": "Θ",
             "letterType": "Type2",
             "startPos": "beta5",
             "endPos": "gamma13",
@@ -156574,7 +156574,7 @@
         "dateAdded": "2025-03-06T17:56:43.911677"
       },
       "metadataBundled": true,
-      "metadataSource": "ΩNZΣ-YΨ-IIθMYΔ-ZΨ-IIθMYΔ-ZΨ-IIΩNZΣ-YΨ-II_ver1.meta.json",
+      "metadataSource": "ΩNZΣ-YΨ-IIΘMYΔ-ZΨ-IIΘMYΔ-ZΨ-IIΩNZΣ-YΨ-II_ver1.meta.json",
       "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
       "ownerDisplayName": "Austen Cloud",
       "ownerAvatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
