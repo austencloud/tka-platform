@@ -13,8 +13,13 @@
     addBeatNumbers: boolean;
     addDifficultyLevel: boolean;
     includeStartPosition: boolean;
-    addUserInfo: boolean;
+    // Granular footer controls
+    showCreatorName: boolean;
+    showNotes: boolean;
+    showBirthday: boolean;
+    customNotesText: string;
     onToggle: (key: string) => void;
+    onCustomNotesChange: (value: string) => void;
     isMobileHidden?: boolean;
   }
 
@@ -23,8 +28,12 @@
     addBeatNumbers,
     addDifficultyLevel,
     includeStartPosition,
-    addUserInfo,
+    showCreatorName,
+    showNotes,
+    showBirthday,
+    customNotesText,
     onToggle,
+    onCustomNotesChange,
     isMobileHidden = false,
   }: Props = $props();
 </script>
@@ -68,12 +77,41 @@
           class:active={addDifficultyLevel}
           onclick={() => onToggle("difficulty")}>Difficulty</button
         >
+      </div>
+    </div>
+
+    <div class="control-group">
+      <span class="group-label">Footer Info</span>
+      <div class="toggle-grid footer-toggles">
         <button
           class="toggle-btn"
-          class:active={addUserInfo}
-          onclick={() => onToggle("userInfo")}>User Info</button
+          class:active={showCreatorName}
+          onclick={() => onToggle("creatorName")}>Name</button
+        >
+        <button
+          class="toggle-btn"
+          class:active={showNotes}
+          onclick={() => onToggle("notes")}>Notes</button
+        >
+        <button
+          class="toggle-btn birthday-btn"
+          class:active={showBirthday}
+          onclick={() => onToggle("birthday")}
+          title="Birthday date">🎂</button
         >
       </div>
+    </div>
+
+    <div class="control-group notes-input-group">
+      <label class="group-label" for="custom-notes">Custom Notes Text</label>
+      <input
+        id="custom-notes"
+        type="text"
+        class="notes-input"
+        value={customNotesText}
+        placeholder="Created using TKA Scribe"
+        oninput={(e) => onCustomNotesChange(e.currentTarget.value)}
+      />
     </div>
   </div>
 </section>
@@ -321,5 +359,51 @@
       font-size: 10px;
       letter-spacing: 0.3px;
     }
+  }
+
+  /* Footer toggles - 3 column grid */
+  .footer-toggles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Birthday emoji button */
+  .birthday-btn {
+    font-size: clamp(16px, 3cqi, 20px);
+    line-height: 1;
+  }
+
+  /* Notes input */
+  .notes-input-group {
+    margin-top: clamp(4px, 1cqi, 8px);
+  }
+
+  .notes-input {
+    width: 100%;
+    min-height: 44px; /* WCAG touch target */
+    padding: clamp(10px, 1.5cqi, 12px);
+    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
+    border: 1px solid var(--theme-stroke);
+    border-radius: clamp(8px, 1.5cqi, 12px);
+    color: var(--theme-text);
+    font-size: var(--font-size-compact);
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    transition: all 150ms ease;
+  }
+
+  .notes-input::placeholder {
+    color: var(--theme-text-dim);
+    opacity: 0.6;
+  }
+
+  .notes-input:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .notes-input:focus {
+    outline: none;
+    border-color: var(--theme-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent) 25%, transparent);
   }
 </style>

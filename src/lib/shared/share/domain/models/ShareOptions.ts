@@ -22,10 +22,17 @@ export interface ShareOptions {
   beatSize: number; // Size of each beat in pixels
   margin: number; // Margin around the sequence
   backgroundColor: string;
+  darkMode: boolean; // Dark mode toggle (affects grid, text colors)
 
   // === USER INFO ===
   userName: string;
   notes: string;
+
+  // === GRANULAR FOOTER CONTROLS ===
+  showCreatorName?: boolean;
+  showNotes?: boolean;
+  showBirthday?: boolean;
+  customNotesText?: string;
 }
 
 export interface SharePreset {
@@ -50,6 +57,7 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       beatSize: 950, // Always 1:1 scale
       margin: 20,
       backgroundColor: "#ffffff",
+      darkMode: false,
       userName: "",
       notes: "",
     },
@@ -69,6 +77,7 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       beatSize: 950, // Always 1:1 scale
       margin: 50,
       backgroundColor: "#ffffff",
+      darkMode: false,
       userName: "", // Will be populated from auth state
       notes: "Created with TKA Scribe",
     },
@@ -88,6 +97,7 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       beatSize: 950, // Always 1:1 scale
       margin: 30,
       backgroundColor: "#ffffff",
+      darkMode: false,
       userName: "", // Will be populated from auth state
       notes: "",
     },
@@ -102,6 +112,7 @@ export const DEFAULT_SHARE_OPTIONS: ShareOptions = {
   beatSize: 950, // Always 1:1 scale - no user choice needed
   margin: 24, // Clean spacing
   backgroundColor: "#ffffff", // Clean white background
+  darkMode: false, // Light mode by default
 
   // User-configurable content options
   includeStartPosition: true,
@@ -111,4 +122,10 @@ export const DEFAULT_SHARE_OPTIONS: ShareOptions = {
   addDifficultyLevel: false,
   userName: "",
   notes: "",
+
+  // Footer controls - all shown by default
+  showCreatorName: true,
+  showNotes: true,
+  showBirthday: true,
+  customNotesText: "Created using TKA Scribe",
 };

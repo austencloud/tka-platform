@@ -34,6 +34,14 @@ export interface StaticSettings {
   height: number;
   quality: number; // 0-100
   background: "transparent" | "white" | "black";
+
+  // Granular footer overrides (undefined = use persistent defaults)
+  showCreatorName?: boolean;
+  showNotes?: boolean;
+  showBirthday?: boolean;
+  customNotesText?: string;
+  // Track if user has customized settings for this export
+  isUsingCustomFooter?: boolean;
 }
 
 /** Settings for performance video */
@@ -105,7 +113,8 @@ const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
 
 import { getContext, setContext } from "svelte";
 
-const SHARE_HUB_STATE_KEY = Symbol("ShareHubState");
+// Use Symbol.for to allow access from components that don't import this module directly
+const SHARE_HUB_STATE_KEY = Symbol.for("ShareHubState");
 
 /**
  * Internal state holder class.

@@ -122,13 +122,20 @@ export class ShareHubExportOrchestrator implements IShareHubExportOrchestrator {
       ...DEFAULT_SHARE_OPTIONS,
       format: "PNG",
       quality: 1.0,
-      backgroundColor: "#FFFFFF",
+      // Use dark mode setting to determine background color
+      backgroundColor: compositionSettings.darkMode ? "#0a0a0f" : "#FFFFFF",
+      darkMode: compositionSettings.darkMode,
       includeStartPosition: compositionSettings.includeStartPosition,
       addBeatNumbers: compositionSettings.addBeatNumbers,
       addWord: compositionSettings.addWord,
       addUserInfo: compositionSettings.addUserInfo,
       addDifficultyLevel: compositionSettings.addDifficultyLevel,
       userName: userInfo?.displayName ?? "",
+      // Granular footer controls
+      showCreatorName: compositionSettings.showCreatorName,
+      showNotes: compositionSettings.showNotes,
+      showBirthday: compositionSettings.showBirthday,
+      customNotesText: compositionSettings.customNotesText,
     };
 
     // Use native share on mobile, download on desktop

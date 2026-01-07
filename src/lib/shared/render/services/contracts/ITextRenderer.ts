@@ -50,6 +50,8 @@ export interface ITextRenderer {
    * @param footerHeight - Height of the footer area for proper text positioning
    * @param beatCount - Number of beats for legacy-matching font sizing
    * @param darkMode - When true, uses dark theme styling (dark bg, light text)
+   * @param showFlags - Granular controls for which footer elements to show
+   * @param customNotesText - Custom text to use for notes instead of default
    */
   renderUserInfo(
     canvas: HTMLCanvasElement,
@@ -57,7 +59,13 @@ export interface ITextRenderer {
     options: TextRenderOptions,
     footerHeight?: number,
     beatCount?: number,
-    darkMode?: boolean
+    darkMode?: boolean,
+    showFlags?: {
+      showCreatorName?: boolean;
+      showNotes?: boolean;
+      showBirthday?: boolean;
+    },
+    customNotesText?: string
   ): void;
 
   /**

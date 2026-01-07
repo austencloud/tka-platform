@@ -193,7 +193,12 @@ export class ImageComposer implements IImageComposer {
     );
 
     // Calculate footer height if user info should be included
-    const footerHeight = options.addUserInfo
+    // Check granular flags if provided, otherwise use addUserInfo for backwards compatibility
+    const showCreatorName = options.showCreatorName ?? options.addUserInfo;
+    const showNotes = options.showNotes ?? options.addUserInfo;
+    const showBirthday = options.showBirthday ?? options.addUserInfo;
+    const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
+    const footerHeight = hasAnyFooterContent
       ? this.calculateFooterHeight(beatSize)
       : 0;
 
@@ -278,6 +283,7 @@ export class ImageComposer implements IImageComposer {
       const beat = sequence.beats[i];
       if (!beat) continue; // Skip if beat is undefined
       // Calculate position: beats fill remaining columns, then wrap to next row
+      // All rows start at startColumn (column 1 if start position exists, column 0 otherwise)
       const col = startColumn + (i % beatsPerRow);
       const row = Math.floor(i / beatsPerRow);
       // Only pass beat number if addBeatNumbers is true
@@ -347,7 +353,7 @@ export class ImageComposer implements IImageComposer {
     }
 
     // Step 8: Render user info footer at the bottom
-    if (options.addUserInfo && footerHeight > 0) {
+    if (hasAnyFooterContent && footerHeight > 0) {
       this.TextRenderer.renderUserInfo(
         canvas,
         {
@@ -361,7 +367,14 @@ export class ImageComposer implements IImageComposer {
         },
         footerHeight, // Pass footer height for proper text positioning
         beatCount, // Pass beat count for legacy-matching font sizing
-        isDarkMode // Dark Mode for dark theme styling
+        isDarkMode, // Dark Mode for dark theme styling
+        // Granular footer visibility flags
+        {
+          showCreatorName,
+          showNotes,
+          showBirthday,
+        },
+        options.customNotesText // Custom notes text override
       );
     }
 
@@ -593,7 +606,8 @@ export class ImageComposer implements IImageComposer {
       occupied.add("0,0");
     }
 
-    // Add all beats
+    // Add all beats using the same positioning logic as rendering:
+    // All rows start at startColumn (column 1 if start position exists, column 0 otherwise)
     const startColumn = options.includeStartPosition ? 1 : 0;
     const beatsPerRow = columns - startColumn;
 

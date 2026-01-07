@@ -96,9 +96,14 @@ export interface AppSettings {
     addBeatNumbers?: boolean;
     addDifficultyLevel?: boolean;
     includeStartPosition?: boolean;
-    addUserInfo?: boolean;
     darkMode?: boolean;
     customName?: string; // Optional custom name for header
+
+    // Granular footer controls (replaces single addUserInfo toggle)
+    showCreatorName?: boolean; // Bottom-left: creator name
+    showNotes?: boolean; // Bottom-center: notes text
+    showBirthday?: boolean; // Bottom-right: birthday date
+    customNotesText?: string; // Custom text for notes (default: "Created using TKA Scribe")
   };
 }
 

@@ -19,6 +19,7 @@
   interface Props {
     gridVisible: boolean;
     beatNumbersVisible: boolean;
+    armsVisible: boolean;
     trailStyle: TrailStyle;
     playbackMode: PlaybackMode;
     bpm: number;
@@ -34,6 +35,7 @@
   let {
     gridVisible,
     beatNumbersVisible,
+    armsVisible,
     trailStyle,
     playbackMode,
     bpm,
@@ -168,6 +170,15 @@
         </button>
         <button
           class="compact-btn"
+          class:active={armsVisible}
+          onclick={() => onToggle("arms")}
+          type="button"
+        >
+          <i class="fas fa-user" aria-hidden="true"></i>
+          <span>Arms</span>
+        </button>
+        <button
+          class="compact-btn"
           class:active={beatNumbersVisible}
           onclick={() => onToggle("beatNumbers")}
           type="button"
@@ -287,11 +298,16 @@
 
       <div class="control-group">
         <span class="group-label">Canvas</span>
-        <div class="toggle-grid">
+        <div class="toggle-grid triple">
           <button
             class="toggle-btn"
             class:active={gridVisible}
             onclick={() => onToggle("grid")}>Grid</button
+          >
+          <button
+            class="toggle-btn"
+            class:active={armsVisible}
+            onclick={() => onToggle("arms")}>Arms</button
           >
           <button
             class="toggle-btn"
@@ -596,6 +612,10 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: clamp(4px, 1cqi, 8px);
+  }
+
+  .toggle-grid.triple {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .playback-mode-toggle {

@@ -17,9 +17,17 @@ export interface ImageCompositionSettings {
   addBeatNumbers: boolean;
   addDifficultyLevel: boolean;
   includeStartPosition: boolean;
-  addUserInfo: boolean;
   darkMode: boolean;
   customName?: string; // Optional custom name for header
+
+  // Granular footer controls (replaces single addUserInfo toggle)
+  showCreatorName: boolean; // Bottom-left: creator name
+  showNotes: boolean; // Bottom-center: notes text
+  showBirthday: boolean; // Bottom-right: birthday date
+  customNotesText: string; // Custom text for notes (default: "Created using TKA Scribe")
+
+  // Backwards compatibility - computed from granular controls (always defined in getSettings())
+  addUserInfo: boolean; // True if any footer element is shown
 }
 
 const DEFAULT_SETTINGS: ImageCompositionSettings = {
@@ -27,8 +35,16 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   addBeatNumbers: true,
   addDifficultyLevel: false,
   includeStartPosition: true,
-  addUserInfo: false,
   darkMode: false, // Default to light mode (will be synced from global on init)
+
+  // Footer defaults - all shown by default when user info is enabled
+  showCreatorName: true,
+  showNotes: true,
+  showBirthday: true,
+  customNotesText: "Created using TKA Scribe",
+
+  // Computed: true when any footer element is shown
+  addUserInfo: true,
 };
 
 type Observer = () => void;
@@ -125,8 +141,12 @@ class ImageCompositionStateManager {
     return this.settings.includeStartPosition;
   }
 
+  /**
+   * Computed property for backwards compatibility.
+   * Returns true if ANY footer element is enabled.
+   */
   get addUserInfo(): boolean {
-    return this.settings.addUserInfo;
+    return this.settings.showCreatorName || this.settings.showNotes || this.settings.showBirthday;
   }
 
   get darkMode(): boolean {
@@ -137,9 +157,30 @@ class ImageCompositionStateManager {
     return this.settings.customName;
   }
 
+  // Granular footer getters
+  get showCreatorName(): boolean {
+    return this.settings.showCreatorName;
+  }
+
+  get showNotes(): boolean {
+    return this.settings.showNotes;
+  }
+
+  get showBirthday(): boolean {
+    return this.settings.showBirthday;
+  }
+
+  get customNotesText(): string {
+    return this.settings.customNotesText;
+  }
+
   // Get all settings (for passing to share service)
   getSettings(): ImageCompositionSettings {
-    return { ...this.settings };
+    return {
+      ...this.settings,
+      // Include computed addUserInfo for backwards compatibility
+      addUserInfo: this.settings.showCreatorName || this.settings.showNotes || this.settings.showBirthday,
+    };
   }
 
   // Setters
@@ -167,8 +208,39 @@ class ImageCompositionStateManager {
     this.notifyObservers();
   }
 
+  /**
+   * Convenience method to set all footer elements at once.
+   * For backwards compatibility with code that uses addUserInfo.
+   */
   setAddUserInfo(value: boolean): void {
-    this.settings.addUserInfo = value;
+    this.settings.showCreatorName = value;
+    this.settings.showNotes = value;
+    this.settings.showBirthday = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  // Granular footer setters
+  setShowCreatorName(value: boolean): void {
+    this.settings.showCreatorName = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  setShowNotes(value: boolean): void {
+    this.settings.showNotes = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  setShowBirthday(value: boolean): void {
+    this.settings.showBirthday = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  setCustomNotesText(value: string): void {
+    this.settings.customNotesText = value;
     this.saveToStorage();
     this.notifyObservers();
   }

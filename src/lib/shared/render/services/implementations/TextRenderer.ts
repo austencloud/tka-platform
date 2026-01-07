@@ -443,6 +443,8 @@ export class TextRenderer implements ITextRenderer {
    *
    * Font sizing is now based on footer height to ensure text fits properly.
    * @param darkMode - When true, uses dark theme styling (dark bg, light text)
+   * @param showFlags - Granular controls for which footer elements to show
+   * @param customNotesText - Custom text to use for notes instead of default
    */
   renderUserInfo(
     canvas: HTMLCanvasElement,
@@ -450,8 +452,23 @@ export class TextRenderer implements ITextRenderer {
     _options: TextRenderOptions,
     footerHeight: number = 60,
     _beatCount: number = 3,
-    darkMode: boolean = false
+    darkMode: boolean = false,
+    showFlags?: {
+      showCreatorName?: boolean;
+      showNotes?: boolean;
+      showBirthday?: boolean;
+    },
+    customNotesText?: string
   ): void {
+    // Resolve show flags (default all to true for backwards compatibility)
+    const showCreatorName = showFlags?.showCreatorName ?? true;
+    const showNotes = showFlags?.showNotes ?? true;
+    const showBirthday = showFlags?.showBirthday ?? true;
+
+    // If nothing to show, don't render the footer at all
+    if (!showCreatorName && !showNotes && !showBirthday) {
+      return;
+    }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -486,27 +503,41 @@ export class TextRenderer implements ITextRenderer {
     ctx.textBaseline = "middle"; // Vertically center text
 
     // Username (bottom-left) - Georgia Bold
-    if (userInfo.userName && userInfo.userName.trim() !== "") {
+    if (showCreatorName && userInfo.userName && userInfo.userName.trim() !== "") {
       ctx.font = `bold ${fontSize}px Georgia, serif`;
       ctx.textAlign = "left";
       ctx.fillText(userInfo.userName, margin, yPosition);
     }
 
     // Notes (bottom-center) - Georgia Normal weight
-    const notes =
-      userInfo.notes && userInfo.notes.trim() !== ""
-        ? userInfo.notes
-        : "Created using TKA Scribe";
-    ctx.font = `${fontSize}px Georgia, serif`;
-    ctx.textAlign = "center";
-    ctx.fillText(notes, canvas.width / 2, yPosition);
+    if (showNotes) {
+      // Use custom notes text if provided, otherwise fall back to userInfo.notes or default
+      const notes =
+        customNotesText && customNotesText.trim() !== ""
+          ? customNotesText
+          : userInfo.notes && userInfo.notes.trim() !== ""
+            ? userInfo.notes
+            : "Created using TKA Scribe";
+      ctx.font = `${fontSize}px Georgia, serif`;
+      ctx.textAlign = "center";
+      ctx.fillText(notes, canvas.width / 2, yPosition);
+    }
 
-    // Date (bottom-right) - Georgia Normal, format: M-D-YYYY
-    // Use the passed-in exportDate (sequence birth date) instead of current date
-    const dateToUse = userInfo.exportDate ? new Date(userInfo.exportDate) : new Date();
-    const dateStr = `${dateToUse.getMonth() + 1}-${dateToUse.getDate()}-${dateToUse.getFullYear()}`;
-    ctx.textAlign = "right";
-    ctx.fillText(dateStr, canvas.width - margin, yPosition);
+    // Birthday date (bottom-right) - Georgia Normal, format: 🎂 M-D-YYYY
+    // Use the sequence birthday (from userInfo.birthday or exportDate) instead of current date
+    // Birthday emoji indicates this is when the sequence was originally created
+    if (showBirthday) {
+      // Prefer birthday field, fall back to exportDate, then current date
+      const dateToUse = userInfo.birthday
+        ? userInfo.birthday
+        : userInfo.exportDate
+          ? new Date(userInfo.exportDate)
+          : new Date();
+      const dateStr = `🎂 ${dateToUse.getMonth() + 1}-${dateToUse.getDate()}-${dateToUse.getFullYear()}`;
+      ctx.font = `${fontSize}px Georgia, serif`;
+      ctx.textAlign = "right";
+      ctx.fillText(dateStr, canvas.width - margin, yPosition);
+    }
   }
 
   /**

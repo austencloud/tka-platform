@@ -58,6 +58,7 @@
   // Animation visibility state
   let animGridVisible = $state(true);
   let animBeatNumbersVisible = $state(true);
+  let animArmsVisible = $state(false);
   let animTrailStyle = $state<TrailStyle>("subtle");
   let animPlaybackMode = $state<PlaybackMode>("continuous");
   let animBpm = $state(60);
@@ -69,7 +70,11 @@
   let imgAddBeatNumbers = $state(true);
   let imgAddDifficultyLevel = $state(false);
   let imgIncludeStartPosition = $state(true);
-  let imgAddUserInfo = $state(false);
+  // Granular footer controls
+  let imgShowCreatorName = $state(true);
+  let imgShowNotes = $state(true);
+  let imgShowBirthday = $state(true);
+  let imgCustomNotesText = $state("Created using TKA Scribe");
 
   // Haptics
   let hapticService: IHapticFeedback | null = null;
@@ -153,6 +158,10 @@
           animWordHeaderVisible
         );
         break;
+      case "arms":
+        animArmsVisible = !animArmsVisible;
+        animationVisibilityManager.setVisibility("arms", animArmsVisible);
+        break;
     }
   }
 
@@ -195,11 +204,25 @@
           imgIncludeStartPosition
         );
         break;
-      case "userInfo":
-        imgAddUserInfo = !imgAddUserInfo;
-        imageCompositionManager.setAddUserInfo(imgAddUserInfo);
+      case "creatorName":
+        imgShowCreatorName = !imgShowCreatorName;
+        imageCompositionManager.setShowCreatorName(imgShowCreatorName);
+        break;
+      case "notes":
+        imgShowNotes = !imgShowNotes;
+        imageCompositionManager.setShowNotes(imgShowNotes);
+        break;
+      case "birthday":
+        imgShowBirthday = !imgShowBirthday;
+        imageCompositionManager.setShowBirthday(imgShowBirthday);
         break;
     }
+  }
+
+  function handleCustomNotesChange(value: string) {
+    triggerHaptic();
+    imgCustomNotesText = value;
+    imageCompositionManager.setCustomNotesText(value);
   }
 
   onMount(() => {
@@ -220,6 +243,7 @@
     animGridVisible = animationVisibilityManager.isGridVisible();
     animBeatNumbersVisible =
       animationVisibilityManager.getVisibility("beatNumbers");
+    animArmsVisible = animationVisibilityManager.getVisibility("arms");
     animTrailStyle = animationVisibilityManager.getTrailStyle();
     animPlaybackMode = animationVisibilityManager.getPlaybackMode();
     animBpm = animationVisibilityManager.getBpm();
@@ -232,7 +256,11 @@
     imgAddBeatNumbers = imageCompositionManager.addBeatNumbers;
     imgAddDifficultyLevel = imageCompositionManager.addDifficultyLevel;
     imgIncludeStartPosition = imageCompositionManager.includeStartPosition;
-    imgAddUserInfo = imageCompositionManager.addUserInfo;
+    // Granular footer controls
+    imgShowCreatorName = imageCompositionManager.showCreatorName;
+    imgShowNotes = imageCompositionManager.showNotes;
+    imgShowBirthday = imageCompositionManager.showBirthday;
+    imgCustomNotesText = imageCompositionManager.customNotesText;
 
     // Observers for external changes
     const pictographObserver = () => {
@@ -251,6 +279,7 @@
       animGridVisible = animationVisibilityManager.isGridVisible();
       animBeatNumbersVisible =
         animationVisibilityManager.getVisibility("beatNumbers");
+      animArmsVisible = animationVisibilityManager.getVisibility("arms");
       animTrailStyle = animationVisibilityManager.getTrailStyle();
       animPlaybackMode = animationVisibilityManager.getPlaybackMode();
       animBpm = animationVisibilityManager.getBpm();
@@ -265,7 +294,11 @@
       imgAddBeatNumbers = imageCompositionManager.addBeatNumbers;
       imgAddDifficultyLevel = imageCompositionManager.addDifficultyLevel;
       imgIncludeStartPosition = imageCompositionManager.includeStartPosition;
-      imgAddUserInfo = imageCompositionManager.addUserInfo;
+      // Granular footer controls
+      imgShowCreatorName = imageCompositionManager.showCreatorName;
+      imgShowNotes = imageCompositionManager.showNotes;
+      imgShowBirthday = imageCompositionManager.showBirthday;
+      imgCustomNotesText = imageCompositionManager.customNotesText;
     };
 
     visibilityManager.registerObserver(pictographObserver, ["all"]);
@@ -308,6 +341,7 @@
     <AnimationPanel
       gridVisible={animGridVisible}
       beatNumbersVisible={animBeatNumbersVisible}
+      armsVisible={animArmsVisible}
       trailStyle={animTrailStyle}
       playbackMode={animPlaybackMode}
       bpm={animBpm}
@@ -325,8 +359,12 @@
       addBeatNumbers={imgAddBeatNumbers}
       addDifficultyLevel={imgAddDifficultyLevel}
       includeStartPosition={imgIncludeStartPosition}
-      addUserInfo={imgAddUserInfo}
+      showCreatorName={imgShowCreatorName}
+      showNotes={imgShowNotes}
+      showBirthday={imgShowBirthday}
+      customNotesText={imgCustomNotesText}
       onToggle={handleImageToggle}
+      onCustomNotesChange={handleCustomNotesChange}
       isMobileHidden={mobileMode !== "image"}
     />
   </div>

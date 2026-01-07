@@ -287,8 +287,11 @@
     animationContext.actions.onFormatChange = onFormatChange ?? (() => {});
   });
 
-  // Set context once during initialization
-  setAnimationExportContext(animationContext);
+  // Set context only in create mode (when ShareHubCoordinator manages animation)
+  // In discover/library mode, AnimationPlayer uses its own standalone state
+  if (mode === "create") {
+    setAnimationExportContext(animationContext);
+  }
 
   // Try to get Create module context for measured tool panel width
   const createModuleContext = tryGetCreateModuleContext();

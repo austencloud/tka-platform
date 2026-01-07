@@ -225,6 +225,9 @@ export class Sharer implements ISharer {
       // Visibility settings
       redVisible: true,
       blueVisible: true,
+      visibilityOverrides: {
+        darkMode: shareOptions.darkMode,
+      },
 
       // User information
       userName: shareOptions.userName || "TKA Scribe User",
@@ -235,7 +238,12 @@ export class Sharer implements ISharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.notes || "Created with TKA Scribe",
+      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Scribe",
+
+      // Granular footer controls
+      showCreatorName: shareOptions.showCreatorName,
+      showNotes: shareOptions.showNotes,
+      showBirthday: shareOptions.showBirthday,
 
       // Output format
       format: shareOptions.format,
@@ -265,6 +273,9 @@ export class Sharer implements ISharer {
       // Visibility settings
       redVisible: true,
       blueVisible: true,
+      visibilityOverrides: {
+        darkMode: shareOptions.darkMode,
+      },
 
       // User information
       userName: shareOptions.userName || "TKA Scribe User",
@@ -275,7 +286,12 @@ export class Sharer implements ISharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.notes || "Created with TKA Scribe",
+      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Scribe",
+
+      // Granular footer controls
+      showCreatorName: shareOptions.showCreatorName,
+      showNotes: shareOptions.showNotes,
+      showBirthday: shareOptions.showBirthday,
 
       // Output format - Maximum speed optimization
       format: "JPEG" as const, // JPEG encodes much faster than PNG

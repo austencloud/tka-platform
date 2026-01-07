@@ -16,11 +16,17 @@ export interface SequenceExportOptions {
   includeStartPosition: boolean;
   addBeatNumbers: boolean;
   addReversalSymbols: boolean;
-  addUserInfo: boolean;
+  addUserInfo: boolean; // Computed: true if any footer element is shown
   addWord: boolean;
   combinedGrids: boolean;
   addDifficultyLevel: boolean;
   customName?: string; // Optional custom name for header (overrides word when provided)
+
+  // Granular footer controls (if undefined, use addUserInfo as fallback)
+  showCreatorName?: boolean; // Bottom-left: creator name
+  showNotes?: boolean; // Bottom-center: notes text
+  showBirthday?: boolean; // Bottom-right: birthday date
+  customNotesText?: string; // Custom text for notes (default: "Created using TKA Scribe")
 
   // Prop type override (optional)
   // If provided, overrides the prop type for all beats in the sequence
@@ -95,6 +101,7 @@ export interface UserExportInfo {
   userName: string;
   notes: string;
   exportDate: string;
+  birthday?: Date; // Original creation date of the sequence
 }
 
 export interface LayoutData {
