@@ -12,6 +12,9 @@ export const AdminTypes = {
 
   // Analytics
   IAnalyticsDataProvider: Symbol.for("IAnalyticsDataProvider"),
+  IUserMetricsAnalyzer: Symbol.for("IUserMetricsAnalyzer"),
+  IEventActivityAnalyzer: Symbol.for("IEventActivityAnalyzer"),
+  IContentQueryAnalyzer: Symbol.for("IContentQueryAnalyzer"),
   IActivityLogger: Symbol.for("IActivityLogger"),
   ISessionTracker: Symbol.for("ISessionTracker"),
 

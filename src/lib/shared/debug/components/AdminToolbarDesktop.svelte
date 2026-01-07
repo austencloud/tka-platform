@@ -38,6 +38,8 @@
     onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
     onPreviewSidebarTour: () => void;
+    onClearCloudThumbnails: () => void;
+    isClearingThumbnails: boolean;
     onClose: () => void;
   }
 
@@ -59,6 +61,8 @@
     onResetTabIntro,
     onPreviewFirstRun,
     onPreviewSidebarTour,
+    onClearCloudThumbnails,
+    isClearingThumbnails,
     onClose,
   }: Props = $props();
 
@@ -81,6 +85,11 @@
 
   function handleSidebarTour() {
     onPreviewSidebarTour();
+    isActionsOpen = false;
+  }
+
+  function handleClearCloudThumbnails() {
+    onClearCloudThumbnails();
     isActionsOpen = false;
   }
 
@@ -235,6 +244,23 @@
               <i class="fas fa-route" aria-hidden="true"></i>
               <span>Preview Sidebar Tour</span>
             </button>
+
+            <div class="dropdown-divider"></div>
+
+            <button
+              type="button"
+              class="dropdown-item danger"
+              onclick={handleClearCloudThumbnails}
+              disabled={isClearingThumbnails}
+            >
+              {#if isClearingThumbnails}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>Clearing...</span>
+              {:else}
+                <i class="fas fa-cloud-arrow-down" aria-hidden="true"></i>
+                <span>Clear Cloud Thumbnails</span>
+              {/if}
+            </button>
           </div>
         {/if}
       </div>
@@ -298,7 +324,7 @@
     gap: 8px;
     padding: 4px 12px;
     height: 48px;
-    overflow: hidden;
+    /* Note: no overflow:hidden here - dropdown needs to escape */
   }
 
   /* Three-column layout: left and right flex equally, center is fixed content */
@@ -310,7 +336,7 @@
     min-width: 0;
     justify-content: flex-start;
     height: 40px;
-    overflow: hidden;
+    /* Note: no overflow:hidden - allow content to escape if needed */
   }
 
   .toolbar-center {
@@ -329,7 +355,7 @@
     min-width: 0;
     justify-content: flex-end;
     height: 40px;
-    overflow: hidden;
+    /* Note: no overflow:hidden here - dropdown needs to escape */
   }
 
   .toolbar-branding {
@@ -592,6 +618,24 @@
     font-size: var(--font-size-xs);
     color: var(--theme-text-dim);
     margin-left: 4px;
+  }
+
+  .dropdown-item.danger {
+    color: #fca5a5;
+  }
+
+  .dropdown-item.danger i {
+    color: #ef4444;
+  }
+
+  .dropdown-item.danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.15);
+  }
+
+  .dropdown-divider {
+    height: 1px;
+    margin: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .toast {

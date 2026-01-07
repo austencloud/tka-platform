@@ -33,6 +33,7 @@
     IQuickAccessPersister,
     QuickAccessUser,
   } from "../services/contracts/IQuickAccessPersister";
+  import type { ICloudThumbnailCache } from "$lib/features/discover/gallery/display/services/contracts/ICloudThumbnailCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 
@@ -168,6 +169,46 @@
     }, 2000);
   }
 
+  let isClearingThumbnails = $state(false);
+
+  async function clearCloudThumbnails() {
+    if (isClearingThumbnails) return; // Prevent double-clicks
+
+    console.log("🗑️ Starting cloud thumbnail deletion...");
+    isClearingThumbnails = true;
+    introResetMessage = "Clearing cloud thumbnails...";
+
+    try {
+      const cloudCache = container.get<ICloudThumbnailCache>(
+        TYPES.ICloudThumbnailCache
+      );
+
+      console.log("🗑️ Deleting gallery thumbnails...");
+      const galleryCount = await cloudCache.deleteVariant("gallery");
+      console.log(`🗑️ Deleted ${galleryCount} gallery thumbnails`);
+
+      console.log("🗑️ Deleting wordcard thumbnails...");
+      const wordcardCount = await cloudCache.deleteVariant("wordcard");
+      console.log(`🗑️ Deleted ${wordcardCount} wordcard thumbnails`);
+
+      const total = galleryCount + wordcardCount;
+      console.log(`✅ Total deleted: ${total} cloud thumbnails`);
+
+      introResetMessage = `Deleted ${total} cloud thumbnails`;
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } catch (error) {
+      console.error("❌ Failed to clear cloud thumbnails:", error);
+      introResetMessage = `Error: ${error instanceof Error ? error.message : "Unknown error"}`;
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } finally {
+      isClearingThumbnails = false;
+    }
+  }
+
   function handleClose() {
     adminToolbarState.close();
   }
@@ -230,6 +271,8 @@
       onResetTabIntro={resetTabIntro}
       onPreviewFirstRun={previewFirstRunWizard}
       onPreviewSidebarTour={previewSidebarTour}
+      onClearCloudThumbnails={clearCloudThumbnails}
+      {isClearingThumbnails}
       onClose={handleClose}
     />
   {:else}
@@ -251,6 +294,8 @@
       onResetTabIntro={resetTabIntro}
       onPreviewFirstRun={previewFirstRunWizard}
       onPreviewSidebarTour={previewSidebarTour}
+      onClearCloudThumbnails={clearCloudThumbnails}
+      {isClearingThumbnails}
       onClose={handleClose}
     />
   {/if}

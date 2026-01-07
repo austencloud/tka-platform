@@ -147,6 +147,11 @@
       0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
+  .user-card:focus-visible {
+    outline: 2px solid var(--card-accent);
+    outline-offset: 2px;
+  }
+
   .user-card.selected {
     border-color: var(--card-accent);
     box-shadow:
@@ -156,7 +161,7 @@
 
   /* Active user gets green accent on presence dot */
   .user-card.active {
-    border-top: 3px solid var(--semantic-success, var(--semantic-success));
+    border-top: 3px solid var(--semantic-success);
   }
 
   /* Avatar with colored ring */
@@ -192,8 +197,8 @@
   }
 
   .presence-dot.active {
-    background: var(--semantic-success, var(--semantic-success));
-    box-shadow: 0 0 8px var(--semantic-success, var(--semantic-success));
+    background: var(--semantic-success);
+    box-shadow: 0 0 8px var(--semantic-success);
   }
 
   /* Screen reader only - visually hidden but accessible */
@@ -240,7 +245,7 @@
 
   .location {
     font-size: var(--font-size-compact);
-    color: var(--semantic-success, var(--semantic-success));
+    color: var(--semantic-success);
     display: flex;
     align-items: center;
     justify-content: center;

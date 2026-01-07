@@ -33,6 +33,8 @@
     onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
     onPreviewSidebarTour: () => void;
+    onClearCloudThumbnails: () => void;
+    isClearingThumbnails: boolean;
     onClose: () => void;
   }
 
@@ -53,6 +55,8 @@
     onResetTabIntro,
     onPreviewFirstRun,
     onPreviewSidebarTour,
+    onClearCloudThumbnails,
+    isClearingThumbnails,
     onClose,
   }: Props = $props();
 
@@ -198,6 +202,21 @@
       <button type="button" class="action-card" onclick={onPreviewSidebarTour}>
         <i class="fas fa-route" aria-hidden="true"></i>
         <span>Sidebar Tour</span>
+      </button>
+
+      <button
+        type="button"
+        class="action-card danger"
+        onclick={onClearCloudThumbnails}
+        disabled={isClearingThumbnails}
+      >
+        {#if isClearingThumbnails}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          <span>Clearing...</span>
+        {:else}
+          <i class="fas fa-cloud-arrow-down" aria-hidden="true"></i>
+          <span>Clear Cloud Thumbnails</span>
+        {/if}
       </button>
 
       {#if isUserPreview && previewProfile && !isCurrentUserInQuickAccess}
@@ -498,6 +517,19 @@
 
   .action-card span {
     line-height: 1.3;
+  }
+
+  .action-card.danger {
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .action-card.danger i {
+    color: #ef4444;
+  }
+
+  .action-card.danger:active:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
   }
 
   .mobile-toast {

@@ -11,17 +11,17 @@
   import ActiveUsersPanel from "./ActiveUsersPanel.svelte";
 </script>
 
-<div class="analytics-dashboard">
+<main class="analytics-dashboard" role="main" aria-label="Analytics Dashboard">
   <header class="dashboard-header">
     <h2>Analytics Overview</h2>
   </header>
 
   <WeeklyEngagement />
 
-  <section class="active-users-section">
+  <section class="active-users-section" aria-label="Active Users">
     <ActiveUsersPanel />
   </section>
-</div>
+</main>
 
 <style>
   .analytics-dashboard {
@@ -49,7 +49,7 @@
   }
 
   .active-users-section {
-    background: var(--theme-card-bg, var(--theme-card-bg));
+    background: var(--theme-card-bg);
     border-radius: 12px;
     border: 1px solid var(--theme-stroke);
     min-height: 400px;

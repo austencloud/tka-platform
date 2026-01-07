@@ -13,10 +13,16 @@ import type { IAnalyticsDataProvider } from "../../../features/admin/services/co
 import type { IAnnouncementManager } from "../../../features/admin/services/contracts/IAnnouncementManager";
 import type { IUserActivityTracker } from "../../../features/admin/services/contracts/IUserActivityTracker";
 import type { IQuickAccessPersister } from "../../debug/services/contracts/IQuickAccessPersister";
+import type { IUserMetricsAnalyzer } from "../../../features/admin/services/implementations/UserMetricsAnalyzer";
+import type { IEventActivityAnalyzer } from "../../../features/admin/services/implementations/EventActivityAnalyzer";
+import type { IContentQueryAnalyzer } from "../../../features/admin/services/implementations/ContentQueryAnalyzer";
 import { SystemStateManager } from "../../../features/admin/services/implementations/SystemStateManager";
 import { AuditLogger } from "../../../features/admin/services/implementations/AuditLogger";
 import { AdminChallengeManager } from "../../../features/admin/services/implementations/AdminChallengeManager";
 import { AnalyticsDataProvider } from "../../../features/admin/services/implementations/AnalyticsDataProvider";
+import { UserMetricsAnalyzer } from "../../../features/admin/services/implementations/UserMetricsAnalyzer";
+import { EventActivityAnalyzer } from "../../../features/admin/services/implementations/EventActivityAnalyzer";
+import { ContentQueryAnalyzer } from "../../../features/admin/services/implementations/ContentQueryAnalyzer";
 import { AnnouncementManager } from "../../../features/admin/services/implementations/AnnouncementManager";
 import { UserActivityTracker } from "../../../features/admin/services/implementations/UserActivityTracker";
 import { QuickAccessPersister } from "../../debug/services/implementations/QuickAccessPersister";
@@ -41,7 +47,23 @@ export const adminModule = new ContainerModule(
       .to(AdminChallengeManager)
       .inSingletonScope();
 
-    // Analytics Data Service
+    // Analytics Services (decomposed for single responsibility)
+    options
+      .bind<IUserMetricsAnalyzer>(TYPES.IUserMetricsAnalyzer)
+      .to(UserMetricsAnalyzer)
+      .inSingletonScope();
+
+    options
+      .bind<IEventActivityAnalyzer>(TYPES.IEventActivityAnalyzer)
+      .to(EventActivityAnalyzer)
+      .inSingletonScope();
+
+    options
+      .bind<IContentQueryAnalyzer>(TYPES.IContentQueryAnalyzer)
+      .to(ContentQueryAnalyzer)
+      .inSingletonScope();
+
+    // Analytics Data Provider (orchestrates the above analyzers)
     options
       .bind<IAnalyticsDataProvider>(TYPES.IAnalyticsDataProvider)
       .to(AnalyticsDataProvider)

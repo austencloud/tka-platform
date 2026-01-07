@@ -137,13 +137,15 @@
       <h2>Active Users</h2>
       <p class="subtitle">Real-time activity-based presence monitoring</p>
     </div>
-    <div class="stats-row">
+    <div class="stats-row" role="group" aria-label="Filter users by status">
       <button
         class="stat-button"
         class:selected={statusFilter === "active"}
         onclick={() => setFilter(statusFilter === "active" ? "all" : "active")}
+        aria-pressed={statusFilter === "active"}
+        aria-label="Filter by active users: {activeCount} active"
       >
-        <span class="stat-value active">{activeCount}</span>
+        <span class="stat-value active" aria-hidden="true">{activeCount}</span>
         <span class="stat-label">Active</span>
       </button>
       <button
@@ -151,8 +153,10 @@
         class:selected={statusFilter === "inactive"}
         onclick={() =>
           setFilter(statusFilter === "inactive" ? "all" : "inactive")}
+        aria-pressed={statusFilter === "inactive"}
+        aria-label="Filter by inactive users: {inactiveCount} inactive"
       >
-        <span class="stat-value inactive">{inactiveCount}</span>
+        <span class="stat-value inactive" aria-hidden="true">{inactiveCount}</span>
         <span class="stat-label">Inactive</span>
       </button>
     </div>
@@ -246,7 +250,7 @@
     justify-content: space-between;
     align-items: flex-start;
     padding: 1.5rem;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border-bottom: 1px solid var(--theme-stroke);
     flex-shrink: 0;
   }
 
@@ -275,7 +279,7 @@
     gap: 0.25rem;
     padding: 0.5rem 1rem;
     background: transparent;
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border: 1px solid var(--theme-stroke);
     border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -285,9 +289,14 @@
     background: var(--theme-card-hover-bg);
   }
 
+  .stat-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
   .stat-button.selected {
     background: var(--theme-accent-bg);
-    border-color: var(--theme-accent, var(--theme-accent));
+    border-color: var(--theme-accent);
   }
 
   .stat-value {
@@ -297,7 +306,7 @@
   }
 
   .stat-value.active {
-    color: var(--semantic-success, var(--semantic-success));
+    color: var(--semantic-success);
   }
 
   .stat-value.inactive {
@@ -305,7 +314,7 @@
   }
 
   .stat-label {
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-secondary, var(--theme-text-dim));
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -317,7 +326,7 @@
     justify-content: space-between;
     padding: 0.5rem 1.5rem;
     background: var(--theme-accent-bg);
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .filter-label {
@@ -326,7 +335,7 @@
   }
 
   .filter-label strong {
-    color: var(--theme-accent, var(--theme-accent));
+    color: var(--theme-accent);
     text-transform: capitalize;
   }
 
@@ -347,10 +356,15 @@
     color: var(--theme-text);
   }
 
+  .clear-filter:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
   .link-button {
     background: transparent;
     border: none;
-    color: var(--theme-accent, var(--theme-accent));
+    color: var(--theme-accent);
     font-size: 0.875rem;
     cursor: pointer;
     text-decoration: underline;
@@ -359,6 +373,11 @@
 
   .link-button:hover {
     color: var(--theme-accent-hover);
+  }
+
+  .link-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .active-users-body {
@@ -383,8 +402,8 @@
   .loading .spinner {
     width: 32px;
     height: 32px;
-    border: 3px solid var(--theme-stroke, var(--theme-stroke));
-    border-top-color: var(--theme-accent, var(--theme-accent));
+    border: 3px solid var(--theme-stroke);
+    border-top-color: var(--theme-accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -398,13 +417,13 @@
   @media (prefers-reduced-motion: reduce) {
     .loading .spinner {
       animation: none;
-      border-top-color: var(--theme-accent, var(--theme-accent));
-      border-right-color: var(--theme-accent, var(--theme-accent));
+      border-top-color: var(--theme-accent);
+      border-right-color: var(--theme-accent);
     }
   }
 
   .error {
-    color: var(--semantic-error, var(--semantic-error));
+    color: var(--semantic-error);
   }
 
   .empty i,

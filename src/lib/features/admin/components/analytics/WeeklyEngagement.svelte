@@ -131,7 +131,7 @@
 
 <style>
   .section {
-    background: var(--theme-card-bg, var(--theme-card-bg));
+    background: var(--theme-card-bg);
     border-radius: 12px;
     padding: 20px;
     border: 1px solid var(--theme-stroke);
@@ -151,16 +151,16 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
   }
 
   .section-header h3 i {
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .cache-indicator {
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     display: flex;
     align-items: center;
     gap: 4px;
@@ -190,7 +190,7 @@
   .metric-label {
     font-size: var(--font-size-min);
     font-weight: 500;
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
   }
 
   /* Skeleton loading */
@@ -210,7 +210,7 @@
   .skeleton-label {
     width: 80px;
     height: 14px;
-    background: var(--theme-stroke, var(--theme-card-bg));
+    background: var(--theme-stroke);
     border-radius: 3px;
     margin: 0 auto;
     animation: pulse 1.5s ease-in-out infinite;

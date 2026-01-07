@@ -204,7 +204,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .detail-header h3 {
@@ -233,6 +233,11 @@
     color: var(--theme-text);
   }
 
+  .close-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
   .detail-content {
     flex: 1;
     min-height: 0;
@@ -254,8 +259,8 @@
   .spinner {
     width: 24px;
     height: 24px;
-    border: 2px solid var(--theme-stroke, var(--theme-stroke));
-    border-top-color: var(--theme-accent, var(--theme-accent));
+    border: 2px solid var(--theme-stroke);
+    border-top-color: var(--theme-accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -270,16 +275,16 @@
     .spinner,
     .spinner-small {
       animation: none;
-      border-top-color: var(--theme-accent, var(--theme-accent));
-      border-right-color: var(--theme-accent, var(--theme-accent));
+      border-top-color: var(--theme-accent);
+      border-right-color: var(--theme-accent);
     }
   }
 
   .sessions-list h4 {
     margin: 0 0 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: var(--theme-text-secondary, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -287,10 +292,11 @@
   .session-card {
     display: block;
     width: 100%;
+    min-height: 44px; /* WCAG AA touch target minimum */
     padding: 0.75rem;
     margin-bottom: 0.5rem;
     background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border: 1px solid var(--theme-stroke);
     border-radius: 0.375rem;
     cursor: pointer;
     text-align: left;
@@ -301,9 +307,14 @@
     background: var(--theme-card-hover-bg);
   }
 
+  .session-card:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
   .session-card.selected {
     background: var(--theme-accent-bg);
-    border-color: var(--theme-accent, var(--theme-accent));
+    border-color: var(--theme-accent);
   }
 
   .session-header {
@@ -320,16 +331,16 @@
   }
 
   .session-duration {
-    font-size: 0.75rem;
-    color: var(--theme-accent, var(--theme-accent));
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-accent);
     font-weight: 500;
   }
 
   .session-meta {
     display: flex;
     gap: 0.75rem;
-    font-size: 0.75rem;
-    color: var(--theme-text-secondary, var(--theme-text-dim));
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
   }
 
   .event-count {
@@ -360,8 +371,8 @@
   .spinner-small {
     width: 16px;
     height: 16px;
-    border: 2px solid var(--theme-stroke, var(--theme-stroke));
-    border-top-color: var(--theme-accent, var(--theme-accent));
+    border: 2px solid var(--theme-stroke);
+    border-top-color: var(--theme-accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -369,8 +380,8 @@
   .no-events {
     margin: 0;
     text-align: center;
-    font-size: 0.75rem;
-    color: var(--theme-text-secondary, var(--theme-text-dim));
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
   }
 
   .events-timeline {
@@ -385,13 +396,13 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.75rem;
-    color: var(--theme-text-secondary, var(--theme-text-dim));
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim);
   }
 
   .event-item i {
     width: 14px;
-    color: var(--theme-accent, var(--theme-accent));
+    color: var(--theme-accent);
     opacity: 0.7;
   }
 
@@ -409,14 +420,14 @@
 
   .event-time {
     color: var(--theme-text-dim);
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .event-module {
-    font-size: 0.6875rem;
+    font-size: var(--font-size-compact, 12px);
     padding: 0.125rem 0.375rem;
     background: var(--theme-accent-bg);
     border-radius: 0.25rem;
-    color: var(--theme-accent, var(--theme-accent));
+    color: var(--theme-accent);
   }
 </style>
