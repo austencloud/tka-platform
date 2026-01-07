@@ -495,6 +495,470 @@ describe("GridPositionDeriver", () => {
   });
 
   // ============================================================================
+  // ZETA POSITIONS - 135° Obtuse Angle (16 positions, skewed mode)
+  // ============================================================================
+
+  describe("Zeta Positions (1-8) - 135° CCW offset", () => {
+    it("should map ZETA1: SOUTHWEST,NORTH ↔ zeta1", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA1
+      );
+      expect(blue).toBe(GridLocation.SOUTHWEST);
+      expect(red).toBe(GridLocation.NORTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHWEST,
+        GridLocation.NORTH
+      );
+      expect(position).toBe(GridPosition.ZETA1);
+    });
+
+    it("should map ZETA2: WEST,NORTHEAST ↔ zeta2", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA2
+      );
+      expect(blue).toBe(GridLocation.WEST);
+      expect(red).toBe(GridLocation.NORTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.WEST,
+        GridLocation.NORTHEAST
+      );
+      expect(position).toBe(GridPosition.ZETA2);
+    });
+
+    it("should map ZETA3: NORTHWEST,EAST ↔ zeta3", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA3
+      );
+      expect(blue).toBe(GridLocation.NORTHWEST);
+      expect(red).toBe(GridLocation.EAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHWEST,
+        GridLocation.EAST
+      );
+      expect(position).toBe(GridPosition.ZETA3);
+    });
+
+    it("should map ZETA4: NORTH,SOUTHEAST ↔ zeta4", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA4
+      );
+      expect(blue).toBe(GridLocation.NORTH);
+      expect(red).toBe(GridLocation.SOUTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTH,
+        GridLocation.SOUTHEAST
+      );
+      expect(position).toBe(GridPosition.ZETA4);
+    });
+
+    it("should map ZETA5: NORTHEAST,SOUTH ↔ zeta5", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA5
+      );
+      expect(blue).toBe(GridLocation.NORTHEAST);
+      expect(red).toBe(GridLocation.SOUTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHEAST,
+        GridLocation.SOUTH
+      );
+      expect(position).toBe(GridPosition.ZETA5);
+    });
+
+    it("should map ZETA6: EAST,SOUTHWEST ↔ zeta6", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA6
+      );
+      expect(blue).toBe(GridLocation.EAST);
+      expect(red).toBe(GridLocation.SOUTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.EAST,
+        GridLocation.SOUTHWEST
+      );
+      expect(position).toBe(GridPosition.ZETA6);
+    });
+
+    it("should map ZETA7: SOUTHEAST,WEST ↔ zeta7", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA7
+      );
+      expect(blue).toBe(GridLocation.SOUTHEAST);
+      expect(red).toBe(GridLocation.WEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHEAST,
+        GridLocation.WEST
+      );
+      expect(position).toBe(GridPosition.ZETA7);
+    });
+
+    it("should map ZETA8: SOUTH,NORTHWEST ↔ zeta8", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA8
+      );
+      expect(blue).toBe(GridLocation.SOUTH);
+      expect(red).toBe(GridLocation.NORTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTH,
+        GridLocation.NORTHWEST
+      );
+      expect(position).toBe(GridPosition.ZETA8);
+    });
+  });
+
+  describe("Zeta Positions (9-16) - 135° CW offset", () => {
+    it("should map ZETA9: SOUTHEAST,NORTH ↔ zeta9", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA9
+      );
+      expect(blue).toBe(GridLocation.SOUTHEAST);
+      expect(red).toBe(GridLocation.NORTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHEAST,
+        GridLocation.NORTH
+      );
+      expect(position).toBe(GridPosition.ZETA9);
+    });
+
+    it("should map ZETA10: SOUTH,NORTHEAST ↔ zeta10", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA10
+      );
+      expect(blue).toBe(GridLocation.SOUTH);
+      expect(red).toBe(GridLocation.NORTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTH,
+        GridLocation.NORTHEAST
+      );
+      expect(position).toBe(GridPosition.ZETA10);
+    });
+
+    it("should map ZETA11: SOUTHWEST,EAST ↔ zeta11", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA11
+      );
+      expect(blue).toBe(GridLocation.SOUTHWEST);
+      expect(red).toBe(GridLocation.EAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHWEST,
+        GridLocation.EAST
+      );
+      expect(position).toBe(GridPosition.ZETA11);
+    });
+
+    it("should map ZETA12: WEST,SOUTHEAST ↔ zeta12", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA12
+      );
+      expect(blue).toBe(GridLocation.WEST);
+      expect(red).toBe(GridLocation.SOUTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.WEST,
+        GridLocation.SOUTHEAST
+      );
+      expect(position).toBe(GridPosition.ZETA12);
+    });
+
+    it("should map ZETA13: NORTHWEST,SOUTH ↔ zeta13", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA13
+      );
+      expect(blue).toBe(GridLocation.NORTHWEST);
+      expect(red).toBe(GridLocation.SOUTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHWEST,
+        GridLocation.SOUTH
+      );
+      expect(position).toBe(GridPosition.ZETA13);
+    });
+
+    it("should map ZETA14: NORTH,SOUTHWEST ↔ zeta14", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA14
+      );
+      expect(blue).toBe(GridLocation.NORTH);
+      expect(red).toBe(GridLocation.SOUTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTH,
+        GridLocation.SOUTHWEST
+      );
+      expect(position).toBe(GridPosition.ZETA14);
+    });
+
+    it("should map ZETA15: NORTHEAST,WEST ↔ zeta15", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA15
+      );
+      expect(blue).toBe(GridLocation.NORTHEAST);
+      expect(red).toBe(GridLocation.WEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHEAST,
+        GridLocation.WEST
+      );
+      expect(position).toBe(GridPosition.ZETA15);
+    });
+
+    it("should map ZETA16: EAST,NORTHWEST ↔ zeta16", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ZETA16
+      );
+      expect(blue).toBe(GridLocation.EAST);
+      expect(red).toBe(GridLocation.NORTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.EAST,
+        GridLocation.NORTHWEST
+      );
+      expect(position).toBe(GridPosition.ZETA16);
+    });
+  });
+
+  // ============================================================================
+  // ETA POSITIONS - 45° Acute Angle (16 positions, skewed mode)
+  // ============================================================================
+
+  describe("Eta Positions (1-8) - 45° CCW offset", () => {
+    it("should map ETA1: NORTHWEST,NORTH ↔ eta1", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA1
+      );
+      expect(blue).toBe(GridLocation.NORTHWEST);
+      expect(red).toBe(GridLocation.NORTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHWEST,
+        GridLocation.NORTH
+      );
+      expect(position).toBe(GridPosition.ETA1);
+    });
+
+    it("should map ETA2: NORTH,NORTHEAST ↔ eta2", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA2
+      );
+      expect(blue).toBe(GridLocation.NORTH);
+      expect(red).toBe(GridLocation.NORTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTH,
+        GridLocation.NORTHEAST
+      );
+      expect(position).toBe(GridPosition.ETA2);
+    });
+
+    it("should map ETA3: NORTHEAST,EAST ↔ eta3", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA3
+      );
+      expect(blue).toBe(GridLocation.NORTHEAST);
+      expect(red).toBe(GridLocation.EAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHEAST,
+        GridLocation.EAST
+      );
+      expect(position).toBe(GridPosition.ETA3);
+    });
+
+    it("should map ETA4: EAST,SOUTHEAST ↔ eta4", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA4
+      );
+      expect(blue).toBe(GridLocation.EAST);
+      expect(red).toBe(GridLocation.SOUTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.EAST,
+        GridLocation.SOUTHEAST
+      );
+      expect(position).toBe(GridPosition.ETA4);
+    });
+
+    it("should map ETA5: SOUTHEAST,SOUTH ↔ eta5", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA5
+      );
+      expect(blue).toBe(GridLocation.SOUTHEAST);
+      expect(red).toBe(GridLocation.SOUTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHEAST,
+        GridLocation.SOUTH
+      );
+      expect(position).toBe(GridPosition.ETA5);
+    });
+
+    it("should map ETA6: SOUTH,SOUTHWEST ↔ eta6", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA6
+      );
+      expect(blue).toBe(GridLocation.SOUTH);
+      expect(red).toBe(GridLocation.SOUTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTH,
+        GridLocation.SOUTHWEST
+      );
+      expect(position).toBe(GridPosition.ETA6);
+    });
+
+    it("should map ETA7: SOUTHWEST,WEST ↔ eta7", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA7
+      );
+      expect(blue).toBe(GridLocation.SOUTHWEST);
+      expect(red).toBe(GridLocation.WEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHWEST,
+        GridLocation.WEST
+      );
+      expect(position).toBe(GridPosition.ETA7);
+    });
+
+    it("should map ETA8: WEST,NORTHWEST ↔ eta8", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA8
+      );
+      expect(blue).toBe(GridLocation.WEST);
+      expect(red).toBe(GridLocation.NORTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.WEST,
+        GridLocation.NORTHWEST
+      );
+      expect(position).toBe(GridPosition.ETA8);
+    });
+  });
+
+  describe("Eta Positions (9-16) - 45° CW offset", () => {
+    it("should map ETA9: NORTHEAST,NORTH ↔ eta9", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA9
+      );
+      expect(blue).toBe(GridLocation.NORTHEAST);
+      expect(red).toBe(GridLocation.NORTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHEAST,
+        GridLocation.NORTH
+      );
+      expect(position).toBe(GridPosition.ETA9);
+    });
+
+    it("should map ETA10: EAST,NORTHEAST ↔ eta10", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA10
+      );
+      expect(blue).toBe(GridLocation.EAST);
+      expect(red).toBe(GridLocation.NORTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.EAST,
+        GridLocation.NORTHEAST
+      );
+      expect(position).toBe(GridPosition.ETA10);
+    });
+
+    it("should map ETA11: SOUTHEAST,EAST ↔ eta11", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA11
+      );
+      expect(blue).toBe(GridLocation.SOUTHEAST);
+      expect(red).toBe(GridLocation.EAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHEAST,
+        GridLocation.EAST
+      );
+      expect(position).toBe(GridPosition.ETA11);
+    });
+
+    it("should map ETA12: SOUTH,SOUTHEAST ↔ eta12", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA12
+      );
+      expect(blue).toBe(GridLocation.SOUTH);
+      expect(red).toBe(GridLocation.SOUTHEAST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTH,
+        GridLocation.SOUTHEAST
+      );
+      expect(position).toBe(GridPosition.ETA12);
+    });
+
+    it("should map ETA13: SOUTHWEST,SOUTH ↔ eta13", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA13
+      );
+      expect(blue).toBe(GridLocation.SOUTHWEST);
+      expect(red).toBe(GridLocation.SOUTH);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.SOUTHWEST,
+        GridLocation.SOUTH
+      );
+      expect(position).toBe(GridPosition.ETA13);
+    });
+
+    it("should map ETA14: WEST,SOUTHWEST ↔ eta14", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA14
+      );
+      expect(blue).toBe(GridLocation.WEST);
+      expect(red).toBe(GridLocation.SOUTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.WEST,
+        GridLocation.SOUTHWEST
+      );
+      expect(position).toBe(GridPosition.ETA14);
+    });
+
+    it("should map ETA15: NORTHWEST,WEST ↔ eta15", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA15
+      );
+      expect(blue).toBe(GridLocation.NORTHWEST);
+      expect(red).toBe(GridLocation.WEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTHWEST,
+        GridLocation.WEST
+      );
+      expect(position).toBe(GridPosition.ETA15);
+    });
+
+    it("should map ETA16: NORTH,NORTHWEST ↔ eta16", () => {
+      const [blue, red] = service.getGridLocationsFromPosition(
+        GridPosition.ETA16
+      );
+      expect(blue).toBe(GridLocation.NORTH);
+      expect(red).toBe(GridLocation.NORTHWEST);
+
+      const position = service.getGridPositionFromLocations(
+        GridLocation.NORTH,
+        GridLocation.NORTHWEST
+      );
+      expect(position).toBe(GridPosition.ETA16);
+    });
+  });
+
+  // ============================================================================
   // ERROR HANDLING - Invalid Inputs
   // ============================================================================
 
@@ -507,34 +971,32 @@ describe("GridPositionDeriver", () => {
       ).toThrow("No location pair found for position: invalid_position");
     });
 
-    it("should throw error for unmapped location pair in getGridPositionFromLocations", () => {
-      // This combination doesn't exist in the mapping
-      // (NORTH, NORTHEAST is not a valid position)
-      expect(() =>
+    it("should verify that previously unmapped pairs now map correctly", () => {
+      // With zeta and eta positions, these are now valid:
+      // (NORTH, NORTHEAST) = ETA2
+      expect(
         service.getGridPositionFromLocations(
           GridLocation.NORTH,
           GridLocation.NORTHEAST
         )
-      ).toThrow("No position found for locations: n, ne");
-    });
+      ).toBe(GridPosition.ETA2);
 
-    it("should throw error for another unmapped location pair", () => {
-      // (SOUTH, NORTHEAST is not a valid position)
-      expect(() =>
+      // (SOUTH, NORTHEAST) = ZETA10
+      expect(
         service.getGridPositionFromLocations(
           GridLocation.SOUTH,
           GridLocation.NORTHEAST
         )
-      ).toThrow("No position found for locations: s, ne");
+      ).toBe(GridPosition.ZETA10);
     });
   });
 
   // ============================================================================
-  // COMPREHENSIVE COVERAGE - All 32 Positions
+  // COMPREHENSIVE COVERAGE - All 64 Positions
   // ============================================================================
 
   describe("Complete Position Coverage", () => {
-    it("should have exactly 32 total positions mapped", () => {
+    it("should have exactly 64 total positions mapped", () => {
       const allPositions = [
         // Alpha (8)
         GridPosition.ALPHA1,
@@ -571,6 +1033,40 @@ describe("GridPositionDeriver", () => {
         GridPosition.GAMMA14,
         GridPosition.GAMMA15,
         GridPosition.GAMMA16,
+        // Zeta (16)
+        GridPosition.ZETA1,
+        GridPosition.ZETA2,
+        GridPosition.ZETA3,
+        GridPosition.ZETA4,
+        GridPosition.ZETA5,
+        GridPosition.ZETA6,
+        GridPosition.ZETA7,
+        GridPosition.ZETA8,
+        GridPosition.ZETA9,
+        GridPosition.ZETA10,
+        GridPosition.ZETA11,
+        GridPosition.ZETA12,
+        GridPosition.ZETA13,
+        GridPosition.ZETA14,
+        GridPosition.ZETA15,
+        GridPosition.ZETA16,
+        // Eta (16)
+        GridPosition.ETA1,
+        GridPosition.ETA2,
+        GridPosition.ETA3,
+        GridPosition.ETA4,
+        GridPosition.ETA5,
+        GridPosition.ETA6,
+        GridPosition.ETA7,
+        GridPosition.ETA8,
+        GridPosition.ETA9,
+        GridPosition.ETA10,
+        GridPosition.ETA11,
+        GridPosition.ETA12,
+        GridPosition.ETA13,
+        GridPosition.ETA14,
+        GridPosition.ETA15,
+        GridPosition.ETA16,
       ];
 
       // Verify all positions can be converted to locations and back
@@ -580,7 +1076,7 @@ describe("GridPositionDeriver", () => {
         expect(derivedPosition).toBe(position);
       });
 
-      expect(allPositions.length).toBe(32);
+      expect(allPositions.length).toBe(64);
     });
 
     it("should maintain bidirectional consistency for all positions", () => {

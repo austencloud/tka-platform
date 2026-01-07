@@ -26,10 +26,7 @@ interface ICSVParser {
 
 @injectable()
 export class MotionQueryHandler implements IMotionQueryHandler {
-  private parsedData: Record<
-    Exclude<GridMode, GridMode.SKEWED>,
-    ParsedCsvRow[]
-  > | null = null;
+  private parsedData: Record<GridMode, ParsedCsvRow[]> | null = null;
   private isInitialized = false;
 
   constructor(
@@ -63,10 +60,15 @@ export class MotionQueryHandler implements IMotionQueryHandler {
         csvData.data?.boxData || ""
       );
 
+      // Parse skewed data if available
+      const skewedParseResult = csvData.data?.skewedData
+        ? this.CSVParser.parseCSV(csvData.data.skewedData)
+        : { rows: [] };
+
       this.parsedData = {
         [GridMode.DIAMOND]: diamondParseResult.rows,
         [GridMode.BOX]: boxParseResult.rows,
-        // SKEWED mode doesn't have separate data - it uses both diamond and box
+        [GridMode.SKEWED]: skewedParseResult.rows,
       };
 
       this.isInitialized = true;
@@ -93,10 +95,12 @@ export class MotionQueryHandler implements IMotionQueryHandler {
 
     // Simple implementation - filter based on criteria
     const gridMode = (criteria["gridMode"] as GridMode) || GridMode.DIAMOND;
-    const actualGridMode =
-      gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
-    const csvRows =
-      this.parsedData[actualGridMode as keyof typeof this.parsedData] || [];
+    // Use actual grid mode data, fallback to diamond only if skewed has no data
+    let csvRows = this.parsedData[gridMode] || [];
+    if (gridMode === GridMode.SKEWED && csvRows.length === 0) {
+      csvRows = this.parsedData[GridMode.DIAMOND] || [];
+    }
+    const actualGridMode = gridMode;
     const pictographs: PictographData[] = [];
 
     for (const row of csvRows.slice(0, 50)) {
@@ -201,10 +205,12 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       }
 
       // Get all available pictographs for the specified grid mode
-      // SKEWED mode falls back to DIAMOND mode (SKEWED doesn't have separate CSV data)
-      const effectiveMode =
-        gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
-      const csvRows = this.parsedData[effectiveMode] || [];
+      // SKEWED mode falls back to DIAMOND only if no skewed data available
+      let csvRows = this.parsedData[gridMode] || [];
+      if (gridMode === GridMode.SKEWED && csvRows.length === 0) {
+        csvRows = this.parsedData[GridMode.DIAMOND] || [];
+      }
+      const effectiveMode = gridMode;
 
       // Parse all available pictographs with grid mode
       const allPictographs: PictographData[] = [];
@@ -409,10 +415,11 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       return null;
     }
 
-    const actualGridMode =
-      gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
-    const csvRows =
-      this.parsedData[actualGridMode as keyof typeof this.parsedData] || [];
+    // Use actual grid mode data, fallback to diamond only if skewed has no data
+    let csvRows = this.parsedData[gridMode] || [];
+    if (gridMode === GridMode.SKEWED && csvRows.length === 0) {
+      csvRows = this.parsedData[GridMode.DIAMOND] || [];
+    }
 
     // Revert float motions back to their pre-float state for CSV matching
     // Float motions are runtime conversions from pro/anti - the CSV only has the base types

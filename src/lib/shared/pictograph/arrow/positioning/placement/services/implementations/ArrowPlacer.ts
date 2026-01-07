@@ -23,6 +23,7 @@ export class ArrowPlacer implements IArrowPlacer {
   private allPlacements: AllPlacementData = {
     [GridMode.DIAMOND]: {},
     [GridMode.BOX]: {},
+    [GridMode.SKEWED]: {}, // Uses diamond placements as base
   };
 
   // Track which grid modes have been loaded (lazy loading by grid mode)
@@ -64,37 +65,38 @@ export class ArrowPlacer implements IArrowPlacer {
   /**
    * Ensure placement data is loaded for a specific grid mode (lazy loading)
    * Only loads 5 files for the requested grid mode instead of all 10
+   * SKEWED mode loads BOTH diamond and box placements (arrows can be at either)
    */
   async ensureGridModeLoaded(gridMode: GridMode): Promise<void> {
-    // For SKEWED mode, use diamond files
-    const actualGridMode =
-      gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
+    // For SKEWED mode, we need BOTH diamond and box placements
+    // because arrows can end at cardinal (diamond) OR intercardinal (box) positions
+    if (gridMode === GridMode.SKEWED) {
+      await this.ensureGridModeLoaded(GridMode.DIAMOND);
+      await this.ensureGridModeLoaded(GridMode.BOX);
+      this.loadedGridModes.add(GridMode.SKEWED);
+      return;
+    }
 
     // Skip if already loaded
-    if (this.loadedGridModes.has(actualGridMode)) {
+    if (this.loadedGridModes.has(gridMode)) {
       return;
     }
 
     // Log when we're loading a new grid mode (helps trace startup issues)
     // Include stack trace to help identify what triggered the load
     debug.log(
-      `Loading ${actualGridMode} mode placement data (lazy load triggered)`
+      `Loading ${gridMode} mode placement data (lazy load triggered)`
     );
-    if (actualGridMode === GridMode.BOX) {
+    if (gridMode === GridMode.BOX) {
       debug.log(`BOX mode placement load triggered from:`, new Error().stack);
     }
 
     try {
-      await this.loadGridPlacements(actualGridMode);
-      this.loadedGridModes.add(actualGridMode);
-
-      // Also mark SKEWED as loaded if we loaded DIAMOND
-      if (actualGridMode === GridMode.DIAMOND) {
-        this.loadedGridModes.add(GridMode.SKEWED);
-      }
+      await this.loadGridPlacements(gridMode);
+      this.loadedGridModes.add(gridMode);
     } catch (error) {
       console.error(
-        `❌ Failed to load ${actualGridMode} placement data:`,
+        `❌ Failed to load ${gridMode} placement data:`,
         error
       );
       throw new Error(
@@ -107,10 +109,13 @@ export class ArrowPlacer implements IArrowPlacer {
    * Load placements for a specific grid mode
    */
   private async loadGridPlacements(gridMode: GridMode): Promise<void> {
-    // For SKEWED mode, default to diamond files
-    const actualGridMode =
-      gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
-    const files = this.placementFiles[actualGridMode];
+    // SKEWED mode should never reach here - it's handled by ensureGridModeLoaded
+    // which loads both DIAMOND and BOX modes instead
+    if (gridMode === GridMode.SKEWED) {
+      console.warn("loadGridPlacements called with SKEWED - should use ensureGridModeLoaded");
+      return;
+    }
+    const files = this.placementFiles[gridMode];
     this.allPlacements[gridMode] = {};
 
     for (const [motionType, filePath] of Object.entries(files ?? {})) {
@@ -222,9 +227,12 @@ export class ArrowPlacer implements IArrowPlacer {
    */
   isLoaded(gridMode?: GridMode): boolean {
     if (gridMode) {
-      const actualMode =
-        gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
-      return this.loadedGridModes.has(actualMode);
+      // SKEWED mode requires both DIAMOND and BOX to be loaded
+      if (gridMode === GridMode.SKEWED) {
+        return this.loadedGridModes.has(GridMode.DIAMOND) &&
+               this.loadedGridModes.has(GridMode.BOX);
+      }
+      return this.loadedGridModes.has(gridMode);
     }
     // For backwards compatibility, check if at least diamond is loaded
     return this.loadedGridModes.has(GridMode.DIAMOND);

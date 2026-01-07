@@ -87,6 +87,46 @@ export class GridPositionDeriver implements IGridPositionDeriver {
       `${GridLocation.NORTHEAST},${GridLocation.NORTHWEST}`,
       GridPosition.GAMMA16,
     ],
+
+    // Zeta positions - 135° obtuse angle (skewed mode)
+    // Zeta 1-8: Right cycles N→NE→E→SE→S→SW→W→NW, Left is 135° CCW (3 steps back)
+    [`${GridLocation.SOUTHWEST},${GridLocation.NORTH}`, GridPosition.ZETA1],
+    [`${GridLocation.WEST},${GridLocation.NORTHEAST}`, GridPosition.ZETA2],
+    [`${GridLocation.NORTHWEST},${GridLocation.EAST}`, GridPosition.ZETA3],
+    [`${GridLocation.NORTH},${GridLocation.SOUTHEAST}`, GridPosition.ZETA4],
+    [`${GridLocation.NORTHEAST},${GridLocation.SOUTH}`, GridPosition.ZETA5],
+    [`${GridLocation.EAST},${GridLocation.SOUTHWEST}`, GridPosition.ZETA6],
+    [`${GridLocation.SOUTHEAST},${GridLocation.WEST}`, GridPosition.ZETA7],
+    [`${GridLocation.SOUTH},${GridLocation.NORTHWEST}`, GridPosition.ZETA8],
+    // Zeta 9-16: Right cycles same, Left is 135° CW (3 steps forward)
+    [`${GridLocation.SOUTHEAST},${GridLocation.NORTH}`, GridPosition.ZETA9],
+    [`${GridLocation.SOUTH},${GridLocation.NORTHEAST}`, GridPosition.ZETA10],
+    [`${GridLocation.SOUTHWEST},${GridLocation.EAST}`, GridPosition.ZETA11],
+    [`${GridLocation.WEST},${GridLocation.SOUTHEAST}`, GridPosition.ZETA12],
+    [`${GridLocation.NORTHWEST},${GridLocation.SOUTH}`, GridPosition.ZETA13],
+    [`${GridLocation.NORTH},${GridLocation.SOUTHWEST}`, GridPosition.ZETA14],
+    [`${GridLocation.NORTHEAST},${GridLocation.WEST}`, GridPosition.ZETA15],
+    [`${GridLocation.EAST},${GridLocation.NORTHWEST}`, GridPosition.ZETA16],
+
+    // Eta positions - 45° acute angle (skewed mode)
+    // Eta 1-8: Right cycles, Left is 45° CCW (1 step back)
+    [`${GridLocation.NORTHWEST},${GridLocation.NORTH}`, GridPosition.ETA1],
+    [`${GridLocation.NORTH},${GridLocation.NORTHEAST}`, GridPosition.ETA2],
+    [`${GridLocation.NORTHEAST},${GridLocation.EAST}`, GridPosition.ETA3],
+    [`${GridLocation.EAST},${GridLocation.SOUTHEAST}`, GridPosition.ETA4],
+    [`${GridLocation.SOUTHEAST},${GridLocation.SOUTH}`, GridPosition.ETA5],
+    [`${GridLocation.SOUTH},${GridLocation.SOUTHWEST}`, GridPosition.ETA6],
+    [`${GridLocation.SOUTHWEST},${GridLocation.WEST}`, GridPosition.ETA7],
+    [`${GridLocation.WEST},${GridLocation.NORTHWEST}`, GridPosition.ETA8],
+    // Eta 9-16: Right cycles same, Left is 45° CW (1 step forward)
+    [`${GridLocation.NORTHEAST},${GridLocation.NORTH}`, GridPosition.ETA9],
+    [`${GridLocation.EAST},${GridLocation.NORTHEAST}`, GridPosition.ETA10],
+    [`${GridLocation.SOUTHEAST},${GridLocation.EAST}`, GridPosition.ETA11],
+    [`${GridLocation.SOUTH},${GridLocation.SOUTHEAST}`, GridPosition.ETA12],
+    [`${GridLocation.SOUTHWEST},${GridLocation.SOUTH}`, GridPosition.ETA13],
+    [`${GridLocation.WEST},${GridLocation.SOUTHWEST}`, GridPosition.ETA14],
+    [`${GridLocation.NORTHWEST},${GridLocation.WEST}`, GridPosition.ETA15],
+    [`${GridLocation.NORTH},${GridLocation.NORTHWEST}`, GridPosition.ETA16],
   ]);
 
   // Reverse mapping from position to hand locations

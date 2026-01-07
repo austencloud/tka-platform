@@ -43,10 +43,7 @@ interface ICSVParser {
 
 @injectable()
 export class LetterQueryHandler implements ILetterQueryHandler {
-  private parsedData: Record<
-    Exclude<GridMode, GridMode.SKEWED>,
-    ParsedCsvRow[]
-  > | null = null;
+  private parsedData: Record<GridMode, ParsedCsvRow[]> | null = null;
   private isInitialized = false;
 
   constructor(
@@ -134,10 +131,15 @@ export class LetterQueryHandler implements ILetterQueryHandler {
           });
       }
 
+      // Parse skewed data if available
+      const skewedParseResult = csvData.data?.skewedData
+        ? this.CSVParser.parseCSV(csvData.data.skewedData)
+        : { rows: [], errors: [] };
+
       this.parsedData = {
         [GridMode.DIAMOND]: diamondParseResult.rows,
         [GridMode.BOX]: boxParseResult.rows,
-        // SKEWED mode doesn't have separate data - it uses both diamond and box
+        [GridMode.SKEWED]: skewedParseResult.rows,
       };
 
       this.isInitialized = true;
@@ -245,15 +247,17 @@ export class LetterQueryHandler implements ILetterQueryHandler {
         return [];
       }
 
-      // For SKEWED mode, default to diamond data
-      const actualGridMode =
-        gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
-      const csvRows =
-        this.parsedData[actualGridMode as Exclude<GridMode, GridMode.SKEWED>];
+      // Get CSV rows for the specified grid mode
+      // For SKEWED, fall back to diamond only if no skewed data
+      let csvRows = this.parsedData[gridMode];
+      if (gridMode === GridMode.SKEWED && csvRows.length === 0) {
+        csvRows = this.parsedData[GridMode.DIAMOND];
+      }
       if (csvRows.length === 0) {
         console.error(`❌ No CSV data available for grid mode: ${gridMode}`);
         return [];
       }
+      const actualGridMode = gridMode;
 
       const pictographs: PictographData[] = [];
       for (let i = 0; i < csvRows.length; i++) {
@@ -352,11 +356,11 @@ export class LetterQueryHandler implements ILetterQueryHandler {
       return null;
     }
 
-    // For SKEWED mode, default to diamond data
-    const actualGridMode =
-      gridMode === GridMode.SKEWED ? GridMode.DIAMOND : gridMode;
-    const csvRows =
-      this.parsedData[actualGridMode as Exclude<GridMode, GridMode.SKEWED>];
+    // Get CSV rows for the specified grid mode, with fallback for SKEWED
+    let csvRows = this.parsedData[gridMode];
+    if (gridMode === GridMode.SKEWED && csvRows.length === 0) {
+      csvRows = this.parsedData[GridMode.DIAMOND];
+    }
 
     // Handle the mismatch between JSON config and LetterMapping interface
     const mappingData = mapping as CodexLetterMapping & {

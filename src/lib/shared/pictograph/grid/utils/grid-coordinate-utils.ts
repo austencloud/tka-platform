@@ -40,11 +40,6 @@ export function parseCoordinates(
  * Convert raw coordinate data into structured GridPointData format
  */
 export function createGridPointData(mode: GridMode): GridPointData {
-  // SKEWED mode doesn't have its own coordinates - it uses both diamond and box
-  // For now, default to diamond when SKEWED is requested
-  const actualMode = mode === GridMode.SKEWED ? GridMode.DIAMOND : mode;
-  const modeData = gridCoordinates[actualMode];
-
   const parsePoints = (points: Record<string, string>) =>
     Object.fromEntries(
       Object.entries(points).map(([key, value]) => [
@@ -52,6 +47,43 @@ export function createGridPointData(mode: GridMode): GridPointData {
         { coordinates: parseCoordinates(value) },
       ])
     );
+
+  // SKEWED mode merges both diamond and box coordinates
+  // This is needed because skewed positions have one hand in cardinal (diamond)
+  // and one hand in intercardinal (box) positions
+  if (mode === GridMode.SKEWED) {
+    const diamondData = gridCoordinates[GridMode.DIAMOND];
+    const boxData = gridCoordinates[GridMode.BOX];
+
+    return {
+      // Merge hand points from both diamond (n,e,s,w) and box (ne,se,sw,nw)
+      allHandPointsStrict: {
+        ...parsePoints(diamondData.hand_points.strict),
+        ...parsePoints(boxData.hand_points.strict),
+      },
+      allHandPointsNormal: {
+        ...parsePoints(diamondData.hand_points.normal),
+        ...parsePoints(boxData.hand_points.normal),
+      },
+      // Merge layer2 points from both
+      allLayer2PointsStrict: {
+        ...parsePoints(diamondData.layer2_points.strict),
+        ...parsePoints(boxData.layer2_points.strict),
+      },
+      allLayer2PointsNormal: {
+        ...parsePoints(diamondData.layer2_points.normal),
+        ...parsePoints(boxData.layer2_points.normal),
+      },
+      // Merge outer points from both diamond (cardinal) and box (intercardinal)
+      allOuterPoints: {
+        ...parsePoints(diamondData.outer_points),
+        ...parsePoints(boxData.outer_points),
+      },
+      centerPoint: { coordinates: parseCoordinates(diamondData.center_point) },
+    };
+  }
+
+  const modeData = gridCoordinates[mode];
 
   return {
     allHandPointsStrict: parsePoints(modeData.hand_points.strict),

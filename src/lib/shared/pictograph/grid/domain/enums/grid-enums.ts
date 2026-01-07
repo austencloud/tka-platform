@@ -13,6 +13,8 @@ export enum GridPositionGroup {
   ALPHA = "alpha",
   BETA = "beta",
   GAMMA = "gamma",
+  ZETA = "zeta",
+  ETA = "eta",
 }
 
 export enum GridPosition {
@@ -50,6 +52,42 @@ export enum GridPosition {
   GAMMA14 = "gamma14",
   GAMMA15 = "gamma15",
   GAMMA16 = "gamma16",
+
+  // Zeta positions - 135° obtuse angle between hands (skewed mode)
+  ZETA1 = "zeta1",
+  ZETA2 = "zeta2",
+  ZETA3 = "zeta3",
+  ZETA4 = "zeta4",
+  ZETA5 = "zeta5",
+  ZETA6 = "zeta6",
+  ZETA7 = "zeta7",
+  ZETA8 = "zeta8",
+  ZETA9 = "zeta9",
+  ZETA10 = "zeta10",
+  ZETA11 = "zeta11",
+  ZETA12 = "zeta12",
+  ZETA13 = "zeta13",
+  ZETA14 = "zeta14",
+  ZETA15 = "zeta15",
+  ZETA16 = "zeta16",
+
+  // Eta positions - 45° acute angle between hands (skewed mode)
+  ETA1 = "eta1",
+  ETA2 = "eta2",
+  ETA3 = "eta3",
+  ETA4 = "eta4",
+  ETA5 = "eta5",
+  ETA6 = "eta6",
+  ETA7 = "eta7",
+  ETA8 = "eta8",
+  ETA9 = "eta9",
+  ETA10 = "eta10",
+  ETA11 = "eta11",
+  ETA12 = "eta12",
+  ETA13 = "eta13",
+  ETA14 = "eta14",
+  ETA15 = "eta15",
+  ETA16 = "eta16",
 }
 
 export enum GridMode {

@@ -52,15 +52,28 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   // Get SVG preload service
   const SvgPreloader = resolve(TYPES.ISvgPreloader) as ISvgPreloader;
 
-  // Load diamond grid (we rotate it to create box appearance)
-  async function loadGrid(): Promise<void> {
+  // Track which grid is currently loaded
+  let loadedGridType = $state<"diamond" | "skewed" | null>(null);
+
+  // Load the appropriate grid based on mode
+  // Diamond mode uses diamond_grid.svg (rotated 45° for box mode)
+  // Skewed mode uses skewed_grid.svg (shows all 8 positions)
+  async function loadGrid(forMode: GridMode): Promise<void> {
+    const needsSkewedGrid = forMode === GridMode.SKEWED;
+    const gridFileName = needsSkewedGrid ? "skewed_grid" : "diamond_grid";
+    const gridType = needsSkewedGrid ? "skewed" : "diamond";
+
+    // Skip reload if we already have the right grid
+    if (loadedGridType === gridType && baseGridSvg) return;
+
     try {
-      const svgText = await SvgPreloader.getSvgContent("grid", "diamond_grid");
+      const svgText = await SvgPreloader.getSvgContent("grid", gridFileName);
       baseGridSvg = svgText;
+      loadedGridType = gridType;
       onLoaded?.();
     } catch (error) {
       hasError = true;
-      errorMessage = "Failed to load grid";
+      errorMessage = `Failed to load ${gridFileName}`;
       onError?.(errorMessage);
       throw error;
     }
@@ -84,8 +97,17 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     );
   });
 
-  // Load grid on mount
-  loadGrid();
+  // Load grid on mount and when mode changes between skewed/non-skewed
+  loadGrid(gridMode);
+
+  // Reload grid if mode changes to/from SKEWED (different SVG needed)
+  $effect(() => {
+    const needsSkewed = gridMode === GridMode.SKEWED;
+    const hasSkewed = loadedGridType === "skewed";
+    if (needsSkewed !== hasSkewed) {
+      loadGrid(gridMode);
+    }
+  });
 
   // Apply grid mode styling directly to SVG elements as inline attributes
   // COLORS are handled by CSS with transitions - only structure/opacity is set inline
@@ -98,6 +120,37 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     isPreviewMode: boolean,
     exportDarkMode?: boolean
   ): string {
+    // SKEWED mode: minimal processing - CSS handles everything
+    // The skewed_grid.svg has different structure (both diamond and box points)
+    if (mode === GridMode.SKEWED) {
+      // For export, inline colors on skewed grid elements
+      if (exportDarkMode !== undefined) {
+        const gridColor = exportDarkMode === true ? "#d0d0d0" : "#000000";
+        let modifiedSvg = svgContent;
+        // Strip style block for export
+        modifiedSvg = modifiedSvg.replace(/<style[\s\S]*?<\/style>/gi, "");
+        // Apply color to all points with .diamond-points or .box-points class
+        modifiedSvg = modifiedSvg.replace(
+          /(<(?:circle|path)[^>]*class="[^"]*(?:diamond|box)-points[^"]*"[^/>]*)(\/?>)/g,
+          (match, opening, closing) => {
+            let cleaned = opening.replace(/\s*fill="[^"]*"/g, "");
+            cleaned = cleaned.replace(/\s*stroke="[^"]*"/g, "");
+            return `${cleaned} fill="${gridColor}" stroke="${gridColor}"${closing}`;
+          }
+        );
+        // Center point
+        modifiedSvg = modifiedSvg.replace(
+          /(<circle[^>]*id="center_point"[^/>]*)(\/?>)/g,
+          (match, opening, closing) => {
+            let cleaned = opening.replace(/\s*fill="[^"]*"/g, "");
+            return `${cleaned} fill="${gridColor}"${closing}`;
+          }
+        );
+        return modifiedSvg;
+      }
+      return svgContent;
+    }
+
     // When darkMode is explicitly set (for export), inline the colors
     // CSS rules won't be captured in outerHTML, so we must embed colors inline
     const shouldInlineColors = exportDarkMode !== undefined;
@@ -310,9 +363,13 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   // Increment cumulative rotation by 45 deg with smooth animation whenever gridMode changes
   // Use global rotation direction to determine clockwise (+45) or counterclockwise (-45)
+  // SKEWED mode: no rotation needed (shows all 8 positions without rotation)
   $effect(() => {
     // First render - set initial rotation without animation
     if (previousGridMode === null) {
+      // SKEWED mode: no rotation (already shows all positions)
+      // BOX mode: 45° rotation
+      // DIAMOND mode: 0° rotation
       cumulativeRotation = gridMode === GridMode.BOX ? 45 : 0;
       previousGridMode = gridMode;
       return;
@@ -320,6 +377,13 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
     // No change - do nothing
     if (gridMode === previousGridMode) return;
+
+    // SKEWED mode doesn't animate rotation - it uses a different grid entirely
+    if (gridMode === GridMode.SKEWED || previousGridMode === GridMode.SKEWED) {
+      cumulativeRotation = gridMode === GridMode.BOX ? 45 : 0;
+      previousGridMode = gridMode;
+      return;
+    }
 
     const previousRotation = cumulativeRotation;
     const direction = getGridRotationDirection();
@@ -369,6 +433,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   bind:this={gridContainerElement}
   class="grid-container"
   class:box-mode={gridMode === GridMode.BOX}
+  class:skewed-mode={gridMode === GridMode.SKEWED}
   class:show-non-radial={showNonRadialPoints}
   class:preview-mode={previewMode}
   class:interactive-non-radial={onToggleNonRadial !== undefined}
@@ -621,6 +686,69 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   }
 
   :global(.grid-container.dark-mode-override line) {
+    stroke: #d0d0d0;
+  }
+
+  /* ====================================================================
+     SKEWED MODE - Shows both diamond (filled) and box (outlined) points
+     The skewed_grid.svg contains both diamond and box grids overlaid.
+   ==================================================================== */
+
+  /* Diamond points in skewed mode - filled circles */
+  :global(.grid-container.skewed-mode .diamond-points) {
+    fill: #000;
+    stroke: #000;
+    stroke-width: 1;
+  }
+
+  /* Box points in skewed mode - outlined rings (from SVG paths) */
+  :global(.grid-container.skewed-mode .box-points) {
+    fill: #000;
+    stroke: #000;
+    stroke-width: 1;
+  }
+
+  /* Dark mode - skewed grid points */
+  :global(:root.dark .grid-container.skewed-mode .diamond-points),
+  :global(:root.dark .grid-container.skewed-mode .box-points) {
+    fill: var(--dm-grid-color, #d0d0d0);
+    stroke: var(--dm-grid-color, #d0d0d0);
+  }
+
+  /* Hand points in skewed mode */
+  :global(.grid-container.skewed-mode #n_diamond_hand_point),
+  :global(.grid-container.skewed-mode #e_diamond_hand_point),
+  :global(.grid-container.skewed-mode #s_diamond_hand_point),
+  :global(.grid-container.skewed-mode #w_diamond_hand_point),
+  :global(.grid-container.skewed-mode #nw_box_hand_point),
+  :global(.grid-container.skewed-mode #ne_box_hand_point),
+  :global(.grid-container.skewed-mode #se_box_hand_point),
+  :global(.grid-container.skewed-mode #sw_box_hand_point) {
+    fill: #000;
+  }
+
+  /* Dark mode - hand points in skewed mode */
+  :global(:root.dark .grid-container.skewed-mode #n_diamond_hand_point),
+  :global(:root.dark .grid-container.skewed-mode #e_diamond_hand_point),
+  :global(:root.dark .grid-container.skewed-mode #s_diamond_hand_point),
+  :global(:root.dark .grid-container.skewed-mode #w_diamond_hand_point),
+  :global(:root.dark .grid-container.skewed-mode #nw_box_hand_point),
+  :global(:root.dark .grid-container.skewed-mode #ne_box_hand_point),
+  :global(:root.dark .grid-container.skewed-mode #se_box_hand_point),
+  :global(:root.dark .grid-container.skewed-mode #sw_box_hand_point) {
+    fill: var(--dm-grid-color, #d0d0d0);
+  }
+
+  /* Export mode overrides for skewed mode */
+  :global(.grid-container.skewed-mode.light-mode-override .diamond-points),
+  :global(.grid-container.skewed-mode.light-mode-override .box-points) {
+    fill: #000000;
+    stroke: #000000;
+  }
+
+  :global(.grid-container.skewed-mode.dark-mode-override .diamond-points),
+  :global(.grid-container.skewed-mode.dark-mode-override .box-points) {
+    fill: #d0d0d0;
     stroke: #d0d0d0;
   }
 </style>

@@ -1,1 +1,54 @@
-<?xml version="1.0" encoding="utf-8"?><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 950 950" xml:space="preserve"><style>.skewed-grid-invisible{fill:none}.box-points,.diamond-points{fill:#000;stroke:#000;stroke-width:1}</style><circle id="center_point" cx="475" cy="475" r="12" style="fill:#000"/><g id="diamond-grid"><circle id="n_diamond_outer_point" class="diamond-points" cx="475" cy="175" r="25"/><circle id="e_diamond_outer_point" class="diamond-points" cx="775" cy="475" r="25"/><circle id="s_diamond_outer_point" class="diamond-points" cx="475" cy="775" r="25"/><circle id="w_diamond_outer_point" class="diamond-points" cx="175" cy="475" r="25"/><circle id="n_diamond_hand_point" class="diamond-points" cx="475" cy="331.9" r="8"/><circle id="e_diamond_hand_point" class="diamond-points" cx="618.1" cy="475" r="8"/><circle id="s_diamond_hand_point" class="diamond-points" cx="475" cy="618.1" r="8"/><circle id="w_diamond_hand_point" class="diamond-points" cx="331.9" cy="475" r="8"/><circle id="ne_diamond_layer2_point" class="skewed-grid-invisible" cx="618.1" cy="331.9" r="8.8"/><circle id="se_diamond_layer2_point" class="skewed-grid-invisible" cx="618.1" cy="618.1" r="8.8"/><circle id="sw_diamond_layer2_point" class="skewed-grid-invisible" cx="331.9" cy="618.1" r="8.8"/><circle id="nw_diamond_layer2_point" class="skewed-grid-invisible" cx="331.9" cy="331.9" r="8.8"/><circle id="ne_diamond_layer2_point_strict" class="skewed-grid-invisible" cx="625" cy="325" r="8.8"/><circle id="se_diamond_layer2_point_strict" class="skewed-grid-invisible" cx="625" cy="625" r="8.8"/><circle id="sw_diamond_layer2_point_strict" class="skewed-grid-invisible" cx="325" cy="625" r="8.8"/><circle id="nw_diamond_layer2_point_strict" class="skewed-grid-invisible" cx="325" cy="325" r="8.8"/><circle id="n_diamond_hand_point_strict" class="skewed-grid-invisible" cx="475" cy="325" r="4.7"/><circle id="e_diamond_hand_point_strict" class="skewed-grid-invisible" cx="625" cy="475" r="4.7"/><circle id="s_diamond_hand_point_strict" class="skewed-grid-invisible" cx="475" cy="625" r="4.7"/><circle id="w_diamond_hand_point_strict" class="skewed-grid-invisible" cx="325" cy="475" r="4.7"/></g><g id="box-grid"><path id="ne_box_outer_point" class="box-points st0" d="M262.9 247.9c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.8-2.9 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/><path id="se_box_outer_point" class="box-points st0" d="M687.1 247.9c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.9-2.9 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/><path id="sw_box_outer_point" class="box-points st0" d="M687.1 672.1c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.9-2.8 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/><path id="nw_box_outer_point" class="box-points st0" d="M262.9 672.1c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.8-2.8 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/><circle id="nw_box_hand_point" class="box-points" cx="373.8" cy="373.8" r="8"/><circle id="ne_box_hand_point" class="box-points" cx="576.2" cy="373.8" r="8"/><circle id="se_box_hand_point" class="box-points" cx="576.2" cy="576.2" r="8"/><circle id="sw_box_hand_point" class="box-points" cx="373.8" cy="576.2" r="8"/><circle id="n_box_layer2_point" class="skewed-grid-invisible" cx="475" cy="272.6" r="8.8"/><circle id="e_box_layer2_point" class="skewed-grid-invisible" cx="677.4" cy="475" r="8.8"/><circle id="s_box_layer2_point" class="skewed-grid-invisible" cx="475" cy="677.4" r="8.8"/><circle id="w_box_layer2_point" class="skewed-grid-invisible" cx="272.6" cy="475" r="8.8"/><circle id="strict_n_box_layer2_point" class="skewed-grid-invisible" cx="475" cy="262.9" r="8.8"/><circle id="strict_e_box_layer2_point" class="skewed-grid-invisible" cx="687.1" cy="475" r="8.8"/><circle id="strict_s_box_layer2_point" class="skewed-grid-invisible" cx="475" cy="687.1" r="8.8"/><circle id="strict_w_box_layer2_point" class="skewed-grid-invisible" cx="262.9" cy="475" r="8.8"/><circle id="strict_se_box_hand_point" class="skewed-grid-invisible" cx="581.1" cy="581.1" r="4.7"/><circle id="strict_sw_box_hand_point" class="skewed-grid-invisible" cx="368.9" cy="581.1" r="4.7"/><circle id="strict_nw_box_hand_point" class="skewed-grid-invisible" cx="368.9" cy="368.9" r="4.7"/><circle id="strict_ne_box_hand_point" class="skewed-grid-invisible" cx="581.1" cy="368.9" r="4.7"/></g></svg>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Skewed Grid SVG
+
+  Shows all 8 positions (4 cardinal + 4 intercardinal) for skewed pictographs.
+  Used when one hand is in cardinal position (N/E/S/W) and another in intercardinal (NE/SE/SW/NW).
+
+  Only includes: center point, outer points (8), and non-strict hand points (8).
+  Layer2 points and strict points are NOT included - they're not needed for pictograph display.
+-->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 950 950" xml:space="preserve">
+  <style>
+    .grid-point { fill: currentColor; stroke: currentColor; stroke-width: 1; }
+    .outer-ring { fill: none; stroke: currentColor; stroke-width: 2; }
+    .center { fill: currentColor; }
+  </style>
+
+  <!-- Center point -->
+  <circle id="center_point" class="center" cx="475" cy="475" r="12"/>
+
+  <!-- Diamond grid (cardinal positions: N, E, S, W) -->
+  <g id="diamond-grid">
+    <!-- Outer points - filled circles -->
+    <circle id="n_diamond_outer_point" class="grid-point" cx="475" cy="175" r="25"/>
+    <circle id="e_diamond_outer_point" class="grid-point" cx="775" cy="475" r="25"/>
+    <circle id="s_diamond_outer_point" class="grid-point" cx="475" cy="775" r="25"/>
+    <circle id="w_diamond_outer_point" class="grid-point" cx="175" cy="475" r="25"/>
+
+    <!-- Hand points (non-strict) - where props attach -->
+    <circle id="n_diamond_hand_point" class="grid-point" cx="475" cy="331.9" r="8"/>
+    <circle id="e_diamond_hand_point" class="grid-point" cx="618.1" cy="475" r="8"/>
+    <circle id="s_diamond_hand_point" class="grid-point" cx="475" cy="618.1" r="8"/>
+    <circle id="w_diamond_hand_point" class="grid-point" cx="331.9" cy="475" r="8"/>
+  </g>
+
+  <!-- Box grid (intercardinal positions: NE, SE, SW, NW) -->
+  <g id="box-grid">
+    <!-- Outer points - rings (outline style to distinguish from diamond) -->
+    <!-- NW = upper-left corner (262.9, 262.9) -->
+    <circle id="nw_box_outer_point" class="outer-ring" cx="262.9" cy="262.9" r="25"/>
+    <!-- NE = upper-right corner (687.1, 262.9) -->
+    <circle id="ne_box_outer_point" class="outer-ring" cx="687.1" cy="262.9" r="25"/>
+    <!-- SE = lower-right corner (687.1, 687.1) -->
+    <circle id="se_box_outer_point" class="outer-ring" cx="687.1" cy="687.1" r="25"/>
+    <!-- SW = lower-left corner (262.9, 687.1) -->
+    <circle id="sw_box_outer_point" class="outer-ring" cx="262.9" cy="687.1" r="25"/>
+
+    <!-- Hand points (non-strict) - where props attach -->
+    <circle id="nw_box_hand_point" class="grid-point" cx="373.8" cy="373.8" r="8"/>
+    <circle id="ne_box_hand_point" class="grid-point" cx="576.2" cy="373.8" r="8"/>
+    <circle id="se_box_hand_point" class="grid-point" cx="576.2" cy="576.2" r="8"/>
+    <circle id="sw_box_hand_point" class="grid-point" cx="373.8" cy="576.2" r="8"/>
+  </g>
+</svg>
