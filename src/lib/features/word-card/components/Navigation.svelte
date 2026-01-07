@@ -104,12 +104,9 @@
 
 <style>
   .navigation {
-    height: 100%;
     display: flex;
     flex-direction: column;
-    padding: var(--spacing-md);
     gap: var(--spacing-lg);
-    overflow-y: auto;
   }
 
   .section {
@@ -225,28 +222,11 @@
     color: #ffffff;
   }
 
-  /* Scrollbar */
-  .navigation::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .navigation::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .navigation::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
-  }
-
   /* Responsive - horizontal layout on mobile */
   @media (max-width: 768px) {
     .navigation {
       flex-direction: row;
-      padding: var(--spacing-sm);
       gap: var(--spacing-md);
-      overflow-x: auto;
-      overflow-y: hidden;
     }
 
     .section {

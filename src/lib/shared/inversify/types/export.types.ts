@@ -22,9 +22,6 @@ export const ExportTypes = {
   ICompositeVideoRenderer: Symbol.for("ICompositeVideoRenderer"),
 
   // Image Export
-  IPageImageExportService: Symbol.for("IPageImageExportService"),
-  IPageFactoryService: Symbol.for("IPageFactoryService"),
-  IPrintablePageLayoutService: Symbol.for("IPrintablePageLayoutService"),
   ITKAImageExportService: Symbol.for("ITKAImageExportService"),
   ICanvasManager: Symbol.for("ICanvasManager"),
   IImageComposer: Symbol.for("IImageComposer"),
@@ -32,19 +29,6 @@ export const ExportTypes = {
   IDimensionCalculator: Symbol.for("IDimensionCalculator"),
   IFilenameGenerator: Symbol.for("IFilenameGenerator"),
   IImagePreviewGenerator: Symbol.for("IImagePreviewGenerator"),
-
-  // Word Card Export
-  IWordCardExportIntegrationService: Symbol.for(
-    "IWordCardExportIntegrationService"
-  ),
-  IWordCardExportOrchestrator: Symbol.for("IWordCardExportOrchestrator"),
-  IWordCardImageGenerator: Symbol.for("IWordCardImageGenerator"),
-  IWordCardImageConverter: Symbol.for("IWordCardImageConverter"),
-  IWordCardBatchProcessor: Symbol.for("IWordCardBatchProcessor"),
-  IWordCardExportProgressTracker: Symbol.for("IWordCardExportProgressTracker"),
-  IWordCardCache: Symbol.for("IWordCardCache"),
-  IWordCardSVGComposer: Symbol.for("IWordCardSVGComposer"),
-  IWordCardMetadataOverlay: Symbol.for("IWordCardMetadataOverlay"),
 
   // Format Conversion
   IImageFormatConverter: Symbol.for("IImageFormatConverter"),

@@ -1,7 +1,9 @@
 <!--
   WordCard.svelte - Sequence card for print preview
 
-  Displays a sequence image. In print mode, uses light styling for paper.
+  Displays a sequence thumbnail using PropAwareThumbnail with Firebase caching.
+  Word cards always include user data footer (creator name, notes, birthday).
+  In print mode, uses light background for paper preview.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -9,6 +11,8 @@
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
+  import PropAwareThumbnail from "$lib/features/discover/gallery/display/components/PropAwareThumbnail.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -18,17 +22,16 @@
   let { sequence, printMode = false }: Props = $props();
 
   let hapticService: IHapticFeedback;
-  let imageVersion = $state(1);
-  let imageLoadFailed = $state(false);
 
   onMount(() => {
     hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
   });
 
-  // Generate image path - try multiple versions
-  let imagePath = $derived.by(() => {
-    const word = sequence.name.replace(" Sequence", "");
-    return `/gallery/${word}/${word}_ver${imageVersion}.webp`;
+  // Get prop settings from global state
+  const propSettings = $derived({
+    bluePropType: settingsService.settings.bluePropType,
+    redPropType: settingsService.settings.redPropType,
+    catDogMode: settingsService.settings.catDogMode,
   });
 
   function handleClick() {
@@ -41,15 +44,6 @@
       handleClick();
     }
   }
-
-  function handleImageError() {
-    if (imageVersion < 6) {
-      imageVersion++;
-      imageLoadFailed = false;
-    } else {
-      imageLoadFailed = true;
-    }
-  }
 </script>
 
 <button
@@ -60,49 +54,42 @@
   aria-label="View sequence {sequence.name}"
   type="button"
 >
-  {#if !imageLoadFailed}
-    <img
-      src={imagePath}
-      alt={sequence.name}
-      class="card-image"
-      loading="lazy"
-      onerror={handleImageError}
-    />
-  {:else}
-    <!-- Fallback for missing images -->
-    <div class="card-fallback">
-      <div class="fallback-icon">
-        <i class="fas fa-image" aria-hidden="true"></i>
-      </div>
-      <span class="fallback-name">{sequence.name.replace(" Sequence", "")}</span
-      >
-      <span class="fallback-beats">{sequence.beats.length} beats</span>
-    </div>
-  {/if}
+  <PropAwareThumbnail
+    {sequence}
+    bluePropType={propSettings.bluePropType}
+    redPropType={propSettings.redPropType}
+    catDogModeEnabled={propSettings.catDogMode}
+    lightMode={printMode}
+    variant="wordcard"
+  />
 </button>
 
 <style>
+  /* Print-mode semantic tokens for word cards (light mode for paper) */
   .word-card {
-    display: block;
+    --print-bg: #ffffff;
+    --print-border: #000000;
+    --print-text: #333333;
+    --print-text-dim: #666666;
+    --print-text-muted: #999999;
+    --print-spinner-track: #e0e0e0;
+    --print-error-bg: #ffeeee;
+    --print-error-text: #cc0000;
+
+    display: flex;
+    flex-direction: column;
     width: 100%;
+    height: 100%; /* Fill grid cell */
     padding: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
+    background: var(--print-bg);
+    border: 1px solid var(--print-border);
+    border-radius: 0;
     overflow: hidden;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
-  /* Print mode - exact print preview (no decorations) */
-  .word-card.print-mode {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .word-card:hover:not(.print-mode) {
+  .word-card:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
@@ -112,60 +99,46 @@
     outline-offset: 2px;
   }
 
-  .card-image {
+  /* PropAwareThumbnail scales to fit within the card cell */
+  .word-card :global(.prop-thumbnail) {
     width: 100%;
-    height: auto;
-    display: block;
-  }
-
-  /* Fallback - dark mode */
-  .card-fallback {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-md);
-    min-height: 80px;
-    aspect-ratio: 2 / 1; /* Approximate sequence aspect ratio */
-  }
-
-  .fallback-icon {
-    width: 36px;
-    height: 36px;
+    height: 100%;
+    background: var(--print-bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 50%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-    font-size: 0.9rem;
   }
 
-  .fallback-name {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 500;
-    color: var(--theme-text, #ffffff);
-    text-align: center;
+  .word-card :global(.prop-thumbnail img) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Scale down to fit, maintain aspect ratio */
   }
 
-  .fallback-beats {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  /* Light-mode loading placeholder for word cards */
+  .word-card :global(.loading-placeholder),
+  .word-card :global(.error-placeholder),
+  .word-card :global(.empty-placeholder) {
+    background: var(--print-bg);
+    color: var(--print-text-dim);
   }
 
-  /* Print mode fallback - simple black text for print */
-  .print-mode .fallback-icon {
-    background: transparent;
-    color: #666666;
+  .word-card :global(.spinner) {
+    border-color: var(--print-spinner-track);
+    border-top-color: var(--print-text-dim);
   }
 
-  .print-mode .fallback-name {
-    color: #000000;
+  .word-card :global(.loading-status) {
+    color: var(--print-text-dim);
   }
 
-  .print-mode .fallback-beats {
-    color: #666666;
+  .word-card :global(.error-icon) {
+    background: var(--print-error-bg);
+    color: var(--print-error-text);
+  }
+
+  .word-card :global(.letter) {
+    color: var(--print-text-muted);
   }
 
   @media (prefers-reduced-motion: reduce) {

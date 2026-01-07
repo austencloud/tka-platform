@@ -35,14 +35,14 @@
 
 <div class="page-display" style:--column-count={columnCount}>
   {#if isLoading}
-    <div class="state-container">
-      <div class="spinner"></div>
+    <div class="state-container" role="status" aria-live="polite" aria-busy="true">
+      <div class="spinner" aria-hidden="true"></div>
       <h3 class="state-title">Loading sequences...</h3>
       <p class="state-message">Preparing print preview</p>
     </div>
   {:else if error}
-    <div class="state-container">
-      <div class="state-icon error">
+    <div class="state-container" role="alert" aria-live="assertive">
+      <div class="state-icon error" aria-hidden="true">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
       <h3 class="state-title">Error Loading Sequences</h3>
@@ -53,8 +53,8 @@
       </button>
     </div>
   {:else if pages.length === 1 && pages[0]?.isEmpty}
-    <div class="state-container">
-      <div class="state-icon empty">
+    <div class="state-container" role="status" aria-live="polite">
+      <div class="state-icon empty" aria-hidden="true">
         <i class="fas fa-file-alt" aria-hidden="true"></i>
       </div>
       <h3 class="state-title">No Sequences Found</h3>
@@ -208,19 +208,19 @@
   }
 
   .page-content {
-    padding: 3%; /* Proportional margins */
+    padding: 1.5%; /* Tight margins for 3 rows */
     height: 100%;
     box-sizing: border-box;
   }
 
-  /* Sequence Grid - 2 columns, rows auto-sized to content */
+  /* Sequence Grid - 2 columns, evenly distributed rows */
   .sequence-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: min-content;
-    gap: 2%;
+    grid-auto-rows: 1fr; /* Equal height rows */
+    gap: 1%;
     height: 100%;
-    align-content: start;
+    align-content: stretch; /* Fill available space evenly */
   }
 
   /* Responsive */

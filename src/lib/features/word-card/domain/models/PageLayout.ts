@@ -1,4 +1,9 @@
-// Type alias for backward compatibility
+/**
+ * Page Layout Models
+ *
+ * Interface definitions for printable page layout functionality including page dimensions,
+ * paper sizes, margins, grid calculations, and print specifications.
+ */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
@@ -6,59 +11,6 @@ import type {
   PageOrientation,
   WordCardPaperSize,
 } from "../types/PageLayoutTypes";
-
-export interface Margins {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-export interface LayoutValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-export interface Rectangle {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface GridConfig {
-  rows: number;
-  columns: number;
-  cardWidth: number;
-  cardHeight: number;
-  spacing: number;
-}
-
-export interface LayoutCalculationRequest {
-  paperSize: WordCardPaperSize;
-  orientation: PageOrientation;
-  cardCount: number;
-  cardAspectRatio: number;
-}
-
-export interface LayoutCalculationResult {
-  isOptimal: boolean;
-  gridConfig: GridConfig;
-  pageConfig: PageLayoutConfig;
-  utilization: number;
-}
-
-// DPIConfig moved to line 197 to avoid duplicates
-
-// Duplicate interface removed - using the complete definition below
-
-/**
- * Page Layout Models
- *
- * Interface definitions for printable page layout functionality including page dimensions,
- * paper sizes, margins, grid calculations, and print specifications.
- */
 
 // ============================================================================
 // CORE PAGE LAYOUT INTERFACES
@@ -107,7 +59,7 @@ export interface Page {
 
 export interface PaperSpecification {
   name: WordCardPaperSize;
-  dimensions: PageDimensions; // in points (1/72 inch)
+  dimensions: PageDimensions;
   displayName: string;
   description: string;
 }
@@ -131,19 +83,18 @@ export interface PrintConfig {
 export interface LayoutCalculationRequest {
   paperSize: WordCardPaperSize;
   orientation: PageOrientation;
-  margins: PageMargins;
-  cardAspectRatio: number;
-  sequenceCount: number;
+  margins?: PageMargins;
+  cardAspectRatio?: number;
+  cardCount: number;
+  sequenceCount?: number;
   preferredCardsPerPage?: number;
 }
 
-export interface WordCardLayoutCalculationResult {
-  gridConfig: WordCardGridConfig;
-  pagesNeeded: number;
-  cardDimensions: PageDimensions;
-  contentArea: Rectangle;
-  utilization: number; // 0-1 representing how well the layout uses available space
+export interface LayoutCalculationResult {
   isOptimal: boolean;
+  gridConfig: WordCardGridConfig;
+  pageConfig: PageLayoutConfig;
+  utilization: number;
 }
 
 export interface GridCalculationOptions {
@@ -183,20 +134,12 @@ export interface DPIConfig {
   scaleFactor: number;
 }
 
-// Type alias for backward compatibility with services expecting DPIConfiguration
 export type DPIConfiguration = DPIConfig;
 
 export interface MeasurementUnit {
   name: string;
-  pointsPerUnit: number; // 1 point = 1/72 inch
+  pointsPerUnit: number;
   displayName: string;
-}
-
-export interface ConversionResult {
-  points: number;
-  pixels: number;
-  inches: number;
-  millimeters: number;
 }
 
 // ============================================================================
@@ -217,11 +160,10 @@ export interface LayoutValidationWarning {
   severity?: "warning" | "info";
 }
 
-export interface LayoutSuggestion {
-  type: "paper_size" | "orientation" | "grid" | "margins";
-  description: string;
-  suggestedValue: unknown;
-  expectedImprovement: string;
+export interface LayoutValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 
 // ============================================================================
@@ -241,14 +183,6 @@ export interface LayoutOptimizationRequest {
     utilizationWeight: number;
   };
 }
-
-export interface LayoutOptimizationResult {
-  recommendedConfig: PageLayoutConfig;
-  alternativeConfigs: PageLayoutConfig[];
-  optimizationScore: number;
-  reasoning: string[];
-}
-// Duplicate simplified types removed — using the core, fully-defined interfaces above.
 
 // ============================================================================
 // GRID LAYOUT INTERFACES

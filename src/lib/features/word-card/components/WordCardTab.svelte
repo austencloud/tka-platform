@@ -9,16 +9,29 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
   import type { IDiscoverLoader } from "../../discover/gallery/display/services/contracts/IDiscoverLoader";
+  import type { ICloudThumbnailCache } from "../../discover/gallery/display/services/contracts/ICloudThumbnailCache";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import WordCardNavigation from "./Navigation.svelte";
+  import WordCardFilters from "./WordCardFilters.svelte";
   import PageDisplay from "./PageDisplay.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
 
   // Services
   let loaderService = $state<IDiscoverLoader | null>(null);
+  let cloudCache = $state<ICloudThumbnailCache | null>(null);
+
+  // Admin state (use featureFlagService for consistent reactivity)
+  const isAdmin = $derived(featureFlagService.userRole === "admin");
+  let isDeleting = $state(false);
+  let deleteMessage = $state<string | null>(null);
 
   // Storage keys
   const STORAGE_KEY_LENGTH = "wordCard.selectedLength";
   const STORAGE_KEY_COLUMNS = "wordCard.columnCount";
+  const STORAGE_KEY_DIFFICULTY = "wordCard.difficulty";
+  const STORAGE_KEY_FAVORITES = "wordCard.favorites";
+  const STORAGE_KEY_GRID_MODE = "wordCard.gridMode";
+  const STORAGE_KEY_AUTHOR = "wordCard.author";
 
   // Load persisted state or use defaults
   function getPersistedNumber(key: string, defaultValue: number): number {
@@ -27,12 +40,40 @@
     return stored ? parseInt(stored, 10) : defaultValue;
   }
 
+  function getPersistedNullableNumber(key: string): number | null {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem(key);
+    return stored ? parseInt(stored, 10) : null;
+  }
+
+  function getPersistedBoolean(key: string, defaultValue: boolean): boolean {
+    if (typeof window === "undefined") return defaultValue;
+    const stored = localStorage.getItem(key);
+    return stored === "true";
+  }
+
+  function getPersistedString(key: string): string | null {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(key);
+  }
+
   // State
   let sequences: SequenceData[] = $state([]);
   let isLoading = $state(false);
   let selectedLength = $state(getPersistedNumber(STORAGE_KEY_LENGTH, 16));
   let columnCount = $state(getPersistedNumber(STORAGE_KEY_COLUMNS, 3));
   let error = $state<string | null>(null);
+
+  // Filter state
+  let difficulty = $state<number | null>(getPersistedNullableNumber(STORAGE_KEY_DIFFICULTY));
+  let favorites = $state<boolean>(getPersistedBoolean(STORAGE_KEY_FAVORITES, false));
+  let gridMode = $state<string | null>(getPersistedString(STORAGE_KEY_GRID_MODE));
+  let author = $state<string | null>(getPersistedString(STORAGE_KEY_AUTHOR));
+
+  // Derive unique authors from loaded sequences
+  let authors = $derived(
+    [...new Set(sequences.map((s) => s.author).filter((a): a is string => Boolean(a)))].sort()
+  );
 
   // Persist filter changes
   $effect(() => {
@@ -47,10 +88,73 @@
     }
   });
 
-  // Filtered sequences based on selected length
+  // Persist new filter changes
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      if (difficulty !== null) {
+        localStorage.setItem(STORAGE_KEY_DIFFICULTY, String(difficulty));
+      } else {
+        localStorage.removeItem(STORAGE_KEY_DIFFICULTY);
+      }
+    }
+  });
+
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY_FAVORITES, String(favorites));
+    }
+  });
+
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      if (gridMode !== null) {
+        localStorage.setItem(STORAGE_KEY_GRID_MODE, gridMode);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_GRID_MODE);
+      }
+    }
+  });
+
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      if (author !== null) {
+        localStorage.setItem(STORAGE_KEY_AUTHOR, author);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_AUTHOR);
+      }
+    }
+  });
+
+  // Filtered sequences based on all filters
   let filteredSequences = $derived.by(() => {
-    if (selectedLength === 0) return sequences;
-    return sequences.filter((seq) => seq.sequenceLength === selectedLength);
+    let result = sequences;
+
+    // Beat length filter
+    if (selectedLength !== 0) {
+      result = result.filter((seq) => seq.sequenceLength === selectedLength);
+    }
+
+    // Difficulty filter
+    if (difficulty !== null) {
+      result = result.filter((seq) => seq.difficultyLevel === difficulty);
+    }
+
+    // Favorites filter
+    if (favorites) {
+      result = result.filter((seq) => seq.isFavorite);
+    }
+
+    // Grid mode filter
+    if (gridMode !== null) {
+      result = result.filter((seq) => seq.gridMode === gridMode);
+    }
+
+    // Author filter
+    if (author !== null) {
+      result = result.filter((seq) => seq.author === author);
+    }
+
+    return result;
   });
 
   // Estimate sequences per page based on beat length
@@ -59,9 +163,8 @@
     // 2 columns, rows depend on sequence height
     if (beatCount <= 3) return 10; // 5 rows
     if (beatCount <= 4) return 8; // 4 rows
-    if (beatCount <= 6) return 6; // 3 rows
-    if (beatCount <= 10) return 4; // 2 rows
-    return 4; // 2 rows for 12-16 beats
+    if (beatCount <= 8) return 6; // 3 rows
+    return 6; // 3 rows for 10-16 beats (tight spacing)
   }
 
   // Create pages from filtered sequences (dynamic per page based on beat length)
@@ -111,6 +214,7 @@
   onMount(async () => {
     const container = await getContainerInstance();
     loaderService = container.get<IDiscoverLoader>(TYPES.IDiscoverLoader);
+    cloudCache = container.get<ICloudThumbnailCache>(TYPES.ICloudThumbnailCache);
     await loadSequences();
   });
 
@@ -136,6 +240,56 @@
   function handleColumnCountChanged(count: number) {
     columnCount = count;
   }
+
+  // Filter handlers
+  function handleDifficultyChange(value: number | null) {
+    difficulty = value;
+  }
+
+  function handleFavoritesChange(value: boolean) {
+    favorites = value;
+  }
+
+  function handleGridModeChange(value: string | null) {
+    gridMode = value;
+  }
+
+  function handleAuthorChange(value: string | null) {
+    author = value;
+  }
+
+  async function handleClearCache() {
+    if (!cloudCache) return;
+
+    const confirmed = confirm(
+      "Delete all cached word card thumbnails from Firebase?\n\n" +
+        "This will force all word cards to re-render with the new layout settings.\n" +
+        "The images will be regenerated as users view them."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      isDeleting = true;
+      deleteMessage = "Deleting cached thumbnails...";
+
+      const count = await cloudCache.deleteVariant("wordcard");
+
+      deleteMessage = `Deleted ${count} cached thumbnails. Refreshing...`;
+
+      // Brief pause to show success message
+      await new Promise((r) => setTimeout(r, 1000));
+
+      // Force page reload to re-render all thumbnails
+      window.location.reload();
+    } catch (err) {
+      deleteMessage =
+        err instanceof Error ? err.message : "Failed to delete cache";
+      console.error("Failed to clear word card cache:", err);
+    } finally {
+      isDeleting = false;
+    }
+  }
 </script>
 
 <div class="word-card-tab">
@@ -145,8 +299,25 @@
       <div class="title-row">
         <i class="fas fa-id-card" aria-hidden="true"></i>
         <h1 class="title">Word Cards</h1>
+        {#if isAdmin}
+          <button
+            class="admin-clear-cache"
+            onclick={handleClearCache}
+            disabled={isDeleting}
+            title="Clear all cached word card thumbnails from Firebase"
+          >
+            {#if isDeleting}
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            {:else}
+              <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            {/if}
+            Clear Cache
+          </button>
+        {/if}
       </div>
-      <p class="status">{statusMessage}</p>
+      <p class="status" role="status" aria-live="polite" aria-atomic="true">
+        {deleteMessage ?? statusMessage}
+      </p>
     </div>
   </header>
 
@@ -154,12 +325,26 @@
   <div class="main-content">
     <!-- Navigation Sidebar -->
     <aside class="sidebar">
-      <WordCardNavigation
-        {selectedLength}
-        {columnCount}
-        onLengthSelected={handleLengthSelected}
-        onColumnCountChanged={handleColumnCountChanged}
-      />
+      <div class="sidebar-content">
+        <WordCardNavigation
+          {selectedLength}
+          {columnCount}
+          onLengthSelected={handleLengthSelected}
+          onColumnCountChanged={handleColumnCountChanged}
+        />
+        <div class="filter-divider"></div>
+        <WordCardFilters
+          {difficulty}
+          {favorites}
+          {gridMode}
+          {author}
+          {authors}
+          onDifficultyChange={handleDifficultyChange}
+          onFavoritesChange={handleFavoritesChange}
+          onGridModeChange={handleGridModeChange}
+          onAuthorChange={handleAuthorChange}
+        />
+      </div>
     </aside>
 
     <!-- Page Display -->
@@ -204,9 +389,39 @@
     margin-bottom: var(--spacing-xs);
   }
 
-  .title-row i {
+  .title-row > i {
     color: var(--theme-accent, #f43f5e);
     font-size: 1.25rem;
+  }
+
+  .admin-clear-cache {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: var(--border-radius-sm, 6px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .admin-clear-cache:hover:not(:disabled) {
+    background: rgba(255, 107, 107, 0.2);
+    border-color: rgba(255, 107, 107, 0.5);
+  }
+
+  .admin-clear-cache:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .admin-clear-cache i {
+    font-size: 0.75rem;
   }
 
   .title {
@@ -238,6 +453,34 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
     overflow: hidden;
+  }
+
+  .sidebar-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+  }
+
+  .sidebar-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+  }
+
+  .filter-divider {
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin: var(--spacing-xs) 0;
   }
 
   .content-area {
@@ -280,7 +523,22 @@
 
     .sidebar {
       width: 100%;
-      max-height: 180px;
+      max-height: 200px;
+    }
+
+    .sidebar-content {
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: var(--spacing-sm);
+      gap: var(--spacing-sm);
+    }
+
+    .filter-divider {
+      width: 1px;
+      height: auto;
+      min-height: 40px;
+      margin: 0 var(--spacing-xs);
     }
   }
 </style>
