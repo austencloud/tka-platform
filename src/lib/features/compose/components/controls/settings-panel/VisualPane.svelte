@@ -37,7 +37,26 @@
   let updateCounter = $state(0);
   let currentTrailStyle = $state<TrailStyle>(visibilityManager.getTrailStyle());
 
+  // Derive trail style from actual animation settings (source of truth)
+  function getTrailStyleFromSettings(): TrailStyle {
+    const trail = animationSettings.trail;
+    if (!trail.enabled || trail.mode === TrailMode.OFF) return "off";
+    // Distinguish subtle vs vivid by line width and fade duration
+    if ((trail.fadeDurationMs ?? 2000) <= 1800 && (trail.lineWidth ?? 3) < 3.5) {
+      return "subtle";
+    }
+    return "vivid";
+  }
+
   onMount(() => {
+    // Sync initial state: animationSettings is source of truth for actual behavior
+    // visibilityManager may be out of sync if persisted separately
+    const derivedStyle = getTrailStyleFromSettings();
+    if (derivedStyle !== visibilityManager.getTrailStyle()) {
+      visibilityManager.setTrailStyle(derivedStyle);
+      currentTrailStyle = derivedStyle;
+    }
+
     const handleChange = () => {
       currentTrailStyle = visibilityManager.getTrailStyle();
       updateCounter++;

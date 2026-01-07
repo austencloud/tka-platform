@@ -11,7 +11,7 @@
     PlaybackMode,
     StepPlaybackStepSize,
   } from "../../../state/animation-panel-state.svelte";
-  import BpmControl from "./BpmControl.svelte";
+  import BpmChips from "../BpmChips.svelte";
 
   let {
     bpm = $bindable(60),
@@ -91,7 +91,7 @@
   {/if}
 
   <!-- BPM Control -->
-  <BpmControl bind:bpm {onBpmChange} />
+  <BpmChips bind:bpm variant="full" {onBpmChange} />
 </div>
 
 <style>

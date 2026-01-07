@@ -537,6 +537,7 @@ export class SequenceFramePreRenderer {
         gridVisible: true,
         propsVisible: true,
         trailsVisible: false, // No trails in pre-render
+        armsVisible: false, // No arms in pre-render frames
         blueMotionVisible: true,
         redMotionVisible: true,
       },

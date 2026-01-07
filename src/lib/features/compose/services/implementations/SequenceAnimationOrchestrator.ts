@@ -100,7 +100,10 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
 
       this.metadata = {
         word: sequenceData.word || sequenceData.name || "",
-        author: (sequenceData.metadata["author"] as string) || "",
+        author:
+          sequenceData.author ||
+          (sequenceData.metadata?.["author"] as string) ||
+          "",
         totalBeats: beats.length, // Number of motion beats (NOT including start position)
         propType: sequenceData.propType, // Legacy fallback
         bluePropType:

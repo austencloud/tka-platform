@@ -18,6 +18,7 @@ export interface AnimationVisibilitySettings {
   gridVisible: boolean;
   propsVisible: boolean;
   trailsVisible: boolean;
+  armsVisible: boolean;
   blueMotionVisible: boolean;
   redMotionVisible: boolean;
 }
@@ -148,4 +149,16 @@ export interface IAnimationRenderer {
    * Used by render loop to continue rendering during smooth transitions
    */
   isBackgroundTransitioning(): boolean;
+
+  /**
+   * Get the dimensions of the currently loaded blue prop
+   * Returns { width: 0, height: 0 } if no prop is loaded
+   */
+  getBluePropDimensions(): { width: number; height: number };
+
+  /**
+   * Get the dimensions of the currently loaded red prop
+   * Returns { width: 0, height: 0 } if no prop is loaded
+   */
+  getRedPropDimensions(): { width: number; height: number };
 }

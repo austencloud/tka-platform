@@ -16,6 +16,7 @@
  * - Canvas2DApplicationManager: Canvas lifecycle and management
  * - Canvas2DImageLoader: SVG→Image conversion and caching
  * - Canvas2DTrailRenderer: Trail rendering logic
+ * - Canvas2DArmRenderer: Stick-figure arm rendering with 2D IK
  * - Canvas2DFadeManager: Glyph fade transitions
  */
 
@@ -27,7 +28,9 @@ import type {
 import { Canvas2DApplicationManager } from "./canvas2d/Canvas2DApplicationManager";
 import { Canvas2DImageLoader } from "./canvas2d/Canvas2DImageLoader";
 import { Canvas2DTrailRenderer } from "./canvas2d/Canvas2DTrailRenderer";
+import { Canvas2DArmRenderer } from "./canvas2d/Canvas2DArmRenderer";
 import { Canvas2DFadeManager } from "./canvas2d/Canvas2DFadeManager";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 // Constants matching AnimatorCanvas EXACTLY
 const VIEWBOX_SIZE = 950;
@@ -40,6 +43,7 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   private appManager: Canvas2DApplicationManager;
   private imageLoader: Canvas2DImageLoader;
   private trailRenderer: Canvas2DTrailRenderer;
+  private armRenderer: Canvas2DArmRenderer;
   private fadeManager: Canvas2DFadeManager;
 
   // Track current grid mode for resize operations
@@ -49,6 +53,7 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
     this.appManager = new Canvas2DApplicationManager();
     this.imageLoader = new Canvas2DImageLoader();
     this.trailRenderer = new Canvas2DTrailRenderer();
+    this.armRenderer = new Canvas2DArmRenderer();
     this.fadeManager = new Canvas2DFadeManager();
   }
 
@@ -167,6 +172,39 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
         params.redTrailPoints,
         params.trailSettings,
         params.currentTime,
+        !!params.blueProp && params.visibility.blueMotionVisible,
+        !!params.redProp && params.visibility.redMotionVisible
+      );
+    }
+
+    // 3.5. Draw arms (if visible) - render BEFORE props so arms appear behind
+    if (params.visibility.armsVisible) {
+      const blueTransform = params.blueProp
+        ? this.calculatePropTransform(
+            params.blueProp,
+            params.bluePropDimensions,
+            canvasSize
+          )
+        : null;
+      const redTransform = params.redProp
+        ? this.calculatePropTransform(
+            params.redProp,
+            params.redPropDimensions,
+            canvasSize
+          )
+        : null;
+
+      const colors = getAnimationVisibilityManager().getMotionColors();
+
+      this.armRenderer.renderArms(
+        ctx,
+        blueTransform?.x ?? canvasSize / 2,
+        blueTransform?.y ?? canvasSize / 2,
+        redTransform?.x ?? canvasSize / 2,
+        redTransform?.y ?? canvasSize / 2,
+        canvasSize,
+        colors.blue,
+        colors.red,
         !!params.blueProp && params.visibility.blueMotionVisible,
         !!params.redProp && params.visibility.redMotionVisible
       );
@@ -372,6 +410,14 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
 
   getCanvas(): HTMLCanvasElement | null {
     return this.appManager.getCanvas();
+  }
+
+  getBluePropDimensions(): { width: number; height: number } {
+    return this.imageLoader.getBluePropDimensions();
+  }
+
+  getRedPropDimensions(): { width: number; height: number } {
+    return this.imageLoader.getRedPropDimensions();
   }
 
   destroy(): void {

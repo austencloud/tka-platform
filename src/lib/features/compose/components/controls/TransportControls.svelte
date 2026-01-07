@@ -27,17 +27,7 @@
 </script>
 
 <div class="transport-controls">
-  <!-- Full Beat Back -->
-  <button
-    class="step-btn step-full"
-    onclick={onStepFullBeatBackward}
-    type="button"
-    aria-label="Previous full beat"
-  >
-    <i class="fas fa-angles-left" aria-hidden="true"></i>
-  </button>
-
-  <!-- Half Beat Back -->
+  <!-- Half Beat Back (secondary - outer position) -->
   <button
     class="step-btn step-half"
     onclick={onStepHalfBeatBackward}
@@ -45,6 +35,16 @@
     aria-label="Previous half beat"
   >
     <i class="fas fa-chevron-left" aria-hidden="true"></i>
+  </button>
+
+  <!-- Full Beat Back (primary - adjacent to play) -->
+  <button
+    class="step-btn step-full"
+    onclick={onStepFullBeatBackward}
+    type="button"
+    aria-label="Previous full beat"
+  >
+    <i class="fas fa-angles-left" aria-hidden="true"></i>
   </button>
 
   <!-- Play/Pause -->
@@ -58,17 +58,7 @@
     <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
   </button>
 
-  <!-- Half Beat Forward -->
-  <button
-    class="step-btn step-half"
-    onclick={onStepHalfBeatForward}
-    type="button"
-    aria-label="Next half beat"
-  >
-    <i class="fas fa-chevron-right" aria-hidden="true"></i>
-  </button>
-
-  <!-- Full Beat Forward -->
+  <!-- Full Beat Forward (primary - adjacent to play) -->
   <button
     class="step-btn step-full"
     onclick={onStepFullBeatForward}
@@ -76,6 +66,16 @@
     aria-label="Next full beat"
   >
     <i class="fas fa-angles-right" aria-hidden="true"></i>
+  </button>
+
+  <!-- Half Beat Forward (secondary - outer position) -->
+  <button
+    class="step-btn step-half"
+    onclick={onStepHalfBeatForward}
+    type="button"
+    aria-label="Next half beat"
+  >
+    <i class="fas fa-chevron-right" aria-hidden="true"></i>
   </button>
 </div>
 
