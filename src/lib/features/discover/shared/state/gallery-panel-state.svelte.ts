@@ -29,6 +29,9 @@ class GalleryPanelManager {
   // Pin state (desktop only)
   isPinned = $state(false);
 
+  // Expanded state for detail panel (shows animation settings sidebar)
+  isDetailExpanded = $state(false);
+
   // Active sequence for detail panel
   activeSequence = $state<SequenceData | null>(null);
 
@@ -123,6 +126,7 @@ class GalleryPanelManager {
     debug.log("🔵 PANEL: close() called");
     this.activePanel = null;
     this.isTransitioning = false;
+    this.isDetailExpanded = false; // Reset expanded state
     debug.log(
       `📊 STATE: activePanel=${this.activePanel}, isTransitioning=${this.isTransitioning}, isOpen=${this.isOpen}`
     );
@@ -137,6 +141,23 @@ class GalleryPanelManager {
 
   togglePin() {
     this.isPinned = !this.isPinned;
+  }
+
+  /**
+   * Toggle expanded mode for detail panel
+   * When expanded, panel is wider to show animation settings sidebar
+   */
+  toggleDetailExpanded() {
+    this.isDetailExpanded = !this.isDetailExpanded;
+    debug.log(`🔵 PANEL: toggleDetailExpanded() → ${this.isDetailExpanded}`);
+  }
+
+  /**
+   * Set detail expanded state directly
+   */
+  setDetailExpanded(expanded: boolean) {
+    this.isDetailExpanded = expanded;
+    debug.log(`🔵 PANEL: setDetailExpanded(${expanded})`);
   }
 
   /**

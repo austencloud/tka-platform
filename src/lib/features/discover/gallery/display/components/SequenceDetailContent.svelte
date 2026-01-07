@@ -11,25 +11,25 @@ Used by both desktop side panel and mobile slide-up overlay.
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
+  import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
+  import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
   import { galleryPanelManager } from "../../../shared/state/gallery-panel-state.svelte";
   import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
-  import SequenceVideosSection from "$lib/shared/video-collaboration/components/SequenceVideosSection.svelte";
-  import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
+  import VideosPanel from "$lib/shared/video-collaboration/components/VideosPanel.svelte";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import { auth } from "$lib/shared/auth/firebase";
   import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
 
   let hapticService: IHapticFeedback | null = null;
+  let videoService: ICollaborativeVideoManager | null = null;
 
-  // Video state
-  let showUploadSheet = $state(false);
-  let videosKey = $state(0); // For refreshing videos section
-  let selectedVideo = $state<CollaborativeVideo | null>(null);
+  // Video state - now just tracking count and panel visibility
+  let videoCount = $state(0);
+  let showVideosPanel = $state(false);
 
   // Share Hub state
   let showShareHub = $state(false);
@@ -46,19 +46,27 @@ Used by both desktop side panel and mobile slide-up overlay.
     onInviteCollaborators?: (video: CollaborativeVideo) => void;
   }>();
 
-  onMount(() => {
+  onMount(async () => {
     hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+
+    // Load video count for the compact button
+    try {
+      await loadFeatureModule("share");
+      videoService = tryResolve<ICollaborativeVideoManager>(
+        TYPES.ICollaborativeVideoManager
+      );
+      if (videoService) {
+        const videos = await videoService.getVideosForSequence(sequence.id);
+        videoCount = videos.length;
+      }
+    } catch (e) {
+      console.warn("[SequenceDetailContent] Failed to load video count:", e);
+    }
   });
 
   // Handlers
   function handleAction(action: string) {
     hapticService?.trigger("selection");
-
-    // Handle local actions
-    if (action === "upload-video") {
-      showUploadSheet = true;
-      return;
-    }
 
     if (action === "share") {
       showShareHub = true;
@@ -68,18 +76,26 @@ Used by both desktop side panel and mobile slide-up overlay.
     onAction(action, sequence);
   }
 
-  function handleVideoUploaded() {
-    // Refresh the videos section
-    videosKey++;
-  }
-
-  function handleVideoClick(video: CollaborativeVideo) {
+  function handleVideosClick() {
     hapticService?.trigger("selection");
-    selectedVideo = video;
+    showVideosPanel = true;
   }
 
-  function closeVideoPlayer() {
-    selectedVideo = null;
+  function handleVideosPanelClose() {
+    showVideosPanel = false;
+    // Refresh video count when panel closes
+    refreshVideoCount();
+  }
+
+  async function refreshVideoCount() {
+    if (videoService) {
+      try {
+        const videos = await videoService.getVideosForSequence(sequence.id);
+        videoCount = videos.length;
+      } catch (e) {
+        console.warn("[SequenceDetailContent] Failed to refresh video count:", e);
+      }
+    }
   }
 
   function handleMaximize() {
@@ -104,26 +120,47 @@ Used by both desktop side panel and mobile slide-up overlay.
   // Check if we have creator info to display
   const hasCreatorInfo = $derived(Boolean(sequence.ownerId));
   const currentUserId = $derived(auth.currentUser?.uid);
-  const canInviteToVideo = $derived(
-    Boolean(selectedVideo && currentUserId === selectedVideo.creatorId)
+
+  // Check if current user owns this sequence (for ownership-aware edit controls)
+  const isOwned = $derived(
+    Boolean(currentUserId && sequence.ownerId === currentUserId)
   );
 </script>
 
 <div class="detail-content">
-  <!-- Header with close button -->
+  <!-- Header with collapse/close buttons -->
   <header class="detail-header">
     <span class="header-title">Sequence Details</span>
-    <button class="close-button" onclick={onClose} aria-label="Close">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
+    <div class="header-buttons">
+      {#if galleryPanelManager.isDetailExpanded}
+        <button
+          class="collapse-button"
+          onclick={() => galleryPanelManager.setDetailExpanded(false)}
+          aria-label="Collapse panel"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="11 17 6 12 11 7"></polyline>
+            <polyline points="18 17 13 12 18 7"></polyline>
+          </svg>
+        </button>
+      {/if}
+      <button class="close-button" onclick={onClose} aria-label="Close">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <!-- Media Viewer (Images, Animation, Video) -->
@@ -181,15 +218,6 @@ Used by both desktop side panel and mobile slide-up overlay.
     {/if}
   </div>
 
-  <!-- Videos Section -->
-  {#key videosKey}
-    <SequenceVideosSection
-      sequenceId={sequence.id}
-      onVideoClick={handleVideoClick}
-      onUploadClick={() => handleAction("upload-video")}
-    />
-  {/key}
-
   <!-- Action Buttons -->
   <div class="action-buttons">
     <button
@@ -215,23 +243,47 @@ Used by both desktop side panel and mobile slide-up overlay.
       <span>{sequence.isFavorite ? "Saved" : "Save"}</span>
     </button>
 
-    <button
-      class="action-btn"
-      onclick={() => handleAction("edit")}
-      aria-label="Edit sequence"
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
+    {#if isOwned}
+      <button
+        class="action-btn"
+        onclick={() => handleAction("edit")}
+        aria-label="Edit sequence"
       >
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-      </svg>
-    </button>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      </button>
+    {:else}
+      <!-- Fork button for non-owned sequences -->
+      <button
+        class="action-btn"
+        onclick={() => handleAction("fork")}
+        aria-label="Fork sequence"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="18" r="3" />
+          <circle cx="6" cy="6" r="3" />
+          <circle cx="18" cy="6" r="3" />
+          <path d="M18 9a9 9 0 0 1-9 9" />
+          <path d="M6 9a9 9 0 0 0 9 9" />
+        </svg>
+      </button>
+    {/if}
 
     <button
       class="action-btn"
@@ -254,10 +306,11 @@ Used by both desktop side panel and mobile slide-up overlay.
       </svg>
     </button>
 
+    <!-- Videos Button -->
     <button
-      class="action-btn"
-      onclick={() => handleAction("delete")}
-      aria-label="Delete sequence"
+      class="action-btn action-btn-videos"
+      onclick={handleVideosClick}
+      aria-label={videoCount > 0 ? `View ${videoCount} videos` : "Record performance"}
     >
       <svg
         width="20"
@@ -267,12 +320,37 @@ Used by both desktop side panel and mobile slide-up overlay.
         stroke="currentColor"
         stroke-width="2"
       >
-        <polyline points="3 6 5 6 21 6" />
-        <path
-          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-        />
+        <polygon points="23 7 16 12 23 17 23 7" />
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
       </svg>
+      {#if videoCount > 0}
+        <span class="video-count">{videoCount}</span>
+      {:else}
+        <span>Record</span>
+      {/if}
     </button>
+
+    {#if isOwned}
+      <button
+        class="action-btn action-btn-danger"
+        onclick={() => handleAction("delete")}
+        aria-label="Delete sequence"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="3 6 5 6 21 6" />
+          <path
+            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+          />
+        </svg>
+      </button>
+    {/if}
 
     <button
       class="action-btn action-btn-maximize"
@@ -296,77 +374,34 @@ Used by both desktop side panel and mobile slide-up overlay.
   </div>
 </div>
 
-<!-- Video Upload Sheet -->
-<VideoUploadSheet
-  show={showUploadSheet}
-  {sequence}
-  onClose={() => (showUploadSheet = false)}
-  onUploaded={handleVideoUploaded}
-/>
+<!-- Videos Panel (full overlay) -->
+{#if showVideosPanel}
+  <VideosPanel
+    {sequence}
+    onClose={handleVideosPanelClose}
+    {onInviteCollaborators}
+  />
+{/if}
 
 <!-- Share Hub Drawer -->
 <ShareHubDrawer
   bind:isOpen={showShareHub}
   {sequence}
+  mode="discover"
+  {isOwned}
+  creatorInfo={hasCreatorInfo
+    ? {
+        ownerId: sequence.ownerId ?? "",
+        displayName: sequence.ownerDisplayName ?? "Unknown",
+        avatarUrl: sequence.ownerAvatarUrl,
+      }
+    : null}
+  isFavorite={sequence.isFavorite ?? false}
+  onFavoriteToggle={() => handleAction("favorite")}
+  onFork={() => handleAction("fork")}
+  onDelete={isOwned ? () => handleAction("delete") : undefined}
   onClose={() => (showShareHub = false)}
 />
-
-<!-- Video Player Modal -->
-{#if selectedVideo}
-  <div class="video-player-overlay" role="dialog" aria-label="Video player">
-    <button
-      class="video-player-backdrop"
-      onclick={closeVideoPlayer}
-      aria-label="Close video player"
-    ></button>
-    <div class="video-player-container">
-      <header class="video-player-header">
-        <div class="video-player-title">
-          <i class="fas fa-video" aria-hidden="true"></i>
-          <span>Performance Video</span>
-        </div>
-        <div class="video-player-actions">
-          {#if canInviteToVideo && onInviteCollaborators}
-            <button
-              class="video-player-invite"
-              onclick={() => {
-                onInviteCollaborators(selectedVideo);
-                closeVideoPlayer();
-              }}
-            >
-              <i class="fas fa-user-plus" aria-hidden="true"></i>
-              Invite
-            </button>
-          {/if}
-          <button
-            class="video-player-close"
-            onclick={closeVideoPlayer}
-            aria-label="Close video"
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </div>
-      </header>
-      <div class="video-player-content">
-        <video
-          src={selectedVideo.videoUrl}
-          controls
-          autoplay
-          muted
-          playsinline
-          class="video-player-video"
-        >
-          <track kind="captions" />
-        </video>
-      </div>
-      {#if selectedVideo.description}
-        <div class="video-player-description">
-          {selectedVideo.description}
-        </div>
-      {/if}
-    </div>
-  </div>
-{/if}
 
 <style>
   .detail-content {
@@ -394,6 +429,44 @@ Used by both desktop side panel and mobile slide-up overlay.
     font-size: clamp(14px, 4cqi, 18px);
     font-weight: 600;
     color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
+  }
+
+  /* Header buttons container */
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Collapse button - shrinks panel back to normal width */
+  .collapse-button {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-accent, #3b82f6);
+    border: 1px solid var(--theme-accent, #3b82f6);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .collapse-button svg {
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
+  }
+
+  .collapse-button:hover {
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
+    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
+    transform: scale(1.05);
+  }
+
+  .collapse-button:active {
+    transform: scale(0.95);
   }
 
   /* Close button - uses global touch target token */
@@ -428,10 +501,10 @@ Used by both desktop side panel and mobile slide-up overlay.
   }
 
   /* Media Container - holds the unified media viewer */
+  /* flex: 1 lets it grow to fill available space between header and buttons */
   .media-container {
     flex: 1;
     min-height: clamp(200px, 45cqi, 350px);
-    max-height: 70%;
     width: 100%;
     max-width: 100%;
     border-radius: clamp(8px, 2cqi, 12px);
@@ -629,6 +702,17 @@ Used by both desktop side panel and mobile slide-up overlay.
     );
   }
 
+  /* Danger button style for delete */
+  .action-btn-danger {
+    color: var(--semantic-error);
+    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  .action-btn-danger:hover {
+    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
+    border-color: var(--semantic-error);
+  }
+
   /* Compact layout for smaller containers */
   @container detail-panel (max-width: 320px) {
     .action-btn span {
@@ -642,158 +726,58 @@ Used by both desktop side panel and mobile slide-up overlay.
     }
   }
 
+  /* Videos button style */
+  .action-btn-videos {
+    position: relative;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-info) 20%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-info) 10%, transparent) 100%
+    );
+    border-color: color-mix(in srgb, var(--semantic-info) 40%, transparent);
+  }
+
+  .action-btn-videos:hover {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--semantic-info) 30%, transparent) 0%,
+      color-mix(in srgb, var(--semantic-info) 20%, transparent) 100%
+    );
+    border-color: var(--semantic-info);
+  }
+
+  .action-btn-videos svg {
+    color: var(--semantic-info);
+  }
+
+  .video-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--semantic-info);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .close-button,
+    .collapse-button,
     .action-btn,
     .creator-badge {
       transition: none;
     }
 
     .close-button:active,
+    .collapse-button:active,
     .action-btn:active,
     .creator-badge:active {
       transform: none;
     }
-  }
-
-  /* Video Player Modal */
-  .video-player-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-  }
-
-  .video-player-backdrop {
-    position: absolute;
-    inset: 0;
-    background: color-mix(in srgb, var(--theme-shadow) 85%, transparent);
-    border: none;
-    cursor: pointer;
-  }
-
-  .video-player-container {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 800px;
-    max-height: 90vh;
-    background: var(
-      --theme-panel-bg,
-      linear-gradient(
-        135deg,
-        rgba(20, 20, 30, 0.98) 0%,
-        rgba(30, 30, 45, 0.98) 100%
-      )
-    );
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 16px;
-    overflow: hidden;
-    animation: videoPlayerIn 0.2s ease-out;
-  }
-
-  @keyframes videoPlayerIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .video-player-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.25rem;
-    background: var(--theme-card-bg);
-    border-bottom: 1px solid var(--theme-stroke);
-  }
-
-  .video-player-title {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
-  .video-player-title i {
-    color: var(--semantic-info, var(--semantic-info));
-  }
-
-  .video-player-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .video-player-invite {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.85rem;
-    background: linear-gradient(135deg, var(--semantic-info) 0%, #2563eb 100%);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .video-player-invite:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-  }
-
-  .video-player-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .video-player-close:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text, white);
-  }
-
-  .video-player-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-shadow, black);
-  }
-
-  .video-player-video {
-    width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-  }
-
-  .video-player-description {
-    padding: 1rem 1.25rem;
-    font-size: 0.9rem;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    border-top: 1px solid var(--theme-stroke);
-    background: var(--theme-card-bg);
   }
 </style>

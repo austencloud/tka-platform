@@ -173,6 +173,7 @@ export function createExploreState() {
   }
 
   // Load user's library sequences
+  // When impersonating, Firestore rules allow admins to read any user's library
   async function loadLibrarySequences(): Promise<void> {
     const libService = getLibraryRepository();
     if (!libService) {

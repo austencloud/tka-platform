@@ -27,7 +27,7 @@
   import { getContainerInstance } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IDiscoverThumbnailCache } from "../services/contracts/IDiscoverThumbnailCache";
-  import type { ICloudThumbnailCache } from "../services/contracts/ICloudThumbnailCache";
+  import type { ICloudThumbnailCache, ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
   import type { IDiscoverLoader } from "../services/contracts/IDiscoverLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -39,6 +39,12 @@
     redPropType?: PropType;
     catDogModeEnabled?: boolean;
     lightMode?: boolean;
+    /**
+     * Cache variant determines what metadata is baked into the image:
+     * - 'gallery': No user data footer (default, for Discover browsing)
+     * - 'wordcard': With user data footer (for print cards)
+     */
+    variant?: ThumbnailVariant;
     // Image composition settings - when provided, skips cloud caching and renders fresh
     // This enables the sequence viewer to show customized export previews
     addWord?: boolean;
@@ -47,6 +53,11 @@
     addDifficultyLevel?: boolean;
     addUserInfo?: boolean;
     userName?: string;
+    // Granular footer controls
+    showCreatorName?: boolean;
+    showNotes?: boolean;
+    showBirthday?: boolean;
+    customNotesText?: string;
   }
 
   const {
@@ -55,6 +66,7 @@
     redPropType,
     catDogModeEnabled = false,
     lightMode = false,
+    variant = "gallery",
     // Image composition settings - undefined means use defaults
     addWord,
     addBeatNumbers,
@@ -62,29 +74,58 @@
     addDifficultyLevel,
     addUserInfo,
     userName,
+    // Granular footer controls
+    showCreatorName,
+    showNotes,
+    showBirthday,
+    customNotesText,
   }: Props = $props();
 
-  // Cloud-cached thumbnails are rendered with these default settings.
-  // Only re-render if user's settings differ from these defaults.
-  const CLOUD_CACHE_DEFAULTS = {
+  // Variant-specific cache defaults
+  // Gallery: No user data footer (for Discover browsing)
+  // WordCard: With user data footer (for print cards)
+  const GALLERY_DEFAULTS = {
     addWord: true,
     addBeatNumbers: true,
     includeStartPosition: true,
     addDifficultyLevel: true,
     addUserInfo: false,
+    showCreatorName: true,
+    showNotes: true,
+    showBirthday: true,
   };
 
-  // Check if current settings differ from cloud cache defaults
+  const WORDCARD_DEFAULTS = {
+    addWord: true,
+    addBeatNumbers: true,
+    includeStartPosition: true,
+    addDifficultyLevel: true,
+    addUserInfo: true,  // Word cards always include user data
+    showCreatorName: true,
+    showNotes: true,
+    showBirthday: true,
+  };
+
+  // Get the appropriate defaults based on variant
+  const cacheDefaults = $derived(variant === "wordcard" ? WORDCARD_DEFAULTS : GALLERY_DEFAULTS);
+
+  // Check if current settings differ from cloud cache defaults for this variant
   // If they match (or are undefined), we can use the cached version
   const settingsDifferFromDefaults = $derived(() => {
+    const defaults = cacheDefaults;
     // If setting is undefined, it uses the default (no difference)
     // If setting is defined but matches default, no difference
     // If setting is defined and differs from default, must re-render
-    if (addWord !== undefined && addWord !== CLOUD_CACHE_DEFAULTS.addWord) return true;
-    if (addBeatNumbers !== undefined && addBeatNumbers !== CLOUD_CACHE_DEFAULTS.addBeatNumbers) return true;
-    if (includeStartPosition !== undefined && includeStartPosition !== CLOUD_CACHE_DEFAULTS.includeStartPosition) return true;
-    if (addDifficultyLevel !== undefined && addDifficultyLevel !== CLOUD_CACHE_DEFAULTS.addDifficultyLevel) return true;
-    if (addUserInfo !== undefined && addUserInfo !== CLOUD_CACHE_DEFAULTS.addUserInfo) return true;
+    if (addWord !== undefined && addWord !== defaults.addWord) return true;
+    if (addBeatNumbers !== undefined && addBeatNumbers !== defaults.addBeatNumbers) return true;
+    if (includeStartPosition !== undefined && includeStartPosition !== defaults.includeStartPosition) return true;
+    if (addDifficultyLevel !== undefined && addDifficultyLevel !== defaults.addDifficultyLevel) return true;
+    if (addUserInfo !== undefined && addUserInfo !== defaults.addUserInfo) return true;
+    // Granular footer controls
+    if (showCreatorName !== undefined && showCreatorName !== defaults.showCreatorName) return true;
+    if (showNotes !== undefined && showNotes !== defaults.showNotes) return true;
+    if (showBirthday !== undefined && showBirthday !== defaults.showBirthday) return true;
+    if (customNotesText !== undefined) return true; // Any custom text differs from default
     return false;
   });
 
@@ -95,6 +136,10 @@
   let hasError = $state(false);
   let isVisible = $state(false);
   let loadingStatus = $state<string>("");
+
+  // Render queue management - when props change mid-render, we need to re-render
+  let pendingRerender = $state(false);
+  let currentRenderVersion = $state(0); // Increments each time we start a render
 
   // Derived
   const sequenceName = $derived(sequence.word || sequence.name);
@@ -121,6 +166,11 @@
   let prevIncludeStartPosition = $state<boolean | undefined>(undefined);
   let prevAddDifficultyLevel = $state<boolean | undefined>(undefined);
   let prevAddUserInfo = $state<boolean | undefined>(undefined);
+  // Track previous granular footer settings
+  let prevShowCreatorName = $state<boolean | undefined>(undefined);
+  let prevShowNotes = $state<boolean | undefined>(undefined);
+  let prevShowBirthday = $state<boolean | undefined>(undefined);
+  let prevCustomNotesText = $state<string | undefined>(undefined);
   let hasInitiallyLoaded = $state(false);
 
   onMount(() => {
@@ -153,15 +203,163 @@
   });
 
   /**
+   * Reload thumbnail when props change - INSTANT swap if cached, otherwise render
+   *
+   * AGGRESSIVE CANCELLATION: When props change, we immediately:
+   * 1. Increment renderVersion to invalidate any in-progress renders
+   * 2. Check cloud cache for new props (instant if hit)
+   * 3. If cache miss, show loading state and render fresh
+   *
+   * Old renders are abandoned - they check renderVersion and abort.
+   */
+  async function reloadThumbnail() {
+    // AGGRESSIVE: Always bump version to cancel any in-progress renders
+    const renderVersion = ++currentRenderVersion;
+    console.log(`[PropAwareThumbnail] ${sequenceName}: Starting reload v${renderVersion}`);
+
+    // Clear pending flag - we're handling the change now
+    pendingRerender = false;
+    hasError = false;
+
+    // Snapshot current props IMMEDIATELY
+    const snapshotProps = {
+      bluePropType,
+      redPropType,
+      catDogModeEnabled,
+      lightMode,
+      isCatDog,
+      effectivePropType,
+      sequenceName,
+    };
+
+    // STEP 1: Try cloud cache FIRST for instant swap
+    try {
+      const container = await getContainerInstance();
+      const cloudCache = container.get<ICloudThumbnailCache>(
+        TYPES.ICloudThumbnailCache
+      );
+
+      // Check if stale before cache lookup
+      if (currentRenderVersion !== renderVersion) {
+        console.log(`[PropAwareThumbnail] ${sequenceName}: Stale before cache check, aborting`);
+        return;
+      }
+
+      const cloudKey = snapshotProps.isCatDog
+        ? getCatDogCloudKeyWithProps(snapshotProps)
+        : getSinglePropCloudKeyWithProps(snapshotProps);
+
+      if (cloudKey) {
+        const cloudUrl = await cloudCache.getUrl(cloudKey);
+
+        // Check if stale after cache lookup
+        if (currentRenderVersion !== renderVersion) {
+          console.log(`[PropAwareThumbnail] ${sequenceName}: Stale after cache check, aborting`);
+          return;
+        }
+
+        if (cloudUrl) {
+          // INSTANT SWAP from cache!
+          console.log(`[PropAwareThumbnail] ${sequenceName}: Cache hit! Instant swap`);
+          const oldUrl = thumbnailUrl;
+          thumbnailUrl = cloudUrl;
+          if (oldUrl?.startsWith("blob:")) {
+            URL.revokeObjectURL(oldUrl);
+          }
+          return; // Done - no render needed
+        }
+      }
+    } catch (error) {
+      console.warn(`[PropAwareThumbnail] ${sequenceName}: Cache check failed:`, error);
+      // Continue to render
+    }
+
+    // Check if stale before starting render
+    if (currentRenderVersion !== renderVersion) {
+      console.log(`[PropAwareThumbnail] ${sequenceName}: Stale before render, aborting`);
+      return;
+    }
+
+    // STEP 2: Cache miss - need to render
+    // Show loading state immediately so user knows something is happening
+    isLoading = true;
+    loadingStatus = "Rendering...";
+
+    try {
+      const blob = await renderThumbnailWithProps(snapshotProps);
+
+      // Check if stale after render - if so, discard completely
+      if (currentRenderVersion !== renderVersion) {
+        console.log(`[PropAwareThumbnail] ${sequenceName}: Render v${renderVersion} stale (now v${currentRenderVersion}), discarding`);
+        return; // Just abandon - don't trigger another render
+      }
+
+      // Create new blob URL
+      const newUrl = URL.createObjectURL(blob);
+
+      // Preload to prevent flash
+      await new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Failed to preload"));
+        img.src = newUrl;
+      });
+
+      // Final stale check before swap
+      if (currentRenderVersion !== renderVersion) {
+        URL.revokeObjectURL(newUrl);
+        return;
+      }
+
+      // Swap
+      const oldUrl = thumbnailUrl;
+      thumbnailUrl = newUrl;
+      if (oldUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(oldUrl);
+      }
+
+      // Upload to cloud for next time (async, don't wait)
+      const container = await getContainerInstance();
+      const cloudCache = container.get<ICloudThumbnailCache>(
+        TYPES.ICloudThumbnailCache
+      );
+      const cloudKey = snapshotProps.isCatDog
+        ? getCatDogCloudKeyWithProps(snapshotProps)
+        : getSinglePropCloudKeyWithProps(snapshotProps);
+      if (cloudKey) {
+        cloudCache.upload(cloudKey, blob).catch(() => {});
+      }
+    } catch (error) {
+      // Only show error if this render is still current
+      if (currentRenderVersion === renderVersion) {
+        console.error(`[PropAwareThumbnail] ${sequenceName}: Render failed:`, error);
+        // Keep old image on error
+      }
+    } finally {
+      // Only clear loading if we're still the current render
+      if (currentRenderVersion === renderVersion) {
+        isLoading = false;
+        loadingStatus = "";
+      }
+    }
+  }
+
+  /**
    * Main thumbnail loading function
    * Tries cloud cache first, then renders locally and uploads
    * When custom settings are provided, skips caching entirely
    *
    * IMPORTANT: We snapshot prop values at the start and pass them explicitly
    * to avoid race conditions where props change during async rendering.
+   *
+   * QUEUE MANAGEMENT: If props change during initial load, we schedule a
+   * reload after this load completes to ensure we render with correct props.
    */
   async function loadThumbnail() {
     if (isLoading || thumbnailUrl) return;
+
+    // Track this render's version to detect if it's stale
+    const renderVersion = ++currentRenderVersion;
 
     // Early validation: need a usable sequence name
     if (!sequenceName) {
@@ -207,12 +405,14 @@
         loadingStatus = "Rendering...";
         const blob = await renderThumbnailWithProps(snapshotProps);
 
-        // Check if props changed during render - if so, abort
-        if (propsChangedSince(snapshotProps)) {
+        // Check if props changed during render - if so, discard and schedule reload
+        if (currentRenderVersion !== renderVersion || propsChangedSince(snapshotProps)) {
           console.log(
-            `[PropAwareThumbnail] Props changed during render, discarding result`
+            `[PropAwareThumbnail] ${sequenceName}: Props changed during render, scheduling reload`
           );
-          return;
+          hasInitiallyLoaded = true; // Mark loaded so effect can trigger reload
+          pendingRerender = true;
+          return; // Will trigger reload in finally block
         }
 
         thumbnailUrl = URL.createObjectURL(blob);
@@ -251,16 +451,23 @@
       const cloudUrl = await cloudCache.getUrl(cloudKey);
 
       // Check if props changed during cache check
-      if (propsChangedSince(snapshotProps)) {
+      if (currentRenderVersion !== renderVersion || propsChangedSince(snapshotProps)) {
         console.log(
-          `[PropAwareThumbnail] Props changed during cache check, aborting`
+          `[PropAwareThumbnail] ${sequenceName}: Props changed during cache check, scheduling reload`
         );
-        return;
+        hasInitiallyLoaded = true;
+        pendingRerender = true;
+        return; // Will trigger reload in finally block
       }
 
       if (cloudUrl) {
+        // Check if stale before using cloud URL
+        if (currentRenderVersion !== renderVersion) {
+          console.log(`[PropAwareThumbnail] ${sequenceName}: Stale after cloud hit, aborting`);
+          return;
+        }
         // Found in cloud! Use directly (no blob URL needed)
-        console.log(`[PropAwareThumbnail] Found in cloud: ${cloudUrl}`);
+        console.log(`[PropAwareThumbnail] ${sequenceName}: Found in cloud: ${cloudUrl}`);
         thumbnailUrl = cloudUrl;
         hasInitiallyLoaded = true;
         loadingStatus = "";
@@ -274,11 +481,13 @@
 
       // CRITICAL: Check if props changed during render - if so, discard result
       // This prevents caching images with wrong props
-      if (propsChangedSince(snapshotProps)) {
+      if (currentRenderVersion !== renderVersion || propsChangedSince(snapshotProps)) {
         console.log(
-          `[PropAwareThumbnail] Props changed during render for ${sequenceName}, discarding to prevent cache pollution`
+          `[PropAwareThumbnail] ${sequenceName}: Props changed during render, scheduling reload`
         );
-        return;
+        hasInitiallyLoaded = true;
+        pendingRerender = true;
+        return; // Will trigger reload in finally block
       }
 
       // Step 3: Create URL for immediate display
@@ -313,11 +522,18 @@
 
       loadingStatus = "";
     } catch (error) {
-      console.error(`Failed to load thumbnail for ${sequenceName}:`, error);
-      hasError = true;
-      loadingStatus = "";
+      // Only show error if this render is still current
+      if (currentRenderVersion === renderVersion) {
+        console.error(`Failed to load thumbnail for ${sequenceName}:`, error);
+        hasError = true;
+      }
     } finally {
-      isLoading = false;
+      // Only clear loading state if we're still the current render
+      // If props changed, a new render is already running
+      if (currentRenderVersion === renderVersion) {
+        isLoading = false;
+        loadingStatus = "";
+      }
     }
   }
 
@@ -353,6 +569,7 @@
       sequenceName: props.sequenceName,
       propType: props.effectivePropType,
       lightMode: props.lightMode,
+      variant,  // Include variant to separate gallery/wordcard caches
     };
   }
 
@@ -371,6 +588,7 @@
       sequenceName: props.sequenceName,
       propType: combinedProp,
       lightMode: props.lightMode,
+      variant,  // Include variant to separate gallery/wordcard caches
     };
   }
 
@@ -440,17 +658,23 @@
     }
 
     // Render with appropriate props - USING SNAPSHOTTED VALUES
-    // Use custom settings if provided, otherwise use defaults
+    // Use custom settings if provided, otherwise use variant-specific defaults
+    const defaults = cacheDefaults;
     const renderOptions = {
       beatSize: 240,
       format: "WebP" as const,
       quality: 0.9,
-      includeStartPosition: includeStartPosition ?? true,
-      addBeatNumbers: addBeatNumbers ?? true,
-      addWord: addWord ?? true,
-      addDifficultyLevel: addDifficultyLevel ?? true,
-      addUserInfo: addUserInfo ?? false,
+      includeStartPosition: includeStartPosition ?? defaults.includeStartPosition,
+      addBeatNumbers: addBeatNumbers ?? defaults.addBeatNumbers,
+      addWord: addWord ?? defaults.addWord,
+      addDifficultyLevel: addDifficultyLevel ?? defaults.addDifficultyLevel,
+      addUserInfo: addUserInfo ?? defaults.addUserInfo,
       userName: userName ?? "",
+      // Granular footer controls - use variant-specific defaults
+      showCreatorName: showCreatorName ?? defaults.showCreatorName,
+      showNotes: showNotes ?? defaults.showNotes,
+      showBirthday: showBirthday ?? defaults.showBirthday,
+      customNotesText: customNotesText,
       addReversalSymbols: true,
       backgroundColor: props.lightMode ? "#ffffff" : "#1a1a2e",
       // For single-prop mode, override all props to the selected type
@@ -509,6 +733,11 @@
     const currentIncludeStartPosition = includeStartPosition;
     const currentAddDifficultyLevel = addDifficultyLevel;
     const currentAddUserInfo = addUserInfo;
+    // Read granular footer settings
+    const currentShowCreatorName = showCreatorName;
+    const currentShowNotes = showNotes;
+    const currentShowBirthday = showBirthday;
+    const currentCustomNotesText = customNotesText;
 
     // Check if props actually changed (not just initial render)
     const propsChanged =
@@ -521,7 +750,11 @@
         currentAddBeatNumbers !== prevAddBeatNumbers ||
         currentIncludeStartPosition !== prevIncludeStartPosition ||
         currentAddDifficultyLevel !== prevAddDifficultyLevel ||
-        currentAddUserInfo !== prevAddUserInfo);
+        currentAddUserInfo !== prevAddUserInfo ||
+        currentShowCreatorName !== prevShowCreatorName ||
+        currentShowNotes !== prevShowNotes ||
+        currentShowBirthday !== prevShowBirthday ||
+        currentCustomNotesText !== prevCustomNotesText);
 
     // Update previous values
     prevBlueProp = currentBlue;
@@ -533,26 +766,37 @@
     prevIncludeStartPosition = currentIncludeStartPosition;
     prevAddDifficultyLevel = currentAddDifficultyLevel;
     prevAddUserInfo = currentAddUserInfo;
+    prevShowCreatorName = currentShowCreatorName;
+    prevShowNotes = currentShowNotes;
+    prevShowBirthday = currentShowBirthday;
+    prevCustomNotesText = currentCustomNotesText;
 
-    // Only reload if props actually changed while visible
-    if (propsChanged && isVisible && !isLoading) {
-      if (thumbnailUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(thumbnailUrl);
-      }
-      thumbnailUrl = null;
-      loadThumbnail();
+    // Reload if props changed while visible
+    // AGGRESSIVE: Always trigger reload - it will bump version and cancel any in-progress renders
+    // The reload checks cloud cache first for instant swap
+    if (propsChanged && isVisible) {
+      console.log(`[PropAwareThumbnail] ${sequenceName}: Props changed, triggering reload`);
+      reloadThumbnail();
     }
   });
 </script>
 
-<div class="prop-thumbnail" bind:this={containerRef}>
+<div class="prop-thumbnail" data-variant={variant} bind:this={containerRef}>
   {#if thumbnailUrl}
     <img
       src={thumbnailUrl}
       alt={`Preview of ${sequenceName}`}
       loading="lazy"
       decoding="async"
+      draggable="false"
     />
+    <!-- Loading overlay - shows on TOP of existing image during re-renders -->
+    {#if isLoading && loadingStatus}
+      <div class="loading-overlay" aria-label="Re-rendering thumbnail">
+        <div class="spinner"></div>
+        <span class="loading-status">{loadingStatus}</span>
+      </div>
+    {/if}
   {:else if isLoading}
     <div class="loading-placeholder" aria-label="Loading thumbnail">
       <div class="spinner"></div>
@@ -608,6 +852,17 @@
     }
   }
 
+  /* Word cards use natural image dimensions (no forced aspect ratio) */
+  .prop-thumbnail[data-variant="wordcard"] {
+    aspect-ratio: unset;
+  }
+
+  .prop-thumbnail[data-variant="wordcard"] img {
+    width: 100%;
+    height: auto;
+    object-fit: fill;
+  }
+
   .prop-thumbnail img {
     width: 100%;
     height: 100%;
@@ -616,6 +871,10 @@
     /* Prevent image from exceeding thumbnail bounds */
     max-width: 100%;
     max-height: 100%;
+    /* Prevent drag-and-drop on desktop */
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none;
   }
 
   .loading-placeholder,
@@ -677,6 +936,32 @@
     opacity: 0.5;
   }
 
+  /* Loading overlay - shows on TOP of existing image during re-renders */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 10;
+  }
+
+  .loading-overlay .spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+  }
+
+  .loading-overlay .loading-status {
+    color: white;
+    font-size: 11px;
+    opacity: 0.9;
+  }
+
   /* Container query responsive sizing */
   @container sequence-card (max-width: 249px) {
     .letter {
@@ -688,6 +973,10 @@
     }
     .loading-status {
       display: none;
+    }
+    .loading-overlay .spinner {
+      width: 20px;
+      height: 20px;
     }
   }
 </style>

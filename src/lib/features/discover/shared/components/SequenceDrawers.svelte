@@ -297,8 +297,9 @@
 </div>
 
 <!-- Detail Panel (Unified for Both Mobile & Desktop) -->
+<!-- When expanded, use wider width to show horizontal animation controls -->
 <div
-  style:--drawer-width={drawerWidth}
+  style:--drawer-width={galleryPanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
   class:nav-visible={isMobile && isNavVisible}
 >
   <Drawer

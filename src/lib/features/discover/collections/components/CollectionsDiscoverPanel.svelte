@@ -24,16 +24,6 @@ Uses singleton state for caching - data persists across tab switches.
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
-  import DiscoverNavButtons from "../../shared/components/DiscoverNavButtons.svelte";
-  import { getContext } from "svelte";
-  import type { DiscoverLocation } from "../../shared/state/discover-navigation-state.svelte";
-
-  // Get navigation handler from context (provided by DiscoverModule)
-  const navContext = getContext<{
-    onNavigate: (location: DiscoverLocation) => void;
-  }>("discoverNavigation");
-
-  const onNavigate = navContext?.onNavigate ?? (() => {});
 
   // Services
   let userService: IUserRepository;
@@ -131,18 +121,14 @@ Uses singleton state for caching - data persists across tab switches.
 </script>
 
 <div class="collections-discover-panel">
-  <!-- Top bar with navigation -->
+  <!-- Header -->
   <div class="collections-topbar">
-    <div class="nav-section">
-      <DiscoverNavButtons {onNavigate} />
-    </div>
     <div class="header-section">
       <h2 class="panel-title">
         <i class="fas fa-book-open" aria-hidden="true"></i>
         Browse Libraries
       </h2>
     </div>
-    <div class="spacer"></div>
   </div>
 
   <PanelSearch

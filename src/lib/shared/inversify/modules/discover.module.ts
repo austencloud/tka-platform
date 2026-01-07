@@ -19,39 +19,46 @@ import { TYPES } from "../types";
 export const exploreModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
     // === EXPLORE SERVICES ===
+    // Guard against duplicate binding (module may be loaded multiple times via HMR or race conditions)
+    const bindIfNeeded = <T>(
+      type: symbol,
+      impl: new (...args: unknown[]) => T
+    ) => {
+      if (!options.isBound(type)) {
+        return options.bind(type).to(impl);
+      }
+      return null;
+    };
 
     // Specialized explore/Explore services (use directly, no orchestration layer needed!)
-    options
-      .bind(TYPES.ISequenceDifficultyCalculator)
-      .to(SequenceDifficultyCalculator);
-    options
-      .bind(TYPES.IDiscoverMetadataExtractor)
-      .to(DiscoverMetadataExtractor);
-    options.bind(TYPES.IDiscoverCache).to(DiscoverCache);
-    options.bind(TYPES.IDiscoverFilter).to(DiscoverFilter);
-    options.bind(TYPES.IDiscoverSorter).to(DiscoverSorter);
+    bindIfNeeded(TYPES.ISequenceDifficultyCalculator, SequenceDifficultyCalculator);
+    bindIfNeeded(TYPES.IDiscoverMetadataExtractor, DiscoverMetadataExtractor);
+    bindIfNeeded(TYPES.IDiscoverCache, DiscoverCache);
+    bindIfNeeded(TYPES.IDiscoverFilter, DiscoverFilter);
+    bindIfNeeded(TYPES.IDiscoverSorter, DiscoverSorter);
     // DiscoverLoader MUST be singleton - sequence index cache (4.7MB) needs to persist
-    options.bind(TYPES.IDiscoverLoader).to(DiscoverLoader).inSingletonScope();
+    if (!options.isBound(TYPES.IDiscoverLoader)) {
+      options.bind(TYPES.IDiscoverLoader).to(DiscoverLoader).inSingletonScope();
+    }
 
     // Other explore/Explore services
-    options.bind(TYPES.IFavoritesManager).to(FavoritesManager);
-    options.bind(TYPES.IFilterPersister).to(FilterPersister);
+    bindIfNeeded(TYPES.IFavoritesManager, FavoritesManager);
+    bindIfNeeded(TYPES.IFilterPersister, FilterPersister);
 
     // Note: IPersistenceService is now bound in data.module.ts to DexiePersistenceService
-    // options.bind(TYPES.IPersistenceService).to(DiscoverPersistenceService); // REMOVED - conflicts with DexiePersistenceService
-    options.bind(TYPES.ISectionManager).to(DiscoverSectionManager);
-    options
-      .bind(TYPES.IDiscoverThumbnailProvider)
-      .to(DiscoverThumbnailProvider);
+    bindIfNeeded(TYPES.ISectionManager, DiscoverSectionManager);
+    bindIfNeeded(TYPES.IDiscoverThumbnailProvider, DiscoverThumbnailProvider);
     // Singleton for IndexedDB cache persistence (local device cache)
-    options
-      .bind(TYPES.IDiscoverThumbnailCache)
-      .to(DiscoverThumbnailCache)
-      .inSingletonScope();
+    if (!options.isBound(TYPES.IDiscoverThumbnailCache)) {
+      options
+        .bind(TYPES.IDiscoverThumbnailCache)
+        .to(DiscoverThumbnailCache)
+        .inSingletonScope();
+    }
     // Note: ICloudThumbnailCache is bound in share.module (tier 2) for cross-feature availability
-    options.bind(TYPES.IOptimizedDiscoverer).to(OptimizedDiscoverer);
-    options.bind(TYPES.INavigator).to(Navigator);
-    options.bind(TYPES.IDiscoverDeleter).to(DiscoverDeleter);
-    options.bind(TYPES.IDiscoverEventHandler).to(DiscoverEventHandler);
+    bindIfNeeded(TYPES.IOptimizedDiscoverer, OptimizedDiscoverer);
+    bindIfNeeded(TYPES.INavigator, Navigator);
+    bindIfNeeded(TYPES.IDiscoverDeleter, DiscoverDeleter);
+    bindIfNeeded(TYPES.IDiscoverEventHandler, DiscoverEventHandler);
   }
 );

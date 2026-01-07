@@ -19,6 +19,7 @@ import { getStorageInstance } from "$lib/shared/auth/firebase";
 import type {
   ICloudThumbnailCache,
   CloudThumbnailKey,
+  ThumbnailVariant,
 } from "../contracts/ICloudThumbnailCache";
 
 // In-memory cache to avoid repeated Firebase Storage checks
@@ -29,18 +30,22 @@ const pendingUploads = new Map<string, Promise<string>>();
 export class CloudThumbnailCache implements ICloudThumbnailCache {
   /**
    * Get the storage path for a thumbnail
+   * Includes variant in path to separate gallery (no user data) from wordcard (with user data)
    */
   getStoragePath(key: CloudThumbnailKey): string {
+    const variant = key.variant ?? "gallery";
     const modeSuffix = key.lightMode ? "_light" : "_dark";
-    return `thumbnails/${key.propType}/${key.sequenceName}${modeSuffix}.webp`;
+    return `thumbnails/${variant}/${key.propType}/${key.sequenceName}${modeSuffix}.webp`;
   }
 
   /**
    * Get cache key for in-memory cache
+   * Includes variant to keep gallery and wordcard thumbnails separate
    */
   private getCacheKey(key: CloudThumbnailKey): string {
+    const variant = key.variant ?? "gallery";
     const modeSuffix = key.lightMode ? "_light" : "_dark";
-    return `${key.propType}/${key.sequenceName}${modeSuffix}`;
+    return `${variant}/${key.propType}/${key.sequenceName}${modeSuffix}`;
   }
 
   /**
@@ -167,6 +172,7 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
         sequenceName: key.sequenceName,
         propType: key.propType,
         lightMode: String(key.lightMode),
+        variant: key.variant ?? "gallery",
         uploadedAt: new Date().toISOString(),
         source: "crowd-sourced",
       },
@@ -182,5 +188,63 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
    */
   clearMemoryCache(): void {
     urlCache.clear();
+  }
+
+  /**
+   * Delete all thumbnails for a variant (admin only)
+   * Lists all files in thumbnails/{variant}/ and deletes them
+   * Returns the number of files deleted
+   */
+  async deleteVariant(variant: ThumbnailVariant): Promise<number> {
+    const { ref, listAll, deleteObject } = await import("firebase/storage");
+    const storage = await getStorageInstance();
+
+    // Get reference to the variant folder
+    const variantRef = ref(storage, `thumbnails/${variant}`);
+
+    let deletedCount = 0;
+
+    try {
+      // List all items recursively (Firebase listAll returns prefixes for folders)
+      const result = await listAll(variantRef);
+
+      // Delete all files in root of variant folder
+      for (const item of result.items) {
+        try {
+          await deleteObject(item);
+          deletedCount++;
+        } catch (error) {
+          console.warn(`Failed to delete ${item.fullPath}:`, error);
+        }
+      }
+
+      // Recursively delete files in subfolders (prop type folders)
+      for (const prefix of result.prefixes) {
+        const subResult = await listAll(prefix);
+        for (const item of subResult.items) {
+          try {
+            await deleteObject(item);
+            deletedCount++;
+          } catch (error) {
+            console.warn(`Failed to delete ${item.fullPath}:`, error);
+          }
+        }
+      }
+
+      // Clear in-memory cache for this variant
+      for (const key of urlCache.keys()) {
+        if (key.startsWith(`${variant}/`)) {
+          urlCache.delete(key);
+        }
+      }
+
+      console.log(
+        `CloudThumbnailCache: Deleted ${deletedCount} files from ${variant} variant`
+      );
+      return deletedCount;
+    } catch (error) {
+      console.error(`CloudThumbnailCache: Error deleting ${variant}:`, error);
+      throw error;
+    }
   }
 }

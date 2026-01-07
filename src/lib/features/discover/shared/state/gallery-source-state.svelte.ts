@@ -3,18 +3,49 @@
  *
  * Manages the source toggle between Community (public) and My Library (user's sequences).
  * Uses Svelte 5 runes pattern for reactive state.
+ * Persists selection to localStorage for cross-session memory.
  */
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 export type GallerySource = "community" | "my-library";
 
+const STORAGE_KEY = "tka-gallery-source";
+
 class GallerySourceManager {
-  // Current source selection
-  source = $state<GallerySource>("community");
+  // Current source selection (restored from localStorage)
+  source = $state<GallerySource>(this.loadPersistedSource());
 
   // Callback for when source changes
   private onChangeCallbacks: Array<(source: GallerySource) => void> = [];
+
+  /**
+   * Load persisted source from localStorage
+   */
+  private loadPersistedSource(): GallerySource {
+    if (typeof localStorage === "undefined") return "community";
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "my-library" || stored === "community") {
+        return stored;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return "community";
+  }
+
+  /**
+   * Persist source to localStorage
+   */
+  private persistSource(source: GallerySource): void {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(STORAGE_KEY, source);
+    } catch {
+      // Ignore storage errors
+    }
+  }
 
   /**
    * Get the current source
@@ -55,6 +86,7 @@ class GallerySourceManager {
 
     if (this.source !== newSource) {
       this.source = newSource;
+      this.persistSource(newSource);
       // Notify listeners
       this.onChangeCallbacks.forEach((callback) => callback(newSource));
     }

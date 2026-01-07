@@ -5,16 +5,27 @@
  * When a user encounters a prop type for the first time, they render it locally
  * and upload to Firebase Storage so future users get instant loading.
  *
- * Storage structure: /thumbnails/{propType}/{sequenceName}_{mode}.webp
- * Example: /thumbnails/club/Butterfly_dark.webp
+ * Storage structure: /thumbnails/{variant}/{propType}/{sequenceName}_{mode}.webp
+ * Examples:
+ *   - Gallery (no user data): /thumbnails/gallery/club/Butterfly_dark.webp
+ *   - Word card (with user data): /thumbnails/wordcard/club/Butterfly_dark.webp
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
+/**
+ * Thumbnail variant determines what metadata is baked into the image:
+ * - 'gallery': No user data footer (for Discover browsing)
+ * - 'wordcard': With user data footer (for print cards)
+ */
+export type ThumbnailVariant = "gallery" | "wordcard";
 
 export interface CloudThumbnailKey {
   sequenceName: string;
   propType: PropType;
   lightMode: boolean;
+  /** Cache variant - defaults to 'gallery' for backwards compatibility */
+  variant?: ThumbnailVariant;
 }
 
 export interface CloudThumbnailResult {
@@ -52,4 +63,15 @@ export interface ICloudThumbnailCache {
    * Get the storage path for a thumbnail
    */
   getStoragePath(key: CloudThumbnailKey): string;
+
+  /**
+   * Delete all thumbnails for a variant (admin only)
+   * Returns the number of files deleted
+   */
+  deleteVariant(variant: ThumbnailVariant): Promise<number>;
+
+  /**
+   * Clear the in-memory URL cache
+   */
+  clearMemoryCache(): void;
 }

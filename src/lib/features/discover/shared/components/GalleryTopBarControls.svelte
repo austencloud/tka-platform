@@ -1,6 +1,6 @@
 <!--
 Gallery Top Bar Controls - 2026 Modern Design (Compact)
-- Navigation buttons (back/forward) on left
+- Source toggle chips (Community / My Library) on far left
 - Sort chips centered
 - Filter button opens drawer with scope toggle + drill-down filters
 - Active filter shown as dismissible chip
@@ -8,23 +8,22 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
 <script lang="ts">
   import { galleryControlsManager } from "../state/gallery-controls-state.svelte";
   import { galleryPanelManager } from "../state/gallery-panel-state.svelte";
+  import { gallerySourceManager, type GallerySource } from "../state/gallery-source-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
-  import { getContext, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { ExploreSortMethod } from "../domain/enums/discover-enums";
-  import DiscoverNavButtons from "./DiscoverNavButtons.svelte";
 
-  // Get navigation handler from context (provided by DiscoverModule)
-  const navContext = getContext<{
-    onNavigate: (location: {
-      tab: string;
-      view?: string;
-      contextId?: string;
-    }) => void;
-  }>("discoverNavigation");
+  interface Props {
+    onSourceChange?: (source: GallerySource) => void;
+  }
 
-  const onNavigate = navContext?.onNavigate ?? (() => {});
+  let { onSourceChange }: Props = $props();
+
+  // Get source state
+  const currentSource = $derived(gallerySourceManager.current);
+  const canViewMyLibrary = $derived(gallerySourceManager.canViewMyLibrary);
 
   // Get gallery controls from global reactive state
   const galleryControls = $derived(galleryControlsManager.current);
@@ -91,14 +90,39 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
       galleryControls.onFilterChange({ type: "all", value: null });
     }
   }
+
+  function handleSourceChange(source: GallerySource) {
+    hapticService?.trigger("selection");
+    gallerySourceManager.setSource(source);
+    onSourceChange?.(source);
+  }
 </script>
 
 {#if galleryControls}
   <div class="gallery-topbar-controls">
     <div class="controls-row">
-      <!-- Left: Navigation buttons -->
+      <!-- Left: Source toggle -->
       <div class="nav-section">
-        <DiscoverNavButtons {onNavigate} />
+        <div class="source-toggle">
+          <button
+            class="source-chip"
+            class:active={currentSource === "community"}
+            onclick={() => handleSourceChange("community")}
+          >
+            <i class="fas fa-globe" aria-hidden="true"></i>
+            <span class="chip-label">Community</span>
+          </button>
+          {#if canViewMyLibrary}
+            <button
+              class="source-chip"
+              class:active={currentSource === "my-library"}
+              onclick={() => handleSourceChange("my-library")}
+            >
+              <i class="fas fa-bookmark" aria-hidden="true"></i>
+              <span class="chip-label">My Library</span>
+            </button>
+          {/if}
+        </div>
       </div>
 
       <!-- Center: Sort Chips (truly centered) -->
@@ -169,12 +193,57 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
     position: relative;
   }
 
-  /* Left section - nav buttons */
+  /* Left section - source toggle */
   .nav-section {
     flex: 1;
     display: flex;
+    align-items: center;
     justify-content: flex-start;
-    min-width: 104px; /* Space for 2 nav buttons (48+8+48) */
+    gap: 12px;
+    min-width: 104px;
+  }
+
+  /* Source Toggle */
+  .source-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 100px;
+    padding: 3px;
+  }
+
+  .source-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+    min-height: calc(var(--control-height) - 8px);
+    background: transparent;
+    border: none;
+    border-radius: 100px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .source-chip:hover {
+    color: var(--theme-text);
+    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
+  }
+
+  .source-chip.active {
+    background: var(--theme-accent);
+    color: var(--theme-text);
+    font-weight: 600;
+  }
+
+  .source-chip i {
+    font-size: var(--font-size-compact);
   }
 
   /* Center section - absolutely centered chips */
@@ -328,21 +397,42 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
   }
 
   /* Mobile responsive - hide labels on small screens */
-  @media (max-width: 480px) {
+  @media (max-width: 640px) {
     .gallery-topbar-controls {
       padding: 8px 12px;
     }
 
+    .source-toggle {
+      padding: 2px;
+    }
+
+    .source-chip {
+      padding: 0 10px;
+      min-height: 32px;
+    }
+
     .sort-chip {
-      padding: 0 12px;
+      padding: 0 10px;
     }
 
     .chip-label {
       display: none;
     }
 
-    .sort-chip i {
+    .sort-chip i,
+    .source-chip i {
       font-size: var(--font-size-base);
+    }
+  }
+
+  /* Very small screens - even more compact */
+  @media (max-width: 400px) {
+    .source-toggle {
+      gap: 2px;
+    }
+
+    .source-chip {
+      padding: 0 8px;
     }
   }
 </style>

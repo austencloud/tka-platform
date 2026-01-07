@@ -40,6 +40,12 @@
   const isPanelOpen = $derived(
     !isMobile && (galleryPanelManager.isOpen || isAnimationPanelOpen)
   );
+
+  // Effective drawer width - accounts for expansion state
+  // When detail panel is expanded, use wider width for grid padding
+  const effectiveDrawerWidth = $derived(
+    galleryPanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth
+  );
 </script>
 
 <DiscoverLayout>
@@ -48,7 +54,7 @@
       <div
         class="sequences-main"
         class:panel-open={isPanelOpen}
-        style:--drawer-width={drawerWidth}
+        style:--drawer-width={effectiveDrawerWidth}
       >
         <SequenceDisplayPanel
           sequences={galleryState.displayedSequences}
@@ -103,7 +109,8 @@
       600px,
       90vw
     ); /* Default width, overridden by inline style */
-    /* No transition on padding - let animate-css-grid handle the smoothness */
+    /* Smooth transition for padding when panel expands/collapses */
+    transition: padding-right 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Add padding when panel is open (desktop only) - simple, standard approach */
@@ -113,7 +120,10 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .sequences-with-detail,
+    .sequences-with-detail {
+      transition: none;
+    }
+
     .sequences-main {
       transition: none;
     }

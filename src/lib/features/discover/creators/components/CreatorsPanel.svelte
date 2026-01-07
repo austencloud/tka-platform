@@ -21,20 +21,10 @@
   import PanelContent from "$lib/shared/components/panel/PanelContent.svelte";
   import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
   import PanelGrid from "$lib/shared/components/panel/PanelGrid.svelte";
-  import DiscoverNavButtons from "../../shared/components/DiscoverNavButtons.svelte";
-  import { getContext } from "svelte";
-  import type { DiscoverLocation } from "../../shared/state/discover-navigation-state.svelte";
   import {
     extractDominantColor,
     getCachedOrFallbackColor,
   } from "$lib/shared/foundation/utils/color-extractor";
-
-  // Get navigation handler from context (provided by DiscoverModule)
-  const navContext = getContext<{
-    onNavigate: (location: DiscoverLocation) => void;
-  }>("discoverNavigation");
-
-  const onNavigate = navContext?.onNavigate ?? (() => {});
 
   let searchQuery = $state("");
   let followingInProgress = $state<Set<string>>(new Set());
@@ -194,18 +184,14 @@
 
 <div class="creators-panel">
   <div class="content-container">
-    <!-- Top bar with navigation -->
+    <!-- Header -->
     <div class="creators-topbar">
-      <div class="nav-section">
-        <DiscoverNavButtons {onNavigate} />
-      </div>
       <div class="header-section">
         <h2 class="panel-title">
           <i class="fas fa-users" aria-hidden="true"></i>
           Discover Creators
         </h2>
       </div>
-      <div class="spacer"></div>
     </div>
 
     <PanelSearch placeholder="Search creators..." bind:value={searchQuery} />
