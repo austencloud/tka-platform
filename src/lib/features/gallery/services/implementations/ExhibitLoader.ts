@@ -94,25 +94,29 @@ export class ExhibitLoader implements IExhibitLoader {
   private async loadSequences(options: ExhibitLoadOptions) {
     const { source, userId, limit = 20 } = options;
 
+    let sequences;
+
     switch (source) {
       case "user_library":
-        return this.libraryRepository.getSequences({
-          limit,
+        sequences = await this.libraryRepository.getSequences({
+          limit: limit * 2, // Fetch extra to account for filtering
           sortBy: "updatedAt",
           sortDirection: "desc",
         });
+        break;
 
       case "public_library":
         if (!userId) {
           console.warn("[ExhibitLoader] public_library requires userId");
           return [];
         }
-        return this.libraryRepository.getUserSequences(userId, {
+        sequences = await this.libraryRepository.getUserSequences(userId, {
           visibility: "public",
-          limit,
+          limit: limit * 2,
           sortBy: "updatedAt",
           sortDirection: "desc",
         });
+        break;
 
       case "curated":
         // TODO: Implement curated collections
@@ -123,5 +127,16 @@ export class ExhibitLoader implements IExhibitLoader {
         console.warn(`[ExhibitLoader] Unknown source: ${source}`);
         return [];
     }
+
+    // Filter to only sequences with actual beat data (for animation)
+    const sequencesWithBeats = sequences.filter(
+      (seq) => seq.beats && seq.beats.length > 0
+    );
+
+    console.debug(
+      `[ExhibitLoader] Loaded ${sequences.length} sequences, ${sequencesWithBeats.length} have beats`
+    );
+
+    return sequencesWithBeats.slice(0, limit);
   }
 }

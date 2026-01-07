@@ -6,7 +6,10 @@
 
 import type { GalleryLayout } from "../domain/models/GalleryLayout";
 import type { Exhibit, GalleryContentSource } from "../domain/models/Exhibit";
-import { PLAYER_EYE_HEIGHT } from "../domain/constants/gallery-dimensions";
+import {
+  PLAYER_EYE_HEIGHT,
+  AVATAR_DEACTIVATION_DISTANCE,
+} from "../domain/constants/gallery-dimensions";
 
 export interface GalleryStateData {
   /** Current gallery layout */
@@ -15,6 +18,8 @@ export interface GalleryStateData {
   exhibits: readonly Exhibit[];
   /** Player position in 3D space */
   playerPosition: { x: number; y: number; z: number };
+  /** ID of the room the player is currently in */
+  currentRoomId: string | null;
   /** Currently focused exhibit (near the player) */
   focusedExhibitId: string | null;
   /** Loading state */
@@ -25,6 +30,8 @@ export interface GalleryStateData {
   contentSource: GalleryContentSource;
   /** User ID if viewing another user's gallery */
   sourceUserId: string | null;
+  /** Whether gallery lights are on (affects lighting + thumbnail mode) */
+  lightsOn: boolean;
 }
 
 /**
@@ -35,24 +42,25 @@ export function createGalleryState() {
   let layout = $state<GalleryLayout | null>(null);
   let exhibits = $state<readonly Exhibit[]>([]);
   let playerPosition = $state({ x: 0, y: PLAYER_EYE_HEIGHT, z: 0 });
+  let currentRoomId = $state<string | null>(null);
   let focusedExhibitId = $state<string | null>(null);
   let isLoading = $state(false);
   let error = $state<string | null>(null);
   let contentSource = $state<GalleryContentSource>("user_library");
   let sourceUserId = $state<string | null>(null);
+  let lightsOn = $state(true); // Lights on by default
 
   // Derived: Get focused exhibit
   const focusedExhibit = $derived(
     exhibits.find((e) => e.id === focusedExhibitId) ?? null
   );
 
-  // Derived: Get exhibits near player (for LOD)
+  // Derived: Get exhibits near player (for proximity-based activation)
   const nearbyExhibits = $derived.by(() => {
-    const NEARBY_DISTANCE = 800;
     return exhibits.filter((exhibit) => {
       const dx = exhibit.avatarPosition.x - playerPosition.x;
       const dz = exhibit.avatarPosition.z - playerPosition.z;
-      return Math.sqrt(dx * dx + dz * dz) < NEARBY_DISTANCE;
+      return Math.sqrt(dx * dx + dz * dz) < AVATAR_DEACTIVATION_DISTANCE;
     });
   });
 
@@ -88,12 +96,20 @@ export function createGalleryState() {
     get sourceUserId() {
       return sourceUserId;
     },
+    get lightsOn() {
+      return lightsOn;
+    },
+    get currentRoomId() {
+      return currentRoomId;
+    },
 
     // State setters
     setLayout(newLayout: GalleryLayout) {
       layout = newLayout;
       // Set player at spawn point
       playerPosition = { ...newLayout.spawnPoint };
+      // Set initial room
+      currentRoomId = newLayout.spawnRoomId;
     },
 
     setExhibits(newExhibits: readonly Exhibit[]) {
@@ -123,6 +139,18 @@ export function createGalleryState() {
       sourceUserId = userId ?? null;
     },
 
+    setLightsOn(on: boolean) {
+      lightsOn = on;
+    },
+
+    toggleLights() {
+      lightsOn = !lightsOn;
+    },
+
+    setCurrentRoomId(roomId: string) {
+      currentRoomId = roomId;
+    },
+
     // Actions
     updateFocusedExhibit() {
       const FOCUS_DISTANCE = 200;
@@ -147,11 +175,13 @@ export function createGalleryState() {
       layout = null;
       exhibits = [];
       playerPosition = { x: 0, y: PLAYER_EYE_HEIGHT, z: 0 };
+      currentRoomId = null;
       focusedExhibitId = null;
       isLoading = false;
       error = null;
       contentSource = "user_library";
       sourceUserId = null;
+      lightsOn = true;
     },
   };
 }

@@ -3,39 +3,164 @@
    * GalleryHUD
    *
    * Heads-up display overlay for the gallery.
-   * Shows controls hint, focused exhibit info, and exit button.
+   * Shows controls hint, focused exhibit info, exit button, and multiplayer UI.
    */
 
   import type { GalleryState } from "../state/gallery-state.svelte";
+  import type { MultiplayerStateInstance } from "../multiplayer/state/multiplayer-state.svelte";
   import { goto } from "$app/navigation";
+  import { getUser } from "$lib/shared/auth/state/authState.svelte";
+
+  // Multiplayer components
+  import GalleryMinimap from "../multiplayer/components/GalleryMinimap.svelte";
+  import SessionJoinDrawer from "../multiplayer/components/SessionJoinDrawer.svelte";
+  import SessionChat from "../multiplayer/components/SessionChat.svelte";
 
   interface Props {
-    /** Gallery state */
-    state: GalleryState;
+    /** Gallery state - named galleryState to avoid Svelte compiler treating 'state' as a store */
+    galleryState: GalleryState;
     /** Whether pointer is locked (user is in navigation mode) */
     isNavigating: boolean;
+    /** Multiplayer state (optional) */
+    multiplayerState?: MultiplayerStateInstance | null;
+    /** Callback to create a new session */
+    onCreateSession?: (name: string, visibility: 'public' | 'private' | 'friends') => Promise<void>;
+    /** Callback to join an existing session */
+    onJoinSession?: (sessionId: string) => Promise<void>;
+    /** Callback to leave the current session */
+    onLeaveSession?: () => Promise<void>;
+    /** Callback to send a chat message */
+    onSendMessage?: (text: string) => Promise<void>;
   }
 
-  let { state, isNavigating }: Props = $props();
+  let {
+    galleryState,
+    isNavigating,
+    multiplayerState = null,
+    onCreateSession,
+    onJoinSession,
+    onLeaveSession,
+    onSendMessage
+  }: Props = $props();
+
+  // Local UI state
+  let showSessionDrawer = $state(false);
+  let showChat = $state(false);
+  let showMinimap = $state(true);
+
+  // Access multiplayer properties directly (they're already reactive getters)
+  // Using functions to avoid Svelte 5 $derived issues with nullable props
+  function getIsInSession() { return multiplayerState?.isInSession ?? false; }
+  function getCurrentSession() { return multiplayerState?.currentSession ?? null; }
+  function getRemotePlayers() { return multiplayerState?.remotePlayers ?? []; }
+  function getChatMessages() { return multiplayerState?.chatMessages ?? []; }
+  function getPlayerCount() { return (multiplayerState?.remotePlayers?.length ?? 0) + 1; }
+
+  // Access authState through imported functions to avoid Svelte 5 reactivity issues
+  function getCurrentUser() { return getUser(); }
+  function getCurrentUserId() { return getUser()?.uid ?? null; }
+
+  // Get author name - prefer current user's name since viewing own library
+  function getAuthorName(): string | null {
+    if (!galleryState.focusedExhibit) return null;
+    // If viewing own library, use current user's display name
+    const currentUser = getCurrentUser();
+    if (currentUser?.displayName) {
+      return currentUser.displayName;
+    }
+    // Fall back to sequence author data
+    return galleryState.focusedExhibit.sequence.author ||
+           galleryState.focusedExhibit.sequence.ownerDisplayName ||
+           null;
+  }
 
   function handleExit() {
     goto("/");
+  }
+
+  async function handleLeaveSession() {
+    if (onLeaveSession) {
+      await onLeaveSession();
+    }
+  }
+
+  async function handleSendMessage(text: string) {
+    if (onSendMessage) {
+      await onSendMessage(text);
+    }
   }
 </script>
 
 <div class="hud">
   <!-- Top bar -->
   <div class="top-bar">
-    <button class="exit-button" onclick={handleExit}>
-      <i class="fas fa-arrow-left"></i>
-      Exit Gallery
-    </button>
+    <div class="left-controls">
+      <button class="exit-button" onclick={handleExit}>
+        <i class="fas fa-arrow-left"></i>
+        Exit Gallery
+      </button>
 
-    {#if state.sourceUserId}
-      <div class="viewing-info">
-        Viewing gallery
-      </div>
-    {/if}
+      <button class="lights-toggle" onclick={() => galleryState.toggleLights()}>
+        <i class="fas {galleryState.lightsOn ? 'fa-sun' : 'fa-moon'}"></i>
+        {galleryState.lightsOn ? 'Light Mode' : 'Dark Mode'}
+      </button>
+    </div>
+
+    <!-- Multiplayer status (only show when multiplayerState is available) -->
+    <div class="center-controls">
+      {#if multiplayerState && getIsInSession() && getCurrentSession()}
+        {@const session = getCurrentSession()}
+        <div class="session-info">
+          <i class="fas fa-users" aria-hidden="true"></i>
+          <span class="session-name">{session?.meta.name}</span>
+          <span class="player-count">{getPlayerCount()} online</span>
+        </div>
+      {/if}
+    </div>
+
+    <div class="right-controls">
+      {#if galleryState.sourceUserId}
+        <div class="viewing-info">
+          Viewing gallery
+        </div>
+      {/if}
+
+      <!-- Multiplayer controls (only show when multiplayerState is available) -->
+      {#if multiplayerState}
+        {#if getIsInSession()}
+          <button
+            class="hud-button minimap-toggle"
+            class:active={showMinimap}
+            onclick={() => showMinimap = !showMinimap}
+            aria-label="Toggle minimap"
+          >
+            <i class="fas fa-map" aria-hidden="true"></i>
+          </button>
+
+          <button
+            class="hud-button chat-toggle"
+            class:active={showChat}
+            onclick={() => showChat = !showChat}
+            aria-label="Toggle chat"
+          >
+            <i class="fas fa-comments" aria-hidden="true"></i>
+            {#if getChatMessages().length > 0}
+              <span class="unread-badge"></span>
+            {/if}
+          </button>
+
+          <button class="hud-button leave-button" onclick={handleLeaveSession}>
+            <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+            Leave
+          </button>
+        {:else}
+          <button class="hud-button join-button" onclick={() => showSessionDrawer = true}>
+            <i class="fas fa-users" aria-hidden="true"></i>
+            Multiplayer
+          </button>
+        {/if}
+      {/if}
+    </div>
   </div>
 
   <!-- Controls hint (shown when not navigating) -->
@@ -43,33 +168,32 @@
     <div class="controls-hint">
       <p><strong>Click</strong> to look around</p>
       <p><strong>WASD</strong> to move</p>
+      <p><strong>T</strong> to toggle light/dark mode</p>
       <p><strong>ESC</strong> to release cursor</p>
     </div>
   {/if}
 
   <!-- Focused exhibit info -->
-  {#if state.focusedExhibit}
+  {#if galleryState.focusedExhibit}
+    {@const author = getAuthorName()}
     <div class="exhibit-info">
       <h3>
-        {state.focusedExhibit.sequence.displayName ||
-          state.focusedExhibit.sequence.name ||
-          state.focusedExhibit.sequence.word ||
+        {galleryState.focusedExhibit.sequence.word ||
+          galleryState.focusedExhibit.sequence.displayName ||
+          galleryState.focusedExhibit.sequence.name ||
           "Untitled"}
       </h3>
-      {#if state.focusedExhibit.sequence.author || state.focusedExhibit.sequence.ownerDisplayName}
-        <p class="author">
-          by {state.focusedExhibit.sequence.author ||
-            state.focusedExhibit.sequence.ownerDisplayName}
-        </p>
+      {#if author}
+        <p class="author">by {author}</p>
       {/if}
-      {#if state.focusedExhibit.sequence.beats}
-        <p class="beats">{state.focusedExhibit.sequence.beats.length} beats</p>
+      {#if galleryState.focusedExhibit.sequence.beats?.length}
+        <p class="beats">{galleryState.focusedExhibit.sequence.beats.length} beats</p>
       {/if}
     </div>
   {/if}
 
   <!-- Loading indicator -->
-  {#if state.isLoading}
+  {#if galleryState.isLoading}
     <div class="loading-overlay">
       <div class="loading-spinner"></div>
       <p>Loading gallery...</p>
@@ -77,11 +201,46 @@
   {/if}
 
   <!-- Error message -->
-  {#if state.error}
+  {#if galleryState.error}
     <div class="error-message">
-      <p>{state.error}</p>
-      <button onclick={() => state.setError(null)}>Dismiss</button>
+      <p>{galleryState.error}</p>
+      <button onclick={() => galleryState.setError(null)}>Dismiss</button>
     </div>
+  {/if}
+
+  <!-- Multiplayer: Only render these components when multiplayerState is available -->
+  {#if multiplayerState}
+    <!-- Minimap -->
+    {#if getIsInSession() && showMinimap && galleryState.layout}
+      <GalleryMinimap
+        layout={galleryState.layout}
+        localPosition={{
+          x: galleryState.playerPosition.x,
+          y: galleryState.playerPosition.y,
+          z: galleryState.playerPosition.z
+        }}
+        remotePlayers={getRemotePlayers()}
+      />
+    {/if}
+
+    <!-- Chat panel -->
+    {#if getIsInSession()}
+      <SessionChat
+        open={showChat}
+        messages={getChatMessages()}
+        currentUserId={getCurrentUserId()}
+        onSend={handleSendMessage}
+        onClose={() => showChat = false}
+      />
+    {/if}
+
+    <!-- Session join drawer -->
+    <SessionJoinDrawer
+      open={showSessionDrawer}
+      onClose={() => showSessionDrawer = false}
+      onCreate={onCreateSession ?? (async () => {})}
+      onJoin={onJoinSession ?? (async () => {})}
+    />
   {/if}
 </div>
 
@@ -109,7 +268,21 @@
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
   }
 
-  .exit-button {
+  .left-controls,
+  .right-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .center-controls {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .exit-button,
+  .lights-toggle {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -120,11 +293,24 @@
     color: white;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, border-color 0.2s;
   }
 
-  .exit-button:hover {
+  .exit-button:hover,
+  .lights-toggle:hover {
     background: rgba(0, 0, 0, 0.8);
+  }
+
+  .lights-toggle {
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+
+  .lights-toggle:hover {
+    border-color: rgba(245, 158, 11, 0.7);
+  }
+
+  .lights-toggle i {
+    color: #f59e0b;
   }
 
   .viewing-info {
@@ -230,5 +416,147 @@
     border-radius: 6px;
     color: white;
     cursor: pointer;
+  }
+
+  /* Multiplayer styles */
+  .session-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+  }
+
+  .session-info i {
+    color: #60a5fa;
+  }
+
+  .session-name {
+    font-weight: 500;
+  }
+
+  .player-count {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+  }
+
+  .hud-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .hud-button:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .hud-button.active {
+    background: rgba(96, 165, 250, 0.2);
+    border-color: rgba(96, 165, 250, 0.5);
+  }
+
+  .hud-button.active i {
+    color: #60a5fa;
+  }
+
+  .join-button {
+    border-color: rgba(96, 165, 250, 0.4);
+  }
+
+  .join-button:hover {
+    border-color: rgba(96, 165, 250, 0.7);
+    background: rgba(96, 165, 250, 0.15);
+  }
+
+  .join-button i {
+    color: #60a5fa;
+  }
+
+  .leave-button {
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  .leave-button:hover {
+    border-color: rgba(239, 68, 68, 0.7);
+    background: rgba(239, 68, 68, 0.15);
+  }
+
+  .leave-button i {
+    color: #ef4444;
+  }
+
+  .unread-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.2);
+    }
+  }
+
+  /* Mobile adjustments */
+  @media (max-width: 768px) {
+    .top-bar {
+      padding: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .left-controls,
+    .right-controls {
+      gap: 8px;
+    }
+
+    .center-controls {
+      position: static;
+      transform: none;
+      order: 3;
+      width: 100%;
+      justify-content: center;
+      display: flex;
+    }
+
+    .exit-button span,
+    .lights-toggle span,
+    .leave-button span {
+      display: none;
+    }
+
+    .hud-button {
+      padding: 10px;
+    }
+
+    .session-info {
+      font-size: 12px;
+      padding: 6px 12px;
+    }
   }
 </style>

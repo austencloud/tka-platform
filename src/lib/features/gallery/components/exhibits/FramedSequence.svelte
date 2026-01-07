@@ -2,109 +2,154 @@
   /**
    * FramedSequence
    *
-   * A 3D picture frame displaying a sequence thumbnail on the gallery wall.
-   * The frame consists of border pieces and an inner plane with the image texture.
+   * An ornate 3D picture frame displaying a sequence's thumbnail image.
+   * Features multi-layer gilded frame with decorative elements.
+   * Frame adjusts to match image aspect ratio.
    */
 
   import { T } from "@threlte/core";
-  import { TextureLoader, SRGBColorSpace, CanvasTexture } from "three";
+  import { onDestroy } from "svelte";
+  import { TextureLoader, LinearFilter, ClampToEdgeWrapping, SRGBColorSpace, type Texture } from "three";
   import type { ExhibitSlot } from "../../domain/models/GalleryLayout";
   import type { Exhibit } from "../../domain/models/Exhibit";
   import {
-    FRAME_WIDTH,
     FRAME_HEIGHT,
     FRAME_DEPTH,
     FRAME_BORDER,
-    FRAME_COLOR,
   } from "../../domain/constants/gallery-dimensions";
+
+  // Ornate frame colors
+  const OUTER_FRAME_COLOR = "#8b6914"; // Darker gold (outer edge)
+  const INNER_FRAME_COLOR = "#c9a227"; // Bright gold (inner detail)
+  const ACCENT_COLOR = "#d4af37"; // Highlight gold
 
   interface Props {
     /** The exhibit to display */
     exhibit: Exhibit;
     /** The slot this frame occupies */
     slot: ExhibitSlot;
+    /** Whether gallery lights are on (affects thumbnail variant) */
+    lightsOn?: boolean;
   }
 
-  let { exhibit, slot }: Props = $props();
+  let { exhibit, slot, lightsOn = true }: Props = $props();
 
-  // Inner dimensions (where the image goes)
-  const innerWidth = FRAME_WIDTH - FRAME_BORDER * 2;
-  const innerHeight = FRAME_HEIGHT - FRAME_BORDER * 2;
+  // State
+  let texture = $state<Texture | null>(null);
+  let imageAspect = $state(1); // width / height
+  let loaded = $state(false);
+  let error = $state<string | null>(null);
+  let currentUrl = $state<string | null>(null);
 
-  // Create a placeholder texture with sequence name
-  function createPlaceholderTexture(): CanvasTexture {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext("2d")!;
+  // Derive the appropriate thumbnail URL based on lights state
+  // When lights are ON: use dark-mode thumbnails (white figures on dark bg)
+  // When lights are OFF: use light-mode thumbnails (dark figures on light bg) for better visibility
+  const thumbnailUrl = $derived.by(() => {
+    const baseUrl = exhibit.thumbnailUrl;
+    if (!baseUrl) return null;
 
-    // Dark gradient background
-    const gradient = ctx.createLinearGradient(0, 0, 0, 512);
-    gradient.addColorStop(0, "#2d1b4e");
-    gradient.addColorStop(1, "#1a1a2e");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 512, 512);
-
-    // Decorative border
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(20, 20, 472, 472);
-
-    // Sequence name
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 36px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    const displayName =
-      exhibit.sequence.word ||
-      exhibit.sequence.displayName ||
-      exhibit.sequence.name ||
-      "Sequence";
-
-    // Word wrap for long names
-    const words = displayName.split("");
-    if (displayName.length > 8) {
-      ctx.font = "bold 28px Arial";
+    // Check if the URL has a _light or _dark suffix pattern
+    // Firebase storage URLs typically have format: /sequenceId_dark.webp or /sequenceId_light.webp
+    if (lightsOn) {
+      // When lights are on, use dark mode thumbnails (they look better in bright gallery)
+      return baseUrl.replace(/_light\.webp/, "_dark.webp");
+    } else {
+      // When lights are off, use light mode thumbnails (glowing effect in dark)
+      return baseUrl.replace(/_dark\.webp/, "_light.webp");
     }
-    ctx.fillText(displayName.slice(0, 16), 256, 220);
+  });
 
-    // Beat count
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-    const beatCount = exhibit.sequence.beats?.length ?? 0;
-    ctx.fillText(`${beatCount} beats`, 256, 280);
+  // Frame layer dimensions
+  const outerBorder = FRAME_BORDER;
+  const innerBorder = FRAME_BORDER * 0.6;
+  const totalBorder = outerBorder + innerBorder;
 
-    // Decorative icon placeholder
-    ctx.font = "48px Arial";
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-    ctx.fillText("🎭", 256, 380);
+  // Calculate frame dimensions based on image aspect ratio
+  const baseHeight = FRAME_HEIGHT;
+  const innerHeight = $derived(baseHeight - totalBorder * 2);
+  const innerWidth = $derived(innerHeight * imageAspect);
+  const middleWidth = $derived(innerWidth + innerBorder * 2);
+  const middleHeight = $derived(innerHeight + innerBorder * 2);
+  const outerWidth = $derived(middleWidth + outerBorder * 2);
+  const outerHeight = $derived(middleHeight + outerBorder * 2);
 
-    const texture = new CanvasTexture(canvas);
-    texture.needsUpdate = true;
-    return texture;
+  // Texture loader with CORS support
+  const textureLoader = new TextureLoader();
+  textureLoader.setCrossOrigin("anonymous");
+
+  // Load the thumbnail image
+  async function loadThumbnail(url: string) {
+    if (!url) {
+      error = "No thumbnail URL";
+      return;
+    }
+
+    // Skip if same URL already loaded
+    if (url === currentUrl && texture) return;
+
+    // Cleanup previous texture
+    if (texture) {
+      texture.dispose();
+      texture = null;
+    }
+
+    loaded = false;
+    error = null;
+
+    try {
+      // Load texture directly - TextureLoader handles CORS internally
+      const newTexture = await new Promise<Texture>((resolve, reject) => {
+        textureLoader.load(
+          url,
+          (tex) => {
+            // Get dimensions from the loaded image
+            const img = tex.image as HTMLImageElement;
+            if (img && img.width && img.height) {
+              imageAspect = img.width / img.height;
+            }
+
+            tex.minFilter = LinearFilter;
+            tex.magFilter = LinearFilter;
+            tex.wrapS = ClampToEdgeWrapping;
+            tex.wrapT = ClampToEdgeWrapping;
+            tex.colorSpace = SRGBColorSpace; // Preserve original colors
+            tex.needsUpdate = true;
+            resolve(tex);
+          },
+          undefined,
+          (err) => {
+            console.error(`[FramedSequence] TextureLoader error:`, err);
+            reject(new Error("Texture load failed"));
+          }
+        );
+      });
+
+      texture = newTexture;
+      currentUrl = url;
+      loaded = true;
+    } catch (err) {
+      console.error(`[FramedSequence] Failed to load ${exhibit.id}:`, err);
+      error = err instanceof Error ? err.message : "Load failed";
+    }
   }
 
-  // Initialize with placeholder, try to load real thumbnail
-  let imageTexture = $state<THREE.Texture>(createPlaceholderTexture());
+  // Cleanup
+  function cleanup() {
+    if (texture) {
+      texture.dispose();
+      texture = null;
+    }
+  }
 
-  // Try to load actual thumbnail if available
+  // Reactive effect: load/reload texture when thumbnailUrl changes (due to lightsOn toggle)
   $effect(() => {
-    if (exhibit.thumbnailUrl) {
-      const loader = new TextureLoader();
-      loader.load(
-        exhibit.thumbnailUrl,
-        (tex) => {
-          tex.colorSpace = SRGBColorSpace;
-          imageTexture = tex;
-        },
-        undefined,
-        (err) => {
-          console.debug(`[FramedSequence] Failed to load thumbnail: ${exhibit.thumbnailUrl}`, err);
-          // Keep placeholder on error
-        }
-      );
+    if (thumbnailUrl) {
+      loadThumbnail(thumbnailUrl);
     }
+  });
+
+  onDestroy(() => {
+    cleanup();
   });
 </script>
 
@@ -112,34 +157,87 @@
   position={[slot.position.x, slot.position.y, slot.position.z]}
   rotation.y={slot.rotation}
 >
-  <!-- Frame border pieces -->
-  <!-- Top border -->
-  <T.Mesh position={[0, innerHeight / 2 + FRAME_BORDER / 2, FRAME_DEPTH / 2]}>
-    <T.BoxGeometry args={[FRAME_WIDTH, FRAME_BORDER, FRAME_DEPTH]} />
-    <T.MeshStandardMaterial color={FRAME_COLOR} roughness={0.3} metalness={0.5} />
+  <!-- OUTER FRAME LAYER (darker gold) -->
+  <!-- Top outer -->
+  <T.Mesh position={[0, middleHeight / 2 + outerBorder / 2, FRAME_DEPTH / 2]}>
+    <T.BoxGeometry args={[outerWidth, outerBorder, FRAME_DEPTH]} />
+    <T.MeshStandardMaterial color={OUTER_FRAME_COLOR} roughness={0.35} metalness={0.7} />
+  </T.Mesh>
+  <!-- Bottom outer -->
+  <T.Mesh position={[0, -middleHeight / 2 - outerBorder / 2, FRAME_DEPTH / 2]}>
+    <T.BoxGeometry args={[outerWidth, outerBorder, FRAME_DEPTH]} />
+    <T.MeshStandardMaterial color={OUTER_FRAME_COLOR} roughness={0.35} metalness={0.7} />
+  </T.Mesh>
+  <!-- Left outer -->
+  <T.Mesh position={[-middleWidth / 2 - outerBorder / 2, 0, FRAME_DEPTH / 2]}>
+    <T.BoxGeometry args={[outerBorder, middleHeight, FRAME_DEPTH]} />
+    <T.MeshStandardMaterial color={OUTER_FRAME_COLOR} roughness={0.35} metalness={0.7} />
+  </T.Mesh>
+  <!-- Right outer -->
+  <T.Mesh position={[middleWidth / 2 + outerBorder / 2, 0, FRAME_DEPTH / 2]}>
+    <T.BoxGeometry args={[outerBorder, middleHeight, FRAME_DEPTH]} />
+    <T.MeshStandardMaterial color={OUTER_FRAME_COLOR} roughness={0.35} metalness={0.7} />
   </T.Mesh>
 
-  <!-- Bottom border -->
-  <T.Mesh position={[0, -innerHeight / 2 - FRAME_BORDER / 2, FRAME_DEPTH / 2]}>
-    <T.BoxGeometry args={[FRAME_WIDTH, FRAME_BORDER, FRAME_DEPTH]} />
-    <T.MeshStandardMaterial color={FRAME_COLOR} roughness={0.3} metalness={0.5} />
+  <!-- INNER FRAME LAYER (brighter gold, raised) -->
+  <!-- Top inner -->
+  <T.Mesh position={[0, innerHeight / 2 + innerBorder / 2, FRAME_DEPTH / 2 + 2]}>
+    <T.BoxGeometry args={[middleWidth - 4, innerBorder, FRAME_DEPTH * 0.6]} />
+    <T.MeshStandardMaterial color={INNER_FRAME_COLOR} roughness={0.25} metalness={0.8} />
+  </T.Mesh>
+  <!-- Bottom inner -->
+  <T.Mesh position={[0, -innerHeight / 2 - innerBorder / 2, FRAME_DEPTH / 2 + 2]}>
+    <T.BoxGeometry args={[middleWidth - 4, innerBorder, FRAME_DEPTH * 0.6]} />
+    <T.MeshStandardMaterial color={INNER_FRAME_COLOR} roughness={0.25} metalness={0.8} />
+  </T.Mesh>
+  <!-- Left inner -->
+  <T.Mesh position={[-innerWidth / 2 - innerBorder / 2, 0, FRAME_DEPTH / 2 + 2]}>
+    <T.BoxGeometry args={[innerBorder, innerHeight, FRAME_DEPTH * 0.6]} />
+    <T.MeshStandardMaterial color={INNER_FRAME_COLOR} roughness={0.25} metalness={0.8} />
+  </T.Mesh>
+  <!-- Right inner -->
+  <T.Mesh position={[innerWidth / 2 + innerBorder / 2, 0, FRAME_DEPTH / 2 + 2]}>
+    <T.BoxGeometry args={[innerBorder, innerHeight, FRAME_DEPTH * 0.6]} />
+    <T.MeshStandardMaterial color={INNER_FRAME_COLOR} roughness={0.25} metalness={0.8} />
   </T.Mesh>
 
-  <!-- Left border -->
-  <T.Mesh position={[-innerWidth / 2 - FRAME_BORDER / 2, 0, FRAME_DEPTH / 2]}>
-    <T.BoxGeometry args={[FRAME_BORDER, innerHeight, FRAME_DEPTH]} />
-    <T.MeshStandardMaterial color={FRAME_COLOR} roughness={0.3} metalness={0.5} />
-  </T.Mesh>
+  <!-- CORNER ACCENTS (decorative spheres) -->
+  {#each [[-1, -1], [-1, 1], [1, -1], [1, 1]] as [xDir, yDir]}
+    <T.Mesh
+      position={[
+        xDir * (middleWidth / 2 + outerBorder / 2),
+        yDir * (middleHeight / 2 + outerBorder / 2),
+        FRAME_DEPTH / 2 + 4,
+      ]}
+    >
+      <T.SphereGeometry args={[outerBorder * 0.4, 8, 8]} />
+      <T.MeshStandardMaterial color={ACCENT_COLOR} roughness={0.2} metalness={0.9} />
+    </T.Mesh>
+  {/each}
 
-  <!-- Right border -->
-  <T.Mesh position={[innerWidth / 2 + FRAME_BORDER / 2, 0, FRAME_DEPTH / 2]}>
-    <T.BoxGeometry args={[FRAME_BORDER, innerHeight, FRAME_DEPTH]} />
-    <T.MeshStandardMaterial color={FRAME_COLOR} roughness={0.3} metalness={0.5} />
-  </T.Mesh>
-
-  <!-- Inner image plane -->
-  <T.Mesh position={[0, 0, FRAME_DEPTH / 2 + 1]}>
+  <!-- Backing (prevents see-through) -->
+  <T.Mesh position={[0, 0, FRAME_DEPTH / 2 - 1]}>
     <T.PlaneGeometry args={[innerWidth, innerHeight]} />
-    <T.MeshBasicMaterial map={imageTexture} />
+    <T.MeshBasicMaterial color="#0a0a0a" />
   </T.Mesh>
+
+  <!-- Image plane -->
+  {#if texture && loaded}
+    <T.Mesh position={[0, 0, FRAME_DEPTH / 2 + 1]}>
+      <T.PlaneGeometry args={[innerWidth, innerHeight]} />
+      <T.MeshBasicMaterial map={texture} toneMapped={false} />
+    </T.Mesh>
+  {:else if error}
+    <!-- Error state - dark placeholder -->
+    <T.Mesh position={[0, 0, FRAME_DEPTH / 2 + 1]}>
+      <T.PlaneGeometry args={[innerWidth, innerHeight]} />
+      <T.MeshBasicMaterial color="#1a0808" />
+    </T.Mesh>
+  {:else}
+    <!-- Loading state -->
+    <T.Mesh position={[0, 0, FRAME_DEPTH / 2 + 1]}>
+      <T.PlaneGeometry args={[innerWidth, innerHeight]} />
+      <T.MeshBasicMaterial color="#111111" />
+    </T.Mesh>
+  {/if}
 </T.Group>

@@ -8,7 +8,7 @@
 
   import { T, useTask } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
-  import { CanvasTexture, LinearFilter, ClampToEdgeWrapping } from "three";
+  import { CanvasTexture, LinearFilter, ClampToEdgeWrapping, SRGBColorSpace } from "three";
   import type { Exhibit } from "../../domain/models/Exhibit";
   import type { ExhibitSlot } from "../../domain/models/GalleryLayout";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -45,15 +45,19 @@
   let initialized = $state(false);
   let initError = $state<string | null>(null);
 
-  // Animation state
-  let currentBeat = $state(0);
-  let accumulatedTime = $state(0);
-  const BEAT_DURATION = 0.5; // seconds per beat
+  // Animation state - use continuous float for smooth interpolation
+  // Start at beat 1 (beat 0 is start position, beat 1+ are motion beats)
+  let currentBeat = $state(1);
+  const BEAT_DURATION = 1.0; // seconds per beat (60 BPM)
 
   // Screen dimensions - position to the right of the frame with good spacing
   const screenWidth = FRAME_WIDTH * 0.9;
   const screenHeight = FRAME_HEIGHT * 0.9;
   const canvasSize = 512;
+
+  // Prop dimensions - loaded from renderer after props are loaded
+  let bluePropDimensions = $state({ width: 252.8, height: 77.8 });
+  let redPropDimensions = $state({ width: 252.8, height: 77.8 });
 
   // Horizontal offset from frame center (positive = to the right when facing wall)
   const SCREEN_OFFSET_X = FRAME_WIDTH * 1.2; // Space between frame and screen
@@ -62,8 +66,11 @@
   const sequence = exhibit.sequence as SequenceData;
   const totalBeats = sequence.beats?.length ?? 0;
 
-  // Get dark mode from settings (reactive)
-  const darkMode = $derived(getSettings().darkMode ?? false);
+  // Get settings (reactive) for prop type and dark mode
+  const settings = $derived(getSettings());
+  const darkMode = $derived(settings.darkMode ?? false);
+  const bluePropType = $derived(settings.bluePropType || settings.propType || "staff");
+  const redPropType = $derived(settings.redPropType || settings.propType || "staff");
 
   // Initialize renderer and load textures
   async function initializeRenderer() {
@@ -84,12 +91,16 @@
       orchestrator = servicesResult.services.orchestrator;
       renderer = rendererResult.renderer;
 
-      // Create offscreen container
+      // Create offscreen container - fixed position to avoid affecting document scroll
       offscreenContainer = document.createElement("div");
-      offscreenContainer.style.position = "absolute";
+      offscreenContainer.style.position = "fixed";
       offscreenContainer.style.left = "-9999px";
+      offscreenContainer.style.top = "0";
       offscreenContainer.style.width = `${canvasSize}px`;
       offscreenContainer.style.height = `${canvasSize}px`;
+      offscreenContainer.style.visibility = "hidden";
+      offscreenContainer.style.pointerEvents = "none";
+      offscreenContainer.style.overflow = "hidden";
       document.body.appendChild(offscreenContainer);
 
       // Initialize renderer
@@ -98,9 +109,13 @@
       // Set dark mode based on user settings
       renderer.setDarkMode(darkMode, false);
 
-      // Load textures with dark mode setting
-      await renderer.loadPerColorPropTextures("staff", "staff", darkMode);
+      // Load textures with user's selected prop types
+      await renderer.loadPerColorPropTextures(bluePropType, redPropType, darkMode);
       await renderer.loadGridTexture("diamond");
+
+      // Get actual prop dimensions from loaded SVGs
+      bluePropDimensions = renderer.getBluePropDimensions();
+      redPropDimensions = renderer.getRedPropDimensions();
 
       // Initialize orchestrator with sequence
       orchestrator.initializeWithDomainData(sequence);
@@ -114,6 +129,8 @@
         // Use linear filtering for smooth scaling
         texture.minFilter = LinearFilter;
         texture.magFilter = LinearFilter;
+        // Preserve original colors (no gamma correction)
+        texture.colorSpace = SRGBColorSpace;
         // Clamp to edge to prevent texture bleeding
         texture.wrapS = ClampToEdgeWrapping;
         texture.wrapT = ClampToEdgeWrapping;
@@ -121,6 +138,7 @@
       }
 
       initialized = true;
+      previousDarkModeValue = darkMode; // Track initial dark mode to avoid reload on first effect
       renderCurrentFrame();
     } catch (err) {
       console.error(`[AnimationScreen] Init failed for ${exhibit.id}:`, err);
@@ -140,7 +158,7 @@
       const blueProp = orchestrator.getBluePropState();
       const redProp = orchestrator.getRedPropState();
 
-      // Render the scene
+      // Render the scene with actual prop dimensions from loaded SVGs
       renderer.renderScene({
         blueProp,
         redProp,
@@ -148,8 +166,8 @@
         gridMode: "diamond",
         letter: null,
         turnsTuple: null,
-        bluePropDimensions: { width: 100, height: 100 },
-        redPropDimensions: { width: 100, height: 100 },
+        bluePropDimensions,
+        redPropDimensions,
         blueTrailPoints: [],
         redTrailPoints: [],
         trailSettings: {
@@ -157,13 +175,14 @@
           length: 0,
           opacity: 0,
           fadeMode: "time",
-          style: "pointed",
+          style: "off",
         },
         currentTime: performance.now(),
         visibility: {
           gridVisible: true,
           propsVisible: true,
           trailsVisible: false,
+          armsVisible: false,
           blueMotionVisible: true,
           redMotionVisible: true,
         },
@@ -207,33 +226,55 @@
     cleanup();
   });
 
-  // Animation loop - advance beats
+  // Animation loop - continuous interpolation for smooth animation
   useTask((delta) => {
     if (!active || !initialized || totalBeats === 0) return;
 
-    accumulatedTime += delta;
+    // Advance beat continuously (delta is in seconds)
+    // Beat 1 starts the animation, so we animate from 1 to totalBeats+1
+    currentBeat += delta / BEAT_DURATION;
 
-    if (accumulatedTime >= BEAT_DURATION) {
-      accumulatedTime = 0;
-      currentBeat = (currentBeat + 1) % totalBeats;
-      renderCurrentFrame();
+    // Loop back to start when we complete all beats
+    // Animation runs from beat 1 to totalBeats+1 (to show final beat's motion)
+    if (currentBeat > totalBeats + 1) {
+      currentBeat = 1;
     }
+
+    // Render every frame with the current interpolated beat
+    renderCurrentFrame();
   });
 
-  // Handle active state changes
+  // Handle active state changes - init when nearby, cleanup when far
   $effect(() => {
     if (active && !initialized && totalBeats > 0) {
       initializeRenderer();
+    } else if (!active && initialized) {
+      // User walked away - clean up to save memory
+      cleanup();
     }
   });
 
-  // Update dark mode when settings change
+  // Track previous dark mode for change detection
+  let previousDarkModeValue: boolean | null = null;
+
+  // Update dark mode when settings change - animate the transition
   $effect(() => {
-    if (renderer && initialized) {
-      renderer.setDarkMode(darkMode, false);
-      // Re-render with new dark mode setting
+    const currentDarkMode = darkMode;
+
+    // Skip if not initialized or no change
+    if (!renderer || !initialized) return;
+    if (previousDarkModeValue === currentDarkMode) return;
+
+    // Update dark mode - animate background transition
+    renderer.setDarkMode(currentDarkMode, true);
+
+    // Reload prop textures with new dark mode colors
+    renderer.loadPerColorPropTextures(bluePropType, redPropType, currentDarkMode).then(() => {
+      // Re-render with new props
       renderCurrentFrame();
-    }
+    });
+
+    previousDarkModeValue = currentDarkMode;
   });
 </script>
 
@@ -242,33 +283,54 @@
     position={[slot.position.x, slot.position.y, slot.position.z]}
     rotation.y={slot.rotation}
   >
-    <!-- Screen backing (dark panel) - offset to the right of frame -->
-    <T.Mesh position={[SCREEN_OFFSET_X, 0, 3]}>
-      <T.BoxGeometry args={[screenWidth + 20, screenHeight + 20, 4]} />
-      <T.MeshStandardMaterial color="#111118" roughness={0.8} />
+    <!-- TV Housing/Cabinet - sleek modern design -->
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 2]}>
+      <T.BoxGeometry args={[screenWidth + 24, screenHeight + 24, 12]} />
+      <T.MeshStandardMaterial color="#1a1a1a" roughness={0.4} metalness={0.6} />
     </T.Mesh>
 
-    <!-- Animation display plane -->
-    <T.Mesh position={[SCREEN_OFFSET_X, 0, 6]}>
+    <!-- TV Bezel (inner frame) - subtle border -->
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 8]}>
+      <T.BoxGeometry args={[screenWidth + 8, screenHeight + 8, 2]} />
+      <T.MeshStandardMaterial color="#0d0d0d" roughness={0.3} metalness={0.7} />
+    </T.Mesh>
+
+    <!-- Screen backing (prevents see-through) -->
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 9]}>
       <T.PlaneGeometry args={[screenWidth, screenHeight]} />
-      <T.MeshBasicMaterial map={texture} />
+      <T.MeshBasicMaterial color="#000000" />
     </T.Mesh>
 
-    <!-- Screen frame/bezel -->
-    <T.Mesh position={[SCREEN_OFFSET_X, 0, 5]}>
-      <T.BoxGeometry args={[screenWidth + 10, screenHeight + 10, 2]} />
-      <T.MeshStandardMaterial color="#1a1a24" roughness={0.5} metalness={0.3} />
+    <!-- Animation display screen -->
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 10]}>
+      <T.PlaneGeometry args={[screenWidth, screenHeight]} />
+      <T.MeshBasicMaterial map={texture} toneMapped={false} />
+    </T.Mesh>
+
+    <!-- Power indicator LED (small green light at bottom) -->
+    <T.Mesh position={[SCREEN_OFFSET_X, -screenHeight / 2 - 8, 9]}>
+      <T.CircleGeometry args={[2, 16]} />
+      <T.MeshBasicMaterial color="#22c55e" />
     </T.Mesh>
   </T.Group>
 {:else if initError}
-  <!-- Show error indicator -->
+  <!-- Show error indicator - TV with red screen -->
   <T.Group
     position={[slot.position.x, slot.position.y, slot.position.z]}
     rotation.y={slot.rotation}
   >
-    <T.Mesh position={[SCREEN_OFFSET_X, 0, 5]}>
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 2]}>
+      <T.BoxGeometry args={[screenWidth + 24, screenHeight + 24, 12]} />
+      <T.MeshStandardMaterial color="#1a1a1a" roughness={0.4} metalness={0.6} />
+    </T.Mesh>
+    <T.Mesh position={[SCREEN_OFFSET_X, 0, 10]}>
       <T.PlaneGeometry args={[screenWidth, screenHeight]} />
       <T.MeshBasicMaterial color="#331111" />
+    </T.Mesh>
+    <!-- Error indicator LED (red) -->
+    <T.Mesh position={[SCREEN_OFFSET_X, -screenHeight / 2 - 8, 9]}>
+      <T.CircleGeometry args={[2, 16]} />
+      <T.MeshBasicMaterial color="#ef4444" />
     </T.Mesh>
   </T.Group>
 {/if}

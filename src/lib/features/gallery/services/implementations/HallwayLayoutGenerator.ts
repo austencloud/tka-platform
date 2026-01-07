@@ -13,6 +13,13 @@ import type {
   ExhibitSlot,
   LayoutGenerationOptions,
 } from "../../domain/models/GalleryLayout";
+import type { Room } from "../../domain/models/Room";
+import type { Doorway } from "../../domain/models/doorway";
+import type { RoomGraph } from "../../domain/models/RoomGraph";
+import { buildRoomGraph } from "../../domain/models/RoomGraph";
+import type { CollisionWorld, WallCollider } from "../../domain/models/WallCollider";
+import { createWallCollider } from "../../domain/models/WallCollider";
+import { LOBBY_THEME } from "../../domain/models/Room";
 import {
   WALL_HEIGHT,
   WALL_THICKNESS,
@@ -76,10 +83,52 @@ export class HallwayLayoutGenerator implements IGalleryLayoutGenerator {
       exhibitSlots: [],
     };
 
+    const walls = [leftWall, rightWall, backWall, frontWall];
+
+    // Create a single room for the hallway (legacy compatibility)
+    const hallwayRoom: Room = {
+      id: "hallway",
+      name: "Gallery Hallway",
+      type: "lobby",
+      shape: {
+        type: "rectangular",
+        center: { x: 0, z: hallwayLength / 2 },
+        width: HALLWAY_WIDTH,
+        depth: hallwayLength,
+        rotation: 0,
+      },
+      wallHeight: WALL_HEIGHT,
+      theme: LOBBY_THEME,
+      doorwayOpenings: [],
+      hasExhibits: true,
+      hasCeiling: true,
+    };
+
+    const rooms: readonly Room[] = [hallwayRoom];
+    const doorways: readonly Doorway[] = [];
+    const roomGraph: RoomGraph = buildRoomGraph(rooms, doorways, "hallway");
+
+    // Create wall colliders from walls
+    const wallColliders: WallCollider[] = walls.map((wall) =>
+      createWallCollider(wall.id, wall.startPos, wall.endPos, "hallway", false)
+    );
+
+    const wallIds = wallColliders.map((w) => w.id);
+    const collisionWorld: CollisionWorld = {
+      walls: new Map(wallColliders.map((w) => [w.id, w])),
+      wallsByRoom: new Map([["hallway", wallIds]]),
+      playerRadius: 30,
+    };
+
     return {
       id: `hallway-${exhibitCount}`,
       name: "Gallery Hallway",
-      walls: [leftWall, rightWall, backWall, frontWall],
+      walls,
+      rooms,
+      doorways,
+      roomGraph,
+      collisionWorld,
+      spawnRoomId: "hallway",
       spawnPoint: {
         x: 0,
         y: PLAYER_EYE_HEIGHT,

@@ -7,10 +7,11 @@
    */
 
   import { T } from "@threlte/core";
-  import { CanvasTexture } from "three";
+  import { CanvasTexture, LinearFilter, ClampToEdgeWrapping } from "three";
   import type { ExhibitSlot } from "../../domain/models/GalleryLayout";
   import type { Exhibit } from "../../domain/models/Exhibit";
   import { FRAME_HEIGHT, FRAME_BORDER } from "../../domain/constants/gallery-dimensions";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   interface Props {
     /** The exhibit to label */
@@ -27,6 +28,17 @@
 
   // Position below the frame
   const labelY = slot.position.y - FRAME_HEIGHT / 2 - FRAME_BORDER - labelHeight / 2 - 10;
+
+  // Get author name - prefer current user's name since viewing own library
+  function getAuthorName(): string | null {
+    // If viewing own library, use current user's display name
+    const currentUser = authState.user;
+    if (currentUser?.displayName) {
+      return currentUser.displayName;
+    }
+    // Fall back to sequence author data
+    return exhibit.sequence.author || exhibit.sequence.ownerDisplayName || null;
+  }
 
   // Create text texture
   function createLabelTexture(): CanvasTexture {
@@ -46,14 +58,14 @@
     ctx.textBaseline = "top";
 
     const title =
+      exhibit.sequence.word ||
       exhibit.sequence.displayName ||
       exhibit.sequence.name ||
-      exhibit.sequence.word ||
       "Untitled";
     ctx.fillText(title.slice(0, 20), 128, 8);
 
-    // Author text (if available)
-    const author = exhibit.sequence.author || exhibit.sequence.ownerDisplayName;
+    // Author text
+    const author = getAuthorName();
     if (author) {
       ctx.fillStyle = "#666666";
       ctx.font = "14px Arial";
@@ -61,6 +73,11 @@
     }
 
     const texture = new CanvasTexture(canvas);
+    texture.generateMipmaps = false;
+    texture.minFilter = LinearFilter;
+    texture.magFilter = LinearFilter;
+    texture.wrapS = ClampToEdgeWrapping;
+    texture.wrapT = ClampToEdgeWrapping;
     texture.needsUpdate = true;
     return texture;
   }

@@ -22,7 +22,7 @@
   let {
     width,
     depth,
-    color = "#e8e8e8",
+    color = "#4a3c38", // Warm ceiling - visible!
     visible = true,
   }: Props = $props();
 
