@@ -143,6 +143,13 @@ export interface LearningProgress {
 export type ConceptDetailView = "learn" | "practice" | "stats";
 
 /**
+ * Navigation mode for concept experiences
+ * - "step": Traditional step-by-step navigation (one page at a time)
+ * - "scroll": All pages displayed vertically for scrolling (review mode)
+ */
+export type ExperienceViewMode = "step" | "scroll";
+
+/**
  * Statistics for displaying user achievements
  */
 export interface ConceptStats {

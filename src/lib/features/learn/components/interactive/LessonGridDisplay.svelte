@@ -254,6 +254,10 @@ Uses the actual GridSvg component for consistency with the rest of the app.
       sans-serif;
   }
 
+  :global(:root.dark) .direction-label {
+    fill: #9ca3af;
+  }
+
   /* Responsive */
   @media (max-width: 600px) {
     .grid-small .grid-svg {

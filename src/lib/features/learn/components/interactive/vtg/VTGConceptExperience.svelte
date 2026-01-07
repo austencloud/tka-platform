@@ -16,9 +16,15 @@ Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
 
-  let { onComplete } = $props<{
+  import type { ExperienceViewMode } from "../../../domain/types";
+
+  let { onComplete, viewMode = "step" } = $props<{
     onComplete?: () => void;
+    viewMode?: ExperienceViewMode;
   }>();
+
+  // Note: Scroll mode not yet implemented for this experience
+  // When viewMode === "scroll", falls back to step mode
 
   const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
 

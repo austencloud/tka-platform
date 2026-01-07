@@ -1,12 +1,15 @@
 <!--
 ConceptDetailView - Direct view of concept content
+Supports two navigation modes:
+- "step": Traditional step-by-step navigation (one page at a time)
+- "scroll": All pages displayed vertically for scrolling (review mode, unlocked after completion)
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
-  import type { LearnConcept, ConceptProgress } from "../domain/types";
+  import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";
   import type { IConceptProgressTracker } from "../services/contracts/IConceptProgressTracker";
   import GridConceptExperience from "./interactive/GridConceptExperience.svelte";
   import Type1ConceptExperience from "./interactive/letters/type1/Type1ConceptExperience.svelte";
@@ -39,6 +42,12 @@ ConceptDetailView - Direct view of concept content
     timeSpentSeconds: 0,
   });
 
+  // Navigation mode: step-by-step or scroll-through
+  let viewMode = $state<ExperienceViewMode>("step");
+
+  // Check if concept is completed (enables scroll mode)
+  let isCompleted = $derived(progress.status === "completed");
+
   // Sync progress when concept changes
   $effect(() => {
     progress = conceptProgressService.getConceptProgress(concept.id);
@@ -46,6 +55,11 @@ ConceptDetailView - Direct view of concept content
 
   // Reference to the current experience component for back navigation
   let experienceComponent: { handleBack?: () => void } | null = $state(null);
+
+  function toggleViewMode() {
+    hapticService?.trigger("selection");
+    viewMode = viewMode === "step" ? "scroll" : "step";
+  }
 
   // Start the concept when detail view opens
   onMount(() => {
@@ -78,7 +92,9 @@ ConceptDetailView - Direct view of concept content
   }
 
   function handlePracticeComplete() {
-    conceptProgressService.recordPracticeAttempt(concept.id, true, 0);
+    // Mark the concept as completed when the experience is finished
+    // This explicitly completes rather than just recording one practice attempt
+    conceptProgressService.completeConcept(concept.id);
     // After completing, go back to concept list
     handleClose();
   }
@@ -98,34 +114,55 @@ ConceptDetailView - Direct view of concept content
 </script>
 
 <div class="concept-detail">
-  <!-- Simple back button -->
-  <button class="back-button" onclick={handleBackButton} aria-label="Go back">
-    <span class="back-icon">‹</span>
-    <span class="back-text">Back</span>
-  </button>
+  <!-- Header bar with back button and mode toggle -->
+  <div class="header-bar">
+    <button class="back-button" onclick={handleBackButton} aria-label="Go back">
+      <span class="back-icon">‹</span>
+      <span class="back-text">Back</span>
+    </button>
+
+    <!-- Mode toggle - only visible for completed concepts -->
+    {#if isCompleted && hasInteractiveContent(concept.id)}
+      <button
+        class="mode-toggle"
+        onclick={toggleViewMode}
+        aria-label={viewMode === "step" ? "Switch to scroll view" : "Switch to step view"}
+        title={viewMode === "step" ? "Switch to scroll view" : "Switch to step view"}
+      >
+        {#if viewMode === "step"}
+          <i class="fa-solid fa-scroll" aria-hidden="true"></i>
+          <span class="mode-label">Review</span>
+        {:else}
+          <i class="fa-solid fa-stairs" aria-hidden="true"></i>
+          <span class="mode-label">Steps</span>
+        {/if}
+      </button>
+    {/if}
+  </div>
 
   <!-- Content - key block forces full remount when concept changes -->
   <div class="concept-detail-content">
-    {#key concept.id}
+    {#key `${concept.id}-${viewMode}`}
       {#if hasInteractiveContent(concept.id)}
         {#if concept.id === "grid"}
           <GridConceptExperience
             bind:this={experienceComponent}
+            {viewMode}
             onComplete={handlePracticeComplete}
             onBack={handleClose}
           />
         {:else if concept.id === "hand-positions"}
-          <PositionsConceptExperience onComplete={handlePracticeComplete} />
+          <PositionsConceptExperience {viewMode} onComplete={handlePracticeComplete} />
         {:else if concept.id === "hand-motions"}
-          <MotionsConceptExperience onComplete={handlePracticeComplete} />
+          <MotionsConceptExperience {viewMode} onComplete={handlePracticeComplete} />
         {:else if concept.id === "vtg-fundamentals"}
-          <VTGConceptExperience onComplete={handlePracticeComplete} />
+          <VTGConceptExperience {viewMode} onComplete={handlePracticeComplete} />
         {:else if concept.id === "words-alpha-beta"}
-          <WordsConceptExperience onComplete={handlePracticeComplete} />
+          <WordsConceptExperience {viewMode} onComplete={handlePracticeComplete} />
         {:else if concept.id === "staff-positions"}
-          <StaffConceptExperience onComplete={handlePracticeComplete} />
+          <StaffConceptExperience {viewMode} onComplete={handlePracticeComplete} />
         {:else if concept.id === "type1-abc-ghi"}
-          <Type1ConceptExperience onComplete={handlePracticeComplete} />
+          <Type1ConceptExperience {viewMode} onComplete={handlePracticeComplete} />
         {/if}
       {:else}
         <!-- Coming Soon placeholder -->
@@ -151,26 +188,34 @@ ConceptDetailView - Direct view of concept content
     color: var(--foreground, #ffffff);
   }
 
-  .back-button {
+  .header-bar {
     position: absolute;
-    top: 1rem;
-    left: 1rem;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    pointer-events: none;
+  }
 
+  .header-bar > * {
+    pointer-events: auto;
+  }
+
+  .back-button {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-
     padding: 0.5rem 1rem;
-
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
-
     color: var(--theme-text);
     font-size: 0.875rem;
     font-weight: 600;
-
     cursor: pointer;
     transition: all 0.2s ease;
   }
@@ -188,6 +233,35 @@ ConceptDetailView - Direct view of concept content
 
   .back-text {
     line-height: 1;
+  }
+
+  .mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 8px;
+    color: var(--theme-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mode-toggle:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-accent, #22d3ee);
+  }
+
+  .mode-toggle i {
+    font-size: 1rem;
+    color: var(--theme-accent, #22d3ee);
+  }
+
+  .mode-label {
+    font-size: 0.8125rem;
   }
 
   .concept-detail-content {
@@ -226,10 +300,20 @@ ConceptDetailView - Direct view of concept content
   }
 
   @media (max-width: 768px) {
+    .header-bar {
+      padding: 0.5rem;
+    }
+
     .back-button {
-      top: 0.5rem;
-      left: 0.5rem;
       padding: 0.375rem 0.75rem;
+    }
+
+    .mode-toggle {
+      padding: 0.375rem 0.75rem;
+    }
+
+    .mode-label {
+      display: none;
     }
   }
 </style>

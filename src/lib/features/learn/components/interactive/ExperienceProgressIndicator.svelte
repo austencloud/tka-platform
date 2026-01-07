@@ -5,7 +5,7 @@ Displays:
 - Dot for each page/step
 - Current step highlighted
 - Completed steps with different style
-- Fixed position at bottom of screen
+- Inline in layout flow (parent controls positioning)
 -->
 <script lang="ts">
   let { currentStep, totalSteps } = $props<{
@@ -42,20 +42,14 @@ Displays:
 
 <style>
   .progress-indicator {
-    position: fixed;
-    bottom: 5rem;
-    /* Center within content area, accounting for desktop sidebar */
-    left: calc(50% + var(--desktop-sidebar-width, 0px) / 2);
-    transform: translateX(-50%);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.7));
-    backdrop-filter: blur(12px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
-    z-index: 100;
   }
 
   .progress-dots {
@@ -86,14 +80,6 @@ Displays:
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-weight: 500;
     font-variant-numeric: tabular-nums;
-  }
-
-  /* Adjust for mobile - no sidebar, center on viewport */
-  @media (max-width: 768px) {
-    .progress-indicator {
-      left: 50%;
-      bottom: 5.5rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
