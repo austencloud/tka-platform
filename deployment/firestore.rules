@@ -54,6 +54,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Feature flag audit log - append-only for admins
+    match /audit/featureFlags/entries/{entryId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // Immutable audit trail
+    }
+
     // ============================================================================
     // GAMIFICATION COLLECTIONS (Root Level)
     // ============================================================================
@@ -352,12 +359,15 @@ service cloud.firestore {
       // USER LIBRARY (Sequences)
       // -------------------------------------------------------------------------
       // Public sequences are readable by anyone, private only by owner
+      // Admins can read any user's sequences for impersonation/preview mode
 
       match /sequences/{sequenceId} {
         // Public sequences can be read by anyone, private only by owner
-        allow read: if resource.data.visibility == 'public' || isOwner(userId);
-        // Only owner can create/update, admins can delete
-        allow create, update: if isOwner(userId);
+        // Admins can read any user's library (for impersonation/preview mode)
+        allow read: if resource.data.visibility == 'public' || isOwner(userId) || isAdmin();
+        // Owner can create/update, admins can update for data migrations
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId) || isAdmin();
         allow delete: if isOwner(userId) || isAdmin();
       }
 

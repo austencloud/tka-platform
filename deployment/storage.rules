@@ -45,16 +45,35 @@ service firebase.storage {
     }
 
     // Crowd-sourced thumbnails - first user to view renders and uploads
-    // Storage structure: thumbnails/{propType}/{sequenceName}_{mode}.webp
-    match /thumbnails/{propType}/{fileName} {
+    // New structure with variant: thumbnails/{variant}/{propType}/{sequenceName}_{mode}.webp
+    // Variants: gallery (no user data), wordcard (with user data footer)
+    match /thumbnails/{variant}/{propType}/{fileName} {
       // Anyone can read thumbnails (for fast loading)
       allow read: if true;
       // Authenticated users can upload thumbnails (crowd-sourced rendering)
-      allow write: if request.auth != null
+      allow create, update: if request.auth != null
         // Only allow WebP images
         && request.resource.contentType == 'image/webp'
         // Limit file size to 500KB (thumbnails should be small)
         && request.resource.size < 500 * 1024;
+      // Authenticated users can delete thumbnails (for cache clearing)
+      // Note: Admin check happens in app code, not rules (no custom claims yet)
+      allow delete: if request.auth != null;
+    }
+
+    // Legacy thumbnails (backwards compatibility)
+    // Old structure: thumbnails/{propType}/{sequenceName}_{mode}.webp
+    match /thumbnails/{propType}/{fileName} {
+      // Anyone can read thumbnails (for fast loading)
+      allow read: if true;
+      // Authenticated users can upload thumbnails (crowd-sourced rendering)
+      allow create, update: if request.auth != null
+        // Only allow WebP images
+        && request.resource.contentType == 'image/webp'
+        // Limit file size to 500KB (thumbnails should be small)
+        && request.resource.size < 500 * 1024;
+      // Authenticated users can delete thumbnails (for cache clearing)
+      allow delete: if request.auth != null;
     }
 
     // Default: deny all other access
