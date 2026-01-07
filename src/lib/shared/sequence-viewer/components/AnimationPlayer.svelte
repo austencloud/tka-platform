@@ -22,6 +22,7 @@
 	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
 	import PlaybackPane from "$lib/features/compose/components/controls/settings-panel/PlaybackPane.svelte";
 	import VisualPane from "$lib/features/compose/components/controls/settings-panel/VisualPane.svelte";
+	import { galleryPanelManager } from "$lib/features/discover/shared/state/gallery-panel-state.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
@@ -61,9 +62,9 @@
 	const ctx = $derived(externalControl ? tryGetAnimationExportContext() : null);
 	const useContext = $derived(externalControl && !!ctx);
 
-	// Services (standalone mode only)
-	let controller: IAnimationPlaybackController | null = null;
-	let discoverLoader: IDiscoverLoader | null = null;
+	// Services (standalone mode only) - must be $state for $effect to track them
+	let controller = $state<IAnimationPlaybackController | null>(null);
+	let discoverLoader = $state<IDiscoverLoader | null>(null);
 
 	// State (standalone mode only) - created once, not reactive to useContext changes
 	// (if useContext changes mid-lifecycle, animState persists for cleanup)
@@ -73,7 +74,7 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let bpm = $state(DEFAULT_BPM);
-	let lastSequenceId: string | null = null;
+	let lastSequenceId = $state<string | null>(null);
 
 	// Sidebar space detection - switch to compact mode if not enough room
 	let sidebarRef: HTMLDivElement | null = $state(null);
@@ -115,6 +116,24 @@
 	const letter = $derived(beatData?.letter ?? null);
 
 	const gridMode = $derived(sequenceData?.gridMode ?? sequence?.gridMode);
+
+	// Trail settings - use $derived.by to ensure reactivity across module boundary
+	// The animationSettings singleton uses $state inside a factory closure, which may not
+	// propagate reactivity properly through simple getters. Reading individual properties
+	// forces Svelte to track fine-grained changes.
+	const trailSettings = $derived.by(() => {
+		const t = animationSettings.trail;
+		// Read individual properties to establish fine-grained dependency tracking
+		void t.enabled;
+		void t.mode;
+		void t.fadeDurationMs;
+		void t.lineWidth;
+		void t.maxOpacity;
+		void t.glowEnabled;
+		void t.trackingMode;
+		// Return a new object to ensure AnimatorCanvas sees the change
+		return { ...t };
+	});
 
 	// Service initialization (standalone mode)
 	onMount(async () => {
@@ -213,11 +232,11 @@
 		if (useContext) ctx!.actions.onCanvasReady(canvas);
 	}
 
-	// Context-only handlers for full mode
-	const stepHalfBack = () => ctx?.actions.onStepHalfBeatBackward();
-	const stepHalfFwd = () => ctx?.actions.onStepHalfBeatForward();
-	const stepFullBack = () => ctx?.actions.onStepFullBeatBackward();
-	const stepFullFwd = () => ctx?.actions.onStepFullBeatForward();
+	// Step handlers - work in both context and standalone modes
+	const stepHalfBack = () => useContext ? ctx!.actions.onStepHalfBeatBackward() : controller?.stepHalfBeatBackward();
+	const stepHalfFwd = () => useContext ? ctx!.actions.onStepHalfBeatForward() : controller?.stepHalfBeatForward();
+	const stepFullBack = () => useContext ? ctx!.actions.onStepFullBeatBackward() : controller?.stepFullBeatBackward();
+	const stepFullFwd = () => useContext ? ctx!.actions.onStepFullBeatForward() : controller?.stepFullBeatForward();
 	const setPlaybackMode = (m: any) => ctx?.actions.onPlaybackModeChange(m);
 	const setStepSize = (s: any) => ctx?.actions.onStepPlaybackStepSizeChange(s);
 	const cancelExport = () => ctx?.actions.onCancelExport();
@@ -237,7 +256,7 @@
 	{:else if error}
 		<div class="state-msg error"><span>{error}</span></div>
 	{:else}
-		{#if layout === "horizontal" && controlsLevel === "full" && useContext}
+		{#if layout === "horizontal"}
 			<!-- Horizontal mode: canvas + sidebar in a row -->
 			<div class="horizontal-row">
 				<div class="canvas-wrap">
@@ -252,7 +271,7 @@
 						{isPlaying}
 						word={sequenceData?.word ?? sequence?.word ?? null}
 						onPlaybackToggle={togglePlayback}
-						trailSettings={animationSettings.trail}
+						{trailSettings}
 						onCanvasReady={handleCanvasReady}
 						{previewDarkMode}
 					/>
@@ -270,28 +289,16 @@
 					{/if}
 				</div>
 
-				<!-- Sidebar with settings - adapts based on available height -->
+				<!-- Sidebar with settings - adapts based on mode and available height -->
 				<div class="horizontal-sidebar" bind:this={sidebarRef}>
-					{#if useCompactSidebar}
-						<!-- Compact mode: tabbed panel when space is limited -->
-						<SettingsTogglePanel
-							propType={null}
-							bluePropType={null}
-							redPropType={null}
-							{bpm}
-							{playbackMode}
-							stepPlaybackStepSize={stepSize}
-							{isPlaying}
-							onBpmChange={handleBpmChange}
-							onPlaybackModeChange={setPlaybackMode}
-							onStepPlaybackStepSizeChange={setStepSize}
-							onPlaybackToggle={togglePlayback}
-						/>
-					{:else}
-						<!-- Expanded mode: both panes visible when space allows -->
-						<div class="sidebar-section">
-							<PlaybackPane
-								bind:bpm
+					{#if useContext && controlsLevel === "full"}
+						<!-- External control mode: full playback + visual controls -->
+						{#if useCompactSidebar}
+							<SettingsTogglePanel
+								propType={null}
+								bluePropType={null}
+								redPropType={null}
+								{bpm}
 								{playbackMode}
 								stepPlaybackStepSize={stepSize}
 								{isPlaying}
@@ -300,8 +307,28 @@
 								onStepPlaybackStepSizeChange={setStepSize}
 								onPlaybackToggle={togglePlayback}
 							/>
+						{:else}
+							<div class="sidebar-section">
+								<PlaybackPane
+									bind:bpm
+									{playbackMode}
+									stepPlaybackStepSize={stepSize}
+									{isPlaying}
+									onBpmChange={handleBpmChange}
+									onPlaybackModeChange={setPlaybackMode}
+									onStepPlaybackStepSizeChange={setStepSize}
+									onPlaybackToggle={togglePlayback}
+								/>
+							</div>
+							<div class="sidebar-section">
+								<VisualPane propType={null} bluePropType={null} redPropType={null} />
+							</div>
+						{/if}
+					{:else}
+						<!-- Standalone mode: simplified BPM + visual controls -->
+						<div class="sidebar-section standalone-controls">
+							<BpmChips {bpm} variant="full" onBpmChange={handleBpmChange} />
 						</div>
-
 						<div class="sidebar-section">
 							<VisualPane propType={null} bluePropType={null} redPropType={null} />
 						</div>
@@ -309,14 +336,15 @@
 				</div>
 			</div>
 
-			<!-- Transport row: step controls + play button -->
+			<!-- Transport row - always show step controls -->
+			<!-- Full beat steps are adjacent to play (primary), half beat steps on outside (secondary) -->
 			{#if showControls}
 				<div class="horizontal-transport-row">
-					<button class="step-btn" onclick={stepFullBack} aria-label="Previous beat">
-						<i class="fas fa-angles-left" aria-hidden="true"></i>
-					</button>
-					<button class="step-btn" onclick={stepHalfBack} aria-label="Previous half beat">
+					<button class="step-btn step-secondary" onclick={stepHalfBack} aria-label="Previous half beat">
 						<i class="fas fa-chevron-left" aria-hidden="true"></i>
+					</button>
+					<button class="step-btn step-primary" onclick={stepFullBack} aria-label="Previous beat">
+						<i class="fas fa-angles-left" aria-hidden="true"></i>
 					</button>
 
 					<button class="play-btn large" onclick={togglePlayback} aria-label={isPlaying ? "Pause" : "Play"}>
@@ -327,11 +355,11 @@
 						{/if}
 					</button>
 
-					<button class="step-btn" onclick={stepHalfFwd} aria-label="Next half beat">
-						<i class="fas fa-chevron-right" aria-hidden="true"></i>
-					</button>
-					<button class="step-btn" onclick={stepFullFwd} aria-label="Next beat">
+					<button class="step-btn step-primary" onclick={stepFullFwd} aria-label="Next beat">
 						<i class="fas fa-angles-right" aria-hidden="true"></i>
+					</button>
+					<button class="step-btn step-secondary" onclick={stepHalfFwd} aria-label="Next half beat">
+						<i class="fas fa-chevron-right" aria-hidden="true"></i>
 					</button>
 				</div>
 			{/if}
@@ -349,7 +377,7 @@
 					{isPlaying}
 					word={sequenceData?.word ?? sequence?.word ?? null}
 					onPlaybackToggle={togglePlayback}
-					trailSettings={animationSettings.trail}
+					{trailSettings}
 					onCanvasReady={handleCanvasReady}
 					{previewDarkMode}
 				/>
@@ -369,7 +397,7 @@
 
 			{#if showControls}
 				{#if controlsLevel === "full" && useContext}
-				<!-- Vertical mode: original tabbed layout -->
+				<!-- Vertical mode: full tabbed layout -->
 				<div class="controls-full">
 					<TransportControls
 						{isPlaying}
@@ -393,7 +421,31 @@
 						onPlaybackToggle={togglePlayback}
 					/>
 				</div>
+			{:else if controlsLevel === "standard"}
+				<!-- Vertical mode: standard controls with step buttons + settings gear -->
+				<!-- Uses 3-column layout: spacer | centered transport | gear button -->
+				<div class="controls-standard">
+					<div class="controls-spacer"></div>
+					<TransportControls
+						{isPlaying}
+						onPlaybackToggle={togglePlayback}
+						onStepHalfBeatBackward={stepHalfBack}
+						onStepHalfBeatForward={stepHalfFwd}
+						onStepFullBeatBackward={stepFullBack}
+						onStepFullBeatForward={stepFullFwd}
+					/>
+					<button
+						class="settings-gear-btn"
+						class:active={galleryPanelManager.isDetailExpanded}
+						onclick={() => galleryPanelManager.toggleDetailExpanded()}
+						aria-label={galleryPanelManager.isDetailExpanded ? "Collapse settings" : "Expand settings"}
+						type="button"
+					>
+						<i class="fas fa-sliders" aria-hidden="true"></i>
+					</button>
+				</div>
 			{:else}
+				<!-- Vertical mode: minimal controls (play button + BPM + settings gear) -->
 				<div class="controls-simple">
 					<button class="play-btn" onclick={togglePlayback} aria-label={isPlaying ? "Pause" : "Play"}>
 						{#if isPlaying}
@@ -403,6 +455,15 @@
 						{/if}
 					</button>
 					<BpmChips {bpm} variant="compact" onBpmChange={handleBpmChange} />
+					<button
+						class="settings-gear-btn"
+						class:active={galleryPanelManager.isDetailExpanded}
+						onclick={() => galleryPanelManager.toggleDetailExpanded()}
+						aria-label={galleryPanelManager.isDetailExpanded ? "Collapse settings" : "Expand settings"}
+						type="button"
+					>
+						<i class="fas fa-sliders" aria-hidden="true"></i>
+					</button>
 				</div>
 			{/if}
 		{/if}
@@ -464,6 +525,7 @@
 	.horizontal-sidebar {
 		display: flex;
 		flex-direction: column;
+		justify-content: space-evenly;
 		gap: clamp(12px, 3cqh, 24px);
 		width: clamp(240px, 32%, 300px);
 		min-width: 240px;
@@ -518,7 +580,7 @@
 	}
 
 	/* Compact mode: BPM presets - 2 columns for narrow sidebar */
-	.horizontal-sidebar :global(.settings-panel .bpm-presets) {
+	.horizontal-sidebar :global(.settings-panel .preset-chips) {
 		display: grid !important;
 		grid-template-columns: repeat(2, 1fr) !important;
 		gap: 8px;
@@ -543,8 +605,30 @@
 
 	.sidebar-section + .sidebar-section {
 		padding-top: clamp(14px, 3cqh, 24px);
-		margin-top: auto; /* Push second section down if there's extra space */
 		border-top: 1px solid var(--theme-stroke);
+	}
+
+	/* Standalone mode: BpmChips in sidebar */
+	.standalone-controls {
+		gap: 12px;
+	}
+
+	.standalone-controls :global(.bpm-chips) {
+		width: 100%;
+	}
+
+	.standalone-controls :global(.bpm-adjuster) {
+		justify-content: center;
+	}
+
+	.standalone-controls :global(.preset-chips) {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+	}
+
+	.standalone-controls :global(.preset-chip) {
+		min-height: 48px;
 	}
 
 	/* Child panes - space between sections, not stretched buttons */
@@ -560,10 +644,17 @@
 	/* EXPANDED MODE ONLY: Button groups (scoped via .sidebar-section) */
 	.horizontal-sidebar .sidebar-section :global(.style-toggle),
 	.horizontal-sidebar .sidebar-section :global(.motion-toggles),
-	.horizontal-sidebar .sidebar-section :global(.element-grid),
 	.horizontal-sidebar .sidebar-section :global(.trail-presets),
 	.horizontal-sidebar .sidebar-section :global(.ends-selector) {
 		display: flex;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+
+	/* Element grid: 2x2 layout for visibility toggles (Grid, Props, #, Glyph) */
+	.horizontal-sidebar .sidebar-section :global(.element-grid) {
+		display: grid !important;
+		grid-template-columns: repeat(2, 1fr);
 		gap: 8px;
 		flex-shrink: 0;
 	}
@@ -658,9 +749,9 @@
 		min-height: 48px;
 	}
 
-	/* BPM presets - 3-column grid, fixed heights */
-	.horizontal-sidebar :global(.bpm-presets) {
-		display: grid;
+	/* BPM presets - 3-column grid (2 rows of 3 chips) */
+	.horizontal-sidebar :global(.preset-chips) {
+		display: grid !important;
 		grid-template-columns: repeat(3, 1fr);
 		gap: 8px;
 	}
@@ -819,6 +910,25 @@
 		flex-shrink: 0;
 	}
 
+	.controls-standard {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px;
+		background: var(--theme-card-bg, rgba(0, 0, 0, 0.3));
+		border: 1px solid var(--theme-stroke);
+		border-radius: 14px;
+		flex-shrink: 0;
+	}
+
+	/* Invisible spacer to balance the gear button - keeps transport centered */
+	.controls-spacer {
+		width: 48px;
+		height: 48px;
+		flex-shrink: 0;
+		visibility: hidden;
+	}
+
 	.play-btn {
 		width: 48px;
 		height: 48px;
@@ -898,6 +1008,75 @@
 	}
 
 	/* ========================================
+	   SETTINGS GEAR BUTTON
+	   ======================================== */
+	.settings-gear-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 50%;
+		color: var(--theme-text-dim);
+		cursor: pointer;
+		transition: all 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	.settings-gear-btn i {
+		font-size: 18px;
+	}
+
+	.settings-gear-btn:hover {
+		background: var(--theme-card-hover-bg);
+		border-color: var(--theme-stroke-strong);
+		color: var(--theme-text);
+		transform: scale(1.05);
+	}
+
+	.settings-gear-btn:active {
+		transform: scale(0.95);
+	}
+
+	.settings-gear-btn.active {
+		background: var(--theme-accent, #3b82f6);
+		border-color: var(--theme-accent, #3b82f6);
+		color: white;
+	}
+
+	.settings-gear-btn.active:hover {
+		background: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
+		border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
+	}
+
+	/* ========================================
+	   SETTINGS SHEET (Drawer)
+	   ======================================== */
+	:global(.animation-settings-sheet) {
+		--drawer-max-height: 55dvh;
+	}
+
+	:global(.drawer-content.animation-settings-sheet) {
+		max-height: 55dvh !important;
+		border-radius: 20px 20px 0 0 !important;
+	}
+
+	.settings-sheet-content {
+		display: flex;
+		flex-direction: column;
+		padding: 8px 16px 16px;
+		height: 100%;
+		background: var(--theme-panel-elevated-bg, var(--theme-panel-bg));
+		overflow-y: auto;
+		overflow-x: hidden;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	/* ========================================
 	   ACCESSIBILITY & MOTION
 	   ======================================== */
 	@media (prefers-reduced-motion: reduce) {
@@ -906,6 +1085,7 @@
 		}
 
 		.play-btn,
+		.settings-gear-btn,
 		.export-card .progress-bar div {
 			transition: none;
 		}

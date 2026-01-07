@@ -153,6 +153,7 @@ export class AnimationEngine {
       beatNumbers: true,
       props: true,
       trails: true,
+      arms: false, // Stick-figure arms off by default
       tkaGlyph: true, // TKA Glyph includes turn numbers
       blueMotion: true,
       redMotion: true,
@@ -211,6 +212,8 @@ export class AnimationEngine {
   private cacheSequenceId: string | null = null;
   private unsubscribeVisibility: (() => void) | null = null;
   private lastTextureReloadSignal: number = 0;
+  private lastClearSignal: number = 0;
+  private lastPreRenderClearSignal: number = 0;
 
   // Previous props for change detection (only track what we compare)
   private prevBeatData: StartPositionData | BeatData | null = null;
@@ -222,6 +225,7 @@ export class AnimationEngine {
   private propTypeOverrideBlue: string | null = null;
   private propTypeOverrideRed: string | null = null;
   private prevDarkMode: boolean = false;
+  private prevTrailsVisible: boolean = true;
 
   // Simple reference to last props for initial render (not a copy - avoids GC)
   private lastPropsRef: AnimationEngineProps | null = null;
@@ -246,6 +250,7 @@ export class AnimationEngine {
       gridVisible: true,
       propsVisible: true,
       trailsVisible: true,
+      armsVisible: false,
       blueMotionVisible: true,
       redMotionVisible: true,
     },
@@ -271,11 +276,13 @@ export class AnimationEngine {
     // Initialize visibility manager
     const visibilityManager = getAnimationVisibilityManager();
     this.prevDarkMode = visibilityManager.isDarkMode();
+    this.prevTrailsVisible = visibilityManager.isTrailsVisible();
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
       beatNumbers: visibilityManager.getVisibility("beatNumbers"),
       props: visibilityManager.getVisibility("props"),
       trails: visibilityManager.getTrailStyle() !== "off",
+      arms: visibilityManager.getVisibility("arms"),
       tkaGlyph: visibilityManager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       blueMotion: visibilityManager.getVisibility("blueMotion"),
       redMotion: visibilityManager.getVisibility("redMotion"),
@@ -311,6 +318,16 @@ export class AnimationEngine {
             });
           }
         }
+
+        // Trigger render when trails visibility changes
+        if (state.trails !== this.prevTrailsVisible) {
+          this.prevTrailsVisible = state.trails;
+          if (this.state.isInitialized) {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+            );
+          }
+        }
       }
     );
 
@@ -339,14 +356,24 @@ export class AnimationEngine {
     // Sync state from services that own reactive state
     this.syncServiceState();
 
-    // Handle settings loaded detection
-    if (!this.settingsLoaded) {
-      if (
-        this.state.currentBluePropType !== "staff" ||
-        this.state.currentRedPropType !== "staff" ||
-        this.settingsService?.currentSettings
-      ) {
+    // Handle settings/trail capturer initialization
+    // Initialize trail capturer when we have any indication settings are ready:
+    // - Prop types changed from default "staff"
+    // - Settings service has loaded
+    // - External trail settings are provided (standalone/gallery mode)
+    // Also retry if settingsLoaded but trail capturer init hasn't completed
+    const shouldInitTrailCapturer =
+      this.state.currentBluePropType !== "staff" ||
+      this.state.currentRedPropType !== "staff" ||
+      this.settingsService?.currentSettings ||
+      props.externalTrailSettings !== undefined;
+
+    if (shouldInitTrailCapturer && this.trailCapturer) {
+      if (!this.settingsLoaded) {
         this.settingsLoaded = true;
+        this.initializeTrailCapturer(props);
+      } else if (!this.trailSettingsSyncService?.state.syncedSettings) {
+        // Retry initialization if sync service wasn't ready on first attempt
         this.initializeTrailCapturer(props);
       }
     }
@@ -453,19 +480,21 @@ export class AnimationEngine {
     // Handle sequence changes
     this.sequenceCacheService?.handleSequenceChange(props.sequenceData ?? null);
 
-    // Handle cache clear signals
-    const clearSignal = this.sequenceCacheService?.state.clearSignal;
-    if (clearSignal && clearSignal > 0) {
+    // Handle cache clear signals (only process once per signal)
+    const clearSignal = this.sequenceCacheService?.state.clearSignal ?? 0;
+    if (clearSignal > this.lastClearSignal) {
       this.precomputationService?.clearCaches();
       this.trailCapturer?.clearTrails();
       this.cacheSequenceId = null;
+      this.lastClearSignal = clearSignal;
     }
 
-    // Handle pre-render clear signals
+    // Handle pre-render clear signals (only process once per signal)
     const preRenderClearSignal =
-      this.sequenceCacheService?.state.preRenderClearSignal;
-    if (preRenderClearSignal && preRenderClearSignal > 0) {
+      this.sequenceCacheService?.state.preRenderClearSignal ?? 0;
+    if (preRenderClearSignal > this.lastPreRenderClearSignal) {
       this.precomputationService?.clearPreRenderedFrames();
+      this.lastPreRenderClearSignal = preRenderClearSignal;
     }
 
     // Sync pre-rendered frames flag
@@ -518,10 +547,9 @@ export class AnimationEngine {
       }
     }
 
-    // Handle prop visibility changes - clear trails when both hidden
-    if (!props.blueProp && !props.redProp) {
-      this.trailCapturer?.clearTrails();
-    }
+    // NOTE: Don't clear trails when props are null - props are temporarily null
+    // during loading/transitions, and clearing trails causes them to disappear.
+    // TrailCapturer handles clearing appropriately based on settings and loop detection.
 
     // Update trail capturer with prop type changes
     if (this.trailCapturer && this.settingsLoaded) {
@@ -826,11 +854,20 @@ export class AnimationEngine {
   private initializeTrailCapturer(props: AnimationEngineProps): void {
     if (!this.trailCapturer || !this.settingsLoaded) return;
 
+    // Use external trail settings if provided, otherwise use internal state
+    const effectiveTrailSettings =
+      props.externalTrailSettings ?? this.state.trailSettings;
+
+    // Also update internal state if external settings provided
+    if (props.externalTrailSettings) {
+      this.state.trailSettings = props.externalTrailSettings;
+    }
+
     this.trailCapturer.initialize({
       canvasSize: this.canvasSize,
       bluePropDimensions: this.state.bluePropDimensions,
       redPropDimensions: this.state.redPropDimensions,
-      trailSettings: this.state.trailSettings,
+      trailSettings: effectiveTrailSettings,
       bluePropType: this.state.currentBluePropType,
       redPropType: this.state.currentRedPropType,
     });
@@ -838,6 +875,14 @@ export class AnimationEngine {
     this.trailSettingsSyncService?.initialize(this.trailCapturer, () =>
       this.renderLoopService?.triggerRender(() => this.getFrameParams(props))
     );
+
+    // CRITICAL: Immediately sync external settings after initializing the sync service
+    // This ensures trails work even if no more update() calls happen after initialization
+    if (props.externalTrailSettings) {
+      this.trailSettingsSyncService?.handleExternalSettingsSync(
+        props.externalTrailSettings
+      );
+    }
   }
 
   private syncServiceState(): void {
@@ -970,6 +1015,7 @@ export class AnimationEngine {
     fp.visibility.gridVisible = this.state.visibilityState.grid;
     fp.visibility.propsVisible = this.state.visibilityState.props;
     fp.visibility.trailsVisible = this.state.visibilityState.trails;
+    fp.visibility.armsVisible = this.state.visibilityState.arms;
     fp.visibility.blueMotionVisible = this.state.visibilityState.blueMotion;
     fp.visibility.redMotionVisible = this.state.visibilityState.redMotion;
 

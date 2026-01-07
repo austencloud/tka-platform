@@ -14,6 +14,8 @@ export interface AnimationVisibilityState {
   beatNumbers: boolean;
   props: boolean;
   trails: boolean;
+  /** Stick-figure arms connecting shoulders to props */
+  arms: boolean;
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
   blueMotion: boolean;
   redMotion: boolean;

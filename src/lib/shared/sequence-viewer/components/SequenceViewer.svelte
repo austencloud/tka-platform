@@ -21,6 +21,7 @@
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/features/discover/gallery/display/components/PropAwareThumbnail.svelte";
+	import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -127,6 +128,10 @@
 	let localAddDifficultyLevel = $state(imageSettings.addDifficultyLevel);
 	let localAddUserInfo = $state(imageSettings.addUserInfo);
 	let localDarkMode = $state(imageSettings.darkMode);
+	// Granular footer controls
+	let localShowCreatorName = $state(imageSettings.showCreatorName);
+	let localShowNotes = $state(imageSettings.showNotes);
+	let localShowBirthday = $state(imageSettings.showBirthday);
 
 	function handleImageSettingsChange() {
 		localAddWord = imageSettings.addWord;
@@ -135,6 +140,10 @@
 		localAddDifficultyLevel = imageSettings.addDifficultyLevel;
 		localAddUserInfo = imageSettings.addUserInfo;
 		localDarkMode = imageSettings.darkMode;
+		// Granular footer controls
+		localShowCreatorName = imageSettings.showCreatorName;
+		localShowNotes = imageSettings.showNotes;
+		localShowBirthday = imageSettings.showBirthday;
 	}
 
 	imageSettings.registerObserver(handleImageSettingsChange);
@@ -150,6 +159,11 @@
 	const addDifficultyLevel = $derived(showVisibilitySettings ? localAddDifficultyLevel : (globalImageExport?.addDifficultyLevel ?? false));
 	const addUserInfo = $derived(showVisibilitySettings ? localAddUserInfo : (globalImageExport?.addUserInfo ?? false));
 	const darkMode = $derived(showVisibilitySettings ? localDarkMode : globalDarkMode);
+
+	// Granular footer controls - derived for effective values
+	const showCreatorName = $derived(showVisibilitySettings ? localShowCreatorName : (globalImageExport?.showCreatorName ?? true));
+	const showNotes = $derived(showVisibilitySettings ? localShowNotes : (globalImageExport?.showNotes ?? true));
+	const showBirthday = $derived(showVisibilitySettings ? localShowBirthday : (globalImageExport?.showBirthday ?? true));
 
 	// Prop type settings for PropAwareThumbnail
 	const bluePropType = $derived(settingsService.settings.bluePropType);
@@ -176,11 +190,84 @@
 	function toggleDarkMode() {
 		imageSettings.toggle("darkMode");
 	}
+	// Granular footer toggle handlers
+	function toggleShowCreatorName() {
+		imageSettings.toggle("showCreatorName");
+	}
+	function toggleShowNotes() {
+		imageSettings.toggle("showNotes");
+	}
+	function toggleShowBirthday() {
+		imageSettings.toggle("showBirthday");
+	}
 
 	// Container width for responsive layout detection
 	let containerWidth = $state(0);
 	// Use horizontal layout when container is wide enough (600px+)
 	const useHorizontalLayout = $derived(containerWidth >= 600);
+
+	// Copy to clipboard state
+	let isCopying = $state(false);
+	let copySuccess = $state(false);
+
+	/**
+	 * Copy the current image to clipboard
+	 * Uses the Clipboard API to write a PNG blob
+	 */
+	async function copyImageToClipboard() {
+		if (isCopying || !sequence) return;
+
+		isCopying = true;
+		copySuccess = false;
+
+		try {
+			// Get the container instance to access the renderer
+			const { getContainerInstance } = await import("$lib/shared/inversify/di");
+			const { TYPES } = await import("$lib/shared/inversify/types");
+			const container = await getContainerInstance();
+			const renderer = container.get<import("$lib/shared/render/services/contracts/ISequenceRenderer").ISequenceRenderer>(TYPES.ISequenceRenderer);
+
+			// Render the image with current settings
+			const blob = await renderer.renderSequenceToBlob(sequence, {
+				beatSize: 240,
+				format: "PNG",
+				quality: 1.0,
+				includeStartPosition,
+				addBeatNumbers,
+				addWord,
+				addDifficultyLevel,
+				addUserInfo,
+				userName,
+				showCreatorName,
+				showNotes,
+				showBirthday,
+				addReversalSymbols: true,
+				visibilityOverrides: {
+					darkMode,
+				},
+			});
+
+			// Copy to clipboard using Clipboard API
+			await navigator.clipboard.write([
+				new ClipboardItem({
+					"image/png": blob,
+				}),
+			]);
+
+			copySuccess = true;
+			hapticService?.trigger("success");
+
+			// Reset success indicator after 2 seconds
+			setTimeout(() => {
+				copySuccess = false;
+			}, 2000);
+		} catch (error) {
+			console.error("Failed to copy image to clipboard:", error);
+			hapticService?.trigger("error");
+		} finally {
+			isCopying = false;
+		}
+	}
 
 	// Derived: available media types
 	const hasImages = $derived(!!sequence);
@@ -246,27 +333,70 @@
 				<i class="fas fa-lightbulb" aria-hidden="true"></i>
 			</button>
 		{/if}
+
+		<!-- Copy to Clipboard Button - only shown in image mode with visibility settings -->
+		{#if showVisibilitySettings && activeMediaType === "image"}
+			<button
+				class="copy-btn"
+				class:success={copySuccess}
+				onclick={copyImageToClipboard}
+				disabled={isCopying}
+				aria-label="Copy image to clipboard"
+				title="Copy image to clipboard"
+			>
+				{#if isCopying}
+					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+				{:else if copySuccess}
+					<i class="fas fa-check" aria-hidden="true"></i>
+				{:else}
+					<i class="fas fa-copy" aria-hidden="true"></i>
+				{/if}
+			</button>
+		{/if}
 	</div>
 
 	<!-- Media Content Area -->
 	<div class="media-content">
 		{#if activeMediaType === "image"}
-			<!-- Image View - using PropAwareThumbnail with custom settings -->
+			<!-- Image View - LayeredSequencePreview for interactive mode, PropAwareThumbnail for browse mode -->
 			<div class="image-view-container">
 				<div class="image-view">
-					<PropAwareThumbnail
-						{sequence}
-						{bluePropType}
-						redPropType={catDogMode ? redPropType : bluePropType}
-						catDogModeEnabled={catDogMode}
-						lightMode={!darkMode}
-						{addWord}
-						{addBeatNumbers}
-						{includeStartPosition}
-						{addDifficultyLevel}
-						{addUserInfo}
-						{userName}
-					/>
+					{#if showVisibilitySettings}
+						<!-- Interactive mode: Use layered preview for animated toggles -->
+						<LayeredSequencePreview
+							{sequence}
+							showWord={addWord}
+							showBeatNumbers={addBeatNumbers}
+							showDifficultyLevel={addDifficultyLevel}
+							{includeStartPosition}
+							{showCreatorName}
+							{showNotes}
+							{showBirthday}
+							{darkMode}
+							{userName}
+							{bluePropType}
+							redPropType={catDogMode ? redPropType : bluePropType}
+							catDogModeEnabled={catDogMode}
+						/>
+					{:else}
+						<!-- Browse mode: Use cached composite images -->
+						<PropAwareThumbnail
+							{sequence}
+							{bluePropType}
+							redPropType={catDogMode ? redPropType : bluePropType}
+							catDogModeEnabled={catDogMode}
+							lightMode={!darkMode}
+							{addWord}
+							{addBeatNumbers}
+							{includeStartPosition}
+							{addDifficultyLevel}
+							{addUserInfo}
+							{userName}
+							{showCreatorName}
+							{showNotes}
+							{showBirthday}
+						/>
+					{/if}
 				</div>
 
 				<!-- Image Export Settings Chips - only shown when visibility settings are enabled (Share Hub) -->
@@ -306,11 +436,28 @@
 						</button>
 						<button
 							class="chip"
-							class:active={addUserInfo}
-							onclick={toggleUserInfo}
-							aria-pressed={addUserInfo}
+							class:active={showCreatorName}
+							onclick={toggleShowCreatorName}
+							aria-pressed={showCreatorName}
 						>
-							User Info
+							Name
+						</button>
+						<button
+							class="chip"
+							class:active={showNotes}
+							onclick={toggleShowNotes}
+							aria-pressed={showNotes}
+						>
+							Notes
+						</button>
+						<button
+							class="chip birthday-chip"
+							class:active={showBirthday}
+							onclick={toggleShowBirthday}
+							aria-pressed={showBirthday}
+							title="Birthday date"
+						>
+							🎂
 						</button>
 					</div>
 				{/if}
@@ -495,6 +642,52 @@
 		outline-offset: 2px;
 	}
 
+	/* Copy Button for Clipboard */
+	.copy-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+		cursor: pointer;
+		transition: all 0.25s ease;
+	}
+
+	.copy-btn i {
+		font-size: 20px;
+		transition: all 0.25s ease;
+	}
+
+	.copy-btn:hover:not(:disabled) {
+		transform: scale(1.08);
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		color: var(--theme-text, white);
+	}
+
+	.copy-btn:active:not(:disabled) {
+		transform: scale(0.95);
+	}
+
+	.copy-btn:disabled {
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+
+	.copy-btn.success {
+		background: linear-gradient(145deg, rgba(34, 197, 94, 0.25), rgba(22, 163, 74, 0.15));
+		border-color: rgba(34, 197, 94, 0.5);
+		color: #22c55e;
+	}
+
+	.copy-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
 	/* Mode Switch Button - single CTA at top */
 	.mode-switch-btn {
 		display: flex;
@@ -640,6 +833,13 @@
 	.chip:focus-visible {
 		outline: 2px solid var(--theme-accent, #6366f1);
 		outline-offset: 2px;
+	}
+
+	/* Birthday chip with emoji */
+	.chip.birthday-chip {
+		font-size: 18px;
+		line-height: 1;
+		padding: 12px 14px;
 	}
 
 	/* Animation View Container */

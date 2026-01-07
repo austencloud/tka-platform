@@ -54,10 +54,16 @@ export class PropTextureLoader implements IPropTextureLoader {
       return;
     }
 
-    // IMMEDIATELY set dimensions from lookup table before async loading
-    // This prevents "smooshed" props on initial render
-    this.state.blueDimensions = getPropDimensions(bluePropType);
-    this.state.redDimensions = getPropDimensions(redPropType);
+    // For INITIAL load only (no texture loaded yet), set dimensions immediately
+    // to prevent "smooshed" props on first render.
+    // For prop SWITCHES (texture already exists), DON'T update dimensions yet -
+    // we need to wait until the new texture loads to avoid rendering the old
+    // texture with new dimensions (causes jank/squishing).
+    const isInitialLoad = !this.state.isLoaded;
+    if (isInitialLoad) {
+      this.state.blueDimensions = getPropDimensions(bluePropType);
+      this.state.redDimensions = getPropDimensions(redPropType);
+    }
 
     this.state.isLoading = true;
     this.state.error = null;
@@ -78,7 +84,8 @@ export class PropTextureLoader implements IPropTextureLoader {
         this.svgGenerator.generateRedPropSvg(redPropType, darkMode),
       ]);
 
-      // Update own state - no callbacks needed
+      // Update dimensions AFTER textures are loaded - this ensures texture and
+      // dimensions are updated atomically, preventing jank on prop switches
       this.state.blueDimensions = {
         width: bluePropData.width,
         height: bluePropData.height,
@@ -87,6 +94,7 @@ export class PropTextureLoader implements IPropTextureLoader {
         width: redPropData.width,
         height: redPropData.height,
       };
+
       this.state.isLoaded = true;
 
       // Direct service-to-service communication (no component middleman)

@@ -23,7 +23,7 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
 
   // Derive display text - simplify repeated patterns (no truncation), then uppercase
   const displayText = $derived(
-    word ? simplifyRepeatedWord(word).toUpperCase() : null
+    word ? simplifyRepeatedWord(word) : null
   );
 </script>
 

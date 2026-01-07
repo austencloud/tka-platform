@@ -63,13 +63,9 @@
   const beatCount = $derived(sequence?.beats?.length ?? 0);
 
   // Track current media type - updated by SequenceViewer via callback
-  // Child is source of truth (handles sessionStorage persistence)
-  let currentMediaType = $state<MediaType>("animation");
-
-  // Sync currentMediaType with initialMediaType prop
-  $effect(() => {
-    currentMediaType = initialMediaType;
-  });
+  // Child (SequenceViewer) is source of truth - it handles sessionStorage persistence
+  // We initialize with a placeholder; the actual value comes from onMediaTypeChange callback
+  let currentMediaType = $state<MediaType>(initialMediaType);
 
   // Export format syncs with media type: image → static, animation → animation
   const selectedFormat = $derived<MediaFormat>(

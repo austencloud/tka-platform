@@ -67,13 +67,13 @@ export class TrailSettingsSynchronizer implements ITrailSettingsSynchronizer {
         JSON.stringify(this.state.syncedSettings) !==
         JSON.stringify(externalSettings);
       if (settingsChanged) {
-        // Update reactive state - component will react via $derived
-        this.state.syncedSettings = { ...externalSettings };
-
-        // CRITICAL: Also update the trail capturer with external settings
-        // Without this, changes to trackingMode, style, etc. won't take effect
+        // CRITICAL: Only mark as synced if we can actually update the TrailCapturer
+        // If TrailCapturer is null (not initialized yet), don't set syncedSettings
+        // This allows AnimationEngine's retry mechanism to work properly
         if (this.TrailCapturer) {
           this.TrailCapturer.updateSettings(externalSettings);
+          // Only set syncedSettings AFTER successfully updating TrailCapturer
+          this.state.syncedSettings = { ...externalSettings };
         }
 
         // Signal render needed
