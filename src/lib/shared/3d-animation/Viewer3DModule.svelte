@@ -339,8 +339,8 @@
 
   // Initialize services asynchronously
   onMount(async () => {
-    // Load the 3D viewer feature module first
-    await loadFeatureModule("3d-viewer");
+    // Load the realm feature module first (provides 3D animation services)
+    await loadFeatureModule("realm");
 
     // Now resolve services using resolveAsync for HMR resilience
     propInterpolator = await resolveAsync<IPropStateInterpolator>(

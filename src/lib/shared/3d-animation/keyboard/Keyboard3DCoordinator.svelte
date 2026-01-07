@@ -76,8 +76,8 @@
         TYPES.IKeyboardShortcutManager
       );
 
-      // Set context to 3d-viewer so our shortcuts are active
-      shortcutService.setContext("3d-viewer");
+      // Set context to realm so our shortcuts are active
+      shortcutService.setContext("realm");
 
       // Create handlers that reference current props via closure
       const handlers: Viewer3DShortcutHandlers = {

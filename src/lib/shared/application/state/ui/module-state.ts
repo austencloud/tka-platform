@@ -29,10 +29,11 @@ const TRANSITION_RESET_DELAY = 300;
  * Sync both UI state and navigation state to the same module.
  * This ensures the navigation bar and content display are always in agreement.
  */
-function syncBothStateSystems(moduleId: ModuleId): void {
+function syncBothStateSystems(moduleId: ModuleId, targetTab?: string): void {
   setActiveModule(moduleId);
   // Also sync navigationState to prevent navigation bar showing different module than content
-  navigationState.setCurrentModule(moduleId);
+  // Pass targetTab if provided (for deep linking via URL)
+  navigationState.setCurrentModule(moduleId, targetTab);
 }
 
 /**
@@ -239,6 +240,23 @@ export function isModuleActive(module: string): boolean {
 
 export async function initializeModulePersistence(): Promise<void> {
   try {
+    // FIRST: Check if URL specifies a module (deep linking takes priority)
+    // This prevents localStorage from overriding the user's navigation intent
+    let urlModule: string | null = null;
+    let urlTab: string | null = null;
+    if (browser) {
+      const pathname = window.location.pathname;
+      const parts = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+      const firstPart = parts[0];
+      const secondPart = parts[1];
+      if (firstPart) {
+        urlModule = firstPart.toLowerCase();
+      }
+      if (secondPart) {
+        urlTab = secondPart.toLowerCase();
+      }
+    }
+
     // Try localStorage FIRST (faster, synchronous)
     let savedModule: string | null = null;
     if (browser) {
@@ -260,9 +278,15 @@ export async function initializeModulePersistence(): Promise<void> {
       savedModule = await persistence.getActiveTab();
     }
 
-    if (savedModule) {
+    // Determine which module to use:
+    // - If URL specifies a module, always use URL (deep linking - user explicitly navigated here)
+    // - Otherwise use saved module (normal restore)
+    const isUrlNavigation = !!urlModule;
+    const effectiveModule = urlModule || savedModule;
+
+    if (effectiveModule) {
       // Cast to ModuleId since we're checking if it's a valid module
-      const moduleId = savedModule as ModuleId;
+      const moduleId = effectiveModule as ModuleId;
 
       // IMPORTANT: During initial load, skip access check because auth might not be ready yet
       // revalidateCurrentModule() will correct this after auth loads if needed
@@ -272,7 +296,8 @@ export async function initializeModulePersistence(): Promise<void> {
       await loadFeatureModule(moduleId);
 
       // Sync BOTH ui state and navigation state to ensure nav bar matches content
-      syncBothStateSystems(moduleId);
+      // Pass URL tab if this is URL-based navigation (deep linking)
+      syncBothStateSystems(moduleId, isUrlNavigation ? urlTab ?? undefined : undefined);
 
       if (browser) {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ moduleId }));

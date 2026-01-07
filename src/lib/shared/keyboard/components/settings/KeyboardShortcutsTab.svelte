@@ -53,7 +53,7 @@
     { context: "discover", label: "Discover", icon: "fa-compass" },
     { context: "compose", label: "Compose", icon: "fa-music" },
     { context: "learn", label: "Learn", icon: "fa-graduation-cap" },
-    { context: "3d-viewer", label: "3D Viewer", icon: "fa-cube" },
+    { context: "realm", label: "Realm", icon: "fa-vr-cardboard" },
     { context: "admin", label: "Admin", icon: "fa-crown", adminOnly: true },
   ];
 

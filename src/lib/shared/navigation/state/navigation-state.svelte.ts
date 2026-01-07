@@ -230,6 +230,56 @@ export function createNavigationState() {
       }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // URL Path Parsing - URL takes priority over localStorage for deep linking
+    // Parses paths like /realm/museum → module: "realm", tab: "museum"
+    // ─────────────────────────────────────────────────────────────────────────────
+    if (typeof window !== "undefined") {
+      const pathname = window.location.pathname;
+      // Remove leading slash and split by remaining slashes
+      const pathParts = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+
+      if (pathParts.length >= 1) {
+        const urlModule = pathParts[0].toLowerCase();
+        const urlTab = pathParts[1]?.toLowerCase();
+
+        // Check if URL specifies a valid module
+        const urlModuleDefinition = MODULE_DEFINITIONS.find(
+          (m) => m.id === urlModule
+        );
+
+        if (urlModuleDefinition) {
+          // URL has valid module - use it
+          currentModule = urlModule as ModuleId;
+
+          // If URL also specifies a tab, use it if valid
+          if (urlTab && urlModuleDefinition.sections.length > 0) {
+            const validTab = urlModuleDefinition.sections.find(
+              (s) => s.id === urlTab
+            );
+            if (validTab) {
+              activeTab = urlTab;
+              // Also remember this tab for the module
+              lastTabByModule[urlModule as ModuleId] = urlTab;
+            } else {
+              // URL tab not valid - use remembered or first tab
+              const remembered = lastTabByModule[urlModule as ModuleId];
+              const firstTab = urlModuleDefinition.sections[0]?.id || "";
+              activeTab = remembered || firstTab;
+            }
+          } else if (urlModuleDefinition.sections.length > 0) {
+            // Module has tabs but URL doesn't specify one - use remembered or first
+            const remembered = lastTabByModule[urlModule as ModuleId];
+            const firstTab = urlModuleDefinition.sections[0]?.id || "";
+            activeTab = remembered || firstTab;
+          } else {
+            // Module has no tabs
+            activeTab = "";
+          }
+        }
+      }
+    }
+
     // Sync mode-specific state with activeTab after all loading is complete
     // This ensures currentLearnMode/currentCreateMode match activeTab on refresh
     // Note: These comparisons use the current values directly (not in a closure)

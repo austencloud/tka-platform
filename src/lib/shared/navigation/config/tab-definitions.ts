@@ -354,6 +354,34 @@ export const ADMIN_TABS: Section[] = [
   },
 ];
 
+// Skew Lab tabs configuration (admin-only experimental module)
+export const SKEWLAB_TABS: Section[] = [
+  {
+    id: "browser",
+    label: "Browser",
+    icon: '<i class="fas fa-images" aria-hidden="true"></i>',
+    description: "Browse and validate skewed pictographs",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
+  {
+    id: "generator",
+    label: "Generator",
+    icon: '<i class="fas fa-hammer" aria-hidden="true"></i>',
+    description: "Tools for generating skewed dataframe",
+    color: "#22c55e",
+    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
+  },
+  {
+    id: "grid",
+    label: "Grid Test",
+    icon: '<i class="fas fa-th" aria-hidden="true"></i>',
+    description: "Test skewed grid rendering",
+    color: "#3b82f6",
+    gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
+  },
+];
+
 // Settings tabs configuration - shown in sidebar like other modules
 export const SETTINGS_TABS: Section[] = [
   {
@@ -419,6 +447,26 @@ export const SETTINGS_TABS: Section[] = [
     description: "Workflow and behavior preferences",
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
+];
+
+// Realm tabs configuration (3D experiences)
+export const REALM_TABS: Section[] = [
+  {
+    id: "stage",
+    label: "Stage",
+    icon: '<i class="fas fa-theater-masks" aria-hidden="true"></i>',
+    description: "Watch 3D avatar performances",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+  {
+    id: "museum",
+    label: "Museum",
+    icon: '<i class="fas fa-landmark" aria-hidden="true"></i>',
+    description: "Walk through a 3D gallery of sequences",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
 ];
 

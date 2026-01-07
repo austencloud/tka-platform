@@ -38,9 +38,8 @@ export type ModuleId =
   | "ml-training"
   | "admin"
   | "settings"
-  | "3d-viewer"
-  | "mandala"
-  | "gallery";
+  | "realm" // 3D experiences - Stage (avatar viewer) + Museum (gallery walkthrough)
+  | "mandala";
 
 /**
  * Module Definition

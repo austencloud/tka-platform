@@ -23,7 +23,7 @@ export type ShortcutContext =
   | "collect" // Active in COLLECT module
   | "compose" // Active in COMPOSE module
   | "admin" // Active in ADMIN module
-  | "3d-viewer" // Active in 3D Viewer module
+  | "realm" // Active in Realm module (Stage/Museum)
   | "edit-panel" // Active when Edit panel is open
   | "animation-panel" // Active when Animation panel is open
   | "share-panel" // Active when Share panel is open

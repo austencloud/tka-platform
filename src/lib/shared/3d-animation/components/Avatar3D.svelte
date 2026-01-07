@@ -195,8 +195,8 @@
     }
 
     try {
-      // Load feature module (ensures GLTF loader etc are available)
-      await loadFeatureModule("3d-viewer");
+      // Load realm module (ensures GLTF loader etc are available)
+      await loadFeatureModule("realm");
 
       // Create per-avatar service instances manually
       // This ensures the animator uses the SAME skeleton instance we load models into

@@ -17,6 +17,8 @@ import {
   ML_TRAINING_TABS,
   ADMIN_TABS,
   SETTINGS_TABS,
+  REALM_TABS,
+  SKEWLAB_TABS,
 } from "./tab-definitions";
 
 // Module definitions for the new navigation system
@@ -144,13 +146,22 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: ADMIN_TABS,
   },
   {
-    id: "3d-viewer",
-    label: "3D Viewer",
-    icon: '<i class="fas fa-cube" style="color: #06b6d4;" aria-hidden="true"></i>',
-    color: "#06b6d4", // Cyan - 3D/spatial
-    description: "Explore sequences in 3D space",
+    id: "skewlab",
+    label: "Skew Lab",
+    icon: '<i class="fas fa-flask" style="color: #f97316;" aria-hidden="true"></i>',
+    color: "#f97316", // Orange - experimental
+    description: "Experimental skewed positions development (temporary)",
+    isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
+    sections: SKEWLAB_TABS,
+  },
+  {
+    id: "realm",
+    label: "Realm",
+    icon: '<i class="fas fa-vr-cardboard" style="color: #06b6d4;" aria-hidden="true"></i>',
+    color: "#06b6d4", // Cyan - 3D/immersive
+    description: "3D experiences - avatar performances and virtual museum",
     isMain: true, // Visibility controlled by feature flags (admin-only)
-    sections: [], // No sub-tabs for now
+    sections: REALM_TABS,
   },
   {
     id: "mandala",
@@ -170,13 +181,6 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true, // Main module button on dashboard
     sections: SETTINGS_TABS, // Profile, Props, Background, Visibility, Misc, AI tabs
   },
-  {
-    id: "gallery",
-    label: "Gallery",
-    icon: '<i class="fas fa-image" style="color: #f59e0b;" aria-hidden="true"></i>',
-    color: "#f59e0b", // Amber - art/gallery
-    description: "Walk through sequences in a virtual 3D museum",
-    isMain: true, // Visibility controlled by feature flags (admin-only for now)
-    sections: [], // Single-page immersive experience
-  },
+  // Gallery module retired - now part of Realm module as Museum tab
+  // 3D Viewer module retired - now part of Realm module as Stage tab
 ];

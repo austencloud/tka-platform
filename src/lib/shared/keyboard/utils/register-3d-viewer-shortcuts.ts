@@ -20,7 +20,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Toggle animation playback",
     key: "Space",
     scope: "playback",
-    context: "3d-viewer",
+    context: "realm",
     priority: "high",
   },
   {
@@ -29,7 +29,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Reset to beginning of current beat",
     key: "r",
     scope: "playback",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.toggle-loop",
@@ -37,7 +37,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Enable/disable looping",
     key: "l",
     scope: "playback",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.speed-up",
@@ -45,7 +45,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Increase playback speed",
     key: "=",
     scope: "playback",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.speed-down",
@@ -53,7 +53,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Decrease playback speed",
     key: "-",
     scope: "playback",
-    context: "3d-viewer",
+    context: "realm",
   },
 
   // === BEAT NAVIGATION ===
@@ -63,7 +63,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Go to previous beat in sequence",
     key: "ArrowLeft",
     scope: "navigation",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.next-beat",
@@ -71,7 +71,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Go to next beat in sequence",
     key: "ArrowRight",
     scope: "navigation",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.first-beat",
@@ -79,7 +79,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Jump to first beat",
     key: "Home",
     scope: "navigation",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.last-beat",
@@ -87,7 +87,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Jump to last beat",
     key: "End",
     scope: "navigation",
-    context: "3d-viewer",
+    context: "realm",
   },
 
   // === CAMERA PRESETS (number keys - WASD reserved for locomotion) ===
@@ -97,7 +97,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "View from back (Wall plane)",
     key: "1",
     scope: "view",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.camera-top",
@@ -105,7 +105,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "View from above (Floor plane)",
     key: "2",
     scope: "view",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.camera-side",
@@ -113,7 +113,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "View from side (Wheel plane)",
     key: "3",
     scope: "view",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.camera-perspective",
@@ -121,7 +121,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Angled 3D view",
     key: "4",
     scope: "view",
-    context: "3d-viewer",
+    context: "realm",
   },
 
   // === UI TOGGLES ===
@@ -131,7 +131,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Show/hide grid planes",
     key: "g",
     scope: "view",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.toggle-panel",
@@ -139,7 +139,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Show/hide side panel",
     key: "p",
     scope: "panel",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.open-browser",
@@ -147,7 +147,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Open the sequence browser",
     key: "o",
     scope: "action",
-    context: "3d-viewer",
+    context: "realm",
   },
   {
     id: "3d-viewer.show-help",
@@ -155,7 +155,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     description: "Show keyboard shortcuts help",
     key: "h",
     scope: "help",
-    context: "3d-viewer",
+    context: "realm",
   },
 ];
 

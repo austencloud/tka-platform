@@ -333,6 +333,7 @@ const TAB_ORDERS: Record<string, string[]> = {
   discover: ["sequences", "collections", "creators", "library"],
   learn: ["concepts", "play", "codex"],
   compose: ["arrange", "browse"],
+  realm: ["stage", "museum"],
   train: ["drills", "challenges", "progress"],
   collect: ["achievements", "badges", "stats"],
   feedback: ["submit", "manage"],
@@ -436,6 +437,11 @@ export function getModuleDefinitions() {
       return false;
     }
 
+    // Library module is now integrated into Gallery via Community/My Library toggle
+    if (module.id === "library") {
+      return false;
+    }
+
     // If auth/feature flags not initialized, show core modules optimistically
     // This prevents layout shifts while waiting for auth
     if (!isAuthInitialized || !isFeatureFlagsInitialized) {
@@ -502,8 +508,20 @@ function parsePathNavigation(): {
   if (pathname && pathname !== "/") {
     // Remove leading slash and split by /
     const parts = pathname.substring(1).split("/").filter(Boolean);
-    const moduleId = parts[0] as ModuleId;
+    let moduleId = parts[0] as ModuleId;
     const sectionId = parts[1];
+
+    // Redirect legacy /library URLs to /discover with "My Library" source active
+    // Library is now integrated into Gallery via Community/My Library toggle
+    if (moduleId === "library") {
+      moduleId = "discover" as ModuleId;
+      // Set gallery source to my-library (uses same localStorage key as gallerySourceManager)
+      try {
+        localStorage.setItem("tka-gallery-source", "my-library");
+      } catch {
+        // Ignore storage errors
+      }
+    }
 
     // Validate module exists
     const moduleDefinition = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
@@ -528,8 +546,18 @@ function parsePathNavigation(): {
   const hash = window.location.hash;
   if (hash && hash !== "#") {
     const parts = hash.substring(1).split("/");
-    const moduleId = parts[0] as ModuleId;
+    let moduleId = parts[0] as ModuleId;
     const sectionId = parts[1];
+
+    // Redirect legacy #library URLs to discover with "My Library" source active
+    if (moduleId === "library") {
+      moduleId = "discover" as ModuleId;
+      try {
+        localStorage.setItem("tka-gallery-source", "my-library");
+      } catch {
+        // Ignore storage errors
+      }
+    }
 
     const moduleDefinition = MODULE_DEFINITIONS.find((m) => m.id === moduleId);
     if (moduleDefinition) {
@@ -580,8 +608,20 @@ export function initializeNavigationHistory() {
     const state = event.state as HistoryState | null;
     if (!state?.moduleId) return;
 
-    const targetModule = state.moduleId;
-    const targetSection = state.sectionId;
+    // Redirect legacy library history entries to discover with my-library source
+    let targetModule = state.moduleId;
+    let targetSection = state.sectionId;
+    if (targetModule === "library") {
+      targetModule = "discover" as ModuleId;
+      targetSection = undefined;
+      try {
+        localStorage.setItem("tka-gallery-source", "my-library");
+      } catch {
+        // Ignore storage errors
+      }
+      // Update URL to new path
+      replaceHistoryState(targetModule, targetSection);
+    }
 
     if (targetModule !== navigationState.currentModule) {
       await handleModuleChange(targetModule, targetSection, {

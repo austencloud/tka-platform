@@ -51,7 +51,7 @@ export function createViewer3DShortcuts(
       description: "Toggle animation playback",
       key: "Space",
       scope: "playback",
-      context: "3d-viewer",
+      context: "realm",
       priority: "high",
       action: handlers.togglePlay,
     },
@@ -61,7 +61,7 @@ export function createViewer3DShortcuts(
       description: "Reset to beginning of current beat",
       key: "r",
       scope: "playback",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.reset,
     },
     {
@@ -70,7 +70,7 @@ export function createViewer3DShortcuts(
       description: "Enable/disable looping",
       key: "l",
       scope: "playback",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.toggleLoop,
     },
     {
@@ -79,7 +79,7 @@ export function createViewer3DShortcuts(
       description: "Increase playback speed",
       key: "=",
       scope: "playback",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.speedUp,
     },
     {
@@ -88,7 +88,7 @@ export function createViewer3DShortcuts(
       description: "Decrease playback speed",
       key: "-",
       scope: "playback",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.speedDown,
     },
 
@@ -99,7 +99,7 @@ export function createViewer3DShortcuts(
       description: "Go to previous beat in sequence",
       key: "ArrowLeft",
       scope: "navigation",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.prevBeat,
     },
     {
@@ -108,7 +108,7 @@ export function createViewer3DShortcuts(
       description: "Go to next beat in sequence",
       key: "ArrowRight",
       scope: "navigation",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.nextBeat,
     },
     {
@@ -117,7 +117,7 @@ export function createViewer3DShortcuts(
       description: "Jump to first beat",
       key: "Home",
       scope: "navigation",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.firstBeat,
     },
     {
@@ -126,7 +126,7 @@ export function createViewer3DShortcuts(
       description: "Jump to last beat",
       key: "End",
       scope: "navigation",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.lastBeat,
     },
 
@@ -137,7 +137,7 @@ export function createViewer3DShortcuts(
       description: "View from back (Wall plane)",
       key: "1",
       scope: "view",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.setCameraFront,
     },
     {
@@ -146,7 +146,7 @@ export function createViewer3DShortcuts(
       description: "View from above (Floor plane)",
       key: "2",
       scope: "view",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.setCameraTop,
     },
     {
@@ -155,7 +155,7 @@ export function createViewer3DShortcuts(
       description: "View from side (Wheel plane)",
       key: "3",
       scope: "view",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.setCameraSide,
     },
     {
@@ -164,7 +164,7 @@ export function createViewer3DShortcuts(
       description: "Angled 3D view",
       key: "4",
       scope: "view",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.setCameraPerspective,
     },
 
@@ -175,7 +175,7 @@ export function createViewer3DShortcuts(
       description: "Show/hide grid planes",
       key: "g",
       scope: "view",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.toggleGrid,
     },
     {
@@ -184,7 +184,7 @@ export function createViewer3DShortcuts(
       description: "Show/hide side panel",
       key: "p",
       scope: "panel",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.togglePanel,
     },
     {
@@ -193,7 +193,7 @@ export function createViewer3DShortcuts(
       description: "Open the sequence browser",
       key: "o",
       scope: "action",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.openBrowser,
     },
     {
@@ -202,7 +202,7 @@ export function createViewer3DShortcuts(
       description: "Show keyboard shortcuts help",
       key: "h",
       scope: "help",
-      context: "3d-viewer",
+      context: "realm",
       action: handlers.showHelp,
     },
   ];

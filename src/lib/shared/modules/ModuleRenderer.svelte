@@ -62,6 +62,8 @@
       import("../../features/feedback/components/FeedbackModule.svelte"),
     admin: () =>
       import("../../features/admin/components/AdminDashboard.svelte"),
+    // Skew Lab module - experimental skewed positions (admin-only, temporary)
+    skewlab: () => import("../../features/skewlab/SkewLabModule.svelte"),
     // ML Training module for prop detection model training
     "ml-training": () =>
       import("../../features/train/ml-training/components/MLTrainingModule.svelte"),
@@ -69,13 +71,13 @@
     compose: () => import("../../features/compose/ComposeModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),
-    // 3D viewer module - admin-only for exploring sequences in 3D space
-    "3d-viewer": () => import("../3d-animation/Viewer3DModule.svelte"),
+    // Realm module - 3D experiences (Stage + Museum tabs)
+    realm: () => import("../../features/realm/RealmModule.svelte"),
+    // Direct gallery access for testing (bypasses Realm module)
+    gallery3d: () => import("../../features/gallery/GalleryModule.svelte"),
     // Mandala generator - kaleidoscope art studio with TKA elements
     mandala: () =>
       import("../../features/mandala-generator/components/MandalaGeneratorModule.svelte"),
-    // 3D Gallery - walk through sequences in a virtual museum
-    gallery: () => import("../../features/gallery/GalleryModule.svelte"),
   };
 
   // Load module with caching
