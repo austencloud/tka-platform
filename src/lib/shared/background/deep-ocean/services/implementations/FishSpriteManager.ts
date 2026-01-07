@@ -19,10 +19,6 @@ export class FishSpriteManager implements IFishSpriteManager {
     { name: "Blue", path: "/assets/background/fish/kenney/fish_blue.png" },
     { name: "Orange", path: "/assets/background/fish/kenney/fish_orange.png" },
     { name: "Green", path: "/assets/background/fish/kenney/fish_green.png" },
-    {
-      name: "Grey Long",
-      path: "/assets/background/fish/kenney/fish_grey_long_a.png",
-    },
   ];
 
   // Color variants (pre-rendered at load time, not runtime)
@@ -33,7 +29,6 @@ export class FishSpriteManager implements IFishSpriteManager {
     { baseName: "Orange", hueRotate: 330, variantName: "Coral" },
     { baseName: "Green", hueRotate: -60, variantName: "Cyan" },
     { baseName: "Green", hueRotate: 60, variantName: "Lime" },
-    { baseName: "Grey Long", hueRotate: 200, variantName: "Deep Blue Long" },
   ];
 
   /** Pre-rendered sprites (base + variants), ready for immediate drawing */
