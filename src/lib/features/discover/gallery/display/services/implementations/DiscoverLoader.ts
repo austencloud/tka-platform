@@ -14,6 +14,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { inject, injectable } from "inversify";
 import type { IDiscoverLoader } from "../contracts/IDiscoverLoader";
 import type { IDiscoverMetadataExtractor } from "../contracts/IDiscoverMetadataExtractor";
+import type { ISequenceDifficultyCalculator } from "../contracts/ISequenceDifficultyCalculator";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
@@ -70,7 +71,9 @@ export class DiscoverLoader implements IDiscoverLoader {
 
   constructor(
     @inject(TYPES.IDiscoverMetadataExtractor)
-    private metadataExtractor: IDiscoverMetadataExtractor
+    private metadataExtractor: IDiscoverMetadataExtractor,
+    @inject(TYPES.ISequenceDifficultyCalculator)
+    private difficultyCalculator: ISequenceDifficultyCalculator
   ) {}
 
   async loadSequenceMetadata(): Promise<SequenceData[]> {
@@ -599,11 +602,22 @@ export class DiscoverLoader implements IDiscoverLoader {
     const gridMode = this.parseGridMode(rawSeq.gridMode) ?? GridMode.BOX;
     const dateAdded = this.parseDate(rawSeq.dateAdded) ?? new Date();
 
-    // Get difficulty from sequence-index.json (no need to extract from .meta.json)
-    const difficultyLevel = this.parseDifficulty(rawSeq.difficultyLevel);
+    // Calculate difficulty from bundled beats if available, otherwise use stored value
+    let difficultyLevel: string;
+    let calculatedLevel: number;
 
-    // Calculate numeric level from difficulty string
-    const calculatedLevel = this.difficultyStringToLevel(difficultyLevel);
+    if (rawSeq.fullMetadata) {
+      // We have bundled metadata - calculate difficulty from actual beat data
+      const fullMetadata = rawSeq.fullMetadata as Record<string, unknown>;
+      const sequence = (fullMetadata.sequence || []) as unknown[];
+      const beats = this.parseBundledBeats(sequence);
+      calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel(beats);
+      difficultyLevel = this.difficultyCalculator.levelToString(calculatedLevel);
+    } else {
+      // Fallback to stored difficulty string
+      difficultyLevel = this.parseDifficulty(rawSeq.difficultyLevel);
+      calculatedLevel = this.difficultyStringToLevel(difficultyLevel);
+    }
 
     return createSequenceData({
       id: word,

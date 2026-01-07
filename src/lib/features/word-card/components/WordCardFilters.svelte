@@ -10,24 +10,20 @@
   import { onMount } from "svelte";
 
   interface Props {
-    difficulty: number | null;
     favorites: boolean;
     gridMode: string | null;
     author: string | null;
     authors: string[];
-    onDifficultyChange: (value: number | null) => void;
     onFavoritesChange: (value: boolean) => void;
     onGridModeChange: (value: string | null) => void;
     onAuthorChange: (value: string | null) => void;
   }
 
   let {
-    difficulty,
     favorites,
     gridMode,
     author,
     authors,
-    onDifficultyChange,
     onFavoritesChange,
     onGridModeChange,
     onAuthorChange,
@@ -39,25 +35,11 @@
     hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
   });
 
-  const difficultyOptions = [
-    { value: null, label: "All" },
-    { value: 1, label: "1" },
-    { value: 2, label: "2" },
-    { value: 3, label: "3" },
-    { value: 4, label: "4" },
-    { value: 5, label: "5" },
-  ];
-
   const gridModeOptions = [
     { value: null, label: "All" },
     { value: "diamond", label: "Diamond" },
     { value: "box", label: "Box" },
   ];
-
-  function handleDifficultyClick(value: number | null) {
-    hapticService?.trigger("selection");
-    onDifficultyChange(value);
-  }
 
   function handleFavoritesClick() {
     hapticService?.trigger("selection");
@@ -77,27 +59,6 @@
 </script>
 
 <div class="filters">
-  <!-- Difficulty -->
-  <section class="section">
-    <h3 class="section-title">
-      <i class="fas fa-signal" aria-hidden="true"></i>
-      <span>Difficulty</span>
-    </h3>
-    <div class="filter-grid">
-      {#each difficultyOptions as option (option.value)}
-        <button
-          class="filter-btn"
-          class:selected={difficulty === option.value}
-          onclick={() => handleDifficultyClick(option.value)}
-          aria-pressed={difficulty === option.value}
-          type="button"
-        >
-          {option.label}
-        </button>
-      {/each}
-    </div>
-  </section>
-
   <!-- Favorites Toggle -->
   <section class="section">
     <button
@@ -107,7 +68,7 @@
       aria-pressed={favorites}
       type="button"
     >
-      <i class="fas fa-star" aria-hidden="true"></i>
+      <i class="fas fa-heart" aria-hidden="true"></i>
       <span>Favorites Only</span>
     </button>
   </section>
@@ -254,9 +215,9 @@
   }
 
   .favorites-toggle.active {
-    background: var(--semantic-warning, #f59e0b);
-    border-color: var(--semantic-warning, #f59e0b);
-    color: #000000;
+    background: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
+    color: #ffffff;
   }
 
   .favorites-toggle i {

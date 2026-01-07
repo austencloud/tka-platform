@@ -16,7 +16,7 @@ export interface ICSVLoader {
   }>;
   loadCSVDataSet(): Promise<{
     success: boolean;
-    data?: { diamondData: string; boxData: string };
+    data?: { diamondData: string; boxData: string; skewedData?: string };
     error?: string;
     sources: {
       diamond: "fetch" | "window" | "cache";

@@ -28,7 +28,6 @@
   // Storage keys
   const STORAGE_KEY_LENGTH = "wordCard.selectedLength";
   const STORAGE_KEY_COLUMNS = "wordCard.columnCount";
-  const STORAGE_KEY_DIFFICULTY = "wordCard.difficulty";
   const STORAGE_KEY_FAVORITES = "wordCard.favorites";
   const STORAGE_KEY_GRID_MODE = "wordCard.gridMode";
   const STORAGE_KEY_AUTHOR = "wordCard.author";
@@ -38,12 +37,6 @@
     if (typeof window === "undefined") return defaultValue;
     const stored = localStorage.getItem(key);
     return stored ? parseInt(stored, 10) : defaultValue;
-  }
-
-  function getPersistedNullableNumber(key: string): number | null {
-    if (typeof window === "undefined") return null;
-    const stored = localStorage.getItem(key);
-    return stored ? parseInt(stored, 10) : null;
   }
 
   function getPersistedBoolean(key: string, defaultValue: boolean): boolean {
@@ -65,7 +58,6 @@
   let error = $state<string | null>(null);
 
   // Filter state
-  let difficulty = $state<number | null>(getPersistedNullableNumber(STORAGE_KEY_DIFFICULTY));
   let favorites = $state<boolean>(getPersistedBoolean(STORAGE_KEY_FAVORITES, false));
   let gridMode = $state<string | null>(getPersistedString(STORAGE_KEY_GRID_MODE));
   let author = $state<string | null>(getPersistedString(STORAGE_KEY_AUTHOR));
@@ -88,16 +80,6 @@
     }
   });
 
-  // Persist new filter changes
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      if (difficulty !== null) {
-        localStorage.setItem(STORAGE_KEY_DIFFICULTY, String(difficulty));
-      } else {
-        localStorage.removeItem(STORAGE_KEY_DIFFICULTY);
-      }
-    }
-  });
 
   $effect(() => {
     if (typeof window !== "undefined") {
@@ -132,11 +114,6 @@
     // Beat length filter
     if (selectedLength !== 0) {
       result = result.filter((seq) => seq.sequenceLength === selectedLength);
-    }
-
-    // Difficulty filter
-    if (difficulty !== null) {
-      result = result.filter((seq) => seq.difficultyLevel === difficulty);
     }
 
     // Favorites filter
@@ -242,10 +219,6 @@
   }
 
   // Filter handlers
-  function handleDifficultyChange(value: number | null) {
-    difficulty = value;
-  }
-
   function handleFavoritesChange(value: boolean) {
     favorites = value;
   }
@@ -334,12 +307,10 @@
         />
         <div class="filter-divider"></div>
         <WordCardFilters
-          {difficulty}
           {favorites}
           {gridMode}
           {author}
           {authors}
-          onDifficultyChange={handleDifficultyChange}
           onFavoritesChange={handleFavoritesChange}
           onGridModeChange={handleGridModeChange}
           onAuthorChange={handleAuthorChange}

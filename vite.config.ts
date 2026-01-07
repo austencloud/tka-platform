@@ -270,6 +270,7 @@ export default defineConfig({
           },
           {
             // Cache static assets from Firebase Storage (thumbnails, images)
+            // IMPORTANT: Only cache status 200 (not 0/opaque) to allow CORS requests
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
             options: {
@@ -279,7 +280,7 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
               cacheableResponse: {
-                statuses: [0, 200],
+                statuses: [200], // Only cache successful CORS responses
               },
             },
           },

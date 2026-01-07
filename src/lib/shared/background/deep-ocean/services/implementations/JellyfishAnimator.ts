@@ -23,13 +23,13 @@ const JELLYFISH_CONFIG = {
   spawnMargin: 80,
   verticalBand: { min: 0.15, max: 0.75 },
 
-  // Movement
-  horizontalSpeed: 6,
-  baseVerticalSpeed: -8, // Upward drift
-  pulseVerticalBoost: -25, // Speed boost during contraction
+  // Movement - slow and serene
+  horizontalSpeed: 2, // Gentle sideways drift
+  baseVerticalSpeed: -3, // Very slow upward drift
+  pulseVerticalBoost: -8, // Subtle propulsion during contraction
 
-  // Pulse animation
-  pulseSpeed: { min: 0.3, max: 0.6 }, // Cycles per second
+  // Pulse animation - relaxed, dreamy rhythm
+  pulseSpeed: { min: 0.12, max: 0.25 }, // Much slower pulses
   bellAspect: { min: 0.7, max: 0.9 }, // Height to width ratio
 
   // Anatomy
@@ -42,15 +42,15 @@ const JELLYFISH_CONFIG = {
   // Opacity
   opacity: { min: 0.5, max: 0.85 },
 
-  // Bioluminescence
+  // Bioluminescence - slow, hypnotic pulse
   glowIntensity: { min: 0.4, max: 0.8 },
-  glowSpeed: { min: 0.2, max: 0.5 },
+  glowSpeed: { min: 0.08, max: 0.18 },
 
-  // Tentacle physics - gentle and floppy
-  tentacleWaveSpeed: 0.012, // Much slower wave motion
-  tentacleDamping: 0.96, // More damping = smoother, less snappy
-  tentacleStiffness: 0.04, // Much less stiff = floppier
-  tentacleWaveAmplitude: 0.15, // Gentler sway
+  // Tentacle physics - peaceful and flowing
+  tentacleWaveSpeed: 0.006, // Very slow, dreamy wave motion
+  tentacleDamping: 0.97, // High damping for smooth motion
+  tentacleStiffness: 0.025, // Very soft and floppy
+  tentacleWaveAmplitude: 0.12, // Subtle sway
 };
 
 /**
@@ -393,15 +393,15 @@ export class JellyfishAnimator implements IJellyfishAnimator {
       jelly.baseY += effectiveVerticalSpeed * deltaSeconds;
       jelly.y = jelly.baseY;
 
-      // Update animation phases
-      jelly.animationPhase += 0.02 * frameMultiplier;
-      jelly.frillPhase += 0.03 * frameMultiplier;
+      // Update animation phases - slow and meditative
+      jelly.animationPhase += 0.008 * frameMultiplier;
+      jelly.frillPhase += 0.012 * frameMultiplier;
       jelly.glowPhase += jelly.glowSpeed * deltaSeconds;
       if (jelly.glowPhase > 1) jelly.glowPhase -= 1;
 
-      // Update oral arm phases
+      // Update oral arm phases - gentle undulation
       for (const arm of jelly.oralArms) {
-        arm.phase += 0.015 * frameMultiplier;
+        arm.phase += 0.006 * frameMultiplier;
       }
 
       // Update tentacle physics

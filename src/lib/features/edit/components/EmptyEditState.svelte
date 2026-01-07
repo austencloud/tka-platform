@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 
   interface Props {
     onLoadSequence: (sequence: SequenceData) => void;
@@ -16,11 +16,11 @@
   let { onLoadSequence, onBrowseSequences }: Props = $props();
 
   function navigateToCreate() {
-    navigationState.setCurrentModule("create");
+    handleModuleChange("create");
   }
 
   function navigateToExplore() {
-    navigationState.setCurrentModule("discover");
+    handleModuleChange("discover");
   }
 </script>
 

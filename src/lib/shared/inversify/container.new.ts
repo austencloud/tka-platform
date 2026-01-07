@@ -6,7 +6,6 @@ import { dataModule } from "./modules/data.module";
 import { exploreModule } from "./modules/discover.module";
 import { learnModule } from "./modules/learn.module";
 import { pictographModule } from "./modules/pictograph.module";
-import { wordCardModule } from "./modules/word-card.module";
 import { writeModule } from "./modules/write.module";
 
 // Create container
@@ -23,7 +22,6 @@ async function initializeContainer() {
       animatorModule,
       exploreModule,
       learnModule,
-      wordCardModule,
       writeModule
     );
     console.log("✅ TKA Container: All modules loaded successfully");

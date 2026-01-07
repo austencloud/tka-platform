@@ -464,10 +464,8 @@ export async function loadFeatureModule(feature: string): Promise<void> {
         break;
 
       case "word_card":
-        await Promise.all([
-          loadIfNeeded("word_card", () => import("./modules/word-card.module")),
-          loadIfNeeded("discover", () => import("./modules/discover.module")),
-        ]);
+        // Word cards use Discover services (IDiscoverLoader, ICloudThumbnailCache)
+        await loadIfNeeded("discover", () => import("./modules/discover.module"));
         break;
 
       case "write":
@@ -513,28 +511,13 @@ export async function loadFeatureModule(feature: string): Promise<void> {
         );
         break;
 
-      case "3d-viewer":
+      case "realm":
+        // Realm module - 3D experiences (Stage + Museum tabs)
+        // Stage needs: animation-3d, discover
+        // Museum needs: create/build, library, gallery, animation-3d
+        if (tier2Promise) await tier2Promise;
         await Promise.all([
           loadIfNeeded("discover", () => import("./modules/discover.module")),
-          loadIfNeeded(
-            "animation-3d",
-            () =>
-              import("../../shared/3d-animation/inversify/animation-3d.module")
-          ),
-        ]);
-        break;
-
-      case "mandala":
-        // Wait for tier 2 (pictograph module has arrow loading services)
-        if (tier2Promise) await tier2Promise;
-        await loadIfNeeded("mandala", () => import("./modules/mandala.module"));
-        break;
-
-      case "gallery":
-        // Gallery needs library services (which depends on build module for OrientationCycleDetector)
-        // and 3D animation. Build module requires tier2 services.
-        if (tier2Promise) await tier2Promise;
-        await Promise.all([
           loadIfNeeded("create", () => import("./modules/build.module")),
           loadIfNeeded("library", () => import("./modules/library.module")),
           loadIfNeeded(
@@ -547,6 +530,31 @@ export async function loadFeatureModule(feature: string): Promise<void> {
               import("../../shared/3d-animation/inversify/animation-3d.module")
           ),
         ]);
+        break;
+
+      case "gallery3d":
+        // Direct 3D gallery access (bypasses Realm module for testing)
+        if (tier2Promise) await tier2Promise;
+        await Promise.all([
+          loadIfNeeded("discover", () => import("./modules/discover.module")),
+          loadIfNeeded("create", () => import("./modules/build.module")),
+          loadIfNeeded("library", () => import("./modules/library.module")),
+          loadIfNeeded(
+            "gallery",
+            () => import("../../features/gallery/inversify/gallery.module")
+          ),
+          loadIfNeeded(
+            "animation-3d",
+            () =>
+              import("../../shared/3d-animation/inversify/animation-3d.module")
+          ),
+        ]);
+        break;
+
+      case "mandala":
+        // Wait for tier 2 (pictograph module has arrow loading services)
+        if (tier2Promise) await tier2Promise;
+        await loadIfNeeded("mandala", () => import("./modules/mandala.module"));
         break;
 
       default:
@@ -597,6 +605,7 @@ function initializeContainer(): Promise<void> {
       preloadCachedFeatureModule();
 
       isInitialized = true;
+      hmrManager.markInitialized();
       syncContainerToGlobal();
     } catch (error) {
       console.error("❌ Container initialization failed:", error);
@@ -636,7 +645,14 @@ function preloadCachedFeatureModule(): void {
 // AUTO-INITIALIZATION (Browser Only)
 // ============================================================================
 
-if (isBrowser) {
+// During HMR, the module is re-evaluated but we should NOT auto-initialize
+// because the HMR accept handler will do the proper rebuild with the shadow container pattern.
+// Check if this is an HMR cycle by:
+// 1. Seeing if HMR is in progress (manager tracks this via phase)
+// 2. Checking if we've already initialized (manager tracks this, persists across HMR)
+const shouldSkipAutoInit = isBrowser && (hmrManager.isHMRInProgress() || hmrManager.wasInitialized());
+
+if (isBrowser && !shouldSkipAutoInit) {
   initializeContainer().catch((error) => {
     console.error("💥 FATAL: Container initialization failed:", error);
   });

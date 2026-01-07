@@ -82,6 +82,7 @@ export class HMRContainerManager {
   private tier2Modules: ContainerModule[] = [];
   private tier1Loaded = false;
   private tier2Loaded = false;
+  private wasEverInitialized = false;
 
   // Track which services are singletons for caching
   private singletonServices: Set<symbol> = new Set();
@@ -259,6 +260,20 @@ export class HMRContainerManager {
    */
   markTier2Loaded(): void {
     this.tier2Loaded = true;
+  }
+
+  /**
+   * Check if the container was ever initialized (persists across HMR)
+   */
+  wasInitialized(): boolean {
+    return this.wasEverInitialized;
+  }
+
+  /**
+   * Mark as initialized (call after successful first initialization)
+   */
+  markInitialized(): void {
+    this.wasEverInitialized = true;
   }
 
   /**

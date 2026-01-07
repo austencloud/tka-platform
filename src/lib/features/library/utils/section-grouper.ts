@@ -54,7 +54,8 @@ export function groupSequencesIntoSections(
 function getGroupKey(seq: LibrarySequence, groupBy: GroupByMethod): string {
   switch (groupBy) {
     case "date":
-      return getDateGroupKey(seq.updatedAt || seq.createdAt);
+      // Use birthday (original creation date) for grouping, fallback to createdAt
+      return getDateGroupKey(seq.birthday || seq.createdAt);
 
     case "letter": {
       const word = seq.word || seq.name || "";

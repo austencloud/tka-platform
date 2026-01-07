@@ -8,7 +8,7 @@
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -63,7 +63,7 @@
   function navigateToLibrary() {
     hapticService?.trigger("selection");
     // Library is now a tab within Discover module
-    navigationState.setCurrentModule("discover", "library");
+    handleModuleChange("discover", "gallery");
   }
 
   async function handleSignOut() {

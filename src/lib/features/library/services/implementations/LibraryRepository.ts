@@ -127,6 +127,8 @@ export class LibraryRepository implements ILibraryRepository {
       ...data,
       id,
       sequenceTags,
+      // Birthday field - original creation date (never changes after being set)
+      birthday: data["birthday"] ? this.toDate(data["birthday"]) : undefined,
       createdAt: this.toDate(data["createdAt"]),
       updatedAt: this.toDate(data["updatedAt"]),
       // Convert dateAdded if present (legacy field from SequenceData)
@@ -221,8 +223,12 @@ export class LibraryRepository implements ILibraryRepository {
         }
 
         // Write sequence document
+        // IMPORTANT: birthday is set once on creation and NEVER changes
         transaction.set(sequenceDocRef, {
           ...libSeq,
+          birthday: existingDoc.exists()
+            ? libSeq.birthday // Preserve existing birthday
+            : libSeq.birthday || serverTimestamp(), // Use provided birthday or default to now
           createdAt: existingDoc.exists()
             ? libSeq.createdAt
             : serverTimestamp(),

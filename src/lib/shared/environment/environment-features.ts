@@ -126,9 +126,8 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   "ml-training": false,
   admin: false,
   settings: true, // Settings always available
-  "3d-viewer": false, // Admin-only (Level 6 feature)
+  realm: false, // 3D experiences - Stage + Museum (admin-only)
   word_card: false, // Word card generator (internal tool)
   write: false, // Write module (unreleased)
   mandala: false, // Mandala generator (internal tool)
-  gallery: false, // 3D Gallery (in development)
 };

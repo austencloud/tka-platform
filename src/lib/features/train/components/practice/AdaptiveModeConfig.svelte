@@ -61,7 +61,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    color: var(--theme-text);
+    color: var(--theme-text, #ffffff);
   }
 
   h3 {
@@ -109,13 +109,13 @@
   /* Track styling */
   input[type="range"]::-webkit-slider-runnable-track {
     height: 0.5rem;
-    background: var(--theme-stroke);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 0.25rem;
   }
 
   input[type="range"]::-moz-range-track {
     height: 0.5rem;
-    background: var(--theme-stroke);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 0.25rem;
   }
 
@@ -124,7 +124,7 @@
     appearance: none;
     width: 28px;
     height: 28px;
-    background: var(--semantic-info, var(--semantic-info));
+    background: var(--semantic-info, #3b82f6);
     border-radius: 50%;
     cursor: pointer;
     margin-top: -10px;
@@ -133,7 +133,7 @@
   input[type="range"]::-moz-range-thumb {
     width: 28px;
     height: 28px;
-    background: var(--semantic-info, var(--semantic-info));
+    background: var(--semantic-info, #3b82f6);
     border-radius: 50%;
     cursor: pointer;
     border: none;

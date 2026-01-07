@@ -30,7 +30,7 @@ Supports two view modes:
 	}>();
 
 	const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-	const state = createGridExperienceState(viewMode === 'scroll');
+	const experienceState = createGridExperienceState(viewMode === 'scroll');
 
 	// Accessibility: refs for focus management
 	let nextButtonRef = $state<HTMLButtonElement | null>(null);
@@ -40,17 +40,17 @@ Supports two view modes:
 	// Set scroll mode if needed
 	$effect(() => {
 		if (viewMode === 'scroll') {
-			state.setScrollMode();
+			experienceState.setScrollMode();
 		}
 	});
 
 	onMount(() => {
-		state.startAnimations();
+		experienceState.startAnimations();
 	});
 
 	function focusNextAction() {
 		requestAnimationFrame(() => {
-			if (state.step === 3 && summaryStepRef) {
+			if (experienceState.step === 3 && summaryStepRef) {
 				summaryStepRef.focusCompleteButton();
 			} else if (nextButtonRef) {
 				nextButtonRef.focus();
@@ -74,21 +74,21 @@ Supports two view modes:
 		hapticService?.trigger('selection');
 
 		// Check if phase handles it internally
-		if (state.handleNextPhase()) return;
+		if (experienceState.handleNextPhase()) return;
 
 		// Otherwise advance to next step
-		state.nextStep(focusNextAction);
+		experienceState.nextStep(focusNextAction);
 	}
 
 	function handleBack() {
 		hapticService?.trigger('selection');
 
 		// Check if phase handles it internally
-		if (state.handleBackPhase()) return;
+		if (experienceState.handleBackPhase()) return;
 
 		// Otherwise go to previous step
-		if (state.step > 0) {
-			state.prevStep(focusNextAction);
+		if (experienceState.step > 0) {
+			experienceState.prevStep(focusNextAction);
 		} else {
 			onBack?.();
 		}
@@ -96,11 +96,11 @@ Supports two view modes:
 
 	function handleSkipToSummary() {
 		hapticService?.trigger('selection');
-		state.skipToSummary(focusNextAction);
+		experienceState.skipToSummary(focusNextAction);
 	}
 
 	function handleComplete() {
-		state.reset();
+		experienceState.reset();
 		onComplete?.();
 	}
 
@@ -115,7 +115,7 @@ Supports two view modes:
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
 		class="grid-experience"
-		class:animate-in={state.animateIn}
+		class:animate-in={experienceState.animateIn}
 		bind:this={containerRef}
 		onkeydown={handleKeydown}
 		tabindex="0"
@@ -124,43 +124,43 @@ Supports two view modes:
 	>
 		<!-- Accessibility: Live region for announcements -->
 		<div class="sr-only" aria-live="polite" aria-atomic="true">
-			{state.announcement}
+			{experienceState.announcement}
 		</div>
 
 		<!-- Accessibility: Skip link -->
-		{#if state.step < 3}
+		{#if experienceState.step < 3}
 			<button class="skip-link" onclick={handleSkipToSummary}>Skip to summary</button>
 		{/if}
 
-		{#if state.step <= 2}
+		{#if experienceState.step <= 2}
 			<!-- Steps 0, 1 & 2: Grid content -->
 			<div class="step-content step-grid-content">
 				<GridStepHeader
-					step={state.step}
-					gridPhase={state.gridPhase}
-					pointTypePhase={state.pointTypePhase}
+					step={experienceState.step}
+					gridPhase={experienceState.gridPhase}
+					pointTypePhase={experienceState.pointTypePhase}
 				/>
 
 				<div class="merge-animation-container">
 					<GridMergeAnimation
-						phase={state.effectivePhase}
-						highlightPhase={state.effectiveHighlightPhase}
+						phase={experienceState.effectivePhase}
+						highlightPhase={experienceState.effectiveHighlightPhase}
 					/>
 				</div>
 
 				<div
 					class="navigation-area anim-item"
-					style="--anim-order: {state.step === 0 ? 3 : state.step === 1 ? 4 : 2}"
+					style="--anim-order: {experienceState.step === 0 ? 3 : experienceState.step === 1 ? 4 : 2}"
 				>
 					<button class="next-button" onclick={handleNext} bind:this={nextButtonRef}>Next</button>
-					<ExperienceProgressIndicator currentStep={state.step + 1} totalSteps={state.totalSteps} />
+					<ExperienceProgressIndicator currentStep={experienceState.step + 1} totalSteps={experienceState.totalSteps} />
 				</div>
 			</div>
-		{:else if state.step === 3}
+		{:else if experienceState.step === 3}
 			<GridSummaryStep
-				animateIn={state.animateIn}
-				totalSteps={state.totalSteps}
-				currentStep={state.step + 1}
+				animateIn={experienceState.animateIn}
+				totalSteps={experienceState.totalSteps}
+				currentStep={experienceState.step + 1}
 				onComplete={handleComplete}
 				bind:this={summaryStepRef}
 			/>

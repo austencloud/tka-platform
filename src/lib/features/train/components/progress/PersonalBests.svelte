@@ -4,7 +4,7 @@
   Displays best performance for each sequence.
 -->
 <script lang="ts">
-  import type { PersonalBest } from "../../services/contracts/IPerformanceHistoryTracker";
+  import type { PersonalBest } from "../../services/contracts/IPerformanceHistoryService";
 
   interface Props {
     bests: PersonalBest[];
@@ -15,15 +15,15 @@
   function getGradeColor(grade: string): string {
     switch (grade.toUpperCase()) {
       case "S":
-        return "var(--semantic-warning)"; // Gold
+        return "#fbbf24"; // Gold
       case "A":
-        return "var(--semantic-success)"; // Green
+        return "#22c55e"; // Green
       case "B":
-        return "var(--semantic-info)"; // Blue
+        return "#3b82f6"; // Blue
       case "C":
-        return "var(--semantic-warning)"; // Orange
+        return "#f59e0b"; // Orange
       case "D":
-        return "var(--semantic-error)"; // Red
+        return "#ef4444"; // Red
       default:
         return "#9ca3af"; // Gray
     }
@@ -55,15 +55,15 @@
       </div>
       <div class="best-stats">
         <div class="stat">
-          <i class="fas fa-bullseye" aria-hidden="true"></i>
+          <i class="fas fa-bullseye"></i>
           <span>{best.bestAccuracy.toFixed(1)}%</span>
         </div>
         <div class="stat">
-          <i class="fas fa-fire" aria-hidden="true"></i>
+          <i class="fas fa-fire"></i>
           <span>{best.bestCombo} combo</span>
         </div>
         <div class="stat date">
-          <i class="fas fa-calendar" aria-hidden="true"></i>
+          <i class="fas fa-calendar"></i>
           <span>{formatDate(best.achievedAt)}</span>
         </div>
       </div>
@@ -83,15 +83,15 @@
     flex-direction: column;
     gap: 0.75rem;
     padding: 1rem;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 0.75rem;
     transition: all 0.2s;
   }
 
   .best-card:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     transform: translateY(-2px);
   }
 
@@ -123,7 +123,7 @@
     font-size: 1.25rem;
     font-weight: 700;
     color: #000000;
-    box-shadow: 0 2px 4px var(--theme-shadow, var(--theme-shadow));
+    box-shadow: 0 2px 4px var(--theme-shadow, rgba(0, 0, 0, 0.2));
   }
 
   .best-stats {

@@ -116,12 +116,47 @@ When `/done` is called with no matching feedback item:
 
 ## Playwright Usage
 
-**Don't use Playwright unless explicitly asked.**
+**User navigates, Claude observes. Never click or navigate autonomously.**
 
-- Snapshots consume 20k+ tokens
-- Never proactively "test" or "verify" via Playwright
-- Let the user test in their browser
-- Only use when given specific instructions
+### The Protocol
+
+1. **User is the navigator** - they control the browser
+2. **Claude only observes** - take snapshots/screenshots when user says "I'm here" or "look at this"
+3. **Claude advises** - tell user where to go, what to click, what to look for
+4. **User confirms** - they tell Claude when they've arrived
+
+### Allowed Playwright Actions
+
+- `browser_snapshot` - ONLY when user asks to evaluate a page
+- `browser_take_screenshot` - ONLY when user asks to see something
+- `browser_console_messages` - ONLY when debugging with user permission
+
+### FORBIDDEN Without Explicit Request
+
+- `browser_click` - NEVER autonomously
+- `browser_navigate` - NEVER autonomously
+- `browser_type` - NEVER autonomously
+- `browser_fill_form` - NEVER autonomously
+- Any action that changes page state
+
+### Why This Matters
+
+- Snapshots consume 20k+ tokens each
+- Autonomous navigation burns tokens on wrong pages
+- User knows their app better than Claude
+- Claude clicking around wastes time and money
+
+### Example Interaction
+
+```
+User: "Open a playwright session, I'll show you the bug"
+Claude: "Ready. Navigate to the page and tell me when to look."
+User: "I'm on the word card page now, take a look"
+Claude: [takes snapshot, analyzes]
+Claude: "I see the issue. Try going to Settings > Props and changing to Staff"
+User: "Done, I'm there now"
+Claude: [takes snapshot if needed]
+```
 
 ---
 

@@ -104,7 +104,16 @@ export interface LibrarySequence extends SequenceData {
   // TIMESTAMPS
   // ============================================================
 
-  /** When added to library */
+  /**
+   * Original creation date - when this exact sequence was first saved anywhere.
+   * This is the sequence's "birthday" and NEVER changes after being set.
+   * - For legacy sequences: imported from PNG metadata date_added
+   * - For new sequences: set to createdAt on first save
+   * - For forked sequences: set to fork time (not original's birthday)
+   */
+  readonly birthday?: Date;
+
+  /** When added to THIS user's library (may differ from birthday) */
   readonly createdAt: Date;
 
   /** When last modified */
@@ -125,6 +134,8 @@ export interface CreateLibrarySequenceOptions {
   tagIds?: string[];
   sequenceTags?: SequenceTag[];
   notes?: string;
+  /** Explicit birthday to use (e.g., from legacy import). Defaults to createdAt. */
+  birthday?: Date;
 }
 
 /**
@@ -150,6 +161,7 @@ export function createLibrarySequence(
     forkCount: 0,
     viewCount: 0,
     starCount: 0,
+    birthday: options.birthday ?? now, // Birthday defaults to creation time
     createdAt: now,
     updatedAt: now,
   };

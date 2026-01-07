@@ -28,7 +28,7 @@
   >([]);
 
   /**
-   * Normalize sequence data - same logic as SequenceNormalizer
+   * Normalize sequence data - same logic as SequenceNormalizationService
    */
   function separateBeatsFromStartPosition(sequence: any) {
     // Modern format - already normalized

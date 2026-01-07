@@ -12,7 +12,7 @@
     DailyChallenge,
     UserChallengeProgress,
   } from "$lib/shared/gamification/domain/models/achievement-models";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import DailyChallengeCard from "$lib/shared/community/challenges/components/DailyChallengeCard.svelte";
 
   let challenge = $state<DailyChallenge | null>(null);
@@ -39,7 +39,7 @@
   });
 
   function viewAllChallenges() {
-    navigationState.setCurrentModule("train", "challenges");
+    handleModuleChange("train", "challenges");
   }
 </script>
 

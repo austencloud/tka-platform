@@ -38,6 +38,12 @@ export class CsvLoader implements ICSVLoader {
           data: csvData.boxData,
           source: this.isWindowDataAvailable() ? "window" : "fetch",
         };
+      } else if (filename.includes("Skewed") || filename.includes("skewed")) {
+        return {
+          success: true,
+          data: csvData.skewedData || "",
+          source: this.isWindowDataAvailable() ? "window" : "fetch",
+        };
       } else {
         return {
           success: false,
@@ -94,10 +100,13 @@ export class CsvLoader implements ICSVLoader {
 
       // Return appropriate data based on grid mode
       let data: string;
-      if (gridMode === GridMode.DIAMOND || gridMode === GridMode.SKEWED) {
+      if (gridMode === GridMode.DIAMOND) {
         data = csvData.diamondData;
       } else if (gridMode === GridMode.BOX) {
         data = csvData.boxData;
+      } else if (gridMode === GridMode.SKEWED) {
+        // Use skewed data if available, fall back to diamond for compatibility
+        data = csvData.skewedData || csvData.diamondData;
       } else {
         return {
           success: false,
@@ -130,6 +139,7 @@ export class CsvLoader implements ICSVLoader {
   private static readonly CSV_FILES = {
     DIAMOND: "/data/pictographs/DiamondPictographDataframe.csv",
     BOX: "/data/pictographs/BoxPictographDataframe.csv",
+    SKEWED: "/data/pictographs/SkewedPictographDataframe.csv",
   } as const;
 
   private csvData: CsvDataSet | null = null;
@@ -201,9 +211,10 @@ export class CsvLoader implements ICSVLoader {
   }
 
   private async loadFromStaticFiles(): Promise<CsvDataSet> {
-    const [diamondResponse, boxResponse] = await Promise.all([
+    const [diamondResponse, boxResponse, skewedResponse] = await Promise.all([
       fetch(CsvLoader.CSV_FILES.DIAMOND),
       fetch(CsvLoader.CSV_FILES.BOX),
+      fetch(CsvLoader.CSV_FILES.SKEWED).catch(() => null), // Optional - may not exist yet
     ]);
 
     this.validateResponses(diamondResponse, boxResponse);
@@ -213,9 +224,16 @@ export class CsvLoader implements ICSVLoader {
       boxResponse.text(),
     ]);
 
+    // Load skewed data if available
+    let skewedData: string | undefined;
+    if (skewedResponse?.ok) {
+      skewedData = await skewedResponse.text();
+    }
+
     return {
       diamondData,
       boxData,
+      skewedData,
     };
   }
 

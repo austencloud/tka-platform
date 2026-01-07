@@ -21,9 +21,9 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/Mo
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
 
 // Position to hand location mapping
-// Format: [GridPosition, blueLocation, redLocation]
+// Format: [blueLocation (left hand), redLocation (right hand)]
 const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
-  // Alpha positions - hands in opposite/inverted directions
+  // Alpha positions - hands in opposite/inverted directions (180° apart)
   [GridPosition.ALPHA1]: [GridLocation.SOUTH, GridLocation.NORTH],
   [GridPosition.ALPHA2]: [GridLocation.SOUTHWEST, GridLocation.NORTHEAST],
   [GridPosition.ALPHA3]: [GridLocation.WEST, GridLocation.EAST],
@@ -33,7 +33,7 @@ const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
   [GridPosition.ALPHA7]: [GridLocation.EAST, GridLocation.WEST],
   [GridPosition.ALPHA8]: [GridLocation.SOUTHEAST, GridLocation.NORTHWEST],
 
-  // Beta positions - both hands same direction
+  // Beta positions - both hands same direction (0° apart)
   [GridPosition.BETA1]: [GridLocation.NORTH, GridLocation.NORTH],
   [GridPosition.BETA2]: [GridLocation.NORTHEAST, GridLocation.NORTHEAST],
   [GridPosition.BETA3]: [GridLocation.EAST, GridLocation.EAST],
@@ -43,7 +43,7 @@ const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
   [GridPosition.BETA7]: [GridLocation.WEST, GridLocation.WEST],
   [GridPosition.BETA8]: [GridLocation.NORTHWEST, GridLocation.NORTHWEST],
 
-  // Gamma positions - mixed/varied combinations
+  // Gamma positions - 90° apart
   [GridPosition.GAMMA1]: [GridLocation.WEST, GridLocation.NORTH],
   [GridPosition.GAMMA2]: [GridLocation.NORTHWEST, GridLocation.NORTHEAST],
   [GridPosition.GAMMA3]: [GridLocation.NORTH, GridLocation.EAST],
@@ -60,6 +60,46 @@ const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
   [GridPosition.GAMMA14]: [GridLocation.NORTHWEST, GridLocation.SOUTHWEST],
   [GridPosition.GAMMA15]: [GridLocation.NORTH, GridLocation.WEST],
   [GridPosition.GAMMA16]: [GridLocation.NORTHEAST, GridLocation.NORTHWEST],
+
+  // Zeta positions - 135° apart (obtuse angle)
+  // Zeta 1-8: Blue is 135° CCW from Red
+  [GridPosition.ZETA1]: [GridLocation.SOUTHWEST, GridLocation.NORTH],
+  [GridPosition.ZETA2]: [GridLocation.WEST, GridLocation.NORTHEAST],
+  [GridPosition.ZETA3]: [GridLocation.NORTHWEST, GridLocation.EAST],
+  [GridPosition.ZETA4]: [GridLocation.NORTH, GridLocation.SOUTHEAST],
+  [GridPosition.ZETA5]: [GridLocation.NORTHEAST, GridLocation.SOUTH],
+  [GridPosition.ZETA6]: [GridLocation.EAST, GridLocation.SOUTHWEST],
+  [GridPosition.ZETA7]: [GridLocation.SOUTHEAST, GridLocation.WEST],
+  [GridPosition.ZETA8]: [GridLocation.SOUTH, GridLocation.NORTHWEST],
+  // Zeta 9-16: Blue is 135° CW from Red
+  [GridPosition.ZETA9]: [GridLocation.SOUTHEAST, GridLocation.NORTH],
+  [GridPosition.ZETA10]: [GridLocation.SOUTH, GridLocation.NORTHEAST],
+  [GridPosition.ZETA11]: [GridLocation.SOUTHWEST, GridLocation.EAST],
+  [GridPosition.ZETA12]: [GridLocation.WEST, GridLocation.SOUTHEAST],
+  [GridPosition.ZETA13]: [GridLocation.NORTHWEST, GridLocation.SOUTH],
+  [GridPosition.ZETA14]: [GridLocation.NORTH, GridLocation.SOUTHWEST],
+  [GridPosition.ZETA15]: [GridLocation.NORTHEAST, GridLocation.WEST],
+  [GridPosition.ZETA16]: [GridLocation.EAST, GridLocation.NORTHWEST],
+
+  // Eta positions - 45° apart (acute angle)
+  // Eta 1-8: Blue is 45° CCW from Red
+  [GridPosition.ETA1]: [GridLocation.NORTHWEST, GridLocation.NORTH],
+  [GridPosition.ETA2]: [GridLocation.NORTH, GridLocation.NORTHEAST],
+  [GridPosition.ETA3]: [GridLocation.NORTHEAST, GridLocation.EAST],
+  [GridPosition.ETA4]: [GridLocation.EAST, GridLocation.SOUTHEAST],
+  [GridPosition.ETA5]: [GridLocation.SOUTHEAST, GridLocation.SOUTH],
+  [GridPosition.ETA6]: [GridLocation.SOUTH, GridLocation.SOUTHWEST],
+  [GridPosition.ETA7]: [GridLocation.SOUTHWEST, GridLocation.WEST],
+  [GridPosition.ETA8]: [GridLocation.WEST, GridLocation.NORTHWEST],
+  // Eta 9-16: Blue is 45° CW from Red
+  [GridPosition.ETA9]: [GridLocation.NORTHEAST, GridLocation.NORTH],
+  [GridPosition.ETA10]: [GridLocation.EAST, GridLocation.NORTHEAST],
+  [GridPosition.ETA11]: [GridLocation.SOUTHEAST, GridLocation.EAST],
+  [GridPosition.ETA12]: [GridLocation.SOUTH, GridLocation.SOUTHEAST],
+  [GridPosition.ETA13]: [GridLocation.SOUTHWEST, GridLocation.SOUTH],
+  [GridPosition.ETA14]: [GridLocation.WEST, GridLocation.SOUTHWEST],
+  [GridPosition.ETA15]: [GridLocation.NORTHWEST, GridLocation.WEST],
+  [GridPosition.ETA16]: [GridLocation.NORTH, GridLocation.NORTHWEST],
 };
 
 // Diamond mode positions (odd numbers for alpha/beta, odd for gamma)
@@ -113,7 +153,11 @@ export function createStartPositionVariations(
     gridMode === GridMode.DIAMOND ? DIAMOND_POSITIONS : BOX_POSITIONS;
 
   return positions.map((pos) => {
-    const [blueLocation, redLocation] = POSITION_LOCATIONS[pos.position];
+    const locations = POSITION_LOCATIONS[pos.position];
+    if (!locations) {
+      throw new Error(`No location mapping found for position: ${pos.position}`);
+    }
+    const [blueLocation, redLocation] = locations;
 
     // Create proper motion data for both hands
     const blueMotion = createMotionData({
