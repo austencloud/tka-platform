@@ -14,6 +14,8 @@ import {
   doc,
   getDoc,
   setDoc,
+  addDoc,
+  collection,
   onSnapshot,
   type Firestore,
 } from "firebase/firestore";
@@ -43,11 +45,33 @@ interface GlobalFeatureFlags {
   updatedBy: string;
 }
 
+/**
+ * Audit log entry for feature flag changes
+ */
+interface FeatureFlagAuditEntry {
+  /** Type of action */
+  action: "global_flag_update" | "user_override_update" | "user_role_update";
+  /** Admin who made the change */
+  adminId: string;
+  /** Target user (for user-specific changes) */
+  targetUserId?: string;
+  /** Feature ID (for flag changes) */
+  featureId?: FeatureId;
+  /** Previous value */
+  previousValue?: unknown;
+  /** New value */
+  newValue?: unknown;
+  /** Timestamp */
+  timestamp: Date;
+}
+
 // ============================================================================
 // REACTIVE STATE (Svelte 5 Runes)
 // ============================================================================
 
 interface FeatureFlagState {
+  /** Current user's ID */
+  userId: string | null;
   /** Current user's role */
   userRole: UserRole;
   /** Debug role override (for admin testing different permission levels) */
@@ -63,6 +87,7 @@ interface FeatureFlagState {
 }
 
 const _state = $state<FeatureFlagState>({
+  userId: null,
   userRole: "user",
   debugRoleOverride: null,
   userOverrides: {
@@ -135,68 +160,17 @@ function generateFeatureFlagsFromModules(): FeatureFlagConfig[] {
   return flags;
 }
 
-/**
- * Generate capability flags (static - not from navigation)
- */
-function generateCapabilityFlags(): FeatureFlagConfig[] {
-  return [
-    {
-      id: "capability:export:video",
-      name: "Video Export",
-      description: "Export sequences as MP4 video",
-      minimumRole: "tester",
-      enabled: true,
-      category: "capability",
-    },
-    {
-      id: "capability:export:gif",
-      name: "GIF Export",
-      description: "Export sequences as animated GIF",
-      minimumRole: "tester",
-      enabled: true,
-      category: "capability",
-    },
-    {
-      id: "capability:export:png",
-      name: "PNG Export",
-      description: "Export sequences as PNG images",
-      minimumRole: "user",
-      enabled: true,
-      category: "capability",
-    },
-    {
-      id: "capability:share:social",
-      name: "Social Sharing",
-      description: "Share to social media platforms",
-      minimumRole: "user",
-      enabled: true,
-      category: "capability",
-    },
-    {
-      id: "capability:advanced:filters",
-      name: "Advanced Filters",
-      description: "Advanced sequence filtering options",
-      minimumRole: "premium",
-      enabled: true,
-      category: "capability",
-    },
-    {
-      id: "capability:sequence:import",
-      name: "Sequence Import",
-      description: "Import sequences from file",
-      minimumRole: "tester",
-      enabled: true,
-      category: "capability",
-    },
-  ];
-}
-
-// Generate default feature flags from navigation + capabilities
+// Generate default feature flags from navigation modules
 // This is the source of truth for all feature flags
-const _DEFAULT_FEATURE_FLAGS: FeatureFlagConfig[] = [
-  ...generateFeatureFlagsFromModules(),
-  ...generateCapabilityFlags(),
-];
+//
+// NOTE: Capabilities (like export:video, share:social) were removed 2026-01-07
+// because they were placeholder definitions with no actual gate checks in the codebase.
+// When you need to gate a specific capability:
+// 1. Add a capability flag here with category: "capability"
+// 2. Add actual canAccess() checks in the feature code
+// 3. Test that the gate actually works
+const _DEFAULT_FEATURE_FLAGS: FeatureFlagConfig[] =
+  generateFeatureFlagsFromModules();
 
 // ============================================================================
 // PRIVATE HELPERS
@@ -390,6 +364,9 @@ export const featureFlagService = {
       // Clean up previous subscriptions
       this.cleanup();
 
+      // Store user ID for audit logging
+      _state.userId = userId;
+
       if (userId) {
         // If we have an initial role from auth token, use it immediately
         // This prevents race condition with Firestore writes
@@ -523,6 +500,28 @@ export const featureFlagService = {
     });
   },
 
+  // ===== Audit Logging =====
+
+  /**
+   * Log an admin action to the audit trail
+   */
+  async logAuditEntry(
+    entry: Omit<FeatureFlagAuditEntry, "adminId" | "timestamp">
+  ): Promise<void> {
+    try {
+      const firestore = await getFirestore();
+      const auditRef = collection(firestore, "audit/featureFlags/entries");
+      await addDoc(auditRef, {
+        ...entry,
+        adminId: _state.userId ?? "unknown",
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      // Don't fail the main operation if audit logging fails
+      console.warn("[FeatureFlagService] Failed to log audit entry:", error);
+    }
+  },
+
   // ===== Admin Functions =====
 
   /**
@@ -535,6 +534,11 @@ export const featureFlagService = {
 
     const firestore = await getFirestore();
     const userDocRef = doc(firestore, `users/${targetUserId}`);
+
+    // Get previous role for audit
+    const userDoc = await getDoc(userDocRef);
+    const previousRole = userDoc.exists() ? userDoc.data()?.role : undefined;
+
     await setDoc(
       userDocRef,
       {
@@ -544,6 +548,14 @@ export const featureFlagService = {
       },
       { merge: true }
     );
+
+    // Log audit entry
+    await this.logAuditEntry({
+      action: "user_role_update",
+      targetUserId,
+      previousValue: previousRole,
+      newValue: newRole,
+    });
   },
 
   /**
@@ -559,6 +571,13 @@ export const featureFlagService = {
 
     const firestore = await getFirestore();
     const userDocRef = doc(firestore, `users/${targetUserId}`);
+
+    // Get previous overrides for audit
+    const userDoc = await getDoc(userDocRef);
+    const previousOverrides = userDoc.exists()
+      ? userDoc.data()?.featureOverrides
+      : undefined;
+
     await setDoc(
       userDocRef,
       {
@@ -566,6 +585,14 @@ export const featureFlagService = {
       },
       { merge: true }
     );
+
+    // Log audit entry
+    await this.logAuditEntry({
+      action: "user_override_update",
+      targetUserId,
+      previousValue: previousOverrides,
+      newValue: overrides,
+    });
   },
 
   /**
@@ -601,7 +628,15 @@ export const featureFlagService = {
         },
       },
       updatedAt: new Date(),
-      updatedBy: "admin", // TODO: Get actual user ID
+      updatedBy: _state.userId ?? "unknown",
+    });
+
+    // Log audit entry
+    await this.logAuditEntry({
+      action: "global_flag_update",
+      featureId,
+      previousValue: currentOverride,
+      newValue: { ...currentOverride, ...updates },
     });
   },
 

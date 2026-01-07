@@ -1,86 +1,129 @@
 <script lang="ts">
+  /**
+   * FeatureFlagHeader
+   * Header with view mode toggle and stats
+   */
+
+  import type { FlagStats } from "./shared/feature-utils";
+
   interface Props {
     viewMode: "global" | "users";
+    stats: FlagStats;
     onViewModeChange: (mode: "global" | "users") => void;
-    stats: {
-      total: number;
-      enabled: number;
-      disabled: number;
-      byRole: Record<string, number>;
-      byCategory: Record<string, number>;
-    };
   }
 
-  let { viewMode, onViewModeChange, stats }: Props = $props();
+  let { viewMode, stats, onViewModeChange }: Props = $props();
 </script>
 
-<header class="management-header">
-  <div class="header-top">
+<header class="feature-flag-header">
+  <div class="header-main">
     <div class="header-content">
-      <h2>Feature Flag Management</h2>
-      <p class="header-description">
-        Control feature access and permissions across the platform
-      </p>
+      <h2>Feature Flags</h2>
+      <p>Control access and permissions across the platform</p>
     </div>
 
     <div class="view-toggle">
       <button
+        type="button"
         class="toggle-btn"
         class:active={viewMode === "global"}
         onclick={() => onViewModeChange("global")}
       >
-        <i class="fas fa-globe" aria-hidden="true"></i>
-        Global Settings
+        <i class="fas fa-table-cells" aria-hidden="true"></i>
+        <span>Global Matrix</span>
       </button>
       <button
+        type="button"
         class="toggle-btn"
         class:active={viewMode === "users"}
         onclick={() => onViewModeChange("users")}
       >
-        <i class="fas fa-user-cog" aria-hidden="true"></i>
-        User Overrides
+        <i class="fas fa-user-gear" aria-hidden="true"></i>
+        <span>User Overrides</span>
       </button>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-value">{stats.total}</span>
+      <span class="stat-label">Features</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-value enabled">{stats.enabled}</span>
+      <span class="stat-label">Enabled</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value disabled">{stats.disabled}</span>
+      <span class="stat-label">Disabled</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-value modules">{stats.byCategory.module}</span>
+      <span class="stat-label">Modules</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value tabs">{stats.byCategory.tab}</span>
+      <span class="stat-label">Tabs</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value capabilities">{stats.byCategory.capability}</span>
+      <span class="stat-label">Capabilities</span>
     </div>
   </div>
 </header>
 
 <style>
-  .management-header {
-    padding: 16px;
-    background: var(--theme-panel-bg);
-    border-bottom: 1px solid var(--theme-stroke);
-  }
-
-  .header-top {
+  .feature-flag-header {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+    padding: 16px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  .header-content {
-    flex: 1;
+  @media (min-width: 768px) {
+    .feature-flag-header {
+      padding: 20px 24px;
+      gap: 16px;
+    }
+  }
+
+  .header-main {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  @media (min-width: 600px) {
+    .header-main {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
   }
 
   .header-content h2 {
     margin: 0 0 4px 0;
-    font-size: clamp(18px, 5vw, 24px);
-    font-weight: 600;
-    line-height: 1.2;
+    font-size: clamp(20px, 5vw, 26px);
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
   }
 
-  .header-description {
+  .header-content p {
     margin: 0;
-    font-size: clamp(12px, 3.5vw, 14px);
-    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .view-toggle {
     display: flex;
     gap: 4px;
-    background: var(--theme-card-bg);
     padding: 4px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: 12px;
-    width: 100%;
   }
 
   .toggle-btn {
@@ -88,23 +131,22 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    flex: 1;
-    padding: 12px 12px;
+    padding: 10px 16px;
     border: none;
     border-radius: 10px;
     background: transparent;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
-    min-height: var(--min-touch-target); /* Touch target */
+    min-height: var(--min-touch-target, 44px);
   }
 
   .toggle-btn:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, #ffffff);
   }
 
   .toggle-btn:active {
@@ -112,45 +154,82 @@
   }
 
   .toggle-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    color: var(--theme-accent);
-    box-shadow: 0 2px 8px
-      color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    color: var(--theme-accent, #6366f1);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
   }
 
-  /* Hide text on very small screens, show only icons */
+  .toggle-btn i {
+    font-size: var(--font-size-sm, 14px);
+  }
+
   @media (max-width: 400px) {
-    .toggle-btn {
-      gap: 0;
-      font-size: 0;
+    .toggle-btn span {
+      display: none;
     }
 
-    .toggle-btn i {
-      font-size: var(--font-size-base);
+    .toggle-btn {
+      padding: 10px 14px;
     }
   }
 
-  /* Tablet and up - horizontal layout */
-  @media (min-width: 768px) {
-    .management-header {
-      padding: 24px;
-    }
+  .stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border-radius: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
-    .header-top {
-      flex-direction: row;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 24px;
-    }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 48px;
+  }
 
-    .view-toggle {
-      width: auto;
-    }
+  .stat-value {
+    font-size: var(--font-size-lg, 18px);
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
+  }
 
-    .toggle-btn {
-      flex: 0 0 auto;
-      padding: 10px 16px;
-      font-size: var(--font-size-sm);
-    }
+  .stat-value.enabled {
+    color: #34d399;
+  }
+
+  .stat-value.disabled {
+    color: #f87171;
+  }
+
+  .stat-value.modules {
+    color: #8b5cf6;
+  }
+
+  .stat-value.tabs {
+    color: #3b82f6;
+  }
+
+  .stat-value.capabilities {
+    color: #f59e0b;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
   }
 </style>
