@@ -25,46 +25,81 @@ import {
  * - ALPHA1 (S-N) → ALPHA1 - vertical stays same
  * - GAMMA1 (W-N) ↔ GAMMA9 (E-N) - gammas cross-mirror
  */
-export const VERTICAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> =
-  {
-    // Alpha group - vertical axis symmetry
-    [GridPosition.ALPHA1]: GridPosition.ALPHA1, // S-N → S-N (on axis)
-    [GridPosition.ALPHA2]: GridPosition.ALPHA8, // SW-NE → SE-NW
-    [GridPosition.ALPHA3]: GridPosition.ALPHA7, // W-E → E-W
-    [GridPosition.ALPHA4]: GridPosition.ALPHA6, // NW-SE → NE-SW
-    [GridPosition.ALPHA5]: GridPosition.ALPHA5, // N-S → N-S (on axis)
-    [GridPosition.ALPHA6]: GridPosition.ALPHA4, // NE-SW → NW-SE
-    [GridPosition.ALPHA7]: GridPosition.ALPHA3, // E-W → W-E
-    [GridPosition.ALPHA8]: GridPosition.ALPHA2, // SE-NW → SW-NE
+export const VERTICAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> = {
+  // Alpha group - vertical axis symmetry
+  [GridPosition.ALPHA1]: GridPosition.ALPHA1, // S-N → S-N (on axis)
+  [GridPosition.ALPHA2]: GridPosition.ALPHA8, // SW-NE → SE-NW
+  [GridPosition.ALPHA3]: GridPosition.ALPHA7, // W-E → E-W
+  [GridPosition.ALPHA4]: GridPosition.ALPHA6, // NW-SE → NE-SW
+  [GridPosition.ALPHA5]: GridPosition.ALPHA5, // N-S → N-S (on axis)
+  [GridPosition.ALPHA6]: GridPosition.ALPHA4, // NE-SW → NW-SE
+  [GridPosition.ALPHA7]: GridPosition.ALPHA3, // E-W → W-E
+  [GridPosition.ALPHA8]: GridPosition.ALPHA2, // SE-NW → SW-NE
 
-    // Beta group - same sides stay same
-    [GridPosition.BETA1]: GridPosition.BETA1, // N-N → N-N (on axis)
-    [GridPosition.BETA2]: GridPosition.BETA8, // NE-NE → NW-NW
-    [GridPosition.BETA3]: GridPosition.BETA7, // E-E → W-W
-    [GridPosition.BETA4]: GridPosition.BETA6, // SE-SE → SW-SW
-    [GridPosition.BETA5]: GridPosition.BETA5, // S-S → S-S (on axis)
-    [GridPosition.BETA6]: GridPosition.BETA4, // SW-SW → SE-SE
-    [GridPosition.BETA7]: GridPosition.BETA3, // W-W → E-E
-    [GridPosition.BETA8]: GridPosition.BETA2, // NW-NW → NE-NE
+  // Beta group - same sides stay same
+  [GridPosition.BETA1]: GridPosition.BETA1, // N-N → N-N (on axis)
+  [GridPosition.BETA2]: GridPosition.BETA8, // NE-NE → NW-NW
+  [GridPosition.BETA3]: GridPosition.BETA7, // E-E → W-W
+  [GridPosition.BETA4]: GridPosition.BETA6, // SE-SE → SW-SW
+  [GridPosition.BETA5]: GridPosition.BETA5, // S-S → S-S (on axis)
+  [GridPosition.BETA6]: GridPosition.BETA4, // SW-SW → SE-SE
+  [GridPosition.BETA7]: GridPosition.BETA3, // W-W → E-E
+  [GridPosition.BETA8]: GridPosition.BETA2, // NW-NW → NE-NE
 
-    // Gamma group - cross-mirror pattern
-    [GridPosition.GAMMA1]: GridPosition.GAMMA9, // W-N ↔ E-N
-    [GridPosition.GAMMA2]: GridPosition.GAMMA16, // NW-NE ↔ NE-NW
-    [GridPosition.GAMMA3]: GridPosition.GAMMA15, // N-E ↔ N-W
-    [GridPosition.GAMMA4]: GridPosition.GAMMA14, // NE-SE ↔ NW-SW
-    [GridPosition.GAMMA5]: GridPosition.GAMMA13, // E-S ↔ W-S
-    [GridPosition.GAMMA6]: GridPosition.GAMMA12, // SE-SW ↔ SW-SE
-    [GridPosition.GAMMA7]: GridPosition.GAMMA11, // S-W ↔ S-E
-    [GridPosition.GAMMA8]: GridPosition.GAMMA10, // SW-NW ↔ SE-NE
-    [GridPosition.GAMMA9]: GridPosition.GAMMA1, // E-N ↔ W-N
-    [GridPosition.GAMMA10]: GridPosition.GAMMA8, // SE-NE ↔ SW-NW
-    [GridPosition.GAMMA11]: GridPosition.GAMMA7, // S-E ↔ S-W
-    [GridPosition.GAMMA12]: GridPosition.GAMMA6, // SW-SE ↔ SE-SW
-    [GridPosition.GAMMA13]: GridPosition.GAMMA5, // W-S ↔ E-S
-    [GridPosition.GAMMA14]: GridPosition.GAMMA4, // NW-SW ↔ NE-SE
-    [GridPosition.GAMMA15]: GridPosition.GAMMA3, // N-W ↔ N-E
-    [GridPosition.GAMMA16]: GridPosition.GAMMA2, // NE-NW ↔ NW-NE
-  };
+  // Gamma group - cross-mirror pattern
+  [GridPosition.GAMMA1]: GridPosition.GAMMA9, // W-N ↔ E-N
+  [GridPosition.GAMMA2]: GridPosition.GAMMA16, // NW-NE ↔ NE-NW
+  [GridPosition.GAMMA3]: GridPosition.GAMMA15, // N-E ↔ N-W
+  [GridPosition.GAMMA4]: GridPosition.GAMMA14, // NE-SE ↔ NW-SW
+  [GridPosition.GAMMA5]: GridPosition.GAMMA13, // E-S ↔ W-S
+  [GridPosition.GAMMA6]: GridPosition.GAMMA12, // SE-SW ↔ SW-SE
+  [GridPosition.GAMMA7]: GridPosition.GAMMA11, // S-W ↔ S-E
+  [GridPosition.GAMMA8]: GridPosition.GAMMA10, // SW-NW ↔ SE-NE
+  [GridPosition.GAMMA9]: GridPosition.GAMMA1, // E-N ↔ W-N
+  [GridPosition.GAMMA10]: GridPosition.GAMMA8, // SE-NE ↔ SW-NW
+  [GridPosition.GAMMA11]: GridPosition.GAMMA7, // S-E ↔ S-W
+  [GridPosition.GAMMA12]: GridPosition.GAMMA6, // SW-SE ↔ SE-SW
+  [GridPosition.GAMMA13]: GridPosition.GAMMA5, // W-S ↔ E-S
+  [GridPosition.GAMMA14]: GridPosition.GAMMA4, // NW-SW ↔ NE-SE
+  [GridPosition.GAMMA15]: GridPosition.GAMMA3, // N-W ↔ N-E
+  [GridPosition.GAMMA16]: GridPosition.GAMMA2, // NE-NW ↔ NW-NE
+
+  // Zeta 1-8 ↔ Zeta 9-16 swap (vertical mirror flips E↔W)
+  [GridPosition.ZETA1]: GridPosition.ZETA9, // SW-N → SE-N
+  [GridPosition.ZETA2]: GridPosition.ZETA16, // W-NE → E-NW
+  [GridPosition.ZETA3]: GridPosition.ZETA15, // NW-E → NE-W
+  [GridPosition.ZETA4]: GridPosition.ZETA14, // N-SE → N-SW
+  [GridPosition.ZETA5]: GridPosition.ZETA13, // NE-S → NW-S
+  [GridPosition.ZETA6]: GridPosition.ZETA12, // E-SW → W-SE
+  [GridPosition.ZETA7]: GridPosition.ZETA11, // SE-W → SW-E
+  [GridPosition.ZETA8]: GridPosition.ZETA10, // S-NW → S-NE
+  [GridPosition.ZETA9]: GridPosition.ZETA1, // SE-N → SW-N
+  [GridPosition.ZETA10]: GridPosition.ZETA8, // S-NE → S-NW
+  [GridPosition.ZETA11]: GridPosition.ZETA7, // SW-E → SE-W
+  [GridPosition.ZETA12]: GridPosition.ZETA6, // W-SE → E-SW
+  [GridPosition.ZETA13]: GridPosition.ZETA5, // NW-S → NE-S
+  [GridPosition.ZETA14]: GridPosition.ZETA4, // N-SW → N-SE
+  [GridPosition.ZETA15]: GridPosition.ZETA3, // NE-W → NW-E
+  [GridPosition.ZETA16]: GridPosition.ZETA2, // E-NW → W-NE
+
+  // Eta 1-8 ↔ Eta 9-16 swap (vertical mirror flips E↔W)
+  [GridPosition.ETA1]: GridPosition.ETA9, // NW-N → NE-N
+  [GridPosition.ETA2]: GridPosition.ETA16, // N-NE → N-NW
+  [GridPosition.ETA3]: GridPosition.ETA15, // NE-E → NW-W
+  [GridPosition.ETA4]: GridPosition.ETA14, // E-SE → W-SW
+  [GridPosition.ETA5]: GridPosition.ETA13, // SE-S → SW-S
+  [GridPosition.ETA6]: GridPosition.ETA12, // S-SW → S-SE
+  [GridPosition.ETA7]: GridPosition.ETA11, // SW-W → SE-E
+  [GridPosition.ETA8]: GridPosition.ETA10, // W-NW → E-NE
+  [GridPosition.ETA9]: GridPosition.ETA1, // NE-N → NW-N
+  [GridPosition.ETA10]: GridPosition.ETA8, // E-NE → W-NW
+  [GridPosition.ETA11]: GridPosition.ETA7, // SE-E → SW-W
+  [GridPosition.ETA12]: GridPosition.ETA6, // S-SE → S-SW
+  [GridPosition.ETA13]: GridPosition.ETA5, // SW-S → SE-S
+  [GridPosition.ETA14]: GridPosition.ETA4, // W-SW → E-SE
+  [GridPosition.ETA15]: GridPosition.ETA3, // NW-W → NE-E
+  [GridPosition.ETA16]: GridPosition.ETA2, // N-NW → N-NE
+};
 
 /**
  * Vertical Mirror Location Map
@@ -99,48 +134,82 @@ export const VERTICAL_MIRROR_LOCATION_MAP: Record<GridLocation, GridLocation> =
  * - ALPHA3 (W-E) → ALPHA3 (W-E) - horizontals stay same
  * - GAMMA1 (W-N) ↔ GAMMA13 (W-S) - north becomes south
  */
-export const HORIZONTAL_MIRROR_POSITION_MAP: Record<
-  GridPosition,
-  GridPosition
-> = {
-  // Alpha group - horizontal axis symmetry
-  [GridPosition.ALPHA1]: GridPosition.ALPHA5, // S-N ↔ N-S
-  [GridPosition.ALPHA2]: GridPosition.ALPHA4, // SW-NE ↔ NW-SE
-  [GridPosition.ALPHA3]: GridPosition.ALPHA3, // W-E → W-E (on axis)
-  [GridPosition.ALPHA4]: GridPosition.ALPHA2, // NW-SE ↔ SW-NE
-  [GridPosition.ALPHA5]: GridPosition.ALPHA1, // N-S ↔ S-N
-  [GridPosition.ALPHA6]: GridPosition.ALPHA8, // NE-SW ↔ SE-NW
-  [GridPosition.ALPHA7]: GridPosition.ALPHA7, // E-W → E-W (on axis)
-  [GridPosition.ALPHA8]: GridPosition.ALPHA6, // SE-NW ↔ NE-SW
+export const HORIZONTAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> =
+  {
+    // Alpha group - horizontal axis symmetry
+    [GridPosition.ALPHA1]: GridPosition.ALPHA5, // S-N ↔ N-S
+    [GridPosition.ALPHA2]: GridPosition.ALPHA4, // SW-NE ↔ NW-SE
+    [GridPosition.ALPHA3]: GridPosition.ALPHA3, // W-E → W-E (on axis)
+    [GridPosition.ALPHA4]: GridPosition.ALPHA2, // NW-SE ↔ SW-NE
+    [GridPosition.ALPHA5]: GridPosition.ALPHA1, // N-S ↔ S-N
+    [GridPosition.ALPHA6]: GridPosition.ALPHA8, // NE-SW ↔ SE-NW
+    [GridPosition.ALPHA7]: GridPosition.ALPHA7, // E-W → E-W (on axis)
+    [GridPosition.ALPHA8]: GridPosition.ALPHA6, // SE-NW ↔ NE-SW
 
-  // Beta group - north/south pairs swap
-  [GridPosition.BETA1]: GridPosition.BETA5, // N-N ↔ S-S
-  [GridPosition.BETA2]: GridPosition.BETA4, // NE-NE ↔ SE-SE
-  [GridPosition.BETA3]: GridPosition.BETA3, // E-E → E-E (on axis)
-  [GridPosition.BETA4]: GridPosition.BETA2, // SE-SE ↔ NE-NE
-  [GridPosition.BETA5]: GridPosition.BETA1, // S-S ↔ N-N
-  [GridPosition.BETA6]: GridPosition.BETA8, // SW-SW ↔ NW-NW
-  [GridPosition.BETA7]: GridPosition.BETA7, // W-W → W-W (on axis)
-  [GridPosition.BETA8]: GridPosition.BETA6, // NW-NW ↔ SW-SW
+    // Beta group - north/south pairs swap
+    [GridPosition.BETA1]: GridPosition.BETA5, // N-N ↔ S-S
+    [GridPosition.BETA2]: GridPosition.BETA4, // NE-NE ↔ SE-SE
+    [GridPosition.BETA3]: GridPosition.BETA3, // E-E → E-E (on axis)
+    [GridPosition.BETA4]: GridPosition.BETA2, // SE-SE ↔ NE-NE
+    [GridPosition.BETA5]: GridPosition.BETA1, // S-S ↔ N-N
+    [GridPosition.BETA6]: GridPosition.BETA8, // SW-SW ↔ NW-NW
+    [GridPosition.BETA7]: GridPosition.BETA7, // W-W → W-W (on axis)
+    [GridPosition.BETA8]: GridPosition.BETA6, // NW-NW ↔ SW-SW
 
-  // Gamma group - north/south flip pattern
-  [GridPosition.GAMMA1]: GridPosition.GAMMA13, // W-N ↔ W-S
-  [GridPosition.GAMMA2]: GridPosition.GAMMA12, // NW-NE ↔ SW-SE
-  [GridPosition.GAMMA3]: GridPosition.GAMMA11, // N-E ↔ S-E
-  [GridPosition.GAMMA4]: GridPosition.GAMMA10, // NE-SE ↔ SE-NE
-  [GridPosition.GAMMA5]: GridPosition.GAMMA9, // E-S ↔ E-N
-  [GridPosition.GAMMA6]: GridPosition.GAMMA16, // SE-SW ↔ NE-NW
-  [GridPosition.GAMMA7]: GridPosition.GAMMA15, // S-W ↔ N-W
-  [GridPosition.GAMMA8]: GridPosition.GAMMA14, // SW-NW ↔ NW-SW
-  [GridPosition.GAMMA9]: GridPosition.GAMMA5, // E-N ↔ E-S
-  [GridPosition.GAMMA10]: GridPosition.GAMMA4, // SE-NE ↔ NE-SE
-  [GridPosition.GAMMA11]: GridPosition.GAMMA3, // S-E ↔ N-E
-  [GridPosition.GAMMA12]: GridPosition.GAMMA2, // SW-SE ↔ NW-NE
-  [GridPosition.GAMMA13]: GridPosition.GAMMA1, // W-S ↔ W-N
-  [GridPosition.GAMMA14]: GridPosition.GAMMA8, // NW-SW ↔ SW-NW
-  [GridPosition.GAMMA15]: GridPosition.GAMMA7, // N-W ↔ S-W
-  [GridPosition.GAMMA16]: GridPosition.GAMMA6, // NE-NW ↔ SE-SW
-};
+    // Gamma group - north/south flip pattern
+    [GridPosition.GAMMA1]: GridPosition.GAMMA13, // W-N ↔ W-S
+    [GridPosition.GAMMA2]: GridPosition.GAMMA12, // NW-NE ↔ SW-SE
+    [GridPosition.GAMMA3]: GridPosition.GAMMA11, // N-E ↔ S-E
+    [GridPosition.GAMMA4]: GridPosition.GAMMA10, // NE-SE ↔ SE-NE
+    [GridPosition.GAMMA5]: GridPosition.GAMMA9, // E-S ↔ E-N
+    [GridPosition.GAMMA6]: GridPosition.GAMMA16, // SE-SW ↔ NE-NW
+    [GridPosition.GAMMA7]: GridPosition.GAMMA15, // S-W ↔ N-W
+    [GridPosition.GAMMA8]: GridPosition.GAMMA14, // SW-NW ↔ NW-SW
+    [GridPosition.GAMMA9]: GridPosition.GAMMA5, // E-N ↔ E-S
+    [GridPosition.GAMMA10]: GridPosition.GAMMA4, // SE-NE ↔ NE-SE
+    [GridPosition.GAMMA11]: GridPosition.GAMMA3, // S-E ↔ N-E
+    [GridPosition.GAMMA12]: GridPosition.GAMMA2, // SW-SE ↔ NW-NE
+    [GridPosition.GAMMA13]: GridPosition.GAMMA1, // W-S ↔ W-N
+    [GridPosition.GAMMA14]: GridPosition.GAMMA8, // NW-SW ↔ SW-NW
+    [GridPosition.GAMMA15]: GridPosition.GAMMA7, // N-W ↔ S-W
+    [GridPosition.GAMMA16]: GridPosition.GAMMA6, // NE-NW ↔ SE-SW
+
+    // Zeta group - horizontal mirror flips N↔S
+    [GridPosition.ZETA1]: GridPosition.ZETA13, // SW-N → NW-S
+    [GridPosition.ZETA2]: GridPosition.ZETA12, // W-NE → W-SE
+    [GridPosition.ZETA3]: GridPosition.ZETA11, // NW-E → SW-E
+    [GridPosition.ZETA4]: GridPosition.ZETA10, // N-SE → S-NE
+    [GridPosition.ZETA5]: GridPosition.ZETA9, // NE-S → SE-N
+    [GridPosition.ZETA6]: GridPosition.ZETA16, // E-SW → E-NW
+    [GridPosition.ZETA7]: GridPosition.ZETA15, // SE-W → NE-W
+    [GridPosition.ZETA8]: GridPosition.ZETA14, // S-NW → N-SW
+    [GridPosition.ZETA9]: GridPosition.ZETA5, // SE-N → NE-S
+    [GridPosition.ZETA10]: GridPosition.ZETA4, // S-NE → N-SE
+    [GridPosition.ZETA11]: GridPosition.ZETA3, // SW-E → NW-E
+    [GridPosition.ZETA12]: GridPosition.ZETA2, // W-SE → W-NE
+    [GridPosition.ZETA13]: GridPosition.ZETA1, // NW-S → SW-N
+    [GridPosition.ZETA14]: GridPosition.ZETA8, // N-SW → S-NW
+    [GridPosition.ZETA15]: GridPosition.ZETA7, // NE-W → SE-W
+    [GridPosition.ZETA16]: GridPosition.ZETA6, // E-NW → E-SW
+
+    // Eta group - horizontal mirror flips N↔S
+    [GridPosition.ETA1]: GridPosition.ETA13, // NW-N → SW-S
+    [GridPosition.ETA2]: GridPosition.ETA12, // N-NE → S-SE
+    [GridPosition.ETA3]: GridPosition.ETA11, // NE-E → SE-E
+    [GridPosition.ETA4]: GridPosition.ETA10, // E-SE → E-NE
+    [GridPosition.ETA5]: GridPosition.ETA9, // SE-S → NE-N
+    [GridPosition.ETA6]: GridPosition.ETA16, // S-SW → N-NW
+    [GridPosition.ETA7]: GridPosition.ETA15, // SW-W → NW-W
+    [GridPosition.ETA8]: GridPosition.ETA14, // W-NW → W-SW
+    [GridPosition.ETA9]: GridPosition.ETA5, // NE-N → SE-S
+    [GridPosition.ETA10]: GridPosition.ETA4, // E-NE → E-SE
+    [GridPosition.ETA11]: GridPosition.ETA3, // SE-E → NE-E
+    [GridPosition.ETA12]: GridPosition.ETA2, // S-SE → N-NE
+    [GridPosition.ETA13]: GridPosition.ETA1, // SW-S → NW-N
+    [GridPosition.ETA14]: GridPosition.ETA8, // W-SW → W-NW
+    [GridPosition.ETA15]: GridPosition.ETA7, // NW-W → SW-W
+    [GridPosition.ETA16]: GridPosition.ETA6, // N-NW → S-SW
+  };
 
 /**
  * Horizontal Mirror Location Map
@@ -215,6 +284,46 @@ export const SWAPPED_POSITION_MAP: Record<GridPosition, GridPosition> = {
   [GridPosition.GAMMA14]: GridPosition.GAMMA8, // NW-SW ↔ SW-NW
   [GridPosition.GAMMA15]: GridPosition.GAMMA1, // N-W ↔ W-N
   [GridPosition.GAMMA16]: GridPosition.GAMMA2, // NE-NW ↔ NW-NE
+
+  // Zeta group - swap Blue↔Red locations
+  // Zeta 1-8: Blue 135° CCW from Red → after swap → Red at old Blue, Blue at old Red → Zeta 9-16 pattern
+  [GridPosition.ZETA1]: GridPosition.ZETA14, // (Red=N, Blue=SW) → (Red=SW, Blue=N)
+  [GridPosition.ZETA2]: GridPosition.ZETA15, // (Red=NE, Blue=W) → (Red=W, Blue=NE)
+  [GridPosition.ZETA3]: GridPosition.ZETA16, // (Red=E, Blue=NW) → (Red=NW, Blue=E)
+  [GridPosition.ZETA4]: GridPosition.ZETA9, // (Red=SE, Blue=N) → (Red=N, Blue=SE)
+  [GridPosition.ZETA5]: GridPosition.ZETA10, // (Red=S, Blue=NE) → (Red=NE, Blue=S)
+  [GridPosition.ZETA6]: GridPosition.ZETA11, // (Red=SW, Blue=E) → (Red=E, Blue=SW)
+  [GridPosition.ZETA7]: GridPosition.ZETA12, // (Red=W, Blue=SE) → (Red=SE, Blue=W)
+  [GridPosition.ZETA8]: GridPosition.ZETA13, // (Red=NW, Blue=S) → (Red=S, Blue=NW)
+  // Zeta 9-16: Blue 135° CW from Red → after swap → Zeta 1-8 pattern
+  [GridPosition.ZETA9]: GridPosition.ZETA4, // (Red=N, Blue=SE) → (Red=SE, Blue=N)
+  [GridPosition.ZETA10]: GridPosition.ZETA5, // (Red=NE, Blue=S) → (Red=S, Blue=NE)
+  [GridPosition.ZETA11]: GridPosition.ZETA6, // (Red=E, Blue=SW) → (Red=SW, Blue=E)
+  [GridPosition.ZETA12]: GridPosition.ZETA7, // (Red=SE, Blue=W) → (Red=W, Blue=SE)
+  [GridPosition.ZETA13]: GridPosition.ZETA8, // (Red=S, Blue=NW) → (Red=NW, Blue=S)
+  [GridPosition.ZETA14]: GridPosition.ZETA1, // (Red=SW, Blue=N) → (Red=N, Blue=SW)
+  [GridPosition.ZETA15]: GridPosition.ZETA2, // (Red=W, Blue=NE) → (Red=NE, Blue=W)
+  [GridPosition.ZETA16]: GridPosition.ZETA3, // (Red=NW, Blue=E) → (Red=E, Blue=NW)
+
+  // Eta group - swap Blue↔Red locations
+  // Eta 1-8: Blue 45° CCW from Red → after swap → Eta 9-16 pattern
+  [GridPosition.ETA1]: GridPosition.ETA16, // (Red=N, Blue=NW) → (Red=NW, Blue=N)
+  [GridPosition.ETA2]: GridPosition.ETA9, // (Red=NE, Blue=N) → (Red=N, Blue=NE)
+  [GridPosition.ETA3]: GridPosition.ETA10, // (Red=E, Blue=NE) → (Red=NE, Blue=E)
+  [GridPosition.ETA4]: GridPosition.ETA11, // (Red=SE, Blue=E) → (Red=E, Blue=SE)
+  [GridPosition.ETA5]: GridPosition.ETA12, // (Red=S, Blue=SE) → (Red=SE, Blue=S)
+  [GridPosition.ETA6]: GridPosition.ETA13, // (Red=SW, Blue=S) → (Red=S, Blue=SW)
+  [GridPosition.ETA7]: GridPosition.ETA14, // (Red=W, Blue=SW) → (Red=SW, Blue=W)
+  [GridPosition.ETA8]: GridPosition.ETA15, // (Red=NW, Blue=W) → (Red=W, Blue=NW)
+  // Eta 9-16: Blue 45° CW from Red → after swap → Eta 1-8 pattern
+  [GridPosition.ETA9]: GridPosition.ETA2, // (Red=N, Blue=NE) → (Red=NE, Blue=N)
+  [GridPosition.ETA10]: GridPosition.ETA3, // (Red=NE, Blue=E) → (Red=E, Blue=NE)
+  [GridPosition.ETA11]: GridPosition.ETA4, // (Red=E, Blue=SE) → (Red=SE, Blue=E)
+  [GridPosition.ETA12]: GridPosition.ETA5, // (Red=SE, Blue=S) → (Red=S, Blue=SE)
+  [GridPosition.ETA13]: GridPosition.ETA6, // (Red=S, Blue=SW) → (Red=SW, Blue=S)
+  [GridPosition.ETA14]: GridPosition.ETA7, // (Red=SW, Blue=W) → (Red=W, Blue=SW)
+  [GridPosition.ETA15]: GridPosition.ETA8, // (Red=W, Blue=NW) → (Red=NW, Blue=W)
+  [GridPosition.ETA16]: GridPosition.ETA1, // (Red=NW, Blue=N) → (Red=N, Blue=NW)
 };
 
 /**

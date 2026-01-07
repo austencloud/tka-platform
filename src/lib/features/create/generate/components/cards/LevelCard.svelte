@@ -63,6 +63,18 @@ Uses stepper pattern for space-efficient level selection
         rgb(161, 98, 7) 100%)`,
       textColor: "black",
     },
+    [DifficultyLevel.SKEWED]: {
+      name: "Skewed",
+      number: 4,
+      color: `radial-gradient(ellipse at top left,
+        rgb(255, 180, 180) 0%,
+        rgb(255, 140, 140) 20%,
+        rgb(255, 100, 100) 40%,
+        rgb(239, 68, 68) 60%,
+        rgb(220, 38, 38) 80%,
+        rgb(185, 28, 28) 100%)`,
+      textColor: "white",
+    },
   };
 
   // 🎨 Vibrant but darker colors for bright/glowing backgrounds (Aurora, Ember Glow)
@@ -105,6 +117,19 @@ Uses stepper pattern for space-efficient level selection
         rgb(180, 115, 5) 100%)`,
       textColor: "black",
     },
+    [DifficultyLevel.SKEWED]: {
+      name: "Skewed",
+      number: 4,
+      // Rich red - deeper red for bright backgrounds
+      color: `radial-gradient(ellipse at top left,
+        rgb(255, 140, 140) 0%,
+        rgb(255, 100, 100) 20%,
+        rgb(239, 68, 68) 40%,
+        rgb(220, 38, 38) 60%,
+        rgb(185, 28, 28) 80%,
+        rgb(153, 27, 27) 100%)`,
+      textColor: "white",
+    },
   };
 
   // Use appropriate color set based on background
@@ -115,12 +140,14 @@ Uses stepper pattern for space-efficient level selection
     [DifficultyLevel.BEGINNER]: 1,
     [DifficultyLevel.INTERMEDIATE]: 2,
     [DifficultyLevel.ADVANCED]: 3,
+    [DifficultyLevel.SKEWED]: 4,
   };
 
   const numberToLevel: Record<number, DifficultyLevel> = {
     1: DifficultyLevel.BEGINNER,
     2: DifficultyLevel.INTERMEDIATE,
     3: DifficultyLevel.ADVANCED,
+    4: DifficultyLevel.SKEWED,
   };
 
   const currentLevelNumber = $derived(
@@ -128,7 +155,7 @@ Uses stepper pattern for space-efficient level selection
   );
 
   function handleIncrement() {
-    const newLevel = Math.min(currentLevelNumber + 1, 3);
+    const newLevel = Math.min(currentLevelNumber + 1, 4);
     onLevelChange(numberToLevel[newLevel]);
   }
 
@@ -171,7 +198,7 @@ Uses stepper pattern for space-efficient level selection
   title="Level"
   currentValue={currentLevelNumber}
   minValue={1}
-  maxValue={3}
+  maxValue={4}
   onIncrement={handleIncrement}
   onDecrement={handleDecrement}
   {formatValue}

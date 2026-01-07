@@ -49,4 +49,5 @@ export interface CSVParseResult {
 export interface CsvDataSet {
   diamondData: string;
   boxData: string;
+  skewedData?: string;
 }

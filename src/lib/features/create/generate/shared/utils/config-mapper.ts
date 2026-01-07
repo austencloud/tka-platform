@@ -26,6 +26,7 @@ export const LEVEL_TO_DIFFICULTY: Record<number, DifficultyLevel> = {
   1: DifficultyEnum.BEGINNER,
   2: DifficultyEnum.INTERMEDIATE,
   3: DifficultyEnum.ADVANCED,
+  4: DifficultyEnum.SKEWED,
 } as const;
 
 /**
@@ -35,6 +36,7 @@ export const DIFFICULTY_TO_LEVEL: Record<DifficultyLevel, number> = {
   [DifficultyEnum.BEGINNER]: 1,
   [DifficultyEnum.INTERMEDIATE]: 2,
   [DifficultyEnum.ADVANCED]: 3,
+  [DifficultyEnum.SKEWED]: 4,
 } as const;
 
 /**

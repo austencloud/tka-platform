@@ -91,6 +91,7 @@ export enum DifficultyLevel {
   BEGINNER = "beginner",
   INTERMEDIATE = "intermediate",
   ADVANCED = "advanced",
+  SKEWED = "skewed",
 }
 
 export enum PropContinuity {

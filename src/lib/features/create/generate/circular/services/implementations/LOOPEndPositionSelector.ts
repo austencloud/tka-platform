@@ -53,13 +53,15 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
 
       case LOOPType.STRICT_MIRRORED: {
         // Mirrored LOOP uses vertical mirror map
-        const mirroredEnd = VERTICAL_MIRROR_POSITION_MAP[startPosition];
+        // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
+        const mirroredEnd = VERTICAL_MIRROR_POSITION_MAP[startPosition]!;
         return mirroredEnd;
       }
 
       case LOOPType.STRICT_SWAPPED: {
         // Swapped LOOP uses swap position map
-        const swappedEnd = SWAPPED_POSITION_MAP[startPosition];
+        // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
+        const swappedEnd = SWAPPED_POSITION_MAP[startPosition]!;
         return swappedEnd;
       }
 
@@ -109,15 +111,17 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
       // Combined LOOP types with MIRRORED
       case LOOPType.MIRRORED_INVERTED:
         // Mirrored-inverted uses just vertical mirror map
-        return VERTICAL_MIRROR_POSITION_MAP[startPosition];
+        // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
+        return VERTICAL_MIRROR_POSITION_MAP[startPosition]!;
 
       case LOOPType.MIRRORED_SWAPPED: {
         // Mirrored-swapped requires BOTH transformations:
         // 1. First mirror the position (east<->west)
         // 2. Then swap the colors (blue<->red positions)
         // This ensures the end position has swapped prop locations
-        const mirroredPosition = VERTICAL_MIRROR_POSITION_MAP[startPosition];
-        return SWAPPED_POSITION_MAP[mirroredPosition];
+        // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
+        const mirroredPosition = VERTICAL_MIRROR_POSITION_MAP[startPosition]!;
+        return SWAPPED_POSITION_MAP[mirroredPosition]!;
       }
 
       // Combined LOOP types with SWAPPED + INVERTED

@@ -33,15 +33,17 @@ export class RotatedEndPositionSelector {
   ): GridPosition {
     if (sliceSize === SliceSize.QUARTERED) {
       // For quartered LOOPs, randomly choose between clockwise and counter-clockwise
-      const cwEndPosition = QUARTER_POSITION_MAP_CW[startPosition];
-      const ccwEndPosition = QUARTER_POSITION_MAP_CCW[startPosition];
+      // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
+      const cwEndPosition = QUARTER_POSITION_MAP_CW[startPosition]!;
+      const ccwEndPosition = QUARTER_POSITION_MAP_CCW[startPosition]!;
 
       // Randomly select one
       return Math.random() < 0.5 ? cwEndPosition : ccwEndPosition;
     }
     // SliceSize.HALVED
     // For halved LOOPs, use the opposite position (180° rotation)
-    return HALF_POSITION_MAP[startPosition];
+    // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
+    return HALF_POSITION_MAP[startPosition]!;
   }
 
   /**
