@@ -7,6 +7,7 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import * as m from "$lib/paraglide/messages.js";
 
   const { currentGridMode = GridMode.DIAMOND, onGridModeChange } = $props<{
     currentGridMode?: GridMode;
@@ -21,8 +22,10 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
   );
 
   const oppositeLabel = $derived(
-    oppositeMode === GridMode.DIAMOND ? "Diamond" : "Box"
+    oppositeMode === GridMode.DIAMOND ? m.assembly_diamond() : m.assembly_box()
   );
+
+  const switchAriaLabel = $derived(m.assembly_switch_to_mode({ mode: oppositeLabel }));
 
   function handleToggle() {
     hapticService?.trigger("selection");
@@ -43,8 +46,8 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
   onkeydown={handleKeyDown}
   role="switch"
   aria-checked={currentGridMode === GridMode.BOX}
-  aria-label={`Switch to ${oppositeLabel} mode`}
-  title={`Switch to ${oppositeLabel} mode`}
+  aria-label={switchAriaLabel}
+  title={switchAriaLabel}
 >
   <span class="mode-label">{oppositeLabel}</span>
 </button>

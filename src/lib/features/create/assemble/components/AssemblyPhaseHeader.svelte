@@ -6,6 +6,7 @@ Undo is handled by the workspace-level undo button, not here.
 -->
 <script lang="ts">
   import type { HandPathPhase } from "../state/handpath-assemble-state.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   const { phase, bluePathLength, redPathLength } = $props<{
     phase: HandPathPhase;
@@ -20,8 +21,8 @@ Undo is handled by the workspace-level undo button, not here.
         // First position is the start position, subsequent are beats
         const title =
           bluePathLength === 0
-            ? "Select Starting Position"
-            : `Select Beat ${bluePathLength}`;
+            ? m.assembly_select_starting_position()
+            : m.assembly_select_beat({ beat: bluePathLength });
         return {
           title,
           color: "var(--semantic-info)",
@@ -31,8 +32,8 @@ Undo is handled by the workspace-level undo button, not here.
       case "red": {
         const title =
           redPathLength === 0
-            ? "Select Starting Position"
-            : `Select Beat ${redPathLength}`;
+            ? m.assembly_select_starting_position()
+            : m.assembly_select_beat({ beat: redPathLength });
         return {
           title,
           color: "var(--semantic-error)",
@@ -41,19 +42,19 @@ Undo is handled by the workspace-level undo button, not here.
       }
       case "rotation-selection":
         return {
-          title: "Choose Rotation",
+          title: m.assembly_choose_rotation(),
           color: "var(--semantic-success)",
           step: 3,
         };
       case "complete":
         return {
-          title: "Complete!",
+          title: m.assembly_complete(),
           color: "var(--semantic-success)",
           step: 3,
         };
       default:
         return {
-          title: "Assembly",
+          title: m.assembly_assembly(),
           color: "#8b5cf6",
           step: 0,
         };

@@ -1073,5 +1073,11 @@
   "assembly_grid_mode": "Grid Mode",
   "assembly_diamond": "Diamond",
   "assembly_box": "Box",
-  "assembly_start_building": "Start Building"
+  "assembly_start_building": "Start Building",
+  "assembly_select_starting_position": "Select Starting Position",
+  "assembly_select_beat": "Select Beat {beat}",
+  "assembly_choose_rotation": "Choose Rotation",
+  "assembly_complete": "Complete!",
+  "assembly_assembly": "Assembly",
+  "assembly_switch_to_mode": "Switch to {mode} mode"
 }
