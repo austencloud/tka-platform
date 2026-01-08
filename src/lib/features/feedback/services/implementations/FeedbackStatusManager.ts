@@ -106,7 +106,7 @@ export class FeedbackStatusService implements IFeedbackStatusService {
     await updateDoc(docRef, {
       status: "archived",
       deferredUntil: Timestamp.fromDate(deferredUntil),
-      resolutionNotes: notes,
+      adminNotes: notes,
       archivedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

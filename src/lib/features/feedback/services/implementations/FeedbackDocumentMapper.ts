@@ -48,7 +48,7 @@ export class FeedbackDocumentMapper implements IFeedbackDocumentMapper {
       capturedTab: data["capturedTab"] as string,
       deviceContext,
       status,
-      resolutionNotes: data["resolutionNotes"] as string | undefined,
+      adminNotes: data["adminNotes"] as string | undefined,
       adminResponse,
       testerConfirmation,
       createdAt: (data["createdAt"] as Timestamp)?.toDate() || new Date(),

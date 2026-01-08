@@ -86,6 +86,35 @@ export function isFeedbackStatus(value: unknown): value is FeedbackStatus {
 export type FeedbackSource = "app" | "terminal";
 
 /**
+ * Archive reason - why feedback was archived
+ * Used to categorize the outcome of feedback that didn't go through
+ * the normal release path
+ */
+export type ArchiveReason =
+  | "released" // Included in a version release (normal path)
+  | "declined" // Won't implement - out of scope or not aligned with vision
+  | "duplicate" // Already exists or covered by another item
+  | "wont-fix" // Working as intended, not a bug
+  | "deferred" // Will revisit later (may have deferredUntil date)
+  | "invalid"; // Not enough info, can't reproduce, or spam
+
+export const ARCHIVE_REASONS: ArchiveReason[] = [
+  "released",
+  "declined",
+  "duplicate",
+  "wont-fix",
+  "deferred",
+  "invalid",
+];
+
+export function isArchiveReason(value: unknown): value is ArchiveReason {
+  return (
+    typeof value === "string" &&
+    (ARCHIVE_REASONS as readonly string[]).includes(value)
+  );
+}
+
+/**
  * Tester confirmation status after admin resolves feedback
  */
 export type TesterConfirmationStatus =
@@ -140,8 +169,13 @@ export interface FeedbackItem {
 
   // Admin management
   status: FeedbackStatus;
-  resolutionNotes?: string; // Agent's summary of how feedback was resolved
+  adminNotes?: string; // Admin-only: internal summary of what was fixed
+  userFacingNotes?: string; // User-visible: friendly explanation for the submitter
   updatedAt?: Date;
+
+  // Claim tracking
+  claimedAt?: Date; // When an agent claimed this item
+  claimedBy?: string; // userId of who claimed it (for accountability)
 
   // Subtasks (optional - for complex feedback requiring prerequisites)
   subtasks?: FeedbackSubtask[];
@@ -160,6 +194,11 @@ export interface FeedbackItem {
   // Version tracking (set when archived)
   fixedInVersion?: string; // e.g., "0.2.0"
   archivedAt?: Date; // When moved to archive
+  archiveReason?: ArchiveReason; // Why it was archived (released, declined, etc.)
+
+  // Message tracking (prevents duplicate notifications)
+  lastNotifiedAt?: Date; // When user was last notified about this item
+  lastNotifiedStatus?: FeedbackStatus; // Status when last notified
 
   // Deferment (archived items scheduled for reactivation)
   deferredUntil?: Date; // When to reactivate this item
@@ -190,11 +229,15 @@ export interface TesterConfirmation {
 
 /**
  * Status change history entry
+ * Tracks who made the change for accountability and audit trails
  */
 export interface StatusHistoryEntry {
   status: FeedbackStatus;
   timestamp: Date;
   fromStatus?: FeedbackStatus;
+  actorId?: string; // userId of who made the change (or "system" for automated)
+  actorName?: string; // Display name for UI
+  notes?: string; // Optional notes about this transition
 }
 
 /**
@@ -303,5 +346,50 @@ export const TYPE_CONFIG: Record<
     color: "#3b82f6",
     icon: "fa-comment",
     placeholder: "Share your thoughts, suggestions, or observations...",
+  },
+};
+
+/**
+ * Archive reason display configuration
+ */
+export const ARCHIVE_REASON_CONFIG: Record<
+  ArchiveReason,
+  { label: string; color: string; icon: string; description: string }
+> = {
+  released: {
+    label: "Released",
+    color: "#10b981",
+    icon: "fa-rocket",
+    description: "Included in a version release",
+  },
+  declined: {
+    label: "Declined",
+    color: "#6b7280",
+    icon: "fa-times-circle",
+    description: "Won't implement - out of scope",
+  },
+  duplicate: {
+    label: "Duplicate",
+    color: "#f59e0b",
+    icon: "fa-clone",
+    description: "Already exists or covered by another item",
+  },
+  "wont-fix": {
+    label: "Won't Fix",
+    color: "#6b7280",
+    icon: "fa-ban",
+    description: "Working as intended",
+  },
+  deferred: {
+    label: "Deferred",
+    color: "#3b82f6",
+    icon: "fa-clock",
+    description: "Will revisit later",
+  },
+  invalid: {
+    label: "Invalid",
+    color: "#ef4444",
+    icon: "fa-exclamation-triangle",
+    description: "Not enough info or can't reproduce",
   },
 };

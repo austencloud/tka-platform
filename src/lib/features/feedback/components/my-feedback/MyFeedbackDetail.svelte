@@ -16,6 +16,7 @@
   import FeedbackEditDrawer from "./FeedbackEditDrawer.svelte";
   import FeedbackReplyPanel from "./FeedbackReplyPanel.svelte";
   import ImageViewerModal from "./ImageViewerModal.svelte";
+  import StatusTimeline from "./StatusTimeline.svelte";
   import { useUserPreview } from "$lib/shared/debug/context/user-preview-context";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
 
@@ -261,6 +262,17 @@
           <p class="description">{item.description}</p>
         </div>
 
+        <!-- Status Timeline - Show history of status changes -->
+        {#if item.statusHistory || item.status !== "new"}
+          <StatusTimeline
+            history={item.statusHistory}
+            currentStatus={item.status}
+            createdAt={item.createdAt}
+            userFacingNotes={item.userFacingNotes}
+            fixedInVersion={item.fixedInVersion}
+          />
+        {/if}
+
         <!-- Screenshots -->
         {#if item.imageUrls && item.imageUrls.length > 0}
           <div class="screenshots-section">
@@ -309,20 +321,30 @@
           </div>
         {/if}
 
-        <!-- Resolution Notes -->
-        {#if item.resolutionNotes}
+        <!-- Resolution Notes - Show user-facing notes if available, otherwise admin notes -->
+        {#if item.userFacingNotes || item.adminNotes}
           <div class="response-section">
             <h3>
               <i class="fas fa-check-circle" aria-hidden="true"></i>
               Resolution
             </h3>
             <div class="response-card resolution">
-              <p class="response-message">{item.resolutionNotes}</p>
-              {#if item.updatedAt}
-                <span class="response-date">
-                  Resolved {formatDate(item.updatedAt)}
-                </span>
-              {/if}
+              <p class="response-message">
+                {item.userFacingNotes || item.adminNotes}
+              </p>
+              <div class="resolution-meta">
+                {#if item.updatedAt}
+                  <span class="response-date">
+                    Resolved {formatDate(item.updatedAt)}
+                  </span>
+                {/if}
+                {#if item.fixedInVersion}
+                  <span class="version-badge">
+                    <i class="fas fa-tag" aria-hidden="true"></i>
+                    v{item.fixedInVersion}
+                  </span>
+                {/if}
+              </div>
             </div>
           </div>
         {/if}
@@ -717,6 +739,31 @@
     box-shadow:
       0 4px 16px rgba(16, 185, 129, 0.2),
       0 0 0 1px rgba(16, 185, 129, 0.15);
+  }
+
+  .resolution-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: rgba(16, 185, 129, 0.25);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #10b981;
+  }
+
+  .version-badge i {
+    font-size: 0.5625rem;
   }
 
   /* Screenshots */

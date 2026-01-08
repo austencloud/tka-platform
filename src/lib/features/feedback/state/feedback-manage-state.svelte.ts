@@ -310,7 +310,7 @@ export function createFeedbackManageState() {
               ...item,
               status: "archived",
               deferredUntil,
-              resolutionNotes: notes,
+              adminNotes: notes,
               archivedAt: new Date(),
               updatedAt: new Date(),
             }
@@ -321,7 +321,7 @@ export function createFeedbackManageState() {
           ...selectedItem,
           status: "archived",
           deferredUntil,
-          resolutionNotes: notes,
+          adminNotes: notes,
           archivedAt: new Date(),
           updatedAt: new Date(),
         };
