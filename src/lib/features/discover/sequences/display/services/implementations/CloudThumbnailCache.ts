@@ -46,27 +46,39 @@ function isCacheValid(entry: CachedUrl): boolean {
 // Prevents overwhelming Firebase with too many simultaneous requests
 const MAX_CONCURRENT_CHECKS = 5;
 let activeChecks = 0;
-const checkQueue: Array<() => void> = [];
 
-async function acquireCheckSlot(): Promise<void> {
+// Priority queue: lower number = higher priority (Y position from top of screen)
+interface QueuedCheck {
+  priority: number;
+  resolve: () => void;
+}
+const checkQueue: QueuedCheck[] = [];
+
+async function acquireCheckSlot(priority: number = Infinity): Promise<void> {
   if (activeChecks < MAX_CONCURRENT_CHECKS) {
     activeChecks++;
     return;
   }
   // Wait for a slot to become available
   return new Promise((resolve) => {
-    checkQueue.push(() => {
-      activeChecks++;
-      resolve();
+    checkQueue.push({
+      priority,
+      resolve: () => {
+        activeChecks++;
+        resolve();
+      },
     });
+    // Sort by priority (lower = higher priority = closer to top of screen)
+    checkQueue.sort((a, b) => a.priority - b.priority);
   });
 }
 
 function releaseCheckSlot(): void {
   activeChecks--;
+  // Take the highest priority item (first after sort)
   const next = checkQueue.shift();
   if (next) {
-    next();
+    next.resolve();
   }
 }
 
@@ -93,6 +105,30 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
   }
 
   /**
+   * Prefetch opposite light mode URL in background
+   * Called after a successful cloud cache hit to enable instant toggling
+   * Delayed significantly to avoid competing with immediate requests
+   */
+  private prefetchOppositeMode(key: CloudThumbnailKey): void {
+    // Delay prefetch by 3 seconds so immediate requests get priority
+    setTimeout(() => {
+      const oppositeKey = { ...key, lightMode: !key.lightMode };
+      const oppositeCacheKey = this.getCacheKey(oppositeKey);
+
+      // Skip if already in cache
+      const cached = urlCache.get(oppositeCacheKey);
+      if (cached && isCacheValid(cached)) {
+        return;
+      }
+
+      // Fire and forget - fetch opposite mode in background
+      this.getUrl(oppositeKey).catch(() => {
+        // Ignore errors - this is just a prefetch optimization
+      });
+    }, 3000);
+  }
+
+  /**
    * Get thumbnail URL from in-memory cache only (synchronous)
    * Returns undefined if not in cache, null if checked and known not to exist
    * Use this for instant cache hits without async overhead
@@ -114,8 +150,9 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
    * Get thumbnail URL from Firebase Storage
    * Returns null if thumbnail doesn't exist in cloud
    * Uses getMetadata first to avoid 404 errors in console (getDownloadURL logs network errors)
+   * @param priority - Lower = higher priority (Y position). Visible thumbnails get served first.
    */
-  async getUrl(key: CloudThumbnailKey): Promise<string | null> {
+  async getUrl(key: CloudThumbnailKey, priority: number = Infinity): Promise<string | null> {
     const cacheKey = this.getCacheKey(key);
 
     // Check in-memory cache first (no concurrency limit needed)
@@ -128,8 +165,8 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       urlCache.delete(cacheKey);
     }
 
-    // Acquire a slot before making Firebase request
-    await acquireCheckSlot();
+    // Acquire a slot before making Firebase request (respects priority queue)
+    await acquireCheckSlot(priority);
 
     try {
       // Double-check cache after acquiring slot (might have been populated while waiting)
@@ -178,6 +215,9 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
 
       if (url) {
         urlCache.set(cacheKey, { url, timestamp: Date.now() });
+
+        // Prefetch opposite light mode in background for instant toggling
+        this.prefetchOppositeMode(key);
       }
       return url;
     } catch (error: unknown) {

@@ -156,6 +156,14 @@
   });
 
   /**
+   * Handle successful image load
+   */
+  function handleImageLoad() {
+    const urlType = thumbnailUrl?.startsWith("blob:") ? "blob" : "cloud";
+    console.log(`[Thumbnail] "${sequenceName}" - img onload SUCCESS (${urlType})`);
+  }
+
+  /**
    * Handle image load error (e.g., 404 from stale cloud URL).
    * Invalidates the cached URL and forces a fresh render (skipping cache).
    * Debounced to prevent rapid re-triggers from multiple error events.
@@ -163,6 +171,9 @@
   function handleImageError() {
     // Debounce: if we already have a pending error handler, skip
     if (errorDebounceTimer) return;
+
+    const urlType = thumbnailUrl?.startsWith("blob:") ? "blob" : "cloud";
+    console.warn(`[Thumbnail] "${sequenceName}" - img ERROR (${urlType}) - will re-render`);
 
     if (!keyDeriver || !cloudCache || !orchestrator) return;
 
@@ -205,6 +216,10 @@
       return;
     }
 
+    // DEBUG: Log when effect fires and why
+    const reason = currentKeyHash === null ? "initial" : "hash-changed";
+    console.log(`[Thumbnail] "${sequenceName}" - $effect fired (${reason}), lightMode=${lightMode}`);
+
     // Cancel previous render
     if (currentKeyHash) {
       orchestrator.cancel({ hash: currentKeyHash });
@@ -239,6 +254,9 @@
         // Only apply if still current
         if (key.hash === currentKeyHash) {
           thumbnailUrl = result.url;
+          // DEBUG: Log what URL type we got
+          const urlType = result.url.startsWith("blob:") ? "blob" : "cloud";
+          console.log(`[Thumbnail] "${sequenceName}" - loaded (${urlType}, fromCache=${result.fromCache})`);
         }
       })
       .catch((err) => {
@@ -271,6 +289,7 @@
       loading="lazy"
       decoding="async"
       draggable="false"
+      onload={handleImageLoad}
       onerror={handleImageError}
     />
     <!-- Loading overlay during re-renders -->

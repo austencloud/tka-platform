@@ -22,7 +22,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import VideosPanel from "$lib/shared/video-collaboration/components/VideosPanel.svelte";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import { auth } from "$lib/shared/auth/firebase";
+  import { getAuthSync } from "$lib/shared/auth/firebase";
   import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
   import VariationStrip from "./VariationStrip.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -152,7 +152,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   // Check if we have creator info to display
   const hasCreatorInfo = $derived(Boolean(sequence.ownerId));
-  const currentUserId = $derived(auth.currentUser?.uid);
+  const currentUserId = $derived(getAuthSync().currentUser?.uid);
 
   // Check if current user owns this sequence (for ownership-aware edit controls)
   const isOwned = $derived(

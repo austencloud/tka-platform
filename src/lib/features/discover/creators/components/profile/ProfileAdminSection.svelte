@@ -15,7 +15,7 @@
     deleteDoc,
   } from "firebase/firestore";
   import { ref, remove } from "firebase/database";
-  import { getFirestoreInstance, database } from "$lib/shared/auth/firebase";
+  import { getFirestoreInstance, getDatabaseInstance } from "$lib/shared/auth/firebase";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
   import {
     ROLE_DISPLAY,
@@ -197,6 +197,7 @@
 
       // Remove from Realtime Database presence (this is where active users come from)
       try {
+        const database = await getDatabaseInstance();
         const presenceRef = ref(database, `presence/${userId}`);
         await remove(presenceRef);
         console.log(

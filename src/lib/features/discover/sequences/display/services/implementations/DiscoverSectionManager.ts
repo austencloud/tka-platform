@@ -141,7 +141,8 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
 
         const secondChar = word.charAt(1);
         const letter = secondChar === "-" ? `${char}-` : char;
-        const beatCount = sequence.sequenceLength ?? 0;
+        // Use sequenceLength if available, otherwise fall back to beats array length
+        const beatCount = sequence.sequenceLength ?? sequence.beats?.length ?? 0;
         // Use pipe separator to avoid conflict with dash in letter names
         return `${letter}|${beatCount}`;
       }

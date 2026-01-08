@@ -158,6 +158,7 @@ export function createExploreState() {
     try {
       isLoading = true;
       sectionsReady = false;
+      sequenceSections = []; // Clear immediately to prevent showing stale sections
       error = null;
       const sequences = await loaderService.loadSequenceMetadata();
       allSequences = sequences;
@@ -191,6 +192,7 @@ export function createExploreState() {
     try {
       isLoading = true;
       sectionsReady = false;
+      sequenceSections = []; // Clear immediately to prevent showing stale sections
       error = null;
       const librarySequences = await libService.getSequences();
       // LibrarySequence extends SequenceData, so this is compatible
@@ -383,6 +385,7 @@ export function createExploreState() {
   ): Promise<void> {
     currentFilter = { type, value: value || null };
     sectionsReady = false;
+    sequenceSections = []; // Clear immediately to prevent showing stale sections
     persistControls();
     await applyFilterAndSort();
     await generateSequenceSections();
@@ -397,6 +400,7 @@ export function createExploreState() {
     currentSortMethod = method;
     sortDirection = direction;
     sectionsReady = false;
+    sequenceSections = []; // Clear immediately to prevent showing stale sections
     persistControls();
     await applyFilterAndSort();
     await generateSequenceSections();

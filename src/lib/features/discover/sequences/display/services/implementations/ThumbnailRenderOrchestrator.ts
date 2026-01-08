@@ -58,10 +58,11 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
 
       // Step 2: If not in memory, check cloud cache (network request)
       // This runs BEFORE queueing so cached items don't wait in line
+      // Priority ensures visible thumbnails are checked first
       if (memoryCached === undefined) {
         // undefined = never checked; null = checked and doesn't exist
         request.onStatusChange?.({ state: "checking-cache" });
-        const cloudUrl = await this.cloudCache.getUrl(cloudKey);
+        const cloudUrl = await this.cloudCache.getUrl(cloudKey, request.priority);
         if (cloudUrl) {
           // Found in cloud - instant return
           this.completedCount++;

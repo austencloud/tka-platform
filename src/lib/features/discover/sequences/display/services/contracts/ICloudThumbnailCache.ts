@@ -55,7 +55,7 @@ export interface ICloudThumbnailCache {
    * Get thumbnail URL from Firebase Storage
    * Returns null if thumbnail doesn't exist in cloud
    */
-  getUrl(key: CloudThumbnailKey): Promise<string | null>;
+  getUrl(key: CloudThumbnailKey, priority?: number): Promise<string | null>;
 
   /**
    * Download thumbnail blob from Firebase Storage

@@ -37,10 +37,14 @@
   let thumbnailService: IDiscoverThumbnailProvider | null = $state(null);
 
   // ✅ DERIVED RUNES: UI state
-  // Show skeleton until both loading is done AND sections are ready
-  const isInitializing = $derived(isLoading || !sectionsReady);
+  // Show skeleton until loading is done AND sections are ready AND sections exist
+  // The sections.length check is defense-in-depth in case sectionsReady gets out of sync
+  const isInitializing = $derived(
+    isLoading || !sectionsReady || (showSections && sections.length === 0)
+  );
   const isEmpty = $derived(!isInitializing && !error && sequences.length === 0);
   const hasSequences = $derived(!isInitializing && !error && sequences.length > 0);
+
 
   // Handle sequence actions
   function handleSequenceAction(action: string, sequence: SequenceData) {
