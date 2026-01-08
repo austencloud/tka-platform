@@ -105,6 +105,7 @@ export function createExploreState() {
   );
   let filteredSequences = $state<SequenceData[]>([]);
   let isFilterModalOpen = $state<boolean>(false);
+  let sectionsReady = $state<boolean>(false);
 
   // Animation modal state
   let isAnimationModalOpen = $state<boolean>(false);
@@ -156,6 +157,7 @@ export function createExploreState() {
   async function loadAllSequences(): Promise<void> {
     try {
       isLoading = true;
+      sectionsReady = false;
       error = null;
       const sequences = await loaderService.loadSequenceMetadata();
       allSequences = sequences;
@@ -164,6 +166,7 @@ export function createExploreState() {
       navigationSections = sections;
       applyFilterAndSort();
       await generateSequenceSections();
+      sectionsReady = true;
     } catch (err) {
       console.error("Failed to load sequences:", err);
       error = err instanceof Error ? err.message : "Failed to load sequences";
@@ -181,11 +184,13 @@ export function createExploreState() {
       allSequences = [];
       displayedSequences = [];
       sequenceSections = [];
+      sectionsReady = false;
       return;
     }
 
     try {
       isLoading = true;
+      sectionsReady = false;
       error = null;
       const librarySequences = await libService.getSequences();
       // LibrarySequence extends SequenceData, so this is compatible
@@ -198,6 +203,7 @@ export function createExploreState() {
       navigationSections = sections;
       applyFilterAndSort();
       await generateSequenceSections();
+      sectionsReady = true;
     } catch (err) {
       console.error("Failed to load library sequences:", err);
       error = err instanceof Error ? err.message : "Failed to load library";
@@ -376,9 +382,11 @@ export function createExploreState() {
     value?: ExploreFilterValue
   ): Promise<void> {
     currentFilter = { type, value: value || null };
+    sectionsReady = false;
     persistControls();
     await applyFilterAndSort();
     await generateSequenceSections();
+    sectionsReady = true;
   }
 
   // Handle sort changes
@@ -388,9 +396,11 @@ export function createExploreState() {
   ): Promise<void> {
     currentSortMethod = method;
     sortDirection = direction;
+    sectionsReady = false;
     persistControls();
     await applyFilterAndSort();
     await generateSequenceSections();
+    sectionsReady = true;
   }
 
   // Handle filter modal
@@ -506,6 +516,9 @@ export function createExploreState() {
     },
     get currentSource() {
       return currentSource;
+    },
+    get sectionsReady() {
+      return sectionsReady;
     },
 
     // Methods

@@ -9,7 +9,7 @@
   import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IDiscoverThumbnailProvider } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverThumbnailProvider";
+  import type { IDiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
   import { openSpotlightViewer } from "$lib/shared/application/state/ui/ui-state.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";

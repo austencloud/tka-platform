@@ -17,6 +17,7 @@
     sequences = [],
     sections = [],
     isLoading = false,
+    sectionsReady = true,
     error = null,
     showSections = false,
     onAction = () => {},
@@ -25,6 +26,7 @@
     sequences?: SequenceData[];
     sections?: SequenceSection[];
     isLoading?: boolean;
+    sectionsReady?: boolean;
     error?: string | null;
     showSections?: boolean;
     onAction?: (action: string, sequence: SequenceData) => void;
@@ -35,8 +37,10 @@
   let thumbnailService: IDiscoverThumbnailProvider | null = $state(null);
 
   // ✅ DERIVED RUNES: UI state
-  const isEmpty = $derived(!isLoading && !error && sequences.length === 0);
-  const hasSequences = $derived(!isLoading && !error && sequences.length > 0);
+  // Show skeleton until both loading is done AND sections are ready
+  const isInitializing = $derived(isLoading || !sectionsReady);
+  const isEmpty = $derived(!isInitializing && !error && sequences.length === 0);
+  const hasSequences = $derived(!isInitializing && !error && sequences.length > 0);
 
   // Handle sequence actions
   function handleSequenceAction(action: string, sequence: SequenceData) {
@@ -76,8 +80,8 @@
 
   <!-- Content area -->
   <div class="display-content" onscroll={handleScroll}>
-    {#if isLoading && sequences.length === 0}
-      <!-- Show skeletons on initial load for instant feedback -->
+    {#if isInitializing}
+      <!-- Show skeletons until sections are fully ready -->
       <DiscoverThumbnailSkeleton viewMode="grid" count={12} />
     {:else if error}
       <div class="error-state" role="alert" aria-live="assertive">

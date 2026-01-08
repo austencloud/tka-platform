@@ -91,7 +91,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     }
   }
 
-  function handleSourceChange(source: GallerySource) {
+  function handleSourceChange(source: SequenceSource) {
     hapticService?.trigger("selection");
     sequenceSourceManager.setSource(source);
     onSourceChange?.(source);

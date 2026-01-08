@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { galleryPanelManager } from "../state/gallery-panel-state.svelte";
+  import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import { ExploreSortMethod } from "../domain/enums/discover-enums";
-  import ViewPresetsDropdown from "../../gallery/filtering/components/ViewPresetsDropdown.svelte";
-  import NavigationDropdown from "../../gallery/navigation/components/NavigationDropdown.svelte";
+  import ViewPresetsDropdown from "../../sequences/filtering/components/ViewPresetsDropdown.svelte";
+  import NavigationDropdown from "../../sequences/navigation/components/NavigationDropdown.svelte";
   import type { ExploreFilter } from "$lib/shared/persistence/domain/types/FilteringTypes";
 
   interface Props {
@@ -33,7 +33,7 @@
       <!-- Mobile: Button to trigger bottom sheet -->
       <button
         class="mobile-control-button"
-        onclick={() => galleryPanelManager.openViewPresets()}
+        onclick={() => sequencePanelManager.openViewPresets()}
         type="button"
         aria-label="View presets"
       >
@@ -52,7 +52,7 @@
       <!-- Mobile: Button to trigger bottom sheet -->
       <button
         class="mobile-control-button"
-        onclick={() => galleryPanelManager.openSortJump()}
+        onclick={() => sequencePanelManager.openSortJump()}
         type="button"
         aria-label="Sort and navigate"
       >
@@ -74,7 +74,7 @@
   <div class="control-item">
     <button
       class="advanced-filter-button"
-      onclick={() => galleryPanelManager.openFilters()}
+      onclick={() => sequencePanelManager.openFilters()}
       type="button"
       aria-label="Advanced filters"
     >

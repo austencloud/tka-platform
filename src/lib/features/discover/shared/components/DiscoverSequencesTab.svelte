@@ -60,6 +60,7 @@
           sequences={galleryState.displayedSequences}
           sections={galleryState.sequenceSections}
           isLoading={galleryState.isLoading}
+          sectionsReady={galleryState.sectionsReady}
           {error}
           showSections={galleryState.showSections}
           onAction={onSequenceAction}
