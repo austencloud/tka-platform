@@ -17,8 +17,9 @@
   import GalleryWall from "./environment/GalleryWall.svelte";
   import GalleryLighting from "./environment/GalleryLighting.svelte";
   import GalleryTorches from "./environment/GalleryTorches.svelte";
+  import Museum3D from "./environment/Museum3D.svelte";
 
-  // Room-based floor and ceiling rendering
+  // Room-based floor and ceiling rendering (procedural - used when no model loaded)
   import RoomFloorRenderer from "./environment/floors/RoomFloorRenderer.svelte";
   import RoomCeilingRenderer from "./environment/ceilings/RoomCeilingRenderer.svelte";
 
@@ -51,6 +52,8 @@
     onRotationChange?: (rotation: { yaw: number; pitch: number }) => void;
     /** Callback when player locomotion changes */
     onLocomotionChange?: (locomotion: { isMoving: boolean; moveDirection: number; moveSpeed: number }) => void;
+    /** Path to museum 3D model (optional - enables model-based rendering) */
+    museumModelPath?: string;
   }
 
   let {
@@ -58,7 +61,8 @@
     avatarServiceDeps,
     multiplayerState = null,
     onRotationChange,
-    onLocomotionChange
+    onLocomotionChange,
+    museumModelPath,
   }: Props = $props();
 
   // Access multiplayer properties directly (they're already reactive getters)
@@ -100,16 +104,29 @@
       enabled={true}
     />
 
-    <!-- Room-based floors (marble for rotunda, wood for wings) -->
-    <RoomFloorRenderer rooms={galleryState.layout.rooms} />
+    <!-- Environment: Either model-based (Blender) or procedural -->
+    {#if museumModelPath}
+      <!-- Model-based rendering: Load hand-crafted museum from glTF -->
+      <Museum3D
+        modelPath={museumModelPath}
+        onSlotsLoaded={(slots) => galleryState.setModelSlots(slots)}
+      />
+    {:else}
+      <!-- Procedural rendering: Generated walls, floors, ceilings -->
+      <!-- Room-based floors (marble for rotunda, wood for wings) + corridor floors -->
+      <RoomFloorRenderer
+        rooms={galleryState.layout.rooms}
+        corridors={galleryState.layout.corridors}
+      />
 
-    <!-- Room-based ceilings (dome for rotunda, coffered for wings) -->
-    <RoomCeilingRenderer rooms={galleryState.layout.rooms} />
+      <!-- Room-based ceilings (dome for rotunda, coffered for wings) -->
+      <RoomCeilingRenderer rooms={galleryState.layout.rooms} />
 
-    <!-- Walls -->
-    {#each galleryState.layout.walls as wall (wall.id)}
-      <GalleryWall {wall} />
-    {/each}
+      <!-- Walls -->
+      {#each galleryState.layout.walls as wall (wall.id)}
+        <GalleryWall {wall} />
+      {/each}
+    {/if}
 
     <!-- Lighting (ambient + spotlights) -->
     <GalleryLighting exhibits={galleryState.exhibits} lightsOn={galleryState.lightsOn} />

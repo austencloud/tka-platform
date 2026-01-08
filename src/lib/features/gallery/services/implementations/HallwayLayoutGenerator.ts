@@ -126,6 +126,7 @@ export class HallwayLayoutGenerator implements IGalleryLayoutGenerator {
       walls,
       rooms,
       doorways,
+      corridors: [], // Simple hallway has no room gaps to bridge
       roomGraph,
       collisionWorld,
       spawnRoomId: "hallway",

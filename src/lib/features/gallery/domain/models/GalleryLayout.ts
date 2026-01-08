@@ -15,7 +15,7 @@
  */
 
 import type { Room } from "./Room";
-import type { Doorway } from "./doorway";
+import type { Doorway, DoorwayCorridor } from "./doorway";
 import type { RoomGraph } from "./RoomGraph";
 import type { CollisionWorld } from "./WallCollider";
 import type { Point2D, AABB2D } from "./geometry";
@@ -96,6 +96,9 @@ export interface GalleryLayout {
   /** All doorways connecting rooms */
   readonly doorways: readonly Doorway[];
 
+  /** Physical corridors bridging gaps between rooms */
+  readonly corridors: readonly DoorwayCorridor[];
+
   /** Room graph for spatial queries and navigation */
   readonly roomGraph: RoomGraph;
 
@@ -158,6 +161,8 @@ export interface LayoutStats {
   roomCount: number;
   /** Number of doorways */
   doorwayCount: number;
+  /** Number of corridors */
+  corridorCount: number;
   /** Number of wall segments */
   wallCount: number;
   /** Total number of exhibit slots */
@@ -178,6 +183,7 @@ export function getLayoutStats(layout: GalleryLayout): LayoutStats {
   return {
     roomCount: layout.rooms.length,
     doorwayCount: layout.doorways.length,
+    corridorCount: layout.corridors.length,
     wallCount: layout.walls.length,
     exhibitSlotCount,
     totalFloorArea: layout.floorSize.width * layout.floorSize.depth,

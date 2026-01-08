@@ -2,21 +2,25 @@
   /**
    * RoomFloorRenderer
    *
-   * Orchestrates floor rendering for all rooms in the gallery.
+   * Orchestrates floor rendering for all rooms and corridors in the gallery.
    * Selects appropriate floor component based on room type and shape.
    */
 
   import type { Room } from "../../../domain/models/Room";
+  import type { DoorwayCorridor } from "../../../domain/models/doorway";
   import RotundaFloor from "./RotundaFloor.svelte";
   import WingFloor from "./WingFloor.svelte";
+  import CorridorFloor from "./CorridorFloor.svelte";
   import { getShapeCenter } from "../../../domain/models/room-shapes";
 
   interface Props {
     /** All rooms to render floors for */
     rooms: readonly Room[];
+    /** Corridors connecting rooms */
+    corridors?: readonly DoorwayCorridor[];
   }
 
-  let { rooms }: Props = $props();
+  let { rooms, corridors = [] }: Props = $props();
 </script>
 
 {#each rooms as room (room.id)}
@@ -39,4 +43,9 @@
       showCarpet={room.type === "wing" || room.type === "gallery"}
     />
   {/if}
+{/each}
+
+<!-- Corridor floors bridge the gaps between rooms -->
+{#each corridors as corridor (corridor.id)}
+  <CorridorFloor {corridor} />
 {/each}

@@ -30,8 +30,10 @@ import type { Doorway } from "../../domain/models/doorway";
 import { createGrandEntrance, createArchway } from "../../domain/models/doorway";
 import { buildRoomGraph } from "../../domain/models/RoomGraph";
 import type { CircularShape, RectangularShape } from "../../domain/models/room-shapes";
+import type { DoorwayCorridor } from "../../domain/models/doorway";
 import { RoomGeometryGenerator } from "./RoomGeometryGenerator";
 import { CollisionWorldBuilder } from "./CollisionWorldBuilder";
+import { ConnectionGeometryGenerator } from "./ConnectionGeometryGenerator";
 import {
   WALL_HEIGHT,
   PLAYER_EYE_HEIGHT,
@@ -74,7 +76,9 @@ export class MansionLayoutGenerator implements IGalleryLayoutGenerator {
     @inject(RoomGeometryGenerator)
     private readonly geometryGenerator: RoomGeometryGenerator,
     @inject(CollisionWorldBuilder)
-    private readonly collisionBuilder: CollisionWorldBuilder
+    private readonly collisionBuilder: CollisionWorldBuilder,
+    @inject(ConnectionGeometryGenerator)
+    private readonly connectionGenerator: ConnectionGeometryGenerator
   ) {}
 
   generate(_options: LayoutGenerationOptions): GalleryLayout {
@@ -89,35 +93,41 @@ export class MansionLayoutGenerator implements IGalleryLayoutGenerator {
     const doorways = this.createDoorways();
 
     // =========================================================================
-    // STEP 3: Build room graph for spatial queries
+    // STEP 3: Generate corridor geometry to bridge room gaps
+    // =========================================================================
+    const corridors = this.connectionGenerator.generateCorridors(rooms, doorways);
+
+    // =========================================================================
+    // STEP 4: Build room graph for spatial queries
     // =========================================================================
     const roomGraph = buildRoomGraph(rooms, doorways, "rotunda");
 
     // =========================================================================
-    // STEP 4: Generate wall geometry from rooms
+    // STEP 5: Generate wall geometry from rooms and corridors
     // =========================================================================
     const { walls, colliders } = this.geometryGenerator.generateFromRooms(
       rooms,
-      doorways
+      doorways,
+      corridors
     );
 
     // =========================================================================
-    // STEP 5: Build collision world
+    // STEP 6: Build collision world
     // =========================================================================
     const collisionWorld = this.collisionBuilder.build(colliders);
 
     // =========================================================================
-    // STEP 6: Calculate bounds
+    // STEP 7: Calculate bounds
     // =========================================================================
     const bounds = this.calculateBounds(rooms);
 
     // =========================================================================
-    // STEP 7: Assemble final layout
+    // STEP 8: Assemble final layout
     // =========================================================================
     const totalSlots = walls.reduce((sum, wall) => sum + wall.exhibitSlots.length, 0);
     console.debug(
       `[MansionLayoutGenerator] Created EPIC museum: ${rooms.length} rooms, ` +
-      `${doorways.length} doorways, ${totalSlots} exhibit slots`
+      `${doorways.length} doorways, ${corridors.length} corridors, ${totalSlots} exhibit slots`
     );
 
     // Debug: Log first few slot positions
@@ -142,6 +152,7 @@ export class MansionLayoutGenerator implements IGalleryLayoutGenerator {
       // New room-based architecture
       rooms,
       doorways,
+      corridors,
       roomGraph,
       collisionWorld,
 
@@ -340,12 +351,17 @@ export class MansionLayoutGenerator implements IGalleryLayoutGenerator {
       const worldX = wingCenter.x + localX * cos - localZ * sin;
       const worldZ = wingCenter.z + localX * sin + localZ * cos;
 
+      // Alcoves should face the corridor they open into
+      // Left alcoves (isLeft=true) open toward positive X → rotate -π/2
+      // Right alcoves (isLeft=false) open toward negative X → rotate π/2
+      const alcoveRotation = wingRotation + (isLeft ? -Math.PI / 2 : Math.PI / 2);
+
       const alcoveShape: RectangularShape = {
         type: "rectangular",
         center: { x: worldX, z: worldZ },
         width: ALCOVE_WIDTH,
         depth: ALCOVE_DEPTH,
-        rotation: wingRotation,
+        rotation: alcoveRotation,
       };
 
       alcoves.push({

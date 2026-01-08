@@ -8,7 +8,7 @@
 
 import { injectable } from "inversify";
 import type { Room, DoorwayOpening } from "../../domain/models/Room";
-import type { Doorway } from "../../domain/models/doorway";
+import type { Doorway, DoorwayCorridor } from "../../domain/models/doorway";
 import type { WallSegment, ExhibitSlot } from "../../domain/models/GalleryLayout";
 import type { WallCollider } from "../../domain/models/WallCollider";
 import { createWallCollider } from "../../domain/models/WallCollider";
@@ -20,6 +20,7 @@ import {
   FRAME_HEIGHT,
   FRAME_CENTER_Y,
   WALL_THICKNESS,
+  WALL_HEIGHT,
 } from "../../domain/constants/gallery-dimensions";
 
 // =============================================================================
@@ -43,22 +44,115 @@ interface GeneratedGeometry {
 @injectable()
 export class RoomGeometryGenerator {
   /**
-   * Generate wall segments and colliders from rooms
+   * Generate wall segments and colliders from rooms and corridors
    */
   generateFromRooms(
     rooms: readonly Room[],
-    doorways: readonly Doorway[]
+    doorways: readonly Doorway[],
+    corridors: readonly DoorwayCorridor[] = []
   ): GeneratedGeometry {
     const allWalls: WallSegment[] = [];
     const allColliders: WallCollider[] = [];
 
+    // Generate room walls
     for (const room of rooms) {
       const { walls, colliders } = this.generateRoomGeometry(room, doorways);
       allWalls.push(...walls);
       allColliders.push(...colliders);
     }
 
+    // Generate corridor walls to bridge room gaps
+    for (const corridor of corridors) {
+      const { walls, colliders } = this.generateCorridorGeometry(corridor);
+      allWalls.push(...walls);
+      allColliders.push(...colliders);
+    }
+
+    console.debug(
+      `[RoomGeometryGenerator] Generated ${allWalls.length} walls, ` +
+      `${allColliders.length} colliders (including ${corridors.length} corridors)`
+    );
+
     return { walls: allWalls, colliders: allColliders };
+  }
+
+  /**
+   * Generate walls for a corridor connecting two rooms
+   */
+  private generateCorridorGeometry(corridor: DoorwayCorridor): GeneratedGeometry {
+    const walls: WallSegment[] = [];
+    const colliders: WallCollider[] = [];
+
+    // Calculate corridor direction and length
+    const dx = corridor.endPoint.x - corridor.startPoint.x;
+    const dz = corridor.endPoint.z - corridor.startPoint.z;
+    const length = Math.sqrt(dx * dx + dz * dz);
+
+    // Skip if corridor is too short
+    if (length < 10) {
+      return { walls, colliders };
+    }
+
+    // Normalize direction
+    const dirX = dx / length;
+    const dirZ = dz / length;
+
+    // Perpendicular vector for wall placement (90° rotation)
+    const perpX = -dirZ;
+    const perpZ = dirX;
+
+    // Half width for wall offset
+    const halfWidth = corridor.width / 2;
+
+    // Left wall: from startPoint+perp*halfWidth to endPoint+perp*halfWidth
+    const leftStart: Point2D = {
+      x: corridor.startPoint.x + perpX * halfWidth,
+      z: corridor.startPoint.z + perpZ * halfWidth,
+    };
+    const leftEnd: Point2D = {
+      x: corridor.endPoint.x + perpX * halfWidth,
+      z: corridor.endPoint.z + perpZ * halfWidth,
+    };
+
+    // Right wall: from startPoint-perp*halfWidth to endPoint-perp*halfWidth
+    const rightStart: Point2D = {
+      x: corridor.startPoint.x - perpX * halfWidth,
+      z: corridor.startPoint.z - perpZ * halfWidth,
+    };
+    const rightEnd: Point2D = {
+      x: corridor.endPoint.x - perpX * halfWidth,
+      z: corridor.endPoint.z - perpZ * halfWidth,
+    };
+
+    // Create left wall segment
+    const leftWallId = `${corridor.id}-wall-left`;
+    walls.push({
+      id: leftWallId,
+      startPos: leftStart,
+      endPos: leftEnd,
+      height: corridor.height,
+      thickness: WALL_THICKNESS,
+      exhibitSlots: [], // Corridors don't have exhibits
+      roomId: undefined, // Corridors are between rooms
+      hasDoorway: false,
+    });
+    colliders.push(createWallCollider(leftWallId, leftStart, leftEnd, corridor.id, false));
+
+    // Create right wall segment
+    const rightWallId = `${corridor.id}-wall-right`;
+    walls.push({
+      id: rightWallId,
+      startPos: rightStart,
+      endPos: rightEnd,
+      height: corridor.height,
+      thickness: WALL_THICKNESS,
+      exhibitSlots: [], // Corridors don't have exhibits
+      roomId: undefined, // Corridors are between rooms
+      hasDoorway: false,
+    });
+    colliders.push(createWallCollider(rightWallId, rightStart, rightEnd, corridor.id, false));
+
+    return { walls, colliders };
   }
 
   /**

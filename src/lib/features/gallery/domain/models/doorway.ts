@@ -58,6 +58,122 @@ export interface Doorway {
 }
 
 // =============================================================================
+// Corridor Style
+// =============================================================================
+
+/**
+ * Visual style of the corridor connecting two rooms
+ */
+export type CorridorStyle =
+  | "grand_passage" // Full corridor with walls, floor, ceiling - for major connections
+  | "archway" // Decorative arch threshold - for medium connections
+  | "simple"; // Minimal geometry - just seal the gap
+
+// =============================================================================
+// Doorway Corridor
+// =============================================================================
+
+/**
+ * Physical corridor geometry connecting two rooms.
+ *
+ * Generated from a Doorway definition, this represents the actual 3D geometry
+ * that bridges the gap between two rooms. While Doorway is conceptual (defines
+ * the connection), DoorwayCorridor is physical (defines the geometry).
+ *
+ * This solves the "hallucinated museum" problem where rooms were positioned
+ * with gaps between them and no bridging geometry.
+ */
+export interface DoorwayCorridor {
+  /** Unique identifier */
+  readonly id: string;
+
+  /** The doorway this corridor implements */
+  readonly doorwayId: string;
+
+  /** Start position - edge of room A where corridor begins */
+  readonly startPoint: Point2D;
+
+  /** End position - edge of room B where corridor ends */
+  readonly endPoint: Point2D;
+
+  /** Width of the corridor (matches doorway width) */
+  readonly width: number;
+
+  /** Height of the corridor (matches doorway height) */
+  readonly height: number;
+
+  /** Visual style for rendering */
+  readonly style: CorridorStyle;
+
+  /** ID of the room at the start point */
+  readonly roomAId: string;
+
+  /** ID of the room at the end point */
+  readonly roomBId: string;
+}
+
+// =============================================================================
+// Corridor Creation Helpers
+// =============================================================================
+
+/**
+ * Create a corridor from a doorway and calculated edge points
+ */
+export function createCorridor(
+  doorway: Doorway,
+  startPoint: Point2D,
+  endPoint: Point2D
+): DoorwayCorridor {
+  // Determine corridor style from doorway style
+  const style: CorridorStyle =
+    doorway.style === "grand_entrance"
+      ? "grand_passage"
+      : doorway.style === "archway"
+        ? "archway"
+        : "simple";
+
+  return {
+    id: `corridor-${doorway.id}`,
+    doorwayId: doorway.id,
+    startPoint,
+    endPoint,
+    width: doorway.width,
+    height: doorway.height,
+    style,
+    roomAId: doorway.roomAId,
+    roomBId: doorway.roomBId,
+  };
+}
+
+/**
+ * Calculate the length of a corridor
+ */
+export function getCorridorLength(corridor: DoorwayCorridor): number {
+  const dx = corridor.endPoint.x - corridor.startPoint.x;
+  const dz = corridor.endPoint.z - corridor.startPoint.z;
+  return Math.sqrt(dx * dx + dz * dz);
+}
+
+/**
+ * Calculate the center point of a corridor
+ */
+export function getCorridorCenter(corridor: DoorwayCorridor): Point2D {
+  return {
+    x: (corridor.startPoint.x + corridor.endPoint.x) / 2,
+    z: (corridor.startPoint.z + corridor.endPoint.z) / 2,
+  };
+}
+
+/**
+ * Calculate the rotation angle of a corridor (radians)
+ */
+export function getCorridorRotation(corridor: DoorwayCorridor): number {
+  const dx = corridor.endPoint.x - corridor.startPoint.x;
+  const dz = corridor.endPoint.z - corridor.startPoint.z;
+  return Math.atan2(dx, dz);
+}
+
+// =============================================================================
 // Doorway Creation Helpers
 // =============================================================================
 
