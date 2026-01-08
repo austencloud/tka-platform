@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     selectedCount: number;
@@ -37,15 +37,15 @@
     <div class="selection-info">
       <div class="count-badge">
         <span class="count">{selectedCount}</span>
-        <span class="label">{m.library_selected()}</span>
+        <span class="label">{t("library_selected")}</span>
       </div>
       <div class="selection-controls">
         <button class="link-btn" onclick={onSelectAll}>
-          {m.library_select_all()}
+          {t("library_select_all")}
         </button>
         <span class="divider">·</span>
         <button class="link-btn" onclick={onClearSelection}>
-          {m.library_clear()}
+          {t("library_clear")}
         </button>
       </div>
     </div>
@@ -56,17 +56,17 @@
         class="action-btn delete"
         onclick={onDelete}
         disabled={!hasSelection}
-        title={m.library_delete_selected()}
+        title={t("library_delete_selected")}
       >
         <i class="fas fa-trash" aria-hidden="true"></i>
-        <span class="btn-label">{m.common_delete()}</span>
+        <span class="btn-label">{t("common_delete")}</span>
       </button>
     </div>
 
     <!-- Right: Done button -->
     <button class="done-btn" onclick={onExit}>
       <i class="fas fa-check" aria-hidden="true"></i>
-      <span>{m.library_done()}</span>
+      <span>{t("library_done")}</span>
     </button>
   </div>
 </div>

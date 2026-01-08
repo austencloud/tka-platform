@@ -11,7 +11,7 @@
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import type { Composition } from "$lib/features/compose/compose/domain/types";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // TODO: Replace with actual composition storage service
   let compositions = $state<Composition[]>([]);
@@ -70,33 +70,33 @@
   {#if !isAuthenticated}
     <PanelState
       type="info"
-      title={m.library_sign_in_required()}
-      message={m.library_sign_in_compositions()}
+      title={t("library_sign_in_required")}
+      message={t("library_sign_in_compositions")}
     />
   {:else if isLoading}
-    <PanelState type="loading" message={m.library_loading_compositions()} />
+    <PanelState type="loading" message={t("library_loading_compositions")} />
   {:else if error}
-    <PanelState type="error" title={m.common_error()} message={error} />
+    <PanelState type="error" title={t("common_error")} message={error} />
   {:else}
     <!-- Header with create button -->
     <div class="header">
-      <h2>{m.library_my_compositions()}</h2>
+      <h2>{t("library_my_compositions")}</h2>
       <PanelButton variant="primary" onclick={handleCreateComposition}>
         <i class="fas fa-plus" aria-hidden="true"></i>
-        {m.library_new_composition()}
+        {t("library_new_composition")}
       </PanelButton>
     </div>
 
     {#if compositions.length === 0}
       <div class="empty-state">
         <i class="fas fa-layer-group" aria-hidden="true"></i>
-        <h3>{m.library_no_compositions()}</h3>
+        <h3>{t("library_no_compositions")}</h3>
         <p>
-          {m.library_create_compositions_desc()}
+          {t("library_create_compositions_desc")}
         </p>
         <PanelButton variant="primary" onclick={handleCreateComposition}>
           <i class="fas fa-plus" aria-hidden="true"></i>
-          {m.library_create_first_composition()}
+          {t("library_create_first_composition")}
         </PanelButton>
       </div>
     {:else}

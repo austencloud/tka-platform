@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { LibrarySequence } from "../domain/models/LibrarySequence";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     sequences: LibrarySequence[];
@@ -48,7 +48,7 @@
     <div class="title-section">
       <h1 class="title">
         <i class="fas fa-layer-group" aria-hidden="true"></i>
-        {m.library_my_library()}
+        {t("library_my_library")}
       </h1>
       {#if stats().total > 0}
         <p class="subtitle">
@@ -72,7 +72,7 @@
             </span>
           {/if}
           {#if stats().totalViews === 0 && stats().totalForks === 0 && stats().totalStars === 0}
-            <span class="no-engagement">{m.library_no_engagement()}</span>
+            <span class="no-engagement">{t("library_no_engagement")}</span>
           {/if}
         </p>
       {/if}
@@ -83,14 +83,14 @@
         class="organize-btn"
         class:active={isOrganizing}
         onclick={onOrganize}
-        aria-label={isOrganizing ? m.library_done_organizing() : m.library_organize_sequences()}
+        aria-label={isOrganizing ? t("library_done_organizing") : t("library_organize_sequences")}
       >
         {#if isOrganizing}
           <i class="fas fa-check" aria-hidden="true"></i>
-          <span>{m.action_done()}</span>
+          <span>{t("action_done")}</span>
         {:else}
           <i class="fas fa-tasks" aria-hidden="true"></i>
-          <span>{m.library_organize()}</span>
+          <span>{t("library_organize")}</span>
         {/if}
       </button>
     {/if}

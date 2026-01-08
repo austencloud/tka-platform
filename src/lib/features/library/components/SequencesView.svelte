@@ -36,7 +36,7 @@
     type GroupByMethod,
     type LibrarySection,
   } from "../utils/section-grouper";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Local UI state
   let showOnlyFavorites = $state(false);
@@ -348,7 +348,7 @@
       <i class="fas fa-search search-icon" aria-hidden="true"></i>
       <input
         type="text"
-        placeholder={m.library_search_placeholder()}
+        placeholder={t("library_search_placeholder")}
         value={searchQuery}
         oninput={handleSearchInput}
         class="search-input"
@@ -356,7 +356,7 @@
       {#if searchQuery}
         <button
           class="clear-search"
-          aria-label={m.library_clear_search()}
+          aria-label={t("library_clear_search")}
           onclick={() => {
             searchQuery = "";
             libraryState.setSearchQuery("");
@@ -373,18 +373,18 @@
       {#if !isSelectMode}
         <button
           class="action-btn"
-          aria-label={m.library_select_sequences()}
+          aria-label={t("library_select_sequences")}
           onclick={enterSelectMode}
-          title={m.action_select()}
+          title={t("action_select")}
         >
           <i class="fas fa-check-square" aria-hidden="true"></i>
         </button>
       {:else}
         <button
           class="action-btn active"
-          aria-label={m.library_exit_selection()}
+          aria-label={t("library_exit_selection")}
           onclick={exitSelectMode}
-          title={m.action_done()}
+          title={t("action_done")}
         >
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
@@ -397,9 +397,9 @@
     <div class="filter-bar-left">
       <div class="sequence-count">
         {#if showOnlyFavorites}
-          <span>{m.library_favorites_count({ count: favoritesCount.toString() })}</span>
+          <span>{t("library_favorites_count", { count: favoritesCount.toString() })}</span>
         {:else}
-          <span>{m.library_sequences_count({ count: totalCount.toString() })}</span>
+          <span>{t("library_sequences_count", { count: totalCount.toString() })}</span>
         {/if}
       </div>
 
@@ -410,14 +410,14 @@
   <div class="controls-bar">
     <!-- Group By chips -->
     <div class="control-group">
-      <span class="control-label">{m.library_group_by()}</span>
+      <span class="control-label">{t("library_group_by")}</span>
       <div class="control-chips">
         <button
           class="control-chip"
           class:active={groupBy === "none"}
           onclick={() => (groupBy = "none")}
         >
-          {m.library_group_none()}
+          {t("library_group_none")}
         </button>
         <button
           class="control-chip"
@@ -425,7 +425,7 @@
           onclick={() => (groupBy = "date")}
         >
           <i class="fas fa-calendar" aria-hidden="true"></i>
-          {m.library_group_date()}
+          {t("library_group_date")}
         </button>
         <button
           class="control-chip"
@@ -433,7 +433,7 @@
           onclick={() => (groupBy = "letter")}
         >
           <i class="fas fa-font" aria-hidden="true"></i>
-          {m.library_group_letter()}
+          {t("library_group_letter")}
         </button>
         <button
           class="control-chip"
@@ -441,14 +441,14 @@
           onclick={() => (groupBy = "length")}
         >
           <i class="fas fa-ruler" aria-hidden="true"></i>
-          {m.library_group_length()}
+          {t("library_group_length")}
         </button>
       </div>
     </div>
 
     <!-- Sort chips -->
     <div class="control-group">
-      <span class="control-label">{m.library_sort_by()}</span>
+      <span class="control-label">{t("library_sort_by")}</span>
       <div class="control-chips">
         <button
           class="control-chip"
@@ -456,7 +456,7 @@
           onclick={() => handleSortChange("updatedAt", "desc")}
         >
           <i class="fas fa-clock" aria-hidden="true"></i>
-          {m.library_sort_updated()}
+          {t("library_sort_updated")}
         </button>
         <button
           class="control-chip"
@@ -464,7 +464,7 @@
           onclick={() => handleSortChange("createdAt", "desc")}
         >
           <i class="fas fa-calendar-plus" aria-hidden="true"></i>
-          {m.library_sort_created()}
+          {t("library_sort_created")}
         </button>
         <button
           class="control-chip"
@@ -480,14 +480,14 @@
           onclick={() => handleSortChange("viewCount", "desc")}
         >
           <i class="fas fa-eye" aria-hidden="true"></i>
-          {m.library_views()}
+          {t("library_views")}
         </button>
       </div>
       <!-- Direction toggle -->
       <button
         class="direction-chip"
         onclick={() => libraryState.toggleSortDirection()}
-        aria-label={libraryState.filters.sortDirection === "asc" ? m.library_sort_ascending() : m.library_sort_descending()}
+        aria-label={libraryState.filters.sortDirection === "asc" ? t("library_sort_ascending") : t("library_sort_descending")}
       >
         {#if libraryState.filters.sortDirection === "asc"}
           <i class="fas fa-arrow-up" aria-hidden="true"></i>
@@ -512,7 +512,7 @@
   {#if isSelectMode}
     <div class="selection-hint">
       <i class="fas fa-info-circle" aria-hidden="true"></i>
-      <span>{m.library_tap_to_select()}</span>
+      <span>{t("library_tap_to_select")}</span>
     </div>
   {/if}
 
@@ -521,8 +521,8 @@
     {#if !isAuthenticated}
       <div class="auth-required">
         <i class="fas fa-lock" aria-hidden="true"></i>
-        <h3>{m.library_sign_in_required()}</h3>
-        <p>{m.library_sign_in_message()}</p>
+        <h3>{t("library_sign_in_required")}</h3>
+        <p>{t("library_sign_in_message")}</p>
       </div>
     {:else if isLoading}
       <div
@@ -532,19 +532,19 @@
         aria-busy="true"
       >
         <div class="spinner" aria-hidden="true"></div>
-        <p>{m.library_loading_library()}</p>
+        <p>{t("library_loading_library")}</p>
       </div>
     {:else if error}
       <div class="error-state" role="alert" aria-live="assertive">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        <h3>{m.library_error_loading_sequences()}</h3>
+        <h3>{t("library_error_loading_sequences")}</h3>
         <p>{error}</p>
         <button
           class="retry-button"
           onclick={() => libraryState.loadSequences()}
         >
           <i class="fas fa-redo" aria-hidden="true"></i>
-          {m.action_retry()}
+          {t("action_retry")}
         </button>
       </div>
     {:else if displayedSequences().length === 0}
@@ -552,20 +552,20 @@
         <i class="fas fa-folder-open" aria-hidden="true"></i>
         <h3>
           {#if searchQuery}
-            {m.library_no_results()}
+            {t("library_no_results")}
           {:else if showOnlyFavorites}
-            {m.library_no_favorites()}
+            {t("library_no_favorites")}
           {:else}
-            {m.library_empty()}
+            {t("library_empty")}
           {/if}
         </h3>
         <p>
           {#if searchQuery}
-            {m.library_try_different_search()}
+            {t("library_try_different_search")}
           {:else if showOnlyFavorites}
-            {m.library_star_sequences()}
+            {t("library_star_sequences")}
           {:else}
-            {m.library_create_first()}
+            {t("library_create_first")}
           {/if}
         </p>
       </div>
