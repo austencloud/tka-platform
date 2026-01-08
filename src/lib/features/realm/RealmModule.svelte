@@ -1,46 +1,42 @@
 <script lang="ts">
   /**
-   * RealmModule
+   * RealmModule - Unified 3D Destination Hub
    *
-   * Container for 3D experiences - Stage (avatar viewer) and Museum (gallery walkthrough).
-   * Handles tab navigation between the two experiences.
+   * Visual destination picker for all 3D experiences (Stage, Gallery, Worlds, etc.).
+   * Shows grid of cards with live 3D previews.
+   * ESC returns to picker from any destination.
+   *
+   * Replaces the old tab-based navigation with a scalable destination system.
    */
 
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { REALM_TABS } from "$lib/shared/navigation/config/tab-definitions";
+  import { destinationManager } from "$lib/shared/3d-core/destinations/destination-manager.svelte";
+  import DestinationPicker from "./components/DestinationPicker.svelte";
+  import DestinationRenderer from "./components/DestinationRenderer.svelte";
 
-  // Lazy load the tab content
-  const tabLoaders = {
-    stage: () => import("$lib/shared/3d-animation/Viewer3DModule.svelte"),
-    museum: () => import("../gallery/GalleryModule.svelte"),
-  };
+  // Current destination state
+  const currentDestinationId = $derived(destinationManager.currentDestinationId);
+  const isPickerActive = $derived(destinationManager.isPickerActive());
 
-  // Get current tab, default to stage
-  let currentTab = $derived(navigationState.activeTab || "stage");
+  function handleDestinationSelect(destinationId: string) {
+    destinationManager.navigateTo(destinationId);
+  }
 
-  // Load the active tab component
-  let tabPromise = $derived(
-    tabLoaders[currentTab as keyof typeof tabLoaders]?.() ||
-      tabLoaders.stage()
-  );
+  function handleReturn() {
+    destinationManager.returnToPicker();
+  }
 </script>
 
 <div class="realm-module">
-  {#key currentTab}
-    {#await tabPromise}
-      <div class="loading">
-        <div class="spinner"></div>
-        <p>Loading {currentTab}...</p>
-      </div>
-    {:then module}
-      <svelte:component this={module.default} />
-    {:catch error}
-      <div class="error">
-        <p>Failed to load {currentTab}</p>
-        <p class="details">{error?.message}</p>
-      </div>
-    {/await}
-  {/key}
+  {#if isPickerActive}
+    <!-- Show destination picker -->
+    <DestinationPicker onSelect={handleDestinationSelect} />
+  {:else if currentDestinationId}
+    <!-- Show active destination -->
+    <DestinationRenderer
+      destinationId={currentDestinationId}
+      onReturn={handleReturn}
+    />
+  {/if}
 </div>
 
 <style>
