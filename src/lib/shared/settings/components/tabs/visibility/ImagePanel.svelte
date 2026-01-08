@@ -3,10 +3,11 @@
 
   Settings panel for image export visibility options.
   Controls what elements are included in exported images.
+  Shows simulated export layout with smooth fade transitions
+  for each visibility toggle.
 -->
 <script lang="ts">
-  import ImageExportPreview from "./ImageExportPreview.svelte";
-  import { exampleBeatData } from "./example-data";
+  import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
 
   interface Props {
     addWord: boolean;
@@ -18,6 +19,10 @@
     showNotes: boolean;
     showBirthday: boolean;
     customNotesText: string;
+    // Dark mode
+    darkMode: boolean;
+    // Pictograph visibility callbacks for fade transitions
+    onPictographToggle: (key: string) => void;
     onToggle: (key: string) => void;
     onCustomNotesChange: (value: string) => void;
     isMobileHidden?: boolean;
@@ -32,6 +37,8 @@
     showNotes,
     showBirthday,
     customNotesText,
+    darkMode,
+    onPictographToggle,
     onToggle,
     onCustomNotesChange,
     isMobileHidden = false,
@@ -50,7 +57,23 @@
   </header>
 
   <div class="preview-frame image-preview">
-    <ImageExportPreview beatData={exampleBeatData} />
+    <ImageExportPreviewLayered
+      showWord={addWord}
+      showBeatNumbers={addBeatNumbers}
+      showDifficultyLevel={addDifficultyLevel}
+      {includeStartPosition}
+      {showCreatorName}
+      {showNotes}
+      {showBirthday}
+      {customNotesText}
+      {darkMode}
+      onToggleTKA={() => onPictographToggle("tka")}
+      onToggleVTG={() => onPictographToggle("vtg")}
+      onToggleElemental={() => onPictographToggle("elemental")}
+      onTogglePositions={() => onPictographToggle("positions")}
+      onToggleReversals={() => onPictographToggle("reversals")}
+      onToggleNonRadial={() => onPictographToggle("nonRadial")}
+    />
   </div>
 
   <div class="panel-controls">
@@ -99,6 +122,21 @@
           onclick={() => onToggle("birthday")}
           title="Birthday date">🎂</button
         >
+      </div>
+    </div>
+
+    <div class="control-group">
+      <span class="group-label">Theme</span>
+      <div class="toggle-grid theme-toggle">
+        <button
+          class="toggle-btn dark-mode-btn"
+          class:active={darkMode}
+          onclick={() => onToggle("darkMode")}
+          title="Dark mode"
+          aria-pressed={darkMode}
+        >
+          {darkMode ? "🌙 Dark" : "☀️ Light"}
+        </button>
       </div>
     </div>
 
@@ -202,6 +240,20 @@
     aspect-ratio: 1;
     max-width: 280px;
     box-shadow: inset 0 2px 8px var(--theme-shadow);
+  }
+
+  /* Make pictograph fill the preview frame */
+  .preview-frame :global(.pictograph-with-visibility),
+  .preview-frame :global(.pictograph) {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .preview-frame :global(svg.pictograph) {
+    width: 100% !important;
+    height: 100% !important;
   }
 
   .panel-controls {
@@ -370,6 +422,15 @@
   .birthday-btn {
     font-size: clamp(16px, 3cqi, 20px);
     line-height: 1;
+  }
+
+  /* Theme toggle - single full-width button */
+  .theme-toggle {
+    grid-template-columns: 1fr;
+  }
+
+  .dark-mode-btn {
+    font-size: var(--font-size-compact);
   }
 
   /* Notes input */

@@ -9,6 +9,7 @@
  */
 
 import type { AppSettings } from "../../../settings/domain/AppSettings";
+import type { ISettingsState } from "../../../settings/services/contracts/ISettingsState";
 import { MotionColor } from "../domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { browser } from "$app/environment";
@@ -16,11 +17,9 @@ import { browser } from "$app/environment";
 const debug = createComponentLogger("VisibilityManager");
 
 // Lazy import to avoid circular dependencies
-// Using 'any' for the service type to avoid complex generic constraints
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let settingsServiceInstance: any = null;
+let settingsServiceInstance: ISettingsState | null = null;
 
-async function getSettingsService() {
+async function getSettingsService(): Promise<ISettingsState | null> {
   if (!browser) return null;
   if (!settingsServiceInstance) {
     const { settingsService } =

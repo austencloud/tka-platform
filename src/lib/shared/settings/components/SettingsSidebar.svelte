@@ -4,7 +4,11 @@
   import { resolve } from "../../inversify/di";
   import { TYPES } from "../../inversify/types";
   import { onMount } from "svelte";
-  import { translateSettingsTab } from "$lib/paraglide/translate";
+  import { translateSettingsTab } from "$lib/shared/i18n/translate";
+  import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
+
+  // Reactive locale for re-rendering translations
+  const locale = $derived(getReactiveLocale());
 
   interface Tab {
     id: string;
@@ -78,6 +82,7 @@
       </div>
     {:else}
       <!-- Icon-above-text pattern (3-5 tabs) - Current implementation -->
+      {#key locale}
       {#each tabs as tab}
         {@const translatedLabel = translateSettingsTab(tab.id)}
         <button
@@ -93,6 +98,7 @@
           <span class="sidebar-label">{translatedLabel}</span>
         </button>
       {/each}
+      {/key}
     {/if}
   </nav>
 </aside>

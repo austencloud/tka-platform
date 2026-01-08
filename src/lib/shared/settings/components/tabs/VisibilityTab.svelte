@@ -54,7 +54,6 @@
   // Animation visibility state
   let animGridVisible = $state(true);
   let animBeatNumbersVisible = $state(true);
-  let animArmsVisible = $state(false);
   let animTrailStyle = $state<TrailStyle>("subtle");
   let animPlaybackMode = $state<PlaybackMode>("continuous");
   let animBpm = $state(60);
@@ -71,6 +70,7 @@
   let imgShowNotes = $state(true);
   let imgShowBirthday = $state(true);
   let imgCustomNotesText = $state("Created using TKA Scribe");
+  let imgDarkMode = $state(false);
 
   // Haptics
   let hapticService: IHapticFeedback | null = null;
@@ -163,10 +163,6 @@
           animWordHeaderVisible
         );
         break;
-      case "arms":
-        animArmsVisible = !animArmsVisible;
-        animationVisibilityManager.setVisibility("arms", animArmsVisible);
-        break;
     }
   }
 
@@ -221,6 +217,10 @@
         imgShowBirthday = !imgShowBirthday;
         imageCompositionManager.setShowBirthday(imgShowBirthday);
         break;
+      case "darkMode":
+        imgDarkMode = !imgDarkMode;
+        imageCompositionManager.setDarkMode(imgDarkMode);
+        break;
     }
   }
 
@@ -250,7 +250,6 @@
     animGridVisible = animationVisibilityManager.isGridVisible();
     animBeatNumbersVisible =
       animationVisibilityManager.getVisibility("beatNumbers");
-    animArmsVisible = animationVisibilityManager.getVisibility("arms");
     animTrailStyle = animationVisibilityManager.getTrailStyle();
     animPlaybackMode = animationVisibilityManager.getPlaybackMode();
     animBpm = animationVisibilityManager.getBpm();
@@ -268,6 +267,7 @@
     imgShowNotes = imageCompositionManager.showNotes;
     imgShowBirthday = imageCompositionManager.showBirthday;
     imgCustomNotesText = imageCompositionManager.customNotesText;
+    imgDarkMode = imageCompositionManager.darkMode;
 
     // Observers for external changes
     const pictographObserver = () => {
@@ -288,7 +288,6 @@
       animGridVisible = animationVisibilityManager.isGridVisible();
       animBeatNumbersVisible =
         animationVisibilityManager.getVisibility("beatNumbers");
-      animArmsVisible = animationVisibilityManager.getVisibility("arms");
       animTrailStyle = animationVisibilityManager.getTrailStyle();
       animPlaybackMode = animationVisibilityManager.getPlaybackMode();
       animBpm = animationVisibilityManager.getBpm();
@@ -308,6 +307,7 @@
       imgShowNotes = imageCompositionManager.showNotes;
       imgShowBirthday = imageCompositionManager.showBirthday;
       imgCustomNotesText = imageCompositionManager.customNotesText;
+      imgDarkMode = imageCompositionManager.darkMode;
     };
 
     visibilityManager.registerObserver(pictographObserver, ["all"]);
@@ -352,7 +352,6 @@
     <AnimationPanel
       gridVisible={animGridVisible}
       beatNumbersVisible={animBeatNumbersVisible}
-      armsVisible={animArmsVisible}
       trailStyle={animTrailStyle}
       playbackMode={animPlaybackMode}
       bpm={animBpm}
@@ -374,6 +373,8 @@
       showNotes={imgShowNotes}
       showBirthday={imgShowBirthday}
       customNotesText={imgCustomNotesText}
+      darkMode={imgDarkMode}
+      onPictographToggle={handlePictographToggle}
       onToggle={handleImageToggle}
       onCustomNotesChange={handleCustomNotesChange}
       isMobileHidden={mobileMode !== "image"}
