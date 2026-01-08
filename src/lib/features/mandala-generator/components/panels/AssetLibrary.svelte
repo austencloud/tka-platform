@@ -108,6 +108,67 @@
   // Staff SVG cache
   let staffSvgCache = $state<Map<string, string>>(new Map());
 
+  // CSS class to fill color mapping (parsed from sprite's style block)
+  let cssClassToFill = $state<Map<string, string>>(new Map());
+
+  /**
+   * Parse CSS style block to extract class->fill color mappings
+   * e.g., ".st0{fill:#2E3192;}" -> { "st0": "#2E3192" }
+   */
+  function parseStyleBlock(doc: Document, rawSvgText: string): Map<string, string> {
+    const classToFill = new Map<string, string>();
+    const fillRegex = /\.([a-zA-Z0-9_-]+)\s*\{\s*fill\s*:\s*(#[0-9A-Fa-f]{3,6})\s*;?\s*\}/g;
+
+    // Try DOM-based parsing first
+    const styleElements = doc.querySelectorAll("style");
+    styleElements.forEach((style) => {
+      const cssText = style.textContent || "";
+      let match;
+      while ((match = fillRegex.exec(cssText)) !== null) {
+        if (match[1] && match[2]) {
+          classToFill.set(match[1], match[2]);
+        }
+      }
+    });
+
+    // Fallback: parse style from raw text if DOM parsing found nothing
+    if (classToFill.size === 0 && rawSvgText) {
+      const styleMatch = rawSvgText.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      if (styleMatch && styleMatch[1]) {
+        const cssText = styleMatch[1];
+        fillRegex.lastIndex = 0; // Reset regex state
+        let match;
+        while ((match = fillRegex.exec(cssText)) !== null) {
+          if (match[1] && match[2]) {
+            classToFill.set(match[1], match[2]);
+          }
+        }
+      }
+    }
+
+    return classToFill;
+  }
+
+  /**
+   * Inline CSS fill classes as direct fill attributes
+   * Replaces class="st0" with fill="#2E3192" based on the style block mapping
+   */
+  function inlineCssFills(content: string, classToFill: Map<string, string>): string {
+    let result = content;
+
+    classToFill.forEach((fillColor, className) => {
+      // Replace class="className" with fill="color"
+      const classRegex = new RegExp(`class="${className}"`, "g");
+      result = result.replace(classRegex, `fill="${fillColor}"`);
+
+      // Handle class='className' (single quotes)
+      const classRegexSingle = new RegExp(`class='${className}'`, "g");
+      result = result.replace(classRegexSingle, `fill="${fillColor}"`);
+    });
+
+    return result;
+  }
+
   /**
    * Calculate bounding box from an SVG path d attribute
    */
@@ -140,6 +201,7 @@
   /**
    * Load the arrow sprite and extract all arrow groups
    * The sprite uses <g id="..."> elements (groups) not <symbol> elements
+   * CSS classes are inlined as fill attributes for color transformation to work
    */
   async function loadArrowSprite(): Promise<void> {
     if (spriteLoaded) return;
@@ -151,6 +213,15 @@
 
       // Parse sprite and extract groups with IDs (arrows are stored as <g id="...">)
       const doc = new DOMParser().parseFromString(spriteText, "image/svg+xml");
+
+      // Parse CSS style block to get class->fill mappings
+      // This inlines fills like .st0{fill:#2E3192;} so color transformation works
+      const classToFill = parseStyleBlock(doc, spriteText);
+      cssClassToFill = classToFill;
+
+      if (classToFill.size > 0) {
+        console.log(`Arrow sprite: parsed ${classToFill.size} CSS fill classes`);
+      }
 
       // Select all direct child groups with IDs (these are our arrows)
       const groups = doc.querySelectorAll("svg > g[id]");
@@ -187,8 +258,9 @@
         // Create viewBox from calculated bounds
         const viewBox = `${minX} ${minY} ${width} ${height}`;
 
-        // Inner content - get the path elements without the group's transform
-        const innerContent = group.innerHTML.trim();
+        // Inner content - inline CSS fills so color transformation works
+        const rawContent = group.innerHTML.trim();
+        const innerContent = inlineCssFills(rawContent, classToFill);
 
         newSymbols.set(id, { viewBox, innerContent });
 
@@ -270,17 +342,24 @@
 
   /**
    * Apply color to SVG content
+   * Handles both 3-digit and 6-digit hex colors in various formats
    */
   function colorSvg(svgText: string, color: string): string {
     if (!svgText) return "";
+
     // Replace fill colors with the selected color
-    // Also handle style attribute fills
+    // Handle 3-digit and 6-digit hex in both quote styles and CSS format
     return svgText
-      .replace(/fill="#[0-9a-fA-F]{6}"/g, `fill="${color}"`)
-      .replace(/fill='#[0-9a-fA-F]{6}'/g, `fill='${color}'`)
-      .replace(/fill:#[0-9a-fA-F]{6}/g, `fill:${color}`)
-      .replace(/stroke="#[0-9a-fA-F]{6}"/g, `stroke="${color}"`)
-      .replace(/stroke='#[0-9a-fA-F]{6}'/g, `stroke='${color}'`);
+      // fill="#XXXXXX" or fill="#XXX" (double quotes)
+      .replace(/fill="#[0-9a-fA-F]{3,6}"/g, `fill="${color}"`)
+      // fill='#XXXXXX' or fill='#XXX' (single quotes)
+      .replace(/fill='#[0-9a-fA-F]{3,6}'/g, `fill='${color}'`)
+      // fill:#XXXXXX or fill:#XXX (CSS style)
+      .replace(/fill:\s*#[0-9a-fA-F]{3,6}/g, `fill:${color}`)
+      // stroke="#XXXXXX" (double quotes)
+      .replace(/stroke="#[0-9a-fA-F]{3,6}"/g, `stroke="${color}"`)
+      // stroke='#XXXXXX' (single quotes)
+      .replace(/stroke='#[0-9a-fA-F]{3,6}'/g, `stroke='${color}'`);
   }
 
   /**
