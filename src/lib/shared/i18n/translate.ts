@@ -38,3 +38,21 @@ export function translateSettingsTab(tabId: string): string {
   }
   return tabId;
 }
+
+/**
+ * Get translated module description by module ID
+ * Falls back to the provided default if no translation exists
+ */
+export function translateModuleDescription(
+  moduleId: string,
+  fallback?: string
+): string {
+  // Convert hyphens to underscores for the message key
+  const normalizedId = moduleId.toLowerCase().replace(/-/g, "_");
+  const key = `module_desc_${normalizedId}` as keyof typeof m;
+  const messageFn = m[key];
+  if (typeof messageFn === "function") {
+    return (messageFn as () => string)();
+  }
+  return fallback || moduleId;
+}
