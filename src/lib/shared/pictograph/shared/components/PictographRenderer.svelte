@@ -38,7 +38,7 @@ Usage:
   import { resolve, tryResolve, TYPES } from "../../../inversify/di";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
   import type { ITurnsTupleGenerator } from "../../arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
-  import { GridMode } from "../../grid/domain/enums/grid-enums";
+  import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import { calculateVTGFromPictograph } from "../domain/utils/vtg-calculator";
 
   // Props - all explicit, no global state dependencies
@@ -54,6 +54,10 @@ Usage:
     showVTG = false,
     showElemental = false,
     showPositions = false,
+    // Hand point visibility (all = show all 8, active = only where props are)
+    handPointVisibility = "all",
+    // Active locations for hand point filtering
+    activeLocations = [],
     // Beat number display
     beatNumber = null,
     showBeatNumber = false,
@@ -87,6 +91,10 @@ Usage:
     showVTG?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
+    /** Hand point visibility mode: "all" shows all 8 points, "active" shows only where props are */
+    handPointVisibility?: "all" | "active";
+    /** Active locations for filtering hand points when in "active" mode */
+    activeLocations?: GridLocation[];
     beatNumber?: number | null;
     showBeatNumber?: boolean;
     previewMode?: boolean;
@@ -235,6 +243,8 @@ Usage:
     <GridSvg
       {gridMode}
       {showNonRadialPoints}
+      {handPointVisibility}
+      {activeLocations}
       {previewMode}
       {darkMode}
       onLoaded={() => {}}
