@@ -109,19 +109,37 @@ const SPECIES_CONFIG: Record<
     hasBioluminescence: false,
     eyeSize: [0.08, 0.1],
     colors: [
+      // Barracuda - silver with dark stripe
       {
-        bodyTop: "#2c3e50",
-        bodyBottom: "#bdc3c7",
-        accent: "#7f8c8d",
+        bodyTop: "#3a4a5c",
+        bodyBottom: "#c0c8d0",
+        accent: "#1a2a3a",
         eye: "#1a1a1a",
-        finTint: "rgba(127, 140, 141, 0.4)",
+        finTint: "rgba(80, 100, 120, 0.5)",
       },
+      // Tuna - metallic blue/silver
       {
-        bodyTop: "#1e4d6b",
-        bodyBottom: "#a8d8ea",
-        accent: "#3498db",
+        bodyTop: "#2255aa",
+        bodyBottom: "#88aacc",
+        accent: "#ffcc00",
         eye: "#0d1f2d",
-        finTint: "rgba(52, 152, 219, 0.4)",
+        finTint: "rgba(34, 85, 170, 0.5)",
+      },
+      // Mahi-mahi - iridescent green/blue
+      {
+        bodyTop: "#00aa55",
+        bodyBottom: "#88ddaa",
+        accent: "#ffdd00",
+        eye: "#003322",
+        finTint: "rgba(0, 170, 85, 0.5)",
+      },
+      // Wahoo - electric blue stripe
+      {
+        bodyTop: "#445566",
+        bodyBottom: "#aabbcc",
+        accent: "#00aaff",
+        eye: "#1a2233",
+        finTint: "rgba(68, 85, 102, 0.5)",
       },
     ],
   },
@@ -134,19 +152,45 @@ const SPECIES_CONFIG: Record<
     hasBioluminescence: true,
     eyeSize: [0.18, 0.24], // Large eyes for deep water
     colors: [
+      // Classic anglerfish - dark with cyan glow
       {
-        bodyTop: "#1a1a2e",
-        bodyBottom: "#2d2d44",
-        accent: "#00fff7",
-        eye: "#00fff7",
-        finTint: "rgba(0, 255, 247, 0.3)",
+        bodyTop: "#0a0a1a",
+        bodyBottom: "#1a1a2a",
+        accent: "#00ffff",
+        eye: "#00ffff",
+        finTint: "rgba(0, 255, 255, 0.4)",
       },
+      // Purple deep sea - violet bioluminescence
       {
-        bodyTop: "#0f0f23",
-        bodyBottom: "#1e1e3f",
-        accent: "#7b68ee",
-        eye: "#9370db",
-        finTint: "rgba(123, 104, 238, 0.3)",
+        bodyTop: "#0f0818",
+        bodyBottom: "#1a1028",
+        accent: "#cc66ff",
+        eye: "#cc66ff",
+        finTint: "rgba(204, 102, 255, 0.4)",
+      },
+      // Green abyss - eerie green glow
+      {
+        bodyTop: "#080f0a",
+        bodyBottom: "#101a12",
+        accent: "#00ff88",
+        eye: "#00ff88",
+        finTint: "rgba(0, 255, 136, 0.4)",
+      },
+      // Pink deep - magenta bioluminescence
+      {
+        bodyTop: "#100810",
+        bodyBottom: "#1a101a",
+        accent: "#ff00ff",
+        eye: "#ff66ff",
+        finTint: "rgba(255, 0, 255, 0.4)",
+      },
+      // Multi-color alien - rainbow spots
+      {
+        bodyTop: "#0a0a14",
+        bodyBottom: "#14142a",
+        accent: "#00ffcc",
+        eye: "#ff66cc",
+        finTint: "rgba(0, 255, 204, 0.4)",
       },
     ],
   },
@@ -159,19 +203,37 @@ const SPECIES_CONFIG: Record<
     hasBioluminescence: false,
     eyeSize: [0.1, 0.12],
     colors: [
+      // Sardines - silver blue shimmer
       {
-        bodyTop: "#5dade2",
-        bodyBottom: "#d4e6f1",
-        accent: "#aed6f1",
+        bodyTop: "#4488bb",
+        bodyBottom: "#c0d8e8",
+        accent: "#ffffff",
         eye: "#1b4f72",
-        finTint: "rgba(93, 173, 226, 0.4)",
+        finTint: "rgba(68, 136, 187, 0.5)",
       },
+      // Anchovies - green tint
       {
-        bodyTop: "#45b39d",
-        bodyBottom: "#d1f2eb",
-        accent: "#a3e4d7",
+        bodyTop: "#558866",
+        bodyBottom: "#b8d8c8",
+        accent: "#ddffee",
         eye: "#145a32",
-        finTint: "rgba(69, 179, 157, 0.4)",
+        finTint: "rgba(85, 136, 102, 0.5)",
+      },
+      // Neon tetras - red stripe
+      {
+        bodyTop: "#3366aa",
+        bodyBottom: "#88bbee",
+        accent: "#ff3333",
+        eye: "#223366",
+        finTint: "rgba(51, 102, 170, 0.5)",
+      },
+      // Golden shiners - gold flash
+      {
+        bodyTop: "#cc9933",
+        bodyBottom: "#ffdd88",
+        accent: "#ffffff",
+        eye: "#664400",
+        finTint: "rgba(204, 153, 51, 0.6)",
       },
     ],
   },

@@ -94,11 +94,11 @@ export class DiscoverEventHandler implements IDiscoverEventHandler {
   }
 
   handleViewDetail(sequence: SequenceData): void {
-    galleryPanelManager.openDetail(sequence);
+    sequencePanelManager.openDetail(sequence);
   }
 
   handleCloseDetailPanel(): void {
-    galleryPanelManager.close();
+    sequencePanelManager.close();
   }
 
   async handleEditSequence(sequence: SequenceData): Promise<void> {

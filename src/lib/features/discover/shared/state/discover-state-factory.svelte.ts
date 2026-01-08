@@ -23,9 +23,9 @@ import type {
 import type { ExploreFilterValue } from "../domain/types/discover-types";
 import type { ISectionManager } from "../services/contracts/ISectionManager";
 import type { ILibraryRepository } from "../../../library/services/contracts/ILibraryRepository";
-import type { GallerySource } from "../state/gallery-source-state.svelte";
+import type { SequenceSource } from "../state/sequence-source-state.svelte";
 import type { IFavoritesManager } from "../services/contracts/IFavoritesManager";
-import { galleryPanelManager } from "../state/gallery-panel-state.svelte";
+import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
 
 const STORAGE_KEY = "tka-discover-gallery-controls";
 
@@ -85,7 +85,7 @@ export function createExploreState() {
 
   // State
   let isLoading = $state(false);
-  let currentSource = $state<GallerySource>("community");
+  let currentSource = $state<SequenceSource>("community");
   let error = $state<string | null>(null);
   let displayedSequences = $state<SequenceData[]>([]);
   let allSequences = $state<SequenceData[]>([]);
@@ -207,7 +207,7 @@ export function createExploreState() {
   }
 
   // Switch source and reload data
-  async function setSource(source: GallerySource): Promise<void> {
+  async function setSource(source: SequenceSource): Promise<void> {
     if (source === currentSource) {
       return;
     }
@@ -291,7 +291,7 @@ export function createExploreState() {
       // Update the active sequence in the panel manager (for detail panel)
       const updatedSequence = allSequences.find((s) => s.id === sequenceId);
       if (updatedSequence) {
-        galleryPanelManager.updateActiveSequence(updatedSequence);
+        sequencePanelManager.updateActiveSequence(updatedSequence);
       }
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
