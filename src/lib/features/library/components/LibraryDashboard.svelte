@@ -15,7 +15,7 @@
     type LibraryViewSection,
   } from "../state/library-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import SequenceCard from "../../discover/gallery/display/components/SequenceCard/SequenceCard.svelte";
+  import SequenceCard from "../../discover/sequences/display/components/SequenceCard/SequenceCard.svelte";
   import type { LibrarySequence } from "../domain/models/LibrarySequence";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { goto } from "$app/navigation";

@@ -16,10 +16,10 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   import { onMount } from "svelte";
-  import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
-  import type { IDiscoverThumbnailProvider } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverThumbnailProvider";
+  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+  import type { IDiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
   import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
-  import SequenceCard from "$lib/features/discover/gallery/display/components/SequenceCard/SequenceCard.svelte";
+  import SequenceCard from "$lib/features/discover/sequences/display/components/SequenceCard/SequenceCard.svelte";
 
   // Props
   let {

@@ -14,7 +14,7 @@
   import { onMount, onDestroy } from "svelte";
   import { libraryState } from "../state/library-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-  import SequenceCard from "../../discover/gallery/display/components/SequenceCard/SequenceCard.svelte";
+  import SequenceCard from "../../discover/sequences/display/components/SequenceCard/SequenceCard.svelte";
   import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";

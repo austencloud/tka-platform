@@ -7,7 +7,7 @@
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-  import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
+  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";

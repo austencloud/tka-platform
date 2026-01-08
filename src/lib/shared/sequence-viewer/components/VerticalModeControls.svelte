@@ -10,7 +10,7 @@
 	import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
 	import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
 	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
-	import { galleryPanelManager } from "$lib/features/discover/shared/state/gallery-panel-state.svelte";
+	import { sequencePanelManager } from "$lib/features/discover/shared/state/sequence-panel-state.svelte";
 	import type { ControlsLevel } from "../domain/types";
 
 	let {
@@ -85,9 +85,9 @@
 		/>
 		<button
 			class="settings-gear-btn"
-			class:active={galleryPanelManager.isDetailExpanded}
-			onclick={() => galleryPanelManager.toggleDetailExpanded()}
-			aria-label={galleryPanelManager.isDetailExpanded
+			class:active={sequencePanelManager.isDetailExpanded}
+			onclick={() => sequencePanelManager.toggleDetailExpanded()}
+			aria-label={sequencePanelManager.isDetailExpanded
 				? "Collapse settings"
 				: "Expand settings"}
 			type="button"
@@ -116,9 +116,9 @@
 		<BpmChips {bpm} variant="compact" {onBpmChange} />
 		<button
 			class="settings-gear-btn"
-			class:active={galleryPanelManager.isDetailExpanded}
-			onclick={() => galleryPanelManager.toggleDetailExpanded()}
-			aria-label={galleryPanelManager.isDetailExpanded
+			class:active={sequencePanelManager.isDetailExpanded}
+			onclick={() => sequencePanelManager.toggleDetailExpanded()}
+			aria-label={sequencePanelManager.isDetailExpanded
 				? "Collapse settings"
 				: "Expand settings"}
 			type="button"

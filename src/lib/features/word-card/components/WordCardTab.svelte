@@ -8,7 +8,7 @@
   import { getContainerInstance } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
-  import type { IDiscoverLoader } from "../../discover/gallery/display/services/contracts/IDiscoverLoader";
+  import type { IDiscoverLoader } from "../../discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import WordCardNavigation from "./Navigation.svelte";
   import WordCardFilters from "./WordCardFilters.svelte";

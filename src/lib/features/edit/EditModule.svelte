@@ -24,7 +24,7 @@
     type EditMode,
   } from "./state/edit-module-state.svelte";
   import type { ISequenceTransformer } from "../create/shared/services/contracts/ISequenceTransformer";
-  import type { IDiscoverLoader } from "../discover/gallery/display/services/contracts/IDiscoverLoader";
+  import type { IDiscoverLoader } from "../discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
   import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";

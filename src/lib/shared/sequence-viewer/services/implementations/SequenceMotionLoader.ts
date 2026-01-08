@@ -7,7 +7,7 @@
 
 import { inject, injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
+import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { ISequenceMotionLoader } from "../contracts/ISequenceMotionLoader";
 

@@ -29,7 +29,7 @@
   import type { IVideoExporter } from "$lib/features/compose/services/contracts/IVideoExporter";
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
+  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import { resolve, loadFeatureModule } from "../inversify/di";
   import { TYPES } from "../inversify/types";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";

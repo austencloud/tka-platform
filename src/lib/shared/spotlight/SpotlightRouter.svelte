@@ -10,7 +10,7 @@
    * - Render SpotlightViewer component
    */
   import { onMount } from "svelte";
-  import SpotlightViewer from "../../features/discover/gallery/spotlight/components/SpotlightViewer.svelte";
+  import SpotlightViewer from "../../features/discover/sequences/spotlight/components/SpotlightViewer.svelte";
   import {
     closeSpotlightViewer,
     getShowSpotlight,

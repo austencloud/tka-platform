@@ -8,7 +8,7 @@
   import SequenceBrowserPanel from "../../../shared/animation-engine/components/SequenceBrowserPanel.svelte";
   import { getContainerInstance } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
-  import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
+  import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import { onMount } from "svelte";
 
   interface Props {

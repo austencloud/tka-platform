@@ -4,10 +4,10 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
-import type { IDiscoverThumbnailProvider } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverThumbnailProvider";
-import type { IDiscoverFilter } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverFilter";
-import type { IDiscoverSorter } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverSorter";
+import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
+import type { IDiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
+import type { IDiscoverFilter } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverFilter";
+import type { IDiscoverSorter } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverSorter";
 import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";

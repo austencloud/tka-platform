@@ -13,7 +13,7 @@
     navigationState,
     MODULE_DEFINITIONS,
   } from "../../state/navigation-state.svelte";
-  import { galleryPanelManager } from "$lib/features/discover/shared/state/gallery-panel-state.svelte";
+  import { sequencePanelManager } from "$lib/features/discover/shared/state/sequence-panel-state.svelte";
   import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
   import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
   import { adminToolbarState } from "$lib/shared/debug/state/admin-toolbar-state.svelte";
@@ -184,7 +184,7 @@
 </script>
 
 <!-- Peek Indicator - Shows when nav is hidden AND no gallery panels are open -->
-{#if !isUIVisible && !galleryPanelManager.isOpen}
+{#if !isUIVisible && !sequencePanelManager.isOpen}
   <button
     class="peek-indicator"
     class:animate-entrance={peekHasAnimated}
