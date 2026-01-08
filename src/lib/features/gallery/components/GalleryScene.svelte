@@ -7,7 +7,7 @@
    * Includes multiplayer support for rendering remote players.
    */
 
-  import { Canvas } from "@threlte/core";
+  import { Canvas, T } from "@threlte/core";
   import type { GalleryState } from "../state/gallery-state.svelte";
   import type { MultiplayerStateInstance } from "../multiplayer/state/multiplayer-state.svelte";
   import type { IPropStateInterpolator } from "$lib/shared/3d-animation/services/contracts/IPropStateInterpolator";
@@ -31,6 +31,7 @@
 
   // Navigation
   import FirstPersonController from "./navigation/FirstPersonController.svelte";
+  import ModelFirstPerson from "./navigation/ModelFirstPerson.svelte";
 
   // Multiplayer
   import RemotePlayerManager from "../multiplayer/components/RemotePlayerManager.svelte";
@@ -91,27 +92,35 @@
 
 <div class="scene-container">
   <Canvas>
-    {#if galleryState.layout && galleryState.currentRoomId}
-    <!-- Navigation with wall collision -->
-    <FirstPersonController
-      layout={galleryState.layout}
-      position={galleryState.playerPosition}
-      currentRoomId={galleryState.currentRoomId}
-      onPositionChange={(pos) => galleryState.setPlayerPosition(pos)}
-      onRoomChange={(roomId) => galleryState.setCurrentRoomId(roomId)}
-      {onRotationChange}
-      {onLocomotionChange}
-      enabled={true}
-    />
-
-    <!-- Environment: Either model-based (Blender) or procedural -->
+    <!-- MODEL-BASED RENDERING: Loads independently of procedural layout -->
     {#if museumModelPath}
-      <!-- Model-based rendering: Load hand-crafted museum from glTF -->
+      <!-- First-person camera for model-based scene -->
+      <ModelFirstPerson spawnPosition={[0, 1.7, 0]} />
+
+      <!-- Model-based lighting -->
+      <T.AmbientLight intensity={0.6} />
+      <T.DirectionalLight position={[10, 20, 10]} intensity={0.8} castShadow />
+      <T.DirectionalLight position={[-5, 10, -5]} intensity={0.3} />
+
+      <!-- Load the museum model -->
       <Museum3D
         modelPath={museumModelPath}
         onSlotsLoaded={(slots) => galleryState.setModelSlots(slots)}
       />
-    {:else}
+    {:else if galleryState.layout && galleryState.currentRoomId}
+      <!-- PROCEDURAL RENDERING: Requires layout to be generated -->
+      <!-- Navigation with wall collision -->
+      <FirstPersonController
+        layout={galleryState.layout}
+        position={galleryState.playerPosition}
+        currentRoomId={galleryState.currentRoomId}
+        onPositionChange={(pos) => galleryState.setPlayerPosition(pos)}
+        onRoomChange={(roomId) => galleryState.setCurrentRoomId(roomId)}
+        {onRotationChange}
+        {onLocomotionChange}
+        enabled={true}
+      />
+
       <!-- Procedural rendering: Generated walls, floors, ceilings -->
       <!-- Room-based floors (marble for rotunda, wood for wings) + corridor floors -->
       <RoomFloorRenderer
@@ -126,50 +135,47 @@
       {#each galleryState.layout.walls as wall (wall.id)}
         <GalleryWall {wall} />
       {/each}
-    {/if}
 
-    <!-- Lighting (ambient + spotlights) -->
-    <GalleryLighting exhibits={galleryState.exhibits} lightsOn={galleryState.lightsOn} />
+      <!-- Full lighting system for procedural scene -->
+      <GalleryLighting exhibits={galleryState.exhibits} lightsOn={galleryState.lightsOn} />
+      <GalleryTorches layout={galleryState.layout} enabled={true} intensity={galleryState.lightsOn ? 0.8 : 0.6} />
 
-    <!-- Torches (wall-mounted with fire effects) - always visible -->
-    <GalleryTorches layout={galleryState.layout} enabled={true} intensity={galleryState.lightsOn ? 0.8 : 0.6} />
+      <!-- Procedural exhibits -->
+      {#each galleryState.exhibits as exhibit (exhibit.id)}
+        {@const slot = getSlotForExhibit(exhibit.id)}
+        {#if slot}
+          <!-- Framed image on wall -->
+          <FramedSequence {exhibit} {slot} lightsOn={galleryState.lightsOn} />
 
-    <!-- Exhibits -->
-    {#each galleryState.exhibits as exhibit (exhibit.id)}
-      {@const slot = getSlotForExhibit(exhibit.id)}
-      {#if slot}
-        <!-- Framed image on wall -->
-        <FramedSequence {exhibit} {slot} lightsOn={galleryState.lightsOn} />
+          <!-- Label below frame -->
+          <ExhibitLabel {exhibit} {slot} />
 
-        <!-- Label below frame -->
-        <ExhibitLabel {exhibit} {slot} />
+          <!-- 2D Animation screen beside frame (proximity activated) -->
+          <AnimationScreen {exhibit} {slot} active={isExhibitNearby(exhibit.id)} />
 
-        <!-- 2D Animation screen beside frame (proximity activated) -->
-        <AnimationScreen {exhibit} {slot} active={isExhibitNearby(exhibit.id)} />
-
-        <!-- Animated avatar beside frame (disabled for MVP) -->
-        {#if exhibit.showAvatar && avatarServiceDeps}
-          <AvatarExhibit
-            {exhibit}
-            playerPosition={{ x: galleryState.playerPosition.x, z: galleryState.playerPosition.z }}
-            serviceDeps={avatarServiceDeps}
-          />
+          <!-- Animated avatar beside frame (disabled for MVP) -->
+          {#if exhibit.showAvatar && avatarServiceDeps}
+            <AvatarExhibit
+              {exhibit}
+              playerPosition={{ x: galleryState.playerPosition.x, z: galleryState.playerPosition.z }}
+              serviceDeps={avatarServiceDeps}
+            />
+          {/if}
         {/if}
-      {/if}
-    {/each}
+      {/each}
 
-    <!-- Remote players (multiplayer mode) -->
-    {#if multiplayerState && getIsInSession() && getRemotePlayers().length > 0}
-      <RemotePlayerManager
-        remotePlayers={getRemotePlayers()}
-        localPosition={{
-          x: galleryState.playerPosition.x,
-          y: galleryState.playerPosition.y,
-          z: galleryState.playerPosition.z
-        }}
-      />
+      <!-- Remote players (multiplayer mode) -->
+      {#if multiplayerState && getIsInSession() && getRemotePlayers().length > 0}
+        <RemotePlayerManager
+          remotePlayers={getRemotePlayers()}
+          localPosition={{
+            x: galleryState.playerPosition.x,
+            y: galleryState.playerPosition.y,
+            z: galleryState.playerPosition.z
+          }}
+        />
+      {/if}
     {/if}
-  {/if}
   </Canvas>
 </div>
 

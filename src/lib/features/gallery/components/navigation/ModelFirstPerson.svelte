@@ -1,0 +1,461 @@
+<script lang="ts">
+  /**
+   * ModelFirstPerson
+   *
+   * First-person controller for model-based museum scenes.
+   * Uses Three.js PointerLockControls for mouse look and WASD for movement.
+   * Includes raycasting-based collision detection for walls and floor.
+   */
+
+  import { T, useThrelte, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
+  import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
+  import { Vector3, Raycaster, MathUtils, type PerspectiveCamera, type Object3D } from "three";
+
+  interface Props {
+    /** Starting position [x, y, z] */
+    spawnPosition?: [number, number, number];
+    /** Movement speed (units per second) */
+    moveSpeed?: number;
+    /** Player height (eye level when standing) */
+    playerHeight?: number;
+    /** Collision radius around player */
+    collisionRadius?: number;
+    /** Maximum height player can step up (stairs) */
+    maxStepHeight?: number;
+    /** Sprint speed multiplier */
+    sprintMultiplier?: number;
+    /** Eye height when crouching */
+    crouchHeight?: number;
+    /** Initial upward velocity when jumping */
+    jumpForce?: number;
+    /** Gravity acceleration (units per second squared) */
+    gravity?: number;
+  }
+
+  let {
+    spawnPosition = [0, 1.7, 5],
+    moveSpeed = 5,
+    playerHeight = 1.7,
+    collisionRadius = 0.3,
+    maxStepHeight = 0.5,
+    sprintMultiplier = 2.0,
+    crouchHeight = 1.0,
+    jumpForce = 8.0,
+    gravity = 20.0,
+  }: Props = $props();
+
+  const { renderer, scene } = useThrelte();
+
+  // Camera reference
+  let camera: PerspectiveCamera | null = null;
+  let controls: PointerLockControls | null = null;
+
+  // Movement state
+  let keys = $state({
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    sprint: false,
+    crouch: false,
+    jump: false,
+  });
+
+  // Physics state
+  let verticalVelocity = $state(0);
+  let isGrounded = $state(true);
+  let isCrouching = $state(false);
+  let currentHeight = $state(playerHeight);
+
+  // Raycasters for collision detection
+  const floorRaycaster = new Raycaster();
+  const wallRaycaster = new Raycaster();
+  const ceilingRaycaster = new Raycaster();
+
+  // Reusable vectors
+  const direction = new Vector3();
+  const moveVector = new Vector3();
+  const playerPos = new Vector3();
+  const downDirection = new Vector3(0, -1, 0);
+
+  // Handle keyboard input
+  function handleKeyDown(e: KeyboardEvent) {
+    switch (e.code) {
+      case "KeyW":
+      case "ArrowUp":
+        keys.forward = true;
+        break;
+      case "KeyS":
+      case "ArrowDown":
+        keys.backward = true;
+        break;
+      case "KeyA":
+      case "ArrowLeft":
+        keys.left = true;
+        break;
+      case "KeyD":
+      case "ArrowRight":
+        keys.right = true;
+        break;
+      case "ShiftLeft":
+      case "ShiftRight":
+        keys.sprint = true;
+        break;
+      case "ControlLeft":
+      case "ControlRight":
+        // Toggle crouch on press
+        if (!isCrouching) {
+          isCrouching = true;
+        } else if (canStandUp()) {
+          isCrouching = false;
+        }
+        break;
+      case "Space":
+        keys.jump = true;
+        break;
+    }
+  }
+
+  function handleKeyUp(e: KeyboardEvent) {
+    switch (e.code) {
+      case "KeyW":
+      case "ArrowUp":
+        keys.forward = false;
+        break;
+      case "KeyS":
+      case "ArrowDown":
+        keys.backward = false;
+        break;
+      case "KeyA":
+      case "ArrowLeft":
+        keys.left = false;
+        break;
+      case "KeyD":
+      case "ArrowRight":
+        keys.right = false;
+        break;
+      case "ShiftLeft":
+      case "ShiftRight":
+        keys.sprint = false;
+        break;
+      // Note: crouch is toggle, not hold - no keyup handling needed
+      // Note: jump is consumed on use, not on keyup
+    }
+  }
+
+  // Handle click to lock pointer
+  function handleClick() {
+    if (controls && !controls.isLocked) {
+      controls.lock();
+    }
+  }
+
+  // Check wall collision and return hit info for sliding
+  // Returns null if no collision, or the wall normal if collision detected
+  function checkWallCollision(position: Vector3, moveDir: Vector3, distance: number): Vector3 | null {
+    if (!scene) return null;
+
+    const feetY = position.y - currentHeight;
+
+    // Check at multiple heights relative to current height (adjusts for crouch)
+    const heightRatio = currentHeight / playerHeight;
+    const checkHeights = [0.1, 0.5 * heightRatio, 0.8 * heightRatio, currentHeight - 0.3];
+
+    let closestHit: { distance: number; normal: Vector3 } | null = null;
+
+    for (const heightOffset of checkHeights) {
+      playerPos.set(position.x, feetY + heightOffset, position.z);
+
+      wallRaycaster.set(playerPos, moveDir);
+      wallRaycaster.far = distance + collisionRadius;
+
+      const intersects = wallRaycaster.intersectObjects(scene.children, true);
+
+      for (const hit of intersects) {
+        if (hit.distance < distance + collisionRadius && hit.face) {
+          if (!closestHit || hit.distance < closestHit.distance) {
+            // Get world-space normal from the hit face
+            const normal = hit.face.normal.clone();
+            // Transform normal from object space to world space
+            normal.transformDirection(hit.object.matrixWorld);
+            closestHit = { distance: hit.distance, normal };
+          }
+        }
+      }
+    }
+
+    return closestHit?.normal ?? null;
+  }
+
+  // Check if position is inside a wall (for push-back)
+  function getWallPushBack(position: Vector3): Vector3 | null {
+    if (!scene) return null;
+
+    const feetY = position.y - currentHeight;
+    const pushBack = new Vector3();
+    let hitCount = 0;
+
+    // Cast rays in 8 directions to detect if we're inside geometry
+    const directions = [
+      new Vector3(1, 0, 0),
+      new Vector3(-1, 0, 0),
+      new Vector3(0, 0, 1),
+      new Vector3(0, 0, -1),
+      new Vector3(0.707, 0, 0.707),
+      new Vector3(-0.707, 0, 0.707),
+      new Vector3(0.707, 0, -0.707),
+      new Vector3(-0.707, 0, -0.707),
+    ];
+
+    for (const dir of directions) {
+      playerPos.set(position.x, feetY + 1.0, position.z);
+      wallRaycaster.set(playerPos, dir);
+      wallRaycaster.far = collisionRadius;
+
+      const intersects = wallRaycaster.intersectObjects(scene.children, true);
+
+      if (intersects.length > 0 && intersects[0].face) {
+        // We're too close - accumulate push direction (opposite of ray direction)
+        const pushStrength = collisionRadius - intersects[0].distance;
+        pushBack.addScaledVector(dir, -pushStrength);
+        hitCount++;
+      }
+    }
+
+    if (hitCount > 0) {
+      return pushBack;
+    }
+    return null;
+  }
+
+  // Get floor height at position - only accepts floors within step range
+  function getFloorHeight(position: Vector3): number | null {
+    if (!scene) return null;
+
+    const currentFeetY = position.y - currentHeight;
+
+    // Cast ray downward from current feet position (not from above!)
+    // This prevents teleporting up to upper levels
+    playerPos.copy(position);
+    playerPos.y = currentFeetY + maxStepHeight; // Start just above max step height
+
+    floorRaycaster.set(playerPos, downDirection);
+    // Only look for floors within stepping distance below us
+    floorRaycaster.far = maxStepHeight + 2; // Can step down ~2 meters (stairs)
+
+    const intersects = floorRaycaster.intersectObjects(scene.children, true);
+
+    if (intersects.length > 0) {
+      const floorY = intersects[0].point.y;
+
+      // Only accept floors within our step range
+      // Can step UP by maxStepHeight, can step DOWN further (falling/stairs)
+      const stepUp = floorY - currentFeetY;
+
+      if (stepUp <= maxStepHeight) {
+        return floorY;
+      }
+      // Floor is too high above us - treat as wall, don't snap
+      return null;
+    }
+
+    return null;
+  }
+
+  // Check if head would hit ceiling (for jump)
+  function checkCeilingCollision(): boolean {
+    if (!scene || !camera) return false;
+
+    ceilingRaycaster.set(camera.position, new Vector3(0, 1, 0));
+    ceilingRaycaster.far = 0.3; // Small buffer above head
+
+    const intersects = ceilingRaycaster.intersectObjects(scene.children, true);
+    return intersects.length > 0;
+  }
+
+  // Check if there's clearance to stand up from crouch
+  function canStandUp(): boolean {
+    if (!scene || !camera) return true;
+
+    const heightDifference = playerHeight - crouchHeight;
+    const rayOrigin = camera.position.clone();
+
+    ceilingRaycaster.set(rayOrigin, new Vector3(0, 1, 0));
+    ceilingRaycaster.far = heightDifference + 0.2; // Need clearance for full height
+
+    const intersects = ceilingRaycaster.intersectObjects(scene.children, true);
+    return intersects.length === 0;
+  }
+
+  // Set up controls when camera is ready
+  function setupControls(cam: PerspectiveCamera) {
+    camera = cam;
+
+    if (!renderer) return;
+
+    controls = new PointerLockControls(camera, renderer.domElement);
+
+    // Add click listener to lock pointer
+    renderer.domElement.addEventListener("click", handleClick);
+  }
+
+  // Set up keyboard listeners
+  $effect(() => {
+    if (typeof window === "undefined") return;
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  });
+
+  // Cleanup on destroy
+  onDestroy(() => {
+    if (controls) {
+      controls.dispose();
+    }
+    if (renderer) {
+      renderer.domElement.removeEventListener("click", handleClick);
+    }
+  });
+
+  // Slide movement vector along wall surface
+  function slideAlongWall(move: Vector3, wallNormal: Vector3): Vector3 {
+    // Project movement onto the wall plane
+    // slide = move - (move · normal) * normal
+    const dot = move.dot(wallNormal);
+    if (dot >= 0) {
+      // Moving away from wall, no need to slide
+      return move;
+    }
+    const slide = move.clone();
+    slide.addScaledVector(wallNormal, -dot);
+    return slide;
+  }
+
+  // Update position each frame based on input
+  useTask((delta) => {
+    if (!controls || !controls.isLocked || !camera) return;
+
+    // === 1. PUSH-BACK FROM WALLS ===
+    const pushBack = getWallPushBack(camera.position);
+    if (pushBack) {
+      camera.position.add(pushBack);
+    }
+
+    // === 2. CROUCH HEIGHT TRANSITION ===
+    const targetHeight = isCrouching ? crouchHeight : playerHeight;
+    currentHeight = MathUtils.lerp(currentHeight, targetHeight, delta * 10);
+
+    // === 3. JUMP INITIATION ===
+    if (keys.jump && isGrounded && verticalVelocity <= 0) {
+      verticalVelocity = jumpForce;
+      isGrounded = false;
+      keys.jump = false; // Consume the jump input
+    } else if (!isGrounded) {
+      // Consume jump key if we're in the air (prevents buffering)
+      keys.jump = false;
+    }
+
+    // === 4. APPLY GRAVITY ===
+    verticalVelocity -= gravity * delta;
+    verticalVelocity = Math.max(verticalVelocity, -30); // Terminal velocity
+
+    // === 5. APPLY VERTICAL MOVEMENT ===
+    camera.position.y += verticalVelocity * delta;
+
+    // === 6. CEILING COLLISION ===
+    if (verticalVelocity > 0 && checkCeilingCollision()) {
+      verticalVelocity = 0; // Bonk - stop rising
+    }
+
+    // === 7. HORIZONTAL MOVEMENT ===
+    direction.z = Number(keys.forward) - Number(keys.backward);
+    direction.x = Number(keys.right) - Number(keys.left);
+
+    if (direction.length() > 0) {
+      direction.normalize();
+
+      // Sprint: 2x speed when holding shift (but not while crouching)
+      const effectiveSpeed = (keys.sprint && !isCrouching)
+        ? moveSpeed * sprintMultiplier
+        : (isCrouching ? moveSpeed * 0.5 : moveSpeed); // Crouch is slower
+
+      const speed = effectiveSpeed * delta;
+
+      // Get camera's forward and right vectors (horizontal only)
+      const cameraDirection = new Vector3();
+      camera.getWorldDirection(cameraDirection);
+      cameraDirection.y = 0;
+      cameraDirection.normalize();
+
+      const cameraRight = new Vector3();
+      cameraRight.crossVectors(cameraDirection, new Vector3(0, 1, 0)).normalize();
+
+      // Calculate world-space movement vector
+      moveVector.set(0, 0, 0);
+      moveVector.addScaledVector(cameraDirection, direction.z * speed);
+      moveVector.addScaledVector(cameraRight, direction.x * speed);
+
+      // Check for wall collision and slide if needed
+      const moveDir = moveVector.clone().normalize();
+      const moveDistance = moveVector.length();
+
+      const wallNormal = checkWallCollision(camera.position, moveDir, moveDistance);
+
+      if (wallNormal) {
+        // Wall detected - slide along it instead of stopping
+        const slideMove = slideAlongWall(moveVector, wallNormal);
+
+        if (slideMove.length() > 0.001) {
+          const slideDir = slideMove.clone().normalize();
+          const slideNormal = checkWallCollision(camera.position, slideDir, slideMove.length());
+
+          if (!slideNormal) {
+            camera.position.add(slideMove);
+          }
+        }
+      } else {
+        camera.position.add(moveVector);
+      }
+    }
+
+    // === 8. FLOOR COLLISION & GROUND CHECK ===
+    const floorY = getFloorHeight(camera.position);
+    if (floorY !== null) {
+      const feetY = camera.position.y - currentHeight;
+
+      if (feetY <= floorY) {
+        // We're at or below floor level - snap to floor
+        camera.position.y = floorY + currentHeight;
+
+        if (verticalVelocity < 0) {
+          verticalVelocity = 0;
+          isGrounded = true;
+        }
+      } else if (feetY - floorY < 0.1) {
+        // Very close to floor - still grounded
+        isGrounded = true;
+      } else {
+        // In the air
+        isGrounded = false;
+      }
+    } else {
+      // No floor found - in the air (or void)
+      isGrounded = false;
+    }
+  });
+</script>
+
+<T.PerspectiveCamera
+  makeDefault
+  position={spawnPosition}
+  fov={75}
+  near={0.1}
+  far={1000}
+  oncreate={(ref) => setupControls(ref)}
+/>

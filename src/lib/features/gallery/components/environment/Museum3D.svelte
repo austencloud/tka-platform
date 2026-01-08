@@ -34,15 +34,27 @@
     receiveShadow = true,
   }: Props = $props();
 
-  // Load the museum model
-  const gltf = $derived(useGltf(modelPath));
+  // Load the museum model - useGltf returns an async store
+  console.log("[Museum3D] Component mounted, loading model from:", modelPath);
+  const gltf = useGltf(modelPath);
 
   // Track if we've already extracted slots
   let slotsExtracted = $state(false);
 
+  // Debug: Log loading state changes
+  $effect(() => {
+    if ($gltf) {
+      console.log("[Museum3D] Model loaded successfully! Scene:", $gltf.scene);
+      console.log("[Museum3D] Scene children:", $gltf.scene.children.length);
+    } else {
+      console.log("[Museum3D] Waiting for model to load...");
+    }
+  });
+
   // Extract slots when model loads
   $effect(() => {
     if ($gltf && !slotsExtracted) {
+      console.log("[Museum3D] Model loaded successfully!", $gltf);
       // First try explicit Slot_ markers
       let slots = extractExplicitSlots($gltf.scene);
 
@@ -192,5 +204,19 @@
     {receiveShadow}
   />
 {:else}
-  <!-- Loading state - could show a placeholder -->
+  <!-- Loading state - show placeholder geometry -->
+  <T.Mesh position={[0, 0.5, 0]}>
+    <T.BoxGeometry args={[1, 1, 1]} />
+    <T.MeshStandardMaterial color="#4488ff" />
+  </T.Mesh>
+  <T.Mesh rotation.x={-Math.PI / 2} position={[0, 0, 0]}>
+    <T.PlaneGeometry args={[20, 20]} />
+    <T.MeshStandardMaterial color="#333333" />
+  </T.Mesh>
 {/if}
+
+<!-- Always render a ground plane for reference -->
+<T.Mesh rotation.x={-Math.PI / 2} position={[0, -0.01, 0]} receiveShadow>
+  <T.PlaneGeometry args={[100, 100]} />
+  <T.MeshStandardMaterial color="#222222" />
+</T.Mesh>

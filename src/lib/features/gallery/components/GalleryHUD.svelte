@@ -329,6 +329,7 @@
     padding: 24px 32px;
     border-radius: 12px;
     backdrop-filter: blur(10px);
+    pointer-events: none; /* Allow mouse events to pass through to canvas */
   }
 
   .controls-hint p {
