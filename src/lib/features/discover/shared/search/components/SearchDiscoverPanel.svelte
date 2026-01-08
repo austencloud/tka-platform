@@ -95,7 +95,6 @@ Allows natural language queries to find sequences, users, and collections.
   }
 
   function handleResultClick(result: SearchResult) {
-    console.log("Navigate to result:", result);
     // TODO: Navigate to appropriate detail view based on result type
   }
 

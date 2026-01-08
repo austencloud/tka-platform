@@ -159,8 +159,7 @@
    * Handle successful image load
    */
   function handleImageLoad() {
-    const urlType = thumbnailUrl?.startsWith("blob:") ? "blob" : "cloud";
-    console.log(`[Thumbnail] "${sequenceName}" - img onload SUCCESS (${urlType})`);
+    // Image loaded successfully
   }
 
   /**
@@ -216,10 +215,6 @@
       return;
     }
 
-    // DEBUG: Log when effect fires and why
-    const reason = currentKeyHash === null ? "initial" : "hash-changed";
-    console.log(`[Thumbnail] "${sequenceName}" - $effect fired (${reason}), lightMode=${lightMode}`);
-
     // Cancel previous render
     if (currentKeyHash) {
       orchestrator.cancel({ hash: currentKeyHash });
@@ -254,9 +249,6 @@
         // Only apply if still current
         if (key.hash === currentKeyHash) {
           thumbnailUrl = result.url;
-          // DEBUG: Log what URL type we got
-          const urlType = result.url.startsWith("blob:") ? "blob" : "cloud";
-          console.log(`[Thumbnail] "${sequenceName}" - loaded (${urlType}, fromCache=${result.fromCache})`);
         }
       })
       .catch((err) => {

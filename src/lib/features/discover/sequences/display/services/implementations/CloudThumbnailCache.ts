@@ -426,9 +426,6 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
         }
       }
 
-      console.log(
-        `CloudThumbnailCache: Deleted ${deletedCount} files from ${variant} variant`
-      );
       return deletedCount;
     } catch (error) {
       console.error(`CloudThumbnailCache: Error deleting ${variant}:`, error);

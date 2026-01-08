@@ -28,7 +28,6 @@
       } else {
         hapticService?.trigger("selection");
       }
-      console.log(`🎬 Fullscreen action: ${action} on sequence:`, sequence.id);
       onAction(action, sequence);
     }
   }

@@ -152,22 +152,5 @@ export function onConnectionChange(
  * Log connection info for debugging
  */
 export function logConnectionInfo(): void {
-  const info = getConnectionInfo();
-  const strategy = getLoadingStrategy(info);
-
-  console.log("Connection Info:", {
-    quality: info.quality,
-    effectiveType: info.effectiveType || "unknown",
-    saveData: info.saveData,
-    downlink: info.downlink ? `${info.downlink} Mbps` : "unknown",
-    rtt: info.rtt ? `${info.rtt}ms` : "unknown",
-  });
-
-  console.log("Loading Strategy:", {
-    initialPageSize: strategy.initialPageSize,
-    scrollPageSize: strategy.scrollPageSize,
-    preloadCount: strategy.preloadCount,
-    enablePreload: strategy.enablePreload,
-    imageQuality: strategy.imageQuality,
-  });
+  // Connection info logging disabled for production
 }

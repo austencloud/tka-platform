@@ -200,9 +200,6 @@
         const database = await getDatabaseInstance();
         const presenceRef = ref(database, `presence/${userId}`);
         await remove(presenceRef);
-        console.log(
-          `[ProfileAdminSection] Removed presence from RTDB for: ${userId}`
-        );
       } catch (err) {
         console.warn(
           `[ProfileAdminSection] Could not remove RTDB presence:`,
@@ -210,7 +207,6 @@
         );
       }
 
-      console.log(`[ProfileAdminSection] Deleted user: ${userId}`);
       onUserDeleted?.();
     } catch (err) {
       console.error("[ProfileAdminSection] Failed to delete user:", err);

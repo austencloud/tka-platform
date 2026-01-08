@@ -101,8 +101,6 @@
 
   onMount(async () => {
     try {
-      console.log(`[UserProfilePanel] Loading profile for user: ${userId}`);
-
       // Ensure required feature modules are loaded
       // Note: Load both community AND discover explicitly to ensure IDiscoverThumbnailProvider is available
       await Promise.all([
@@ -137,9 +135,6 @@
       });
 
       isLoading = false;
-      console.log(
-        `[UserProfilePanel] Loaded profile with ${userSequences.length} sequences`
-      );
 
       // Load user ranks in background
       loadUserRanks();
@@ -231,9 +226,6 @@
     try {
       followingUsers = await userService.getFollowing(userId, 50);
       followingLoaded = true;
-      console.log(
-        `[UserProfilePanel] Loaded ${followingUsers.length} following users`
-      );
     } catch (err) {
       console.error("[UserProfilePanel] Error loading following users:", err);
     } finally {
@@ -248,9 +240,6 @@
     try {
       followerUsers = await userService.getFollowers(userId, 50);
       followersLoaded = true;
-      console.log(
-        `[UserProfilePanel] Loaded ${followerUsers.length} followers`
-      );
     } catch (err) {
       console.error("[UserProfilePanel] Error loading followers:", err);
     } finally {

@@ -54,7 +54,6 @@
   // Show/hide logic
   $effect(() => {
     if (show && sequence) {
-      console.log("✨ Spotlight viewer opened", { displayMode });
       isVisible = true;
       isClosing = false;
 
@@ -142,23 +141,6 @@
       newRotation = viewportIsLandscape !== imageIsLandscape;
     }
 
-    console.log("🔄 Rotation calculation:", {
-      viewport: {
-        width: viewportWidth,
-        height: viewportHeight,
-        isLandscape: viewportIsLandscape,
-        isDesktop,
-      },
-      image: {
-        width: imageWidth,
-        height: imageHeight,
-        aspectRatio: imageAspectRatio.toFixed(2),
-        isSquare: isSquareImage,
-        isLandscape: imageIsLandscape,
-      },
-      shouldRotate: newRotation,
-    });
-
     shouldRotate = newRotation;
   }
 
@@ -200,8 +182,6 @@
     // Toggle the rotation state
     shouldRotate = !shouldRotate;
     manualRotationOverride = shouldRotate;
-
-    console.log("🔄 Manual rotation toggled:", shouldRotate);
   }
 
   // Toggle column picker

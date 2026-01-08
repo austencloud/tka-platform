@@ -7,7 +7,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     currentLevel = null,
@@ -30,7 +30,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
   // TKA Level colors matching the existing pattern
   const getLevelConfig = () => ({
     1: {
-      name: m.level_no_turns(),
+      name: t("level_no_turns"),
       gradient: `radial-gradient(ellipse at top left,
         rgb(186, 230, 253) 0%,
         rgb(125, 211, 252) 30%,
@@ -39,7 +39,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       shadowColor: "199deg 89% 48%",
     },
     2: {
-      name: m.level_whole_turns(),
+      name: t("level_whole_turns"),
       gradient: `radial-gradient(ellipse at top left,
         rgb(226, 232, 240) 0%,
         rgb(148, 163, 184) 30%,
@@ -48,7 +48,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       shadowColor: "215deg 16% 35%",
     },
     3: {
-      name: m.level_half_turns(),
+      name: t("level_half_turns"),
       gradient: `radial-gradient(ellipse at top left,
         rgb(254, 240, 138) 0%,
         rgb(253, 224, 71) 20%,
@@ -74,9 +74,9 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
     currentConfig?.shadowColor ?? defaultShadowColor
   );
   const displayValue = $derived(
-    currentLevel ? m.filter_level_number({ level: currentLevel.toString() }) : m.filter_all_levels()
+    currentLevel ? t("filter_level_number", { level: currentLevel.toString() }) : t("filter_all_levels")
   );
-  const description = $derived(currentConfig?.name ?? m.filter_any_difficulty());
+  const description = $derived(currentConfig?.name ?? t("filter_any_difficulty"));
   const textColor = $derived(
     currentLevel === 1 || currentLevel === 3 ? "black" : "white"
   );
@@ -114,7 +114,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
   aria-label="Filter by difficulty level"
 >
   <div class="card-header">
-    <span class="card-title">{m.filter_level()}</span>
+    <span class="card-title">{t("filter_level")}</span>
   </div>
 
   <div class="stepper-controls">
@@ -122,7 +122,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       class="stepper-zone decrement"
       class:disabled={!canDecrement}
       onclick={handleDecrement}
-      aria-label={m.filter_previous_level()}
+      aria-label={t("filter_previous_level")}
       disabled={!canDecrement}
     >
       <svg
@@ -144,7 +144,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       class="stepper-zone increment"
       class:disabled={!canIncrement}
       onclick={handleIncrement}
-      aria-label={m.filter_next_level()}
+      aria-label={t("filter_next_level")}
       disabled={!canIncrement}
     >
       <svg

@@ -72,20 +72,15 @@ export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
       const task = this.queue.splice(index, 1)[0];
       task?.reject(new Error("Cancelled"));
       this.pendingPromises.delete(id);
-      console.log(`[ThumbnailRenderQueue] ${id}: Cancelled`);
     }
   }
 
   cancelAll(): void {
-    const cancelled = this.queue.length;
     for (const task of this.queue) {
       task.reject(new Error("Cancelled"));
       this.pendingPromises.delete(task.id);
     }
     this.queue = [];
-    if (cancelled > 0) {
-      console.log(`[ThumbnailRenderQueue] Cancelled ${cancelled} queued tasks`);
-    }
   }
 
   getStats(): QueueStats {

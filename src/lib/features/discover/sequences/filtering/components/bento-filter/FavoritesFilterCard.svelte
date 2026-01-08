@@ -7,7 +7,7 @@ Single tap toggles favorites on/off
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     isActive = false,
@@ -39,7 +39,7 @@ Single tap toggles favorites on/off
     }
   }
 
-  const displayValue = $derived(isActive ? m.filter_on() : m.filter_off());
+  const displayValue = $derived(isActive ? t("filter_on") : t("filter_off"));
 </script>
 
 <div
@@ -49,12 +49,12 @@ Single tap toggles favorites on/off
   role="button"
   tabindex="0"
   aria-pressed={isActive}
-  aria-label="{m.filter_favorites()}: {isActive ? m.filter_active() : m.filter_inactive()}"
+  aria-label="{t("filter_favorites")}: {isActive ? t("filter_active") : t("filter_inactive")}"
   onclick={handleToggle}
   onkeydown={handleKeydown}
 >
   <div class="card-header">
-    <span class="card-title">{m.filter_favorites()}</span>
+    <span class="card-title">{t("filter_favorites")}</span>
   </div>
 
   <div class="heart-container">

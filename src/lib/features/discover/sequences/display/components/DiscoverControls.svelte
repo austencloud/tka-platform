@@ -4,7 +4,7 @@
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { ExploreSortMethod } from "../../../shared/domain/enums/discover-enums";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
@@ -28,11 +28,11 @@
 
   // Sort options (reactive for i18n)
   const sortOptions = $derived([
-    { value: ExploreSortMethod.ALPHABETICAL, label: m.discover_sort_name() },
-    { value: ExploreSortMethod.DIFFICULTY_LEVEL, label: m.discover_sort_difficulty() },
-    { value: ExploreSortMethod.SEQUENCE_LENGTH, label: m.discover_sort_length() },
-    { value: ExploreSortMethod.DATE_ADDED, label: m.discover_sort_recent() },
-    { value: ExploreSortMethod.AUTHOR, label: m.discover_sort_author() },
+    { value: ExploreSortMethod.ALPHABETICAL, label: t("discover_sort_name") },
+    { value: ExploreSortMethod.DIFFICULTY_LEVEL, label: t("discover_sort_difficulty") },
+    { value: ExploreSortMethod.SEQUENCE_LENGTH, label: t("discover_sort_length") },
+    { value: ExploreSortMethod.DATE_ADDED, label: t("discover_sort_recent") },
+    { value: ExploreSortMethod.AUTHOR, label: t("discover_sort_author") },
   ]);
 
   // Handle sort change
@@ -53,7 +53,7 @@
 <div class="header-right">
   <div class="view-controls">
     <label class="sort-control">
-      {m.discover_controls_sort()}
+      {t("discover_controls_sort")}
       <select value={sortBy} onchange={handleSortChange}>
         {#each sortOptions as option}
           <option value={option.value}>{option.label}</option>
@@ -66,8 +66,8 @@
         class="view-button"
         class:active={viewMode === "grid"}
         onclick={() => handleViewModeChange("grid")}
-        title={m.discover_view_grid()}
-        aria-label={m.discover_view_grid()}
+        title={t("discover_view_grid")}
+        aria-label={t("discover_view_grid")}
         type="button"
       >
         <svg width="16" height="16" viewBox="0 0 16 16">
@@ -81,8 +81,8 @@
         class="view-button"
         class:active={viewMode === "list"}
         onclick={() => handleViewModeChange("list")}
-        title={m.discover_view_list()}
-        aria-label={m.discover_view_list()}
+        title={t("discover_view_list")}
+        aria-label={t("discover_view_list")}
         type="button"
       >
         <svg width="16" height="16" viewBox="0 0 16 16">

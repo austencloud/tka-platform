@@ -357,9 +357,7 @@
     // UI shows immediately with skeletons while data loads
     galleryState
       .loadAllSequences()
-      .then(() => {
-        // console.log("✅ DiscoverModule: Data loaded");
-      })
+      .then(() => {})
       .catch((err) => {
         console.error("Data loading failed:", err);
         error =

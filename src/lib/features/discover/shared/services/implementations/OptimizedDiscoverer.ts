@@ -189,7 +189,6 @@ export class OptimizedDiscoverer implements IOptimizedDiscoverer {
   clearCache(): void {
     this.cache.clear();
     this.totalCount = 0;
-    console.log("🧹 OptimizedGallery: Cache cleared");
   }
 
   private supportsWebP(): boolean {
