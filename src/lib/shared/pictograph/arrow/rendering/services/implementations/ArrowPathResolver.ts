@@ -1,8 +1,11 @@
 /**
  * Arrow Path Resolution Service
  *
- * Responsible for determining the correct SVG file path based on motion data.
- * Extracted from ArrowRenderer to improve modularity and reusability.
+ * Resolves motion data to symbol IDs in the arrow sprite.
+ * The sprite file is located at /images/arrows-sprite.svg
+ *
+ * Symbol naming convention: {motionType}_{turns}_{orientation}[_skew+/-]
+ * Examples: pro_0.0_radial, anti_1.5_nonradial, dash_2.0_radial_skew+
  */
 
 import type { IArrowPathResolver } from "../contracts/IArrowPathResolver";
@@ -14,67 +17,55 @@ import {
 import { injectable } from "inversify";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 
+/** Path to the consolidated arrow sprite file */
+export const ARROW_SPRITE_PATH = "/images/arrows-sprite.svg";
+
 @injectable()
 export class ArrowPathResolver implements IArrowPathResolver {
   /**
-   * Get arrow SVG path based on motion type and properties (extracted from Arrow.svelte)
+   * Get arrow symbol ID based on motion type and properties
    */
   getArrowPath(
     arrowData: ArrowPlacementData,
     motionData: MotionData
   ): string | null {
-    const { motionType, turns } = motionData;
-    const baseDir = `/images/arrows/${motionType}`;
-
-    // For motion types that have turn-based subdirectories (pro, anti, static, dash)
-    if (
-      motionType === MotionType.PRO ||
-      motionType === MotionType.ANTI ||
-      motionType === MotionType.STATIC ||
-      motionType === MotionType.DASH
-    ) {
-      // Determine if we should use radial vs non-radial arrows based on START orientation only
-      // "from_radial" = arrow starts from radial orientation (in/out)
-      // "from_nonradial" = arrow starts from non-radial orientation (clock/counter)
-      const isNonRadial =
-        motionData.startOrientation === Orientation.CLOCK ||
-        motionData.startOrientation === Orientation.COUNTER;
-
-      const subDir = isNonRadial ? "from_nonradial" : "from_radial";
-      const turnValue = typeof turns === "number" ? turns.toFixed(1) : "0.0";
-      const path = `${baseDir}/${subDir}/${motionType}_${turnValue}.svg`;
-
-      return path;
-    }
-
-    // For float (truly turn-agnostic) - use base directory
-    const path = `${baseDir}.svg`;
-    return path;
+    return this.getArrowSymbolId(motionData);
   }
 
   /**
-   * Get the correct arrow SVG path based on motion data (optimized version)
+   * Get the correct arrow symbol ID based on motion data
    */
   getArrowSvgPath(motionData: MotionData | undefined): string {
+    return this.getArrowSymbolId(motionData);
+  }
+
+  /**
+   * Get the symbol ID for an arrow based on motion data
+   *
+   * @returns Symbol ID like "pro_0.0_radial" or "float"
+   */
+  getArrowSymbolId(motionData: MotionData | undefined): string {
     if (!motionData) {
-      return "/images/arrows/static/from_radial/static_0.svg";
+      return "static_0.5_radial";
     }
 
     const motionType = motionData.motionType;
-    const turnsVal = motionData.turns;
-    const startOrientation = motionData.startOrientation;
 
+    // Float is a special case - single symbol
     if (motionType === MotionType.FLOAT) {
-      return "/images/arrows/float.svg";
+      return "float";
     }
 
-    // Folder is based on START orientation only ("from_radial" = starts from radial)
-    const radialPath =
+    // Determine orientation from start orientation
+    const startOrientation = motionData.startOrientation;
+    const orientation =
       startOrientation === Orientation.IN ||
       startOrientation === Orientation.OUT
-        ? "from_radial"
-        : "from_nonradial";
+        ? "radial"
+        : "nonradial";
 
+    // Format turns value
+    const turnsVal = motionData.turns;
     let turnsStr: string;
     if (turnsVal === "fl") {
       turnsStr = "fl";
@@ -84,6 +75,7 @@ export class ArrowPathResolver implements IArrowPathResolver {
       turnsStr = "0.0";
     }
 
-    return `/images/arrows/${motionType}/${radialPath}/${motionType}_${turnsStr}.svg`;
+    // Build symbol ID: {motionType}_{turns}_{orientation}
+    return `${motionType}_${turnsStr}_${orientation}`;
   }
 }

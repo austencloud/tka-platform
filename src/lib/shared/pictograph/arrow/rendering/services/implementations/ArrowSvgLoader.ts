@@ -1,16 +1,14 @@
 /**
- * SVG Loading Service - OPTIMIZED (2025 Best Practices)
+ * SVG Loading Service - SPRITE-BASED
  *
- * Handles fetching and loading SVG files with aggressive caching.
+ * Loads arrows from a single sprite file containing all arrow symbols.
+ * This eliminates 60+ individual HTTP requests in favor of one sprite load.
  *
- * Key optimizations:
- * - Multi-level caching (raw SVG + transformed SVG by color AND theme mode)
- * - Request deduplication (prevents duplicate concurrent fetches)
- * - Performance monitoring (cache hit/miss tracking)
- * - HMR-aware cache persistence (prevents mass refetches on code changes)
- *
- * Theme mode can be passed explicitly (for exports) or defaults to
- * reading from AnimationVisibilityStateManager (for live display).
+ * Key features:
+ * - Single sprite file load (cached)
+ * - Symbol extraction by ID
+ * - Multi-level caching (sprite + transformed by color/theme)
+ * - HMR-aware cache persistence
  *
  * Extracted from ArrowRenderer to improve modularity and reusability.
  */
@@ -29,37 +27,193 @@ import { TYPES } from "../../../../../inversify/types";
 import { inject, injectable } from "inversify";
 import type { ThemeMode } from "../../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../../animation-engine/state/animation-visibility-state.svelte";
+import { ARROW_SPRITE_PATH } from "./ArrowPathResolver";
+
+// ============================================================================
+// SYMBOL DATA STRUCTURE
+// ============================================================================
+interface SymbolData {
+  viewBox: string;
+  innerContent: string;
+}
+
+// ============================================================================
+// CSS FILL INLINING UTILITIES
+// ============================================================================
+
+/**
+ * Parse CSS style block to extract class->fill color mappings
+ * e.g., ".st0{fill:#2E3192;}" -> { "st0": "#2E3192" }
+ */
+function parseStyleBlock(doc: Document): Map<string, string> {
+  const classToFill = new Map<string, string>();
+  const styleElements = doc.querySelectorAll("style");
+
+  styleElements.forEach((style) => {
+    const cssText = style.textContent || "";
+    // Match patterns like ".st0{fill:#2E3192;}" or ".st0 { fill: #2E3192; }"
+    const regex = /\.([a-zA-Z0-9_-]+)\s*\{\s*fill\s*:\s*(#[0-9A-Fa-f]{3,6})\s*;?\s*\}/g;
+    let match;
+    while ((match = regex.exec(cssText)) !== null) {
+      classToFill.set(match[1], match[2]);
+    }
+  });
+
+  return classToFill;
+}
+
+/**
+ * Inline CSS fill classes as direct fill attributes
+ * Replaces class="st0" with fill="#2E3192" based on the style block mapping
+ */
+function inlineCssFills(content: string, classToFill: Map<string, string>): string {
+  let result = content;
+
+  classToFill.forEach((fillColor, className) => {
+    // Replace class="className" with fill="color"
+    const classRegex = new RegExp(`class="${className}"`, "g");
+    result = result.replace(classRegex, `fill="${fillColor}"`);
+
+    // Handle class='className' (single quotes)
+    const classRegexSingle = new RegExp(`class='${className}'`, "g");
+    result = result.replace(classRegexSingle, `fill="${fillColor}"`);
+  });
+
+  return result;
+}
 
 // ============================================================================
 // HMR-AWARE MODULE-LEVEL CACHE STORAGE
 // ============================================================================
-// These module-level caches persist across HMR to prevent mass network requests
-// when code changes trigger module reloads. The ArrowSvgLoader singleton
-// uses these shared caches instead of instance properties.
-//
-// Without HMR persistence, every arrow on screen would refetch its SVG
-// after any file change, causing 1000+ network requests and 20+ second delays.
-// ============================================================================
-
-const hmrRawSvgCache: Map<string, string> =
-  import.meta.hot?.data?.rawSvgCache ?? new Map();
+const hmrSpriteCache: { symbols: Map<string, SymbolData>; loaded: boolean } =
+  import.meta.hot?.data?.spriteCache ?? { symbols: new Map(), loaded: false };
 const hmrTransformedSvgCache: Map<string, ArrowSvgData> =
   import.meta.hot?.data?.transformedSvgCache ?? new Map();
+
+// Sprite update listeners (for components to re-render when sprite changes)
+const spriteUpdateListeners: Set<() => void> =
+  import.meta.hot?.data?.spriteUpdateListeners ?? new Set();
+
+// Sprite version - increment on updates to trigger re-renders via callback
+let spriteVersionInternal: number = import.meta.hot?.data?.spriteVersion ?? 0;
+
+/** Get current sprite version - use with onSpriteUpdate callback for reactive updates */
+export function getSpriteVersion(): number {
+  return spriteVersionInternal;
+}
 
 // Persist caches before HMR disposal
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
-    data.rawSvgCache = hmrRawSvgCache;
+    data.spriteCache = hmrSpriteCache;
     data.transformedSvgCache = hmrTransformedSvgCache;
+    data.spriteUpdateListeners = spriteUpdateListeners;
+    data.spriteVersion = spriteVersionInternal;
+  });
+
+  // Listen for sprite file changes from Vite plugin
+  import.meta.hot.on("arrow-sprite-update", async () => {
+    console.log("🎯 Arrow sprite updated - clearing cache and reloading");
+
+    // Clear caches
+    hmrSpriteCache.symbols.clear();
+    hmrSpriteCache.loaded = false;
+    hmrTransformedSvgCache.clear();
+
+    // Helper to calculate viewBox from path bounds
+    function getPathBounds(pathD: string): { minX: number; minY: number; maxX: number; maxY: number } {
+      const numbers = pathD.match(/-?\d*\.?\d+/g) || [];
+      const coords: number[] = numbers.map(Number);
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i < coords.length - 1; i += 2) {
+        const x = coords[i];
+        const y = coords[i + 1];
+        if (!isNaN(x) && !isNaN(y)) {
+          minX = Math.min(minX, x);
+          maxX = Math.max(maxX, x);
+          minY = Math.min(minY, y);
+          maxY = Math.max(maxY, y);
+        }
+      }
+      if (!isFinite(minX)) return { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+      return { minX, minY, maxX, maxY };
+    }
+
+    function calculateGroupViewBox(group: Element): string {
+      const dataViewBox = group.getAttribute("data-viewbox");
+      if (dataViewBox) return dataViewBox;
+      const paths = group.querySelectorAll("path");
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      paths.forEach((path) => {
+        const d = path.getAttribute("d") || "";
+        const bounds = getPathBounds(d);
+        minX = Math.min(minX, bounds.minX);
+        minY = Math.min(minY, bounds.minY);
+        maxX = Math.max(maxX, bounds.maxX);
+        maxY = Math.max(maxY, bounds.maxY);
+      });
+      const padding = 5;
+      minX = Math.max(0, minX - padding);
+      minY = Math.max(0, minY - padding);
+      maxX = maxX + padding;
+      maxY = maxY + padding;
+      return `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
+    }
+
+    // Reload sprite
+    try {
+      const response = await fetch(ARROW_SPRITE_PATH + `?t=${Date.now()}`);
+      if (response.ok) {
+        const spriteText = await response.text();
+        const doc = new DOMParser().parseFromString(spriteText, "image/svg+xml");
+
+        // Parse CSS style block to get class->fill mappings
+        const classToFill = parseStyleBlock(doc);
+
+        // Try <symbol> first, then <g>
+        const symbols = doc.querySelectorAll("symbol");
+        if (symbols.length > 0) {
+          symbols.forEach((symbol) => {
+            const id = symbol.getAttribute("id");
+            if (!id) return;
+            const viewBox = symbol.getAttribute("viewBox") || "0 0 100 100";
+            // Inline CSS fills so color transformation works
+            const innerContent = inlineCssFills(symbol.innerHTML.trim(), classToFill);
+            hmrSpriteCache.symbols.set(id, { viewBox, innerContent });
+          });
+        } else {
+          const groups = doc.querySelectorAll("svg > g[id]");
+          groups.forEach((group) => {
+            const id = group.getAttribute("id");
+            if (!id) return;
+            const viewBox = calculateGroupViewBox(group);
+            // Inline CSS fills so color transformation works
+            const innerContent = inlineCssFills(group.innerHTML.trim(), classToFill);
+            hmrSpriteCache.symbols.set(id, { viewBox, innerContent });
+          });
+        }
+
+        hmrSpriteCache.loaded = true;
+        console.log(`🎯 Sprite reloaded: ${hmrSpriteCache.symbols.size} symbols`);
+
+        // Increment version to trigger reactive updates
+        spriteVersionInternal++;
+
+        // Notify all listeners to re-render
+        spriteUpdateListeners.forEach((callback) => callback());
+      }
+    } catch (error) {
+      console.error("Failed to reload sprite:", error);
+    }
   });
 }
 
 @injectable()
 export class ArrowSvgLoader implements IArrowSvgLoader {
-  // 🚀 OPTIMIZATION: Use HMR-aware module-level caches
-  private rawSvgCache = hmrRawSvgCache; // path -> raw SVG text
-  private transformedSvgCache = hmrTransformedSvgCache; // path:color:themeMode -> transformed data
-  private loadingPromises = new Map<string, Promise<string>>(); // path -> loading promise (not persisted)
+  // Sprite cache (single file containing all symbols)
+  private spriteCache = hmrSpriteCache;
+  private transformedSvgCache = hmrTransformedSvgCache;
+  private spriteLoadPromise: Promise<void> | null = null;
 
   // Performance monitoring
   private cacheHits = 0;
@@ -73,45 +227,177 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
   ) {}
 
   /**
+   * Calculate bounding box from an SVG path d attribute
+   */
+  private getPathBounds(pathD: string): { minX: number; minY: number; maxX: number; maxY: number } {
+    const numbers = pathD.match(/-?\d*\.?\d+/g) || [];
+    const coords: number[] = numbers.map(Number);
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    for (let i = 0; i < coords.length - 1; i += 2) {
+      const x = coords[i];
+      const y = coords[i + 1];
+      if (!isNaN(x) && !isNaN(y)) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    if (!isFinite(minX)) return { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+    return { minX, minY, maxX, maxY };
+  }
+
+  /**
+   * Calculate viewBox from a group element by examining its paths
+   */
+  private calculateGroupViewBox(group: Element): string {
+    // First check for data-viewbox attribute
+    const dataViewBox = group.getAttribute("data-viewbox");
+    if (dataViewBox) return dataViewBox;
+
+    // Calculate from path bounds
+    const paths = group.querySelectorAll("path");
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    paths.forEach((path) => {
+      const d = path.getAttribute("d") || "";
+      const bounds = this.getPathBounds(d);
+      minX = Math.min(minX, bounds.minX);
+      minY = Math.min(minY, bounds.minY);
+      maxX = Math.max(maxX, bounds.maxX);
+      maxY = Math.max(maxY, bounds.maxY);
+    });
+
+    // Add padding
+    const padding = 5;
+    minX = Math.max(0, minX - padding);
+    minY = Math.max(0, minY - padding);
+    maxX = maxX + padding;
+    maxY = maxY + padding;
+
+    return `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
+  }
+
+  /**
    * Get the current theme mode based on dark mode setting
-   * Dark mode (Dark Mode) = "dark" theme, Light mode = "light" theme
    */
   private getCurrentThemeMode(): ThemeMode {
     try {
       const manager = getAnimationVisibilityManager();
       return manager.isDarkMode() ? "dark" : "light";
     } catch {
-      // Fallback to light mode if manager not available
       return "light";
     }
   }
 
   /**
-   * Load arrow SVG data with color transformation based on placement data (extracted from Arrow.svelte)
-   * 🚀 OPTIMIZED: Checks transformed cache first, then raw cache, then fetches
-   * @param options Optional settings including themeMode for color selection
+   * Load the sprite file and parse all symbols into cache
+   * Handles both <symbol> (standard) and <g> (Illustrator export) formats
+   */
+  private async loadSprite(): Promise<void> {
+    // Already loaded
+    if (this.spriteCache.loaded) {
+      return;
+    }
+
+    // Already loading - wait for it
+    if (this.spriteLoadPromise) {
+      return this.spriteLoadPromise;
+    }
+
+    // Start loading
+    this.spriteLoadPromise = (async () => {
+      try {
+        const response = await fetch(ARROW_SPRITE_PATH);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch sprite: ${response.status}`);
+        }
+        const spriteText = await response.text();
+
+        // Parse the sprite
+        const doc = new DOMParser().parseFromString(spriteText, "image/svg+xml");
+
+        // Parse CSS style block to get class->fill mappings
+        // This inlines fills like .st0{fill:#2E3192;} so color transformation works
+        const classToFill = parseStyleBlock(doc);
+
+        // First try <symbol> elements (standard SVG sprite format)
+        const symbols = doc.querySelectorAll("symbol");
+
+        if (symbols.length > 0) {
+          symbols.forEach((symbol) => {
+            const id = symbol.getAttribute("id");
+            if (!id) return;
+
+            const viewBox = symbol.getAttribute("viewBox") || "0 0 100 100";
+            // Inline CSS fills so color transformation works
+            const innerContent = inlineCssFills(symbol.innerHTML.trim(), classToFill);
+
+            this.spriteCache.symbols.set(id, { viewBox, innerContent });
+          });
+        } else {
+          // Fallback to <g> elements (Illustrator export format)
+          const groups = doc.querySelectorAll("svg > g[id]");
+
+          groups.forEach((group) => {
+            const id = group.getAttribute("id");
+            if (!id) return;
+
+            // Calculate viewBox from path bounds (or use data-viewbox if present)
+            const viewBox = this.calculateGroupViewBox(group);
+            // Inline CSS fills so color transformation works
+            const innerContent = inlineCssFills(group.innerHTML.trim(), classToFill);
+
+            this.spriteCache.symbols.set(id, { viewBox, innerContent });
+          });
+        }
+
+        this.spriteCache.loaded = true;
+        console.log(`Arrow sprite loaded: ${this.spriteCache.symbols.size} symbols`);
+      } catch (error) {
+        console.error("Failed to load arrow sprite:", error);
+        throw error;
+      } finally {
+        this.spriteLoadPromise = null;
+      }
+    })();
+
+    return this.spriteLoadPromise;
+  }
+
+  /**
+   * Get symbol data by ID from the cached sprite
+   */
+  private getSymbolData(symbolId: string): SymbolData | null {
+    return this.spriteCache.symbols.get(symbolId) || null;
+  }
+
+  /**
+   * Load arrow SVG data with color transformation
    */
   async loadArrowSvg(
     arrowData: ArrowPlacementData,
     motionData: MotionData,
     options?: ArrowSvgLoadOptions
   ): Promise<ArrowSvgData> {
-    const path = this.pathResolver.getArrowPath(arrowData, motionData);
+    // Ensure sprite is loaded
+    await this.loadSprite();
 
-    if (!path) {
-      console.error(
-        "❌ ArrowSvgLoader: No arrow path available - missing motion data"
-      );
-      throw new Error("No arrow path available - missing motion data");
+    // Get symbol ID from path resolver
+    const symbolId = this.pathResolver.getArrowPath(arrowData, motionData);
+
+    if (!symbolId) {
+      console.error("ArrowSvgLoader: No symbol ID available");
+      throw new Error("No arrow symbol ID available");
     }
 
-    // Use explicit theme mode if provided, otherwise fall back to global state
     const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
+    const transformedCacheKey = `${symbolId}:${motionData.color}:${themeMode}`;
 
-    // Create cache key including color AND theme mode for transformed SVG cache
-    const transformedCacheKey = `${path}:${motionData.color}:${themeMode}`;
-
-    // 🚀 OPTIMIZATION: Check transformed cache first (fastest path)
+    // Check transformed cache first
     if (this.transformedSvgCache.has(transformedCacheKey)) {
       this.cacheHits++;
       return this.transformedSvgCache.get(transformedCacheKey)!;
@@ -119,23 +405,45 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
 
     this.cacheMisses++;
 
-    // Fetch raw SVG (uses raw cache + deduplication)
-    const originalSvgText = await this.fetchSvgContentCached(path);
+    // Get symbol from sprite
+    const symbolData = this.getSymbolData(symbolId);
 
-    const parsedSvg = this.svgParser.parseArrowSvg(originalSvgText);
+    if (!symbolData) {
+      console.warn(`Arrow symbol not found: ${symbolId}`);
+      // Return empty arrow data for missing symbols (placeholders)
+      return {
+        id: `arrow-${symbolId}`,
+        svgContent: "",
+        imageSrc: "",
+        viewBox: "0 0 100 100",
+        center: { x: 50, y: 50 },
+        dimensions: {
+          width: 100,
+          height: 100,
+          viewBox: "0 0 100 100",
+          center: { x: 50, y: 50 },
+        },
+      };
+    }
 
-    // Apply color transformation to the SVG, passing theme mode
+    // Create a synthetic SVG text for parsing (mimics individual file format)
+    const syntheticSvgText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${symbolData.viewBox}">${symbolData.innerContent}</svg>`;
+
+    // Parse dimensions
+    const parsedSvg = this.svgParser.parseArrowSvg(syntheticSvgText);
+
+    // Apply color transformation
     const coloredSvgText = this.colorTransformer.applyColorToSvg(
-      originalSvgText,
+      syntheticSvgText,
       motionData.color,
       themeMode
     );
 
-    // Extract just the inner SVG content (no scaling needed - arrows are already correctly sized)
+    // Extract inner content
     const svgContent = this.svgParser.extractSvgContent(coloredSvgText);
 
     const result: ArrowSvgData = {
-      id: `arrow-${Date.now()}`,
+      id: `arrow-${symbolId}`,
       svgContent: svgContent,
       imageSrc: svgContent,
       viewBox: parsedSvg.viewBox || "100 100",
@@ -148,77 +456,43 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
       },
     };
 
-    // 🚀 OPTIMIZATION: Cache transformed result
+    // Cache transformed result
     this.transformedSvgCache.set(transformedCacheKey, result);
 
     return result;
   }
 
   /**
-   * 🚀 NEW: Fetch SVG content with caching and deduplication
-   * This method checks the raw cache first, then deduplicates concurrent requests
+   * Fetch SVG content (legacy method - redirects to sprite)
    */
-  private async fetchSvgContentCached(path: string): Promise<string> {
-    // Check raw SVG cache
-    if (this.rawSvgCache.has(path)) {
-      return this.rawSvgCache.get(path)!;
+  async fetchSvgContent(symbolId: string): Promise<string> {
+    await this.loadSprite();
+    const symbolData = this.getSymbolData(symbolId);
+    if (!symbolData) {
+      throw new Error(`Symbol not found: ${symbolId}`);
     }
-
-    // Check if already loading (prevents duplicate concurrent requests)
-    if (this.loadingPromises.has(path)) {
-      return this.loadingPromises.get(path)!;
-    }
-
-    // Create loading promise
-    const loadingPromise = this.fetchSvgContent(path);
-    this.loadingPromises.set(path, loadingPromise);
-
-    try {
-      const svgText = await loadingPromise;
-
-      // Cache the raw SVG
-      this.rawSvgCache.set(path, svgText);
-
-      // Clean up loading promise
-      this.loadingPromises.delete(path);
-
-      return svgText;
-    } catch (error) {
-      // Clean up on error
-      this.loadingPromises.delete(path);
-      throw error;
-    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${symbolData.viewBox}">${symbolData.innerContent}</svg>`;
   }
 
   /**
-   * Fetch SVG content from a given path
-   * Note: Public for interface compliance, but internal code should use fetchSvgContentCached
-   */
-  async fetchSvgContent(path: string): Promise<string> {
-    const response = await fetch(path);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch SVG: ${response.status}`);
-    }
-    return await response.text();
-  }
-
-  /**
-   * 🚀 NEW: Clear caches (useful for testing or memory management)
+   * Clear caches
    */
   clearCache(): void {
-    this.rawSvgCache.clear();
+    this.spriteCache.symbols.clear();
+    this.spriteCache.loaded = false;
     this.transformedSvgCache.clear();
-    this.loadingPromises.clear();
+    this.spriteLoadPromise = null;
     this.cacheHits = 0;
     this.cacheMisses = 0;
   }
 
   /**
-   * 🚀 NEW: Get cache statistics for performance monitoring
+   * Get cache statistics for performance monitoring
    */
   getCacheStats() {
     return {
-      rawCacheSize: this.rawSvgCache.size,
+      spriteLoaded: this.spriteCache.loaded,
+      symbolCount: this.spriteCache.symbols.size,
       transformedCacheSize: this.transformedSvgCache.size,
       cacheHits: this.cacheHits,
       cacheMisses: this.cacheMisses,
@@ -230,5 +504,14 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
             ).toFixed(2) + "%"
           : "0%",
     };
+  }
+
+  /**
+   * Subscribe to sprite updates (for HMR re-rendering)
+   * Returns unsubscribe function
+   */
+  onSpriteUpdate(callback: () => void): () => void {
+    spriteUpdateListeners.add(callback);
+    return () => spriteUpdateListeners.delete(callback);
   }
 }

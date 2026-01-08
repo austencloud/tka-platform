@@ -30,4 +30,10 @@ export interface IArrowSvgLoader {
    * Fetch SVG content from a given path
    */
   fetchSvgContent(path: string): Promise<string>;
+
+  /**
+   * Subscribe to sprite updates (for HMR re-rendering)
+   * Returns unsubscribe function
+   */
+  onSpriteUpdate?(callback: () => void): () => void;
 }
