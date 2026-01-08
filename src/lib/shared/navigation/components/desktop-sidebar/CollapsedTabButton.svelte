@@ -2,12 +2,21 @@
 <!-- Icon-only tab button for collapsed sidebar (VS Code style) -->
 <script lang="ts">
   import type { Section } from "../../domain/types";
+  import { translateTab } from "$lib/shared/i18n/translate";
+  import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
-  let { section, isActive, onClick } = $props<{
+  let { section, moduleId, isActive, onClick } = $props<{
     section: Section;
+    moduleId: string;
     isActive: boolean;
     onClick: () => void;
   }>();
+
+  // Translated label (reactive to locale changes)
+  const translatedLabel = $derived.by(() => {
+    getReactiveLocale(); // Creates reactive dependency on locale
+    return translateTab(moduleId, section.id, section.label);
+  });
 </script>
 
 <button
@@ -16,7 +25,7 @@
   class:disabled={section.disabled}
   onclick={onClick}
   disabled={section.disabled}
-  aria-label={section.label}
+  aria-label={translatedLabel}
   style="--section-color: {section.color ||
     'var(--muted-foreground)'}; --section-gradient: {section.gradient ||
     section.color ||
@@ -24,7 +33,7 @@
 >
   <span class="tab-icon">{@html section.icon}</span>
   <!-- Hover Label -->
-  <span class="hover-label">{section.label}</span>
+  <span class="hover-label">{translatedLabel}</span>
 </button>
 
 <style>

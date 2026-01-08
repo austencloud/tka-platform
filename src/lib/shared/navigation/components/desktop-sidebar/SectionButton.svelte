@@ -3,18 +3,28 @@
 <script lang="ts">
   import type { Section } from "../../domain/types";
   import NotificationBadge from "../NotificationBadge.svelte";
+  import { translateTab } from "$lib/shared/i18n/translate";
+  import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
   let {
     section,
+    moduleId,
     isActive,
     onClick,
     badgeCount = 0,
   } = $props<{
     section: Section;
+    moduleId: string;
     isActive: boolean;
     onClick: () => void;
     badgeCount?: number;
   }>();
+
+  // Translated label (reactive to locale changes)
+  const translatedLabel = $derived.by(() => {
+    getReactiveLocale(); // Creates reactive dependency on locale
+    return translateTab(moduleId, section.id, section.label);
+  });
 </script>
 
 <button
@@ -23,7 +33,7 @@
   class:disabled={section.disabled}
   onclick={onClick}
   disabled={section.disabled}
-  aria-label={section.label}
+  aria-label={translatedLabel}
   style="--section-color: {section.color ||
     'var(--muted-foreground)'}; --section-gradient: {section.gradient ||
     section.color ||
@@ -35,7 +45,7 @@
       <NotificationBadge count={badgeCount} />
     {/if}
   </div>
-  <span class="section-label">{section.label}</span>
+  <span class="section-label">{translatedLabel}</span>
 </button>
 
 <style>

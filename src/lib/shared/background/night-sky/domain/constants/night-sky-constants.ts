@@ -173,7 +173,7 @@ export const NightSkyConfig = {
   milkyWay: {
     // Band dimensions
     bandWidthPercent: 0.15, // Width as fraction of screen diagonal
-    pathPoints: 5, // Control points for the curved path
+    pathPoints: 50, // Control points for smooth curve (was 5, caused blocky segments)
     // Internal structure
     dustLaneCount: 4, // Dark regions within the band
     starCloudCount: 6, // Bright clusters within the band

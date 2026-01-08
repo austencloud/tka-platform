@@ -24,6 +24,8 @@
     SETTINGS_TABS,
   } from "../state/navigation-state.svelte";
   import { featureFlagService } from "../../auth/services/FeatureFlagService.svelte";
+  import { translateSettingsTab } from "../../i18n/translate";
+  import { getReactiveLocale } from "../../i18n/locale-state.svelte";
 
   let {
     currentModule,
@@ -46,6 +48,9 @@
 
   // Services
   let hapticService: IHapticFeedback;
+
+  // Reactive locale for re-rendering translations
+  const locale = $derived(getReactiveLocale());
 
   // Ref to sidebar element
   let sidebarElement = $state<HTMLElement | null>(null);
@@ -293,6 +298,7 @@
               <div in:fade={{ duration: 150, delay: index * 25 }}>
                 <CollapsedTabButton
                   {section}
+                  moduleId="settings"
                   isActive={isSectionActive}
                   onClick={() => handleSettingsSectionTap(section)}
                 />
@@ -313,7 +319,7 @@
                 style="--section-color: {section.color || '#64748b'};"
               >
                 <span class="section-icon">{@html section.icon}</span>
-                <span class="section-label">{section.label}</span>
+                <span class="section-label">{translateSettingsTab(section.id)}</span>
               </button>
             {/each}
           </div>
@@ -376,6 +382,7 @@
                       >
                         <CollapsedTabButton
                           {section}
+                          moduleId={module.id}
                           isActive={isSectionActive}
                           onClick={() => handleSectionTap(module.id, section)}
                         />

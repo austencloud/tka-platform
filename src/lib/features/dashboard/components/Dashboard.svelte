@@ -72,7 +72,7 @@
         previewProfile.displayName ||
         previewProfile.email ||
         "User"
-      ).split(" ")[0];
+      ).split(" ")[0] ?? "User";
       return t("dashboard_viewing_as", { name: firstName });
     }
     // Normal authenticated user

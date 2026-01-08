@@ -32,6 +32,40 @@ export function translateSettingsTab(tabId: string): string {
 }
 
 /**
+ * Get translated tab label by module ID and tab ID
+ * Uses pattern: tab_{moduleId}_{tabId}
+ * Falls back to the tab label if no translation exists
+ */
+export function translateTab(
+  moduleId: string,
+  tabId: string,
+  fallbackLabel?: string
+): string {
+  const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, "_");
+  const normalizedTabId = tabId.toLowerCase().replace(/-/g, "_");
+  const key = `tab_${normalizedModuleId}_${normalizedTabId}`;
+  const result = tDynamic(key);
+  return result !== key ? result : fallbackLabel || tabId;
+}
+
+/**
+ * Get translated tab description by module ID and tab ID
+ * Uses pattern: tab_desc_{moduleId}_{tabId}
+ * Falls back to the provided default if no translation exists
+ */
+export function translateTabDescription(
+  moduleId: string,
+  tabId: string,
+  fallback?: string
+): string {
+  const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, "_");
+  const normalizedTabId = tabId.toLowerCase().replace(/-/g, "_");
+  const key = `tab_desc_${normalizedModuleId}_${normalizedTabId}`;
+  const result = tDynamic(key);
+  return result !== key ? result : fallback || tabId;
+}
+
+/**
  * Get translated module description by module ID
  * Falls back to the provided default if no translation exists
  */

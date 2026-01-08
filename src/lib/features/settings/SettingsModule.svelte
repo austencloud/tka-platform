@@ -247,10 +247,7 @@
         {:else if activeTab === "theme"}
           <BackgroundTab {settings} onUpdate={handleSettingUpdate} />
         {:else if activeTab === "visibility"}
-          <VisibilityTab
-            currentSettings={settings}
-            onSettingUpdate={handleSettingUpdate}
-          />
+          <VisibilityTab />
         {:else if activeTab === "keyboard"}
           <KeyboardShortcutsTab />
         {:else if activeTab === "preferences"}

@@ -47,6 +47,7 @@
     >
       <SectionButton
         {section}
+        {moduleId}
         isActive={isSectionActive}
         onClick={() => onSectionClick(moduleId, section)}
         badgeCount={badgeCounts[section.id] || 0}

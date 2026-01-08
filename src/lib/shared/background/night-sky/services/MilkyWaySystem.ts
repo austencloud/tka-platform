@@ -357,7 +357,7 @@ export class MilkyWaySystem {
   }
 
   /**
-   * Draw the brighter core region
+   * Draw the brighter core region - soft gradients for photorealistic effect
    */
   private drawCoreBrightness(ctx: CanvasRenderingContext2D): void {
     if (!this.band) return;
@@ -365,56 +365,31 @@ export class MilkyWaySystem {
     const { pathPoints, widths, glowPhase } = this.band;
     const coreBreath = 1 + Math.sin(glowPhase * 1.3) * 0.08;
 
-    ctx.globalAlpha = this.config.coreOpacity * coreBreath;
+    // Enable soft blending
+    ctx.globalCompositeOperation = "screen";
+    ctx.filter = "blur(12px)";
 
-    // Draw narrower, brighter core
-    for (let i = 0; i < pathPoints.length - 1; i++) {
-      const p1 = pathPoints[i]!;
-      const p2 = pathPoints[i + 1]!;
-      const w1 = widths[i]! * 0.4 * coreBreath;
-      const w2 = widths[i + 1]! * 0.4 * coreBreath;
+    // Draw narrower, brighter core along path (every 2nd point for performance)
+    for (let i = 0; i < pathPoints.length; i += 2) {
+      const p = pathPoints[i]!;
+      const w = widths[i]! * 0.25 * coreBreath;
 
-      const dx = p2.x - p1.x;
-      const dy = p2.y - p1.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      const nx = -dy / len;
-      const ny = dx / len;
+      // Warmer, brighter gradient for core
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, w);
+      grad.addColorStop(0, "rgba(255, 250, 240, 0.18)");
+      grad.addColorStop(0.3, "rgba(255, 248, 235, 0.10)");
+      grad.addColorStop(0.6, "rgba(255, 245, 230, 0.04)");
+      grad.addColorStop(1, "transparent");
 
-      const midX = (p1.x + p2.x) / 2;
-      const midY = (p1.y + p2.y) / 2;
-      const gradW = (w1 + w2) / 2;
-
-      const gradient = ctx.createLinearGradient(
-        midX + nx * gradW,
-        midY + ny * gradW,
-        midX - nx * gradW,
-        midY - ny * gradW
-      );
-
-      // Warmer, brighter core
-      gradient.addColorStop(0, "rgba(255, 250, 240, 0)");
-      gradient.addColorStop(0.3, "rgba(255, 250, 240, 0.4)");
-      gradient.addColorStop(0.5, "rgba(255, 255, 255, 0.7)");
-      gradient.addColorStop(0.7, "rgba(255, 250, 240, 0.4)");
-      gradient.addColorStop(1, "rgba(255, 250, 240, 0)");
-
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = grad;
       ctx.beginPath();
-
-      const corners = [
-        { x: p1.x + nx * w1 * 0.5, y: p1.y + ny * w1 * 0.5 },
-        { x: p1.x - nx * w1 * 0.5, y: p1.y - ny * w1 * 0.5 },
-        { x: p2.x - nx * w2 * 0.5, y: p2.y - ny * w2 * 0.5 },
-        { x: p2.x + nx * w2 * 0.5, y: p2.y + ny * w2 * 0.5 },
-      ];
-
-      ctx.moveTo(corners[0]!.x, corners[0]!.y);
-      ctx.lineTo(corners[1]!.x, corners[1]!.y);
-      ctx.lineTo(corners[2]!.x, corners[2]!.y);
-      ctx.lineTo(corners[3]!.x, corners[3]!.y);
-      ctx.closePath();
+      ctx.arc(p.x, p.y, w, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Reset
+    ctx.filter = "none";
+    ctx.globalCompositeOperation = "source-over";
   }
 
   /**
@@ -605,41 +580,11 @@ export class MilkyWaySystem {
 
   /**
    * Draw subtle edge highlights
+   * DISABLED: Hard stroke lines don't fit photorealistic approach
    */
-  private drawEdgeHighlights(ctx: CanvasRenderingContext2D): void {
-    if (!this.band) return;
-
-    const { pathPoints, widths, glowPhase } = this.band;
-
-    ctx.globalAlpha = 0.03 + Math.sin(glowPhase * 0.7) * 0.01;
-    ctx.strokeStyle = "rgba(200, 220, 255, 0.5)";
-    ctx.lineWidth = 1;
-
-    // Draw subtle edge lines with organic variation
-    ctx.beginPath();
-    for (let i = 0; i < pathPoints.length; i++) {
-      const p = pathPoints[i]!;
-      const w = widths[i]!;
-      const nextP = pathPoints[i + 1];
-      if (!nextP) continue;
-
-      const dx = nextP.x - p.x;
-      const dy = nextP.y - p.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      const nx = -dy / len;
-      const ny = dx / len;
-
-      const edgeVar = this.getEdgeVariation(i, 0);
-      const x = p.x + nx * w * 0.5 * edgeVar;
-      const y = p.y + ny * w * 0.5 * edgeVar;
-
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.stroke();
+  private drawEdgeHighlights(_ctx: CanvasRenderingContext2D): void {
+    // Disabled - edge strokes create hard lines incompatible with soft gradient approach
+    return;
   }
 
   /**

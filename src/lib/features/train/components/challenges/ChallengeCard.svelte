@@ -114,7 +114,7 @@
       timed: "train_mode_timed",
     };
     const key = modeLabels[mode];
-    return key ? t(key) : null;
+    return key ? t(key as Parameters<typeof t>[0]) : null;
   });
 
   function handleClick() {

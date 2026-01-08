@@ -182,8 +182,8 @@
 
     // Simple approach: treat pairs of numbers as x,y coordinates
     for (let i = 0; i < coords.length - 1; i += 2) {
-      const x = coords[i];
-      const y = coords[i + 1];
+      const x = coords[i] ?? 0;
+      const y = coords[i + 1] ?? 0;
       if (!isNaN(x) && !isNaN(y)) {
         minX = Math.min(minX, x);
         maxX = Math.max(maxX, x);

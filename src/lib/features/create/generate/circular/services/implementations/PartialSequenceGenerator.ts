@@ -149,14 +149,11 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
     const sequence: BeatData[] = [startBeat];
 
     // Now get all options for generating the rest of the sequence
-    let allOptions = await this.letterQueryHandler.getAllPictographVariations(
+    // NOTE: We do NOT filter by prop type here - prop type is a rendering concern,
+    // not a motion pattern concern. The same motion patterns apply regardless of
+    // whether you're holding a staff, fan, or club.
+    const allOptions = await this.letterQueryHandler.getAllPictographVariations(
       options.gridMode
-    );
-
-    // Filter by prop type to ensure consistency with selected prop
-    allOptions = this.PictographFilter.filterByPropType(
-      allOptions,
-      options.propType
     );
 
     // Step 2: Calculate word length (legacy formula)
@@ -371,11 +368,9 @@ export class PartialSequenceGenerator implements IPartialSequenceGenerator {
     avoidEndPosition?: GridPosition
   ): Promise<BeatData> {
     // Get all options
-    let allOptions =
+    // NOTE: We do NOT filter by prop type - it's a rendering concern, not a motion concern
+    const allOptions =
       await this.letterQueryHandler.getAllPictographVariations(gridMode);
-
-    // Filter by prop type to ensure consistency with selected prop
-    allOptions = this.PictographFilter.filterByPropType(allOptions, propType);
 
     // Apply filters - track counts at each step for diagnostics
     let filteredOptions = allOptions;
