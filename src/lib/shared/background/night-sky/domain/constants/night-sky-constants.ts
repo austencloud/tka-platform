@@ -48,24 +48,61 @@ export const NightSkyConfig = {
     },
   },
   nebula: {
+    // Core dimensions
     count: 3,
-    minRadius: 80,
-    maxRadius: 150,
-    colors: [
-      "rgba(128, 0, 255, 0.03)", // Much more subtle - whisper of purple
-      "rgba(255, 0, 128, 0.03)", // Whisper of pink
-      "rgba(0, 128, 255, 0.03)", // Whisper of blue
+    minRadius: 100,
+    maxRadius: 200,
+    // Structure complexity
+    controlPointCount: 8, // Points defining irregular shape
+    embeddedStarCount: 4, // Bright spots within cloud
+    filamentCount: 3, // Wispy extensions
+    // Emission nebula color palettes (pink/purple/blue like real nebulae)
+    colorPalettes: [
+      {
+        primary: "rgba(255, 100, 180, 0.08)", // Pink (Orion-like)
+        secondary: "rgba(180, 80, 255, 0.06)", // Purple
+        accent: "rgba(100, 180, 255, 0.04)", // Blue edge
+      },
+      {
+        primary: "rgba(100, 150, 255, 0.08)", // Blue (reflection nebula)
+        secondary: "rgba(150, 100, 255, 0.06)", // Violet
+        accent: "rgba(200, 150, 255, 0.04)", // Lavender edge
+      },
+      {
+        primary: "rgba(255, 150, 100, 0.07)", // Orange/salmon (emission)
+        secondary: "rgba(255, 100, 150, 0.05)", // Pink
+        accent: "rgba(255, 200, 150, 0.03)", // Warm edge
+      },
     ],
-    pulseSpeed: {
-      min: 0.005,
-      max: 0.02,
-    },
+    // Animation speeds
+    glowPulseSpeed: 0.0008, // Slow breathing
+    shimmerSpeed: 0.0004, // Traveling highlight
+    colorShiftSpeed: 0.0002, // Very slow hue shift
+    filamentWaveSpeed: 0.0006, // Filament gentle wave
+    // Appearance
+    baseOpacity: 0.12, // Subtle, not overpowering
+    // Quality gating
     enabledOnQuality: ["high", "medium"] as (
       | "high"
       | "medium"
       | "low"
       | "minimal"
     )[],
+    // Quality-specific settings
+    quality: {
+      high: {
+        filaments: true,
+        embeddedStars: true,
+        shimmer: true,
+        colorShift: true,
+      },
+      medium: {
+        filaments: false,
+        embeddedStars: true,
+        shimmer: false,
+        colorShift: false,
+      },
+    },
   },
   constellations: {
     maxLines: 5, // Subtle - just a few constellation lines

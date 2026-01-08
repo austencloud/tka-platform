@@ -12,12 +12,26 @@ import type {
 // Removed resolve import - calculation service now injected via constructor
 import type { INightSkyCalculationService } from "./contracts/INightSkyCalculationService";
 
+// ============================================================================
+// DIFFRACTION STAR - Enhanced brightest stars with camera-like diffraction spikes
+// ============================================================================
+interface DiffractionStar {
+  star: Star;
+  spikePhase: number; // Rotation/pulse animation phase
+  chromaOffset: number; // Chromatic aberration offset
+}
+
 export class ParallaxStarSystem {
   private layers: Record<"far" | "mid" | "near", ParallaxLayer> = {
     far: { stars: [], driftX: 0, driftY: 0 },
     mid: { stars: [], driftX: 0, driftY: 0 },
     near: { stars: [], driftX: 0, driftY: 0 },
   };
+
+  // Track brightest stars for diffraction spike rendering
+  private diffractionStars: DiffractionStar[] = [];
+  private readonly DIFFRACTION_STAR_COUNT = 8; // Top 8 brightest stars get spikes
+  private readonly DIFFRACTION_SPIKE_COUNT = 6; // 6-pointed diffraction pattern
 
   private config: ParallaxConfig;
   private starConfig: StarConfig;
@@ -107,6 +121,39 @@ export class ParallaxStarSystem {
 
     // Set lastDimensions so future updates can detect changes
     this.lastDimensions = dim;
+
+    // Identify brightest stars for diffraction spike rendering (HIGH quality only)
+    this.identifyDiffractionStars();
+  }
+
+  /**
+   * Identify the brightest stars from the near layer for diffraction spike rendering.
+   * These get special 6-pointed diffraction patterns like camera lens flares.
+   */
+  private identifyDiffractionStars() {
+    // Only enable for high quality
+    if (this.qualitySettings.densityMultiplier < 1) {
+      this.diffractionStars = [];
+      return;
+    }
+
+    // Get all near layer stars and sort by brightness (baseOpacity * radius)
+    const nearStars = [...this.layers.near.stars];
+    nearStars.sort((a, b) => {
+      const brightnessA = a.baseOpacity * a.radius;
+      const brightnessB = b.baseOpacity * b.radius;
+      return brightnessB - brightnessA;
+    });
+
+    // Take the top N brightest stars
+    const brightestStars = nearStars.slice(0, this.DIFFRACTION_STAR_COUNT);
+
+    // Create diffraction star tracking objects
+    this.diffractionStars = brightestStars.map((star) => ({
+      star,
+      spikePhase: Math.random() * Math.PI * 2,
+      chromaOffset: Math.random() * 0.3, // Slight offset for chromatic variation
+    }));
   }
 
   update(
@@ -159,6 +206,12 @@ export class ParallaxStarSystem {
         });
       }
     );
+
+    // Update diffraction star phases (subtle rotation/pulse)
+    const effectiveSpeed = frameMultiplier * (a11y.reducedMotion ? 0.2 : 1);
+    for (const diffStar of this.diffractionStars) {
+      diffStar.spikePhase += 0.001 * effectiveSpeed; // Very slow rotation
+    }
   }
 
   draw(ctx: CanvasRenderingContext2D, a11y: AccessibilitySettings) {
@@ -185,7 +238,153 @@ export class ParallaxStarSystem {
         });
       }
     );
+
+    // Draw diffraction spikes on brightest stars (HIGH quality only)
+    if (this.diffractionStars.length > 0) {
+      this.drawDiffractionStars(ctx, a11y);
+    }
+
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Draw diffraction spikes on the brightest stars.
+   * Creates camera-like 6-pointed star patterns with chromatic aberration.
+   */
+  private drawDiffractionStars(
+    ctx: CanvasRenderingContext2D,
+    a11y: AccessibilitySettings
+  ) {
+    for (const diffStar of this.diffractionStars) {
+      const star = diffStar.star;
+      const phase = diffStar.spikePhase;
+      const chromaOffset = diffStar.chromaOffset;
+
+      // Spike length proportional to star brightness
+      const brightness = star.currentOpacity;
+      const spikeLength = star.radius * 8 * brightness;
+
+      // Pulse effect on spike intensity
+      const pulseIntensity = 0.7 + 0.3 * Math.sin(phase * 3);
+      const baseAlpha = brightness * pulseIntensity * (a11y.reducedMotion ? 0.5 : 0.8);
+
+      ctx.save();
+      ctx.translate(star.x, star.y);
+      // Very subtle rotation based on phase
+      ctx.rotate(phase * 0.1);
+
+      // Draw 6 spikes with chromatic aberration
+      for (let i = 0; i < this.DIFFRACTION_SPIKE_COUNT; i++) {
+        const angle = (i / this.DIFFRACTION_SPIKE_COUNT) * Math.PI * 2;
+
+        // Draw chromatic aberration layers (subtle rainbow fringing)
+        this.drawDiffractionSpike(ctx, angle, spikeLength, baseAlpha, chromaOffset);
+      }
+
+      // Draw central glow
+      this.drawCentralGlow(ctx, star, baseAlpha);
+
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Draw a single diffraction spike with chromatic aberration.
+   */
+  private drawDiffractionSpike(
+    ctx: CanvasRenderingContext2D,
+    angle: number,
+    length: number,
+    alpha: number,
+    chromaOffset: number
+  ) {
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+
+    // Main spike (white core)
+    const gradient = ctx.createLinearGradient(
+      0,
+      0,
+      cosA * length,
+      sinA * length
+    );
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+    gradient.addColorStop(0.3, `rgba(255, 255, 255, ${alpha * 0.5})`);
+    gradient.addColorStop(1, "transparent");
+
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(cosA * length, sinA * length);
+    ctx.stroke();
+
+    // Chromatic aberration - red shifted outward
+    const redGradient = ctx.createLinearGradient(
+      0,
+      0,
+      cosA * length * 1.1,
+      sinA * length * 1.1
+    );
+    redGradient.addColorStop(0, "transparent");
+    redGradient.addColorStop(0.5 + chromaOffset * 0.2, `rgba(255, 100, 100, ${alpha * 0.3})`);
+    redGradient.addColorStop(1, "transparent");
+
+    ctx.strokeStyle = redGradient;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cosA * length * 0.3, sinA * length * 0.3);
+    ctx.lineTo(cosA * length * 1.1, sinA * length * 1.1);
+    ctx.stroke();
+
+    // Chromatic aberration - blue shifted inward
+    const blueGradient = ctx.createLinearGradient(
+      0,
+      0,
+      cosA * length * 0.9,
+      sinA * length * 0.9
+    );
+    blueGradient.addColorStop(0, `rgba(100, 150, 255, ${alpha * 0.25})`);
+    blueGradient.addColorStop(0.5, `rgba(100, 150, 255, ${alpha * 0.15})`);
+    blueGradient.addColorStop(1, "transparent");
+
+    ctx.strokeStyle = blueGradient;
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(cosA * length * 0.9, sinA * length * 0.9);
+    ctx.stroke();
+  }
+
+  /**
+   * Draw the central glow around a diffraction star.
+   */
+  private drawCentralGlow(
+    ctx: CanvasRenderingContext2D,
+    star: Star,
+    alpha: number
+  ) {
+    const glowRadius = star.radius * 4;
+
+    // Outer glow
+    const outerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
+    outerGlow.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.8})`);
+    outerGlow.addColorStop(0.2, `rgba(255, 255, 255, ${alpha * 0.4})`);
+    outerGlow.addColorStop(0.5, `rgba(200, 220, 255, ${alpha * 0.15})`);
+    outerGlow.addColorStop(1, "transparent");
+
+    ctx.fillStyle = outerGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bright core
+    ctx.fillStyle = star.color;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(0, 0, star.radius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   /**
@@ -353,6 +552,7 @@ export class ParallaxStarSystem {
       mid: { stars: [], driftX: 0, driftY: 0 },
       near: { stars: [], driftX: 0, driftY: 0 },
     };
+    this.diffractionStars = [];
     this.lastDimensions = null;
   }
 }

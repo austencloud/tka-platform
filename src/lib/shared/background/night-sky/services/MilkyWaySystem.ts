@@ -76,7 +76,9 @@ export class MilkyWaySystem {
     this.quality = quality;
     this.lastDimensions = dim;
 
-    if (!this.config.enabledOnQuality.includes(quality)) {
+    // Check if quality level is enabled (ultra-minimal is never enabled)
+    const enabledQualities = this.config.enabledOnQuality as readonly QualityLevel[];
+    if (!enabledQualities.includes(quality)) {
       this.band = null;
       return;
     }

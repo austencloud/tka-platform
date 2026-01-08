@@ -175,3 +175,125 @@ export interface MilkyWayConfig {
   /** Quality levels where enabled */
   enabledOnQuality: ("high" | "medium" | "low" | "minimal")[];
 }
+
+// ============================================================================
+// NEBULA MODELS (Atmospheric Clouds)
+// ============================================================================
+
+/** Control point for organic cloud shape */
+export interface CloudControlPoint {
+  /** Angle from center (radians) */
+  angle: number;
+  /** Distance from center as multiplier of base radius */
+  distance: number;
+  /** Seed for organic edge variation */
+  seed: number;
+}
+
+/** An embedded star within the nebula */
+export interface EmbeddedStar {
+  /** Offset from nebula center (-1 to 1 normalized) */
+  offsetX: number;
+  offsetY: number;
+  /** Size relative to nebula */
+  sizeRatio: number;
+  /** Brightness (0-1) */
+  brightness: number;
+  /** Animation phase */
+  pulsePhase: number;
+  /** Color tint */
+  color: string;
+}
+
+/** A wispy filament extending from the nebula */
+export interface Filament {
+  /** Start angle from center */
+  startAngle: number;
+  /** Length as multiplier of nebula radius */
+  length: number;
+  /** Width at base as fraction of length */
+  baseWidth: number;
+  /** Curve direction (-1 to 1) */
+  curvature: number;
+  /** Opacity (0-1) */
+  opacity: number;
+  /** Seeds for organic shape */
+  seeds: number[];
+  /** Animation phase offset */
+  phaseOffset: number;
+}
+
+/** Complete nebula cloud state */
+export interface NebulaCloud {
+  /** Center position */
+  x: number;
+  y: number;
+  /** Base radius */
+  baseRadius: number;
+  /** Control points defining irregular shape */
+  controlPoints: CloudControlPoint[];
+  /** Color layers for multi-layer gradient */
+  colorLayers: {
+    color: string;
+    opacity: number;
+    radiusMultiplier: number;
+  }[];
+  /** Embedded bright stars */
+  embeddedStars: EmbeddedStar[];
+  /** Wispy filament extensions */
+  filaments: Filament[];
+  /** Overall glow phase */
+  glowPhase: number;
+  /** Shimmer traveling wave phase */
+  shimmerPhase: number;
+  /** Color shift phase for hue variation */
+  colorShiftPhase: number;
+  /** Seeds for organic edge variation */
+  edgeSeeds: number[];
+}
+
+/** Nebula configuration */
+export interface NebulaConfig {
+  /** Number of nebulae */
+  count: number;
+  /** Minimum radius */
+  minRadius: number;
+  /** Maximum radius */
+  maxRadius: number;
+  /** Number of control points per nebula */
+  controlPointCount: number;
+  /** Number of embedded stars per nebula */
+  embeddedStarCount: number;
+  /** Number of filaments per nebula */
+  filamentCount: number;
+  /** Base color palettes for emission nebula style */
+  colorPalettes: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  }[];
+  /** Animation speeds */
+  glowPulseSpeed: number;
+  shimmerSpeed: number;
+  colorShiftSpeed: number;
+  filamentWaveSpeed: number;
+  /** Base opacity */
+  baseOpacity: number;
+  /** Quality levels where enabled */
+  enabledOnQuality: ("high" | "medium" | "low" | "minimal")[];
+  /** Quality-specific settings */
+  quality: {
+    high: {
+      filaments: boolean;
+      embeddedStars: boolean;
+      shimmer: boolean;
+      colorShift: boolean;
+    };
+    medium: {
+      filaments: boolean;
+      embeddedStars: boolean;
+      shimmer: boolean;
+      colorShift: boolean;
+    };
+  };
+}
