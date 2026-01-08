@@ -18,6 +18,11 @@
   import { resolve, TYPES, preloadFeatureModule } from "../../inversify/di";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { onMount } from "svelte";
+  import { translateModule } from "$lib/shared/i18n/translate";
+  import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
+
+  // Reactive locale for re-rendering translations
+  const locale = $derived(getReactiveLocale());
 
   let {
     currentModule,
@@ -186,6 +191,7 @@
 <!-- Main Modules Section - Compact 2-Column Grid -->
 <section class="module-section">
   <h3 class="section-title">Modules</h3>
+  {#key locale}
   <div class="module-grid">
     {#each mainModules as module}
       {@const moduleColor = module.color || extractModuleColor(module.icon)}
@@ -214,7 +220,7 @@
         <!-- Content layer -->
         <div class="cell-content">
           <span class="cell-icon">{@html module.icon}</span>
-          <span class="cell-label">{module.label}</span>
+          <span class="cell-label">{translateModule(module.id)}</span>
 
           <!-- Unread badge -->
           {#if badgeCount > 0}
@@ -231,12 +237,14 @@
       </button>
     {/each}
   </div>
+  {/key}
 </section>
 
 <!-- Developer/Admin Modules Section -->
 {#if devModules.length > 0}
   <section class="module-section dev-section">
     <h3 class="section-title">Developer</h3>
+    {#key locale}
     <div class="module-grid dev-grid">
       {#each devModules as module}
         {@const moduleColor = module.color || extractModuleColor(module.icon)}
@@ -263,7 +271,7 @@
           <!-- Content layer -->
           <div class="cell-content">
             <span class="cell-icon">{@html module.icon}</span>
-            <span class="cell-label">{module.label}</span>
+            <span class="cell-label">{translateModule(module.id)}</span>
 
             <!-- Disabled badge -->
             {#if isDisabled && module.disabledMessage}
@@ -273,6 +281,7 @@
         </button>
       {/each}
     </div>
+    {/key}
   </section>
 {/if}
 

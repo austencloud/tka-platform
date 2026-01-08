@@ -6,6 +6,8 @@
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import NotificationBadge from "../NotificationBadge.svelte";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
+  import { translateModule } from "$lib/shared/i18n/translate";
+  import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
   let {
     module,
@@ -22,6 +24,12 @@
   }>();
 
   const isDisabled = $derived(module.disabled ?? false);
+
+  // Translated module label (reactive to locale changes)
+  const translatedLabel = $derived.by(() => {
+    getReactiveLocale(); // Creates reactive dependency on locale
+    return translateModule(module.id);
+  });
 
   // Get total unread count from inbox (notifications + messages)
   const inboxUnreadCount = $derived(inboxState.totalUnreadCount);
@@ -54,7 +62,7 @@
   class:has-tabs={hasTabs}
   onclick={onClick}
   disabled={isDisabled}
-  aria-label={module.label}
+  aria-label={translatedLabel}
   aria-current={isActive ? "page" : undefined}
   style="--module-color: {moduleColor || '#a855f7'};"
 >
@@ -78,7 +86,7 @@
   </div>
 
   <!-- Hover Label -->
-  <span class="hover-label">{module.label}</span>
+  <span class="hover-label">{translatedLabel}</span>
 </button>
 
 <style>

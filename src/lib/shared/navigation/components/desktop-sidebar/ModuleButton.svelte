@@ -11,6 +11,8 @@
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   // 🚀 Performance: Intent-based prefetching
   import { prefetchOnIntent } from "../../utils/module-prefetch";
+  import { translateModule } from "$lib/shared/i18n/translate";
+  import { getReactiveLocale } from "$lib/shared/i18n/locale-state.svelte";
 
   let {
     module,
@@ -55,6 +57,12 @@
 
   const isDisabled = $derived(module.disabled ?? false);
 
+  // Translated module label (reactive to locale changes)
+  const translatedLabel = $derived.by(() => {
+    getReactiveLocale(); // Creates reactive dependency on locale
+    return translateModule(module.id);
+  });
+
   // Get effective user info (previewed user takes priority over actual user)
   const effectivePhotoURL = $derived(
     userPreviewState.isActive && userPreviewState.data.profile?.photoURL
@@ -88,7 +96,7 @@
   onclick={handleClick}
   onmouseenter={handleMouseEnter}
   onfocus={handleMouseEnter}
-  aria-label={module.label}
+  aria-label={translatedLabel}
   aria-expanded={isExpanded}
   aria-controls="module-sections-{module.id}"
   aria-current={isActive ? "page" : undefined}
@@ -117,7 +125,7 @@
     {/if}
   </div>
   {#if !isCollapsed}
-    <span class="module-label">{module.label}</span>
+    <span class="module-label">{translatedLabel}</span>
     {#if isDisabled && module.disabledMessage}
       <span class="disabled-badge">{module.disabledMessage}</span>
     {:else if !isExpanded && hasSections}
