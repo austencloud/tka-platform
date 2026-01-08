@@ -60,6 +60,7 @@ import { MessagingTypes } from "./messaging.types";
 import { RenderingTypes } from "./rendering.types";
 import { TrainTypes } from "./train.types";
 import { UITypes } from "./ui.types";
+import { PromoTypes } from "./promo.types";
 
 // Re-export domain-specific types for granular imports
 export {
@@ -84,6 +85,7 @@ export {
   RenderingTypes,
   TrainTypes,
   UITypes,
+  PromoTypes,
 };
 
 /**
@@ -122,6 +124,7 @@ export const TYPES = {
   ...FeedbackTypes,
   ...MessagingTypes,
   ...LOOPLabelerTypes,
+  ...PromoTypes,
 } as const;
 
 // Type helper for getting service types

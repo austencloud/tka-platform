@@ -608,6 +608,12 @@ export async function loadFeatureModule(feature: string): Promise<void> {
         // No DI dependencies - just mark as loaded
         break;
 
+      case "promo-generator":
+        // Promo Generator - 3D device mockup video generator
+        // Self-contained with its own scene management, animation, and export
+        await loadIfNeeded("promo", () => import("./modules/promo.module"));
+        break;
+
       default:
         console.warn(`Unknown feature module: ${feature}`);
         return;
