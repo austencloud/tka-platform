@@ -1,3 +1,8 @@
+---
+description: Detect monolithic files with multiple responsibilities and propose DI-based decomposition
+allowed-tools: Bash Read Edit Write Glob Grep Task TodoWrite
+---
+
 Run monolith detection to identify files with multiple responsibilities.
 
 First, run the detection script:
