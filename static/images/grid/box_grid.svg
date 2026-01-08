@@ -32,10 +32,10 @@
   <path id="nw_box_outer_point" class="box-grid-stroke" d="M262.9 672.1c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.8-2.8 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
 
   <!-- Hand points -->
-  <circle id="nw_box_hand_point" class="normal-hand-point" cx="373.8" cy="373.8" r="8"/>
-  <circle id="ne_box_hand_point" class="normal-hand-point" cx="576.2" cy="373.8" r="8"/>
-  <circle id="se_box_hand_point" class="normal-hand-point" cx="576.2" cy="576.2" r="8"/>
-  <circle id="sw_box_hand_point" class="normal-hand-point" cx="373.8" cy="576.2" r="8"/>
+  <circle id="nw_box_hand_point" class="normal-hand-point" cx="373.8" cy="373.8" r="4.7"/>
+  <circle id="ne_box_hand_point" class="normal-hand-point" cx="576.2" cy="373.8" r="4.7"/>
+  <circle id="se_box_hand_point" class="normal-hand-point" cx="576.2" cy="576.2" r="4.7"/>
+  <circle id="sw_box_hand_point" class="normal-hand-point" cx="373.8" cy="576.2" r="4.7"/>
 
   <!-- Layer 2 points -->
   <circle id="n_box_layer2_point" class="normal-layer2-point" cx="475" cy="272.6" r="8.8"/>
