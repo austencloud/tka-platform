@@ -20,7 +20,6 @@ export const BackgroundTypes = {
   // Deep Ocean - Physics & Systems
   IBubblePhysics: Symbol.for("IBubblePhysics"),
   IParticleSystem: Symbol.for("IParticleSystem"),
-  IFishSpriteManager: Symbol.for("IFishSpriteManager"),
   ILightRayCalculator: Symbol.for("ILightRayCalculator"),
 
   // Deep Ocean - Animators

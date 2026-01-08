@@ -5,7 +5,6 @@ import { TYPES } from "../../../inversify/types";
 // Contracts
 import type { IBubblePhysics } from "../services/contracts/IBubblePhysics";
 import type { IParticleSystem } from "../services/contracts/IParticleSystem";
-import type { IFishSpriteManager } from "../services/contracts/IFishSpriteManager";
 import type { ILightRayCalculator } from "../services/contracts/ILightRayCalculator";
 import type { IFishAnimator } from "../services/contracts/IFishAnimator";
 import type { IJellyfishAnimator } from "../services/contracts/IJellyfishAnimator";
@@ -19,7 +18,6 @@ import type { IJellyfishRenderer } from "../services/contracts/IJellyfishRendere
 // Implementations
 import { BubblePhysics } from "../services/implementations/BubblePhysics";
 import { ParticleSystem } from "../services/implementations/ParticleSystem";
-import { FishSpriteManager } from "../services/implementations/FishSpriteManager";
 import { LightRayCalculator } from "../services/implementations/LightRayCalculator";
 import { FishAnimator } from "../services/implementations/FishAnimator";
 import { JellyfishAnimator } from "../services/implementations/JellyfishAnimator";
@@ -35,17 +33,12 @@ import { JellyfishRenderer } from "../services/implementations/JellyfishRenderer
  *
  * Focused, single-responsibility services for the deep ocean background.
  * Each service handles one specific concern (physics, animation, or rendering).
+ *
+ * Fish are now fully procedural (no sprites needed).
  */
 export const deepOceanBackgroundModule = new ContainerModule(
   async (options: ContainerModuleLoadOptions) => {
     const { bind, isBound } = options;
-
-    // === RESOURCE MANAGEMENT ===
-    if (!isBound(TYPES.IFishSpriteManager)) {
-      bind<IFishSpriteManager>(TYPES.IFishSpriteManager)
-        .to(FishSpriteManager)
-        .inSingletonScope();
-    }
 
     // === PHYSICS SERVICES ===
     if (!isBound(TYPES.IBubblePhysics)) {

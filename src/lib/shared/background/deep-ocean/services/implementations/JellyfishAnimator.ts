@@ -1,6 +1,5 @@
-import { inject, injectable } from "inversify";
+import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
-import { TYPES } from "../../../../inversify/types";
 import type {
   JellyfishMarineLife,
   JellyfishSpecies,
@@ -9,7 +8,6 @@ import type {
   Tentacle,
   TentacleSegment,
 } from "../../domain/models/DeepOceanModels";
-import type { IFishSpriteManager } from "../contracts/IFishSpriteManager";
 import type { IJellyfishAnimator } from "../contracts/IJellyfishAnimator";
 import { JELLYFISH_COUNTS } from "../../domain/constants/fish-constants";
 
@@ -159,11 +157,6 @@ const SPECIES_DEFINITIONS: SpeciesDefinition[] = [
 
 @injectable()
 export class JellyfishAnimator implements IJellyfishAnimator {
-  constructor(
-    @inject(TYPES.IFishSpriteManager)
-    private fishSpriteManager: IFishSpriteManager
-  ) {}
-
   initializeJellyfish(
     dimensions: Dimensions,
     count: number

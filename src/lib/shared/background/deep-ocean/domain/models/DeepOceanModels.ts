@@ -1,22 +1,64 @@
 // Deep Ocean Background Models
 
-export interface Bubble {
+/** Bubble size category affecting behavior and visuals */
+export type BubbleSize = "small" | "medium" | "large";
+
+/** Trail particle from bubble motion */
+export interface BubbleTrailParticle {
   x: number;
   y: number;
-  radius: number;
-  speed: number;
-  sway: number;
-  opacity: number;
-  swayOffset: number;
+  age: number; // 0-1, fades as it ages
+  size: number;
+}
+
+/**
+ * Enhanced Bubble with physics, iridescence, and visual depth
+ */
+export interface Bubble {
+  // Position
+  x: number;
+  y: number;
   startY: number;
+
+  // Size and category
+  radius: number;
+  sizeCategory: BubbleSize;
+
+  // Physics
+  speed: number;
+  baseSpeed: number; // Original speed for reference
+  acceleration: number; // Current acceleration (buoyancy effect)
+  sway: number;
+  swayOffset: number;
+  turbulenceX: number; // Random horizontal jitter
+  turbulencePhase: number; // Phase for turbulence animation
+
+  // Wobble (non-circular deformation)
+  wobblePhase: number;
+  wobbleAmplitude: number; // How much it deforms (0-0.15)
+  wobbleSpeed: number;
+
+  // Visual
+  opacity: number;
+  baseOpacity: number;
+  iridescentPhase: number; // Phase for rainbow shimmer
+  iridescentSpeed: number;
+  rimHighlightAngle: number; // Dynamic light direction
+
+  // Trail particles
+  trailParticles: BubbleTrailParticle[];
+  lastTrailSpawn: number; // Animation time of last trail spawn
+
+  // Clustering (optional)
+  clusterId?: number; // Bubbles with same ID rise together
+  clusterOffset?: { x: number; y: number }; // Offset from cluster leader
+
+  // Lifecycle
+  age: number; // 0-1, for fade-in/fade-out effects
+  fadeZone: number; // Y position where fade-out begins
 }
 
 export type MarineLifeType = "fish" | "jellyfish";
-
-export interface FishSprite {
-  name: string;
-  path: string;
-}
 
 interface MarineLifeBase {
   type: MarineLifeType;
@@ -32,42 +74,218 @@ export type DepthLayer = "far" | "mid" | "near";
 /** Fish behavior state */
 export type FishBehavior = "cruising" | "turning" | "darting" | "schooling";
 
+/** Fish species with different body shapes and characteristics */
+export type FishSpecies = "tropical" | "sleek" | "deep" | "schooling";
+
+/** Fin state with physics */
+export interface FinState {
+  angle: number; // Current angle offset
+  velocity: number; // Angular velocity
+  targetAngle: number; // Target angle (spring physics)
+  length: number; // Fin length relative to body
+  width: number; // Fin width at base
+  segments: number; // Number of segments for smooth curve
+}
+
+/** Tail fin state (more complex - forked/fan) */
+export interface TailState extends FinState {
+  forkAngle: number; // Angle between fork tines
+  forkDepth: number; // How deep the fork is (0-1)
+  wavePhase: number; // For undulating motion
+  waveAmplitude: number;
+}
+
+/** Fish color palette */
+export interface FishColorPalette {
+  bodyTop: string; // Dorsal color
+  bodyBottom: string; // Ventral color (usually lighter)
+  accent: string; // Stripes, spots, or fin edges
+  eye: string; // Iris color
+  finTint: string; // Fin tint/transparency
+}
+
+/** Wake trail particle */
+export interface WakeParticle {
+  x: number;
+  y: number;
+  age: number;
+  size: number;
+  opacity: number;
+}
+
+// ============================================================================
+// SPINE-CHAIN FISH TYPES (New organic animation system)
+// ============================================================================
+
+/** Species-specific spine configuration */
+export interface SpineConfig {
+  jointCount: number;
+  widthProfile: number[]; // Normalized widths (0-1) at each joint
+  angleConstraint: number; // Max bend between segments (radians)
+  segmentLength: number; // Base distance between joints
+}
+
+/** Fin attached to spine segment */
+export interface SpineFin {
+  attachmentSegment: number; // Which spine joint this fin attaches to
+  attachmentSide: "top" | "bottom" | "left" | "right"; // Which side of body
+  baseAngle: number; // Angle relative to spine direction
+  length: number; // Fin length
+  width: number; // Fin width at base
+  segments: number; // Segments for fin rays
+  curvatureResponse: number; // How much fin responds to body curve (0-1)
+}
+
+/** Spine-chain fish configuration */
+export const SPINE_CONFIGS: Record<FishSpecies, SpineConfig> = {
+  tropical: {
+    jointCount: 8,
+    widthProfile: [0.3, 0.7, 1.0, 1.0, 0.9, 0.7, 0.4, 0.15],
+    angleConstraint: Math.PI / 6, // More flexible
+    segmentLength: 10,
+  },
+  sleek: {
+    jointCount: 10,
+    widthProfile: [0.2, 0.4, 0.6, 0.7, 0.7, 0.65, 0.5, 0.35, 0.2, 0.1],
+    angleConstraint: Math.PI / 10, // Stiffer
+    segmentLength: 12,
+  },
+  deep: {
+    jointCount: 7,
+    widthProfile: [0.4, 0.8, 1.0, 0.95, 0.7, 0.4, 0.15],
+    angleConstraint: Math.PI / 7,
+    segmentLength: 11,
+  },
+  schooling: {
+    jointCount: 6,
+    widthProfile: [0.25, 0.6, 0.85, 0.7, 0.4, 0.1],
+    angleConstraint: Math.PI / 8,
+    segmentLength: 8,
+  },
+};
+
+/** Species-specific swimming parameters */
+export const SWIM_PARAMS: Record<FishSpecies, { tailAmplitude: number; swimSpeed: number }> = {
+  tropical: { tailAmplitude: 8, swimSpeed: 0.15 },
+  sleek: { tailAmplitude: 5, swimSpeed: 0.2 },
+  deep: { tailAmplitude: 6, swimSpeed: 0.1 },
+  schooling: { tailAmplitude: 7, swimSpeed: 0.18 },
+};
+
+/**
+ * Procedural Fish with anatomical detail
+ *
+ * Supports two rendering modes:
+ * 1. Legacy: Static bezier curves + sine wave body flex (useSpineChain = false)
+ * 2. Spine-chain: Dynamic joint-based body (useSpineChain = true)
+ *
+ * The spine-chain approach creates more organic movement where
+ * each body segment follows the one ahead.
+ */
 export interface FishMarineLife extends MarineLifeBase {
   type: "fish";
-  sprite: FishSprite;
-  /** Pre-rendered canvas with color variant baked in (no runtime filters) */
-  canvas?: HTMLCanvasElement | OffscreenCanvas;
-  /** @deprecated Use canvas instead - kept for fallback only */
-  image?: HTMLImageElement;
-  width: number;
-  height: number;
+
+  // Species and appearance
+  species: FishSpecies;
+  colors: FishColorPalette;
+
+  // Body dimensions
+  bodyLength: number; // Total length in pixels
+  bodyHeight: number; // Max height (at widest point)
+  bodyAspect: number; // Length to height ratio
+
+  // Position and movement
   direction: 1 | -1;
   speed: number;
-  baseSpeed: number; // Original speed for behavior resets
+  baseSpeed: number;
   verticalDrift: number;
   bobAmplitude: number;
   bobSpeed: number;
   depthBand: { min: number; max: number };
   baseY: number;
 
-  // Depth/parallax properties
+  // Depth/parallax
   depthLayer: DepthLayer;
-  depthScale: number; // 0.5-1.0, affects size and speed
+  depthScale: number;
 
-  // Behavior properties
+  // Behavior
   behavior: FishBehavior;
-  behaviorTimer: number; // Time until behavior change
-  targetDirection?: 1 | -1; // For turning behavior
-  dartSpeed?: number; // For darting behavior
+  behaviorTimer: number;
+  targetDirection?: 1 | -1;
+  dartSpeed?: number;
 
-  // Schooling properties
-  schoolId?: number; // Fish in same school follow each other
-  leaderOffset?: { x: number; y: number }; // Offset from school leader
+  // Schooling
+  schoolId?: number;
+  leaderOffset?: { x: number; y: number };
 
-  // Visual enhancements
-  rotation: number; // Slight tilt based on vertical movement
-  tailPhase: number; // For tail wiggle animation
-  hueRotate: number; // Color variant (degrees) - now baked into canvas
+  // Body shape and animation
+  rotation: number;
+  bodyFlexPhase: number; // S-curve animation for swimming
+  bodyFlexAmount: number; // How much body bends (0-1)
+
+  // Fins with physics
+  dorsalFin: FinState;
+  pectoralFinTop: FinState;
+  pectoralFinBottom: FinState;
+  pelvicFin: FinState;
+  analFin: FinState;
+  tailFin: TailState;
+
+  // Visual details
+  scalePhase: number; // Shimmer animation phase
+  scaleSpeed: number;
+  eyeSize: number; // Relative to body height
+  gillPhase: number; // Breathing animation
+  gillSpeed: number;
+  hasBioluminescence: boolean; // Deep species only
+  glowPhase: number;
+  glowIntensity: number;
+
+  // Wake effects
+  wakeTrail: WakeParticle[];
+  lastWakeSpawn: number;
+
+  // ============================================================================
+  // SPINE-CHAIN PROPERTIES (New organic animation system)
+  // ============================================================================
+
+  /** Whether this fish uses spine-chain animation (vs legacy bezier) */
+  useSpineChain?: boolean;
+
+  /**
+   * Spine joint positions - array of {x, y, angle, width} objects
+   * Populated when useSpineChain is true
+   * Import SpineChain class to manipulate this
+   */
+  spineJoints?: Array<{
+    x: number;
+    y: number;
+    angle: number;
+    width: number;
+    segmentLength: number;
+  }>;
+
+  /** Spine configuration reference */
+  spineConfig?: SpineConfig;
+
+  /** Current swimming phase for tail oscillation */
+  swimPhase?: number;
+
+  /** Tail oscillation amplitude (pixels) */
+  tailAmplitude?: number;
+
+  /** Swimming speed multiplier for undulation */
+  swimSpeed?: number;
+
+  /** Fins attached to spine (replaces individual fin states when using spine) */
+  spineFins?: SpineFin[];
+
+  // ============================================================================
+
+  // Legacy compatibility (for existing behavior code)
+  width: number;
+  height: number;
+  tailPhase: number;
 }
 
 /** Tentacle segment for fluid physics simulation */
@@ -206,14 +424,115 @@ export interface MarineLifeSpawn {
   spawnTime: number; // When to spawn (in animation time)
 }
 
-/** Light ray from surface */
-export interface LightRay {
-  x: number;
+/** Dust particle visible in light beam */
+export interface LightDustParticle {
+  x: number; // Relative to ray center
+  y: number; // Relative to ray top
+  size: number;
   opacity: number;
+  drift: number; // Horizontal drift speed
+  phase: number; // Animation phase
+}
+
+/**
+ * Enhanced Light Ray from surface
+ *
+ * Volumetric god rays with wave distortion, color shifting,
+ * dappled edges, and visible dust particles
+ */
+export interface LightRay {
+  // Position
+  x: number;
+  baseX: number; // Original X position for wave calculation
+
+  // Dimensions
   width: number;
-  angle: number;
+  baseWidth: number; // Original width for pulsing
+
+  // Angle and distortion
+  angle: number; // Base angle in degrees
+  wavePhase: number; // Phase for wave distortion
+  waveAmplitude: number; // How much ray sways
+  waveSpeed: number;
+
+  // Opacity and intensity
+  opacity: number;
+  baseOpacity: number;
+  intensityPhase: number; // For slow brightness pulsing
+  intensitySpeed: number;
+
+  // Animation
   phase: number;
   speed: number;
+
+  // Volumetric properties
+  glowIntensity: number; // Soft edge glow amount
+  depthFade: number; // How quickly it fades with depth (0.5-0.8)
+
+  // Color
+  colorShiftPhase: number; // For subtle color variation
+  colorShiftSpeed: number;
+
+  // Dappled edges (organic, not rectangular)
+  edgeSeeds: number[]; // Random seeds for edge variation
+
+  // Dust particles in beam
+  dustParticles: LightDustParticle[];
+}
+
+/** Caustic pattern cell for underwater light effect */
+export interface CausticCell {
+  x: number;
+  y: number;
+  size: number;
+  intensity: number;
+  phase: number;
+  speed: number;
+}
+
+/** Caustic pattern state */
+export interface CausticsState {
+  cells: CausticCell[];
+  globalPhase: number;
+  driftX: number;
+  driftY: number;
+}
+
+/** Distant bioluminescent glow spot */
+export interface DistantGlow {
+  x: number;
+  y: number;
+  size: number;
+  intensity: number;
+  phase: number;
+  speed: number;
+  color: string; // Cyan, purple, or deep blue
+}
+
+/** Depth fog layer */
+export interface FogLayer {
+  y: number; // Vertical position
+  opacity: number;
+  phase: number;
+  speed: number;
+}
+
+/**
+ * Gradient animation state
+ */
+export interface GradientState {
+  // Color breathing (very slow hue/saturation shift)
+  breathingPhase: number;
+  breathingSpeed: number;
+
+  // Depth fog layers
+  fogLayers: FogLayer[];
+
+  // Distant bioluminescence
+  distantGlows: DistantGlow[];
+
+  // Vignette intensity (subtle edge darkening)
+  vignetteIntensity: number;
 }
 
 export interface DeepOceanState {
@@ -226,6 +545,8 @@ export interface DeepOceanState {
     bottom: string;
   };
   lightRays: LightRay[];
+  caustics: CausticsState | null;
+  gradientState: GradientState | null;
   pendingFishSpawns: number[]; // Spawn times
   schools: Map<number, FishMarineLife[]>; // schoolId -> fish in school
 }

@@ -86,6 +86,8 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
       particles: [],
       currentGradient: { top: "#0d2d47", bottom: "#091a2b" },
       lightRays: [],
+      caustics: null,
+      gradientState: null,
       pendingFishSpawns: [],
       schools: new Map(),
     };
@@ -133,6 +135,14 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
       lightRayCount
     );
 
+    // Initialize caustics (medium/high quality only)
+    if (this.lightRayCalculator.getCausticsEnabled(quality)) {
+      this.state.caustics = this.lightRayCalculator.initializeCaustics(dimensions);
+    }
+
+    // Initialize gradient state for animated effects
+    this.state.gradientState = this.gradientRenderer.initializeGradientState(dimensions);
+
     // Pre-populate for smooth initial animation
     this.prePopulateElements(dimensions);
 
@@ -166,6 +176,14 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
 
     this.animationTime += 0.016 * effectiveMultiplier;
 
+    // Update gradient animation
+    if (this.state.gradientState) {
+      this.state.gradientState = this.gradientRenderer.updateGradientState(
+        this.state.gradientState,
+        effectiveMultiplier
+      );
+    }
+
     // Update physics
     this.state.bubbles = this.bubblePhysics.updateBubbles(
       this.state.bubbles,
@@ -184,6 +202,15 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
       this.state.lightRays,
       effectiveMultiplier
     );
+
+    // Update caustics
+    if (this.state.caustics) {
+      this.state.caustics = this.lightRayCalculator.updateCaustics(
+        this.state.caustics,
+        dimensions,
+        effectiveMultiplier
+      );
+    }
 
     // Update animators
     this.state.fish = this.fishAnimator.updateFish(
@@ -210,14 +237,24 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
   }
 
   draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
-    // Layer order: gradient -> rays -> far particles -> far fish -> bubbles -> mid fish -> near fish -> jellyfish
-    this.gradientRenderer.drawOceanGradient(ctx, dimensions);
+    // Layer order: gradient -> rays -> caustics -> far particles -> far fish -> bubbles -> mid fish -> near fish -> jellyfish
+    this.gradientRenderer.drawOceanGradient(ctx, dimensions, this.state.gradientState);
     this.lightRayRenderer.drawLightRays(
       ctx,
       dimensions,
       this.state.lightRays,
       this.quality
     );
+
+    // Draw caustics (after rays, before particles)
+    if (this.state.caustics) {
+      this.lightRayRenderer.drawCaustics(
+        ctx,
+        dimensions,
+        this.state.caustics,
+        this.quality
+      );
+    }
 
     // Draw particles (background layer)
     this.particleRenderer.drawParticles(ctx, this.state.particles);

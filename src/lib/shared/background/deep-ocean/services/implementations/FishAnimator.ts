@@ -1,8 +1,16 @@
-import { inject, injectable } from "inversify";
+import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
-import { TYPES } from "../../../../inversify/types";
-import type { FishMarineLife, DepthLayer } from "../../domain/models/DeepOceanModels";
-import type { IFishSpriteManager } from "../contracts/IFishSpriteManager";
+import type {
+  FishMarineLife,
+  DepthLayer,
+  FishSpecies,
+  FinState,
+  TailState,
+  FishColorPalette,
+  WakeParticle,
+  SpineFin,
+} from "../../domain/models/DeepOceanModels";
+import { SPINE_CONFIGS, SWIM_PARAMS } from "../../domain/models/DeepOceanModels";
 import type { IFishAnimator } from "../contracts/IFishAnimator";
 import {
   DEPTH_LAYER_CONFIG,
@@ -12,52 +20,227 @@ import {
   BEHAVIOR_TRANSITION_PROBABILITY,
   EDGE_AWARENESS,
   FLOCKING_CONFIG,
-  FISH_VISUALS,
   SPAWN_CONFIG,
   FISH_COUNTS,
 } from "../../domain/constants/fish-constants";
+import { SpineChain } from "../../physics/SpineChain";
+
+/**
+ * Species configuration for procedural fish generation
+ */
+const SPECIES_CONFIG: Record<
+  FishSpecies,
+  {
+    bodyAspect: [number, number]; // Length to height ratio
+    bodyLength: [number, number]; // Base length in pixels
+    finScale: number; // Overall fin size multiplier
+    tailForkDepth: [number, number]; // How forked the tail is
+    hasLargeFins: boolean; // Prominent dorsal/pectoral fins
+    hasBioluminescence: boolean;
+    eyeSize: [number, number]; // Relative to body height
+    colors: FishColorPalette[];
+  }
+> = {
+  tropical: {
+    bodyAspect: [2.0, 2.5],
+    bodyLength: [60, 90],
+    finScale: 1.3,
+    tailForkDepth: [0.2, 0.4],
+    hasLargeFins: true,
+    hasBioluminescence: false,
+    eyeSize: [0.12, 0.16],
+    colors: [
+      {
+        bodyTop: "#ff7b54",
+        bodyBottom: "#ffe5b4",
+        accent: "#fff44f",
+        eye: "#2c1810",
+        finTint: "rgba(255, 165, 0, 0.6)",
+      },
+      {
+        bodyTop: "#4169e1",
+        bodyBottom: "#87ceeb",
+        accent: "#ffd700",
+        eye: "#1a1a2e",
+        finTint: "rgba(65, 105, 225, 0.5)",
+      },
+      {
+        bodyTop: "#9b59b6",
+        bodyBottom: "#d7bde2",
+        accent: "#f1c40f",
+        eye: "#2c1320",
+        finTint: "rgba(155, 89, 182, 0.5)",
+      },
+    ],
+  },
+  sleek: {
+    bodyAspect: [3.5, 4.5],
+    bodyLength: [80, 120],
+    finScale: 0.7,
+    tailForkDepth: [0.5, 0.7],
+    hasLargeFins: false,
+    hasBioluminescence: false,
+    eyeSize: [0.08, 0.1],
+    colors: [
+      {
+        bodyTop: "#2c3e50",
+        bodyBottom: "#bdc3c7",
+        accent: "#7f8c8d",
+        eye: "#1a1a1a",
+        finTint: "rgba(127, 140, 141, 0.4)",
+      },
+      {
+        bodyTop: "#1e4d6b",
+        bodyBottom: "#a8d8ea",
+        accent: "#3498db",
+        eye: "#0d1f2d",
+        finTint: "rgba(52, 152, 219, 0.4)",
+      },
+    ],
+  },
+  deep: {
+    bodyAspect: [2.2, 2.8],
+    bodyLength: [50, 80],
+    finScale: 0.9,
+    tailForkDepth: [0.1, 0.3],
+    hasLargeFins: false,
+    hasBioluminescence: true,
+    eyeSize: [0.18, 0.24], // Large eyes for deep water
+    colors: [
+      {
+        bodyTop: "#1a1a2e",
+        bodyBottom: "#2d2d44",
+        accent: "#00fff7",
+        eye: "#00fff7",
+        finTint: "rgba(0, 255, 247, 0.3)",
+      },
+      {
+        bodyTop: "#0f0f23",
+        bodyBottom: "#1e1e3f",
+        accent: "#7b68ee",
+        eye: "#9370db",
+        finTint: "rgba(123, 104, 238, 0.3)",
+      },
+    ],
+  },
+  schooling: {
+    bodyAspect: [2.5, 3.0],
+    bodyLength: [35, 55],
+    finScale: 0.8,
+    tailForkDepth: [0.3, 0.5],
+    hasLargeFins: false,
+    hasBioluminescence: false,
+    eyeSize: [0.1, 0.12],
+    colors: [
+      {
+        bodyTop: "#5dade2",
+        bodyBottom: "#d4e6f1",
+        accent: "#aed6f1",
+        eye: "#1b4f72",
+        finTint: "rgba(93, 173, 226, 0.4)",
+      },
+      {
+        bodyTop: "#45b39d",
+        bodyBottom: "#d1f2eb",
+        accent: "#a3e4d7",
+        eye: "#145a32",
+        finTint: "rgba(69, 179, 157, 0.4)",
+      },
+    ],
+  },
+};
+
+/**
+ * Fin physics configuration
+ */
+const FIN_PHYSICS = {
+  // Spring constants
+  stiffness: 0.15, // How quickly fin returns to target
+  damping: 0.85, // How quickly oscillations die down
+
+  // Response to movement
+  accelerationResponse: 0.3, // How much fins respond to speed changes
+  turnResponse: 0.5, // How much fins respond to turning
+
+  // Idle animation
+  idleWave: {
+    amplitude: 0.08,
+    speed: 0.02,
+  },
+
+  // Tail specific
+  tail: {
+    waveSpeed: 0.12, // Tail undulation speed
+    waveAmplitude: 0.25, // How much tail waves
+    forkSpread: 0.15, // How much fork opens during motion
+  },
+};
+
+/**
+ * Wake trail configuration
+ */
+const WAKE_CONFIG = {
+  spawnInterval: 0.08, // Seconds between wake particles
+  particleCount: 8, // Max particles per fish
+  sizeRange: [2, 6] as [number, number],
+  lifetime: 1.2, // Seconds
+  fadeStart: 0.5, // Start fading at this fraction of lifetime
+};
+
+/**
+ * Body flex configuration
+ */
+const BODY_FLEX = {
+  swimSpeed: 0.08, // Phase speed for swimming motion
+  amplitude: {
+    cruising: 0.15,
+    darting: 0.25,
+    turning: 0.3,
+  },
+};
 
 @injectable()
 export class FishAnimator implements IFishAnimator {
   private pendingSpawns: number[] = [];
   private nextSchoolId = 0;
-
-  constructor(
-    @inject(TYPES.IFishSpriteManager)
-    private fishSpriteManager: IFishSpriteManager
-  ) {}
+  private spineChains: Map<FishMarineLife, SpineChain> = new Map();
 
   async initializeFish(
     dimensions: Dimensions,
-    count: number
+    count: number,
+    useSpineChain: boolean = false
   ): Promise<FishMarineLife[]> {
-    await this.fishSpriteManager.preloadSprites();
-
     const fish: FishMarineLife[] = [];
     for (let i = 0; i < count; i++) {
-      fish.push(this.createFish(dimensions));
+      fish.push(this.createFish(dimensions, useSpineChain));
     }
 
     this.formSchools(fish);
     return fish;
   }
 
-  createFish(dimensions: Dimensions): FishMarineLife {
-    const entry = this.fishSpriteManager.getRandomSpriteEntry();
-    const sprite = entry?.sprite ?? { name: "Default", path: "" };
-    const canvas = entry?.canvas;
-    const baseWidth = entry?.width ?? 96;
-    const baseHeight = entry?.height ?? 64;
-    const hueRotate = entry?.hueRotate ?? 0;
-
+  createFish(dimensions: Dimensions, useSpineChain: boolean = false): FishMarineLife {
+    // Assign depth layer and species
     const depthLayer = this.assignDepthLayer();
+    const species = this.assignSpecies(depthLayer);
     const config = DEPTH_LAYER_CONFIG[depthLayer];
+    const speciesConfig = SPECIES_CONFIG[species];
+
+    // Calculate size
     const depthScale = this.randomInRange(config.scale);
+    const bodyLength =
+      this.randomInRange(speciesConfig.bodyLength) * depthScale;
+    const bodyAspect = this.randomInRange(speciesConfig.bodyAspect);
+    const bodyHeight = bodyLength / bodyAspect;
 
+    // Color palette
+    const colors =
+      speciesConfig.colors[
+        Math.floor(Math.random() * speciesConfig.colors.length)
+      ] ?? speciesConfig.colors[0]!;
+
+    // Direction and position
     const direction: 1 | -1 = Math.random() > 0.5 ? 1 : -1;
-    const width = baseWidth * depthScale;
-    const height = baseHeight * depthScale;
-
     const depthBand = {
       min: dimensions.height * config.verticalBand[0],
       max: dimensions.height * config.verticalBand[1],
@@ -70,8 +253,8 @@ export class FishAnimator implements IFishAnimator {
 
     const startX =
       direction === 1
-        ? -width - Math.random() * maxOffset
-        : dimensions.width + width + Math.random() * maxOffset;
+        ? -bodyLength - Math.random() * maxOffset
+        : dimensions.width + bodyLength + Math.random() * maxOffset;
     const baseY =
       depthBand.min + Math.random() * (depthBand.max - depthBand.min);
 
@@ -79,11 +262,36 @@ export class FishAnimator implements IFishAnimator {
       this.randomInRange(FISH_MOVEMENT.baseSpeed) * config.speedMultiplier;
     const opacity = this.randomInRange(config.opacity);
 
+    // Create fin states
+    const finScale = speciesConfig.finScale;
+    const dorsalFin = this.createFinState(0.35 * finScale, 0.2 * finScale);
+    const pectoralFinTop = this.createFinState(0.25 * finScale, 0.15 * finScale);
+    const pectoralFinBottom = this.createFinState(
+      0.2 * finScale,
+      0.12 * finScale
+    );
+    const pelvicFin = this.createFinState(0.15 * finScale, 0.1 * finScale);
+    const analFin = this.createFinState(0.18 * finScale, 0.1 * finScale);
+    const tailFin = this.createTailState(
+      0.4 * finScale,
+      0.3 * finScale,
+      this.randomInRange(speciesConfig.tailForkDepth)
+    );
+
     const fish: FishMarineLife = {
       type: "fish",
-      sprite,
-      width,
-      height,
+      species,
+      colors,
+
+      // Body dimensions
+      bodyLength,
+      bodyHeight,
+      bodyAspect,
+
+      // Position and movement
+      x: startX,
+      y: baseY,
+      baseY,
       direction,
       speed: baseSpeed,
       baseSpeed,
@@ -91,29 +299,224 @@ export class FishAnimator implements IFishAnimator {
       bobAmplitude: this.randomInRange(FISH_MOVEMENT.bobAmplitude),
       bobSpeed: this.randomInRange(FISH_MOVEMENT.bobSpeed),
       depthBand,
-      x: startX,
-      baseY,
-      y: baseY,
-      opacity,
-      animationPhase: Math.random() * Math.PI * 2,
+
+      // Depth/parallax
       depthLayer,
       depthScale,
+
+      // Behavior
       behavior: "cruising",
       behaviorTimer: this.randomInRange(BEHAVIOR_CONFIG.cruising.duration),
+
+      // Body animation
       rotation: 0,
+      bodyFlexPhase: Math.random() * Math.PI * 2,
+      bodyFlexAmount: BODY_FLEX.amplitude.cruising,
+
+      // Fins with physics
+      dorsalFin,
+      pectoralFinTop,
+      pectoralFinBottom,
+      pelvicFin,
+      analFin,
+      tailFin,
+
+      // Visual details
+      opacity,
+      animationPhase: Math.random() * Math.PI * 2,
+      scalePhase: Math.random() * Math.PI * 2,
+      scaleSpeed: 0.01 + Math.random() * 0.01,
+      eyeSize: this.randomInRange(speciesConfig.eyeSize),
+      gillPhase: Math.random() * Math.PI * 2,
+      gillSpeed: 0.03 + Math.random() * 0.02,
+      hasBioluminescence: speciesConfig.hasBioluminescence,
+      glowPhase: Math.random() * Math.PI * 2,
+      glowIntensity: speciesConfig.hasBioluminescence ? 0.3 + Math.random() * 0.4 : 0,
+
+      // Wake effects
+      wakeTrail: [],
+      lastWakeSpawn: 0,
+
+      // Legacy compatibility
+      width: bodyLength,
+      height: bodyHeight,
       tailPhase: Math.random() * Math.PI * 2,
-      hueRotate,
     };
 
-    if (canvas) {
-      fish.canvas = canvas;
-    } else {
-      (
-        fish as FishMarineLife & { _needsSpriteUpdate?: boolean }
-      )._needsSpriteUpdate = true;
+    // Initialize spine chain if enabled
+    if (useSpineChain) {
+      this.initializeSpineChain(fish, startX, baseY, direction);
     }
 
     return fish;
+  }
+
+  /**
+   * Initialize spine chain for organic animation
+   */
+  private initializeSpineChain(
+    fish: FishMarineLife,
+    startX: number,
+    startY: number,
+    direction: 1 | -1
+  ): void {
+    const spineConfig = SPINE_CONFIGS[fish.species];
+    const swimParams = SWIM_PARAMS[fish.species];
+
+    // Calculate segment length based on body length
+    const segmentLength = fish.bodyLength / (spineConfig.jointCount - 1);
+
+    // Create spine chain
+    const spine = new SpineChain(
+      { ...spineConfig, segmentLength },
+      startX,
+      startY,
+      direction
+    );
+
+    // Set width profile scaled to body height
+    const maxWidth = fish.bodyHeight / 2;
+    spine.setWidthProfile(spineConfig.widthProfile, maxWidth);
+
+    // Store spine chain reference
+    this.spineChains.set(fish, spine);
+
+    // Copy joint data to fish for rendering
+    fish.useSpineChain = true;
+    fish.spineConfig = spineConfig;
+    fish.spineJoints = spine.joints.map((j) => ({ ...j }));
+    fish.swimPhase = Math.random() * Math.PI * 2;
+    fish.tailAmplitude = swimParams.tailAmplitude * (fish.bodyHeight / 20);
+    fish.swimSpeed = swimParams.swimSpeed;
+
+    // Create spine-attached fins
+    fish.spineFins = this.createSpineFins(fish.species, spineConfig.jointCount);
+  }
+
+  /**
+   * Create fins attached to spine segments
+   */
+  private createSpineFins(species: FishSpecies, jointCount: number): SpineFin[] {
+    const fins: SpineFin[] = [];
+
+    // Dorsal fin (top, around segment 2-3)
+    fins.push({
+      attachmentSegment: Math.floor(jointCount * 0.25),
+      attachmentSide: "top",
+      baseAngle: -Math.PI / 2,
+      length: species === "tropical" ? 0.35 : 0.25,
+      width: 0.15,
+      segments: 5,
+      curvatureResponse: 0.5,
+    });
+
+    // Pectoral fins (sides, around segment 1-2)
+    const pectoralSegment = Math.floor(jointCount * 0.15);
+    fins.push({
+      attachmentSegment: pectoralSegment,
+      attachmentSide: "left",
+      baseAngle: -Math.PI / 4,
+      length: species === "tropical" ? 0.25 : 0.15,
+      width: 0.12,
+      segments: 4,
+      curvatureResponse: 0.8,
+    });
+    fins.push({
+      attachmentSegment: pectoralSegment,
+      attachmentSide: "right",
+      baseAngle: Math.PI / 4,
+      length: species === "tropical" ? 0.25 : 0.15,
+      width: 0.12,
+      segments: 4,
+      curvatureResponse: 0.8,
+    });
+
+    // Pelvic fins (bottom, around segment 3-4)
+    fins.push({
+      attachmentSegment: Math.floor(jointCount * 0.4),
+      attachmentSide: "bottom",
+      baseAngle: Math.PI / 2.5,
+      length: 0.12,
+      width: 0.08,
+      segments: 3,
+      curvatureResponse: 0.3,
+    });
+
+    // Anal fin (bottom, around segment 5-6)
+    fins.push({
+      attachmentSegment: Math.floor(jointCount * 0.65),
+      attachmentSide: "bottom",
+      baseAngle: Math.PI / 2.2,
+      length: 0.15,
+      width: 0.08,
+      segments: 4,
+      curvatureResponse: 0.4,
+    });
+
+    return fins;
+  }
+
+  /**
+   * Get spine chain for a fish (for external access)
+   */
+  getSpineChain(fish: FishMarineLife): SpineChain | undefined {
+    return this.spineChains.get(fish);
+  }
+
+  private createFinState(length: number, width: number): FinState {
+    return {
+      angle: 0,
+      velocity: 0,
+      targetAngle: 0,
+      length,
+      width,
+      segments: 5,
+    };
+  }
+
+  private createTailState(
+    length: number,
+    width: number,
+    forkDepth: number
+  ): TailState {
+    return {
+      angle: 0,
+      velocity: 0,
+      targetAngle: 0,
+      length,
+      width,
+      segments: 7,
+      forkAngle: 0.3 + Math.random() * 0.2,
+      forkDepth,
+      wavePhase: Math.random() * Math.PI * 2,
+      waveAmplitude: FIN_PHYSICS.tail.waveAmplitude,
+    };
+  }
+
+  private assignSpecies(depthLayer: DepthLayer): FishSpecies {
+    // Deep layer gets deep species
+    if (depthLayer === "far") {
+      const roll = Math.random();
+      if (roll < 0.4) return "deep";
+      if (roll < 0.7) return "schooling";
+      return "sleek";
+    }
+
+    // Mid layer is mixed
+    if (depthLayer === "mid") {
+      const roll = Math.random();
+      if (roll < 0.25) return "tropical";
+      if (roll < 0.5) return "sleek";
+      if (roll < 0.8) return "schooling";
+      return "deep";
+    }
+
+    // Near layer favors tropical and sleek
+    const roll = Math.random();
+    if (roll < 0.4) return "tropical";
+    if (roll < 0.7) return "sleek";
+    if (roll < 0.9) return "schooling";
+    return "deep";
   }
 
   updateFish(
@@ -125,34 +528,316 @@ export class FishAnimator implements IFishAnimator {
     const updatedFish: FishMarineLife[] = [];
     const deltaSeconds = 0.016 * frameMultiplier;
 
-    // First pass: update sprites if needed
-    for (const f of fish) {
-      this.updateSpriteIfNeeded(f);
-    }
-
-    // Second pass: apply flocking forces to schooling fish
+    // Apply flocking forces to schooling fish
     this.applyFlockingForces(fish, deltaSeconds);
 
-    // Third pass: update each fish
+    // Update each fish
     for (const f of fish) {
+      // Update behavior timer
       f.behaviorTimer -= deltaSeconds;
       if (f.behaviorTimer <= 0) {
         this.transitionBehavior(f, dimensions);
       }
 
+      // Apply behavior-specific movement
       this.applyBehavior(f, deltaSeconds, frameMultiplier, dimensions);
+
+      // Update animation based on mode
+      if (f.useSpineChain) {
+        // Spine-chain animation (organic)
+        this.updateSpineChain(f, deltaSeconds, frameMultiplier);
+      } else {
+        // Legacy animation
+        this.updateBodyFlex(f, frameMultiplier);
+        this.updateFinPhysics(f, frameMultiplier);
+      }
+
+      // Update visual animations
       this.updateVisuals(f, frameMultiplier);
 
+      // Update wake trail
+      this.updateWakeTrail(f, deltaSeconds, animationTime);
+
+      // Update bioluminescence
+      if (f.hasBioluminescence) {
+        this.updateBioluminescence(f, frameMultiplier);
+      }
+
+      // Check if off screen
       if (this.isOffScreen(f, dimensions)) {
         this.scheduleSpawn(
           animationTime + this.randomInRange(SPAWN_CONFIG.respawnDelay)
         );
+        // Clean up spine chain reference
+        this.spineChains.delete(f);
       } else {
         updatedFish.push(f);
       }
     }
 
     return updatedFish;
+  }
+
+  // ===========================================================================
+  // SPINE CHAIN PHYSICS (Organic Animation)
+  // ===========================================================================
+
+  /**
+   * Update spine chain for organic swimming motion
+   */
+  private updateSpineChain(
+    fish: FishMarineLife,
+    deltaSeconds: number,
+    frameMultiplier: number
+  ): void {
+    const spine = this.spineChains.get(fish);
+    if (!spine || !fish.swimPhase || !fish.tailAmplitude || !fish.swimSpeed) {
+      return;
+    }
+
+    // Update swim phase (drives tail oscillation)
+    const speedRatio = fish.speed / fish.baseSpeed;
+    fish.swimPhase += fish.swimSpeed * speedRatio * frameMultiplier;
+
+    // Calculate head target position
+    const headTargetX = fish.x + fish.direction * fish.speed * deltaSeconds * 60;
+    const bob = Math.sin(fish.animationPhase) * fish.bobAmplitude;
+    const headTargetY = fish.baseY + bob;
+
+    // Apply tail oscillation
+    spine.applyTailOscillation(
+      fish.tailAmplitude * speedRatio,
+      fish.swimPhase
+    );
+
+    // Update spine chain (head follows target, body follows head)
+    spine.update(headTargetX, headTargetY);
+
+    // Update fish position from spine head
+    fish.x = spine.head.x;
+    fish.y = spine.head.y;
+
+    // Update rotation from spine head angle
+    fish.rotation = spine.headAngle;
+    if (fish.direction === -1) {
+      fish.rotation += Math.PI;
+    }
+
+    // Copy spine joint data back to fish for rendering
+    fish.spineJoints = spine.joints.map((j) => ({ ...j }));
+  }
+
+  // ===========================================================================
+  // FIN PHYSICS
+  // ===========================================================================
+
+  private updateFinPhysics(fish: FishMarineLife, frameMultiplier: number): void {
+    const speedRatio = fish.speed / fish.baseSpeed;
+    const isTurning = fish.behavior === "turning";
+    const isDarting = fish.behavior === "darting";
+
+    // Calculate target angles based on movement
+    const baseResponse = isTurning
+      ? FIN_PHYSICS.turnResponse
+      : isDarting
+        ? FIN_PHYSICS.accelerationResponse * 1.5
+        : FIN_PHYSICS.accelerationResponse;
+
+    // Idle wave animation
+    const idleWave =
+      Math.sin(fish.animationPhase * FIN_PHYSICS.idleWave.speed * 60) *
+      FIN_PHYSICS.idleWave.amplitude;
+
+    // Update each fin with spring physics
+    this.updateSingleFin(
+      fish.dorsalFin,
+      idleWave * 0.5,
+      baseResponse,
+      frameMultiplier
+    );
+    this.updateSingleFin(
+      fish.pectoralFinTop,
+      -idleWave * 0.8 + (speedRatio - 1) * 0.2,
+      baseResponse,
+      frameMultiplier
+    );
+    this.updateSingleFin(
+      fish.pectoralFinBottom,
+      idleWave * 0.8 + (speedRatio - 1) * 0.2,
+      baseResponse,
+      frameMultiplier
+    );
+    this.updateSingleFin(
+      fish.pelvicFin,
+      idleWave * 0.4,
+      baseResponse * 0.5,
+      frameMultiplier
+    );
+    this.updateSingleFin(
+      fish.analFin,
+      idleWave * 0.3,
+      baseResponse * 0.5,
+      frameMultiplier
+    );
+
+    // Tail has more complex motion
+    this.updateTailFin(fish, speedRatio, frameMultiplier);
+  }
+
+  private updateSingleFin(
+    fin: FinState,
+    targetOffset: number,
+    response: number,
+    frameMultiplier: number
+  ): void {
+    // Set target angle
+    fin.targetAngle = targetOffset;
+
+    // Spring physics
+    const displacement = fin.targetAngle - fin.angle;
+    const springForce = displacement * FIN_PHYSICS.stiffness;
+    fin.velocity += springForce * frameMultiplier;
+    fin.velocity *= FIN_PHYSICS.damping;
+    fin.angle += fin.velocity * frameMultiplier;
+  }
+
+  private updateTailFin(
+    fish: FishMarineLife,
+    speedRatio: number,
+    frameMultiplier: number
+  ): void {
+    const tail = fish.tailFin;
+
+    // Update wave phase based on speed
+    tail.wavePhase += FIN_PHYSICS.tail.waveSpeed * speedRatio * frameMultiplier;
+
+    // Calculate tail angle from swimming motion
+    const swimAngle =
+      Math.sin(tail.wavePhase) * tail.waveAmplitude * speedRatio;
+    tail.targetAngle = swimAngle;
+
+    // Spring physics for main angle
+    const displacement = tail.targetAngle - tail.angle;
+    const springForce = displacement * FIN_PHYSICS.stiffness * 1.5; // Stiffer tail
+    tail.velocity += springForce * frameMultiplier;
+    tail.velocity *= FIN_PHYSICS.damping;
+    tail.angle += tail.velocity * frameMultiplier;
+
+    // Fork spread based on speed
+    tail.forkAngle =
+      0.3 + speedRatio * FIN_PHYSICS.tail.forkSpread + Math.abs(swimAngle) * 0.1;
+  }
+
+  // ===========================================================================
+  // BODY FLEX ANIMATION
+  // ===========================================================================
+
+  private updateBodyFlex(fish: FishMarineLife, frameMultiplier: number): void {
+    // Update phase
+    const speedRatio = fish.speed / fish.baseSpeed;
+    fish.bodyFlexPhase += BODY_FLEX.swimSpeed * speedRatio * frameMultiplier;
+
+    // Set flex amount based on behavior
+    switch (fish.behavior) {
+      case "darting":
+        fish.bodyFlexAmount = BODY_FLEX.amplitude.darting;
+        break;
+      case "turning":
+        fish.bodyFlexAmount = BODY_FLEX.amplitude.turning;
+        break;
+      default:
+        fish.bodyFlexAmount = BODY_FLEX.amplitude.cruising;
+    }
+  }
+
+  // ===========================================================================
+  // WAKE TRAIL
+  // ===========================================================================
+
+  private updateWakeTrail(
+    fish: FishMarineLife,
+    deltaSeconds: number,
+    animationTime: number
+  ): void {
+    // Age existing particles
+    for (let i = fish.wakeTrail.length - 1; i >= 0; i--) {
+      const particle = fish.wakeTrail[i]!;
+      particle.age += deltaSeconds / WAKE_CONFIG.lifetime;
+
+      // Fade out
+      if (particle.age > WAKE_CONFIG.fadeStart) {
+        particle.opacity =
+          1 - (particle.age - WAKE_CONFIG.fadeStart) / (1 - WAKE_CONFIG.fadeStart);
+      }
+
+      // Remove dead particles
+      if (particle.age >= 1) {
+        fish.wakeTrail.splice(i, 1);
+      }
+    }
+
+    // Spawn new particles
+    if (
+      animationTime - fish.lastWakeSpawn > WAKE_CONFIG.spawnInterval &&
+      fish.wakeTrail.length < WAKE_CONFIG.particleCount
+    ) {
+      const speedRatio = fish.speed / fish.baseSpeed;
+
+      // Only spawn wake when moving fast enough
+      if (speedRatio > 0.5) {
+        const tailX = fish.x - fish.direction * fish.bodyLength * 0.4;
+        const particle: WakeParticle = {
+          x: tailX + (Math.random() - 0.5) * fish.bodyHeight * 0.3,
+          y: fish.y + (Math.random() - 0.5) * fish.bodyHeight * 0.3,
+          age: 0,
+          size: this.randomInRange(WAKE_CONFIG.sizeRange) * speedRatio,
+          opacity: 0.3 + speedRatio * 0.3,
+        };
+        fish.wakeTrail.push(particle);
+        fish.lastWakeSpawn = animationTime;
+      }
+    }
+  }
+
+  // ===========================================================================
+  // BIOLUMINESCENCE
+  // ===========================================================================
+
+  private updateBioluminescence(
+    fish: FishMarineLife,
+    frameMultiplier: number
+  ): void {
+    fish.glowPhase += 0.02 * frameMultiplier;
+
+    // Pulsing glow
+    const pulse = 0.5 + Math.sin(fish.glowPhase) * 0.3;
+    const burst = Math.random() < 0.002 ? 0.5 : 0; // Occasional bright flash
+
+    fish.glowIntensity = Math.min(1, pulse + burst);
+  }
+
+  // ===========================================================================
+  // VISUAL UPDATES
+  // ===========================================================================
+
+  private updateVisuals(fish: FishMarineLife, frameMultiplier: number): void {
+    // Animation phase (for bobbing, etc)
+    fish.animationPhase += fish.bobSpeed * frameMultiplier;
+
+    // Scale shimmer
+    fish.scalePhase += fish.scaleSpeed * frameMultiplier;
+
+    // Gill breathing
+    fish.gillPhase += fish.gillSpeed * frameMultiplier;
+
+    // Tail phase (legacy + additional animation)
+    fish.tailPhase = fish.tailFin.wavePhase;
+
+    // Rotation based on vertical drift
+    if (fish.behavior === "cruising" || fish.behavior === "schooling") {
+      const targetRotation = fish.verticalDrift * 0.02 * fish.direction;
+      fish.rotation += (targetRotation - fish.rotation) * 0.1;
+    }
   }
 
   // ===========================================================================
@@ -180,9 +865,9 @@ export class FishAnimator implements IFishAnimator {
     for (const [, members] of schools) {
       if (members.length < 2) continue;
 
-      for (const fish of members) {
-        const forces = this.calculateFlockingForces(fish, members);
-        this.applySteeringForce(fish, forces, deltaSeconds);
+      for (const f of members) {
+        const forces = this.calculateFlockingForces(f, members);
+        this.applySteeringForce(f, forces, deltaSeconds);
       }
     }
   }
@@ -356,9 +1041,7 @@ export class FishAnimator implements IFishAnimator {
       fish.direction =
         fish.targetDirection ?? ((fish.direction * -1) as 1 | -1);
       fish.behavior = "cruising";
-      fish.behaviorTimer = this.randomInRange(
-        BEHAVIOR_CONFIG.cruising.duration
-      );
+      fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.cruising.duration);
       fish.rotation = 0;
       fish.speed = fish.baseSpeed;
       return;
@@ -367,9 +1050,7 @@ export class FishAnimator implements IFishAnimator {
     // Complete darting: return to cruise
     if (current === "darting") {
       fish.behavior = "cruising";
-      fish.behaviorTimer = this.randomInRange(
-        BEHAVIOR_CONFIG.cruising.duration
-      );
+      fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.cruising.duration);
       fish.speed = fish.baseSpeed;
       return;
     }
@@ -397,9 +1078,7 @@ export class FishAnimator implements IFishAnimator {
     } else {
       // Continue cruising
       fish.behavior = fish.schoolId !== undefined ? "schooling" : "cruising";
-      fish.behaviorTimer = this.randomInRange(
-        BEHAVIOR_CONFIG.cruising.duration
-      );
+      fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.cruising.duration);
     }
   }
 
@@ -428,25 +1107,6 @@ export class FishAnimator implements IFishAnimator {
     const distToRight = dimensions.width - fish.x;
     const distToLeft = fish.x;
     return distToRight < distToLeft ? -1 : 1;
-  }
-
-  // ===========================================================================
-  // VISUAL UPDATES
-  // ===========================================================================
-
-  private updateVisuals(fish: FishMarineLife, frameMultiplier: number): void {
-    // Tail wiggle speed proportional to movement speed
-    const tailSpeed =
-      FISH_VISUALS.tailWiggleSpeed * (fish.speed / fish.baseSpeed);
-    fish.tailPhase += tailSpeed * frameMultiplier;
-
-    // Rotation based on vertical drift
-    if (fish.behavior === "cruising" || fish.behavior === "schooling") {
-      const targetRotation =
-        fish.verticalDrift * FISH_VISUALS.driftRotationFactor * fish.direction;
-      fish.rotation +=
-        (targetRotation - fish.rotation) * FISH_VISUALS.rotationSmoothing;
-    }
   }
 
   // ===========================================================================
@@ -501,21 +1161,6 @@ export class FishAnimator implements IFishAnimator {
   // UTILITY METHODS
   // ===========================================================================
 
-  private updateSpriteIfNeeded(
-    fish: FishMarineLife & { _needsSpriteUpdate?: boolean }
-  ): void {
-    if (!fish._needsSpriteUpdate) return;
-
-    const entry = this.fishSpriteManager.getAnyLoadedSpriteEntry();
-    if (entry) {
-      fish.canvas = entry.canvas;
-      fish.sprite = entry.sprite;
-      fish.width = entry.width * fish.depthScale;
-      fish.height = entry.height * fish.depthScale;
-      delete fish._needsSpriteUpdate;
-    }
-  }
-
   private assignDepthLayer(): DepthLayer {
     const roll = Math.random();
     if (roll < DEPTH_LAYER_DISTRIBUTION.farThreshold) return "far";
@@ -530,7 +1175,7 @@ export class FishAnimator implements IFishAnimator {
   }
 
   private isOffScreen(fish: FishMarineLife, dimensions: Dimensions): boolean {
-    const buffer = fish.width + SPAWN_CONFIG.offScreenBuffer;
+    const buffer = fish.bodyLength + SPAWN_CONFIG.offScreenBuffer;
     return fish.x > dimensions.width + buffer || fish.x < -buffer;
   }
 
