@@ -121,7 +121,19 @@
       "Bash(Select-String -Pattern \"Library|library\")",
       "Bash(Select-Object -First 20)",
       "Bash(Get-ChildItem -Path \"src/lib/features/train\" -Recurse -Filter \"*.svelte\")",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(xxd:*)",
+      "Bash(do if grep -q \"console\\\\.log\\\\|console\\\\.info\\\\|console\\\\.debug\" \"$f\")",
+      "Bash(then echo \"$f\")",
+      "Bash(fi)",
+      "Bash(Select-Object -First 10)",
+      "WebFetch(domain:rapier.rs)",
+      "Bash(kill:*)",
+      "Bash(/c/Windows/System32/taskkill.exe /F /PID 33616)",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*AnimatorLoader*\")",
+      "Bash(Get-ChildItem -Recurse -Include \"tsconfig*.json\" -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "Bash(Select-String -Pattern \"AnimationScreen|FramedSequence\")"
     ]
   }
 }

@@ -1,7 +1,6 @@
-/// <reference types="vitest/config" />
 import { sveltekit } from "@sveltejs/kit/vite";
 import { SvelteKitPWA } from "@vite-pwa/sveltekit";
-import { paraglideVitePlugin } from "@inlang/paraglide-js";
+// Paraglide removed - using lightweight JSON-based i18n in $lib/shared/i18n/
 import fs from "fs";
 import type { IncomingMessage, ServerResponse } from "http";
 import path from "path";
@@ -244,14 +243,6 @@ export default defineConfig({
       },
     }),
     // ============================================================================
-    // INTERNATIONALIZATION (Paraglide i18n)
-    // Run `pnpx @inlang/cli machine translate` to auto-translate all messages
-    // ============================================================================
-    paraglideVitePlugin({
-      project: "./project.inlang",
-      outdir: "./src/lib/paraglide",
-    }),
-    // ============================================================================
     // PWA CONFIGURATION (Google Play Store / Installable Web App)
     // ============================================================================
     SvelteKitPWA({
@@ -266,8 +257,9 @@ export default defineConfig({
       manifest: false, // We already have a manifest in static/pwa/
       injectRegister: "auto",
       workbox: {
-        // 🔇 Disable all workbox console logging (debug mode off)
+        // 🔇 Disable all workbox console logging
         mode: "production",
+        disableDevLogs: true,
         // Cache strategies for different asset types
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webp}"],
         // Exclude large data files from precaching (they'll use runtime caching)

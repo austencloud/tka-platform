@@ -18,6 +18,7 @@
     "size:why": "size-limit --why",
     "bundle:metadata": "node scripts/bundle-sequence-metadata.mjs",
     "preview": "vite preview",
+    "i18n:check": "echo 'i18n is now JSON-based - see messages/*.json and $lib/shared/i18n/'",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --compiler-warnings \"state_referenced_locally:ignore\"",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --compiler-warnings \"state_referenced_locally:ignore\" --watch",
     "type-check": "tsc --noEmit",
@@ -176,7 +177,6 @@
   ],
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.19.3",
-    "@inlang/paraglide-js": "^2.7.2",
     "@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
