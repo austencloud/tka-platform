@@ -3,7 +3,7 @@ import type { IFishFinRenderer } from "../contracts/IFishFinRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 import type { FishMarineLife, FinState, TailState, FishColorPalette, SpineFin } from "../../domain/models/DeepOceanModels";
 import type { SpineChain } from "../../physics/SpineChain";
-import { TYPES } from "../../../inversify/types";
+import { TYPES } from "../../../../inversify/types";
 
 /**
  * Fin attachment points for legacy Bezier fish
@@ -74,7 +74,7 @@ export class FishFinRenderer implements IFishFinRenderer {
       // Calculate fin angle with curvature response
       const finAngle = joint.angle + fin.baseAngle + curvature * fin.curvatureResponse * 2;
 
-      this.drawSpineFin(ctx, fin, fish);
+      this.drawSpineFin(ctx, fin, fish, attachX, attachY, finAngle);
     }
 
     // Draw tail fin separately (at last joint)
@@ -84,11 +84,14 @@ export class FishFinRenderer implements IFishFinRenderer {
   drawSpineFin(
     ctx: CanvasRenderingContext2D,
     fin: SpineFin,
-    fish: FishMarineLife
+    fish: FishMarineLife,
+    x: number,
+    y: number,
+    angle: number
   ): void {
     ctx.save();
-    ctx.translate(fin.x, fin.y);
-    ctx.rotate(fin.currentAngle);
+    ctx.translate(x, y);
+    ctx.rotate(angle);
 
     const length = fin.length * fish.bodyLength;
     const width = fin.width * fish.bodyHeight;

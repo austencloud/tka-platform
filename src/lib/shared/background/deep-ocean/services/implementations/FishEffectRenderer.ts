@@ -5,7 +5,7 @@ import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
 import type { SpineChain } from "../../physics/SpineChain";
 import type { Point } from "../../physics/BodyOutlineCalculator";
 import { BodyOutlineCalculator } from "../../physics/BodyOutlineCalculator";
-import { TYPES } from "../../../inversify/types";
+import { TYPES } from "../../../../inversify/types";
 
 /**
  * Renders visual effects for fish (wake trails, bioluminescence).

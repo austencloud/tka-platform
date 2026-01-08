@@ -10,7 +10,7 @@
 
   let staticCanvas: HTMLCanvasElement;
   let animatedCanvas: HTMLCanvasElement;
-  let animationId: number;
+  let animationId: number | undefined;
 
   // Species configurations (copied from FishAnimator for standalone rendering)
   const SPECIES_CONFIG: Record<

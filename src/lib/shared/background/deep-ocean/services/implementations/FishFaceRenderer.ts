@@ -3,7 +3,7 @@ import type { IFishFaceRenderer } from "../contracts/IFishFaceRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
 import type { SpineChain } from "../../physics/SpineChain";
-import { TYPES } from "../../../inversify/types";
+import { TYPES } from "../../../../inversify/types";
 
 /**
  * Eye and gill configuration for legacy Bezier fish

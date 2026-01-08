@@ -16,11 +16,17 @@ export interface IFishFinRenderer {
 
   /**
    * Draw individual fin on spine-based fish
+   * @param x - Calculated attachment X position
+   * @param y - Calculated attachment Y position
+   * @param angle - Calculated fin angle
    */
   drawSpineFin(
     ctx: CanvasRenderingContext2D,
     fin: SpineFin,
-    fish: FishMarineLife
+    fish: FishMarineLife,
+    x: number,
+    y: number,
+    angle: number
   ): void;
 
   /**

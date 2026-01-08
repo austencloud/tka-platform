@@ -1,10 +1,14 @@
 import { inject, injectable } from "inversify";
 import type { IFishPatternRenderer } from "../contracts/IFishPatternRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
-import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
-import type { SpineChain } from "../../physics/SpineChain";
-import type { Point } from "../../physics/BodyOutlineCalculator";
-import { TYPES } from "../../../inversify/types";
+import type { IFishEffectRenderer } from "../contracts/IFishEffectRenderer";
+import type { IFishFinRenderer } from "../contracts/IFishFinRenderer";
+import type { IFishFaceRenderer } from "../contracts/IFishFaceRenderer";
+import type { IFishBodyRenderer } from "../contracts/IFishBodyRenderer";
+import type { FishMarineLife, FishSpecies } from "../../domain/models/DeepOceanModels";
+import { SpineChain } from "../../physics/SpineChain";
+import { BodyOutlineCalculator, type Point } from "../../physics/BodyOutlineCalculator";
+import { TYPES } from "../../../../inversify/types";
 
 /**
  * Fish pattern rendering configuration (extracted from FishRenderer)
@@ -21,6 +25,63 @@ const RENDER_CONFIG = {
     dashLength: 0.03,
     gapLength: 0.02,
   },
+  // Body shape control points (fraction of body length)
+  bodyShape: {
+    // Control points for dorsal (top) curve
+    dorsalControlPoints: [
+      { x: -0.5, y: 0 }, // Nose
+      { x: -0.3, y: -0.4 }, // Forehead rise
+      { x: 0.0, y: -0.5 }, // Peak (widest)
+      { x: 0.3, y: -0.3 }, // Toward tail
+      { x: 0.45, y: -0.1 }, // Tail junction
+    ],
+    // Control points for ventral (bottom) curve
+    ventralControlPoints: [
+      { x: -0.5, y: 0 }, // Nose (same as dorsal)
+      { x: -0.3, y: 0.25 }, // Lower jaw
+      { x: 0.0, y: 0.4 }, // Belly peak
+      { x: 0.3, y: 0.25 }, // Toward tail
+      { x: 0.45, y: 0.1 }, // Tail junction
+    ],
+  },
+};
+
+/**
+ * Species-specific body shape modifiers
+ */
+const SPECIES_SHAPE: Record<
+  FishSpecies,
+  {
+    dorsalMod: number; // Height multiplier for dorsal curve
+    ventralMod: number; // Height multiplier for ventral curve
+    noseTaper: number; // How pointed the nose is
+    tailTaper: number; // How tapered the tail junction is
+  }
+> = {
+  tropical: {
+    dorsalMod: 1.2, // Taller dorsal
+    ventralMod: 1.1,
+    noseTaper: 0.8, // Rounder nose
+    tailTaper: 0.7,
+  },
+  sleek: {
+    dorsalMod: 0.7, // Flatter
+    ventralMod: 0.6,
+    noseTaper: 1.3, // Pointed nose
+    tailTaper: 1.2,
+  },
+  deep: {
+    dorsalMod: 1.0,
+    ventralMod: 1.1,
+    noseTaper: 0.9,
+    tailTaper: 0.8,
+  },
+  schooling: {
+    dorsalMod: 0.9,
+    ventralMod: 0.85,
+    noseTaper: 1.0,
+    tailTaper: 0.9,
+  },
 };
 
 /**
@@ -29,8 +90,14 @@ const RENDER_CONFIG = {
  */
 @injectable()
 export class FishPatternRenderer implements IFishPatternRenderer {
+  private bodyOutlineCalculator = new BodyOutlineCalculator();
+
   constructor(
-    @inject(TYPES.IColorCalculator) private colorCalc: IColorCalculator
+    @inject(TYPES.IColorCalculator) private colorCalc: IColorCalculator,
+    @inject(TYPES.IFishEffectRenderer) private effectRenderer: IFishEffectRenderer,
+    @inject(TYPES.IFishFinRenderer) private finRenderer: IFishFinRenderer,
+    @inject(TYPES.IFishFaceRenderer) private faceRenderer: IFishFaceRenderer,
+    @inject(TYPES.IFishBodyRenderer) private bodyRenderer: IFishBodyRenderer
   ) {}
 
   // ========== EXTRACTED PATTERN METHODS ==========
@@ -117,8 +184,7 @@ export class FishPatternRenderer implements IFishPatternRenderer {
     ];
 
     // Get body outline for clipping
-    const tempSpine = this.createTempSpineFromJoints(fish);
-    const outline = this.bodyOutlineCalculator.calculateOutline(tempSpine);
+    const outline = this.bodyOutlineCalculator.calculateOutline(spine);
 
     ctx.save();
 
@@ -449,14 +515,14 @@ export class FishPatternRenderer implements IFishPatternRenderer {
 
     // Get modified control points
     const dorsalPoints = RENDER_CONFIG.bodyShape.dorsalControlPoints.map(
-      (p, i) => ({
+      (p: { x: number; y: number }) => ({
         x: p.x * len,
         y: p.y * height * shape.dorsalMod + this.getFlexOffset(p.x, flexAmount),
       })
     );
 
     const ventralPoints = RENDER_CONFIG.bodyShape.ventralControlPoints.map(
-      (p) => ({
+      (p: { x: number; y: number }) => ({
         x: p.x * len,
         y:
           p.y * height * shape.ventralMod + this.getFlexOffset(p.x, flexAmount),
