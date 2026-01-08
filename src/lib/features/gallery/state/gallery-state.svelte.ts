@@ -6,6 +6,7 @@
 
 import type { GalleryLayout } from "../domain/models/GalleryLayout";
 import type { Exhibit, GalleryContentSource } from "../domain/models/Exhibit";
+import type { ModelSlot } from "../services/implementations/MuseumModelLoader";
 import {
   PLAYER_EYE_HEIGHT,
   AVATAR_DEACTIVATION_DISTANCE,
@@ -32,6 +33,10 @@ export interface GalleryStateData {
   sourceUserId: string | null;
   /** Whether gallery lights are on (affects lighting + thumbnail mode) */
   lightsOn: boolean;
+  /** Exhibit slots extracted from loaded 3D model (replaces procedural slots) */
+  modelSlots: readonly ModelSlot[];
+  /** Whether to use model-based rendering instead of procedural */
+  useModelRendering: boolean;
 }
 
 /**
@@ -49,6 +54,10 @@ export function createGalleryState() {
   let contentSource = $state<GalleryContentSource>("user_library");
   let sourceUserId = $state<string | null>(null);
   let lightsOn = $state(true); // Lights on by default
+
+  // Model-based rendering state
+  let modelSlots = $state<readonly ModelSlot[]>([]);
+  let useModelRendering = $state(false);
 
   // Derived: Get focused exhibit
   const focusedExhibit = $derived(
@@ -102,6 +111,12 @@ export function createGalleryState() {
     get currentRoomId() {
       return currentRoomId;
     },
+    get modelSlots() {
+      return modelSlots;
+    },
+    get useModelRendering() {
+      return useModelRendering;
+    },
 
     // State setters
     setLayout(newLayout: GalleryLayout) {
@@ -151,6 +166,26 @@ export function createGalleryState() {
       currentRoomId = roomId;
     },
 
+    /**
+     * Set exhibit slots from a loaded 3D model.
+     * This enables model-based rendering and replaces procedural slots.
+     */
+    setModelSlots(slots: readonly ModelSlot[]) {
+      modelSlots = slots;
+      useModelRendering = slots.length > 0;
+      console.debug(
+        `[GalleryState] Set ${slots.length} model slots, useModelRendering=${useModelRendering}`
+      );
+    },
+
+    /**
+     * Toggle between model-based and procedural rendering.
+     * Useful for A/B testing during migration.
+     */
+    setUseModelRendering(use: boolean) {
+      useModelRendering = use;
+    },
+
     // Actions
     updateFocusedExhibit() {
       const FOCUS_DISTANCE = 200;
@@ -182,6 +217,8 @@ export function createGalleryState() {
       contentSource = "user_library";
       sourceUserId = null;
       lightsOn = true;
+      modelSlots = [];
+      useModelRendering = false;
     },
   };
 }
