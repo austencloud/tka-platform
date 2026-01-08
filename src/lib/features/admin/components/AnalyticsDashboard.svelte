@@ -11,7 +11,7 @@
   import ActiveUsersPanel from "./ActiveUsersPanel.svelte";
 </script>
 
-<main class="analytics-dashboard" role="main" aria-label="Analytics Dashboard">
+<main class="analytics-dashboard" aria-label="Analytics Dashboard">
   <header class="dashboard-header">
     <h2>Analytics Overview</h2>
   </header>
