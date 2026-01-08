@@ -7,12 +7,14 @@
    *
    * Tabs:
    * - Browser: View and validate skewed pictographs from CSV
+   * - Validator: Render all Zeta/Eta as static Type 6 pictographs with hands
    * - Generator: Tools for generating/fixing skewed dataframe (future)
    * - Grid Test: Test skewed grid rendering (future)
    */
 
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import PictographBrowserTab from "./components/PictographBrowserTab.svelte";
+  import PositionValidatorTab from "./components/PositionValidatorTab.svelte";
 
   const activeSection = $derived(navigationState.currentSection);
 </script>
@@ -20,6 +22,8 @@
 <div class="skewlab-module">
   {#if !activeSection || activeSection === "browser"}
     <PictographBrowserTab />
+  {:else if activeSection === "validator"}
+    <PositionValidatorTab />
   {:else if activeSection === "generator"}
     <div class="coming-soon">
       <i class="fas fa-hammer" aria-hidden="true"></i>

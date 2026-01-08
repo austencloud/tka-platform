@@ -9,25 +9,18 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
   import type { IDiscoverLoader } from "../../discover/gallery/display/services/contracts/IDiscoverLoader";
-  import type { ICloudThumbnailCache } from "../../discover/gallery/display/services/contracts/ICloudThumbnailCache";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import WordCardNavigation from "./Navigation.svelte";
   import WordCardFilters from "./WordCardFilters.svelte";
   import PageDisplay from "./PageDisplay.svelte";
-  import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
 
   // Services
   let loaderService = $state<IDiscoverLoader | null>(null);
-  let cloudCache = $state<ICloudThumbnailCache | null>(null);
-
-  // Admin state (use featureFlagService for consistent reactivity)
-  const isAdmin = $derived(featureFlagService.userRole === "admin");
-  let isDeleting = $state(false);
-  let deleteMessage = $state<string | null>(null);
 
   // Storage keys
   const STORAGE_KEY_LENGTH = "wordCard.selectedLength";
   const STORAGE_KEY_COLUMNS = "wordCard.columnCount";
+  const STORAGE_KEY_DIFFICULTY = "wordCard.difficulty";
   const STORAGE_KEY_FAVORITES = "wordCard.favorites";
   const STORAGE_KEY_GRID_MODE = "wordCard.gridMode";
   const STORAGE_KEY_AUTHOR = "wordCard.author";
@@ -50,6 +43,14 @@
     return localStorage.getItem(key);
   }
 
+  function getPersistedNullableNumber(key: string): number | null {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem(key);
+    if (!stored) return null;
+    const num = parseInt(stored, 10);
+    return isNaN(num) ? null : num;
+  }
+
   // State
   let sequences: SequenceData[] = $state([]);
   let isLoading = $state(false);
@@ -58,6 +59,7 @@
   let error = $state<string | null>(null);
 
   // Filter state
+  let difficulty = $state<number | null>(getPersistedNullableNumber(STORAGE_KEY_DIFFICULTY));
   let favorites = $state<boolean>(getPersistedBoolean(STORAGE_KEY_FAVORITES, false));
   let gridMode = $state<string | null>(getPersistedString(STORAGE_KEY_GRID_MODE));
   let author = $state<string | null>(getPersistedString(STORAGE_KEY_AUTHOR));
@@ -80,6 +82,15 @@
     }
   });
 
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      if (difficulty !== null) {
+        localStorage.setItem(STORAGE_KEY_DIFFICULTY, String(difficulty));
+      } else {
+        localStorage.removeItem(STORAGE_KEY_DIFFICULTY);
+      }
+    }
+  });
 
   $effect(() => {
     if (typeof window !== "undefined") {
@@ -114,6 +125,11 @@
     // Beat length filter
     if (selectedLength !== 0) {
       result = result.filter((seq) => seq.sequenceLength === selectedLength);
+    }
+
+    // Difficulty filter (uses calculated 'level' field: 1=beginner, 2=intermediate, 3=advanced)
+    if (difficulty !== null) {
+      result = result.filter((seq) => seq.level === difficulty);
     }
 
     // Favorites filter
@@ -191,7 +207,6 @@
   onMount(async () => {
     const container = await getContainerInstance();
     loaderService = container.get<IDiscoverLoader>(TYPES.IDiscoverLoader);
-    cloudCache = container.get<ICloudThumbnailCache>(TYPES.ICloudThumbnailCache);
     await loadSequences();
   });
 
@@ -219,6 +234,10 @@
   }
 
   // Filter handlers
+  function handleDifficultyChange(value: number | null) {
+    difficulty = value;
+  }
+
   function handleFavoritesChange(value: boolean) {
     favorites = value;
   }
@@ -230,39 +249,6 @@
   function handleAuthorChange(value: string | null) {
     author = value;
   }
-
-  async function handleClearCache() {
-    if (!cloudCache) return;
-
-    const confirmed = confirm(
-      "Delete all cached word card thumbnails from Firebase?\n\n" +
-        "This will force all word cards to re-render with the new layout settings.\n" +
-        "The images will be regenerated as users view them."
-    );
-
-    if (!confirmed) return;
-
-    try {
-      isDeleting = true;
-      deleteMessage = "Deleting cached thumbnails...";
-
-      const count = await cloudCache.deleteVariant("wordcard");
-
-      deleteMessage = `Deleted ${count} cached thumbnails. Refreshing...`;
-
-      // Brief pause to show success message
-      await new Promise((r) => setTimeout(r, 1000));
-
-      // Force page reload to re-render all thumbnails
-      window.location.reload();
-    } catch (err) {
-      deleteMessage =
-        err instanceof Error ? err.message : "Failed to delete cache";
-      console.error("Failed to clear word card cache:", err);
-    } finally {
-      isDeleting = false;
-    }
-  }
 </script>
 
 <div class="word-card-tab">
@@ -272,24 +258,9 @@
       <div class="title-row">
         <i class="fas fa-id-card" aria-hidden="true"></i>
         <h1 class="title">Word Cards</h1>
-        {#if isAdmin}
-          <button
-            class="admin-clear-cache"
-            onclick={handleClearCache}
-            disabled={isDeleting}
-            title="Clear all cached word card thumbnails from Firebase"
-          >
-            {#if isDeleting}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            {:else}
-              <i class="fas fa-trash-alt" aria-hidden="true"></i>
-            {/if}
-            Clear Cache
-          </button>
-        {/if}
       </div>
       <p class="status" role="status" aria-live="polite" aria-atomic="true">
-        {deleteMessage ?? statusMessage}
+        {statusMessage}
       </p>
     </div>
   </header>
@@ -307,10 +278,12 @@
         />
         <div class="filter-divider"></div>
         <WordCardFilters
+          {difficulty}
           {favorites}
           {gridMode}
           {author}
           {authors}
+          onDifficultyChange={handleDifficultyChange}
           onFavoritesChange={handleFavoritesChange}
           onGridModeChange={handleGridModeChange}
           onAuthorChange={handleAuthorChange}
@@ -363,36 +336,6 @@
   .title-row > i {
     color: var(--theme-accent, #f43f5e);
     font-size: 1.25rem;
-  }
-
-  .admin-clear-cache {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: #ff6b6b;
-    background: rgba(255, 107, 107, 0.1);
-    border: 1px solid rgba(255, 107, 107, 0.3);
-    border-radius: var(--border-radius-sm, 6px);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .admin-clear-cache:hover:not(:disabled) {
-    background: rgba(255, 107, 107, 0.2);
-    border-color: rgba(255, 107, 107, 0.5);
-  }
-
-  .admin-clear-cache:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .admin-clear-cache i {
-    font-size: 0.75rem;
   }
 
   .title {
