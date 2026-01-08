@@ -27,6 +27,7 @@
       Visibility: () => import("./tabs/VisibilityTab.svelte"),
       Keyboard: () =>
         import("$lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte"),
+      Language: () => import("./tabs/LanguageTab.svelte"),
     };
 
   // Cache for loaded tab components
@@ -70,6 +71,8 @@
         <LoadedTab currentSettings={settings} {onSettingUpdate} />
       {:else if activeTab === "Keyboard"}
         <LoadedTab currentSettings={settings} {onSettingUpdate} />
+      {:else if activeTab === "Language"}
+        <LoadedTab />
       {/if}
     {/if}
   {:catch}

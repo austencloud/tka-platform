@@ -78,6 +78,7 @@ export interface AppSettings {
     elementalGlyph?: boolean;
     positionsGlyph?: boolean;
     reversalIndicators?: boolean;
+    showGrid?: boolean; // Master toggle for grid visibility
     nonRadialPoints?: boolean;
     handPointVisibility?: "all" | "active"; // Show all hand points or only where props are
   };

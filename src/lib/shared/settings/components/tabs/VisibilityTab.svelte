@@ -28,15 +28,9 @@
   import AnimationPanel from "./visibility/AnimationPanel.svelte";
   import ImagePanel from "./visibility/ImagePanel.svelte";
 
-  interface Props {
-    currentSettings: unknown;
-    onSettingUpdate: (event: { key: string; value: unknown }) => void;
-  }
-
-  let {
-    currentSettings: _currentSettings,
-    onSettingUpdate: _onSettingUpdate,
-  }: Props = $props();
+  // Note: This tab manages its own state via dedicated managers
+  // (VisibilityStateManager, AnimationVisibilityManager, ImageCompositionManager)
+  // rather than using the generic settings pattern
 
   // State managers
   const visibilityManager = getVisibilityStateManager();
@@ -53,6 +47,7 @@
   let elementalGlyphVisible = $state(false);
   let positionsGlyphVisible = $state(false);
   let reversalIndicatorsVisible = $state(true);
+  let gridVisible = $state(true);
   let nonRadialVisible = $state(false);
   let handPointVisibility = $state<"all" | "active">("all");
 
@@ -120,17 +115,18 @@
           reversalIndicatorsVisible
         );
         break;
+      case "grid":
+        gridVisible = !gridVisible;
+        visibilityManager.setGridVisibility(gridVisible);
+        break;
       case "nonRadial":
         nonRadialVisible = !nonRadialVisible;
         visibilityManager.setNonRadialVisibility(nonRadialVisible);
         break;
-      case "handPointsAll":
-        handPointVisibility = "all";
-        visibilityManager.setHandPointVisibility("all");
-        break;
-      case "handPointsActive":
-        handPointVisibility = "active";
-        visibilityManager.setHandPointVisibility("active");
+      case "handPoints":
+        // Toggle between "all" and "active" (show/hide hand points)
+        handPointVisibility = handPointVisibility === "all" ? "active" : "all";
+        visibilityManager.setHandPointVisibility(handPointVisibility);
         break;
     }
   }
@@ -246,6 +242,7 @@
       visibilityManager.getRawGlyphVisibility("positionsGlyph");
     reversalIndicatorsVisible =
       visibilityManager.getRawGlyphVisibility("reversalIndicators");
+    gridVisible = visibilityManager.getGridVisibility();
     nonRadialVisible = visibilityManager.getNonRadialVisibility();
     handPointVisibility = visibilityManager.getHandPointVisibility();
 
@@ -282,6 +279,7 @@
         visibilityManager.getRawGlyphVisibility("positionsGlyph");
       reversalIndicatorsVisible =
         visibilityManager.getRawGlyphVisibility("reversalIndicators");
+      gridVisible = visibilityManager.getGridVisibility();
       nonRadialVisible = visibilityManager.getNonRadialVisibility();
       handPointVisibility = visibilityManager.getHandPointVisibility();
     };
@@ -344,6 +342,7 @@
       {elementalGlyphVisible}
       {positionsGlyphVisible}
       {reversalIndicatorsVisible}
+      {gridVisible}
       {nonRadialVisible}
       {handPointVisibility}
       onToggle={handlePictographToggle}

@@ -4,6 +4,7 @@
   import { resolve } from "../../inversify/di";
   import { TYPES } from "../../inversify/types";
   import { onMount } from "svelte";
+  import { translateSettingsTab } from "$lib/paraglide/translate";
 
   interface Tab {
     id: string;
@@ -78,17 +79,18 @@
     {:else}
       <!-- Icon-above-text pattern (3-5 tabs) - Current implementation -->
       {#each tabs as tab}
+        {@const translatedLabel = translateSettingsTab(tab.id)}
         <button
           class="settings-sidebar-item"
           class:active={activeTab === tab.id}
           class:narrow={isNarrow}
           class:wide={isWide}
           onclick={() => handleTabClick(tab.id)}
-          title={tab.label}
-          aria-label={tab.label}
+          title={translatedLabel}
+          aria-label={translatedLabel}
         >
           <span class="sidebar-icon">{@html tab.icon}</span>
-          <span class="sidebar-label">{tab.label}</span>
+          <span class="sidebar-label">{translatedLabel}</span>
         </button>
       {/each}
     {/if}

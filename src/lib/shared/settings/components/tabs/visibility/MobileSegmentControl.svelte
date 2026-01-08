@@ -15,10 +15,12 @@
   let { currentMode, onModeChange }: Props = $props();
 </script>
 
-<div class="mobile-segment-control">
+<div class="mobile-segment-control" role="tablist" aria-label="Visibility settings panels">
   <button
     class="segment-btn"
     class:active={currentMode === "pictograph"}
+    aria-pressed={currentMode === "pictograph"}
+    role="tab"
     onclick={() => onModeChange("pictograph")}
   >
     <i class="fas fa-image" aria-hidden="true"></i>
@@ -27,6 +29,8 @@
   <button
     class="segment-btn"
     class:active={currentMode === "animation"}
+    aria-pressed={currentMode === "animation"}
+    role="tab"
     onclick={() => onModeChange("animation")}
   >
     <i class="fas fa-film" aria-hidden="true"></i>
@@ -35,6 +39,8 @@
   <button
     class="segment-btn"
     class:active={currentMode === "image"}
+    aria-pressed={currentMode === "image"}
+    role="tab"
     onclick={() => onModeChange("image")}
   >
     <i class="fas fa-download" aria-hidden="true"></i>

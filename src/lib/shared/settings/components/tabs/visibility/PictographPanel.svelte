@@ -5,6 +5,7 @@
   Interactive preview where clicking elements toggles their visibility.
 -->
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import PictographWithVisibility from "$lib/shared/pictograph/shared/components/PictographWithVisibility.svelte";
   import { examplePictographData } from "./example-data";
 
@@ -14,6 +15,7 @@
     elementalGlyphVisible: boolean;
     positionsGlyphVisible: boolean;
     reversalIndicatorsVisible: boolean;
+    gridVisible: boolean;
     nonRadialVisible: boolean;
     handPointVisibility: "all" | "active";
     onToggle: (key: string) => void;
@@ -26,6 +28,7 @@
     elementalGlyphVisible,
     positionsGlyphVisible,
     reversalIndicatorsVisible,
+    gridVisible,
     nonRadialVisible,
     handPointVisibility,
     onToggle,
@@ -60,60 +63,60 @@
 
   <div class="panel-controls">
     <div class="control-group">
-      <span class="group-label">Glyphs</span>
+      <span class="group-label">Elements</span>
       <div class="toggle-grid">
         <button
           class="toggle-btn"
           class:active={tkaGlyphVisible}
+          aria-pressed={tkaGlyphVisible}
           onclick={() => onToggle("tka")}>TKA</button
         >
         <button
           class="toggle-btn"
           class:active={vtgGlyphVisible}
+          aria-pressed={vtgGlyphVisible}
           onclick={() => onToggle("vtg")}>VTG</button
         >
         <button
           class="toggle-btn"
           class:active={elementalGlyphVisible}
+          aria-pressed={elementalGlyphVisible}
           onclick={() => onToggle("elemental")}>Elemental</button
         >
         <button
           class="toggle-btn"
           class:active={positionsGlyphVisible}
+          aria-pressed={positionsGlyphVisible}
           onclick={() => onToggle("positions")}>Positions</button
         >
-      </div>
-    </div>
-
-    <div class="control-group">
-      <span class="group-label">Details</span>
-      <div class="toggle-grid">
         <button
           class="toggle-btn"
           class:active={reversalIndicatorsVisible}
+          aria-pressed={reversalIndicatorsVisible}
           onclick={() => onToggle("reversals")}>Reversals</button
         >
         <button
           class="toggle-btn"
-          class:active={nonRadialVisible}
-          onclick={() => onToggle("nonRadial")}>Non-Radial</button
+          class:active={gridVisible}
+          aria-pressed={gridVisible}
+          onclick={() => onToggle("grid")}>Grid</button
         >
-      </div>
-    </div>
-
-    <div class="control-group">
-      <span class="group-label">Grid</span>
-      <div class="toggle-grid single">
-        <button
-          class="toggle-btn segmented"
-          class:active={handPointVisibility === "all"}
-          onclick={() => onToggle("handPointsAll")}
-        >All Points</button>
-        <button
-          class="toggle-btn segmented"
-          class:active={handPointVisibility === "active"}
-          onclick={() => onToggle("handPointsActive")}
-        >Active Only</button>
+        {#if gridVisible}
+          <button
+            transition:slide={{ duration: 150 }}
+            class="toggle-btn"
+            class:active={handPointVisibility === "all"}
+            aria-pressed={handPointVisibility === "all"}
+            onclick={() => onToggle("handPoints")}>Hand Points</button
+          >
+          <button
+            transition:slide={{ duration: 150 }}
+            class="toggle-btn"
+            class:active={nonRadialVisible}
+            aria-pressed={nonRadialVisible}
+            onclick={() => onToggle("nonRadial")}>Non-Radial</button
+          >
+        {/if}
       </div>
     </div>
   </div>
@@ -253,40 +256,17 @@
     gap: clamp(4px, 1cqi, 8px);
   }
 
-  .toggle-grid.single {
-    grid-template-columns: 1fr 1fr;
-    background: color-mix(in srgb, var(--theme-card-bg) 50%, transparent);
-    border-radius: clamp(10px, 1.5cqi, 14px);
-    padding: 3px;
-    gap: 2px;
-  }
-
-  .toggle-btn.segmented {
-    background: transparent;
-    border: none;
-    border-radius: clamp(7px, 1.5cqi, 11px);
-  }
-
-  .toggle-btn.segmented.active {
-    background: var(--theme-card-bg);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-
-  .toggle-btn.segmented:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
   .toggle-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 44px; /* WCAG touch target */
-    padding: clamp(8px, 1.5cqi, 12px) clamp(8px, 1.5cqi, 10px);
+    min-height: 48px; /* 48px touch target */
+    padding: clamp(10px, 1.5cqi, 14px) clamp(10px, 1.5cqi, 14px);
     background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
     border: 1px solid var(--theme-stroke);
     border-radius: clamp(8px, 1.5cqi, 12px);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-min, 14px);
     font-weight: 600;
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
