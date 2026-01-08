@@ -142,8 +142,6 @@
           if (audioElement) {
             getPlayback().connectAudio(audioElement);
           }
-
-          console.log("🎵 Audio loaded:", file.name, duration, "seconds");
         });
 
         wavesurfer.on("audioprocess", (time: number) => {
@@ -228,7 +226,7 @@
 
       // Use the audio URL from state (would need to store this)
       // For now, this is a placeholder
-      console.log("BPM analysis would run here");
+      // TODO: Implement BPM analysis
     } catch (error) {
       console.error("BPM analysis failed:", error);
     }
