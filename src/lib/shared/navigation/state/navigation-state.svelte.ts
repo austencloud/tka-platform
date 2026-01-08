@@ -239,8 +239,9 @@ export function createNavigationState() {
       // Remove leading slash and split by remaining slashes
       const pathParts = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
 
-      if (pathParts.length >= 1) {
-        const urlModule = pathParts[0].toLowerCase();
+      const firstPart = pathParts[0];
+      if (pathParts.length >= 1 && firstPart) {
+        const urlModule = firstPart.toLowerCase();
         const urlTab = pathParts[1]?.toLowerCase();
 
         // Check if URL specifies a valid module

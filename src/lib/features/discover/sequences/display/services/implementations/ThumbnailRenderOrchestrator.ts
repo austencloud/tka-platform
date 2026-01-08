@@ -44,37 +44,48 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
     const key = this.keyDeriver.deriveKey(request.input);
+    const cloudKey = this.buildCloudKey(key);
 
-    // Show queued status (position is meaningless with priority sorting, so just show 0)
+    // Step 1: Check in-memory cache FIRST (instant, no network)
+    if (key.usesDefaults && !request.skipCache) {
+      const memoryCached = this.cloudCache.getCachedUrl(cloudKey);
+      if (memoryCached) {
+        // Instant return - URL is in memory
+        this.completedCount++;
+        request.onStatusChange?.({ state: "complete", url: memoryCached });
+        return { url: memoryCached, fromCache: true, key };
+      }
+
+      // Step 2: If not in memory, check cloud cache (network request)
+      // This runs BEFORE queueing so cached items don't wait in line
+      if (memoryCached === undefined) {
+        // undefined = never checked; null = checked and doesn't exist
+        request.onStatusChange?.({ state: "checking-cache" });
+        const cloudUrl = await this.cloudCache.getUrl(cloudKey);
+        if (cloudUrl) {
+          // Found in cloud - instant return
+          this.completedCount++;
+          request.onStatusChange?.({ state: "complete", url: cloudUrl });
+          return { url: cloudUrl, fromCache: true, key };
+        }
+        // Not in cloud - will need to render (cached as null, won't check again)
+      }
+    }
+
+    // Step 3: Need to render - queue to throttle concurrent renders
     request.onStatusChange?.({ state: "queued", position: 0 });
 
-    // Queue the ENTIRE operation to prevent thundering herd
-    // Priority: lower Y position = closer to top of viewport = higher priority
     try {
       return await this.queue.enqueue(key.hash, async () => {
-        // Step 1: Check in-memory cache only (no network request = no 404s)
-        // Cloud check is skipped to avoid 404 spam - we still upload for future users
-        if (key.usesDefaults && !request.skipCache) {
-          const cachedUrl = this.cloudCache.getCachedUrl(this.buildCloudKey(key));
-          if (cachedUrl) {
-            this.completedCount++;
-            request.onStatusChange?.({ state: "complete", url: cachedUrl });
-            return { url: cachedUrl, fromCache: true, key };
-          }
-          // If cachedUrl is null (checked before, doesn't exist) or undefined (never checked),
-          // proceed to render locally. Skip cloud check to avoid 404 noise.
-        }
-
-        // Step 2: Render locally
+        // Render locally
         request.onStatusChange?.({ state: "rendering" });
         const blob = await this.renderer.render(request.sequence, key.inputs);
 
-        // Step 3: Create blob URL for display
+        // Create blob URL for display
         const url = URL.createObjectURL(blob);
 
-        // Step 4: Upload to cloud (for default settings, async/non-blocking)
+        // Upload to cloud (for default settings, async/non-blocking)
         if (key.usesDefaults) {
-          // Don't show uploading state - it happens in background after image is displayed
           this.uploadToCloud(key, blob);
         }
 
@@ -86,7 +97,6 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
 
-      // Check if cancelled (not a real error)
       if (err.message === "Cancelled") {
         throw err;
       }

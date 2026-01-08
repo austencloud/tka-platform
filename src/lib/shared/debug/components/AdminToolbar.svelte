@@ -33,7 +33,7 @@
     IQuickAccessPersister,
     QuickAccessUser,
   } from "../services/contracts/IQuickAccessPersister";
-  import type { ICloudThumbnailCache } from "$lib/features/discover/gallery/display/services/contracts/ICloudThumbnailCache";
+  import type { ICloudThumbnailCache } from "$lib/features/discover/sequences/display/services/contracts/ICloudThumbnailCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 

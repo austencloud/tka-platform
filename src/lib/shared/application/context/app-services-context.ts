@@ -15,7 +15,7 @@ import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDet
 import type { IHapticFeedback } from "../services/contracts/IHapticFeedback";
 import type { ICollaborativeVideoManager } from "../../video-collaboration/services/contracts/ICollaborativeVideoManager";
 import type { IUserRepository } from "../../community/services/contracts/IUserRepository";
-import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
+import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
 import type { ICodex } from "$lib/features/learn/codex/services/contracts/ICodex";
 // TODO: IQuizRepoManager contract doesn't exist yet - uncomment when created
 // import type { IQuizRepoManager } from "$lib/features/learn/quiz/services/contracts/IQuizRepoManager";

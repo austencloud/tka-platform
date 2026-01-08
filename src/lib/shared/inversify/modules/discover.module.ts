@@ -25,10 +25,8 @@ export const exploreModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
     // === EXPLORE SERVICES ===
     // Guard against duplicate binding (module may be loaded multiple times via HMR or race conditions)
-    const bindIfNeeded = <T>(
-      type: symbol,
-      impl: new (...args: unknown[]) => T
-    ) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bindIfNeeded = <T>(type: symbol, impl: new (...args: any[]) => T) => {
       if (!options.isBound(type)) {
         return options.bind(type).to(impl);
       }

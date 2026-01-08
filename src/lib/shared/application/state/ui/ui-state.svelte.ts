@@ -1,6 +1,6 @@
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { TabId } from "../../../navigation/domain/types";
-import type { IDiscoverThumbnailProvider } from "../../../../features/discover/gallery/display/services/contracts/IDiscoverThumbnailProvider";
+import type { IDiscoverThumbnailProvider } from "../../../../features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
 
 // Spotlight display modes
 export type SpotlightDisplayMode = "image" | "beatgrid";

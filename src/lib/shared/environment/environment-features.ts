@@ -130,4 +130,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   word_card: false, // Word card generator (internal tool)
   write: false, // Write module (unreleased)
   mandala: false, // Mandala generator (internal tool)
+  skewlab: false, // Skewlab internal tool
+  "background-builder": false, // Background builder internal tool
 };

@@ -20,7 +20,7 @@ import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-pane
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 
-import { SequenceDifficultyCalculator } from "$lib/features/discover/gallery/display/services/implementations/SequenceDifficultyCalculator";
+import { SequenceDifficultyCalculator } from "$lib/features/discover/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
 import type {

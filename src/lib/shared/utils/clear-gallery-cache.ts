@@ -9,7 +9,7 @@
 
 import { resolve } from "../inversify/di";
 import { TYPES } from "../inversify/types";
-import type { IDiscoverCache } from "../../features/discover/gallery/display/services/contracts/IDiscoverCache";
+import type { IDiscoverCache } from "../../features/discover/sequences/display/services/contracts/IDiscoverCache";
 import type { IOptimizedDiscoverer } from "../../features/discover/shared/services/contracts/IOptimizedDiscoverer";
 
 export async function clearAllGalleryCaches(): Promise<void> {
