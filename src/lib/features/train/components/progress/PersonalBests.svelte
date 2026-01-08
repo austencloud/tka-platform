@@ -4,7 +4,7 @@
   Displays best performance for each sequence.
 -->
 <script lang="ts">
-  import type { PersonalBest } from "../../services/contracts/IPerformanceHistoryService";
+  import type { PersonalBest } from "../../services/contracts/IPerformanceHistoryTracker";
 
   interface Props {
     bests: PersonalBest[];

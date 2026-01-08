@@ -11,11 +11,11 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
-  import type { MusicPlayerState } from "../../word-card/domain/types/write";
+  import type { MusicPlayerState } from "$lib/features/word-card/domain/types/write";
   import {
     createDefaultMusicPlayerState,
     formatTime,
-  } from "../../word-card/domain/types/write";
+  } from "$lib/features/word-card/domain/types/write";
   import { onMount } from "svelte";
 
   interface Props {

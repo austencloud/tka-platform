@@ -47,10 +47,6 @@
   import { createCameraChoreographyState } from "./state/camera-choreography-state.svelte";
   import CameraChoreographyControls from "./components/controls/CameraChoreographyControls.svelte";
 
-  // Scene orchestration
-  import { createSceneState } from "./state/scene-state.svelte";
-  import SceneControls from "./components/controls/SceneControls.svelte";
-
   // CameraState type (matches Scene3D.svelte's internal definition)
   interface CameraState {
     position: [number, number, number];
@@ -131,9 +127,6 @@
 
   // Camera choreography state
   const cameraChoreography = createCameraChoreographyState();
-
-  // Scene orchestration state
-  const sceneState = createSceneState();
 
   // Background type comes from settingsService (unified with 2D theme)
 
@@ -353,29 +346,6 @@
       }
     }
     frameId = requestAnimationFrame(updateCamera);
-
-    return () => cancelAnimationFrame(frameId);
-  });
-
-  // Update scene orchestrator during playback
-  $effect(() => {
-    if (!sceneState.isPlaying) return;
-
-    let lastTime = performance.now();
-    let frameId: number;
-
-    function updateScene() {
-      const now = performance.now();
-      const deltaMs = now - lastTime;
-      lastTime = now;
-
-      sceneState.update(deltaMs);
-
-      if (sceneState.isPlaying) {
-        frameId = requestAnimationFrame(updateScene);
-      }
-    }
-    frameId = requestAnimationFrame(updateScene);
 
     return () => cancelAnimationFrame(frameId);
   });
@@ -614,11 +584,6 @@
         />
       </div>
 
-      <!-- Scene Controls (for multi-performer choreography) -->
-      <div class="scene-controls-container">
-        <SceneControls {sceneState} />
-      </div>
-
       <!-- Avatar Sync Controls (only shown with 2+ performers) -->
       {#if syncState && performerStates.length >= 2 && performerStates[0]?.hasSequence && performerStates[1]?.hasSequence}
         <div class="sync-controls-container">
@@ -748,7 +713,6 @@
   }
 
   .mode-switcher-container,
-  .scene-controls-container,
   .sync-controls-container {
     flex-shrink: 0;
   }

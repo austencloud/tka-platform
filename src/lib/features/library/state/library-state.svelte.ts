@@ -569,6 +569,24 @@ class LibraryStateManager {
     }
   }
 
+  async setVisibility(sequenceId: string, visibility: SequenceVisibility): Promise<boolean> {
+    if (this.isPreviewMode) {
+      toast.warning("Cannot change visibility in preview mode");
+      return false;
+    }
+
+    const service = this.getService();
+    if (!service) return false;
+
+    try {
+      await service.setVisibility(sequenceId, visibility);
+      return true;
+    } catch (error) {
+      console.error("📚 [LibraryState] Failed to set visibility:", error);
+      return false;
+    }
+  }
+
   // ============================================================
   // SELECTION
   // ============================================================

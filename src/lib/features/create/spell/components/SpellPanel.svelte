@@ -19,6 +19,7 @@ This component orchestrates the UI; business logic lives in extracted services.
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
   import type { ILOOPSelectionCoordinator } from "../services/contracts/ILOOPSelectionCoordinator";
   import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
+  import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import type { LOOPType } from "../domain/models/spell-models";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
@@ -126,7 +127,7 @@ This component orchestrates the UI; business logic lives in extracted services.
         }
 
         // Push undo snapshot
-        spellState.pushUndoSnapshot("spell-generate", {
+        spellState.pushUndoSnapshot("UndoOperationType.SPELL_GENERATE", {
           word: result.originalWord,
         });
       } else {
@@ -285,7 +286,7 @@ This component orchestrates the UI; business logic lives in extracted services.
         spellState.setCircularizationOptions([]);
         spellState.setDirectLoopUnavailableReason(null);
 
-        spellState.pushUndoSnapshot("spell-apply-loop", {
+        spellState.pushUndoSnapshot("UndoOperationType.SPELL_APPLY_LOOP", {
           word: spellState.inputWord,
           loopType,
           bridgeLetter: selectedBridge.bridgeLetters[0],
@@ -313,7 +314,7 @@ This component orchestrates the UI; business logic lives in extracted services.
             });
           }
 
-          spellState.pushUndoSnapshot("spell-apply-loop", {
+          spellState.pushUndoSnapshot("UndoOperationType.SPELL_APPLY_LOOP", {
             word: spellState.inputWord,
             loopType,
             bridgeLetter,

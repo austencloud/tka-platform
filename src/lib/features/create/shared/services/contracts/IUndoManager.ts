@@ -48,6 +48,10 @@ export enum UndoOperationType {
 
   // Generate operations
   GENERATE_SEQUENCE = "GENERATE_SEQUENCE",
+
+  // Spell module operations
+  SPELL_GENERATE = "SPELL_GENERATE",
+  SPELL_APPLY_LOOP = "SPELL_APPLY_LOOP",
 }
 
 /**

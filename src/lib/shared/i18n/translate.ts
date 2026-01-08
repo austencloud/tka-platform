@@ -3,9 +3,11 @@
  *
  * Provides helper functions for translating dynamic content like
  * module names and settings tabs based on their IDs.
+ *
+ * Uses tDynamic for computed keys (bypasses type safety by design)
  */
 
-import { t } from "./i18n.svelte.js";
+import { tDynamic } from "./i18n.svelte.js";
 
 /**
  * Get translated module label by module ID
@@ -14,7 +16,7 @@ import { t } from "./i18n.svelte.js";
 export function translateModule(moduleId: string): string {
   const normalizedId = moduleId.toLowerCase().replace(/-/g, "_");
   const key = `module_${normalizedId}`;
-  const result = t(key);
+  const result = tDynamic(key);
   return result !== key ? result : moduleId;
 }
 
@@ -25,7 +27,7 @@ export function translateModule(moduleId: string): string {
 export function translateSettingsTab(tabId: string): string {
   const normalizedId = tabId.toLowerCase().replace(/-/g, "_");
   const key = `settings_tab_${normalizedId}`;
-  const result = t(key);
+  const result = tDynamic(key);
   return result !== key ? result : tabId;
 }
 
@@ -39,6 +41,6 @@ export function translateModuleDescription(
 ): string {
   const normalizedId = moduleId.toLowerCase().replace(/-/g, "_");
   const key = `module_desc_${normalizedId}`;
-  const result = t(key);
+  const result = tDynamic(key);
   return result !== key ? result : fallback || moduleId;
 }

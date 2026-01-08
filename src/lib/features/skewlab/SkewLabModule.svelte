@@ -63,8 +63,8 @@
     settingsService = resolve<ISettingsState>(TYPES.ISettingsState);
   });
 
-  // Position to hand location mapping
-  const POSITION_LOCATIONS: Record<GridPosition, [GridLocation, GridLocation]> = {
+  // Position to hand location mapping (only Zeta and Eta positions for skewed mode)
+  const POSITION_LOCATIONS: Partial<Record<GridPosition, [GridLocation, GridLocation]>> = {
     // Zeta positions - 135° obtuse angle
     [GridPosition.ZETA1]: [GridLocation.SOUTHWEST, GridLocation.NORTH],
     [GridPosition.ZETA2]: [GridLocation.WEST, GridLocation.NORTHEAST],
@@ -122,7 +122,11 @@
   });
 
   function createStaticPictograph(position: GridPosition): PictographData {
-    const [blueLocation, redLocation] = POSITION_LOCATIONS[position];
+    const locations = POSITION_LOCATIONS[position];
+    if (!locations) {
+      throw new Error(`No location mapping found for position: ${position}`);
+    }
+    const [blueLocation, redLocation] = locations;
     const gridMode = GridMode.SKEWED;
 
     const blueMotion = createMotionData({
@@ -168,7 +172,7 @@
 
   function formatPosition(pos: GridPosition): string {
     const match = pos.match(/^(zeta|eta)(\d+)$/i);
-    if (match) {
+    if (match && match[1] && match[2]) {
       return `${match[1].charAt(0).toUpperCase()}${match[2]}`;
     }
     return pos.toUpperCase();
@@ -253,12 +257,13 @@
   <div class="grid">
     {#each displayPositions as position (position)}
       {@const pictograph = createStaticPictograph(position)}
-      {@const [blueLoc, redLoc] = POSITION_LOCATIONS[position]}
+      {@const positionLocations = POSITION_LOCATIONS[position]}
+      {@const blueLoc = positionLocations?.[0] ?? GridLocation.NORTH}
+      {@const redLoc = positionLocations?.[1] ?? GridLocation.SOUTH}
       <article class="card">
         <div class="pictograph-area">
           <PictographContainer
             pictographData={pictograph}
-            size={160}
             gridMode={GridMode.SKEWED}
           />
         </div>

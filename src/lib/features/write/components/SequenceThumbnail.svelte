@@ -4,7 +4,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
-  import { generateSequenceThumbnail } from "../../word-card/domain/types/write";
+  import { generateSequenceThumbnail } from "$lib/features/word-card/domain/types/write";
   import { onMount } from "svelte";
 
   // Props

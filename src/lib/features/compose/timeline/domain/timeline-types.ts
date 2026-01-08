@@ -160,7 +160,11 @@ export interface TimelineTrack {
 export type TrackType =
   | "animation" // Standard animation clips
   | "overlay" // Overlaid on top with transparency
-  | "background"; // Behind other tracks
+  | "background" // Behind other tracks
+  // Stage-specific track types (for multi-performer 3D choreography)
+  | "performer" // Performer track - one track per avatar in Stage
+  | "formation" // Formation cue markers - trigger formation changes
+  | "camera"; // Camera keyframe track - choreographed camera moves
 
 // ============================================================================
 // Audio Reference

@@ -4,7 +4,7 @@
   Shows act details or empty state when no act selected.
 -->
 <script lang="ts">
-  import type { ActData } from "../../word-card/domain/types/write";
+  import type { ActData } from "$lib/features/word-card/domain/types/write";
   import ActHeader from "./ActHeader.svelte";
   import SequenceGrid from "./SequenceGrid.svelte";
 

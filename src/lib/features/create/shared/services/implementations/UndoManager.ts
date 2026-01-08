@@ -54,6 +54,8 @@ const OPERATION_DESCRIPTIONS: Record<UndoOperationType, string> = {
   EXTEND_SEQUENCE: "Extend",
   MODIFY_BEAT_PROPERTIES: "Modify Beat Properties",
   GENERATE_SEQUENCE: "Generate Sequence",
+  SPELL_GENERATE: "Spell Generate",
+  SPELL_APPLY_LOOP: "Spell Apply LOOP",
 };
 
 @injectable()

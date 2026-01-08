@@ -7,7 +7,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
-  import type { ActThumbnailInfo } from "../../word-card/domain/types/write";
+  import type { ActThumbnailInfo } from "$lib/features/word-card/domain/types/write";
   import { onMount } from "svelte";
   import ActCard from "./ActCard.svelte";
 

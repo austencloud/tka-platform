@@ -498,6 +498,7 @@
     }
 
     // Get player position from physics
+    if (!playerController.rigidBody) return;
     const newPos = playerController.rigidBody.translation();
 
     // Check for room changes

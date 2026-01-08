@@ -133,7 +133,9 @@
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*AnimatorLoader*\")",
       "Bash(Get-ChildItem -Recurse -Include \"tsconfig*.json\" -Depth 2)",
       "Bash(Select-Object FullName)",
-      "Bash(Select-String -Pattern \"AnimationScreen|FramedSequence\")"
+      "Bash(Select-String -Pattern \"AnimationScreen|FramedSequence\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"PictographFilter.ts\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"ArrowSvg.svelte\")"
     ]
   }
 }

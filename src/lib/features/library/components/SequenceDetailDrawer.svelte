@@ -13,9 +13,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import PropAwareThumbnail from "../../discover/gallery/display/components/PropAwareThumbnail.svelte";
+  import PropAwareThumbnail from "../../discover/sequences/display/components/PropAwareThumbnail.svelte";
   import TagAutocompleteInput from "./tags/TagAutocompleteInput.svelte";
-  import VisibilityToggle from "./VisibilityToggle.svelte";
   import { libraryState } from "../state/library-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
