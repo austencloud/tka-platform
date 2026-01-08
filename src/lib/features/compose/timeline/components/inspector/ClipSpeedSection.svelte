@@ -123,11 +123,27 @@
 
   .range-input::-webkit-slider-thumb {
     appearance: none;
-    width: 14px;
-    height: 14px;
+    width: 24px;
+    height: 24px;
     background: var(--theme-accent);
     border-radius: 50%;
     cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .range-input::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background: var(--theme-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .range-input:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 4px;
   }
 
   .field-label {
@@ -159,7 +175,12 @@
 
   .preset-btn:hover {
     background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
+  }
+
+  .preset-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .preset-btn.active {

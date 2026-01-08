@@ -8,6 +8,7 @@
 
   import type { TimelineTrack } from "../domain/timeline-types";
   import { getTimelineState } from "../state/timeline-state.svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
   interface Props {
     track: TimelineTrack;
@@ -42,6 +43,9 @@
   // Controls menu visibility
   let showControls = $state(false);
   let menuRef: HTMLDivElement;
+
+  // Delete confirmation
+  let showDeleteConfirm = $state(false);
 
   function toggleControls(e: MouseEvent) {
     e.stopPropagation();
@@ -196,7 +200,10 @@
         {#if trackCount > 1}
           <button
             class="delete-btn"
-            onclick={() => getState().removeTrack(track.id)}
+            onclick={() => {
+              showControls = false;
+              showDeleteConfirm = true;
+            }}
             title="Delete track"
             aria-label="Delete track"
           >
@@ -207,6 +214,23 @@
     {/if}
   </div>
 </div>
+
+<ConfirmDialog
+  bind:isOpen={showDeleteConfirm}
+  title="Delete Track?"
+  message={track.clips.length > 0
+    ? `This will remove "${track.name}" and all ${track.clips.length} clip${track.clips.length === 1 ? "" : "s"} on it.`
+    : `This will remove "${track.name}".`}
+  confirmText="Delete"
+  cancelText="Cancel"
+  variant="danger"
+  confirmDelay={track.clips.length > 0 ? 2 : 0}
+  onConfirm={() => {
+    getState().removeTrack(track.id);
+    showDeleteConfirm = false;
+  }}
+  onCancel={() => (showDeleteConfirm = false)}
+/>
 
 <style>
   .track-header {

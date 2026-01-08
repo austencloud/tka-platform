@@ -127,6 +127,9 @@
   function handleKeyDown(e: KeyboardEvent) {
     if (!selected) return;
 
+    // Nudge amount: 0.1s normal, 1s with shift
+    const nudgeAmount = e.shiftKey ? 1 : 0.1;
+
     switch (e.key) {
       case "Delete":
       case "Backspace":
@@ -144,9 +147,58 @@
         getState().updateClip(clip.id, { muted: !clip.muted });
         break;
       case "l":
-        e.preventDefault();
-        getState().updateClip(clip.id, { locked: !clip.locked });
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          getState().updateClip(clip.id, { locked: !clip.locked });
+        }
         break;
+      case "ArrowLeft":
+        e.preventDefault();
+        e.stopPropagation();
+        getState().moveClip(
+          clip.id,
+          Math.max(0, clip.startTime - nudgeAmount),
+          undefined,
+          { skipSnap: true }
+        );
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        e.stopPropagation();
+        getState().moveClip(
+          clip.id,
+          clip.startTime + nudgeAmount,
+          undefined,
+          { skipSnap: true }
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        e.stopPropagation();
+        moveToAdjacentTrack(-1);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        e.stopPropagation();
+        moveToAdjacentTrack(1);
+        break;
+    }
+  }
+
+  // Move clip to adjacent track (up = -1, down = +1)
+  function moveToAdjacentTrack(direction: -1 | 1) {
+    const state = getState();
+    const tracks = state.project.tracks;
+    const currentTrackIndex = tracks.findIndex((t) => t.id === clip.trackId);
+    const targetIndex = currentTrackIndex + direction;
+
+    if (targetIndex >= 0 && targetIndex < tracks.length) {
+      const targetTrack = tracks[targetIndex];
+      if (targetTrack && !targetTrack.locked) {
+        state.moveClip(clip.id, clip.startTime, targetTrack.id, {
+          skipSnap: true,
+        });
+      }
     }
   }
 </script>
@@ -290,6 +342,11 @@
     box-shadow:
       0 4px 16px rgba(0, 0, 0, 0.5),
       0 0 12px color-mix(in srgb, var(--theme-text, white) 30%, transparent);
+  }
+
+  .timeline-clip:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
   .timeline-clip.muted {
@@ -472,6 +529,17 @@
     z-index: 10;
   }
 
+  /* Invisible 48px touch target for accessibility */
+  .trim-handle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   .timeline-clip:hover .trim-handle,
   .timeline-clip.selected .trim-handle,
   .timeline-clip.trimming .trim-handle {
@@ -512,6 +580,17 @@
     opacity: 0;
     transition: opacity 0.15s ease;
     z-index: 11;
+  }
+
+  /* Invisible 48px touch target for accessibility */
+  .resize-handle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 48px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .resize-handle.right {

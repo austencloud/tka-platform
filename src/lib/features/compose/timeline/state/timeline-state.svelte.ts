@@ -40,6 +40,8 @@ import { createPlayheadActions } from "./actions/playhead-actions";
 import { createSelectionActions } from "./actions/selection-actions";
 import { createViewportActions } from "./actions/viewport-actions";
 import { createUIStateActions } from "./actions/ui-state-actions";
+import { getTimelineUndoManager } from "../services/implementations/TimelineUndoManager";
+import type { TimelineUndoOperationType } from "../services/contracts/ITimelineUndoManager";
 
 // ============================================================================
 // Project Deduplication Helper
@@ -107,27 +109,68 @@ export function createTimelineState() {
   // Core State
   // =========================================================================
 
-  // Load project from storage and deduplicate to prevent Svelte each_key_duplicate errors
-  let project = $state<TimelineProject>(
-    deduplicateProjectClips(
-      loadFromStorage(TIMELINE_STORAGE_KEYS.PROJECT, createProject())
-    )
-  );
+  // Loading and error state
+  let isLoading = $state(true);
+  let loadError = $state<string | null>(null);
 
+  // Load project from storage and deduplicate to prevent Svelte each_key_duplicate errors
+  let project = $state<TimelineProject>(createProject());
   let playhead = $state<PlayheadState>(createDefaultPlayheadState());
   let selection = $state<SelectionState>(createDefaultSelectionState());
-  let viewport = $state<ViewportState>(
-    loadFromStorage(
+  let viewport = $state<ViewportState>(createDefaultViewportState());
+
+  // Initialize state from storage
+  try {
+    project = deduplicateProjectClips(
+      loadFromStorage(TIMELINE_STORAGE_KEYS.PROJECT, createProject())
+    );
+    viewport = loadFromStorage(
       TIMELINE_STORAGE_KEYS.VIEWPORT,
       createDefaultViewportState()
-    )
-  );
+    );
+    isLoading = false;
+  } catch (err) {
+    console.error("[Timeline] Failed to load from storage:", err);
+    loadError = "Failed to load project. Starting fresh.";
+    project = createProject();
+    viewport = createDefaultViewportState();
+    isLoading = false;
+  }
 
   // UI State
   let isClipInspectorOpen = $state(false);
   let isTrackSettingsOpen = $state(false);
   let isProjectSettingsOpen = $state(false);
   let clipBeingEdited = $state<string | null>(null);
+
+  // Undo/Redo state
+  const undoManager = getTimelineUndoManager();
+  undoManager.init(() => project);
+
+  let canUndo = $state(undoManager.canUndo);
+  let canRedo = $state(undoManager.canRedo);
+  let undoDescription = $state<string | null>(undoManager.undoDescription);
+  let redoDescription = $state<string | null>(undoManager.redoDescription);
+
+  // Subscribe to undo manager changes
+  undoManager.subscribe(() => {
+    canUndo = undoManager.canUndo;
+    canRedo = undoManager.canRedo;
+    undoDescription = undoManager.undoDescription;
+    redoDescription = undoManager.redoDescription;
+  });
+
+  // Helper to wrap mutations with undo capture
+  function withUndo<T>(
+    type: TimelineUndoOperationType,
+    description: string,
+    fn: () => T
+  ): T {
+    undoManager.captureState(type, description);
+    const result = fn();
+    undoManager.commitState();
+    return result;
+  }
 
   // Drag state
   let isDragging = $state(false);
@@ -171,8 +214,6 @@ export function createTimelineState() {
   );
   const totalDuration = $derived(calculateProjectDuration(project));
   const hasSelection = $derived(selection.selectedClipIds.length > 0);
-  const canUndo = $derived(false); // TODO: implement history
-  const canRedo = $derived(false);
 
   // =========================================================================
   // Helper Functions
@@ -270,13 +311,15 @@ export function createTimelineState() {
     const trackName = name ?? `Track ${newOrder + 1}`;
     const track = createTrack(trackName, newOrder);
 
-    project = {
-      ...project,
-      tracks: [...project.tracks, track],
-      updatedAt: new Date(),
-    };
-    saveProject();
-    return track;
+    return withUndo("ADD_TRACK", `Add track "${trackName}"`, () => {
+      project = {
+        ...project,
+        tracks: [...project.tracks, track],
+        updatedAt: new Date(),
+      };
+      saveProject();
+      return track;
+    });
   }
 
   function removeTrack(trackId: string) {
@@ -286,22 +329,26 @@ export function createTimelineState() {
     }
 
     const track = project.tracks.find((t) => t.id === trackId);
-    project = {
-      ...project,
-      tracks: project.tracks
-        .filter((t) => t.id !== trackId)
-        .map((t, i) => ({ ...t, order: i })),
-      updatedAt: new Date(),
-    };
+    const trackName = track?.name ?? "Track";
 
-    selection = {
-      ...selection,
-      selectedClipIds: selection.selectedClipIds.filter(
-        (id) => !track?.clips.some((c) => c.id === id)
-      ),
-    };
+    withUndo("REMOVE_TRACK", `Remove track "${trackName}"`, () => {
+      project = {
+        ...project,
+        tracks: project.tracks
+          .filter((t) => t.id !== trackId)
+          .map((t, i) => ({ ...t, order: i })),
+        updatedAt: new Date(),
+      };
 
-    saveProject();
+      selection = {
+        ...selection,
+        selectedClipIds: selection.selectedClipIds.filter(
+          (id) => !track?.clips.some((c) => c.id === id)
+        ),
+      };
+
+      saveProject();
+    });
   }
 
   function updateTrack(trackId: string, updates: Partial<TimelineTrack>) {
@@ -368,61 +415,80 @@ export function createTimelineState() {
       playhead.position
     );
     const clip = createClip(sequence, trackId, snappedStart, options);
+    const clipName = sequence.word || sequence.name || "clip";
 
-    project = {
-      ...project,
-      tracks: project.tracks.map((t) =>
-        t.id === trackId
-          ? {
-              ...t,
-              clips: [...t.clips, clip].sort(
-                (a, b) => a.startTime - b.startTime
-              ),
-            }
-          : t
-      ),
-      updatedAt: new Date(),
-    };
+    return withUndo("ADD_CLIP", `Add "${clipName}"`, () => {
+      project = {
+        ...project,
+        tracks: project.tracks.map((t) =>
+          t.id === trackId
+            ? {
+                ...t,
+                clips: [...t.clips, clip].sort(
+                  (a, b) => a.startTime - b.startTime
+                ),
+              }
+            : t
+        ),
+        updatedAt: new Date(),
+      };
 
-    saveProject();
-    console.log(
-      `🎬 Timeline: Added clip "${sequence.name}" at ${snappedStart}s`
-    );
-    return clip;
+      saveProject();
+      console.log(
+        `🎬 Timeline: Added clip "${sequence.name}" at ${snappedStart}s`
+      );
+      return clip;
+    });
   }
 
   function removeClip(clipId: string) {
-    project = {
-      ...project,
-      tracks: project.tracks.map((t) => ({
-        ...t,
-        clips: t.clips.filter((c) => c.id !== clipId),
-      })),
-      updatedAt: new Date(),
-    };
+    const clip = allClips.find((c) => c.id === clipId);
+    const clipName = clip?.label || clip?.sequence?.name || "clip";
 
-    selection = {
-      ...selection,
-      selectedClipIds: selection.selectedClipIds.filter((id) => id !== clipId),
-    };
+    withUndo("REMOVE_CLIP", `Remove "${clipName}"`, () => {
+      project = {
+        ...project,
+        tracks: project.tracks.map((t) => ({
+          ...t,
+          clips: t.clips.filter((c) => c.id !== clipId),
+        })),
+        updatedAt: new Date(),
+      };
 
-    saveProject();
+      selection = {
+        ...selection,
+        selectedClipIds: selection.selectedClipIds.filter(
+          (id) => id !== clipId
+        ),
+      };
+
+      saveProject();
+    });
   }
 
   function removeSelectedClips() {
     if (selection.selectedClipIds.length === 0) return;
 
-    project = {
-      ...project,
-      tracks: project.tracks.map((t) => ({
-        ...t,
-        clips: t.clips.filter((c) => !selection.selectedClipIds.includes(c.id)),
-      })),
-      updatedAt: new Date(),
-    };
+    const count = selection.selectedClipIds.length;
+    withUndo(
+      "REMOVE_CLIPS",
+      `Remove ${count} clip${count > 1 ? "s" : ""}`,
+      () => {
+        project = {
+          ...project,
+          tracks: project.tracks.map((t) => ({
+            ...t,
+            clips: t.clips.filter(
+              (c) => !selection.selectedClipIds.includes(c.id)
+            ),
+          })),
+          updatedAt: new Date(),
+        };
 
-    selection = { ...selection, selectedClipIds: [] };
-    saveProject();
+        selection = { ...selection, selectedClipIds: [] };
+        saveProject();
+      }
+    );
   }
 
   function updateClip(clipId: string, updates: Partial<TimelineClip>) {
@@ -526,23 +592,27 @@ export function createTimelineState() {
       startTime: getClipEndTime(clip),
     };
 
-    project = {
-      ...project,
-      tracks: project.tracks.map((t) =>
-        t.id === clip.trackId
-          ? {
-              ...t,
-              clips: [...t.clips, newClip].sort(
-                (a, b) => a.startTime - b.startTime
-              ),
-            }
-          : t
-      ),
-      updatedAt: new Date(),
-    };
+    const clipName = clip.label || clip.sequence?.name || "clip";
 
-    saveProject();
-    return newClip;
+    return withUndo("DUPLICATE_CLIP", `Duplicate "${clipName}"`, () => {
+      project = {
+        ...project,
+        tracks: project.tracks.map((t) =>
+          t.id === clip.trackId
+            ? {
+                ...t,
+                clips: [...t.clips, newClip].sort(
+                  (a, b) => a.startTime - b.startTime
+                ),
+              }
+            : t
+        ),
+        updatedAt: new Date(),
+      };
+
+      saveProject();
+      return newClip;
+    });
   }
 
   // =========================================================================
@@ -628,7 +698,54 @@ export function createTimelineState() {
   // Return State Object
   // =========================================================================
 
+  // Clear load error after user has seen it
+  function clearLoadError() {
+    loadError = null;
+  }
+
+  // Undo/Redo operations
+  function undo() {
+    const snapshot = undoManager.undo();
+    if (snapshot) {
+      project = deduplicateProjectClips(snapshot.project);
+      saveProject();
+    }
+  }
+
+  function redo() {
+    const snapshot = undoManager.redo();
+    if (snapshot) {
+      project = deduplicateProjectClips(snapshot.project);
+      saveProject();
+    }
+  }
+
   return {
+    // Loading/error state getters
+    get isLoading() {
+      return isLoading;
+    },
+    get loadError() {
+      return loadError;
+    },
+    clearLoadError,
+
+    // Undo/redo state getters
+    get canUndo() {
+      return canUndo;
+    },
+    get canRedo() {
+      return canRedo;
+    },
+    get undoDescription() {
+      return undoDescription;
+    },
+    get redoDescription() {
+      return redoDescription;
+    },
+    undo,
+    redo,
+
     // Core state getters
     get project() {
       return project;
@@ -658,12 +775,6 @@ export function createTimelineState() {
     },
     get hasSelection() {
       return hasSelection;
-    },
-    get canUndo() {
-      return canUndo;
-    },
-    get canRedo() {
-      return canRedo;
     },
 
     // UI state getters

@@ -29,7 +29,7 @@
   import TimelinePreview from "./TimelinePreview.svelte";
   import SourcePreview from "./SourcePreview.svelte";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
-  import { timeToPixels } from "../domain/timeline-types";
+  import { timeToPixels, type TimelineTrack, type TimelineClip } from "../domain/timeline-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { untrack } from "svelte";
 
@@ -77,9 +77,11 @@
   let totalDuration = $state(60);
   let isPlaying = $state(false);
   let hasSelection = $state(false);
-  let tracks = $state<any[]>([]);
+  let tracks = $state<TimelineTrack[]>([]);
   let hasClips = $state(false);
-  let allClips = $state<any[]>([]);
+  let allClips = $state<TimelineClip[]>([]);
+  let isLoading = $state(true);
+  let loadError = $state<string | null>(null);
 
   // Load persisted panel layout
   const savedLayout = loadFromStorage<PanelLayout>(
@@ -130,6 +132,8 @@
     const hasSel = state.hasSelection;
     const trks = state.project.tracks;
     const clips = state.allClips;
+    const loading = state.isLoading;
+    const error = state.loadError;
 
     untrack(() => {
       pixelsPerSecond = pps;
@@ -141,6 +145,8 @@
       tracks = trks;
       allClips = clips;
       hasClips = clips.length > 0;
+      isLoading = loading;
+      loadError = error;
     });
   });
 
@@ -352,6 +358,25 @@
           getState().zoomToFit();
         }
         break;
+      case "z":
+      case "Z":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            getState().redo();
+          } else {
+            getState().undo();
+          }
+        }
+        break;
+      case "y":
+      case "Y":
+        // Windows-style redo
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          getState().redo();
+        }
+        break;
     }
   }
 
@@ -485,33 +510,63 @@
   role="application"
   aria-label="Timeline editor"
 >
-  <!-- Top Controls Bar -->
-  <div class="controls-bar">
-    <TimelineControls onOpenMediaBrowser={toggleMediaBrowser} />
-
-    <LayoutToggles
-      {showMediaBrowser}
-      {showPreview}
-      onToggleMediaBrowser={toggleMediaBrowser}
-      onTogglePreview={() => (showPreview = !showPreview)}
-    />
-  </div>
-
-  <!-- Main Content Area -->
-  <div class="main-content">
-    {#if showMediaBrowser}
-      <PanelGroup
-        direction="horizontal"
-        panels={mainPanels}
-        bind:sizes={mainSizes}
-      />
-    {:else}
-      {@render leftSideContent()}
+  {#if isLoading}
+    <!-- Loading State -->
+    <div class="loading-state">
+      <div class="loading-skeleton">
+        <div class="skeleton-controls"></div>
+        <div class="skeleton-monitors"></div>
+        <div class="skeleton-tracks">
+          <div class="skeleton-track"></div>
+          <div class="skeleton-track"></div>
+        </div>
+      </div>
+      <span class="loading-text">Loading timeline...</span>
+    </div>
+  {:else}
+    <!-- Error Banner (dismissible) -->
+    {#if loadError}
+      <div class="error-banner" role="alert">
+        <i class="fa-solid fa-exclamation-triangle" aria-hidden="true"></i>
+        <span>{loadError}</span>
+        <button
+          class="dismiss-btn"
+          onclick={() => getState().clearLoadError()}
+          aria-label="Dismiss error"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
     {/if}
-  </div>
 
-  <!-- Clip Inspector Panel -->
-  <ClipInspector />
+    <!-- Top Controls Bar -->
+    <div class="controls-bar">
+      <TimelineControls onOpenMediaBrowser={toggleMediaBrowser} />
+
+      <LayoutToggles
+        {showMediaBrowser}
+        {showPreview}
+        onToggleMediaBrowser={toggleMediaBrowser}
+        onTogglePreview={() => (showPreview = !showPreview)}
+      />
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      {#if showMediaBrowser}
+        <PanelGroup
+          direction="horizontal"
+          panels={mainPanels}
+          bind:sizes={mainSizes}
+        />
+      {:else}
+        {@render leftSideContent()}
+      {/if}
+    </div>
+
+    <!-- Clip Inspector Panel -->
+    <ClipInspector />
+  {/if}
 </div>
 
 <style>
@@ -559,5 +614,110 @@
     min-height: 0;
     min-width: 0;
     background: var(--theme-panel-elevated-bg);
+  }
+
+  /* Loading State */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+  }
+
+  .loading-skeleton {
+    width: 80%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .skeleton-controls {
+    height: 48px;
+    background: var(--theme-card-bg);
+    border-radius: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-monitors {
+    height: 150px;
+    background: var(--theme-card-bg);
+    border-radius: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+    animation-delay: 0.2s;
+  }
+
+  .skeleton-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .skeleton-track {
+    height: 60px;
+    background: var(--theme-card-bg);
+    border-radius: 6px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-track:nth-child(2) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .loading-text {
+    font-size: var(--font-size-min);
+    color: var(--theme-text-dim);
+  }
+
+  /* Error Banner */
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: color-mix(in srgb, var(--semantic-warning) 15%, transparent);
+    border-bottom: 1px solid var(--semantic-warning);
+    color: var(--semantic-warning);
+    font-size: var(--font-size-min);
+  }
+
+  .error-banner i {
+    font-size: var(--font-size-sm);
+  }
+
+  .error-banner span {
+    flex: 1;
+  }
+
+  .dismiss-btn {
+    width: 32px;
+    height: 32px;
+    min-width: var(--min-touch-target, 48px);
+    min-height: var(--min-touch-target, 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--semantic-warning);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+  }
+
+  .dismiss-btn:hover {
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
   }
 </style>

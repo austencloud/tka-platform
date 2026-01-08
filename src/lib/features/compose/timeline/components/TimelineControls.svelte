@@ -44,6 +44,12 @@
   let playheadDirection = $state<1 | -1>(1);
   let shuttleSpeed = $state(1);
 
+  // Undo/redo state for template bindings
+  let canUndo = $state(false);
+  let canRedo = $state(false);
+  let undoDescription = $state<string | null>(null);
+  let redoDescription = $state<string | null>(null);
+
   // Dark Mode state
   let darkModeEnabled = $state(false);
   const visibilityManager = getAnimationVisibilityManager();
@@ -86,6 +92,15 @@
     zoomPercent = Math.round((state.viewport.pixelsPerSecond / 50) * 100);
   });
 
+  // Sync undo/redo state
+  $effect(() => {
+    const state = getState();
+    canUndo = state.canUndo;
+    canRedo = state.canRedo;
+    undoDescription = state.undoDescription;
+    redoDescription = state.redoDescription;
+  });
+
   // Sync Dark Mode from visibility manager
   $effect(() => {
     darkModeEnabled = visibilityManager.isDarkMode();
@@ -126,6 +141,29 @@
     {#if shuttleDisplay}
       <span class="shuttle-indicator">{shuttleDisplay}</span>
     {/if}
+  </div>
+
+  <!-- Undo/Redo Controls -->
+  <div class="undo-redo-section">
+    <button
+      class="control-btn"
+      onclick={() => getState().undo()}
+      disabled={!canUndo}
+      title={undoDescription ? `Undo: ${undoDescription} (Ctrl+Z)` : "Nothing to undo"}
+      aria-label={undoDescription ? `Undo: ${undoDescription}` : "Nothing to undo"}
+    >
+      <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+    </button>
+
+    <button
+      class="control-btn"
+      onclick={() => getState().redo()}
+      disabled={!canRedo}
+      title={redoDescription ? `Redo: ${redoDescription} (Ctrl+Shift+Z)` : "Nothing to redo"}
+      aria-label={redoDescription ? `Redo: ${redoDescription}` : "Nothing to redo"}
+    >
+      <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+    </button>
   </div>
 
   <!-- Add Media Button -->
@@ -211,7 +249,8 @@
     gap: 8px;
   }
 
-  .zoom-section {
+  .zoom-section,
+  .undo-redo-section {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -245,6 +284,20 @@
   .control-btn:active {
     transform: translateY(0);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .control-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .control-btn:disabled:hover {
+    background: var(--theme-card-bg);
+    border-color: var(--theme-stroke);
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .time-display {
@@ -354,23 +407,24 @@
     font-size: var(--font-size-compact);
   }
 
-  /* Dark Mode button - electric cyan glow when active */
+  /* Dark Mode button - electric neon glow when active */
   .dark-mode-btn.active {
-    background: rgba(0, 255, 255, 0.15);
-    border-color: #00ffff;
-    color: #00ffff;
+    --neon-color: var(--theme-neon, #00ffff);
+    background: color-mix(in srgb, var(--neon-color) 15%, transparent);
+    border-color: var(--neon-color);
+    color: var(--neon-color);
     box-shadow:
-      0 0 12px rgba(0, 255, 255, 0.4),
-      0 0 20px rgba(0, 255, 255, 0.2),
-      inset 0 0 8px rgba(0, 255, 255, 0.1);
-    text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
+      0 0 12px color-mix(in srgb, var(--neon-color) 40%, transparent),
+      0 0 20px color-mix(in srgb, var(--neon-color) 20%, transparent),
+      inset 0 0 8px color-mix(in srgb, var(--neon-color) 10%, transparent);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--neon-color) 80%, transparent);
   }
 
   .dark-mode-btn.active:hover {
-    background: rgba(0, 255, 255, 0.25);
+    background: color-mix(in srgb, var(--neon-color) 25%, transparent);
     box-shadow:
-      0 0 16px rgba(0, 255, 255, 0.5),
-      0 0 28px rgba(0, 255, 255, 0.3),
-      inset 0 0 10px rgba(0, 255, 255, 0.15);
+      0 0 16px color-mix(in srgb, var(--neon-color) 50%, transparent),
+      0 0 28px color-mix(in srgb, var(--neon-color) 30%, transparent),
+      inset 0 0 10px color-mix(in srgb, var(--neon-color) 15%, transparent);
   }
 </style>

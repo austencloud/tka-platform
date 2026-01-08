@@ -196,8 +196,6 @@
     display: flex;
     flex-direction: column;
     z-index: 50;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     box-shadow: -4px 0 16px var(--theme-shadow);
   }
 
@@ -208,9 +206,7 @@
     justify-content: space-between;
     padding: 14px 18px;
     background: var(--theme-panel-elevated-bg);
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .header-title {
