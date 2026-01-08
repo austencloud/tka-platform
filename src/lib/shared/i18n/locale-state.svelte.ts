@@ -1,44 +1,37 @@
 /**
- * Reactive Locale State
+ * Locale State - Backwards Compatibility Layer
  *
- * Provides a reactive wrapper around Paraglide's locale system.
- * Allows UI to update instantly when language changes without page reload.
+ * Re-exports from the main i18n module for existing code that imports from here.
+ * New code should import directly from i18n.svelte.ts
  */
 
 import {
   getLocale,
-  setLocale as paraglideSetLocale,
+  setLocale,
+  initI18n,
   type Locale,
-} from "$lib/paraglide/runtime.js";
-
-// Reactive locale state - triggers Svelte re-renders when changed
-let currentLocale = $state<string>(getLocale());
+} from "./i18n.svelte.js";
 
 /**
- * Get the current locale reactively.
- * Components using this will re-render when locale changes.
+ * @deprecated Use getLocale() from i18n.svelte.ts instead
  */
 export function getReactiveLocale(): string {
-  return currentLocale;
+  return getLocale();
 }
 
 /**
- * Switch to a new locale without page reload.
- * Updates both Paraglide's internal state and triggers Svelte reactivity.
+ * @deprecated Use setLocale() from i18n.svelte.ts instead
  */
 export function switchLocale(locale: string): void {
-  // Update Paraglide's locale (persists to cookie/localStorage)
-  // Pass reload: false to prevent page refresh
-  paraglideSetLocale(locale as Locale, { reload: false });
-
-  // Trigger Svelte reactivity by updating our state
-  currentLocale = locale;
+  setLocale(locale as Locale);
 }
 
 /**
- * Initialize locale state on app startup.
- * Call this once in your root layout to sync with persisted locale.
+ * @deprecated Use initI18n() from i18n.svelte.ts instead
  */
 export function initLocaleState(): void {
-  currentLocale = getLocale();
+  initI18n();
 }
+
+// Re-export for any other usages
+export { getLocale, setLocale, initI18n, type Locale };
