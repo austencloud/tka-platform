@@ -297,7 +297,7 @@ export class FishAnimator implements IFishAnimator {
   async initializeFish(
     dimensions: Dimensions,
     count: number,
-    useSpineChain: boolean = false
+    useSpineChain: boolean = true // Spine-chain enabled by default for organic animation
   ): Promise<FishMarineLife[]> {
     const fish: FishMarineLife[] = [];
     for (let i = 0; i < count; i++) {
@@ -308,7 +308,7 @@ export class FishAnimator implements IFishAnimator {
     return fish;
   }
 
-  createFish(dimensions: Dimensions, useSpineChain: boolean = false): FishMarineLife {
+  createFish(dimensions: Dimensions, useSpineChain: boolean = true): FishMarineLife {
     // Assign depth layer and species
     const depthLayer = this.assignDepthLayer();
     const species = this.assignSpecies(depthLayer);
@@ -689,7 +689,8 @@ export class FishAnimator implements IFishAnimator {
     fish.swimPhase += fish.swimSpeed * speedRatio * frameMultiplier;
 
     // Calculate head target position
-    const headTargetX = fish.x + fish.direction * fish.speed * deltaSeconds * 60;
+    // fish.speed is in pixels per second, deltaSeconds is ~0.016 per frame
+    const headTargetX = fish.x + fish.direction * fish.speed * deltaSeconds;
     const bob = Math.sin(fish.animationPhase) * fish.bobAmplitude;
     const headTargetY = fish.baseY + bob;
 

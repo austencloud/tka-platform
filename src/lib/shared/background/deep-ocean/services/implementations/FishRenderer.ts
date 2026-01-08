@@ -366,47 +366,54 @@ export class FishRenderer implements IFishRenderer {
     fish: FishMarineLife,
     spine: SpineChain
   ): void {
-    const bandCount = 3 + Math.floor(Math.random() * 2); // 3-4 bands
-    const bandWidth = fish.bodyLength * 0.08;
+    // Deterministic band count based on fish properties (not random!)
+    const bandCount = 3 + Math.floor((fish.bodyLength * fish.bodyHeight) % 2);
+    const bandWidth = fish.bodyLength * 0.07;
 
-    // Use contrasting colors for bands
+    // Fixed contrasting colors - no randomness
     const bandColors = [
       fish.colors.accent,
-      this.shiftHue(fish.colors.accent, 180), // Complementary
       "#ffffff",
       fish.colors.accent,
+      "#ffffff",
     ];
 
+    // Get body outline for clipping
+    const tempSpine = this.createTempSpineFromJoints(fish);
+    const outline = this.bodyOutlineCalculator.calculateOutline(tempSpine);
+
+    ctx.save();
+
+    // Clip to body shape so bands don't extend beyond
+    this.bodyOutlineCalculator.drawBodyPath(ctx, outline);
+    ctx.clip();
+
     for (let b = 0; b < bandCount; b++) {
-      const t = 0.2 + (b / (bandCount - 1)) * 0.5; // Position along body (20%-70%)
+      const t = 0.15 + (b / (bandCount - 1)) * 0.55; // Position along body (15%-70%)
 
       // Get position on spine
       const pos = spine.getPositionAt(t);
       const perpAngle = pos.angle - Math.PI / 2;
 
-      // Draw vertical band from top to bottom of body at this point
+      // Draw vertical band - stays within body due to clipping
       ctx.beginPath();
 
-      const topX = pos.x + Math.cos(perpAngle) * pos.width * 1.1;
-      const topY = pos.y + Math.sin(perpAngle) * pos.width * 1.1;
-      const bottomX = pos.x - Math.cos(perpAngle) * pos.width * 1.1;
-      const bottomY = pos.y - Math.sin(perpAngle) * pos.width * 1.1;
+      const topX = pos.x + Math.cos(perpAngle) * pos.width * 0.95;
+      const topY = pos.y + Math.sin(perpAngle) * pos.width * 0.95;
+      const bottomX = pos.x - Math.cos(perpAngle) * pos.width * 0.95;
+      const bottomY = pos.y - Math.sin(perpAngle) * pos.width * 0.95;
 
       ctx.moveTo(topX, topY);
       ctx.lineTo(bottomX, bottomY);
 
       ctx.strokeStyle = bandColors[b % bandColors.length]!;
-      ctx.lineWidth = bandWidth * (1 - Math.abs(t - 0.45) * 0.8);
+      ctx.lineWidth = bandWidth * (1 - Math.abs(t - 0.4) * 0.6);
       ctx.lineCap = "round";
-      ctx.globalAlpha = 0.7;
-      ctx.stroke();
-
-      // Add edge glow for pop
-      ctx.strokeStyle = this.adjustAlpha(bandColors[b % bandColors.length]!, 0.3);
-      ctx.lineWidth = bandWidth * 1.5;
-      ctx.globalAlpha = 0.3;
+      ctx.globalAlpha = 0.75;
       ctx.stroke();
     }
+
+    ctx.restore();
   }
 
   /**

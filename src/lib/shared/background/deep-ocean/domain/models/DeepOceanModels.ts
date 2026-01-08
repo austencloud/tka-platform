@@ -166,10 +166,10 @@ export const SPINE_CONFIGS: Record<FishSpecies, SpineConfig> = {
 
 /** Species-specific swimming parameters */
 export const SWIM_PARAMS: Record<FishSpecies, { tailAmplitude: number; swimSpeed: number }> = {
-  tropical: { tailAmplitude: 8, swimSpeed: 0.15 },
-  sleek: { tailAmplitude: 5, swimSpeed: 0.2 },
-  deep: { tailAmplitude: 6, swimSpeed: 0.1 },
-  schooling: { tailAmplitude: 7, swimSpeed: 0.18 },
+  tropical: { tailAmplitude: 0.8, swimSpeed: 0.08 },  // Gentle sway
+  sleek: { tailAmplitude: 0.5, swimSpeed: 0.1 },      // Subtle, efficient
+  deep: { tailAmplitude: 0.6, swimSpeed: 0.06 },      // Slow, eerie
+  schooling: { tailAmplitude: 0.7, swimSpeed: 0.09 }, // Coordinated, calm
 };
 
 /**

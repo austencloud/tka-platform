@@ -97,22 +97,44 @@ export class SpineChain {
   }
 
   /**
-   * Apply tail oscillation for swimming motion
-   * @param amplitude - How far tail swings perpendicular to direction
+   * Apply swimming wave through entire spine
+   * Creates natural S-curve motion that propagates from tail to head
+   * @param amplitude - Max swing at tail (decreases toward head)
    * @param phase - Current phase of oscillation (0-2PI)
    */
   applyTailOscillation(amplitude: number, phase: number): void {
-    if (this.joints.length < 2) return;
+    if (this.joints.length < 3) return;
 
-    const tail = this.joints[this.joints.length - 1]!;
-    const prevTail = this.joints[this.joints.length - 2]!;
+    // Store original positions for smooth interpolation
+    const basePositions = this.joints.map(j => ({ x: j.x, y: j.y, angle: j.angle }));
 
-    // Oscillate perpendicular to tail direction
-    const perpAngle = tail.angle + Math.PI / 2;
-    const offset = Math.sin(phase) * amplitude;
+    // Apply wave to each joint with:
+    // - Increasing amplitude toward tail
+    // - Phase delay between segments (wave propagation)
+    for (let i = 1; i < this.joints.length; i++) {
+      const joint = this.joints[i]!;
+      const prev = this.joints[i - 1]!;
 
-    tail.x = prevTail.x - Math.cos(tail.angle) * tail.segmentLength + Math.cos(perpAngle) * offset;
-    tail.y = prevTail.y - Math.sin(tail.angle) * tail.segmentLength + Math.sin(perpAngle) * offset;
+      // Wave influence increases toward tail (0 at head, 1 at tail)
+      const t = i / (this.joints.length - 1);
+      const waveInfluence = t * t; // Quadratic for more natural motion
+
+      // Phase delay creates wave propagation (tail leads, head follows)
+      const phaseDelay = t * 1.2; // Radians of delay per segment
+      const localPhase = phase - phaseDelay;
+
+      // Calculate perpendicular offset
+      const perpAngle = prev.angle + Math.PI / 2;
+      const offset = Math.sin(localPhase) * amplitude * waveInfluence;
+
+      // Apply offset perpendicular to spine direction
+      joint.x = basePositions[i]!.x + Math.cos(perpAngle) * offset;
+      joint.y = basePositions[i]!.y + Math.sin(perpAngle) * offset;
+
+      // Adjust angle based on offset direction (creates natural curve)
+      const angleAdjust = Math.cos(localPhase) * 0.15 * waveInfluence;
+      joint.angle = basePositions[i]!.angle + angleAdjust;
+    }
   }
 
   /**
