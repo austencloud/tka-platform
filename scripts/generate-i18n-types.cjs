@@ -22,7 +22,7 @@ const output = `// AUTO-GENERATED - DO NOT EDIT
 // Generated: ${new Date().toISOString()}
 // Keys: ${keys.length}
 
-import type enMessages from "../../../../messages/en.json";
+import enMessages from "../../../../messages/en.json";
 
 /** All valid translation keys (${keys.length} keys) */
 export type TranslationKey = keyof typeof enMessages;
@@ -32,7 +32,7 @@ export type Messages = typeof enMessages;
 
 /** Check if a key exists */
 export function isValidKey(key: string): key is TranslationKey {
-  return key in (enMessages as Record<string, unknown>);
+  return key in enMessages;
 }
 `;
 

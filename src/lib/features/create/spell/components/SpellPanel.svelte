@@ -127,7 +127,7 @@ This component orchestrates the UI; business logic lives in extracted services.
         }
 
         // Push undo snapshot
-        spellState.pushUndoSnapshot("UndoOperationType.SPELL_GENERATE", {
+        spellState.pushUndoSnapshot(UndoOperationType.SPELL_GENERATE, {
           word: result.originalWord,
         });
       } else {
@@ -286,7 +286,7 @@ This component orchestrates the UI; business logic lives in extracted services.
         spellState.setCircularizationOptions([]);
         spellState.setDirectLoopUnavailableReason(null);
 
-        spellState.pushUndoSnapshot("UndoOperationType.SPELL_APPLY_LOOP", {
+        spellState.pushUndoSnapshot(UndoOperationType.SPELL_APPLY_LOOP, {
           word: spellState.inputWord,
           loopType,
           bridgeLetter: selectedBridge.bridgeLetters[0],
@@ -314,7 +314,7 @@ This component orchestrates the UI; business logic lives in extracted services.
             });
           }
 
-          spellState.pushUndoSnapshot("UndoOperationType.SPELL_APPLY_LOOP", {
+          spellState.pushUndoSnapshot(UndoOperationType.SPELL_APPLY_LOOP, {
             word: spellState.inputWord,
             loopType,
             bridgeLetter,

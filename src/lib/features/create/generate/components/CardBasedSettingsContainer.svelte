@@ -235,6 +235,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
       out:scale={{ start: 0.95, duration: 250, easing: quintOut }}
       onclick={(e) => handleCardClick(card.id, e)}
+      role={helpMode && cardIdToHelpId[card.id] !== null ? "button" : undefined}
     >
       <!-- Props are dynamically typed by CardConfigurator - type assertion needed -->
       <!-- Colors are overridden based on current background for visibility -->

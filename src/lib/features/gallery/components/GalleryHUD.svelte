@@ -437,7 +437,7 @@
     font-size: 16px;
   }
 
-  .controls-hint strong {
+  .controls-hint :global(strong) {
     color: #f59e0b;
   }
 
@@ -724,11 +724,6 @@
       display: flex;
     }
 
-    .exit-button span,
-    .lights-toggle span,
-    .leave-button span {
-      display: none;
-    }
 
     .hud-button {
       padding: 10px;

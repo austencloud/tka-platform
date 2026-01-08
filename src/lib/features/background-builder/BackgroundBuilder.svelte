@@ -1,7 +1,14 @@
 <script lang="ts">
   import FishGallery from "./components/FishGallery.svelte";
+  import NightSkyLab from "./components/NightSkyLab.svelte";
 
-  type TabId = "fish" | "jellyfish" | "bubbles" | "light-rays" | "gradient";
+  type TabId =
+    | "fish"
+    | "jellyfish"
+    | "bubbles"
+    | "light-rays"
+    | "gradient"
+    | "night-sky";
 
   interface Tab {
     id: TabId;
@@ -15,6 +22,7 @@
     { id: "bubbles", label: "Bubbles", icon: "fa-circle" },
     { id: "light-rays", label: "Light Rays", icon: "fa-sun" },
     { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
+    { id: "night-sky", label: "Night Sky", icon: "fa-moon" },
   ];
 
   let activeTab: TabId = $state("fish");
@@ -62,6 +70,8 @@
         <i class="fas fa-fill-drip"></i>
         <p>Gradient Gallery - Coming Soon</p>
       </div>
+    {:else if activeTab === "night-sky"}
+      <NightSkyLab />
     {/if}
   </main>
 </div>

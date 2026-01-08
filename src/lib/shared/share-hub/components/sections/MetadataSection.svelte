@@ -117,6 +117,7 @@
             class="add-tag-btn"
             onclick={handleAddTag}
             disabled={!newTagInput.trim()}
+            aria-label="Add tag"
           >
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>

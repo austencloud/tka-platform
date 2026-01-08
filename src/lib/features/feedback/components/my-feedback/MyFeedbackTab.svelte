@@ -283,10 +283,6 @@
     font-size: var(--font-size-compact);
   }
 
-  .preview-banner strong {
-    color: #93c5fd;
-  }
-
   .header-content {
     display: flex;
     align-items: center;

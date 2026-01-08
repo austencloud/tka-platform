@@ -346,11 +346,6 @@
     min-height: 48px;
   }
 
-  .nav-section {
-    flex-shrink: 0;
-    min-width: 104px;
-  }
-
   .header-section {
     flex: 1;
     display: flex;
@@ -370,11 +365,6 @@
   .panel-title i {
     font-size: var(--font-size-lg);
     color: var(--theme-text-dim);
-  }
-
-  .spacer {
-    flex-shrink: 0;
-    min-width: 104px;
   }
 
   /* ============================================================================

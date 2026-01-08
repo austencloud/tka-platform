@@ -60,11 +60,30 @@ export class NightSkyCalculationService implements INightSkyCalculationService {
     // 30% of larger stars get the classic 4-pointed sparkle shape
     const isSparkle = r > 1.5 && Math.random() < 0.3;
 
+    // Initialize atmospheric scintillation phases (4 frequency layers)
+    // Real scintillation comes from turbulent air cells of varying sizes
+    // causing rapid, irregular brightness fluctuations
+    const scintillationPhases = [
+      Math.random() * Math.PI * 2, // Low frequency (large air cells)
+      Math.random() * Math.PI * 2, // Medium-low frequency
+      Math.random() * Math.PI * 2, // Medium-high frequency
+      Math.random() * Math.PI * 2, // High frequency (small air cells)
+    ];
+
+    // Scintillation intensity varies by star:
+    // - Brighter stars scintillate more visibly
+    // - Random variation for natural look
+    const baseOpacity = this.randFloat(
+      config.baseOpacityMin,
+      config.baseOpacityMax
+    );
+    const scintillationIntensity = baseOpacity * (0.5 + Math.random() * 0.5);
+
     return {
       x: Math.random() * dimensions.width,
       y: Math.random() * dimensions.height,
       radius: r,
-      baseOpacity: this.randFloat(config.baseOpacityMin, config.baseOpacityMax),
+      baseOpacity,
       currentOpacity: 1,
       twinkleSpeed: tw
         ? this.randFloat(config.minTwinkleSpeed, config.maxTwinkleSpeed)
@@ -75,6 +94,8 @@ export class NightSkyCalculationService implements INightSkyCalculationService {
         ? "#FFFFFF"
         : this.randItem(config.colors),
       isSparkle,
+      scintillationPhases,
+      scintillationIntensity,
     };
   }
 

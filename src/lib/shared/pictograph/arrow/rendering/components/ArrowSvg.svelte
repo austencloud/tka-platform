@@ -81,6 +81,18 @@ Now with intelligent rotation animation matching prop behavior!
     !isDarkMode ? "drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white)" : ""
   );
 
+  // Safe center values - guard against NaN which can occur with empty/static arrow SVGs
+  const safeCenter = $derived({
+    x: Number.isFinite(arrowAssets?.center?.x) ? arrowAssets.center.x : 0,
+    y: Number.isFinite(arrowAssets?.center?.y) ? arrowAssets.center.y : 0,
+  });
+
+  // Safe position values - guard against NaN in position calculations
+  const safePosition = $derived({
+    x: Number.isFinite(arrowPosition?.x) ? arrowPosition.x : 0,
+    y: Number.isFinite(arrowPosition?.y) ? arrowPosition.y : 0,
+  });
+
   // ============================================================================
   // INTELLIGENT ROTATION ANIMATION SYSTEM (matching PropSvg behavior)
   // ============================================================================
@@ -341,14 +353,14 @@ Now with intelligent rotation animation matching prop behavior!
       ? `${color} arrow - ${motionData.motion} ${motionData.turns}`
       : undefined}
     style="
-      transform: translate({arrowPosition.x}px, {arrowPosition.y}px)
+      transform: translate({safePosition.x}px, {safePosition.y}px)
                  rotate({displayedRotation}deg)
                  {shouldMirror ? 'scale(-1, 1)' : ''};
       {lightModeStroke && !isSelected ? `filter: ${lightModeStroke};` : ''}
     "
   >
     <!-- Position group at calculated coordinates, let SVG handle its own centering -->
-    <g transform="translate({-arrowAssets.center.x}, {-arrowAssets.center.y})">
+    <g transform="translate({-safeCenter.x}, {-safeCenter.y})">
       {@html arrowAssets.imageSrc}
     </g>
 

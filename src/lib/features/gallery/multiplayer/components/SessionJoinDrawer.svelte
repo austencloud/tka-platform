@@ -258,8 +258,8 @@
 						/>
 					</div>
 
-					<div class="form-group">
-						<label>Visibility</label>
+					<div class="form-group" role="radiogroup" aria-labelledby="visibility-label">
+						<span id="visibility-label" class="form-label-text">Visibility</span>
 						<div class="visibility-options">
 							<label class="visibility-option">
 								<input
@@ -573,7 +573,8 @@
 		gap: 8px;
 	}
 
-	.form-group label {
+	.form-group label,
+	.form-label-text {
 		font-size: 13px;
 		font-weight: 500;
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));

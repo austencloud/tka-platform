@@ -20,7 +20,7 @@
   <button
     class="segment-btn"
     class:active={currentMode === "pictograph"}
-    aria-pressed={currentMode === "pictograph"}
+    aria-selected={currentMode === "pictograph"}
     role="tab"
     onclick={() => onModeChange("pictograph")}
   >
@@ -30,7 +30,7 @@
   <button
     class="segment-btn"
     class:active={currentMode === "animation"}
-    aria-pressed={currentMode === "animation"}
+    aria-selected={currentMode === "animation"}
     role="tab"
     onclick={() => onModeChange("animation")}
   >
@@ -40,7 +40,7 @@
   <button
     class="segment-btn"
     class:active={currentMode === "image"}
-    aria-pressed={currentMode === "image"}
+    aria-selected={currentMode === "image"}
     role="tab"
     onclick={() => onModeChange("image")}
   >

@@ -82,12 +82,8 @@ export const NightSkyConfig = {
     // Appearance
     baseOpacity: 0.12, // Subtle, not overpowering
     // Quality gating
-    enabledOnQuality: ["high", "medium"] as (
-      | "high"
-      | "medium"
-      | "low"
-      | "minimal"
-    )[],
+    // DISABLED: Will be reimagined as noise-based procedural system
+    enabledOnQuality: [] as ("high" | "medium" | "low" | "minimal")[],
     // Quality-specific settings
     quality: {
       high: {
@@ -108,12 +104,9 @@ export const NightSkyConfig = {
     maxLines: 5, // Subtle - just a few constellation lines
     opacity: 0.3, // More subtle opacity
     twinkleSpeed: 0.003, // Much slower - gentle, calm twinkling
-    enabledOnQuality: ["high", "medium"] as (
-      | "high"
-      | "medium"
-      | "low"
-      | "minimal"
-    )[],
+    // DISABLED: Random lines between stars look geometric/artificial
+    // TODO: Reimagine with real constellation patterns or remove entirely
+    enabledOnQuality: [] as ("high" | "medium" | "low" | "minimal")[],
   },
   Moon: {
     radiusPercent: 0.04,
@@ -193,12 +186,9 @@ export const NightSkyConfig = {
     dustLaneDriftSpeed: 0.0001, // Almost imperceptible movement
     starCloudPulseSpeed: 0.002, // Individual cluster pulsing
     // Quality gating
-    enabledOnQuality: ["high", "medium"] as (
-      | "high"
-      | "medium"
-      | "low"
-      | "minimal"
-    )[],
+    // DISABLED: Current segment-based approach shows visible banding
+    // TODO: Reimagine as particle-based system
+    enabledOnQuality: [] as ("high" | "medium" | "low" | "minimal")[],
     // Quality-specific settings
     quality: {
       high: {

@@ -191,11 +191,6 @@ Uses singleton state for caching - data persists across tab switches.
     min-height: var(--min-touch-target);
   }
 
-  .nav-section {
-    flex-shrink: 0;
-    min-width: 104px; /* Space for nav buttons */
-  }
-
   .header-section {
     flex: 1;
     display: flex;
@@ -215,11 +210,6 @@ Uses singleton state for caching - data persists across tab switches.
   .panel-title i {
     font-size: var(--font-size-base);
     color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .spacer {
-    flex-shrink: 0;
-    min-width: 104px; /* Match nav section for centering */
   }
 
   .creators-list {

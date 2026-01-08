@@ -895,9 +895,6 @@
       padding-bottom: 2px;
     }
 
-    .control-chip span {
-      display: none;
-    }
   }
 
   /* Sections Container */

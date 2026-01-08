@@ -20,10 +20,18 @@
     fixedInVersion?: string;
   }>();
 
+  // Timeline entry type
+  type TimelineEntry = {
+    status: FeedbackStatus;
+    timestamp: Date;
+    notes?: string;
+    actor?: string;
+  };
+
   // Build timeline entries from history, or create a simple one if no history
-  const timelineEntries = $derived(() => {
+  const timelineEntries = $derived((): TimelineEntry[] => {
     if (history && history.length > 0) {
-      return history.map((entry) => ({
+      return history.map((entry: StatusHistoryEntry): TimelineEntry => ({
         status: entry.status,
         timestamp: entry.timestamp,
         notes: entry.notes,
@@ -32,12 +40,7 @@
     }
 
     // Fallback: create minimal timeline from current state
-    const entries: {
-      status: FeedbackStatus;
-      timestamp: Date;
-      notes?: string;
-      actor?: string;
-    }[] = [{ status: "new", timestamp: createdAt }];
+    const entries: TimelineEntry[] = [{ status: "new", timestamp: createdAt }];
 
     if (currentStatus !== "new") {
       entries.push({

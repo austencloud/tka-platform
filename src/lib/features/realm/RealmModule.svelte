@@ -47,39 +47,4 @@
     flex-direction: column;
     background: var(--theme-panel-bg, #12121c);
   }
-
-  .loading,
-  .error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-top-color: var(--theme-accent, #06b6d4);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .error {
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .details {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.7;
-  }
 </style>

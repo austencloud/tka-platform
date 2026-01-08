@@ -17,6 +17,10 @@ export interface Star {
   isTwinkling: boolean;
   color: string;
   isSparkle: boolean; // True for 5-pointed star shape with glow, false for circular
+  // Atmospheric scintillation properties (2036 vision)
+  // Real star twinkling is caused by turbulent atmosphere, not smooth oscillation
+  scintillationPhases: number[]; // Multiple phase values for layered frequencies
+  scintillationIntensity: number; // How strongly this star scintillates (0-1)
 }
 
 export interface MoonIllumination {

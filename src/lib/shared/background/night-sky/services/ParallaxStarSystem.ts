@@ -108,10 +108,11 @@ export class ParallaxStarSystem {
         L.stars.forEach((star: Star) => {
           // Random twinkle phase (0 to 2π)
           star.twinklePhase = Math.random() * Math.PI * 2;
-          // Set current opacity based on random phase
+          // Set current opacity based on atmospheric scintillation
           if (star.isTwinkling) {
             star.currentOpacity =
-              star.baseOpacity * (0.7 + 0.3 * Math.sin(star.twinklePhase));
+              star.baseOpacity *
+              this.calculateScintillation(star.scintillationPhases, star.scintillationIntensity);
           } else {
             star.currentOpacity = star.baseOpacity;
           }
@@ -156,6 +157,43 @@ export class ParallaxStarSystem {
     }));
   }
 
+  /**
+   * Calculate atmospheric scintillation using layered frequencies.
+   *
+   * Real star twinkling is caused by turbulent air cells refracting light.
+   * Different cell sizes create different frequency components:
+   * - Large cells: slow, smooth variations
+   * - Small cells: rapid, jittery variations
+   *
+   * By combining 4 frequency layers, we get irregular, realistic flickering
+   * instead of the smooth sine wave that looks artificial.
+   *
+   * @param phases - Array of 4 phase values for each frequency layer
+   * @param intensity - How strongly this star scintillates (0-1)
+   * @returns Opacity multiplier (0.5-1.0 range to avoid stars disappearing)
+   */
+  private calculateScintillation(phases: number[], intensity: number): number {
+    // Frequency layer weights (should sum to ~1.0 for the intensity portion)
+    // Lower frequencies dominate (as in real atmosphere)
+    const weights = [0.40, 0.30, 0.20, 0.10];
+
+    // Calculate combined noise from all frequency layers
+    let noise = 0;
+    for (let i = 0; i < 4; i++) {
+      noise += weights[i] * Math.sin(phases[i]);
+    }
+
+    // noise is now in range [-1, 1]
+    // Scale by intensity and shift to positive range
+    // Result: baseFloor + (intensity * noise_contribution)
+    // - intensity=0: always returns 1.0 (no scintillation)
+    // - intensity=1: returns 0.5 to 1.0 (maximum scintillation)
+    const baseFloor = 0.5;
+    const scintillationRange = 0.5;
+
+    return baseFloor + scintillationRange * (1 + noise * intensity) / 2;
+  }
+
   update(
     dim: Dimensions,
     a11y: AccessibilitySettings,
@@ -195,11 +233,19 @@ export class ParallaxStarSystem {
           s.y = (s.y + L.driftY * effectiveDrift + dim.height) % dim.height;
 
           if (s.isTwinkling) {
-            // Apply frame multiplier to twinkle speed for consistent animation speed
-            const effectiveTwinkleSpeed = s.twinkleSpeed * effectiveDrift;
-            s.twinklePhase += effectiveTwinkleSpeed;
+            // Atmospheric scintillation: advance each frequency layer at different rates
+            // Frequency ratios based on atmospheric turbulence research:
+            // Large air cells move slowly, small cells move fast
+            const baseSpeed = s.twinkleSpeed * effectiveDrift;
+            s.scintillationPhases[0] += baseSpeed * 1.0; // Low freq (slow)
+            s.scintillationPhases[1] += baseSpeed * 2.3; // Medium-low
+            s.scintillationPhases[2] += baseSpeed * 5.7; // Medium-high
+            s.scintillationPhases[3] += baseSpeed * 13.0; // High freq (fast jitter)
+
+            // Calculate combined scintillation effect
             s.currentOpacity =
-              s.baseOpacity * (0.7 + 0.3 * Math.sin(s.twinklePhase));
+              s.baseOpacity *
+              this.calculateScintillation(s.scintillationPhases, s.scintillationIntensity);
           } else {
             s.currentOpacity = s.baseOpacity;
           }

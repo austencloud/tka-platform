@@ -345,11 +345,11 @@
     <!-- Floating Controls - Bottom Center: Playback -->
     <div class="floating-controls bottom-center">
       <div class="playback-bar">
-        <button class="playback-btn" onclick={togglePlayback} disabled={!generatorState.isReady}>
+        <button class="playback-btn" onclick={togglePlayback} disabled={!generatorState.isReady} aria-label={isPlaying ? "Pause" : "Play"}>
           {#if isPlaying}
-            <i class="fas fa-pause"></i>
+            <i class="fas fa-pause" aria-hidden="true"></i>
           {:else}
-            <i class="fas fa-play"></i>
+            <i class="fas fa-play" aria-hidden="true"></i>
           {/if}
         </button>
         <div class="timeline-container">
@@ -365,8 +365,8 @@
           />
           <div class="timeline-fill" style="width: {progress * 100}%"></div>
         </div>
-        <button class="playback-btn stop" onclick={stopPreview} disabled={!generatorState.isReady}>
-          <i class="fas fa-stop"></i>
+        <button class="playback-btn stop" onclick={stopPreview} disabled={!generatorState.isReady} aria-label="Stop">
+          <i class="fas fa-stop" aria-hidden="true"></i>
         </button>
         <span class="time-display">
           {Math.floor(progress * 21)}s
@@ -816,61 +816,6 @@
     color: rgba(255, 255, 255, 0.7);
   }
 
-  /* Preset Grid */
-  .preset-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .preset-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 16px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .preset-card:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-  }
-
-  .preset-card.active {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: #6366f1;
-    color: #fff;
-  }
-
-  .preset-card:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .preset-icon {
-    font-size: 20px;
-    opacity: 0.8;
-  }
-
-  .preset-card.active .preset-icon {
-    opacity: 1;
-    color: #a5b4fc;
-  }
-
-  .preset-name {
-    font-size: 11px;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1.3;
-  }
-
   /* Environment Grid */
   .env-grid {
     display: grid;
@@ -1050,7 +995,6 @@
       min-width: 200px;
     }
 
-    .preset-grid,
     .env-grid {
       grid-template-columns: repeat(3, 1fr);
     }

@@ -20,6 +20,7 @@ import type { INightSkyCalculationService } from "./contracts/INightSkyCalculati
 import { MilkyWaySystem } from "./MilkyWaySystem";
 import { MoonSystem } from "./MoonSystem";
 import { NebulaSystem } from "./NebulaSystem";
+import { ProceduralNebulaSystem } from "./ProceduralNebulaSystem";
 import { ParallaxStarSystem } from "./ParallaxStarSystem";
 import { SpaceshipSystem } from "./SpaceshipSystem";
 
@@ -59,6 +60,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
   // Modular systems (initialized via factory method)
   private parallaxStarSystem!: ParallaxStarSystem;
   private nebulaSystem!: NebulaSystem;
+  private proceduralNebulaSystem!: ProceduralNebulaSystem;
   private constellationSystem!: ConstellationSystem;
   private moonSystem!: MoonSystem;
   private spaceshipSystem!: SpaceshipSystem;
@@ -124,6 +126,9 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       instance.calculationService
     );
 
+    // Procedural nebula system (2036 vision - noise-based organic clouds)
+    instance.proceduralNebulaSystem = new ProceduralNebulaSystem();
+
     instance.constellationSystem = new ConstellationSystem(
       instance.cfg.constellations,
       instance.calculationService
@@ -165,6 +170,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     this.milkyWaySystem.initialize(dim, this.quality);
     this.parallaxStarSystem.initialize(dim, this.a11y);
     this.nebulaSystem.initialize(dim, this.quality);
+    this.proceduralNebulaSystem.initialize(dim, this.quality);
     this.moonSystem.initialize(dim, this.quality, this.a11y);
 
     this.isInitialized = true;
@@ -175,6 +181,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     this.milkyWaySystem.update(this.a11y, frameMultiplier);
     this.parallaxStarSystem.update(dim, this.a11y, frameMultiplier);
     this.nebulaSystem.update(this.a11y, frameMultiplier);
+    this.proceduralNebulaSystem.update(this.a11y, frameMultiplier);
     this.constellationSystem.update(
       this.parallaxStarSystem.getNearStars(),
       this.quality,
@@ -206,10 +213,13 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       // Draw Milky Way first (deep background layer)
       this.milkyWaySystem.draw(ctx, this.a11y);
 
-      // Draw nebula (background layer)
+      // Draw nebula (background layer) - old geometric system (disabled)
       this.nebulaSystem.draw(ctx, this.a11y);
 
-      // Draw stars (on top of Milky Way)
+      // Draw procedural nebula (2036 vision - noise-based organic clouds)
+      this.proceduralNebulaSystem.draw(ctx, this.a11y);
+
+      // Draw stars (on top of Milky Way and nebulae)
       this.parallaxStarSystem.draw(ctx, this.a11y);
 
       // Draw constellations
@@ -246,6 +256,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       this.cfg.nebula,
       this.calculationService
     );
+    this.proceduralNebulaSystem = new ProceduralNebulaSystem();
     this.constellationSystem = new ConstellationSystem(
       this.cfg.constellations,
       this.calculationService
@@ -282,6 +293,8 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     if (this.isInitialized) {
       // Handle Milky Way resize
       this.milkyWaySystem.handleResize(newDimensions);
+      // Handle procedural nebula resize
+      this.proceduralNebulaSystem.handleResize(newDimensions);
       // The ParallaxStarSystem will automatically handle dimension changes in its update method
       // by calling adaptToNewDimensions when it detects dimension changes
       this.update(newDimensions);
@@ -294,6 +307,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     this.milkyWaySystem.cleanup();
     this.parallaxStarSystem.cleanup();
     this.nebulaSystem.cleanup();
+    this.proceduralNebulaSystem.cleanup();
     this.constellationSystem.cleanup();
     this.moonSystem.cleanup();
     this.spaceshipSystem.cleanup();

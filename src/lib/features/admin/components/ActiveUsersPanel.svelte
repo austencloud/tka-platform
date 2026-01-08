@@ -335,10 +335,6 @@
     color: var(--theme-text-secondary, var(--theme-text-dim));
   }
 
-  .filter-label strong {
-    color: var(--theme-accent);
-    text-transform: capitalize;
-  }
 
   .clear-filter {
     display: flex;

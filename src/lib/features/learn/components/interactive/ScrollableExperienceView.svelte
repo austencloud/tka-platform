@@ -150,12 +150,6 @@ all content at once instead of stepping through one page at a time.
     }
   }
 
-  /* Hide scroll hint after user starts scrolling */
-  .scroll-content:has(:hover) ~ .scroll-hint,
-  .scroll-content:focus-within ~ .scroll-hint {
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
 
   @media (max-width: 768px) {
     .scroll-header {

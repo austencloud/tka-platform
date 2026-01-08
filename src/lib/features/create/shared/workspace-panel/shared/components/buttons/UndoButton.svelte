@@ -40,6 +40,8 @@
     [UndoOperationType.EXTEND_SEQUENCE]: "Extend",
     [UndoOperationType.MODIFY_BEAT_PROPERTIES]: "Edit Beat",
     [UndoOperationType.GENERATE_SEQUENCE]: "Generate Sequence",
+    [UndoOperationType.SPELL_GENERATE]: "Spell Generate",
+    [UndoOperationType.SPELL_APPLY_LOOP]: "Apply Spell Loop",
   };
 
   // Derived state for button text/tooltip

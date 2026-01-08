@@ -199,10 +199,6 @@
     gap: clamp(4px, 1cqi, 8px);
   }
 
-  .toggle-grid.triple {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
   .playback-mode-toggle {
     display: flex;
     gap: clamp(4px, 1cqi, 8px);
