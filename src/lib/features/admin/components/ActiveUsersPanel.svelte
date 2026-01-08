@@ -2,7 +2,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IUserActivityTracker } from "../services/contracts/IUserActivityTracker";
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
@@ -135,19 +135,19 @@
 <div class="active-users-panel">
   <header class="panel-header">
     <div class="header-content">
-      <h2>{m.admin_active_users()}</h2>
-      <p class="subtitle">{m.admin_presence_monitoring()}</p>
+      <h2>{t("admin_active_users")}</h2>
+      <p class="subtitle">{t("admin_presence_monitoring")}</p>
     </div>
-    <div class="stats-row" role="group" aria-label={m.admin_filter_by_status()}>
+    <div class="stats-row" role="group" aria-label={t("admin_filter_by_status")}>
       <button
         class="stat-button"
         class:selected={statusFilter === "active"}
         onclick={() => setFilter(statusFilter === "active" ? "all" : "active")}
         aria-pressed={statusFilter === "active"}
-        aria-label={m.admin_filter_active({ count: activeCount.toString() })}
+        aria-label={t("admin_filter_active", { count: activeCount.toString() })}
       >
         <span class="stat-value active" aria-hidden="true">{activeCount}</span>
-        <span class="stat-label">{m.admin_active()}</span>
+        <span class="stat-label">{t("admin_active")}</span>
       </button>
       <button
         class="stat-button"
@@ -155,10 +155,10 @@
         onclick={() =>
           setFilter(statusFilter === "inactive" ? "all" : "inactive")}
         aria-pressed={statusFilter === "inactive"}
-        aria-label={m.admin_filter_inactive({ count: inactiveCount.toString() })}
+        aria-label={t("admin_filter_inactive", { count: inactiveCount.toString() })}
       >
         <span class="stat-value inactive" aria-hidden="true">{inactiveCount}</span>
-        <span class="stat-label">{m.admin_inactive()}</span>
+        <span class="stat-label">{t("admin_inactive")}</span>
       </button>
     </div>
   </header>
@@ -167,11 +167,11 @@
   {#if statusFilter !== "all"}
     <div class="filter-bar">
       <span class="filter-label">
-        {m.admin_showing_users({ status: statusFilter, count: filteredUsers.length.toString() })}
+        {t("admin_showing_users", { status: statusFilter, count: filteredUsers.length.toString() })}
       </span>
       <button class="clear-filter" onclick={() => setFilter("all")}>
         <i class="fas fa-times" aria-hidden="true"></i>
-        {m.admin_show_all()}
+        {t("admin_show_all")}
       </button>
     </div>
   {/if}
@@ -180,7 +180,7 @@
     {#if isLoading}
       <div class="loading" role="status" aria-live="polite" aria-busy="true">
         <div class="spinner" aria-hidden="true"></div>
-        <span>{m.admin_loading_users()}</span>
+        <span>{t("admin_loading_users")}</span>
       </div>
     {:else if error}
       <div class="error">
@@ -190,15 +190,15 @@
     {:else if users.length === 0}
       <div class="empty">
         <i class="fas fa-users" aria-hidden="true"></i>
-        <span>{m.admin_no_users_found()}</span>
-        <p>{m.admin_no_registered_users()}</p>
+        <span>{t("admin_no_users_found")}</span>
+        <p>{t("admin_no_registered_users")}</p>
       </div>
     {:else if filteredUsers.length === 0}
       <div class="empty">
         <i class="fas fa-filter" aria-hidden="true"></i>
-        <span>{m.admin_no_status_users({ status: statusFilter })}</span>
+        <span>{t("admin_no_status_users", { status: statusFilter })}</span>
         <button class="link-button" onclick={() => setFilter("all")}>
-          {m.admin_show_all_users()}
+          {t("admin_show_all_users")}
         </button>
       </div>
     {:else}
@@ -222,7 +222,7 @@
     placement={drawerPlacement}
     showHandle={true}
     class="user-profile-drawer"
-    ariaLabel={m.admin_user_profile()}
+    ariaLabel={t("admin_user_profile")}
   >
     {#if selectedUserId && communityModuleLoaded}
       <UserProfilePanel
@@ -232,7 +232,7 @@
     {:else if selectedUserId}
       <div class="loading-profile">
         <div class="spinner" aria-hidden="true"></div>
-        <span>{m.admin_loading_profile()}</span>
+        <span>{t("admin_loading_profile")}</span>
       </div>
     {/if}
   </Drawer>

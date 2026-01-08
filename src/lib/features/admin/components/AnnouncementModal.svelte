@@ -13,7 +13,7 @@
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     announcement: Announcement;
@@ -107,7 +107,7 @@
   onkeydown={(e) => e.key === "Escape" && handleDismiss()}
   role="button"
   tabindex="0"
-  aria-label={m.admin_close_announcement()}
+  aria-label={t("admin_close_announcement")}
 >
   <div
     class="modal-content"
@@ -127,7 +127,7 @@
           aria-hidden="true"
         ></i>
       </div>
-      <button class="close-button" onclick={handleDismiss} aria-label={m.common_close()}>
+      <button class="close-button" onclick={handleDismiss} aria-label={t("common_close")}>
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
     </div>
@@ -149,7 +149,7 @@
             class="action-button secondary"
             onclick={() => handleInternalNavigation(announcement.actionUrl!)}
           >
-            {announcement.actionLabel || m.admin_learn_more()}
+            {announcement.actionLabel || t("admin_learn_more")}
             <i class="fas fa-arrow-right" aria-hidden="true"></i>
           </button>
         {:else}
@@ -159,14 +159,14 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            {announcement.actionLabel || m.admin_learn_more()}
+            {announcement.actionLabel || t("admin_learn_more")}
             <i class="fas fa-external-link-alt" aria-hidden="true"></i>
           </a>
         {/if}
       {/if}
       <button class="action-button primary" onclick={handleDismiss}>
         <i class="fas fa-check" aria-hidden="true"></i>
-        {m.admin_got_it()}
+        {t("admin_got_it")}
       </button>
     </div>
   </div>

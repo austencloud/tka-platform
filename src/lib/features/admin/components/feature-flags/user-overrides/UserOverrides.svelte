@@ -188,9 +188,10 @@
 </AdminTwoPanelLayout>
 
 {#if showImpactModal && pendingImpact}
+  {@const impact = pendingImpact}
   <AdminModal
     title="Apply Changes"
-    variant={pendingImpact.lost.length > 0 ? "warning" : "info"}
+    variant={impact.lost.length > 0 ? "warning" : "info"}
     confirmLabel="Apply Changes"
     cancelLabel="Cancel"
     onConfirm={confirmSave}
@@ -200,41 +201,41 @@
     }}
     loading={isSaving}
   >
-    {#snippet message()}
+    {#snippet children()}
       <div class="impact-summary">
         <p class="impact-intro">
           Applying changes to <strong>{selectedUser?.displayName}</strong>:
         </p>
 
-        {#if pendingImpact.gained.length > 0}
+        {#if impact.gained.length > 0}
           <div class="impact-section gained">
             <h4>
               <i class="fas fa-plus-circle" aria-hidden="true"></i>
-              Will gain access to ({pendingImpact.gained.length})
+              Will gain access to ({impact.gained.length})
             </h4>
             <ul>
-              {#each pendingImpact.gained as feature}
+              {#each impact.gained as feature}
                 <li>{feature}</li>
               {/each}
             </ul>
           </div>
         {/if}
 
-        {#if pendingImpact.lost.length > 0}
+        {#if impact.lost.length > 0}
           <div class="impact-section lost">
             <h4>
               <i class="fas fa-minus-circle" aria-hidden="true"></i>
-              Will lose access to ({pendingImpact.lost.length})
+              Will lose access to ({impact.lost.length})
             </h4>
             <ul>
-              {#each pendingImpact.lost as feature}
+              {#each impact.lost as feature}
                 <li>{feature}</li>
               {/each}
             </ul>
           </div>
         {/if}
 
-        {#if pendingImpact.gained.length === 0 && pendingImpact.lost.length === 0}
+        {#if impact.gained.length === 0 && impact.lost.length === 0}
           <p class="no-effective-change">
             <i class="fas fa-info-circle" aria-hidden="true"></i>
             Override settings changed but effective access remains the same.

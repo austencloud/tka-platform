@@ -15,7 +15,7 @@
     AnnouncementAudience,
   } from "../../domain/models/announcement-models";
   import UserSearchInput from "./UserSearchInput.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     announcement?: Announcement | null;
@@ -125,30 +125,30 @@
 
     // Validation
     if (!title.trim()) {
-      error = m.form_error_title_required();
+      error = t("form_error_title_required");
       return;
     }
     if (!message.trim()) {
-      error = m.form_error_message_required();
+      error = t("form_error_message_required");
       return;
     }
     if (hasExpiration && !expirationDate) {
-      error = m.form_error_expiration_required();
+      error = t("form_error_expiration_required");
       return;
     }
     if (targetAudience === "specific-user" && !targetUserId.trim()) {
-      error = m.form_error_user_id_required();
+      error = t("form_error_user_id_required");
       return;
     }
 
     const user = authState.user;
     if (!user) {
-      error = m.form_error_login_required();
+      error = t("form_error_login_required");
       return;
     }
 
     if (!announcementService) {
-      error = m.form_error_service_unavailable();
+      error = t("form_error_service_unavailable");
       return;
     }
 
@@ -185,7 +185,7 @@
       onSave();
     } catch (err) {
       console.error("Failed to save announcement:", err);
-      error = m.form_error_save_failed();
+      error = t("form_error_save_failed");
     } finally {
       isSaving = false;
     }
@@ -194,8 +194,8 @@
 
 <div class="announcement-form">
   <div class="form-header">
-    <h2>{announcement ? m.admin_edit_announcement() : m.admin_create_announcement()}</h2>
-    <button class="close-button" onclick={onCancel} aria-label={m.common_close()}>
+    <h2>{announcement ? t("admin_edit_announcement") : t("admin_create_announcement")}</h2>
+    <button class="close-button" onclick={onCancel} aria-label={t("common_close")}>
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </div>
@@ -210,13 +210,13 @@
 
     <!-- Title -->
     <div class="form-section">
-      <label class="section-label" for="announcement-title">{m.form_title()}</label>
+      <label class="section-label" for="announcement-title">{t("form_title")}</label>
       <input
         id="announcement-title"
         type="text"
         class="text-input"
         bind:value={title}
-        placeholder={m.form_title_placeholder()}
+        placeholder={t("form_title_placeholder")}
         maxlength="100"
         required
         aria-required="true"
@@ -226,22 +226,22 @@
 
     <!-- Message -->
     <div class="form-section">
-      <label class="section-label" for="announcement-message">{m.form_message()}</label>
+      <label class="section-label" for="announcement-message">{t("form_message")}</label>
       <textarea
         id="announcement-message"
         class="text-input"
         bind:value={message}
-        placeholder={m.form_message_placeholder()}
+        placeholder={t("form_message_placeholder")}
         rows="6"
         required
         aria-required="true"
       ></textarea>
-      <span class="help-text">{m.form_markdown_hint()}</span>
+      <span class="help-text">{t("form_markdown_hint")}</span>
     </div>
 
     <!-- Severity Selection (Chips) -->
     <div class="form-section">
-      <span class="section-label" id="severity-label">{m.form_severity()}</span>
+      <span class="section-label" id="severity-label">{t("form_severity")}</span>
       <div class="chip-group" role="group" aria-labelledby="severity-label">
         {#each severityOptions as option}
           <button
@@ -264,7 +264,7 @@
 
     <!-- Target Audience Selection (Chips) -->
     <div class="form-section">
-      <span class="section-label" id="audience-label">{m.form_target_audience()}</span>
+      <span class="section-label" id="audience-label">{t("form_target_audience")}</span>
       <div class="chip-group" role="group" aria-labelledby="audience-label">
         {#each audienceOptions as option}
           <button
@@ -287,20 +287,20 @@
     <!-- Specific User Search (conditional) -->
     {#if targetAudience === "specific-user"}
       <div class="form-section indented">
-        <label class="section-label" for="user-search-input">{m.form_select_user()}</label>
+        <label class="section-label" for="user-search-input">{t("form_select_user")}</label>
         <UserSearchInput
           selectedUserId={targetUserId}
           selectedUserDisplay={targetUserDisplay}
           onSelect={handleUserSelect}
         />
-        <span class="help-text">{m.form_search_name_email()}</span>
+        <span class="help-text">{t("form_search_name_email")}</span>
       </div>
     {/if}
 
     <!-- Display Options (Toggle Chips) -->
     <div class="form-section">
-      <span class="section-label">{m.form_display_options()}</span>
-      <div class="chip-group" role="group" aria-label={m.form_display_options()}>
+      <span class="section-label">{t("form_display_options")}</span>
+      <div class="chip-group" role="group" aria-label={t("form_display_options")}>
         <button
           type="button"
           class="toggle-chip"
@@ -309,7 +309,7 @@
           aria-pressed={showAsModal}
         >
           <i class="fas fa-window-maximize" aria-hidden="true"></i>
-          <span>{m.form_show_modal()}</span>
+          <span>{t("form_show_modal")}</span>
           {#if showAsModal}
             <i class="fas fa-check chip-check" aria-hidden="true"></i>
           {/if}
@@ -323,7 +323,7 @@
           aria-pressed={hasExpiration}
         >
           <i class="fas fa-calendar-times" aria-hidden="true"></i>
-          <span>{m.form_set_expiration()}</span>
+          <span>{t("form_set_expiration")}</span>
           {#if hasExpiration}
             <i class="fas fa-check chip-check" aria-hidden="true"></i>
           {/if}
@@ -334,7 +334,7 @@
     <!-- Expiration Date (conditional) -->
     {#if hasExpiration}
       <div class="form-section indented">
-        <label class="section-label" for="expiration-date">{m.form_expiration_date()}</label>
+        <label class="section-label" for="expiration-date">{t("form_expiration_date")}</label>
         <input
           id="expiration-date"
           type="date"
@@ -348,27 +348,27 @@
     <!-- Action URL (optional) -->
     <div class="form-section">
       <label class="section-label" for="action-url"
-        >{m.form_action_url()} <span class="optional">({m.form_optional()})</span></label
+        >{t("form_action_url")} <span class="optional">({t("form_optional")})</span></label
       >
       <input
         id="action-url"
         type="text"
         class="text-input"
         bind:value={actionUrl}
-        placeholder={m.form_url_placeholder()}
+        placeholder={t("form_url_placeholder")}
       />
-      <span class="help-text">{m.form_url_hint()}</span>
+      <span class="help-text">{t("form_url_hint")}</span>
     </div>
 
     {#if actionUrl}
       <div class="form-section indented">
-        <label class="section-label" for="action-label">{m.form_action_label()}</label>
+        <label class="section-label" for="action-label">{t("form_action_label")}</label>
         <input
           id="action-label"
           type="text"
           class="text-input"
           bind:value={actionLabel}
-          placeholder={m.form_label_placeholder()}
+          placeholder={t("form_label_placeholder")}
           maxlength="30"
         />
       </div>
@@ -378,15 +378,15 @@
     <div class="form-actions">
       <button type="button" class="cancel-button" onclick={onCancel}>
         <i class="fas fa-times" aria-hidden="true"></i>
-        {m.form_cancel()}
+        {t("form_cancel")}
       </button>
       <button type="submit" class="save-button" disabled={isSaving}>
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          {m.form_saving()}
+          {t("form_saving")}
         {:else}
           <i class="fas fa-check" aria-hidden="true"></i>
-          {announcement ? m.form_update() : m.form_create()}
+          {announcement ? t("form_update") : t("form_create")}
         {/if}
       </button>
     </div>

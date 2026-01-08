@@ -8,7 +8,7 @@
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IAnnouncementManager } from "../../services/contracts/IAnnouncementManager";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     selectedUserId?: string;
@@ -108,9 +108,9 @@
       oninput={handleSearchInput}
       onfocus={handleFocus}
       onblur={handleBlur}
-      placeholder={m.search_users_placeholder()}
+      placeholder={t("search_users_placeholder")}
       autocomplete="off"
-      aria-label={m.search_users_aria()}
+      aria-label={t("search_users_aria")}
       data-1p-ignore
       data-lpignore="true"
       data-form-type="other"
@@ -121,7 +121,7 @@
   </div>
 
   {#if showResults && searchResults.length > 0}
-    <div class="search-results" role="listbox" aria-label={m.search_results()}>
+    <div class="search-results" role="listbox" aria-label={t("search_results")}>
       {#each searchResults as user (user.uid)}
         <button
           type="button"
@@ -131,7 +131,7 @@
           onclick={() => handleSelectUser(user)}
         >
           <div class="result-info">
-            <span class="result-name">{user.displayName || m.search_no_name()}</span>
+            <span class="result-name">{user.displayName || t("search_no_name")}</span>
             <span class="result-email">{user.email}</span>
           </div>
           <i class="fas fa-check result-check" aria-hidden="true"></i>
@@ -144,7 +144,7 @@
     <div class="search-results">
       <div class="no-results">
         <i class="fas fa-user-slash" aria-hidden="true"></i>
-        {m.search_no_users_found()}
+        {t("search_no_users_found")}
       </div>
     </div>
   {/if}

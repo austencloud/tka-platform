@@ -11,7 +11,7 @@
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementForm from "./announcements/AnnouncementForm.svelte";
   import AnnouncementList from "./announcements/AnnouncementList.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
   let announcementService: IAnnouncementManager | null = null;
@@ -59,7 +59,7 @@
 
   async function handleDelete(announcementId: string) {
     if (!announcementService) return;
-    if (!confirm(m.admin_confirm_delete_announcement())) return;
+    if (!confirm(t("admin_confirm_delete_announcement"))) return;
 
     try {
       await announcementService.deleteAnnouncement(announcementId);
@@ -85,7 +85,7 @@
   {#if isLoading}
     <div class="loading-state">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <p>{m.admin_loading_announcements()}</p>
+      <p>{t("admin_loading_announcements")}</p>
     </div>
   {:else if showForm}
     <AnnouncementForm
@@ -95,10 +95,10 @@
     />
   {:else}
     <div class="management-header">
-      <h2>{m.admin_system_announcements()}</h2>
+      <h2>{t("admin_system_announcements")}</h2>
       <button class="create-button" onclick={handleCreateNew}>
         <i class="fas fa-plus" aria-hidden="true"></i>
-        {m.admin_create_announcement_btn()}
+        {t("admin_create_announcement_btn")}
       </button>
     </div>
 
