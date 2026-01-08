@@ -1,25 +1,32 @@
-import type {
+import {
   GridLocation,
   GridMode,
 } from "../../../grid/domain/enums/grid-enums";
 import type { GridPointData } from "../../../grid/domain/models/grid-models";
 import { createGridPointData } from "../../../grid/utils/grid-coordinate-utils";
 
+// Cardinal locations use diamond grid coordinates
+const CARDINAL_LOCATIONS = new Set(["n", "e", "s", "w"]);
+// Intercardinal locations use box grid coordinates
+const INTERCARDINAL_LOCATIONS = new Set(["ne", "se", "sw", "nw"]);
+
 /**
  * DefaultPropPositioner - Calculates default prop positions using grid coordinates
  * Ported from legacy web app to ensure positioning parity
  */
 export class DefaultPropPositioner {
+  // Fallback coordinates matching actual grid data
   private fallbackCoordinates: Record<string, { x: number; y: number }> = {
-    // Default positions if grid points aren't found - matching legacy fallbacks
-    n: { x: 475, y: 330 },
-    e: { x: 620, y: 475 },
-    s: { x: 475, y: 620 },
-    w: { x: 330, y: 475 },
-    ne: { x: 620, y: 330 },
-    se: { x: 620, y: 620 },
-    sw: { x: 330, y: 620 },
-    nw: { x: 330, y: 330 },
+    // Diamond mode (cardinal) - from gridCoordinates
+    n: { x: 475, y: 331.9 },
+    e: { x: 618.1, y: 475 },
+    s: { x: 475, y: 618.1 },
+    w: { x: 331.9, y: 475 },
+    // Box mode (intercardinal) - from gridCoordinates
+    ne: { x: 576.2, y: 373.8 },
+    se: { x: 576.2, y: 576.2 },
+    sw: { x: 373.8, y: 576.2 },
+    nw: { x: 373.8, y: 373.8 },
   };
 
   constructor(
@@ -43,7 +50,18 @@ export class DefaultPropPositioner {
     const normalizedLocation = (
       typeof location === "string" ? location : location
     ).toLowerCase();
-    const pointName = `${normalizedLocation}_${this.gridMode.valueOf()}_hand_point`;
+
+    // For SKEWED mode, determine the correct grid type based on location:
+    // - Cardinal (N, E, S, W) → diamond grid
+    // - Intercardinal (NE, SE, SW, NW) → box grid
+    let gridType: string;
+    if (this.gridMode === GridMode.SKEWED) {
+      gridType = CARDINAL_LOCATIONS.has(normalizedLocation) ? "diamond" : "box";
+    } else {
+      gridType = this.gridMode.valueOf();
+    }
+
+    const pointName = `${normalizedLocation}_${gridType}_hand_point`;
     const gridPoint = this.getGridPoint(pointName);
 
     if (gridPoint?.coordinates) {

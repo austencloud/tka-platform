@@ -1,9 +1,21 @@
 import { GridLocation, GridMode } from "../../../grid/domain/enums/grid-enums";
 import { Orientation } from "../../../shared/domain/enums/pictograph-enums";
 
+// Cardinal locations use diamond grid rotation
+const CARDINAL_LOCATIONS = new Set([
+  GridLocation.NORTH,
+  GridLocation.EAST,
+  GridLocation.SOUTH,
+  GridLocation.WEST,
+]);
+
 /**
  * Calculates prop rotation angles based on location, orientation, and grid mode.
  * Uses static lookup tables for optimal performance.
+ *
+ * For SKEWED mode, rotation is determined per-location:
+ * - Cardinal (N, E, S, W) → diamond rotation angles
+ * - Intercardinal (NE, SE, SW, NW) → box rotation angles
  */
 export class PropRotAngleManager {
   private readonly location: GridLocation;
@@ -89,13 +101,26 @@ export class PropRotAngleManager {
 
   /** Calculates the rotation angle in degrees */
   getRotationAngle(): number {
-    const angleMap =
-      this.gridMode === GridMode.DIAMOND
-        ? PropRotAngleManager.DIAMOND_ANGLE_MAP
-        : PropRotAngleManager.BOX_ANGLE_MAP;
-
+    const angleMap = this.getAngleMapForLocation(this.location);
     const orientationAngles = angleMap[this.orientation];
     return orientationAngles[this.location] ?? 0;
+  }
+
+  /** Determines the correct angle map based on grid mode and location */
+  private getAngleMapForLocation(
+    location: GridLocation
+  ): Record<Orientation, Record<GridLocation, number>> {
+    if (this.gridMode === GridMode.DIAMOND) {
+      return PropRotAngleManager.DIAMOND_ANGLE_MAP;
+    }
+    if (this.gridMode === GridMode.SKEWED) {
+      // In skewed mode, use diamond angles for cardinal, box for intercardinal
+      return CARDINAL_LOCATIONS.has(location)
+        ? PropRotAngleManager.DIAMOND_ANGLE_MAP
+        : PropRotAngleManager.BOX_ANGLE_MAP;
+    }
+    // BOX mode or default
+    return PropRotAngleManager.BOX_ANGLE_MAP;
   }
 
   /** Static method for rotation angle calculation (recommended) */
@@ -104,13 +129,30 @@ export class PropRotAngleManager {
     orientation: Orientation,
     gridMode: GridMode
   ): number {
-    const angleMap =
-      gridMode === GridMode.DIAMOND
-        ? PropRotAngleManager.DIAMOND_ANGLE_MAP
-        : PropRotAngleManager.BOX_ANGLE_MAP;
-
+    const angleMap = PropRotAngleManager.getAngleMapForLocationStatic(
+      location,
+      gridMode
+    );
     const orientationAngles = angleMap[orientation];
     return orientationAngles[location] ?? 0;
+  }
+
+  /** Static version of angle map selection for use with calculateRotation */
+  private static getAngleMapForLocationStatic(
+    location: GridLocation,
+    gridMode: GridMode
+  ): Record<Orientation, Record<GridLocation, number>> {
+    if (gridMode === GridMode.DIAMOND) {
+      return PropRotAngleManager.DIAMOND_ANGLE_MAP;
+    }
+    if (gridMode === GridMode.SKEWED) {
+      // In skewed mode, use diamond angles for cardinal, box for intercardinal
+      return CARDINAL_LOCATIONS.has(location)
+        ? PropRotAngleManager.DIAMOND_ANGLE_MAP
+        : PropRotAngleManager.BOX_ANGLE_MAP;
+    }
+    // BOX mode or default
+    return PropRotAngleManager.BOX_ANGLE_MAP;
   }
 }
 

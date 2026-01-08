@@ -23,6 +23,7 @@ import { TunnelModeSequenceManager } from "../../../features/compose/services/im
 import { AnimationStorageManager } from "../../../features/compose/services/implementations/AnimationStorageManager";
 import { DarkModeProvider } from "../../animation-engine/services/implementations/DarkModeProvider";
 import { Animator } from "../../application/services/implementations/Animator";
+import { SequenceMotionLoader } from "../../sequence-viewer/services/implementations/SequenceMotionLoader";
 import { TYPES } from "../types";
 
 export const animatorModule = new ContainerModule(
@@ -71,6 +72,9 @@ export const animatorModule = new ContainerModule(
 
     // === STATE PROVIDERS ===
     options.bind(TYPES.IDarkModeProvider).to(DarkModeProvider);
+
+    // === DATA LOADING ===
+    options.bind(TYPES.ISequenceMotionLoader).to(SequenceMotionLoader);
 
     // ============================================================================
     // ARCHIVED BINDINGS (services moved to archive/animator-unused-services/)

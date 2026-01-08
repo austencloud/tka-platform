@@ -34,14 +34,18 @@ export function useDiscoverHandlers({
     galleryState.selectSequence(sequence);
   }
 
-  async function handleSequenceAction(action: string, sequence: SequenceData) {
+  async function handleSequenceAction(
+    action: string,
+    sequence: SequenceData,
+    variations?: SequenceData[]
+  ) {
     try {
       switch (action) {
         case "select":
           handleSequenceSelect(sequence);
           break;
         case "view-detail":
-          handleViewDetail(sequence);
+          handleViewDetail(sequence, variations);
           break;
         case "delete":
           handleSequenceDelete(sequence);
@@ -66,8 +70,11 @@ export function useDiscoverHandlers({
     }
   }
 
-  function handleViewDetail(sequence: SequenceData) {
-    galleryPanelManager.openDetail(sequence);
+  function handleViewDetail(
+    sequence: SequenceData,
+    variations?: SequenceData[]
+  ) {
+    galleryPanelManager.openDetail(sequence, variations);
   }
 
   function handleCloseDetailPanel() {

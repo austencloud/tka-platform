@@ -123,9 +123,27 @@ export class LibraryRepository implements ILibraryRepository {
     // Ensure sequenceTags exists (for backward compatibility)
     const sequenceTags = data["sequenceTags"] || [];
 
+    // Derive word from beats (single source of truth)
+    // Fall back to stored word/name only if beats aren't available
+    const beats = data["beats"] as Array<{ letter?: string }> | undefined;
+    let word: string | null = null;
+    if (beats && beats.length > 0) {
+      // Derive word by concatenating beat letters
+      word = beats
+        .map((beat) => beat.letter ?? "")
+        .filter((letter) => letter !== "")
+        .join("");
+    }
+
+    // Fallback to stored values if derivation failed
+    if (!word) {
+      word = data["word"] || data["name"] || id;
+    }
+
     return {
       ...data,
       id,
+      word, // Ensure word is always present
       sequenceTags,
       // Birthday field - original creation date (never changes after being set)
       birthday: data["birthday"] ? this.toDate(data["birthday"]) : undefined,

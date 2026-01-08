@@ -45,6 +45,7 @@ export const AnimationTypes = {
   // Data
   IAnimatedPictographDataService: Symbol.for("IAnimatedPictographDataService"),
   IMotionParameterService: Symbol.for("IMotionParameterService"),
+  ISequenceMotionLoader: Symbol.for("ISequenceMotionLoader"),
 
   // State Providers
   IDarkModeProvider: Symbol.for("IDarkModeProvider"),

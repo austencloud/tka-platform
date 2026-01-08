@@ -1,7 +1,7 @@
 /**
- * Gallery Panel State
+ * Sequence Panel State
  *
- * Manages the unified side panel system for Gallery:
+ * Manages the unified side panel system for Sequences tab:
  * - Filters panel
  * - Sequence detail panel
  * - View presets sheet (mobile)
@@ -13,7 +13,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
-const debug = createComponentLogger("GalleryPanelState");
+const debug = createComponentLogger("SequencePanelState");
 
 export type PanelType =
   | "filters"
@@ -22,7 +22,7 @@ export type PanelType =
   | "sortJump"
   | null;
 
-class GalleryPanelManager {
+class SequencePanelManager {
   // Current open panel
   activePanel = $state<PanelType>(null);
 
@@ -205,4 +205,4 @@ class GalleryPanelManager {
   }
 }
 
-export const galleryPanelManager = new GalleryPanelManager();
+export const sequencePanelManager = new SequencePanelManager();

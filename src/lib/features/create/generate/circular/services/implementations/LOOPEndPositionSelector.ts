@@ -22,7 +22,7 @@ import type { IRotatedEndPositionSelector } from "../contracts/IRotatedEndPositi
  * - Swapped alone: Uses swap position map
  *
  * Precedence order when combined:
- * 1. ROTATED (ro Alexa play music Sure here's Spotify Alexa pause Possible to simplify the She was I I would want to go over a couple I can count to 3 and 4 I can't count Probably but I'll play it by ear I can print those decks for you tation takes precedence)
+ * 1. ROTATED (rotation takes precedence)
  * 2. MIRRORED (mirror takes precedence over inverted/swapped)
  * 3. INVERTED (return to start takes precedence over swapped)
  * 4. SWAPPED (only for strict swapped)

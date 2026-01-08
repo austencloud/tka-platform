@@ -78,6 +78,9 @@
     // Mandala generator - kaleidoscope art studio with TKA elements
     mandala: () =>
       import("../../features/mandala-generator/components/MandalaGeneratorModule.svelte"),
+    // Background Builder - design and iterate on deep ocean background elements
+    "background-builder": () =>
+      import("../../features/background-builder/BackgroundBuilder.svelte"),
   };
 
   // Load module with caching

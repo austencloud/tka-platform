@@ -1,5 +1,5 @@
 /**
- * Gallery Controls State
+ * Sequence Controls State
  *
  * to access the same state/handlers as DiscoverTab without context issues.
  *
@@ -9,13 +9,13 @@
 import type { ExploreSortMethod } from "../domain/enums/discover-enums";
 import type { ExploreFilterValue } from "../domain/types/discover-types";
 
-type GalleryFilter = { type: string; value: ExploreFilterValue };
+type SequenceFilter = { type: string; value: ExploreFilterValue };
 
-export interface GalleryControlsState {
-  currentFilter: GalleryFilter;
+export interface SequenceControlsState {
+  currentFilter: SequenceFilter;
   currentSortMethod: ExploreSortMethod;
   availableNavigationSections: string[];
-  onFilterChange: (filter: GalleryFilter) => void;
+  onFilterChange: (filter: SequenceFilter) => void;
   onSortMethodChange: (method: ExploreSortMethod) => void;
   scrollToSection: (sectionId: string) => void;
   openFilterModal: () => void;
@@ -23,10 +23,10 @@ export interface GalleryControlsState {
 
 // Module-level reactive state using Svelte 5 $state rune
 // Create a state object that can be mutated and will trigger reactivity
-class GalleryControlsManager {
-  state = $state<GalleryControlsState | null>(null);
+class SequenceControlsManager {
+  state = $state<SequenceControlsState | null>(null);
 
-  set(newState: GalleryControlsState | null) {
+  set(newState: SequenceControlsState | null) {
     this.state = newState;
   }
 
@@ -39,4 +39,4 @@ class GalleryControlsManager {
   }
 }
 
-export const galleryControlsManager = new GalleryControlsManager();
+export const sequenceControlsManager = new SequenceControlsManager();

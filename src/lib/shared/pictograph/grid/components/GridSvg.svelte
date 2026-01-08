@@ -694,61 +694,84 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
      The skewed_grid.svg contains both diamond and box grids overlaid.
    ==================================================================== */
 
-  /* Diamond points in skewed mode - filled circles */
-  :global(.grid-container.skewed-mode .diamond-points) {
+  /* Diamond outer points in skewed mode - filled circles */
+  :global(.grid-container.skewed-mode #n_diamond_outer_point),
+  :global(.grid-container.skewed-mode #e_diamond_outer_point),
+  :global(.grid-container.skewed-mode #s_diamond_outer_point),
+  :global(.grid-container.skewed-mode #w_diamond_outer_point) {
     fill: #000;
     stroke: #000;
     stroke-width: 1;
   }
 
-  /* Box points in skewed mode - outlined rings (from SVG paths) */
-  :global(.grid-container.skewed-mode .box-points) {
-    fill: #000;
+  /* Box outer points in skewed mode - hollow rings (stroke only) */
+  /* Using same stroke-width (13) as box mode for consistency */
+  :global(.grid-container.skewed-mode .box-outer-ring) {
+    fill: none;
     stroke: #000;
-    stroke-width: 1;
+    stroke-width: 13;
+    stroke-miterlimit: 10;
   }
 
-  /* Dark mode - skewed grid points */
-  :global(:root.dark .grid-container.skewed-mode .diamond-points),
-  :global(:root.dark .grid-container.skewed-mode .box-points) {
+  /* Center point in skewed mode */
+  :global(.grid-container.skewed-mode #center_point) {
+    fill: #000;
+  }
+
+  /* Hand points in skewed mode (using .normal-hand-point class) */
+  :global(.grid-container.skewed-mode .normal-hand-point) {
+    fill: #000;
+  }
+
+  /* Dark mode - diamond outer points in skewed mode */
+  :global(:root.dark .grid-container.skewed-mode #n_diamond_outer_point),
+  :global(:root.dark .grid-container.skewed-mode #e_diamond_outer_point),
+  :global(:root.dark .grid-container.skewed-mode #s_diamond_outer_point),
+  :global(:root.dark .grid-container.skewed-mode #w_diamond_outer_point) {
     fill: var(--dm-grid-color, #d0d0d0);
     stroke: var(--dm-grid-color, #d0d0d0);
   }
 
-  /* Hand points in skewed mode */
-  :global(.grid-container.skewed-mode #n_diamond_hand_point),
-  :global(.grid-container.skewed-mode #e_diamond_hand_point),
-  :global(.grid-container.skewed-mode #s_diamond_hand_point),
-  :global(.grid-container.skewed-mode #w_diamond_hand_point),
-  :global(.grid-container.skewed-mode #nw_box_hand_point),
-  :global(.grid-container.skewed-mode #ne_box_hand_point),
-  :global(.grid-container.skewed-mode #se_box_hand_point),
-  :global(.grid-container.skewed-mode #sw_box_hand_point) {
-    fill: #000;
+  /* Dark mode - box outer rings in skewed mode */
+  :global(:root.dark .grid-container.skewed-mode .box-outer-ring) {
+    stroke: var(--dm-grid-color, #d0d0d0);
   }
 
-  /* Dark mode - hand points in skewed mode */
-  :global(:root.dark .grid-container.skewed-mode #n_diamond_hand_point),
-  :global(:root.dark .grid-container.skewed-mode #e_diamond_hand_point),
-  :global(:root.dark .grid-container.skewed-mode #s_diamond_hand_point),
-  :global(:root.dark .grid-container.skewed-mode #w_diamond_hand_point),
-  :global(:root.dark .grid-container.skewed-mode #nw_box_hand_point),
-  :global(:root.dark .grid-container.skewed-mode #ne_box_hand_point),
-  :global(:root.dark .grid-container.skewed-mode #se_box_hand_point),
-  :global(:root.dark .grid-container.skewed-mode #sw_box_hand_point) {
+  /* Dark mode - center point in skewed mode */
+  :global(:root.dark .grid-container.skewed-mode #center_point) {
     fill: var(--dm-grid-color, #d0d0d0);
   }
 
-  /* Export mode overrides for skewed mode */
-  :global(.grid-container.skewed-mode.light-mode-override .diamond-points),
-  :global(.grid-container.skewed-mode.light-mode-override .box-points) {
+  /* Dark mode - hand points in skewed mode */
+  :global(:root.dark .grid-container.skewed-mode .normal-hand-point) {
+    fill: var(--dm-grid-color, #d0d0d0);
+  }
+
+  /* Export mode overrides for skewed mode - light */
+  :global(.grid-container.skewed-mode.light-mode-override #n_diamond_outer_point),
+  :global(.grid-container.skewed-mode.light-mode-override #e_diamond_outer_point),
+  :global(.grid-container.skewed-mode.light-mode-override #s_diamond_outer_point),
+  :global(.grid-container.skewed-mode.light-mode-override #w_diamond_outer_point),
+  :global(.grid-container.skewed-mode.light-mode-override #center_point),
+  :global(.grid-container.skewed-mode.light-mode-override .normal-hand-point) {
     fill: #000000;
+  }
+
+  :global(.grid-container.skewed-mode.light-mode-override .box-outer-ring) {
     stroke: #000000;
   }
 
-  :global(.grid-container.skewed-mode.dark-mode-override .diamond-points),
-  :global(.grid-container.skewed-mode.dark-mode-override .box-points) {
+  /* Export mode overrides for skewed mode - dark */
+  :global(.grid-container.skewed-mode.dark-mode-override #n_diamond_outer_point),
+  :global(.grid-container.skewed-mode.dark-mode-override #e_diamond_outer_point),
+  :global(.grid-container.skewed-mode.dark-mode-override #s_diamond_outer_point),
+  :global(.grid-container.skewed-mode.dark-mode-override #w_diamond_outer_point),
+  :global(.grid-container.skewed-mode.dark-mode-override #center_point),
+  :global(.grid-container.skewed-mode.dark-mode-override .normal-hand-point) {
     fill: #d0d0d0;
+  }
+
+  :global(.grid-container.skewed-mode.dark-mode-override .box-outer-ring) {
     stroke: #d0d0d0;
   }
 </style>

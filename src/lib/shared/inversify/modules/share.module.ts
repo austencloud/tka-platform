@@ -12,7 +12,7 @@ import { MediaBundler } from "../../share/services/implementations/MediaBundler"
 import { FirebaseVideoUploader } from "../../share/services/implementations/FirebaseVideoUploader";
 import { RecordingPersister } from "../../video-record/services/implementations/RecordingPersister";
 import { CollaborativeVideoManager } from "../../video-collaboration/services/implementations/CollaborativeVideoManager";
-import { CloudThumbnailCache } from "../../../features/discover/gallery/display/services/implementations/CloudThumbnailCache";
+import { CloudThumbnailCache } from "../../../features/discover/sequences/display/services/implementations/CloudThumbnailCache";
 import { ShareHubExportOrchestrator } from "../../share-hub/services/implementations/ShareHubExportOrchestrator";
 import { TYPES } from "../types";
 

@@ -75,11 +75,11 @@ export const LEARN_TABS: Section[] = [
 ];
 
 // Discover tabs configuration (public discovery)
-// Note: Library functionality is now integrated into Gallery via scope toggle (Community / My Library)
+// Note: Library functionality is now integrated into Sequences via scope toggle (Community / My Library)
 export const DISCOVER_TABS: Section[] = [
   {
-    id: "gallery",
-    label: "Gallery",
+    id: "sequences",
+    label: "Sequences",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
     description: "Browse and discover sequences",
     color: "#a855f7",
@@ -363,6 +363,14 @@ export const SKEWLAB_TABS: Section[] = [
     description: "Browse and validate skewed pictographs",
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
+  {
+    id: "validator",
+    label: "Validator",
+    icon: '<i class="fas fa-check-double" aria-hidden="true"></i>',
+    description: "Validate all Zeta/Eta positions render correctly",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
     id: "generator",

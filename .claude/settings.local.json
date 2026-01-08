@@ -95,7 +95,9 @@
       "WebFetch(domain:zolmeister.com)",
       "WebFetch(domain:www.myexperimentswithcode.com)",
       "Bash(Select-String -Pattern \"mandala|Error:|error:\")",
-      "Bash(Select-Object -First 30)"
+      "Bash(Select-Object -First 30)",
+      "Bash(Get-ChildItem \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\shared\\\\inversify\\\\modules\\\\*.module.ts\")",
+      "Bash(Select-Object Name)"
     ]
   }
 }

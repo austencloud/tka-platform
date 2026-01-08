@@ -2,8 +2,8 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import DiscoverLayout from "./DiscoverLayout.svelte";
   import SequenceDrawers from "./SequenceDrawers.svelte";
-  import { galleryPanelManager } from "../state/gallery-panel-state.svelte";
-  import SequenceDisplayPanel from "../../gallery/display/components/SequenceDisplayPanel.svelte";
+  import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+  import SequenceDisplayPanel from "../../sequences/display/components/SequenceDisplayPanel.svelte";
 
   interface Props {
     isMobile: boolean;
@@ -38,13 +38,13 @@
 
   // Panel is "open" when either the detail panel OR animation panel is showing (desktop only)
   const isPanelOpen = $derived(
-    !isMobile && (galleryPanelManager.isOpen || isAnimationPanelOpen)
+    !isMobile && (sequencePanelManager.isOpen || isAnimationPanelOpen)
   );
 
   // Effective drawer width - accounts for expansion state
   // When detail panel is expanded, use wider width for grid padding
   const effectiveDrawerWidth = $derived(
-    galleryPanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth
+    sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth
   );
 </script>
 
@@ -83,7 +83,7 @@
   onSortMethodChange={(method) => galleryState.handleSortChange(method, "asc")}
   onSectionClick={(sectionId) => {
     galleryState.scrollToSection(sectionId);
-    galleryPanelManager.close();
+    sequencePanelManager.close();
   }}
   {onDetailPanelAction}
   {onCloseDetailPanel}

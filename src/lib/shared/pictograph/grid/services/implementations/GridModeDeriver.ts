@@ -42,7 +42,17 @@ export class GridModeDeriver implements IGridModeDeriver {
     const blueIsSkewed = this.isSkewed(blueMotion);
     const redIsSkewed = this.isSkewed(redMotion);
 
+    // SKEWED mode is detected when:
+    // 1. Either motion individually crosses between cardinal/intercardinal
+    // 2. One motion is purely diamond and the other is purely box
     if (blueIsSkewed || redIsSkewed) {
+      return GridMode.SKEWED;
+    }
+
+    // Check for cross-mode: one motion is diamond, other is box
+    // This happens with static pictographs where each prop stays in place
+    // but one is at a cardinal position and the other at intercardinal
+    if ((blueIsDiamond && redIsBox) || (blueIsBox && redIsDiamond)) {
       return GridMode.SKEWED;
     }
 

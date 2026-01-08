@@ -4,16 +4,16 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import SequenceDetailContent from "../../gallery/display/components/SequenceDetailContent.svelte";
+  import SequenceDetailContent from "../../sequences/display/components/SequenceDetailContent.svelte";
   import InviteCollaboratorsPanel from "$lib/shared/video-collaboration/components/InviteCollaboratorsPanel.svelte";
-  import ViewPresetsSheet from "../../gallery/filtering/components/ViewPresetsSheet.svelte";
-  import SortJumpSheet from "../../gallery/navigation/components/SortJumpSheet.svelte";
-  import { galleryPanelManager } from "../state/gallery-panel-state.svelte";
+  import ViewPresetsSheet from "../../sequences/filtering/components/ViewPresetsSheet.svelte";
+  import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
+  import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import { ExploreSortMethod } from "../domain/enums/discover-enums";
   import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
-  import BentoFilterPanel from "../../gallery/filtering/components/bento-filter/BentoFilterPanel.svelte";
-  import LetterSelectionSheet from "../../gallery/filtering/components/bento-filter/LetterSelectionSheet.svelte";
-  import PositionOptionsSheet from "../../gallery/filtering/components/bento-filter/PositionOptionsSheet.svelte";
+  import BentoFilterPanel from "../../sequences/filtering/components/bento-filter/BentoFilterPanel.svelte";
+  import LetterSelectionSheet from "../../sequences/filtering/components/bento-filter/LetterSelectionSheet.svelte";
+  import PositionOptionsSheet from "../../sequences/filtering/components/bento-filter/PositionOptionsSheet.svelte";
   import type { FilterPreset } from "../domain/types/discover-types";
 
   interface CurrentFilter {

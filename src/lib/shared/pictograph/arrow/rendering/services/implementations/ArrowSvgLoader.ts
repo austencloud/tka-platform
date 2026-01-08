@@ -44,20 +44,45 @@ interface SymbolData {
 /**
  * Parse CSS style block to extract class->fill color mappings
  * e.g., ".st0{fill:#2E3192;}" -> { "st0": "#2E3192" }
+ * Uses both DOM and regex fallback for maximum compatibility
  */
-function parseStyleBlock(doc: Document): Map<string, string> {
+function parseStyleBlock(doc: Document, rawSvgText?: string): Map<string, string> {
   const classToFill = new Map<string, string>();
-  const styleElements = doc.querySelectorAll("style");
+  const fillRegex = /\.([a-zA-Z0-9_-]+)\s*\{\s*fill\s*:\s*(#[0-9A-Fa-f]{3,6})\s*;?\s*\}/g;
 
+  // Try DOM-based parsing first
+  const styleElements = doc.querySelectorAll("style");
   styleElements.forEach((style) => {
     const cssText = style.textContent || "";
-    // Match patterns like ".st0{fill:#2E3192;}" or ".st0 { fill: #2E3192; }"
-    const regex = /\.([a-zA-Z0-9_-]+)\s*\{\s*fill\s*:\s*(#[0-9A-Fa-f]{3,6})\s*;?\s*\}/g;
     let match;
-    while ((match = regex.exec(cssText)) !== null) {
-      classToFill.set(match[1], match[2]);
+    while ((match = fillRegex.exec(cssText)) !== null) {
+      if (match[1] && match[2]) {
+        classToFill.set(match[1], match[2]);
+      }
     }
   });
+
+  // Fallback: parse style from raw text if DOM parsing found nothing
+  if (classToFill.size === 0 && rawSvgText) {
+    const styleMatch = rawSvgText.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    if (styleMatch && styleMatch[1]) {
+      const cssText = styleMatch[1];
+      fillRegex.lastIndex = 0; // Reset regex state
+      let match;
+      while ((match = fillRegex.exec(cssText)) !== null) {
+        if (match[1] && match[2]) {
+          classToFill.set(match[1], match[2]);
+        }
+      }
+    }
+  }
+
+  // Debug logging
+  if (classToFill.size > 0) {
+    console.log(`Arrow sprite: parsed ${classToFill.size} CSS fill classes`);
+  } else {
+    console.warn("Arrow sprite: no CSS fill classes found - arrows may appear black");
+  }
 
   return classToFill;
 }
@@ -168,7 +193,7 @@ if (import.meta.hot) {
         const doc = new DOMParser().parseFromString(spriteText, "image/svg+xml");
 
         // Parse CSS style block to get class->fill mappings
-        const classToFill = parseStyleBlock(doc);
+        const classToFill = parseStyleBlock(doc, spriteText);
 
         // Try <symbol> first, then <g>
         const symbols = doc.querySelectorAll("symbol");
@@ -322,7 +347,7 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
 
         // Parse CSS style block to get class->fill mappings
         // This inlines fills like .st0{fill:#2E3192;} so color transformation works
-        const classToFill = parseStyleBlock(doc);
+        const classToFill = parseStyleBlock(doc, spriteText);
 
         // First try <symbol> elements (standard SVG sprite format)
         const symbols = doc.querySelectorAll("symbol");

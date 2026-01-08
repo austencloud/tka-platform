@@ -2,7 +2,7 @@
 DiscoverModuleNavigation.svelte
 
 Tab-based navigation for the Discover module.
-Tabs: Gallery, Collections, Creators
+Tabs: Sequences, Collections, Creators
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -14,16 +14,16 @@ Tabs: Gallery, Collections, Creators
     DiscoverTabConfig,
   } from "./types/discover-tab-types";
 
-  const { currentTab = "gallery", onTabChange = () => {} } = $props<{
+  const { currentTab = "sequences", onTabChange = () => {} } = $props<{
     currentTab?: DiscoverModuleType;
     onTabChange?: (tab: DiscoverModuleType) => void;
   }>();
 
   let hapticService: IHapticFeedback;
 
-  // Note: Library is now integrated into Gallery via scope toggle (Community / My Library)
+  // Note: Library is now integrated into Sequences via scope toggle (Community / My Library)
   const tabs: DiscoverTabConfig[] = [
-    { id: "gallery", label: "Gallery", icon: "fa-layer-group" },
+    { id: "sequences", label: "Sequences", icon: "fa-layer-group" },
     { id: "collections", label: "Collections", icon: "fa-folder" },
     { id: "creators", label: "Creators", icon: "fa-users" },
   ];

@@ -1,5 +1,5 @@
 /**
- * Gallery Source State
+ * Sequence Source State
  *
  * Manages the source toggle between Community (public) and My Library (user's sequences).
  * Uses Svelte 5 runes pattern for reactive state.
@@ -8,21 +8,41 @@
 
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 
-export type GallerySource = "community" | "my-library";
+export type SequenceSource = "community" | "my-library";
 
-const STORAGE_KEY = "tka-gallery-source";
+const STORAGE_KEY = "tka-sequence-source";
+const OLD_STORAGE_KEY = "tka-gallery-source"; // For migration
 
-class GallerySourceManager {
+/**
+ * Migrate from old localStorage key if present
+ */
+function migrateFromOldKey(): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    const oldValue = localStorage.getItem(OLD_STORAGE_KEY);
+    if (oldValue) {
+      localStorage.setItem(STORAGE_KEY, oldValue);
+      localStorage.removeItem(OLD_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+// Run migration on module load
+migrateFromOldKey();
+
+class SequenceSourceManager {
   // Current source selection (restored from localStorage)
-  source = $state<GallerySource>(this.loadPersistedSource());
+  source = $state<SequenceSource>(this.loadPersistedSource());
 
   // Callback for when source changes
-  private onChangeCallbacks: Array<(source: GallerySource) => void> = [];
+  private onChangeCallbacks: Array<(source: SequenceSource) => void> = [];
 
   /**
    * Load persisted source from localStorage
    */
-  private loadPersistedSource(): GallerySource {
+  private loadPersistedSource(): SequenceSource {
     if (typeof localStorage === "undefined") return "community";
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -38,7 +58,7 @@ class GallerySourceManager {
   /**
    * Persist source to localStorage
    */
-  private persistSource(source: GallerySource): void {
+  private persistSource(source: SequenceSource): void {
     if (typeof localStorage === "undefined") return;
     try {
       localStorage.setItem(STORAGE_KEY, source);
@@ -50,7 +70,7 @@ class GallerySourceManager {
   /**
    * Get the current source
    */
-  get current(): GallerySource {
+  get current(): SequenceSource {
     return this.source;
   }
 
@@ -78,7 +98,7 @@ class GallerySourceManager {
   /**
    * Set the source
    */
-  setSource(newSource: GallerySource): void {
+  setSource(newSource: SequenceSource): void {
     // If trying to set "my-library" but not authenticated, stay on community
     if (newSource === "my-library" && !authState.isAuthenticated) {
       return;
@@ -107,7 +127,7 @@ class GallerySourceManager {
    * Register a callback for source changes
    * Returns an unsubscribe function
    */
-  onChange(callback: (source: GallerySource) => void): () => void {
+  onChange(callback: (source: SequenceSource) => void): () => void {
     this.onChangeCallbacks.push(callback);
     return () => {
       const index = this.onChangeCallbacks.indexOf(callback);
@@ -125,4 +145,4 @@ class GallerySourceManager {
   }
 }
 
-export const gallerySourceManager = new GallerySourceManager();
+export const sequenceSourceManager = new SequenceSourceManager();

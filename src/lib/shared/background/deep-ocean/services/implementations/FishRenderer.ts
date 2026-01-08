@@ -335,6 +335,7 @@ export class FishRenderer implements IFishRenderer {
 
   /**
    * Draw stripe patterns for tropical and schooling fish
+   * Now with vertical bands for tropical fish - much more vibrant!
    */
   private drawSpineStripes(
     ctx: CanvasRenderingContext2D,
@@ -346,21 +347,88 @@ export class FishRenderer implements IFishRenderer {
 
     ctx.save();
 
-    const stripeCount = fish.species === "tropical" ? 4 : 2;
-    const stripeWidth = fish.bodyHeight * 0.08;
+    if (fish.species === "tropical") {
+      // TROPICAL: Bold vertical bands like clownfish/angelfish
+      this.drawVerticalBands(ctx, fish, spine);
+    } else {
+      // SCHOOLING: Horizontal racing stripes
+      this.drawHorizontalStripes(ctx, fish, spine);
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Draw bold vertical bands for tropical fish
+   */
+  private drawVerticalBands(
+    ctx: CanvasRenderingContext2D,
+    fish: FishMarineLife,
+    spine: SpineChain
+  ): void {
+    const bandCount = 3 + Math.floor(Math.random() * 2); // 3-4 bands
+    const bandWidth = fish.bodyLength * 0.08;
+
+    // Use contrasting colors for bands
+    const bandColors = [
+      fish.colors.accent,
+      this.shiftHue(fish.colors.accent, 180), // Complementary
+      "#ffffff",
+      fish.colors.accent,
+    ];
+
+    for (let b = 0; b < bandCount; b++) {
+      const t = 0.2 + (b / (bandCount - 1)) * 0.5; // Position along body (20%-70%)
+
+      // Get position on spine
+      const pos = spine.getPositionAt(t);
+      const perpAngle = pos.angle - Math.PI / 2;
+
+      // Draw vertical band from top to bottom of body at this point
+      ctx.beginPath();
+
+      const topX = pos.x + Math.cos(perpAngle) * pos.width * 1.1;
+      const topY = pos.y + Math.sin(perpAngle) * pos.width * 1.1;
+      const bottomX = pos.x - Math.cos(perpAngle) * pos.width * 1.1;
+      const bottomY = pos.y - Math.sin(perpAngle) * pos.width * 1.1;
+
+      ctx.moveTo(topX, topY);
+      ctx.lineTo(bottomX, bottomY);
+
+      ctx.strokeStyle = bandColors[b % bandColors.length]!;
+      ctx.lineWidth = bandWidth * (1 - Math.abs(t - 0.45) * 0.8);
+      ctx.lineCap = "round";
+      ctx.globalAlpha = 0.7;
+      ctx.stroke();
+
+      // Add edge glow for pop
+      ctx.strokeStyle = this.adjustAlpha(bandColors[b % bandColors.length]!, 0.3);
+      ctx.lineWidth = bandWidth * 1.5;
+      ctx.globalAlpha = 0.3;
+      ctx.stroke();
+    }
+  }
+
+  /**
+   * Draw horizontal racing stripes for schooling fish
+   */
+  private drawHorizontalStripes(
+    ctx: CanvasRenderingContext2D,
+    fish: FishMarineLife,
+    spine: SpineChain
+  ): void {
+    const stripeCount = 2;
+    const stripeWidth = fish.bodyHeight * 0.12; // Thicker
 
     for (let s = 0; s < stripeCount; s++) {
-      const t = (s + 1) / (stripeCount + 1);
+      const t = s === 0 ? 0.3 : 0.7; // Top and bottom stripes
 
       ctx.beginPath();
 
-      // Draw stripe following spine curvature
       for (let i = 0; i < spine.joints.length; i++) {
         const joint = spine.joints[i]!;
         const perpAngle = joint.angle - Math.PI / 2;
-
-        // Position along body width
-        const offset = (t - 0.5) * joint.width * 1.6;
+        const offset = (t - 0.5) * joint.width * 1.4;
         const x = joint.x + Math.cos(perpAngle) * offset;
         const y = joint.y + Math.sin(perpAngle) * offset;
 
@@ -371,16 +439,21 @@ export class FishRenderer implements IFishRenderer {
         }
       }
 
-      // Stripe color with variation
-      const hueShift = s * 30;
-      ctx.strokeStyle = this.shiftHue(fish.colors.accent, hueShift);
-      ctx.lineWidth = stripeWidth * (1 - Math.abs(t - 0.5) * 0.5);
+      // Bold metallic stripe
+      const gradient = ctx.createLinearGradient(
+        spine.joints[0]!.x, spine.joints[0]!.y,
+        spine.joints[spine.joints.length - 1]!.x, spine.joints[spine.joints.length - 1]!.y
+      );
+      gradient.addColorStop(0, this.adjustAlpha(fish.colors.accent, 0.9));
+      gradient.addColorStop(0.5, "#ffffff");
+      gradient.addColorStop(1, this.adjustAlpha(fish.colors.accent, 0.9));
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = stripeWidth;
       ctx.lineCap = "round";
-      ctx.globalAlpha = 0.6;
+      ctx.globalAlpha = 0.8;
       ctx.stroke();
     }
-
-    ctx.restore();
   }
 
   /**
@@ -454,7 +527,7 @@ export class FishRenderer implements IFishRenderer {
   }
 
   /**
-   * Draw iridescent shimmer highlight on body
+   * Draw iridescent shimmer highlight on body - AMPLIFIED for A+ visuals
    */
   private drawSpineIridescence(
     ctx: CanvasRenderingContext2D,
@@ -463,45 +536,72 @@ export class FishRenderer implements IFishRenderer {
   ): void {
     ctx.save();
 
-    // Create shimmer highlight along the upper body
-    const shimmerPhase = fish.scalePhase * 2;
-    const shimmerIntensity = 0.15 + Math.sin(shimmerPhase) * 0.1;
+    // Create shimmer highlight along the upper body - MUCH stronger
+    const shimmerPhase = fish.scalePhase * 3;
+    const shimmerIntensity = 0.35 + Math.sin(shimmerPhase) * 0.2; // Doubled intensity
 
-    // Draw highlight gradient along dorsal area
     const centerX = (outline.headPoint.x + outline.tailPoint.x) / 2;
     const topY = Math.min(...outline.leftPoints.map(p => p.y), ...outline.rightPoints.map(p => p.y));
+    const bottomY = Math.max(...outline.leftPoints.map(p => p.y), ...outline.rightPoints.map(p => p.y));
     const centerY = (outline.headPoint.y + outline.tailPoint.y) / 2;
 
-    const gradient = ctx.createLinearGradient(centerX, topY, centerX, centerY);
+    // Multiple overlapping iridescent layers for rainbow effect
+    const hue1 = (fish.scalePhase * 50) % 360;
+    const hue2 = (hue1 + 60) % 360;
+    const hue3 = (hue1 + 120) % 360;
 
-    // Iridescent colors shift based on phase
-    const hue1 = (fish.scalePhase * 30) % 360;
-    const hue2 = (hue1 + 30) % 360;
+    // Layer 1: Primary shimmer from top
+    const gradient1 = ctx.createLinearGradient(centerX, topY, centerX, centerY);
+    gradient1.addColorStop(0, `hsla(${hue1}, 100%, 85%, ${shimmerIntensity})`);
+    gradient1.addColorStop(0.4, `hsla(${hue2}, 90%, 75%, ${shimmerIntensity * 0.6})`);
+    gradient1.addColorStop(1, `hsla(${hue3}, 80%, 70%, 0)`);
 
-    gradient.addColorStop(0, `hsla(${hue1}, 80%, 80%, ${shimmerIntensity})`);
-    gradient.addColorStop(0.3, `hsla(${hue2}, 70%, 70%, ${shimmerIntensity * 0.5})`);
-    gradient.addColorStop(1, `hsla(${hue1}, 60%, 60%, 0)`);
-
-    // Clip to body shape and fill
     this.bodyOutlineCalculator.drawBodyPath(ctx, outline);
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = gradient1;
     ctx.fill();
 
-    // Add specular highlight spot
-    const highlightX = outline.headPoint.x + (outline.tailPoint.x - outline.headPoint.x) * 0.3;
-    const highlightY = topY + fish.bodyHeight * 0.2;
-    const highlightRadius = fish.bodyHeight * 0.3;
+    // Layer 2: Traveling wave shimmer (moves along body)
+    const waveOffset = (fish.scalePhase * 0.3) % 1;
+    const waveX = outline.headPoint.x + (outline.tailPoint.x - outline.headPoint.x) * waveOffset;
+
+    const waveGradient = ctx.createRadialGradient(
+      waveX, centerY, 0,
+      waveX, centerY, fish.bodyLength * 0.3
+    );
+    waveGradient.addColorStop(0, `hsla(${hue2}, 100%, 90%, ${shimmerIntensity * 0.7})`);
+    waveGradient.addColorStop(0.5, `hsla(${hue3}, 80%, 80%, ${shimmerIntensity * 0.3})`);
+    waveGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+    this.bodyOutlineCalculator.drawBodyPath(ctx, outline);
+    ctx.fillStyle = waveGradient;
+    ctx.fill();
+
+    // Layer 3: Strong specular highlight (wet look)
+    const highlightX = outline.headPoint.x + (outline.tailPoint.x - outline.headPoint.x) * 0.25;
+    const highlightY = topY + fish.bodyHeight * 0.15;
+    const highlightRadius = fish.bodyHeight * 0.4;
 
     const specularGradient = ctx.createRadialGradient(
       highlightX, highlightY, 0,
       highlightX, highlightY, highlightRadius
     );
-    specularGradient.addColorStop(0, `rgba(255, 255, 255, ${shimmerIntensity * 0.8})`);
-    specularGradient.addColorStop(0.5, `rgba(255, 255, 255, ${shimmerIntensity * 0.3})`);
+    specularGradient.addColorStop(0, `rgba(255, 255, 255, ${shimmerIntensity * 1.2})`);
+    specularGradient.addColorStop(0.3, `rgba(255, 255, 255, ${shimmerIntensity * 0.6})`);
+    specularGradient.addColorStop(0.7, `rgba(200, 230, 255, ${shimmerIntensity * 0.2})`);
     specularGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
 
     this.bodyOutlineCalculator.drawBodyPath(ctx, outline);
     ctx.fillStyle = specularGradient;
+    ctx.fill();
+
+    // Layer 4: Belly shimmer (subtle light from below)
+    const bellyGradient = ctx.createLinearGradient(centerX, centerY, centerX, bottomY);
+    bellyGradient.addColorStop(0, "rgba(255, 255, 255, 0)");
+    bellyGradient.addColorStop(0.5, `rgba(200, 220, 255, ${shimmerIntensity * 0.15})`);
+    bellyGradient.addColorStop(1, `rgba(180, 200, 255, ${shimmerIntensity * 0.25})`);
+
+    this.bodyOutlineCalculator.drawBodyPath(ctx, outline);
+    ctx.fillStyle = bellyGradient;
     ctx.fill();
 
     ctx.restore();

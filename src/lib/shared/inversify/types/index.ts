@@ -45,6 +45,7 @@ import { ArrowTypes } from "./arrow.types";
 import { AudioTypes } from "./audio.types";
 import { AuthTypes } from "./auth.types";
 import { BackgroundTypes } from "./background.types";
+import { ComposeTypes } from "./compose.types";
 import { LOOPLabelerTypes } from "./loop-labeler.types";
 import { CoreTypes } from "./core.types";
 import { CreateTypes } from "./create.types";
@@ -68,6 +69,7 @@ export {
   AudioTypes,
   AuthTypes,
   BackgroundTypes,
+  ComposeTypes,
   LOOPLabelerTypes,
   CoreTypes,
   CreateTypes,
@@ -103,6 +105,7 @@ export const TYPES = {
   ...AuthTypes,
   ...UITypes,
   ...CreateTypes,
+  ...ComposeTypes,
   ...RenderingTypes,
   ...ArrowTypes,
   ...AudioTypes,

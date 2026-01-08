@@ -66,6 +66,22 @@ export class ArrowSvgColorTransformer implements IArrowSvgColorTransformer {
       `fill:${targetColor}`
     );
 
+    // Handle CSS class-based fills (Illustrator exports use .st0, .st1 classes)
+    // Add inline fill style to path elements that use class-based styling
+    // This overrides any CSS class fill with our target color
+    coloredSvg = coloredSvg.replace(
+      /<(path|polygon|circle|rect|ellipse)([^>]*?)class="st\d+"([^>]*?)>/g,
+      (match, tag, before, after) => {
+        // Check if there's already an inline style
+        if (before.includes('style="') || after.includes('style="')) {
+          // Append to existing style
+          return match.replace(/style="([^"]*)"/, `style="$1;fill:${targetColor}"`);
+        }
+        // Add new style attribute
+        return `<${tag}${before}class="st0"${after} style="fill:${targetColor}">`;
+      }
+    );
+
     // DASH ARROW SCALING FIX
     // Apply scaling transformation to dash arrows to match size of other arrows
     const viewBoxMatch = svgText.match(/viewBox="([^"]+)"/);

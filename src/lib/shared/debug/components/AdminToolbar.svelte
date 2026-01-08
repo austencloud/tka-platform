@@ -176,25 +176,32 @@
 
     console.log("🗑️ Starting cloud thumbnail deletion...");
     isClearingThumbnails = true;
-    introResetMessage = "Clearing cloud thumbnails...";
+    introResetMessage = "Scanning cloud thumbnails...";
 
     try {
       const cloudCache = container.get<ICloudThumbnailCache>(
         TYPES.ICloudThumbnailCache
       );
 
+      let totalDeleted = 0;
+
       console.log("🗑️ Deleting gallery thumbnails...");
-      const galleryCount = await cloudCache.deleteVariant("gallery");
+      const galleryCount = await cloudCache.deleteVariant("gallery", (p) => {
+        introResetMessage = `Gallery: ${p.deleted}/${p.total}`;
+      });
+      totalDeleted += galleryCount;
       console.log(`🗑️ Deleted ${galleryCount} gallery thumbnails`);
 
       console.log("🗑️ Deleting wordcard thumbnails...");
-      const wordcardCount = await cloudCache.deleteVariant("wordcard");
+      const wordcardCount = await cloudCache.deleteVariant("wordcard", (p) => {
+        introResetMessage = `Wordcard: ${p.deleted}/${p.total}`;
+      });
+      totalDeleted += wordcardCount;
       console.log(`🗑️ Deleted ${wordcardCount} wordcard thumbnails`);
 
-      const total = galleryCount + wordcardCount;
-      console.log(`✅ Total deleted: ${total} cloud thumbnails`);
+      console.log(`✅ Total deleted: ${totalDeleted} cloud thumbnails`);
 
-      introResetMessage = `Deleted ${total} cloud thumbnails`;
+      introResetMessage = `Deleted ${totalDeleted} cloud thumbnails`;
       setTimeout(() => {
         introResetMessage = null;
       }, 5000);
@@ -208,7 +215,6 @@
       isClearingThumbnails = false;
     }
   }
-
   function handleClose() {
     adminToolbarState.close();
   }

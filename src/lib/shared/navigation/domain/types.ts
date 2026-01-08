@@ -39,7 +39,9 @@ export type ModuleId =
   | "admin"
   | "settings"
   | "realm" // 3D experiences - Stage (avatar viewer) + Museum (gallery walkthrough)
-  | "mandala";
+  | "mandala"
+  | "skewlab" // Experimental skewed positions (admin-only, temporary)
+  | "background-builder"; // Design and iterate on deep ocean background elements
 
 /**
  * Module Definition

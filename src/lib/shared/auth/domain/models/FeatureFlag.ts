@@ -85,6 +85,7 @@ const FEATURE_ROLE_OVERRIDES: Partial<Record<FeatureId, UserRole>> = {
   "module:write": "admin", // Write module is admin-only for now
   "module:mandala": "admin", // Mandala generator is admin-only for now
   "module:skewlab": "admin", // Skew Lab is admin-only (temporary dev module)
+  "module:background-builder": "admin", // Background Builder for deep ocean design iteration
 
   // Modules - Tester access
   "module:feedback": "tester", // Feedback requires sign-in (tester access)

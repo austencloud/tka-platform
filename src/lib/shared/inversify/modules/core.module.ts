@@ -34,6 +34,7 @@ import { settingsService } from "../../settings/state/SettingsState.svelte";
 import { FirebaseSettingsPersister } from "../../settings/services/implementations/FirebaseSettingsPersister";
 import { OnboardingPersister } from "../../onboarding/services/implementations/OnboardingPersister";
 import { TagManager } from "../../../features/library/services/implementations/TagManager";
+import { WordDeriver } from "../../foundation/services/implementations/WordDeriver";
 import { TYPES } from "../types";
 
 export const coreModule = new ContainerModule(
@@ -85,6 +86,7 @@ export const coreModule = new ContainerModule(
     options.bind(TYPES.IDeviceDetector).to(DeviceDetector).inSingletonScope();
 
     // === FOUNDATION SERVICES ===
+    options.bind(TYPES.IWordDeriver).to(WordDeriver).inSingletonScope();
     options.bind(TYPES.IFileDownloader).to(FileDownloader);
     options.bind(TYPES.IStorageManager).to(StorageManager);
     options.bind(TYPES.ISeoManager).to(SeoManager);

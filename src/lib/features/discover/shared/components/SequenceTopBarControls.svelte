@@ -1,14 +1,14 @@
 <!--
-Gallery Top Bar Controls - 2026 Modern Design (Compact)
+Sequence Top Bar Controls - 2026 Modern Design (Compact)
 - Source toggle chips (Community / My Library) on far left
 - Sort chips centered
 - Filter button opens drawer with scope toggle + drill-down filters
 - Active filter shown as dismissible chip
 -->
 <script lang="ts">
-  import { galleryControlsManager } from "../state/gallery-controls-state.svelte";
-  import { galleryPanelManager } from "../state/gallery-panel-state.svelte";
-  import { gallerySourceManager, type GallerySource } from "../state/gallery-source-state.svelte";
+  import { sequenceControlsManager } from "../state/sequence-controls-state.svelte";
+  import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
+  import { sequenceSourceManager, type SequenceSource } from "../state/sequence-source-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
@@ -16,33 +16,33 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
   import { ExploreSortMethod } from "../domain/enums/discover-enums";
 
   interface Props {
-    onSourceChange?: (source: GallerySource) => void;
+    onSourceChange?: (source: SequenceSource) => void;
   }
 
   let { onSourceChange }: Props = $props();
 
   // Get source state
-  const currentSource = $derived(gallerySourceManager.current);
-  const canViewMyLibrary = $derived(gallerySourceManager.canViewMyLibrary);
+  const currentSource = $derived(sequenceSourceManager.current);
+  const canViewMyLibrary = $derived(sequenceSourceManager.canViewMyLibrary);
 
-  // Get gallery controls from global reactive state
-  const galleryControls = $derived(galleryControlsManager.current);
+  // Get sequence controls from global reactive state
+  const sequenceControls = $derived(sequenceControlsManager.current);
 
   // Check if filter panel is already open (hide button to avoid redundant UI)
-  const isFilterPanelOpen = $derived(galleryPanelManager.isFiltersOpen);
+  const isFilterPanelOpen = $derived(sequencePanelManager.isFiltersOpen);
 
   // Services
   let hapticService: IHapticFeedback | null = null;
 
   // Check if there's an active filter
   const hasActiveFilter = $derived(
-    galleryControls?.currentFilter?.type !== "all"
+    sequenceControls?.currentFilter?.type !== "all"
   );
 
   // Get active filter label for display
   const activeFilterLabel = $derived.by(() => {
-    if (!galleryControls?.currentFilter) return null;
-    const filter = galleryControls.currentFilter;
+    if (!sequenceControls?.currentFilter) return null;
+    const filter = sequenceControls.currentFilter;
     if (filter.type === "all") return null;
     if (filter.type === "favorites") return "Favorites";
     if (filter.type === "difficulty") return `Level ${filter.value}`;
@@ -74,32 +74,32 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
 
   function handleSortChange(method: ExploreSortMethod) {
     hapticService?.trigger("selection");
-    if (galleryControls) {
-      galleryControls.onSortMethodChange(method);
+    if (sequenceControls) {
+      sequenceControls.onSortMethodChange(method);
     }
   }
 
   function handleOpenFilters() {
     hapticService?.trigger("selection");
-    galleryPanelManager.openFilters();
+    sequencePanelManager.openFilters();
   }
 
   function handleClearFilter() {
     hapticService?.trigger("selection");
-    if (galleryControls) {
-      galleryControls.onFilterChange({ type: "all", value: null });
+    if (sequenceControls) {
+      sequenceControls.onFilterChange({ type: "all", value: null });
     }
   }
 
   function handleSourceChange(source: GallerySource) {
     hapticService?.trigger("selection");
-    gallerySourceManager.setSource(source);
+    sequenceSourceManager.setSource(source);
     onSourceChange?.(source);
   }
 </script>
 
-{#if galleryControls}
-  <div class="gallery-topbar-controls">
+{#if sequenceControls}
+  <div class="sequence-topbar-controls">
     <div class="controls-row">
       <!-- Left: Source toggle -->
       <div class="nav-section">
@@ -131,7 +131,7 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
           {#each sortOptions as opt}
             <button
               class="sort-chip"
-              class:active={galleryControls.currentSortMethod === opt.id}
+              class:active={sequenceControls.currentSortMethod === opt.id}
               onclick={() => handleSortChange(opt.id)}
             >
               <i class="fas {opt.icon}" aria-hidden="true"></i>
@@ -172,7 +172,7 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
 {/if}
 
 <style>
-  .gallery-topbar-controls {
+  .sequence-topbar-controls {
     --control-height: var(--min-touch-target);
     --padding-vertical: 10px;
 
@@ -398,7 +398,7 @@ Gallery Top Bar Controls - 2026 Modern Design (Compact)
 
   /* Mobile responsive - hide labels on small screens */
   @media (max-width: 640px) {
-    .gallery-topbar-controls {
+    .sequence-topbar-controls {
       padding: 8px 12px;
     }
 

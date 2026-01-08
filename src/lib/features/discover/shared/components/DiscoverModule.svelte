@@ -26,13 +26,13 @@
   } from "../state/discover-navigation-state.svelte";
   import { DiscoverScrollBehavior } from "../services/implementations/DiscoverScrollBehavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
-  import { galleryControlsManager } from "../state/gallery-controls-state.svelte";
-  import { gallerySourceManager } from "../state/gallery-source-state.svelte";
+  import { sequenceControlsManager } from "../state/sequence-controls-state.svelte";
+  import { sequenceSourceManager } from "../state/sequence-source-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
 
-  // Note: Library tab removed - now integrated into Gallery via scope toggle (Community / My Library)
+  // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type DiscoverModuleType = "sequences" | "collections" | "creators";
 
   // ============================================================================
@@ -208,9 +208,9 @@
   }
 
   // ✅ SYNC GALLERY SOURCE STATE
-  // Wire gallerySourceManager changes to galleryState.setSource()
+  // Wire sequenceSourceManager changes to galleryState.setSource()
   $effect(() => {
-    const currentSource = gallerySourceManager.current;
+    const currentSource = sequenceSourceManager.current;
     // Sync source to galleryState (handles data loading)
     if (currentSource !== galleryState.currentSource) {
       galleryState.setSource(currentSource);
@@ -222,7 +222,7 @@
   let lastEffectiveUserId = $state<string | null>(authState.effectiveUserId);
   $effect(() => {
     const currentEffectiveUserId = authState.effectiveUserId;
-    const isInMyLibrary = gallerySourceManager.current === "my-library";
+    const isInMyLibrary = sequenceSourceManager.current === "my-library";
 
     // If user changed and we're viewing My Library, force reload
     if (currentEffectiveUserId !== lastEffectiveUserId && isInMyLibrary) {
@@ -279,7 +279,7 @@
   // Provide gallery state for TopBar controls via global reactive state
   // (Context doesn't work for siblings, so we use module-level $state)
   $effect(() => {
-    galleryControlsManager.set({
+    sequenceControlsManager.set({
       get currentFilter() {
         return galleryState.currentFilter;
       },
@@ -371,7 +371,7 @@
     // Return cleanup function
     return () => {
       cleanup?.();
-      galleryControlsManager.clear();
+      sequenceControlsManager.clear();
     };
   });
 </script>

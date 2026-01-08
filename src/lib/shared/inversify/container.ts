@@ -557,6 +557,17 @@ export async function loadFeatureModule(feature: string): Promise<void> {
         await loadIfNeeded("mandala", () => import("./modules/mandala.module"));
         break;
 
+      case "background-builder":
+        // Background Builder needs deep ocean background services (fish, jellyfish, etc.)
+        // These are loaded in tier 2 via background.module
+        if (tier2Promise) await tier2Promise;
+        break;
+
+      case "skewlab":
+        // SkewLab needs pictograph services from tier 2
+        if (tier2Promise) await tier2Promise;
+        break;
+
       default:
         console.warn(`Unknown feature module: ${feature}`);
         return;

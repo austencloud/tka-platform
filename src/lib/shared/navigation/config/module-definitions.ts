@@ -173,6 +173,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: [], // Single-tab creative studio
   },
   {
+    id: "background-builder",
+    label: "BG Builder",
+    icon: '<i class="fas fa-water" style="color: #0ea5e9;" aria-hidden="true"></i>',
+    color: "#0ea5e9", // Sky blue - ocean/background
+    description: "Design and iterate on deep ocean background elements",
+    isMain: true, // Admin-only for development
+    sections: [], // Tab switching handled internally
+  },
+  {
     id: "settings",
     label: "Settings",
     icon: '<i class="fas fa-cog" style="color: #64748b;" aria-hidden="true"></i>',

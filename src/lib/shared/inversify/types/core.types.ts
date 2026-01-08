@@ -6,6 +6,7 @@
 
 export const CoreTypes = {
   // Sequence Services
+  IWordDeriver: Symbol.for("IWordDeriver"),
   ISequenceRepository: Symbol.for("ISequenceRepository"),
   ISequenceDomainManager: Symbol.for("ISequenceDomainManager"),
   ISequenceAnalyzer: Symbol.for("ISequenceAnalyzer"),
