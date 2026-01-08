@@ -31,7 +31,6 @@ interface AnimationVisibilitySettings {
   playbackMode: PlaybackMode; // Continuous flow vs step-by-step
   speed: number; // Speed multiplier (1.0 = 60 BPM, range 0.1-3.0)
   wordHeader: boolean; // Word/sequence name header at top
-  arms: boolean; // Show stick-figure arms connecting shoulders to props
 
   // Global Effects (applies to pictograph, animation, and image export)
   // Dark Mode: dark background, inverted grid, white text/outlines
@@ -89,7 +88,6 @@ export class AnimationVisibilityStateManager {
       playbackMode: "continuous", // Default to continuous playback
       speed: 1.0, // Default to 60 BPM
       wordHeader: true, // Show word/sequence name by default
-      arms: false, // Arms off by default (opt-in feature)
 
       // Global effects
       darkMode: false, // Dark Mode disabled by default

@@ -358,7 +358,6 @@ export class VideoPreRenderer implements IVideoPreRenderer {
             gridVisible: true,
             propsVisible: true,
             trailsVisible: true,
-            armsVisible: false, // No arms in video export
             blueMotionVisible: true,
             redMotionVisible: true,
           },

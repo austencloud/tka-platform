@@ -243,7 +243,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         gridVisible: effectiveGridVisible,
         propsVisible: effectivePropsVisible,
         trailsVisible: effectiveTrailsVisible,
-        armsVisible: visibility.armsVisible ?? false,
         blueMotionVisible: effectiveBlueMotionVisible,
         redMotionVisible: effectiveRedMotionVisible,
       },

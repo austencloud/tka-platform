@@ -18,7 +18,6 @@ export interface AnimationVisibilitySettings {
   gridVisible: boolean;
   propsVisible: boolean;
   trailsVisible: boolean;
-  armsVisible: boolean;
   blueMotionVisible: boolean;
   redMotionVisible: boolean;
 }

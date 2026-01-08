@@ -182,7 +182,6 @@
           gridVisible: true,
           propsVisible: true,
           trailsVisible: false,
-          armsVisible: false,
           blueMotionVisible: true,
           redMotionVisible: true,
         },

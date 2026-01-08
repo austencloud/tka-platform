@@ -153,7 +153,6 @@ export class AnimationEngine {
       beatNumbers: true,
       props: true,
       trails: true,
-      arms: false, // Stick-figure arms off by default
       tkaGlyph: true, // TKA Glyph includes turn numbers
       blueMotion: true,
       redMotion: true,
@@ -250,7 +249,6 @@ export class AnimationEngine {
       gridVisible: true,
       propsVisible: true,
       trailsVisible: true,
-      armsVisible: false,
       blueMotionVisible: true,
       redMotionVisible: true,
     },
@@ -282,7 +280,6 @@ export class AnimationEngine {
       beatNumbers: visibilityManager.getVisibility("beatNumbers"),
       props: visibilityManager.getVisibility("props"),
       trails: visibilityManager.getTrailStyle() !== "off",
-      arms: visibilityManager.getVisibility("arms"),
       tkaGlyph: visibilityManager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       blueMotion: visibilityManager.getVisibility("blueMotion"),
       redMotion: visibilityManager.getVisibility("redMotion"),
@@ -1015,7 +1012,6 @@ export class AnimationEngine {
     fp.visibility.gridVisible = this.state.visibilityState.grid;
     fp.visibility.propsVisible = this.state.visibilityState.props;
     fp.visibility.trailsVisible = this.state.visibilityState.trails;
-    fp.visibility.armsVisible = this.state.visibilityState.arms;
     fp.visibility.blueMotionVisible = this.state.visibilityState.blueMotion;
     fp.visibility.redMotionVisible = this.state.visibilityState.redMotion;
 
