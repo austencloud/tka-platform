@@ -11,7 +11,7 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type {
@@ -59,7 +59,7 @@ export class SystemStateManager implements ISystemStateManager {
   private async isFirestoreAvailable(): Promise<boolean> {
     const firestore = await getFirestoreInstance();
     return (
-      firestore !== null && firestore !== undefined && auth.currentUser !== null
+      firestore !== null && firestore !== undefined && getAuthSync().currentUser !== null
     );
   }
 

@@ -18,7 +18,7 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { getAuthSync, getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
   getTrainChallengesPath,
   getUserTrainProgressPath,
@@ -169,7 +169,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
   // ============================================================================
 
   async getUserChallengeProgress(): Promise<UserTrainChallengeProgress[]> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return [];
 
     try {
@@ -195,7 +195,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
   async getUserProgressForChallenge(
     challengeId: string
   ): Promise<UserTrainChallengeProgress | null> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return null;
 
     try {
@@ -216,7 +216,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
   }
 
   async startChallenge(challengeId: string): Promise<void> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("No user logged in");
     }
@@ -255,7 +255,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     increment: number,
     score?: TrainChallengeScore
   ): Promise<void> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("No user logged in");
     }
@@ -306,7 +306,7 @@ export class TrainChallengeManager implements ITrainChallengeManager {
     challengeId: string,
     finalScore: TrainChallengeScore
   ): Promise<number> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("No user logged in");
     }

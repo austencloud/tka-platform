@@ -8,7 +8,7 @@
 import { browser } from "$app/environment";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-import { auth } from "$lib/shared/auth/firebase";
+import { getAuthSync } from "$lib/shared/auth/firebase";
 
 const STORAGE_KEY = "tka-image-composition-settings";
 
@@ -66,7 +66,7 @@ class ImageCompositionStateManager {
     // First try to load from Firebase if authenticated
     const firebaseSettings = settingsService.currentSettings.imageExport;
 
-    if (firebaseSettings && auth.currentUser) {
+    if (firebaseSettings && getAuthSync().currentUser) {
       // Use Firebase settings for authenticated users
       this.settings = { ...DEFAULT_SETTINGS, ...firebaseSettings };
     } else {
@@ -107,7 +107,7 @@ class ImageCompositionStateManager {
     }
 
     // Also save to Firebase if authenticated
-    if (auth.currentUser) {
+    if (getAuthSync().currentUser) {
       this.saveToFirebase();
     }
   }

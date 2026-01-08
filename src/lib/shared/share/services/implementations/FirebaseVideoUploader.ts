@@ -10,8 +10,7 @@ import type {
   IFirebaseVideoUploader,
   VideoUploadResult,
 } from "../contracts/IFirebaseVideoUploader";
-import { getStorageInstance } from "$lib/shared/auth/firebase";
-import { auth } from "$lib/shared/auth/firebase";
+import { getStorageInstance, getAuthSync } from "$lib/shared/auth/firebase";
 
 @injectable()
 export class FirebaseVideoUploader implements IFirebaseVideoUploader {
@@ -19,7 +18,7 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
    * Get current user ID
    */
   private getUserId(): string {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated to upload videos");
     }

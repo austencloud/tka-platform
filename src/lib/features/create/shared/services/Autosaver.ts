@@ -19,7 +19,7 @@ import {
   serverTimestamp,
   type Timestamp,
 } from "firebase/firestore";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import {
   createDraftSequence,
   type DraftSequence,
@@ -37,7 +37,7 @@ export class Autosaver {
     sessionId: string,
     sequenceData: SequenceData
   ): Promise<void> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated to save draft");
     }
@@ -61,7 +61,7 @@ export class Autosaver {
    * Load a draft by session ID
    */
   async loadDraft(sessionId: string): Promise<DraftSequence | null> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return null;
 
     const firestore = await getFirestoreInstance();
@@ -77,7 +77,7 @@ export class Autosaver {
    * Delete a draft
    */
   async deleteDraft(sessionId: string): Promise<void> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return;
 
     const firestore = await getFirestoreInstance();
@@ -89,7 +89,7 @@ export class Autosaver {
    * Get all drafts for current user
    */
   async getAllDrafts(): Promise<DraftSequence[]> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return [];
 
     const firestore = await getFirestoreInstance();
@@ -147,7 +147,7 @@ export class Autosaver {
    * Clean up old drafts (older than N days)
    */
   async cleanupOldDrafts(daysOld = 7): Promise<number> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return 0;
 
     const cutoffDate = new Date();

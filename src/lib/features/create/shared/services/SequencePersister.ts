@@ -19,7 +19,7 @@ import {
   serverTimestamp,
   type Timestamp,
 } from "firebase/firestore";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -60,7 +60,7 @@ export class SequencePersister {
     sequenceData: SequenceData,
     metadata: SaveSequenceMetadata
   ): Promise<string> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       console.error("[SequencePersister] No authenticated user");
       throw new Error("User must be authenticated to save sequence");
@@ -125,7 +125,7 @@ export class SequencePersister {
     sequenceData: SequenceData,
     metadata: Partial<SaveSequenceMetadata>
   ): Promise<void> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated");
     }
@@ -171,7 +171,7 @@ export class SequencePersister {
    * Load a saved sequence by ID
    */
   async loadSequence(sequenceId: string): Promise<SavedSequence | null> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return null;
 
     try {
@@ -196,7 +196,7 @@ export class SequencePersister {
    * Get recent saved sequences
    */
   async getRecentSequences(limitCount = 10): Promise<SavedSequence[]> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return [];
 
     try {
@@ -224,7 +224,7 @@ export class SequencePersister {
    * Get all saved sequences for current user
    */
   async getAllSequences(): Promise<SavedSequence[]> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return [];
 
     try {
@@ -244,7 +244,7 @@ export class SequencePersister {
    * Check if a sequence is already saved
    */
   async isSequenceSaved(sequenceId: string): Promise<boolean> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return false;
 
     try {

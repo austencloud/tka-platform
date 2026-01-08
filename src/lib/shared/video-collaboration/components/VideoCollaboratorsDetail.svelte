@@ -9,7 +9,7 @@
     CollaborativeVideo,
     VideoCollaborator,
   } from "../domain/CollaborativeVideo";
-  import { auth } from "$lib/shared/auth/firebase";
+  import { getAuthSync } from "$lib/shared/auth/firebase";
 
   const {
     video,
@@ -21,7 +21,7 @@
     onInviteClick?: () => void;
   } = $props();
 
-  const currentUserId = $derived(auth.currentUser?.uid);
+  const currentUserId = $derived(getAuthSync().currentUser?.uid);
   const isCreator = $derived(currentUserId === video.creatorId);
 
   function formatDate(date: Date): string {

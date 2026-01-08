@@ -6,7 +6,7 @@
  */
 
 import { injectable } from "inversify";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import {
   collection,
@@ -58,7 +58,7 @@ export interface IRecordingPersister {
 @injectable()
 export class RecordingPersister implements IRecordingPersister {
   private getUserId(): string {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated to access recordings");
     }

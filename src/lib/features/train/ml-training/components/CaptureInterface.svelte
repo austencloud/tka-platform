@@ -14,7 +14,7 @@ Hybrid sync: saves locally first, then syncs to Firebase in background.
     type SyncProgress,
   } from "../services/FirebaseMLStorage";
   import { getMLTrainingStorage } from "../services/MLTrainingStorageManager";
-  import { auth } from "$lib/shared/auth/firebase";
+  import { getAuthSync } from "$lib/shared/auth/firebase";
   import type { PropType, CaptureSession } from "../domain/models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
@@ -169,7 +169,7 @@ Hybrid sync: saves locally first, then syncs to Firebase in background.
    */
   async function syncSessionToFirebase(session: CaptureSession) {
     // Only sync if user is authenticated
-    if (!auth.currentUser) {
+    if (!getAuthSync().currentUser) {
       return;
     }
 

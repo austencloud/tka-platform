@@ -21,7 +21,7 @@ import {
   serverTimestamp,
   type Timestamp,
 } from "firebase/firestore";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import {
   createSequenceSession,
   generateDeviceId,
@@ -47,7 +47,7 @@ export class SessionManager {
    * Create a new session
    */
   async createSession(): Promise<SequenceSession> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated to create session");
     }
@@ -83,7 +83,7 @@ export class SessionManager {
       throw new Error("No active session");
     }
 
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated");
     }
@@ -138,7 +138,7 @@ export class SessionManager {
    * Get recent sessions for current user
    */
   async getRecentSessions(limit = 10): Promise<SequenceSession[]> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return [];
 
     const firestore = await getFirestoreInstance();
@@ -163,7 +163,7 @@ export class SessionManager {
    * Load a session by ID
    */
   async loadSession(sessionId: string): Promise<SequenceSession | null> {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) return null;
 
     const firestore = await getFirestoreInstance();

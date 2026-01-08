@@ -11,7 +11,7 @@
  */
 
 import { injectable, inject } from "inversify";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { TYPES } from "$lib/shared/inversify/types";
 import type {
   IAnalyticsDataProvider,
@@ -63,7 +63,7 @@ export class AnalyticsDataProvider implements IAnalyticsDataProvider {
       return (
         firestore !== null &&
         firestore !== undefined &&
-        auth.currentUser !== null
+        getAuthSync().currentUser !== null
       );
     } catch {
       return false;

@@ -15,7 +15,7 @@
   import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { auth } from "$lib/shared/auth/firebase";
+  import { getAuthSync } from "$lib/shared/auth/firebase";
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
@@ -80,7 +80,7 @@
   let fileInputEl: HTMLInputElement;
 
   // Current user
-  const currentUser = $derived(auth.currentUser);
+  const currentUser = $derived(getAuthSync().currentUser);
 
   function handleFileSelect(event: Event) {
     const input = event.target as HTMLInputElement;

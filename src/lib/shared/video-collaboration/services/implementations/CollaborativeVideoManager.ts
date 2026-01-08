@@ -12,7 +12,7 @@
  */
 
 import { injectable } from "inversify";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import {
   collection,
@@ -51,7 +51,7 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
   // ============================================================================
 
   private getUserId(): string {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated to access videos");
     }
@@ -63,7 +63,7 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
     displayName?: string;
     avatarUrl?: string;
   } {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated");
     }

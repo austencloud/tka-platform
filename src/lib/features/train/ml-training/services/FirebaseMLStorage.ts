@@ -11,8 +11,7 @@
  * - Background sync to Firebase after capture
  */
 
-import { getStorageInstance } from "$lib/shared/auth/firebase";
-import { auth } from "$lib/shared/auth/firebase";
+import { getStorageInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import type { FirebaseStorage } from "firebase/storage";
 import type { CaptureSession, CapturedFrame } from "../domain/models";
 
@@ -93,7 +92,7 @@ export function createFirebaseMLStorageManager(): FirebaseMLStorageManager {
   }
 
   function getUserId(): string {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       throw new Error("User must be authenticated to sync ML training data");
     }

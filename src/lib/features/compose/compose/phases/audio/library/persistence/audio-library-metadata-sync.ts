@@ -17,7 +17,7 @@ import {
   orderBy,
   type FieldValue,
 } from "firebase/firestore";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import type {
   AudioTrack,
   AudioTrackLocal,
@@ -30,7 +30,7 @@ import { listCachedTrackIds } from "./audio-library-persistence";
  * Get reference to user's audio library collection
  */
 async function getUserAudioCollection() {
-  const user = auth.currentUser;
+  const user = getAuthSync().currentUser;
   if (!user) {
     throw new Error("User must be authenticated to access audio library");
   }

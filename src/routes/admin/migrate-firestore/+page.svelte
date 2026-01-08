@@ -6,7 +6,7 @@
    * to normalize start position data.
    */
 
-  import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import { getAuthSync, getFirestoreInstance } from "$lib/shared/auth/firebase";
   import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
   import { onMount } from "svelte";
 
@@ -77,7 +77,7 @@
   }
 
   async function analyzeSequences() {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       errors = ["You must be logged in to run this migration"];
       status = "error";
@@ -130,7 +130,7 @@
   }
 
   async function runMigration() {
-    const user = auth.currentUser;
+    const user = getAuthSync().currentUser;
     if (!user) {
       errors = ["You must be logged in"];
       status = "error";
@@ -191,7 +191,7 @@
 
   onMount(() => {
     // Wait for auth to be ready
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = getAuthSync().onAuthStateChanged((user) => {
       if (user) {
         analyzeSequences();
       } else {

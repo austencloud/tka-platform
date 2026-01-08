@@ -15,7 +15,7 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import { getFirestoreInstance, auth } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import type {
   IAuditLogger,
   AuditLogEntry,
@@ -34,7 +34,8 @@ export class AuditLogger implements IAuditLogger {
     details?: Record<string, unknown>
   ): Promise<void> {
     const firestore = await getFirestoreInstance();
-    if (!firestore || !auth.currentUser) {
+    const currentUser = getAuthSync().currentUser;
+    if (!firestore || !currentUser) {
       return;
     }
 
@@ -43,7 +44,7 @@ export class AuditLogger implements IAuditLogger {
       await addDoc(auditLogsRef, {
         timestamp: Timestamp.now(),
         action,
-        performedBy: auth.currentUser.uid,
+        performedBy: currentUser.uid,
         affectedUserId: affectedUserId ?? null,
         summary,
         details: details ?? null,

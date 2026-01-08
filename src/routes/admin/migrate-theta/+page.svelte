@@ -9,7 +9,7 @@
    * Requires admin privileges.
    */
 
-  import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import { getAuthSync, getFirestoreInstance } from "$lib/shared/auth/firebase";
   import {
     collection,
     getDocs,
@@ -246,7 +246,7 @@
   }
 
   onMount(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = getAuthSync().onAuthStateChanged((user) => {
       if (user && authState.isAdmin) {
         status = "idle";
         analyzeAllUsers();
