@@ -48,7 +48,9 @@ interface VisibilitySettings {
   elementalGlyph: boolean;
   positionsGlyph: boolean;
 
-  // Grid elements
+  // Grid visibility (master toggle)
+  showGrid: boolean; // When false, entire grid is hidden
+  // Grid sub-options (only relevant when showGrid is true)
   nonRadialPoints: boolean;
   handPointVisibility: "all" | "active"; // Show all hand points or only where props are
 }
@@ -87,6 +89,7 @@ export class VisibilityStateManager {
       positionsGlyph: false,
 
       // Grid defaults
+      showGrid: true, // Grid visible by default
       nonRadialPoints: false,
       handPointVisibility: "all", // Default to showing all hand points
 
@@ -154,6 +157,8 @@ export class VisibilityStateManager {
           this.settings.positionsGlyph = v.positionsGlyph;
         if (v.reversalIndicators !== undefined)
           this.settings.reversalIndicators = v.reversalIndicators;
+        if (v.showGrid !== undefined)
+          this.settings.showGrid = v.showGrid;
         if (v.nonRadialPoints !== undefined)
           this.settings.nonRadialPoints = v.nonRadialPoints;
         if (v.handPointVisibility !== undefined)
@@ -197,6 +202,7 @@ export class VisibilityStateManager {
       elementalGlyph: this.settings.elementalGlyph,
       positionsGlyph: this.settings.positionsGlyph,
       reversalIndicators: this.settings.reversalIndicators,
+      showGrid: this.settings.showGrid,
       nonRadialPoints: this.settings.nonRadialPoints,
       handPointVisibility: this.settings.handPointVisibility,
     };
@@ -416,6 +422,28 @@ export class VisibilityStateManager {
    */
   isGlyphDependent(glyphType: string): boolean {
     return this.DEPENDENT_GLYPHS.includes(glyphType);
+  }
+
+  // ============================================================================
+  // GRID VISIBILITY (MASTER TOGGLE)
+  // ============================================================================
+
+  /**
+   * Get grid visibility (master toggle)
+   * When false, entire grid is hidden
+   */
+  getGridVisibility(): boolean {
+    return this.settings.showGrid;
+  }
+
+  /**
+   * Set grid visibility (master toggle)
+   */
+  setGridVisibility(visible: boolean): void {
+    this.settings.showGrid = visible;
+    this.notifyObservers(["all"]);
+    // Persist to storage (async, non-blocking)
+    void this.persistSettings();
   }
 
   // ============================================================================

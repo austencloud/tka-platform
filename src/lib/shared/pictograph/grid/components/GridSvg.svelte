@@ -14,6 +14,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     gridMode = GridMode.DIAMOND,
     showNonRadialPoints = false,
     previewMode = false,
+    visible = true,
     onLoaded,
     onError,
     onToggleNonRadial = undefined,
@@ -29,6 +30,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     showNonRadialPoints?: boolean;
     /** Preview mode: show "off" elements at 40% opacity instead of hidden */
     previewMode?: boolean;
+    /** Visibility control for fade effect */
+    visible?: boolean;
     /** Called when grid is successfully loaded */
     onLoaded?: () => void;
     /** Called when grid loading fails */
@@ -102,20 +105,24 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   // Styled grid content - reactively updates when gridMode or previewMode changes
   // IMPORTANT: Does NOT depend on gridColor - CSS handles color transitions for smooth animation
-  // In preview mode, we DON'T depend on showNonRadialPoints to avoid re-rendering (CSS handles opacity transitions)
+  // In preview mode, we DON'T depend on showNonRadialPoints or handPointVisibility to avoid re-rendering
+  // (CSS handles opacity transitions via container classes)
   // EXCEPTION: When darkMode is explicitly set (for export), inline colors ARE applied
   const styledGridSvg = $derived.by(() => {
     if (!baseGridSvg) return "";
     // In preview mode, always pass false for showNonRadial since CSS classes handle visibility
     // This prevents SVG re-rendering when toggling, allowing CSS transitions to work
     const effectiveShowNonRadial = previewMode ? false : showNonRadialPoints;
+    // In preview mode, always use "active" mode to add classes, but CSS controls actual visibility
+    // This prevents re-rendering when toggling hand points, allowing CSS transitions
+    const effectiveHandPointMode = previewMode ? "active" : handPointVisibility;
     return applyGridModeStyles(
       baseGridSvg,
       gridMode,
       effectiveShowNonRadial,
       previewMode,
       darkMode,
-      handPointVisibility,
+      effectiveHandPointMode,
       activeLocations
     );
   });
@@ -176,7 +183,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
       // Apply hand point filtering for skewed mode
       if (handPointMode === "active" && activeHandLocations && activeHandLocations.length > 0) {
-        modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations);
+        modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations, isPreviewMode);
       }
 
       return modifiedSvg;
@@ -355,8 +362,9 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
     // Hand point visibility filtering
     // When mode is "active" and we have active locations, hide non-active hand points
+    // In preview mode, inactive points show at 40% opacity instead of hidden
     if (handPointMode === "active" && activeHandLocations && activeHandLocations.length > 0) {
-      modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations);
+      modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations, isPreviewMode);
     }
 
     return modifiedSvg;
@@ -364,8 +372,9 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 
   /**
    * Filter hand points to only show those at active locations
+   * In preview mode, uses CSS classes for smooth transitions instead of inline opacity
    */
-  function applyHandPointFiltering(svgContent: string, activeLocations: GridLocation[]): string {
+  function applyHandPointFiltering(svgContent: string, activeLocations: GridLocation[], isPreviewMode: boolean = false): string {
     let modifiedSvg = svgContent;
     const activeSet = new Set(activeLocations);
 
@@ -382,11 +391,29 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       modifiedSvg = modifiedSvg.replace(
         circlePattern,
         (match, opening, closing) => {
-          // Remove any existing opacity
+          // Remove any existing opacity and class modifications
           let cleaned = opening.replace(/\s*opacity="[^"]*"/g, "");
-          // Set opacity based on whether this location is active
-          const opacity = isActive ? "1" : "0";
-          return `${cleaned} opacity="${opacity}"${closing}`;
+
+          if (isPreviewMode) {
+            // In preview mode, add CSS class for smooth transitions
+            // Don't set inline opacity - let CSS handle it
+            const stateClass = isActive ? "hand-point-active" : "hand-point-inactive";
+            // Add class to existing class attribute or create new one
+            if (cleaned.includes('class="')) {
+              cleaned = cleaned.replace(/class="([^"]*)"/, `class="$1 ${stateClass}"`);
+            } else {
+              cleaned = cleaned.replace(/>$/, ` class="${stateClass}">`).replace(/\/>$/, ` class="${stateClass}"/>`);
+              // Handle case where there's no class - add before closing
+              if (!cleaned.includes('class=')) {
+                cleaned = `${cleaned} class="${stateClass}"`;
+              }
+            }
+            return `${cleaned}${closing}`;
+          } else {
+            // Not in preview mode - set inline opacity for exports
+            const opacity = isActive ? "1" : "0";
+            return `${cleaned} opacity="${opacity}"${closing}`;
+          }
         }
       );
     }
@@ -501,9 +528,11 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 <g
   bind:this={gridContainerElement}
   class="grid-container"
+  class:visible
   class:box-mode={gridMode === GridMode.BOX}
   class:skewed-mode={gridMode === GridMode.SKEWED}
   class:show-non-radial={showNonRadialPoints}
+  class:hide-inactive-hand-points={handPointVisibility === "active"}
   class:preview-mode={previewMode}
   class:interactive-non-radial={onToggleNonRadial !== undefined}
   class:dark-mode-override={darkMode === true}
@@ -540,6 +569,18 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 <style>
   .grid-container {
     z-index: 1;
+    /* Beautiful fade in/out effect matching other pictograph elements */
+    opacity: 0;
+    transition: opacity 150ms ease-out;
+  }
+
+  .grid-container.visible {
+    opacity: 1;
+  }
+
+  /* Preview mode: show "off" state at 40% opacity instead of hidden */
+  .grid-container.preview-mode:not(.visible) {
+    opacity: 0.4;
   }
 
   /* Note: CSS transitions don't work with SVG transform attributes.
@@ -660,7 +701,21 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   /* Hand points - use currentColor by default */
   /* Note: strict-hand-point is NOT styled here - it remains fill:none (hidden) as defined in SVG */
   :global(.normal-hand-point) {
-    transition: fill 150ms ease-out;
+    transition:
+      fill 150ms ease-out,
+      opacity 150ms ease-out;
+  }
+
+  /* Hand point visibility states for preview mode (smooth transitions) */
+  /* By default, all hand points are fully visible (even those marked inactive) */
+  :global(.hand-point-active),
+  :global(.hand-point-inactive) {
+    opacity: 1;
+  }
+
+  /* When filtering is active, dim inactive hand points */
+  :global(.grid-container.hide-inactive-hand-points .hand-point-inactive) {
+    opacity: 0.4;
   }
 
   /* Dark mode - normal hand points use light color */

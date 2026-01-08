@@ -151,6 +151,11 @@ with pre-prepared data for better performance.
   });
 
   // Effective visibility values
+  const effectiveShowGrid = $derived.by(() => {
+    visibilityUpdateCount;
+    return visibilityManager.getGridVisibility();
+  });
+
   const effectiveShowTKA = $derived.by(() => {
     visibilityUpdateCount;
     return showTKA !== undefined
@@ -341,6 +346,7 @@ with pre-prepared data for better performance.
         pictograph={preparedData}
         {blueReversal}
         {redReversal}
+        showGrid={effectiveShowGrid}
         showTKA={effectiveShowTKA}
         showReversals={effectiveShowReversals}
         showNonRadialPoints={effectiveShowNonRadialPoints}
@@ -374,6 +380,7 @@ with pre-prepared data for better performance.
             pictograph={preparedData}
             {blueReversal}
             {redReversal}
+            showGrid={effectiveShowGrid}
             showTKA={effectiveShowTKA}
             showReversals={effectiveShowReversals}
             showNonRadialPoints={effectiveShowNonRadialPoints}

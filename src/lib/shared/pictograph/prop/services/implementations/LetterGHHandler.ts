@@ -12,10 +12,12 @@ import {
   VectorDirection,
 } from "../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
-import type { DiamondLoc } from "../../domain/direction/DirectionMaps";
+import type { DiamondLoc, BoxLoc } from "../../domain/direction/DirectionMaps";
 import {
   DIAMOND_NON_RADIAL_MAP,
   DIAMOND_RADIAL_MAP,
+  BOX_NON_RADIAL_MAP,
+  BOX_RADIAL_MAP,
 } from "../../domain/direction/DirectionMaps";
 import type { IDirectionCalculator } from "../contracts/IDirectionCalculator";
 import type { IOrientationChecker } from "../contracts/IOrientationChecker";
@@ -50,13 +52,32 @@ export class LetterGHHandler implements IDirectionCalculator {
     isRadial: boolean,
     endLocation: string
   ): VectorDirection | null {
+    // Guard: empty or invalid location
+    if (!endLocation) {
+      return null;
+    }
+
     // Special case: South location always returns RIGHT
     if (endLocation === "s" || endLocation === GridLocation.SOUTH) {
       return VectorDirection.RIGHT;
     }
 
-    // Use red prop's direction from the map as base
-    const map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
-    return map[endLocation as DiamondLoc][MotionColor.RED] ?? null;
+    // Check if it's a box location (NE/SE/SW/NW)
+    const isBoxLocation = [
+      GridLocation.NORTHEAST,
+      GridLocation.SOUTHEAST,
+      GridLocation.SOUTHWEST,
+      GridLocation.NORTHWEST,
+    ].includes(endLocation as GridLocation);
+
+    if (isBoxLocation) {
+      // Use box maps for box mode pictographs
+      const boxMap = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
+      return boxMap[endLocation as BoxLoc][MotionColor.RED] ?? null;
+    }
+
+    // Use diamond maps for diamond mode pictographs (N/S/E/W)
+    const diamondMap = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
+    return diamondMap[endLocation as DiamondLoc][MotionColor.RED] ?? null;
   }
 }

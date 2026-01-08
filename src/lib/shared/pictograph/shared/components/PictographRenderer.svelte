@@ -47,6 +47,7 @@ Usage:
     blueReversal = false,
     redReversal = false,
     // Core visibility controls
+    showGrid = true,
     showTKA = true,
     showReversals = true,
     showNonRadialPoints = false,
@@ -85,6 +86,8 @@ Usage:
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
+    /** Master toggle for grid visibility */
+    showGrid?: boolean;
     showTKA?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
@@ -240,17 +243,20 @@ Usage:
     <rect width="950" height="950" fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "white" : "var(--dm-pictograph-bg)"} />
 
     <!-- Grid -->
-    <GridSvg
-      {gridMode}
-      {showNonRadialPoints}
-      {handPointVisibility}
-      {activeLocations}
-      {previewMode}
-      {darkMode}
-      onLoaded={() => {}}
-      onError={() => {}}
-      {onToggleNonRadial}
-    />
+    {#if showGrid || previewMode}
+      <GridSvg
+        {gridMode}
+        {showNonRadialPoints}
+        {handPointVisibility}
+        {activeLocations}
+        {previewMode}
+        {darkMode}
+        visible={showGrid}
+        onLoaded={() => {}}
+        onError={() => {}}
+        {onToggleNonRadial}
+      />
+    {/if}
 
     <!-- Props -->
     {#each motions as { color, data } (color)}
