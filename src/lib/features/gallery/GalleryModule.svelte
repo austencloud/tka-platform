@@ -22,12 +22,14 @@
   import type { IGallerySessionManager } from "./multiplayer/services/contracts/IGallerySessionManager";
   import type { IGalleryPositionSyncer } from "./multiplayer/services/contracts/IGalleryPositionSyncer";
   import { createGalleryState } from "./state/gallery-state.svelte";
+  import { createGallerySettings } from "./state/gallery-settings.svelte";
   import { createMultiplayerState, type MultiplayerStateInstance } from "./multiplayer/state/multiplayer-state.svelte";
   import GalleryScene from "./components/GalleryScene.svelte";
   import GalleryHUD from "./components/GalleryHUD.svelte";
 
-  // Create gallery state
+  // Create gallery state and settings
   const galleryState = createGalleryState();
+  const gallerySettings = createGallerySettings();
 
   // Multiplayer state (initialized after services are resolved)
   // NOTE: Do NOT wrap in $state - createMultiplayerState() already returns reactive getters
@@ -244,6 +246,7 @@
 <div class="gallery-module">
   <GalleryScene
     {galleryState}
+    {gallerySettings}
     {avatarServiceDeps}
     {multiplayerState}
     onRotationChange={handleRotationChange}
@@ -252,6 +255,7 @@
   />
   <GalleryHUD
     {galleryState}
+    {gallerySettings}
     {isNavigating}
     {multiplayerState}
     onCreateSession={handleCreateSession}

@@ -35,26 +35,14 @@
   }: Props = $props();
 
   // Load the museum model - useGltf returns an async store
-  console.log("[Museum3D] Component mounted, loading model from:", modelPath);
   const gltf = useGltf(modelPath);
 
   // Track if we've already extracted slots
   let slotsExtracted = $state(false);
 
-  // Debug: Log loading state changes
-  $effect(() => {
-    if ($gltf) {
-      console.log("[Museum3D] Model loaded successfully! Scene:", $gltf.scene);
-      console.log("[Museum3D] Scene children:", $gltf.scene.children.length);
-    } else {
-      console.log("[Museum3D] Waiting for model to load...");
-    }
-  });
-
   // Extract slots when model loads
   $effect(() => {
     if ($gltf && !slotsExtracted) {
-      console.log("[Museum3D] Model loaded successfully!", $gltf);
       // First try explicit Slot_ markers
       let slots = extractExplicitSlots($gltf.scene);
 

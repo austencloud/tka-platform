@@ -7,9 +7,11 @@
    */
 
   import type { GalleryState } from "../state/gallery-state.svelte";
+  import type { GallerySettingsInstance } from "../state/gallery-settings.svelte";
   import type { MultiplayerStateInstance } from "../multiplayer/state/multiplayer-state.svelte";
   import { goto } from "$app/navigation";
   import { getUser } from "$lib/shared/auth/state/authState.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   // Multiplayer components
   import GalleryMinimap from "../multiplayer/components/GalleryMinimap.svelte";
@@ -19,6 +21,8 @@
   interface Props {
     /** Gallery state - named galleryState to avoid Svelte compiler treating 'state' as a store */
     galleryState: GalleryState;
+    /** Gallery settings for physics mode and rendering */
+    gallerySettings: GallerySettingsInstance;
     /** Whether pointer is locked (user is in navigation mode) */
     isNavigating: boolean;
     /** Multiplayer state (optional) */
@@ -35,6 +39,7 @@
 
   let {
     galleryState,
+    gallerySettings,
     isNavigating,
     multiplayerState = null,
     onCreateSession,
@@ -47,6 +52,7 @@
   let showSessionDrawer = $state(false);
   let showChat = $state(false);
   let showMinimap = $state(true);
+  let showSettings = $state(false);
 
   // Access multiplayer properties directly (they're already reactive getters)
   // Using functions to avoid Svelte 5 $derived issues with nullable props
@@ -97,12 +103,12 @@
     <div class="left-controls">
       <button class="exit-button" onclick={handleExit}>
         <i class="fas fa-arrow-left"></i>
-        Exit Gallery
+        {m.gallery_exit()}
       </button>
 
       <button class="lights-toggle" onclick={() => galleryState.toggleLights()}>
         <i class="fas {galleryState.lightsOn ? 'fa-sun' : 'fa-moon'}"></i>
-        {galleryState.lightsOn ? 'Light Mode' : 'Dark Mode'}
+        {galleryState.lightsOn ? m.gallery_light_mode() : m.gallery_dark_mode()}
       </button>
     </div>
 
@@ -113,7 +119,7 @@
         <div class="session-info">
           <i class="fas fa-users" aria-hidden="true"></i>
           <span class="session-name">{session?.meta.name}</span>
-          <span class="player-count">{getPlayerCount()} online</span>
+          <span class="player-count">{m.gallery_online_count({ count: getPlayerCount().toString() })}</span>
         </div>
       {/if}
     </div>
@@ -121,9 +127,19 @@
     <div class="right-controls">
       {#if galleryState.sourceUserId}
         <div class="viewing-info">
-          Viewing gallery
+          {m.gallery_viewing_gallery()}
         </div>
       {/if}
+
+      <!-- Settings button -->
+      <button
+        class="hud-button settings-toggle"
+        class:active={showSettings}
+        onclick={() => showSettings = !showSettings}
+        aria-label="Toggle settings"
+      >
+        <i class="fas fa-cog" aria-hidden="true"></i>
+      </button>
 
       <!-- Multiplayer controls (only show when multiplayerState is available) -->
       {#if multiplayerState}
@@ -151,25 +167,109 @@
 
           <button class="hud-button leave-button" onclick={handleLeaveSession}>
             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-            Leave
+            {m.gallery_leave()}
           </button>
         {:else}
           <button class="hud-button join-button" onclick={() => showSessionDrawer = true}>
             <i class="fas fa-users" aria-hidden="true"></i>
-            Multiplayer
+            {m.gallery_multiplayer()}
           </button>
         {/if}
       {/if}
     </div>
   </div>
 
+  <!-- Settings Panel -->
+  {#if showSettings}
+    <div class="settings-panel">
+      <h3>Gallery Settings</h3>
+
+      <div class="setting-group">
+        <label for="physics-mode">Physics Mode</label>
+        <select
+          id="physics-mode"
+          value={gallerySettings.physicsMode}
+          onchange={(e) => {
+            const target = e.target as HTMLSelectElement;
+            gallerySettings.setPhysicsMode(target.value as "raycasting" | "rapier");
+            window.location.reload(); // Reload to apply physics change
+          }}
+        >
+          <option value="raycasting">Raycasting (Lighter)</option>
+          <option value="rapier">Rapier (Realistic)</option>
+        </select>
+        <p class="setting-hint">
+          Raycasting is lighter and faster. Rapier provides realistic physics with slopes and auto-step.
+        </p>
+      </div>
+
+      <div class="setting-group">
+        <label for="rendering-backend">Rendering Backend</label>
+        <select
+          id="rendering-backend"
+          value={gallerySettings.renderingBackend}
+          onchange={(e) => {
+            const target = e.target as HTMLSelectElement;
+            gallerySettings.setRenderingBackend(target.value as "webgl" | "webgpu-auto");
+            window.location.reload(); // Reload to apply rendering change
+          }}
+        >
+          <option value="webgl">WebGL (Compatible)</option>
+          <option value="webgpu-auto">WebGPU (Auto-fallback)</option>
+        </select>
+        <p class="setting-hint">
+          WebGL works everywhere. WebGPU is faster but automatically falls back to WebGL if unavailable.
+        </p>
+      </div>
+
+      <div class="setting-group">
+        <label for="fov">Field of View: {gallerySettings.fov}°</label>
+        <input
+          id="fov"
+          type="range"
+          min="50"
+          max="120"
+          step="5"
+          value={gallerySettings.fov}
+          oninput={(e) => {
+            const target = e.target as HTMLInputElement;
+            gallerySettings.setFov(parseInt(target.value));
+          }}
+        />
+      </div>
+
+      <div class="setting-group">
+        <label for="mouse-sensitivity">Mouse Sensitivity: {gallerySettings.mouseSensitivity.toFixed(1)}x</label>
+        <input
+          id="mouse-sensitivity"
+          type="range"
+          min="0.1"
+          max="3.0"
+          step="0.1"
+          value={gallerySettings.mouseSensitivity}
+          oninput={(e) => {
+            const target = e.target as HTMLInputElement;
+            gallerySettings.setMouseSensitivity(parseFloat(target.value));
+          }}
+        />
+      </div>
+
+      <button class="reset-button" onclick={() => {
+        gallerySettings.reset();
+        window.location.reload();
+      }}>
+        Reset to Defaults
+      </button>
+    </div>
+  {/if}
+
   <!-- Controls hint (shown when not navigating) -->
   {#if !isNavigating}
     <div class="controls-hint">
-      <p><strong>Click</strong> to look around</p>
-      <p><strong>WASD</strong> to move</p>
-      <p><strong>T</strong> to toggle light/dark mode</p>
-      <p><strong>ESC</strong> to release cursor</p>
+      <p>{@html m.gallery_hint_click().replace('Click', '<strong>Click</strong>')}</p>
+      <p>{@html m.gallery_hint_wasd().replace('WASD', '<strong>WASD</strong>')}</p>
+      <p>{@html m.gallery_hint_toggle().replace('T', '<strong>T</strong>')}</p>
+      <p>{@html m.gallery_hint_escape().replace('ESC', '<strong>ESC</strong>')}</p>
     </div>
   {/if}
 
@@ -181,13 +281,13 @@
         {galleryState.focusedExhibit.sequence.word ||
           galleryState.focusedExhibit.sequence.displayName ||
           galleryState.focusedExhibit.sequence.name ||
-          "Untitled"}
+          m.gallery_untitled()}
       </h3>
       {#if author}
-        <p class="author">by {author}</p>
+        <p class="author">{m.gallery_by_author({ author })}</p>
       {/if}
       {#if galleryState.focusedExhibit.sequence.beats?.length}
-        <p class="beats">{galleryState.focusedExhibit.sequence.beats.length} beats</p>
+        <p class="beats">{m.gallery_beats_count({ count: galleryState.focusedExhibit.sequence.beats.length.toString() })}</p>
       {/if}
     </div>
   {/if}
@@ -196,7 +296,7 @@
   {#if galleryState.isLoading}
     <div class="loading-overlay">
       <div class="loading-spinner"></div>
-      <p>Loading gallery...</p>
+      <p>{m.gallery_loading()}</p>
     </div>
   {/if}
 
@@ -204,7 +304,7 @@
   {#if galleryState.error}
     <div class="error-message">
       <p>{galleryState.error}</p>
-      <button onclick={() => galleryState.setError(null)}>Dismiss</button>
+      <button onclick={() => galleryState.setError(null)}>{m.gallery_dismiss()}</button>
     </div>
   {/if}
 
@@ -523,6 +623,85 @@
     }
   }
 
+  /* Settings Panel */
+  .settings-panel {
+    position: absolute;
+    top: 70px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    min-width: 300px;
+    max-width: 400px;
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .settings-panel h3 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .setting-group {
+    margin-bottom: 20px;
+  }
+
+  .setting-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .setting-group select,
+  .setting-group input[type="range"] {
+    width: 100%;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 14px;
+  }
+
+  .setting-group select {
+    cursor: pointer;
+  }
+
+  .setting-group select:focus {
+    outline: none;
+    border-color: rgba(96, 165, 250, 0.5);
+  }
+
+  .setting-hint {
+    margin: 8px 0 0 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.4;
+  }
+
+  .reset-button {
+    width: 100%;
+    padding: 10px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 6px;
+    color: #ef4444;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .reset-button:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.6);
+  }
+
   /* Mobile adjustments */
   @media (max-width: 768px) {
     .top-bar {
@@ -558,6 +737,13 @@
     .session-info {
       font-size: 12px;
       padding: 6px 12px;
+    }
+
+    .settings-panel {
+      right: 8px;
+      left: 8px;
+      min-width: auto;
+      max-width: none;
     }
   }
 </style>

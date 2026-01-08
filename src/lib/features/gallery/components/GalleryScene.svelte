@@ -9,6 +9,7 @@
 
   import { Canvas, T } from "@threlte/core";
   import type { GalleryState } from "../state/gallery-state.svelte";
+  import type { GallerySettingsInstance } from "../state/gallery-settings.svelte";
   import type { MultiplayerStateInstance } from "../multiplayer/state/multiplayer-state.svelte";
   import type { IPropStateInterpolator } from "$lib/shared/3d-animation/services/contracts/IPropStateInterpolator";
   import type { ISequenceConverter } from "$lib/shared/3d-animation/services/contracts/ISequenceConverter";
@@ -31,6 +32,7 @@
 
   // Navigation
   import FirstPersonController from "./navigation/FirstPersonController.svelte";
+  import RapierFirstPersonController from "./navigation/RapierFirstPersonController.svelte";
   import ModelFirstPerson from "./navigation/ModelFirstPerson.svelte";
 
   // Multiplayer
@@ -45,6 +47,8 @@
   interface Props {
     /** Gallery state - named galleryState to avoid Svelte compiler treating 'state' as a store */
     galleryState: GalleryState;
+    /** Gallery settings for physics mode and rendering */
+    gallerySettings: GallerySettingsInstance;
     /** Service dependencies for avatar exhibits */
     avatarServiceDeps: AvatarServiceDeps | null;
     /** Multiplayer state (optional - when in a session) */
@@ -59,6 +63,7 @@
 
   let {
     galleryState,
+    gallerySettings,
     avatarServiceDeps,
     multiplayerState = null,
     onRotationChange,
@@ -91,7 +96,14 @@
 </script>
 
 <div class="scene-container">
-  <Canvas>
+  <Canvas
+    rendererParameters={{
+      antialias: true,
+      powerPreference: "high-performance",
+      // WebGPU support: Threlte will automatically fall back to WebGL if unavailable
+      forceWebGL: gallerySettings.renderingBackend === "webgl"
+    }}
+  >
     <!-- MODEL-BASED RENDERING: Loads independently of procedural layout -->
     {#if museumModelPath}
       <!-- First-person camera for model-based scene -->
@@ -110,16 +122,29 @@
     {:else if galleryState.layout && galleryState.currentRoomId}
       <!-- PROCEDURAL RENDERING: Requires layout to be generated -->
       <!-- Navigation with wall collision -->
-      <FirstPersonController
-        layout={galleryState.layout}
-        position={galleryState.playerPosition}
-        currentRoomId={galleryState.currentRoomId}
-        onPositionChange={(pos) => galleryState.setPlayerPosition(pos)}
-        onRoomChange={(roomId) => galleryState.setCurrentRoomId(roomId)}
-        {onRotationChange}
-        {onLocomotionChange}
-        enabled={true}
-      />
+      {#if gallerySettings.physicsMode === "rapier"}
+        <RapierFirstPersonController
+          layout={galleryState.layout}
+          position={galleryState.playerPosition}
+          currentRoomId={galleryState.currentRoomId}
+          onPositionChange={(pos) => galleryState.setPlayerPosition(pos)}
+          onRoomChange={(roomId) => galleryState.setCurrentRoomId(roomId)}
+          {onRotationChange}
+          {onLocomotionChange}
+          enabled={true}
+        />
+      {:else}
+        <FirstPersonController
+          layout={galleryState.layout}
+          position={galleryState.playerPosition}
+          currentRoomId={galleryState.currentRoomId}
+          onPositionChange={(pos) => galleryState.setPlayerPosition(pos)}
+          onRoomChange={(roomId) => galleryState.setCurrentRoomId(roomId)}
+          {onRotationChange}
+          {onLocomotionChange}
+          enabled={true}
+        />
+      {/if}
 
       <!-- Procedural rendering: Generated walls, floors, ceilings -->
       <!-- Room-based floors (marble for rotunda, wood for wings) + corridor floors -->
