@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import type { Announcement } from "../../domain/models/announcement-models";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     announcements: Announcement[];
@@ -38,8 +39,8 @@
   {#if announcements.length === 0}
     <div class="empty-state">
       <i class="fas fa-bullhorn" aria-hidden="true"></i>
-      <p>No announcements yet</p>
-      <span>Create your first announcement to get started</span>
+      <p>{m.admin_no_announcements()}</p>
+      <span>{m.admin_create_first()}</span>
     </div>
   {:else}
     <div class="announcements-grid">
@@ -56,7 +57,7 @@
               {#if announcement.showAsModal}
                 <span class="modal-badge">
                   <i class="fas fa-window-restore" aria-hidden="true"></i>
-                  Modal
+                  {m.admin_modal()}
                 </span>
               {/if}
             </div>
@@ -64,14 +65,14 @@
               <button
                 class="action-button edit"
                 onclick={() => onEdit(announcement)}
-                aria-label="Edit announcement"
+                aria-label={m.admin_edit_aria()}
               >
                 <i class="fas fa-edit" aria-hidden="true"></i>
               </button>
               <button
                 class="action-button delete"
                 onclick={() => onDelete(announcement.id)}
-                aria-label="Delete announcement"
+                aria-label={m.admin_delete_aria()}
               >
                 <i class="fas fa-trash" aria-hidden="true"></i>
               </button>
@@ -97,7 +98,7 @@
             {#if announcement.expiresAt}
               <span class="expires-date">
                 <i class="fas fa-clock" aria-hidden="true"></i>
-                Expires {formatDate(announcement.expiresAt)}
+                {m.admin_expires({ date: formatDate(announcement.expiresAt) })}
               </span>
             {/if}
           </div>

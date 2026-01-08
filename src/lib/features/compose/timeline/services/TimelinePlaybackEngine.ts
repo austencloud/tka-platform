@@ -96,7 +96,6 @@ export class TimelinePlaybackEngine {
       this.audioElement.play().catch(console.error);
     }
 
-    console.log("▶️ TimelinePlaybackEngine: Started");
   }
 
   /**
@@ -119,7 +118,6 @@ export class TimelinePlaybackEngine {
       this.audioElement.pause();
     }
 
-    console.log("⏸️ TimelinePlaybackEngine: Stopped");
   }
 
   /**
@@ -164,7 +162,6 @@ export class TimelinePlaybackEngine {
       this.handleAudioTimeUpdate.bind(this)
     );
 
-    console.log("🔊 TimelinePlaybackEngine: Audio connected");
   }
 
   /**

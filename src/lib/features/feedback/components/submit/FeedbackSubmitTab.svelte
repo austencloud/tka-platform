@@ -2,6 +2,7 @@
 <script lang="ts">
   import FeedbackForm from "./FeedbackForm.svelte";
   import { getSharedFeedbackSubmitState } from "../../state/feedback-submit-state.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   // Use shared state so drafts persist between tab and quick panel
   const submitState = getSharedFeedbackSubmitState();
@@ -14,8 +15,8 @@
       <div class="header-icon">
         <i class="fas fa-paper-plane" aria-hidden="true"></i>
       </div>
-      <h1 class="header-title">Submit Feedback</h1>
-      <p class="header-subtitle">Help improve TKA Scribe with your input</p>
+      <h1 class="header-title">{m.feedback_submit_title()}</h1>
+      <p class="header-subtitle">{m.feedback_submit_subtitle()}</p>
     </header>
 
     <!-- Form Content -->

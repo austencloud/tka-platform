@@ -11,6 +11,7 @@
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import type { Composition } from "$lib/features/compose/compose/domain/types";
+  import * as m from "$lib/paraglide/messages.js";
 
   // TODO: Replace with actual composition storage service
   let compositions = $state<Composition[]>([]);
@@ -69,34 +70,33 @@
   {#if !isAuthenticated}
     <PanelState
       type="info"
-      title="Sign In Required"
-      message="Sign in to view and create compositions"
+      title={m.library_sign_in_required()}
+      message={m.library_sign_in_compositions()}
     />
   {:else if isLoading}
-    <PanelState type="loading" message="Loading compositions..." />
+    <PanelState type="loading" message={m.library_loading_compositions()} />
   {:else if error}
-    <PanelState type="error" title="Error" message={error} />
+    <PanelState type="error" title={m.common_error()} message={error} />
   {:else}
     <!-- Header with create button -->
     <div class="header">
-      <h2>My Compositions</h2>
+      <h2>{m.library_my_compositions()}</h2>
       <PanelButton variant="primary" onclick={handleCreateComposition}>
         <i class="fas fa-plus" aria-hidden="true"></i>
-        New Composition
+        {m.library_new_composition()}
       </PanelButton>
     </div>
 
     {#if compositions.length === 0}
       <div class="empty-state">
         <i class="fas fa-layer-group" aria-hidden="true"></i>
-        <h3>No Compositions Yet</h3>
+        <h3>{m.library_no_compositions()}</h3>
         <p>
-          Create compositions in the Compose module to arrange sequences into
-          multi-cell layouts for performances.
+          {m.library_create_compositions_desc()}
         </p>
         <PanelButton variant="primary" onclick={handleCreateComposition}>
           <i class="fas fa-plus" aria-hidden="true"></i>
-          Create Your First Composition
+          {m.library_create_first_composition()}
         </PanelButton>
       </div>
     {:else}

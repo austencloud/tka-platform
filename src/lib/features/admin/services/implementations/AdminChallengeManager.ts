@@ -137,8 +137,6 @@ export class AdminChallengeManager implements IAdminChallengeManager {
         { challengeId, date: formData.date, difficulty: formData.difficulty }
       );
 
-      console.log(`✅ [Admin] Created daily challenge: ${challenge.title}`);
-
       return challenge;
     } catch (error) {
       console.error(
@@ -187,8 +185,6 @@ export class AdminChallengeManager implements IAdminChallengeManager {
 
       await updateDoc(challengeDocRef, updates);
 
-      console.log(`✅ [Admin] Updated daily challenge: ${challengeId}`);
-
       // Fetch and return updated challenge
       const updatedDoc = await getDoc(challengeDocRef);
       return updatedDoc.data() as DailyChallenge;
@@ -210,8 +206,6 @@ export class AdminChallengeManager implements IAdminChallengeManager {
       const firestore = await getFirestoreInstance();
       const challengeDocRef = doc(firestore, `dailyChallenges/${challengeId}`);
       await deleteDoc(challengeDocRef);
-
-      console.log(`✅ [Admin] Deleted daily challenge: ${challengeId}`);
     } catch (error) {
       console.error(
         "[AdminChallengeManager] Failed to delete challenge:",

@@ -96,7 +96,6 @@
         createdAt: serverTimestamp(),
       });
 
-      console.log("✅ Challenge created successfully");
       resetForm();
       showCreateForm = false;
       await loadChallenges();
@@ -156,7 +155,6 @@
         count++;
       }
 
-      console.log(`✅ Successfully seeded ${count} challenges`);
       alert(`Successfully added ${count} training challenges!`);
       await loadChallenges();
     } catch (error) {

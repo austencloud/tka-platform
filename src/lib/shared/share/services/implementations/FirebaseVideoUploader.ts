@@ -46,8 +46,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
         : "mp4";
     const storagePath = `users/${userId}/recordings/${sequenceId}/${timestamp}.${extension}`;
 
-    console.log(`📤 Uploading video to: ${storagePath}`);
-
     // Create storage reference
     const storageRef = ref(storage, storagePath);
 
@@ -70,7 +68,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
           const progress =
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           onProgress?.(Math.round(progress));
-          console.log(`📤 Upload progress: ${progress.toFixed(1)}%`);
         },
         (error) => {
           console.error("❌ Upload failed:", error);
@@ -80,7 +77,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
           // Upload completed successfully
           try {
             const url = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log("✅ Upload complete:", url);
             resolve({ url, storagePath });
           } catch (error) {
             reject(error);
@@ -106,8 +102,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     // Storage path: users/{userId}/animations/{sequenceId}/sequence.{format}
     const storagePath = `users/${userId}/animations/${sequenceId}/sequence.${format}`;
 
-    console.log(`📤 Uploading animation to: ${storagePath}`);
-
     const storageRef = ref(storage, storagePath);
     await uploadBytes(storageRef, animationBlob, {
       contentType: format === "webp" ? "image/webp" : "image/gif",
@@ -119,7 +113,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     });
 
     const url = await getDownloadURL(storageRef);
-    console.log("✅ Animation upload complete:", url);
     return { url, storagePath };
   }
 
@@ -138,9 +131,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     try {
       const recordingsList = await listAll(recordingsRef);
       await Promise.all(recordingsList.items.map((item) => deleteObject(item)));
-      console.log(
-        `🗑️ Deleted ${recordingsList.items.length} recordings for sequence ${sequenceId}`
-      );
     } catch (error) {
       console.warn("Failed to delete recordings:", error);
     }
@@ -152,9 +142,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     try {
       const animationsList = await listAll(animationsRef);
       await Promise.all(animationsList.items.map((item) => deleteObject(item)));
-      console.log(
-        `🗑️ Deleted ${animationsList.items.length} animations for sequence ${sequenceId}`
-      );
     } catch (error) {
       console.warn("Failed to delete animations:", error);
     }
@@ -186,8 +173,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     // Storage path matches video path with _thumb suffix
     const storagePath = `users/${userId}/recordings/${sequenceId}/${videoTimestamp}_thumb.jpg`;
 
-    console.log(`📤 Uploading thumbnail to: ${storagePath}`);
-
     const storageRef = ref(storage, storagePath);
     await uploadBytes(storageRef, thumbnailBlob, {
       contentType: "image/jpeg",
@@ -200,7 +185,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     });
 
     const url = await getDownloadURL(storageRef);
-    console.log("✅ Thumbnail upload complete:", url);
     return { url, storagePath };
   }
 
@@ -226,8 +210,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
       webp: "image/webp",
     };
 
-    console.log(`📤 Uploading sequence thumbnail to: ${storagePath}`);
-
     const storageRef = ref(storage, storagePath);
     await uploadBytes(storageRef, thumbnailBlob, {
       contentType: contentTypeMap[format],
@@ -239,7 +221,6 @@ export class FirebaseVideoUploader implements IFirebaseVideoUploader {
     });
 
     const url = await getDownloadURL(storageRef);
-    console.log("✅ Sequence thumbnail upload complete:", url);
     return { url, storagePath };
   }
 }

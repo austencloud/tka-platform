@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { PlaybackMode } from "../../state/animation-panel-state.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let {
     playbackMode = "continuous",
@@ -42,7 +43,7 @@
     aria-pressed={playbackMode === "continuous"}
   >
     <i class="fas fa-play" aria-hidden="true"></i>
-    <span>Continuous</span>
+    <span>{m.compose_continuous()}</span>
   </button>
   <button
     class="mode-btn"
@@ -52,7 +53,7 @@
     aria-pressed={playbackMode === "step"}
   >
     <i class="fas fa-shoe-prints" aria-hidden="true"></i>
-    <span>Step-by-Step</span>
+    <span>{m.compose_step_by_step()}</span>
   </button>
 </div>
 

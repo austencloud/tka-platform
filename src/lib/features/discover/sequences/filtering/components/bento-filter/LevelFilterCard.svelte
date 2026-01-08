@@ -7,6 +7,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
   import { tryResolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let {
     currentLevel = null,
@@ -27,12 +28,9 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
   });
 
   // TKA Level colors matching the existing pattern
-  const levelConfig: Record<
-    number,
-    { name: string; gradient: string; shadowColor: string }
-  > = {
+  const getLevelConfig = () => ({
     1: {
-      name: "No Turns",
+      name: m.level_no_turns(),
       gradient: `radial-gradient(ellipse at top left,
         rgb(186, 230, 253) 0%,
         rgb(125, 211, 252) 30%,
@@ -41,7 +39,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       shadowColor: "199deg 89% 48%",
     },
     2: {
-      name: "Whole Turns",
+      name: m.level_whole_turns(),
       gradient: `radial-gradient(ellipse at top left,
         rgb(226, 232, 240) 0%,
         rgb(148, 163, 184) 30%,
@@ -50,7 +48,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       shadowColor: "215deg 16% 35%",
     },
     3: {
-      name: "Half Turns",
+      name: m.level_half_turns(),
       gradient: `radial-gradient(ellipse at top left,
         rgb(254, 240, 138) 0%,
         rgb(253, 224, 71) 20%,
@@ -60,24 +58,25 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
         rgb(161, 98, 7) 100%)`,
       shadowColor: "45deg 93% 47%",
     },
-  };
+  });
 
   // Default styling when no level selected
   const defaultGradient =
     "linear-gradient(135deg, var(--semantic-info), #1d4ed8)";
   const defaultShadowColor = "217deg 91% 60%";
 
-  const currentConfig = $derived(
-    currentLevel ? levelConfig[currentLevel] : null
-  );
+  const currentConfig = $derived.by(() => {
+    const config = getLevelConfig();
+    return currentLevel ? config[currentLevel as keyof typeof config] : null;
+  });
   const gradient = $derived(currentConfig?.gradient ?? defaultGradient);
   const shadowColor = $derived(
     currentConfig?.shadowColor ?? defaultShadowColor
   );
   const displayValue = $derived(
-    currentLevel ? `Level ${currentLevel}` : "All Levels"
+    currentLevel ? m.filter_level_number({ level: currentLevel.toString() }) : m.filter_all_levels()
   );
-  const description = $derived(currentConfig?.name ?? "Any difficulty");
+  const description = $derived(currentConfig?.name ?? m.filter_any_difficulty());
   const textColor = $derived(
     currentLevel === 1 || currentLevel === 3 ? "black" : "white"
   );
@@ -115,7 +114,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
   aria-label="Filter by difficulty level"
 >
   <div class="card-header">
-    <span class="card-title">Level</span>
+    <span class="card-title">{m.filter_level()}</span>
   </div>
 
   <div class="stepper-controls">
@@ -123,7 +122,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       class="stepper-zone decrement"
       class:disabled={!canDecrement}
       onclick={handleDecrement}
-      aria-label="Previous level"
+      aria-label={m.filter_previous_level()}
       disabled={!canDecrement}
     >
       <svg
@@ -145,7 +144,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
       class="stepper-zone increment"
       class:disabled={!canIncrement}
       onclick={handleIncrement}
-      aria-label="Next level"
+      aria-label={m.filter_next_level()}
       disabled={!canIncrement}
     >
       <svg

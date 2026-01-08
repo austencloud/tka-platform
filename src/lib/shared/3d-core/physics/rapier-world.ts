@@ -56,7 +56,6 @@ export async function initPhysicsWorld(
 	);
 	state.isInitialized = true;
 
-	console.log("[Physics] Rapier initialized with gravity", gravity);
 }
 
 // ============================================================================

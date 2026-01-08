@@ -12,6 +12,7 @@
     PlaybackMode,
     StepPlaybackStepSize,
   } from "../../state/animation-panel-state.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let {
     isOpen = $bindable(false),
@@ -56,7 +57,7 @@
   respectLayoutMode={true}
   closeOnBackdrop={true}
   closeOnEscape={true}
-  ariaLabel="Animation Settings"
+  ariaLabel={m.compose_animation_settings()}
   showHandle={true}
   class="settings-sheet-bottom"
 >

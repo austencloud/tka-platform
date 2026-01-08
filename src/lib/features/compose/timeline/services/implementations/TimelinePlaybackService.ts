@@ -231,7 +231,6 @@ export class TimelinePlayer implements ITimelinePlayer {
     // Listen for audio time updates as fallback sync
     audioElement.addEventListener("timeupdate", this.handleAudioTimeUpdate);
 
-    console.log("🔊 TimelinePlaybackService: Audio connected");
   }
 
   disconnectAudio(): void {
@@ -250,13 +249,11 @@ export class TimelinePlayer implements ITimelinePlayer {
   // =========================================================================
 
   initialize(): void {
-    console.log("🎬 TimelinePlaybackService: Initialized");
   }
 
   destroy(): void {
     this.stopEngine();
     this.disconnectAudio();
-    console.log("🎬 TimelinePlaybackService: Destroyed");
   }
 
   // =========================================================================
@@ -279,7 +276,6 @@ export class TimelinePlayer implements ITimelinePlayer {
       this.audioElement.play().catch(console.error);
     }
 
-    console.log("▶️ TimelinePlaybackService: Engine started");
   }
 
   private stopEngine(): void {
@@ -297,7 +293,6 @@ export class TimelinePlayer implements ITimelinePlayer {
       this.audioElement.pause();
     }
 
-    console.log("⏸️ TimelinePlaybackService: Engine stopped");
   }
 
   private tick = (currentTime: number): void => {

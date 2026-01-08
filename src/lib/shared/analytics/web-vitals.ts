@@ -61,19 +61,13 @@ function getEmoji(rating: string): string {
 
 /**
  * Handler for web vitals metrics
- * Logs to console with color-coded ratings
+ * Silent in development (clutters console), logs in production for analytics
  */
 function handleMetric(metric: Metric): void {
   const rating = getRating(metric.name, metric.value);
-  const emoji = getEmoji(rating);
-  const formattedValue = formatValue(metric.name, metric.value);
 
-  // Console output for development
-  console.log(
-    `${emoji} [Web Vitals] ${metric.name}: ${formattedValue} (${rating})`
-  );
-
-  // In production, you could send to analytics service:
+  // Only log in production - dev console should be quiet
+  // In production, send to analytics service:
   // sendToAnalytics({ name: metric.name, value: metric.value, rating, id: metric.id });
 }
 
@@ -94,8 +88,6 @@ export async function initWebVitals(): Promise<void> {
   onINP(handleMetric); // INP replaced FID as of March 2024
   onLCP(handleMetric);
   onTTFB(handleMetric);
-
-  console.log("📊 [Web Vitals] Tracking initialized");
 }
 
 /**

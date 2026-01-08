@@ -140,12 +140,6 @@
     try {
       const propType = settingsService.currentSettings.propType || "staff";
 
-      console.log("🎨 Loading secondary prop textures for tunnel mode:", {
-        propType,
-        blueColor: tunnelColors.secondary.blue,
-        redColor: tunnelColors.secondary.red,
-      });
-
       await animationRenderer.loadSecondaryPropTextures(
         propType,
         tunnelColors.secondary.blue,
@@ -153,7 +147,6 @@
       );
 
       secondaryTexturesLoaded = true;
-      console.log("✅ Secondary prop textures loaded successfully");
     } catch (err) {
       console.error("❌ Failed to load secondary prop textures:", err);
     }
@@ -197,9 +190,6 @@
     if (isSameSequences) {
       // Same sequences, just prop type or other metadata change
       // Don't trigger loading state - AnimationEngine hot-swap handles prop changes
-      console.log(
-        "🔄 TunnelRenderer: Same sequences, skipping reload (prop type change handled by hot-swap)"
-      );
       return;
     }
 
@@ -227,11 +217,6 @@
         setTimeout(resolve, ANIMATION_LOAD_DELAY_MS)
       );
 
-      console.log("🎬 Initializing tunnel animations:", {
-        primary: primarySequence.id,
-        secondary: secondarySequence.id,
-      });
-
       // Initialize both playback controllers
       const primarySuccess = primaryPlaybackController.initialize(
         primarySequence,
@@ -250,7 +235,6 @@
       lastLoadedPrimarySequenceId = primaryId;
       lastLoadedSecondarySequenceId = secondaryId;
 
-      console.log("✅ Tunnel animations initialized successfully");
       loading = false;
 
       // Auto-start animations if playing
@@ -297,7 +281,6 @@
       primaryAnimationState.sequenceData &&
       secondaryAnimationState.sequenceData
     ) {
-      console.log(`🎬 Syncing speed to tunnel renderers: ${speed}x`);
       primaryPlaybackController.setSpeed(speed);
       secondaryPlaybackController.setSpeed(speed);
     }

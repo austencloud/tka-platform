@@ -69,9 +69,6 @@ export function createSequenceTransformOperations(
           );
           coreState.setCurrentSequence(updatedSequence);
           selectionState.setStartPosition(null);
-          console.log(
-            "✅ Transform: Cleared start position (setStartPosition called with null)"
-          );
         } else {
           // Update sequence with start position - set both fields for compatibility
           const updatedSequence = updateSequenceData(
@@ -83,9 +80,6 @@ export function createSequenceTransformOperations(
           );
           coreState.setCurrentSequence(updatedSequence);
           selectionState.setStartPosition(startPosition);
-          console.log(
-            "✅ Transform: Updated hasStartPosition to true (setStartPosition called)"
-          );
         }
         coreState.clearError();
       } catch (error) {
@@ -99,8 +93,6 @@ export function createSequenceTransformOperations(
       }
 
       try {
-        console.log(`🔄 Mirroring sequence (target: ${targetHand})...`);
-
         // Phase 1: Transform motions (synchronous for single-hand, keeps existing letters)
         const transformedSequence = await SequenceTransformer.mirrorSequence(
           coreState.currentSequence,
@@ -122,7 +114,6 @@ export function createSequenceTransformOperations(
               const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
-              console.log("✅ Mirror complete (two-phase) and saved");
             } catch (letterError) {
               console.warn("Failed to derive letters after mirror:", letterError);
               // Still save the transformed sequence even if letter derivation fails
@@ -132,7 +123,6 @@ export function createSequenceTransformOperations(
         } else {
           // For "both" mode, letters are already correct - just save
           await onSave?.();
-          console.log("✅ Mirror complete and saved");
         }
       } catch (error) {
         console.error("❌ Mirror error:", error);
@@ -170,7 +160,6 @@ export function createSequenceTransformOperations(
       if (!coreState.currentSequence || !SequenceTransformer) return;
 
       try {
-        console.log(`🔄 Rotating sequence ${direction} (target: ${targetHand})...`);
         const rotationAmount = direction === "clockwise" ? 1 : -1;
 
         // Phase 1: Transform motions (synchronous for single-hand, keeps existing letters)
@@ -194,7 +183,6 @@ export function createSequenceTransformOperations(
               const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
-              console.log("✅ Rotate complete (two-phase) and saved");
             } catch (letterError) {
               console.warn("Failed to derive letters after rotate:", letterError);
               await onSave?.();
@@ -202,7 +190,6 @@ export function createSequenceTransformOperations(
           });
         } else {
           await onSave?.();
-          console.log("✅ Rotate complete and saved");
         }
       } catch (error) {
         handleError("Failed to rotate sequence", error);
@@ -229,8 +216,6 @@ export function createSequenceTransformOperations(
       if (!coreState.currentSequence || !SequenceTransformer) return;
 
       try {
-        console.log(`🔄 Rewinding sequence (target: ${targetHand})...`);
-
         // Phase 1: Transform motions (synchronous for single-hand, keeps existing letters)
         const transformedSequence = await SequenceTransformer.rewindSequence(
           coreState.currentSequence,
@@ -251,7 +236,6 @@ export function createSequenceTransformOperations(
               const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
-              console.log("✅ Rewind complete (two-phase) and saved");
             } catch (letterError) {
               console.warn("Failed to derive letters after rewind:", letterError);
               await onSave?.();
@@ -259,7 +243,6 @@ export function createSequenceTransformOperations(
           });
         } else {
           await onSave?.();
-          console.log("✅ Rewind complete and saved");
         }
       } catch (error) {
         handleError("Failed to rewind sequence", error);
@@ -294,8 +277,6 @@ export function createSequenceTransformOperations(
       if (!coreState.currentSequence || !SequenceTransformer) return;
 
       try {
-        console.log(`🔄 Flipping sequence (target: ${targetHand})...`);
-
         // Phase 1: Transform motions (synchronous for single-hand, keeps existing letters)
         const transformedSequence = await SequenceTransformer.flipSequence(
           coreState.currentSequence,
@@ -316,7 +297,6 @@ export function createSequenceTransformOperations(
               const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
-              console.log("✅ Flip complete (two-phase) and saved");
             } catch (letterError) {
               console.warn("Failed to derive letters after flip:", letterError);
               await onSave?.();
@@ -324,7 +304,6 @@ export function createSequenceTransformOperations(
           });
         } else {
           await onSave?.();
-          console.log("✅ Flip complete and saved");
         }
       } catch (error) {
         console.error("❌ Flip error:", error);
@@ -336,8 +315,6 @@ export function createSequenceTransformOperations(
       if (!coreState.currentSequence || !SequenceTransformer) return;
 
       try {
-        console.log(`🔄 Inverting sequence rotation directions (target: ${targetHand})...`);
-
         // Phase 1: Transform motions (synchronous for single-hand, keeps existing letters)
         const transformedSequence = await SequenceTransformer.invertSequence(
           coreState.currentSequence,
@@ -358,7 +335,6 @@ export function createSequenceTransformOperations(
               const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
               coreState.setCurrentSequence(withLetters);
               await onSave?.();
-              console.log("✅ Invert complete (two-phase) and saved");
             } catch (letterError) {
               console.warn("Failed to derive letters after invert:", letterError);
               await onSave?.();
@@ -366,7 +342,6 @@ export function createSequenceTransformOperations(
           });
         } else {
           await onSave?.();
-          console.log("✅ Invert complete and saved");
         }
       } catch (error) {
         console.error("❌ Invert error:", error);

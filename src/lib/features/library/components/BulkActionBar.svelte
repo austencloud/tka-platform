@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     selectedCount: number;
@@ -36,15 +37,15 @@
     <div class="selection-info">
       <div class="count-badge">
         <span class="count">{selectedCount}</span>
-        <span class="label">selected</span>
+        <span class="label">{m.library_selected()}</span>
       </div>
       <div class="selection-controls">
         <button class="link-btn" onclick={onSelectAll}>
-          Select All
+          {m.library_select_all()}
         </button>
         <span class="divider">·</span>
         <button class="link-btn" onclick={onClearSelection}>
-          Clear
+          {m.library_clear()}
         </button>
       </div>
     </div>
@@ -55,17 +56,17 @@
         class="action-btn delete"
         onclick={onDelete}
         disabled={!hasSelection}
-        title="Delete selected sequences"
+        title={m.library_delete_selected()}
       >
         <i class="fas fa-trash" aria-hidden="true"></i>
-        <span class="btn-label">Delete</span>
+        <span class="btn-label">{m.common_delete()}</span>
       </button>
     </div>
 
     <!-- Right: Done button -->
     <button class="done-btn" onclick={onExit}>
       <i class="fas fa-check" aria-hidden="true"></i>
-      <span>Done</span>
+      <span>{m.library_done()}</span>
     </button>
   </div>
 </div>

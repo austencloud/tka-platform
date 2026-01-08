@@ -200,7 +200,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       const docRef = doc(firestore, VIDEOS_COLLECTION, video.id);
       await setDoc(docRef, this.videoToDoc(video));
 
-      console.log(`✅ Saved collaborative video: ${video.id}`);
     } catch (error) {
       console.error(
         "❌ [CollaborativeVideoManager] Failed to save video:",
@@ -248,7 +247,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
       const docRef = doc(firestore, VIDEOS_COLLECTION, videoId);
       await deleteDoc(docRef);
 
-      console.log(`🗑️ Deleted collaborative video: ${videoId}`);
     } catch (error) {
       console.error(
         "❌ [CollaborativeVideoManager] Failed to delete video:",
@@ -283,7 +281,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         updatedAt: serverTimestamp(),
       });
 
-      console.log(`📝 Updated collaborative video: ${videoId}`);
     } catch (error) {
       console.error(
         "❌ [CollaborativeVideoManager] Failed to update video:",
@@ -356,7 +353,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         updatedAt: serverTimestamp(),
       });
 
-      console.log(`📨 Invited ${userId} to collaborate on video ${videoId}`);
     } catch (error) {
       console.error(
         "❌ [CollaborativeVideoManager] Failed to invite collaborator:",
@@ -425,9 +421,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         updatedAt: serverTimestamp(),
       });
 
-      console.log(
-        `✅ ${userInfo.uid} accepted collaboration on video ${videoId}`
-      );
     } catch (error) {
       console.error(
         "❌ [CollaborativeVideoManager] Failed to accept invite:",
@@ -477,7 +470,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         updatedAt: serverTimestamp(),
       });
 
-      console.log(`❌ ${userId} declined collaboration on video ${videoId}`);
     } catch (error) {
       console.error(
         "❌ [CollaborativeVideoManager] Failed to decline invite:",
@@ -530,7 +522,6 @@ export class CollaborativeVideoManager implements ICollaborativeVideoManager {
         updatedAt: serverTimestamp(),
       });
 
-      console.log(`🚪 Removed ${userId} from video ${videoId}`);
     } catch (error) {
       console.error(
         "❌ [CollaborativeVideoManager] Failed to remove collaborator:",

@@ -108,9 +108,6 @@
     if (isSameSequence) {
       // Same sequence, just prop type or other metadata change
       // Don't trigger loading state - AnimationEngine hot-swap handles prop changes
-      console.log(
-        "🔄 SingleRenderer: Same sequence, skipping reload (prop type change handled by hot-swap)"
-      );
       return;
     }
 
@@ -130,11 +127,6 @@
         setTimeout(resolve, ANIMATION_LOAD_DELAY_MS)
       );
 
-      console.log("🎬 Initializing single animation:", {
-        id: sequence.id,
-        beats: sequence.beats.length,
-      });
-
       // Initialize playback controller
       const success = playbackController.initialize(sequence, animationState);
 
@@ -145,7 +137,6 @@
       // Track the loaded sequence ID
       lastLoadedSequenceId = sequenceId;
 
-      console.log("✅ Single animation initialized successfully");
       loading = false;
 
       // Auto-start animation if playing
@@ -174,7 +165,6 @@
   // Sync speed
   $effect(() => {
     if (playbackController && animationState.sequenceData) {
-      console.log(`🎬 Syncing speed to single renderer: ${speed}x`);
       playbackController.setSpeed(speed);
     }
   });

@@ -2,6 +2,7 @@
   /**
    * ClipActionsSection - Lock, mute, duplicate, and delete actions
    */
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     locked: boolean;
@@ -25,7 +26,7 @@
 <section class="section">
   <div class="section-header">
     <i class="fa-solid fa-bolt" aria-hidden="true"></i>
-    <span>Actions</span>
+    <span>{m.clip_actions()}</span>
   </div>
 
   <div class="action-buttons">
@@ -34,7 +35,7 @@
         class="fa-solid {locked ? 'fa-lock' : 'fa-lock-open'}"
         aria-hidden="true"
       ></i>
-      {locked ? "Unlock" : "Lock"}
+      {locked ? m.clip_unlock() : m.clip_lock()}
     </button>
 
     <button class="action-btn" class:active={muted} onclick={onToggleMute}>
@@ -42,19 +43,19 @@
         class="fa-solid {muted ? 'fa-volume-xmark' : 'fa-volume-high'}"
         aria-hidden="true"
       ></i>
-      {muted ? "Unmute" : "Mute"}
+      {muted ? m.clip_unmute() : m.clip_mute()}
     </button>
   </div>
 
   <div class="action-buttons">
     <button class="action-btn" onclick={onDuplicate}>
       <i class="fa-solid fa-copy" aria-hidden="true"></i>
-      Duplicate
+      {m.clip_duplicate()}
     </button>
 
     <button class="action-btn danger" onclick={onDelete}>
       <i class="fa-solid fa-trash" aria-hidden="true"></i>
-      Delete
+      {m.clip_delete()}
     </button>
   </div>
 </section>

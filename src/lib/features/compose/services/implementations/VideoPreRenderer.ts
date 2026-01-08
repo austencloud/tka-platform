@@ -121,7 +121,6 @@ export class VideoPreRenderer implements IVideoPreRenderer {
     // Check for cached video first
     const cached = await this.getCachedVideo(sequenceId);
     if (cached?.success) {
-      console.log(`📼 Using cached video for ${sequenceId}`);
       return cached;
     }
 
@@ -145,11 +144,6 @@ export class VideoPreRenderer implements IVideoPreRenderer {
         sequenceId,
       };
     }
-
-    console.log(
-      `🎬 Starting video generation for ${sequenceId} (${totalBeats} beats @ ${fps}fps)`
-    );
-    console.log(`📐 Using REAL PixiJS renderer with actual SVG assets`);
 
     // Create offscreen container for PixiJS
     // IMPORTANT: Use opacity: 0 instead of visibility: hidden
@@ -181,11 +175,9 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       });
 
       // Initialize Canvas2D with offscreen container
-      console.log("🔧 Initializing offscreen Canvas2D renderer...");
       await canvasRenderer.initialize(offscreenContainer, width, 1);
 
       // Load REAL grid and prop images (the actual SVGs!)
-      console.log("📦 Loading real SVG images...");
       await Promise.all([
         canvasRenderer.loadGridTexture("diamond"),
         canvasRenderer.loadPropTextures("staff"),
@@ -238,8 +230,6 @@ export class VideoPreRenderer implements IVideoPreRenderer {
           ? "video/webm"
           : "video/mp4";
 
-      console.log(`📹 MediaRecorder using: ${mimeType}`);
-
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
         videoBitsPerSecond: quality * 8_000_000,
@@ -260,10 +250,6 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       const totalFrames = Math.ceil(totalBeats * videoFps);
       const frameDuration = 1000 / videoFps; // ~33.3ms per frame
       const startTime = performance.now();
-
-      console.log(
-        `🎥 Rendering ${totalFrames} frames at ${videoFps}fps (${totalBeats} beats)`
-      );
 
       // Trail settings for rendering
       const trailSettings: TrailSettings = {
@@ -399,13 +385,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
 
       const videoBlob = await new Promise<Blob>((resolve) => {
         mediaRecorder.onstop = () => {
-          console.log(
-            `📦 MediaRecorder stopped with ${recordedChunks.length} chunks`
-          );
           const blob = new Blob(recordedChunks, { type: mimeType });
-          console.log(
-            `📦 Created video blob: ${(blob.size / 1024).toFixed(1)}KB, type: ${blob.type}`
-          );
           resolve(blob);
         };
       });
@@ -429,10 +409,6 @@ export class VideoPreRenderer implements IVideoPreRenderer {
         estimatedTimeRemaining: 0,
         phase: "complete",
       });
-
-      console.log(
-        `✅ Video generated with REAL PixiJS: ${sequenceId} (${duration.toFixed(1)}s, ${(videoBlob.size / 1024).toFixed(0)}KB)`
-      );
 
       this.isCurrentlyRendering = false;
 

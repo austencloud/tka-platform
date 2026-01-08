@@ -6,6 +6,8 @@
   Repetitions control (for circular sequences) is inline, not in a sheet.
 -->
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages.js";
+
   let {
     onExportVideo = () => {},
     onCancelExport = () => {},
@@ -39,26 +41,26 @@
 
   // Derive display text based on export state
   const buttonText = $derived(() => {
-    if (!isExporting) return "Share";
-    if (!exportProgress) return "Starting...";
+    if (!isExporting) return m.export_share();
+    if (!exportProgress) return m.export_starting();
 
     const { stage, progress } = exportProgress;
     if (stage === "capturing") {
-      return `Capturing ${Math.round(progress * 100)}%`;
+      return m.export_capturing({ progress: Math.round(progress * 100).toString() });
     } else if (stage === "encoding") {
-      return "Encoding...";
+      return m.export_encoding();
     } else if (stage === "complete") {
-      return "Complete!";
+      return m.export_complete();
     }
-    return "Exporting...";
+    return m.export_exporting();
   });
 
   const buttonHint = $derived(() => {
     if (!isExporting) {
-      return "MP4 Video";
+      return m.export_mp4_video();
     }
-    if (exportProgress?.stage === "complete") return "Ready to share";
-    return "Please wait...";
+    if (exportProgress?.stage === "complete") return m.export_ready_to_share();
+    return m.export_please_wait();
   });
 
   const repetitionPresets = [1, 2, 4, 8];
@@ -73,11 +75,11 @@
         class="save-btn cancelling"
         onclick={handleCancelClick}
         type="button"
-        aria-label="Cancel export"
+        aria-label={m.export_cancel_export()}
       >
         <i class="fas main-icon fa-times" aria-hidden="true"></i>
-        <span class="btn-label">Cancel</span>
-        <span class="btn-hint">Tap to stop export</span>
+        <span class="btn-label">{m.common_cancel()}</span>
+        <span class="btn-hint">{m.export_tap_to_stop()}</span>
 
         {#if exportProgress?.stage === "capturing"}
           <div class="progress-bar">
@@ -95,7 +97,7 @@
         class:complete={exportProgress?.stage === "complete"}
         onclick={handleSaveClick}
         type="button"
-        aria-label="Share as MP4 video"
+        aria-label={m.export_share_mp4()}
       >
         <i
           class="fas main-icon"
@@ -114,8 +116,8 @@
     <div class="repetitions-row">
       <div class="repetitions-label">
         <i class="fas fa-redo" aria-hidden="true"></i>
-        <span class="label-text">Repetitions</span>
-        <span class="label-hint">(exported video)</span>
+        <span class="label-text">{m.export_repetitions()}</span>
+        <span class="label-hint">{m.export_for_video()}</span>
       </div>
       <div class="repetitions-buttons">
         {#each repetitionPresets as count}
@@ -124,9 +126,7 @@
             class:active={loopCount === count}
             onclick={() => handleRepetitionClick(count)}
             type="button"
-            aria-label="Export video with {count} repetition{count > 1
-              ? 's'
-              : ''}"
+            aria-label={m.export_repetitions_aria({ count: count.toString() })}
           >
             {count}x
           </button>

@@ -162,11 +162,6 @@
               existingBeats={existingBeatsArray}
               bind:undoRef={assemblyUndoRef}
               onStartPositionSet={(startPosition) => {
-                console.log(
-                  "[CreationToolPanelSlot] onStartPositionSet called with",
-                  startPosition
-                );
-
                 // IMPORTANT: Use assemblerTabState.sequenceState directly, NOT getActiveTabSequenceState()
                 // getActiveTabSequenceState() returns state based on navigationState.activeTab at call time,
                 // which could be wrong if the user switches tabs before this callback completes.
@@ -182,9 +177,6 @@
                 // Ensure a sequence exists
                 let currentSeq = assemblerSequenceState.currentSequence;
                 if (!currentSeq) {
-                  console.log(
-                    "[CreationToolPanelSlot] Creating new sequence for assembler mode with start position"
-                  );
                   const gridMode = assemblerSequenceState.gridMode;
                   currentSeq = {
                     id: crypto.randomUUID(),
@@ -204,9 +196,6 @@
                   assemblerSequenceState.setCurrentSequence(currentSeq);
                 } else {
                   // Update existing sequence with start position
-                  console.log(
-                    "[CreationToolPanelSlot] Updating existing sequence with start position"
-                  );
                   assemblerSequenceState.updateSequence({
                     ...currentSeq,
                     startingPositionBeat: createStartPositionData({
@@ -216,12 +205,6 @@
                 }
               }}
               onSequenceUpdate={(pictographs) => {
-                console.log(
-                  "[CreationToolPanelSlot] onSequenceUpdate called with",
-                  pictographs.length,
-                  "pictographs"
-                );
-
                 // IMPORTANT: Use assemblerTabState.sequenceState directly, NOT getActiveTabSequenceState()
                 // This ensures we always update the assembler's state, not whatever tab is currently active.
                 const assemblerSequenceState =
@@ -236,9 +219,6 @@
                 // Ensure a sequence exists
                 let currentSeq = assemblerSequenceState.currentSequence;
                 if (!currentSeq) {
-                  console.log(
-                    "[CreationToolPanelSlot] Creating new sequence for assembler mode"
-                  );
                   const gridMode = assemblerSequenceState.gridMode;
                   currentSeq = {
                     id: crypto.randomUUID(),
@@ -258,23 +238,12 @@
                 const beats = pictographs.map((p, i) =>
                   createBeatData({ ...p, beatNumber: i + 1, duration: 1000 })
                 );
-                console.log(
-                  "[CreationToolPanelSlot] Updating sequence with",
-                  beats.length,
-                  "beats"
-                );
                 assemblerSequenceState.updateSequence({
                   ...currentSeq,
                   beats,
                 });
               }}
               onSequenceComplete={(pictographs) => {
-                console.log(
-                  "[CreationToolPanelSlot] onSequenceComplete called with",
-                  pictographs.length,
-                  "pictographs"
-                );
-
                 // IMPORTANT: Use assemblerTabState.sequenceState directly, NOT getActiveTabSequenceState()
                 // This ensures we always update the assembler's state, not whatever tab is currently active.
                 const assemblerSequenceState =
@@ -296,11 +265,6 @@
 
                 const beats = pictographs.map((p, i) =>
                   createBeatData({ ...p, beatNumber: i + 1, duration: 1000 })
-                );
-                console.log(
-                  "[CreationToolPanelSlot] Completing sequence with",
-                  beats.length,
-                  "beats"
                 );
                 assemblerSequenceState.updateSequence({
                   ...currentSeq,

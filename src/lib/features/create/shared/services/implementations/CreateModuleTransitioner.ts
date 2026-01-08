@@ -32,7 +32,6 @@ export class CreateModuleTransitioner implements ICreateModuleTransitioner {
 
     // Simple immediate transition without complex fade orchestrator
     setActiveToolPanel(targetTab);
-    console.log(`🎭 Sub-tab transition: ${currentTab} → ${targetTab}`);
   }
 
   /**
@@ -61,7 +60,6 @@ export class CreateModuleTransitioner implements ICreateModuleTransitioner {
    * Transition to a specific tab
    */
   async transitionToTab(tabId: string): Promise<void> {
-    console.log(`🔄 CreateModuleTransitioner: Transitioning to tab ${tabId}`);
     // Implementation for tab transition logic
   }
 

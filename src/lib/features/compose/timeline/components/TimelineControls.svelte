@@ -118,7 +118,6 @@
    */
   function toggleDarkMode() {
     const newState = !darkModeEnabled;
-    console.log("[TimelineControls] toggleDarkMode:", newState);
     visibilityManager.setDarkMode(newState);
     darkModeEnabled = newState;
 

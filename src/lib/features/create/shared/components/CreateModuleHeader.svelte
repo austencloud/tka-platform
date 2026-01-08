@@ -14,6 +14,7 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   // Props
   const {
@@ -57,7 +58,7 @@
     <div
       class="segmented-control"
       role="tablist"
-      aria-label="Create module selection"
+      aria-label={m.create_module_selection()}
     >
       <!-- Construct Tab -->
       <button
@@ -71,13 +72,13 @@
         aria-controls="construct-panel"
         tabindex={activeTab === "construct" ? 0 : -1}
         id="tab-construct"
-        title="Construct mode"
+        title={m.create_construct_mode()}
         data-testid="tab-constructor"
       >
         {#if layout === "vertical"}
           🔨
         {:else}
-          🔨 Construct
+          🔨 {m.create_construct()}
         {/if}
       </button>
 
@@ -93,13 +94,13 @@
         aria-controls="generate-panel"
         tabindex={activeTab === "generate" ? 0 : -1}
         id="tab-generate"
-        title="Generate mode"
+        title={m.create_generate_mode()}
         data-testid="tab-generator"
       >
         {#if layout === "vertical"}
           ⚡
         {:else}
-          ⚡ Generate
+          ⚡ {m.create_generate()}
         {/if}
       </button>
     </div>

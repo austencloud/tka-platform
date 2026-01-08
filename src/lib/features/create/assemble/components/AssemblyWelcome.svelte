@@ -9,6 +9,7 @@ Shown when sequence is empty.
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
+  import * as m from "$lib/paraglide/messages.js";
 
   const { gridMode, onStart, onGridModeChange } = $props<{
     gridMode: GridMode;
@@ -58,40 +59,39 @@ Shown when sequence is empty.
     </div>
 
     <!-- Title -->
-    <h1 class="welcome-title">Hand Path Builder</h1>
+    <h1 class="welcome-title">{m.assembly_title()}</h1>
 
     <!-- Description -->
     <p class="welcome-description">
-      Build sequences by tracing hand paths on a grid. Tap positions to create a
-      path for each hand, then combine them into a complete sequence.
+      {m.assembly_description()}
     </p>
 
     <!-- How it works -->
     <div class="how-it-works">
-      <h2 class="section-title">How it works</h2>
+      <h2 class="section-title">{m.assembly_how_it_works()}</h2>
       <ol class="steps-list">
         <li>
           <span class="step-number blue">1</span>
           <span class="step-text"
-            >Tap grid positions to trace the <strong>blue hand</strong> path</span
+            >{m.assembly_step1({ hand: "" })} <strong>{m.assembly_blue_hand()}</strong></span
           >
         </li>
         <li>
           <span class="step-number red">2</span>
           <span class="step-text"
-            >Then trace the <strong>red hand</strong> path</span
+            >{m.assembly_step2({ hand: "" })} <strong>{m.assembly_red_hand()}</strong></span
           >
         </li>
         <li>
           <span class="step-number green">3</span>
-          <span class="step-text">Choose rotation direction to complete</span>
+          <span class="step-text">{m.assembly_step3()}</span>
         </li>
       </ol>
     </div>
 
     <!-- Grid Mode Toggle -->
     <div class="grid-mode-section">
-      <span class="grid-mode-label">Grid Mode</span>
+      <span class="grid-mode-label">{m.assembly_grid_mode()}</span>
       <div class="grid-mode-toggle">
         <button
           class="mode-button"
@@ -99,7 +99,7 @@ Shown when sequence is empty.
           onclick={() => handleGridModeChange(GridMode.DIAMOND)}
         >
           <span class="mode-icon">◇</span>
-          Diamond
+          {m.assembly_diamond()}
         </button>
         <button
           class="mode-button"
@@ -107,14 +107,14 @@ Shown when sequence is empty.
           onclick={() => handleGridModeChange(GridMode.BOX)}
         >
           <span class="mode-icon">□</span>
-          Box
+          {m.assembly_box()}
         </button>
       </div>
     </div>
 
     <!-- Start Button -->
     <button class="start-button" onclick={handleStart}>
-      <span class="button-text">Start Building</span>
+      <span class="button-text">{m.assembly_start_building()}</span>
       <span class="button-icon">→</span>
     </button>
   </div>

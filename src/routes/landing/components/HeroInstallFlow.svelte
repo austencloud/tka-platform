@@ -52,8 +52,6 @@
     platform = info.platform;
     inAppBrowser = info.inAppBrowser;
 
-    console.log("[Install Flow] Platform detection:", info);
-
     // Check if already installed (standalone mode)
     const isStandaloneMedia = window.matchMedia(
       "(display-mode: standalone)"
@@ -70,22 +68,16 @@
     // Determine install state
     if (isInstalled) {
       installState = "installed";
-      console.log("[Install Flow] Already installed");
     } else if (info.inAppBrowser !== "none") {
       installState = "in-app-browser";
-      console.log("[Install Flow] In-app browser:", info.inAppBrowser);
     } else if (info.platform === "android") {
       installState = "android";
-      console.log("[Install Flow] Android - showing Play Store");
     } else if (info.platform === "ios" && info.browser === "safari") {
       installState = "ios-safari";
-      console.log("[Install Flow] iOS Safari - manual install");
     } else if (info.platform === "ios") {
       installState = "ios-non-safari";
-      console.log("[Install Flow] iOS non-Safari - redirect to Safari");
     } else {
       installState = "desktop";
-      console.log("[Install Flow] Desktop - open in browser");
     }
   });
 

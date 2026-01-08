@@ -3,6 +3,7 @@
   import { resolve } from "../../inversify/di";
   import { TYPES } from "../../inversify/types";
   import { onMount } from "svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let { error, onRetry } = $props<{
     error: string;
@@ -70,7 +71,7 @@
       </svg>
     </div>
 
-    <h1>Initialization Failed</h1>
+    <h1>{m.error_initialization_failed()}</h1>
     <p class="error-message">{displayMessage}</p>
 
     <div class="error-actions">
@@ -95,14 +96,14 @@
           />
           <path d="M8 16H3v5" stroke="currentColor" stroke-width="2" />
         </svg>
-        Retry
+        {m.common_retry()}
       </button>
 
-      <button class="btn btn-glass" onclick={handleGoHome}> Go Home </button>
+      <button class="btn btn-glass" onclick={handleGoHome}> {m.common_go_home()} </button>
     </div>
 
     <details class="error-details">
-      <summary>Technical Details</summary>
+      <summary>{m.error_technical_details()}</summary>
       <pre class="error-stack">{error}</pre>
     </details>
   </div>

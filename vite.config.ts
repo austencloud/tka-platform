@@ -266,6 +266,8 @@ export default defineConfig({
       manifest: false, // We already have a manifest in static/pwa/
       injectRegister: "auto",
       workbox: {
+        // 🔇 Disable all workbox console logging (debug mode off)
+        mode: "production",
         // Cache strategies for different asset types
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webp}"],
         // Exclude large data files from precaching (they'll use runtime caching)

@@ -225,18 +225,15 @@ export function createPlaybackState(): PlaybackState {
     // Playback controls
     play() {
       isPlaying = true;
-      console.log("▶️ Playback: Play");
     },
 
     pause() {
       isPlaying = false;
-      console.log("⏸️ Playback: Pause");
     },
 
     stop() {
       isPlaying = false;
       currentBeat = 0;
-      console.log("⏹️ Playback: Stop");
     },
 
     setSpeed(newSpeed: number) {
@@ -248,7 +245,6 @@ export function createPlaybackState(): PlaybackState {
     setLoop(loop: boolean) {
       shouldLoop = loop;
       saveToStorage(STORAGE_KEYS.SHOULD_LOOP, loop);
-      console.log(`🔁 Playback: Loop ${loop ? "enabled" : "disabled"}`);
     },
 
     setCurrentBeat(beat: number) {
@@ -288,12 +284,10 @@ export function createPlaybackState(): PlaybackState {
     // Mode & Sequences
     setCurrentMode(mode: ComposeMode) {
       currentMode = mode;
-      console.log(`🎬 Playback: Mode changed to ${mode}`);
     },
 
     setSequences(newSequences: AnimationSequenceSlot[]) {
       sequences = newSequences;
-      console.log(`🎬 Playback: Sequences updated`, newSequences);
     },
 
     updateSequenceSlot(index: number, slot: Partial<AnimationSequenceSlot>) {
@@ -312,7 +306,6 @@ export function createPlaybackState(): PlaybackState {
               ? slot.redVisible
               : existing.redVisible,
         };
-        console.log(`🎬 Playback: Sequence slot ${index} updated`, slot);
       }
     },
 
@@ -332,10 +325,6 @@ export function createPlaybackState(): PlaybackState {
               ? settings.rotationOffset
               : existing.rotationOffset,
         };
-        console.log(
-          `🎨 Playback: Canvas settings updated for ${canvasId}`,
-          settings
-        );
       } else {
         // Create new canvas settings if not found
         canvasSettings.push({
@@ -360,10 +349,6 @@ export function createPlaybackState(): PlaybackState {
             ...trailSettings,
           },
         };
-        console.log(
-          `🎨 Playback: Trail settings updated for ${canvasId}`,
-          trailSettings
-        );
       }
     },
 
@@ -399,7 +384,6 @@ export function createPlaybackState(): PlaybackState {
           trailSettings: { ...DEFAULT_TRAIL_SETTINGS },
         },
       ];
-      console.log("🔄 Playback: State reset");
     },
   };
 }

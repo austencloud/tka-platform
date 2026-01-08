@@ -12,7 +12,4 @@
   // Don't destructure the return value as it contains reactive state that can cause loops
   interactivity();
 
-  onMount(() => {
-    console.log("[SceneInteractivity] Plugin activated");
-  });
 </script>

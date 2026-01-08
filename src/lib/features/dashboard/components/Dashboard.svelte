@@ -21,6 +21,7 @@
     getEffectiveUserId,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   // Components
   import DashboardHeader from "./DashboardHeader.svelte";
@@ -59,9 +60,9 @@
 
   const greeting = $derived.by(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return m.dashboard_greeting_morning();
+    if (hour < 18) return m.dashboard_greeting_afternoon();
+    return m.dashboard_greeting_evening();
   });
 
   const effectiveWelcomeMessage = $derived.by(() => {
@@ -72,14 +73,14 @@
         previewProfile.email ||
         "User"
       ).split(" ")[0];
-      return `Viewing as ${firstName}`;
+      return m.dashboard_viewing_as({ name: firstName });
     }
     // Normal authenticated user
     if (authState.isAuthenticated && authState.user?.displayName) {
       const firstName = authState.user.displayName.split(" ")[0];
       return `${greeting}, ${firstName}`;
     }
-    return "Welcome to TKA Scribe";
+    return m.dashboard_welcome();
   });
 
   // Derived

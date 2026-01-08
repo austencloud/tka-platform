@@ -27,7 +27,6 @@
   onMount(async () => {
     try {
       if (isSignInWithEmailLink(auth, window.location.href)) {
-        console.log("🔐 [email-link] Detected email link sign-in");
         await completeSignIn();
       }
     } catch (err) {
@@ -46,8 +45,6 @@
     success = null;
 
     try {
-      console.log(`🔐 [email-link] Sending sign-in link to ${email}`);
-
       // Configure the email action handler
       const actionCodeSettings = {
         // URL where the user will be redirected after clicking the link
@@ -61,7 +58,6 @@
       // Save the email locally so we can complete sign-in on the same device
       window.localStorage.setItem("emailForSignIn", email);
 
-      console.log(`✅ [email-link] Email sent successfully to ${email}`);
       success = `Magic link sent! Check your email at ${email}`;
     } catch (err: any) {
       console.error(`❌ [email-link] Error sending email:`, err);
@@ -83,17 +79,12 @@
   }
 
   async function completeSignIn() {
-    console.log("🔐 [email-link] Completing sign-in...");
-
     try {
       // Set persistence before sign-in
-      console.log(`🔐 [email-link] Setting persistence...`);
       try {
         await setPersistence(auth, indexedDBLocalPersistence);
-        console.log(`✅ [email-link] IndexedDB persistence set`);
       } catch (indexedDBErr) {
         await setPersistence(auth, browserLocalPersistence);
-        console.log(`✅ [email-link] localStorage persistence set`);
       }
 
       // Get the email from localStorage
@@ -102,7 +93,6 @@
       if (!savedEmail) {
         // User opened the link on a different device
         // Ask for email to prevent session fixation attacks
-        console.log("⚠️ [email-link] Email not found in storage, asking user");
         savedEmail = window.prompt(
           "Please enter your email address to confirm:"
         );
@@ -113,8 +103,6 @@
         return;
       }
 
-      console.log(`🔐 [email-link] Signing in with email: ${savedEmail}`);
-
       // Sign in with the email link
       const result = await signInWithEmailLink(
         auth,
@@ -122,14 +110,10 @@
         window.location.href
       );
 
-      console.log(`✅ [email-link] User signed in:`, result.user.uid);
-      console.log(`✅ [email-link] Email verified:`, result.user.emailVerified);
-
       // Clear the email from storage
       window.localStorage.removeItem("emailForSignIn");
 
       // Navigate to app
-      console.log(`🔐 [email-link] Navigating to app...`);
       goto("/");
     } catch (err: any) {
       console.error(`❌ [email-link] Sign-in error:`, err);

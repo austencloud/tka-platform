@@ -3,6 +3,7 @@
 -->
 <script lang="ts">
   import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     currentSortMethod: ExploreSortMethod;
@@ -20,24 +21,24 @@
     onToggleFilters,
   }: Props = $props();
 
-  const sortOptions = [
+  const sortOptions = $derived([
     {
       id: ExploreSortMethod.ALPHABETICAL,
-      label: "A → Z",
+      label: m.sort_alphabetical(),
       icon: "fa-arrow-down-a-z",
     },
     {
       id: ExploreSortMethod.SEQUENCE_LENGTH,
-      label: "Length",
+      label: m.sort_length(),
       icon: "fa-ruler",
     },
     {
       id: ExploreSortMethod.DIFFICULTY_LEVEL,
-      label: "Difficulty",
+      label: m.sort_difficulty(),
       icon: "fa-signal",
     },
-    { id: ExploreSortMethod.DATE_ADDED, label: "Recent", icon: "fa-clock" },
-  ];
+    { id: ExploreSortMethod.DATE_ADDED, label: m.sort_recent(), icon: "fa-clock" },
+  ]);
 </script>
 
 <div class="sort-row">
@@ -65,8 +66,8 @@
     class="advanced-toggle"
     class:active={showFilters}
     onclick={onToggleFilters}
-    title="Advanced filters"
-    aria-label="Toggle advanced filters"
+    title={m.filter_advanced()}
+    aria-label={m.filter_toggle_advanced()}
   >
     <i class="fas fa-sliders-h" aria-hidden="true"></i>
   </button>

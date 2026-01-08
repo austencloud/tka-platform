@@ -45,35 +45,13 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
       const blueMotion = pictographData.motions.blue;
       const redMotion = pictographData.motions.red;
 
-      // console.log("🔍 TurnsTupleGenerator - Input:", {
-      //   letter: pictographData.letter,
-      //   hasBlueMotion: !!blueMotion,
-      //   hasRedMotion: !!redMotion,
-      //   blueMotionData: blueMotion ? {
-      //     motionType: blueMotion.motionType,
-      //     turns: blueMotion.turns,
-      //     rotationDirection: blueMotion.rotationDirection,
-      //     startLocation: blueMotion.startLocation,
-      //     endLocation: blueMotion.endLocation
-      //   } : null,
-      //   redMotionData: redMotion ? {
-      //     motionType: redMotion.motionType,
-      //     turns: redMotion.turns,
-      //     rotationDirection: redMotion.rotationDirection,
-      //     startLocation: redMotion.startLocation,
-      //     endLocation: redMotion.endLocation
-      //   } : null
-      // });
-
       if (!blueMotion || !redMotion) {
-        // console.log("❌ Returning (0, 0) - missing motion data");
         return "(0, 0)";
       }
 
       const letterType = this.determineLetterType(
         pictographData.letter || undefined
       );
-      // console.log("📝 Letter type determined:", letterType);
 
       if (letterType === "TYPE1_HYBRID") {
         return this.generateType1HybridTuple(blueMotion, redMotion);
@@ -553,16 +531,6 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
     const blueTurns = this.normalizeTurns(blueMotion);
     const redTurns = this.normalizeTurns(redMotion);
 
-    // console.log("🎯 TYPE6 Tuple Generation:", {
-    //   letter,
-    //   blueTurns,
-    //   redTurns,
-    //   blueMotionTurns: blueMotion.turns,
-    //   redMotionTurns: redMotion.turns,
-    //   blueMotionType: blueMotion.motionType,
-    //   redMotionType: redMotion.motionType
-    // });
-
     // Gamma (γ) requires prop rotation state
     if (letter === "γ") {
       return this.generateGammaTuple(
@@ -575,25 +543,19 @@ export class TurnsTupleGenerator implements ITurnsTupleGenerator {
 
     // Standard TYPE5/TYPE6 logic for α, β
     if (blueTurns === 0 && redTurns === 0) {
-      const tuple = `(${this.formatTurns(blueTurns)}, ${this.formatTurns(redTurns)})`;
-      // console.log("✅ TYPE6 tuple (both 0):", tuple);
-      return tuple;
+      return `(${this.formatTurns(blueTurns)}, ${this.formatTurns(redTurns)})`;
     } else if (blueTurns === 0 || redTurns === 0) {
       const turningMotion = blueTurns !== 0 ? blueMotion : redMotion;
       const turningRotDir =
         turningMotion.rotationDirection.toLowerCase() || "cw";
-      const tuple = `(${turningRotDir}, ${this.formatTurns(blueTurns)}, ${this.formatTurns(redTurns)})`;
-      // console.log("✅ TYPE6 tuple (one motion turning):", tuple);
-      return tuple;
+      return `(${turningRotDir}, ${this.formatTurns(blueTurns)}, ${this.formatTurns(redTurns)})`;
     } else {
       const blueRotDir =
         blueMotion.rotationDirection.toLowerCase() || "norotation";
       const redRotDir =
         redMotion.rotationDirection.toLowerCase() || "norotation";
       const direction = blueRotDir === redRotDir ? "s" : "o";
-      const tuple = `(${direction}, ${this.formatTurns(blueTurns)}, ${this.formatTurns(redTurns)})`;
-      // console.log("✅ TYPE6 tuple (both turning):", tuple);
-      return tuple;
+      return `(${direction}, ${this.formatTurns(blueTurns)}, ${this.formatTurns(redTurns)})`;
     }
   }
 

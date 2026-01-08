@@ -133,6 +133,51 @@ export const NightSkyConfig = {
     interval: 45000,
     enabledOnQuality: ["high"] as ("high" | "medium" | "low" | "minimal")[],
   },
+  milkyWay: {
+    // Band dimensions
+    bandWidthPercent: 0.15, // Width as fraction of screen diagonal
+    pathPoints: 5, // Control points for the curved path
+    // Internal structure
+    dustLaneCount: 4, // Dark regions within the band
+    starCloudCount: 6, // Bright clusters within the band
+    // Appearance
+    baseOpacity: 0.12, // Subtle, not overpowering
+    coreOpacity: 0.2, // Brighter center
+    edgeOpacity: 0.04, // Soft fade at edges
+    // Colors - cool blues to warm center
+    colors: {
+      edge: "rgba(180, 200, 255, 1)", // Cool blue edge
+      mid: "rgba(220, 210, 240, 1)", // Lavender mid
+      core: "rgba(255, 240, 220, 1)", // Warm cream core
+    },
+    // Animation speeds
+    shimmerSpeed: 0.0003, // Very slow traveling wave
+    glowPulseSpeed: 0.0008, // Subtle breathing
+    dustLaneDriftSpeed: 0.0001, // Almost imperceptible movement
+    starCloudPulseSpeed: 0.002, // Individual cluster pulsing
+    // Quality gating
+    enabledOnQuality: ["high", "medium"] as (
+      | "high"
+      | "medium"
+      | "low"
+      | "minimal"
+    )[],
+    // Quality-specific settings
+    quality: {
+      high: {
+        dustLanes: true,
+        starClouds: true,
+        shimmer: true,
+        edgeDetail: true,
+      },
+      medium: {
+        dustLanes: false,
+        starClouds: true,
+        shimmer: false,
+        edgeDetail: false,
+      },
+    },
+  },
   background: {
     gradientStops: [
       { position: 0, color: "#0a0a1a" }, // Deep space black

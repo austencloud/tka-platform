@@ -15,6 +15,7 @@
     DailyChallenge,
     UserChallengeProgress,
   } from "$lib/shared/gamification/domain/models/achievement-models";
+  import * as m from "$lib/paraglide/messages.js";
 
   // Services
   let challengeService: IDailyChallengeManager | null = $state(null);
@@ -91,18 +92,18 @@
   {#if isLoading}
     <div class="loading-container">
       <div class="spinner"></div>
-      <p>Loading challenges...</p>
+      <p>{m.gamification_loading_challenges()}</p>
     </div>
   {:else if !authState.isAuthenticated}
     <div class="auth-required">
       <i class="fas fa-lock" aria-hidden="true"></i>
-      <h3>Sign In Required</h3>
-      <p>Sign in to access daily challenges and quests</p>
+      <h3>{m.auth_sign_in_required()}</h3>
+      <p>{m.gamification_sign_in_challenges()}</p>
     </div>
   {:else if !dailyChallenge}
     <div class="empty-state">
       <i class="fas fa-calendar-check" aria-hidden="true"></i>
-      <h3>No Challenge Today</h3>
+      <h3>{m.gamification_no_challenge_today()}</h3>
       <p>Check back tomorrow for a new daily challenge!</p>
     </div>
   {:else}
@@ -110,7 +111,7 @@
     <div class="daily-challenge glass-surface">
       <div class="challenge-header">
         <h3>
-          <i class="fas fa-bullseye" aria-hidden="true"></i> Daily Challenge
+          <i class="fas fa-bullseye" aria-hidden="true"></i> {m.gamification_daily_challenge()}
         </h3>
         <span class="difficulty-badge {dailyChallenge.difficulty}">
           {dailyChallenge.difficulty}
@@ -141,10 +142,10 @@
 
     <!-- Active Quests (Coming Soon) -->
     <div class="quests-section">
-      <h3><i class="fas fa-scroll" aria-hidden="true"></i> Active Quests</h3>
+      <h3><i class="fas fa-scroll" aria-hidden="true"></i> {m.gamification_active_quests()}</h3>
       <div class="coming-soon">
         <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-        <p>Quest system coming soon!</p>
+        <p>Quest system {m.status_coming_soon().toLowerCase()}!</p>
         <p class="hint">Complete longer challenges for bigger rewards</p>
       </div>
     </div>

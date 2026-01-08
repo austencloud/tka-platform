@@ -25,6 +25,7 @@
     extractDominantColor,
     getCachedOrFallbackColor,
   } from "$lib/shared/foundation/utils/color-extractor";
+  import * as m from "$lib/paraglide/messages.js";
 
   let searchQuery = $state("");
   let followingInProgress = $state<Set<string>>(new Set());
@@ -189,26 +190,26 @@
       <div class="header-section">
         <h2 class="panel-title">
           <i class="fas fa-users" aria-hidden="true"></i>
-          Discover Creators
+          {m.discover_creators_title()}
         </h2>
       </div>
     </div>
 
-    <PanelSearch placeholder="Search creators..." bind:value={searchQuery} />
+    <PanelSearch placeholder={m.discover_search_creators()} bind:value={searchQuery} />
 
     <PanelContent>
       {#if error}
-        <PanelState type="error" title="Error" message={error} />
+        <PanelState type="error" title={m.discover_error()} message={error} />
       {:else if isLoading}
-        <PanelState type="loading" message="Loading creators..." />
+        <PanelState type="loading" message={m.discover_loading_creators()} />
       {:else if filteredUsers.length === 0}
         <PanelState
           type="empty"
           icon="fa-users"
-          title="No Creators Found"
+          title={m.discover_no_creators()}
           message={searchQuery
-            ? "No creators match your search"
-            : "No members found"}
+            ? m.discover_no_match()
+            : m.discover_no_members()}
         />
       {:else}
         <PanelGrid minCardWidth="240px" gap="20px">
@@ -300,7 +301,7 @@
                     {#if followingInProgress.has(user.id)}
                       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
                     {:else}
-                      {user.isFollowing ? "Following" : "Follow"}
+                      {user.isFollowing ? m.discover_following() : m.discover_follow()}
                     {/if}
                   </button>
                 </div>

@@ -8,6 +8,7 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
 -->
 <script lang="ts">
   import { LetterTypeTextPainter } from "../services/LetterTypeTextPainter";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     letterType: string;
@@ -15,24 +16,23 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
 
   const { letterType }: Props = $props();
 
-  const TYPE_DESCRIPTIONS: Record<
-    string,
-    { typeName: string; description: string }
-  > = {
-    Type1: { typeName: "Type 1", description: "Dual-Shift" },
-    Type2: { typeName: "Type 2", description: "Shift" },
-    Type3: { typeName: "Type 3", description: "Cross-Shift" },
-    Type4: { typeName: "Type 4", description: "Dash" },
-    Type5: { typeName: "Type 5", description: "Dual-Dash" },
-    Type6: { typeName: "Type 6", description: "Static" },
-  };
+  // Use translated descriptions
+  const getTypeDescriptions = () => ({
+    Type1: { typeName: "Type 1", description: m.create_type_dual_shift() },
+    Type2: { typeName: "Type 2", description: m.create_type_shift() },
+    Type3: { typeName: "Type 3", description: m.create_type_cross_shift() },
+    Type4: { typeName: "Type 4", description: m.create_type_dash() },
+    Type5: { typeName: "Type 5", description: m.create_type_dual_dash() },
+    Type6: { typeName: "Type 6", description: m.create_type_static() },
+  });
 
-  const typeInfo = $derived(
-    TYPE_DESCRIPTIONS[letterType] || {
+  const typeInfo = $derived.by(() => {
+    const descriptions = getTypeDescriptions();
+    return descriptions[letterType as keyof typeof descriptions] || {
       typeName: "Type ?",
-      description: "Unknown",
-    }
-  );
+      description: m.create_type_unknown(),
+    };
+  });
 
   const formattedText = $derived(
     LetterTypeTextPainter.formatSectionHeader(

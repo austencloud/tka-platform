@@ -34,12 +34,10 @@
   // Handlers
   function handleModeSelect(mode: ComposeMode) {
     arrangeState.selectMode(mode);
-    console.log("🎨 ArrangeTab: Mode selected:", mode);
   }
 
   function handleBack() {
     arrangeState.selectMode(null);
-    console.log("🎨 ArrangeTab: Back to mode selection");
   }
 
   function handleStartPlayback() {
@@ -55,11 +53,6 @@
 
     // Open the playback overlay (source: arrange tab)
     composeModuleState.openPlayback("arrange");
-
-    console.log(
-      "🎨 ArrangeTab: Opening playback overlay for mode:",
-      selectedMode
-    );
   }
 </script>
 

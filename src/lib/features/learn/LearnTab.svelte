@@ -26,6 +26,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
     setActiveConceptId,
     clearActiveConceptId,
   } from "./state/experience-persistence.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   type LearnMode = "concepts" | "play" | "codex";
 
@@ -105,14 +106,14 @@ Navigation via bottom tabs (mobile-first UX pattern)
 
     if (activeMode === "concepts") {
       if (selectedConcept) {
-        header = selectedConcept.name || "Concept Details";
+        header = selectedConcept.name || m.learn_concept_details();
       } else {
-        header = "Learning Path";
+        header = m.learn_learning_path();
       }
     } else if (activeMode === "play") {
-      header = "Play";
+      header = m.learn_play();
     } else if (activeMode === "codex") {
-      header = "Letters";
+      header = m.learn_letters();
     }
 
     onHeaderChange(header);

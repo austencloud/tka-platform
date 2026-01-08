@@ -58,8 +58,6 @@ export class GamificationNotifier implements IGamificationNotifier {
     };
 
     await this.saveAndQueueNotification(notification);
-
-    console.log(`🎉 Achievement notification: ${title}`);
   }
 
   async showLevelUp(newLevel: number, milestoneTitle?: string): Promise<void> {
@@ -84,8 +82,6 @@ export class GamificationNotifier implements IGamificationNotifier {
     };
 
     await this.saveAndQueueNotification(notification);
-
-    console.log(`📈 Level up notification: Level ${newLevel}`);
   }
 
   async showChallengeComplete(
@@ -107,8 +103,6 @@ export class GamificationNotifier implements IGamificationNotifier {
     };
 
     await this.saveAndQueueNotification(notification);
-
-    console.log(`🎯 Challenge completion notification: ${challengeTitle}`);
   }
 
   async showStreakMilestone(streakDays: number): Promise<void> {
@@ -140,14 +134,11 @@ export class GamificationNotifier implements IGamificationNotifier {
     };
 
     await this.saveAndQueueNotification(notification);
-
-    console.log(`🔥 Streak milestone notification: ${streakDays} days`);
   }
 
   showXPGain(amount: number, reason?: string): void {
     // Quick, lightweight notification - no persistence needed
     addXPToast(amount, reason);
-    console.log(`✨ XP gained: +${amount}${reason ? ` (${reason})` : ""}`);
   }
 
   /**
@@ -270,8 +261,6 @@ export class GamificationNotifier implements IGamificationNotifier {
         });
 
         await batch.commit();
-
-        console.log(`✅ Marked ${snapshot.size} notifications as read`);
       } catch (error) {
         console.error("❌ Failed to mark all notifications as read:", error);
       }
@@ -326,8 +315,6 @@ export class GamificationNotifier implements IGamificationNotifier {
         });
 
         await batch.commit();
-
-        console.log(`🗑️ Cleared ${snapshot.size} notifications`);
       } catch (error) {
         console.error("❌ Failed to clear notifications:", error);
       }

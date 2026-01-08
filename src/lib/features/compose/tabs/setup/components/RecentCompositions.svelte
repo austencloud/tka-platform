@@ -66,8 +66,6 @@
     // Set mode and open playback
     composeModuleState.setCurrentMode(composition.mode);
     composeModuleState.openPlayback("arrange");
-
-    console.log("🎬 RecentCompositions: Quick play:", composition.name);
   }
 
   function formatDate(date: Date): string {

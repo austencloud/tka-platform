@@ -159,14 +159,6 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
       // Generate required keys for special placement lookup
       const [, , attrKey] = this.generateLookupKeys(pictographData, motionData);
 
-      // console.log("🎯 Base Adjustment Lookup:", {
-      //   letter,
-      //   oriKey,
-      //   turnsTuple,
-      //   attrKey,
-      //   arrowColor
-      // });
-
       try {
         const specialAdjustment = await this.lookupSpecialPlacement(
           motionData,
@@ -176,10 +168,7 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
         );
 
         if (specialAdjustment) {
-          // console.log("✅ Found special adjustment:", specialAdjustment);
           return specialAdjustment;
-        } else {
-          // console.log("⚠️  No special adjustment found, falling back to default");
         }
       } catch (error) {
         console.warn(`Error in special placement lookup for ${letter}:`, error);
@@ -284,13 +273,6 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
             )
           : GridMode.DIAMOND);
 
-      // console.log("🔧 Default Adjustment Calculation:", {
-      //   letter: pictographData.letter,
-      //   motionType: motionData.motionType,
-      //   turns: motionData.turns,
-      //   gridMode
-      // });
-
       const keys = await this.DefaultPlacer.getAvailablePlacementKeys(
         motionData.motionType as MotionType,
         gridMode as GridMode
@@ -300,14 +282,12 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
       );
 
       const availableKeys = Object.keys(defaultPlacements || []);
-      // console.log("📋 Available placement keys:", availableKeys);
 
       const placementKey = this.placementKeyService.generatePlacementKey(
         motionData,
         pictographData,
         availableKeys
       );
-      // console.log("🔑 Generated placement key:", placementKey);
 
       const adjustmentPoint = await this.DefaultPlacer.getDefaultAdjustment(
         placementKey,
@@ -316,7 +296,6 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
         gridMode as GridMode
       );
 
-      // console.log("✅ Default adjustment result:", adjustmentPoint);
       return new Point(adjustmentPoint.x, adjustmentPoint.y);
     } catch (error) {
       console.error("Error calculating default adjustment:", error);

@@ -40,7 +40,6 @@ export function createDestinationManager() {
 		}
 
 		currentDestinationId = destinationId;
-		console.log(`[DestinationManager] Navigating to ${destinationId}`);
 	}
 
 	/**

@@ -303,7 +303,6 @@
       }
 
       animationServicesReady = true;
-      console.log("✅ Animation services loaded for Share Hub");
     } catch (error) {
       console.error("❌ Failed to load animation services:", error);
       animationPanelState.setError("Failed to load animation services");

@@ -67,20 +67,17 @@
   function handleNewActRequested() {
     currentAct = createEmptyAct();
     hasUnsavedChanges = true;
-    console.log("Creating new act");
   }
 
   function handleSaveRequested() {
     if (!currentAct) return;
     // TODO: Implement actual save logic
     hasUnsavedChanges = false;
-    console.log("Saving act:", currentAct.name);
   }
 
   function handleSaveAsRequested() {
     if (!currentAct) return;
     // TODO: Implement save as dialog
-    console.log("Save as requested for act:", currentAct.name);
   }
 
   // Act browser handlers
@@ -100,7 +97,6 @@
         filePath: actInfo.filePath,
       };
       hasUnsavedChanges = false;
-      console.log("Loading act:", actInfo.name);
     }
   }
 
@@ -109,7 +105,6 @@
     // TODO: Refresh acts from storage
     setTimeout(() => {
       isLoading = false;
-      console.log("Refreshed act browser");
     }, 1000);
   }
 
@@ -123,44 +118,37 @@
 
   function handleMusicLoadRequested() {
     // TODO: Implement music file selection
-    console.log("Music load requested");
   }
 
   function handleSequenceClicked(position: number) {
     // TODO: Open sequence in construct tab
-    console.log("Sequence clicked:", position);
   }
 
   function handleSequenceRemoveRequested(position: number) {
     if (!currentAct) return;
     currentAct.sequences.splice(position, 1);
     hasUnsavedChanges = true;
-    console.log("Sequence removed:", position);
   }
 
   // Music player handlers
   function handlePlayRequested() {
     musicPlayerState.isPlaying = true;
     musicPlayerState.isPaused = false;
-    console.log("Play requested");
   }
 
   function handlePauseRequested() {
     musicPlayerState.isPlaying = false;
     musicPlayerState.isPaused = true;
-    console.log("Pause requested");
   }
 
   function handleStopRequested() {
     musicPlayerState.isPlaying = false;
     musicPlayerState.isPaused = false;
     musicPlayerState.currentTime = 0;
-    console.log("Stop requested");
   }
 
   function handleSeekRequested(position: number) {
     musicPlayerState.currentTime = position;
-    console.log("Seek requested:", position);
   }
 
   // Splitter handlers

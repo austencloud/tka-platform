@@ -17,6 +17,7 @@ import type { NightSkyConfig } from "../domain/constants/night-sky-constants";
 import { CometSystem } from "./CometSystem";
 import { ConstellationSystem } from "./ConstellationSystem";
 import type { INightSkyCalculationService } from "./contracts/INightSkyCalculationService";
+import { MilkyWaySystem } from "./MilkyWaySystem";
 import { MoonSystem } from "./MoonSystem";
 import { NebulaSystem } from "./NebulaSystem";
 import { ParallaxStarSystem } from "./ParallaxStarSystem";
@@ -62,6 +63,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
   private moonSystem!: MoonSystem;
   private spaceshipSystem!: SpaceshipSystem;
   private cometSystem!: CometSystem;
+  private milkyWaySystem!: MilkyWaySystem;
   private shootingStarSystem = createShootingStarSystem();
   private shootingStarState!: ShootingStarState;
 
@@ -144,6 +146,11 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       instance.calculationService
     );
 
+    instance.milkyWaySystem = new MilkyWaySystem(
+      instance.cfg.milkyWay,
+      instance.calculationService
+    );
+
     instance.shootingStarState = instance.shootingStarSystem.initialState;
 
     return instance;
@@ -155,6 +162,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     this.setQuality(q); // Sets this.cfg and this.Q
 
     // Initialize all modular systems
+    this.milkyWaySystem.initialize(dim, this.quality);
     this.parallaxStarSystem.initialize(dim, this.a11y);
     this.nebulaSystem.initialize(dim, this.quality);
     this.moonSystem.initialize(dim, this.quality, this.a11y);
@@ -164,6 +172,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
 
   /* UPDATE */
   public update(dim: Dimensions, frameMultiplier: number = 1.0) {
+    this.milkyWaySystem.update(this.a11y, frameMultiplier);
     this.parallaxStarSystem.update(dim, this.a11y, frameMultiplier);
     this.nebulaSystem.update(this.a11y, frameMultiplier);
     this.constellationSystem.update(
@@ -194,10 +203,13 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
 
     // Only draw other elements if properly initialized
     if (this.isInitialized) {
-      // Draw nebula first (background layer)
+      // Draw Milky Way first (deep background layer)
+      this.milkyWaySystem.draw(ctx, this.a11y);
+
+      // Draw nebula (background layer)
       this.nebulaSystem.draw(ctx, this.a11y);
 
-      // Draw stars
+      // Draw stars (on top of Milky Way)
       this.parallaxStarSystem.draw(ctx, this.a11y);
 
       // Draw constellations
@@ -252,6 +264,10 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       this.cfg.stars,
       this.calculationService
     );
+    this.milkyWaySystem = new MilkyWaySystem(
+      this.cfg.milkyWay,
+      this.calculationService
+    );
   }
 
   public setAccessibility(s: AccessibilitySettings) {
@@ -264,6 +280,8 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
    */
   public handleResize(_oldDimensions: Dimensions, newDimensions: Dimensions) {
     if (this.isInitialized) {
+      // Handle Milky Way resize
+      this.milkyWaySystem.handleResize(newDimensions);
       // The ParallaxStarSystem will automatically handle dimension changes in its update method
       // by calling adaptToNewDimensions when it detects dimension changes
       this.update(newDimensions);
@@ -273,6 +291,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
   /* CLEANUP */
   public cleanup() {
     this.isInitialized = false;
+    this.milkyWaySystem.cleanup();
     this.parallaxStarSystem.cleanup();
     this.nebulaSystem.cleanup();
     this.constellationSystem.cleanup();

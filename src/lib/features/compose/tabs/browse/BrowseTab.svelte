@@ -89,7 +89,6 @@ Features:
 
       case "edit":
         // TODO: Navigate to Arrange tab with composition loaded
-        console.log("Edit composition:", animation);
         break;
 
       case "favorite":
@@ -98,12 +97,10 @@ Features:
 
       case "duplicate":
         // TODO: Duplicate animation
-        console.log("Duplicate animation:", animation);
         break;
 
       case "share":
         // TODO: Open share dialog
-        console.log("Share animation:", animation);
         break;
 
       case "delete":

@@ -71,7 +71,6 @@
     const presetSettings = applyPreset(presetId);
     if (presetSettings) {
       onSettingsChange(canvasId, presetSettings);
-      console.log(`🎨 Applied preset "${presetId}" to canvas ${canvasId}`);
     }
   }
 

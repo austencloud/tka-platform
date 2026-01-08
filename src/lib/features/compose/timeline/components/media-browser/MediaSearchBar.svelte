@@ -2,6 +2,8 @@
   MediaSearchBar.svelte - Search input with favorites toggle
 -->
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages.js";
+
   interface Props {
     searchQuery: string;
     isFavoritesActive: boolean;
@@ -17,11 +19,11 @@
   }: Props = $props();
 </script>
 
-<div class="search-bar" role="search" aria-label="Search media">
+<div class="search-bar" role="search" aria-label={m.search_media()}>
   <i class="fas fa-search" aria-hidden="true"></i>
   <input
     type="text"
-    placeholder="Search..."
+    placeholder={m.search_placeholder()}
     value={searchQuery}
     oninput={(e) => onSearchChange(e.currentTarget.value)}
   />
@@ -29,8 +31,8 @@
     class="favorites-btn"
     class:active={isFavoritesActive}
     onclick={() => onFavoritesToggle(!isFavoritesActive)}
-    title="Favorites"
-    aria-label="Toggle favorites filter"
+    title={m.favorites()}
+    aria-label={m.favorites_toggle()}
   >
     <i class="fas fa-heart" aria-hidden="true"></i>
   </button>
@@ -38,7 +40,7 @@
     <button
       class="clear-btn"
       onclick={() => onSearchChange("")}
-      aria-label="Clear search"
+      aria-label={m.search_clear()}
     >
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>

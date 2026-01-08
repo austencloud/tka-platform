@@ -87,8 +87,6 @@ export class VideoRecorder implements IVideoRecorder {
         ? "video/webm"
         : "video/mp4";
 
-    console.log(`🎥 Starting recording ${recordingId} with ${mimeType}`);
-
     // Create MediaRecorder
     const mediaRecorder = new MediaRecorder(stream, {
       mimeType,
@@ -140,7 +138,6 @@ export class VideoRecorder implements IVideoRecorder {
 
         // Auto-stop if max duration reached
         if (currentDuration >= maxDuration) {
-          console.log(`⏱️ Max duration reached, auto-stopping ${recordingId}`);
           this.stopRecording(recordingId);
         }
       }, 100);
@@ -164,7 +161,6 @@ export class VideoRecorder implements IVideoRecorder {
     if (state.mediaRecorder.state === "recording") {
       state.mediaRecorder.pause();
       state.lastPauseTime = Date.now();
-      console.log(`⏸️ Paused recording ${recordingId}`);
     }
   }
 
@@ -183,7 +179,6 @@ export class VideoRecorder implements IVideoRecorder {
       state.pausedDuration += pauseDuration;
       state.lastPauseTime = null;
       state.mediaRecorder.resume();
-      console.log(`▶️ Resumed recording ${recordingId}`);
     }
   }
 
@@ -200,8 +195,6 @@ export class VideoRecorder implements IVideoRecorder {
       };
     }
 
-    console.log(`⏹️ Stopping recording ${recordingId}`);
-
     // Clear progress interval
     if (state.progressInterval) {
       clearInterval(state.progressInterval);
@@ -213,9 +206,6 @@ export class VideoRecorder implements IVideoRecorder {
         const blob = new Blob(state.chunks, {
           type: state.mediaRecorder.mimeType,
         });
-        console.log(
-          `📦 Recording complete: ${recordingId} (${(blob.size / 1024).toFixed(1)}KB)`
-        );
         resolve(blob);
       };
 
@@ -265,8 +255,6 @@ export class VideoRecorder implements IVideoRecorder {
       console.warn(`No recording found with ID ${recordingId}`);
       return;
     }
-
-    console.log(`❌ Cancelling recording ${recordingId}`);
 
     // Clear progress interval
     if (state.progressInterval) {

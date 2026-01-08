@@ -4,6 +4,7 @@
    */
 
   import type { TimelineClip } from "../../domain/timeline-types";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     clip: TimelineClip;
@@ -23,36 +24,36 @@
 <section class="section">
   <div class="section-header">
     <i class="fa-solid fa-info-circle" aria-hidden="true"></i>
-    <span>Info</span>
+    <span>{m.clip_info()}</span>
   </div>
 
   <div class="info-row">
-    <span class="info-label">Sequence</span>
-    <span class="info-value">{clip.sequence.name || "Unnamed"}</span>
+    <span class="info-label">{m.clip_sequence()}</span>
+    <span class="info-value">{clip.sequence.name || m.clip_unnamed()}</span>
   </div>
 
   <div class="info-row">
-    <span class="info-label">Beats</span>
+    <span class="info-label">{m.clip_beats()}</span>
     <span class="info-value">{clip.sequence.beats.length}</span>
   </div>
 
   <div class="info-row">
-    <span class="info-label">Duration</span>
+    <span class="info-label">{m.clip_duration()}</span>
     <span class="info-value">{formatTime(clip.duration)}</span>
   </div>
 
   <div class="info-row">
-    <span class="info-label">Effective</span>
+    <span class="info-label">{m.clip_effective()}</span>
     <span class="info-value">{formatTime(effectiveDuration)}</span>
   </div>
 
   <div class="field">
-    <label class="field-label" for="clip-label">Label</label>
+    <label class="field-label" for="clip-label">{m.clip_label()}</label>
     <input
       id="clip-label"
       type="text"
       class="text-input"
-      placeholder="Optional clip label"
+      placeholder={m.clip_label_placeholder()}
       value={clip.label ?? ""}
       onchange={(e) => onUpdateLabel((e.target as HTMLInputElement).value)}
     />

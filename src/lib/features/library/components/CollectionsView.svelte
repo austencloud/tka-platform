@@ -15,6 +15,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let collections = $state<LibraryCollection[]>([]);
   let isLoading = $state(true);
@@ -53,33 +54,33 @@
   {#if !isAuthenticated}
     <PanelState
       type="info"
-      title="Sign In Required"
-      message="Sign in to view and create collections"
+      title={m.library_sign_in_required()}
+      message={m.library_sign_in_collections()}
     />
   {:else if isLoading}
-    <PanelState type="loading" message="Loading collections..." />
+    <PanelState type="loading" message={m.library_loading_collections()} />
   {:else if error}
-    <PanelState type="error" title="Error" message={error} />
+    <PanelState type="error" title={m.common_error()} message={error} />
   {:else}
     <!-- Header with create button -->
     <div class="header">
-      <h2>My Collections</h2>
+      <h2>{m.library_my_collections()}</h2>
       <PanelButton variant="primary" onclick={handleCreateCollection}>
         <i class="fas fa-plus" aria-hidden="true"></i>
-        New Collection
+        {m.library_new_collection()}
       </PanelButton>
     </div>
 
     {#if collections.length === 0}
       <div class="empty-state">
         <i class="fas fa-folder-open" aria-hidden="true"></i>
-        <h3>No Collections Yet</h3>
+        <h3>{m.library_no_collections()}</h3>
         <p>
-          Create collections to organize your sequences, compositions, and more.
+          {m.library_create_collections_desc()}
         </p>
         <PanelButton variant="primary" onclick={handleCreateCollection}>
           <i class="fas fa-plus" aria-hidden="true"></i>
-          Create Your First Collection
+          {m.library_create_first_collection()}
         </PanelButton>
       </div>
     {:else}
@@ -100,7 +101,7 @@
               <h3>{collection.name}</h3>
               <p class="item-count">
                 {collection.sequenceCount}
-                {collection.sequenceCount === 1 ? "item" : "items"}
+                {collection.sequenceCount === 1 ? m.common_item() : m.common_items()}
               </p>
             </div>
             {#if collection.systemType}

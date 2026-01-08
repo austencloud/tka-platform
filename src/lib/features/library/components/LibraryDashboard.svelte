@@ -26,6 +26,7 @@
   import CollaborativeVideoCard from "$lib/shared/video-collaboration/components/CollaborativeVideoCard.svelte";
   import ActivityTimeline from "./ActivityTimeline.svelte";
   import SequenceAnalyticsBadge from "./SequenceAnalyticsBadge.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     onNavigate?: (section: LibraryViewSection) => void;
@@ -178,8 +179,8 @@
   {#if !isAuthenticated}
     <div class="auth-required">
       <i class="fas fa-lock" aria-hidden="true"></i>
-      <h2>Sign In Required</h2>
-      <p>Please sign in to access your personal library.</p>
+      <h2>{m.library_sign_in_required()}</h2>
+      <p>{m.library_sign_in_message()}</p>
     </div>
   {:else if isLoading}
     <div
@@ -189,16 +190,16 @@
       aria-busy="true"
     >
       <div class="spinner" aria-hidden="true"></div>
-      <p>Loading your library...</p>
+      <p>{m.library_loading_library()}</p>
     </div>
   {:else if error}
     <div class="error-state" role="alert" aria-live="assertive">
       <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-      <h2>Error Loading Library</h2>
+      <h2>{m.library_error_loading()}</h2>
       <p>{error}</p>
       <button class="retry-btn" onclick={() => libraryState.initialize()}>
         <i class="fas fa-redo" aria-hidden="true"></i>
-        Retry
+        {m.action_retry()}
       </button>
     </div>
   {:else}
@@ -208,26 +209,26 @@
       <div class="stats-bar">
         <div class="stat-item">
           <span class="stat-value">{totalSequences}</span>
-          <span class="stat-label">Sequences</span>
+          <span class="stat-label">{m.library_sequences()}</span>
         </div>
         <div class="stat-item highlight">
           <span class="stat-value">{publicCount}</span>
-          <span class="stat-label">Published</span>
+          <span class="stat-label">{m.library_published()}</span>
         </div>
         <div class="stat-item">
           <span class="stat-value">{totalFavorites}</span>
-          <span class="stat-label">Favorites</span>
+          <span class="stat-label">{m.library_favorites()}</span>
         </div>
         {#if totalViews > 0}
           <div class="stat-item views">
             <span class="stat-value">{totalViews}</span>
-            <span class="stat-label">Views</span>
+            <span class="stat-label">{m.library_views()}</span>
           </div>
         {/if}
         {#if totalForks > 0}
           <div class="stat-item forks">
             <span class="stat-value">{totalForks}</span>
-            <span class="stat-label">Forks</span>
+            <span class="stat-label">{m.library_forks()}</span>
           </div>
         {/if}
       </div>
@@ -238,7 +239,7 @@
           <div class="section-header">
             <div class="section-title">
               <i class="fas fa-sparkles" aria-hidden="true"></i>
-              <h2>Created This Week</h2>
+              <h2>{m.library_created_this_week()}</h2>
               <span class="count-badge">{createdThisWeek().length}</span>
             </div>
           </div>
@@ -271,11 +272,11 @@
         <div class="section-header">
           <div class="section-title">
             <i class="fas fa-clock" aria-hidden="true"></i>
-            <h2>Recently Updated</h2>
+            <h2>{m.library_recently_updated()}</h2>
           </div>
           {#if totalSequences > 0}
             <button class="see-all-btn" onclick={handleSeeAllSequences}>
-              See All <i class="fas fa-chevron-right" aria-hidden="true"></i>
+              {m.library_see_all()} <i class="fas fa-chevron-right" aria-hidden="true"></i>
             </button>
           {/if}
         </div>
@@ -304,7 +305,7 @@
         {:else}
           <div class="empty-section">
             <i class="fas fa-plus-circle" aria-hidden="true"></i>
-            <p>No sequences yet. Create your first sequence!</p>
+            <p>{m.library_no_sequences()}</p>
           </div>
         {/if}
       </section>
@@ -315,10 +316,10 @@
           <div class="section-header">
             <div class="section-title">
               <i class="fas fa-heart" aria-hidden="true"></i>
-              <h2>Favorites</h2>
+              <h2>{m.library_favorites()}</h2>
             </div>
             <button class="see-all-btn" onclick={handleSeeAllFavorites}>
-              See All <i class="fas fa-chevron-right" aria-hidden="true"></i>
+              {m.library_see_all()} <i class="fas fa-chevron-right" aria-hidden="true"></i>
             </button>
           </div>
 
@@ -340,11 +341,11 @@
           <div class="section-header">
             <div class="section-title">
               <i class="fas fa-video" aria-hidden="true"></i>
-              <h2>My Videos</h2>
+              <h2>{m.library_my_videos()}</h2>
             </div>
             {#if totalVideos > 0}
               <button class="see-all-btn" onclick={handleSeeAllVideos}>
-                See All <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                {m.library_see_all()} <i class="fas fa-chevron-right" aria-hidden="true"></i>
               </button>
             {/if}
           </div>
@@ -357,7 +358,7 @@
               aria-busy="true"
             >
               <div class="spinner small" aria-hidden="true"></div>
-              <span>Loading videos...</span>
+              <span>{m.library_loading_videos()}</span>
             </div>
           {:else if recentVideos().length > 0}
             <div class="videos-grid">
@@ -371,7 +372,7 @@
           {:else}
             <div class="empty-section">
               <i class="fas fa-video" aria-hidden="true"></i>
-              <p>No videos yet. Record your first performance!</p>
+              <p>{m.library_no_videos()}</p>
             </div>
           {/if}
         </section>
@@ -383,7 +384,7 @@
           <div class="section-header">
             <div class="section-title">
               <i class="fas fa-history" aria-hidden="true"></i>
-              <h2>Recent Activity</h2>
+              <h2>{m.library_recent_activity()}</h2>
             </div>
           </div>
 
