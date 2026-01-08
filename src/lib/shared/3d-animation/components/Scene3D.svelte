@@ -32,6 +32,8 @@
   import type { GridMode } from "../domain/constants/grid-layout";
   import type { Snippet } from "svelte";
   import { WALL_OFFSET } from "../utils/performer-positions";
+  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
 
   /** Avatar position for per-avatar grids */
   interface AvatarGridPosition {
@@ -43,6 +45,10 @@
   }
 
   interface Props {
+    /** Camera mode for view switching (orbit vs first-person) */
+    cameraMode?: CameraMode;
+    /** Primary avatar to follow in first-person mode */
+    primaryAvatar?: AvatarInstanceState | null;
     /** Which planes to show */
     visiblePlanes?: Set<Plane>;
     /** Whether to show the grid */
@@ -91,6 +97,8 @@
   }
 
   let {
+    cameraMode = CameraMode.THIRD_PERSON,
+    primaryAvatar = null,
     visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
     showGrid = true,
     showLabels = true,
@@ -187,6 +195,9 @@
     | undefined
   >(undefined);
 
+  // Reference to camera for first-person mode
+  let cameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
+
   // Handle orbit control changes
   function handleCameraChange() {
     if (!onCameraChange || !controlsRef) return;
@@ -239,25 +250,55 @@
 
     <!-- Perspective Camera (disabled when locomotion mode provides its own) -->
     {#if !disableCamera}
-      <T.PerspectiveCamera
-        makeDefault
-        position={cameraPosition}
-        fov={65}
-        near={1}
-        far={6000}
-      >
-        <!-- Orbit controls attached to camera (disabled during object dragging) -->
-        <OrbitControls
-          bind:ref={controlsRef}
-          enabled={!disableOrbitControls}
-          enableDamping
-          dampingFactor={0.05}
-          minDistance={200}
-          maxDistance={1500}
-          target={cameraTarget}
-          onchange={handleCameraChange}
+      {#if cameraMode === CameraMode.FIRST_PERSON && primaryAvatar}
+        <!-- First-person camera following primary avatar -->
+        {@const eyeHeight = 160}
+        {@const forwardOffset = 50}
+        {@const eyeX = primaryAvatar.position.x + Math.sin(primaryAvatar.facingAngle) * forwardOffset}
+        {@const eyeY = primaryAvatar.position.y + eyeHeight}
+        {@const eyeZ = primaryAvatar.position.z + Math.cos(primaryAvatar.facingAngle) * forwardOffset}
+
+        <T.PerspectiveCamera
+          bind:ref={cameraRef}
+          makeDefault
+          position={[eyeX, eyeY, eyeZ]}
+          fov={75}
+          near={1}
+          far={6000}
         />
-      </T.PerspectiveCamera>
+
+        <!-- Update camera rotation to match avatar facing -->
+        <T.Object3D
+          onFrame={() => {
+            if (cameraRef && primaryAvatar) {
+              cameraRef.rotation.order = "YXZ";
+              cameraRef.rotation.y = primaryAvatar.facingAngle;
+              cameraRef.rotation.x = 0; // Look straight ahead
+            }
+          }}
+        />
+      {:else}
+        <!-- Existing orbit controls (third-person) -->
+        <T.PerspectiveCamera
+          makeDefault
+          position={cameraPosition}
+          fov={65}
+          near={1}
+          far={6000}
+        >
+          <!-- Orbit controls attached to camera (disabled during object dragging) -->
+          <OrbitControls
+            bind:ref={controlsRef}
+            enabled={!disableOrbitControls}
+            enableDamping
+            dampingFactor={0.05}
+            minDistance={200}
+            maxDistance={1500}
+            target={cameraTarget}
+            onchange={handleCameraChange}
+          />
+        </T.PerspectiveCamera>
+      {/if}
     {/if}
 
     <!-- Ambient light for base illumination (reduced for night environments) -->

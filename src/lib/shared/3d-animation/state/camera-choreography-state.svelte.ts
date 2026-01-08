@@ -1,0 +1,200 @@
+/**
+ * Camera Choreography State
+ *
+ * Svelte 5 runes-based state for camera choreography.
+ * Manages playback integration and provides reactive camera state.
+ */
+
+import type {
+  CameraChoreography,
+  CameraKeyframe,
+  CameraState,
+  CameraPosition,
+} from "../domain/camera-choreography";
+
+import {
+  createCameraChoreography,
+  createDefaultCameraState,
+} from "../domain/camera-choreography";
+
+import {
+  createCameraChoreographer,
+} from "../services/implementations/CameraChoreographer";
+
+import type {
+  ICameraChoreographer,
+  PerformerPositionProvider,
+} from "../services/contracts/ICameraChoreographer";
+
+/**
+ * Create camera choreography state with Svelte 5 reactivity
+ */
+export function createCameraChoreographyState() {
+  // Internal choreographer instance
+  const choreographer: ICameraChoreographer = createCameraChoreographer();
+
+  // Reactive state
+  let isEnabled = $state(false);
+  let cameraState = $state<CameraState>(createDefaultCameraState());
+  let isRecording = $state(false);
+
+  // Derived state
+  const hasChoreography = $derived(choreographer.hasChoreography);
+  const keyframeCount = $derived(choreographer.keyframes.length);
+  const isAnimating = $derived(cameraState.isAnimating);
+
+  /**
+   * Enable/disable choreographed camera (vs orbit controls)
+   */
+  function setEnabled(enabled: boolean) {
+    isEnabled = enabled;
+  }
+
+  /**
+   * Toggle choreographed camera mode
+   */
+  function toggle() {
+    isEnabled = !isEnabled;
+  }
+
+  /**
+   * Load a choreography
+   */
+  function loadChoreography(choreography: CameraChoreography) {
+    choreographer.loadChoreography(choreography);
+    cameraState = choreographer.currentState;
+  }
+
+  /**
+   * Clear choreography
+   */
+  function clearChoreography() {
+    choreographer.clearChoreography();
+    cameraState = createDefaultCameraState();
+    isEnabled = false;
+  }
+
+  /**
+   * Create a new empty choreography
+   */
+  function createNew(name: string) {
+    const choreography = createCameraChoreography(
+      name,
+      { x: 0, y: 200, z: 600 },
+      { x: 0, y: 100, z: 0 }
+    );
+    choreographer.loadChoreography(choreography);
+    cameraState = choreographer.currentState;
+  }
+
+  /**
+   * Update camera state for current playback position
+   * Call this each frame when choreography is enabled
+   */
+  function updateForBeat(
+    beatNumber: number,
+    beatProgress: number,
+    performerProvider?: PerformerPositionProvider
+  ) {
+    if (!isEnabled || !choreographer.hasChoreography) return;
+
+    cameraState = choreographer.updateForBeat(
+      beatNumber,
+      beatProgress,
+      performerProvider
+    );
+  }
+
+  /**
+   * Add a keyframe at the current beat
+   */
+  function addKeyframe(
+    beatNumber: number,
+    position: CameraPosition,
+    target: CameraPosition
+  ) {
+    choreographer.captureKeyframe(beatNumber, position, target);
+  }
+
+  /**
+   * Remove a keyframe by ID
+   */
+  function removeKeyframe(id: string) {
+    choreographer.removeKeyframe(id);
+  }
+
+  /**
+   * Start recording mode (keyframes added on beat changes)
+   */
+  function startRecording() {
+    isRecording = true;
+  }
+
+  /**
+   * Stop recording mode
+   */
+  function stopRecording() {
+    isRecording = false;
+  }
+
+  /**
+   * Get current choreography for saving
+   */
+  function getChoreography(): CameraChoreography | null {
+    return choreographer.choreography;
+  }
+
+  return {
+    // State
+    get isEnabled() {
+      return isEnabled;
+    },
+    get cameraState() {
+      return cameraState;
+    },
+    get hasChoreography() {
+      return hasChoreography;
+    },
+    get keyframeCount() {
+      return keyframeCount;
+    },
+    get isAnimating() {
+      return isAnimating;
+    },
+    get isRecording() {
+      return isRecording;
+    },
+    get keyframes() {
+      return choreographer.keyframes;
+    },
+    get activeKeyframe() {
+      return choreographer.activeKeyframe;
+    },
+    get nextKeyframe() {
+      return choreographer.nextKeyframe;
+    },
+    get transitionProgress() {
+      return choreographer.transitionProgress;
+    },
+
+    // Methods
+    setEnabled,
+    toggle,
+    loadChoreography,
+    clearChoreography,
+    createNew,
+    updateForBeat,
+    addKeyframe,
+    removeKeyframe,
+    startRecording,
+    stopRecording,
+    getChoreography,
+
+    // Direct choreographer access for advanced use
+    get choreographer() {
+      return choreographer;
+    },
+  };
+}
+
+export type CameraChoreographyState = ReturnType<typeof createCameraChoreographyState>;

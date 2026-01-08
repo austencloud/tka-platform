@@ -30,6 +30,9 @@ export interface Viewer3DShortcutHandlers {
   setCameraSide: () => void;
   setCameraPerspective: () => void;
 
+  // Camera mode switching
+  toggleCameraMode: () => void;
+
   // UI toggles
   toggleGrid: () => void;
   togglePanel: () => void;
@@ -204,6 +207,15 @@ export function createViewer3DShortcuts(
       scope: "help",
       context: "realm",
       action: handlers.showHelp,
+    },
+    {
+      id: "3d-viewer.toggle-camera-mode",
+      label: "Toggle Camera Mode",
+      description: "Switch between orbit and first-person camera",
+      key: "v",
+      scope: "action",
+      context: "realm",
+      action: handlers.toggleCameraMode,
     },
   ];
 }

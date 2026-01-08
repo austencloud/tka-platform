@@ -39,6 +39,7 @@
 
     // Camera
     setCameraPreset: (preset: CameraPreset) => void;
+    toggleCameraMode: () => void;
 
     // UI toggles
     showGrid: boolean;
@@ -63,6 +64,7 @@
     nextBeat,
     goToBeat,
     setCameraPreset,
+    toggleCameraMode,
     showGrid,
     setShowGrid,
     panelOpen,
@@ -107,6 +109,9 @@
         setCameraTop: () => setCameraPreset("top"),
         setCameraSide: () => setCameraPreset("side"),
         setCameraPerspective: () => setCameraPreset("perspective"),
+
+        // Camera mode switching
+        toggleCameraMode: () => toggleCameraMode(),
 
         // UI toggles
         toggleGrid: () => setShowGrid(!showGrid),

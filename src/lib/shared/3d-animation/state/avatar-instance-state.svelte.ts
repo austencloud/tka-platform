@@ -365,6 +365,14 @@ export function createAvatarInstanceState(
     isMoving = false;
   }
 
+  /**
+   * Set facing angle (for external mutation, e.g., from formation manager)
+   */
+  function setFacingAngle(value: number) {
+    facingAngle = value;
+    targetFacingAngle = value;
+  }
+
   return {
     // Identity
     id,
@@ -381,6 +389,10 @@ export function createAvatarInstanceState(
     get facingAngle() {
       return facingAngle;
     },
+    set facingAngle(value: number) {
+      facingAngle = value;
+      targetFacingAngle = value;
+    },
 
     // Movement state
     get isMoving() {
@@ -396,6 +408,7 @@ export function createAvatarInstanceState(
     setMoveInput,
     updateMovement,
     stopMovement,
+    setFacingAngle,
 
     // Avatar model
     get avatarModelId() {

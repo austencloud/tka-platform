@@ -250,7 +250,6 @@ export class LegAnimator implements ILegAnimator {
       const testBoneName = `${prefix}Hips`;
       const bone = root.getObjectByName(testBoneName);
       if (bone) {
-        console.log(`[LegAnimator] Detected bone prefix: "${prefix}"`);
         return prefix;
       }
     }
@@ -301,7 +300,6 @@ export class LegAnimator implements ILegAnimator {
   async loadDirectionalAnimations(
     urls: DirectionalAnimationUrls
   ): Promise<void> {
-    console.log("[LegAnimator] Loading directional animations...");
     this.directionalMode = true;
 
     // Load all 4 in parallel
@@ -318,7 +316,6 @@ export class LegAnimator implements ILegAnimator {
     this.directions.strafeRight.raw = strafeRight;
 
     this.animationLoaded = true;
-    console.log("[LegAnimator] All directional animations loaded");
 
     if (this.initialized && this.mixer) {
       this.processDirectionalAnimations();
@@ -342,9 +339,6 @@ export class LegAnimator implements ILegAnimator {
             reject(new Error(`Animation clip is undefined in ${url}`));
             return;
           }
-          console.log(
-            `[LegAnimator] Loaded ${url}: ${clip.tracks.length} tracks, ${clip.duration.toFixed(2)}s`
-          );
           resolve(clip);
         },
         undefined,
@@ -371,10 +365,6 @@ export class LegAnimator implements ILegAnimator {
     this.walkAction.enabled = true;
     this.walkAction.setEffectiveWeight(0);
     this.walkAction.play();
-
-    console.log(
-      `[LegAnimator] Created walk action: ${this.walkClip.tracks.length} leg tracks`
-    );
   }
 
   /**
@@ -396,10 +386,6 @@ export class LegAnimator implements ILegAnimator {
       dir.action.enabled = true;
       dir.action.setEffectiveWeight(0);
       dir.action.play();
-
-      console.log(
-        `[LegAnimator] Created ${key} action: ${dir.processed.tracks.length} leg tracks`
-      );
     }
   }
 

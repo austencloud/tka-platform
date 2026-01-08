@@ -20,6 +20,11 @@ import {
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
+import type { FormationPreset } from "../domain/formation";
+import {
+  createFormationManager,
+} from "../services/implementations/FormationManager";
+import type { IFormationManager } from "../services/contracts/IFormationManager";
 
 /**
  * Dependencies for performer manager
@@ -40,6 +45,9 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   let performerStates = $state<AvatarInstanceState[]>([]);
   let activePerformerIndex = $state(0);
   let syncState: AvatarSyncState | null = $state(null);
+
+  // Formation manager for flexible positioning
+  const formationManager: IFormationManager = createFormationManager(1);
 
   // Derived: active performer state
   const activeState = $derived(performerStates[activePerformerIndex] ?? null);
@@ -86,15 +94,55 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   }
 
   /**
-   * Update all performer positions based on count
+   * Update all performer positions based on formation
    */
   function updatePositions() {
-    const positions = getDefaultPositions(performerStates.length);
+    // Update formation manager's performer count
+    formationManager.setPerformerCount(performerStates.length);
+
+    // Apply positions from formation manager
+    const positions = formationManager.getAllPerformerPositions();
     performerStates.forEach((performer, i) => {
-      const pos = positions[i];
+      const pos = positions.find((p) => p.index === i);
       if (pos) {
-        performer.position.x = pos.x;
-        performer.position.z = pos.z;
+        performer.position.x = pos.position.x;
+        performer.position.z = pos.position.z;
+        performer.setFacingAngle(pos.facingAngle);
+      }
+    });
+  }
+
+  /**
+   * Apply a formation preset (immediately, no transition)
+   */
+  function applyFormationPreset(preset: FormationPreset) {
+    formationManager.applyPreset(preset);
+    updatePositions();
+  }
+
+  /**
+   * Transition to a formation preset (smooth animation)
+   */
+  function transitionToFormation(preset: FormationPreset, durationMs: number = 500) {
+    formationManager.transitionToPreset(preset, durationMs);
+  }
+
+  /**
+   * Update formation transition (called each frame when transitioning)
+   */
+  function updateFormationTransition() {
+    if (!formationManager.isTransitioning) return;
+
+    formationManager.updateTransition(performance.now());
+
+    // Apply interpolated positions
+    const positions = formationManager.getAllPerformerPositions();
+    performerStates.forEach((performer, i) => {
+      const pos = positions.find((p) => p.index === i);
+      if (pos) {
+        performer.position.x = pos.position.x;
+        performer.position.z = pos.position.z;
+        performer.setFacingAngle(pos.facingAngle);
       }
     });
   }
@@ -216,6 +264,17 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
       return MAX_PERFORMERS;
     },
 
+    // Formation state
+    get currentFormation() {
+      return formationManager.currentFormation;
+    },
+    get currentFormationPreset() {
+      return formationManager.currentFormation.preset;
+    },
+    get isFormationTransitioning() {
+      return formationManager.isTransitioning;
+    },
+
     // Methods
     initialize,
     addPerformer,
@@ -225,6 +284,11 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
     setSpeed,
     ensurePerformerCount,
     destroy,
+
+    // Formation methods
+    applyFormationPreset,
+    transitionToFormation,
+    updateFormationTransition,
   };
 }
 

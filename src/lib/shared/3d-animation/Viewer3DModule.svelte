@@ -39,6 +39,18 @@
   import EffectsLayer from "./effects/EffectsLayer.svelte";
   import { getEffectsConfigState } from "./effects/state/effects-config-state.svelte";
 
+  // Camera mode switching
+  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
+
+  // Camera choreography
+  import { createCameraChoreographyState } from "./state/camera-choreography-state.svelte";
+  import CameraChoreographyControls from "./components/controls/CameraChoreographyControls.svelte";
+
+  // Scene orchestration
+  import { createSceneState } from "./state/scene-state.svelte";
+  import SceneControls from "./components/controls/SceneControls.svelte";
+
   // CameraState type (matches Scene3D.svelte's internal definition)
   interface CameraState {
     position: [number, number, number];
@@ -112,6 +124,17 @@
   let isPointerLocked = $state(false); // Pointer lock state for locomotion hint
   let isDraggingPerformer = $state(false); // True when any performer is being dragged
 
+  // Camera mode (orbit <-> 1st person with V key)
+  let cameraMode = $state<CameraMode>(
+    cameraPreferences.getModeForDestination("stage")
+  );
+
+  // Camera choreography state
+  const cameraChoreography = createCameraChoreographyState();
+
+  // Scene orchestration state
+  const sceneState = createSceneState();
+
   // Background type comes from settingsService (unified with 2D theme)
 
   // Avatar model is now determined by bodyType in Avatar3D component
@@ -142,6 +165,23 @@
       z: p.position.z,
       facingAngle: p.facingAngle,
     }));
+  });
+
+  // Effective camera position (choreography overrides orbit controls when enabled)
+  const effectiveCameraPosition = $derived.by((): [number, number, number] | null => {
+    if (cameraChoreography.isEnabled && cameraChoreography.hasChoreography) {
+      const pos = cameraChoreography.cameraState.position;
+      return [pos.x, pos.y, pos.z];
+    }
+    return customCameraPosition;
+  });
+
+  const effectiveCameraTarget = $derived.by((): [number, number, number] | null => {
+    if (cameraChoreography.isEnabled && cameraChoreography.hasChoreography) {
+      const target = cameraChoreography.cameraState.target;
+      return [target.x, target.y, target.z];
+    }
+    return customCameraTarget;
   });
 
   // Camera handlers
@@ -267,6 +307,79 @@
     }
   });
 
+  // Update formation transitions (runs every frame during transitions)
+  $effect(() => {
+    if (!performerManager?.isFormationTransitioning) return;
+
+    let frameId: number;
+    function animate() {
+      performerManager?.updateFormationTransition();
+      if (performerManager?.isFormationTransitioning) {
+        frameId = requestAnimationFrame(animate);
+      }
+    }
+    frameId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(frameId);
+  });
+
+  // Update camera choreography during playback
+  $effect(() => {
+    if (!cameraChoreography.isEnabled || !activeState?.isPlaying) return;
+
+    let frameId: number;
+    function updateCamera() {
+      // Create performer position provider for follow mode
+      const performerProvider = {
+        getPosition: (index: number) => {
+          const performer = performerStates[index];
+          if (!performer) return null;
+          return {
+            x: performer.position.x,
+            y: performer.position.y,
+            z: performer.position.z,
+          };
+        },
+      };
+
+      cameraChoreography.updateForBeat(
+        activeState?.currentBeatIndex ?? 0,
+        activeState?.progress ?? 0,
+        performerProvider
+      );
+
+      if (cameraChoreography.isEnabled && activeState?.isPlaying) {
+        frameId = requestAnimationFrame(updateCamera);
+      }
+    }
+    frameId = requestAnimationFrame(updateCamera);
+
+    return () => cancelAnimationFrame(frameId);
+  });
+
+  // Update scene orchestrator during playback
+  $effect(() => {
+    if (!sceneState.isPlaying) return;
+
+    let lastTime = performance.now();
+    let frameId: number;
+
+    function updateScene() {
+      const now = performance.now();
+      const deltaMs = now - lastTime;
+      lastTime = now;
+
+      sceneState.update(deltaMs);
+
+      if (sceneState.isPlaying) {
+        frameId = requestAnimationFrame(updateScene);
+      }
+    }
+    frameId = requestAnimationFrame(updateScene);
+
+    return () => cancelAnimationFrame(frameId);
+  });
+
   // Persist state changes (using first performer for backwards compat)
   $effect(() => {
     const firstPerformer = performerStates[0];
@@ -304,21 +417,23 @@
     <!-- Scene Area -->
     <main class="scene-area">
       <Scene3D
+        {cameraMode}
+        primaryAvatar={performerStates[0]}
         {visiblePlanes}
         {showGrid}
         {showLabels}
         {gridMode}
         {cameraPreset}
-        {customCameraPosition}
-        {customCameraTarget}
+        customCameraPosition={effectiveCameraPosition}
+        customCameraTarget={effectiveCameraTarget}
         onCameraChange={handleCameraChange}
+        disableOrbitControls={cameraChoreography.isEnabled || isDraggingPerformer}
         bloomEnabled={effectsConfig.bloom.enabled}
         bloomIntensity={effectsConfig.bloom.intensity}
         bloomThreshold={effectsConfig.bloom.threshold}
         backgroundType={settingsService.settings.backgroundType}
         {avatarPositions}
         disableCamera={locomotionMode}
-        disableOrbitControls={isDraggingPerformer}
         onMeshClick={handleMeshClick}
         onPointerUp={handlePointerUp}
         onDrag={handleDrag}
@@ -397,8 +512,16 @@
         {cameraPreset}
         isCustomCamera={!!customCameraPosition}
         onCameraChange={setCameraPreset}
+        formationPreset={performerManager?.currentFormationPreset}
+        isFormationTransitioning={performerManager?.isFormationTransitioning ?? false}
+        performerCount={performerStates.length}
+        onFormationChange={(preset) => performerManager?.transitionToFormation(preset, 500)}
         {speed}
         onSpeedChange={(s) => (speed = s)}
+        {cameraChoreography}
+        currentBeat={activeState?.currentBeatIndex ?? 0}
+        currentCameraPosition={customCameraPosition ? { x: customCameraPosition[0], y: customCameraPosition[1], z: customCameraPosition[2] } : undefined}
+        currentCameraTarget={customCameraTarget ? { x: customCameraTarget[0], y: customCameraTarget[1], z: customCameraTarget[2] } : undefined}
         {sequenceName}
         onClearSequence={() => activeState?.clearSequence()}
         isPlaying={activeState?.isPlaying ?? false}
@@ -491,6 +614,11 @@
         />
       </div>
 
+      <!-- Scene Controls (for multi-performer choreography) -->
+      <div class="scene-controls-container">
+        <SceneControls {sceneState} />
+      </div>
+
       <!-- Avatar Sync Controls (only shown with 2+ performers) -->
       {#if syncState && performerStates.length >= 2 && performerStates[0]?.hasSequence && performerStates[1]?.hasSequence}
         <div class="sync-controls-container">
@@ -543,6 +671,9 @@
     nextBeat={() => activeState?.nextBeat()}
     goToBeat={(i) => activeState?.goToBeat(i)}
     {setCameraPreset}
+    toggleCameraMode={() => {
+      cameraMode = cameraPreferences.toggleMode("stage");
+    }}
     {showGrid}
     setShowGrid={(v) => (showGrid = v)}
     {panelOpen}

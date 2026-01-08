@@ -14,6 +14,11 @@
   import SpeedControlBar from "../controls/SpeedControlBar.svelte";
   import PlaybackControlBar from "../controls/PlaybackControlBar.svelte";
   import SequenceInfoBadge from "../controls/SequenceInfoBadge.svelte";
+  import FormationSelector from "../controls/FormationSelector.svelte";
+  import CameraChoreographyControls from "../controls/CameraChoreographyControls.svelte";
+  import type { FormationPreset } from "../../domain/formation";
+  import type { CameraChoreographyState } from "../../state/camera-choreography-state.svelte";
+  import type { CameraPosition } from "../../domain/camera-choreography";
 
   interface Props {
     // Camera
@@ -21,9 +26,21 @@
     isCustomCamera?: boolean;
     onCameraChange: (preset: CameraPreset) => void;
 
+    // Formation (optional - only shown with 2+ performers)
+    formationPreset?: FormationPreset;
+    isFormationTransitioning?: boolean;
+    performerCount?: number;
+    onFormationChange?: (preset: FormationPreset) => void;
+
     // Speed
     speed: number;
     onSpeedChange: (speed: number) => void;
+
+    // Camera choreography (optional)
+    cameraChoreography?: CameraChoreographyState;
+    currentBeat?: number;
+    currentCameraPosition?: CameraPosition;
+    currentCameraTarget?: CameraPosition;
 
     // Sequence info (optional)
     sequenceName?: string | null;
@@ -56,8 +73,16 @@
     cameraPreset,
     isCustomCamera = false,
     onCameraChange,
+    formationPreset,
+    isFormationTransitioning = false,
+    performerCount = 1,
+    onFormationChange,
     speed,
     onSpeedChange,
+    cameraChoreography,
+    currentBeat = 0,
+    currentCameraPosition,
+    currentCameraTarget,
     sequenceName = null,
     onClearSequence,
     isPlaying,
@@ -88,6 +113,15 @@
       onchange={onCameraChange}
     />
 
+    {#if performerCount >= 2 && formationPreset && onFormationChange}
+      <FormationSelector
+        value={formationPreset}
+        isTransitioning={isFormationTransitioning}
+        {performerCount}
+        onchange={onFormationChange}
+      />
+    {/if}
+
     {#if sequenceName}
       <SequenceInfoBadge
         name={sequenceName}
@@ -96,6 +130,16 @@
     {/if}
 
     <SpeedControlBar value={speed} onchange={onSpeedChange} />
+
+    {#if cameraChoreography}
+      <CameraChoreographyControls
+        choreographyState={cameraChoreography}
+        {currentBeat}
+        {currentCameraPosition}
+        {currentCameraTarget}
+        hasSequence={hasSequence}
+      />
+    {/if}
 
     {#if onShowHelp}
       <button
