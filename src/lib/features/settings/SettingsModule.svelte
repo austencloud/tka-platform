@@ -42,6 +42,7 @@
   import VisibilityTab from "$lib/shared/settings/components/tabs/VisibilityTab.svelte";
   import KeyboardShortcutsTab from "$lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
+  import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
 
   // Reactive settings - derives from getSettings() to maintain reactivity
   let settings = $derived(getSettings());
@@ -257,6 +258,8 @@
             currentSettings={settings}
             onSettingUpdate={handleSettingUpdate}
           />
+        {:else if activeTab === "language"}
+          <LanguageTab />
         {:else}
           <!-- Fallback to profile if unknown tab -->
           <ProfileTab

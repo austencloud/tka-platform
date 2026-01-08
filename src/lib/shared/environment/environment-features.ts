@@ -132,4 +132,5 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   mandala: false, // Mandala generator (internal tool)
   skewlab: false, // Skewlab internal tool
   "background-builder": false, // Background builder internal tool
+  "infinite-worlds": false, // Infinite worlds procedural generation (admin-only)
 };

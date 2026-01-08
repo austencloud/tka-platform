@@ -41,7 +41,8 @@ export type ModuleId =
   | "realm" // 3D experiences - Stage (avatar viewer) + Museum (gallery walkthrough)
   | "mandala"
   | "skewlab" // Experimental skewed positions (admin-only, temporary)
-  | "background-builder"; // Design and iterate on deep ocean background elements
+  | "background-builder" // Design and iterate on deep ocean background elements
+  | "infinite-worlds"; // WebGPU + ECS + Rapier procedural world exploration
 
 /**
  * Module Definition

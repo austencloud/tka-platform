@@ -190,6 +190,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true, // Main module button on dashboard
     sections: SETTINGS_TABS, // Profile, Props, Background, Visibility, Misc, AI tabs
   },
+  {
+    id: "infinite-worlds",
+    label: "Infinite Worlds",
+    icon: '<i class="fas fa-globe" style="color: #22d3ee;" aria-hidden="true"></i>',
+    color: "#22d3ee", // Cyan - infinite/exploration
+    description: "Explore procedurally generated infinite worlds",
+    isMain: true, // Admin-only for development
+    sections: [], // Single immersive experience
+  },
   // Gallery module retired - now part of Realm module as Museum tab
   // 3D Viewer module retired - now part of Realm module as Stage tab
 ];

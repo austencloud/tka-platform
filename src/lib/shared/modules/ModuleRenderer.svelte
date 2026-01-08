@@ -81,6 +81,9 @@
     // Background Builder - design and iterate on deep ocean background elements
     "background-builder": () =>
       import("../../features/background-builder/BackgroundBuilder.svelte"),
+    // Infinite Worlds - WebGPU + ECS + Rapier procedural world exploration
+    "infinite-worlds": () =>
+      import("../../features/infinite-worlds/components/InfiniteWorldsModule.svelte"),
   };
 
   // Load module with caching

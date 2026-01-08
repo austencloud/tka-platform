@@ -27,7 +27,7 @@
   import { sidebarTourState } from "$lib/shared/onboarding/state/sidebar-tour-state.svelte";
   import { resetSidebarTour } from "$lib/shared/onboarding/config/storage-keys";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import { container } from "$lib/shared/inversify/container";
+  import { getContainerInstance } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type {
     IQuickAccessPersister,
@@ -179,6 +179,7 @@
     introResetMessage = "Scanning cloud thumbnails...";
 
     try {
+      const container = await getContainerInstance();
       const cloudCache = container.get<ICloudThumbnailCache>(
         TYPES.ICloudThumbnailCache
       );
@@ -236,8 +237,9 @@
     });
 
     // Resolve the service after mount (admin module loads async in Tier 2)
-    const tryResolve = () => {
+    const tryResolve = async () => {
       try {
+        const container = await getContainerInstance();
         quickAccessPersister = container.get<IQuickAccessPersister>(
           TYPES.IQuickAccessPersister
         );
@@ -248,13 +250,8 @@
       }
     };
 
-    // Try immediately, then retry after a short delay if not available
-    if (!tryResolve()) {
-      // Retry after Tier 2 modules should be loaded
-      setTimeout(() => {
-        tryResolve();
-      }, 500);
-    }
+    // Resolve async - will wait for Tier 2 modules
+    tryResolve();
   });
 </script>
 

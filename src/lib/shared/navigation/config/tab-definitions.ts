@@ -423,6 +423,14 @@ export const SETTINGS_TABS: Section[] = [
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
+  {
+    id: "language",
+    label: "Language",
+    icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
+    description: "App language and translations",
+    color: "#0ea5e9",
+    gradient: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
+  },
 ];
 
 // Realm tabs configuration (3D experiences)

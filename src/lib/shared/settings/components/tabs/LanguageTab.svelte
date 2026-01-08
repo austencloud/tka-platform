@@ -1,0 +1,290 @@
+<!--
+  LanguageTab.svelte - App Language Settings
+
+  Allows users to select their preferred language.
+  Uses Paraglide i18n for translations.
+-->
+<script lang="ts">
+  import { onMount } from "svelte";
+  import {
+    getLocale,
+    setLocale,
+    locales,
+    baseLocale,
+  } from "$lib/paraglide/runtime.js";
+  import * as m from "$lib/paraglide/messages.js";
+  import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import { resolve } from "../../../inversify/di";
+  import { TYPES } from "../../../inversify/types";
+
+  // Language display names (native)
+  const languageNames: Record<string, { native: string; english: string }> = {
+    en: { native: "English", english: "English" },
+    es: { native: "Español", english: "Spanish" },
+    fr: { native: "Français", english: "French" },
+    de: { native: "Deutsch", english: "German" },
+    pt: { native: "Português", english: "Portuguese" },
+    zh: { native: "中文", english: "Chinese" },
+    ja: { native: "日本語", english: "Japanese" },
+    ko: { native: "한국어", english: "Korean" },
+    ar: { native: "العربية", english: "Arabic" },
+    ru: { native: "Русский", english: "Russian" },
+    it: { native: "Italiano", english: "Italian" },
+  };
+
+  // Services
+  let hapticService: IHapticFeedback | null = null;
+
+  // State
+  let isVisible = $state(false);
+  let currentLocale = $state(getLocale());
+
+  onMount(async () => {
+    try {
+      hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    } catch {
+      console.warn("Haptic service not available");
+    }
+    setTimeout(() => (isVisible = true), 30);
+  });
+
+  function handleLanguageSelect(locale: string) {
+    hapticService?.trigger("selection");
+    setLocale(locale as typeof locales[number]);
+    currentLocale = locale;
+  }
+
+  function isCurrentLocale(locale: string): boolean {
+    return currentLocale === locale;
+  }
+</script>
+
+<div class="language-tab" class:visible={isVisible}>
+  <!-- Header -->
+  <header class="tab-header">
+    <div class="header-icon">
+      <i class="fas fa-globe" aria-hidden="true"></i>
+    </div>
+    <div class="header-content">
+      <h1>{m.settings_language()}</h1>
+      <p>Choose your preferred language</p>
+    </div>
+  </header>
+
+  <!-- Language Grid -->
+  <section class="section">
+    <h2 class="section-title">
+      <i class="fas fa-language" aria-hidden="true"></i>
+      Available Languages
+    </h2>
+
+    <div class="language-grid">
+      {#each locales as locale}
+        {@const langInfo = languageNames[locale] || { native: locale, english: locale }}
+        <button
+          type="button"
+          class="language-card"
+          class:selected={isCurrentLocale(locale)}
+          class:base={locale === baseLocale}
+          onclick={() => handleLanguageSelect(locale)}
+          aria-pressed={isCurrentLocale(locale)}
+        >
+          <span class="native-name">{langInfo.native}</span>
+          <span class="english-name">{langInfo.english}</span>
+          {#if isCurrentLocale(locale)}
+            <i class="fas fa-check checkmark" aria-hidden="true"></i>
+          {/if}
+          {#if locale === baseLocale}
+            <span class="base-badge">Default</span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  </section>
+
+  <!-- Info Section -->
+  <section class="section info-section">
+    <div class="info-card">
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      <p>
+        Translations are AI-generated and may contain errors.
+        <a href="https://github.com/austencloud/the-kinetic-alphabet" target="_blank" rel="noopener">
+          Help improve translations
+        </a>
+      </p>
+    </div>
+  </section>
+</div>
+
+<style>
+  .language-tab {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg, 24px);
+    padding: var(--spacing-lg, 24px);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .language-tab.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Header */
+  .tab-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 16px);
+  }
+
+  .header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+  }
+
+  .header-content h1 {
+    font-size: var(--font-size-xl, 20px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+    margin: 0;
+  }
+
+  .header-content p {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    margin: 4px 0 0;
+  }
+
+  /* Sections */
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 16px);
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+  }
+
+  .section-title i {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+
+  /* Language Grid */
+  .language-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .language-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--spacing-md, 16px) var(--spacing-sm, 8px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .language-card:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    transform: translateY(-2px);
+  }
+
+  .language-card.selected {
+    border-color: var(--theme-accent, #0ea5e9);
+    background: rgba(14, 165, 233, 0.1);
+  }
+
+  .native-name {
+    font-size: var(--font-size-lg, 18px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+
+  .english-name {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .checkmark {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: var(--theme-accent, #0ea5e9);
+    font-size: 14px;
+  }
+
+  .base-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--theme-accent, #0ea5e9);
+    color: white;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Info Section */
+  .info-section {
+    margin-top: var(--spacing-md, 16px);
+  }
+
+  .info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-md, 16px);
+    background: rgba(14, 165, 233, 0.1);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 12px;
+  }
+
+  .info-card i {
+    color: var(--theme-accent, #0ea5e9);
+    margin-top: 2px;
+  }
+
+  .info-card p {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .info-card a {
+    color: var(--theme-accent, #0ea5e9);
+    text-decoration: none;
+  }
+
+  .info-card a:hover {
+    text-decoration: underline;
+  }
+</style>
