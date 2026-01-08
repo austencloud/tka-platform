@@ -6,6 +6,8 @@
   - Desktop (isSideBySideLayout): Header row with title, info button, and close button
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   let {
     isSideBySideLayout = false,
     onClose = () => {},
@@ -23,11 +25,11 @@
     <button
       class="mobile-info-btn"
       onclick={onShowHelp}
-      aria-label="Show help and shortcuts"
+      aria-label={t("compose_show_help")}
     >
       <i class="fas fa-circle-info" aria-hidden="true"></i>
     </button>
-    <button class="mobile-close-btn" onclick={onClose} aria-label="Close panel">
+    <button class="mobile-close-btn" onclick={onClose} aria-label={t("compose_close_panel")}>
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </div>
@@ -37,12 +39,12 @@
     <button
       class="header-info-btn"
       onclick={onShowHelp}
-      aria-label="Show help and shortcuts"
+      aria-label={t("compose_show_help")}
     >
       <i class="fas fa-circle-info" aria-hidden="true"></i>
     </button>
-    <span class="header-title">Animation Viewer</span>
-    <button class="header-close-btn" onclick={onClose} aria-label="Close panel">
+    <span class="header-title">{t("compose_animation_viewer")}</span>
+    <button class="header-close-btn" onclick={onClose} aria-label={t("compose_close_panel")}>
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </header>

@@ -96,10 +96,6 @@ export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
         } else {
           console.warn(`⚠️ Could not load sequence from gallery: ${galleryId}`);
         }
-      } else {
-        console.log(
-          `ℹ️ User-created sequence ${sequence.id} has no gallery entry`
-        );
       }
     }
     // Hydrate if missing motion data (try gallery lookup)

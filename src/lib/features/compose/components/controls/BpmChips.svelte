@@ -8,6 +8,8 @@
   - "compact": Shows only preset chips with a "Custom" popover for fine adjustment
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+
   // Constants
   const BPM_PRESETS = [15, 30, 60, 90, 120, 150];
 
@@ -145,7 +147,7 @@
           class="adjust-btn"
           onclick={decreaseBpm}
           disabled={bpm <= min}
-          aria-label="Decrease BPM"
+          aria-label={t("compose_decrease_bpm")}
           type="button"
         >
           <i class="fas fa-minus" aria-hidden="true"></i>
@@ -155,18 +157,18 @@
           class="current-bpm"
           onclick={handleTap}
           type="button"
-          aria-label="Tap to set tempo"
-          title="Tap repeatedly to set BPM"
+          aria-label={t("compose_tap_to_set_tempo")}
+          title={t("compose_tap_tempo_hint")}
         >
           <span class="bpm-value">{bpm}</span>
-          <span class="bpm-label">{tapTimes.length > 0 ? "TAP" : "BPM"}</span>
+          <span class="bpm-label">{tapTimes.length > 0 ? t("compose_tap") : t("compose_bpm")}</span>
         </button>
 
         <button
           class="adjust-btn"
           onclick={increaseBpm}
           disabled={bpm >= max}
-          aria-label="Increase BPM"
+          aria-label={t("compose_increase_bpm")}
           type="button"
         >
           <i class="fas fa-plus" aria-hidden="true"></i>
@@ -180,7 +182,7 @@
             class:active={bpm === presetBpm}
             onclick={() => selectPreset(presetBpm)}
             type="button"
-            aria-label="Set BPM to {presetBpm}"
+            aria-label={t("compose_set_bpm_to", { bpm: presetBpm })}
           >
             {presetBpm}
           </button>
@@ -197,7 +199,7 @@
         class:active={bpm === presetBpm && !showCustomPopover}
         onclick={() => selectPreset(presetBpm)}
         type="button"
-        aria-label="Set BPM to {presetBpm}"
+        aria-label={t("compose_set_bpm_to", { bpm: presetBpm })}
       >
         {presetBpm}
       </button>
@@ -209,9 +211,9 @@
       class:active={!isPresetValue || showCustomPopover}
       onclick={toggleCustomPopover}
       type="button"
-      aria-label="Custom BPM"
+      aria-label={t("compose_custom_bpm")}
     >
-      {!isPresetValue ? bpm : "Custom"}
+      {!isPresetValue ? bpm : t("compose_custom")}
     </button>
   </div>
 
@@ -220,13 +222,13 @@
       class="bpm-custom-popover"
       style="left: {popoverX}px; top: {popoverY}px;"
     >
-      <div class="popover-header">Custom BPM</div>
+      <div class="popover-header">{t("compose_custom_bpm")}</div>
       <div class="popover-controls">
         <button
           class="popover-btn"
           onclick={decreaseBpm}
           disabled={bpm <= min}
-          aria-label="Decrease BPM"
+          aria-label={t("compose_decrease_bpm")}
           type="button"
         >
           <i class="fas fa-minus" aria-hidden="true"></i>
@@ -234,14 +236,14 @@
 
         <div class="bpm-display">
           <span class="bpm-number">{bpm}</span>
-          <span class="bpm-unit">BPM</span>
+          <span class="bpm-unit">{t("compose_bpm")}</span>
         </div>
 
         <button
           class="popover-btn"
           onclick={increaseBpm}
           disabled={bpm >= max}
-          aria-label="Increase BPM"
+          aria-label={t("compose_increase_bpm")}
           type="button"
         >
           <i class="fas fa-plus" aria-hidden="true"></i>

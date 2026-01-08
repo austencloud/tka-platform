@@ -11,7 +11,7 @@
    */
 
   import { getTimelineState } from "../state/timeline-state.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     clipId: string;
@@ -74,7 +74,7 @@
       onclick={() => handleAction(() => getState().duplicateClip(clipId))}
     >
       <i class="fa-solid fa-copy" aria-hidden="true"></i>
-      <span>{m.clip_duplicate()}</span>
+      <span>{t("clip_duplicate")}</span>
       <kbd>Ctrl+D</kbd>
     </button>
 
@@ -83,7 +83,7 @@
       onclick={() => handleAction(() => getState().removeClip(clipId))}
     >
       <i class="fa-solid fa-trash" aria-hidden="true"></i>
-      <span>{m.clip_delete()}</span>
+      <span>{t("clip_delete")}</span>
       <kbd>Del</kbd>
     </button>
 
@@ -101,7 +101,7 @@
         class="fa-solid {clip?.muted ? 'fa-volume-high' : 'fa-volume-xmark'}"
         aria-hidden="true"
       ></i>
-      <span>{clip?.muted ? m.clip_unmute() : m.clip_mute()}</span>
+      <span>{clip?.muted ? t("clip_unmute") : t("clip_mute")}</span>
       <kbd>M</kbd>
     </button>
 
@@ -116,7 +116,7 @@
         class="fa-solid {clip?.locked ? 'fa-lock-open' : 'fa-lock'}"
         aria-hidden="true"
       ></i>
-      <span>{clip?.locked ? m.clip_unlock() : m.clip_lock()}</span>
+      <span>{clip?.locked ? t("clip_unlock") : t("clip_lock")}</span>
       <kbd>L</kbd>
     </button>
 
@@ -126,7 +126,7 @@
         handleAction(() => getState().setClipLoop(clipId, !clip?.loop))}
     >
       <i class="fa-solid fa-repeat" aria-hidden="true"></i>
-      <span>{clip?.loop ? m.clip_disable_loop() : m.clip_enable_loop()}</span>
+      <span>{clip?.loop ? t("clip_disable_loop") : t("clip_enable_loop")}</span>
     </button>
 
     <div class="divider"></div>
@@ -135,7 +135,7 @@
     <div class="submenu">
       <button class="menu-item">
         <i class="fa-solid fa-gauge" aria-hidden="true"></i>
-        <span>{m.clip_speed()}</span>
+        <span>{t("clip_speed")}</span>
         <i class="fa-solid fa-chevron-right submenu-arrow" aria-hidden="true"
         ></i>
       </button>
@@ -145,14 +145,14 @@
           onclick={() =>
             handleAction(() => getState().setClipPlaybackRate(clipId, 0.25))}
         >
-          <span>{m.clip_speed_very_slow()}</span>
+          <span>{t("clip_speed_very_slow")}</span>
         </button>
         <button
           class="menu-item"
           onclick={() =>
             handleAction(() => getState().setClipPlaybackRate(clipId, 0.5))}
         >
-          <span>{m.clip_speed_slow()}</span>
+          <span>{t("clip_speed_slow")}</span>
         </button>
         <button
           class="menu-item"
@@ -167,7 +167,7 @@
           onclick={() =>
             handleAction(() => getState().setClipPlaybackRate(clipId, 1))}
         >
-          <span>{m.clip_speed_normal()}</span>
+          <span>{t("clip_speed_normal")}</span>
         </button>
         <button
           class="menu-item"
@@ -181,14 +181,14 @@
           onclick={() =>
             handleAction(() => getState().setClipPlaybackRate(clipId, 2))}
         >
-          <span>{m.clip_speed_fast()}</span>
+          <span>{t("clip_speed_fast")}</span>
         </button>
         <button
           class="menu-item"
           onclick={() =>
             handleAction(() => getState().setClipPlaybackRate(clipId, 4))}
         >
-          <span>{m.clip_speed_very_fast()}</span>
+          <span>{t("clip_speed_very_fast")}</span>
         </button>
       </div>
     </div>
@@ -201,7 +201,7 @@
       onclick={() => handleAction(() => getState().openClipInspector(clipId))}
     >
       <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-      <span>{m.clip_open_inspector()}</span>
+      <span>{t("clip_open_inspector")}</span>
     </button>
   </div>
 {/if}

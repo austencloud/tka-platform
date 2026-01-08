@@ -258,9 +258,6 @@
   function applyPreset(preset: SpeedCurvePreset) {
     selectedPreset = preset;
     // In a full implementation, this would update the clip's speedCurve property
-    console.log(
-      `🎢 Speed curve preset "${preset}" selected for clip ${clipId}`
-    );
   }
 </script>
 

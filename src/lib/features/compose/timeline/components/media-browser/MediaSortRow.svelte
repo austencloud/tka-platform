@@ -3,7 +3,7 @@
 -->
 <script lang="ts">
   import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     currentSortMethod: ExploreSortMethod;
@@ -24,20 +24,20 @@
   const sortOptions = $derived([
     {
       id: ExploreSortMethod.ALPHABETICAL,
-      label: m.sort_alphabetical(),
+      label: t("sort_alphabetical"),
       icon: "fa-arrow-down-a-z",
     },
     {
       id: ExploreSortMethod.SEQUENCE_LENGTH,
-      label: m.sort_length(),
+      label: t("sort_length"),
       icon: "fa-ruler",
     },
     {
       id: ExploreSortMethod.DIFFICULTY_LEVEL,
-      label: m.sort_difficulty(),
+      label: t("sort_difficulty"),
       icon: "fa-signal",
     },
-    { id: ExploreSortMethod.DATE_ADDED, label: m.sort_recent(), icon: "fa-clock" },
+    { id: ExploreSortMethod.DATE_ADDED, label: t("sort_recent"), icon: "fa-clock" },
   ]);
 </script>
 
@@ -66,8 +66,8 @@
     class="advanced-toggle"
     class:active={showFilters}
     onclick={onToggleFilters}
-    title={m.filter_advanced()}
-    aria-label={m.filter_toggle_advanced()}
+    title={t("filter_advanced")}
+    aria-label={t("filter_toggle_advanced")}
   >
     <i class="fas fa-sliders-h" aria-hidden="true"></i>
   </button>

@@ -434,9 +434,6 @@ export function createTimelineState() {
       };
 
       saveProject();
-      console.log(
-        `🎬 Timeline: Added clip "${sequence.name}" at ${snappedStart}s`
-      );
       return clip;
     });
   }

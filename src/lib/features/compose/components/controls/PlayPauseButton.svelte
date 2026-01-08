@@ -5,7 +5,7 @@
   Primary action for animation playback control.
 -->
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     isPlaying = $bindable(false),
@@ -28,7 +28,7 @@
   class:playing={isPlaying}
   class:large={size === "large"}
   onclick={handleClick}
-  aria-label={isPlaying ? m.compose_pause_animation() : m.compose_play_animation()}
+  aria-label={isPlaying ? t("compose_pause_animation") : t("compose_play_animation")}
   aria-pressed={isPlaying}
 >
   <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
