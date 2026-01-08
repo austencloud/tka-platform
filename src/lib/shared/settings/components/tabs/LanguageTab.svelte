@@ -6,16 +6,15 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    getLocale,
-    setLocale,
-    locales,
-    baseLocale,
-  } from "$lib/paraglide/runtime.js";
+  import { locales, baseLocale } from "$lib/paraglide/runtime.js";
   import * as m from "$lib/paraglide/messages.js";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { resolve } from "../../../inversify/di";
   import { TYPES } from "../../../inversify/types";
+  import {
+    getReactiveLocale,
+    switchLocale,
+  } from "$lib/shared/i18n/locale-state.svelte";
 
   // Language display names (native)
   const languageNames: Record<string, { native: string; english: string }> = {
@@ -37,7 +36,7 @@
 
   // State
   let isVisible = $state(false);
-  let currentLocale = $state(getLocale());
+  let currentLocale = $derived(getReactiveLocale());
 
   onMount(async () => {
     try {
@@ -50,8 +49,7 @@
 
   function handleLanguageSelect(locale: string) {
     hapticService?.trigger("selection");
-    setLocale(locale as typeof locales[number]);
-    currentLocale = locale;
+    switchLocale(locale);
   }
 
   function isCurrentLocale(locale: string): boolean {
@@ -67,7 +65,7 @@
     </div>
     <div class="header-content">
       <h1>{m.settings_language()}</h1>
-      <p>Choose your preferred language</p>
+      <p>{m.settings_choose_language()}</p>
     </div>
   </header>
 
@@ -75,7 +73,7 @@
   <section class="section">
     <h2 class="section-title">
       <i class="fas fa-language" aria-hidden="true"></i>
-      Available Languages
+      {m.settings_available_languages()}
     </h2>
 
     <div class="language-grid">
