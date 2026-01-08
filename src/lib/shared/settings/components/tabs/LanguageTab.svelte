@@ -105,9 +105,9 @@
     <div class="info-card">
       <i class="fas fa-info-circle" aria-hidden="true"></i>
       <p>
-        Translations are AI-generated and may contain errors.
+        {m.settings_translation_note()}
         <a href="https://github.com/austencloud/the-kinetic-alphabet" target="_blank" rel="noopener">
-          Help improve translations
+          {m.settings_help_translate()}
         </a>
       </p>
     </div>

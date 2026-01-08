@@ -8,10 +8,10 @@
 -->
 <script lang="ts">
   import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     addWord: boolean;
-    addBeatNumbers: boolean;
     addDifficultyLevel: boolean;
     includeStartPosition: boolean;
     // Granular footer controls
@@ -30,7 +30,6 @@
 
   let {
     addWord,
-    addBeatNumbers,
     addDifficultyLevel,
     includeStartPosition,
     showCreatorName,
@@ -53,13 +52,12 @@
     <span class="panel-icon image-icon">
       <i class="fas fa-download" aria-hidden="true"></i>
     </span>
-    <h3 class="panel-title">Image Export</h3>
+    <h3 class="panel-title">{m.visibility_image_export()}</h3>
   </header>
 
   <div class="preview-frame image-preview">
     <ImageExportPreviewLayered
       showWord={addWord}
-      showBeatNumbers={addBeatNumbers}
       showDifficultyLevel={addDifficultyLevel}
       {includeStartPosition}
       {showCreatorName}
@@ -78,76 +76,71 @@
 
   <div class="panel-controls">
     <div class="control-group">
-      <span class="group-label">Include in Image</span>
+      <span class="group-label">{m.visibility_include_in_image()}</span>
       <div class="toggle-grid">
         <button
           class="toggle-btn"
           class:active={addWord}
-          onclick={() => onToggle("word")}>Word</button
-        >
-        <button
-          class="toggle-btn"
-          class:active={addBeatNumbers}
-          onclick={() => onToggle("beatNumbers")}>Beat #s</button
+          onclick={() => onToggle("word")}>{m.visibility_word()}</button
         >
         <button
           class="toggle-btn"
           class:active={includeStartPosition}
-          onclick={() => onToggle("startPosition")}>Start Pos</button
+          onclick={() => onToggle("startPosition")}>{m.visibility_start_pos()}</button
         >
         <button
           class="toggle-btn"
           class:active={addDifficultyLevel}
-          onclick={() => onToggle("difficulty")}>Difficulty</button
+          onclick={() => onToggle("difficulty")}>{m.visibility_difficulty()}</button
         >
       </div>
     </div>
 
     <div class="control-group">
-      <span class="group-label">Footer Info</span>
+      <span class="group-label">{m.visibility_footer_info()}</span>
       <div class="toggle-grid footer-toggles">
         <button
           class="toggle-btn"
           class:active={showCreatorName}
-          onclick={() => onToggle("creatorName")}>Name</button
+          onclick={() => onToggle("creatorName")}>{m.visibility_name()}</button
         >
         <button
           class="toggle-btn"
           class:active={showNotes}
-          onclick={() => onToggle("notes")}>Notes</button
+          onclick={() => onToggle("notes")}>{m.visibility_notes()}</button
         >
         <button
           class="toggle-btn birthday-btn"
           class:active={showBirthday}
           onclick={() => onToggle("birthday")}
-          title="Birthday date">🎂</button
+          title={m.visibility_birthday_tooltip()}>🎂</button
         >
       </div>
     </div>
 
     <div class="control-group">
-      <span class="group-label">Theme</span>
+      <span class="group-label">{m.visibility_theme()}</span>
       <div class="toggle-grid theme-toggle">
         <button
           class="toggle-btn dark-mode-btn"
           class:active={darkMode}
           onclick={() => onToggle("darkMode")}
-          title="Dark mode"
+          title={m.visibility_theme()}
           aria-pressed={darkMode}
         >
-          {darkMode ? "🌙 Dark" : "☀️ Light"}
+          {darkMode ? `🌙 ${m.visibility_dark_mode()}` : `☀️ ${m.visibility_light_mode()}`}
         </button>
       </div>
     </div>
 
     <div class="control-group notes-input-group">
-      <label class="group-label" for="custom-notes">Custom Notes Text</label>
+      <label class="group-label" for="custom-notes">{m.visibility_custom_notes_text()}</label>
       <input
         id="custom-notes"
         type="text"
         class="notes-input"
         value={customNotesText}
-        placeholder="Created using TKA Scribe"
+        placeholder={m.visibility_notes_placeholder()}
         oninput={(e) => onCustomNotesChange(e.currentTarget.value)}
       />
     </div>

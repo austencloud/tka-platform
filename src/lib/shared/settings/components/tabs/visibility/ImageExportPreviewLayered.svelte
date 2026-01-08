@@ -16,11 +16,11 @@
   import PictographWithVisibility from "$lib/shared/pictograph/shared/components/PictographWithVisibility.svelte";
   import { examplePictographData } from "./example-data";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 
   interface Props {
     // Content visibility toggles
     showWord?: boolean;
-    showBeatNumbers?: boolean;
     showDifficultyLevel?: boolean;
     includeStartPosition?: boolean;
     // Footer toggles
@@ -42,7 +42,6 @@
 
   const {
     showWord = true,
-    showBeatNumbers = true,
     showDifficultyLevel = false,
     includeStartPosition = true,
     showCreatorName = true,
@@ -57,6 +56,21 @@
     onToggleReversals,
     onToggleNonRadial,
   }: Props = $props();
+
+  // Get visibility manager to read beat numbers setting from Pictograph panel
+  const visibilityManager = getVisibilityStateManager();
+
+  // Beat numbers visibility comes from Pictograph settings
+  let showBeatNumbers = $state(visibilityManager.getBeatNumbersVisibility());
+
+  // Update beat numbers when visibility changes
+  $effect(() => {
+    const observer = () => {
+      showBeatNumbers = visibilityManager.getBeatNumbersVisibility();
+    };
+    visibilityManager.registerObserver(observer, ["all"]);
+    return () => visibilityManager.unregisterObserver(observer);
+  });
 
   // Example word for preview
   const previewWord = "SAMPLE";
@@ -140,7 +154,7 @@
       <div class="pictograph-cell">
         <PictographWithVisibility
           pictographData={examplePictographData}
-          forceShowAll={true}
+          forceShowAll={false}
           previewMode={true}
           {onToggleTKA}
           {onToggleVTG}
@@ -391,6 +405,18 @@
   .pictograph-cell :global(svg.pictograph) {
     width: 100% !important;
     height: 100% !important;
+  }
+
+  /* Override preview mode opacity to fully hide (not dim) invisible glyphs */
+  /* This gives smooth fade transitions while ensuring invisible = opacity 0, not 0.4 */
+  .pictograph-cell :global(.tka-glyph.preview-mode:not(.visible)),
+  .pictograph-cell :global(.vtg-glyph.preview-mode:not(.visible)),
+  .pictograph-cell :global(.elemental-glyph.preview-mode:not(.visible)),
+  .pictograph-cell :global(.positions-glyph.preview-mode:not(.visible)),
+  .pictograph-cell :global(.reversal-indicator.preview-mode:not(.visible)),
+  .pictograph-cell :global(.hand-point.preview-mode:not(.visible)),
+  .pictograph-cell :global(.non-radial-point.preview-mode:not(.visible)) {
+    opacity: 0 !important;
   }
 
   @media (prefers-reduced-motion: reduce) {

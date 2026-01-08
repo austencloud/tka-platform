@@ -90,28 +90,8 @@
     {/each}
   </div>
 
-  <!-- Row 3: Canvas + Overlay toggles -->
+  <!-- Row 3: Overlay toggles -->
   <div class="mobile-row">
-    <button
-      class="compact-btn"
-      class:active={gridVisible}
-      aria-pressed={gridVisible}
-      onclick={() => onToggle("grid")}
-      type="button"
-    >
-      <i class="fas fa-th" aria-hidden="true"></i>
-      <span>Grid</span>
-    </button>
-    <button
-      class="compact-btn"
-      class:active={beatNumbersVisible}
-      aria-pressed={beatNumbersVisible}
-      onclick={() => onToggle("beatNumbers")}
-      type="button"
-    >
-      <i class="fas fa-hashtag" aria-hidden="true"></i>
-      <span>Beat #</span>
-    </button>
     <button
       class="compact-btn"
       class:active={tkaGlyphVisible}

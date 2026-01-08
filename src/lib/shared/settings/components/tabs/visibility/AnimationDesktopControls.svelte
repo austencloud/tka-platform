@@ -95,24 +95,6 @@
   </div>
 
   <div class="control-group">
-    <span class="group-label">Canvas</span>
-    <div class="toggle-grid">
-      <button
-        class="toggle-btn"
-        class:active={gridVisible}
-        aria-pressed={gridVisible}
-        onclick={() => onToggle("grid")}>Grid</button
-      >
-      <button
-        class="toggle-btn"
-        class:active={beatNumbersVisible}
-        aria-pressed={beatNumbersVisible}
-        onclick={() => onToggle("beatNumbers")}>Beat #s</button
-      >
-    </div>
-  </div>
-
-  <div class="control-group">
     <span class="group-label">Trails</span>
     <div class="trail-preset-row">
       <div class="preset-buttons">

@@ -50,10 +50,9 @@
   let gridVisible = $state(true);
   let nonRadialVisible = $state(false);
   let handPointVisibility = $state<"all" | "active">("all");
+  let beatNumbersVisible = $state(true);
 
   // Animation visibility state
-  let animGridVisible = $state(true);
-  let animBeatNumbersVisible = $state(true);
   let animTrailStyle = $state<TrailStyle>("subtle");
   let animPlaybackMode = $state<PlaybackMode>("continuous");
   let animBpm = $state(60);
@@ -62,7 +61,6 @@
 
   // Image composition state
   let imgAddWord = $state(true);
-  let imgAddBeatNumbers = $state(true);
   let imgAddDifficultyLevel = $state(false);
   let imgIncludeStartPosition = $state(true);
   // Granular footer controls
@@ -128,6 +126,10 @@
         handPointVisibility = handPointVisibility === "all" ? "active" : "all";
         visibilityManager.setHandPointVisibility(handPointVisibility);
         break;
+      case "beatNumbers":
+        beatNumbersVisible = !beatNumbersVisible;
+        visibilityManager.setBeatNumbersVisibility(beatNumbersVisible);
+        break;
     }
   }
 
@@ -135,20 +137,6 @@
   function handleAnimationToggle(key: string) {
     triggerHaptic();
     switch (key) {
-      case "grid":
-        animGridVisible = !animGridVisible;
-        // When visible, use diamond (sequence will override); when hidden, use none
-        animationVisibilityManager.setGridMode(
-          animGridVisible ? "diamond" : "none"
-        );
-        break;
-      case "beatNumbers":
-        animBeatNumbersVisible = !animBeatNumbersVisible;
-        animationVisibilityManager.setVisibility(
-          "beatNumbers",
-          animBeatNumbersVisible
-        );
-        break;
       case "tka":
         animTkaGlyphVisible = !animTkaGlyphVisible;
         animationVisibilityManager.setVisibility(
@@ -190,10 +178,6 @@
       case "word":
         imgAddWord = !imgAddWord;
         imageCompositionManager.setAddWord(imgAddWord);
-        break;
-      case "beatNumbers":
-        imgAddBeatNumbers = !imgAddBeatNumbers;
-        imageCompositionManager.setAddBeatNumbers(imgAddBeatNumbers);
         break;
       case "difficulty":
         imgAddDifficultyLevel = !imgAddDifficultyLevel;
@@ -245,11 +229,9 @@
     gridVisible = visibilityManager.getGridVisibility();
     nonRadialVisible = visibilityManager.getNonRadialVisibility();
     handPointVisibility = visibilityManager.getHandPointVisibility();
+    beatNumbersVisible = visibilityManager.getBeatNumbersVisibility();
 
     // Load initial animation visibility
-    animGridVisible = animationVisibilityManager.isGridVisible();
-    animBeatNumbersVisible =
-      animationVisibilityManager.getVisibility("beatNumbers");
     animTrailStyle = animationVisibilityManager.getTrailStyle();
     animPlaybackMode = animationVisibilityManager.getPlaybackMode();
     animBpm = animationVisibilityManager.getBpm();
@@ -259,7 +241,6 @@
 
     // Load initial image composition
     imgAddWord = imageCompositionManager.addWord;
-    imgAddBeatNumbers = imageCompositionManager.addBeatNumbers;
     imgAddDifficultyLevel = imageCompositionManager.addDifficultyLevel;
     imgIncludeStartPosition = imageCompositionManager.includeStartPosition;
     // Granular footer controls
@@ -282,12 +263,10 @@
       gridVisible = visibilityManager.getGridVisibility();
       nonRadialVisible = visibilityManager.getNonRadialVisibility();
       handPointVisibility = visibilityManager.getHandPointVisibility();
+      beatNumbersVisible = visibilityManager.getBeatNumbersVisibility();
     };
 
     const animationObserver = () => {
-      animGridVisible = animationVisibilityManager.isGridVisible();
-      animBeatNumbersVisible =
-        animationVisibilityManager.getVisibility("beatNumbers");
       animTrailStyle = animationVisibilityManager.getTrailStyle();
       animPlaybackMode = animationVisibilityManager.getPlaybackMode();
       animBpm = animationVisibilityManager.getBpm();
@@ -299,7 +278,6 @@
 
     const imageObserver = () => {
       imgAddWord = imageCompositionManager.addWord;
-      imgAddBeatNumbers = imageCompositionManager.addBeatNumbers;
       imgAddDifficultyLevel = imageCompositionManager.addDifficultyLevel;
       imgIncludeStartPosition = imageCompositionManager.includeStartPosition;
       // Granular footer controls
@@ -345,13 +323,14 @@
       {gridVisible}
       {nonRadialVisible}
       {handPointVisibility}
+      {beatNumbersVisible}
       onToggle={handlePictographToggle}
       isMobileHidden={mobileMode !== "pictograph"}
     />
 
     <AnimationPanel
-      gridVisible={animGridVisible}
-      beatNumbersVisible={animBeatNumbersVisible}
+      gridVisible={gridVisible}
+      beatNumbersVisible={beatNumbersVisible}
       trailStyle={animTrailStyle}
       playbackMode={animPlaybackMode}
       bpm={animBpm}
@@ -366,7 +345,6 @@
 
     <ImagePanel
       addWord={imgAddWord}
-      addBeatNumbers={imgAddBeatNumbers}
       addDifficultyLevel={imgAddDifficultyLevel}
       includeStartPosition={imgIncludeStartPosition}
       showCreatorName={imgShowCreatorName}

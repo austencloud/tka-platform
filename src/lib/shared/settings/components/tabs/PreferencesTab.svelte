@@ -20,6 +20,7 @@
     isSettingsPreviewMode,
   } from "$lib/shared/application/state/app-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   let { currentSettings, onSettingUpdate } = $props<{
     currentSettings: AppSettings;
@@ -75,8 +76,8 @@
       <i class="fas fa-sliders" aria-hidden="true"></i>
     </div>
     <div class="header-content">
-      <h1>Preferences</h1>
-      <p>Customize how the app behaves</p>
+      <h1>{m.settings_preferences()}</h1>
+      <p>{m.settings_customize_behavior()}</p>
     </div>
   </header>
 
@@ -84,7 +85,7 @@
   <section class="section">
     <h2 class="section-title">
       <i class="fas fa-moon" aria-hidden="true"></i>
-      Visual Effects
+      {m.settings_visual_effects()}
     </h2>
 
     <div class="toggle-list">
@@ -98,7 +99,7 @@
         disabled={isPreview}
       >
         <div class="toggle-info">
-          <span class="toggle-label">Dark Mode</span>
+          <span class="toggle-label">{m.settings_dark_mode()}</span>
         </div>
         <div class="toggle-switch dark-mode-switch" class:active={darkMode}>
           <div class="toggle-knob"></div>
@@ -111,7 +112,7 @@
   <section class="section">
     <h2 class="section-title">
       <i class="fas fa-message-question" aria-hidden="true"></i>
-      Confirmation Dialogs
+      {m.settings_confirmation_dialogs()}
     </h2>
 
     <div class="toggle-list">
@@ -123,7 +124,7 @@
         aria-pressed={showClearConfirmation}
       >
         <div class="toggle-info">
-          <span class="toggle-label">Ask before clearing sequence</span>
+          <span class="toggle-label">{m.settings_ask_before_clearing()}</span>
         </div>
         <div class="toggle-switch" class:active={showClearConfirmation}>
           <div class="toggle-knob"></div>
@@ -138,8 +139,7 @@
   <div class="tip-card">
     <i class="fas fa-lightbulb" aria-hidden="true"></i>
     <p>
-      <strong>Tip:</strong> You can always use
-      <strong>Undo</strong> to reverse accidental changes.
+      <strong>{m.settings_tip()}</strong> {m.settings_undo_tip()}
     </p>
   </div>
 </div>

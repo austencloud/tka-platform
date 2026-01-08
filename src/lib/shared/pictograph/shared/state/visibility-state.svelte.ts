@@ -52,6 +52,9 @@ interface VisibilitySettings {
   // Grid sub-options (only relevant when showGrid is true)
   nonRadialPoints: boolean;
   handPointVisibility: "all" | "active"; // Show all hand points or only where props are
+
+  // Beat numbers overlay (appears on pictographs in sequences)
+  beatNumbers: boolean;
 }
 
 export class VisibilityStateManager {
@@ -91,6 +94,9 @@ export class VisibilityStateManager {
       showGrid: true, // Grid visible by default
       nonRadialPoints: false,
       handPointVisibility: "all", // Default to showing all hand points
+
+      // Beat numbers default
+      beatNumbers: true, // Show beat numbers by default
 
       // Override with any provided settings
       ...this.convertAppSettingsToVisibility(initialSettings),
@@ -162,6 +168,8 @@ export class VisibilityStateManager {
           this.settings.nonRadialPoints = v.nonRadialPoints;
         if (v.handPointVisibility !== undefined)
           this.settings.handPointVisibility = v.handPointVisibility;
+        if (v.beatNumbers !== undefined)
+          this.settings.beatNumbers = v.beatNumbers;
 
         debug.log(
           "loadPersistedSettings: Applied settings, result:",
@@ -204,6 +212,7 @@ export class VisibilityStateManager {
       showGrid: this.settings.showGrid,
       nonRadialPoints: this.settings.nonRadialPoints,
       handPointVisibility: this.settings.handPointVisibility,
+      beatNumbers: this.settings.beatNumbers,
     };
 
     debug.log("Persisting visibility settings", visibilitySettings);
@@ -483,6 +492,28 @@ export class VisibilityStateManager {
    */
   setHandPointVisibility(mode: "all" | "active"): void {
     this.settings.handPointVisibility = mode;
+    this.notifyObservers(["all"]);
+    // Persist to storage (async, non-blocking)
+    void this.persistSettings();
+  }
+
+  // ============================================================================
+  // BEAT NUMBERS
+  // ============================================================================
+
+  /**
+   * Get beat numbers visibility
+   * Beat numbers appear on pictographs in sequences (1, 2, 3...)
+   */
+  getBeatNumbersVisibility(): boolean {
+    return this.settings.beatNumbers;
+  }
+
+  /**
+   * Set beat numbers visibility
+   */
+  setBeatNumbersVisibility(visible: boolean): void {
+    this.settings.beatNumbers = visible;
     this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)
     void this.persistSettings();

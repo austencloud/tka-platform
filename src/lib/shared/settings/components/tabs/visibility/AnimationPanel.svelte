@@ -17,6 +17,7 @@
     TrailMode,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     gridVisible: boolean;
@@ -105,7 +106,7 @@
     <span class="panel-icon animation-icon">
       <i class="fas fa-film" aria-hidden="true"></i>
     </span>
-    <h3 class="panel-title">Animation</h3>
+    <h3 class="panel-title">{m.visibility_animation()}</h3>
   </header>
 
   <div class="preview-frame animation-preview">

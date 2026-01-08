@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import type { VisibilityMode } from "./visibility-types";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     currentMode: VisibilityMode;
@@ -15,7 +16,7 @@
   let { currentMode, onModeChange }: Props = $props();
 </script>
 
-<div class="mobile-segment-control" role="tablist" aria-label="Visibility settings panels">
+<div class="mobile-segment-control" role="tablist" aria-label={m.visibility_settings_panels()}>
   <button
     class="segment-btn"
     class:active={currentMode === "pictograph"}
@@ -24,7 +25,7 @@
     onclick={() => onModeChange("pictograph")}
   >
     <i class="fas fa-image" aria-hidden="true"></i>
-    <span>Pictograph</span>
+    <span>{m.visibility_pictograph()}</span>
   </button>
   <button
     class="segment-btn"
@@ -34,7 +35,7 @@
     onclick={() => onModeChange("animation")}
   >
     <i class="fas fa-film" aria-hidden="true"></i>
-    <span>Animation</span>
+    <span>{m.visibility_animation()}</span>
   </button>
   <button
     class="segment-btn"
@@ -44,7 +45,7 @@
     onclick={() => onModeChange("image")}
   >
     <i class="fas fa-download" aria-hidden="true"></i>
-    <span>Image</span>
+    <span>{m.visibility_image()}</span>
   </button>
 </div>
 
