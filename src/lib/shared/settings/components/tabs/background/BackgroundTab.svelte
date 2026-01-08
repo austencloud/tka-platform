@@ -15,7 +15,7 @@
   import BackgroundCard from "./BackgroundCard.svelte";
   import { backgroundsConfig } from "./background-config";
   import { applyThemeFromColors } from "../../../utils/background-theme-calculator";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let { settings, onUpdate } = $props<{
     settings: AppSettings;
@@ -149,8 +149,8 @@
           ><i class="fas fa-palette" aria-hidden="true"></i></span
         >
         <div class="panel-header-text">
-          <h3 class="panel-title">{m.settings_background_theme()}</h3>
-          <p class="panel-subtitle">{m.settings_background_subtitle()}</p>
+          <h3 class="panel-title">{t("settings_background_theme")}</h3>
+          <p class="panel-subtitle">{t("settings_background_subtitle")}</p>
         </div>
       </header>
 
@@ -160,7 +160,7 @@
           <span class="category-icon"
             ><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i></span
           >
-          <span class="category-label">{m.settings_animated()}</span>
+          <span class="category-label">{t("settings_animated")}</span>
         </div>
         <div class="card-grid animated-grid">
           {#each animatedBackgrounds as background}
@@ -180,7 +180,7 @@
           <span class="category-icon"
             ><i class="fas fa-circle" aria-hidden="true"></i></span
           >
-          <span class="category-label">{m.settings_simple()}</span>
+          <span class="category-label">{t("settings_simple")}</span>
         </div>
         <div class="card-grid simple-grid">
           {#each simpleBackgrounds as background}

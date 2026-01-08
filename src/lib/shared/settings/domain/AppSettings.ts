@@ -81,6 +81,7 @@ export interface AppSettings {
     showGrid?: boolean; // Master toggle for grid visibility
     nonRadialPoints?: boolean;
     handPointVisibility?: "all" | "active"; // Show all hand points or only where props are
+    beatNumbers?: boolean; // Show beat numbers on pictographs in sequences
   };
 
   // Community/Privacy Settings

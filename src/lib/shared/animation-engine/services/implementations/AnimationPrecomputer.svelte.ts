@@ -133,9 +133,6 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
       );
 
       this.state.pathCacheData = cacheData;
-      console.log(
-        `✅ [${this.instanceId}] Cache precomputation complete in ${(performance.now() - startTime).toFixed(1)}ms, isValid=${this.pathCache?.isValid()}`
-      );
     } catch (error) {
       console.error(
         `❌ [${this.instanceId}] Failed to pre-compute animation paths:`,
@@ -171,8 +168,6 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
         return;
       }
 
-      console.log("🎬 Starting frame pre-render for perfect playback...");
-
       if (!this.framePreRenderer) {
         console.error("⚠️ Frame pre-renderer not available");
         return;
@@ -190,16 +185,10 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
         },
         (progress: PreRenderProgress) => {
           this.state.preRenderProgress = progress;
-          console.log(
-            `📊 Pre-render progress: ${progress.percent.toFixed(1)}%`
-          );
         }
       );
 
       this.state.preRenderedFramesReady = true;
-      console.log(
-        "✅ Frame pre-render complete! Switching to perfect playback."
-      );
     } catch (error) {
       console.error("❌ Failed to pre-render frames:", error);
       this.state.preRenderedFramesReady = false;

@@ -56,9 +56,6 @@
       const persisted = await galleryPersistence.loadAll();
       if (persisted.images.length > 0) {
         state.restoreFromPersistence(persisted.images, persisted.blobs);
-        console.log(
-          `Restored ${persisted.images.length} rendered images from cache`
-        );
       }
 
       await Promise.all([
@@ -282,9 +279,6 @@
     }
 
     state.setRendering(false);
-    console.log(
-      `☁️ Cloud upload complete: ${successCount} success, ${failCount} failed`
-    );
   }
 
   /**

@@ -17,7 +17,7 @@
   import type { ILeaderboardManager } from "$lib/shared/community/services/contracts/ILeaderboardManager";
   import type { LeaderboardCategory } from "$lib/shared/community/domain/models/leaderboard-models";
   import AchievementsBrowser from "$lib/shared/gamification/components/AchievementsBrowser.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
   let achievementService: IAchievementManager | null = $state(null);
@@ -174,13 +174,13 @@
   {#if isLoading}
     <div class="loading-container">
       <div class="spinner"></div>
-      <p>{m.gamification_loading_achievements()}</p>
+      <p>{t("gamification_loading_achievements")}</p>
     </div>
   {:else if !authState.isAuthenticated}
     <div class="auth-required">
       <i class="fas fa-lock" aria-hidden="true"></i>
-      <h3>{m.auth_sign_in_required()}</h3>
-      <p>{m.gamification_sign_in_achievements()}</p>
+      <h3>{t("auth_sign_in_required")}</h3>
+      <p>{t("gamification_sign_in_achievements")}</p>
     </div>
   {:else}
     <!-- Stats Grid -->
@@ -191,7 +191,7 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{stats?.currentLevel || 0}</div>
-          <div class="stat-label">{m.gamification_level()}</div>
+          <div class="stat-label">{t("gamification_level")}</div>
         </div>
       </div>
 
@@ -213,7 +213,7 @@
           <div class="stat-value">
             {stats?.achievementsUnlocked || 0}/{stats?.totalAchievements || 0}
           </div>
-          <div class="stat-label">{m.gamification_achievements()}</div>
+          <div class="stat-label">{t("gamification_achievements")}</div>
         </div>
       </div>
 
@@ -223,7 +223,7 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{currentStreak}</div>
-          <div class="stat-label">{m.gamification_streak()}</div>
+          <div class="stat-label">{t("gamification_streak")}</div>
         </div>
       </div>
     </div>

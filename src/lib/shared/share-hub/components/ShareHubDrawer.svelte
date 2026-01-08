@@ -16,6 +16,7 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequencePreviewPanel from "$lib/shared/sequence-viewer/components/SequencePreviewPanel.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Context-specific section components
   import AnalyticsSection from "./sections/AnalyticsSection.svelte";
@@ -330,7 +331,7 @@
 >
   <Drawer
     bind:isOpen
-    ariaLabel="Share Hub - Choose export format"
+    ariaLabel={t("share_hub_aria")}
     onclose={handleClose}
     closeOnBackdrop={false}
     showHandle={true}
@@ -408,8 +409,8 @@
         {/if}
       {:else}
         <div class="empty-state">
-          <p>No sequence to share</p>
-          <button class="close-btn" onclick={handleClose}>Close</button>
+          <p>{t("share_hub_no_sequence")}</p>
+          <button class="close-btn" onclick={handleClose}>{t("common_close")}</button>
         </div>
       {/if}
     </div>

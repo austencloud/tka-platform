@@ -4,7 +4,7 @@
   Header with dynamic title/subtitle based on auth mode and close button
 -->
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Props
   let { mode = "signin", onClose } = $props<{
@@ -16,16 +16,16 @@
 <header class="auth-header">
   <div class="auth-header__content">
     <h2 id="auth-sheet-title" class="auth-header__title">
-      {mode === "signin" ? m.auth_welcome() : m.auth_create_account()}
+      {mode === "signin" ? t("auth_welcome") : t("auth_create_account")}
     </h2>
     <p class="auth-header__subtitle">
-      {mode === "signin" ? m.auth_signin_subtitle() : m.auth_signup_subtitle()}
+      {mode === "signin" ? t("auth_signin_subtitle") : t("auth_signup_subtitle")}
     </p>
   </div>
   <button
     class="auth-header__close"
     onclick={onClose}
-    aria-label={mode === "signin" ? m.auth_close_signin() : m.auth_close_signup()}
+    aria-label={mode === "signin" ? t("auth_close_signin") : t("auth_close_signup")}
   >
     <i class="fas fa-times" aria-hidden="true"></i>
   </button>

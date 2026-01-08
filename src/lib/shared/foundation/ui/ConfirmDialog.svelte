@@ -17,14 +17,14 @@
   import { resolve } from "../../inversify/di";
   import { TYPES } from "../../inversify/types";
   import { onMount } from "svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     isOpen = $bindable(false),
     title,
     message,
-    confirmText = m.common_continue(),
-    cancelText = m.common_cancel(),
+    confirmText = t("common_continue"),
+    cancelText = t("common_cancel"),
     onConfirm,
     onCancel,
     variant = "warning",
@@ -166,7 +166,7 @@
             {#if dontAskAgainChecked}
               <i class="fa-solid fa-check chip-icon" aria-hidden="true"></i>
             {/if}
-            <span>{m.common_dont_ask_again()}</span>
+            <span>{t("common_dont_ask_again")}</span>
           </button>
         </div>
       {/if}

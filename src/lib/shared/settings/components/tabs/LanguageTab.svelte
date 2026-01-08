@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { locales, baseLocale } from "$lib/paraglide/runtime.js";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t, locales, baseLocale } from "$lib/shared/i18n/i18n.svelte.js";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { resolve } from "../../../inversify/di";
   import { TYPES } from "../../../inversify/types";
@@ -64,8 +63,8 @@
       <i class="fas fa-globe" aria-hidden="true"></i>
     </div>
     <div class="header-content">
-      <h1>{m.settings_language()}</h1>
-      <p>{m.settings_choose_language()}</p>
+      <h1>{t("settings_language")}</h1>
+      <p>{t("settings_choose_language")}</p>
     </div>
   </header>
 
@@ -73,7 +72,7 @@
   <section class="section">
     <h2 class="section-title">
       <i class="fas fa-language" aria-hidden="true"></i>
-      {m.settings_available_languages()}
+      {t("settings_available_languages")}
     </h2>
 
     <div class="language-grid">
@@ -105,9 +104,9 @@
     <div class="info-card">
       <i class="fas fa-info-circle" aria-hidden="true"></i>
       <p>
-        {m.settings_translation_note()}
+        {t("settings_translation_note")}
         <a href="https://github.com/austencloud/the-kinetic-alphabet" target="_blank" rel="noopener">
-          {m.settings_help_translate()}
+          {t("settings_help_translate")}
         </a>
       </p>
     </div>

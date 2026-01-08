@@ -5,7 +5,7 @@
   import FeedbackSubmitTab from "./submit/FeedbackSubmitTab.svelte";
   import FeedbackManageTab from "./manage/FeedbackManageTab.svelte";
   import MyFeedbackTab from "./my-feedback/MyFeedbackTab.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Track active tab for this module
   const activeTab = $derived(navigationState.activeTab);
@@ -32,8 +32,8 @@
       {:else}
         <div class="placeholder">
           <i class="fas fa-comment-dots" aria-hidden="true"></i>
-          <h2>{m.module_feedback()}</h2>
-          <p>{m.feedback_select_tab()}</p>
+          <h2>{t("module_feedback")}</h2>
+          <p>{t("feedback_select_tab")}</p>
         </div>
       {/if}
     </div>

@@ -8,7 +8,7 @@
   import { slide } from "svelte/transition";
   import PictographWithVisibility from "$lib/shared/pictograph/shared/components/PictographWithVisibility.svelte";
   import { examplePictographData } from "./example-data";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     tkaGlyphVisible: boolean;
@@ -47,7 +47,7 @@
     <span class="panel-icon pictograph-icon">
       <i class="fas fa-image" aria-hidden="true"></i>
     </span>
-    <h3 class="panel-title">{m.visibility_pictograph()}</h3>
+    <h3 class="panel-title">{t("visibility_pictograph")}</h3>
   </header>
 
   <div class="preview-frame">
@@ -66,49 +66,49 @@
 
   <div class="panel-controls">
     <div class="control-group">
-      <span class="group-label">{m.visibility_elements()}</span>
+      <span class="group-label">{t("visibility_elements")}</span>
       <div class="toggle-grid">
         <button
           class="toggle-btn"
           class:active={tkaGlyphVisible}
           aria-pressed={tkaGlyphVisible}
-          onclick={() => onToggle("tka")}>{m.visibility_tka()}</button
+          onclick={() => onToggle("tka")}>{t("visibility_tka")}</button
         >
         <button
           class="toggle-btn"
           class:active={vtgGlyphVisible}
           aria-pressed={vtgGlyphVisible}
-          onclick={() => onToggle("vtg")}>{m.visibility_vtg()}</button
+          onclick={() => onToggle("vtg")}>{t("visibility_vtg")}</button
         >
         <button
           class="toggle-btn"
           class:active={elementalGlyphVisible}
           aria-pressed={elementalGlyphVisible}
-          onclick={() => onToggle("elemental")}>{m.visibility_elemental()}</button
+          onclick={() => onToggle("elemental")}>{t("visibility_elemental")}</button
         >
         <button
           class="toggle-btn"
           class:active={positionsGlyphVisible}
           aria-pressed={positionsGlyphVisible}
-          onclick={() => onToggle("positions")}>{m.visibility_positions()}</button
+          onclick={() => onToggle("positions")}>{t("visibility_positions")}</button
         >
         <button
           class="toggle-btn"
           class:active={reversalIndicatorsVisible}
           aria-pressed={reversalIndicatorsVisible}
-          onclick={() => onToggle("reversals")}>{m.visibility_reversals()}</button
+          onclick={() => onToggle("reversals")}>{t("visibility_reversals")}</button
         >
         <button
           class="toggle-btn"
           class:active={beatNumbersVisible}
           aria-pressed={beatNumbersVisible}
-          onclick={() => onToggle("beatNumbers")}>{m.visibility_beat_numbers()}</button
+          onclick={() => onToggle("beatNumbers")}>{t("visibility_beat_numbers")}</button
         >
         <button
           class="toggle-btn"
           class:active={gridVisible}
           aria-pressed={gridVisible}
-          onclick={() => onToggle("grid")}>{m.visibility_show_grid()}</button
+          onclick={() => onToggle("grid")}>{t("visibility_show_grid")}</button
         >
         {#if gridVisible}
           <button
@@ -116,14 +116,14 @@
             class="toggle-btn"
             class:active={handPointVisibility === "all"}
             aria-pressed={handPointVisibility === "all"}
-            onclick={() => onToggle("handPoints")}>{m.visibility_hand_points()}</button
+            onclick={() => onToggle("handPoints")}>{t("visibility_hand_points")}</button
           >
           <button
             transition:slide={{ duration: 150 }}
             class="toggle-btn"
             class:active={nonRadialVisible}
             aria-pressed={nonRadialVisible}
-            onclick={() => onToggle("nonRadial")}>{m.visibility_non_radial()}</button
+            onclick={() => onToggle("nonRadial")}>{t("visibility_non_radial")}</button
           >
         {/if}
       </div>

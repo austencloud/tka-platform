@@ -1,7 +1,7 @@
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import TodayChallengeWidget from "./widgets/TodayChallengeWidget.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     challengeDrawerOpen: boolean;
@@ -17,7 +17,7 @@
 <Drawer
   bind:isOpen={challengeDrawerOpen}
   placement="bottom"
-  ariaLabel={m.dashboard_todays_challenge()}
+  ariaLabel={t("dashboard_todays_challenge")}
 >
   <div class="drawer-body">
     <TodayChallengeWidget />

@@ -157,7 +157,7 @@
 	const addBeatNumbers = $derived(showVisibilitySettings ? localAddBeatNumbers : (globalImageExport?.addBeatNumbers ?? true));
 	const includeStartPosition = $derived(showVisibilitySettings ? localIncludeStartPosition : (globalImageExport?.includeStartPosition ?? true));
 	const addDifficultyLevel = $derived(showVisibilitySettings ? localAddDifficultyLevel : (globalImageExport?.addDifficultyLevel ?? false));
-	const addUserInfo = $derived(showVisibilitySettings ? localAddUserInfo : (globalImageExport?.addUserInfo ?? false));
+	const addUserInfo = $derived(showVisibilitySettings ? localAddUserInfo : ((globalImageExport?.showCreatorName || globalImageExport?.showNotes || globalImageExport?.showBirthday) ?? false));
 	const darkMode = $derived(showVisibilitySettings ? localDarkMode : globalDarkMode);
 
 	// Granular footer controls - derived for effective values

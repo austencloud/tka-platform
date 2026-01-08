@@ -19,7 +19,7 @@
   import CatDogToggle from "./prop-type/CatDogToggle.svelte";
   import PropSelectionSheet from "./prop-type/PropSelectionSheet.svelte";
   import PropPresetBar from "./prop-type/PropPresetBar.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Entry animation
   let isVisible = $state(false);
@@ -302,14 +302,14 @@
         ><i class="fas fa-wand-sparkles" aria-hidden="true"></i></span
       >
       <div class="panel-header-text">
-        <h3 class="panel-title">{m.settings_prop_type()}</h3>
-        <p class="panel-subtitle">{m.settings_prop_subtitle()}</p>
+        <h3 class="panel-title">{t("settings_prop_type")}</h3>
+        <p class="panel-subtitle">{t("settings_prop_subtitle")}</p>
       </div>
     </header>
 
     <!-- Prop Presets -->
     <div class="presets-section">
-      <h4 class="section-label">{m.settings_quick_presets()}</h4>
+      <h4 class="section-label">{t("settings_quick_presets")}</h4>
       <PropPresetBar
         presets={propPresets}
         selectedIndex={selectedPresetIndex}
@@ -322,7 +322,7 @@
     <div class="mode-section">
       <CatDogToggle {catDogMode} onToggle={toggleCatDogMode} />
       <p class="mode-hint">
-        {catDogMode ? m.settings_different_props() : m.settings_same_props()}
+        {catDogMode ? t("settings_different_props") : t("settings_same_props")}
       </p>
     </div>
 
@@ -340,7 +340,7 @@
         >
           <span class="hand-label">
             <span class="hand-dot blue"></span>
-            {m.settings_left_hand()}
+            {t("settings_left_hand")}
           </span>
           <img
             src={blueInfo.image}
@@ -404,7 +404,7 @@
         >
           <span class="hand-label">
             <span class="hand-dot red"></span>
-            {m.settings_right_hand()}
+            {t("settings_right_hand")}
           </span>
           <img
             src={redInfo.image}
@@ -528,8 +528,8 @@
     : selectedRedPropType}
   color={selectingHand}
   title={selectingHand === "blue"
-    ? m.settings_select_left_prop()
-    : m.settings_select_right_prop()}
+    ? t("settings_select_left_prop")
+    : t("settings_select_right_prop")}
   onSelect={handlePropSelect}
 />
 

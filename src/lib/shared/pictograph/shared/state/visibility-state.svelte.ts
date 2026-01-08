@@ -327,21 +327,35 @@ export class VisibilityStateManager {
     const otherColor =
       color === MotionColor.RED ? MotionColor.BLUE : MotionColor.RED;
 
-    const colorMotionKey = `${color}Motion` as keyof VisibilitySettings;
-    const otherColorMotionKey =
-      `${otherColor}Motion` as keyof VisibilitySettings;
+    // Type-safe motion property keys
+    const isRed = color === MotionColor.RED;
+    const isOtherRed = otherColor === MotionColor.RED;
+
+    // Get current state of other motion
+    const otherMotionVisible = isOtherRed
+      ? this.settings.redMotion
+      : this.settings.blueMotion;
 
     // Enforce constraint: at least one motion must remain visible
-    if (!visible && !this.settings[otherColorMotionKey]) {
+    if (!visible && !otherMotionVisible) {
       // If trying to turn off the last visible motion, turn on the other one
-      this.settings[colorMotionKey] = false;
-      this.settings[otherColorMotionKey] = true;
+      if (isRed) {
+        this.settings.redMotion = false;
+        this.settings.blueMotion = true;
+      } else {
+        this.settings.blueMotion = false;
+        this.settings.redMotion = true;
+      }
       this.notifyObservers(["motion", "glyph", "buttons"]);
       return;
     }
 
     // Normal case
-    this.settings[colorMotionKey] = visible;
+    if (isRed) {
+      this.settings.redMotion = visible;
+    } else {
+      this.settings.blueMotion = visible;
+    }
     this.notifyObservers(["motion", "glyph", "buttons"]);
   }
 

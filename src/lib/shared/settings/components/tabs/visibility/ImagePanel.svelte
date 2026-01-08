@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     addWord: boolean;
@@ -52,7 +52,7 @@
     <span class="panel-icon image-icon">
       <i class="fas fa-download" aria-hidden="true"></i>
     </span>
-    <h3 class="panel-title">{m.visibility_image_export()}</h3>
+    <h3 class="panel-title">{t("visibility_image_export")}</h3>
   </header>
 
   <div class="preview-frame image-preview">
@@ -76,71 +76,71 @@
 
   <div class="panel-controls">
     <div class="control-group">
-      <span class="group-label">{m.visibility_include_in_image()}</span>
+      <span class="group-label">{t("visibility_include_in_image")}</span>
       <div class="toggle-grid">
         <button
           class="toggle-btn"
           class:active={addWord}
-          onclick={() => onToggle("word")}>{m.visibility_word()}</button
+          onclick={() => onToggle("word")}>{t("visibility_word")}</button
         >
         <button
           class="toggle-btn"
           class:active={includeStartPosition}
-          onclick={() => onToggle("startPosition")}>{m.visibility_start_pos()}</button
+          onclick={() => onToggle("startPosition")}>{t("visibility_start_pos")}</button
         >
         <button
           class="toggle-btn"
           class:active={addDifficultyLevel}
-          onclick={() => onToggle("difficulty")}>{m.visibility_difficulty()}</button
+          onclick={() => onToggle("difficulty")}>{t("visibility_difficulty")}</button
         >
       </div>
     </div>
 
     <div class="control-group">
-      <span class="group-label">{m.visibility_footer_info()}</span>
+      <span class="group-label">{t("visibility_footer_info")}</span>
       <div class="toggle-grid footer-toggles">
         <button
           class="toggle-btn"
           class:active={showCreatorName}
-          onclick={() => onToggle("creatorName")}>{m.visibility_name()}</button
+          onclick={() => onToggle("creatorName")}>{t("visibility_name")}</button
         >
         <button
           class="toggle-btn"
           class:active={showNotes}
-          onclick={() => onToggle("notes")}>{m.visibility_notes()}</button
+          onclick={() => onToggle("notes")}>{t("visibility_notes")}</button
         >
         <button
           class="toggle-btn birthday-btn"
           class:active={showBirthday}
           onclick={() => onToggle("birthday")}
-          title={m.visibility_birthday_tooltip()}>🎂</button
+          title={t("visibility_birthday_tooltip")}>🎂</button
         >
       </div>
     </div>
 
     <div class="control-group">
-      <span class="group-label">{m.visibility_theme()}</span>
+      <span class="group-label">{t("visibility_theme")}</span>
       <div class="toggle-grid theme-toggle">
         <button
           class="toggle-btn dark-mode-btn"
           class:active={darkMode}
           onclick={() => onToggle("darkMode")}
-          title={m.visibility_theme()}
+          title={t("visibility_theme")}
           aria-pressed={darkMode}
         >
-          {darkMode ? `🌙 ${m.visibility_dark_mode()}` : `☀️ ${m.visibility_light_mode()}`}
+          {darkMode ? `🌙 ${t("visibility_dark_mode")}` : `☀️ ${t("visibility_light_mode")}`}
         </button>
       </div>
     </div>
 
     <div class="control-group notes-input-group">
-      <label class="group-label" for="custom-notes">{m.visibility_custom_notes_text()}</label>
+      <label class="group-label" for="custom-notes">{t("visibility_custom_notes_text")}</label>
       <input
         id="custom-notes"
         type="text"
         class="notes-input"
         value={customNotesText}
-        placeholder={m.visibility_notes_placeholder()}
+        placeholder={t("visibility_notes_placeholder")}
         oninput={(e) => onCustomNotesChange(e.currentTarget.value)}
       />
     </div>

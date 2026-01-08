@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
 	import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+	import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
 	let {
 		progress,
@@ -18,11 +19,11 @@
 	const progressPct = $derived(Math.round(progress.progress * 100));
 	const progressLabel = $derived(
 		progress.stage === "capturing"
-			? "Capturing..."
+			? t("export_capturing_progress")
 			: progress.stage === "encoding"
-				? "Encoding..."
+				? t("export_encoding")
 				: progress.stage === "complete"
-					? "Done!"
+					? t("export_done")
 					: ""
 	);
 </script>
@@ -34,7 +35,7 @@
 			<div style="width:{progressPct}%"></div>
 		</div>
 		{#if progress.stage !== "complete"}
-			<button onclick={onCancel}>Cancel</button>
+			<button onclick={onCancel}>{t("common_cancel")}</button>
 		{/if}
 	</div>
 </div>

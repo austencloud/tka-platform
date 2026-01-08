@@ -11,7 +11,7 @@
   import { useUserPreview } from "$lib/shared/debug/context/user-preview-context";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import MyFeedbackList from "./MyFeedbackList.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const state = createMyFeedbackState();
   const preview = useUserPreview();
@@ -176,7 +176,7 @@
       {#if isPreviewMode}
         <div class="preview-banner">
           <i class="fas fa-eye" aria-hidden="true"></i>
-          <span>{m.feedback_viewing_for({ name: previewUserName })}</span>
+          <span>{t("feedback_viewing_for", { name: previewUserName })}</span>
         </div>
       {/if}
       <div class="header-content">
@@ -185,12 +185,12 @@
         </div>
         <div class="header-text">
           <h1>
-            {isPreviewMode ? m.feedback_user_feedback({ name: previewUserName }) : m.feedback_my_feedback()}
+            {isPreviewMode ? t("feedback_user_feedback", { name: previewUserName }) : t("feedback_my_feedback")}
           </h1>
           <p>
             {isPreviewMode
-              ? m.feedback_user_feedback_subtitle()
-              : m.feedback_my_feedback_subtitle()}
+              ? t("feedback_user_feedback_subtitle")
+              : t("feedback_my_feedback_subtitle")}
           </p>
         </div>
       </div>
@@ -206,20 +206,20 @@
           aria-busy="true"
         >
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          <span>{m.feedback_loading()}</span>
+          <span>{t("feedback_loading")}</span>
         </div>
       {:else if state.error}
         <div class="error-state" role="alert" aria-live="assertive">
           <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
           <span>{state.error}</span>
-          <button onclick={() => state.loadMyFeedback(true)}>{m.action_retry()}</button>
+          <button onclick={() => state.loadMyFeedback(true)}>{t("action_retry")}</button>
         </div>
       {:else if state.items.length === 0}
         <div class="empty-state">
           <i class="fas fa-inbox" aria-hidden="true"></i>
-          <h2>{m.feedback_no_feedback()}</h2>
+          <h2>{t("feedback_no_feedback")}</h2>
           <p>
-            {m.feedback_no_feedback_message()}
+            {t("feedback_no_feedback_message")}
           </p>
         </div>
       {:else}

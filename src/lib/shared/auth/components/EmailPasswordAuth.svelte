@@ -3,7 +3,6 @@
    * EmailPasswordAuth
    *
    * Email/password sign-in and sign-up.
-   * Note: Authenticator-app 2FA (TOTP) has been removed from the app.
    */
 
   import {
@@ -18,7 +17,7 @@
   import { goto } from "$app/navigation";
   import { onDestroy } from "svelte";
   import { auth } from "../firebase";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let { mode = $bindable("signin" as "signin" | "signup") } = $props();
 
@@ -109,7 +108,7 @@
         }
 
         await sendEmailVerification(result.user);
-        success = m.auth_account_created();
+        success = t("auth_account_created");
         resetAttempts();
         await new Promise((resolve) => setTimeout(resolve, 1200));
       } else {
@@ -130,12 +129,12 @@
       }
 
       if (err?.code === "auth/email-already-in-use") {
-        error = m.auth_error_email_in_use();
+        error = t("auth_error_email_in_use");
         mode = "signin";
       } else if (err?.code === "auth/weak-password") {
-        error = m.auth_error_weak_password();
+        error = t("auth_error_weak_password");
       } else if (err?.code === "auth/invalid-email") {
-        error = m.auth_error_invalid_email();
+        error = t("auth_error_invalid_email");
       } else if (
         err?.code === "auth/user-not-found" ||
         err?.code === "auth/wrong-password" ||
@@ -144,17 +143,17 @@
         const attemptsLeft = MAX_ATTEMPTS - failedAttempts;
         error =
           attemptsLeft > 0
-            ? `${m.auth_error_invalid_credential()} ${attemptsLeft} attempt${
+            ? `${t("auth_error_invalid_credential")} ${attemptsLeft} attempt${
                 attemptsLeft === 1 ? "" : "s"
               } remaining.`
-            : `${m.auth_error_too_many_attempts()} ${lockoutRemaining}s`;
+            : `${t("auth_error_too_many_attempts")} ${lockoutRemaining}s`;
       } else if (err?.code === "auth/too-many-requests") {
-        error = m.auth_error_too_many_attempts();
+        error = t("auth_error_too_many_attempts");
       } else if (err?.code === "auth/multi-factor-auth-required") {
         error =
           "This account has authenticator 2FA enabled, which is no longer supported in the app. Disable it from your account settings or contact support.";
       } else {
-        error = m.auth_error_generic();
+        error = t("auth_error_generic");
       }
     } finally {
       loading = false;
@@ -176,13 +175,13 @@
   >
     {#if mode === "signup"}
       <label class="label">
-        {m.auth_name()}
+        {t("auth_name")}
         <input class="input" bind:value={name} autocomplete="name" />
       </label>
     {/if}
 
     <label class="label">
-      {m.auth_email()}
+      {t("auth_email")}
       <input
         class="input"
         type="email"
@@ -193,7 +192,7 @@
     </label>
 
     <label class="label">
-      {m.auth_password()}
+      {t("auth_password")}
       <div class="password-row">
         <input
           class="input"
@@ -206,7 +205,7 @@
           type="button"
           class="toggle"
           onclick={() => (showPassword = !showPassword)}
-          aria-label={showPassword ? m.auth_hide_password() : m.auth_show_password()}
+          aria-label={showPassword ? t("auth_hide_password") : t("auth_show_password")}
         >
           <i
             class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"
@@ -226,9 +225,9 @@
 
     <button class="submit" type="submit" disabled={loading}>
       {#if loading}
-        {mode === "signin" ? m.auth_logging_in() : m.auth_creating_account()}
+        {mode === "signin" ? t("auth_logging_in") : t("auth_creating_account")}
       {:else}
-        {mode === "signin" ? m.auth_sign_in() : m.auth_sign_up()}
+        {mode === "signin" ? t("auth_sign_in") : t("auth_sign_up")}
       {/if}
     </button>
 
@@ -238,7 +237,7 @@
       onclick={toggleMode}
       disabled={loading}
     >
-      {mode === "signin" ? m.auth_need_account() : m.auth_have_account_signin()}
+      {mode === "signin" ? t("auth_need_account") : t("auth_have_account_signin")}
     </button>
   </form>
 </div>

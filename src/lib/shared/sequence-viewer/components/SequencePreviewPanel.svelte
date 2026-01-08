@@ -20,6 +20,7 @@
   } from "../domain/types";
   import SequenceViewer from "./SequenceViewer.svelte";
   import ExportControlsSection from "./ExportControlsSection.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
     sequence,
@@ -113,7 +114,7 @@
         <button
           class="icon-btn close-btn"
           onclick={() => onClose?.()}
-          aria-label="Close"
+          aria-label={t("viewer_close")}
         >
           <svg
             viewBox="0 0 24 24"
@@ -128,7 +129,7 @@
       {/if}
     </div>
 
-    <h2 class="title">Sequence Viewer</h2>
+    <h2 class="title">{t("viewer_sequence_viewer")}</h2>
 
     <div class="header-right">
       {#if mode === "full" && onFavorite}
@@ -137,8 +138,8 @@
           class:active={isFavorited}
           onclick={() => onFavorite?.()}
           aria-label={isFavorited
-            ? "Remove from favorites"
-            : "Add to favorites"}
+            ? t("viewer_remove_from_favorites")
+            : t("viewer_add_to_favorites")}
         >
           <i class="fas fa-heart" aria-hidden="true"></i>
         </button>
@@ -148,7 +149,7 @@
         <button
           class="icon-btn share-btn"
           onclick={() => onShare?.()}
-          aria-label="Share"
+          aria-label={t("viewer_share")}
         >
           <i class="fas fa-share-alt" aria-hidden="true"></i>
         </button>
@@ -183,7 +184,7 @@
         <div class="name-editor-section">
           <label for="custom-name" class="name-label">
             <i class="fas fa-tag" aria-hidden="true"></i>
-            <span>Custom Name</span>
+            <span>{t("viewer_custom_name")}</span>
           </label>
           {#if isEditingName}
             <div class="name-edit-container">
@@ -199,14 +200,14 @@
                 <button
                   class="name-action-btn save"
                   onclick={saveNameChange}
-                  aria-label="Save name"
+                  aria-label={t("viewer_save_name")}
                 >
                   <i class="fas fa-check" aria-hidden="true"></i>
                 </button>
                 <button
                   class="name-action-btn cancel"
                   onclick={cancelNameEdit}
-                  aria-label="Cancel"
+                  aria-label={t("common_cancel")}
                 >
                   <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
@@ -215,12 +216,12 @@
           {:else}
             <div class="name-display-container">
               <span class="name-display">
-                {sequence?.displayName || sequence?.word || "Unnamed Sequence"}
+                {sequence?.displayName || sequence?.word || t("viewer_unnamed_sequence")}
               </span>
               <button
                 class="name-edit-btn"
                 onclick={startEditingName}
-                aria-label="Edit custom name"
+                aria-label={t("viewer_edit_custom_name")}
               >
                 <i class="fas fa-edit" aria-hidden="true"></i>
               </button>
@@ -249,7 +250,7 @@
       <div class="sequence-stats">
         <span class="stat">
           <i class="fas fa-music" aria-hidden="true"></i>
-          {beatCount} beats
+          {t("viewer_beats_count", { count: beatCount })}
         </span>
       </div>
     </div>
@@ -259,13 +260,13 @@
       {#if onEdit}
         <button class="action-btn" onclick={() => onEdit?.()}>
           <i class="fas fa-edit" aria-hidden="true"></i>
-          <span>Edit</span>
+          <span>{t("viewer_edit")}</span>
         </button>
       {/if}
       {#if onDelete}
         <button class="action-btn danger" onclick={() => onDelete?.()}>
           <i class="fas fa-trash" aria-hidden="true"></i>
-          <span>Delete</span>
+          <span>{t("viewer_delete")}</span>
         </button>
       {/if}
     </div>

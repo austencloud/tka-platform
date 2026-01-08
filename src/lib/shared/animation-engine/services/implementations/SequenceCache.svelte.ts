@@ -45,9 +45,6 @@ export class SequenceCache implements ISequenceCache {
       this.state.sequenceId !== null &&
       this.state.sequenceId !== newSequenceId
     ) {
-      console.log(
-        `🧹 Sequence changed (${this.state.sequenceId} -> ${newSequenceId}), clearing caches to prevent memory leak`
-      );
       this.state.clearSignal++;
     }
 
@@ -58,9 +55,6 @@ export class SequenceCache implements ISequenceCache {
 
   handlePlaybackChange(isPlaying: boolean): void {
     if (!isPlaying && this.hasPreRenderedFrames) {
-      console.log(
-        `🧹 Playback stopped, clearing pre-rendered frames to free memory`
-      );
       this.state.preRenderClearSignal++;
       this.hasPreRenderedFrames = false;
     }

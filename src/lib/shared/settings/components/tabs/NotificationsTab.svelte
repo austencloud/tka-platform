@@ -14,7 +14,7 @@
   import NotificationsHero from "$lib/shared/settings/components/notifications/NotificationsHero.svelte";
   import NotificationsAnnouncementsSection from "$lib/shared/settings/components/notifications/NotificationsAnnouncementsSection.svelte";
   import NotificationsSectionShell from "$lib/shared/settings/components/notifications/NotificationsSectionShell.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
   let announcementService: IAnnouncementManager | null = null;
@@ -96,8 +96,8 @@
 
   <section class="content">
     <NotificationsSectionShell
-      eyebrow={m.settings_preferences()}
-      title={m.settings_notifications_preferences()}
+      eyebrow={t("settings_preferences")}
+      title={t("settings_notifications_preferences")}
     >
       <NotificationPreferencesPanel />
     </NotificationsSectionShell>

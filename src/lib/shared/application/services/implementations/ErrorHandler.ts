@@ -241,6 +241,5 @@ export class ErrorHandler implements IErrorHandler {
     this.errors = [];
     this.criticalErrors = [];
     clearErrorHistory();
-    console.log("ErrorHandler: Error history cleared");
   }
 }

@@ -21,7 +21,7 @@
     getEffectiveUserId,
   } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Components
   import DashboardHeader from "./DashboardHeader.svelte";
@@ -60,9 +60,9 @@
 
   const greeting = $derived.by(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return m.dashboard_greeting_morning();
-    if (hour < 18) return m.dashboard_greeting_afternoon();
-    return m.dashboard_greeting_evening();
+    if (hour < 12) return t("dashboard_greeting_morning");
+    if (hour < 18) return t("dashboard_greeting_afternoon");
+    return t("dashboard_greeting_evening");
   });
 
   const effectiveWelcomeMessage = $derived.by(() => {
@@ -73,14 +73,14 @@
         previewProfile.email ||
         "User"
       ).split(" ")[0];
-      return m.dashboard_viewing_as({ name: firstName });
+      return t("dashboard_viewing_as", { name: firstName });
     }
     // Normal authenticated user
     if (authState.isAuthenticated && authState.user?.displayName) {
       const firstName = authState.user.displayName.split(" ")[0];
       return `${greeting}, ${firstName}`;
     }
-    return m.dashboard_welcome();
+    return t("dashboard_welcome");
   });
 
   // Derived
@@ -126,7 +126,6 @@
 
   async function checkHasFollowing(retryCount = 0) {
     if (!effectiveUserId) {
-      console.log("[Dashboard] No effectiveUserId, skipping following check");
       return;
     }
 
@@ -136,16 +135,8 @@
       );
       if (feedService) {
         hasFollowing = await feedService.hasFollowing(effectiveUserId);
-        console.log(
-          `[Dashboard] hasFollowing check for user ${effectiveUserId}:`,
-          hasFollowing
-        );
       } else if (retryCount < 3) {
         // Service not available yet (Tier 2 still loading), retry after delay
-        console.log(
-          "[Dashboard] Feed service not ready, retrying...",
-          retryCount + 1
-        );
         setTimeout(() => checkHasFollowing(retryCount + 1), 500);
       }
     } catch (error) {

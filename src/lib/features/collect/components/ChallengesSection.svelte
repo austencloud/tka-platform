@@ -15,7 +15,7 @@
     DailyChallenge,
     UserChallengeProgress,
   } from "$lib/shared/gamification/domain/models/achievement-models";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
   let challengeService: IDailyChallengeManager | null = $state(null);
@@ -92,18 +92,18 @@
   {#if isLoading}
     <div class="loading-container">
       <div class="spinner"></div>
-      <p>{m.gamification_loading_challenges()}</p>
+      <p>{t("gamification_loading_challenges")}</p>
     </div>
   {:else if !authState.isAuthenticated}
     <div class="auth-required">
       <i class="fas fa-lock" aria-hidden="true"></i>
-      <h3>{m.auth_sign_in_required()}</h3>
-      <p>{m.gamification_sign_in_challenges()}</p>
+      <h3>{t("auth_sign_in_required")}</h3>
+      <p>{t("gamification_sign_in_challenges")}</p>
     </div>
   {:else if !dailyChallenge}
     <div class="empty-state">
       <i class="fas fa-calendar-check" aria-hidden="true"></i>
-      <h3>{m.gamification_no_challenge_today()}</h3>
+      <h3>{t("gamification_no_challenge_today")}</h3>
       <p>Check back tomorrow for a new daily challenge!</p>
     </div>
   {:else}
@@ -111,7 +111,7 @@
     <div class="daily-challenge glass-surface">
       <div class="challenge-header">
         <h3>
-          <i class="fas fa-bullseye" aria-hidden="true"></i> {m.gamification_daily_challenge()}
+          <i class="fas fa-bullseye" aria-hidden="true"></i> {t("gamification_daily_challenge")}
         </h3>
         <span class="difficulty-badge {dailyChallenge.difficulty}">
           {dailyChallenge.difficulty}
@@ -142,10 +142,10 @@
 
     <!-- Active Quests (Coming Soon) -->
     <div class="quests-section">
-      <h3><i class="fas fa-scroll" aria-hidden="true"></i> {m.gamification_active_quests()}</h3>
+      <h3><i class="fas fa-scroll" aria-hidden="true"></i> {t("gamification_active_quests")}</h3>
       <div class="coming-soon">
         <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-        <p>Quest system {m.status_coming_soon().toLowerCase()}!</p>
+        <p>Quest system {t("status_coming_soon").toLowerCase()}!</p>
         <p class="hint">Complete longer challenges for bigger rewards</p>
       </div>
     </div>

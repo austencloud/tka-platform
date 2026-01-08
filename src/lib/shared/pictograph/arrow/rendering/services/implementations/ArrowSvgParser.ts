@@ -104,11 +104,9 @@ export class ArrowSvgParser implements IArrowSvgParser {
     // Extract SVG content (everything inside the <svg> tags)
     // Arrows are already correctly sized for 950x950 coordinate system
     const svgContentMatch = svgText.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
-    if (!svgContentMatch?.[1]) {
-      console.warn("Could not extract SVG content from non-static arrow");
-      return svgText;
-    }
 
-    return svgContentMatch[1];
+    // Return extracted content, or empty string if no content found
+    // (empty content is valid - some arrows may have no renderable paths)
+    return svgContentMatch?.[1] ?? "";
   }
 }
