@@ -14,6 +14,7 @@
 import { World } from "miniplex";
 import type { Object3D } from "three";
 import type { RigidBody, Collider } from "@dimforge/rapier3d-compat";
+import { CameraMode } from "$lib/shared/3d-core/camera/types";
 
 // ============================================================================
 // COMPONENT DEFINITIONS
@@ -89,6 +90,10 @@ export interface CameraComponent {
   far: number;
   yaw: number;
   pitch: number;
+  // Camera mode switching (1st person <-> 3rd person)
+  mode: CameraMode;
+  targetDistance: number; // 5.0 for third-person orbit distance
+  targetHeight: number; // 2.0 above player eye height
 }
 
 /**
@@ -313,6 +318,9 @@ export function createPlayerEntity(
       far: 1000,
       yaw: 0,
       pitch: 0,
+      mode: CameraMode.FIRST_PERSON,
+      targetDistance: 5.0,
+      targetHeight: 2.0,
     };
   }
 

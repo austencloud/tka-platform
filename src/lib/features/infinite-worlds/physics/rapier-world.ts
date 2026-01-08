@@ -86,8 +86,6 @@ export async function initPhysicsWorld(
   state.gravity = gravity;
   state.world = new RAPIER.World(new RAPIER.Vector3(gravity.x, gravity.y, gravity.z));
   state.isInitialized = true;
-
-  console.log("[InfiniteWorlds] Rapier physics initialized");
 }
 
 // ============================================================================

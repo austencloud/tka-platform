@@ -425,7 +425,7 @@
       fpsTime = 0;
 
       // Update stats
-      entityCount = getEntityStats().total;
+      entityCount = getEntityStats().total ?? 0;
       if (chunkManager) {
         const stats = chunkManager.getStats();
         chunkStats = {

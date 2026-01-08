@@ -133,8 +133,6 @@ export class ChunkManager {
 
       this.workers.push(worker);
     }
-
-    console.log(`[ChunkManager] Initialized ${workerCount} workers`);
   }
 
   private handleWorkerResult(result: ChunkResultMessage): void {

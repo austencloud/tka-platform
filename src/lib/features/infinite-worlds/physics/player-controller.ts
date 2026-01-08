@@ -116,8 +116,6 @@ export function createPlayerController(
   state.controller.enableSnapToGround(cfg.snapToGroundDistance);
   state.controller.setApplyImpulsesToDynamicBodies(true);
 
-  console.log("[PlayerController] Created at", cfg.position);
-
   return state;
 }
 

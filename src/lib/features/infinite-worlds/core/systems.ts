@@ -32,6 +32,8 @@ import {
 } from "../physics/player-controller";
 import type { PerspectiveCamera, Scene, Object3D } from "three";
 import { Vector3, Quaternion, Euler } from "three";
+import { CameraMode } from "$lib/shared/3d-core/camera/types";
+import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
 
 // ============================================================================
 // SYSTEM CONTEXT
@@ -71,6 +73,22 @@ let isPointerLocked = false;
 export function initInputSystem(canvas: HTMLCanvasElement): () => void {
   const handleKeyDown = (e: KeyboardEvent) => {
     keyState[e.code] = true;
+
+    // V key toggles camera mode
+    if (e.key.toLowerCase() === "v") {
+      for (const entity of localPlayer.entities) {
+        if (entity.camera) {
+          // Toggle mode
+          entity.camera.mode = entity.camera.mode === CameraMode.FIRST_PERSON
+            ? CameraMode.THIRD_PERSON
+            : CameraMode.FIRST_PERSON;
+
+          // Save preference
+          cameraPreferences.setModeForDestination("worlds", entity.camera.mode);
+        }
+      }
+      e.preventDefault();
+    }
   };
 
   const handleKeyUp = (e: KeyboardEvent) => {
@@ -159,7 +177,7 @@ export function cameraSystem(ctx: SystemContext): void {
   for (const entity of localPlayer.entities) {
     if (!entity.camera) continue;
 
-    // Update yaw and pitch
+    // Update rotation (same for both modes)
     entity.camera.yaw -= delta.x * MOUSE_SENSITIVITY;
     entity.camera.pitch -= delta.y * MOUSE_SENSITIVITY;
 
@@ -169,9 +187,38 @@ export function cameraSystem(ctx: SystemContext): void {
       Math.min(Math.PI / 2 - 0.01, entity.camera.pitch)
     );
 
-    // Apply to Three.js camera
-    const euler = new Euler(entity.camera.pitch, entity.camera.yaw, 0, "YXZ");
-    ctx.camera.quaternion.setFromEuler(euler);
+    // Apply camera position/rotation based on mode
+    if (entity.camera.mode === CameraMode.FIRST_PERSON) {
+      // First-person: camera at player position
+      const euler = new Euler(entity.camera.pitch, entity.camera.yaw, 0, "YXZ");
+      ctx.camera.quaternion.setFromEuler(euler);
+      // Position synced in renderSyncSystem
+    } else {
+      // Third-person: orbit behind player
+      if (ctx.playerController) {
+        const playerPos = getPlayerPosition(ctx.playerController);
+        if (playerPos) {
+          const distance = entity.camera.targetDistance;
+          const height = entity.camera.targetHeight;
+
+          const offsetX = -Math.sin(entity.camera.yaw) * distance;
+          const offsetZ = -Math.cos(entity.camera.yaw) * distance;
+
+          ctx.camera.position.set(
+            playerPos.x + offsetX,
+            playerPos.y + height,
+            playerPos.z + offsetZ
+          );
+
+          // Look at player
+          ctx.camera.lookAt(
+            playerPos.x,
+            playerPos.y + 1.7, // Eye height
+            playerPos.z
+          );
+        }
+      }
+    }
   }
 }
 
@@ -398,15 +445,19 @@ export function renderSyncSystem(ctx: SystemContext): void {
     obj.visible = entity.mesh.visible;
   }
 
-  // Sync camera position from local player
+  // Sync camera position from local player (ONLY in first-person mode)
+  // In third-person, cameraSystem handles camera position
   for (const entity of localPlayer.entities) {
-    if (!entity.transform) continue;
+    if (!entity.transform || !entity.camera) continue;
 
-    ctx.camera.position.set(
-      entity.transform.position[0] ?? 0,
-      entity.transform.position[1] ?? 0,
-      entity.transform.position[2] ?? 0
-    );
+    // Only sync camera position in first-person mode
+    if (entity.camera.mode === CameraMode.FIRST_PERSON) {
+      ctx.camera.position.set(
+        entity.transform.position[0] ?? 0,
+        entity.transform.position[1] ?? 0,
+        entity.transform.position[2] ?? 0
+      );
+    }
   }
 }
 
