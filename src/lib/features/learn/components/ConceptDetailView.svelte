@@ -10,6 +10,7 @@ Supports two navigation modes:
   import { TYPES } from "$lib/shared/inversify/types";
   import { onMount } from "svelte";
   import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { IConceptProgressTracker } from "../services/contracts/IConceptProgressTracker";
   import GridConceptExperience from "./interactive/GridConceptExperience.svelte";
   import Type1ConceptExperience from "./interactive/letters/type1/Type1ConceptExperience.svelte";
@@ -116,9 +117,9 @@ Supports two navigation modes:
 <div class="concept-detail">
   <!-- Header bar with back button and mode toggle -->
   <div class="header-bar">
-    <button class="back-button" onclick={handleBackButton} aria-label="Go back">
+    <button class="back-button" onclick={handleBackButton} aria-label={t("learn_go_back")}>
       <span class="back-icon">‹</span>
-      <span class="back-text">Back</span>
+      <span class="back-text">{t("learn_back")}</span>
     </button>
 
     <!-- Mode toggle - only visible for completed concepts -->
@@ -126,15 +127,15 @@ Supports two navigation modes:
       <button
         class="mode-toggle"
         onclick={toggleViewMode}
-        aria-label={viewMode === "step" ? "Switch to scroll view" : "Switch to step view"}
-        title={viewMode === "step" ? "Switch to scroll view" : "Switch to step view"}
+        aria-label={viewMode === "step" ? t("learn_switch_to_scroll") : t("learn_switch_to_step")}
+        title={viewMode === "step" ? t("learn_switch_to_scroll") : t("learn_switch_to_step")}
       >
         {#if viewMode === "step"}
           <i class="fa-solid fa-scroll" aria-hidden="true"></i>
-          <span class="mode-label">Review</span>
+          <span class="mode-label">{t("learn_review")}</span>
         {:else}
           <i class="fa-solid fa-stairs" aria-hidden="true"></i>
-          <span class="mode-label">Steps</span>
+          <span class="mode-label">{t("learn_steps")}</span>
         {/if}
       </button>
     {/if}
@@ -168,9 +169,9 @@ Supports two navigation modes:
         <!-- Coming Soon placeholder -->
         <div class="coming-soon">
           <span class="coming-soon-icon">🚧</span>
-          <h2 class="coming-soon-title">Interactive Content Coming Soon!</h2>
+          <h2 class="coming-soon-title">{t("learn_coming_soon_title")}</h2>
           <p class="coming-soon-text">
-            We're building interactive experiences for this concept.
+            {t("learn_coming_soon_desc")}
           </p>
         </div>
       {/if}

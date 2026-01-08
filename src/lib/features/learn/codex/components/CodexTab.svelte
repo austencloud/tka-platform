@@ -13,6 +13,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
   import CodexComponent from "./CodexComponent.svelte";
   import LetterDetailView from "./LetterDetailView.svelte";
   import { createCodexState } from "../state/codex-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Codex state for fetching letter details
   const codexState = createCodexState();
@@ -59,7 +60,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
 
 <div class="codex-tab">
   <div class="codex-header">
-    <h2>Letters</h2>
+    <h2>{t("learn_letters_title")}</h2>
   </div>
 
   <div class="codex-content">
@@ -90,7 +91,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
       {#if isLoadingDetails}
         <div class="loading-overlay" transition:fade={{ duration: 150 }}>
           <div class="loading-spinner"></div>
-          <p>Loading letter details...</p>
+          <p>{t("learn_loading_letter_details")}</p>
         </div>
       {/if}
     </div>

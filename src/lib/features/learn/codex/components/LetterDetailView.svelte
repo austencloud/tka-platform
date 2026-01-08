@@ -11,6 +11,7 @@ Shows all pictographs for a selected letter with:
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import SimpleGlassScroll from "../../../../shared/foundation/ui/SimpleGlassScroll.svelte";
   import PictographContainer from "../../../../shared/pictograph/shared/components/PictographContainer.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Props
   let {
@@ -40,8 +41,8 @@ Shows all pictographs for a selected letter with:
 
   const explanation = $derived(
     letterExplanations[letter] || {
-      title: `Letter ${letter}`,
-      description: "Detailed explanation coming soon.",
+      title: t("learn_letter_title", { letter }),
+      description: t("learn_explanation_coming_soon"),
     }
   );
 
@@ -74,7 +75,7 @@ Shows all pictographs for a selected letter with:
 
     // If we have no info, use the ID or a simple label
     if (parts.length === 0) {
-      return pictograph.id || "Variation";
+      return pictograph.id || t("learn_variation");
     }
 
     return parts.join(" • ");
@@ -84,7 +85,7 @@ Shows all pictographs for a selected letter with:
 <div class="letter-detail-view">
   <!-- Header with back button -->
   <div class="detail-header">
-    <button class="back-button" onclick={onBack} aria-label="Back to codex">
+    <button class="back-button" onclick={onBack} aria-label={t("learn_back_to_codex")}>
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
     </button>
     <div class="letter-title">
@@ -104,7 +105,7 @@ Shows all pictographs for a selected letter with:
         <!-- Pictograph grid -->
         <div class="pictograph-section">
           <h3 class="section-heading">
-            All {letter} Pictographs ({pictographs.length} variations)
+            {t("learn_all_pictographs", { letter, count: pictographs.length })}
           </h3>
           <div
             class="pictograph-grid"
@@ -119,7 +120,7 @@ Shows all pictographs for a selected letter with:
                   handlePictographClick(pictograph)}
                 role="button"
                 tabindex="0"
-                aria-label="View pictograph details"
+                aria-label={t("learn_view_pictograph_details")}
               >
                 <PictographContainer pictographData={pictograph} />
               </div>
@@ -128,7 +129,7 @@ Shows all pictographs for a selected letter with:
 
           {#if pictographs.length === 0}
             <div class="empty-state">
-              <p>No pictographs available for this letter.</p>
+              <p>{t("learn_no_pictographs")}</p>
             </div>
           {/if}
         </div>
