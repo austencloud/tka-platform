@@ -173,9 +173,6 @@ export function createGalleryState() {
     setModelSlots(slots: readonly ModelSlot[]) {
       modelSlots = slots;
       useModelRendering = slots.length > 0;
-      console.debug(
-        `[GalleryState] Set ${slots.length} model slots, useModelRendering=${useModelRendering}`
-      );
     },
 
     /**

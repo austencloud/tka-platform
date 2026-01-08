@@ -11,7 +11,7 @@
   import type { MultiplayerStateInstance } from "../multiplayer/state/multiplayer-state.svelte";
   import { goto } from "$app/navigation";
   import { getUser } from "$lib/shared/auth/state/authState.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Multiplayer components
   import GalleryMinimap from "../multiplayer/components/GalleryMinimap.svelte";
@@ -103,12 +103,12 @@
     <div class="left-controls">
       <button class="exit-button" onclick={handleExit}>
         <i class="fas fa-arrow-left"></i>
-        {m.gallery_exit()}
+        {t("gallery_exit")}
       </button>
 
       <button class="lights-toggle" onclick={() => galleryState.toggleLights()}>
         <i class="fas {galleryState.lightsOn ? 'fa-sun' : 'fa-moon'}"></i>
-        {galleryState.lightsOn ? m.gallery_light_mode() : m.gallery_dark_mode()}
+        {galleryState.lightsOn ? t("gallery_light_mode") : t("gallery_dark_mode")}
       </button>
     </div>
 
@@ -118,8 +118,8 @@
         {@const session = getCurrentSession()}
         <div class="session-info">
           <i class="fas fa-users" aria-hidden="true"></i>
-          <span class="session-name">{session?.meta.name}</span>
-          <span class="player-count">{m.gallery_online_count({ count: getPlayerCount().toString() })}</span>
+          <span class="session-name">{session?.name}</span>
+          <span class="player-count">{t("gallery_online_count", { count: getPlayerCount().toString() })}</span>
         </div>
       {/if}
     </div>
@@ -127,7 +127,7 @@
     <div class="right-controls">
       {#if galleryState.sourceUserId}
         <div class="viewing-info">
-          {m.gallery_viewing_gallery()}
+          {t("gallery_viewing_gallery")}
         </div>
       {/if}
 
@@ -167,12 +167,12 @@
 
           <button class="hud-button leave-button" onclick={handleLeaveSession}>
             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-            {m.gallery_leave()}
+            {t("gallery_leave")}
           </button>
         {:else}
           <button class="hud-button join-button" onclick={() => showSessionDrawer = true}>
             <i class="fas fa-users" aria-hidden="true"></i>
-            {m.gallery_multiplayer()}
+            {t("gallery_multiplayer")}
           </button>
         {/if}
       {/if}
@@ -266,10 +266,10 @@
   <!-- Controls hint (shown when not navigating) -->
   {#if !isNavigating}
     <div class="controls-hint">
-      <p>{@html m.gallery_hint_click().replace('Click', '<strong>Click</strong>')}</p>
-      <p>{@html m.gallery_hint_wasd().replace('WASD', '<strong>WASD</strong>')}</p>
-      <p>{@html m.gallery_hint_toggle().replace('T', '<strong>T</strong>')}</p>
-      <p>{@html m.gallery_hint_escape().replace('ESC', '<strong>ESC</strong>')}</p>
+      <p>{@html t("gallery_hint_click").replace('Click', '<strong>Click</strong>')}</p>
+      <p>{@html t("gallery_hint_wasd").replace('WASD', '<strong>WASD</strong>')}</p>
+      <p>{@html t("gallery_hint_toggle").replace('T', '<strong>T</strong>')}</p>
+      <p>{@html t("gallery_hint_escape").replace('ESC', '<strong>ESC</strong>')}</p>
     </div>
   {/if}
 
@@ -281,13 +281,13 @@
         {galleryState.focusedExhibit.sequence.word ||
           galleryState.focusedExhibit.sequence.displayName ||
           galleryState.focusedExhibit.sequence.name ||
-          m.gallery_untitled()}
+          t("gallery_untitled")}
       </h3>
       {#if author}
-        <p class="author">{m.gallery_by_author({ author })}</p>
+        <p class="author">{t("gallery_by_author", { author })}</p>
       {/if}
       {#if galleryState.focusedExhibit.sequence.beats?.length}
-        <p class="beats">{m.gallery_beats_count({ count: galleryState.focusedExhibit.sequence.beats.length.toString() })}</p>
+        <p class="beats">{t("gallery_beats_count", { count: galleryState.focusedExhibit.sequence.beats.length.toString() })}</p>
       {/if}
     </div>
   {/if}
@@ -296,7 +296,7 @@
   {#if galleryState.isLoading}
     <div class="loading-overlay">
       <div class="loading-spinner"></div>
-      <p>{m.gallery_loading()}</p>
+      <p>{t("gallery_loading")}</p>
     </div>
   {/if}
 
@@ -304,7 +304,7 @@
   {#if galleryState.error}
     <div class="error-message">
       <p>{galleryState.error}</p>
-      <button onclick={() => galleryState.setError(null)}>{m.gallery_dismiss()}</button>
+      <button onclick={() => galleryState.setError(null)}>{t("gallery_dismiss")}</button>
     </div>
   {/if}
 

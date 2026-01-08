@@ -202,11 +202,11 @@
   </T.Mesh>
 
   <!-- CORNER ACCENTS (decorative spheres) -->
-  {#each [[-1, -1], [-1, 1], [1, -1], [1, 1]] as [xDir, yDir]}
+  {#each [{ x: -1, y: -1 }, { x: -1, y: 1 }, { x: 1, y: -1 }, { x: 1, y: 1 }] as corner}
     <T.Mesh
       position={[
-        xDir * (middleWidth / 2 + outerBorder / 2),
-        yDir * (middleHeight / 2 + outerBorder / 2),
+        corner.x * (middleWidth / 2 + outerBorder / 2),
+        corner.y * (middleHeight / 2 + outerBorder / 2),
         FRAME_DEPTH / 2 + 4,
       ]}
     >

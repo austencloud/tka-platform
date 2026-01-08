@@ -6,10 +6,9 @@
 	 * Positioned above the player's avatar.
 	 */
 
-	import { T, useThrelte } from '@threlte/core';
+	import { T, useThrelte, useTask } from '@threlte/core';
 	import { Text } from '@threlte/extras';
-	import { onMount } from 'svelte';
-	import { Vector3 } from 'three';
+	import { type Group } from 'three';
 
 	interface Props {
 		/** Player's display name */
@@ -30,20 +29,14 @@
 	);
 
 	// Billboard rotation (face camera)
-	let groupRef: THREE.Group | undefined = $state();
+	let groupRef: Group | undefined = $state();
 
-	// Update billboard rotation each frame
-	$effect(() => {
-		if (!groupRef || !$camera) return;
-
-		const unsubscribe = useThrelte().renderStage.add(() => {
-			if (groupRef && $camera) {
-				// Make the name tag face the camera
-				groupRef.quaternion.copy($camera.quaternion);
-			}
-		});
-
-		return unsubscribe;
+	// Update billboard rotation each frame using useTask
+	useTask(() => {
+		if (groupRef && $camera) {
+			// Make the name tag face the camera
+			groupRef.quaternion.copy($camera.quaternion);
+		}
 	});
 </script>
 

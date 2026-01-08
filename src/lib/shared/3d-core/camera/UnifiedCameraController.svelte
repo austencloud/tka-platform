@@ -189,7 +189,7 @@
 			);
 
 			// Interpolate FOV if enabled
-			if (fullConfig.fovTransition && "fov" in camera) {
+			if (fullConfig.fovTransition && "fov" in camera && "updateProjectionMatrix" in camera) {
 				const fovStart =
 					state.mode === CameraMode.FIRST_PERSON
 						? fullConfig.fovThirdPerson
@@ -199,7 +199,7 @@
 						? fullConfig.fovFirstPerson
 						: fullConfig.fovThirdPerson;
 				(camera as any).fov = fovStart + (fovEnd - fovStart) * easedProgress;
-				camera.updateProjectionMatrix();
+				(camera as any).updateProjectionMatrix();
 			}
 		}
 	}

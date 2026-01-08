@@ -178,26 +178,28 @@
   onMount(() => {
     isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-    if (isTouchDevice) {
-      // Set joystick Y position (from bottom)
-      joystickBaseY = window.innerHeight - JOYSTICK_MARGIN - JOYSTICK_SIZE / 2;
-
-      // Add touch listeners
-      window.addEventListener("touchstart", handleTouchStart, { passive: false });
-      window.addEventListener("touchmove", handleTouchMove, { passive: false });
-      window.addEventListener("touchend", handleTouchEnd);
-      window.addEventListener("touchcancel", handleTouchEnd);
-
-      // Update position on resize
-      const handleResize = () => {
-        joystickBaseY = window.innerHeight - JOYSTICK_MARGIN - JOYSTICK_SIZE / 2;
-      };
-      window.addEventListener("resize", handleResize);
-
-      return () => {
-        window.removeEventListener("resize", handleResize);
-      };
+    if (!isTouchDevice) {
+      return;
     }
+
+    // Set joystick Y position (from bottom)
+    joystickBaseY = window.innerHeight - JOYSTICK_MARGIN - JOYSTICK_SIZE / 2;
+
+    // Add touch listeners
+    window.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd);
+    window.addEventListener("touchcancel", handleTouchEnd);
+
+    // Update position on resize
+    const handleResize = () => {
+      joystickBaseY = window.innerHeight - JOYSTICK_MARGIN - JOYSTICK_SIZE / 2;
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   });
 
   onDestroy(() => {

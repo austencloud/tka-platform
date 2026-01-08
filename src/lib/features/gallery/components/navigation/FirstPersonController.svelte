@@ -20,6 +20,8 @@
     LOOK_ANGLE_LIMIT,
     SPRINT_MULTIPLIER,
   } from "../../domain/constants/gallery-dimensions";
+  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
   import { getWallsForRooms, findDeepestCollision, resolveCollision } from "../../domain/models/WallCollider";
   import { getRoomWithNeighbors, findRoomAtPointWithHint } from "../../domain/models/RoomGraph";
   import TouchControls from "./TouchControls.svelte";
@@ -59,7 +61,16 @@
   let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI }: Props = $props();
 
   // Camera reference
-  let camera = $state<PerspectiveCamera | null>(null);
+  let camera = $state<PerspectiveCamera | undefined>(undefined);
+
+  // Camera mode (1st person <-> 3rd person with V key)
+  let cameraMode = $state<CameraMode>(
+    cameraPreferences.getModeForDestination("gallery")
+  );
+
+  // Third person camera settings
+  const THIRD_PERSON_DISTANCE = 5; // meters behind player
+  const THIRD_PERSON_HEIGHT = 2; // meters above player eye height
 
   // Look angles (radians)
   // Start facing down the hallway (+Z direction) by default
@@ -78,6 +89,16 @@
   let walkToTarget: Vector3 | null = $state(null);
   let isWalkingToTarget = $state(false);
   let indicatorFadeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Camera transition state
+  let transitionState = $state<{
+    isActive: boolean;
+    progress: number;
+    startPosition: { x: number; y: number; z: number };
+    targetPosition: { x: number; y: number; z: number };
+    startRotation: { yaw: number; pitch: number };
+    targetRotation: { yaw: number; pitch: number };
+  } | null>(null);
 
   // Raycaster for tap-to-walk
   const raycaster = new Raycaster();
@@ -141,6 +162,109 @@
     }
   }
 
+  // Camera transition helpers
+  function calculateCameraPosition(mode: CameraMode): { x: number; y: number; z: number } {
+    if (mode === CameraMode.FIRST_PERSON) {
+      return {
+        x: position.x,
+        y: PLAYER_EYE_HEIGHT,
+        z: position.z
+      };
+    } else {
+      // Third person: orbit behind player
+      const offsetX = -Math.sin(yaw) * THIRD_PERSON_DISTANCE;
+      const offsetZ = -Math.cos(yaw) * THIRD_PERSON_DISTANCE;
+
+      return {
+        x: position.x + offsetX,
+        y: position.y + THIRD_PERSON_HEIGHT,
+        z: position.z + offsetZ
+      };
+    }
+  }
+
+  function cubicBezier(t: number): number {
+    // Ease in-out cubic: (0.4, 0.0, 0.2, 1.0)
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function lerpVector3(
+    start: { x: number; y: number; z: number },
+    end: { x: number; y: number; z: number },
+    t: number
+  ): { x: number; y: number; z: number } {
+    return {
+      x: start.x + (end.x - start.x) * t,
+      y: start.y + (end.y - start.y) * t,
+      z: start.z + (end.z - start.z) * t
+    };
+  }
+
+  function slerpRotation(
+    start: { yaw: number; pitch: number },
+    end: { yaw: number; pitch: number },
+    t: number
+  ): { yaw: number; pitch: number } {
+    // Simple linear interpolation for angles (good enough for small changes)
+    return {
+      yaw: start.yaw + (end.yaw - start.yaw) * t,
+      pitch: start.pitch + (end.pitch - start.pitch) * t
+    };
+  }
+
+  function startCameraTransition(newMode: CameraMode) {
+    if (!camera) return;
+
+    const current = {
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z
+    };
+    const target = calculateCameraPosition(newMode);
+
+    transitionState = {
+      isActive: true,
+      progress: 0,
+      startPosition: current,
+      targetPosition: target,
+      startRotation: { yaw, pitch },
+      targetRotation: { yaw, pitch } // Rotation stays the same
+    };
+  }
+
+  function updateTransition(deltaTime: number) {
+    if (!transitionState?.isActive || !camera) return;
+
+    transitionState.progress += deltaTime / 0.3; // 300ms transition
+
+    if (transitionState.progress >= 1) {
+      transitionState.isActive = false;
+      transitionState.progress = 1;
+    }
+
+    // Use cubic bezier easing
+    const t = cubicBezier(Math.min(1, transitionState.progress));
+
+    // Interpolate position
+    const pos = lerpVector3(
+      transitionState.startPosition,
+      transitionState.targetPosition,
+      t
+    );
+    camera.position.set(pos.x, pos.y, pos.z);
+
+    // Interpolate rotation (though it doesn't change for our use case)
+    const rot = slerpRotation(
+      transitionState.startRotation,
+      transitionState.targetRotation,
+      t
+    );
+    yaw = rot.yaw;
+    pitch = rot.pitch;
+  }
+
   // Initialize yaw from prop on first render
   $effect(() => {
     if (!hasInitializedYaw && initialYaw !== undefined) {
@@ -197,6 +321,13 @@
     const mapping = getKeyMapping(e.key);
     if (mapping) {
       keys[mapping] = true;
+      e.preventDefault();
+    }
+
+    // V key toggles camera mode
+    if (e.key.toLowerCase() === "v") {
+      cameraMode = cameraPreferences.toggleMode("gallery");
+      startCameraTransition(cameraMode);
       e.preventDefault();
     }
 
@@ -270,6 +401,9 @@
   // Movement update loop
   useTask((delta) => {
     if (!enabled || !camera) return;
+
+    // Update camera transition first
+    updateTransition(delta);
 
     let newX = position.x;
     let newZ = position.z;
@@ -370,11 +504,20 @@
       // Not moving - emit idle state
       emitLocomotion(false, 0, 0, 0);
     }
+
+    // Apply third-person camera mode (if not transitioning)
+    if (cameraMode === CameraMode.THIRD_PERSON && !transitionState?.isActive) {
+      const thirdPersonPos = calculateCameraPosition(CameraMode.THIRD_PERSON);
+      camera.position.set(thirdPersonPos.x, thirdPersonPos.y, thirdPersonPos.z);
+
+      // Look at player
+      camera.lookAt(position.x, position.y + PLAYER_EYE_HEIGHT, position.z);
+    }
   });
 
   // Update camera rotation and emit rotation changes
   $effect(() => {
-    if (camera) {
+    if (camera && cameraMode === CameraMode.FIRST_PERSON) {
       camera.rotation.order = "YXZ";
       camera.rotation.y = yaw;
       camera.rotation.x = pitch;

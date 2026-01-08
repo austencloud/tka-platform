@@ -13,6 +13,12 @@
   import type { ExhibitSlot } from "../../domain/models/GalleryLayout";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+  import {
+    TrailMode,
+    TrailStyle,
+    TrailEffect,
+    TrackingMode,
+  } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
   import {
     loadAnimatorServices,
@@ -79,13 +85,13 @@
     try {
       // Load services
       const servicesResult = await loadAnimatorServices();
-      if (!servicesResult.success || !servicesResult.services) {
-        throw new Error(servicesResult.error || "Failed to load animator services");
+      if (!servicesResult.success) {
+        throw new Error(servicesResult.error);
       }
 
       const rendererResult = await loadAnimationRenderer();
-      if (!rendererResult.success || !rendererResult.renderer) {
-        throw new Error(rendererResult.error || "Failed to load renderer");
+      if (!rendererResult.success) {
+        throw new Error(rendererResult.error);
       }
 
       orchestrator = servicesResult.services.orchestrator;
@@ -172,10 +178,22 @@
         redTrailPoints: [],
         trailSettings: {
           enabled: false,
-          length: 0,
-          opacity: 0,
-          fadeMode: "time",
-          style: "off",
+          mode: TrailMode.OFF,
+          style: TrailStyle.SMOOTH_LINE,
+          effect: TrailEffect.NONE,
+          fadeDurationMs: 0,
+          maxPoints: 0,
+          lineWidth: 2,
+          glowEnabled: false,
+          glowBlur: 0,
+          blueColor: "#3575E2",
+          redColor: "#ED1C24",
+          minOpacity: 0,
+          maxOpacity: 0,
+          trackingMode: TrackingMode.RIGHT_END,
+          hideProps: false,
+          usePathCache: false,
+          previewMode: false,
         },
         currentTime: performance.now(),
         visibility: {

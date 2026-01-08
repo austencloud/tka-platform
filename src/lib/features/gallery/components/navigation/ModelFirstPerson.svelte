@@ -215,9 +215,10 @@
 
       const intersects = wallRaycaster.intersectObjects(scene.children, true);
 
-      if (intersects.length > 0 && intersects[0].face) {
+      const firstHit = intersects[0];
+      if (intersects.length > 0 && firstHit && firstHit.face) {
         // We're too close - accumulate push direction (opposite of ray direction)
-        const pushStrength = collisionRadius - intersects[0].distance;
+        const pushStrength = collisionRadius - firstHit.distance;
         pushBack.addScaledVector(dir, -pushStrength);
         hitCount++;
       }
@@ -246,8 +247,9 @@
 
     const intersects = floorRaycaster.intersectObjects(scene.children, true);
 
-    if (intersects.length > 0) {
-      const floorY = intersects[0].point.y;
+    const floorHit = intersects[0];
+    if (intersects.length > 0 && floorHit) {
+      const floorY = floorHit.point.y;
 
       // Only accept floors within our step range
       // Can step UP by maxStepHeight, can step DOWN further (falling/stairs)

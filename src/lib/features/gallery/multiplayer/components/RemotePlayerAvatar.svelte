@@ -9,7 +9,7 @@
 
 	import { T, useTask, useThrelte } from '@threlte/core';
 	import { onMount } from 'svelte';
-	import { TextureLoader, Color, Vector3, Quaternion } from 'three';
+	import { TextureLoader, Color, type Group, type Texture } from 'three';
 	import type { RemotePlayer } from '../domain/multiplayer-models';
 	import PlayerNameTag from './PlayerNameTag.svelte';
 
@@ -29,7 +29,7 @@
 	const ORB_HEIGHT_OFFSET = 160; // Height above ground (roughly head height)
 
 	// Load profile picture as texture
-	let profileTexture: THREE.Texture | null = $state(null);
+	let profileTexture: Texture | null = $state(null);
 
 	onMount(() => {
 		if (player.avatarUrl) {
@@ -68,7 +68,7 @@
 	] as [number, number, number]);
 
 	// Billboard rotation (face camera)
-	let orbGroupRef: THREE.Group | undefined = $state();
+	let orbGroupRef: Group | undefined = $state();
 
 	useTask(() => {
 		if (orbGroupRef && $camera) {

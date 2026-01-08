@@ -19,20 +19,27 @@
     LOOK_ANGLE_LIMIT,
     SPRINT_MULTIPLIER,
   } from "../../domain/constants/gallery-dimensions";
+  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
   import {
     createPhysicsWorldState,
     initPhysicsWorld,
     disposePhysicsWorld,
-    type PhysicsWorldState,
   } from "$lib/shared/3d-core/physics/rapier-world";
   import {
     createPlayerController,
     disposePlayerController,
     movePlayer,
-    type PlayerControllerState,
   } from "$lib/shared/3d-core/physics/player-controller";
+  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-core/physics/types";
   import { findRoomAtPointWithHint } from "../../domain/models/RoomGraph";
+  import {
+    createGalleryWallColliders,
+    createGalleryFloorCollider,
+    removeColliders,
+  } from "../../services/implementations/GalleryPhysicsColliderGenerator";
   import TouchControls from "./TouchControls.svelte";
+  import type RAPIER from "@dimforge/rapier3d-compat";
 
   // Touch look sensitivity
   const TOUCH_SENSITIVITY = 0.004;
@@ -61,11 +68,13 @@
   let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI }: Props = $props();
 
   // Camera reference
-  let camera = $state<PerspectiveCamera | null>(null);
+  let camera = $state<PerspectiveCamera | undefined>(undefined);
 
   // Physics state
   let physicsState: PhysicsWorldState | null = $state(null);
   let playerController: PlayerControllerState | null = $state(null);
+  let wallColliders: RAPIER.Collider[] = [];
+  let floorCollider: RAPIER.Collider | null = null;
 
   // Look angles (radians)
   let yaw = $state(Math.PI);
@@ -76,6 +85,25 @@
   let moveInput = $state({ x: 0, z: 0 });
   let touchMoveInput = $state({ x: 0, z: 0 });
   let isTouchDevice = $state(false);
+
+  // Camera mode (1st person <-> 3rd person with V key)
+  let cameraMode = $state<CameraMode>(
+    cameraPreferences.getModeForDestination("gallery")
+  );
+
+  // Third person camera settings
+  const THIRD_PERSON_DISTANCE = 5; // meters behind player
+  const THIRD_PERSON_HEIGHT = 2; // meters above player eye height
+
+  // Camera transition state
+  let transitionState = $state<{
+    isActive: boolean;
+    progress: number;
+    startPosition: { x: number; y: number; z: number };
+    targetPosition: { x: number; y: number; z: number };
+    startRotation: { yaw: number; pitch: number };
+    targetRotation: { yaw: number; pitch: number };
+  } | null>(null);
 
   // Pointer lock state
   let isPointerLocked = $state(false);
@@ -102,14 +130,25 @@
       position: { x: position.x, y: capsuleCenterY, z: position.z },
     });
 
-    // TODO: Create colliders for gallery walls, floor, ceiling
-    // For now, just floor collider
+    // Create colliders from gallery layout
     if (physicsState.rapier && physicsState.world) {
-      const RAPIER = physicsState.rapier;
-      const floorDesc = RAPIER.ColliderDesc.cuboid(500, 0.1, 500);
-      floorDesc.setTranslation(0, -0.1, 0);
-      floorDesc.setFriction(0.8);
-      physicsState.world.createCollider(floorDesc);
+      // Create floor
+      const floor = createGalleryFloorCollider(
+        physicsState,
+        layout.floorSize.width,
+        layout.floorSize.depth
+      );
+      if (floor) {
+        floorCollider = floor;
+      }
+
+      // Create all wall colliders from the collision world
+      wallColliders = createGalleryWallColliders(
+        physicsState,
+        layout.collisionWorld
+      );
+
+      console.log(`[RapierFPC] Created ${wallColliders.length} wall colliders + floor`);
     }
 
     // Detect touch device
@@ -133,6 +172,19 @@
 
     if (document.pointerLockElement) {
       document.exitPointerLock();
+    }
+
+    // Clean up colliders
+    if (physicsState) {
+      if (wallColliders.length > 0) {
+        removeColliders(physicsState, wallColliders);
+        wallColliders = [];
+      }
+
+      if (floorCollider && physicsState.world) {
+        physicsState.world.removeCollider(floorCollider, true);
+        floorCollider = null;
+      }
     }
 
     if (physicsState && playerController) {
@@ -165,6 +217,109 @@
 
   function handleTouchTap(_screenX: number, _screenY: number) {
     // Future: tap-to-walk implementation
+  }
+
+  // Camera transition helpers
+  function calculateCameraPosition(mode: CameraMode): { x: number; y: number; z: number } {
+    if (mode === CameraMode.FIRST_PERSON) {
+      return {
+        x: position.x,
+        y: PLAYER_EYE_HEIGHT,
+        z: position.z
+      };
+    } else {
+      // Third person: orbit behind player
+      const offsetX = -Math.sin(yaw) * THIRD_PERSON_DISTANCE;
+      const offsetZ = -Math.cos(yaw) * THIRD_PERSON_DISTANCE;
+
+      return {
+        x: position.x + offsetX,
+        y: position.y + THIRD_PERSON_HEIGHT,
+        z: position.z + offsetZ
+      };
+    }
+  }
+
+  function cubicBezier(t: number): number {
+    // Ease in-out cubic: (0.4, 0.0, 0.2, 1.0)
+    return t < 0.5
+      ? 4 * t * t * t
+      : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function lerpVector3(
+    start: { x: number; y: number; z: number },
+    end: { x: number; y: number; z: number },
+    t: number
+  ): { x: number; y: number; z: number } {
+    return {
+      x: start.x + (end.x - start.x) * t,
+      y: start.y + (end.y - start.y) * t,
+      z: start.z + (end.z - start.z) * t
+    };
+  }
+
+  function slerpRotation(
+    start: { yaw: number; pitch: number },
+    end: { yaw: number; pitch: number },
+    t: number
+  ): { yaw: number; pitch: number } {
+    // Simple linear interpolation for angles (good enough for small changes)
+    return {
+      yaw: start.yaw + (end.yaw - start.yaw) * t,
+      pitch: start.pitch + (end.pitch - start.pitch) * t
+    };
+  }
+
+  function startCameraTransition(newMode: CameraMode) {
+    if (!camera) return;
+
+    const current = {
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z
+    };
+    const target = calculateCameraPosition(newMode);
+
+    transitionState = {
+      isActive: true,
+      progress: 0,
+      startPosition: current,
+      targetPosition: target,
+      startRotation: { yaw, pitch },
+      targetRotation: { yaw, pitch } // Rotation stays the same
+    };
+  }
+
+  function updateTransition(deltaTime: number) {
+    if (!transitionState?.isActive || !camera) return;
+
+    transitionState.progress += deltaTime / 0.3; // 300ms transition
+
+    if (transitionState.progress >= 1) {
+      transitionState.isActive = false;
+      transitionState.progress = 1;
+    }
+
+    // Use cubic bezier easing
+    const t = cubicBezier(Math.min(1, transitionState.progress));
+
+    // Interpolate position
+    const pos = lerpVector3(
+      transitionState.startPosition,
+      transitionState.targetPosition,
+      t
+    );
+    camera.position.set(pos.x, pos.y, pos.z);
+
+    // Interpolate rotation (though it doesn't change for our use case)
+    const rot = slerpRotation(
+      transitionState.startRotation,
+      transitionState.targetRotation,
+      t
+    );
+    yaw = rot.yaw;
+    pitch = rot.pitch;
   }
 
   // Key mapping
@@ -203,6 +358,14 @@
     const mapping = getKeyMapping(e.key);
     if (mapping) {
       keys[mapping] = true;
+      e.preventDefault();
+    }
+
+    // V key toggles camera mode
+    if (e.key.toLowerCase() === "v") {
+      cameraMode = cameraPreferences.toggleMode("gallery");
+      startCameraTransition(cameraMode);
+      console.log(`[Camera] Switched to ${cameraMode} mode`);
       e.preventDefault();
     }
 
@@ -274,6 +437,9 @@
   // Movement update loop
   useTask((delta) => {
     if (!enabled || !camera || !physicsState || !playerController) return;
+
+    // Update camera transition first
+    updateTransition(delta);
 
     let moved = false;
     moveDirection.set(0, 0, 0);
@@ -362,11 +528,20 @@
     } else {
       onLocomotionChange?.({ isMoving: false, moveDirection: 0, moveSpeed: 0 });
     }
+
+    // Apply third-person camera mode (if not transitioning)
+    if (cameraMode === CameraMode.THIRD_PERSON && !transitionState?.isActive) {
+      const thirdPersonPos = calculateCameraPosition(CameraMode.THIRD_PERSON);
+      camera.position.set(thirdPersonPos.x, thirdPersonPos.y, thirdPersonPos.z);
+
+      // Look at player
+      camera.lookAt(position.x, position.y + PLAYER_EYE_HEIGHT, position.z);
+    }
   });
 
   // Update camera rotation
   $effect(() => {
-    if (camera) {
+    if (camera && cameraMode === CameraMode.FIRST_PERSON) {
       camera.rotation.order = "YXZ";
       camera.rotation.y = yaw;
       camera.rotation.x = pitch;

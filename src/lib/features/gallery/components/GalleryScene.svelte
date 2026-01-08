@@ -97,12 +97,8 @@
 
 <div class="scene-container">
   <Canvas
-    rendererParameters={{
-      antialias: true,
-      powerPreference: "high-performance",
-      // WebGPU support: Threlte will automatically fall back to WebGL if unavailable
-      forceWebGL: gallerySettings.renderingBackend === "webgl"
-    }}
+    autoRender={true}
+    toneMapping={undefined}
   >
     <!-- MODEL-BASED RENDERING: Loads independently of procedural layout -->
     {#if museumModelPath}

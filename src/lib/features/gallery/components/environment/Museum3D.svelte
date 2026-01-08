@@ -48,15 +48,10 @@
 
       // If no explicit slots, try to find painting meshes
       if (slots.length === 0) {
-        console.debug("[Museum3D] No Slot_ markers found, looking for painting meshes...");
         slots = extractPaintingSlots($gltf.scene);
       }
 
       slotsExtracted = true;
-
-      console.debug(
-        `[Museum3D] Loaded museum model with ${slots.length} exhibit slots`
-      );
 
       if (onSlotsLoaded) {
         onSlotsLoaded(slots);
@@ -133,10 +128,6 @@
 
         slots.push(slot);
         slotIndex++;
-
-        console.debug(
-          `[Museum3D] Found painting mesh: ${object.name} at (${center.x.toFixed(1)}, ${center.y.toFixed(1)}, ${center.z.toFixed(1)})`
-        );
       }
     });
 
