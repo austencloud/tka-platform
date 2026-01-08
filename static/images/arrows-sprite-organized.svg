@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TKA Arrow Sprite - Organized Grid Layout -->
+<!-- Open in Illustrator to edit. Position doesn't affect rendering (normalized on load). -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 2800 8400" style="enable-background:new 0 0 2800 8400;">
+
+<style type="text/css">
+  .st0{fill:#2E3192;}
+  .grid-line{stroke:#CCCCCC;stroke-width:1;fill:none;}
+  .grid-line-major{stroke:#999999;stroke-width:2;fill:none;}
+  .label{font-family:Arial,sans-serif;font-size:14px;fill:#666666;}
+  .label-header{font-family:Arial,sans-serif;font-size:16px;fill:#333333;font-weight:bold;}
+  .cell-bg-empty{fill:#FFF5F5;}
+  .cell-bg-filled{fill:#F5FFF5;}
+</style>
+
+<!-- Grid Configuration:
+     Cell size: 350x350
+     Columns: Label(150) + 7 turns (0.0-3.0)
+     Total width: 150 + 7*350 = 2600 (+ 200 padding = 2800)
+
+     Rows (24 total):
+     - Header row (50px)
+     - PRO radial (7 turns) + PRO radial skew+ (7) + PRO radial skew- (7) = 3 rows
+     - PRO nonradial (7 turns) + PRO nonradial skew+ (7) + PRO nonradial skew- (7) = 3 rows
+     - ANTI radial x3 = 3 rows
+     - ANTI nonradial x3 = 3 rows
+     - STATIC radial x3 = 3 rows
+     - STATIC nonradial x3 = 3 rows
+     - DASH radial x3 = 3 rows
+     - DASH nonradial x3 = 3 rows
+     - Special (float, dash_base) = 1 row
+     Total: 25 rows * 350 = 8750
+-->
+
+<!-- Background grid lines -->
+<g id="grid-background">
+  <!-- Vertical lines (columns) -->
+  <line class="grid-line-major" x1="150" y1="0" x2="150" y2="8400"/>
+  <line class="grid-line" x1="500" y1="0" x2="500" y2="8400"/>
+  <line class="grid-line" x1="850" y1="0" x2="850" y2="8400"/>
+  <line class="grid-line" x1="1200" y1="0" x2="1200" y2="8400"/>
+  <line class="grid-line" x1="1550" y1="0" x2="1550" y2="8400"/>
+  <line class="grid-line" x1="1900" y1="0" x2="1900" y2="8400"/>
+  <line class="grid-line" x1="2250" y1="0" x2="2250" y2="8400"/>
+  <line class="grid-line-major" x1="2600" y1="0" x2="2600" y2="8400"/>
+
+  <!-- Horizontal lines (rows) - every 350px after header -->
+  <line class="grid-line-major" x1="0" y1="50" x2="2800" y2="50"/>
+  <line class="grid-line" x1="0" y1="400" x2="2800" y2="400"/>
+  <line class="grid-line" x1="0" y1="750" x2="2800" y2="750"/>
+  <line class="grid-line-major" x1="0" y1="1100" x2="2800" y2="1100"/>
+  <line class="grid-line" x1="0" y1="1450" x2="2800" y2="1450"/>
+  <line class="grid-line" x1="0" y1="1800" x2="2800" y2="1800"/>
+  <line class="grid-line-major" x1="0" y1="2150" x2="2800" y2="2150"/>
+  <line class="grid-line" x1="0" y1="2500" x2="2800" y2="2500"/>
+  <line class="grid-line" x1="0" y1="2850" x2="2800" y2="2850"/>
+  <line class="grid-line-major" x1="0" y1="3200" x2="2800" y2="3200"/>
+  <line class="grid-line" x1="0" y1="3550" x2="2800" y2="3550"/>
+  <line class="grid-line" x1="0" y1="3900" x2="2800" y2="3900"/>
+  <line class="grid-line-major" x1="0" y1="4250" x2="2800" y2="4250"/>
+  <line class="grid-line" x1="0" y1="4600" x2="2800" y2="4600"/>
+  <line class="grid-line" x1="0" y1="4950" x2="2800" y2="4950"/>
+  <line class="grid-line-major" x1="0" y1="5300" x2="2800" y2="5300"/>
+  <line class="grid-line" x1="0" y1="5650" x2="2800" y2="5650"/>
+  <line class="grid-line" x1="0" y1="6000" x2="2800" y2="6000"/>
+  <line class="grid-line-major" x1="0" y1="6350" x2="2800" y2="6350"/>
+  <line class="grid-line" x1="0" y1="6700" x2="2800" y2="6700"/>
+  <line class="grid-line" x1="0" y1="7050" x2="2800" y2="7050"/>
+  <line class="grid-line-major" x1="0" y1="7400" x2="2800" y2="7400"/>
+  <line class="grid-line" x1="0" y1="7750" x2="2800" y2="7750"/>
+  <line class="grid-line-major" x1="0" y1="8100" x2="2800" y2="8100"/>
+</g>
+
+<!-- Column Headers -->
+<g id="column-headers">
+  <text class="label-header" x="325" y="35">0.0</text>
+  <text class="label-header" x="675" y="35">0.5</text>
+  <text class="label-header" x="1025" y="35">1.0</text>
+  <text class="label-header" x="1375" y="35">1.5</text>
+  <text class="label-header" x="1725" y="35">2.0</text>
+  <text class="label-header" x="2075" y="35">2.5</text>
+  <text class="label-header" x="2425" y="35">3.0</text>
+</g>
+
+<!-- Row Labels -->
+<g id="row-labels">
+  <text class="label" x="10" y="230">PRO rad</text>
+  <text class="label" x="10" y="580">PRO rad+</text>
+  <text class="label" x="10" y="930">PRO rad-</text>
+  <text class="label" x="10" y="1280">PRO non</text>
+  <text class="label" x="10" y="1630">PRO non+</text>
+  <text class="label" x="10" y="1980">PRO non-</text>
+  <text class="label" x="10" y="2330">ANTI rad</text>
+  <text class="label" x="10" y="2680">ANTI rad+</text>
+  <text class="label" x="10" y="3030">ANTI rad-</text>
+  <text class="label" x="10" y="3380">ANTI non</text>
+  <text class="label" x="10" y="3730">ANTI non+</text>
+  <text class="label" x="10" y="4080">ANTI non-</text>
+  <text class="label" x="10" y="4430">STAT rad</text>
+  <text class="label" x="10" y="4780">STAT rad+</text>
+  <text class="label" x="10" y="5130">STAT rad-</text>
+  <text class="label" x="10" y="5480">STAT non</text>
+  <text class="label" x="10" y="5830">STAT non+</text>
+  <text class="label" x="10" y="6180">STAT non-</text>
+  <text class="label" x="10" y="6530">DASH rad</text>
+  <text class="label" x="10" y="6880">DASH rad+</text>
+  <text class="label" x="10" y="7230">DASH rad-</text>
+  <text class="label" x="10" y="7580">DASH non</text>
+  <text class="label" x="10" y="7930">DASH non+</text>
+  <text class="label" x="10" y="8280">DASH non-</text>
+</g>
+
+<!-- ============================================================ -->
+<!-- PRO RADIAL (Row 1: y=50-400) -->
+<!-- ============================================================ -->
+<g id="pro_0.0_radial" transform="translate(175, 75)">
+  <path class="st0" d="M228.3,244.3c-4.8-3.9-33.2-27-41.3-37.3c-4.8-6.2,1.5-14.4,3.6-16.9l28.8,27v-2.3c-0.2-42.9-21-90.4-55.9-126.9C124,46.4,69.8,21.9,11,18.8c-7.4-0.4-11.1-5.3-11-10C0.1,4.4,3.5,0,11,0c54.4,0,111,23.6,155.3,64.5c44.9,41.5,70.8,95.6,70.9,148.3v2.6l25.1-27.6c2.3,2.3,8.9,10.1,4.5,16.5C261,212.8,232.9,239.9,228.3,244.3"/>
+</g>
+<g id="pro_0.5_radial" transform="translate(525, 75)">
+  <path class="st0" d="M166.6,357.6c-1.4-6.2-9.7-44.2-9.8-54.7c-0.1-7.8,9.8-10.5,13-11.2l5.6,38.4l1.4-2.3c28.2-44.1,33-94.7,13.9-146.5C163.8,108.2,92.7,44.6,9.5,19.2c-3.9-1.3-7.1-4-8.7-7.4c-1-2.2-1.1-4.3-0.3-6.2C2.1,1.8,4.7,0,8.7,0c1.7,0,3.6,0.3,5.8,1C105.9,28.8,180.4,95.9,209,176c20.4,57.2,14.4,114.6-17,161.5l-1.3,1.9l37.4-5.9c0.4,3.2,1,13.6-6.3,16C209.3,353.7,172.7,357.1,166.6,357.6"/>
+</g>
+<g id="pro_1.0_radial" transform="translate(875, 75)">
+  <path class="st0" d="M49.4,241c-1.2,0-2.1-0.2-2.5-0.4C36,236,6,215.1,0.6,211.2c4-7.9,20.3-38.5,27.5-47.2c0.6-0.8,3-2.7,7.1-2.7c2.8,0,5.8,0.9,8.9,2.8l-19.9,33.2l1-0.1c60.3-6.4,87.3-50.3,87-88.3C111.9,67.2,79.8,22.3,8.9,16.2C3,16,0.4,11.9,0.5,8.2S3.3,0.5,9,0.5h0.5c36,1.5,66.1,13.8,87.1,35.6c18.5,19.2,29,44.9,29.5,72.2c0.8,46.5-29.2,98.8-97,104.1l-1.5,0.1L61,233.1C56.8,239.9,52,241,49.4,241"/>
+</g>
+<g id="pro_1.5_radial" transform="translate(1225, 75)">
+  <path class="st0" d="M111.6,391.7C5.9,404.1-0.8,297.7,36.7,266.5l-36,9.6c-0.6-3.3-2.3-13.5,4.8-16.8c11-4.8,47.5-12.2,53.5-13.4c2,5.9,14,41.1,15.3,53c0.7,7.7-9,11.4-12,12.4L51,275.6c-30.3,34.7-15.2,111.3,61,99.7c165.2-25.1,75.1-310.8-76.5-357.9C18,12,24.9-3.8,40.9,1.2C212.5,54.7,302.8,369.2,111.6,391.7"/>
+</g>
+<g id="pro_2.0_radial" transform="translate(1575, 75)">
+  <path class="st0" d="M225.3,238.5c-4.6-4.1-32.6-28.6-39.7-38.4c-4.5-6.2,2-14.3,4.2-16.7l26.4,26.1l-0.5-3.1c-4.4-25.2-19.4-85-64.9-96.7l-1.3-0.3l0.1,1.4c1.4,20.6-11.8,43.8-30,52.9c-4.8,2.5-10.1,3.9-15.5,3.9c-8.8,0-17.3-3.9-24.6-11.2C68.9,144.1,67.3,129,75.2,115c9.1-16.3,28.9-27.6,48-27.6c1.1,0,2.3,0,3.4,0.1l1.4,0.1l-0.4-1.4c-11-42-48.6-63.3-118.3-67.1C6.1,18.3,0,15.3,0,9.3V8.9c0-0.2,0.1-0.5,0.1-0.8C1,1.7,6.7,0,10,0h4.5c32.1,0,63,7.9,86.9,22.3c26.6,16.1,42.5,38.9,45.8,66l0.1,0.7l0.7,0.1c54.4,9.7,80.3,69.9,85.9,118.4l0.2,2l26.6-26.2c2.2,2.4,8.7,10.4,4.2,16.7C257.9,209.9,229.9,234.5,225.3,238.5 M122.5,103.7c-11.5,0-18.1,4.9-24.4,10.3c-8.2,7.1-13.5,24.2-7.4,31.4c2.5,2.9,6.7,4.6,11.4,4.6c4.1,0,10.5-1.4,17.8-7.8c9.5-8.6,13.4-21.7,11-37l-0.1-0.7l-0.7-0.1C127.4,103.9,124.9,103.7,122.5,103.7"/>
+</g>
+<g id="pro_2.5_radial" transform="translate(1925, 75)">
+  <path class="st0" d="M130.1,371.3c-1.3-6-9.2-42.3-9.2-54.4c0.1-7.7,10.1-10.3,13.3-10.9l5.8,36.3c71.3-98,51.7-250-12.9-264.4c0,0,3.2,35.3-22.3,51.8c-9.2,5.9-32.1,13.1-46.7-2.4s-10.7-36-2.7-46c21.1-26.4,41-22.5,50-20.9c-4-8-32-37.8-98.5-41.9C-3.4,17.8-2.2-0.8,10.5,0c24,1.5,97.2,17.5,113.6,62c86.8,11.2,105.6,177.2,30,291.5l37.2-5.4c0.3,3.2,0.8,13.6-6.5,15.9C173.3,367.5,136.3,370.8,130.1,371.3 M73.8,86.4c-4.5,4.5-14.2,17.8-4.7,28.7s26.3,0.2,31.2-4.8c15.3-13.9,10.6-33.9,10.6-33.9S92.2,67.9,73.8,86.4"/>
+</g>
+<g id="pro_3.0_radial" transform="translate(2275, 75)">
+  <path class="st0" d="M50.3,239.5c-1,0-2.1-0.2-3.1-0.6C36.1,234.3,5.5,213,0.5,209.5c2.8-5.5,20-38.4,27.8-47.7c1.7-2,4-3,6.9-3c4.2,0,8.6,2.1,10.3,3.1l-18.3,30.8l1.8-0.1c13.9-0.5,62.6-12.5,75.1-37.9c4.7-9.5,3.6-18.4-3.2-27.9l-0.7-1.1l-0.8,1c-9.9,11.7-27,19.2-43.7,19.2c-5.2,0-10.1-0.7-14.6-2.2c-14.8-4.7-23.4-16.8-23.6-33.2c1-16.2,10.3-28.2,25.7-32.7c4.4-1.3,9.1-2,14-2c16,0,32.2,6.9,42,18.1l0.7,0.8l0.8-0.8c6.6-7,8.3-15.2,4.8-23.7C95.2,45.6,44.1,19.6,9.4,18.7c-2.4-0.1-5.1-1.5-7-3.8c-1.8-2.1-2.6-4.5-2.3-6.5C0.7,2.7,3.7,0,9.4,0c48.8,0.5,101.2,32,114.4,64.3c6.5,15.9,2.9,31.4-10.4,44.7l-0.6,0.6l0.6,0.7c13.5,17,16.9,32.9,10.2,48.6c-13.5,31.7-66.3,49.2-90.8,51.6l-3,0.3l32.7,20C60.9,233.1,56.1,239.5,50.3,239.5 M58.3,93.1c-10.4,0-25.1,5.4-25.1,17.4c0,12.6,16.3,17.9,25.1,17.9s21-4.5,28.7-14.7c2.1-2.9,1.9-6.8-0.4-9.5C77.8,94.4,67.4,93.1,58.3,93.1"/>
+</g>
+
+<!-- PRO RADIAL SKEW+ (Row 2: y=400-750) - EMPTY PLACEHOLDERS -->
+<g id="pro_0.0_radial_skew+" transform="translate(175, 425)"><!-- NEEDS ARROW --></g>
+<g id="pro_0.5_radial_skew+" transform="translate(525, 425)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.0_radial_skew+" transform="translate(875, 425)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.5_radial_skew+" transform="translate(1225, 425)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.0_radial_skew+" transform="translate(1575, 425)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.5_radial_skew+" transform="translate(1925, 425)"><!-- NEEDS ARROW --></g>
+<g id="pro_3.0_radial_skew+" transform="translate(2275, 425)"><!-- NEEDS ARROW --></g>
+
+<!-- PRO RADIAL SKEW- (Row 3: y=750-1100) - EMPTY PLACEHOLDERS -->
+<g id="pro_0.0_radial_skew-" transform="translate(175, 775)"><!-- NEEDS ARROW --></g>
+<g id="pro_0.5_radial_skew-" transform="translate(525, 775)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.0_radial_skew-" transform="translate(875, 775)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.5_radial_skew-" transform="translate(1225, 775)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.0_radial_skew-" transform="translate(1575, 775)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.5_radial_skew-" transform="translate(1925, 775)"><!-- NEEDS ARROW --></g>
+<g id="pro_3.0_radial_skew-" transform="translate(2275, 775)"><!-- NEEDS ARROW --></g>
+
+<!-- PRO NONRADIAL (Row 4: y=1100-1450) -->
+<g id="pro_0.0_nonradial" transform="translate(175, 1125)">
+  <path class="st0" d="M171.5,188.2c-4.8-3.9-33.2-28.3-41.3-38.6c-4.8-6.2,1.5-14.2,3.6-16.7l28.8,26.1c0-76.3-34.7-141.1-150.6-141.1c-7.4-0.4-12.1-4.3-12-9C0.1,4.4,3.5,0,11,0c132.6,0,169.4,73.9,169.4,158.9l25.1-26.1c2.3,2.3,8.9,10.3,4.5,16.7C204.2,158,176.1,183.8,171.5,188.2"/>
+</g>
+<g id="pro_0.5_nonradial" transform="translate(525, 1125)">
+  <path class="st0" d="M374.1,143c-6.3-1.1-44.6-7.6-54.4-11.5c-7.2-2.8-6.1-13-5.5-16.3l37.7,9.3l-1.6-2.2C250.1-18.9,25.3,23.8,13.8,25.6c-5.7,1-13.4-1.4-13.8-8.7S5.8,8,10.9,7C22,4.9,265.4-37,365,112l1.3,2l8.6-36.8c3.1,0.8,12.9,4.2,12.4,11.9C386.5,101.9,375.9,137.2,374.1,143"/>
+</g>
+<g id="pro_1.0_nonradial" transform="translate(875, 1125)">
+  <path class="st0" d="M4.7,52.3c262.5-159,451.5,80.7,310.6,236.9l36.6-1.1c-0.2,3.4-0.8,13.7-8.5,15.3c-11.8,2.2-49,1-55.2,0.8c-0.6-6.2-4.2-43.2-2.8-55.1c1.1-7.7,11.4-9,14.5-9.3l2.8,37.2C438,121.9,238.1-79.8,13.9,67.9C3.6,74.6-6.1,58.8,4.7,52.3"/>
+</g>
+<g id="pro_1.5_nonradial" transform="translate(1225, 1125)">
+  <path class="st0" d="M323.3,191.1c-39,60.9-111.9,37.3-139.8-14.4L172,212.1c-3.1-1.3-12.6-5.4-11.5-13.2c2-11.9,15.6-46.5,17.8-52.2c6.1,1.6,42.1,10.6,52.8,16c6.9,3.6,4.7,13.7,3.8,16.8l-36.1-10c29.5,50.3,85.5,49.2,111,10.6c78-118-162.7-171.6-295.7-161.8C-4.4,18.4-4.4,2.1,12.4,0.9C147.9-7.8,415.4,47.4,323.3,191.1"/>
+</g>
+<g id="pro_2.0_nonradial" transform="translate(1575, 1125)">
+  <path class="st0" d="M4.6,69.1c213.1-132.6,377.1-48,408.8,35.6c21,65-34.2,115.6-102.8,50.6l1.2,36.6c-3.4-0.2-13.7-0.8-15.3-8.5c-2.2-11.8-1.1-49-1-55.2c6.2-0.6,43.2-4.3,55.1-3c7.7,1.1,9,11.4,9.3,14.5l-37.2,2.9c56.4,46.6,83.9,15.4,72.6-28.5c-20-72.6-185.1-157.7-376.1-29.8C3.3,93.8-6.2,75.6,4.6,69.1"/>
+</g>
+<g id="pro_2.5_nonradial" transform="translate(1925, 1125)">
+  <path class="st0" d="M9.7,16.4c55.6-0.9,93.8,2.5,144.3,42.2c-5,4.3-14.4,10.5-15.7,20.6c-2.5,17,8.9,29.3,25.7,31.6s27.2-9.1,31.6-22.4c4.2-12.7-10-23.3-9.9-23.3c49.3-6.4,112.4,18.4,159.9,41.7l-33.8,14.6c0.3,0.7,0.7,1.4,1.3,2.4c2.4,4.2,6.6,9.1,12.4,7.8c10.3-2.3,45.7-18.5,51.5-21.1c-1.9-5.9-12.7-40.5-19.4-52c0,0.1-0.1,0-0.1,0c-4-6.6-13.9-3.7-17-2.8l13.3,35.1C304.6,66.9,242.1,39.9,169,52.6C122.4,6.4,63.3-1.4,10.8,0.2C-6,0.7-0.7,16.5,9.7,16.4 M169,69.2c4.9,3.7,12.4,8.7,11.4,15.5c-0.8,6.8-7.7,12.7-14.3,11.7c-6.9-0.9-13-7.5-11.9-15.4C155.4,73.1,162,70.5,169,69.2"/>
+</g>
+<g id="pro_3.0_nonradial" transform="translate(2275, 1125)">
+  <path class="st0" d="M18.6,105.2C119,34.3,252.1-17.6,315.5,54h-0.7c-19.1,0-38.9,11.3-48,27.6c-7.9,14-6.3,29.1,4.3,41.4c7.3,7.3,15.8,11.2,24.6,11.2c5.2,0,10.4-1.3,15.5-3.9c18.2-9.1,31.4-32.3,30-52.9v-0.6c77.9,47.3,79.1,160.8-25.1,256.4l-2.8-37.2c-3.1,0.3-13.4,1.6-14.5,9.3c-1.4,11.9,2.2,48.9,2.8,55.1c6.2,0.2,43.4,1.4,55.2-0.8c7.7-1.6,8.3-11.9,8.5-15.3l-36.6,1.1C434.2,248.3,445,115.9,339.8,56.2C273.5-37.4,153.3-6.2,4.4,91.9C-6.1,98.9,3.5,115.9,18.6,105.2 M322.4,71.1l0.1,0.7c2.4,15.3-1.5,28.4-11,37c-7.3,6.4-13.7,7.8-17.8,7.8c-4.7,0-8.9-1.7-11.4-4.6c-6.1-7.2-0.8-24.3,7.4-31.4c6.3-5.4,12.9-10.3,24.4-10.3c2.4,0,4.9,0.2,7.6,0.7L322.4,71.1z"/>
+</g>
+
+<!-- PRO NONRADIAL SKEW+ (Row 5: y=1450-1800) - EMPTY PLACEHOLDERS -->
+<g id="pro_0.0_nonradial_skew+" transform="translate(175, 1475)"><!-- NEEDS ARROW --></g>
+<g id="pro_0.5_nonradial_skew+" transform="translate(525, 1475)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.0_nonradial_skew+" transform="translate(875, 1475)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.5_nonradial_skew+" transform="translate(1225, 1475)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.0_nonradial_skew+" transform="translate(1575, 1475)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.5_nonradial_skew+" transform="translate(1925, 1475)"><!-- NEEDS ARROW --></g>
+<g id="pro_3.0_nonradial_skew+" transform="translate(2275, 1475)"><!-- NEEDS ARROW --></g>
+
+<!-- PRO NONRADIAL SKEW- (Row 6: y=1800-2150) - EMPTY PLACEHOLDERS -->
+<g id="pro_0.0_nonradial_skew-" transform="translate(175, 1825)"><!-- NEEDS ARROW --></g>
+<g id="pro_0.5_nonradial_skew-" transform="translate(525, 1825)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.0_nonradial_skew-" transform="translate(875, 1825)"><!-- NEEDS ARROW --></g>
+<g id="pro_1.5_nonradial_skew-" transform="translate(1225, 1825)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.0_nonradial_skew-" transform="translate(1575, 1825)"><!-- NEEDS ARROW --></g>
+<g id="pro_2.5_nonradial_skew-" transform="translate(1925, 1825)"><!-- NEEDS ARROW --></g>
+<g id="pro_3.0_nonradial_skew-" transform="translate(2275, 1825)"><!-- NEEDS ARROW --></g>
+
+<!-- ============================================================ -->
+<!-- ANTI RADIAL (Row 7: y=2150-2500) - PLACEHOLDERS FOR NOW -->
+<!-- ============================================================ -->
+<g id="anti_0.0_radial" transform="translate(175, 2175)"><!-- Copy from original --></g>
+<g id="anti_0.5_radial" transform="translate(525, 2175)"><!-- Copy from original --></g>
+<g id="anti_1.0_radial" transform="translate(875, 2175)"><!-- Copy from original --></g>
+<g id="anti_1.5_radial" transform="translate(1225, 2175)"><!-- Copy from original --></g>
+<g id="anti_2.0_radial" transform="translate(1575, 2175)"><!-- Copy from original --></g>
+<g id="anti_2.5_radial" transform="translate(1925, 2175)"><!-- Copy from original --></g>
+<g id="anti_3.0_radial" transform="translate(2275, 2175)"><!-- Copy from original --></g>
+
+<!-- ANTI RADIAL SKEW+ (Row 8) -->
+<g id="anti_0.0_radial_skew+" transform="translate(175, 2525)"><!-- NEEDS ARROW --></g>
+<g id="anti_0.5_radial_skew+" transform="translate(525, 2525)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.0_radial_skew+" transform="translate(875, 2525)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.5_radial_skew+" transform="translate(1225, 2525)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.0_radial_skew+" transform="translate(1575, 2525)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.5_radial_skew+" transform="translate(1925, 2525)"><!-- NEEDS ARROW --></g>
+<g id="anti_3.0_radial_skew+" transform="translate(2275, 2525)"><!-- NEEDS ARROW --></g>
+
+<!-- ANTI RADIAL SKEW- (Row 9) -->
+<g id="anti_0.0_radial_skew-" transform="translate(175, 2875)"><!-- NEEDS ARROW --></g>
+<g id="anti_0.5_radial_skew-" transform="translate(525, 2875)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.0_radial_skew-" transform="translate(875, 2875)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.5_radial_skew-" transform="translate(1225, 2875)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.0_radial_skew-" transform="translate(1575, 2875)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.5_radial_skew-" transform="translate(1925, 2875)"><!-- NEEDS ARROW --></g>
+<g id="anti_3.0_radial_skew-" transform="translate(2275, 2875)"><!-- NEEDS ARROW --></g>
+
+<!-- ANTI NONRADIAL (Row 10) -->
+<g id="anti_0.0_nonradial" transform="translate(175, 3225)"><!-- Copy from original --></g>
+<g id="anti_0.5_nonradial" transform="translate(525, 3225)"><!-- Copy from original --></g>
+<g id="anti_1.0_nonradial" transform="translate(875, 3225)"><!-- Copy from original --></g>
+<g id="anti_1.5_nonradial" transform="translate(1225, 3225)"><!-- Copy from original --></g>
+<g id="anti_2.0_nonradial" transform="translate(1575, 3225)"><!-- Copy from original --></g>
+<g id="anti_2.5_nonradial" transform="translate(1925, 3225)"><!-- Copy from original --></g>
+<g id="anti_3.0_nonradial" transform="translate(2275, 3225)"><!-- Copy from original --></g>
+
+<!-- ANTI NONRADIAL SKEW+ (Row 11) -->
+<g id="anti_0.0_nonradial_skew+" transform="translate(175, 3575)"><!-- NEEDS ARROW --></g>
+<g id="anti_0.5_nonradial_skew+" transform="translate(525, 3575)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.0_nonradial_skew+" transform="translate(875, 3575)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.5_nonradial_skew+" transform="translate(1225, 3575)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.0_nonradial_skew+" transform="translate(1575, 3575)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.5_nonradial_skew+" transform="translate(1925, 3575)"><!-- NEEDS ARROW --></g>
+<g id="anti_3.0_nonradial_skew+" transform="translate(2275, 3575)"><!-- NEEDS ARROW --></g>
+
+<!-- ANTI NONRADIAL SKEW- (Row 12) -->
+<g id="anti_0.0_nonradial_skew-" transform="translate(175, 3925)"><!-- NEEDS ARROW --></g>
+<g id="anti_0.5_nonradial_skew-" transform="translate(525, 3925)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.0_nonradial_skew-" transform="translate(875, 3925)"><!-- NEEDS ARROW --></g>
+<g id="anti_1.5_nonradial_skew-" transform="translate(1225, 3925)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.0_nonradial_skew-" transform="translate(1575, 3925)"><!-- NEEDS ARROW --></g>
+<g id="anti_2.5_nonradial_skew-" transform="translate(1925, 3925)"><!-- NEEDS ARROW --></g>
+<g id="anti_3.0_nonradial_skew-" transform="translate(2275, 3925)"><!-- NEEDS ARROW --></g>
+
+<!-- ============================================================ -->
+<!-- STATIC rows (13-18) - all placeholders -->
+<!-- ============================================================ -->
+<g id="static_0.0_radial" transform="translate(175, 4275)"><!-- Copy from original --></g>
+<g id="static_0.5_radial" transform="translate(525, 4275)"><!-- Copy from original --></g>
+<g id="static_1.0_radial" transform="translate(875, 4275)"><!-- Copy from original --></g>
+<g id="static_1.5_radial" transform="translate(1225, 4275)"><!-- Copy from original --></g>
+<g id="static_2.0_radial" transform="translate(1575, 4275)"><!-- Copy from original --></g>
+<g id="static_2.5_radial" transform="translate(1925, 4275)"><!-- Copy from original --></g>
+<g id="static_3.0_radial" transform="translate(2275, 4275)"><!-- Copy from original --></g>
+
+<g id="static_0.0_radial_skew+" transform="translate(175, 4625)"><!-- NEEDS ARROW --></g>
+<g id="static_0.5_radial_skew+" transform="translate(525, 4625)"><!-- NEEDS ARROW --></g>
+<g id="static_1.0_radial_skew+" transform="translate(875, 4625)"><!-- NEEDS ARROW --></g>
+<g id="static_1.5_radial_skew+" transform="translate(1225, 4625)"><!-- NEEDS ARROW --></g>
+<g id="static_2.0_radial_skew+" transform="translate(1575, 4625)"><!-- NEEDS ARROW --></g>
+<g id="static_2.5_radial_skew+" transform="translate(1925, 4625)"><!-- NEEDS ARROW --></g>
+<g id="static_3.0_radial_skew+" transform="translate(2275, 4625)"><!-- NEEDS ARROW --></g>
+
+<g id="static_0.0_radial_skew-" transform="translate(175, 4975)"><!-- NEEDS ARROW --></g>
+<g id="static_0.5_radial_skew-" transform="translate(525, 4975)"><!-- NEEDS ARROW --></g>
+<g id="static_1.0_radial_skew-" transform="translate(875, 4975)"><!-- NEEDS ARROW --></g>
+<g id="static_1.5_radial_skew-" transform="translate(1225, 4975)"><!-- NEEDS ARROW --></g>
+<g id="static_2.0_radial_skew-" transform="translate(1575, 4975)"><!-- NEEDS ARROW --></g>
+<g id="static_2.5_radial_skew-" transform="translate(1925, 4975)"><!-- NEEDS ARROW --></g>
+<g id="static_3.0_radial_skew-" transform="translate(2275, 4975)"><!-- NEEDS ARROW --></g>
+
+<g id="static_0.0_nonradial" transform="translate(175, 5325)"><!-- Copy from original --></g>
+<g id="static_0.5_nonradial" transform="translate(525, 5325)"><!-- Copy from original --></g>
+<g id="static_1.0_nonradial" transform="translate(875, 5325)"><!-- Copy from original --></g>
+<g id="static_1.5_nonradial" transform="translate(1225, 5325)"><!-- Copy from original --></g>
+<g id="static_2.0_nonradial" transform="translate(1575, 5325)"><!-- Copy from original --></g>
+<g id="static_2.5_nonradial" transform="translate(1925, 5325)"><!-- Copy from original --></g>
+<g id="static_3.0_nonradial" transform="translate(2275, 5325)"><!-- Copy from original --></g>
+
+<g id="static_0.0_nonradial_skew+" transform="translate(175, 5675)"><!-- NEEDS ARROW --></g>
+<g id="static_0.5_nonradial_skew+" transform="translate(525, 5675)"><!-- NEEDS ARROW --></g>
+<g id="static_1.0_nonradial_skew+" transform="translate(875, 5675)"><!-- NEEDS ARROW --></g>
+<g id="static_1.5_nonradial_skew+" transform="translate(1225, 5675)"><!-- NEEDS ARROW --></g>
+<g id="static_2.0_nonradial_skew+" transform="translate(1575, 5675)"><!-- NEEDS ARROW --></g>
+<g id="static_2.5_nonradial_skew+" transform="translate(1925, 5675)"><!-- NEEDS ARROW --></g>
+<g id="static_3.0_nonradial_skew+" transform="translate(2275, 5675)"><!-- NEEDS ARROW --></g>
+
+<g id="static_0.0_nonradial_skew-" transform="translate(175, 6025)"><!-- NEEDS ARROW --></g>
+<g id="static_0.5_nonradial_skew-" transform="translate(525, 6025)"><!-- NEEDS ARROW --></g>
+<g id="static_1.0_nonradial_skew-" transform="translate(875, 6025)"><!-- NEEDS ARROW --></g>
+<g id="static_1.5_nonradial_skew-" transform="translate(1225, 6025)"><!-- NEEDS ARROW --></g>
+<g id="static_2.0_nonradial_skew-" transform="translate(1575, 6025)"><!-- NEEDS ARROW --></g>
+<g id="static_2.5_nonradial_skew-" transform="translate(1925, 6025)"><!-- NEEDS ARROW --></g>
+<g id="static_3.0_nonradial_skew-" transform="translate(2275, 6025)"><!-- NEEDS ARROW --></g>
+
+<!-- ============================================================ -->
+<!-- DASH rows (19-24) - all placeholders -->
+<!-- ============================================================ -->
+<g id="dash_0.0_radial" transform="translate(175, 6375)"><!-- Copy from original --></g>
+<g id="dash_0.5_radial" transform="translate(525, 6375)"><!-- Copy from original --></g>
+<g id="dash_1.0_radial" transform="translate(875, 6375)"><!-- Copy from original --></g>
+<g id="dash_1.5_radial" transform="translate(1225, 6375)"><!-- Copy from original --></g>
+<g id="dash_2.0_radial" transform="translate(1575, 6375)"><!-- Copy from original --></g>
+<g id="dash_2.5_radial" transform="translate(1925, 6375)"><!-- Copy from original --></g>
+<g id="dash_3.0_radial" transform="translate(2275, 6375)"><!-- Copy from original --></g>
+
+<g id="dash_0.0_radial_skew+" transform="translate(175, 6725)"><!-- NEEDS ARROW --></g>
+<g id="dash_0.5_radial_skew+" transform="translate(525, 6725)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.0_radial_skew+" transform="translate(875, 6725)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.5_radial_skew+" transform="translate(1225, 6725)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.0_radial_skew+" transform="translate(1575, 6725)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.5_radial_skew+" transform="translate(1925, 6725)"><!-- NEEDS ARROW --></g>
+<g id="dash_3.0_radial_skew+" transform="translate(2275, 6725)"><!-- NEEDS ARROW --></g>
+
+<g id="dash_0.0_radial_skew-" transform="translate(175, 7075)"><!-- NEEDS ARROW --></g>
+<g id="dash_0.5_radial_skew-" transform="translate(525, 7075)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.0_radial_skew-" transform="translate(875, 7075)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.5_radial_skew-" transform="translate(1225, 7075)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.0_radial_skew-" transform="translate(1575, 7075)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.5_radial_skew-" transform="translate(1925, 7075)"><!-- NEEDS ARROW --></g>
+<g id="dash_3.0_radial_skew-" transform="translate(2275, 7075)"><!-- NEEDS ARROW --></g>
+
+<g id="dash_0.0_nonradial" transform="translate(175, 7425)"><!-- Copy from original --></g>
+<g id="dash_0.5_nonradial" transform="translate(525, 7425)"><!-- Copy from original --></g>
+<g id="dash_1.0_nonradial" transform="translate(875, 7425)"><!-- Copy from original --></g>
+<g id="dash_1.5_nonradial" transform="translate(1225, 7425)"><!-- Copy from original --></g>
+<g id="dash_2.0_nonradial" transform="translate(1575, 7425)"><!-- Copy from original --></g>
+<g id="dash_2.5_nonradial" transform="translate(1925, 7425)"><!-- Copy from original --></g>
+<g id="dash_3.0_nonradial" transform="translate(2275, 7425)"><!-- Copy from original --></g>
+
+<g id="dash_0.0_nonradial_skew+" transform="translate(175, 7775)"><!-- NEEDS ARROW --></g>
+<g id="dash_0.5_nonradial_skew+" transform="translate(525, 7775)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.0_nonradial_skew+" transform="translate(875, 7775)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.5_nonradial_skew+" transform="translate(1225, 7775)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.0_nonradial_skew+" transform="translate(1575, 7775)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.5_nonradial_skew+" transform="translate(1925, 7775)"><!-- NEEDS ARROW --></g>
+<g id="dash_3.0_nonradial_skew+" transform="translate(2275, 7775)"><!-- NEEDS ARROW --></g>
+
+<g id="dash_0.0_nonradial_skew-" transform="translate(175, 8125)"><!-- NEEDS ARROW --></g>
+<g id="dash_0.5_nonradial_skew-" transform="translate(525, 8125)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.0_nonradial_skew-" transform="translate(875, 8125)"><!-- NEEDS ARROW --></g>
+<g id="dash_1.5_nonradial_skew-" transform="translate(1225, 8125)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.0_nonradial_skew-" transform="translate(1575, 8125)"><!-- NEEDS ARROW --></g>
+<g id="dash_2.5_nonradial_skew-" transform="translate(1925, 8125)"><!-- NEEDS ARROW --></g>
+<g id="dash_3.0_nonradial_skew-" transform="translate(2275, 8125)"><!-- NEEDS ARROW --></g>
+
+<!-- ============================================================ -->
+<!-- SPECIAL ARROWS (float, dash_base) -->
+<!-- ============================================================ -->
+<g id="float" transform="translate(175, 8350)">
+  <path class="st0" d="M197.9,140.6c2.1,13.2-1,56.3-1,56.3s-43.1,3-56.3,1c-10-1.6-9.7-16.8-9.7-16.8l36.8-0.3L3.2,16.4C-6.1,7,7-6.1,16.4,3.2l164.5,164.5l0.3-36.8C181.2,130.9,196.3,130.6,197.9,140.6"/>
+</g>
+<g id="dash_base" transform="translate(525, 8350)">
+  <path class="st0" d="M31,0.2c1.1,0.8,3.9,4.1,3.9,4.1S32.1,7.5,31,8.3c-0.8,0.6-1.9-0.5-1.9-0.5l2.6-2.6H1c-1.3,0-1.3-1.9,0-1.9h30.7l-2.6-2.6C29.1,0.7,30.2-0.4,31,0.2"/>
+</g>
+
+</svg>
