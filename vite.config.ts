@@ -151,6 +151,32 @@ const webpEncoderWasmRelative =
   "node_modules/webp-encoder/lib/assets/a.out.wasm";
 const webpEncoderWasmAbsolute = path.resolve(dirname, webpEncoderWasmRelative);
 
+/**
+ * 🎯 ARROW SPRITE HMR: Auto-reload when sprite is edited in Illustrator
+ * - Watches static/images/arrows-sprite.svg
+ * - Sends custom HMR event when file changes
+ * - ArrowSvgLoader listens and reloads sprite without page refresh
+ */
+const arrowSpriteHmrPlugin = () => ({
+  name: "arrow-sprite-hmr",
+  configureServer(server: ViteDevServer) {
+    const spritePath = path.resolve(dirname, "static/images/arrows-sprite.svg");
+
+    server.watcher.add(spritePath);
+
+    server.watcher.on("change", (changedPath: string) => {
+      if (changedPath.replace(/\\/g, "/").endsWith("arrows-sprite.svg")) {
+        console.log("🎯 Arrow sprite changed - sending HMR update");
+        server.ws.send({
+          type: "custom",
+          event: "arrow-sprite-update",
+          data: { timestamp: Date.now() },
+        });
+      }
+    });
+  },
+});
+
 const webpWasmDevPlugin = () => ({
   name: "webp-wasm-dev-server",
   configureServer(server: ViteDevServer) {
@@ -306,6 +332,7 @@ export default defineConfig({
     dictionaryPlugin(),
     fontCorsPlugin(), // 📱 CORS headers for fonts (mobile debugging)
     devCachePlugin(), // 🚀 2025: Smart caching (no-cache for CSS/JS, cache for SVGs)
+    arrowSpriteHmrPlugin(), // 🎯 Auto-reload arrows when sprite is edited in Illustrator
     webpWasmDevPlugin(),
     webpStaticCopyPlugin(),
     // 📊 Bundle analyzer - generates stats.html when ANALYZE=true

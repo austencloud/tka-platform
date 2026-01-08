@@ -10,6 +10,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
@@ -23,6 +24,9 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import { auth } from "$lib/shared/auth/firebase";
   import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
+  import VariationStrip from "./VariationStrip.svelte";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   let hapticService: IHapticFeedback | null = null;
   let videoService: ICollaborativeVideoManager | null = null;
@@ -36,15 +40,44 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   const {
     sequence,
+    variations = [],
+    variationIndex = 0,
     onClose = () => {},
     onAction = () => {},
     onInviteCollaborators,
+    onVariationSelect = () => {},
   } = $props<{
     sequence: SequenceData;
+    variations?: SequenceData[];
+    variationIndex?: number;
     onClose?: () => void;
     onAction?: (action: string, sequence: SequenceData) => void;
     onInviteCollaborators?: (video: CollaborativeVideo) => void;
+    onVariationSelect?: (index: number, sequence: SequenceData) => void;
   }>();
+
+  // Get light mode from visibility state
+  const visibilityManager = getAnimationVisibilityManager();
+  const lightMode = $derived(!visibilityManager.isDarkMode());
+
+  // Get prop settings for variation thumbnails
+  const propSettings = $derived({
+    bluePropType: settingsService.settings.bluePropType as PropType | undefined,
+    redPropType: settingsService.settings.redPropType as PropType | undefined,
+    catDogMode: settingsService.settings.catDogMode,
+  });
+
+  // Check if cat-dog mode is enabled
+  const isCatDog = $derived(
+    propSettings.bluePropType !== propSettings.redPropType ||
+      propSettings.catDogMode
+  );
+
+  // Handle variation selection
+  function handleVariationSelect(index: number, selectedSequence: SequenceData) {
+    hapticService?.trigger("selection");
+    onVariationSelect(index, selectedSequence);
+  }
 
   onMount(async () => {
     hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
@@ -162,6 +195,19 @@ Used by both desktop side panel and mobile slide-up overlay.
       </button>
     </div>
   </header>
+
+  <!-- Variation Strip (when sequence has variations) -->
+  {#if variations.length > 1}
+    <VariationStrip
+      {variations}
+      currentIndex={variationIndex}
+      onSelect={handleVariationSelect}
+      bluePropType={propSettings.bluePropType}
+      redPropType={propSettings.redPropType}
+      catDogModeEnabled={isCatDog}
+      {lightMode}
+    />
+  {/if}
 
   <!-- Media Viewer (Images, Animation, Video) -->
   <div class="media-container">

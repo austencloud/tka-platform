@@ -69,7 +69,7 @@ async function reactivateDeferred() {
         item.title || item.description?.substring(0, 60) || "Untitled";
       const deferDate =
         item.deferredUntil?.toDate?.().toLocaleDateString() || "Unknown";
-      const reason = item.resolutionNotes || "No reason provided";
+      const reason = item.adminNotes || "No reason provided";
 
       console.log(
         `  ${idx + 1}. ${item.id.substring(0, 8)}... | ${item.type || "N/A"}`

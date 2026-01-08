@@ -17,15 +17,21 @@ Features:
 
   const {
     sequence = null,
+    variations = [],
+    variationIndex = 0,
     isOpen = false,
     onClose = () => {},
     onAction = () => {},
+    onVariationSelect = () => {},
     viewMode = "desktop", // 'desktop' | 'mobile'
   } = $props<{
     sequence?: SequenceData | null;
+    variations?: SequenceData[];
+    variationIndex?: number;
     isOpen?: boolean;
     onClose?: () => void;
     onAction?: (action: string, sequence: SequenceData) => void;
+    onVariationSelect?: (index: number, sequence: SequenceData) => void;
     viewMode?: "desktop" | "mobile";
   }>();
 
@@ -67,7 +73,14 @@ Features:
     aria-hidden={!isOpen}
   >
     {#if sequence}
-      <SequenceDetailContent {sequence} {onClose} {onAction} />
+      <SequenceDetailContent
+        {sequence}
+        {variations}
+        {variationIndex}
+        {onClose}
+        {onAction}
+        {onVariationSelect}
+      />
     {/if}
   </aside>
 {/if}

@@ -1,0 +1,103 @@
+/**
+ * IThumbnailKeyDeriver
+ *
+ * Derives cache keys from thumbnail render inputs.
+ * Replaces 13 prev* state variables with a single hash comparison.
+ *
+ * A cache key captures everything that affects the visual output of a thumbnail.
+ * Same inputs always produce same key (pure function).
+ */
+
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { ThumbnailVariant } from "./ICloudThumbnailCache";
+
+/**
+ * All inputs that affect the visual output of a thumbnail.
+ * A change to ANY of these requires a new render.
+ */
+export interface ThumbnailRenderInput {
+  // Identity
+  sequenceName: string;
+
+  // Prop configuration
+  bluePropType: PropType | undefined;
+  redPropType: PropType | undefined;
+  catDogModeEnabled: boolean;
+
+  // Visual mode
+  lightMode: boolean;
+  variant: ThumbnailVariant;
+
+  // Composition overrides (undefined = use variant defaults)
+  addWord?: boolean;
+  addBeatNumbers?: boolean;
+  includeStartPosition?: boolean;
+  addDifficultyLevel?: boolean;
+  addUserInfo?: boolean;
+  showCreatorName?: boolean;
+  showNotes?: boolean;
+  showBirthday?: boolean;
+  customNotesText?: string;
+  userName?: string;
+}
+
+/**
+ * Immutable cache key - once computed, never changes.
+ * Used for cache lookups and render deduplication.
+ */
+export interface ThumbnailCacheKey {
+  /** Hash of all inputs that affect visual output */
+  readonly hash: string;
+
+  /** Cloud storage path (for ICloudThumbnailCache) */
+  readonly cloudPath: string;
+
+  /** Original inputs (for debugging/logging) */
+  readonly inputs: Readonly<ThumbnailRenderInput>;
+
+  /** Whether this uses default composition settings (cacheable to cloud) */
+  readonly usesDefaults: boolean;
+
+  /** Effective prop type string (for cloud cache key construction) */
+  readonly propKey: string;
+}
+
+/**
+ * Default composition settings for each variant.
+ */
+export interface CompositionDefaults {
+  addWord: boolean;
+  addBeatNumbers: boolean;
+  includeStartPosition: boolean;
+  addDifficultyLevel: boolean;
+  addUserInfo: boolean;
+  showCreatorName: boolean;
+  showNotes: boolean;
+  showBirthday: boolean;
+}
+
+export interface IThumbnailKeyDeriver {
+  /**
+   * Derive a cache key from render inputs.
+   * Same inputs always produce same key (pure function).
+   */
+  deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey;
+
+  /**
+   * Check if two keys represent the same thumbnail.
+   * Simple hash comparison - faster than full derivation.
+   */
+  keysEqual(a: ThumbnailCacheKey, b: ThumbnailCacheKey): boolean;
+
+  /**
+   * Get variant-specific default settings.
+   * Used to determine if custom settings differ from cloud-cacheable defaults.
+   */
+  getVariantDefaults(variant: ThumbnailVariant): CompositionDefaults;
+
+  /**
+   * Check if the input uses default settings for its variant.
+   * When true, the thumbnail can be cached to/retrieved from cloud.
+   */
+  inputUsesDefaults(input: ThumbnailRenderInput): boolean;
+}

@@ -3,6 +3,7 @@
  */
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
+import config from "../config/feedback.config.js";
 
 // Load service account key
 const serviceAccount = JSON.parse(
@@ -17,7 +18,9 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-const ADMIN_USER_ID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
+
+// Import config values
+const { ADMIN_USER_ID, ADMIN_USER } = config;
 
 /**
  * Generate a deterministic conversation ID from two user IDs
@@ -54,8 +57,8 @@ async function sendReleaseMessage(userId, feedbackId, feedbackTitle, version) {
         participantInfo: {
           [ADMIN_USER_ID]: {
             userId: ADMIN_USER_ID,
-            displayName: "Austen Cloud",
-            avatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+            displayName: ADMIN_USER.displayName,
+            avatar: ADMIN_USER.photoURL,
             joinedAt: now,
           },
           [userId]: {
@@ -77,8 +80,8 @@ async function sendReleaseMessage(userId, feedbackId, feedbackTitle, version) {
 
     const messageData = {
       senderId: ADMIN_USER_ID,
-      senderName: "Austen Cloud",
-      senderAvatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+      senderName: ADMIN_USER.displayName,
+      senderAvatar: ADMIN_USER.photoURL,
       content: messageContent,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       readBy: [ADMIN_USER_ID],
@@ -107,7 +110,7 @@ async function sendReleaseMessage(userId, feedbackId, feedbackTitle, version) {
       lastMessage: {
         content: messageContent,
         senderId: ADMIN_USER_ID,
-        senderName: "Austen Cloud",
+        senderName: ADMIN_USER.displayName,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         hasAttachment: true,
       },

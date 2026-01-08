@@ -20,11 +20,55 @@ import type {
   ICloudThumbnailCache,
   CloudThumbnailKey,
   ThumbnailVariant,
+  DeleteProgress,
 } from "../contracts/ICloudThumbnailCache";
 
-// In-memory cache to avoid repeated Firebase Storage checks
-const urlCache = new Map<string, string | null>();
+// In-memory cache with TTL to avoid stale URLs
+// Firebase download URLs expire after ~1 hour, so we refresh after 30 minutes
+const URL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+interface CachedUrl {
+  url: string | null;
+  timestamp: number;
+}
+
+const urlCache = new Map<string, CachedUrl>();
 const pendingUploads = new Map<string, Promise<string>>();
+
+/**
+ * Check if a cached entry is still valid (not expired)
+ */
+function isCacheValid(entry: CachedUrl): boolean {
+  return Date.now() - entry.timestamp < URL_CACHE_TTL_MS;
+}
+
+// Concurrency control for cloud cache checks
+// Prevents overwhelming Firebase with too many simultaneous requests
+const MAX_CONCURRENT_CHECKS = 5;
+let activeChecks = 0;
+const checkQueue: Array<() => void> = [];
+
+async function acquireCheckSlot(): Promise<void> {
+  if (activeChecks < MAX_CONCURRENT_CHECKS) {
+    activeChecks++;
+    return;
+  }
+  // Wait for a slot to become available
+  return new Promise((resolve) => {
+    checkQueue.push(() => {
+      activeChecks++;
+      resolve();
+    });
+  });
+}
+
+function releaseCheckSlot(): void {
+  activeChecks--;
+  const next = checkQueue.shift();
+  if (next) {
+    next();
+  }
+}
 
 @injectable()
 export class CloudThumbnailCache implements ICloudThumbnailCache {
@@ -49,42 +93,107 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
   }
 
   /**
+   * Get thumbnail URL from in-memory cache only (synchronous)
+   * Returns undefined if not in cache, null if checked and known not to exist
+   * Use this for instant cache hits without async overhead
+   */
+  getCachedUrl(key: CloudThumbnailKey): string | null | undefined {
+    const cacheKey = this.getCacheKey(key);
+    const cached = urlCache.get(cacheKey);
+    if (cached && isCacheValid(cached)) {
+      return cached.url;
+    }
+    // Expired or not in cache
+    if (cached) {
+      urlCache.delete(cacheKey); // Clean up expired entry
+    }
+    return undefined; // Not in cache yet
+  }
+
+  /**
    * Get thumbnail URL from Firebase Storage
    * Returns null if thumbnail doesn't exist in cloud
+   * Uses getMetadata first to avoid 404 errors in console (getDownloadURL logs network errors)
    */
   async getUrl(key: CloudThumbnailKey): Promise<string | null> {
     const cacheKey = this.getCacheKey(key);
 
-    // Check in-memory cache first
-    if (urlCache.has(cacheKey)) {
-      return urlCache.get(cacheKey) ?? null;
+    // Check in-memory cache first (no concurrency limit needed)
+    const cached = urlCache.get(cacheKey);
+    if (cached && isCacheValid(cached)) {
+      return cached.url;
+    }
+    // Clean up expired entry
+    if (cached) {
+      urlCache.delete(cacheKey);
     }
 
+    // Acquire a slot before making Firebase request
+    await acquireCheckSlot();
+
     try {
-      const { ref, getDownloadURL } = await import("firebase/storage");
+      // Double-check cache after acquiring slot (might have been populated while waiting)
+      const cachedAgain = urlCache.get(cacheKey);
+      if (cachedAgain && isCacheValid(cachedAgain)) {
+        return cachedAgain.url;
+      }
+
+      const { ref, getMetadata, getDownloadURL } = await import("firebase/storage");
       const storage = await getStorageInstance();
       const storagePath = this.getStoragePath(key);
       const storageRef = ref(storage, storagePath);
 
+      // Add timeout to prevent hanging when Firebase is overloaded
+      const TIMEOUT_MS = 5000;
+
+      // First check if file exists using getMetadata (doesn't log 404 to console)
+      // This avoids the red 404 errors that getDownloadURL causes
+      try {
+        await Promise.race([
+          getMetadata(storageRef),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Cloud cache timeout")), TIMEOUT_MS)
+          ),
+        ]);
+      } catch (metadataError: unknown) {
+        // File doesn't exist - cache null and return silently (no console error)
+        if (
+          metadataError instanceof Error &&
+          (metadataError.message.includes("object-not-found") ||
+            metadataError.message.includes("storage/object-not-found"))
+        ) {
+          urlCache.set(cacheKey, { url: null, timestamp: Date.now() });
+          return null;
+        }
+        // Timeout - don't cache, render locally
+        if (metadataError instanceof Error && metadataError.message.includes("timeout")) {
+          return null;
+        }
+        // Other error - don't cache, might be transient
+        return null;
+      }
+
+      // File exists - now get the download URL (won't 404)
       const url = await getDownloadURL(storageRef);
-      urlCache.set(cacheKey, url);
+
+      if (url) {
+        urlCache.set(cacheKey, { url, timestamp: Date.now() });
+      }
       return url;
     } catch (error: unknown) {
-      // If file doesn't exist, cache the null result
+      // Shouldn't happen since we checked metadata first, but handle gracefully
       if (
         error instanceof Error &&
         (error.message.includes("object-not-found") ||
           error.message.includes("storage/object-not-found"))
       ) {
-        urlCache.set(cacheKey, null);
+        urlCache.set(cacheKey, { url: null, timestamp: Date.now() });
         return null;
       }
-      // For other errors, don't cache - might be transient
-      console.warn(
-        `CloudThumbnailCache: Error getting URL for ${cacheKey}:`,
-        error
-      );
       return null;
+    } finally {
+      // Always release the slot
+      releaseCheckSlot();
     }
   }
 
@@ -145,7 +254,7 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
 
     try {
       const url = await uploadPromise;
-      urlCache.set(cacheKey, url);
+      urlCache.set(cacheKey, { url, timestamp: Date.now() });
       return url;
     } finally {
       pendingUploads.delete(cacheKey);
@@ -191,11 +300,23 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
   }
 
   /**
+   * Invalidate a specific cache entry
+   * Call this when an image fails to load (e.g., 404) to allow retry
+   */
+  invalidateUrl(key: CloudThumbnailKey): void {
+    const cacheKey = this.getCacheKey(key);
+    urlCache.delete(cacheKey);
+  }
+
+  /**
    * Delete all thumbnails for a variant (admin only)
    * Lists all files in thumbnails/{variant}/ and deletes them
    * Returns the number of files deleted
    */
-  async deleteVariant(variant: ThumbnailVariant): Promise<number> {
+  async deleteVariant(
+    variant: ThumbnailVariant,
+    onProgress?: (progress: DeleteProgress) => void
+  ): Promise<number> {
     const { ref, listAll, deleteObject } = await import("firebase/storage");
     const storage = await getStorageInstance();
 
@@ -208,27 +329,54 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       // List all items recursively (Firebase listAll returns prefixes for folders)
       const result = await listAll(variantRef);
 
-      // Delete all files in root of variant folder
+      // Collect all files to delete
+      const allItems: { fullPath: string; ref: typeof result.items[0] }[] = [];
+
+      // Add root items
       for (const item of result.items) {
-        try {
-          await deleteObject(item);
-          deletedCount++;
-        } catch (error) {
-          console.warn(`Failed to delete ${item.fullPath}:`, error);
-        }
+        allItems.push({ fullPath: item.fullPath, ref: item });
       }
 
-      // Recursively delete files in subfolders (prop type folders)
+      // Add subfolder items
       for (const prefix of result.prefixes) {
         const subResult = await listAll(prefix);
         for (const item of subResult.items) {
-          try {
-            await deleteObject(item);
-            deletedCount++;
-          } catch (error) {
-            console.warn(`Failed to delete ${item.fullPath}:`, error);
-          }
+          allItems.push({ fullPath: item.fullPath, ref: item });
         }
+      }
+
+      const total = allItems.length;
+
+      // Report initial count
+      onProgress?.({ deleted: 0, total });
+
+      // Delete files in parallel batches for speed
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < allItems.length; i += BATCH_SIZE) {
+        const batch = allItems.slice(i, i + BATCH_SIZE);
+
+        // Delete batch in parallel
+        const results = await Promise.allSettled(
+          batch.map((item) => deleteObject(item.ref))
+        );
+
+        // Count successes and log failures
+        results.forEach((result, j) => {
+          if (result.status === "fulfilled") {
+            deletedCount++;
+          } else {
+            const item = batch[j];
+            if (item) {
+              console.warn(`Failed to delete ${item.fullPath}:`, result.reason);
+            }
+          }
+        });
+
+        // Report progress after each batch
+        onProgress?.({
+          deleted: deletedCount,
+          total,
+        });
       }
 
       // Clear in-memory cache for this variant

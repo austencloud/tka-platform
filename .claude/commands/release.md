@@ -1,6 +1,6 @@
 ---
 description: Create a new release version with git tagging and feedback archival
-allowed-tools: Bash, Read, Edit, AskUserQuestion
+allowed-tools: Bash Read Edit AskUserQuestion
 ---
 
 # Release Command

@@ -116,28 +116,50 @@ When `/done` is called with no matching feedback item:
 
 ## Playwright Usage
 
-**User navigates, Claude observes. Never click or navigate autonomously.**
+### ⛔ CRITICAL: NEVER USE INTERACTIVE PLAYWRIGHT WITHOUT EXPLICIT PERMISSION ⛔
 
-### The Protocol
+**Default mode: User navigates, Claude observes.**
+
+Interactive Playwright commands (`browser_navigate`, `browser_click`, `browser_type`, etc.) require **EXPLICIT VERBAL PERMISSION** in the current conversation.
+
+### What Counts as Permission
+
+User must say something like:
+- "Go ahead and use Playwright autonomously"
+- "You can navigate/click freely"
+- "Take control of the browser"
+- "Test this yourself with Playwright"
+
+### What Does NOT Count as Permission
+
+- User mentioning Playwright exists
+- User asking you to test something (tell them WHERE to go, don't go yourself)
+- User asking what's on a page (ask them to navigate and tell you when to look)
+- Silence - if they haven't explicitly granted autonomous control, YOU DON'T HAVE IT
+
+### Default Protocol (No Permission Granted)
 
 1. **User is the navigator** - they control the browser
-2. **Claude only observes** - take snapshots/screenshots when user says "I'm here" or "look at this"
+2. **Claude only observes** - snapshots/screenshots ONLY when user says "look at this"
 3. **Claude advises** - tell user where to go, what to click, what to look for
 4. **User confirms** - they tell Claude when they've arrived
 
-### Allowed Playwright Actions
+### With Permission Granted
 
-- `browser_snapshot` - ONLY when user asks to evaluate a page
-- `browser_take_screenshot` - ONLY when user asks to see something
-- `browser_console_messages` - ONLY when debugging with user permission
+If user explicitly says "go ahead with Playwright" or equivalent, you may:
+- Navigate to URLs
+- Click elements
+- Fill forms
+- Take snapshots autonomously
 
-### FORBIDDEN Without Explicit Request
+Permission expires at end of conversation or when user revokes it.
 
-- `browser_click` - NEVER autonomously
-- `browser_navigate` - NEVER autonomously
-- `browser_type` - NEVER autonomously
-- `browser_fill_form` - NEVER autonomously
-- Any action that changes page state
+### Always Allowed (Read-Only)
+
+These never require permission:
+- `browser_snapshot` - when user asks to evaluate a page
+- `browser_take_screenshot` - when user asks to see something
+- `browser_console_messages` - when debugging
 
 ### Why This Matters
 
@@ -145,17 +167,25 @@ When `/done` is called with no matching feedback item:
 - Autonomous navigation burns tokens on wrong pages
 - User knows their app better than Claude
 - Claude clicking around wastes time and money
+- On January 7, 2026, Claude burned massive tokens navigating autonomously without permission
 
-### Example Interaction
+### Example: Default Mode (No Permission)
 
 ```
-User: "Open a playwright session, I'll show you the bug"
-Claude: "Ready. Navigate to the page and tell me when to look."
-User: "I'm on the word card page now, take a look"
+User: "The background builder isn't loading fish"
+Claude: "Dev server should be at localhost:5173/background-builder.
+        Navigate there and tell me when you're ready for me to look."
+User: "I'm there now"
 Claude: [takes snapshot, analyzes]
-Claude: "I see the issue. Try going to Settings > Props and changing to Staff"
-User: "Done, I'm there now"
-Claude: [takes snapshot if needed]
+```
+
+### Example: Permission Granted
+
+```
+User: "Go ahead and test the background builder with Playwright"
+Claude: [NOW allowed to navigate, click, etc.]
+Claude: [navigates to localhost:5173/background-builder]
+Claude: [takes snapshot, analyzes, clicks around as needed]
 ```
 
 ---

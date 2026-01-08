@@ -7,6 +7,7 @@
 
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
+import config from "../config/feedback.config.js";
 
 // Load service account key
 const serviceAccount = JSON.parse(
@@ -20,11 +21,11 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+// Use admin user from config
 const AUSTEN_USER = {
-  ownerId: "PBp3GSBO6igCKPwJyLZNmVEmamI3",
-  ownerDisplayName: "Austen Cloud",
-  ownerAvatarUrl:
-    "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+  ownerId: config.ADMIN_USER.userId,
+  ownerDisplayName: config.ADMIN_USER.displayName,
+  ownerAvatarUrl: config.ADMIN_USER.photoURL,
 };
 
 const PAGE_SIZE = 20; // Very small page size to stay under quota

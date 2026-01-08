@@ -8,14 +8,21 @@ Uses PropAwareThumbnail for cloud-cached rendering:
 - First user to view a prop type renders it locally
 - Rendered image is uploaded to Firebase Storage
 - All subsequent users get instant loading from cloud
+
+Variation support:
+- When a sequence has variations (same word, different authors/props/turns),
+  a pill shows "1/3" etc. at the bottom
+- Tapping the pill cycles through variations with crossfade
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import PropAwareThumbnail from "../PropAwareThumbnail.svelte";
+  import VariationPill from "./VariationPill.svelte";
 
   const {
     sequence,
+    variations = [],
     onPrimaryAction = () => {},
     selected = false,
     bluePropType = undefined,
@@ -25,6 +32,7 @@ Uses PropAwareThumbnail for cloud-cached rendering:
     coverUrl: _coverUrl = undefined, // Legacy prop - kept for backwards compatibility
   }: {
     sequence: SequenceData;
+    variations?: SequenceData[];
     onPrimaryAction?: (sequence: SequenceData) => void;
     selected?: boolean;
     bluePropType?: PropType;
@@ -34,18 +42,56 @@ Uses PropAwareThumbnail for cloud-cached rendering:
     coverUrl?: string;
   } = $props();
 
-  function handlePrimaryAction() {
-    onPrimaryAction(sequence);
+  // Track which variation is currently displayed
+  let currentVariationIndex = $state(0);
+
+  // The sequence currently being shown (either the original or a variation)
+  // Always fallback to the base sequence to guarantee non-undefined
+  const displayedSequence: SequenceData = $derived.by(() => {
+    if (variations.length > 1) {
+      const variation = variations[currentVariationIndex];
+      return variation ?? sequence;
+    }
+    return sequence;
+  });
+
+  // Total count for the pill
+  const variationCount = $derived(variations.length > 1 ? variations.length : 0);
+
+  // Cycle to next variation
+  function handleCycleVariation() {
+    if (variations.length > 1) {
+      currentVariationIndex = (currentVariationIndex + 1) % variations.length;
+    }
   }
+
+  function handlePrimaryAction() {
+    onPrimaryAction(displayedSequence);
+  }
+
+  // Reset index when the base sequence changes
+  $effect(() => {
+    // Depend on sequence.id to detect base sequence change
+    const _ = sequence.id;
+    currentVariationIndex = 0;
+  });
 </script>
 
-<button class="sequence-card" class:selected onclick={handlePrimaryAction}>
-  <PropAwareThumbnail
-    {sequence}
-    {bluePropType}
-    {redPropType}
-    {catDogModeEnabled}
-    {lightMode}
+<button class="sequence-card" class:selected class:light-mode={lightMode} onclick={handlePrimaryAction}>
+  <div class="thumbnail-container" class:crossfade={variationCount > 0}>
+    <PropAwareThumbnail
+      sequence={displayedSequence}
+      {bluePropType}
+      {redPropType}
+      {catDogModeEnabled}
+      {lightMode}
+    />
+  </div>
+
+  <VariationPill
+    currentIndex={currentVariationIndex}
+    totalCount={variationCount}
+    onCycle={handleCycleVariation}
   />
 </button>
 
@@ -101,5 +147,29 @@ Uses PropAwareThumbnail for cloud-cached rendering:
     border-color: color-mix(in srgb, var(--semantic-info) 80%, transparent);
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--semantic-info) 40%, transparent);
+  }
+
+  /* Light mode: use light background to match light-colored pictograph images */
+  .sequence-card.light-mode {
+    background: #f5f5f7;
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .sequence-card.light-mode:hover {
+    border-color: rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Thumbnail container for crossfade animation */
+  .thumbnail-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Smooth crossfade when cycling variations */
+  .thumbnail-container.crossfade :global(img),
+  .thumbnail-container.crossfade :global(.placeholder) {
+    transition: opacity 0.2s ease-out;
   }
 </style>

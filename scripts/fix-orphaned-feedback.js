@@ -7,6 +7,7 @@
 
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
+import config from "../config/feedback.config.js";
 
 const serviceAccount = JSON.parse(
   readFileSync("./serviceAccountKey.json", "utf8")
@@ -18,12 +19,12 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+// Use admin user from config
 const CORRECT_USER = {
-  userId: "PBp3GSBO6igCKPwJyLZNmVEmamI3",
-  userDisplayName: "Austen Cloud",
-  userEmail: "austencloud@gmail.com",
-  userPhotoURL:
-    "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+  userId: config.ADMIN_USER.userId,
+  userDisplayName: config.ADMIN_USER.displayName,
+  userEmail: config.ADMIN_USER.email,
+  userPhotoURL: config.ADMIN_USER.photoURL,
 };
 
 async function fixOrphanedFeedback() {

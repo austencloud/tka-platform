@@ -1,6 +1,6 @@
 ---
 description: Generate user-friendly changelog from completed feedback items
-allowed-tools: Bash(git *), Read, Grep, Glob, WebFetch
+allowed-tools: Bash Read Grep Glob WebFetch
 ---
 
 # Changelog Generation

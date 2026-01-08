@@ -5,12 +5,15 @@
   // NOTE: animate-css-grid disabled - causes layout chaos with async thumbnail loading
   // import { wrapGrid } from "animate-css-grid";
   import type { IDiscoverThumbnailProvider } from "../services/contracts/IDiscoverThumbnailProvider";
+  import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import SequenceCard from "./SequenceCard/SequenceCard.svelte";
   import SectionHeader from "./SectionHeader.svelte";
   import VirtualizedSequenceGrid from "./VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../services/implementations/DiscoverThumbnailCache";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { resolve } from "$lib/shared/inversify/di";
+  import { TYPES } from "$lib/shared/inversify/types";
 
   /**
    * 🚀 PERFORMANCE: Virtualization threshold
@@ -44,6 +47,21 @@
       sequences.length > VIRTUALIZATION_THRESHOLD &&
       viewMode === "grid"
   );
+
+  // Variation grouper service for identifying sequences with same word
+  const variationGrouper = resolve<IVariationGrouper>(TYPES.IVariationGrouper);
+
+  // Build variation map when sequences change
+  const variationMap = $derived.by(() => {
+    return variationGrouper.buildVariationMap(sequences);
+  });
+
+  // Get variations for a specific sequence
+  function getVariationsForSequence(sequence: SequenceData): SequenceData[] {
+    const word = sequence.word || sequence.name;
+    if (!word) return [sequence];
+    return variationMap.get(word.trim()) ?? [sequence];
+  }
 
   // Get user's prop settings for prop-aware thumbnails
   const propSettings = $derived({
@@ -87,12 +105,13 @@
   let containerWidth = $state(0);
 
   const columnCount = $derived.by(() => {
+    // Reduced column counts by 1 at each breakpoint for larger thumbnails
     if (containerWidth === 0) return 2; // Default
-    if (containerWidth >= 1600) return 6;
-    if (containerWidth >= 1200) return 5;
-    if (containerWidth >= 800) return 4;
-    if (containerWidth >= 481) return 3;
-    return 2;
+    if (containerWidth >= 1600) return 5; // was 6
+    if (containerWidth >= 1200) return 4; // was 5
+    if (containerWidth >= 800) return 3;  // was 4
+    if (containerWidth >= 481) return 2;  // was 3
+    return 2; // minimum
   });
 
   // Initialize ResizeObserver for responsive column count
@@ -139,9 +158,22 @@
     };
   });
 
-  // Handle sequence actions
-  function handleSequenceAction(action: string, sequence: SequenceData) {
-    onAction(action, sequence);
+  // Handle sequence actions (pass variations for view-detail)
+  function handleSequenceAction(
+    action: string,
+    sequence: SequenceData,
+    variations?: SequenceData[]
+  ) {
+    // Pass variations as third argument for view-detail action
+    if (action === "view-detail" && variations) {
+      (onAction as (action: string, sequence: SequenceData, variations?: SequenceData[]) => void)(
+        action,
+        sequence,
+        variations
+      );
+    } else {
+      onAction(action, sequence);
+    }
   }
 
   function getCoverUrl(sequence: SequenceData) {
@@ -201,12 +233,14 @@
               ? `repeat(${columnCount}, 1fr)`
               : undefined}
           >
-            {#each section.sequences as sequence}
+            {#each section.sequences as sequence (sequence.id)}
+              {@const seqVariations = getVariationsForSequence(sequence)}
               <SequenceCard
                 {sequence}
+                variations={seqVariations}
                 coverUrl={getCoverUrl(sequence)}
-                onPrimaryAction={(sequence) =>
-                  handleSequenceAction("view-detail", sequence)}
+                onPrimaryAction={(seq) =>
+                  handleSequenceAction("view-detail", seq, seqVariations)}
                 bluePropType={propSettings.bluePropType}
                 redPropType={propSettings.redPropType}
                 catDogModeEnabled={isCatDog}
@@ -230,12 +264,14 @@
       : undefined}
     transition:slide={{ duration: 300 }}
   >
-    {#each sequences as sequence}
+    {#each sequences as sequence (sequence.id)}
+      {@const seqVariations = getVariationsForSequence(sequence)}
       <SequenceCard
         {sequence}
+        variations={seqVariations}
         coverUrl={getCoverUrl(sequence)}
-        onPrimaryAction={(sequence) =>
-          handleSequenceAction("view-detail", sequence)}
+        onPrimaryAction={(seq) =>
+          handleSequenceAction("view-detail", seq, seqVariations)}
         bluePropType={propSettings.bluePropType}
         redPropType={propSettings.redPropType}
         catDogModeEnabled={isCatDog}

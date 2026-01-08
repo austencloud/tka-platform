@@ -327,9 +327,14 @@
       <div class="detail-content-wrapper">
         <SequenceDetailContent
           sequence={galleryPanelManager.activeSequence}
+          variations={galleryPanelManager.activeVariations}
+          variationIndex={galleryPanelManager.variationIndex}
           onClose={onCloseDetailPanel}
           onAction={onDetailPanelAction}
           onInviteCollaborators={handleInviteCollaborators}
+          onVariationSelect={(index, seq) => {
+            galleryPanelManager.setVariationIndex(index);
+          }}
         />
       </div>
     {/if}

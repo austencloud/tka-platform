@@ -62,7 +62,14 @@
     "env:dev": "node scripts/switch-environment.js dev",
     "env:prod": "node scripts/switch-environment.js prod",
     "monolith": "node scripts/find-monoliths.cjs",
-    "monolith:all": "node scripts/find-monoliths.cjs --all"
+    "monolith:all": "node scripts/find-monoliths.cjs --all",
+    "sort-arrows": "node scripts/sort-arrows.js",
+    "sort-arrows:dry": "node scripts/sort-arrows.js --dry-run",
+    "arrows:watch": "node scripts/sort-arrows.js --watch",
+    "arrows:sync": "node scripts/arrows-sync.js",
+    "arrows:export": "node scripts/arrows-sync.js --once",
+    "arrows:template": "node scripts/generate-arrow-template.js",
+    "arrows:create": "node scripts/create-arrow-document.js"
   },
   "overrides": {
     "cookie": "^0.7.2",

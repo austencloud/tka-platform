@@ -10,6 +10,39 @@ This project follows a **2026+ AI-assisted development approach**:
 - **Extract when there are multiple responsibilities** - not to hit arbitrary line counts
 - **Service-based architecture** - logic lives in services, components orchestrate
 
+---
+
+## NEVER Create Utility Files or Hooks
+
+**This is a service-based architecture using Inversify dependency injection. ALL logic must live in injectable services.**
+
+### What NOT to create:
+
+- `utils/` folders or files (e.g., `utils/deriveWord.ts`)
+- `helpers/` folders or files
+- `hooks/` folders or files (this isn't React)
+- Standalone pure functions meant to be imported directly
+
+### What to create instead:
+
+1. **Interface** in `services/contracts/IServiceName.ts`
+2. **Implementation** in `services/implementations/ServiceName.ts` with `@injectable()` decorator
+3. **Type symbol** in `inversify/types/*.types.ts`
+4. **Binding** in `inversify/modules/*.module.ts`
+
+### Why:
+
+- Dependency injection enables testing, mocking, and swapping implementations
+- Services are discoverable via the DI container
+- Follows the established architecture pattern
+- Keeps all business logic in injectable, traceable units
+
+### If you think you need a utility:
+
+You actually need a service. Create an interface, implement it with `@injectable()`, register it in the container, and inject it where needed.
+
+---
+
 ### Why this matters for AI-assisted development:
 
 - Smaller files = smaller context windows = faster, cheaper, more accurate AI assistance
@@ -23,7 +56,6 @@ This project follows a **2026+ AI-assisted development approach**:
 - Re-export files that just forward imports
 - Wrapper components that add no logic
 - Splitting cohesive logic across files just to reduce line count
-- Utility functions that belong together (e.g., string utils can live in one file)
 
 ---
 

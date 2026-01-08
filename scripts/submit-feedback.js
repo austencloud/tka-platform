@@ -18,12 +18,14 @@
  *   node scripts/submit-feedback.js "Video drawer" "Implement video recording" --subtasks '[{"id":"1","title":"Create UI","description":"Build drawer UI","status":"pending"}]'
  */
 
-// Known user profiles
+import config from "../config/feedback.config.js";
+
+// Known user profiles - use config for austen profile
 const USER_PROFILES = {
   austen: {
-    userId: "austen-cloud",
-    userEmail: "austencloud@gmail.com",
-    userDisplayName: "Austen Cloud",
+    userId: config.ADMIN_USER.userId,
+    userEmail: config.ADMIN_USER.email,
+    userDisplayName: config.ADMIN_USER.displayName,
   },
   claude: {
     userId: "system",

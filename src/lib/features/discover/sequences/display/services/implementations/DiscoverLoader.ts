@@ -655,9 +655,20 @@ export class DiscoverLoader implements IDiscoverLoader {
     const gridMode = this.parseGridMode(rawSeq.gridMode) ?? GridMode.BOX;
     const dateAdded = this.parseDate(rawSeq.dateAdded) ?? new Date();
 
-    // Get difficulty and calculate numeric level
-    const difficultyLevel = this.parseDifficulty(rawSeq.difficultyLevel);
-    const calculatedLevel = this.difficultyStringToLevel(difficultyLevel);
+    // Calculate difficulty from bundled beats if available, otherwise use stored value
+    let difficultyLevel: string;
+    let calculatedLevel: number;
+
+    if (rawSeq.fullMetadata) {
+      const fullMetadata = rawSeq.fullMetadata as Record<string, unknown>;
+      const sequence = (fullMetadata.sequence || []) as unknown[];
+      const beats = this.parseBundledBeats(sequence);
+      calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel(beats);
+      difficultyLevel = this.difficultyCalculator.levelToString(calculatedLevel);
+    } else {
+      difficultyLevel = this.parseDifficulty(rawSeq.difficultyLevel);
+      calculatedLevel = this.difficultyStringToLevel(difficultyLevel);
+    }
 
     return createSequenceData({
       id: word,

@@ -1,7 +1,7 @@
 /**
  * Feedback Queue Manager
  *
- * Run `node scripts/fetch-feedback.js.js help` to see all available commands.
+ * Run `node scripts/fetch-feedback.js help` to see all available commands.
  *
  * Workflow:
  *   1. Agent runs with no args → claims next unclaimed feedback (prioritized: no priority > high > medium > low)
@@ -9,12 +9,17 @@
  *   3. Future agents see subtasks and can work on prerequisites first
  *   4. Agent resolves when all subtasks complete
  *   5. When moving to in-review/completed, add resolution notes to explain what was done
+ *
+ * Concurrency Safety:
+ *   - Claims use Firestore transactions to prevent race conditions
+ *   - Two agents running simultaneously cannot claim the same item
  */
 
 import admin from "firebase-admin";
 import { readFileSync } from "fs";
 import { execSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
+import config from "../config/feedback.config.js";
 
 // Load service account key
 const serviceAccount = JSON.parse(
@@ -28,10 +33,8 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// Stale claim threshold (2 hours) - items claimed longer than this can be reclaimed
-const STALE_CLAIM_MS = 2 * 60 * 60 * 1000;
-
-const ADMIN_USER_ID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
+// Import config values
+const { ADMIN_USER_ID, ADMIN_USER, STALE_CLAIM_MS } = config;
 
 /**
  * Generate a deterministic conversation ID from two user IDs
@@ -44,6 +47,8 @@ function generateConversationId(userId1, userId2) {
 /**
  * Send a direct message to a user (in their conversation with admin)
  * This mirrors the message they receive when submitting feedback
+ *
+ * Includes deduplication: won't send if already notified for same status
  */
 async function sendDirectMessageToUser(
   userId,
@@ -61,6 +66,22 @@ async function sendDirectMessageToUser(
   if (userId === ADMIN_USER_ID) {
     console.log("  ℹ️  Skipping message to admin (self)");
     return null;
+  }
+
+  // Check for duplicate notification
+  try {
+    const feedbackRef = db.collection("feedback").doc(feedbackId);
+    const feedbackDoc = await feedbackRef.get();
+    if (feedbackDoc.exists) {
+      const data = feedbackDoc.data();
+      // Skip if already notified for this status
+      if (data.lastNotifiedStatus === feedbackStatus) {
+        console.log(`  ℹ️  Already notified for status "${feedbackStatus}" - skipping`);
+        return null;
+      }
+    }
+  } catch (e) {
+    // Continue even if check fails
   }
 
   try {
@@ -84,8 +105,8 @@ async function sendDirectMessageToUser(
         participantInfo: {
           [ADMIN_USER_ID]: {
             userId: ADMIN_USER_ID,
-            displayName: "Austen Cloud",
-            avatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+            displayName: ADMIN_USER.displayName,
+            avatar: ADMIN_USER.photoURL,
             joinedAt: now,
           },
           [userId]: {
@@ -105,8 +126,8 @@ async function sendDirectMessageToUser(
     const messagesRef = conversationRef.collection("messages");
     const messageData = {
       senderId: ADMIN_USER_ID,
-      senderName: "Austen Cloud",
-      senderAvatar: "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+      senderName: ADMIN_USER.displayName,
+      senderAvatar: ADMIN_USER.photoURL,
       content: messageContent,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       readBy: [ADMIN_USER_ID],
@@ -134,13 +155,23 @@ async function sendDirectMessageToUser(
       lastMessage: {
         content: messageContent,
         senderId: ADMIN_USER_ID,
-        senderName: "Austen Cloud",
+        senderName: ADMIN_USER.displayName,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         hasAttachment: true,
       },
       [`unreadCount.${userId}`]: admin.firestore.FieldValue.increment(1),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    // Update notification tracking to prevent duplicates
+    try {
+      await db.collection("feedback").doc(feedbackId).update({
+        lastNotifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastNotifiedStatus: feedbackStatus,
+      });
+    } catch (e) {
+      // Non-critical - continue even if tracking update fails
+    }
 
     console.log(`  💬 Direct message sent to user`);
     return messageRef.id;
@@ -227,6 +258,71 @@ async function downloadFeedbackImages(feedbackId, imageUrls) {
   }
 
   return downloadedPaths;
+}
+
+/**
+ * Atomically claim a feedback item using Firestore transaction
+ * Prevents race conditions when multiple agents try to claim simultaneously
+ *
+ * @param {string} docId - The document ID to claim
+ * @param {boolean} isReclaim - Whether this is reclaiming a stale item
+ * @returns {Object|null} - The claimed item data, or null if claim failed
+ */
+async function atomicClaim(docId, isReclaim = false) {
+  try {
+    const docRef = db.collection("feedback").doc(docId);
+
+    const result = await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+
+      if (!doc.exists) {
+        throw new Error("Item no longer exists");
+      }
+
+      const data = doc.data();
+
+      // Check if still claimable
+      if (data.status === "in-progress" && !isReclaim) {
+        // Another agent claimed it between our query and this transaction
+        throw new Error("Already claimed by another agent");
+      }
+
+      // For reclaims, verify it's still stale
+      if (isReclaim && data.status === "in-progress") {
+        const claimAge = data.claimedAt?.toDate?.()
+          ? Date.now() - data.claimedAt.toDate().getTime()
+          : 0;
+        if (claimAge < STALE_CLAIM_MS) {
+          throw new Error("Item is no longer stale");
+        }
+      }
+
+      // If status changed to completed/archived, don't claim
+      if (["completed", "archived"].includes(data.status)) {
+        throw new Error("Item is no longer claimable");
+      }
+
+      // Perform atomic update
+      transaction.update(docRef, {
+        status: "in-progress",
+        claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        claimedBy: ADMIN_USER_ID, // Track who claimed it
+      });
+
+      return { id: doc.id, ...data };
+    });
+
+    return result;
+  } catch (error) {
+    if (
+      error.message.includes("Already claimed") ||
+      error.message.includes("no longer")
+    ) {
+      console.log(`  ⚠️  ${error.message}`);
+      return null;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -474,11 +570,18 @@ async function claimNextFeedback(priorityFilter = null) {
       return null;
     }
 
-    // Claim the item (use hyphenated status to match UI)
-    await db.collection("feedback").doc(itemToClaim.id).update({
-      status: "in-progress",
-      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    // Claim the item atomically (prevents race conditions)
+    const claimedItem = await atomicClaim(itemToClaim.id, isReclaim);
+
+    if (!claimedItem) {
+      // Claim failed (item was claimed by another agent)
+      console.log("\n  🔄 Retrying with next available item...\n");
+      // Recursively try the next item
+      return claimNextFeedback(priorityFilter);
+    }
+
+    // Use the transaction-verified data
+    itemToClaim = claimedItem;
 
     // Output the claimed item details
     const createdAt = itemToClaim.createdAt?.toDate?.()
@@ -649,8 +752,12 @@ async function updateResolutionNotes(docId, notes) {
 
 /**
  * Update feedback status by Firestore document ID
+ * @param {string} docId - The document ID to update
+ * @param {string} status - The new status
+ * @param {string} resolutionNotes - Admin-only resolution notes
+ * @param {string} userFacingNotes - Optional user-visible notes (for notifying submitter)
  */
-async function updateFeedbackById(docId, status, resolutionNotes) {
+async function updateFeedbackById(docId, status, resolutionNotes, userFacingNotes = null) {
   try {
     const docRef = db.collection("feedback").doc(docId);
     const doc = await docRef.get();
@@ -700,7 +807,12 @@ async function updateFeedbackById(docId, status, resolutionNotes) {
     }
 
     if (resolutionNotes) {
-      updateData.resolutionNotes = resolutionNotes;
+      updateData.adminNotes = resolutionNotes;
+    }
+
+    // Add user-facing notes if provided
+    if (userFacingNotes) {
+      updateData.userFacingNotes = userFacingNotes;
     }
 
     await docRef.update(updateData);
@@ -713,7 +825,10 @@ async function updateFeedbackById(docId, status, resolutionNotes) {
     console.log(`  Title: ${item.title || "No title"}`);
     console.log(`  New Status: ${normalizedStatus}`);
     if (resolutionNotes) {
-      console.log(`  Resolution: ${resolutionNotes}`);
+      console.log(`  Admin Notes: ${resolutionNotes}`);
+    }
+    if (userFacingNotes) {
+      console.log(`  User Notes: ${userFacingNotes}`);
     }
 
     // Send direct message to user when marking as completed or archived
@@ -722,18 +837,21 @@ async function updateFeedbackById(docId, status, resolutionNotes) {
 
       let messageContent;
       if (normalizedStatus === "completed") {
-        messageContent = resolutionNotes
-          ? `✅ Your feedback has been addressed: ${resolutionNotes}`
-          : "✅ Your feedback has been addressed and is ready for the next release!";
+        // Prefer user-facing notes for the message, fall back to resolution notes
+        const userMessage = userFacingNotes || resolutionNotes;
+        messageContent = userMessage
+          ? `Your feedback has been addressed: ${userMessage}`
+          : "Your feedback has been addressed and is ready for the next release!";
       } else if (normalizedStatus === "archived") {
         // Check if there's a version tag
         const version = item.fixedInVersion || null;
         if (version) {
-          messageContent = `🚀 Your feedback was included in version ${version}! Thank you for helping improve TKA Scribe.`;
+          messageContent = `Your feedback was included in version ${version}! Thank you for helping improve TKA Scribe.`;
         } else {
-          messageContent = resolutionNotes
-            ? `📦 Your feedback has been resolved: ${resolutionNotes}`
-            : "📦 Your feedback has been resolved. Thank you for your input!";
+          const userMessage = userFacingNotes || resolutionNotes;
+          messageContent = userMessage
+            ? `Your feedback has been resolved: ${userMessage}`
+            : "Your feedback has been resolved. Thank you for your input!";
         }
       }
 
@@ -1379,6 +1497,8 @@ ITEM MANAGEMENT
 ──────────────────────────────────────────────────────────────────────────────
   <id>                   View specific feedback details
   <id> <status> "notes"  Update status (new, in-progress, in-review, completed, archived)
+  <id> <status> "admin notes" --user-notes "user message"
+                         Update status with both admin and user-facing notes
   <id> title "text"      Update title
   <id> priority <p>      Update priority (low, medium, high)
   <id> resolution "text" Add resolution notes (what was done)
@@ -1812,15 +1932,7 @@ async function addFeedback(args) {
     return null;
   }
 
-  // User lookup (default to Austen)
-  const AUSTEN_USER = {
-    userId: "PBp3GSBO6igCKPwJyLZNmVEmamI3",
-    userDisplayName: "Austen Cloud",
-    userEmail: "austencloud@gmail.com",
-    userPhotoURL:
-      "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
-  };
-
+  // Use admin user from config
   const feedbackData = {
     title: flags.title,
     description: flags.description,
@@ -1828,10 +1940,10 @@ async function addFeedback(args) {
     status: "new",
     source: "terminal", // Created via CLI, not app feedback form
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    userId: AUSTEN_USER.userId,
-    userDisplayName: AUSTEN_USER.userDisplayName,
-    userEmail: AUSTEN_USER.userEmail,
-    userPhotoURL: AUSTEN_USER.userPhotoURL,
+    userId: ADMIN_USER.userId,
+    userDisplayName: ADMIN_USER.displayName,
+    userEmail: ADMIN_USER.email,
+    userPhotoURL: ADMIN_USER.photoURL,
   };
 
   if (flags.priority) {
@@ -1952,15 +2064,7 @@ async function main() {
       return;
     }
 
-    // Use Austen's actual user info so avatars work correctly
-    const AUSTEN_USER = {
-      userId: "PBp3GSBO6igCKPwJyLZNmVEmamI3",
-      userDisplayName: "Austen Cloud",
-      userEmail: "austencloud@gmail.com",
-      userPhotoURL:
-        "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
-    };
-
+    // Use admin user from config
     const docRef = await db.collection("feedback").add({
       title,
       description: description,
@@ -1970,10 +2074,10 @@ async function main() {
       status: "new",
       source: "terminal", // Created via CLI, not app feedback form
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      userId: AUSTEN_USER.userId,
-      userDisplayName: AUSTEN_USER.userDisplayName,
-      userEmail: AUSTEN_USER.userEmail,
-      userPhotoURL: AUSTEN_USER.userPhotoURL,
+      userId: ADMIN_USER.userId,
+      userDisplayName: ADMIN_USER.displayName,
+      userEmail: ADMIN_USER.email,
+      userPhotoURL: ADMIN_USER.photoURL,
     });
 
     console.log(
@@ -2063,8 +2167,21 @@ async function main() {
       console.log("    <id> subtask <subtaskId> <status>\n");
     }
   } else if (args[1]) {
-    // Update: <id> <status> ["notes"]
-    await updateFeedbackById(args[0], args[1], args[2]);
+    // Update: <id> <status> ["notes"] [--user-notes "notes"]
+    // Parse --user-notes flag if present
+    const userNotesIndex = args.indexOf("--user-notes");
+    let userFacingNotes = null;
+    let resolutionNotes = args[2];
+
+    if (userNotesIndex !== -1 && args[userNotesIndex + 1]) {
+      userFacingNotes = args[userNotesIndex + 1];
+      // If --user-notes comes before the resolution notes, adjust
+      if (userNotesIndex === 2) {
+        resolutionNotes = null;
+      }
+    }
+
+    await updateFeedbackById(args[0], args[1], resolutionNotes, userFacingNotes);
   } else {
     // View specific item by ID
     await getFeedbackById(args[0]);

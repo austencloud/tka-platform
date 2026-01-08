@@ -1,6 +1,6 @@
 ---
 description: Analyze TypeScript errors and determine optimal fix strategy
-allowed-tools: Bash, Read, Edit, Write, Glob, Grep, Task, TodoWrite
+allowed-tools: Bash Read Edit Write Glob Grep Task TodoWrite
 ---
 
 # TypeScript Error Analysis Command

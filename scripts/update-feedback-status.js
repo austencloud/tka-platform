@@ -55,7 +55,7 @@ async function updateFeedbackStatus() {
   };
 
   if (notes) {
-    updateData.resolutionNotes = notes;
+    updateData.adminNotes = notes;
   }
 
   await ref.update(updateData);

@@ -3,12 +3,13 @@
  */
 
 import { readFileSync, writeFileSync } from "fs";
+import config from "../config/feedback.config.js";
 
+// Use admin user from config
 const AUSTEN_USER = {
-  ownerId: "PBp3GSBO6igCKPwJyLZNmVEmamI3",
-  ownerDisplayName: "Austen Cloud",
-  ownerAvatarUrl:
-    "https://lh3.googleusercontent.com/a/ACg8ocJ3KdjUMAOYNbg_fpHXouXfgTPntLXQVQVQwb_bsbViiAQujwYYJg=s96-c",
+  ownerId: config.ADMIN_USER.userId,
+  ownerDisplayName: config.ADMIN_USER.displayName,
+  ownerAvatarUrl: config.ADMIN_USER.photoURL,
 };
 
 // Read the JSON file

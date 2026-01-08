@@ -35,6 +35,12 @@ class GalleryPanelManager {
   // Active sequence for detail panel
   activeSequence = $state<SequenceData | null>(null);
 
+  // Variations for the active sequence (same word, different authors/props)
+  activeVariations = $state<SequenceData[]>([]);
+
+  // Current variation index within the variations array
+  variationIndex = $state(0);
+
   // Track if we're in a panel transition (prevents grid jumping)
   private isTransitioning = $state(false);
 
@@ -65,9 +71,15 @@ class GalleryPanelManager {
     this.switchPanel("filters");
   }
 
-  openDetail(sequence: SequenceData) {
+  openDetail(sequence: SequenceData, variations?: SequenceData[]) {
     debug.log("🔵 PANEL: openDetail() called");
     this.activeSequence = sequence;
+    this.activeVariations = variations ?? [sequence];
+    // Find the index of this sequence in variations
+    this.variationIndex = this.activeVariations.findIndex(
+      (v) => v.id === sequence.id
+    );
+    if (this.variationIndex < 0) this.variationIndex = 0;
     this.switchPanel("detail");
   }
 
@@ -167,6 +179,28 @@ class GalleryPanelManager {
   updateActiveSequence(updatedSequence: SequenceData) {
     if (this.activeSequence?.id === updatedSequence.id) {
       this.activeSequence = updatedSequence;
+    }
+  }
+
+  /**
+   * Set the current variation index and update the active sequence
+   * Used when navigating between variations in the detail panel
+   */
+  setVariationIndex(index: number) {
+    if (index >= 0 && index < this.activeVariations.length) {
+      this.variationIndex = index;
+      this.activeSequence = this.activeVariations[index] ?? null;
+      debug.log(`🔵 PANEL: setVariationIndex(${index})`);
+    }
+  }
+
+  /**
+   * Select a specific variation by sequence reference
+   */
+  selectVariation(sequence: SequenceData) {
+    const index = this.activeVariations.findIndex((v) => v.id === sequence.id);
+    if (index >= 0) {
+      this.setVariationIndex(index);
     }
   }
 }

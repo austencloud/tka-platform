@@ -55,7 +55,7 @@ The feedback system uses a **5-status workflow** with two distinct phases:
 **Next actions:**
 
 - Run `/fb` to auto-claim the oldest item
-- Or manually view with `node scripts/fetch-feedback.js.js <id>`
+- Or manually view with `node scripts/fetch-feedback.js <id>`
 
 **Displayed:** In Kanban "New" column
 
@@ -90,7 +90,7 @@ The feedback system uses a **5-status workflow** with two distinct phases:
 **Command:**
 
 ```bash
-node scripts/fetch-feedback.js.js <id> in-review "Testing steps:
+node scripts/fetch-feedback.js <id> in-review "Testing steps:
 1. Navigate to [module/tab]
 2. [Action to perform]
 3. Expected: [what should happen]"
@@ -119,7 +119,7 @@ node scripts/fetch-feedback.js.js <id> in-review "Testing steps:
 node scripts/release.js -p
 
 # Mark as completed
-node scripts/fetch-feedback.js.js <id> completed "Verified working on [device/browser]"
+node scripts/fetch-feedback.js <id> completed "Verified working on [device/browser]"
 ```
 
 **Important:**
@@ -150,7 +150,7 @@ When `/release` runs, all `completed` items are:
 When feedback won't be implemented:
 
 ```bash
-node scripts/fetch-feedback.js.js <id> archived "Reason: [declined/wont-fix/deferred/duplicate]"
+node scripts/fetch-feedback.js <id> archived "Reason: [declined/wont-fix/deferred/duplicate]"
 ```
 
 **Displayed:** In Kanban "Archived" column (collapsed by default)
@@ -190,7 +190,7 @@ node scripts/fetch-feedback.js.js <id> archived "Reason: [declined/wont-fix/defe
 ┌──────────────────────────────────────────────────────────────────────────┐
 │ 5. REVIEW REQUEST                                                        │
 │    Agent runs:                                                           │
-│    node scripts/fetch-feedback.js.js abc123 in-review "Testing steps:              │
+│    node scripts/fetch-feedback.js abc123 in-review "Testing steps:              │
 │    1. Open gallery on mobile (or resize to <768px)                      │
 │    2. Thumbnails should now be 120px tall                               │
 │    3. Verify text is still readable"                                    │
@@ -210,7 +210,7 @@ node scripts/fetch-feedback.js.js <id> archived "Reason: [declined/wont-fix/defe
 │    node scripts/release.js -p                                            │
 │    → Shows: "3 items ready for v0.1.1 (2 bugs, 1 feature)"             │
 │                                                                          │
-│    node scripts/fetch-feedback.js.js abc123 completed "Verified on iPhone"         │
+│    node scripts/fetch-feedback.js abc123 completed "Verified on iPhone"         │
 │                                                                          │
 │    Status: in-review → completed                                         │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -253,39 +253,39 @@ node scripts/fetch-feedback.js.js <id> archived "Reason: [declined/wont-fix/defe
 
 ```bash
 # Auto-claim next item
-node scripts/fetch-feedback.js.js
+node scripts/fetch-feedback.js
 
 # List all feedback
-node scripts/fetch-feedback.js.js list
+node scripts/fetch-feedback.js list
 
 # View specific item
-node scripts/fetch-feedback.js.js <id>
+node scripts/fetch-feedback.js <id>
 
 # Update status
-node scripts/fetch-feedback.js.js <id> in-progress "Working on it"
-node scripts/fetch-feedback.js.js <id> in-review "Test steps: ..."
-node scripts/fetch-feedback.js.js <id> completed "Verified"
-node scripts/fetch-feedback.js.js <id> archived "Declined: out of scope"
+node scripts/fetch-feedback.js <id> in-progress "Working on it"
+node scripts/fetch-feedback.js <id> in-review "Test steps: ..."
+node scripts/fetch-feedback.js <id> completed "Verified"
+node scripts/fetch-feedback.js <id> archived "Declined: out of scope"
 
 # Update title
-node scripts/fetch-feedback.js.js <id> title "Short descriptive title"
+node scripts/fetch-feedback.js <id> title "Short descriptive title"
 ```
 
 ### Complex Items (Subtasks)
 
 ```bash
 # Add subtask
-node scripts/fetch-feedback.js.js <id> subtask add "Step 1" "Description"
+node scripts/fetch-feedback.js <id> subtask add "Step 1" "Description"
 
 # Add dependent subtask (depends on subtask 1)
-node scripts/fetch-feedback.js.js <id> subtask add "Step 2" "Description" 1
+node scripts/fetch-feedback.js <id> subtask add "Step 2" "Description" 1
 
 # Update subtask status
-node scripts/fetch-feedback.js.js <id> subtask 1 in-progress
-node scripts/fetch-feedback.js.js <id> subtask 1 completed
+node scripts/fetch-feedback.js <id> subtask 1 in-progress
+node scripts/fetch-feedback.js <id> subtask 1 completed
 
 # List subtasks
-node scripts/fetch-feedback.js.js <id> subtask list
+node scripts/fetch-feedback.js <id> subtask list
 ```
 
 ### Release Preview & Execution
@@ -310,13 +310,13 @@ node scripts/release.js --dry-run
 When moving to `in-review`, give clear steps. Bad example:
 
 ```bash
-node scripts/fetch-feedback.js.js <id> in-review "Fixed"  # ❌ Too vague
+node scripts/fetch-feedback.js <id> in-review "Fixed"  # ❌ Too vague
 ```
 
 Good example:
 
 ```bash
-node scripts/fetch-feedback.js.js <id> in-review "Testing:
+node scripts/fetch-feedback.js <id> in-review "Testing:
 1. Go to Discover → Gallery
 2. Resize browser to 375px width
 3. Thumbnails should be 120px tall
@@ -336,9 +336,9 @@ Always run `node scripts/release.js -p` before marking as `completed`. This help
 If a feedback item requires multiple steps or has prerequisites, break it down:
 
 ```bash
-node scripts/fetch-feedback.js.js <id> subtask add "Add database schema" "..."
-node scripts/fetch-feedback.js.js <id> subtask add "Create API endpoint" "..." 1
-node scripts/fetch-feedback.js.js <id> subtask add "Update UI component" "..." 2
+node scripts/fetch-feedback.js <id> subtask add "Add database schema" "..."
+node scripts/fetch-feedback.js <id> subtask add "Create API endpoint" "..." 1
+node scripts/fetch-feedback.js <id> subtask add "Update UI component" "..." 2
 ```
 
 This lets multiple agents work on prerequisites in parallel.
@@ -358,10 +358,10 @@ Use `node scripts/release.js -p` to see what's ready and decide timing.
 If feedback won't be implemented, move it to `archived` with a reason:
 
 ```bash
-node scripts/fetch-feedback.js.js <id> archived "Declined: out of scope for v1"
-node scripts/fetch-feedback.js.js <id> archived "Won't fix: working as intended"
-node scripts/fetch-feedback.js.js <id> archived "Duplicate of #xyz123"
-node scripts/fetch-feedback.js.js <id> archived "Deferred: revisit in Q2"
+node scripts/fetch-feedback.js <id> archived "Declined: out of scope for v1"
+node scripts/fetch-feedback.js <id> archived "Won't fix: working as intended"
+node scripts/fetch-feedback.js <id> archived "Duplicate of #xyz123"
+node scripts/fetch-feedback.js <id> archived "Deferred: revisit in Q2"
 ```
 
 This keeps the Kanban board clean and communicates decisions.
@@ -387,7 +387,7 @@ This keeps the Kanban board clean and communicates decisions.
 **Solution:** Move it back to `new`:
 
 ```bash
-node scripts/fetch-feedback.js.js <id> new "Unclaiming for now"
+node scripts/fetch-feedback.js <id> new "Unclaiming for now"
 ```
 
 ### "Release is showing old commits, not my completed feedback"

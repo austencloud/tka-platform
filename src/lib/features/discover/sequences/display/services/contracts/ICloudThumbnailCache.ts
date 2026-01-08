@@ -20,6 +20,15 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType
  */
 export type ThumbnailVariant = "gallery" | "wordcard";
 
+/**
+ * Progress callback for deletion operations
+ */
+export interface DeleteProgress {
+  deleted: number;
+  total: number;
+  currentFile?: string;
+}
+
 export interface CloudThumbnailKey {
   sequenceName: string;
   propType: PropType;
@@ -35,6 +44,13 @@ export interface CloudThumbnailResult {
 }
 
 export interface ICloudThumbnailCache {
+  /**
+   * Get thumbnail URL from in-memory cache only (synchronous)
+   * Returns undefined if not in cache, null if checked and known not to exist
+   * Use this for instant cache hits without async overhead
+   */
+  getCachedUrl(key: CloudThumbnailKey): string | null | undefined;
+
   /**
    * Get thumbnail URL from Firebase Storage
    * Returns null if thumbnail doesn't exist in cloud
@@ -67,11 +83,21 @@ export interface ICloudThumbnailCache {
   /**
    * Delete all thumbnails for a variant (admin only)
    * Returns the number of files deleted
+   * Optional progress callback for real-time feedback
    */
-  deleteVariant(variant: ThumbnailVariant): Promise<number>;
+  deleteVariant(
+    variant: ThumbnailVariant,
+    onProgress?: (progress: DeleteProgress) => void
+  ): Promise<number>;
 
   /**
    * Clear the in-memory URL cache
    */
   clearMemoryCache(): void;
+
+  /**
+   * Invalidate a specific cache entry
+   * Call this when an image fails to load (e.g., 404) to allow retry
+   */
+  invalidateUrl(key: CloudThumbnailKey): void;
 }

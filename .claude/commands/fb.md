@@ -1,6 +1,6 @@
 ---
 description: Auto-claim and work on the next feedback item in the queue
-allowed-tools: Bash, Read, Edit, Write, Glob, Grep, Task, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_resize, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_close, mcp__playwright__browser_wait_for
+allowed-tools: Bash Read Edit Write Glob Grep Task mcp__playwright__browser_navigate mcp__playwright__browser_snapshot mcp__playwright__browser_click mcp__playwright__browser_resize mcp__playwright__browser_take_screenshot mcp__playwright__browser_close mcp__playwright__browser_wait_for
 ---
 
 # Feedback Queue Command
@@ -501,7 +501,7 @@ If a feedback item has been "in-progress" for over 2 hours, it's considered stal
 - `new` - Unclaimed, ready to be picked up
 - `in-progress` - Being worked on
 - `in-review` - Done, waiting for tester confirmation
-- `archived` - Closed (use resolutionNotes to explain: fixed, declined, deferred, etc.)
+- `archived` - Closed (use adminNotes to explain: fixed, declined, deferred, etc.)
 
 ---
 

@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
 import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
 import type {
   SectionConfig,
@@ -14,9 +14,15 @@ import type {
 } from "$lib/features/discover/shared/domain/models/discover-models";
 import type { IDiscoverSectionManager } from "../contracts/IDiscoverSectionManager";
 import { sortSequencesByKineticAlphabet } from "$lib/features/discover/shared/utils/kinetic-alphabet-sort";
+import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
+import { TYPES } from "$lib/shared/inversify/types";
 
 @injectable()
 export class DiscoverSectionManager implements IDiscoverSectionManager {
+  constructor(
+    @inject(TYPES.IWordDeriver)
+    private wordDeriver: IWordDeriver
+  ) {}
   organizeSections(
     sequences: SequenceData[],
     config: SectionConfig
@@ -120,7 +126,8 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
         // Sub-group by letter AND beat count for consistent row heights
         // Handle letter types: "W" vs "W-" (type 3 letters)
         // Type 6 letters: α, β, γ, ζ, η, τ, ⊕
-        const firstChar = sequence.word.charAt(0);
+        const word = this.wordDeriver.derive(sequence);
+        const firstChar = word.charAt(0);
         const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
 
         let char: string;
@@ -132,7 +139,7 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
           char = firstChar.toUpperCase();
         }
 
-        const secondChar = sequence.word.charAt(1);
+        const secondChar = word.charAt(1);
         const letter = secondChar === "-" ? `${char}-` : char;
         const beatCount = sequence.sequenceLength ?? 0;
         // Use pipe separator to avoid conflict with dash in letter names
@@ -140,7 +147,8 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
       }
 
       case "length": {
-        const length = sequence.sequenceLength ?? sequence.word.length;
+        const word = this.wordDeriver.derive(sequence);
+        const length = sequence.sequenceLength ?? word.length;
         return `${length} beats`;
       }
 
@@ -241,9 +249,24 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
   ): SequenceData[] {
     const sorted = [...sequences];
 
+    // Helper to get sequence length (beat count)
+    const getLength = (s: SequenceData) =>
+      s.sequenceLength ?? s.word?.length ?? 0;
+
     switch (sortMethod) {
-      case "alphabetical":
-        return sortSequencesByKineticAlphabet(sorted);
+      case "alphabetical": {
+        // Primary: Kinetic alphabet order, Secondary: length for visual consistency
+        const alphabetSorted = sortSequencesByKineticAlphabet(sorted);
+        return alphabetSorted.sort((a, b) => {
+          // Keep alphabetical order but group by length within same starting letter
+          const letterA = a.word?.charAt(0) ?? "";
+          const letterB = b.word?.charAt(0) ?? "";
+          if (letterA === letterB) {
+            return getLength(a) - getLength(b);
+          }
+          return 0; // Keep original alphabetical order for different letters
+        });
+      }
 
       case ExploreSortMethod.DIFFICULTY_LEVEL:
         return sorted.sort((a, b) => {
@@ -259,33 +282,50 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
                 return 0;
             }
           };
-          return (
+          const diffCompare =
             getDifficultyOrder(a.difficultyLevel) -
-            getDifficultyOrder(b.difficultyLevel)
-          );
+            getDifficultyOrder(b.difficultyLevel);
+          // Secondary sort by length for visual consistency
+          if (diffCompare === 0) {
+            return getLength(a) - getLength(b);
+          }
+          return diffCompare;
         });
 
       case ExploreSortMethod.SEQUENCE_LENGTH:
         return sorted.sort((a, b) => {
-          const lengthA = a.sequenceLength ?? a.word.length;
-          const lengthB = b.sequenceLength ?? b.word.length;
+          const lengthA = getLength(a);
+          const lengthB = getLength(b);
           return lengthA - lengthB;
         });
 
       case ExploreSortMethod.DATE_ADDED:
+        // Primary: most recent first, Secondary: length for visual consistency
         return sorted.sort((a, b) => {
           const dateA = a.dateAdded ? new Date(a.dateAdded).getTime() : 0;
           const dateB = b.dateAdded ? new Date(b.dateAdded).getTime() : 0;
-          return dateB - dateA; // Most recent first
+          // Group by length first within sections for visual consistency
+          // (sequences in the same row should have similar heights)
+          const lengthCompare = getLength(a) - getLength(b);
+          if (lengthCompare !== 0) {
+            return lengthCompare;
+          }
+          return dateB - dateA; // Most recent first as secondary
         });
 
       case "author":
-        return sorted.sort((a, b) =>
-          (a.author ?? "").localeCompare(b.author ?? "")
-        );
+        return sorted.sort((a, b) => {
+          const authorCompare = (a.author ?? "").localeCompare(b.author ?? "");
+          // Secondary sort by length for visual consistency
+          if (authorCompare === 0) {
+            return getLength(a) - getLength(b);
+          }
+          return authorCompare;
+        });
 
       default:
-        return sorted;
+        // Default: sort by length for visual consistency
+        return sorted.sort((a, b) => getLength(a) - getLength(b));
     }
   }
 

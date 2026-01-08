@@ -37,12 +37,14 @@
  *   node scripts/release.js --changelog file.json - Use custom changelog entries (user-friendly)
  *   node scripts/release.js --highlights 1,3,4   - Select highlight indices (comma-separated, or "none")
  *   node scripts/release.js --from-main        - Release directly from main (skip branch workflow)
+ *   node scripts/release.js --skip-jargon-check - Bypass jargon detection (use with caution)
  */
 
 import admin from "firebase-admin";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { execSync } from "child_process";
 import * as readline from "readline";
+import config from "../config/feedback.config.js";
 
 // Load service account key
 const serviceAccount = JSON.parse(
@@ -57,6 +59,9 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+
+// Import config values
+const { ADMIN_USER_ID, ADMIN_USER } = config;
 
 /**
  * Create readline interface for user prompts
@@ -81,6 +86,7 @@ function askQuestion(rl, question) {
 
 /**
  * Prompt user to select highlights from changelog entries
+ * Enhanced flow with better visuals and more options
  * @param {Array} changelogEntries - The changelog entries to suggest as highlights
  * @returns {Promise<string[]>} - Selected highlights (may be empty)
  */
@@ -88,47 +94,72 @@ async function promptForHighlights(changelogEntries) {
   // Get potential highlights (features and major improvements)
   const potentialHighlights = changelogEntries
     .filter((e) => e.category === "added" || e.category === "improved")
-    .map((e) => e.text);
+    .map((e) => ({ text: e.text, category: e.category }));
 
   if (potentialHighlights.length === 0) {
     console.log("\n📌 No feature/improvement entries to highlight.\n");
     return [];
   }
 
-  console.log("\n" + "═".repeat(60));
+  console.log("\n" + "═".repeat(70));
   console.log("⭐ HIGHLIGHT SELECTION");
-  console.log("═".repeat(60));
+  console.log("═".repeat(70));
   console.log(
     '\nHighlights appear prominently at the top of the "What\'s New" modal.'
   );
-  console.log("Only select items that are genuinely exciting for users.\n");
+  console.log("Select items that are genuinely exciting for users.\n");
 
-  console.log("Potential highlights from this release:\n");
-  potentialHighlights.forEach((text, i) => {
-    console.log(`  [${i + 1}] ${text}`);
+  console.log("─".repeat(70));
+  console.log("  Available entries:\n");
+
+  potentialHighlights.forEach((item, i) => {
+    const icon = item.category === "added" ? "✨" : "🔧";
+    const label = item.category === "added" ? "NEW" : "IMPROVED";
+    console.log(`  [${i + 1}] ${icon} ${item.text}`);
+    console.log(`      ${label}`);
+    console.log("");
   });
-  console.log(`  [0] No highlights for this release`);
-  console.log(`  [c] Enter custom highlight text\n`);
+
+  console.log("─".repeat(70));
+  console.log("  Options:\n");
+  console.log("    • Enter numbers separated by commas (e.g., 1,3)");
+  console.log("    • Enter 'all' to select all entries");
+  console.log("    • Enter 'none' or 0 for no highlights");
+  console.log("    • Enter 'custom' to write your own highlight text\n");
 
   const rl = createPrompt();
 
   try {
     const answer = await askQuestion(
       rl,
-      "Select highlights (comma-separated numbers, 0 for none, or c for custom): "
+      "Your selection: "
     );
 
-    if (answer === "0" || answer === "") {
+    const trimmedAnswer = answer.trim().toLowerCase();
+
+    // No highlights
+    if (trimmedAnswer === "0" || trimmedAnswer === "none" || trimmedAnswer === "") {
       console.log("\n✓ No highlights selected.\n");
       return [];
     }
 
-    if (answer.toLowerCase() === "c") {
+    // All highlights
+    if (trimmedAnswer === "all") {
+      const allHighlights = potentialHighlights.map((h) => h.text);
+      console.log("\n✓ Selected ALL highlights:");
+      allHighlights.forEach((h) => console.log(`   • ${h}`));
+      console.log("");
+      return allHighlights;
+    }
+
+    // Custom highlight
+    if (trimmedAnswer === "c" || trimmedAnswer === "custom") {
       const customText = await askQuestion(rl, "Enter custom highlight text: ");
-      if (customText) {
-        console.log(`\n✓ Custom highlight: "${customText}"\n`);
-        return [customText];
+      if (customText && customText.trim()) {
+        console.log(`\n✓ Custom highlight: "${customText.trim()}"\n`);
+        return [customText.trim()];
       }
+      console.log("\n✓ No highlight entered.\n");
       return [];
     }
 
@@ -139,7 +170,7 @@ async function promptForHighlights(changelogEntries) {
       .filter((i) => i >= 0 && i < potentialHighlights.length);
 
     const selectedHighlights = selectedIndices.map(
-      (i) => potentialHighlights[i]
+      (i) => potentialHighlights[i].text
     );
 
     if (selectedHighlights.length > 0) {
@@ -147,7 +178,7 @@ async function promptForHighlights(changelogEntries) {
       selectedHighlights.forEach((h) => console.log(`   • ${h}`));
       console.log("");
     } else {
-      console.log("\n✓ No valid highlights selected.\n");
+      console.log("\n⚠️ No valid selections. Enter numbers from the list above.\n");
     }
 
     return selectedHighlights;
@@ -220,6 +251,107 @@ function generateChangelogFromFeedback(items, includeInternalOnly = false) {
   });
 
   return { userFacing, developerNotes };
+}
+
+/**
+ * Technical jargon patterns that shouldn't appear in user-facing changelog
+ * These indicate the entry needs rewriting for users
+ */
+const JARGON_PATTERNS = [
+  // Code/file references
+  /\.(ts|js|svelte|css|json|md)(\s|$|:)/i,
+  /[A-Z][a-z]+[A-Z][a-z]+/, // CamelCase (likely class/component names)
+  /\b(src|lib|components?|services?|utils?|helpers?)\b/i,
+  /\b(props?|state|store|context)\b/i,
+
+  // Technical terms
+  /\b(refactor|endpoint|API|SDK|CSS|HTML|DOM|UI)\b/,
+  /\b(migration|schema|database|firestore|firebase)\b/i,
+  /\b(dependency|dependencies|npm|package)\b/i,
+  /\b(config|configuration|env|environment)\b/i,
+  /\b(handler|listener|callback|async|await)\b/i,
+  /\b(component|module|service|class|interface|type)\b/i,
+  /\b(render|mount|unmount|lifecycle)\b/i,
+  /\b(cache|caching|memoiz|optimiz)/i,
+  /\b(middleware|interceptor|decorator)\b/i,
+  /\b(singleton|injection|DI|inversify)\b/i,
+
+  // Dev workflow terms
+  /\b(PR|pull request|merge|commit|branch|git)\b/i,
+  /\b(lint|eslint|prettier|format)\b/i,
+  /\b(test|spec|coverage|mock)\b/i,
+  /\b(build|compile|bundle|webpack|vite)\b/i,
+  /\b(debug|log|console|trace)\b/i,
+
+  // Implementation details
+  /\b(null|undefined|boolean|string|number|array|object)\b/i,
+  /\b(function|method|variable|const|let|var)\b/i,
+  /\b(import|export|require|module)\b/i,
+  /\b(timeout|interval|promise|observable)\b/i,
+  /\b(selector|query|mutation|subscription)\b/i,
+];
+
+/**
+ * Check changelog entries for technical jargon
+ * Returns array of entries that contain jargon
+ */
+function detectJargon(entries) {
+  const issues = [];
+
+  for (const entry of entries) {
+    const matches = [];
+    for (const pattern of JARGON_PATTERNS) {
+      const match = entry.text.match(pattern);
+      if (match) {
+        matches.push(match[0]);
+      }
+    }
+
+    if (matches.length > 0) {
+      issues.push({
+        text: entry.text,
+        jargon: [...new Set(matches)], // Dedupe
+        feedbackId: entry.feedbackId,
+      });
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Display jargon warnings and return whether to proceed
+ */
+function displayJargonWarnings(issues) {
+  if (issues.length === 0) {
+    console.log("✓ No technical jargon detected in changelog entries\n");
+    return true;
+  }
+
+  console.log("\n" + "═".repeat(70));
+  console.log("⚠️  JARGON DETECTED - These entries need rewriting for users:");
+  console.log("═".repeat(70) + "\n");
+
+  issues.forEach((issue, i) => {
+    console.log(`  [${i + 1}] "${issue.text}"`);
+    console.log(`      Jargon found: ${issue.jargon.join(", ")}`);
+    if (issue.feedbackId) {
+      console.log(`      Feedback ID: ${issue.feedbackId.substring(0, 8)}...`);
+    }
+    console.log("");
+  });
+
+  console.log("─".repeat(70));
+  console.log("  Changelog entries should be written for flow artists, not developers.");
+  console.log("  Rewrite these entries to focus on user benefits, not implementation.\n");
+  console.log("  Examples of good rewrites:");
+  console.log('    ❌ "Fixed null check in SequenceLoader component"');
+  console.log('    ✓ "Sequences now load reliably without errors"\n');
+  console.log('    ❌ "Refactored gallery CSS grid layout"');
+  console.log('    ✓ "Gallery thumbnails now resize smoothly on all devices"\n');
+  console.log("═".repeat(70) + "\n");
+
+  return false; // Don't proceed automatically
 }
 
 /**
@@ -905,7 +1037,20 @@ async function main() {
   // 3. Display changelog
   displayChangelog(changelog);
 
-  // 4. Check git status
+  // 4. Check for jargon in changelog entries (skip for custom changelogs - already vetted)
+  if (!useCustomChangelog) {
+    const jargonIssues = detectJargon(changelog);
+    const jargonOk = displayJargonWarnings(jargonIssues);
+
+    if (!jargonOk && !args.includes("--skip-jargon-check")) {
+      console.log("💡 Fix the jargon issues above, or add --skip-jargon-check to proceed anyway.\n");
+      if (!dryRun && !quickPreview) {
+        process.exit(1);
+      }
+    }
+  }
+
+  // 5. Check git status
   const gitStatus = checkGitStatus();
   if (gitStatus) {
     console.log("⚠️  Warning: Working directory has uncommitted changes:");
@@ -950,6 +1095,12 @@ async function main() {
       if (highlightsArg === "none" || highlightsArg === "0") {
         console.log("✓ No highlights selected (via --highlights flag)\n");
         selectedHighlights = [];
+      } else if (highlightsArg === "all") {
+        // Select all potential highlights
+        selectedHighlights = potentialHighlights;
+        console.log("✓ Selected ALL highlights (via --highlights all):");
+        selectedHighlights.forEach((h) => console.log(`   • ${h}`));
+        console.log("");
       } else {
         // Parse comma-separated indices (1-based)
         const indices = highlightsArg
