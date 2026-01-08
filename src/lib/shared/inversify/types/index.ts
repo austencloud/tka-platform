@@ -61,6 +61,7 @@ import { RenderingTypes } from "./rendering.types";
 import { TrainTypes } from "./train.types";
 import { UITypes } from "./ui.types";
 import { PromoTypes } from "./promo.types";
+import { MUSEUM_TYPES } from "./museum.types";
 
 // Re-export domain-specific types for granular imports
 export {
@@ -82,6 +83,7 @@ export {
   LearnTypes,
   LibraryTypes,
   MessagingTypes,
+  MUSEUM_TYPES,
   RenderingTypes,
   TrainTypes,
   UITypes,

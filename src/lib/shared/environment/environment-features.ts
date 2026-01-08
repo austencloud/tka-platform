@@ -133,4 +133,5 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   skewlab: false, // Skewlab internal tool
   "background-builder": false, // Background builder internal tool
   "infinite-worlds": false, // Infinite worlds procedural generation (admin-only)
+  museum: false, // Museum navigator - walkable 3D gallery (admin-only)
 };

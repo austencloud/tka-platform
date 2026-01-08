@@ -608,6 +608,15 @@ export async function loadFeatureModule(feature: string): Promise<void> {
         // No DI dependencies - just mark as loaded
         break;
 
+      case "museum":
+        // Museum Navigator - walkable 3D gallery
+        // Needs: library (for sequences), render (for pictographs), museum curator
+        // IMPORTANT: library must load BEFORE museum because SequenceCurator depends on ILibraryRepository
+        if (tier2Promise) await tier2Promise;
+        await loadIfNeeded("library", () => import("./modules/library.module"));
+        await loadIfNeeded("museum", () => import("./modules/museum.module"));
+        break;
+
       case "promo-generator":
         // Promo Generator - 3D device mockup video generator
         // Self-contained with its own scene management, animation, and export

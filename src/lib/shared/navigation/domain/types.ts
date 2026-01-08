@@ -42,7 +42,8 @@ export type ModuleId =
   | "mandala"
   | "skewlab" // Experimental skewed positions (admin-only, temporary)
   | "background-builder" // Design and iterate on deep ocean background elements
-  | "infinite-worlds"; // WebGPU + ECS + Rapier procedural world exploration
+  | "infinite-worlds" // WebGPU + ECS + Rapier procedural world exploration
+  | "museum"; // Walkable 3D gallery of user sequences
 
 /**
  * Module Definition

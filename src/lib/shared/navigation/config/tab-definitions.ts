@@ -433,25 +433,13 @@ export const SETTINGS_TABS: Section[] = [
   },
 ];
 
-// Realm tabs configuration (3D experiences)
-export const REALM_TABS: Section[] = [
-  {
-    id: "stage",
-    label: "Stage",
-    icon: '<i class="fas fa-theater-masks" aria-hidden="true"></i>',
-    description: "Watch 3D avatar performances",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
-    id: "museum",
-    label: "Museum",
-    icon: '<i class="fas fa-landmark" aria-hidden="true"></i>',
-    description: "Walk through a 3D gallery of sequences",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
-];
+// ============================================================================
+// DEPRECATED: Realm tabs configuration (now uses destination picker)
+// ============================================================================
+// Realm no longer uses tabs - it uses a visual destination picker instead.
+// Stage, Gallery (Museum), and Worlds are now accessed through the picker.
+// Kept for backwards compatibility only.
+export const REALM_TABS: Section[] = [];
 
 // Feedback tabs configuration (testers/admins only)
 export const FEEDBACK_TABS: Section[] = [

@@ -71,19 +71,20 @@
     compose: () => import("../../features/compose/ComposeModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),
-    // Realm module - 3D experiences (Stage + Museum tabs)
+    // Realm module - Unified 3D destination hub (Stage, Gallery, Worlds, etc.)
     realm: () => import("../../features/realm/RealmModule.svelte"),
-    // Direct gallery access for testing (bypasses Realm module)
-    gallery3d: () => import("../../features/gallery/GalleryModule.svelte"),
     // Mandala generator - kaleidoscope art studio with TKA elements
     mandala: () =>
       import("../../features/mandala-generator/components/MandalaGeneratorModule.svelte"),
     // Background Builder - design and iterate on deep ocean background elements
     "background-builder": () =>
       import("../../features/background-builder/BackgroundBuilder.svelte"),
-    // Infinite Worlds - WebGPU + ECS + Rapier procedural world exploration
-    "infinite-worlds": () =>
-      import("../../features/infinite-worlds/components/InfiniteWorldsModule.svelte"),
+    // ========================================================================
+    // REMOVED: Standalone 3D modules (now accessible via Realm destinations)
+    // ========================================================================
+    // gallery3d → Removed, use Realm → Gallery destination
+    // infinite-worlds → Removed, use Realm → Worlds destination
+    // museum → Removed (Museum Navigator archived, use Realm → Gallery)
   };
 
   // Load module with caching

@@ -159,9 +159,9 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Realm",
     icon: '<i class="fas fa-vr-cardboard" style="color: #06b6d4;" aria-hidden="true"></i>',
     color: "#06b6d4", // Cyan - 3D/immersive
-    description: "3D experiences - avatar performances and virtual museum",
+    description: "Unified 3D destination hub - Stage, Gallery, Infinite Worlds, and more",
     isMain: true, // Visibility controlled by feature flags (admin-only)
-    sections: REALM_TABS,
+    sections: [], // Uses destination picker instead of tabs
   },
   {
     id: "mandala",
@@ -190,15 +190,11 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true, // Main module button on dashboard
     sections: SETTINGS_TABS, // Profile, Props, Background, Visibility, Misc, AI tabs
   },
-  {
-    id: "infinite-worlds",
-    label: "Infinite Worlds",
-    icon: '<i class="fas fa-globe" style="color: #22d3ee;" aria-hidden="true"></i>',
-    color: "#22d3ee", // Cyan - infinite/exploration
-    description: "Explore procedurally generated infinite worlds",
-    isMain: true, // Admin-only for development
-    sections: [], // Single immersive experience
-  },
-  // Gallery module retired - now part of Realm module as Museum tab
-  // 3D Viewer module retired - now part of Realm module as Stage tab
+  // ============================================================================
+  // REMOVED: Standalone 3D modules (now unified under Realm)
+  // ============================================================================
+  // - infinite-worlds → Now accessible via Realm destination picker
+  // - museum → Now accessible via Realm destination picker (Gallery destination)
+  // - gallery3d → Retired, merged into Gallery destination
+  // - 3d-viewer → Retired, merged into Stage destination
 ];
