@@ -114,6 +114,7 @@
     "stripe": "^20.1.0",
     "svelte": "^5.46.1",
     "svelte-check": "^4.3.5",
+    "svg-path-commander": "^2.1.11",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-pwa": "^1.2.0",
@@ -174,6 +175,8 @@
     }
   ],
   "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "@inlang/paraglide-js": "^2.7.2",
     "@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
@@ -195,6 +198,7 @@
     "inversify": "^7.10.4",
     "jszip": "^3.10.1",
     "lz-string": "^1.5.0",
+    "miniplex": "^2.0.0",
     "mp4-muxer": "^5.2.2",
     "realtime-bpm-analyzer": "^5.0.0",
     "reflect-metadata": "^0.2.2",

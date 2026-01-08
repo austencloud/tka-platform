@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { sveltekit } from "@sveltejs/kit/vite";
 import { SvelteKitPWA } from "@vite-pwa/sveltekit";
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import fs from "fs";
 import type { IncomingMessage, ServerResponse } from "http";
 import path from "path";
@@ -243,6 +244,14 @@ export default defineConfig({
       },
     }),
     // ============================================================================
+    // INTERNATIONALIZATION (Paraglide i18n)
+    // Run `pnpx @inlang/cli machine translate` to auto-translate all messages
+    // ============================================================================
+    paraglideVitePlugin({
+      project: "./project.inlang",
+      outdir: "./src/lib/paraglide",
+    }),
+    // ============================================================================
     // PWA CONFIGURATION (Google Play Store / Installable Web App)
     // ============================================================================
     SvelteKitPWA({
@@ -251,7 +260,7 @@ export default defineConfig({
       scope: "/",
       base: "/",
       devOptions: {
-        enabled: true, // Enable in dev for PWA install testing
+        enabled: false, // Enable in dev for PWA install testing
         type: "module",
       },
       manifest: false, // We already have a manifest in static/pwa/
