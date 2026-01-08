@@ -6,7 +6,7 @@ Undo is handled by the workspace-level undo button, not here.
 -->
 <script lang="ts">
   import type { HandPathPhase } from "../state/handpath-assemble-state.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { phase, bluePathLength, redPathLength } = $props<{
     phase: HandPathPhase;
@@ -21,8 +21,8 @@ Undo is handled by the workspace-level undo button, not here.
         // First position is the start position, subsequent are beats
         const title =
           bluePathLength === 0
-            ? m.assembly_select_starting_position()
-            : m.assembly_select_beat({ beat: bluePathLength });
+            ? t("assembly_select_starting_position")
+            : t("assembly_select_beat", { beat: bluePathLength });
         return {
           title,
           color: "var(--semantic-info)",
@@ -32,8 +32,8 @@ Undo is handled by the workspace-level undo button, not here.
       case "red": {
         const title =
           redPathLength === 0
-            ? m.assembly_select_starting_position()
-            : m.assembly_select_beat({ beat: redPathLength });
+            ? t("assembly_select_starting_position")
+            : t("assembly_select_beat", { beat: redPathLength });
         return {
           title,
           color: "var(--semantic-error)",
@@ -42,19 +42,19 @@ Undo is handled by the workspace-level undo button, not here.
       }
       case "rotation-selection":
         return {
-          title: m.assembly_choose_rotation(),
+          title: t("assembly_choose_rotation"),
           color: "var(--semantic-success)",
           step: 3,
         };
       case "complete":
         return {
-          title: m.assembly_complete(),
+          title: t("assembly_complete"),
           color: "var(--semantic-success)",
           step: 3,
         };
       default:
         return {
-          title: m.assembly_assembly(),
+          title: t("assembly_assembly"),
           color: "#8b5cf6",
           step: 0,
         };

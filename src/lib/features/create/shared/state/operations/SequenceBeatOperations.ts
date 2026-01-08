@@ -255,15 +255,10 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
         removingIndices.push(i);
       }
 
-      console.log(
-        `🎬 Starting simultaneous fade-out for ${beatsToRemove} beats starting from index ${beatIndex}`
-      );
-
       const fadeAnimationDuration = 250;
 
       // Add ALL beats to removing set at once - they all fade simultaneously
       animationState.startRemovingBeats(removingIndices);
-      console.log(`🎭 Fading out all ${beatsToRemove} beats simultaneously`);
 
       // Remove beats after fade animation completes
       setTimeout(() => {
@@ -290,9 +285,6 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
           // Small delay for visual feedback before completing
           setTimeout(() => {
             animationState.endRemovingBeats();
-            console.log(
-              `✅ Simultaneous removal complete for ${beatsToRemove} beats`
-            );
             onComplete?.();
           }, 50);
         } catch (error) {
@@ -305,11 +297,6 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
     updateBeat(beatIndex: number, beatData: Partial<BeatData>) {
       if (!coreState.currentSequence) return;
 
-      const currentSelectedBeat = selectionState.selectedBeatNumber;
-      console.log(
-        `[SequenceBeatOperations.updateBeat] START - selectedBeatNumber=${currentSelectedBeat}, updating beatIndex=${beatIndex}`
-      );
-
       try {
         let updatedSequence = updateBeatInSequence(
           coreState.currentSequence,
@@ -320,17 +307,8 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
-        console.log(
-          `[SequenceBeatOperations.updateBeat] Before setCurrentSequence - selectedBeatNumber=${selectionState.selectedBeatNumber}`
-        );
         coreState.setCurrentSequence(updatedSequence);
-        console.log(
-          `[SequenceBeatOperations.updateBeat] After setCurrentSequence - selectedBeatNumber=${selectionState.selectedBeatNumber}`
-        );
         coreState.clearError();
-        console.log(
-          `[SequenceBeatOperations.updateBeat] END - selectedBeatNumber=${selectionState.selectedBeatNumber}`
-        );
       } catch (error) {
         handleError("Failed to update beat", error);
       }

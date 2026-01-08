@@ -7,7 +7,7 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { currentGridMode = GridMode.DIAMOND, onGridModeChange } = $props<{
     currentGridMode?: GridMode;
@@ -22,10 +22,10 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
   );
 
   const oppositeLabel = $derived(
-    oppositeMode === GridMode.DIAMOND ? m.assembly_diamond() : m.assembly_box()
+    oppositeMode === GridMode.DIAMOND ? t("assembly_diamond") : t("assembly_box")
   );
 
-  const switchAriaLabel = $derived(m.assembly_switch_to_mode({ mode: oppositeLabel }));
+  const switchAriaLabel = $derived(t("assembly_switch_to_mode", { mode: oppositeLabel }));
 
   function handleToggle() {
     hapticService?.trigger("selection");

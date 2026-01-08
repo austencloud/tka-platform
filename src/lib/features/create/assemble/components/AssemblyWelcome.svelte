@@ -9,7 +9,7 @@ Shown when sequence is empty.
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { gridMode, onStart, onGridModeChange } = $props<{
     gridMode: GridMode;
@@ -59,39 +59,39 @@ Shown when sequence is empty.
     </div>
 
     <!-- Title -->
-    <h1 class="welcome-title">{m.assembly_title()}</h1>
+    <h1 class="welcome-title">{t("assembly_title")}</h1>
 
     <!-- Description -->
     <p class="welcome-description">
-      {m.assembly_description()}
+      {t("assembly_description")}
     </p>
 
     <!-- How it works -->
     <div class="how-it-works">
-      <h2 class="section-title">{m.assembly_how_it_works()}</h2>
+      <h2 class="section-title">{t("assembly_how_it_works")}</h2>
       <ol class="steps-list">
         <li>
           <span class="step-number blue">1</span>
           <span class="step-text"
-            >{m.assembly_step1({ hand: "" })} <strong>{m.assembly_blue_hand()}</strong></span
+            >{t("assembly_step1", { hand: "" })} <strong>{t("assembly_blue_hand")}</strong></span
           >
         </li>
         <li>
           <span class="step-number red">2</span>
           <span class="step-text"
-            >{m.assembly_step2({ hand: "" })} <strong>{m.assembly_red_hand()}</strong></span
+            >{t("assembly_step2", { hand: "" })} <strong>{t("assembly_red_hand")}</strong></span
           >
         </li>
         <li>
           <span class="step-number green">3</span>
-          <span class="step-text">{m.assembly_step3()}</span>
+          <span class="step-text">{t("assembly_step3")}</span>
         </li>
       </ol>
     </div>
 
     <!-- Grid Mode Toggle -->
     <div class="grid-mode-section">
-      <span class="grid-mode-label">{m.assembly_grid_mode()}</span>
+      <span class="grid-mode-label">{t("assembly_grid_mode")}</span>
       <div class="grid-mode-toggle">
         <button
           class="mode-button"
@@ -99,7 +99,7 @@ Shown when sequence is empty.
           onclick={() => handleGridModeChange(GridMode.DIAMOND)}
         >
           <span class="mode-icon">◇</span>
-          {m.assembly_diamond()}
+          {t("assembly_diamond")}
         </button>
         <button
           class="mode-button"
@@ -107,14 +107,14 @@ Shown when sequence is empty.
           onclick={() => handleGridModeChange(GridMode.BOX)}
         >
           <span class="mode-icon">□</span>
-          {m.assembly_box()}
+          {t("assembly_box")}
         </button>
       </div>
     </div>
 
     <!-- Start Button -->
     <button class="start-button" onclick={handleStart}>
-      <span class="button-text">{m.assembly_start_building()}</span>
+      <span class="button-text">{t("assembly_start_building")}</span>
       <span class="button-icon">→</span>
     </button>
   </div>

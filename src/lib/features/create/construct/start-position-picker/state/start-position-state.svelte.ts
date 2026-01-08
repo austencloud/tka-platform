@@ -79,9 +79,6 @@ export function createSimplifiedStartPositionState() {
   // Useful when importing a sequence where we just need the mode to match
   function setGridMode(gridMode: GridMode) {
     if (currentGridMode !== gridMode) {
-      console.log(
-        `🔄 StartPositionState: Setting grid mode directly - ${currentGridMode} → ${gridMode}`
-      );
       currentGridMode = gridMode;
     }
   }

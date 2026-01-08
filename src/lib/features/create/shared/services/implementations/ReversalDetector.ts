@@ -187,9 +187,6 @@ export class ReversalDetector implements IReversalDetector {
     const motionData = beat.motions[motionColor];
 
     if (!motionData) {
-      console.log(
-        `⚠️ ReversalDetector: No motion data found for ${color} motion`
-      );
       return null;
     }
 

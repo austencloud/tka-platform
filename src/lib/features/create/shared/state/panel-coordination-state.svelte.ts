@@ -510,32 +510,15 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     },
 
     openSequenceActionsPanel() {
-      console.log(
-        `[panel-coordination] openSequenceActionsPanel called, current state: ${isSequenceActionsPanelOpen}`
-      );
       // Only close other panels if this panel isn't already open
       // This prevents the panel from closing when beat operations update state
       if (!isSequenceActionsPanelOpen) {
-        console.log(
-          `[panel-coordination] Panel not open, closing other panels`
-        );
         closeAllPanels();
-      } else {
-        console.log(
-          `[panel-coordination] Panel already open, skipping closeAllPanels`
-        );
       }
       isSequenceActionsPanelOpen = true;
-      console.log(
-        `[panel-coordination] Panel now open: ${isSequenceActionsPanelOpen}`
-      );
     },
 
     closeSequenceActionsPanel() {
-      console.log(
-        `[panel-coordination] closeSequenceActionsPanel called, stack:`,
-        new Error().stack
-      );
       isSequenceActionsPanelOpen = false;
     },
 

@@ -160,7 +160,6 @@
   onMount(() => {
     const handleAnimationChange = (event: CustomEvent) => {
       currentAnimationName = event.detail.animation;
-      console.log(`🎨 BeatCell: Animation changed to ${currentAnimationName}`);
     };
 
     window.addEventListener(

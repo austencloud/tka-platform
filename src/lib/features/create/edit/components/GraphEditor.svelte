@@ -162,11 +162,6 @@
           },
         })
       );
-
-      // Show brief notification (optional)
-      console.log(
-        `Rotation override ${newState ? "enabled" : "disabled"} for ${selectedArrowColor} arrow`
-      );
     } catch (error) {
       console.error("Failed to toggle rotation override:", error);
       errorMessage = "Failed to toggle rotation override";

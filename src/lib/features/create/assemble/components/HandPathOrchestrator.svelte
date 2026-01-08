@@ -267,22 +267,10 @@ Integrates all Assembly components and manages state transitions.
       if (isRedFirstPosition && onStartPositionSet) {
         const blueStartPosition = assemblyState.blueHandPath[0];
         if (blueStartPosition) {
-          console.log(
-            "[HandPathOrchestrator] Red first position selected:",
-            position
-          );
-          console.log(
-            "[HandPathOrchestrator] Blue start position:",
-            blueStartPosition
-          );
           const startPositionPictograph = createDualHandStartPositionPictograph(
             blueStartPosition,
             position,
             assemblyState.gridMode
-          );
-          console.log(
-            "[HandPathOrchestrator] Dual hand pictograph motions:",
-            startPositionPictograph.motions
           );
           onStartPositionSet(startPositionPictograph);
         }

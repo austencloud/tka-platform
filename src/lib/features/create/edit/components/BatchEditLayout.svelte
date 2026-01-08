@@ -122,11 +122,6 @@ Uses simplified stepper controls matching the single-beat edit pattern.
         const { blockSize, inlineSize } = entry.contentBoxSize[0] || {};
         containerHeight = blockSize || entry.contentRect.height;
         containerWidth = inlineSize || entry.contentRect.width;
-
-        // Debug logging (can remove in production)
-        console.log(
-          `📏 Batch edit container: ${containerWidth}x${containerHeight}px (${layoutMode})`
-        );
       }
     });
 
