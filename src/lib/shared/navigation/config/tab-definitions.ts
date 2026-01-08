@@ -354,41 +354,8 @@ export const ADMIN_TABS: Section[] = [
   },
 ];
 
-// Skew Lab tabs configuration (admin-only experimental module)
-export const SKEWLAB_TABS: Section[] = [
-  {
-    id: "browser",
-    label: "Browser",
-    icon: '<i class="fas fa-images" aria-hidden="true"></i>',
-    description: "Browse and validate skewed pictographs",
-    color: "#f97316",
-    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
-  },
-  {
-    id: "validator",
-    label: "Validator",
-    icon: '<i class="fas fa-check-double" aria-hidden="true"></i>',
-    description: "Validate all Zeta/Eta positions render correctly",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    id: "generator",
-    label: "Generator",
-    icon: '<i class="fas fa-hammer" aria-hidden="true"></i>',
-    description: "Tools for generating skewed dataframe",
-    color: "#22c55e",
-    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
-  },
-  {
-    id: "grid",
-    label: "Grid Test",
-    icon: '<i class="fas fa-th" aria-hidden="true"></i>',
-    description: "Test skewed grid rendering",
-    color: "#3b82f6",
-    gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
-  },
-];
+// Skew Lab - single page module (no sub-tabs)
+export const SKEWLAB_TABS: Section[] = [];
 
 // Settings tabs configuration - shown in sidebar like other modules
 export const SETTINGS_TABS: Section[] = [
