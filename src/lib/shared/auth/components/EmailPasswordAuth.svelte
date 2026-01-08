@@ -18,6 +18,7 @@
   import { goto } from "$app/navigation";
   import { onDestroy } from "svelte";
   import { auth } from "../firebase";
+  import * as m from "$lib/paraglide/messages.js";
 
   let { mode = $bindable("signin" as "signin" | "signup") } = $props();
 
@@ -108,8 +109,7 @@
         }
 
         await sendEmailVerification(result.user);
-        success =
-          "Account created! Please check your email to verify your account.";
+        success = m.auth_account_created();
         resetAttempts();
         await new Promise((resolve) => setTimeout(resolve, 1200));
       } else {
@@ -130,13 +130,12 @@
       }
 
       if (err?.code === "auth/email-already-in-use") {
-        error =
-          "Unable to create account. Please try a different email or sign in.";
+        error = m.auth_error_email_in_use();
         mode = "signin";
       } else if (err?.code === "auth/weak-password") {
-        error = "Password is too weak. Use at least 8 characters.";
+        error = m.auth_error_weak_password();
       } else if (err?.code === "auth/invalid-email") {
-        error = "Invalid email address format.";
+        error = m.auth_error_invalid_email();
       } else if (
         err?.code === "auth/user-not-found" ||
         err?.code === "auth/wrong-password" ||
@@ -145,17 +144,17 @@
         const attemptsLeft = MAX_ATTEMPTS - failedAttempts;
         error =
           attemptsLeft > 0
-            ? `Invalid email or password. ${attemptsLeft} attempt${
+            ? `${m.auth_error_invalid_credential()} ${attemptsLeft} attempt${
                 attemptsLeft === 1 ? "" : "s"
               } remaining.`
-            : `Too many failed attempts. Please wait ${lockoutRemaining} seconds.`;
+            : `${m.auth_error_too_many_attempts()} ${lockoutRemaining}s`;
       } else if (err?.code === "auth/too-many-requests") {
-        error = "Too many failed attempts. Please try again later.";
+        error = m.auth_error_too_many_attempts();
       } else if (err?.code === "auth/multi-factor-auth-required") {
         error =
           "This account has authenticator 2FA enabled, which is no longer supported in the app. Disable it from your account settings or contact support.";
       } else {
-        error = "An error occurred during authentication. Please try again.";
+        error = m.auth_error_generic();
       }
     } finally {
       loading = false;
@@ -177,13 +176,13 @@
   >
     {#if mode === "signup"}
       <label class="label">
-        Name
+        {m.auth_name()}
         <input class="input" bind:value={name} autocomplete="name" />
       </label>
     {/if}
 
     <label class="label">
-      Email
+      {m.auth_email()}
       <input
         class="input"
         type="email"
@@ -194,7 +193,7 @@
     </label>
 
     <label class="label">
-      Password
+      {m.auth_password()}
       <div class="password-row">
         <input
           class="input"
@@ -207,7 +206,7 @@
           type="button"
           class="toggle"
           onclick={() => (showPassword = !showPassword)}
-          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-label={showPassword ? m.auth_hide_password() : m.auth_show_password()}
         >
           <i
             class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"
@@ -227,9 +226,9 @@
 
     <button class="submit" type="submit" disabled={loading}>
       {#if loading}
-        {mode === "signin" ? "Signing in..." : "Creating account..."}
+        {mode === "signin" ? m.auth_logging_in() : m.auth_creating_account()}
       {:else}
-        {mode === "signin" ? "Sign In" : "Sign Up"}
+        {mode === "signin" ? m.auth_sign_in() : m.auth_sign_up()}
       {/if}
     </button>
 
@@ -239,9 +238,7 @@
       onclick={toggleMode}
       disabled={loading}
     >
-      {mode === "signin"
-        ? "Need an account? Sign up"
-        : "Already have an account? Sign in"}
+      {mode === "signin" ? m.auth_need_account() : m.auth_have_account_signin()}
     </button>
   </form>
 </div>
