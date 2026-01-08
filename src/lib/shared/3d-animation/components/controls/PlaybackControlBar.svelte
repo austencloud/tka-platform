@@ -174,6 +174,11 @@
     cursor: not-allowed;
   }
 
+  .play-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
   .play-btn.primary {
     width: 56px;
     height: 56px;
@@ -183,7 +188,7 @@
   }
 
   .play-btn.primary:hover {
-    background: #7c3aed;
+    background: var(--theme-accent-strong, #7c3aed);
   }
 
   .play-btn.active {
@@ -197,6 +202,11 @@
     max-width: 200px;
     height: 48px;
     accent-color: var(--theme-accent, var(--theme-accent-strong));
+  }
+
+  .progress-slider:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .progress-label {

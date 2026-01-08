@@ -6,7 +6,6 @@
    * Sections are collapsible to avoid content overflow.
    */
 
-  import type { MotionConfig3D } from "../../domain/models/MotionData3D";
   import type { GridMode } from "../../domain/constants/grid-layout";
   import type { AvatarId } from "../../config/avatar-definitions";
   import { Plane } from "../../domain/enums/Plane";
@@ -25,10 +24,6 @@
     currentBeatIndex: number;
     /** Total beats */
     totalBeats: number;
-    /** Blue config (null if not visible) - kept for future use */
-    blueConfig?: MotionConfig3D | null;
-    /** Red config (null if not visible) - kept for future use */
-    redConfig?: MotionConfig3D | null;
     /** Grid mode */
     gridMode: GridMode;
     /** Visible planes */
@@ -51,8 +46,6 @@
     hasSequence,
     currentBeatIndex,
     totalBeats,
-    blueConfig = null,
-    redConfig = null,
     gridMode,
     visiblePlanes,
     showFigure,
@@ -280,8 +273,13 @@
   }
 
   .load-btn:hover {
-    background: #7c3aed;
+    background: var(--theme-accent-strong, #7c3aed);
     transform: translateY(-1px);
+  }
+
+  .load-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .load-btn:active {
@@ -359,6 +357,11 @@
 
   .section-header:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .section-header:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: -2px;
   }
 
   .section-header i:first-child {

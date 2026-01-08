@@ -32,6 +32,8 @@
   import { WALL_OFFSET } from "../utils/performer-positions";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import IKFigure3D from "./IKFigure3D.svelte";
+  import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Direct imports for manual instantiation (ensures shared skeleton instance)
   import { AvatarSkeletonBuilder } from "../services/implementations/AvatarSkeletonBuilder";
@@ -95,6 +97,7 @@
   let useProceduralFallback = $state(true);
   let currentLoadedAvatarId = $state<string | null>(null);
   let isLoading = $state(false);
+  let hasShownFallbackToast = $state(false);
 
   // Cache the root object to avoid reactivity issues during swap
   let cachedRoot = $state<import("three").Object3D | null>(null);
@@ -181,6 +184,12 @@
         err
       );
       useProceduralFallback = true;
+
+      // Show user-friendly toast (only once per session)
+      if (!hasShownFallbackToast) {
+        hasShownFallbackToast = true;
+        toast.warning("Using simplified avatar (3D model unavailable)");
+      }
     } finally {
       isLoading = false;
     }
@@ -333,6 +342,11 @@
 </script>
 
 {#if visible}
+  <!-- Loading indicator while avatar model loads -->
+  {#if isLoading}
+    <AvatarLoadingIndicator {position} />
+  {/if}
+
   {#if useProceduralFallback}
     <!-- Procedural fallback (used when GLTF loading fails) -->
     <T.Group

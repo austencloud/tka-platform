@@ -1,0 +1,231 @@
+/**
+ * Performer Manager State
+ *
+ * Manages multiple performers in the 3D viewer.
+ * Handles adding, removing, positioning, and selecting performers.
+ */
+
+import {
+  createAvatarInstanceState,
+  type AvatarInstanceState,
+} from "./avatar-instance-state.svelte";
+import {
+  createAvatarSyncState,
+  type AvatarSyncState,
+} from "./avatar-sync-state.svelte";
+import {
+  getDefaultPositions,
+  MAX_PERFORMERS,
+} from "../utils/performer-positions";
+import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
+import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
+import type { AvatarId } from "../config/avatar-definitions";
+
+/**
+ * Dependencies for performer manager
+ */
+export interface PerformerManagerDeps {
+  propInterpolator: IPropStateInterpolator;
+  sequenceConverter: ISequenceConverter;
+  initialAvatarId: AvatarId;
+}
+
+/**
+ * Create performer manager state
+ */
+export function createPerformerManager(deps: PerformerManagerDeps) {
+  const { propInterpolator, sequenceConverter, initialAvatarId } = deps;
+
+  // Performer states (1-4 performers)
+  let performerStates = $state<AvatarInstanceState[]>([]);
+  let activePerformerIndex = $state(0);
+  let syncState: AvatarSyncState | null = $state(null);
+
+  // Derived: active performer state
+  const activeState = $derived(performerStates[activePerformerIndex] ?? null);
+
+  // Helper getters for sync (first two performers)
+  const avatar1State = $derived(performerStates[0] ?? null);
+  const avatar2State = $derived(performerStates[1] ?? null);
+
+  /**
+   * Create a performer at a given index
+   */
+  function createPerformer(index: number): AvatarInstanceState {
+    const positions = getDefaultPositions(performerStates.length + 1);
+    const pos = positions[index] ?? { x: 0, z: 0 };
+
+    return createAvatarInstanceState(
+      {
+        id: `performer-${index}`,
+        positionX: pos.x,
+        positionZ: pos.z,
+        avatarModelId: initialAvatarId,
+      },
+      { propInterpolator, sequenceConverter }
+    );
+  }
+
+  /**
+   * Initialize with a single performer
+   */
+  function initialize(): AvatarInstanceState {
+    const initialPosition = getDefaultPositions(1)[0] ?? { x: 0, z: 0 };
+    const initialPerformer = createAvatarInstanceState(
+      {
+        id: "performer-0",
+        positionX: initialPosition.x,
+        positionZ: initialPosition.z,
+        avatarModelId: initialAvatarId,
+      },
+      { propInterpolator, sequenceConverter }
+    );
+
+    performerStates = [initialPerformer];
+    return initialPerformer;
+  }
+
+  /**
+   * Update all performer positions based on count
+   */
+  function updatePositions() {
+    const positions = getDefaultPositions(performerStates.length);
+    performerStates.forEach((performer, i) => {
+      const pos = positions[i];
+      if (pos) {
+        performer.position.x = pos.x;
+        performer.position.z = pos.z;
+      }
+    });
+  }
+
+  /**
+   * Add a new performer
+   */
+  function addPerformer() {
+    if (performerStates.length >= MAX_PERFORMERS) return;
+
+    const newPerformer = createPerformer(performerStates.length);
+    performerStates = [...performerStates, newPerformer];
+    updatePositions();
+
+    // Create sync state when we have exactly 2 performers
+    if (performerStates.length === 2) {
+      const first = performerStates[0];
+      const second = performerStates[1];
+      if (first && second) {
+        syncState?.destroy();
+        syncState = createAvatarSyncState(first, second);
+      }
+    }
+  }
+
+  /**
+   * Remove the last performer
+   */
+  function removePerformer() {
+    if (performerStates.length <= 1) return;
+
+    const removed = performerStates[performerStates.length - 1];
+    if (!removed) return;
+    removed.destroy();
+
+    performerStates = performerStates.slice(0, -1);
+    updatePositions();
+
+    // Adjust active index if needed
+    if (activePerformerIndex >= performerStates.length) {
+      activePerformerIndex = performerStates.length - 1;
+    }
+
+    // Destroy sync if down to 1 performer
+    if (performerStates.length < 2) {
+      syncState?.destroy();
+      syncState = null;
+    }
+  }
+
+  /**
+   * Select a performer by index
+   */
+  function selectPerformer(index: number) {
+    if (index >= 0 && index < performerStates.length) {
+      activePerformerIndex = index;
+    }
+  }
+
+  /**
+   * Handle performer drag
+   */
+  function handleDrag(index: number, newPos: { x: number; z: number }) {
+    const performer = performerStates[index];
+    if (performer) {
+      performer.position.x = newPos.x;
+      performer.position.z = newPos.z;
+    }
+  }
+
+  /**
+   * Set speed on all performers
+   */
+  function setSpeed(speed: number) {
+    performerStates.forEach((p) => (p.speed = speed));
+  }
+
+  /**
+   * Ensure we have at least N performers
+   */
+  function ensurePerformerCount(count: number) {
+    while (performerStates.length < count && performerStates.length < MAX_PERFORMERS) {
+      addPerformer();
+    }
+  }
+
+  /**
+   * Clean up all performers
+   */
+  function destroy() {
+    performerStates.forEach((p) => p.destroy());
+    syncState?.destroy();
+  }
+
+  return {
+    // State
+    get performers() {
+      return performerStates;
+    },
+    get activeIndex() {
+      return activePerformerIndex;
+    },
+    get activeState() {
+      return activeState;
+    },
+    get syncState() {
+      return syncState;
+    },
+    get avatar1State() {
+      return avatar1State;
+    },
+    get avatar2State() {
+      return avatar2State;
+    },
+    get count() {
+      return performerStates.length;
+    },
+    get maxPerformers() {
+      return MAX_PERFORMERS;
+    },
+
+    // Methods
+    initialize,
+    addPerformer,
+    removePerformer,
+    selectPerformer,
+    handleDrag,
+    setSpeed,
+    ensurePerformerCount,
+    destroy,
+  };
+}
+
+export type PerformerManager = ReturnType<typeof createPerformerManager>;

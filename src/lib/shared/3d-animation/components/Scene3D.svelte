@@ -178,7 +178,14 @@
   });
 
   // Reference to orbit controls for getting camera state
-  let controlsRef = $state<any>(null);
+  // Type uses intersection to satisfy bind:ref while providing camera/target access
+  let controlsRef = $state<
+    | (import("three/examples/jsm/controls/OrbitControls.js").OrbitControls & {
+        object: THREE.PerspectiveCamera;
+        target: THREE.Vector3;
+      })
+    | undefined
+  >(undefined);
 
   // Handle orbit control changes
   function handleCameraChange() {
@@ -195,6 +202,30 @@
     }
   }
 </script>
+
+{#snippet sceneContent()}
+  <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
+  <Environment3D {backgroundType} />
+
+  <!-- Grid planes - one per avatar position, rotating with avatar facing -->
+  {#if showGrid}
+    {#each gridPositions as pos, i}
+      <Grid3D
+        {visiblePlanes}
+        {showLabels}
+        {gridMode}
+        centerPosition={pos}
+        facingAngle={pos.facingAngle ?? 0}
+        {gridOffset}
+      />
+    {/each}
+  {/if}
+
+  <!-- Children content (props, etc.) -->
+  {#if children}
+    {@render children()}
+  {/if}
+{/snippet}
 
 <div class="scene-container" role="application">
   <Canvas>
@@ -249,27 +280,7 @@
     <!-- Post-processing effects (wraps scene content when enabled) -->
     {#if bloomEnabled}
       <EffectComposer>
-        <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
-        <Environment3D {backgroundType} />
-
-        <!-- Grid planes - one per avatar position, rotating with avatar facing -->
-        {#if showGrid}
-          {#each gridPositions as pos, i}
-            <Grid3D
-              {visiblePlanes}
-              {showLabels}
-              {gridMode}
-              centerPosition={pos}
-              facingAngle={pos.facingAngle ?? 0}
-              {gridOffset}
-            />
-          {/each}
-        {/if}
-
-        <!-- Children content (props, etc.) -->
-        {#if children}
-          {@render children()}
-        {/if}
+        {@render sceneContent()}
 
         <!-- Bloom effect -->
         <BloomEffect
@@ -280,27 +291,7 @@
         />
       </EffectComposer>
     {:else}
-      <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
-      <Environment3D {backgroundType} />
-
-      <!-- Grid planes - one per avatar position, rotating with avatar facing -->
-      {#if showGrid}
-        {#each gridPositions as pos, i}
-          <Grid3D
-            {visiblePlanes}
-            {showLabels}
-            {gridMode}
-            centerPosition={pos}
-            facingAngle={pos.facingAngle ?? 0}
-            {gridOffset}
-          />
-        {/each}
-      {/if}
-
-      <!-- Children content (props, etc.) -->
-      {#if children}
-        {@render children()}
-      {/if}
+      {@render sceneContent()}
     {/if}
   </Canvas>
 </div>

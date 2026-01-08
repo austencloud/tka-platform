@@ -14,35 +14,22 @@
   import Avatar3D from "./components/Avatar3D.svelte";
   import AvatarLabel3D from "./components/AvatarLabel3D.svelte";
   import DraggablePerformer from "./components/DraggablePerformer.svelte";
-  import type { BodyType } from "./services/contracts/IAvatarCustomizer";
   import SceneOverlayControls from "./components/panels/SceneOverlayControls.svelte";
   import Animation3DSidePanel from "./components/panels/Animation3DSidePanel.svelte";
   import Keyboard3DCoordinator from "./keyboard/Keyboard3DCoordinator.svelte";
   import type { CameraPreset } from "./components/controls/CameraPresetBar.svelte";
   import { Plane } from "./domain/enums/Plane";
   import type { GridMode } from "./domain/constants/grid-layout";
-  import {
-    createAvatarInstanceState,
-    type AvatarInstanceState,
-  } from "./state/avatar-instance-state.svelte";
-  import {
-    createAvatarSyncState,
-    type AvatarSyncState,
-  } from "./state/avatar-sync-state.svelte";
-  import {
-    getDefaultPositions,
-    MAX_PERFORMERS,
-    WALL_OFFSET,
-  } from "./utils/performer-positions";
-  import PerformerManager from "./components/panels/PerformerManager.svelte";
+  import { WALL_OFFSET } from "./utils/performer-positions";
+  import PerformerManagerUI from "./components/panels/PerformerManager.svelte";
   import AvatarSyncControls from "./components/panels/AvatarSyncControls.svelte";
-  import DuetBrowserPanel from "./components/panels/DuetBrowserPanel.svelte";
-  import DuetCreatorPanel from "./components/panels/DuetCreatorPanel.svelte";
-  import type { DuetSequenceWithData } from "./domain/duet-sequence";
-  import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
+  import DuetOrchestrator from "./components/DuetOrchestrator.svelte";
+  import {
+    createPerformerManager,
+    type PerformerManager,
+  } from "./state/performer-manager.svelte";
   import ShortcutsHelp from "$lib/shared/keyboard/components/ShortcutsHelp.svelte";
   import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   // Locomotion system
@@ -86,34 +73,26 @@
 
   const initialAvatarId = getInitialAvatarId();
 
-  // Services and state - initialized asynchronously
-  let propInterpolator: IPropStateInterpolator | null = $state(null);
-  let sequenceConverter: ISequenceConverter | null = $state(null);
+  // Services - initialized asynchronously
   let persistenceService: IAnimation3DPersister | null = $state(null);
-
-  // Dynamic performer states (1-4 performers)
-  let performerStates = $state<AvatarInstanceState[]>([]);
-  let activePerformerIndex = $state(0);
-  let syncState: AvatarSyncState | null = $state(null);
   let servicesReady = $state(false);
 
-  // Dependencies stored for creating new performers
-  let serviceDeps: {
-    propInterpolator: IPropStateInterpolator;
-    sequenceConverter: ISequenceConverter;
-  } | null = null;
+  // Performer management (extracted to dedicated state factory)
+  let performerManager = $state<PerformerManager | null>(null);
 
-  // Duet browser state
-  type BrowserViewMode = "sequences" | "duets";
-  let browserViewMode = $state<BrowserViewMode>("sequences");
-  let duetCreatorOpen = $state(false);
-
-  // Derived: active performer state (routes controls to selected performer)
-  const activeState = $derived(performerStates[activePerformerIndex] ?? null);
-
-  // Helper getters for backwards compatibility with sync (first two performers)
-  const avatar1State = $derived(performerStates[0] ?? null);
-  const avatar2State = $derived(performerStates[1] ?? null);
+  // Derived: shorthand accessors from performer manager
+  const performerStates = $derived.by(() => {
+    return performerManager ? performerManager.performers : [];
+  });
+  const activePerformerIndex = $derived.by(() => {
+    return performerManager ? performerManager.activeIndex : 0;
+  });
+  const activeState = $derived.by(() => {
+    return performerManager ? performerManager.activeState : null;
+  });
+  const syncState = $derived.by(() => {
+    return performerManager ? performerManager.syncState : null;
+  });
 
   // Effects configuration state
   const effectsConfig = getEffectsConfigState();
@@ -157,7 +136,7 @@
   // Avatar positions for per-avatar grid planes (full 3D position + facing angle)
   // Grid planes rotate with avatar's body orientation for body-relative coordinate system
   const avatarPositions = $derived.by(() => {
-    return performerStates.map((p) => ({
+    return performerStates.map((p: { position: { x: number; y: number; z: number }; facingAngle: number }) => ({
       x: p.position.x,
       y: p.position.y,
       z: p.position.z,
@@ -188,95 +167,6 @@
     visiblePlanes = newSet;
   }
 
-  // Sequence handlers
-  function handleSequenceSelect(sequence: SequenceData) {
-    activeState?.loadSequence(sequence);
-    browserOpen = false;
-  }
-
-  // Performer management
-  function createPerformer(index: number): AvatarInstanceState | null {
-    if (!serviceDeps) return null;
-
-    const positions = getDefaultPositions(performerStates.length + 1);
-    const pos = positions[index] ?? { x: 0, z: 0 };
-
-    return createAvatarInstanceState(
-      {
-        id: `performer-${index}`,
-        positionX: pos.x,
-        positionZ: pos.z,
-        avatarModelId: initialAvatarId,
-      },
-      serviceDeps
-    );
-  }
-
-  function addPerformer() {
-    if (performerStates.length >= MAX_PERFORMERS || !serviceDeps) return;
-
-    const newPerformer = createPerformer(performerStates.length);
-    if (!newPerformer) return;
-
-    performerStates = [...performerStates, newPerformer];
-    updatePerformerPositions();
-
-    // Recreate sync state if we have exactly 2 performers
-    if (performerStates.length === 2) {
-      const first = performerStates[0];
-      const second = performerStates[1];
-      if (first && second) {
-        syncState?.destroy();
-        syncState = createAvatarSyncState(first, second);
-      }
-    }
-  }
-
-  function removePerformer() {
-    if (performerStates.length <= 1) return;
-
-    const removed = performerStates[performerStates.length - 1];
-    if (!removed) return;
-    removed.destroy();
-
-    performerStates = performerStates.slice(0, -1);
-    updatePerformerPositions();
-
-    // Adjust active index if needed
-    if (activePerformerIndex >= performerStates.length) {
-      activePerformerIndex = performerStates.length - 1;
-    }
-
-    // Destroy sync if down to 1 performer
-    if (performerStates.length < 2) {
-      syncState?.destroy();
-      syncState = null;
-    }
-  }
-
-  function updatePerformerPositions() {
-    const positions = getDefaultPositions(performerStates.length);
-    performerStates.forEach((performer, i) => {
-      const pos = positions[i];
-      if (pos) {
-        // Update position - need to reassign the position object
-        performer.position.x = pos.x;
-        performer.position.z = pos.z;
-      }
-    });
-  }
-
-  function handlePerformerDrag(
-    index: number,
-    newPos: { x: number; z: number }
-  ) {
-    const performer = performerStates[index];
-    if (performer) {
-      performer.position.x = newPos.x;
-      performer.position.z = newPos.z;
-    }
-  }
-
   // Handle mesh clicks from raycaster (for performer selection)
   function handleMeshClick(
     meshName: string,
@@ -287,7 +177,7 @@
     const performerMatch = meshName.match(/^PERFORMER_performer-(\d+)$/);
     if (performerMatch && performerMatch[1]) {
       const performerIndex = parseInt(performerMatch[1], 10);
-      activePerformerIndex = performerIndex;
+      performerManager?.selectPerformer(performerIndex);
       isDraggingPerformer = true;
     }
   }
@@ -301,40 +191,9 @@
 
   // Handle drag movement (update active performer position)
   function handleDrag(position: { x: number; z: number }) {
-    const performer = performerStates[activePerformerIndex];
-    if (performer && isDraggingPerformer) {
-      performer.position.x = position.x;
-      performer.position.z = position.z;
+    if (isDraggingPerformer && performerManager) {
+      performerManager.handleDrag(activePerformerIndex, position);
     }
-  }
-
-  // Duet handlers
-  function handleDuetSelect(duet: DuetSequenceWithData) {
-    // Ensure we have at least 2 performers
-    while (performerStates.length < 2) {
-      addPerformer();
-    }
-
-    // Load sequences into first two performers
-    performerStates[0]?.loadSequence(duet.avatar1Sequence);
-    performerStates[1]?.loadSequence(duet.avatar2Sequence);
-
-    // Apply beat offset via sync state
-    if (syncState) {
-      syncState.setOffset(duet.beatOffset);
-      // Enable sync if there's an offset
-      if (duet.beatOffset !== 0 && !syncState.isSyncEnabled) {
-        syncState.toggleSync();
-      }
-    }
-
-    browserOpen = false;
-  }
-
-  function handleDuetCreated(duetId: string) {
-    duetCreatorOpen = false;
-    browserViewMode = "duets";
-    browserOpen = true;
   }
 
   // Initialize services asynchronously
@@ -342,33 +201,26 @@
     // Load the realm feature module first (provides 3D animation services)
     await loadFeatureModule("realm");
 
-    // Now resolve services using resolveAsync for HMR resilience
-    propInterpolator = await resolveAsync<IPropStateInterpolator>(
+    // Resolve services using resolveAsync for HMR resilience
+    const propInterpolator = await resolveAsync<IPropStateInterpolator>(
       ANIMATION_3D_TYPES.IPropStateInterpolator
     );
-    sequenceConverter = await resolveAsync<ISequenceConverter>(
+    const sequenceConverter = await resolveAsync<ISequenceConverter>(
       ANIMATION_3D_TYPES.ISequenceConverter
     );
     persistenceService = await resolveAsync<IAnimation3DPersister>(
       ANIMATION_3D_TYPES.IAnimation3DPersister
     );
 
-    // Store deps for creating additional performers
-    serviceDeps = { propInterpolator, sequenceConverter };
+    // Create performer manager with resolved dependencies
+    performerManager = createPerformerManager({
+      propInterpolator,
+      sequenceConverter,
+      initialAvatarId,
+    });
 
-    // Create initial performer (start with 1, user can add more)
-    const initialPosition = getDefaultPositions(1)[0] ?? { x: 0, z: 0 };
-    const initialPerformer = createAvatarInstanceState(
-      {
-        id: "performer-0",
-        positionX: initialPosition.x,
-        positionZ: initialPosition.z,
-        avatarModelId: initialAvatarId,
-      },
-      serviceDeps
-    );
-
-    performerStates = [initialPerformer];
+    // Initialize with first performer
+    const initialPerformer = performerManager.initialize();
 
     // Load persisted state
     const saved = persistenceService.loadState();
@@ -405,7 +257,7 @@
 
   // Sync speed to all performer states
   $effect(() => {
-    performerStates.forEach((p) => (p.speed = speed));
+    performerManager?.setSpeed(speed);
   });
 
   // Reset pointer lock state when exiting locomotion mode
@@ -438,8 +290,7 @@
   });
 
   onDestroy(() => {
-    performerStates.forEach((p) => p.destroy());
-    syncState?.destroy();
+    performerManager?.destroy();
   });
 </script>
 
@@ -595,6 +446,21 @@
         {/snippet}
       </SceneOverlayControls>
 
+      <!-- Empty State Overlay (shown when no sequence loaded) -->
+      {#if !activeState?.hasSequence}
+        <div class="empty-state-overlay">
+          <div class="empty-state-content">
+            <i class="fas fa-film" aria-hidden="true"></i>
+            <h3>No Sequence Loaded</h3>
+            <p>Load a sequence to see it performed in 3D</p>
+            <button class="load-sequence-btn" onclick={() => (browserOpen = true)}>
+              <i class="fas fa-folder-open" aria-hidden="true"></i>
+              Browse Sequences
+            </button>
+          </div>
+        </div>
+      {/if}
+
       <!-- Locomotion Hint (shown when in locomotion mode but pointer not locked) -->
       {#if locomotionMode && !isPointerLocked}
         <div class="locomotion-hint">
@@ -615,13 +481,13 @@
     <aside class="side-panel-wrapper" class:collapsed={!panelOpen}>
       <!-- Performer Manager -->
       <div class="mode-switcher-container">
-        <PerformerManager
+        <PerformerManagerUI
           {performerStates}
           {activePerformerIndex}
-          maxPerformers={MAX_PERFORMERS}
-          onSelect={(i) => (activePerformerIndex = i)}
-          onAdd={addPerformer}
-          onRemove={removePerformer}
+          maxPerformers={performerManager?.maxPerformers ?? 4}
+          onSelect={(i) => performerManager?.selectPerformer(i)}
+          onAdd={() => performerManager?.addPerformer()}
+          onRemove={() => performerManager?.removePerformer()}
         />
       </div>
 
@@ -637,8 +503,6 @@
         hasSequence={activeState?.hasSequence ?? false}
         currentBeatIndex={activeState?.currentBeatIndex ?? 0}
         totalBeats={activeState?.totalBeats ?? 0}
-        blueConfig={activeState?.showBlue ? activeState.activeBlueConfig : null}
-        redConfig={activeState?.showRed ? activeState.activeRedConfig : null}
         {gridMode}
         {visiblePlanes}
         {showFigure}
@@ -652,70 +516,13 @@
     </aside>
   </div>
 
-  <!-- Sequence/Duet Browser -->
-  {#if browserOpen}
-    <div class="browser-overlay">
-      <div class="browser-panel">
-        <header class="browser-header">
-          <h2>Load Sequence</h2>
-          <button
-            class="close-browser-btn"
-            onclick={() => (browserOpen = false)}
-            aria-label="Close browser"
-          >
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </header>
-
-        {#if browserViewMode === "sequences"}
-          <SequenceBrowserPanel
-            mode="primary"
-            show={true}
-            onSelect={handleSequenceSelect}
-            onClose={() => (browserOpen = false)}
-          />
-        {:else}
-          <DuetBrowserPanel
-            viewMode={browserViewMode}
-            onSelectDuet={handleDuetSelect}
-            onCreateDuet={() => (duetCreatorOpen = true)}
-            onViewModeChange={(mode) => (browserViewMode = mode)}
-          />
-        {/if}
-
-        <!-- View Mode Toggle at bottom -->
-        <div class="browser-footer">
-          <button
-            class="view-mode-btn"
-            class:active={browserViewMode === "sequences"}
-            onclick={() => (browserViewMode = "sequences")}
-          >
-            <i class="fas fa-film" aria-hidden="true"></i>
-            Solo Sequences
-          </button>
-          <button
-            class="view-mode-btn"
-            class:active={browserViewMode === "duets"}
-            onclick={() => (browserViewMode = "duets")}
-          >
-            <i class="fas fa-users" aria-hidden="true"></i>
-            Duets
-          </button>
-        </div>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Duet Creator Panel -->
-  {#if duetCreatorOpen}
-    <div class="duet-creator-overlay">
-      <div class="duet-creator-panel">
-        <DuetCreatorPanel
-          onCreated={handleDuetCreated}
-          onCancel={() => (duetCreatorOpen = false)}
-        />
-      </div>
-    </div>
+  <!-- Sequence/Duet Browser (extracted to DuetOrchestrator) -->
+  {#if performerManager}
+    <DuetOrchestrator
+      open={browserOpen}
+      {performerManager}
+      onClose={() => (browserOpen = false)}
+    />
   {/if}
 
   <!-- Keyboard Shortcuts -->
@@ -849,6 +656,12 @@
     background: #2563eb;
   }
 
+  .toggle-panel-btn:focus-visible,
+  .locomotion-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
   /* Locomotion Hint Overlay */
   .locomotion-hint {
     position: absolute;
@@ -910,6 +723,12 @@
     }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .locomotion-hint {
+      animation: none;
+    }
+  }
+
   @media (max-width: 1024px) {
     .toggle-panel-btn {
       display: flex;
@@ -931,106 +750,77 @@
     }
   }
 
-  /* Browser Overlay */
-  .browser-overlay,
-  .duet-creator-overlay {
-    position: fixed;
+  /* Empty State Overlay */
+  .empty-state-overlay {
+    position: absolute;
     inset: 0;
-    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    pointer-events: none;
+    z-index: 10;
   }
 
-  .browser-panel {
+  .empty-state-content {
     display: flex;
     flex-direction: column;
-    width: min(90vw, 600px);
-    max-height: 80vh;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .browser-header {
-    display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    gap: 1rem;
+    padding: 2rem 3rem;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 16px;
+    text-align: center;
+    pointer-events: auto;
+    backdrop-filter: blur(8px);
   }
 
-  .browser-header h2 {
+  .empty-state-content i {
+    font-size: 3rem;
+    color: var(--theme-accent, #8b5cf6);
+    opacity: 0.8;
+  }
+
+  .empty-state-content h3 {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--theme-text, #ffffff);
   }
 
-  .close-browser-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .close-browser-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .browser-footer {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .view-mode-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.625rem 0.75rem;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  .empty-state-content p {
+    margin: 0;
     font-size: var(--font-size-sm, 14px);
-    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .load-sequence-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--theme-accent, #8b5cf6);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
-  .view-mode-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
+  .load-sequence-btn:hover {
+    background: var(--theme-accent-strong, #7c3aed);
+    transform: translateY(-1px);
   }
 
-  .view-mode-btn.active {
-    background: var(--theme-accent, #64b5f6);
-    border-color: var(--theme-accent, #64b5f6);
-    color: #000;
+  .load-sequence-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
-  .duet-creator-panel {
-    width: min(90vw, 500px);
-    max-height: 90vh;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    overflow: hidden;
+  .load-sequence-btn:active {
+    transform: translateY(0);
   }
+
 </style>
