@@ -50,26 +50,53 @@ const SPECIES_CONFIG: Record<
     hasBioluminescence: false,
     eyeSize: [0.12, 0.16],
     colors: [
+      // Clownfish - vibrant orange with white bands
       {
-        bodyTop: "#ff7b54",
-        bodyBottom: "#ffe5b4",
-        accent: "#fff44f",
-        eye: "#2c1810",
-        finTint: "rgba(255, 165, 0, 0.6)",
+        bodyTop: "#ff6600",
+        bodyBottom: "#ffaa00",
+        accent: "#ffffff",
+        eye: "#1a1a1a",
+        finTint: "rgba(255, 150, 0, 0.7)",
       },
+      // Blue Tang - electric blue with yellow
       {
-        bodyTop: "#4169e1",
-        bodyBottom: "#87ceeb",
-        accent: "#ffd700",
-        eye: "#1a1a2e",
-        finTint: "rgba(65, 105, 225, 0.5)",
+        bodyTop: "#0066ff",
+        bodyBottom: "#00ccff",
+        accent: "#ffff00",
+        eye: "#000033",
+        finTint: "rgba(0, 150, 255, 0.6)",
       },
+      // Angelfish - purple and gold
       {
-        bodyTop: "#9b59b6",
-        bodyBottom: "#d7bde2",
-        accent: "#f1c40f",
-        eye: "#2c1320",
-        finTint: "rgba(155, 89, 182, 0.5)",
+        bodyTop: "#9933ff",
+        bodyBottom: "#cc99ff",
+        accent: "#ffcc00",
+        eye: "#330066",
+        finTint: "rgba(153, 51, 255, 0.6)",
+      },
+      // Parrotfish - hot pink and turquoise
+      {
+        bodyTop: "#ff3399",
+        bodyBottom: "#ff99cc",
+        accent: "#00ffcc",
+        eye: "#330033",
+        finTint: "rgba(255, 51, 153, 0.6)",
+      },
+      // Butterflyfish - bright yellow with black
+      {
+        bodyTop: "#ffdd00",
+        bodyBottom: "#ffff66",
+        accent: "#000000",
+        eye: "#1a1a00",
+        finTint: "rgba(255, 220, 0, 0.7)",
+      },
+      // Mandarin fish - orange and blue psychedelic
+      {
+        bodyTop: "#ff5500",
+        bodyBottom: "#0088ff",
+        accent: "#00ff88",
+        eye: "#1a0033",
+        finTint: "rgba(255, 100, 0, 0.6)",
       },
     ],
   },

@@ -1,10 +1,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { IDiscoverThumbnailProvider } from "../../gallery/display/services/contracts/IDiscoverThumbnailProvider";
+import type { IDiscoverThumbnailProvider } from "../../sequences/display/services/contracts/IDiscoverThumbnailProvider";
 import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
-import type { IDiscoverLoader } from "../../gallery/display/services/contracts/IDiscoverLoader";
+import type { IDiscoverLoader } from "../../sequences/display/services/contracts/IDiscoverLoader";
 import type { DeleteConfirmationData } from "../services/contracts/IDiscoverEventHandler";
 import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-import { galleryPanelManager } from "../state/gallery-panel-state.svelte";
+import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
 import type { createExploreState } from "../state/discover-state-factory.svelte";
 import { openSpotlightViewer } from "../../../../shared/application/state/ui/ui-state.svelte";
 import { tryResolve } from "$lib/shared/inversify/di";
@@ -74,11 +74,11 @@ export function useDiscoverHandlers({
     sequence: SequenceData,
     variations?: SequenceData[]
   ) {
-    galleryPanelManager.openDetail(sequence, variations);
+    sequencePanelManager.openDetail(sequence, variations);
   }
 
   function handleCloseDetailPanel() {
-    galleryPanelManager.close();
+    sequencePanelManager.close();
   }
 
   async function handleEditSequence(sequence: SequenceData) {

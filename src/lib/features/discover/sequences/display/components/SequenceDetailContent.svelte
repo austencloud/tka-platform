@@ -18,7 +18,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import { onMount } from "svelte";
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
-  import { galleryPanelManager } from "../../../shared/state/gallery-panel-state.svelte";
+  import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
   import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import VideosPanel from "$lib/shared/video-collaboration/components/VideosPanel.svelte";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
@@ -141,7 +141,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     hapticService?.trigger("selection");
 
     // Close the detail panel
-    galleryPanelManager.close();
+    sequencePanelManager.close();
 
     // Navigate to creator profile using unified navigation state
     discoverNavigationState.viewCreatorProfile(
@@ -165,10 +165,10 @@ Used by both desktop side panel and mobile slide-up overlay.
   <header class="detail-header">
     <span class="header-title">Sequence Details</span>
     <div class="header-buttons">
-      {#if galleryPanelManager.isDetailExpanded}
+      {#if sequencePanelManager.isDetailExpanded}
         <button
           class="collapse-button"
-          onclick={() => galleryPanelManager.setDetailExpanded(false)}
+          onclick={() => sequencePanelManager.setDetailExpanded(false)}
           aria-label="Collapse panel"
         >
           <svg

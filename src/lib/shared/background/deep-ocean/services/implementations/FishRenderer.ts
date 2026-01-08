@@ -988,7 +988,7 @@ export class FishRenderer implements IFishRenderer {
   }
 
   /**
-   * Draw bioluminescence glow around spine body
+   * Draw bioluminescence glow around spine body - DRAMATIC A+ glow
    */
   private drawSpineBioluminescenceGlow(
     ctx: CanvasRenderingContext2D,
@@ -997,54 +997,127 @@ export class FishRenderer implements IFishRenderer {
   ): void {
     const centerX = (outline.headPoint.x + outline.tailPoint.x) / 2;
     const centerY = (outline.headPoint.y + outline.tailPoint.y) / 2;
-    const glowRadius = Math.max(fish.bodyLength, fish.bodyHeight) * 0.8;
 
-    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowRadius);
+    // Pulsing glow intensity
+    const pulseIntensity = fish.glowIntensity * (0.7 + Math.sin(fish.glowPhase * 2) * 0.3);
+
+    // Layer 1: Large outer glow
+    const outerRadius = Math.max(fish.bodyLength, fish.bodyHeight) * 1.2;
     const rgb = this.hexToRgb(fish.colors.accent);
 
-    gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fish.glowIntensity * 0.3})`);
-    gradient.addColorStop(0.5, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fish.glowIntensity * 0.1})`);
-    gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+    const outerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
+    outerGradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulseIntensity * 0.5})`);
+    outerGradient.addColorStop(0.3, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulseIntensity * 0.25})`);
+    outerGradient.addColorStop(0.6, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulseIntensity * 0.1})`);
+    outerGradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
 
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = outerGradient;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, glowRadius, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
     ctx.fill();
+
+    // Layer 2: Inner intense glow
+    const innerRadius = Math.max(fish.bodyLength, fish.bodyHeight) * 0.5;
+    const innerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, innerRadius);
+    innerGradient.addColorStop(0, `rgba(255, 255, 255, ${pulseIntensity * 0.4})`);
+    innerGradient.addColorStop(0.3, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulseIntensity * 0.6})`);
+    innerGradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+
+    ctx.fillStyle = innerGradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Layer 3: Edge glow along body outline
+    ctx.save();
+    ctx.shadowColor = fish.colors.accent;
+    ctx.shadowBlur = 15 * pulseIntensity;
+    ctx.strokeStyle = this.adjustAlpha(fish.colors.accent, pulseIntensity * 0.5);
+    ctx.lineWidth = 3;
+    this.bodyOutlineCalculator.drawBodyPath(ctx, outline);
+    ctx.stroke();
+    ctx.restore();
   }
 
   /**
-   * Draw bioluminescence spots along spine
+   * Draw bioluminescence spots along spine - DRAMATIC A+ spots
    */
   private drawSpineBioluminescenceSpots(
     ctx: CanvasRenderingContext2D,
     fish: FishMarineLife,
     spine: SpineChain
   ): void {
-    const spotCount = 5;
-    const colors = ["#00fff7", "#7b68ee", "#00ced1"];
+    // More spots, more variety
+    const spotCount = 8;
+    const colors = ["#00fff7", "#7b68ee", "#00ced1", "#ff00ff", "#00ff88"];
+
+    ctx.save();
 
     for (let i = 0; i < spotCount; i++) {
-      const t = (i + 1) / (spotCount + 1);
+      const t = (i + 0.5) / (spotCount);
       const pos = spine.getPositionAt(t);
 
-      const spotPhase = fish.glowPhase + i * 0.5;
-      const spotIntensity = fish.glowIntensity * (0.5 + Math.sin(spotPhase) * 0.5);
-      if (spotIntensity < 0.1) continue;
+      // Offset spots from centerline
+      const perpAngle = pos.angle - Math.PI / 2;
+      const offsetDir = (i % 2 === 0) ? 1 : -1;
+      const offsetAmount = pos.width * 0.3 * offsetDir;
+      const spotX = pos.x + Math.cos(perpAngle) * offsetAmount;
+      const spotY = pos.y + Math.sin(perpAngle) * offsetAmount;
 
-      const spotSize = fish.bodyHeight * (0.02 + Math.random() * 0.03);
+      // Cascading pulse effect
+      const spotPhase = fish.glowPhase + i * 0.4;
+      const spotIntensity = fish.glowIntensity * (0.6 + Math.sin(spotPhase) * 0.4);
+
+      const spotSize = fish.bodyHeight * (0.04 + Math.sin(spotPhase * 0.5) * 0.02);
       const color = colors[i % colors.length]!;
       const rgb = this.hexToRgb(color);
 
-      const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, spotSize);
-      gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${spotIntensity})`);
-      gradient.addColorStop(0.5, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${spotIntensity * 0.5})`);
-      gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+      // Outer glow
+      const outerGradient = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, spotSize * 2);
+      outerGradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${spotIntensity})`);
+      outerGradient.addColorStop(0.4, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${spotIntensity * 0.5})`);
+      outerGradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
 
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = outerGradient;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, spotSize, 0, Math.PI * 2);
+      ctx.arc(spotX, spotY, spotSize * 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bright center
+      const centerGradient = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, spotSize * 0.5);
+      centerGradient.addColorStop(0, `rgba(255, 255, 255, ${spotIntensity})`);
+      centerGradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${spotIntensity * 0.8})`);
+
+      ctx.fillStyle = centerGradient;
+      ctx.beginPath();
+      ctx.arc(spotX, spotY, spotSize * 0.5, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Add glowing "antenna" lure for anglerfish effect
+    const headPos = spine.getPositionAt(0.05);
+    const lurePhase = fish.glowPhase * 1.5;
+    const lureIntensity = fish.glowIntensity * (0.5 + Math.sin(lurePhase) * 0.5);
+
+    if (lureIntensity > 0.3) {
+      const lureX = headPos.x + Math.cos(headPos.angle - Math.PI / 4) * fish.bodyHeight * 0.3;
+      const lureY = headPos.y + Math.sin(headPos.angle - Math.PI / 4) * fish.bodyHeight * 0.3;
+      const lureSize = fish.bodyHeight * 0.08;
+
+      // Lure glow
+      const lureGradient = ctx.createRadialGradient(lureX, lureY, 0, lureX, lureY, lureSize * 3);
+      lureGradient.addColorStop(0, `rgba(255, 255, 255, ${lureIntensity})`);
+      lureGradient.addColorStop(0.2, `rgba(0, 255, 255, ${lureIntensity * 0.8})`);
+      lureGradient.addColorStop(0.5, `rgba(0, 200, 255, ${lureIntensity * 0.4})`);
+      lureGradient.addColorStop(1, "rgba(0, 150, 255, 0)");
+
+      ctx.fillStyle = lureGradient;
+      ctx.beginPath();
+      ctx.arc(lureX, lureY, lureSize * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   // ===========================================================================

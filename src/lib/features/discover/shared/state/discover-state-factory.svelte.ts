@@ -9,12 +9,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { resolve, tryResolve } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
 import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
-import type { IDiscoverFilter } from "../../gallery/display/services/contracts/IDiscoverFilter";
-import type { IDiscoverLoader } from "../../gallery/display/services/contracts/IDiscoverLoader";
-import type { IDiscoverSorter } from "../../gallery/display/services/contracts/IDiscoverSorter";
-import type { ExploreNavigationConfig } from "../../gallery/navigation/domain/models/navigation-models";
-import type { ExploreNavigationItem } from "../../gallery/navigation/domain/models/navigation-models";
-import type { INavigator } from "../../gallery/navigation/services/contracts/INavigator";
+import type { IDiscoverFilter } from "../../sequences/display/services/contracts/IDiscoverFilter";
+import type { IDiscoverLoader } from "../../sequences/display/services/contracts/IDiscoverLoader";
+import type { IDiscoverSorter } from "../../sequences/display/services/contracts/IDiscoverSorter";
+import type { ExploreNavigationConfig } from "../../sequences/navigation/domain/models/navigation-models";
+import type { ExploreNavigationItem } from "../../sequences/navigation/domain/models/navigation-models";
+import type { INavigator } from "../../sequences/navigation/services/contracts/INavigator";
 import { ExploreSortMethod } from "../domain/enums/discover-enums";
 import type {
   SectionConfig,

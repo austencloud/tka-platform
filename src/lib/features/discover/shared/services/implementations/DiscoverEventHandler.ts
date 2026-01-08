@@ -14,9 +14,9 @@ import type {
   DeleteConfirmationData,
 } from "../contracts/IDiscoverEventHandler";
 import { openSpotlightViewer } from "../../../../../shared/application/state/ui/ui-state.svelte";
-import type { IDiscoverThumbnailProvider } from "../../../gallery/display/services/contracts/IDiscoverThumbnailProvider";
-import type { IDiscoverLoader } from "../../../gallery/display/services/contracts/IDiscoverLoader";
-import { galleryPanelManager } from "../../state/gallery-panel-state.svelte";
+import type { IDiscoverThumbnailProvider } from "../../../sequences/display/services/contracts/IDiscoverThumbnailProvider";
+import type { IDiscoverLoader } from "../../../sequences/display/services/contracts/IDiscoverLoader";
+import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
 import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 @injectable()

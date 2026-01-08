@@ -133,17 +133,17 @@
 <!-- View Presets Sheet (Mobile) -->
 {#if isMobile}
   <Drawer
-    isOpen={galleryPanelManager.isViewPresetsOpen}
+    isOpen={sequencePanelManager.isViewPresetsOpen}
     placement="bottom"
     onOpenChange={(open) => {
-      if (!open) galleryPanelManager.close();
+      if (!open) sequencePanelManager.close();
     }}
   >
     <div class="drawer-header">
       <h2>View Presets</h2>
       <button
         class="drawer-close-btn"
-        onclick={() => galleryPanelManager.close()}
+        onclick={() => sequencePanelManager.close()}
         aria-label="Close"
       >
         <i class="fas fa-times" aria-hidden="true"></i>
@@ -153,7 +153,7 @@
       currentFilter={currentFilter.type as FilterPreset}
       onFilterChange={(preset) => {
         onFilterChange(preset);
-        galleryPanelManager.close();
+        sequencePanelManager.close();
       }}
     />
   </Drawer>
@@ -162,17 +162,17 @@
 <!-- Sort & Jump Sheet (Mobile) -->
 {#if isMobile}
   <Drawer
-    isOpen={galleryPanelManager.isSortJumpOpen}
+    isOpen={sequencePanelManager.isSortJumpOpen}
     placement="bottom"
     onOpenChange={(open) => {
-      if (!open) galleryPanelManager.close();
+      if (!open) sequencePanelManager.close();
     }}
   >
     <div class="drawer-header">
       <h2>Sort & Navigate</h2>
       <button
         class="drawer-close-btn"
-        onclick={() => galleryPanelManager.close()}
+        onclick={() => sequencePanelManager.close()}
         aria-label="Close"
       >
         <i class="fas fa-times" aria-hidden="true"></i>
@@ -183,7 +183,7 @@
       {availableSections}
       onSortMethodChange={(method) => {
         onSortMethodChange(method);
-        galleryPanelManager.close();
+        sequencePanelManager.close();
       }}
       {onSectionClick}
     />
@@ -193,7 +193,7 @@
 <!-- Filters Panel (Both Mobile & Desktop) - Using BentoFilterPanel -->
 <div style:--drawer-width={drawerWidth}>
   <Drawer
-    isOpen={galleryPanelManager.isFiltersOpen}
+    isOpen={sequencePanelManager.isFiltersOpen}
     placement={isMobile ? "bottom" : "right"}
     class="filters-drawer"
     showHandle={false}
@@ -203,8 +203,8 @@
     setInertOnSiblings={isMobile}
     onOpenChange={(open) => {
       // Only close if drawer is actually closing AND we're not in a panel transition
-      if (!open && galleryPanelManager.isFiltersOpen) {
-        galleryPanelManager.close();
+      if (!open && sequencePanelManager.isFiltersOpen) {
+        sequencePanelManager.close();
       }
     }}
   >
@@ -212,7 +212,7 @@
       <h2>Browse & Filter</h2>
       <button
         class="drawer-close-btn"
-        onclick={() => galleryPanelManager.close()}
+        onclick={() => sequencePanelManager.close()}
         aria-label="Close"
       >
         <i class="fas fa-times" aria-hidden="true"></i>
@@ -299,11 +299,11 @@
 <!-- Detail Panel (Unified for Both Mobile & Desktop) -->
 <!-- When expanded, use wider width to show horizontal animation controls -->
 <div
-  style:--drawer-width={galleryPanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
+  style:--drawer-width={sequencePanelManager.isDetailExpanded ? "min(900px, 85vw)" : drawerWidth}
   class:nav-visible={isMobile && isNavVisible}
 >
   <Drawer
-    isOpen={galleryPanelManager.isDetailOpen}
+    isOpen={sequencePanelManager.isDetailOpen}
     placement={isMobile ? "bottom" : "right"}
     class="detail-drawer {isMobile && isNavVisible ? 'with-nav-offset' : ''}"
     showHandle={false}
@@ -317,23 +317,23 @@
     setInertOnSiblings={isMobile && !isNavVisible}
     onOpenChange={(open) => {
       // Only close if drawer is actually closing AND we're not in a panel transition
-      if (!open && galleryPanelManager.isDetailOpen) {
+      if (!open && sequencePanelManager.isDetailOpen) {
         handleCloseInvitePanel();
         onCloseDetailPanel();
       }
     }}
   >
-    {#if galleryPanelManager.activeSequence}
+    {#if sequencePanelManager.activeSequence}
       <div class="detail-content-wrapper">
         <SequenceDetailContent
-          sequence={galleryPanelManager.activeSequence}
-          variations={galleryPanelManager.activeVariations}
-          variationIndex={galleryPanelManager.variationIndex}
+          sequence={sequencePanelManager.activeSequence}
+          variations={sequencePanelManager.activeVariations}
+          variationIndex={sequencePanelManager.variationIndex}
           onClose={onCloseDetailPanel}
           onAction={onDetailPanelAction}
           onInviteCollaborators={handleInviteCollaborators}
           onVariationSelect={(index, seq) => {
-            galleryPanelManager.setVariationIndex(index);
+            sequencePanelManager.setVariationIndex(index);
           }}
         />
       </div>

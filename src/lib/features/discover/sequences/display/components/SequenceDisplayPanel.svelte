@@ -8,7 +8,7 @@
   import type { IDiscoverThumbnailProvider } from "../services/contracts/IDiscoverThumbnailProvider";
   import DiscoverGrid from "./DiscoverGrid.svelte";
   import DiscoverThumbnailSkeleton from "./DiscoverThumbnailSkeleton.svelte";
-  import GalleryTopBarControls from "../../../shared/components/GalleryTopBarControls.svelte";
+  import SequenceTopBarControls from "../../../shared/components/SequenceTopBarControls.svelte";
 
   let hapticService: IHapticFeedback | null = null;
 
@@ -71,7 +71,7 @@
 <div class="sequence-display-panel">
   <!-- Gallery controls (moved from TopBar) -->
   <div class="gallery-controls-container">
-    <GalleryTopBarControls />
+    <SequenceTopBarControls />
   </div>
 
   <!-- Content area -->
