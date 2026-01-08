@@ -22,6 +22,7 @@
   import { trainChallengesState } from "../../state/train-challenges-state.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import ChallengeCard from "./ChallengeCard.svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   // Services
   const challengeService = resolve<ITrainChallengeManager>(
@@ -166,7 +167,7 @@
 <div class="challenges-panel">
   <!-- Compact Single-Row Header -->
   <header class="header">
-    <h1>Challenges</h1>
+    <h1>{m.train_challenges_title()}</h1>
 
     <!-- Quick Filter Chips - Inline -->
     {#if !loading}
@@ -176,21 +177,21 @@
           class:active={filter === "all"}
           onclick={() => handleFilterChange("all")}
         >
-          All
+          {m.train_filter_all()}
         </button>
         <button
           class="chip"
           class:active={filter === "available"}
           onclick={() => handleFilterChange("available")}
         >
-          Available
+          {m.train_filter_available()}
         </button>
         <button
           class="chip"
           class:active={filter === "completed"}
           onclick={() => handleFilterChange("completed")}
         >
-          Done
+          {m.train_filter_done()}
         </button>
       </div>
 
@@ -218,26 +219,26 @@
         aria-busy="true"
       >
         <div class="spinner" aria-hidden="true"></div>
-        <p>Loading challenges...</p>
+        <p>{m.train_loading_challenges()}</p>
       </div>
     {:else if filteredChallenges.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
           <i class="fas fa-trophy" aria-hidden="true"></i>
         </div>
-        <h2>No Challenges Found</h2>
+        <h2>{m.train_no_challenges()}</h2>
         <p>
           {#if filter === "completed"}
-            You haven't completed any challenges yet.
+            {m.train_no_completed_yet()}
           {:else if filter === "available"}
-            All challenges completed! Check back soon.
+            {m.train_all_completed()}
           {:else}
-            No challenges available right now.
+            {m.train_none_available()}
           {/if}
         </p>
         {#if activeFilterCount > 0}
           <button class="clear-filters-btn" onclick={clearAllFilters}>
-            Clear Filters
+            {m.train_clear_filters()}
           </button>
         {/if}
       </div>
@@ -265,11 +266,11 @@
 >
   <div class="filter-panel">
     <div class="filter-panel-header">
-      <h2>Filters & Sort</h2>
+      <h2>{m.train_filters_sort()}</h2>
       <button
         class="close-btn"
         onclick={closeFilterPanel}
-        aria-label="Close filters"
+        aria-label={m.action_close()}
       >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
@@ -278,7 +279,7 @@
     <div class="filter-panel-content">
       <!-- Sort Options -->
       <section class="filter-section">
-        <h3>Sort By</h3>
+        <h3>{m.train_sort_by()}</h3>
         <div class="option-grid">
           <button
             class="option-btn"
@@ -286,7 +287,7 @@
             onclick={() => handleSortChange("difficulty")}
           >
             <i class="fas fa-layer-group" aria-hidden="true"></i>
-            <span>Difficulty</span>
+            <span>{m.train_sort_difficulty()}</span>
           </button>
           <button
             class="option-btn"
@@ -294,7 +295,7 @@
             onclick={() => handleSortChange("xp")}
           >
             <i class="fas fa-star" aria-hidden="true"></i>
-            <span>XP Reward</span>
+            <span>{m.train_sort_xp()}</span>
           </button>
           <button
             class="option-btn"
@@ -302,58 +303,58 @@
             onclick={() => handleSortChange("newest")}
           >
             <i class="fas fa-clock" aria-hidden="true"></i>
-            <span>Newest</span>
+            <span>{m.train_sort_newest()}</span>
           </button>
         </div>
       </section>
 
       <!-- Difficulty Filter -->
       <section class="filter-section">
-        <h3>Difficulty</h3>
+        <h3>{m.train_sort_difficulty()}</h3>
         <div class="option-grid">
           <button
             class="option-btn"
             class:active={difficultyFilter === null}
             onclick={() => handleDifficultyChange(null)}
           >
-            <span>All</span>
+            <span>{m.train_difficulty_all()}</span>
           </button>
           <button
             class="option-btn difficulty-easy"
             class:active={difficultyFilter === "easy"}
             onclick={() => handleDifficultyChange("easy")}
           >
-            <span>Easy</span>
+            <span>{m.train_difficulty_easy()}</span>
           </button>
           <button
             class="option-btn difficulty-medium"
             class:active={difficultyFilter === "medium"}
             onclick={() => handleDifficultyChange("medium")}
           >
-            <span>Medium</span>
+            <span>{m.train_difficulty_medium()}</span>
           </button>
           <button
             class="option-btn difficulty-hard"
             class:active={difficultyFilter === "hard"}
             onclick={() => handleDifficultyChange("hard")}
           >
-            <span>Hard</span>
+            <span>{m.train_difficulty_hard()}</span>
           </button>
           <button
             class="option-btn difficulty-expert"
             class:active={difficultyFilter === "expert"}
             onclick={() => handleDifficultyChange("expert")}
           >
-            <span>Expert</span>
+            <span>{m.train_difficulty_expert()}</span>
           </button>
         </div>
       </section>
     </div>
 
     <div class="filter-panel-footer">
-      <button class="reset-btn" onclick={clearAllFilters}> Reset All </button>
+      <button class="reset-btn" onclick={clearAllFilters}>{m.train_reset_all()}</button>
       <button class="apply-btn" onclick={closeFilterPanel}>
-        Show {filteredChallenges.length} Results
+        {m.train_show_results({ count: filteredChallenges.length.toString() })}
       </button>
     </div>
   </div>

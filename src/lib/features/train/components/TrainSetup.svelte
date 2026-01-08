@@ -10,6 +10,7 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import { onMount } from "svelte";
+  import * as m from "$lib/paraglide/messages.js";
 
   interface Props {
     onSequenceSelected: (sequence: SequenceData) => void;
@@ -76,8 +77,8 @@
       <div class="icon-container">
         <i class="fas fa-dumbbell" aria-hidden="true"></i>
       </div>
-      <h1>Train Mode</h1>
-      <p>Practice sequences with real-time hand tracking feedback</p>
+      <h1>{m.train_mode_title()}</h1>
+      <p>{m.train_mode_description()}</p>
     </header>
 
     <!-- Main Content -->
@@ -85,22 +86,22 @@
       <div class="feature-list">
         <div class="feature">
           <i class="fas fa-video" aria-hidden="true"></i>
-          <span>Live camera tracking</span>
+          <span>{m.train_feature_camera()}</span>
         </div>
         <div class="feature">
           <i class="fas fa-hand-paper" aria-hidden="true"></i>
-          <span>Hand position detection</span>
+          <span>{m.train_feature_hand()}</span>
         </div>
         <div class="feature">
           <i class="fas fa-chart-line" aria-hidden="true"></i>
-          <span>Performance scoring</span>
+          <span>{m.train_feature_scoring()}</span>
         </div>
       </div>
 
       <!-- Call to Action -->
       <button class="select-sequence-button" onclick={openBrowser}>
         <i class="fas fa-th-list" aria-hidden="true"></i>
-        <span>Select Sequence</span>
+        <span>{m.train_select_sequence()}</span>
       </button>
     </div>
   </div>
@@ -109,7 +110,7 @@
   {#if isLoadingFullSequence}
     <div class="loading-overlay">
       <div class="loading-spinner"></div>
-      <p>Loading sequence data...</p>
+      <p>{m.train_loading_sequence()}</p>
     </div>
   {/if}
 
