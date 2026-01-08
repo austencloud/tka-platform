@@ -248,6 +248,7 @@
     {multiplayerState}
     onRotationChange={handleRotationChange}
     onLocomotionChange={handleLocomotionChange}
+    museumModelPath="/models/art-gallery.glb"
   />
   <GalleryHUD
     {galleryState}

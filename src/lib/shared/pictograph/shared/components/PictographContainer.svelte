@@ -380,6 +380,8 @@ with pre-prepared data for better performance.
             showVTG={effectiveShowVTG}
             showElemental={effectiveShowElemental}
             showPositions={effectiveShowPositions}
+            handPointVisibility={effectiveHandPointVisibility}
+            {activeLocations}
             {beatNumber}
             {showBeatNumber}
             {previewMode}
