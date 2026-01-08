@@ -50,6 +50,7 @@ interface VisibilitySettings {
 
   // Grid elements
   nonRadialPoints: boolean;
+  handPointVisibility: "all" | "active"; // Show all hand points or only where props are
 }
 
 export class VisibilityStateManager {
@@ -87,6 +88,7 @@ export class VisibilityStateManager {
 
       // Grid defaults
       nonRadialPoints: false,
+      handPointVisibility: "all", // Default to showing all hand points
 
       // Override with any provided settings
       ...this.convertAppSettingsToVisibility(initialSettings),
@@ -154,6 +156,8 @@ export class VisibilityStateManager {
           this.settings.reversalIndicators = v.reversalIndicators;
         if (v.nonRadialPoints !== undefined)
           this.settings.nonRadialPoints = v.nonRadialPoints;
+        if (v.handPointVisibility !== undefined)
+          this.settings.handPointVisibility = v.handPointVisibility;
 
         debug.log(
           "loadPersistedSettings: Applied settings, result:",
@@ -194,6 +198,7 @@ export class VisibilityStateManager {
       positionsGlyph: this.settings.positionsGlyph,
       reversalIndicators: this.settings.reversalIndicators,
       nonRadialPoints: this.settings.nonRadialPoints,
+      handPointVisibility: this.settings.handPointVisibility,
     };
 
     debug.log("Persisting visibility settings", visibilitySettings);
@@ -430,6 +435,28 @@ export class VisibilityStateManager {
   setNonRadialVisibility(visible: boolean): void {
     this.settings.nonRadialPoints = visible;
     this.notifyObservers(["non_radial"]);
+    // Persist to storage (async, non-blocking)
+    void this.persistSettings();
+  }
+
+  // ============================================================================
+  // HAND POINT VISIBILITY
+  // ============================================================================
+
+  /**
+   * Get hand point visibility mode
+   * "all" = show all hand points, "active" = show only where props are
+   */
+  getHandPointVisibility(): "all" | "active" {
+    return this.settings.handPointVisibility;
+  }
+
+  /**
+   * Set hand point visibility mode
+   */
+  setHandPointVisibility(mode: "all" | "active"): void {
+    this.settings.handPointVisibility = mode;
+    this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)
     void this.persistSettings();
   }

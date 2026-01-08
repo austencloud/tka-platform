@@ -15,6 +15,7 @@
     positionsGlyphVisible: boolean;
     reversalIndicatorsVisible: boolean;
     nonRadialVisible: boolean;
+    handPointVisibility: "all" | "active";
     onToggle: (key: string) => void;
     isMobileHidden?: boolean;
   }
@@ -26,6 +27,7 @@
     positionsGlyphVisible,
     reversalIndicatorsVisible,
     nonRadialVisible,
+    handPointVisibility,
     onToggle,
     isMobileHidden = false,
   }: Props = $props();
@@ -96,6 +98,22 @@
           class:active={nonRadialVisible}
           onclick={() => onToggle("nonRadial")}>Non-Radial</button
         >
+      </div>
+    </div>
+
+    <div class="control-group">
+      <span class="group-label">Grid</span>
+      <div class="toggle-grid single">
+        <button
+          class="toggle-btn segmented"
+          class:active={handPointVisibility === "all"}
+          onclick={() => onToggle("handPointsAll")}
+        >All Points</button>
+        <button
+          class="toggle-btn segmented"
+          class:active={handPointVisibility === "active"}
+          onclick={() => onToggle("handPointsActive")}
+        >Active Only</button>
       </div>
     </div>
   </div>
@@ -233,6 +251,29 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: clamp(4px, 1cqi, 8px);
+  }
+
+  .toggle-grid.single {
+    grid-template-columns: 1fr 1fr;
+    background: color-mix(in srgb, var(--theme-card-bg) 50%, transparent);
+    border-radius: clamp(10px, 1.5cqi, 14px);
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .toggle-btn.segmented {
+    background: transparent;
+    border: none;
+    border-radius: clamp(7px, 1.5cqi, 11px);
+  }
+
+  .toggle-btn.segmented.active {
+    background: var(--theme-card-bg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .toggle-btn.segmented:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .toggle-btn {

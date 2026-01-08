@@ -37,7 +37,7 @@ with pre-prepared data for better performance.
   import type { PictographData } from "../domain/models/PictographData";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import type { PropType } from "../../prop/domain/enums/PropType";
-  import { GridMode } from "../../grid/domain/enums/grid-enums";
+  import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
 
   // Props - accepts either BeatData (with beat context) or PictographData
@@ -194,6 +194,31 @@ with pre-prepared data for better performance.
       : visibilityManager.getGlyphVisibility("positionsGlyph");
   });
 
+  // Hand point visibility mode
+  const effectiveHandPointVisibility = $derived.by(() => {
+    visibilityUpdateCount;
+    return visibilityManager.getHandPointVisibility();
+  });
+
+  // Active locations (where props are positioned)
+  // Extract from pictograph motion data - use endLocation for prop positioning
+  const activeLocations = $derived.by(() => {
+    if (!pictographData) return [];
+    const locations: GridLocation[] = [];
+
+    const blueMotion = pictographData.motions?.blue;
+    const redMotion = pictographData.motions?.red;
+
+    if (blueMotion?.endLocation) {
+      locations.push(blueMotion.endLocation as GridLocation);
+    }
+    if (redMotion?.endLocation) {
+      locations.push(redMotion.endLocation as GridLocation);
+    }
+
+    return locations;
+  });
+
   // Prepared data state
   let preparedData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
@@ -322,6 +347,8 @@ with pre-prepared data for better performance.
         showVTG={effectiveShowVTG}
         showElemental={effectiveShowElemental}
         showPositions={effectiveShowPositions}
+        handPointVisibility={effectiveHandPointVisibility}
+        {activeLocations}
         {beatNumber}
         {showBeatNumber}
         {previewMode}

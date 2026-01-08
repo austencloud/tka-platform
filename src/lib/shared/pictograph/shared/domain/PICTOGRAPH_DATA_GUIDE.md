@@ -22,7 +22,7 @@ The pictograph system has complex interdependencies:
 ```typescript
 import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
 import { TYPES } from "$lib/shared/inversify/types";
-import type { IDiscoverLoader } from "$lib/features/discover/gallery/display/services/contracts/IDiscoverLoader";
+import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
 
 // Load the discover module first
 await loadFeatureModule("discover");
@@ -159,7 +159,7 @@ If you need sequence data for tests, previews, or examples:
 - **SequenceData model**: `src/lib/shared/foundation/domain/models/SequenceData.ts`
 - **TurnPatternService**: `src/lib/features/create/shared/services/implementations/TurnPatternService.ts`
 - **OrientationCalculator**: `src/lib/shared/pictograph/prop/services/implementations/OrientationCalculator.ts`
-- **DiscoverLoader**: `src/lib/features/discover/gallery/display/services/implementations/DiscoverLoader.ts`
+- **DiscoverLoader**: `src/lib/features/discover/sequences/display/services/implementations/DiscoverLoader.ts`
 
 ## Example: Creating a B(1,1) Sequence for Animation Preview
 

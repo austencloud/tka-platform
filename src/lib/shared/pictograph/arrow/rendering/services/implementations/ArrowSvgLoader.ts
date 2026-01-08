@@ -77,13 +77,6 @@ function parseStyleBlock(doc: Document, rawSvgText?: string): Map<string, string
     }
   }
 
-  // Debug logging
-  if (classToFill.size > 0) {
-    console.log(`Arrow sprite: parsed ${classToFill.size} CSS fill classes`);
-  } else {
-    console.warn("Arrow sprite: no CSS fill classes found - arrows may appear black");
-  }
-
   return classToFill;
 }
 
@@ -151,8 +144,8 @@ if (import.meta.hot) {
       const coords: number[] = numbers.map(Number);
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       for (let i = 0; i < coords.length - 1; i += 2) {
-        const x = coords[i];
-        const y = coords[i + 1];
+        const x = coords[i] as number;
+        const y = coords[i + 1] as number;
         if (!isNaN(x) && !isNaN(y)) {
           minX = Math.min(minX, x);
           maxX = Math.max(maxX, x);
@@ -261,8 +254,8 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     for (let i = 0; i < coords.length - 1; i += 2) {
-      const x = coords[i];
-      const y = coords[i + 1];
+      const x = coords[i] as number;
+      const y = coords[i + 1] as number;
       if (!isNaN(x) && !isNaN(y)) {
         minX = Math.min(minX, x);
         maxX = Math.max(maxX, x);

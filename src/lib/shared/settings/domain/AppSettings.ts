@@ -79,6 +79,7 @@ export interface AppSettings {
     positionsGlyph?: boolean;
     reversalIndicators?: boolean;
     nonRadialPoints?: boolean;
+    handPointVisibility?: "all" | "active"; // Show all hand points or only where props are
   };
 
   // Community/Privacy Settings

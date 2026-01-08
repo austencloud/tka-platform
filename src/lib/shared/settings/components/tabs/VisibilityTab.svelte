@@ -54,6 +54,7 @@
   let positionsGlyphVisible = $state(false);
   let reversalIndicatorsVisible = $state(true);
   let nonRadialVisible = $state(false);
+  let handPointVisibility = $state<"all" | "active">("all");
 
   // Animation visibility state
   let animGridVisible = $state(true);
@@ -122,6 +123,14 @@
       case "nonRadial":
         nonRadialVisible = !nonRadialVisible;
         visibilityManager.setNonRadialVisibility(nonRadialVisible);
+        break;
+      case "handPointsAll":
+        handPointVisibility = "all";
+        visibilityManager.setHandPointVisibility("all");
+        break;
+      case "handPointsActive":
+        handPointVisibility = "active";
+        visibilityManager.setHandPointVisibility("active");
         break;
     }
   }
@@ -238,6 +247,7 @@
     reversalIndicatorsVisible =
       visibilityManager.getRawGlyphVisibility("reversalIndicators");
     nonRadialVisible = visibilityManager.getNonRadialVisibility();
+    handPointVisibility = visibilityManager.getHandPointVisibility();
 
     // Load initial animation visibility
     animGridVisible = animationVisibilityManager.isGridVisible();
@@ -273,6 +283,7 @@
       reversalIndicatorsVisible =
         visibilityManager.getRawGlyphVisibility("reversalIndicators");
       nonRadialVisible = visibilityManager.getNonRadialVisibility();
+      handPointVisibility = visibilityManager.getHandPointVisibility();
     };
 
     const animationObserver = () => {
@@ -334,6 +345,7 @@
       {positionsGlyphVisible}
       {reversalIndicatorsVisible}
       {nonRadialVisible}
+      {handPointVisibility}
       onToggle={handlePictographToggle}
       isMobileHidden={mobileMode !== "pictograph"}
     />

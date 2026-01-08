@@ -5,7 +5,7 @@ Loads diamond grid and rotates it 45 deg with cumulative rotation.
 Pure reactive approach - grid mode determines styling, rotation provides animation.
 -->
 <script lang="ts">
-  import { GridMode } from "../domain/enums/grid-enums";
+  import { GridMode, GridLocation } from "../domain/enums/grid-enums";
   import { resolve, TYPES } from "../../../inversify/di";
   import type { ISvgPreloader } from "../../shared/services/contracts/ISvgPreloader";
   import { getGridRotationDirection } from "../state/grid-rotation-state.svelte";
@@ -19,6 +19,9 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     onToggleNonRadial = undefined,
     // Dark Mode override for export (when set, applies inline colors)
     darkMode = undefined,
+    // Hand point visibility control
+    handPointVisibility = "all",
+    activeLocations = undefined,
   } = $props<{
     /** Grid mode - derived from motion data */
     gridMode?: GridMode;
@@ -34,7 +37,25 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     onToggleNonRadial?: () => void;
     /** Dark Mode override for export. When set, applies inline colors. */
     darkMode?: boolean;
+    /** Hand point visibility mode: "all" shows all, "active" shows only where props are */
+    handPointVisibility?: "all" | "active";
+    /** Locations where props are positioned (used when handPointVisibility="active") */
+    activeLocations?: GridLocation[];
   }>();
+
+  // Map hand point IDs to their grid locations
+  const HAND_POINT_LOCATIONS: Record<string, GridLocation> = {
+    // Diamond grid hand points
+    n_diamond_hand_point: GridLocation.NORTH,
+    e_diamond_hand_point: GridLocation.EAST,
+    s_diamond_hand_point: GridLocation.SOUTH,
+    w_diamond_hand_point: GridLocation.WEST,
+    // Box grid hand points (for skewed mode)
+    ne_box_hand_point: GridLocation.NORTHEAST,
+    se_box_hand_point: GridLocation.SOUTHEAST,
+    sw_box_hand_point: GridLocation.SOUTHWEST,
+    nw_box_hand_point: GridLocation.NORTHWEST,
+  };
 
   // State
   // NOTE: Grid colors are handled by CSS via :global(:root.dark ...) selectors
@@ -93,7 +114,9 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
       gridMode,
       effectiveShowNonRadial,
       previewMode,
-      darkMode
+      darkMode,
+      handPointVisibility,
+      activeLocations
     );
   });
 
@@ -118,15 +141,18 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     mode: GridMode,
     showNonRadial: boolean,
     isPreviewMode: boolean,
-    exportDarkMode?: boolean
+    exportDarkMode?: boolean,
+    handPointMode: "all" | "active" = "all",
+    activeHandLocations?: GridLocation[]
   ): string {
     // SKEWED mode: minimal processing - CSS handles everything
     // The skewed_grid.svg has different structure (both diamond and box points)
     if (mode === GridMode.SKEWED) {
+      let modifiedSvg = svgContent;
+
       // For export, inline colors on skewed grid elements
       if (exportDarkMode !== undefined) {
         const gridColor = exportDarkMode === true ? "#d0d0d0" : "#000000";
-        let modifiedSvg = svgContent;
         // Strip style block for export
         modifiedSvg = modifiedSvg.replace(/<style[\s\S]*?<\/style>/gi, "");
         // Apply color to all points with .diamond-points or .box-points class
@@ -146,9 +172,14 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
             return `${cleaned} fill="${gridColor}"${closing}`;
           }
         );
-        return modifiedSvg;
       }
-      return svgContent;
+
+      // Apply hand point filtering for skewed mode
+      if (handPointMode === "active" && activeHandLocations && activeHandLocations.length > 0) {
+        modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations);
+      }
+
+      return modifiedSvg;
     }
 
     // When darkMode is explicitly set (for export), inline the colors
@@ -318,6 +349,44 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
         (match, opening, closing) => {
           let cleaned = opening.replace(/\s*stroke="[^"]*"/g, "");
           return `${cleaned} stroke="${gridColor}"${closing}`;
+        }
+      );
+    }
+
+    // Hand point visibility filtering
+    // When mode is "active" and we have active locations, hide non-active hand points
+    if (handPointMode === "active" && activeHandLocations && activeHandLocations.length > 0) {
+      modifiedSvg = applyHandPointFiltering(modifiedSvg, activeHandLocations);
+    }
+
+    return modifiedSvg;
+  }
+
+  /**
+   * Filter hand points to only show those at active locations
+   */
+  function applyHandPointFiltering(svgContent: string, activeLocations: GridLocation[]): string {
+    let modifiedSvg = svgContent;
+    const activeSet = new Set(activeLocations);
+
+    // Process each known hand point ID
+    for (const [pointId, location] of Object.entries(HAND_POINT_LOCATIONS)) {
+      const isActive = activeSet.has(location);
+
+      // Match the circle element by ID
+      const circlePattern = new RegExp(
+        `(<circle[^>]*id="${pointId}"[^/>]*)(/>)`,
+        "g"
+      );
+
+      modifiedSvg = modifiedSvg.replace(
+        circlePattern,
+        (match, opening, closing) => {
+          // Remove any existing opacity
+          let cleaned = opening.replace(/\s*opacity="[^"]*"/g, "");
+          // Set opacity based on whether this location is active
+          const opacity = isActive ? "1" : "0";
+          return `${cleaned} opacity="${opacity}"${closing}`;
         }
       );
     }
