@@ -360,6 +360,7 @@ export class ImageComposer implements IImageComposer {
           userName: options.userName || "",
           exportDate: options.exportDate || new Date().toISOString(),
           notes: options.notes || "",
+          birthday: options.birthday, // Original sequence creation date
         },
         {
           margin: options.margin || 10,

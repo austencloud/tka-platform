@@ -1,0 +1,286 @@
+<!--
+  VerticalModeControls.svelte
+
+  Control bar for vertical layout mode with three variants:
+  - minimal: Play button + BPM chips + settings gear
+  - standard: TransportControls + settings gear
+  - full: TransportControls + SettingsTogglePanel
+-->
+<script lang="ts">
+	import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+	import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+	import SettingsTogglePanel from "$lib/features/compose/components/controls/SettingsTogglePanel.svelte";
+	import { galleryPanelManager } from "$lib/features/discover/shared/state/gallery-panel-state.svelte";
+	import type { ControlsLevel } from "../domain/types";
+
+	let {
+		controlsLevel,
+		useContext,
+		isPlaying,
+		bpm,
+		playbackMode,
+		stepSize,
+		onPlaybackToggle,
+		onBpmChange,
+		onPlaybackModeChange,
+		onStepSizeChange,
+		onStepHalfBack,
+		onStepHalfFwd,
+		onStepFullBack,
+		onStepFullFwd,
+	}: {
+		controlsLevel: ControlsLevel;
+		useContext: boolean;
+		isPlaying: boolean;
+		bpm: number;
+		playbackMode: "continuous" | "step";
+		stepSize: 0.5 | 1;
+		onPlaybackToggle: () => void;
+		onBpmChange: (bpm: number) => void;
+		onPlaybackModeChange: (mode: "continuous" | "step") => void;
+		onStepSizeChange: (size: 0.5 | 1) => void;
+		onStepHalfBack: () => void;
+		onStepHalfFwd: () => void;
+		onStepFullBack: () => void;
+		onStepFullFwd: () => void;
+	} = $props();
+</script>
+
+{#if controlsLevel === "full" && useContext}
+	<!-- Full tabbed layout -->
+	<div class="controls-full">
+		<TransportControls
+			{isPlaying}
+			{onPlaybackToggle}
+			onStepHalfBeatBackward={onStepHalfBack}
+			onStepHalfBeatForward={onStepHalfFwd}
+			onStepFullBeatBackward={onStepFullBack}
+			onStepFullBeatForward={onStepFullFwd}
+		/>
+		<SettingsTogglePanel
+			propType={null}
+			bluePropType={null}
+			redPropType={null}
+			{bpm}
+			{playbackMode}
+			stepPlaybackStepSize={stepSize}
+			{isPlaying}
+			{onBpmChange}
+			onPlaybackModeChange={onPlaybackModeChange}
+			onStepPlaybackStepSizeChange={onStepSizeChange}
+			{onPlaybackToggle}
+		/>
+	</div>
+{:else if controlsLevel === "standard"}
+	<!-- Standard controls with step buttons + settings gear -->
+	<div class="controls-standard">
+		<div class="controls-spacer"></div>
+		<TransportControls
+			{isPlaying}
+			{onPlaybackToggle}
+			onStepHalfBeatBackward={onStepHalfBack}
+			onStepHalfBeatForward={onStepHalfFwd}
+			onStepFullBeatBackward={onStepFullBack}
+			onStepFullBeatForward={onStepFullFwd}
+		/>
+		<button
+			class="settings-gear-btn"
+			class:active={galleryPanelManager.isDetailExpanded}
+			onclick={() => galleryPanelManager.toggleDetailExpanded()}
+			aria-label={galleryPanelManager.isDetailExpanded
+				? "Collapse settings"
+				: "Expand settings"}
+			type="button"
+		>
+			<i class="fas fa-sliders" aria-hidden="true"></i>
+		</button>
+	</div>
+{:else}
+	<!-- Minimal controls (play button + BPM + settings gear) -->
+	<div class="controls-simple">
+		<button
+			class="play-btn"
+			onclick={onPlaybackToggle}
+			aria-label={isPlaying ? "Pause" : "Play"}
+		>
+			{#if isPlaying}
+				<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+				</svg>
+			{:else}
+				<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M8 5v14l11-7z" />
+				</svg>
+			{/if}
+		</button>
+		<BpmChips {bpm} variant="compact" {onBpmChange} />
+		<button
+			class="settings-gear-btn"
+			class:active={galleryPanelManager.isDetailExpanded}
+			onclick={() => galleryPanelManager.toggleDetailExpanded()}
+			aria-label={galleryPanelManager.isDetailExpanded
+				? "Collapse settings"
+				: "Expand settings"}
+			type="button"
+		>
+			<i class="fas fa-sliders" aria-hidden="true"></i>
+		</button>
+	</div>
+{/if}
+
+<style>
+	.controls-simple {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		padding: 10px 12px;
+		background: var(--theme-card-bg, rgba(0, 0, 0, 0.3));
+		border: 1px solid var(--theme-stroke);
+		border-radius: 12px;
+		flex-shrink: 0;
+	}
+
+	.controls-standard {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px;
+		background: var(--theme-card-bg, rgba(0, 0, 0, 0.3));
+		border: 1px solid var(--theme-stroke);
+		border-radius: 14px;
+		flex-shrink: 0;
+	}
+
+	/* Invisible spacer to balance the gear button - keeps transport centered */
+	.controls-spacer {
+		width: 48px;
+		height: 48px;
+		flex-shrink: 0;
+		visibility: hidden;
+	}
+
+	.controls-full {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 12px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 14px;
+		flex-shrink: 0;
+		max-height: 200px;
+		overflow-y: auto;
+	}
+
+	.play-btn {
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(
+			135deg,
+			var(--theme-accent, #3b82f6) 0%,
+			color-mix(in srgb, var(--theme-accent, #3b82f6) 80%, black) 100%
+		);
+		border: none;
+		border-radius: 50%;
+		color: white;
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
+	}
+
+	.play-btn svg {
+		width: 22px;
+		height: 22px;
+	}
+
+	.play-btn:hover {
+		transform: scale(1.05);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+	}
+
+	.play-btn:active {
+		transform: scale(0.98);
+	}
+
+	.settings-gear-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 50%;
+		color: var(--theme-text-dim);
+		cursor: pointer;
+		transition: all 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	.settings-gear-btn i {
+		font-size: 18px;
+	}
+
+	.settings-gear-btn:hover {
+		background: var(--theme-card-hover-bg);
+		border-color: var(--theme-stroke-strong);
+		color: var(--theme-text);
+		transform: scale(1.05);
+	}
+
+	.settings-gear-btn:active {
+		transform: scale(0.95);
+	}
+
+	.settings-gear-btn.active {
+		background: var(--theme-accent, #3b82f6);
+		border-color: var(--theme-accent, #3b82f6);
+		color: white;
+	}
+
+	.settings-gear-btn.active:hover {
+		background: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
+		border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
+	}
+
+	/* Widescreen optimizations */
+	@media (min-width: 1200px) {
+		.controls-simple {
+			padding: 8px 10px;
+			gap: 10px;
+		}
+
+		.play-btn {
+			width: 48px;
+			height: 48px;
+			min-width: 48px;
+			min-height: 48px;
+		}
+
+		.play-btn svg {
+			width: 22px;
+			height: 22px;
+		}
+
+		.controls-full {
+			gap: 8px;
+			padding: 10px;
+			max-height: 180px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.play-btn,
+		.settings-gear-btn {
+			transition: none;
+		}
+	}
+</style>

@@ -16,13 +16,14 @@ export interface SequenceExportOptions {
   includeStartPosition: boolean;
   addBeatNumbers: boolean;
   addReversalSymbols: boolean;
-  addUserInfo: boolean; // Computed: true if any footer element is shown
+  /** @deprecated Footer visibility is now derived from individual flags (showCreatorName, showNotes, showBirthday) */
+  addUserInfo?: boolean;
   addWord: boolean;
   combinedGrids: boolean;
   addDifficultyLevel: boolean;
   customName?: string; // Optional custom name for header (overrides word when provided)
 
-  // Granular footer controls (if undefined, use addUserInfo as fallback)
+  // Granular footer controls - footer renders if any of these are true
   showCreatorName?: boolean; // Bottom-left: creator name
   showNotes?: boolean; // Bottom-center: notes text
   showBirthday?: boolean; // Bottom-right: birthday date
@@ -66,6 +67,8 @@ export interface SequenceExportOptions {
   userName: string;
   exportDate: string;
   notes: string;
+  /** Original creation date of the sequence (for birthday display) */
+  birthday?: Date;
 
   // Output format
   format: "PNG" | "JPEG" | "WebP";

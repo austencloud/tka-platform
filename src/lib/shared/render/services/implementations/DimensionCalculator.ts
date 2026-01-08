@@ -35,20 +35,26 @@ export class DimensionCalculator implements IDimensionCalculator {
     let additionalHeightTop = 0;
     let additionalHeightBottom = 0;
 
+    // Derive footer visibility from individual flags, falling back to addUserInfo for backwards compat
+    const showCreatorName = options.showCreatorName ?? options.addUserInfo;
+    const showNotes = options.showNotes ?? options.addUserInfo;
+    const showBirthday = options.showBirthday ?? options.addUserInfo;
+    const hasFooter = showCreatorName || showNotes || showBirthday;
+
     // Match desktop logic exactly based on beat count
     if (beatCount === 0) {
       additionalHeightTop = 0;
-      additionalHeightBottom = options.addUserInfo ? 55 : 0;
+      additionalHeightBottom = hasFooter ? 55 : 0;
     } else if (beatCount === 1) {
       additionalHeightTop = options.addWord ? 150 : 0;
-      additionalHeightBottom = options.addUserInfo ? 55 : 0;
+      additionalHeightBottom = hasFooter ? 55 : 0;
     } else if (beatCount === 2) {
       additionalHeightTop = options.addWord ? 200 : 0;
-      additionalHeightBottom = options.addUserInfo ? 75 : 0;
+      additionalHeightBottom = hasFooter ? 75 : 0;
     } else {
       // beatCount >= 3
       additionalHeightTop = options.addWord ? 300 : 0;
-      additionalHeightBottom = options.addUserInfo ? 150 : 0;
+      additionalHeightBottom = hasFooter ? 150 : 0;
     }
 
     // Apply beat scale exactly as desktop does

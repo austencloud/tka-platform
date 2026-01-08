@@ -1,0 +1,151 @@
+<!--
+  HorizontalTransportRow.svelte
+
+  Transport controls row for horizontal layout mode.
+  Contains step buttons (half/full beat) and central play/pause button.
+-->
+<script lang="ts">
+	let {
+		isPlaying,
+		onPlaybackToggle,
+		onStepHalfBack,
+		onStepHalfFwd,
+		onStepFullBack,
+		onStepFullFwd,
+	}: {
+		isPlaying: boolean;
+		onPlaybackToggle: () => void;
+		onStepHalfBack: () => void;
+		onStepHalfFwd: () => void;
+		onStepFullBack: () => void;
+		onStepFullFwd: () => void;
+	} = $props();
+</script>
+
+<div class="horizontal-transport-row">
+	<button
+		class="step-btn step-secondary"
+		onclick={onStepHalfBack}
+		aria-label="Previous half beat"
+	>
+		<i class="fas fa-chevron-left" aria-hidden="true"></i>
+	</button>
+	<button
+		class="step-btn step-primary"
+		onclick={onStepFullBack}
+		aria-label="Previous beat"
+	>
+		<i class="fas fa-angles-left" aria-hidden="true"></i>
+	</button>
+
+	<button
+		class="play-btn"
+		onclick={onPlaybackToggle}
+		aria-label={isPlaying ? "Pause" : "Play"}
+	>
+		{#if isPlaying}
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+			</svg>
+		{:else}
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<path d="M8 5v14l11-7z" />
+			</svg>
+		{/if}
+	</button>
+
+	<button
+		class="step-btn step-primary"
+		onclick={onStepFullFwd}
+		aria-label="Next beat"
+	>
+		<i class="fas fa-angles-right" aria-hidden="true"></i>
+	</button>
+	<button
+		class="step-btn step-secondary"
+		onclick={onStepHalfFwd}
+		aria-label="Next half beat"
+	>
+		<i class="fas fa-chevron-right" aria-hidden="true"></i>
+	</button>
+</div>
+
+<style>
+	.horizontal-transport-row {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 12px;
+		padding: 12px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 14px;
+		flex-shrink: 0;
+	}
+
+	.step-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
+		background: var(--theme-card-bg);
+		border: 1.5px solid var(--theme-stroke);
+		border-radius: 50%;
+		color: var(--theme-text-dim);
+		cursor: pointer;
+		transition: all 0.2s ease;
+		flex-shrink: 0;
+	}
+
+	.step-btn:hover {
+		background: var(--theme-card-hover-bg);
+		border-color: var(--theme-stroke-strong);
+		color: var(--theme-text);
+		transform: scale(1.05);
+	}
+
+	.play-btn {
+		width: 64px;
+		height: 64px;
+		min-width: 64px;
+		min-height: 64px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(
+			135deg,
+			var(--theme-accent, #3b82f6) 0%,
+			color-mix(in srgb, var(--theme-accent, #3b82f6) 80%, black) 100%
+		);
+		border: none;
+		border-radius: 50%;
+		color: white;
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
+	}
+
+	.play-btn svg {
+		width: 28px;
+		height: 28px;
+	}
+
+	.play-btn:hover {
+		transform: scale(1.05);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+	}
+
+	.play-btn:active {
+		transform: scale(0.98);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.step-btn,
+		.play-btn {
+			transition: none;
+		}
+	}
+</style>
