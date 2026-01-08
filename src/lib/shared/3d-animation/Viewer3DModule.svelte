@@ -748,6 +748,7 @@
   }
 
   .mode-switcher-container,
+  .scene-controls-container,
   .sync-controls-container {
     flex-shrink: 0;
   }

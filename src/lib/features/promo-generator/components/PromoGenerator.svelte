@@ -38,7 +38,7 @@
   let canvas: HTMLCanvasElement | null = $state(null);
   let canvasContainer: HTMLDivElement | null = $state(null);
   let orchestrator: IPromoOrchestrator | null = $state(null);
-  let state: PromoGeneratorState = $state({
+  let generatorState: PromoGeneratorState = $state({
     isReady: false,
     isExporting: false,
     exportProgress: 0,
@@ -94,7 +94,7 @@
       await orchestrator.initialize(canvas, canvasWidth, canvasHeight);
 
       orchestrator.subscribe((newState) => {
-        state = newState;
+        generatorState = newState;
       });
 
       availablePresets = orchestrator.getAvailablePresets();
@@ -235,14 +235,14 @@
   <div class="canvas-area" bind:this={canvasContainer}>
     <canvas bind:this={canvas} class="preview-canvas"></canvas>
 
-    {#if !state.isReady}
+    {#if !generatorState.isReady}
       <div class="loading-overlay">
         <div class="loader"></div>
         <span>Initializing 3D Engine...</span>
       </div>
     {/if}
 
-    {#if state.isExporting}
+    {#if generatorState.isExporting}
       <div class="export-overlay">
         <div class="export-modal">
           <div class="export-header">
@@ -257,7 +257,7 @@
                 cx="50"
                 cy="50"
                 r="45"
-                style="stroke-dashoffset: {283 - (283 * state.exportProgress) / 100}"
+                style="stroke-dashoffset: {283 - (283 * generatorState.exportProgress) / 100}"
               />
             </svg>
             <span class="progress-text">{Math.round(state.exportProgress)}%</span>

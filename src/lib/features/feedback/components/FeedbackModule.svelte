@@ -1,7 +1,6 @@
 <!-- FeedbackModule - Main container for feedback functionality -->
 <script lang="ts">
   import { navigationState } from "../../../shared/navigation/state/navigation-state.svelte";
-  import { updateFeedbackContext } from "../state/feedback-context-tracker.svelte";
   import FeedbackSubmitTab from "./submit/FeedbackSubmitTab.svelte";
   import FeedbackManageTab from "./manage/FeedbackManageTab.svelte";
   import MyFeedbackTab from "./my-feedback/MyFeedbackTab.svelte";
@@ -11,13 +10,7 @@
   const activeTab = $derived(navigationState.activeTab);
 
   // Update context tracker whenever navigation changes
-  $effect(() => {
-    // Access reactive values to establish dependency
-    const _module = navigationState.currentModule;
-    const _tab = navigationState.activeTab;
-    // Update the context tracker
-    updateFeedbackContext();
-  });
+
 </script>
 
 <div class="feedback-module">
