@@ -260,7 +260,7 @@
                 style="stroke-dashoffset: {283 - (283 * generatorState.exportProgress) / 100}"
               />
             </svg>
-            <span class="progress-text">{Math.round(state.exportProgress)}%</span>
+            <span class="progress-text">{Math.round(generatorState.exportProgress)}%</span>
           </div>
           <button class="cancel-btn" onclick={cancelExport}>Cancel</button>
         </div>
@@ -272,7 +272,7 @@
       <button
         class="icon-btn"
         onclick={() => modelInput?.click()}
-        disabled={!state.isReady}
+        disabled={!generatorState.isReady}
         title="Load 3D Model"
       >
         <i class="fas fa-cube"></i>
@@ -280,7 +280,7 @@
       <button
         class="icon-btn"
         onclick={() => screenshotInput?.click()}
-        disabled={!state.isReady}
+        disabled={!generatorState.isReady}
         title="Load Screenshot"
       >
         <i class="fas fa-image"></i>
@@ -292,7 +292,7 @@
       <button
         class="export-trigger"
         onclick={() => (showExportPanel = !showExportPanel)}
-        disabled={!state.isReady || state.isExporting}
+        disabled={!generatorState.isReady || generatorState.isExporting}
       >
         <i class="fas fa-download"></i>
         <span>Export</span>
@@ -334,7 +334,7 @@
               </button>
             </div>
           </div>
-          <button class="render-btn" onclick={exportVideo} disabled={state.isExporting}>
+          <button class="render-btn" onclick={exportVideo} disabled={generatorState.isExporting}>
             <i class="fas fa-film"></i>
             Render Video
           </button>
@@ -345,7 +345,7 @@
     <!-- Floating Controls - Bottom Center: Playback -->
     <div class="floating-controls bottom-center">
       <div class="playback-bar">
-        <button class="playback-btn" onclick={togglePlayback} disabled={!state.isReady}>
+        <button class="playback-btn" onclick={togglePlayback} disabled={!generatorState.isReady}>
           {#if isPlaying}
             <i class="fas fa-pause"></i>
           {:else}
@@ -360,12 +360,12 @@
             step="0.001"
             value={progress}
             oninput={handleSeek}
-            disabled={!state.isReady}
+            disabled={!generatorState.isReady}
             class="timeline"
           />
           <div class="timeline-fill" style="width: {progress * 100}%"></div>
         </div>
-        <button class="playback-btn stop" onclick={stopPreview} disabled={!state.isReady}>
+        <button class="playback-btn stop" onclick={stopPreview} disabled={!generatorState.isReady}>
           <i class="fas fa-stop"></i>
         </button>
         <span class="time-display">
@@ -425,7 +425,7 @@
             class="env-card"
             class:active={selectedEnvironment === env.id}
             onclick={() => handleEnvironmentChange(env.id)}
-            disabled={!state.isReady}
+            disabled={!generatorState.isReady}
             style="--env-color: {env.color}"
           >
             <div class="env-preview"></div>
@@ -435,10 +435,10 @@
       </div>
     </section>
 
-    {#if state.error}
+    {#if generatorState.error}
       <div class="error-toast">
         <i class="fas fa-exclamation-circle"></i>
-        <span>{state.error}</span>
+        <span>{generatorState.error}</span>
       </div>
     {/if}
   </aside>
