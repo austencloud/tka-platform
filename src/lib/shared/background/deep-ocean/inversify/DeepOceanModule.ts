@@ -14,6 +14,12 @@ import type { IBubbleRenderer } from "../services/contracts/IBubbleRenderer";
 import type { IParticleRenderer } from "../services/contracts/IParticleRenderer";
 import type { IFishRenderer } from "../services/contracts/IFishRenderer";
 import type { IJellyfishRenderer } from "../services/contracts/IJellyfishRenderer";
+import type { IColorCalculator } from "../services/contracts/IColorCalculator";
+import type { IFishEffectRenderer } from "../services/contracts/IFishEffectRenderer";
+import type { IFishFaceRenderer } from "../services/contracts/IFishFaceRenderer";
+import type { IFishFinRenderer } from "../services/contracts/IFishFinRenderer";
+import type { IFishPatternRenderer } from "../services/contracts/IFishPatternRenderer";
+import type { IFishBodyRenderer } from "../services/contracts/IFishBodyRenderer";
 
 // Implementations
 import { BubblePhysics } from "../services/implementations/BubblePhysics";
@@ -27,6 +33,12 @@ import { BubbleRenderer } from "../services/implementations/BubbleRenderer";
 import { ParticleRenderer } from "../services/implementations/ParticleRenderer";
 import { FishRenderer } from "../services/implementations/FishRenderer";
 import { JellyfishRenderer } from "../services/implementations/JellyfishRenderer";
+import { ColorCalculator } from "../services/implementations/ColorCalculator";
+import { FishEffectRenderer } from "../services/implementations/FishEffectRenderer";
+import { FishFaceRenderer } from "../services/implementations/FishFaceRenderer";
+import { FishFinRenderer } from "../services/implementations/FishFinRenderer";
+import { FishPatternRenderer } from "../services/implementations/FishPatternRenderer";
+import { FishBodyRenderer } from "../services/implementations/FishBodyRenderer";
 
 /**
  * Deep Ocean Background Services Module
@@ -98,6 +110,38 @@ export const deepOceanBackgroundModule = new ContainerModule(
     if (!isBound(TYPES.IJellyfishRenderer)) {
       bind<IJellyfishRenderer>(TYPES.IJellyfishRenderer)
         .to(JellyfishRenderer)
+        .inSingletonScope();
+    }
+
+    // === FISH RENDERING UTILITIES ===
+    if (!isBound(TYPES.IColorCalculator)) {
+      bind<IColorCalculator>(TYPES.IColorCalculator)
+        .to(ColorCalculator)
+        .inSingletonScope();
+    }
+    if (!isBound(TYPES.IFishEffectRenderer)) {
+      bind<IFishEffectRenderer>(TYPES.IFishEffectRenderer)
+        .to(FishEffectRenderer)
+        .inSingletonScope();
+    }
+    if (!isBound(TYPES.IFishFaceRenderer)) {
+      bind<IFishFaceRenderer>(TYPES.IFishFaceRenderer)
+        .to(FishFaceRenderer)
+        .inSingletonScope();
+    }
+    if (!isBound(TYPES.IFishFinRenderer)) {
+      bind<IFishFinRenderer>(TYPES.IFishFinRenderer)
+        .to(FishFinRenderer)
+        .inSingletonScope();
+    }
+    if (!isBound(TYPES.IFishPatternRenderer)) {
+      bind<IFishPatternRenderer>(TYPES.IFishPatternRenderer)
+        .to(FishPatternRenderer)
+        .inSingletonScope();
+    }
+    if (!isBound(TYPES.IFishBodyRenderer)) {
+      bind<IFishBodyRenderer>(TYPES.IFishBodyRenderer)
+        .to(FishBodyRenderer)
         .inSingletonScope();
     }
   }

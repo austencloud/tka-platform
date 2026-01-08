@@ -34,6 +34,14 @@ export const BackgroundTypes = {
   IFishRenderer: Symbol.for("IFishRenderer"),
   IJellyfishRenderer: Symbol.for("IJellyfishRenderer"),
 
+  // Deep Ocean - Fish Rendering Services (decomposed from FishRenderer monolith)
+  IColorCalculator: Symbol.for("IColorCalculator"),
+  IFishEffectRenderer: Symbol.for("IFishEffectRenderer"),
+  IFishFaceRenderer: Symbol.for("IFishFaceRenderer"),
+  IFishFinRenderer: Symbol.for("IFishFinRenderer"),
+  IFishPatternRenderer: Symbol.for("IFishPatternRenderer"),
+  IFishBodyRenderer: Symbol.for("IFishBodyRenderer"),
+
   // @deprecated - use split services above
   IMarineLifeAnimator: Symbol.for("IMarineLifeAnimator"),
   IOceanRenderer: Symbol.for("IOceanRenderer"),
