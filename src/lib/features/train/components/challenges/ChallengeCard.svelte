@@ -14,7 +14,7 @@
   } from "../../domain/models/TrainChallengeModels";
   import { calculateChallengeProgress } from "../../domain/models/TrainChallengeModels";
   import type { ChallengeDifficulty } from "$lib/shared/gamification/domain/models/achievement-models";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     challenge: TrainChallenge;
@@ -108,13 +108,13 @@
   const modeBadge = $derived.by(() => {
     const mode = challenge.requirement.metadata?.mode;
     if (!mode) return null;
-    const modeLabels: Record<string, () => string> = {
-      adaptive: m.train_mode_adaptive,
-      step_by_step: m.train_mode_step_by_step,
-      timed: m.train_mode_timed,
+    const modeLabels: Record<string, string> = {
+      adaptive: "train_mode_adaptive",
+      step_by_step: "train_mode_step_by_step",
+      timed: "train_mode_timed",
     };
-    const labelFn = modeLabels[mode];
-    return labelFn ? labelFn() : null;
+    const key = modeLabels[mode];
+    return key ? t(key) : null;
   });
 
   function handleClick() {
@@ -187,11 +187,11 @@
       {#if isComplete}
         <div class="status-badge complete">
           <i class="fas fa-check-circle" aria-hidden="true"></i>
-          <span>{m.train_completed()}</span>
+          <span>{t("train_completed")}</span>
         </div>
       {:else}
         <div class="action-hint">
-          <span>{isStarted ? m.train_continue() : m.train_start()}</span>
+          <span>{isStarted ? t("train_continue") : t("train_start")}</span>
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </div>
       {/if}

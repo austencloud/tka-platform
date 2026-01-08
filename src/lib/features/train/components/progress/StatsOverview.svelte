@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import type { StatsOverview } from "../../services/contracts/IPerformanceHistoryTracker";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     stats: StatsOverview;
@@ -33,7 +33,7 @@
     <i class="fas fa-calendar-check" aria-hidden="true"></i>
     <div class="stat-content">
       <div class="stat-value">{stats.totalSessions}</div>
-      <div class="stat-label">{m.train_total_sessions()}</div>
+      <div class="stat-label">{t("train_total_sessions")}</div>
     </div>
   </div>
 
@@ -44,7 +44,7 @@
     <i class="fas fa-clock" aria-hidden="true"></i>
     <div class="stat-content">
       <div class="stat-value">{formatDuration(stats.totalPracticeTime)}</div>
-      <div class="stat-label">{m.train_practice_time()}</div>
+      <div class="stat-label">{t("train_practice_time")}</div>
     </div>
   </div>
 
@@ -55,7 +55,7 @@
     <i class="fas fa-bullseye" aria-hidden="true"></i>
     <div class="stat-content">
       <div class="stat-value">{stats.averageAccuracy.toFixed(1)}%</div>
-      <div class="stat-label">{m.train_avg_accuracy()}</div>
+      <div class="stat-label">{t("train_avg_accuracy")}</div>
     </div>
   </div>
 
@@ -66,7 +66,7 @@
     <i class="fas fa-fire" aria-hidden="true"></i>
     <div class="stat-content">
       <div class="stat-value">{stats.maxCombo}</div>
-      <div class="stat-label">{m.train_highest_combo()}</div>
+      <div class="stat-label">{t("train_highest_combo")}</div>
     </div>
   </div>
 </div>

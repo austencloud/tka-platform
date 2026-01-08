@@ -6,7 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { TrainChallenge } from "../domain/models/TrainChallengeModels";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface XPBreakdown {
     baseXP: number;
@@ -92,7 +92,7 @@
     <div class="scrollable-content">
       <!-- Header -->
       <div class="results-header">
-        <h1>{m.train_training_complete()}</h1>
+        <h1>{t("train_training_complete")}</h1>
         {#if sequenceName}
           <p class="sequence-name">{sequenceName}</p>
         {/if}
@@ -104,7 +104,7 @@
           <span class="grade-letter">{grade}</span>
         </div>
         <div class="accuracy-text">
-          {m.train_accuracy_percent({ value: accuracy.toFixed(1) })}
+          {t("train_accuracy_percent", { value: accuracy.toFixed(1) })}
         </div>
       </div>
 
@@ -124,7 +124,7 @@
             </svg>
           </div>
           <div class="stat-value">{finalScore.toLocaleString()}</div>
-          <div class="stat-label">{m.train_score()}</div>
+          <div class="stat-label">{t("train_score")}</div>
         </div>
 
         <div class="stat-card">
@@ -139,7 +139,7 @@
             </svg>
           </div>
           <div class="stat-value">{hits}</div>
-          <div class="stat-label">{m.train_hits()}</div>
+          <div class="stat-label">{t("train_hits")}</div>
         </div>
 
         <div class="stat-card">
@@ -154,7 +154,7 @@
             </svg>
           </div>
           <div class="stat-value">{misses}</div>
-          <div class="stat-label">{m.train_misses()}</div>
+          <div class="stat-label">{t("train_misses")}</div>
         </div>
 
         <div class="stat-card">
@@ -169,24 +169,24 @@
             </svg>
           </div>
           <div class="stat-value">{maxCombo}x</div>
-          <div class="stat-label">{m.train_max_combo()}</div>
+          <div class="stat-label">{t("train_max_combo")}</div>
         </div>
       </div>
 
       <!-- Detailed Stats -->
       <div class="detailed-stats">
         <div class="detail-row">
-          <span class="detail-label">{m.train_total_beats()}</span>
+          <span class="detail-label">{t("train_total_beats")}</span>
           <span class="detail-value">{totalBeats}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">{m.train_hit_rate()}</span>
+          <span class="detail-label">{t("train_hit_rate")}</span>
           <span class="detail-value">{accuracy.toFixed(1)}%</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">{m.train_perfect_combo()}</span>
+          <span class="detail-label">{t("train_perfect_combo")}</span>
           <span class="detail-value"
-            >{maxCombo === totalBeats ? m.train_perfect_yes() + " 🎉" : m.common_no()}</span
+            >{maxCombo === totalBeats ? t("train_perfect_yes") + " 🎉" : t("common_no")}</span
           >
         </div>
       </div>
@@ -205,27 +205,27 @@
                 d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
               />
             </svg>
-            <h3>{m.train_xp_earned()}</h3>
+            <h3>{t("train_xp_earned")}</h3>
           </div>
           <div class="xp-breakdown">
             <div class="xp-row">
-              <span class="xp-label">{m.train_base_xp()}</span>
+              <span class="xp-label">{t("train_base_xp")}</span>
               <span class="xp-value">+{xpBreakdown.baseXP}</span>
             </div>
             {#if xpBreakdown.accuracyBonus > 0}
               <div class="xp-row bonus">
-                <span class="xp-label">{m.train_accuracy_bonus()}</span>
+                <span class="xp-label">{t("train_accuracy_bonus")}</span>
                 <span class="xp-value">+{xpBreakdown.accuracyBonus}</span>
               </div>
             {/if}
             {#if xpBreakdown.comboBonus > 0}
               <div class="xp-row bonus">
-                <span class="xp-label">{m.train_combo_bonus()}</span>
+                <span class="xp-label">{t("train_combo_bonus")}</span>
                 <span class="xp-value">+{xpBreakdown.comboBonus}</span>
               </div>
             {/if}
             <div class="xp-total">
-              <span class="xp-total-label">{m.train_total_xp()}</span>
+              <span class="xp-total-label">{t("train_total_xp")}</span>
               <span class="xp-total-value">+{xpBreakdown.totalXP}</span>
             </div>
           </div>
@@ -258,8 +258,8 @@
             </svg>
             <h3>
               {challengeProgress.isComplete
-                ? m.train_challenge_completed()
-                : m.train_challenge_progress()}
+                ? t("train_challenge_completed")
+                : t("train_challenge_progress")}
             </h3>
           </div>
           <div class="challenge-info">
@@ -285,7 +285,7 @@
             </div>
             {#if challengeProgress.isComplete}
               <div class="challenge-reward">
-                <span class="reward-label">{m.train_reward()}</span>
+                <span class="reward-label">{t("train_reward")}</span>
                 <span class="reward-value"
                   >+{challengeProgress.challenge.xpReward} XP</span
                 >
@@ -311,11 +311,11 @@
               d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"
             />
           </svg>
-          {m.train_play_again()}
+          {t("train_play_again")}
         </button>
       {/if}
       {#if onExit}
-        <button class="secondary-button" onclick={onExit}>{m.train_exit()}</button>
+        <button class="secondary-button" onclick={onExit}>{t("train_exit")}</button>
       {/if}
     </div>
   </div>

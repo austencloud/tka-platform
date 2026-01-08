@@ -20,7 +20,7 @@
   import StatsOverviewComponent from "./StatsOverview.svelte";
   import PersonalBests from "./PersonalBests.svelte";
   import SessionHistory from "./SessionHistory.svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let isLoading = $state(true);
   let stats = $state<StatsOverview | null>(null);
@@ -63,7 +63,7 @@
   {#if isLoading}
     <div class="loading-state">
       <div class="spinner"></div>
-      <p>{m.train_loading_stats()}</p>
+      <p>{t("train_loading_stats")}</p>
     </div>
   {:else if !hasData}
     <!-- EMPTY STATE - Engaging placeholder -->
@@ -73,8 +73,8 @@
         <div class="header-icon">
           <i class="fas fa-chart-line" aria-hidden="true"></i>
         </div>
-        <h1>{m.train_your_journey()}</h1>
-        <p>{m.train_journey_subtitle()}</p>
+        <h1>{t("train_your_journey")}</h1>
+        <p>{t("train_journey_subtitle")}</p>
       </header>
 
       <!-- Preview Stats Grid -->
@@ -85,7 +85,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-value">0</span>
-            <span class="stat-label">{m.train_sessions()}</span>
+            <span class="stat-label">{t("train_sessions")}</span>
           </div>
         </div>
 
@@ -95,7 +95,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-value placeholder">--:--</span>
-            <span class="stat-label">{m.train_practice_time()}</span>
+            <span class="stat-label">{t("train_practice_time")}</span>
           </div>
         </div>
 
@@ -105,7 +105,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-value placeholder">--%</span>
-            <span class="stat-label">{m.train_avg_accuracy()}</span>
+            <span class="stat-label">{t("train_avg_accuracy")}</span>
           </div>
         </div>
 
@@ -115,7 +115,7 @@
           </div>
           <div class="stat-content">
             <span class="stat-value">0</span>
-            <span class="stat-label">{m.train_best_combo()}</span>
+            <span class="stat-label">{t("train_best_combo")}</span>
           </div>
         </div>
       </section>
@@ -126,7 +126,7 @@
         <section class="preview-section">
           <div class="section-header">
             <i class="fas fa-trophy" aria-hidden="true"></i>
-            <h2>{m.train_personal_bests()}</h2>
+            <h2>{t("train_personal_bests")}</h2>
           </div>
           <div class="empty-rows">
             <div class="empty-row">
@@ -140,7 +140,7 @@
             </div>
           </div>
           <p class="section-hint">
-            {m.train_bests_hint()}
+            {t("train_bests_hint")}
           </p>
         </section>
 
@@ -148,7 +148,7 @@
         <section class="preview-section">
           <div class="section-header">
             <i class="fas fa-history" aria-hidden="true"></i>
-            <h2>{m.train_recent_sessions()}</h2>
+            <h2>{t("train_recent_sessions")}</h2>
           </div>
           <div class="empty-rows">
             <div class="empty-row">
@@ -161,7 +161,7 @@
               <div class="empty-bar" style="width: 55%"></div>
             </div>
           </div>
-          <p class="section-hint">{m.train_sessions_hint()}</p>
+          <p class="section-hint">{t("train_sessions_hint")}</p>
         </section>
       </div>
 
@@ -169,7 +169,7 @@
       <div class="cta-section">
         <button class="start-btn" onclick={navigateToPractice}>
           <i class="fas fa-play" aria-hidden="true"></i>
-          <span>{m.train_start_first_session()}</span>
+          <span>{t("train_start_first_session")}</span>
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
         </button>
       </div>
@@ -182,14 +182,14 @@
 
     {#if personalBests.length > 0}
       <section class="section">
-        <h2>{m.train_personal_bests()}</h2>
+        <h2>{t("train_personal_bests")}</h2>
         <PersonalBests bests={personalBests} />
       </section>
     {/if}
 
     {#if recentSessions.length > 0}
       <section class="section">
-        <h2>{m.train_recent_sessions()}</h2>
+        <h2>{t("train_recent_sessions")}</h2>
         <SessionHistory sessions={recentSessions} />
       </section>
     {/if}

@@ -10,7 +10,7 @@
   import { TYPES } from "$lib/shared/inversify/types";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import { onMount } from "svelte";
-  import * as m from "$lib/paraglide/messages.js";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {
     onSequenceSelected: (sequence: SequenceData) => void;
@@ -77,8 +77,8 @@
       <div class="icon-container">
         <i class="fas fa-dumbbell" aria-hidden="true"></i>
       </div>
-      <h1>{m.train_mode_title()}</h1>
-      <p>{m.train_mode_description()}</p>
+      <h1>{t("train_mode_title")}</h1>
+      <p>{t("train_mode_description")}</p>
     </header>
 
     <!-- Main Content -->
@@ -86,22 +86,22 @@
       <div class="feature-list">
         <div class="feature">
           <i class="fas fa-video" aria-hidden="true"></i>
-          <span>{m.train_feature_camera()}</span>
+          <span>{t("train_feature_camera")}</span>
         </div>
         <div class="feature">
           <i class="fas fa-hand-paper" aria-hidden="true"></i>
-          <span>{m.train_feature_hand()}</span>
+          <span>{t("train_feature_hand")}</span>
         </div>
         <div class="feature">
           <i class="fas fa-chart-line" aria-hidden="true"></i>
-          <span>{m.train_feature_scoring()}</span>
+          <span>{t("train_feature_scoring")}</span>
         </div>
       </div>
 
       <!-- Call to Action -->
       <button class="select-sequence-button" onclick={openBrowser}>
         <i class="fas fa-th-list" aria-hidden="true"></i>
-        <span>{m.train_select_sequence()}</span>
+        <span>{t("train_select_sequence")}</span>
       </button>
     </div>
   </div>
@@ -110,7 +110,7 @@
   {#if isLoadingFullSequence}
     <div class="loading-overlay">
       <div class="loading-spinner"></div>
-      <p>{m.train_loading_sequence()}</p>
+      <p>{t("train_loading_sequence")}</p>
     </div>
   {/if}
 
