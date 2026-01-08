@@ -39,6 +39,33 @@ declare global {
 const isBrowser = typeof window !== "undefined";
 
 // ============================================================================
+// TYPE-SAFE GLOBAL ACCESSORS
+// ============================================================================
+
+/**
+ * Get the global container with type safety.
+ * @throws Error if container is not initialized
+ */
+function getGlobalContainer(): InversifyContainer {
+  const container = globalThis.__TKA_CONTAINER__;
+  if (!container) {
+    throw new Error(
+      "Container not initialized. Call ensureContainerInitialized() before resolving services. " +
+        "This usually means a component is trying to resolve services before the app is fully loaded."
+    );
+  }
+  return container;
+}
+
+/**
+ * Get the global HMR manager if available.
+ * Returns null if not yet initialized (safe for early access).
+ */
+function getGlobalHMRManager(): HMRContainerManager | null {
+  return globalThis.__TKA_HMR_MANAGER__ ?? null;
+}
+
+// ============================================================================
 // HMR-RESILIENT SERVICE RESOLUTION
 // ============================================================================
 
@@ -61,23 +88,14 @@ export function resolve<T>(serviceIdentifier: symbol): T {
     );
   }
 
-  // Delegate to container.ts which uses HMRContainerManager
-  // Dynamic import would break sync resolution, so we use the global
-  const container = globalThis.__TKA_CONTAINER__;
-  if (!container) {
-    throw new Error(
-      `Container not initialized. Call ensureContainerInitialized() before resolving services. ` +
-        `This usually means a component is trying to resolve services before the app is fully loaded.`
-    );
-  }
-
   // Try HMR manager first if available (provides fallbacks during HMR)
-  const hmrManager = globalThis.__TKA_HMR_MANAGER__;
+  const hmrManager = getGlobalHMRManager();
   if (hmrManager) {
     return hmrManager.resolve<T>(serviceIdentifier);
   }
 
-  // Fall back to direct container access
+  // Fall back to direct container access (type-safe)
+  const container = getGlobalContainer();
   return container.get<T>(serviceIdentifier);
 }
 
@@ -95,18 +113,12 @@ export async function resolveAsync<T>(serviceIdentifier: symbol): Promise<T> {
 
   await ensureContainerInitialized();
 
-  const hmrManager = globalThis.__TKA_HMR_MANAGER__;
+  const hmrManager = getGlobalHMRManager();
   if (hmrManager) {
     return hmrManager.resolveAsync<T>(serviceIdentifier);
   }
 
-  const container = globalThis.__TKA_CONTAINER__;
-  if (!container) {
-    throw new Error(
-      "Container not initialized after ensureContainerInitialized()"
-    );
-  }
-
+  const container = getGlobalContainer();
   return container.get<T>(serviceIdentifier);
 }
 
@@ -120,12 +132,12 @@ export function tryResolve<T>(serviceIdentifier: symbol): T | null {
   if (!isBrowser) return null;
 
   // Try HMR manager first if available
-  const hmrManager = globalThis.__TKA_HMR_MANAGER__;
+  const hmrManager = getGlobalHMRManager();
   if (hmrManager) {
     return hmrManager.tryResolve<T>(serviceIdentifier);
   }
 
-  // Fall back to direct container access
+  // Fall back to direct container access (safe version)
   const container = globalThis.__TKA_CONTAINER__;
   if (!container) return null;
 
@@ -179,8 +191,8 @@ export function isContainerReady(): boolean {
  * Check if HMR is currently in progress.
  */
 export function isHMRInProgress(): boolean {
-  const hmrManager = globalThis.__TKA_HMR_MANAGER__;
-  return hmrManager ? hmrManager.isHMRInProgress() : false;
+  const hmrManager = getGlobalHMRManager();
+  return hmrManager?.isHMRInProgress() ?? false;
 }
 
 // ============================================================================

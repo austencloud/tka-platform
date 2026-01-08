@@ -1,5 +1,6 @@
 import type { ContainerModuleLoadOptions } from "inversify";
 import { ContainerModule } from "inversify";
+import { createSafeBinder } from "../hmr/safeBind";
 
 // PERFORMANCE FIX: Import services directly to avoid circular dependencies
 import { ApplicationInitializer } from "../../application/services/implementations/ApplicationInitializer";
@@ -37,86 +38,104 @@ import { TagManager } from "../../../features/library/services/implementations/T
 import { WordDeriver } from "../../foundation/services/implementations/WordDeriver";
 import { TYPES } from "../types";
 
+// ============================================================================
+// HMR STATE PRESERVATION
+// ============================================================================
+// These state instances must persist across HMR cycles to preserve user state.
+// We use import.meta.hot.data to cache them during module disposal.
+
+const hmrData = import.meta.hot?.data as {
+  appState?: ReturnType<typeof createAppState>;
+  appStateInitializer?: ReturnType<typeof createAppStateInitializer>;
+  performanceMetricsState?: ReturnType<typeof createPerformanceMetricsState>;
+} | undefined;
+
+// Restore from HMR cache or create new instances
+const appState = hmrData?.appState ?? createAppState();
+const appStateInitializer = hmrData?.appStateInitializer ?? createAppStateInitializer();
+const performanceMetricsState = hmrData?.performanceMetricsState ?? createPerformanceMetricsState();
+
+// Cache instances on HMR dispose
+if (import.meta.hot) {
+  import.meta.hot.dispose((data) => {
+    data.appState = appState;
+    data.appStateInitializer = appStateInitializer;
+    data.performanceMetricsState = performanceMetricsState;
+  });
+}
+
 export const coreModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
+    // Use safe binder to prevent duplicate bindings during HMR
+    const bind = createSafeBinder(options);
+
     // === APPLICATION SERVICES ===
-    options.bind(TYPES.IApplicationInitializer).to(ApplicationInitializer);
-    options.bind(TYPES.IResourceTracker).to(ResourceTracker);
-    options.bind(TYPES.IComponentManager).to(ComponentManager);
-    options.bind(TYPES.IErrorHandler).to(ErrorHandler);
-    options.bind(TYPES.IHapticFeedback).to(HapticFeedback);
-    options.bind(TYPES.IRippleEffect).to(RippleEffect);
+    bind(TYPES.IApplicationInitializer).to(ApplicationInitializer);
+    bind(TYPES.IResourceTracker).to(ResourceTracker);
+    bind(TYPES.IComponentManager).to(ComponentManager);
+    bind(TYPES.IErrorHandler).to(ErrorHandler);
+    bind(TYPES.IHapticFeedback).to(HapticFeedback);
+    bind(TYPES.IRippleEffect).to(RippleEffect);
 
     // === AUTH SERVICES ===
-    options.bind(TYPES.IAuthenticator).to(Authenticator);
-    options
-      .bind(TYPES.IProfilePictureManager)
+    bind(TYPES.IAuthenticator).to(Authenticator);
+    bind(TYPES.IProfilePictureManager)
       .to(ProfilePictureManager)
       .inSingletonScope();
-    options
-      .bind(TYPES.IUserDocumentManager)
+    bind(TYPES.IUserDocumentManager)
       .to(UserDocumentManager)
       .inSingletonScope();
-    options
-      .bind(TYPES.ISubscriptionManager)
+    bind(TYPES.ISubscriptionManager)
       .to(SubscriptionManager)
       .inSingletonScope();
-    options.bind(TYPES.IProfileApiClient).to(ProfileApiClient);
-    options
-      .bind(TYPES.IStepUpAuthCoordinator)
+    bind(TYPES.IProfileApiClient).to(ProfileApiClient);
+    bind(TYPES.IStepUpAuthCoordinator)
       .to(StepUpAuthCoordinator)
       .inSingletonScope();
-    options.bind(TYPES.IAccountManager).to(AccountManager);
-    options
-      .bind(TYPES.IUsernameValidator)
+    bind(TYPES.IAccountManager).to(AccountManager);
+    bind(TYPES.IUsernameValidator)
       .to(UsernameValidator)
       .inSingletonScope();
 
     // === MOBILE SERVICES ===
-    options.bind(TYPES.IMobileFullscreenManager).to(MobileFullscreenManager);
-    options.bind(TYPES.IPlatformDetector).to(PlatformDetector);
-    options.bind(TYPES.IGestureHandler).to(GestureHandler);
-    options.bind(TYPES.IPWAEngagementTracker).to(PWAEngagementTracker);
-    options
-      .bind(TYPES.IPWAInstallDismissalManager)
+    bind(TYPES.IMobileFullscreenManager).to(MobileFullscreenManager);
+    bind(TYPES.IPlatformDetector).to(PlatformDetector);
+    bind(TYPES.IGestureHandler).to(GestureHandler);
+    bind(TYPES.IPWAEngagementTracker).to(PWAEngagementTracker);
+    bind(TYPES.IPWAInstallDismissalManager)
       .to(PWAInstallDismissalManager);
 
     // === DEVICE SERVICES ===
-    options.bind(TYPES.IViewportManager).to(ViewportManager).inSingletonScope();
-    options.bind(TYPES.IDeviceDetector).to(DeviceDetector).inSingletonScope();
+    bind(TYPES.IViewportManager).to(ViewportManager).inSingletonScope();
+    bind(TYPES.IDeviceDetector).to(DeviceDetector).inSingletonScope();
 
     // === FOUNDATION SERVICES ===
-    options.bind(TYPES.IWordDeriver).to(WordDeriver).inSingletonScope();
-    options.bind(TYPES.IFileDownloader).to(FileDownloader);
-    options.bind(TYPES.IStorageManager).to(StorageManager);
-    options.bind(TYPES.ISeoManager).to(SeoManager);
-    options.bind(TYPES.ISvgImageConverter).to(SvgImageConverter);
+    bind(TYPES.IWordDeriver).to(WordDeriver).inSingletonScope();
+    bind(TYPES.IFileDownloader).to(FileDownloader);
+    bind(TYPES.IStorageManager).to(StorageManager);
+    bind(TYPES.ISeoManager).to(SeoManager);
+    bind(TYPES.ISvgImageConverter).to(SvgImageConverter);
 
     // === SETTINGS SERVICES ===
     // Use the module-level singleton to ensure there's only ONE instance app-wide
     // Previously .to(SettingsState).inSingletonScope() created a separate DI instance
-    options.bind(TYPES.ISettingsState).toConstantValue(settingsService);
-    options
-      .bind(TYPES.ISettingsPersister)
+    bind(TYPES.ISettingsState).toConstantValue(settingsService);
+    bind(TYPES.ISettingsPersister)
       .to(FirebaseSettingsPersister)
       .inSingletonScope();
 
     // === ONBOARDING SERVICES ===
-    options
-      .bind(TYPES.IOnboardingPersister)
+    bind(TYPES.IOnboardingPersister)
       .to(OnboardingPersister)
       .inSingletonScope();
 
     // === LIBRARY SERVICES ===
-    options.bind(TYPES.ITagManager).to(TagManager).inSingletonScope();
+    bind(TYPES.ITagManager).to(TagManager).inSingletonScope();
 
     // === STATE SERVICES ===
-    options.bind(TYPES.IAppState).toConstantValue(createAppState());
-    options
-      .bind(TYPES.IAppStateInitializer)
-      .toConstantValue(createAppStateInitializer());
-    options
-      .bind(TYPES.IPerformanceMetricsState)
-      .toConstantValue(createPerformanceMetricsState());
+    // Use module-level instances that persist across HMR
+    bind(TYPES.IAppState).toConstantValue(appState);
+    bind(TYPES.IAppStateInitializer).toConstantValue(appStateInitializer);
+    bind(TYPES.IPerformanceMetricsState).toConstantValue(performanceMetricsState);
   }
 );

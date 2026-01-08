@@ -1,5 +1,6 @@
 import type { ContainerModuleLoadOptions } from "inversify";
 import { ContainerModule } from "inversify";
+import { createSafeBinder } from "../hmr/safeBind";
 import { AngleCalculator } from "../../../features/compose/services/implementations/AngleCalculator";
 import { AnimationLoop } from "../../../features/compose/services/implementations/AnimationLoopService";
 import { AnimationPlaybackController } from "../../../features/compose/services/implementations/AnimationPlaybackController";
@@ -28,62 +29,61 @@ import { TYPES } from "../types";
 
 export const animatorModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
+    // Use safe binder to prevent duplicate bindings during HMR
+    const bind = createSafeBinder(options);
+
     // === CORE ANIMATION SERVICES ===
-    options.bind(TYPES.IAnimator).to(Animator);
-    options.bind(TYPES.IAnimationLoop).to(AnimationLoop);
-    options
-      .bind(TYPES.IAnimationPlaybackController)
+    bind(TYPES.IAnimator).to(Animator);
+    bind(TYPES.IAnimationLoop).to(AnimationLoop);
+    bind(TYPES.IAnimationPlaybackController)
       .to(AnimationPlaybackController);
-    options
-      .bind(TYPES.ISequenceAnimationOrchestrator)
+    bind(TYPES.ISequenceAnimationOrchestrator)
       .to(SequenceAnimationOrchestrator);
-    options.bind(TYPES.IAnimationStateService).to(AnimationStateService);
-    options.bind(TYPES.IBeatCalculationService).to(BeatCalculationService);
-    options.bind(TYPES.IPropInterpolationService).to(PropInterpolationService);
-    options
-      .bind(TYPES.ISequenceLoopabilityChecker)
+    bind(TYPES.IAnimationStateService).to(AnimationStateService);
+    bind(TYPES.IBeatCalculationService).to(BeatCalculationService);
+    bind(TYPES.IPropInterpolationService).to(PropInterpolationService);
+    bind(TYPES.ISequenceLoopabilityChecker)
       .to(SequenceLoopabilityChecker);
 
     // === CALCULATION SERVICES ===
-    options.bind(TYPES.IAngleCalculator).to(AngleCalculator);
-    options.bind(TYPES.ICoordinateUpdater).to(CoordinateUpdater);
-    options.bind(TYPES.IMotionCalculator).to(MotionCalculator);
-    options.bind(TYPES.IEndpointCalculator).to(EndpointCalculator);
+    bind(TYPES.IAngleCalculator).to(AngleCalculator);
+    bind(TYPES.ICoordinateUpdater).to(CoordinateUpdater);
+    bind(TYPES.IMotionCalculator).to(MotionCalculator);
+    bind(TYPES.IEndpointCalculator).to(EndpointCalculator);
 
     // === RENDERING SERVICES ===
-    options.bind(TYPES.ICanvasRenderer).to(CanvasRenderer);
+    bind(TYPES.ICanvasRenderer).to(CanvasRenderer);
     // IAnimationRenderer loaded on-demand via animation module when animation canvas is used
-    options.bind(TYPES.ISVGGenerator).to(SVGGenerator);
-    options.bind(TYPES.IVideoExporter).to(VideoExporter);
-    options.bind(TYPES.IVideoExportOrchestrator).to(VideoExportOrchestrator);
-    options.bind(TYPES.ICompositeVideoRenderer).to(CompositeVideoRenderer);
+    bind(TYPES.ISVGGenerator).to(SVGGenerator);
+    bind(TYPES.IVideoExporter).to(VideoExporter);
+    bind(TYPES.IVideoExportOrchestrator).to(VideoExportOrchestrator);
+    bind(TYPES.ICompositeVideoRenderer).to(CompositeVideoRenderer);
 
     // === TRAIL SERVICES ===
-    options.bind(TYPES.ITrailCapturer).to(TrailCapturer);
+    bind(TYPES.ITrailCapturer).to(TrailCapturer);
 
     // === MODE-SPECIFIC SERVICES ===
     // ISequenceNormalizer moved to data.module.ts (Tier 1) - required by ISequenceRepository
-    options
-      .bind(TYPES.ITunnelModeSequenceManager)
+    bind(TYPES.ITunnelModeSequenceManager)
       .to(TunnelModeSequenceManager);
 
     // === ANIMATION STORAGE ===
-    options.bind(TYPES.IAnimationStorageManager).to(AnimationStorageManager);
+    bind(TYPES.IAnimationStorageManager).to(AnimationStorageManager);
 
     // === STATE PROVIDERS ===
-    options.bind(TYPES.IDarkModeProvider).to(DarkModeProvider);
+    bind(TYPES.IDarkModeProvider).to(DarkModeProvider);
 
     // === DATA LOADING ===
-    options.bind(TYPES.ISequenceMotionLoader).to(SequenceMotionLoader);
+    bind(TYPES.ISequenceMotionLoader).to(SequenceMotionLoader);
 
     // ============================================================================
     // ARCHIVED BINDINGS (services moved to archive/animator-unused-services/)
     // ============================================================================
-    // options.bind(TYPES.IAnimationControlService).to(AnimationControlService);
-    // options.bind(TYPES.IMotionParameterService).to(MotionParameterService);
-    // options.bind(TYPES.IMotionLetterIdentificationService).to(MotionLetterIdentificationService);
-    // options.bind(TYPES.IOverlayRenderer).to(OverlayRenderer);
-    // options.bind(TYPES.ISvgConfig).to(SvgConfig);
-    // options.bind(TYPES.ISvgUtilityService).to(SvgUtilityService);
+    // bind(TYPES.IAnimationControlService).to(AnimationControlService);
+    // bind(TYPES.IMotionParameterService).to(MotionParameterService);
+    // bind(TYPES.IMotionLetterIdentificationService).to(MotionLetterIdentificationService);
+    // bind(TYPES.IOverlayRenderer).to(OverlayRenderer);
+    // bind(TYPES.ISvgConfig).to(SvgConfig);
+    // bind(TYPES.ISvgUtilityService).to(SvgUtilityService);
   }
 );

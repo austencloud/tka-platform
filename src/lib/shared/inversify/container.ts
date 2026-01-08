@@ -337,7 +337,11 @@ export async function loadFeatureModule(feature: string): Promise<void> {
   // Without this, tier2Promise may be null and dependencies won't be loaded
   await ensureContainerInitialized();
 
-  // Helper to load a module only if not already loaded
+  // Retry configuration for transient failures
+  const MAX_RETRIES = 3;
+  const INITIAL_DELAY_MS = 500;
+
+  // Helper to load a module with retry logic for transient failures
   const loadIfNeeded = async (
     name: string,
     importFn: () => Promise<{ [key: string]: ContainerModule }>
@@ -354,31 +358,62 @@ export async function loadFeatureModule(feature: string): Promise<void> {
     }
 
     const loadPromise = (async () => {
-      try {
-        const moduleExports = await importFn();
-        const module = Object.values(moduleExports)[0] as ContainerModule;
-        if (!module) throw new Error(`Module ${name} export is undefined`);
+      let lastError: Error | null = null;
 
-        // Double-check after async import
-        if (loadedModules.has(name)) {
-          return; // Race condition: another call loaded it while we were importing
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const moduleExports = await importFn();
+          const module = Object.values(moduleExports)[0] as ContainerModule;
+          if (!module) throw new Error(`Module ${name} export is undefined`);
+
+          // Double-check after async import
+          if (loadedModules.has(name)) {
+            return; // Race condition: another call loaded it while we were importing
+          }
+
+          // Register with HMR manager for rebuild
+          hmrManager.registerFeatureModule(name, async () => {
+            const exports = await importFn();
+            return Object.values(exports)[0] as ContainerModule;
+          });
+
+          await hmrManager.loadModules([module]);
+          loadedModules.add(name);
+          return; // Success - exit retry loop
+        } catch (error) {
+          lastError = error as Error;
+
+          // Don't retry on syntax errors or module not found (permanent failures)
+          const errorMessage = String(error);
+          if (
+            errorMessage.includes("SyntaxError") ||
+            errorMessage.includes("Cannot find module")
+          ) {
+            throw error;
+          }
+
+          // Retry with exponential backoff for transient failures (network, etc.)
+          if (attempt < MAX_RETRIES - 1) {
+            const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
+            console.warn(
+              `⚠️ Feature module '${name}' load failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying in ${delay}ms...`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
         }
-
-        // Register with HMR manager for rebuild
-        hmrManager.registerFeatureModule(name, async () => {
-          const exports = await importFn();
-          return Object.values(exports)[0] as ContainerModule;
-        });
-
-        await hmrManager.loadModules([module]);
-        loadedModules.add(name);
-      } finally {
-        pendingModules.delete(name);
       }
+
+      // All retries exhausted
+      throw lastError ?? new Error(`Failed to load module ${name} after ${MAX_RETRIES} attempts`);
     })();
 
     pendingModules.set(name, loadPromise);
-    return loadPromise;
+
+    try {
+      return await loadPromise;
+    } finally {
+      pendingModules.delete(name);
+    }
   };
 
   try {
@@ -566,6 +601,11 @@ export async function loadFeatureModule(feature: string): Promise<void> {
       case "skewlab":
         // SkewLab needs pictograph services from tier 2
         if (tier2Promise) await tier2Promise;
+        break;
+
+      case "infinite-worlds":
+        // Infinite Worlds is self-contained (WebGPU, ECS, Rapier)
+        // No DI dependencies - just mark as loaded
         break;
 
       default:

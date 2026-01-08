@@ -2,11 +2,13 @@
  * Gallery DI Module
  *
  * Registers all gallery services with the inversify container.
+ * Uses safe binding to prevent duplicate bindings during HMR.
  */
 
 import type { ContainerModuleLoadOptions } from "inversify";
 import { ContainerModule } from "inversify";
 import { GALLERY_TYPES } from "./gallery.types";
+import { createSafeBinder } from "$lib/shared/inversify/hmr/safeBind";
 
 // Service implementations
 import { RoomGeometryGenerator } from "../services/implementations/RoomGeometryGenerator";
@@ -22,39 +24,36 @@ import { GalleryPositionSyncer } from "../multiplayer/services/implementations/G
 
 export const galleryModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
+    // Use safe binder to prevent duplicate bindings during HMR
+    const bind = createSafeBinder(options);
+
     // Room geometry generator (singleton - stateless)
-    options
-      .bind(RoomGeometryGenerator)
+    bind(RoomGeometryGenerator)
       .toSelf()
       .inSingletonScope();
 
     // Collision world builder (singleton - stateless)
-    options
-      .bind(CollisionWorldBuilder)
+    bind(CollisionWorldBuilder)
       .toSelf()
       .inSingletonScope();
 
     // Collision resolver (singleton - stateless)
-    options
-      .bind(CollisionResolver)
+    bind(CollisionResolver)
       .toSelf()
       .inSingletonScope();
 
     // Connection geometry generator (singleton - calculates corridor geometry)
-    options
-      .bind(ConnectionGeometryGenerator)
+    bind(ConnectionGeometryGenerator)
       .toSelf()
       .inSingletonScope();
 
     // Layout generator (singleton - uses injected services)
-    options
-      .bind(GALLERY_TYPES.IGalleryLayoutGenerator)
+    bind(GALLERY_TYPES.IGalleryLayoutGenerator)
       .to(MansionLayoutGenerator)
       .inSingletonScope();
 
     // Exhibit loader (singleton - uses injected repository)
-    options
-      .bind(GALLERY_TYPES.IExhibitLoader)
+    bind(GALLERY_TYPES.IExhibitLoader)
       .to(ExhibitLoader)
       .inSingletonScope();
 
@@ -63,14 +62,12 @@ export const galleryModule = new ContainerModule(
     // =========================================================================
 
     // Session manager (singleton - manages session state)
-    options
-      .bind(GALLERY_TYPES.IGallerySessionManager)
+    bind(GALLERY_TYPES.IGallerySessionManager)
       .to(GallerySessionManager)
       .inSingletonScope();
 
     // Position syncer (singleton - handles real-time sync)
-    options
-      .bind(GALLERY_TYPES.IGalleryPositionSyncer)
+    bind(GALLERY_TYPES.IGalleryPositionSyncer)
       .to(GalleryPositionSyncer)
       .inSingletonScope();
   }

@@ -5,6 +5,7 @@
  */
 
 import { ContainerModule, type ContainerModuleLoadOptions } from "inversify";
+import { createHMRSafeBinder } from "../hmr/safeBind";
 import { TYPES } from "../types";
 
 // Contracts
@@ -37,27 +38,26 @@ import { PublicIndexSyncer } from "../../../features/library/services/implementa
  */
 export const libraryModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
+    // Use HMR-safe binder to prevent duplicate bindings during hot reload
+    const bind = createHMRSafeBinder(options);
+
     // Core Library Service
-    options
-      .bind<ILibraryRepository>(TYPES.ILibraryRepository)
+    bind<ILibraryRepository>(TYPES.ILibraryRepository)
       .to(LibraryRepository)
       .inSingletonScope();
 
     // Library Save Service (orchestrates multi-step save workflow)
-    options
-      .bind<ILibrarySaveService>(TYPES.ILibrarySaveService)
+    bind<ILibrarySaveService>(TYPES.ILibrarySaveService)
       .to(LibrarySaveService)
       .inSingletonScope();
 
     // Collection Service (includes system collections like Favorites)
-    options
-      .bind<ICollectionManager>(TYPES.ICollectionManager)
+    bind<ICollectionManager>(TYPES.ICollectionManager)
       .to(CollectionManager)
       .inSingletonScope();
 
     // Public Index Syncer (manages publicSequences collection)
-    options
-      .bind<IPublicIndexSyncer>(TYPES.IPublicIndexSyncer)
+    bind<IPublicIndexSyncer>(TYPES.IPublicIndexSyncer)
       .to(PublicIndexSyncer)
       .inSingletonScope();
 

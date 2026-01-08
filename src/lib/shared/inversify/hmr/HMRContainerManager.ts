@@ -26,6 +26,7 @@ export interface DeferredResolution<T = unknown> {
   reject: (error: Error) => void;
   timestamp: number;
   timeout: number;
+  timeoutId: ReturnType<typeof setTimeout> | null;
 }
 
 export interface SingletonCacheEntry {
@@ -51,6 +52,27 @@ export interface HMRContainerConfig {
   debug: boolean;
   /** Maximum deferred resolutions to queue */
   maxDeferredQueue: number;
+}
+
+export interface HMRMetrics {
+  /** Total HMR cycles completed */
+  totalCycles: number;
+  /** Successful HMR cycles */
+  successfulCycles: number;
+  /** Failed HMR cycles (forced full reload or error) */
+  failedCycles: number;
+  /** Rebuild times in ms (last 10) */
+  rebuildTimes: number[];
+  /** Deferred resolutions per cycle (last 10) */
+  deferredResolutionsPerCycle: number[];
+  /** Singletons restored per cycle (last 10) */
+  singletonsRestoredPerCycle: number[];
+  /** Services that hit fallbacks during HMR */
+  fallbackHits: Map<string, number>;
+  /** Last cycle timestamp */
+  lastCycleTimestamp: number | null;
+  /** Average rebuild time */
+  averageRebuildTime: number;
 }
 
 // ============================================================================
@@ -86,6 +108,25 @@ export class HMRContainerManager {
 
   // Track which services are singletons for caching
   private singletonServices: Set<symbol> = new Set();
+
+  // Telemetry metrics for HMR performance tracking
+  private metrics: HMRMetrics = {
+    totalCycles: 0,
+    successfulCycles: 0,
+    failedCycles: 0,
+    rebuildTimes: [],
+    deferredResolutionsPerCycle: [],
+    singletonsRestoredPerCycle: [],
+    fallbackHits: new Map(),
+    lastCycleTimestamp: null,
+    averageRebuildTime: 0,
+  };
+
+  // Track current cycle stats
+  private currentCycleStats = {
+    deferredCount: 0,
+    singletonsRestored: 0,
+  };
 
   private constructor(config: Partial<HMRContainerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -143,6 +184,46 @@ export class HMRContainerManager {
    */
   isHMRInProgress(): boolean {
     return this.state.phase !== "idle" && this.state.phase !== "ready";
+  }
+
+  /**
+   * Get HMR telemetry metrics for monitoring and debugging
+   */
+  getMetrics(): Readonly<HMRMetrics> {
+    return { ...this.metrics, fallbackHits: new Map(this.metrics.fallbackHits) };
+  }
+
+  /**
+   * Get a summary of HMR health for debugging
+   */
+  getHealthSummary(): {
+    status: "healthy" | "degraded" | "unhealthy";
+    successRate: number;
+    avgRebuildTime: number;
+    totalCycles: number;
+    topFallbackServices: string[];
+  } {
+    const successRate =
+      this.metrics.totalCycles > 0
+        ? this.metrics.successfulCycles / this.metrics.totalCycles
+        : 1;
+
+    const status =
+      successRate >= 0.95 ? "healthy" : successRate >= 0.8 ? "degraded" : "unhealthy";
+
+    // Get top 5 services that hit fallbacks most often
+    const topFallbackServices = Array.from(this.metrics.fallbackHits.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([service]) => service);
+
+    return {
+      status,
+      successRate,
+      avgRebuildTime: this.metrics.averageRebuildTime,
+      totalCycles: this.metrics.totalCycles,
+      topFallbackServices,
+    };
   }
 
   /**
@@ -287,25 +368,23 @@ export class HMRContainerManager {
   }
 
   /**
-   * Load modules into the container
-   * Uses isBound check to prevent duplicate bindings during HMR
+   * Load modules into the container.
+   *
+   * NOTE: For HMR safety, modules should use createHMRSafeBinder from safeBind.ts
+   * which uses options.rebind() for already-bound services.
    */
   async loadModules(modules: ContainerModule[]): Promise<void> {
-    // Load modules only if not already loaded
-    // Inversify doesn't have a built-in "isModuleLoaded" check,
-    // so we track loaded modules ourselves
+    const container = this.state.activeContainer;
+
     for (const module of modules) {
       try {
-        await this.state.activeContainer.load(module);
+        await container.load(module);
       } catch (error) {
-        // If we get an ambiguous binding error, the module was already loaded
         const errorMessage = String(error);
         if (errorMessage.includes("Ambiguous bindings")) {
-          this.log(`Module already loaded, skipping duplicate: ${errorMessage.substring(0, 200)}`, "warn");
-          // Don't throw - just skip this module
-          continue;
+          // This shouldn't happen if modules use createHMRSafeBinder
+          this.log(`Ambiguous binding detected - module should use createHMRSafeBinder: ${errorMessage.substring(0, 200)}`, "error");
         }
-        // For other errors, throw
         this.log(`Failed to load module: ${errorMessage}`, "error");
         throw error;
       }
@@ -383,10 +462,14 @@ export class HMRContainerManager {
    */
   async onHMRAccept(): Promise<void> {
     this.log("HMR accept triggered - starting rebuild");
-    this.state.phase = "rebuilding";
 
-    // Create shadow container for rebuild
+    // Reset current cycle stats
+    this.currentCycleStats = { deferredCount: 0, singletonsRestored: 0 };
+
+    // Create shadow container BEFORE changing phase to prevent race condition
+    // where resolveWithFallbacks tries to access null shadowContainer
     this.state.shadowContainer = new Container();
+    this.state.phase = "rebuilding";
 
     // Start rebuild in shadow container
     this.state.rebuildPromise = this.rebuildShadowContainer();
@@ -427,6 +510,10 @@ export class HMRContainerManager {
       const duration = this.state.startTime
         ? Date.now() - this.state.startTime
         : 0;
+
+      // Record successful cycle metrics
+      this.recordCycleMetrics(duration, true);
+
       this.log(`HMR complete in ${duration}ms`);
     } catch (error) {
       this.log(`HMR rebuild failed: ${error}`, "error");
@@ -435,6 +522,10 @@ export class HMRContainerManager {
       this.state.shadowContainer = null;
       this.state.rebuildPromise = null;
       this.state.phase = "ready";
+
+      // Record failed cycle metrics
+      const duration = this.state.startTime ? Date.now() - this.state.startTime : 0;
+      this.recordCycleMetrics(duration, false);
 
       // Reject all deferred resolutions
       this.rejectDeferredQueue(error as Error);
@@ -467,18 +558,27 @@ export class HMRContainerManager {
    * Resolve with fallbacks during HMR
    */
   private resolveWithFallbacks<T>(serviceIdentifier: symbol): T {
+    const serviceName = serviceIdentifier.toString();
+
+    // Track fallback hit for telemetry
+    const recordFallbackHit = () => {
+      const count = this.metrics.fallbackHits.get(serviceName) ?? 0;
+      this.metrics.fallbackHits.set(serviceName, count + 1);
+    };
+
     // 1. Try singleton cache
     const cached = this.getCachedSingleton<T>(serviceIdentifier);
     if (cached !== null) {
-      this.log(
-        `Using cached singleton during HMR: ${serviceIdentifier.toString()}`
-      );
+      recordFallbackHit();
+      this.log(`Using cached singleton during HMR: ${serviceName}`);
       return cached;
     }
 
     // 2. Try active container (might still work for some services)
     try {
-      return this.state.activeContainer.get<T>(serviceIdentifier);
+      const result = this.state.activeContainer.get<T>(serviceIdentifier);
+      recordFallbackHit();
+      return result;
     } catch {
       // Container is in flux - expected
     }
@@ -486,7 +586,9 @@ export class HMRContainerManager {
     // 3. Try shadow container if it exists and is further along
     if (this.state.shadowContainer && this.state.phase === "swapping") {
       try {
-        return this.state.shadowContainer.get<T>(serviceIdentifier);
+        const result = this.state.shadowContainer.get<T>(serviceIdentifier);
+        recordFallbackHit();
+        return result;
       } catch {
         // Not yet available in shadow
       }
@@ -494,7 +596,7 @@ export class HMRContainerManager {
 
     // 4. Throw with helpful message
     throw new Error(
-      `Service ${serviceIdentifier.toString()} not available during HMR. ` +
+      `Service ${serviceName} not available during HMR. ` +
         `Phase: ${this.state.phase}. Use resolveAsync() for deferred resolution.`
     );
   }
@@ -514,12 +616,11 @@ export class HMRContainerManager {
         reject,
         timestamp: Date.now(),
         timeout: this.config.resolutionTimeout,
+        timeoutId: null,
       };
 
-      this.deferredQueue.push(entry);
-
-      // Set timeout for this resolution
-      setTimeout(() => {
+      // Set timeout for this resolution and store the ID for cleanup
+      entry.timeoutId = setTimeout(() => {
         const index = this.deferredQueue.indexOf(entry);
         if (index !== -1) {
           this.deferredQueue.splice(index, 1);
@@ -531,6 +632,8 @@ export class HMRContainerManager {
           );
         }
       }, this.config.resolutionTimeout);
+
+      this.deferredQueue.push(entry);
     });
   }
 
@@ -541,7 +644,15 @@ export class HMRContainerManager {
     const queue = [...this.deferredQueue];
     this.deferredQueue = [];
 
+    // Track for telemetry
+    this.currentCycleStats.deferredCount = queue.length;
+
     for (const entry of queue) {
+      // Clear the timeout to prevent memory leaks
+      if (entry.timeoutId) {
+        clearTimeout(entry.timeoutId);
+      }
+
       try {
         const service = this.state.activeContainer.get(entry.serviceIdentifier);
         entry.resolve(service);
@@ -564,6 +675,10 @@ export class HMRContainerManager {
     this.deferredQueue = [];
 
     for (const entry of queue) {
+      // Clear the timeout to prevent memory leaks
+      if (entry.timeoutId) {
+        clearTimeout(entry.timeoutId);
+      }
       entry.reject(error);
     }
   }
@@ -641,16 +756,91 @@ export class HMRContainerManager {
   }
 
   /**
-   * Restore singletons after HMR (re-bind cached instances)
+   * Restore singletons after HMR by rebinding cached instances as constant values.
    *
-   * Note: This is tricky with InversifyJS. For true singleton preservation,
-   * the singleton must be designed to be "hot-swappable" or we need to
-   * create a wrapper service.
+   * This preserves singleton state (subscriptions, websockets, accumulated data)
+   * across HMR cycles by replacing the newly-created instances with the cached ones.
    */
   private restoreSingletons(): void {
-    // For now, just clear the cache after HMR
-    // True singleton preservation would require more invasive changes
+    let restoredCount = 0;
+
+    for (const [serviceId, entry] of this.singletonCache) {
+      try {
+        // Check if the service is bound in the new container
+        if (this.state.activeContainer.isBound(serviceId)) {
+          // Rebind to the cached instance instead of the new one (use sync version)
+          this.state.activeContainer.rebindSync(serviceId).toConstantValue(entry.instance);
+          restoredCount++;
+          this.log(`Restored singleton: ${serviceId.toString()}`);
+        } else {
+          // Service not bound in new container - bind as constant
+          this.state.activeContainer.bind(serviceId).toConstantValue(entry.instance);
+          restoredCount++;
+          this.log(`Bound cached singleton: ${serviceId.toString()}`);
+        }
+      } catch (error) {
+        this.log(
+          `Failed to restore singleton ${serviceId.toString()}: ${error}`,
+          "warn"
+        );
+      }
+    }
+
+    // Track for telemetry
+    this.currentCycleStats.singletonsRestored = restoredCount;
+
+    this.log(`Restored ${restoredCount}/${this.singletonCache.size} singletons`);
     this.singletonCache.clear();
+  }
+
+  /**
+   * Record metrics for a completed HMR cycle
+   */
+  private recordCycleMetrics(durationMs: number, success: boolean): void {
+    const MAX_HISTORY = 10;
+
+    this.metrics.totalCycles++;
+    this.metrics.lastCycleTimestamp = Date.now();
+
+    if (success) {
+      this.metrics.successfulCycles++;
+    } else {
+      this.metrics.failedCycles++;
+    }
+
+    // Track rebuild time
+    this.metrics.rebuildTimes.push(durationMs);
+    if (this.metrics.rebuildTimes.length > MAX_HISTORY) {
+      this.metrics.rebuildTimes.shift();
+    }
+
+    // Calculate average rebuild time
+    this.metrics.averageRebuildTime =
+      this.metrics.rebuildTimes.reduce((a, b) => a + b, 0) /
+      this.metrics.rebuildTimes.length;
+
+    // Track deferred resolutions
+    this.metrics.deferredResolutionsPerCycle.push(this.currentCycleStats.deferredCount);
+    if (this.metrics.deferredResolutionsPerCycle.length > MAX_HISTORY) {
+      this.metrics.deferredResolutionsPerCycle.shift();
+    }
+
+    // Track singletons restored
+    this.metrics.singletonsRestoredPerCycle.push(this.currentCycleStats.singletonsRestored);
+    if (this.metrics.singletonsRestoredPerCycle.length > MAX_HISTORY) {
+      this.metrics.singletonsRestoredPerCycle.shift();
+    }
+
+    // Log metrics summary in debug mode
+    if (this.config.debug) {
+      const health = this.getHealthSummary();
+      this.log(
+        `HMR Metrics: ${health.status} | ` +
+          `Success rate: ${(health.successRate * 100).toFixed(1)}% | ` +
+          `Avg rebuild: ${health.avgRebuildTime.toFixed(0)}ms | ` +
+          `Cycles: ${health.totalCycles}`
+      );
+    }
   }
 
   /**

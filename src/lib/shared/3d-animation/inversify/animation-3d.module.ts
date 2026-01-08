@@ -2,11 +2,13 @@
  * Animation 3D DI Module
  *
  * Registers all 3D animation services with the inversify container.
+ * Uses safe binding to prevent duplicate bindings during HMR.
  */
 
 import type { ContainerModuleLoadOptions } from "inversify";
 import { ContainerModule } from "inversify";
 import { ANIMATION_3D_TYPES } from "./animation-3d.types";
+import { createSafeBinder } from "../../inversify/hmr/safeBind";
 
 // Implementations
 import { AngleMathCalculator } from "../services/implementations/AngleMathCalculator";
@@ -31,44 +33,40 @@ import { LegAnimator } from "../services/implementations/LegAnimator";
 
 export const animation3DModule = new ContainerModule(
   (options: ContainerModuleLoadOptions) => {
+    // Use safe binder to prevent duplicate bindings during HMR
+    const bind = createSafeBinder(options);
+
     // Core math services (no dependencies)
-    options
-      .bind(ANIMATION_3D_TYPES.IAngleMathCalculator)
+    bind(ANIMATION_3D_TYPES.IAngleMathCalculator)
       .to(AngleMathCalculator)
       .inSingletonScope();
 
-    options
-      .bind(ANIMATION_3D_TYPES.IOrientationMapper)
+    bind(ANIMATION_3D_TYPES.IOrientationMapper)
       .to(OrientationMapper)
       .inSingletonScope();
 
     // Motion calculator (depends on angle math + orientation)
-    options
-      .bind(ANIMATION_3D_TYPES.IMotionCalculator3D)
+    bind(ANIMATION_3D_TYPES.IMotionCalculator3D)
       .to(MotionCalculator)
       .inSingletonScope();
 
     // Coordinate mapping
-    options
-      .bind(ANIMATION_3D_TYPES.IPlaneCoordinateMapper)
+    bind(ANIMATION_3D_TYPES.IPlaneCoordinateMapper)
       .to(PlaneCoordinateMapper)
       .inSingletonScope();
 
     // Prop state interpolation (depends on angle math, orientation, motion calculator)
-    options
-      .bind(ANIMATION_3D_TYPES.IPropStateInterpolator)
+    bind(ANIMATION_3D_TYPES.IPropStateInterpolator)
       .to(PropStateInterpolator)
       .inSingletonScope();
 
     // Sequence conversion
-    options
-      .bind(ANIMATION_3D_TYPES.ISequenceConverter)
+    bind(ANIMATION_3D_TYPES.ISequenceConverter)
       .to(SequenceConverter)
       .inSingletonScope();
 
     // Persistence
-    options
-      .bind(ANIMATION_3D_TYPES.IAnimation3DPersister)
+    bind(ANIMATION_3D_TYPES.IAnimation3DPersister)
       .to(Animation3DPersister)
       .inSingletonScope();
 
@@ -80,23 +78,20 @@ export const animation3DModule = new ContainerModule(
     // This enables dual/multi-avatar mode where avatars don't share state.
 
     // Skeleton management (GLTF loading, bone access)
-    options
-      .bind(ANIMATION_3D_TYPES.IAvatarSkeletonBuilder)
+    bind(ANIMATION_3D_TYPES.IAvatarSkeletonBuilder)
       .to(AvatarSkeletonBuilder)
       .inTransientScope();
 
     // IK solver (analytic, CCD, FABRIK algorithms)
-    options.bind(ANIMATION_3D_TYPES.IIKSolver).to(IKSolver).inTransientScope();
+    bind(ANIMATION_3D_TYPES.IIKSolver).to(IKSolver).inTransientScope();
 
     // Customization (body type, skin tone, proportions)
-    options
-      .bind(ANIMATION_3D_TYPES.IAvatarCustomizer)
+    bind(ANIMATION_3D_TYPES.IAvatarCustomizer)
       .to(AvatarCustomizer)
       .inTransientScope();
 
     // Animation (pose blending, transitions)
-    options
-      .bind(ANIMATION_3D_TYPES.IAvatarAnimator)
+    bind(ANIMATION_3D_TYPES.IAvatarAnimator)
       .to(AvatarAnimator)
       .inTransientScope();
 
@@ -105,8 +100,7 @@ export const animation3DModule = new ContainerModule(
     // ═══════════════════════════════════════════════════════════════════════════
 
     // Duet persistence (localStorage, sequence resolution)
-    options
-      .bind(ANIMATION_3D_TYPES.IDuetPersister)
+    bind(ANIMATION_3D_TYPES.IDuetPersister)
       .to(DuetPersister)
       .inSingletonScope();
 
@@ -115,8 +109,7 @@ export const animation3DModule = new ContainerModule(
     // ═══════════════════════════════════════════════════════════════════════════
     // Transient scope - each avatar needs its own leg animator
 
-    options
-      .bind(ANIMATION_3D_TYPES.ILegAnimator)
+    bind(ANIMATION_3D_TYPES.ILegAnimator)
       .to(LegAnimator)
       .inTransientScope();
   }

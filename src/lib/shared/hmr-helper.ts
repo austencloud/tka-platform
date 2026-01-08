@@ -19,11 +19,13 @@ export function shouldForceReload(): boolean {
   }
 
   // If the root element exists but has no children after HMR, we're in a bad state
+  // We rely solely on content check - if HMR left us with an empty app, reload
   const hasContent = rootElement.children.length > 0;
-  const isHMRUpdate = !!(window as unknown as Record<string, unknown>)
-    .__vite_plugin_react_preamble_installed__;
 
-  return isHMRUpdate && !hasContent;
+  // Only trigger reload if we're in dev mode (HMR active) and have no content
+  const isDevMode = import.meta.env.DEV;
+
+  return isDevMode && !hasContent;
 }
 
 /**
