@@ -108,11 +108,12 @@ export class PromoOrchestrator implements IPromoOrchestrator {
         this.screenshotInjector.initialize(screenMesh);
       }
 
-      // Initialize animation controller with device and camera
+      // Initialize animation controller with device, camera, and distance for scaling
       const deviceGroup = this.sceneManager.getDevice();
       const camera = this.sceneManager.getCamera();
+      const cameraDistance = this.sceneManager.getCameraDistance();
       if (deviceGroup && camera) {
-        this.animationController.initialize(deviceGroup, camera);
+        this.animationController.initialize(deviceGroup, camera, cameraDistance);
       }
 
       console.log(`[PromoOrchestrator] Device loaded: ${device}`);

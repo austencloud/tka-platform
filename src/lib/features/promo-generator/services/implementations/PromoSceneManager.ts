@@ -103,6 +103,9 @@ export class PromoSceneManager implements IPromoSceneManager {
   private currentDeviceType: DeviceType | null = null;
   private orbitControls: OrbitControls | null = null;
 
+  /** Recommended camera distance based on model size */
+  private _cameraDistance: number = 5;
+
   constructor() {
     this.gltfLoader = new GLTFLoader();
     this.rgbeLoader = new RGBELoader();
@@ -146,8 +149,6 @@ export class PromoSceneManager implements IPromoSceneManager {
     this.orbitControls.dampingFactor = 0.05;
     this.orbitControls.target.set(0, 0, 0);
     this.orbitControls.update();
-
-    console.log("[PromoSceneManager] Initialized with OrbitControls");
   }
 
   private setupDefaultLighting(): void {
@@ -215,7 +216,6 @@ export class PromoSceneManager implements IPromoSceneManager {
             name === screenMeshName.toLowerCase()
           ) {
             this.screenMesh = child;
-            console.log(`[PromoSceneManager] Found screen mesh: ${child.name}`);
           }
         }
       });
@@ -225,9 +225,6 @@ export class PromoSceneManager implements IPromoSceneManager {
         const screenCandidate = this.findLargestFlatMesh(this.device);
         if (screenCandidate) {
           this.screenMesh = screenCandidate;
-          console.log(
-            `[PromoSceneManager] Auto-detected screen mesh: ${screenCandidate.name}`
-          );
         }
       }
 
@@ -254,50 +251,37 @@ export class PromoSceneManager implements IPromoSceneManager {
       // Replace device reference with pivot
       this.device = pivot;
 
-      // Debug: log model info
+      // Auto-orient the model: many phone models are lying flat
       const newBbox = new THREE.Box3().setFromObject(this.device);
       const newSize = newBbox.getSize(new THREE.Vector3());
-      console.log(
-        `[PromoSceneManager] Model centered. Original size: ${size.x.toFixed(2)}, ${size.y.toFixed(2)}, ${size.z.toFixed(2)}`
-      );
-      console.log(
-        `[PromoSceneManager] Normalized size: ${newSize.x.toFixed(2)}, ${newSize.y.toFixed(2)}, ${newSize.z.toFixed(2)}`
-      );
-
-      // Auto-orient the model: many phone models are lying flat
       // If the model is wider than tall in the current orientation, rotate it
       if (newSize.y < newSize.z) {
         // Phone is lying down (Z is taller than Y), rotate to stand up
         this.device.rotation.x = -Math.PI / 2;
-        console.log("[PromoSceneManager] Auto-rotated model to stand upright (Z was taller than Y)");
       } else if (newSize.y < newSize.x && newSize.z < newSize.x) {
         // Phone is on its side (X is the longest), rotate 90° on Z
         this.device.rotation.z = Math.PI / 2;
-        console.log("[PromoSceneManager] Auto-rotated model (X was longest dimension)");
       }
 
       // Update camera position based on model size
       if (this.camera) {
-        // Position camera to see the whole model nicely - use normalized model height
         const finalBbox = new THREE.Box3().setFromObject(this.device);
         const finalSize = finalBbox.getSize(new THREE.Vector3());
-        const distance = Math.max(finalSize.x, finalSize.y, finalSize.z) * 2.5;
-        this.camera.position.set(0, 0, distance);
+        // Camera distance: phone should fill a good portion of frame
+        // Model is ~2 units, camera at 5 gives nice framing with preset scaling
+        this._cameraDistance = Math.max(finalSize.x, finalSize.y, finalSize.z) * 2.5;
+        this.camera.position.set(0, 0, this._cameraDistance);
         this.camera.lookAt(0, 0, 0);
-        console.log(`[PromoSceneManager] Camera at distance: ${distance.toFixed(2)}`);
-        console.log(`[PromoSceneManager] Final model size: ${finalSize.x.toFixed(2)}, ${finalSize.y.toFixed(2)}, ${finalSize.z.toFixed(2)}`);
       }
 
-      // Add debug helpers (can be removed in production)
-      const axesHelper = new THREE.AxesHelper(2);
-      this.scene.add(axesHelper);
-      const gridHelper = new THREE.GridHelper(4, 10, 0x444444, 0x222222);
-      gridHelper.position.y = -1.5;
-      this.scene.add(gridHelper);
+      // Debug helpers disabled for production
+      // const axesHelper = new THREE.AxesHelper(2);
+      // this.scene.add(axesHelper);
+      // const gridHelper = new THREE.GridHelper(4, 10, 0x444444, 0x222222);
+      // gridHelper.position.y = -1.5;
+      // this.scene.add(gridHelper);
 
       this.scene.add(this.device);
-
-      console.log(`[PromoSceneManager] Loaded device from: ${modelPath}`);
     } catch (error) {
       console.error("[PromoSceneManager] Failed to load device:", error);
       throw error;
@@ -348,8 +332,6 @@ export class PromoSceneManager implements IPromoSceneManager {
     if (config.intensity !== undefined) {
       this.renderer.toneMappingExposure = config.intensity;
     }
-
-    console.log(`[PromoSceneManager] Environment set: ${config.type}`);
   }
 
   getSceneRefs(): SceneRefs {
@@ -401,6 +383,14 @@ export class PromoSceneManager implements IPromoSceneManager {
     return Object.values(DEVICE_CONFIGS);
   }
 
+  /**
+   * Get the recommended camera distance for the current model.
+   * Used by animation controller to scale preset camera positions.
+   */
+  getCameraDistance(): number {
+    return this._cameraDistance;
+  }
+
   dispose(): void {
     // Dispose orbit controls
     if (this.orbitControls) {
@@ -430,8 +420,6 @@ export class PromoSceneManager implements IPromoSceneManager {
 
     this.camera = null;
     this.screenMesh = null;
-
-    console.log("[PromoSceneManager] Disposed");
   }
 
   /**

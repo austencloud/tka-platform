@@ -2,9 +2,8 @@
   /**
    * PromoGenerator Component
    *
-   * Main UI for the 3D device mockup promo video generator.
-   * Provides controls for device selection, screenshot loading,
-   * animation presets, and video export.
+   * Modern 2026-style UI for the 3D device mockup promo video generator.
+   * Features visual selectors, floating controls, and immersive canvas.
    */
 
   import { onMount, onDestroy } from "svelte";
@@ -22,25 +21,22 @@
 
   // Props
   interface Props {
-    /** Initial device model path (optional) */
     initialModelPath?: string;
-    /** Initial screenshot path (optional) */
     initialScreenshot?: string;
-    /** Width of the preview canvas */
     width?: number;
-    /** Height of the preview canvas */
     height?: number;
   }
 
   let {
     initialModelPath = "",
     initialScreenshot = "",
-    width = 800,
-    height = 600,
+    width = 1920,
+    height = 1080,
   }: Props = $props();
 
   // State
   let canvas: HTMLCanvasElement | null = $state(null);
+  let canvasContainer: HTMLDivElement | null = $state(null);
   let orchestrator: IPromoOrchestrator | null = $state(null);
   let state: PromoGeneratorState = $state({
     isReady: false,
@@ -57,44 +53,56 @@
   let exportStage: ExportStage = $state("preparing");
   let isPlaying: boolean = $state(false);
   let progress: number = $state(0);
+  let showExportPanel: boolean = $state(false);
 
   // Export settings
   let exportResolution: "720p" | "1080p" | "4k" = $state("1080p");
   let exportFps: 30 | 60 = $state(60);
-  let exportFilename: string = $state("tka-promo");
 
   // File input refs
   let modelInput: HTMLInputElement | null = $state(null);
   let screenshotInput: HTMLInputElement | null = $state(null);
 
+  // Environment options with visual representation
+  const environments: { id: EnvironmentType; label: string; color: string }[] = [
+    { id: "studio", label: "Studio", color: "#1a1a2e" },
+    { id: "gradient", label: "Gradient", color: "linear-gradient(135deg, #1a1a2e, #0f0f1a)" },
+    { id: "space", label: "Space", color: "#000000" },
+    { id: "sunset", label: "Sunset", color: "linear-gradient(135deg, #ff6b35, #f7931e)" },
+  ];
+
+  // Resolution options
+  const resolutions: { id: "720p" | "1080p" | "4k"; label: string; dims: string }[] = [
+    { id: "720p", label: "HD", dims: "1280×720" },
+    { id: "1080p", label: "Full HD", dims: "1920×1080" },
+    { id: "4k", label: "4K", dims: "3840×2160" },
+  ];
+
   // Initialize on mount
   onMount(async () => {
-    if (!canvas) return;
+    if (!canvas || !canvasContainer) return;
 
     try {
-      // Load the promo generator module
       await loadFeatureModule("promo-generator");
-
-      // Resolve orchestrator
       orchestrator = resolve<IPromoOrchestrator>(TYPES.IPromoOrchestrator);
 
-      // Initialize with canvas
-      await orchestrator.initialize(canvas, width, height);
+      // Get container dimensions for responsive canvas
+      const rect = canvasContainer.getBoundingClientRect();
+      const canvasWidth = Math.floor(rect.width);
+      const canvasHeight = Math.floor(rect.height);
 
-      // Subscribe to state changes
+      await orchestrator.initialize(canvas, canvasWidth, canvasHeight);
+
       orchestrator.subscribe((newState) => {
         state = newState;
       });
 
-      // Get available presets
       availablePresets = orchestrator.getAvailablePresets();
 
-      // Load initial model if provided
       if (initialModelPath) {
         await orchestrator.loadDevice(initialModelPath);
       }
 
-      // Load initial screenshot if provided
       if (initialScreenshot) {
         await orchestrator.loadScreenshot(initialScreenshot);
       }
@@ -103,12 +111,11 @@
     }
   });
 
-  // Cleanup on destroy
   onDestroy(() => {
     orchestrator?.dispose();
   });
 
-  // Handle model file selection
+  // Handlers
   async function handleModelUpload(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -122,7 +129,6 @@
     }
   }
 
-  // Handle screenshot file selection
   async function handleScreenshotUpload(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -136,40 +142,34 @@
     }
   }
 
-  // Handle preset change
   function handlePresetChange(presetId: string) {
     if (!orchestrator) return;
     selectedPreset = presetId;
     orchestrator.usePreset(presetId);
   }
 
-  // Handle environment change
   function handleEnvironmentChange(env: EnvironmentType) {
     if (!orchestrator) return;
     selectedEnvironment = env;
     orchestrator.setEnvironment(env);
   }
 
-  // Play preview
-  function playPreview() {
+  function togglePlayback() {
     if (!orchestrator) return;
-    isPlaying = true;
-    orchestrator.preview((prog) => {
-      progress = prog;
-      if (prog >= 1) {
-        isPlaying = false;
-      }
-    });
+    if (isPlaying) {
+      orchestrator.pausePreview();
+      isPlaying = false;
+    } else {
+      isPlaying = true;
+      orchestrator.preview((prog) => {
+        progress = prog;
+        if (prog >= 1) {
+          isPlaying = false;
+        }
+      });
+    }
   }
 
-  // Pause preview
-  function pausePreview() {
-    if (!orchestrator) return;
-    orchestrator.pausePreview();
-    isPlaying = false;
-  }
-
-  // Stop preview
   function stopPreview() {
     if (!orchestrator) return;
     orchestrator.stopPreview();
@@ -177,7 +177,6 @@
     progress = 0;
   }
 
-  // Handle seek
   function handleSeek(event: Event) {
     const input = event.target as HTMLInputElement;
     const value = parseFloat(input.value);
@@ -186,7 +185,6 @@
     progress = value;
   }
 
-  // Export video
   async function exportVideo() {
     if (!orchestrator) return;
 
@@ -194,7 +192,7 @@
       resolution: exportResolution,
       fps: exportFps,
       format: "mp4",
-      filename: exportFilename,
+      filename: `promo-${Date.now()}`,
     };
 
     await orchestrator.export(config, (prog, stage) => {
@@ -203,216 +201,266 @@
     });
   }
 
-  // Cancel export
   function cancelExport() {
-    if (!orchestrator) return;
-    orchestrator.cancelExport();
+    orchestrator?.cancelExport();
+  }
+
+  // Get preset icon based on type
+  function getPresetIcon(id: string): string {
+    const icons: Record<string, string> = {
+      "tka-showcase": "video",
+    };
+    return icons[id] || "cube";
   }
 </script>
 
 <div class="promo-generator">
-  <div class="preview-container">
-    <canvas
-      bind:this={canvas}
-      {width}
-      {height}
-      class="preview-canvas"
-    ></canvas>
+  <!-- Hidden file inputs -->
+  <input
+    bind:this={modelInput}
+    type="file"
+    accept=".glb,.gltf"
+    onchange={handleModelUpload}
+    class="hidden-input"
+  />
+  <input
+    bind:this={screenshotInput}
+    type="file"
+    accept="image/*"
+    onchange={handleScreenshotUpload}
+    class="hidden-input"
+  />
+
+  <!-- Main Canvas Area -->
+  <div class="canvas-area" bind:this={canvasContainer}>
+    <canvas bind:this={canvas} class="preview-canvas"></canvas>
 
     {#if !state.isReady}
       <div class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Initializing...</p>
+        <div class="loader"></div>
+        <span>Initializing 3D Engine...</span>
       </div>
     {/if}
 
     {#if state.isExporting}
       <div class="export-overlay">
-        <div class="export-progress">
-          <div class="progress-bar">
-            <div
-              class="progress-fill"
-              style="width: {state.exportProgress}%"
-            ></div>
+        <div class="export-modal">
+          <div class="export-header">
+            <span class="export-title">Rendering Video</span>
+            <span class="export-stage">{exportStage}</span>
           </div>
-          <p class="export-stage">{exportStage}</p>
-          <p class="export-percent">{Math.round(state.exportProgress)}%</p>
+          <div class="export-progress-ring">
+            <svg viewBox="0 0 100 100">
+              <circle class="progress-bg" cx="50" cy="50" r="45" />
+              <circle
+                class="progress-fill"
+                cx="50"
+                cy="50"
+                r="45"
+                style="stroke-dashoffset: {283 - (283 * state.exportProgress) / 100}"
+              />
+            </svg>
+            <span class="progress-text">{Math.round(state.exportProgress)}%</span>
+          </div>
           <button class="cancel-btn" onclick={cancelExport}>Cancel</button>
         </div>
       </div>
     {/if}
-  </div>
 
-  <div class="controls">
-    <section class="control-section">
-      <h3>Device Model</h3>
-      <input
-        bind:this={modelInput}
-        type="file"
-        accept=".glb,.gltf"
-        onchange={handleModelUpload}
-        class="file-input"
-      />
+    <!-- Floating Controls - Top Left: Upload Actions -->
+    <div class="floating-controls top-left">
       <button
-        class="upload-btn"
+        class="icon-btn"
         onclick={() => modelInput?.click()}
         disabled={!state.isReady}
+        title="Load 3D Model"
       >
-        Load Device Model (.glb)
+        <i class="fas fa-cube"></i>
       </button>
-      {#if state.currentDevice}
-        <p class="current-value">Current: {state.currentDevice}</p>
-      {/if}
-    </section>
-
-    <section class="control-section">
-      <h3>Screenshot</h3>
-      <input
-        bind:this={screenshotInput}
-        type="file"
-        accept="image/*"
-        onchange={handleScreenshotUpload}
-        class="file-input"
-      />
       <button
-        class="upload-btn"
+        class="icon-btn"
         onclick={() => screenshotInput?.click()}
         disabled={!state.isReady}
+        title="Load Screenshot"
       >
-        Load Screenshot
+        <i class="fas fa-image"></i>
       </button>
-      {#if state.screenshots.length > 0}
-        <p class="current-value">
-          {state.screenshots.length} screenshot(s) loaded
-        </p>
-      {/if}
-    </section>
+    </div>
 
-    <section class="control-section">
-      <h3>Animation Preset</h3>
-      <select
-        value={selectedPreset}
-        onchange={(e) => handlePresetChange(e.currentTarget.value)}
-        disabled={!state.isReady}
-      >
-        {#each availablePresets as preset}
-          <option value={preset.id}>{preset.name}</option>
-        {/each}
-      </select>
-      {#if selectedPreset}
-        {@const preset = availablePresets.find((p) => p.id === selectedPreset)}
-        {#if preset}
-          <p class="preset-description">{preset.description}</p>
-        {/if}
-      {/if}
-    </section>
-
-    <section class="control-section">
-      <h3>Environment</h3>
-      <select
-        value={selectedEnvironment}
-        onchange={(e) =>
-          handleEnvironmentChange(e.currentTarget.value as EnvironmentType)}
-        disabled={!state.isReady}
-      >
-        <option value="studio">Studio</option>
-        <option value="gradient">Gradient</option>
-        <option value="space">Space</option>
-        <option value="sunset">Sunset</option>
-      </select>
-    </section>
-
-    <section class="control-section">
-      <h3>Preview</h3>
-      <div class="playback-controls">
-        {#if !isPlaying}
-          <button
-            class="play-btn"
-            onclick={playPreview}
-            disabled={!state.isReady || state.isExporting}
-          >
-            ▶ Play
-          </button>
-        {:else}
-          <button class="pause-btn" onclick={pausePreview}>⏸ Pause</button>
-        {/if}
-        <button
-          class="stop-btn"
-          onclick={stopPreview}
-          disabled={!state.isReady}
-        >
-          ⏹ Stop
-        </button>
-      </div>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.001"
-        value={progress}
-        oninput={handleSeek}
-        disabled={!state.isReady}
-        class="seek-slider"
-      />
-    </section>
-
-    <section class="control-section">
-      <h3>Export Settings</h3>
-      <div class="export-settings">
-        <label>
-          Resolution:
-          <select bind:value={exportResolution}>
-            <option value="720p">720p</option>
-            <option value="1080p">1080p</option>
-            <option value="4k">4K</option>
-          </select>
-        </label>
-        <label>
-          FPS:
-          <select bind:value={exportFps}>
-            <option value={30}>30 fps</option>
-            <option value={60}>60 fps</option>
-          </select>
-        </label>
-        <label>
-          Filename:
-          <input type="text" bind:value={exportFilename} />
-        </label>
-      </div>
+    <!-- Floating Controls - Top Right: Export -->
+    <div class="floating-controls top-right">
       <button
-        class="export-btn"
-        onclick={exportVideo}
+        class="export-trigger"
+        onclick={() => (showExportPanel = !showExportPanel)}
         disabled={!state.isReady || state.isExporting}
       >
-        Export Video
+        <i class="fas fa-download"></i>
+        <span>Export</span>
       </button>
+
+      {#if showExportPanel}
+        <div class="export-panel">
+          <div class="panel-section">
+            <span class="section-label">Resolution</span>
+            <div class="pill-group">
+              {#each resolutions as res}
+                <button
+                  class="pill"
+                  class:active={exportResolution === res.id}
+                  onclick={() => (exportResolution = res.id)}
+                >
+                  <span class="pill-label">{res.label}</span>
+                  <span class="pill-sub">{res.dims}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+          <div class="panel-section">
+            <span class="section-label">Frame Rate</span>
+            <div class="pill-group">
+              <button
+                class="pill"
+                class:active={exportFps === 30}
+                onclick={() => (exportFps = 30)}
+              >
+                30 fps
+              </button>
+              <button
+                class="pill"
+                class:active={exportFps === 60}
+                onclick={() => (exportFps = 60)}
+              >
+                60 fps
+              </button>
+            </div>
+          </div>
+          <button class="render-btn" onclick={exportVideo} disabled={state.isExporting}>
+            <i class="fas fa-film"></i>
+            Render Video
+          </button>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Floating Controls - Bottom Center: Playback -->
+    <div class="floating-controls bottom-center">
+      <div class="playback-bar">
+        <button class="playback-btn" onclick={togglePlayback} disabled={!state.isReady}>
+          {#if isPlaying}
+            <i class="fas fa-pause"></i>
+          {:else}
+            <i class="fas fa-play"></i>
+          {/if}
+        </button>
+        <div class="timeline-container">
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.001"
+            value={progress}
+            oninput={handleSeek}
+            disabled={!state.isReady}
+            class="timeline"
+          />
+          <div class="timeline-fill" style="width: {progress * 100}%"></div>
+        </div>
+        <button class="playback-btn stop" onclick={stopPreview} disabled={!state.isReady}>
+          <i class="fas fa-stop"></i>
+        </button>
+        <span class="time-display">
+          {Math.floor(progress * 21)}s
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar: Simple workflow -->
+  <aside class="sidebar">
+    <section class="sidebar-section">
+      <h3 class="section-title">Animation</h3>
+      <div class="animation-info">
+        <p class="animation-desc">
+          7 cinematic shots with hard cuts between angles.
+          Each shot showcases a different screenshot.
+        </p>
+        <div class="shot-list">
+          <div class="shot-item">
+            <span class="shot-time">0-3s</span>
+            <span class="shot-desc">Front zoom in</span>
+          </div>
+          <div class="shot-item">
+            <span class="shot-time">3-6s</span>
+            <span class="shot-desc">Right angle pan</span>
+          </div>
+          <div class="shot-item">
+            <span class="shot-time">6-9s</span>
+            <span class="shot-desc">Left angle drift</span>
+          </div>
+          <div class="shot-item">
+            <span class="shot-time">9-12s</span>
+            <span class="shot-desc">Low angle rise</span>
+          </div>
+          <div class="shot-item">
+            <span class="shot-time">12-15s</span>
+            <span class="shot-desc">High angle descent</span>
+          </div>
+          <div class="shot-item">
+            <span class="shot-time">15-18s</span>
+            <span class="shot-desc">Three-quarter zoom</span>
+          </div>
+          <div class="shot-item">
+            <span class="shot-time">18-21s</span>
+            <span class="shot-desc">Hero drift</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sidebar-section">
+      <h3 class="section-title">Background</h3>
+      <div class="env-grid">
+        {#each environments as env}
+          <button
+            class="env-card"
+            class:active={selectedEnvironment === env.id}
+            onclick={() => handleEnvironmentChange(env.id)}
+            disabled={!state.isReady}
+            style="--env-color: {env.color}"
+          >
+            <div class="env-preview"></div>
+            <span class="env-label">{env.label}</span>
+          </button>
+        {/each}
+      </div>
     </section>
 
     {#if state.error}
-      <div class="error-message">
-        <p>{state.error}</p>
+      <div class="error-toast">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{state.error}</span>
       </div>
     {/if}
-  </div>
+  </aside>
 </div>
 
 <style>
   .promo-generator {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg, 24px);
-    padding: var(--spacing-lg, 24px);
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border-radius: var(--radius-lg, 12px);
-    color: var(--theme-text, #ffffff);
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    height: 100vh;
+    background: #0a0a0f;
+    overflow: hidden;
   }
 
-  .preview-container {
+  .hidden-input {
+    display: none;
+  }
+
+  /* Canvas Area */
+  .canvas-area {
     position: relative;
-    width: 100%;
-    aspect-ratio: 4/3;
-    background: #000;
-    border-radius: var(--radius-md, 8px);
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
     overflow: hidden;
   }
 
@@ -422,220 +470,589 @@
     display: block;
   }
 
-  .loading-overlay,
-  .export-overlay {
+  /* Loading Overlay */
+  .loading-overlay {
     position: absolute;
     inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.8);
+    gap: 16px;
+    background: rgba(10, 10, 15, 0.9);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
   }
 
-  .spinner {
+  .loader {
     width: 48px;
     height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.2);
-    border-top-color: var(--theme-accent, #6366f1);
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #6366f1;
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
   }
 
-  .export-progress {
+  /* Floating Controls */
+  .floating-controls {
+    position: absolute;
     display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .floating-controls.top-left {
+    top: 20px;
+    left: 20px;
+  }
+
+  .floating-controls.top-right {
+    top: 20px;
+    right: 20px;
     flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-md, 16px);
-    width: 80%;
-    max-width: 400px;
+    align-items: flex-end;
   }
 
-  .progress-bar {
-    width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    overflow: hidden;
+  .floating-controls.bottom-center {
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
-  .progress-fill {
-    height: 100%;
-    background: var(--theme-accent, #6366f1);
-    transition: width 0.1s ease;
-  }
-
-  .export-stage {
-    font-size: var(--font-size-sm, 14px);
-    text-transform: capitalize;
-    opacity: 0.8;
-  }
-
-  .export-percent {
-    font-size: var(--font-size-lg, 20px);
-    font-weight: 600;
-  }
-
-  .controls {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-md, 16px);
-  }
-
-  .control-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm, 8px);
-    padding: var(--spacing-md, 16px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-radius: var(--radius-md, 8px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .control-section h3 {
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-  }
-
-  .file-input {
-    display: none;
-  }
-
-  .upload-btn,
-  .play-btn,
-  .pause-btn,
-  .stop-btn,
-  .export-btn,
-  .cancel-btn {
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  .icon-btn {
+    width: 44px;
+    height: 44px;
     border: none;
-    border-radius: var(--radius-sm, 4px);
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 500;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+  }
+
+  .icon-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .icon-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Export Trigger */
+  .export-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
-  .upload-btn {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
+  .export-trigger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
   }
 
-  .upload-btn:hover:not(:disabled) {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.12));
-  }
-
-  .play-btn,
-  .export-btn {
-    background: var(--theme-accent, #6366f1);
-    color: white;
-  }
-
-  .play-btn:hover:not(:disabled),
-  .export-btn:hover:not(:disabled) {
-    background: var(--theme-accent-hover, #5558e3);
-  }
-
-  .pause-btn {
-    background: var(--semantic-warning, #f59e0b);
-    color: white;
-  }
-
-  .stop-btn,
-  .cancel-btn {
-    background: var(--semantic-error, #ef4444);
-    color: white;
-  }
-
-  button:disabled {
+  .export-trigger:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
-  select,
-  input[type="text"] {
-    padding: var(--spacing-sm, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-sm, 4px);
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-sm, 14px);
+  /* Export Panel */
+  .export-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    padding: 16px;
+    background: rgba(20, 20, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    min-width: 280px;
   }
 
-  select:focus,
-  input[type="text"]:focus {
-    outline: none;
-    border-color: var(--theme-accent, #6366f1);
+  .panel-section {
+    margin-bottom: 16px;
   }
 
-  .playback-controls {
+  .section-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .pill-group {
     display: flex;
-    gap: var(--spacing-sm, 8px);
+    gap: 6px;
   }
 
-  .seek-slider {
-    width: 100%;
-    height: 8px;
-    border-radius: 4px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    appearance: none;
-    cursor: pointer;
-  }
-
-  .seek-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
-    cursor: pointer;
-  }
-
-  .export-settings {
+  .pill {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm, 8px);
-  }
-
-  .export-settings label {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: var(--spacing-sm, 8px);
-    font-size: var(--font-size-sm, 14px);
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-  .export-settings select,
-  .export-settings input {
-    flex: 1;
-    max-width: 150px;
+  .pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
-  .current-value,
-  .preset-description {
-    font-size: var(--font-size-xs, 12px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+  .pill.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #6366f1;
+    color: #fff;
+  }
+
+  .pill-label {
+    font-weight: 600;
+  }
+
+  .pill-sub {
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  .render-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .render-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+  }
+
+  /* Playback Bar */
+  .playback-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: rgba(20, 20, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(16px);
+  }
+
+  .playback-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .playback-btn.stop {
+    background: rgba(255, 255, 255, 0.1);
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .playback-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+  }
+
+  .playback-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .timeline-container {
+    position: relative;
+    width: 200px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .timeline {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .timeline-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
+  .time-display {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px;
+    background: rgba(15, 15, 20, 0.95);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .section-title {
     margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
 
-  .error-message {
-    grid-column: 1 / -1;
-    padding: var(--spacing-md, 16px);
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid var(--semantic-error, #ef4444);
-    border-radius: var(--radius-md, 8px);
-    color: var(--semantic-error, #ef4444);
+  /* Animation Info */
+  .animation-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  .error-message p {
+  .animation-desc {
     margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .shot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .shot-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    transition: background 0.2s ease;
+  }
+
+  .shot-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .shot-time {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6366f1;
+    min-width: 40px;
+  }
+
+  .shot-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* Preset Grid */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .preset-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .preset-card:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .preset-card.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: #6366f1;
+    color: #fff;
+  }
+
+  .preset-card:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .preset-icon {
+    font-size: 20px;
+    opacity: 0.8;
+  }
+
+  .preset-card.active .preset-icon {
+    opacity: 1;
+    color: #a5b4fc;
+  }
+
+  .preset-name {
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  /* Environment Grid */
+  .env-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .env-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .env-card:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .env-card.active {
+    border-color: #6366f1;
+  }
+
+  .env-card:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .env-preview {
+    width: 100%;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--env-color);
+  }
+
+  .env-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .env-card.active .env-label {
+    color: #fff;
+  }
+
+  /* Export Overlay */
+  .export-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 15, 0.9);
+    backdrop-filter: blur(8px);
+  }
+
+  .export-modal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 32px 48px;
+    background: rgba(20, 20, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+  }
+
+  .export-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .export-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .export-stage {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: capitalize;
+  }
+
+  .export-progress-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+
+  .export-progress-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .export-progress-ring circle {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+
+  .progress-bg {
+    stroke: rgba(255, 255, 255, 0.1);
+  }
+
+  .progress-fill {
+    stroke: url(#gradient);
+    stroke: #6366f1;
+    stroke-dasharray: 283;
+    transition: stroke-dashoffset 0.3s ease;
+  }
+
+  .progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .cancel-btn {
+    padding: 10px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  /* Error Toast */
+  .error-toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    color: #fca5a5;
+    font-size: 13px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .promo-generator {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+    }
+
+    .sidebar {
+      flex-direction: row;
+      padding: 16px;
+      border-left: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      overflow-x: auto;
+    }
+
+    .sidebar-section {
+      min-width: 200px;
+    }
+
+    .preset-grid,
+    .env-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 </style>

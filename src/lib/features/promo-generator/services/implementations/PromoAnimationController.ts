@@ -35,6 +35,15 @@ export class PromoAnimationController implements IPromoAnimationController {
   private progressCallback: AnimationProgressCallback | null = null;
   private speed: number = 1;
 
+  /**
+   * Scale factor for camera positions in presets.
+   * Presets are authored with camera at ~5 units, so we scale based on actual model.
+   */
+  private cameraDistanceScale: number = 1;
+
+  /** Base camera distance that presets are authored for */
+  private static readonly BASE_CAMERA_DISTANCE = 5;
+
   // Animation state
   private _isPlaying: boolean = false;
   private _isPaused: boolean = false;
@@ -46,14 +55,22 @@ export class PromoAnimationController implements IPromoAnimationController {
     });
   }
 
-  initialize(device: THREE.Group, camera: THREE.PerspectiveCamera): void {
+  initialize(
+    device: THREE.Group,
+    camera: THREE.PerspectiveCamera,
+    cameraDistance?: number
+  ): void {
     this.device = device;
     this.camera = camera;
 
-    // Load default preset
-    this.loadPresetById(DEFAULT_PRESET_ID);
+    // Calculate camera distance scale based on actual model size
+    if (cameraDistance) {
+      this.cameraDistanceScale =
+        cameraDistance / PromoAnimationController.BASE_CAMERA_DISTANCE;
+    }
 
-    console.log("[PromoAnimationController] Initialized");
+    // Load default preset (will apply scaling)
+    this.loadPresetById(DEFAULT_PRESET_ID);
   }
 
   loadPreset(preset: AnimationPreset): void {
@@ -65,8 +82,6 @@ export class PromoAnimationController implements IPromoAnimationController {
 
     // Build the timeline
     this.buildTimeline(preset);
-
-    console.log(`[PromoAnimationController] Loaded preset: ${preset.name}`);
   }
 
   loadPresetById(presetId: string): void {
@@ -140,6 +155,10 @@ export class PromoAnimationController implements IPromoAnimationController {
 
     // Build animation from keyframes
     // GSAP requires animating the Vector3/Euler objects directly, not string paths
+    //
+    // IMPORTANT: When two keyframes have the same time, it's a "cut" point:
+    // - The first keyframe is the END of the previous shot
+    // - The second keyframe is the START of the next shot (instant set, not animation)
     for (let i = 0; i < sortedKeyframes.length; i++) {
       const keyframe = sortedKeyframes[i];
       if (!keyframe) continue;
@@ -152,112 +171,195 @@ export class PromoAnimationController implements IPromoAnimationController {
       const endTime = keyframe.time * preset.duration;
       const duration = endTime - startTime;
 
-      if (duration <= 0) continue;
+      // Check if this is a "cut" - same time as previous keyframe means instant transition
+      const isCut = prevKeyframe && prevKeyframe.time === keyframe.time;
+
+      if (duration <= 0 && !isCut) continue;
 
       // Get easing
       const ease = keyframe.easing || "power2.inOut";
 
+      // For cuts, use .set() for instant transition; for smooth, use .to()
+      const method = isCut ? "set" : "to";
+      const animDuration = isCut ? 0 : duration;
+
       // Animate device position
       if (keyframe.device?.position && this.device) {
-        this.timeline.to(
-          this.device.position,
-          {
-            x: keyframe.device.position[0],
-            y: keyframe.device.position[1],
-            z: keyframe.device.position[2],
-            duration,
-            ease,
-          },
-          startTime
-        );
+        if (isCut) {
+          this.timeline.set(
+            this.device.position,
+            {
+              x: keyframe.device.position[0],
+              y: keyframe.device.position[1],
+              z: keyframe.device.position[2],
+            },
+            startTime
+          );
+        } else {
+          this.timeline.to(
+            this.device.position,
+            {
+              x: keyframe.device.position[0],
+              y: keyframe.device.position[1],
+              z: keyframe.device.position[2],
+              duration: animDuration,
+              ease,
+            },
+            startTime
+          );
+        }
       }
 
       // Animate device rotation
       if (keyframe.device?.rotation && this.device) {
-        this.timeline.to(
-          this.device.rotation,
-          {
-            x: keyframe.device.rotation[0],
-            y: keyframe.device.rotation[1],
-            z: keyframe.device.rotation[2],
-            duration,
-            ease,
-          },
-          startTime
-        );
+        if (isCut) {
+          this.timeline.set(
+            this.device.rotation,
+            {
+              x: keyframe.device.rotation[0],
+              y: keyframe.device.rotation[1],
+              z: keyframe.device.rotation[2],
+            },
+            startTime
+          );
+        } else {
+          this.timeline.to(
+            this.device.rotation,
+            {
+              x: keyframe.device.rotation[0],
+              y: keyframe.device.rotation[1],
+              z: keyframe.device.rotation[2],
+              duration: animDuration,
+              ease,
+            },
+            startTime
+          );
+        }
       }
 
       // Animate device scale
       if (keyframe.device?.scale !== undefined && this.device) {
-        this.timeline.to(
-          this.device.scale,
-          {
-            x: keyframe.device.scale,
-            y: keyframe.device.scale,
-            z: keyframe.device.scale,
-            duration,
-            ease,
-          },
-          startTime
-        );
+        if (isCut) {
+          this.timeline.set(
+            this.device.scale,
+            {
+              x: keyframe.device.scale,
+              y: keyframe.device.scale,
+              z: keyframe.device.scale,
+            },
+            startTime
+          );
+        } else {
+          this.timeline.to(
+            this.device.scale,
+            {
+              x: keyframe.device.scale,
+              y: keyframe.device.scale,
+              z: keyframe.device.scale,
+              duration: animDuration,
+              ease,
+            },
+            startTime
+          );
+        }
       }
 
-      // Animate camera position
+      // Animate camera position (scaled by camera distance factor)
       if (keyframe.camera?.position && this.camera) {
-        this.timeline.to(
-          this.camera.position,
-          {
-            x: keyframe.camera.position[0],
-            y: keyframe.camera.position[1],
-            z: keyframe.camera.position[2],
-            duration,
-            ease,
-          },
-          startTime
-        );
+        const scale = this.cameraDistanceScale;
+        if (isCut) {
+          this.timeline.set(
+            this.camera.position,
+            {
+              x: keyframe.camera.position[0] * scale,
+              y: keyframe.camera.position[1] * scale,
+              z: keyframe.camera.position[2] * scale,
+            },
+            startTime
+          );
+        } else {
+          this.timeline.to(
+            this.camera.position,
+            {
+              x: keyframe.camera.position[0] * scale,
+              y: keyframe.camera.position[1] * scale,
+              z: keyframe.camera.position[2] * scale,
+              duration: animDuration,
+              ease,
+            },
+            startTime
+          );
+        }
       }
 
       // Animate camera FOV
       if (keyframe.camera?.fov !== undefined && this.camera) {
         const camera = this.camera;
-        this.timeline.to(
-          this.camera,
-          {
-            fov: keyframe.camera.fov,
-            duration,
-            ease,
-            onUpdate: () => {
-              camera.updateProjectionMatrix();
+        if (isCut) {
+          this.timeline.set(
+            this.camera,
+            { fov: keyframe.camera.fov },
+            startTime
+          );
+          // Need to update projection matrix after set
+          this.timeline.call(() => camera.updateProjectionMatrix(), [], startTime);
+        } else {
+          this.timeline.to(
+            this.camera,
+            {
+              fov: keyframe.camera.fov,
+              duration: animDuration,
+              ease,
+              onUpdate: () => {
+                camera.updateProjectionMatrix();
+              },
             },
-          },
-          startTime
-        );
+            startTime
+          );
+        }
       }
 
-      // Animate lookAt if specified
+      // Animate lookAt if specified (scaled by camera distance factor)
       if (keyframe.camera?.lookAt && this.camera) {
-        const prevLookAt = prevKeyframe?.camera?.lookAt || [0, 0, 0];
-        const lookAtProxy = {
-          x: prevLookAt[0],
-          y: prevLookAt[1],
-          z: prevLookAt[2],
-        };
+        const scale = this.cameraDistanceScale;
         const camera = this.camera;
+        const targetLookAt = {
+          x: keyframe.camera.lookAt[0] * scale,
+          y: keyframe.camera.lookAt[1] * scale,
+          z: keyframe.camera.lookAt[2] * scale,
+        };
 
-        this.timeline.to(
-          lookAtProxy,
-          {
-            x: keyframe.camera.lookAt[0],
-            y: keyframe.camera.lookAt[1],
-            z: keyframe.camera.lookAt[2],
-            duration,
-            ease,
-            onUpdate: () => {
-              camera.lookAt(lookAtProxy.x, lookAtProxy.y, lookAtProxy.z);
+        if (isCut) {
+          // Instant lookAt change
+          this.timeline.call(
+            () => camera.lookAt(targetLookAt.x, targetLookAt.y, targetLookAt.z),
+            [],
+            startTime
+          );
+        } else {
+          // Smooth lookAt animation
+          const prevLookAt = prevKeyframe?.camera?.lookAt || [0, 0, 0];
+          const lookAtProxy = {
+            x: prevLookAt[0] * scale,
+            y: prevLookAt[1] * scale,
+            z: prevLookAt[2] * scale,
+          };
+
+          this.timeline.to(
+            lookAtProxy,
+            {
+              x: targetLookAt.x,
+              y: targetLookAt.y,
+              z: targetLookAt.z,
+              duration: animDuration,
+              ease,
+              onUpdate: () => {
+                camera.lookAt(lookAtProxy.x, lookAtProxy.y, lookAtProxy.z);
+              },
             },
-          },
-          startTime
-        );
+            startTime
+          );
+        }
       }
     }
 
@@ -276,8 +378,6 @@ export class PromoAnimationController implements IPromoAnimationController {
     this._isPaused = false;
 
     this.timeline.restart();
-
-    console.log("[PromoAnimationController] Playing animation");
   }
 
   pause(): void {
@@ -285,8 +385,6 @@ export class PromoAnimationController implements IPromoAnimationController {
 
     this.timeline.pause();
     this._isPaused = true;
-
-    console.log("[PromoAnimationController] Paused");
   }
 
   resume(): void {
@@ -294,8 +392,6 @@ export class PromoAnimationController implements IPromoAnimationController {
 
     this.timeline.resume();
     this._isPaused = false;
-
-    console.log("[PromoAnimationController] Resumed");
   }
 
   stop(): void {
@@ -311,8 +407,6 @@ export class PromoAnimationController implements IPromoAnimationController {
       this.setDeviceState(this.currentPreset.defaultDevice);
       this.setCameraState(this.currentPreset.defaultCamera);
     }
-
-    console.log("[PromoAnimationController] Stopped");
   }
 
   seek(normalizedTime: number): void {
@@ -342,13 +436,22 @@ export class PromoAnimationController implements IPromoAnimationController {
   setCameraState(state: CameraState): void {
     if (!this.camera) return;
 
-    this.camera.position.set(
-      state.position[0],
-      state.position[1],
-      state.position[2]
-    );
+    // Scale camera position based on model size
+    const scale = this.cameraDistanceScale;
+    const scaledPos = {
+      x: state.position[0] * scale,
+      y: state.position[1] * scale,
+      z: state.position[2] * scale,
+    };
 
-    this.camera.lookAt(state.lookAt[0], state.lookAt[1], state.lookAt[2]);
+    this.camera.position.set(scaledPos.x, scaledPos.y, scaledPos.z);
+
+    // Scale lookAt as well
+    this.camera.lookAt(
+      state.lookAt[0] * scale,
+      state.lookAt[1] * scale,
+      state.lookAt[2] * scale
+    );
 
     if (state.fov !== undefined) {
       this.camera.fov = state.fov;
@@ -382,7 +485,6 @@ export class PromoAnimationController implements IPromoAnimationController {
 
   registerPreset(preset: AnimationPreset): void {
     this.registeredPresets.set(preset.id, preset);
-    console.log(`[PromoAnimationController] Registered preset: ${preset.id}`);
   }
 
   setSpeed(speed: number): void {
@@ -404,7 +506,5 @@ export class PromoAnimationController implements IPromoAnimationController {
     this.progressCallback = null;
     this._isPlaying = false;
     this._isPaused = false;
-
-    console.log("[PromoAnimationController] Disposed");
   }
 }

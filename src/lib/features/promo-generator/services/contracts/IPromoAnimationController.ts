@@ -42,8 +42,13 @@ export interface IPromoAnimationController {
    * Initialize the controller with scene objects
    * @param device - The device group to animate
    * @param camera - The camera to animate
+   * @param cameraDistance - Recommended camera distance for scaling presets
    */
-  initialize(device: THREE.Group, camera: THREE.PerspectiveCamera): void;
+  initialize(
+    device: THREE.Group,
+    camera: THREE.PerspectiveCamera,
+    cameraDistance?: number
+  ): void;
 
   /**
    * Load an animation preset

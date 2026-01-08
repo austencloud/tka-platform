@@ -90,6 +90,12 @@ export interface IPromoSceneManager {
   getAvailableDevices(): DeviceConfig[];
 
   /**
+   * Get the recommended camera distance for the current model.
+   * Used to scale animation preset camera positions appropriately.
+   */
+  getCameraDistance(): number;
+
+  /**
    * Dispose of all scene resources
    */
   dispose(): void;
