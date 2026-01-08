@@ -115,7 +115,9 @@
       "WebFetch(domain:dev.to)",
       "WebFetch(domain:medium.com)",
       "Bash(do grep -l \"from.*$lib/shared/auth/firebase\" \"$f\")",
-      "WebFetch(domain:inlang.com)"
+      "WebFetch(domain:inlang.com)",
+      "WebFetch(domain:threepipe.org)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
