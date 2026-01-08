@@ -38,6 +38,8 @@ export class MandalaController {
       scale?: number;
       arrowSpec?: { motionType: string; turns?: number };
       svgContent?: string;
+      viewBox?: { width: number; height: number };
+      center?: { x: number; y: number };
     } = {}
   ) {
     this.state.pushHistory();
@@ -57,6 +59,8 @@ export class MandalaController {
       scale: options.scale ?? 1,
       arrowSpec: typedArrowSpec,
       svgContent: options.svgContent,
+      viewBox: options.viewBox,
+      center: options.center,
     });
 
     this.state.addElement(element);

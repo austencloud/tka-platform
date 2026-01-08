@@ -21,13 +21,30 @@
     onDragStart,
   }: Props = $props();
 
-  // Transform string for positioning
+  // Get center point for proper centering
+  // Use stored center if available, otherwise calculate from viewBox
+  const centerX = $derived(
+    element.center?.x ?? (element.viewBox?.width ?? 100) / 2
+  );
+  const centerY = $derived(
+    element.center?.y ?? (element.viewBox?.height ?? 100) / 2
+  );
+
+  // Transform string for positioning - position at element location
   const transform = $derived(
     `translate(${element.position.x}, ${element.position.y}) rotate(${element.rotation}) scale(${element.scale})`
   );
 
-  // Selection ring radius based on element type
-  const selectionRadius = $derived(element.type === "gridDot" ? 15 : 40);
+  // Selection ring radius based on element dimensions or type
+  const selectionRadius = $derived.by(() => {
+    if (element.type === "gridDot") return 15;
+    if (element.viewBox) {
+      // Use larger dimension for selection ring
+      const maxDim = Math.max(element.viewBox.width, element.viewBox.height);
+      return Math.min(maxDim / 2, 150); // Cap at reasonable size
+    }
+    return 60; // Default for arrows
+  });
 
   function handlePointerDown(event: PointerEvent) {
     if (isGhost) return;
@@ -79,29 +96,41 @@
   {#if element.type === "gridDot"}
     <circle r="8" fill={element.color} />
   {:else if element.svgContent}
-    <!-- Render SVG content -->
-    <g class="svg-content" style:color={element.color}>
+    <!-- Render SVG content with proper centering -->
+    <!-- Translate by negative center to align SVG's center point with position -->
+    <g class="svg-content" transform="translate({-centerX}, {-centerY})">
       {@html element.svgContent}
     </g>
   {:else}
-    <!-- Placeholder for elements without SVG -->
-    <rect
-      x="-25"
-      y="-25"
-      width="50"
-      height="50"
-      fill={element.color}
-      opacity="0.5"
-      rx="4"
-    />
-    <text
-      text-anchor="middle"
-      dominant-baseline="middle"
-      font-size="10"
-      fill="white"
-    >
-      {element.type === "arrow" ? "A" : "S"}
-    </text>
+    <!-- Loading placeholder - show spinner while SVG loads -->
+    <g class="loading-placeholder">
+      <circle
+        r="30"
+        fill="none"
+        stroke={element.color}
+        stroke-width="3"
+        stroke-dasharray="20 10"
+        opacity="0.5"
+      >
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          from="0"
+          to="360"
+          dur="2s"
+          repeatCount="indefinite"
+        />
+      </circle>
+      <text
+        text-anchor="middle"
+        dominant-baseline="middle"
+        font-size="14"
+        fill={element.color}
+        opacity="0.7"
+      >
+        {element.type === "arrow" ? "↻" : "⊛"}
+      </text>
+    </g>
   {/if}
 </g>
 
@@ -125,13 +154,12 @@
     filter: drop-shadow(0 0 4px var(--theme-accent, #4a9eff));
   }
 
-  /* SVG content inherits color */
+  /* SVG content styling */
   .svg-content :global(svg) {
     overflow: visible;
   }
 
-  /* Center the SVG within the transform group */
-  .svg-content :global(svg) {
-    transform: translate(-50%, -50%);
+  .loading-placeholder {
+    pointer-events: none;
   }
 </style>

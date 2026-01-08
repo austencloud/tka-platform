@@ -3,11 +3,15 @@
   import { TKA_BLUE, TKA_RED } from "../../domain/models/mandala-config";
   import { onMount } from "svelte";
 
+  /** Path to the consolidated arrow sprite */
+  const ARROW_SPRITE_PATH = "/images/arrows-sprite.svg";
+
   interface Props {
     onAssetSelect?: (
       assetType: string,
       motionType: string,
-      color: string
+      color: string,
+      svgData?: ParsedSvgData
     ) => void;
   }
 
@@ -30,38 +34,40 @@
   const TURN_VALUES = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
 
   // Generate all arrow variations (motion type + turn combinations)
+  // Symbol IDs use format: {motionType}_{turns}_{orientation}
   interface ArrowVariation {
     id: string;
+    symbolId: string; // Symbol ID in sprite
     motionType: string;
     motionLabel: string;
     turns: number | null;
     label: string;
-    path: string;
   }
 
   const ALL_ARROW_VARIATIONS: ArrowVariation[] = MOTION_TYPES.flatMap(
     (motion): ArrowVariation[] => {
       if (motion.id === "float") {
-        // Float has no turn variations
+        // Float is a special case - single symbol
         return [
           {
             id: "float",
+            symbolId: "float",
             motionType: "float" as string,
             motionLabel: "Float",
             turns: null,
             label: "Float",
-            path: "/images/arrows/float.svg",
           },
         ];
       }
       // All other motion types have turn variations
+      // Use radial orientation for mandala (from center outward)
       return TURN_VALUES.map((turn) => ({
         id: `${motion.id}_${turn}`,
+        symbolId: `${motion.id}_${turn.toFixed(1)}_radial`,
         motionType: motion.id as string,
         motionLabel: motion.label,
         turns: turn as number | null,
         label: `${motion.label} ${turn}`,
-        path: `/images/arrows/${motion.id}/from_radial/${motion.id}_${turn.toFixed(1)}.svg`,
       }));
     }
   );
@@ -79,25 +85,217 @@
 
   let selectedColor = $state(TKA_BLUE);
 
-  // SVG cache
-  let arrowSvgCache = $state<Map<string, string>>(new Map());
+  // Parsed SVG data structure
+  interface ParsedSvgData {
+    svgContent: string;
+    viewBox: { width: number; height: number };
+    center: { x: number; y: number };
+  }
+
+  // Symbol data from sprite
+  interface SymbolData {
+    viewBox: string;
+    innerContent: string;
+  }
+
+  // Sprite cache - stores all arrow symbols
+  let spriteSymbols = $state<Map<string, SymbolData>>(new Map());
+  let spriteLoaded = $state(false);
+
+  // Parsed SVG data cache - stores parsed viewBox/center per symbol
+  let parsedSvgCache = $state<Map<string, ParsedSvgData>>(new Map());
+
+  // Staff SVG cache
   let staffSvgCache = $state<Map<string, string>>(new Map());
 
-  // Load an SVG and cache it
-  async function loadSvg(
-    path: string,
-    cache: Map<string, string>,
-    updateCache: (m: Map<string, string>) => void
-  ): Promise<string> {
-    if (cache.has(path)) {
-      return cache.get(path)!;
+  /**
+   * Calculate bounding box from an SVG path d attribute
+   */
+  function getPathBounds(pathD: string): { minX: number; minY: number; maxX: number; maxY: number } {
+    // Extract all numbers from the path, treating them as coordinates
+    const numbers = pathD.match(/-?\d*\.?\d+/g) || [];
+    const coords: number[] = numbers.map(Number);
+
+    // Path commands that take coordinates (simplified - handles M, L, C, S, Q, T, A)
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    // Simple approach: treat pairs of numbers as x,y coordinates
+    for (let i = 0; i < coords.length - 1; i += 2) {
+      const x = coords[i];
+      const y = coords[i + 1];
+      if (!isNaN(x) && !isNaN(y)) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    // Fallback if no valid coordinates found
+    if (!isFinite(minX)) return { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+
+    return { minX, minY, maxX, maxY };
+  }
+
+  /**
+   * Load the arrow sprite and extract all arrow groups
+   * The sprite uses <g id="..."> elements (groups) not <symbol> elements
+   */
+  async function loadArrowSprite(): Promise<void> {
+    if (spriteLoaded) return;
+
+    try {
+      const response = await fetch(ARROW_SPRITE_PATH);
+      if (!response.ok) throw new Error(`Failed to fetch sprite: ${response.status}`);
+      const spriteText = await response.text();
+
+      // Parse sprite and extract groups with IDs (arrows are stored as <g id="...">)
+      const doc = new DOMParser().parseFromString(spriteText, "image/svg+xml");
+
+      // Select all direct child groups with IDs (these are our arrows)
+      const groups = doc.querySelectorAll("svg > g[id]");
+
+      const newSymbols = new Map<string, SymbolData>();
+
+      groups.forEach((group) => {
+        const id = group.getAttribute("id");
+        if (!id) return;
+
+        // Get all paths in this group to calculate bounds
+        const paths = group.querySelectorAll("path");
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        paths.forEach((path) => {
+          const d = path.getAttribute("d") || "";
+          const bounds = getPathBounds(d);
+          minX = Math.min(minX, bounds.minX);
+          minY = Math.min(minY, bounds.minY);
+          maxX = Math.max(maxX, bounds.maxX);
+          maxY = Math.max(maxY, bounds.maxY);
+        });
+
+        // Add padding around the bounds
+        const padding = 5;
+        minX = Math.max(0, minX - padding);
+        minY = Math.max(0, minY - padding);
+        maxX = maxX + padding;
+        maxY = maxY + padding;
+
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        // Create viewBox from calculated bounds
+        const viewBox = `${minX} ${minY} ${width} ${height}`;
+
+        // Inner content - get the path elements without the group's transform
+        const innerContent = group.innerHTML.trim();
+
+        newSymbols.set(id, { viewBox, innerContent });
+
+        // Parse and cache dimensions for each group
+        const parsed = parseSymbol(viewBox, innerContent);
+        parsedSvgCache.set(id, parsed);
+      });
+
+      spriteSymbols = newSymbols;
+      parsedSvgCache = new Map(parsedSvgCache); // trigger reactivity
+      spriteLoaded = true;
+
+      console.log(`Arrow sprite loaded: ${spriteSymbols.size} arrows`);
+    } catch (e) {
+      console.error("Failed to load arrow sprite:", e);
+    }
+  }
+
+  /**
+   * Parse symbol data to extract viewBox and center
+   */
+  function parseSymbol(viewBoxAttr: string, innerContent: string): ParsedSvgData {
+    const viewBoxValues = viewBoxAttr.split(/\s+/);
+    const minX = parseFloat(viewBoxValues[0] || "0") || 0;
+    const minY = parseFloat(viewBoxValues[1] || "0") || 0;
+    let width = parseFloat(viewBoxValues[2] || "100") || 100;
+    let height = parseFloat(viewBoxValues[3] || "100") || 100;
+
+    // Detect tiny arrows (dash base) and scale them up
+    const isTinyArrow = width < 50 && height < 50;
+    let scaleFactor = 1;
+    if (isTinyArrow) {
+      const targetSize = 250;
+      const currentSize = Math.max(width, height);
+      scaleFactor = targetSize / currentSize;
+      width = width * scaleFactor;
+      height = height * scaleFactor;
+    }
+
+    // Get center point from symbol content (look for centerPoint element)
+    // Default center is the middle of the viewBox
+    let center = { x: width / 2, y: height / 2 };
+    try {
+      const doc = new DOMParser().parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg">${innerContent}</svg>`,
+        "image/svg+xml"
+      );
+      const centerElement = doc.getElementById("centerPoint");
+      if (centerElement) {
+        // The centerPoint cx/cy are absolute coordinates, need to offset by viewBox minX/minY
+        const rawCenterX = parseFloat(centerElement.getAttribute("cx") || "0");
+        const rawCenterY = parseFloat(centerElement.getAttribute("cy") || "0");
+        center = {
+          x: (rawCenterX - minX) * scaleFactor,
+          y: (rawCenterY - minY) * scaleFactor,
+        };
+      }
+    } catch {
+      // Use default center
+    }
+
+    return { svgContent: innerContent, viewBox: { width, height }, center };
+  }
+
+  /**
+   * Get symbol content by ID
+   */
+  function getSymbolContent(symbolId: string): string {
+    const symbol = spriteSymbols.get(symbolId);
+    return symbol?.innerContent || "";
+  }
+
+  /**
+   * Get parsed SVG data for a symbol
+   */
+  function getParsedSvg(symbolId: string): ParsedSvgData | undefined {
+    return parsedSvgCache.get(symbolId);
+  }
+
+  /**
+   * Apply color to SVG content
+   */
+  function colorSvg(svgText: string, color: string): string {
+    if (!svgText) return "";
+    // Replace fill colors with the selected color
+    // Also handle style attribute fills
+    return svgText
+      .replace(/fill="#[0-9a-fA-F]{6}"/g, `fill="${color}"`)
+      .replace(/fill='#[0-9a-fA-F]{6}'/g, `fill='${color}'`)
+      .replace(/fill:#[0-9a-fA-F]{6}/g, `fill:${color}`)
+      .replace(/stroke="#[0-9a-fA-F]{6}"/g, `stroke="${color}"`)
+      .replace(/stroke='#[0-9a-fA-F]{6}'/g, `stroke='${color}'`);
+  }
+
+  /**
+   * Load staff SVG (still uses individual files)
+   */
+  async function loadStaffSvg(path: string): Promise<string> {
+    if (staffSvgCache.has(path)) {
+      return staffSvgCache.get(path)!;
     }
     try {
       const response = await fetch(path);
       if (!response.ok) throw new Error(`Failed to fetch ${path}`);
       const svgText = await response.text();
-      cache.set(path, svgText);
-      updateCache(new Map(cache)); // trigger reactivity
+      staffSvgCache.set(path, svgText);
+      staffSvgCache = new Map(staffSvgCache);
       return svgText;
     } catch (e) {
       console.error(`Failed to load SVG: ${path}`, e);
@@ -105,33 +303,9 @@
     }
   }
 
-  // Convenience wrappers
-  function loadArrowSvg(path: string) {
-    return loadSvg(path, arrowSvgCache, (m) => (arrowSvgCache = m));
-  }
-
-  function loadStaffSvg(path: string) {
-    return loadSvg(path, staffSvgCache, (m) => (staffSvgCache = m));
-  }
-
-  // Apply color to SVG
-  function colorSvg(svgText: string, color: string): string {
-    if (!svgText) return "";
-    // Replace fill colors with the selected color
-    // TKA arrows use #2e3192 (blue) and #ed1c24 (red) as base colors
-    return svgText
-      .replace(/fill="#[0-9a-fA-F]{6}"/g, `fill="${color}"`)
-      .replace(/fill='#[0-9a-fA-F]{6}'/g, `fill='${color}'`)
-      .replace(/stroke="#[0-9a-fA-F]{6}"/g, `stroke="${color}"`)
-      .replace(/stroke='#[0-9a-fA-F]{6}'/g, `stroke='${color}'`);
-  }
-
-  // Load all SVGs on mount
+  // Load sprite and staffs on mount
   onMount(() => {
-    // Load ALL arrow variation SVGs
-    ALL_ARROW_VARIATIONS.forEach((arrow) => {
-      loadArrowSvg(arrow.path);
-    });
+    loadArrowSprite();
     // Load staff SVGs
     STAFF_TYPES.forEach((staff) => {
       loadStaffSvg(staff.path);
@@ -150,9 +324,20 @@
     assetType: string,
     motionType: string,
     turns: number | null,
-    color: string
+    color: string,
+    symbolId: string
   ) {
-    onAssetSelect?.(assetType, motionType, color);
+    const parsed = getParsedSvg(symbolId);
+    if (parsed) {
+      // Apply color to the SVG content before passing
+      const coloredData: ParsedSvgData = {
+        ...parsed,
+        svgContent: colorSvg(parsed.svgContent, color),
+      };
+      onAssetSelect?.(assetType, motionType, color, coloredData);
+    } else {
+      onAssetSelect?.(assetType, motionType, color);
+    }
   }
 
   // Filtered arrow variations based on motion type filter
@@ -225,7 +410,8 @@
   <div class="asset-grid">
     {#if activeTab === "arrows"}
       {#each displayedArrows as arrow (arrow.id)}
-        {@const svgContent = arrowSvgCache.get(arrow.path)}
+        {@const symbolContent = getSymbolContent(arrow.symbolId)}
+        {@const parsedData = getParsedSvg(arrow.symbolId)}
         <button
           class="asset-item"
           onclick={() =>
@@ -233,10 +419,15 @@
               "arrow",
               arrow.motionType,
               arrow.turns,
-              selectedColor
+              selectedColor,
+              arrow.symbolId
             )}
           draggable="true"
           ondragstart={(e) => {
+            // Include parsed SVG data for proper rendering on drop
+            const coloredContent = parsedData
+              ? colorSvg(parsedData.svgContent, selectedColor)
+              : "";
             e.dataTransfer?.setData(
               "application/json",
               JSON.stringify({
@@ -244,16 +435,21 @@
                 motionType: arrow.motionType,
                 turns: arrow.turns,
                 color: selectedColor,
-                path: arrow.path,
+                symbolId: arrow.symbolId,
+                svgContent: coloredContent,
+                viewBox: parsedData?.viewBox,
+                center: parsedData?.center,
               })
             );
           }}
         >
           <div class="asset-preview">
-            {#if svgContent}
-              {@html colorSvg(svgContent, selectedColor)}
+            {#if symbolContent && spriteLoaded}
+              <svg viewBox={spriteSymbols.get(arrow.symbolId)?.viewBox || "0 0 100 100"}>
+                {@html colorSvg(symbolContent, selectedColor)}
+              </svg>
             {:else}
-              <span class="loading-indicator">...</span>
+              <div class="loading-spinner"></div>
             {/if}
           </div>
           <span class="asset-label">{arrow.label}</span>
@@ -264,7 +460,7 @@
         {@const svgContent = staffSvgCache.get(staff.path)}
         <button
           class="asset-item"
-          onclick={() => handleAssetClick("staff", staff.id, null, selectedColor)}
+          onclick={() => handleAssetClick("staff", staff.id, null, selectedColor, staff.id)}
           draggable="true"
           ondragstart={(e) => {
             e.dataTransfer?.setData(
@@ -273,6 +469,8 @@
                 type: "staff",
                 staffType: staff.id,
                 color: selectedColor,
+                path: staff.path,
+                svgContent: svgContent ? colorSvg(svgContent, selectedColor) : "",
               })
             );
           }}
@@ -281,7 +479,7 @@
             {#if svgContent}
               {@html colorSvg(svgContent, selectedColor)}
             {:else}
-              <span class="loading-indicator">...</span>
+              <div class="loading-spinner"></div>
             {/if}
           </div>
           <span class="asset-label">{staff.label}</span>
@@ -442,9 +640,19 @@
     object-fit: contain;
   }
 
-  .loading-indicator {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    font-size: 12px;
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    border-top-color: var(--theme-accent, #4a9eff);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .asset-label {

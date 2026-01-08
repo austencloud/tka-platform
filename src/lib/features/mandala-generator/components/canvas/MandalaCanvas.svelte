@@ -188,7 +188,7 @@
       if (jsonStr) {
         const data = JSON.parse(jsonStr);
         if (data.type === "arrow") {
-          // Add the arrow element at the exact drop position
+          // Add the arrow element with SVG content from drag data
           mandalaState.addElement({
             id: crypto.randomUUID(),
             type: "arrow",
@@ -201,6 +201,10 @@
             scale: 1,
             color: data.color,
             zIndex: mandalaState.elements.length,
+            // Include SVG data for proper rendering
+            svgContent: data.svgContent,
+            viewBox: data.viewBox,
+            center: data.center,
           });
         } else if (data.type === "staff") {
           mandalaState.addElement({
@@ -214,6 +218,10 @@
             scale: 1,
             color: data.color,
             zIndex: mandalaState.elements.length,
+            // Include SVG data for proper rendering
+            svgContent: data.svgContent,
+            viewBox: data.viewBox,
+            center: data.center,
           });
         }
       }

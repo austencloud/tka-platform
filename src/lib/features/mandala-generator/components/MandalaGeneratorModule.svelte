@@ -47,11 +47,12 @@
     controller.cleanup();
   });
 
-  // Handle asset selection from library
+  // Handle asset selection from library (click to add at center)
   function handleAssetSelect(
     assetType: string,
     motionType: string,
-    color: string
+    color: string,
+    svgData?: { svgContent: string; viewBox: { width: number; height: number }; center: { x: number; y: number } }
   ) {
     // Place element near center with slight random offset
     const offset = {
@@ -69,40 +70,11 @@
       {
         color,
         arrowSpec: assetType === "arrow" ? { motionType } : undefined,
+        svgContent: svgData?.svgContent,
+        viewBox: svgData?.viewBox,
+        center: svgData?.center,
       }
     );
-  }
-
-  // Handle canvas drop
-  function handleCanvasDrop(event: DragEvent) {
-    event.preventDefault();
-    const data = event.dataTransfer?.getData("application/json");
-    if (!data) return;
-
-    try {
-      const asset = JSON.parse(data);
-      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      const canvasSize = rect.width;
-      const scale = 950 / canvasSize;
-
-      const position: Point = {
-        x: (event.clientX - rect.left) * scale,
-        y: (event.clientY - rect.top) * scale,
-      };
-
-      controller.addElement(asset.type, position, {
-        color: asset.color,
-        arrowSpec:
-          asset.type === "arrow" ? { motionType: asset.motionType } : undefined,
-      });
-    } catch (e) {
-      console.error("Failed to parse dropped asset:", e);
-    }
-  }
-
-  function handleDragOver(event: DragEvent) {
-    event.preventDefault();
-    event.dataTransfer!.dropEffect = "copy";
   }
 
   // Action bar handlers
@@ -130,12 +102,7 @@
     <!-- Mobile layout: stacked -->
     <div class="mobile-layout">
       <!-- Canvas -->
-      <div
-        class="canvas-wrapper"
-        ondrop={handleCanvasDrop}
-        ondragover={handleDragOver}
-        role="application"
-      >
+      <div class="canvas-wrapper">
         <MandalaCanvas {transformer} />
       </div>
 
@@ -147,7 +114,7 @@
           disabled={!mandalaState.canUndo}
           title="Undo"
         >
-          ↩
+          Undo
         </button>
         <button
           class="action-btn"
@@ -155,7 +122,7 @@
           disabled={!mandalaState.canRedo}
           title="Redo"
         >
-          ↪
+          Redo
         </button>
         <button
           class="action-btn"
@@ -163,7 +130,7 @@
           disabled={!mandalaState.hasElements}
           title="Clear"
         >
-          🗑
+          Clear
         </button>
         <button
           class="action-btn primary"
@@ -171,7 +138,7 @@
           disabled={!mandalaState.hasElements}
           title="Export"
         >
-          💾
+          Export
         </button>
       </div>
 
@@ -210,7 +177,7 @@
               disabled={!mandalaState.canUndo}
               title="Undo (Ctrl+Z)"
             >
-              ↩ Undo
+              Undo
             </button>
             <button
               class="action-btn"
@@ -218,7 +185,7 @@
               disabled={!mandalaState.canRedo}
               title="Redo (Ctrl+Y)"
             >
-              ↪ Redo
+              Redo
             </button>
             <button
               class="action-btn"
@@ -226,7 +193,7 @@
               disabled={!mandalaState.hasElements}
               title="Clear canvas"
             >
-              🗑 Clear
+              Clear
             </button>
             <button
               class="action-btn primary"
@@ -234,16 +201,11 @@
               disabled={!mandalaState.hasElements}
               title="Export"
             >
-              💾 Export
+              Export
             </button>
           </div>
         </div>
-        <div
-          class="canvas-wrapper"
-          ondrop={handleCanvasDrop}
-          ondragover={handleDragOver}
-          role="application"
-        >
+        <div class="canvas-wrapper">
           <MandalaCanvas {transformer} />
         </div>
       </main>
@@ -401,7 +363,8 @@
   }
 
   .action-btn {
-    padding: 8px 12px;
+    min-height: 48px;
+    padding: 12px 16px;
     font-size: var(--font-size-min, 14px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: transparent;

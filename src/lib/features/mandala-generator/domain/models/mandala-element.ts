@@ -59,13 +59,13 @@ export interface MandalaElement {
   /** Staff specification (if type is 'staff') */
   staffSpec?: StaffSpec;
 
-  /** Cached SVG content (loaded asynchronously) */
+  /** Cached SVG content (loaded asynchronously, inner content without svg wrapper) */
   svgContent?: string;
 
-  /** SVG viewBox dimensions */
+  /** SVG viewBox dimensions for proper sizing */
   viewBox?: { width: number; height: number };
 
-  /** SVG center point for rotation */
+  /** SVG center point for proper rotation/placement centering */
   center?: Point;
 
   /** Z-index for layering (higher = on top) */
