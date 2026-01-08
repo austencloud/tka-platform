@@ -48,8 +48,10 @@
     getPointerLocked,
     type SystemContext,
   } from "../core/systems";
-  import { generateWorldSeed, encodeSeed } from "../generation/seed-generator";
+  import { generateWorldSeed, encodeSeed, SeededNoise, getBiome } from "../generation/seed-generator";
   import { VegetationManager } from "../rendering/instanced-vegetation";
+  import { AtmosphereManager } from "../rendering/atmosphere";
+  import { WaterManager } from "../rendering/water";
   import {
     BufferGeometry,
     BufferAttribute,
@@ -58,8 +60,11 @@
     DirectionalLight,
     AmbientLight,
     HemisphereLight,
+    Vector3,
     type PerspectiveCamera,
   } from "three";
+  import { teleportPlayer } from "../physics/player-controller";
+  import DebugPanel from "./DebugPanel.svelte";
 
   // ============================================================================
   // PROPS
@@ -92,6 +97,8 @@
   let terrainPhysics: TerrainPhysicsManager | null = $state(null);
   let playerController: PlayerControllerState | null = $state(null);
   let vegetationManager: VegetationManager | null = $state(null);
+  let atmosphereManager: AtmosphereManager | null = $state(null);
+  let waterManager: WaterManager | null = $state(null);
   let chunkManager: ChunkManager | null = $state(null);
   let cleanupInput: (() => void) | null = null;
 
@@ -106,14 +113,16 @@
   let entityCount = $state(0);
   let chunkStats = $state({ loaded: 0, pending: 0, loading: 0 });
   let colliderCount = $state(0);
-  let vegetationCount = $state({ trees: 0, rocks: 0, grass: 0 });
+  let vegetationCount = $state({ trees: 0, rocks: 0, bushes: 0, grass: 0 });
   let playerPos = $state({ x: 0, y: 0, z: 0 });
   let rendererType = $state("Unknown");
   let isLocked = $state(false);
+  let currentBiome = $state("forest");
 
   // World
   const worldSeed = seed ?? generateWorldSeed();
   const worldSeedEncoded = encodeSeed(worldSeed);
+  const worldNoise = new SeededNoise(worldSeed);
 
   // ============================================================================
   // LIFECYCLE
@@ -159,8 +168,22 @@
     // Create local player entity
     createPlayerEntity("local-player", true, 0, 50, 0);
 
-    // Initialize vegetation manager (GPU instanced rendering)
-    vegetationManager = new VegetationManager(rendererState.scene);
+    // Initialize vegetation manager (GPU instanced rendering with GLTF models)
+    vegetationManager = new VegetationManager(rendererState.scene, { useGLTFModels: true });
+    await vegetationManager.initWithModels();
+
+    // Initialize atmosphere (sky + fog)
+    atmosphereManager = new AtmosphereManager(rendererState.scene);
+    atmosphereManager.createSky();
+    atmosphereManager.setFog("plains"); // Default fog
+
+    // Initialize water (at sea level - visible in low areas and ocean biomes)
+    waterManager = new WaterManager(rendererState.scene, {
+      waterLevel: 5,
+      color: "#2a8faa",
+      opacity: 0.75,
+    });
+    waterManager.create();
 
     // Initialize chunk manager
     chunkManager = new ChunkManager(worldSeed, {
@@ -243,6 +266,12 @@
 
     // Dispose vegetation manager
     vegetationManager?.dispose();
+
+    // Dispose atmosphere
+    atmosphereManager?.dispose();
+
+    // Dispose water
+    waterManager?.dispose();
 
     // Dispose terrain physics
     terrainPhysics?.dispose();
@@ -350,6 +379,34 @@
   }
 
   // ============================================================================
+  // DEBUG PANEL HANDLERS
+  // ============================================================================
+
+  function handleTeleport(x: number, y: number, z: number): void {
+    if (playerController) {
+      teleportPlayer(playerController, { x, y, z });
+      // Also update camera position for immediate visual feedback
+      if (camera) {
+        camera.position.set(x, y + 1.6, z); // Eye height offset
+      }
+    }
+  }
+
+  function handleToggleWater(visible: boolean): void {
+    waterManager?.setVisible(visible);
+  }
+
+  function handleToggleFog(enabled: boolean): void {
+    if (!rendererState) return;
+
+    if (enabled) {
+      atmosphereManager?.setFog(currentBiome);
+    } else {
+      rendererState.scene.fog = null;
+    }
+  }
+
+  // ============================================================================
   // GAME LOOP
   // ============================================================================
 
@@ -389,6 +446,8 @@
           y: Math.round(camera.position.y * 10) / 10,
           z: Math.round(camera.position.z * 10) / 10,
         };
+        // Update current biome based on player position
+        currentBiome = getBiome(worldNoise, camera.position.x, camera.position.z);
       }
     }
 
@@ -418,6 +477,12 @@
       // Rebuild vegetation batches if needed (handles removals)
       vegetationManager?.rebuildDirtyBatches();
 
+      // Update atmosphere (keep sky centered on camera)
+      atmosphereManager?.update(camera);
+
+      // Update water animation
+      waterManager?.update(time / 1000, camera.position.x, camera.position.z);
+
       // Render
       renderScene(rendererState, camera);
     }
@@ -441,6 +506,14 @@
       </div>
     </div>
   {/if}
+
+  <DebugPanel
+    position={playerPos}
+    biome={currentBiome}
+    onTeleport={handleTeleport}
+    onToggleWater={handleToggleWater}
+    onToggleFog={handleToggleFog}
+  />
 
   {#if showDebug}
     <div class="debug-overlay">
@@ -473,7 +546,7 @@
       <div class="debug-row">
         <span class="label">Vegetation:</span>
         <span class="value">
-          {vegetationCount.trees} trees / {vegetationCount.rocks} rocks
+          {vegetationCount.trees} trees / {vegetationCount.rocks} rocks / {vegetationCount.bushes} bushes
         </span>
       </div>
       <div class="debug-row">

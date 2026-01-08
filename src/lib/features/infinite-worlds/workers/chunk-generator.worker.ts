@@ -42,7 +42,7 @@ export interface ChunkResultMessage {
 }
 
 export interface VegetationData {
-  type: "tree" | "rock" | "grass";
+  type: "tree1" | "tree2" | "tree3" | "rock1" | "rock2" | "bush1" | "bush2" | "grass";
   x: number;
   y: number;
   z: number;
@@ -147,11 +147,31 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
     }
   }
 
-  // Generate vegetation (for chunks up to LOD 2)
+  // Generate vegetation (LOD 0-2 full density, LOD 3 sparse trees only)
   const vegetation: VegetationData[] = [];
 
-  if (lod <= 2) {
-    const vegStep = Math.max(2, step);
+  // Helper to pick random tree variant
+  const pickTreeVariant = (): "tree1" | "tree2" | "tree3" => {
+    const r = rng();
+    if (r < 0.4) return "tree1";
+    if (r < 0.7) return "tree2";
+    return "tree3";
+  };
+
+  // Helper to pick random rock variant
+  const pickRockVariant = (): "rock1" | "rock2" => {
+    return rng() < 0.5 ? "rock1" : "rock2";
+  };
+
+  // Helper to pick random bush variant
+  const pickBushVariant = (): "bush1" | "bush2" => {
+    return rng() < 0.5 ? "bush1" : "bush2";
+  };
+
+  if (lod <= 3) {
+    const lodMultiplier = lod === 3 ? 4 : 1;
+    const vegStep = Math.max(2, step) * lodMultiplier;
+
     for (let z = 0; z < chunkSize; z += vegStep) {
       for (let x = 0; x < chunkSize; x += vegStep) {
         const worldX = originX + x;
@@ -160,11 +180,38 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
         const localBiome = getBiome(noise, worldX, worldZ);
         const density = getVegetationDensity(noise, worldX, worldZ);
 
-        // Trees in forests and plains (not in water, desert, or high mountains)
-        if (localBiome === "forest" || localBiome === "plains") {
-          if (shouldPlaceTree(worldSeed, worldX, worldZ, density)) {
+        // FOREST BIOME: Dense trees and bushes
+        if (localBiome === "forest") {
+          const effectiveDensity = lod === 3 ? density * 0.5 : density;
+          if (shouldPlaceTree(worldSeed, worldX, worldZ, effectiveDensity)) {
             vegetation.push({
-              type: "tree",
+              type: pickTreeVariant(),
+              x: x,
+              y: height,
+              z: z,
+              rotation: rng() * Math.PI * 2,
+              scale: 0.7 + rng() * 0.5,
+            });
+          }
+          // Add bushes between trees (LOD 0-2 only)
+          if (lod <= 2 && rng() < density * 0.4) {
+            vegetation.push({
+              type: pickBushVariant(),
+              x: x + (rng() - 0.5) * 3,
+              y: height,
+              z: z + (rng() - 0.5) * 3,
+              rotation: rng() * Math.PI * 2,
+              scale: 0.6 + rng() * 0.4,
+            });
+          }
+        }
+
+        // PLAINS BIOME: Sparse trees, some bushes
+        if (localBiome === "plains") {
+          const effectiveDensity = lod === 3 ? density * 0.3 : density * 0.5;
+          if (shouldPlaceTree(worldSeed, worldX, worldZ, effectiveDensity)) {
+            vegetation.push({
+              type: pickTreeVariant(),
               x: x,
               y: height,
               z: z,
@@ -172,23 +219,61 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
               scale: 0.8 + rng() * 0.4,
             });
           }
-        }
-
-        // Rocks in mountains and desert
-        if (localBiome === "mountains" || localBiome === "desert") {
-          // Use different seed offset for rocks
-          const rockChance = rng();
-          if (rockChance < density * 0.3) {
+          // Occasional bushes
+          if (lod <= 2 && rng() < density * 0.2) {
             vegetation.push({
-              type: "rock",
+              type: pickBushVariant(),
               x: x + (rng() - 0.5) * 2,
               y: height,
               z: z + (rng() - 0.5) * 2,
               rotation: rng() * Math.PI * 2,
-              scale: 0.5 + rng() * 1.5,
+              scale: 0.5 + rng() * 0.3,
             });
           }
         }
+
+        // MOUNTAINS BIOME: Rocks, very sparse trees at lower elevations
+        if (localBiome === "mountains") {
+          // Rocks are common
+          if (lod <= 2 && rng() < density * 0.5) {
+            vegetation.push({
+              type: pickRockVariant(),
+              x: x + (rng() - 0.5) * 2,
+              y: height,
+              z: z + (rng() - 0.5) * 2,
+              rotation: rng() * Math.PI * 2,
+              scale: 0.8 + rng() * 1.5,
+            });
+          }
+          // Sparse trees only at lower mountain elevations
+          if (height < 35 && rng() < density * 0.15) {
+            vegetation.push({
+              type: pickTreeVariant(),
+              x: x,
+              y: height,
+              z: z,
+              rotation: rng() * Math.PI * 2,
+              scale: 0.5 + rng() * 0.3, // Smaller trees
+            });
+          }
+        }
+
+        // DESERT BIOME: Only rocks, no vegetation
+        if (localBiome === "desert") {
+          if (lod <= 2 && rng() < density * 0.3) {
+            vegetation.push({
+              type: pickRockVariant(),
+              x: x + (rng() - 0.5) * 3,
+              y: height,
+              z: z + (rng() - 0.5) * 3,
+              rotation: rng() * Math.PI * 2,
+              scale: 0.4 + rng() * 1.2,
+            });
+          }
+        }
+
+        // OCEAN BIOME: Nothing (underwater)
+        // No vegetation placed
       }
     }
   }
@@ -197,11 +282,6 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
   const centerX = originX + chunkSize / 2;
   const centerZ = originZ + chunkSize / 2;
   const biome = getBiome(noise, centerX, centerZ);
-
-  // Only log chunks that should have vegetation (LOD <= 2) or have vegetation
-  if (lod <= 2 || vegetation.length > 0) {
-    console.log(`[ChunkWorker] Chunk (${chunkX},${chunkZ}) LOD ${lod} biome ${biome}: ${vegetation.length} vegetation`);
-  }
 
   return {
     type: "chunk-result",
