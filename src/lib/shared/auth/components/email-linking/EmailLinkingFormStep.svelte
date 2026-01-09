@@ -5,6 +5,8 @@
   Handles input validation and submission.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   interface Props {
     email: string;
     password: string;
@@ -39,7 +41,7 @@
 
 <form class="email-form" onsubmit={handleSubmit}>
   <div class="form-group">
-    <label for="email-link-email">Email Address</label>
+    <label for="email-link-email">{t("form_email")}</label>
     <div class="input-wrapper">
       <i class="fas fa-envelope input-icon" aria-hidden="true"></i>
       <input
@@ -47,7 +49,7 @@
         type="email"
         value={email}
         oninput={(e) => onEmailChange(e.currentTarget.value)}
-        placeholder="you@example.com"
+        placeholder={t("form_placeholder_email")}
         required
         disabled={isSubmitting}
         autocomplete="email"
@@ -57,7 +59,7 @@
   </div>
 
   <div class="form-group">
-    <label for="email-link-password">Password</label>
+    <label for="email-link-password">{t("form_password")}</label>
     <div class="input-wrapper">
       <i class="fas fa-lock input-icon" aria-hidden="true"></i>
       <input
@@ -65,7 +67,7 @@
         type={showPassword ? "text" : "password"}
         value={password}
         oninput={(e) => onPasswordChange(e.currentTarget.value)}
-        placeholder="At least 8 characters"
+        placeholder={t("form_placeholder_password")}
         required
         minlength="8"
         disabled={isSubmitting}
@@ -76,7 +78,7 @@
         type="button"
         class="toggle-password"
         onclick={onTogglePassword}
-        aria-label={showPassword ? "Hide password" : "Show password"}
+        aria-label={showPassword ? t("auth_hide_password") : t("auth_show_password")}
         disabled={isSubmitting}
         tabindex={-1}
       >
@@ -87,8 +89,7 @@
       </button>
     </div>
     <span class="field-hint">
-      <i class="fas fa-eye" aria-hidden="true"></i> Use the eye icon to verify your
-      password
+      <i class="fas fa-eye" aria-hidden="true"></i> {t("form_verify_password_hint")}
     </span>
   </div>
 
@@ -106,7 +107,7 @@
       onclick={onCancel}
       disabled={isSubmitting}
     >
-      Cancel
+      {t("action_cancel")}
     </button>
     <button
       type="submit"
@@ -116,10 +117,10 @@
     >
       {#if isSubmitting}
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Linking...</span>
+        <span>{t("auth_linking")}</span>
       {:else}
         <i class="fas fa-link" aria-hidden="true"></i>
-        <span>Link Email</span>
+        <span>{t("auth_link_email")}</span>
       {/if}
     </button>
   </div>

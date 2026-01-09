@@ -8,6 +8,7 @@
     registerPasskey,
     stepUpWithPasskey,
   } from "../webauthn/passkeysClient";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -182,7 +183,7 @@
         {#if allowPassword}
           <div class="password">
             <label class="label" for="verify-password"
-              >Password (optional)</label
+              >{t("form_password")} ({t("form_optional")})</label
             >
             <div class="pw-wrap">
               <input
@@ -191,7 +192,7 @@
                 class="pw-input"
                 bind:value={password}
                 autocomplete="current-password"
-                placeholder="Enter your password"
+                placeholder={t("form_placeholder_current_password")}
                 disabled={isSubmitting}
               />
               <button
@@ -199,7 +200,7 @@
                 class="pw-toggle"
                 onclick={() => (showPassword = !showPassword)}
                 disabled={isSubmitting}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("auth_hide_password") : t("auth_show_password")}
               >
                 <i
                   class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"
@@ -225,7 +226,7 @@
           onclick={handleCancel}
           disabled={isSubmitting}
         >
-          Cancel
+          {t("action_cancel")}
         </button>
 
         {#if allowPassword}
@@ -237,9 +238,9 @@
           >
             {#if isSubmitting}
               <span class="spinner"></span>
-              Verifying...
+              {t("auth_verifying")}
             {:else}
-              Verify with Password
+              {t("auth_verify_with_password")}
             {/if}
           </button>
         {/if}
@@ -252,9 +253,9 @@
         >
           {#if isSubmitting}
             <span class="spinner"></span>
-            Verifying...
+            {t("auth_verifying")}
           {:else}
-            Verify with Passkey
+            {t("auth_verify_with_passkey")}
           {/if}
         </button>
       </footer>

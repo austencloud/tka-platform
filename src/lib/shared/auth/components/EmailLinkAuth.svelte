@@ -17,6 +17,7 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let email = $state("");
   let loading = $state(false);
@@ -154,12 +155,12 @@
   </div>
 
   <div class="form-group">
-    <label for="email-link">Email</label>
+    <label for="email-link">{t("form_email")}</label>
     <input
       id="email-link"
       type="email"
       bind:value={email}
-      placeholder="you@example.com"
+      placeholder={t("form_placeholder_email")}
       required
       disabled={loading}
     />
@@ -192,7 +193,7 @@
   <button type="submit" disabled={loading} class="submit-button">
     {#if loading}
       <span class="spinner"></span>
-      Sending...
+      {t("auth_sending")}
     {:else}
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -210,7 +211,7 @@
         ></path>
         <polyline points="22,6 12,13 2,6"></polyline>
       </svg>
-      Send Magic Link
+      {t("auth_send_magic_link")}
     {/if}
   </button>
 </form>
