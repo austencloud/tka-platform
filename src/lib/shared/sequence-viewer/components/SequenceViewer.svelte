@@ -22,16 +22,12 @@
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/features/discover/sequences/display/components/PropAwareThumbnail.svelte";
 	import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
-	import MediaModeSwitch from "./MediaModeSwitch.svelte";
-	import ImageSettingsChips from "./ImageSettingsChips.svelte";
-	import AnimationSettingsChips from "./AnimationSettingsChips.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 	import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 	import { authState } from "$lib/shared/auth/state/authState.svelte";
 	import { browser } from "$app/environment";
-	import { setSequenceViewerContext } from "../context/sequence-viewer-context.svelte";
 
 	const MEDIA_TYPE_STORAGE_KEY = "sequence-viewer-media-type";
 
@@ -307,69 +303,71 @@
 		}
 	}
 
-	// Set up context for compound components
-	// Uses $effect to ensure reactive values are always current
-	$effect(() => {
-		setSequenceViewerContext({
-			// Media type state
-			get activeMediaType() { return activeMediaType; },
-			get hasImages() { return hasImages; },
-			get hasAnimation() { return hasAnimation; },
-			get hasVideo() { return hasVideo; },
-			selectMediaType,
-
-			// Dark mode state
-			get darkMode() { return darkMode; },
-			toggleDarkMode,
-
-			// Copy to clipboard
-			get isCopying() { return isCopying; },
-			get copySuccess() { return copySuccess; },
-			get copyError() { return copyError; },
-			copyImageToClipboard,
-
-			// Image settings
-			get showVisibilitySettings() { return showVisibilitySettings; },
-			get addWord() { return addWord; },
-			get addBeatNumbers() { return addBeatNumbers; },
-			get includeStartPosition() { return includeStartPosition; },
-			get addDifficultyLevel() { return addDifficultyLevel; },
-			get showCreatorName() { return showCreatorName; },
-			get showNotes() { return showNotes; },
-			get showBirthday() { return showBirthday; },
-			toggleWord,
-			toggleBeatNumbers,
-			toggleStartPosition,
-			toggleDifficulty,
-			toggleShowCreatorName,
-			toggleShowNotes,
-			toggleShowBirthday,
-
-			// Animation settings
-			get animGridVisible() { return animGridVisible; },
-			get animBeatNumbers() { return animBeatNumbers; },
-			get animTkaGlyph() { return animTkaGlyph; },
-			get animWordHeader() { return animWordHeader; },
-			get animTrails() { return animTrails; },
-			toggleAnimGrid,
-			toggleAnimBeatNumbers,
-			toggleAnimTkaGlyph,
-			toggleAnimWordHeader,
-			toggleAnimTrails,
-
-			// Controls level
-			get controlsLevel() { return controlsLevel; },
-
-			// Haptic service
-			get hapticService() { return hapticService; },
-		});
-	});
-
 </script>
 
 <div class="media-viewer" bind:clientWidth={containerWidth}>
-	<!-- Mode Switch Row - compound component -->
-	<MediaModeSwitch />
+	<!-- Mode Switch Button (at top, where tabs used to be) -->
+	<div class="mode-switch-row">
+		{#if activeMediaType === "image" && hasAnimation}
+			<button
+				type="button"
+				class="mode-switch-btn primary"
+				onclick={() => selectMediaType("animation")}
+				aria-label="Play animation"
+			>
+				<i class="fas fa-play" aria-hidden="true"></i>
+				<span>Play Animation</span>
+			</button>
+		{:else if activeMediaType === "animation" && hasImages}
+			<button
+				type="button"
+				class="mode-switch-btn secondary"
+				onclick={() => selectMediaType("image")}
+				aria-label="View image"
+			>
+				<i class="fas fa-image" aria-hidden="true"></i>
+				<span>View Image</span>
+			</button>
+		{/if}
+
+		<!-- Dark Mode Lamp Button - only shown when visibility settings are enabled (Share Hub) -->
+		{#if showVisibilitySettings}
+			<button
+				type="button"
+				class="lamp-btn"
+				class:lit={!darkMode}
+				onclick={toggleDarkMode}
+				aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+				title="Toggle dark/light mode"
+			>
+				<i class="fas fa-lightbulb" aria-hidden="true"></i>
+			</button>
+		{/if}
+
+		<!-- Copy to Clipboard Button - only shown in image mode with visibility settings -->
+		{#if showVisibilitySettings && activeMediaType === "image"}
+			<button
+				type="button"
+				class="copy-btn"
+				class:success={copySuccess}
+				class:error={copyError}
+				onclick={copyImageToClipboard}
+				disabled={isCopying}
+				aria-label="Copy image to clipboard"
+				title={copyError ? "Copy failed - try again" : "Copy image to clipboard"}
+			>
+				{#if isCopying}
+					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+				{:else if copySuccess}
+					<i class="fas fa-check" aria-hidden="true"></i>
+				{:else if copyError}
+					<i class="fas fa-times" aria-hidden="true"></i>
+				{:else}
+					<i class="fas fa-copy" aria-hidden="true"></i>
+				{/if}
+			</button>
+		{/if}
+	</div>
 
 	<!-- Media Content Area -->
 	<div class="media-content">
@@ -415,8 +413,75 @@
 					{/if}
 				</div>
 
-				<!-- Image Export Settings Chips - compound component -->
-				<ImageSettingsChips />
+				<!-- Image Export Settings Chips - only shown when visibility settings are enabled (Share Hub) -->
+				{#if showVisibilitySettings}
+					<div class="settings-chips">
+						<button
+							type="button"
+							class="chip"
+							class:active={addWord}
+							onclick={toggleWord}
+							aria-pressed={addWord}
+						>
+							Word
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={addBeatNumbers}
+							onclick={toggleBeatNumbers}
+							aria-pressed={addBeatNumbers}
+						>
+							Beat #s
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={includeStartPosition}
+							onclick={toggleStartPosition}
+							aria-pressed={includeStartPosition}
+						>
+							Start Pos
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={addDifficultyLevel}
+							onclick={toggleDifficulty}
+							aria-pressed={addDifficultyLevel}
+						>
+							Difficulty
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={showCreatorName}
+							onclick={toggleShowCreatorName}
+							aria-pressed={showCreatorName}
+						>
+							Name
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={showNotes}
+							onclick={toggleShowNotes}
+							aria-pressed={showNotes}
+						>
+							Notes
+						</button>
+						<button
+							type="button"
+							class="chip birthday-chip"
+							class:active={showBirthday}
+							onclick={toggleShowBirthday}
+							aria-pressed={showBirthday}
+							title="Birthday date"
+						>
+							🎂
+						</button>
+					</div>
+				{/if}
 			</div>
 		{:else if activeMediaType === "animation"}
 			<!-- Animation View - using unified AnimationPlayer -->
@@ -435,8 +500,57 @@
 					/>
 				</div>
 
-				<!-- Animation Visibility Settings Chips - compound component -->
-				<AnimationSettingsChips />
+				<!-- Animation Visibility Settings Chips (only shown in Share Hub, not browse mode) -->
+				<!-- When controlsLevel="full", these are redundant with AnimationPlayer's Visual tab -->
+				{#if showVisibilitySettings && controlsLevel !== "full"}
+					<div class="settings-chips">
+						<button
+							type="button"
+							class="chip"
+							class:active={animGridVisible}
+							onclick={toggleAnimGrid}
+							aria-pressed={animGridVisible}
+						>
+							Grid
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={animBeatNumbers}
+							onclick={toggleAnimBeatNumbers}
+							aria-pressed={animBeatNumbers}
+						>
+							Beat #s
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={animTkaGlyph}
+							onclick={toggleAnimTkaGlyph}
+							aria-pressed={animTkaGlyph}
+						>
+							TKA Glyph
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={animWordHeader}
+							onclick={toggleAnimWordHeader}
+							aria-pressed={animWordHeader}
+						>
+							Word
+						</button>
+						<button
+							type="button"
+							class="chip"
+							class:active={animTrails}
+							onclick={toggleAnimTrails}
+							aria-pressed={animTrails}
+						>
+							Trails
+						</button>
+					</div>
+				{/if}
 			</div>
 		{:else if activeMediaType === "video"}
 			<!-- Video View -->
@@ -487,6 +601,242 @@
 		flex: 1;
 		gap: 8px;
 		overflow: hidden;
+	}
+
+	/* Mode Switch Row (at top) */
+	.mode-switch-row {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 16px;
+		flex-shrink: 0;
+		padding: 12px 16px;
+		overflow: visible;
+	}
+
+	/* Mode Switch Button - single CTA at top */
+	.mode-switch-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		padding: 14px 28px;
+		min-height: 56px;
+		min-width: 180px;
+		border-radius: 28px;
+		font-size: var(--font-size-base, 16px);
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.mode-switch-btn i {
+		font-size: 18px;
+	}
+
+	/* Primary style (Play Animation) */
+	.mode-switch-btn.primary {
+		background: var(--theme-accent, #6366f1);
+		border: none;
+		color: white;
+		box-shadow:
+			0 4px 12px rgba(99, 102, 241, 0.3),
+			0 0 0 1px rgba(99, 102, 241, 0.2);
+	}
+
+	.mode-switch-btn.primary:hover {
+		transform: translateY(-2px) scale(1.02);
+		box-shadow:
+			0 6px 16px rgba(99, 102, 241, 0.4),
+			0 0 0 1px rgba(99, 102, 241, 0.3);
+	}
+
+	/* Secondary style (View Image) */
+	.mode-switch-btn.secondary {
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		color: var(--theme-text, white);
+	}
+
+	.mode-switch-btn.secondary:hover {
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+		border-color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+		transform: translateY(-2px) scale(1.02);
+	}
+
+	.mode-switch-btn:active {
+		transform: translateY(0) scale(0.98);
+	}
+
+	.mode-switch-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
+	/* Lamp Button for Dark Mode Toggle */
+	.lamp-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+		cursor: pointer;
+		transition: all 0.25s ease;
+	}
+
+	.lamp-btn i {
+		font-size: 22px;
+		transition: all 0.25s ease;
+	}
+
+	/* Lit state - lamp is "on" (light mode preview) */
+	.lamp-btn.lit {
+		background: linear-gradient(145deg, rgba(255, 220, 100, 0.25), rgba(255, 180, 50, 0.15));
+		border-color: rgba(255, 200, 80, 0.5);
+		color: #ffd966;
+		box-shadow:
+			0 0 20px rgba(255, 200, 80, 0.3),
+			inset 0 0 10px rgba(255, 255, 255, 0.1);
+	}
+
+	.lamp-btn.lit i {
+		filter: drop-shadow(0 0 6px rgba(255, 200, 80, 0.8));
+	}
+
+	.lamp-btn:hover {
+		transform: scale(1.08);
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+	}
+
+	.lamp-btn.lit:hover {
+		background: linear-gradient(145deg, rgba(255, 220, 100, 0.35), rgba(255, 180, 50, 0.25));
+		box-shadow:
+			0 0 25px rgba(255, 200, 80, 0.4),
+			inset 0 0 12px rgba(255, 255, 255, 0.15);
+	}
+
+	.lamp-btn:active {
+		transform: scale(0.95);
+	}
+
+	.lamp-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
+	/* Copy Button for Clipboard */
+	.copy-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+		cursor: pointer;
+		transition: all 0.25s ease;
+	}
+
+	.copy-btn i {
+		font-size: 20px;
+		transition: all 0.25s ease;
+	}
+
+	.copy-btn:hover:not(:disabled) {
+		transform: scale(1.08);
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		color: var(--theme-text, white);
+	}
+
+	.copy-btn:active:not(:disabled) {
+		transform: scale(0.95);
+	}
+
+	.copy-btn:disabled {
+		cursor: not-allowed;
+		opacity: 0.6;
+	}
+
+	.copy-btn.success {
+		background: linear-gradient(145deg, rgba(34, 197, 94, 0.25), rgba(22, 163, 74, 0.15));
+		border-color: rgba(34, 197, 94, 0.5);
+		color: #22c55e;
+	}
+
+	.copy-btn.error {
+		background: linear-gradient(145deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.15));
+		border-color: var(--semantic-error, rgba(239, 68, 68, 0.5));
+		color: var(--semantic-error, #ef4444);
+	}
+
+	.copy-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
+	/* Settings Chips */
+	.settings-chips {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px;
+		padding: 12px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 12px;
+		flex-shrink: 0;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 12px 16px;
+		min-height: 48px; /* WCAG 2.1 AAA touch target */
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 24px;
+		font-size: var(--font-size-min, 14px);
+		font-weight: 500;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+		cursor: pointer;
+		transition: all 0.15s ease;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.chip:hover {
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+		color: var(--theme-text, white);
+	}
+
+	.chip.active {
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+		border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+		color: white;
+	}
+
+	.chip.active:hover {
+		background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+		border-color: var(--theme-accent, #6366f1);
+	}
+
+	.chip:focus-visible {
+		outline: 2px solid var(--theme-accent, #6366f1);
+		outline-offset: 2px;
+	}
+
+	/* Birthday chip with emoji */
+	.chip.birthday-chip {
+		font-size: 18px;
+		line-height: 1;
+		padding: 12px 14px;
 	}
 
 	/* Media Content - fills available space for animation/image */
@@ -625,13 +975,19 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.mode-switch-btn,
+		.lamp-btn,
+		.copy-btn,
 		.back-btn,
 		.chip {
 			transition: none;
 		}
 
 		.mode-switch-btn:hover,
-		.mode-switch-btn:active {
+		.mode-switch-btn:active,
+		.lamp-btn:hover,
+		.lamp-btn:active,
+		.copy-btn:hover,
+		.copy-btn:active {
 			transform: none;
 		}
 	}

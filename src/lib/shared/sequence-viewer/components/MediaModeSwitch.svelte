@@ -82,6 +82,7 @@
 		justify-content: center;
 		align-items: center;
 		gap: 16px;
+		width: 100%;
 		flex-shrink: 0;
 		padding: 12px 16px;
 		overflow: visible;
