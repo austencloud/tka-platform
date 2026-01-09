@@ -93,7 +93,7 @@
 		</div>
 	{:else if DestinationComponent}
 		<!-- Render the destination -->
-		<svelte:component this={DestinationComponent} />
+		<DestinationComponent />
 
 		<!-- Return hint (overlay) -->
 		<div class="return-hint">

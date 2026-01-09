@@ -9,8 +9,10 @@
 	 * Design: Grid layout with live previews (Apple's app preview pattern)
 	 */
 
+	import { onMount } from "svelte";
 	import { DESTINATIONS, DESTINATION_CATEGORIES } from "$lib/shared/3d-core/destinations/definitions";
 	import type { Destination } from "$lib/shared/3d-core/destinations/types";
+	import Mini3DPreview from "./Mini3DPreview.svelte";
 
 	interface Props {
 		onSelect: (destinationId: string) => void;
@@ -23,6 +25,15 @@
 
 	// Hovered destination (for preview animation)
 	let hoveredDestinationId = $state<string | null>(null);
+
+	// Visible cards (lazy loading via IntersectionObserver)
+	let visibleCards = $state<Set<string>>(new Set());
+
+	// Loaded previews (tracks which previews have loaded successfully)
+	let loadedPreviews = $state<Set<string>>(new Set());
+
+	// Card element refs for IntersectionObserver
+	let cardRefs = $state<Map<string, HTMLElement>>(new Map());
 
 	// Filtered destinations
 	const filteredDestinations = $derived(
@@ -38,6 +49,57 @@
 	function handleCategoryClick(categoryId: string | null) {
 		selectedCategory = categoryId;
 	}
+
+	function handlePreviewReady(destinationId: string) {
+		loadedPreviews = new Set([...loadedPreviews, destinationId]);
+	}
+
+	// Svelte action to track card elements for IntersectionObserver
+	function trackCard(element: HTMLElement, destinationId: string) {
+		cardRefs.set(destinationId, element);
+
+		return {
+			destroy() {
+				cardRefs.delete(destinationId);
+			}
+		};
+	}
+
+	// IntersectionObserver for lazy loading
+	onMount(() => {
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					const id = entry.target.getAttribute("data-destination-id");
+					if (!id) continue;
+
+					if (entry.isIntersecting) {
+						visibleCards = new Set([...visibleCards, id]);
+					}
+					// Note: We don't remove from visibleCards when scrolling away
+					// to prevent unmount/remount flicker. The preview stays loaded.
+				}
+			},
+			{
+				rootMargin: "100px", // Start loading slightly before visible
+				threshold: 0.1,
+			}
+		);
+
+		// Observe all cards as they get added
+		const unsubscribe = $effect.root(() => {
+			$effect(() => {
+				for (const [, element] of cardRefs) {
+					observer.observe(element);
+				}
+			});
+		});
+
+		return () => {
+			observer.disconnect();
+			unsubscribe();
+		};
+	});
 </script>
 
 <div class="destination-picker">
@@ -78,15 +140,34 @@
 				class="destination-card"
 				class:hovered={hoveredDestinationId === destination.id}
 				style="--dest-color: {destination.color}"
+				data-destination-id={destination.id}
 				onclick={() => handleDestinationClick(destination)}
 				onmouseenter={() => (hoveredDestinationId = destination.id)}
 				onmouseleave={() => (hoveredDestinationId = null)}
+				use:trackCard={destination.id}
 			>
-				<!-- Preview area (future: live 3D preview) -->
+				<!-- Preview area with live 3D preview -->
 				<div class="preview-area">
-					<div class="preview-placeholder">
-						<i class="fas {destination.icon} preview-icon" aria-hidden="true"></i>
-					</div>
+					{#if visibleCards.has(destination.id)}
+						<!-- Live 3D preview (lazy loaded when visible) -->
+						<Mini3DPreview
+							destinationId={destination.id}
+							isHovered={hoveredDestinationId === destination.id}
+							onReady={() => handlePreviewReady(destination.id)}
+						/>
+
+						<!-- Fallback icon (shown while loading or on error) -->
+						{#if !loadedPreviews.has(destination.id)}
+							<div class="preview-placeholder preview-loading">
+								<i class="fas {destination.icon} preview-icon" aria-hidden="true"></i>
+							</div>
+						{/if}
+					{:else}
+						<!-- Static placeholder (before intersection) -->
+						<div class="preview-placeholder">
+							<i class="fas {destination.icon} preview-icon" aria-hidden="true"></i>
+						</div>
+					{/if}
 
 					<!-- Multiplayer badge -->
 					{#if destination.supportsMultiplayer}
@@ -257,6 +338,14 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		transition: opacity 0.3s ease;
+	}
+
+	.preview-loading {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+		z-index: 1;
 	}
 
 	.preview-icon {
