@@ -36,6 +36,16 @@ import {
  * Thin coordinator that delegates to focused, single-responsibility services.
  * Each service handles exactly one concern (physics, animation, or rendering).
  */
+export interface DeepOceanLayers {
+  gradient: boolean;
+  lightRays: boolean;
+  caustics: boolean;
+  particles: boolean;
+  bubbles: boolean;
+  fish: boolean;
+  jellyfish: boolean;
+}
+
 @injectable()
 export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
   private state: DeepOceanState;
@@ -47,6 +57,17 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
   };
   private animationTime = 0;
   private perfMonitor = new DeepOceanPerformanceMonitor();
+
+  // Layer visibility for lab mode
+  private layerVisibility: DeepOceanLayers = {
+    gradient: true,
+    lightRays: true,
+    caustics: true,
+    particles: true,
+    bubbles: true,
+    fish: true,
+    jellyfish: true,
+  };
 
   constructor(
     // Physics services
@@ -237,17 +258,27 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
   }
 
   draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
-    // Layer order: gradient -> rays -> caustics -> far particles -> far fish -> bubbles -> mid fish -> near fish -> jellyfish
-    this.gradientRenderer.drawOceanGradient(ctx, dimensions, this.state.gradientState);
-    this.lightRayRenderer.drawLightRays(
-      ctx,
-      dimensions,
-      this.state.lightRays,
-      this.quality
-    );
+    // Layer order: gradient -> rays -> caustics -> particles -> bubbles -> fish -> jellyfish
+
+    if (this.layerVisibility.gradient) {
+      this.gradientRenderer.drawOceanGradient(ctx, dimensions, this.state.gradientState);
+    } else {
+      // Draw simple dark background if gradient disabled
+      ctx.fillStyle = "#0a1628";
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+    }
+
+    if (this.layerVisibility.lightRays) {
+      this.lightRayRenderer.drawLightRays(
+        ctx,
+        dimensions,
+        this.state.lightRays,
+        this.quality
+      );
+    }
 
     // Draw caustics (after rays, before particles)
-    if (this.state.caustics) {
+    if (this.state.caustics && this.layerVisibility.caustics) {
       this.lightRayRenderer.drawCaustics(
         ctx,
         dimensions,
@@ -257,16 +288,24 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
     }
 
     // Draw particles (background layer)
-    this.particleRenderer.drawParticles(ctx, this.state.particles);
+    if (this.layerVisibility.particles) {
+      this.particleRenderer.drawParticles(ctx, this.state.particles);
+    }
 
     // Draw bubbles
-    this.bubbleRenderer.drawBubbles(ctx, this.state.bubbles);
+    if (this.layerVisibility.bubbles) {
+      this.bubbleRenderer.drawBubbles(ctx, this.state.bubbles);
+    }
 
     // Draw fish (sorted by depth internally)
-    this.fishRenderer.drawFish(ctx, this.state.fish);
+    if (this.layerVisibility.fish) {
+      this.fishRenderer.drawFish(ctx, this.state.fish);
+    }
 
     // Draw jellyfish (foreground)
-    this.jellyfishRenderer.drawJellyfish(ctx, this.state.jellyfish);
+    if (this.layerVisibility.jellyfish) {
+      this.jellyfishRenderer.drawJellyfish(ctx, this.state.jellyfish);
+    }
 
     this.perfMonitor.endRender(
       this.state.fish.length,
@@ -289,6 +328,23 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
       : { top: "#0d2d47", bottom: "#091a2b" };
   }
 
+  setLayerVisibility(layers: Partial<DeepOceanLayers>): void {
+    this.layerVisibility = { ...this.layerVisibility, ...layers };
+  }
+
+  getLayerVisibility(): DeepOceanLayers {
+    return { ...this.layerVisibility };
+  }
+
+  getStats(): { fish: number; jellyfish: number; bubbles: number; particles: number } {
+    return {
+      fish: this.state.fish.length,
+      jellyfish: this.state.jellyfish.length,
+      bubbles: this.state.bubbles.length,
+      particles: this.state.particles.length,
+    };
+  }
+
   getMetrics(): PerformanceMetrics {
     return {
       fps: 60,
@@ -301,6 +357,32 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
       renderTime: 0,
       memoryUsage: 0,
     };
+  }
+
+  handleResize(oldDimensions: Dimensions, newDimensions: Dimensions): void {
+    // Scale positions of existing elements
+    const scaleX = newDimensions.width / oldDimensions.width;
+    const scaleY = newDimensions.height / oldDimensions.height;
+
+    this.state.bubbles.forEach((bubble) => {
+      bubble.x *= scaleX;
+      bubble.y *= scaleY;
+    });
+
+    this.state.particles.forEach((particle) => {
+      particle.x *= scaleX;
+      particle.y *= scaleY;
+    });
+
+    this.state.fish.forEach((fish) => {
+      fish.x *= scaleX;
+      fish.y *= scaleY;
+    });
+
+    this.state.jellyfish.forEach((jelly) => {
+      jelly.x *= scaleX;
+      jelly.y *= scaleY;
+    });
   }
 
   cleanup(): void {

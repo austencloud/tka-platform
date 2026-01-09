@@ -1,45 +1,40 @@
 <script lang="ts">
-  import FishGallery from "./components/FishGallery.svelte";
   import NightSkyLab from "./components/NightSkyLab.svelte";
-
-  type TabId =
-    | "fish"
-    | "jellyfish"
-    | "bubbles"
-    | "light-rays"
-    | "gradient"
-    | "night-sky";
+  import DeepOceanLab from "./components/DeepOceanLab.svelte";
+  import {
+    backgroundBuilderState,
+    type BackgroundBuilderTab,
+  } from "./state/background-builder-state.svelte";
 
   interface Tab {
-    id: TabId;
+    id: BackgroundBuilderTab;
     label: string;
     icon: string;
   }
 
   const tabs: Tab[] = [
-    { id: "fish", label: "Fish", icon: "fa-fish" },
-    { id: "jellyfish", label: "Jellyfish", icon: "fa-disease" },
-    { id: "bubbles", label: "Bubbles", icon: "fa-circle" },
-    { id: "light-rays", label: "Light Rays", icon: "fa-sun" },
-    { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
+    { id: "deep-ocean", label: "Deep Ocean", icon: "fa-water" },
     { id: "night-sky", label: "Night Sky", icon: "fa-moon" },
+    { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
   ];
 
-  let activeTab: TabId = $state("fish");
+  function setTab(tabId: BackgroundBuilderTab) {
+    backgroundBuilderState.setCurrentTab(tabId);
+  }
 </script>
 
 <div class="background-builder">
   <header>
     <h1>Background Builder</h1>
-    <p>Design and iterate on deep ocean background elements</p>
+    <p>Design and iterate on background elements</p>
   </header>
 
   <nav class="tabs">
     {#each tabs as tab}
       <button
         class="tab"
-        class:active={activeTab === tab.id}
-        onclick={() => (activeTab = tab.id)}
+        class:active={backgroundBuilderState.currentTab === tab.id}
+        onclick={() => setTab(tab.id)}
       >
         <i class="fas {tab.icon}"></i>
         {tab.label}
@@ -48,30 +43,15 @@
   </nav>
 
   <main class="content">
-    {#if activeTab === "fish"}
-      <FishGallery />
-    {:else if activeTab === "jellyfish"}
-      <div class="placeholder">
-        <i class="fas fa-disease"></i>
-        <p>Jellyfish Gallery - Coming Soon</p>
-      </div>
-    {:else if activeTab === "bubbles"}
-      <div class="placeholder">
-        <i class="fas fa-circle"></i>
-        <p>Bubble Gallery - Coming Soon</p>
-      </div>
-    {:else if activeTab === "light-rays"}
-      <div class="placeholder">
-        <i class="fas fa-sun"></i>
-        <p>Light Ray Gallery - Coming Soon</p>
-      </div>
-    {:else if activeTab === "gradient"}
+    {#if backgroundBuilderState.currentTab === "deep-ocean"}
+      <DeepOceanLab />
+    {:else if backgroundBuilderState.currentTab === "night-sky"}
+      <NightSkyLab />
+    {:else if backgroundBuilderState.currentTab === "gradient"}
       <div class="placeholder">
         <i class="fas fa-fill-drip"></i>
-        <p>Gradient Gallery - Coming Soon</p>
+        <p>Gradient Lab - Coming Soon</p>
       </div>
-    {:else if activeTab === "night-sky"}
-      <NightSkyLab />
     {/if}
   </main>
 </div>
