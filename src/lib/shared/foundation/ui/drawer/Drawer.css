@@ -195,6 +195,7 @@ dialog.drawer-content {
   top: 0;
   right: 0;
   bottom: 0;
+  left: auto; /* Override dialog UA default left: 0 */
   height: 100vh;
   height: 100dvh; /* Modern browsers: accounts for browser chrome */
   max-height: 100vh;
@@ -235,6 +236,7 @@ dialog.drawer-content {
   top: 0;
   left: 0;
   bottom: 0;
+  right: auto; /* Override dialog UA default right: 0 */
   height: 100vh;
   max-height: 100vh;
   width: var(--sheet-width, min(600px, 90vw));

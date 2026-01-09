@@ -91,12 +91,12 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
 
   // Legacy static reference for backwards compatibility
   private readonly legacyAuroraColors = [
-    { r: 0, g: 25, b: 50, a: 0.4 }, // Deep blue
-    { r: 0, g: 50, b: 100, a: 0.2 }, // Medium blue
-    { r: 0, g: 100, b: 150, a: 0.1 }, // Light blue
-    { r: 50, g: 150, b: 100, a: 0.15 }, // Blue-green
-    { r: 100, g: 200, b: 150, a: 0.12 }, // Green
-    { r: 150, g: 255, b: 200, a: 0.08 }, // Light green
+    { r: 0, g: 80, b: 120, a: 0.6 },
+    { r: 0, g: 120, b: 100, a: 0.5 },
+    { r: 50, g: 180, b: 120, a: 0.45 },
+    { r: 80, g: 200, b: 150, a: 0.4 },
+    { r: 120, g: 230, b: 180, a: 0.35 },
+    { r: 150, g: 255, b: 200, a: 0.3 },
   ];
 
   public initialize(_dimensions: Dimensions, quality: QualityLevel): void {
@@ -295,7 +295,8 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
         );
         const color = this.auroraColors[i % this.auroraColors.length];
         if (color) {
-          const intensity = ((Math.sin(wave * 2) + 1) / 2) * 0.1;
+          // Higher intensity for visible wave shimmer effects
+          const intensity = 0.1 + ((Math.sin(wave * 2) + 1) / 2) * 0.25;
 
           waveGradient.addColorStop(
             0,

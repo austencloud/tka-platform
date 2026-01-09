@@ -112,16 +112,9 @@ ${
     localStorage.setItem("dev-hmr-enabled", String(hmrEnabled));
 
     if (import.meta.hot) {
-      if (hmrEnabled) {
-        console.log("🔥 HMR Enabled - Changes will hot-reload automatically");
-        // Force a full reload to re-enable HMR
-        window.location.reload();
-      } else {
-        console.log("❄️ HMR Disabled - Manual refresh required for changes");
-        // Note: Vite doesn't support dynamically disabling HMR
-        // A full page reload is required to apply HMR preference
-        window.location.reload();
-      }
+      // Force a full reload to apply HMR preference
+      // Note: Vite doesn't support dynamically enabling/disabling HMR
+      window.location.reload();
     }
   }
 

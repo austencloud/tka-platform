@@ -19,6 +19,20 @@ interface Tree {
   type: TreeType;
 }
 
+interface LayerConfig {
+  count: number;
+  heightRange: [number, number]; // min, max as ratio of canvas height
+  widthRange: [number, number]; // min, max as ratio of canvas height
+  minSpacing: number; // minimum pixels between trees in same layer
+}
+
+// Tree layer configurations - from far (back) to near (front)
+const LAYER_CONFIGS: LayerConfig[] = [
+  { count: 6, heightRange: [0.18, 0.28], widthRange: [0.05, 0.08], minSpacing: 60 }, // far/small
+  { count: 5, heightRange: [0.3, 0.45], widthRange: [0.08, 0.12], minSpacing: 90 }, // mid
+  { count: 5, heightRange: [0.45, 0.65], widthRange: [0.12, 0.18], minSpacing: 130 }, // foreground/large
+];
+
 /**
  * Creates forest silhouettes rising from the bottom of the screen
  * Trees are dark shapes against the sky - no ground layers needed
@@ -39,6 +53,60 @@ export function createTreeSilhouetteSystem() {
   type RenderContext =
     | CanvasRenderingContext2D
     | OffscreenCanvasRenderingContext2D;
+
+  // Seeded random for deterministic but varied placement
+  let seed = Date.now();
+
+  function seededRandom(): number {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  }
+
+  function resetSeed(): void {
+    seed = Date.now();
+  }
+
+  /**
+   * Distribute tree positions with minimum spacing constraint
+   * Uses rejection sampling - generate candidates, keep if not too close to existing
+   */
+  function distributePositions(
+    count: number,
+    canvasWidth: number,
+    minSpacing: number
+  ): number[] {
+    const positions: number[] = [];
+    const maxAttempts = count * 20;
+    let attempt = 0;
+
+    // Add margin so trees don't spawn at exact edges
+    const margin = canvasWidth * 0.03;
+    const usableWidth = canvasWidth - margin * 2;
+
+    while (positions.length < count && attempt < maxAttempts) {
+      // Generate candidate position
+      const candidate = margin + seededRandom() * usableWidth;
+
+      // Check if too close to any existing position
+      const tooClose = positions.some((p) => Math.abs(p - candidate) < minSpacing);
+
+      if (!tooClose) {
+        positions.push(candidate);
+      }
+      attempt++;
+    }
+
+    // Fallback: if we couldn't place all trees, fill with even distribution
+    if (positions.length < count) {
+      const gap = usableWidth / (count + 1);
+      while (positions.length < count) {
+        const idx = positions.length;
+        positions.push(margin + gap * (idx + 1));
+      }
+    }
+
+    return positions.sort((a, b) => a - b);
+  }
 
   // ===================
   // CONIFER TREES
@@ -417,42 +485,28 @@ export function createTreeSilhouetteSystem() {
 
     if (enabledTypes.length === 0) return trees;
 
-    const pickType = (): TreeType => enabledTypes[Math.floor(Math.random() * enabledTypes.length)]!;
+    // Reset seed for new generation
+    resetSeed();
 
-    // Large foreground trees (fewer, bigger)
-    const foregroundPositions = [0.08, 0.25, 0.52, 0.78, 0.95];
-    for (const xRatio of foregroundPositions) {
-      trees.push({
-        x: width * xRatio + (Math.random() - 0.5) * width * 0.05,
-        height: height * (0.45 + Math.random() * 0.2),
-        width: height * (0.12 + Math.random() * 0.06),
-        type: pickType(),
-      });
+    const pickType = (): TreeType => enabledTypes[Math.floor(seededRandom() * enabledTypes.length)]!;
+
+    // Generate trees layer by layer (far to near)
+    for (const layer of LAYER_CONFIGS) {
+      const positions = distributePositions(layer.count, width, layer.minSpacing);
+      const [minHeight, maxHeight] = layer.heightRange;
+      const [minWidth, maxWidth] = layer.widthRange;
+
+      for (const x of positions) {
+        trees.push({
+          x,
+          height: height * (minHeight + seededRandom() * (maxHeight - minHeight)),
+          width: height * (minWidth + seededRandom() * (maxWidth - minWidth)),
+          type: pickType(),
+        });
+      }
     }
 
-    // Medium background trees (fill gaps)
-    const midPositions = [0.15, 0.38, 0.62, 0.85];
-    for (const xRatio of midPositions) {
-      trees.push({
-        x: width * xRatio + (Math.random() - 0.5) * width * 0.08,
-        height: height * (0.3 + Math.random() * 0.15),
-        width: height * (0.08 + Math.random() * 0.04),
-        type: pickType(),
-      });
-    }
-
-    // Small distant trees (peek between larger ones)
-    const farPositions = [0.12, 0.32, 0.48, 0.68, 0.88];
-    for (const xRatio of farPositions) {
-      trees.push({
-        x: width * xRatio + (Math.random() - 0.5) * width * 0.06,
-        height: height * (0.18 + Math.random() * 0.1),
-        width: height * (0.05 + Math.random() * 0.03),
-        type: pickType(),
-      });
-    }
-
-    // Sort by height (tallest last so they draw on top)
+    // Sort by height (smallest first, so larger trees draw on top)
     return trees.sort((a, b) => a.height - b.height);
   }
 

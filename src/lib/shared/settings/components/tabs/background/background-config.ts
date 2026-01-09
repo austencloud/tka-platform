@@ -63,10 +63,10 @@ export const backgroundsConfig: BackgroundMetadata[] = [
   },
   {
     type: BackgroundType.SAKURA_DRIFT,
-    name: "Sakura Drift",
+    name: "Cherry Blossom",
     description: "Soft twilight with gently falling cherry blossoms",
     icon: "🌸",
-    // Sakura: soft pinks and magentas
+    // Cherry blossom: soft pinks and magentas
     themeColors: ["#831843", "#db2777", "#f9a8d4"],
   },
   {

@@ -32,19 +32,19 @@ export const DEPTH_LAYER_CONFIG: Record<
   far: {
     scale: [0.3, 0.45],
     speedMultiplier: 0.5,
-    opacity: [0.15, 0.25],
+    opacity: [0.6, 0.75],
     verticalBand: [0.1, 0.4], // Upper background
   },
   mid: {
     scale: [0.45, 0.65],
     speedMultiplier: 0.75,
-    opacity: [0.3, 0.45],
+    opacity: [0.85, 0.95],
     verticalBand: [0.25, 0.65], // Middle
   },
   near: {
     scale: [0.65, 0.85],
     speedMultiplier: 1.0,
-    opacity: [0.5, 0.65],
+    opacity: [1.0, 1.0],
     verticalBand: [0.4, 0.85], // Foreground
   },
 };

@@ -1,36 +1,21 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { AuroraBorealisBackgroundSystem } from "$lib/shared/background/aurora/services/AuroraBorealisBackgroundSystem";
+  import { AuroraBackgroundSystem } from "$lib/shared/background/aurora/services/AuroraBackgroundSystem";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
-  let backgroundSystem: AuroraBorealisBackgroundSystem | null = $state(null);
+  let backgroundSystem: AuroraBackgroundSystem | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
 
   // Quality settings
   let quality: QualityLevel = $state("high");
 
-  // Layer toggles
-  let layers = $state({
-    gradient: true,
-    waves: true,
-    enhancedEffects: true,
-  });
-
-  // Color palette options
-  type ColorPalette = "classic" | "purple" | "blue" | "rainbow";
-  let colorPalette: ColorPalette = $state("classic");
-
-  // Intensity presets
-  type IntensityPreset = "subtle" | "normal" | "vivid" | "intense";
-  let intensityPreset: IntensityPreset = $state("normal");
-
   // Stats
-  let stats = $state({ waves: 0 });
+  let stats = $state({ lensFlares: 0, sparkles: 0 });
 
   function initializeSystem() {
     if (!canvas) return;
@@ -44,14 +29,9 @@
       canvas.height = container.clientHeight;
     }
 
-    backgroundSystem = new AuroraBorealisBackgroundSystem();
+    backgroundSystem = new AuroraBackgroundSystem();
     const dimensions = { width: canvas.width, height: canvas.height };
     backgroundSystem.initialize(dimensions, quality);
-
-    // Apply layer visibility if method exists
-    if (backgroundSystem.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
-    }
 
     // Update stats
     updateStats();
@@ -60,18 +40,27 @@
   }
 
   function updateStats() {
-    if (backgroundSystem?.getStats) {
-      stats = backgroundSystem.getStats();
-    } else {
-      // Fallback: estimate from quality
-      const waveCounts: Record<QualityLevel, number> = {
-        high: 12,
-        medium: 10,
-        low: 6,
-        minimal: 4,
-        "ultra-minimal": 2,
+    if (backgroundSystem) {
+      const metrics = backgroundSystem.getMetrics();
+      // The system tracks lens flares + sparkles as particleCount
+      const flareCounts: Record<QualityLevel, number> = {
+        high: 5,
+        medium: 3,
+        low: 2,
+        minimal: 1,
+        "ultra-minimal": 1,
       };
-      stats = { waves: waveCounts[quality] || 10 };
+      const sparkleCounts: Record<QualityLevel, number> = {
+        high: 50,
+        medium: 30,
+        low: 15,
+        minimal: 5,
+        "ultra-minimal": 0,
+      };
+      stats = {
+        lensFlares: flareCounts[quality] || 3,
+        sparkles: sparkleCounts[quality] || 30,
+      };
     }
   }
 
@@ -129,27 +118,9 @@
 
   function setQuality(q: QualityLevel) {
     quality = q;
-    regenerate();
-  }
-
-  function setColorPalette(palette: ColorPalette) {
-    colorPalette = palette;
-    if (backgroundSystem?.setColorPalette) {
-      backgroundSystem.setColorPalette(palette);
-    }
-  }
-
-  function setIntensity(preset: IntensityPreset) {
-    intensityPreset = preset;
-    if (backgroundSystem?.setIntensity) {
-      backgroundSystem.setIntensity(preset);
-    }
-  }
-
-  function toggleLayer(layer: keyof typeof layers) {
-    layers = { ...layers, [layer]: !layers[layer] };
-    if (backgroundSystem?.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
+    if (backgroundSystem) {
+      backgroundSystem.setQuality(q);
+      updateStats();
     }
   }
 
@@ -171,37 +142,14 @@
   <div class="controls">
     <div class="header">
       <h2>Aurora Lab</h2>
-      <span class="badge">Northern Lights</span>
+      <span class="badge">Rainbow</span>
     </div>
 
     <!-- Quality Chips -->
     <ChipGroup label="Quality" variant="row">
-      <ChipToggle label="High" active={quality === "high"} color="emerald" onclick={() => setQuality("high")} />
-      <ChipToggle label="Medium" active={quality === "medium"} color="emerald" onclick={() => setQuality("medium")} />
-      <ChipToggle label="Low" active={quality === "low"} color="emerald" onclick={() => setQuality("low")} />
-    </ChipGroup>
-
-    <!-- Layer Chips -->
-    <ChipGroup label="Layers">
-      <ChipToggle label="Sky Gradient" icon="fa-moon" active={layers.gradient} color="emerald" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Aurora Waves" icon="fa-water" active={layers.waves} color="emerald" onclick={() => toggleLayer("waves")} />
-      <ChipToggle label="Wave Effects" icon="fa-wand-magic-sparkles" active={layers.enhancedEffects} color="emerald" onclick={() => toggleLayer("enhancedEffects")} />
-    </ChipGroup>
-
-    <!-- Color Palette -->
-    <ChipGroup label="Color Palette" variant="row">
-      <ChipToggle label="Classic" active={colorPalette === "classic"} color="emerald" onclick={() => setColorPalette("classic")} />
-      <ChipToggle label="Purple" active={colorPalette === "purple"} color="default" onclick={() => setColorPalette("purple")} />
-      <ChipToggle label="Blue" active={colorPalette === "blue"} color="cyan" onclick={() => setColorPalette("blue")} />
-      <ChipToggle label="Rainbow" active={colorPalette === "rainbow"} color="rose" onclick={() => setColorPalette("rainbow")} />
-    </ChipGroup>
-
-    <!-- Intensity -->
-    <ChipGroup label="Intensity" variant="row">
-      <ChipToggle label="Subtle" active={intensityPreset === "subtle"} color="emerald" onclick={() => setIntensity("subtle")} />
-      <ChipToggle label="Normal" active={intensityPreset === "normal"} color="emerald" onclick={() => setIntensity("normal")} />
-      <ChipToggle label="Vivid" active={intensityPreset === "vivid"} color="emerald" onclick={() => setIntensity("vivid")} />
-      <ChipToggle label="Intense" active={intensityPreset === "intense"} color="emerald" onclick={() => setIntensity("intense")} />
+      <ChipToggle label="High" active={quality === "high"} color="violet" onclick={() => setQuality("high")} />
+      <ChipToggle label="Medium" active={quality === "medium"} color="violet" onclick={() => setQuality("medium")} />
+      <ChipToggle label="Low" active={quality === "low"} color="violet" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Regenerate -->
@@ -215,21 +163,34 @@
       <span class="label">Scene Stats</span>
       <div class="stats-grid">
         <div class="stat">
-          <span class="stat-value">{stats.waves}</span>
-          <span class="stat-label">Light Waves</span>
+          <span class="stat-value">{stats.lensFlares}</span>
+          <span class="stat-label">Lens Flares</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{stats.sparkles}</span>
+          <span class="stat-label">Sparkles</span>
         </div>
       </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+      <span class="label">About</span>
+      <p class="info-text">
+        Rainbow gradient with cycling colors, animated lens flares, and sparkle effects.
+        Colors shift through the spectrum for a vibrant aurora effect.
+      </p>
     </div>
 
     <!-- Progress Pills -->
     <div class="progress-section">
       <span class="label">Features</span>
       <div class="progress-pills">
-        <span class="pill complete">Base Gradient</span>
-        <span class="pill complete">Light Waves</span>
-        <span class="pill complete">Wave Animation</span>
-        <span class="pill active">Layer Controls</span>
-        <span class="pill pending">Color Palettes</span>
+        <span class="pill complete">Wavy Gradient</span>
+        <span class="pill complete">Color Cycling</span>
+        <span class="pill complete">Lens Flares</span>
+        <span class="pill complete">Sparkles</span>
+        <span class="pill complete">Quality Levels</span>
       </div>
     </div>
   </div>
@@ -274,12 +235,12 @@
 
   .badge {
     padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(52, 211, 153, 0.3));
-    border: 1px solid rgba(52, 211, 153, 0.4);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
+    border: 1px solid rgba(167, 139, 250, 0.4);
     border-radius: 20px;
     font-size: 0.7rem;
     font-weight: 600;
-    color: #34d399;
+    color: #a78bfa;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -298,7 +259,7 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #10b981, #059669);
+    background: linear-gradient(135deg, #8b5cf6, #ec4899);
     border: none;
     border-radius: 12px;
     color: #ffffff;
@@ -310,7 +271,7 @@
 
   .action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.35);
   }
 
   .action-btn:active {
@@ -327,7 +288,7 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 
@@ -343,13 +304,28 @@
   .stat-value {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #34d399;
+    color: #a78bfa;
   }
 
   .stat-label {
     font-size: 0.7rem;
     color: #6b7280;
     text-transform: uppercase;
+  }
+
+  .info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .info-text {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #9ca3af;
+    line-height: 1.5;
   }
 
   .progress-section {
@@ -374,13 +350,13 @@
   }
 
   .pill.complete {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
   }
 
   .pill.active {
-    background: rgba(16, 185, 129, 0.2);
-    color: #6ee7b7;
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
     animation: pulse 2s infinite;
   }
 
