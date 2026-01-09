@@ -364,6 +364,62 @@
 }
 
 /* ============================================
+   * @starting-style Entry Animations (2025+)
+   *
+   * Modern CSS feature that defines initial styles for elements
+   * entering the DOM or transitioning from display:none.
+   * Eliminates need for JavaScript RAF timing hacks.
+   *
+   * Browser support: Chrome 117+, Safari 17.5+, Firefox 144+ (Baseline 2025)
+   * https://developer.mozilla.org/en-US/docs/Web/CSS/@starting-style
+   * ============================================ */
+
+/* Enable discrete transitions for display property */
+.drawer-content,
+.drawer-overlay {
+  transition-behavior: allow-discrete;
+}
+
+/* Bottom placement entry animation */
+.drawer-content[data-placement="bottom"][data-state="open"] {
+  @starting-style {
+    transform: translate3d(0, 100%, 0);
+    opacity: 0;
+  }
+}
+
+/* Top placement entry animation */
+.drawer-content[data-placement="top"][data-state="open"] {
+  @starting-style {
+    transform: translate3d(0, -100%, 0);
+    opacity: 0;
+  }
+}
+
+/* Right placement entry animation */
+.drawer-content[data-placement="right"][data-state="open"] {
+  @starting-style {
+    transform: translate3d(100%, 0, 0);
+    opacity: 0;
+  }
+}
+
+/* Left placement entry animation */
+.drawer-content[data-placement="left"][data-state="open"] {
+  @starting-style {
+    transform: translate3d(-100%, 0, 0);
+    opacity: 0;
+  }
+}
+
+/* Overlay fade-in entry animation */
+.drawer-overlay[data-state="open"] {
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+/* ============================================
    * Spring Animation
    * Simulates spring physics with CSS keyframes
    * Creates an iOS-like "bounce" effect on open

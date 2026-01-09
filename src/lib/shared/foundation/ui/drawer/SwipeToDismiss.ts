@@ -12,6 +12,21 @@ import { isTopDrawer, dismissTopDrawer } from "./DrawerStack";
 
 const debug = createComponentLogger("SwipeToDismiss");
 
+/**
+ * Swipe-to-dismiss threshold constants
+ * These control when a swipe gesture triggers drawer dismissal
+ */
+const DISMISS_THRESHOLDS = {
+  /** Minimum distance (px) for a slow swipe to trigger dismiss */
+  DISTANCE_SLOW: 100,
+  /** Minimum distance (px) for a fast swipe to trigger dismiss */
+  DISTANCE_FAST: 50,
+  /** Maximum duration (ms) for a swipe to be considered "fast" */
+  FAST_SWIPE_MAX_DURATION: 500,
+  /** Minimum movement (px) to consider gesture as intentional drag */
+  MOVEMENT_THRESHOLD: 5,
+} as const;
+
 export type SwipePlacement = "bottom" | "top" | "right" | "left";
 
 export interface SwipeToDismissOptions {
@@ -123,10 +138,7 @@ export class SwipeToDismiss {
   attach(element: HTMLElement) {
     this.detach(); // Clean up any previous listeners
     this.element = element;
-    console.log(
-      "[SwipeToDismiss] attach called for drawer:",
-      this.options.drawerId
-    );
+    debug.log(`attach called for drawer: ${this.options.drawerId}`);
 
     const handleStart = (e: TouchEvent | MouseEvent) =>
       this.handleTouchStart(e);
@@ -233,28 +245,23 @@ export class SwipeToDismiss {
   }
 
   private handleTouchStart(event: TouchEvent | MouseEvent) {
-    console.log(
-      "[SwipeToDismiss] handleTouchStart for drawer:",
-      this.options.drawerId
-    );
+    debug.log(`handleTouchStart for drawer: ${this.options.drawerId}`);
 
     if (!this.options.dismissible) {
-      console.log("[SwipeToDismiss] blocked: not dismissible");
+      debug.log("blocked: not dismissible");
       return;
     }
 
     // Ignore right-click (context menu) - allow browser default behavior
     if (event instanceof MouseEvent && event.button !== 0) {
-      console.log("[SwipeToDismiss] blocked: right-click");
+      debug.log("blocked: right-click");
       return;
     }
 
     // Only process if this drawer is the top drawer (prevents nested drawer conflicts)
     // If not the top drawer, don't start tracking at all - let the top drawer handle it
     if (this.options.drawerId && !isTopDrawer(this.options.drawerId)) {
-      console.log(
-        "[SwipeToDismiss] not top drawer, ignoring gesture"
-      );
+      debug.log("not top drawer, ignoring gesture");
       // Don't track gesture on non-top drawer - the top drawer will handle it
       // This prevents the bug where both parent and child drawers process the same swipe
       return;
@@ -418,7 +425,7 @@ export class SwipeToDismiss {
       }
 
       if (wasAboveThreshold) {
-        console.log("[SwipeToDismiss] delegating dismiss to top drawer");
+        debug.log("delegating dismiss to top drawer");
         dismissTopDrawer();
       }
 
