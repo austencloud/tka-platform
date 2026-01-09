@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { NightSkyBackgroundSystem } from "$lib/shared/background/night-sky/services/NightSkyBackgroundSystem";
+  import { nightSkyBackgroundModule } from "$lib/shared/background/night-sky/inversify/NightSkyModule";
+  import { getContainerInstance } from "$lib/shared/inversify/di";
+  import { TYPES } from "$lib/shared/inversify/types";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
 
   // Canvas reference
@@ -32,7 +35,7 @@
     ultra: 3.0,
   };
 
-  function initializeSystem() {
+  async function initializeSystem() {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
@@ -42,6 +45,12 @@
     if (container) {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
+    }
+
+    // Ensure DI module is loaded before creating the system
+    const diContainer = await getContainerInstance();
+    if (!diContainer.isBound(TYPES.INightSkyCalculationService)) {
+      await diContainer.load(nightSkyBackgroundModule);
     }
 
     backgroundSystem = NightSkyBackgroundSystem.create();
@@ -358,14 +367,17 @@
     transition: all 0.2s ease;
   }
 
-  .chip:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: #e5e7eb;
+  /* Only apply hover effects on devices with real hover (not touch) */
+  @media (hover: hover) {
+    .chip:hover:not(:disabled):not(.active) {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: #e5e7eb;
+    }
   }
 
-  .chip.active,
-  .chip.active:hover {
+  /* Active state - higher specificity, no hover dependency */
+  .chip.active {
     background: rgba(99, 102, 241, 0.2);
     border-color: rgba(99, 102, 241, 0.5);
     color: #a5b4fc;
@@ -380,21 +392,6 @@
 
   .layer-chip i {
     font-size: 0.75rem;
-  }
-
-  /* Explicit active state for layer chips - fixes mobile touch rendering */
-  .layer-chip.active {
-    background: rgba(99, 102, 241, 0.2) !important;
-    border-color: rgba(99, 102, 241, 0.5) !important;
-    color: #a5b4fc !important;
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
-  }
-
-  .layer-chip:not(.active) {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
-    color: #9ca3af;
-    box-shadow: none;
   }
 
   .layer-chip.coming-soon {

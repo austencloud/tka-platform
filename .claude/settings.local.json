@@ -139,7 +139,9 @@
       "Bash(do grep -H \">\\\\s*[A-Z][a-zA-Z ]*<\\\\|placeholder=\"\"\\\\|aria-label=\"\"\" \"$file\")",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\discover\" -Recurse -Filter \"*SequenceDetail*\")",
       "Bash(do tail -5 \"$file\")",
-      "WebFetch(domain:www.manuelsanchezdev.com)"
+      "WebFetch(domain:www.manuelsanchezdev.com)",
+      "WebFetch(domain:algorithmicbotany.org)",
+      "WebFetch(domain:www.jasonwebb.io)"
     ]
   }
 }

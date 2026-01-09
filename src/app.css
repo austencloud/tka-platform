@@ -27,6 +27,15 @@ body {
   overscroll-behavior-x: none;
 }
 
+/*
+ * Scrollbar Gutter - Prevents layout shift when modals/drawers toggle body overflow.
+ * Baseline 2024: https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-gutter
+ * Reserves space for scrollbar so content doesn't jump when overflow changes.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
