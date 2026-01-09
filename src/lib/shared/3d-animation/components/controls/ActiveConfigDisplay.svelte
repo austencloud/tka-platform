@@ -5,6 +5,7 @@
    * Shows blue and red prop configurations for the current beat.
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { MotionConfig3D } from "../../domain/models/MotionData3D";
 
   interface Props {
@@ -22,12 +23,12 @@
     <div class="config-card">
       <div class="config-header blue">
         <span class="dot"></span>
-        <span>Blue</span>
+        <span>{t("viewer3d_blue")}</span>
       </div>
       <div class="config-details">
         <span>{blueConfig.startLocation} &rarr; {blueConfig.endLocation}</span>
         <span>{blueConfig.motionType}</span>
-        <span>{blueConfig.turns} turns</span>
+        <span>{blueConfig.turns} {t("viewer3d_turns")}</span>
       </div>
     </div>
   {/if}
@@ -36,18 +37,18 @@
     <div class="config-card">
       <div class="config-header red">
         <span class="dot"></span>
-        <span>Red</span>
+        <span>{t("viewer3d_red")}</span>
       </div>
       <div class="config-details">
         <span>{redConfig.startLocation} &rarr; {redConfig.endLocation}</span>
         <span>{redConfig.motionType}</span>
-        <span>{redConfig.turns} turns</span>
+        <span>{redConfig.turns} {t("viewer3d_turns")}</span>
       </div>
     </div>
   {/if}
 
   {#if !blueConfig && !redConfig}
-    <div class="empty">No active motions</div>
+    <div class="empty">{t("viewer3d_no_active_motions")}</div>
   {/if}
 </div>
 

@@ -7,6 +7,7 @@
    */
 
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { resolve } from "$lib/shared/inversify/di";
   import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
   import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
@@ -141,7 +142,7 @@
   {#if viewMode === "duets"}
     <button class="create-btn" onclick={onCreateDuet}>
       <i class="fas fa-plus" aria-hidden="true"></i>
-      Create Duet
+      {t('duet_create')}
     </button>
   {/if}
 
@@ -150,7 +151,7 @@
     {#if isLoading}
       <div class="loading">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Loading...</span>
+        <span>{t('loading_data')}</span>
       </div>
     {:else if error}
       <div class="error">
@@ -162,8 +163,8 @@
       {#if duets.length === 0}
         <div class="empty-state">
           <i class="fas fa-users" aria-hidden="true"></i>
-          <p>No duets yet</p>
-          <p class="hint">Create a duet to pair two sequences</p>
+          <p>{t('empty_no_duets')}</p>
+          <p class="hint">{t('empty_create_duet')}</p>
         </div>
       {:else}
         <div class="duet-list">
@@ -189,13 +190,13 @@
 
               <div class="duet-info">
                 <div class="sequence-pair">
-                  <span class="avatar-label">A1:</span>
+                  <span class="avatar-label">{t('duet_a1')}</span>
                   <span class="sequence-id" title={duet.avatar1SequenceId}>
                     {duet.avatar1SequenceId.slice(0, 8)}...
                   </span>
                 </div>
                 <div class="sequence-pair">
-                  <span class="avatar-label">A2:</span>
+                  <span class="avatar-label">{t('duet_a2')}</span>
                   <span class="sequence-id" title={duet.avatar2SequenceId}>
                     {duet.avatar2SequenceId.slice(0, 8)}...
                   </span>
@@ -221,8 +222,8 @@
       {/if}
     {:else}
       <div class="sequences-placeholder">
-        <p>Sequence browser goes here</p>
-        <p class="hint">Switch to Duets to manage paired sequences</p>
+        <p>{t('duet_sequence_browser')}</p>
+        <p class="hint">{t('duet_switch_manage')}</p>
       </div>
     {/if}
   </div>

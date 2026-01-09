@@ -6,6 +6,7 @@
    * Updates the 3D scene in real-time to match their proportions.
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import {
     COMMON_HEIGHTS,
@@ -52,10 +53,10 @@
 </script>
 
 <div class="proportions-panel" class:compact>
-  <h3>Your Proportions</h3>
+  <h3>{t("avatar_proportions")}</h3>
 
   <section class="input-section">
-    <span class="section-label">Height</span>
+    <span class="section-label">{t("avatar_body_type")}</span>
     <div class="current-value">{userProportionsState.heightDisplay}</div>
 
     {#if !useCustomHeight}
@@ -107,7 +108,7 @@
   </section>
 
   <section class="input-section">
-    <span class="section-label">Staff Length</span>
+    <span class="section-label">{t("avatar_skin_tone")}</span>
     <div class="current-value">{userProportionsState.staffLengthDisplay}</div>
 
     {#if !useCustomStaff}

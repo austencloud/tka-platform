@@ -6,6 +6,7 @@
    * Sections are collapsible to avoid content overflow.
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { GridMode } from "../../domain/constants/grid-layout";
   import type { AvatarId } from "../../config/avatar-definitions";
   import { Plane } from "../../domain/enums/Plane";
@@ -66,7 +67,7 @@
   <div class="load-section">
     <button class="load-btn" onclick={onLoadSequence}>
       <i class="fas fa-folder-open" aria-hidden="true"></i>
-      Load Sequence
+      {t("action_load")}
     </button>
   </div>
 
@@ -79,7 +80,7 @@
   {:else}
     <div class="empty-state">
       <i class="fas fa-film" aria-hidden="true"></i>
-      <p>Load a sequence to begin</p>
+      <p>{t("empty_load_sequence")}</p>
     </div>
   {/if}
 
@@ -97,7 +98,7 @@
         aria-expanded={expandedSections.has("avatar")}
       >
         <i class="fas fa-person" aria-hidden="true"></i>
-        <span>Avatar</span>
+        <span>{t("avatar_settings")}</span>
         <i
           class="fas fa-chevron-down chevron"
           class:rotated={!expandedSections.has("avatar")}
@@ -130,7 +131,7 @@
         aria-expanded={expandedSections.has("proportions")}
       >
         <i class="fas fa-ruler-vertical" aria-hidden="true"></i>
-        <span>Proportions</span>
+        <span>{t("avatar_proportions")}</span>
         <i
           class="fas fa-chevron-down chevron"
           class:rotated={!expandedSections.has("proportions")}
@@ -158,7 +159,7 @@
         aria-expanded={expandedSections.has("environment")}
       >
         <i class="fas fa-mountain-sun" aria-hidden="true"></i>
-        <span>Environment</span>
+        <span>{t("viewer3d_environment")}</span>
         <i
           class="fas fa-chevron-down chevron"
           class:rotated={!expandedSections.has("environment")}
@@ -184,7 +185,7 @@
         aria-expanded={expandedSections.has("effects")}
       >
         <i class="fas fa-sparkles" aria-hidden="true"></i>
-        <span>Effects</span>
+        <span>{t("viewer3d_effects")}</span>
         <i
           class="fas fa-chevron-down chevron"
           class:rotated={!expandedSections.has("effects")}
@@ -210,7 +211,7 @@
         aria-expanded={expandedSections.has("grid")}
       >
         <i class="fas fa-border-all" aria-hidden="true"></i>
-        <span>Grid</span>
+        <span>{t("viewer3d_grid")}</span>
         <i
           class="fas fa-chevron-down chevron"
           class:rotated={!expandedSections.has("grid")}

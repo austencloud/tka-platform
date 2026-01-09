@@ -9,6 +9,7 @@
    * here changes the app-wide background theme (and vice versa).
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
@@ -92,13 +93,13 @@
 <section class="environment-panel">
   <header class="panel-header">
     <i class="fas fa-mountain-sun" aria-hidden="true"></i>
-    <span>Environment</span>
+    <span>{t("viewer3d_environment")}</span>
   </header>
 
   <div
     class="environment-grid"
     role="radiogroup"
-    aria-label="Select environment"
+    aria-label={t("viewer3d_environment")}
   >
     {#each backgroundOptions as option}
       <button

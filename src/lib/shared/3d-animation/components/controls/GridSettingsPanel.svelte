@@ -5,6 +5,7 @@
    * Toggle between diamond/box grid modes and show/hide individual planes.
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { Plane, PLANE_LABELS, PLANE_COLORS } from "../../domain/enums/Plane";
   import type { GridMode } from "../../domain/constants/grid-layout";
 
@@ -26,7 +27,7 @@
 </script>
 
 <section class="grid-settings">
-  <h3>Grid</h3>
+  <h3>{t("viewer3d_grid")}</h3>
 
   <!-- Grid Mode Toggle -->
   <div class="mode-toggle">

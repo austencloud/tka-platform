@@ -7,6 +7,7 @@
    * - Select from available avatar models
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import {
     AVATAR_DEFINITIONS,
     type AvatarId,
@@ -28,13 +29,13 @@
 <div class="avatar-panel">
   <!-- Visibility toggle row -->
   <div class="visibility-row">
-    <span class="visibility-label">Show Avatar</span>
+    <span class="visibility-label">{t("avatar_show")}</span>
     <button
       class="visibility-toggle"
       class:active={showFigure}
       onclick={onToggle}
-      aria-label={showFigure ? "Hide avatar" : "Show avatar"}
-      title={showFigure ? "Hide avatar" : "Show avatar"}
+      aria-label={showFigure ? t("avatar_hidden") : t("avatar_show")}
+      title={showFigure ? t("avatar_hidden") : t("avatar_show")}
     >
       <i
         class="fas"
@@ -46,7 +47,7 @@
   </div>
 
   {#if showFigure}
-    <div class="avatar-grid" role="radiogroup" aria-label="Avatar selection">
+    <div class="avatar-grid" role="radiogroup" aria-label={t("avatar_settings")}>
       {#each AVATAR_DEFINITIONS as avatar}
         <button
           class="avatar-card"
@@ -63,7 +64,7 @@
     </div>
   {:else}
     <div class="hidden-state">
-      <span>Avatar hidden</span>
+      <span>{t("avatar_hidden")}</span>
     </div>
   {/if}
 </div>

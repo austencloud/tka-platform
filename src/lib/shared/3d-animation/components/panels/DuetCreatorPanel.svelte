@@ -7,6 +7,7 @@
    */
 
   import { onMount } from "svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
   import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
@@ -145,7 +146,7 @@
 
 <div class="duet-creator">
   <header class="header">
-    <h2>Create Duet</h2>
+    <h2>{t('duet_create')}</h2>
     <button class="close-btn" onclick={onCancel} title="Cancel">
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
@@ -170,7 +171,7 @@
         <i class="fas fa-search" aria-hidden="true"></i>
         <input
           type="text"
-          placeholder="Search sequences..."
+          placeholder={t('duet_search_sequences')}
           bind:value={searchQuery}
         />
       </div>
@@ -178,7 +179,7 @@
       {#if isLoadingSequences}
         <div class="loading">
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading...
+          {t('loading_data')}
         </div>
       {:else}
         <div class="sequence-list">
@@ -218,21 +219,21 @@
 
       <!-- Name -->
       <div class="form-group">
-        <label for="duet-name">Name</label>
+        <label for="duet-name">{t('duet_name')}</label>
         <input
           id="duet-name"
           type="text"
-          placeholder="My Duet"
+          placeholder={t('duet_name_placeholder')}
           bind:value={name}
         />
       </div>
 
       <!-- Description -->
       <div class="form-group">
-        <label for="duet-desc">Description (optional)</label>
+        <label for="duet-desc">{t('duet_description')}</label>
         <textarea
           id="duet-desc"
-          placeholder="Describe this duet..."
+          placeholder={t('duet_desc_placeholder')}
           rows="2"
           bind:value={description}
         ></textarea>
@@ -241,7 +242,7 @@
       <!-- Sequence Pickers -->
       <div class="sequence-pickers">
         <div class="picker-group">
-          <span class="picker-label">Avatar 1 Sequence</span>
+          <span class="picker-label">{t('duet_avatar1_sequence')}</span>
           <button
             class="picker-btn"
             class:has-selection={avatar1Sequence}
@@ -262,7 +263,7 @@
         </div>
 
         <div class="picker-group">
-          <span class="picker-label">Avatar 2 Sequence</span>
+          <span class="picker-label">{t('duet_avatar2_sequence')}</span>
           <button
             class="picker-btn"
             class:has-selection={avatar2Sequence}
@@ -285,7 +286,7 @@
 
       <!-- Beat Offset -->
       <div class="form-group">
-        <span class="form-label">Beat Offset (Avatar 2)</span>
+        <span class="form-label">{t('avatar_beat_offset')} ({t('avatar_follower')})</span>
         <div class="offset-control">
           <button
             class="offset-btn"
@@ -338,14 +339,14 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <button class="cancel-btn" onclick={onCancel}> Cancel </button>
+      <button class="cancel-btn" onclick={onCancel}>{t('action_cancel')}</button>
       <button class="save-btn" disabled={!canSave} onclick={handleSave}>
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Saving...
+          {t('action_saving')}
         {:else}
           <i class="fas fa-check" aria-hidden="true"></i>
-          Create Duet
+          {t('duet_create')}
         {/if}
       </button>
     </footer>

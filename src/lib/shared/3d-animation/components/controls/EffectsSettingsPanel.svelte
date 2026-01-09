@@ -6,6 +6,7 @@
    * Uses chip-style buttons consistent with GridSettingsPanel.
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getEffectsConfigState } from "../../effects/state/effects-config-state.svelte";
 
   const config = getEffectsConfigState();
@@ -133,7 +134,7 @@
 </script>
 
 <section class="effects-settings">
-  <h3>Effects</h3>
+  <h3>{t("viewer3d_effects")}</h3>
 
   <!-- Effect Chips Grid -->
   <div class="effect-chips">
@@ -156,7 +157,7 @@
   <!-- Trail Mode Toggle (when trails enabled) -->
   {#if config.trails.enabled}
     <div class="sub-control">
-      <span class="sub-label">Color</span>
+      <span class="sub-label">{t("viewer3d_color")}</span>
       <div class="mode-chips">
         <button
           class="mode-chip"
@@ -177,7 +178,7 @@
 
     <!-- Trail Tracking Mode (which end(s) to track) -->
     <div class="sub-control">
-      <span class="sub-label">Track</span>
+      <span class="sub-label">{t("viewer3d_track")}</span>
       <div class="mode-chips triple">
         <button
           class="mode-chip"
