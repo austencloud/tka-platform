@@ -321,7 +321,7 @@ export class SwipeToDismiss {
     if (this.delegatingToTopDrawer) {
       const deltaY = this.currentY - this.startY;
       const deltaX = this.currentX - this.startX;
-      if (Math.abs(deltaY) > 5 || Math.abs(deltaX) > 5) {
+      if (Math.abs(deltaY) > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD || Math.abs(deltaX) > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD) {
         this.hasMoved = true;
       }
       return;
@@ -331,7 +331,6 @@ export class SwipeToDismiss {
     const deltaX = this.currentX - this.startX;
     const absDeltaY = Math.abs(deltaY);
     const absDeltaX = Math.abs(deltaX);
-    const movementThreshold = 5;
 
     // Check if user is swiping in the dismiss direction
     const isSwipingInDismissDirection =
@@ -353,7 +352,7 @@ export class SwipeToDismiss {
     // since the detection can fail in complex flex layouts.
     if (
       isSwipingInScrollDirection &&
-      (absDeltaY > movementThreshold || absDeltaX > movementThreshold)
+      (absDeltaY > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD || absDeltaX > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD)
     ) {
       this.isDragging = false;
       this.options.onDragChange?.(0, 1, false);
@@ -380,7 +379,7 @@ export class SwipeToDismiss {
       }
     }
 
-    if (absDeltaY > movementThreshold || absDeltaX > movementThreshold) {
+    if (absDeltaY > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD || absDeltaX > DISMISS_THRESHOLDS.MOVEMENT_THRESHOLD) {
       this.hasMoved = true;
       if (this.startedOnInteractive) {
         event.preventDefault();
@@ -415,13 +414,13 @@ export class SwipeToDismiss {
       // Check if gesture was significant enough to dismiss
       let wasAboveThreshold = false;
       if (this.options.placement === "bottom") {
-        wasAboveThreshold = deltaY > 100 || (deltaY > 50 && duration < 500);
+        wasAboveThreshold = deltaY > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
       } else if (this.options.placement === "top") {
-        wasAboveThreshold = deltaY < -100 || (deltaY < -50 && duration < 500);
+        wasAboveThreshold = deltaY < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
       } else if (this.options.placement === "right") {
-        wasAboveThreshold = deltaX > 100 || (deltaX > 50 && duration < 500);
+        wasAboveThreshold = deltaX > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
       } else if (this.options.placement === "left") {
-        wasAboveThreshold = deltaX < -100 || (deltaX < -50 && duration < 500);
+        wasAboveThreshold = deltaX < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
       }
 
       if (wasAboveThreshold) {
@@ -471,13 +470,13 @@ export class SwipeToDismiss {
 
     // Check dismissal threshold based on placement
     if (this.options.placement === "bottom") {
-      wasAboveThreshold = deltaY > 100 || (deltaY > 50 && duration < 500);
+      wasAboveThreshold = deltaY > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
     } else if (this.options.placement === "top") {
-      wasAboveThreshold = deltaY < -100 || (deltaY < -50 && duration < 500);
+      wasAboveThreshold = deltaY < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
     } else if (this.options.placement === "right") {
-      wasAboveThreshold = deltaX > 100 || (deltaX > 50 && duration < 500);
+      wasAboveThreshold = deltaX > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
     } else if (this.options.placement === "left") {
-      wasAboveThreshold = deltaX < -100 || (deltaX < -50 && duration < 500);
+      wasAboveThreshold = deltaX < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
     }
 
     // Debug logging

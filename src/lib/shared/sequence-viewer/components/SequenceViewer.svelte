@@ -710,6 +710,12 @@
 		color: #22c55e;
 	}
 
+	.copy-btn.error {
+		background: linear-gradient(145deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.15));
+		border-color: var(--semantic-error, rgba(239, 68, 68, 0.5));
+		color: var(--semantic-error, #ef4444);
+	}
+
 	.copy-btn:focus-visible {
 		outline: 2px solid var(--theme-accent, #6366f1);
 		outline-offset: 2px;
