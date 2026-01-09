@@ -10,9 +10,10 @@ const STORAGE_KEY = "tka-background-builder-active-tab";
 export type BackgroundBuilderTab =
   | "deep-ocean"
   | "night-sky"
+  | "firefly-forest"
   | "gradient";
 
-const VALID_TABS: BackgroundBuilderTab[] = ["deep-ocean", "night-sky", "gradient"];
+const VALID_TABS: BackgroundBuilderTab[] = ["deep-ocean", "night-sky", "firefly-forest", "gradient"];
 const DEFAULT_TAB: BackgroundBuilderTab = "deep-ocean";
 
 function isValidTab(value: string): value is BackgroundBuilderTab {

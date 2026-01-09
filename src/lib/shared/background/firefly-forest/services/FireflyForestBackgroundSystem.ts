@@ -28,6 +28,14 @@ interface ShootingStar {
   opacity: number;
 }
 
+export interface FireflyForestLayers {
+  gradient: boolean;
+  stars: boolean;
+  shootingStars: boolean;
+  trees: boolean;
+  fireflies: boolean;
+}
+
 export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   private fireflySystem: ReturnType<typeof createFireflySystem>;
   private treeSystem: ReturnType<typeof createTreeSilhouetteSystem>;
@@ -41,6 +49,15 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   private dimensions: Dimensions = { width: 0, height: 0 };
 
   private readonly gradientStops = FIREFLY_BACKGROUND_GRADIENT;
+
+  // Layer visibility for lab mode
+  private layerVisibility: FireflyForestLayers = {
+    gradient: true,
+    stars: true,
+    shootingStars: true,
+    trees: true,
+    fireflies: true,
+  };
 
   constructor() {
     this.fireflySystem = createFireflySystem();
@@ -155,19 +172,32 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     if (!this.isInitialized) return;
 
     // Draw gradient background
-    this.drawBackground(ctx, dimensions);
+    if (this.layerVisibility.gradient) {
+      this.drawBackground(ctx, dimensions);
+    } else {
+      ctx.fillStyle = "#0a1628";
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+    }
 
     // Draw stars in the sky
-    this.drawStars(ctx);
+    if (this.layerVisibility.stars) {
+      this.drawStars(ctx);
+    }
 
     // Draw shooting star (Easter egg)
-    this.drawShootingStar(ctx);
+    if (this.layerVisibility.shootingStars) {
+      this.drawShootingStar(ctx);
+    }
 
     // Draw tree silhouettes (static, cached)
-    this.treeSystem.draw(ctx, dimensions);
+    if (this.layerVisibility.trees) {
+      this.treeSystem.draw(ctx, dimensions);
+    }
 
     // Draw fireflies on top
-    this.fireflySystem.draw(this.fireflies, ctx);
+    if (this.layerVisibility.fireflies) {
+      this.fireflySystem.draw(this.fireflies, ctx);
+    }
   }
 
   private drawBackground(
@@ -272,6 +302,22 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     );
     this.stars = this.generateStars(newDimensions, this.quality);
     this.treeSystem.handleResize(oldDimensions, newDimensions);
+  }
+
+  public setLayerVisibility(layers: Partial<FireflyForestLayers>): void {
+    this.layerVisibility = { ...this.layerVisibility, ...layers };
+  }
+
+  public getLayerVisibility(): FireflyForestLayers {
+    return { ...this.layerVisibility };
+  }
+
+  public getStats(): { fireflies: number; stars: number; hasShootingStar: boolean } {
+    return {
+      fireflies: this.fireflies.length,
+      stars: this.stars.length,
+      hasShootingStar: this.shootingStar !== null,
+    };
   }
 
   public cleanup(): void {

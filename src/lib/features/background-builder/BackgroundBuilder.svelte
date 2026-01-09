@@ -1,6 +1,7 @@
 <script lang="ts">
   import NightSkyLab from "./components/NightSkyLab.svelte";
   import DeepOceanLab from "./components/DeepOceanLab.svelte";
+  import FireflyForestLab from "./components/FireflyForestLab.svelte";
   import {
     backgroundBuilderState,
     type BackgroundBuilderTab,
@@ -15,6 +16,7 @@
   const tabs: Tab[] = [
     { id: "deep-ocean", label: "Deep Ocean", icon: "fa-water" },
     { id: "night-sky", label: "Night Sky", icon: "fa-moon" },
+    { id: "firefly-forest", label: "Firefly Forest", icon: "fa-tree" },
     { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
   ];
 
@@ -47,6 +49,8 @@
       <DeepOceanLab />
     {:else if backgroundBuilderState.currentTab === "night-sky"}
       <NightSkyLab />
+    {:else if backgroundBuilderState.currentTab === "firefly-forest"}
+      <FireflyForestLab />
     {:else if backgroundBuilderState.currentTab === "gradient"}
       <div class="placeholder">
         <i class="fas fa-fill-drip"></i>
