@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ChallengeScheduleEntry } from "../../domain/models/AdminModels";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     upcomingChallenges: ChallengeScheduleEntry[];
@@ -38,10 +39,10 @@
   {#if upcomingChallenges.length === 0}
     <div class="empty-timeline">
       <i class="fas fa-calendar-times" aria-hidden="true"></i>
-      <p>No upcoming challenges scheduled</p>
+      <p>{t("empty_no_upcoming")}</p>
       <button class="add-challenge-btn" onclick={onSwitchToCalendar}>
         <i class="fas fa-plus" aria-hidden="true"></i>
-        Schedule a Challenge
+        {t("scheduler_schedule_challenge")}
       </button>
     </div>
   {:else}
@@ -56,7 +57,7 @@
               })}</span
             >
             {#if isToday(entry.date)}
-              <span class="today-badge">Today</span>
+              <span class="today-badge">{t("calendar_today")}</span>
             {/if}
           </div>
           <div class="timeline-content">
@@ -81,7 +82,7 @@
             class="timeline-delete"
             onclick={() =>
               entry.challenge && onDeleteChallenge(entry.challenge.id)}
-            aria-label="Delete challenge"
+            aria-label={t("scheduler_delete_challenge")}
           >
             <i class="fas fa-trash" aria-hidden="true"></i>
           </button>

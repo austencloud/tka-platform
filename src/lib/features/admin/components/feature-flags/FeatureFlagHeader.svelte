@@ -5,6 +5,7 @@
    */
 
   import type { FlagStats } from "./shared/feature-utils";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     viewMode: "global" | "users";
@@ -18,8 +19,8 @@
 <header class="feature-flag-header">
   <div class="header-main">
     <div class="header-content">
-      <h2>Feature Flags</h2>
-      <p>Control access and permissions across the platform</p>
+      <h2>{t("admin_feature_flags")}</h2>
+      <p>{t("admin_feature_flags_desc")}</p>
     </div>
 
     <div class="view-toggle">
@@ -30,7 +31,7 @@
         onclick={() => onViewModeChange("global")}
       >
         <i class="fas fa-table-cells" aria-hidden="true"></i>
-        <span>Global Matrix</span>
+        <span>{t("admin_global_matrix")}</span>
       </button>
       <button
         type="button"
@@ -39,7 +40,7 @@
         onclick={() => onViewModeChange("users")}
       >
         <i class="fas fa-user-gear" aria-hidden="true"></i>
-        <span>User Overrides</span>
+        <span>{t("admin_user_overrides")}</span>
       </button>
     </div>
   </div>
@@ -47,29 +48,29 @@
   <div class="stats-bar">
     <div class="stat">
       <span class="stat-value">{stats.total}</span>
-      <span class="stat-label">Features</span>
+      <span class="stat-label">{t("admin_features")}</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat">
       <span class="stat-value enabled">{stats.enabled}</span>
-      <span class="stat-label">Enabled</span>
+      <span class="stat-label">{t("admin_enabled")}</span>
     </div>
     <div class="stat">
       <span class="stat-value disabled">{stats.disabled}</span>
-      <span class="stat-label">Disabled</span>
+      <span class="stat-label">{t("admin_disabled")}</span>
     </div>
     <div class="stat-divider"></div>
     <div class="stat">
       <span class="stat-value modules">{stats.byCategory.module}</span>
-      <span class="stat-label">Modules</span>
+      <span class="stat-label">{t("admin_modules")}</span>
     </div>
     <div class="stat">
       <span class="stat-value tabs">{stats.byCategory.tab}</span>
-      <span class="stat-label">Tabs</span>
+      <span class="stat-label">{t("admin_tabs")}</span>
     </div>
     <div class="stat">
       <span class="stat-value capabilities">{stats.byCategory.capability}</span>
-      <span class="stat-label">Capabilities</span>
+      <span class="stat-label">{t("admin_capabilities")}</span>
     </div>
   </div>
 </header>

@@ -13,6 +13,7 @@
     ISystemStateManager,
     CachedUserMetadata,
   } from "../../services/contracts/ISystemStateManager";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   let isLoading = $state(true);
   let users = $state<CachedUserMetadata[]>([]);
@@ -76,7 +77,7 @@
     {#if cacheAge}
       <span class="cache-indicator" title="Data cached from SystemState">
         <i class="fas fa-database" aria-hidden="true"></i>
-        <span class="sr-only">Data loaded</span>
+        <span class="sr-only">{t("admin_data_loaded")}</span>
         {cacheAge}
       </span>
     {/if}
@@ -85,7 +86,7 @@
   <div aria-live="polite" aria-busy={isLoading}>
     {#if isLoading}
       <div class="metrics-grid" role="status">
-        <span class="sr-only">Loading stats...</span>
+        <span class="sr-only">{t("loading_stats")}</span>
         {#each Array(3) as _}
           <div class="metric-card skeleton" aria-hidden="true">
             <div class="skeleton-value"></div>
@@ -99,7 +100,7 @@
           <div class="metric-value" aria-hidden="true">
             {metrics().totalUsers}
           </div>
-          <div class="metric-label">Total Users</div>
+          <div class="metric-label">{t("admin_total_users")}</div>
           <span class="sr-only">
             {metrics().totalUsers} total registered users
           </span>
@@ -109,7 +110,7 @@
           <div class="metric-value" aria-hidden="true">
             {metrics().activeThisWeek}
           </div>
-          <div class="metric-label">Active This Week</div>
+          <div class="metric-label">{t("admin_active_this_week")}</div>
           <span class="sr-only">
             {metrics().activeThisWeek} users active this week
           </span>
@@ -119,7 +120,7 @@
           <div class="metric-value" aria-hidden="true">
             {metrics().newThisWeek}
           </div>
-          <div class="metric-label">New This Week</div>
+          <div class="metric-label">{t("admin_new_this_week")}</div>
           <span class="sr-only">
             {metrics().newThisWeek} new users this week
           </span>

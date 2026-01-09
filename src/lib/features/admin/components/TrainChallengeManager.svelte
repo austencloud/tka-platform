@@ -14,6 +14,7 @@
   import { collection, addDoc, serverTimestamp } from "firebase/firestore";
   import { getTrainChallengesPath } from "$lib/shared/gamification/data/firestore-collections";
   import { SEED_CHALLENGES } from "$lib/features/train/data/seed-challenges";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   // Services (resolved lazily to avoid module initialization errors)
   let challengeService: ITrainChallengeManager | null = null;
@@ -336,7 +337,7 @@
           onclick={() => (showCreateForm = false)}
           disabled={creating}
         >
-          Cancel
+          {t("action_cancel")}
         </button>
         <button class="submit-btn" onclick={handleCreate} disabled={creating}>
           {#if creating}
@@ -357,12 +358,12 @@
     {#if loading}
       <div class="loading-state">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <p>Loading challenges...</p>
+        <p>{t("loading_challenges")}</p>
       </div>
     {:else if challenges.length === 0}
       <div class="empty-state">
         <i class="fas fa-dumbbell" aria-hidden="true"></i>
-        <p>No challenges created yet</p>
+        <p>{t("empty_no_challenges")}</p>
       </div>
     {:else}
       <div class="challenges-list">

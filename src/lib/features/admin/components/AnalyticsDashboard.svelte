@@ -9,16 +9,17 @@
    */
   import WeeklyEngagement from "./analytics/WeeklyEngagement.svelte";
   import ActiveUsersPanel from "./ActiveUsersPanel.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 </script>
 
-<main class="analytics-dashboard" aria-label="Analytics Dashboard">
+<main class="analytics-dashboard" aria-label={t("admin_analytics_overview")}>
   <header class="dashboard-header">
-    <h2>Analytics Overview</h2>
+    <h2>{t("admin_analytics_overview")}</h2>
   </header>
 
   <WeeklyEngagement />
 
-  <section class="active-users-section" aria-label="Active Users">
+  <section class="active-users-section" aria-label={t("admin_active_users")}>
     <ActiveUsersPanel />
   </section>
 </main>

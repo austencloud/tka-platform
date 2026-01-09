@@ -279,10 +279,6 @@
     gap: 10px;
   }
 
-  .feature-toggle-row {
-    /* Container for FeatureRow */
-  }
-
   .feature-toggle-row.indent {
     margin-left: 12px;
   }

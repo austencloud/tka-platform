@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   interface Props {
     stats: {
       total: number;
@@ -21,7 +23,7 @@
     </div>
     <div class="stat-content">
       <span class="stat-value">{stats.total}</span>
-      <span class="stat-label">Total Scheduled</span>
+      <span class="stat-label">{t("scheduler_total_scheduled")}</span>
     </div>
   </div>
   <div class="stat-card">
@@ -33,7 +35,7 @@
     </div>
     <div class="stat-content">
       <span class="stat-value">{stats.upcoming}</span>
-      <span class="stat-label">Upcoming</span>
+      <span class="stat-label">{t("scheduler_upcoming")}</span>
     </div>
   </div>
   <div class="stat-card">
@@ -45,7 +47,7 @@
     </div>
     <div class="stat-content">
       <span class="stat-value">{stats.thisWeek}</span>
-      <span class="stat-label">This Week</span>
+      <span class="stat-label">{t("scheduler_this_week")}</span>
     </div>
   </div>
   <div class="stat-card">
@@ -57,7 +59,7 @@
     </div>
     <div class="stat-content">
       <span class="stat-value">{stats.unscheduled}</span>
-      <span class="stat-label">Open Slots</span>
+      <span class="stat-label">{t("scheduler_open_slots")}</span>
     </div>
   </div>
 </div>
