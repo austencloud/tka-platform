@@ -360,3 +360,13 @@ export function getVariationState() {
   }
   return variationStateInstance;
 }
+
+/**
+ * Reset the global variation state instance.
+ * Call this when the Spell tab mounts to ensure clean state.
+ */
+export function resetVariationState() {
+  if (variationStateInstance) {
+    variationStateInstance.reset();
+  }
+}

@@ -49,7 +49,7 @@ Displays the original word and expanded word with visual differentiation:
     <div class="result-row">
       <span class="result-label">Full sequence:</span>
       <div class="expanded-word">
-        {#each letterSources as source, index}
+        {#each letterSources as source}
           <span
             class="letter"
             class:original={source.isOriginal}

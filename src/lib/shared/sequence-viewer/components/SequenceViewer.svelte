@@ -525,65 +525,6 @@
 		overflow: hidden;
 	}
 
-	/* Settings Chips */
-	.settings-chips {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: 8px;
-		padding: 12px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 12px;
-		flex-shrink: 0;
-	}
-
-	.chip {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 12px 16px;
-		min-height: 48px; /* WCAG 2.1 AAA touch target */
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 24px;
-		font-size: var(--font-size-min, 14px);
-		font-weight: 500;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-		cursor: pointer;
-		transition: all 0.15s ease;
-		-webkit-tap-highlight-color: transparent;
-	}
-
-	.chip:hover {
-		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-		color: var(--theme-text, white);
-	}
-
-	.chip.active {
-		background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
-		border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-		color: white;
-	}
-
-	.chip.active:hover {
-		background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
-		border-color: var(--theme-accent, #6366f1);
-	}
-
-	.chip:focus-visible {
-		outline: 2px solid var(--theme-accent, #6366f1);
-		outline-offset: 2px;
-	}
-
-	/* Birthday chip with emoji */
-	.chip.birthday-chip {
-		font-size: 18px;
-		line-height: 1;
-		padding: 12px 14px;
-	}
-
 	/* Animation View Container */
 	.animation-view-container {
 		display: flex;

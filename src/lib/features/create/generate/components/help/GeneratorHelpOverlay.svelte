@@ -7,10 +7,9 @@
 <script lang="ts">
   interface Props {
     onClose: () => void;
-    dimmed?: boolean;
   }
 
-  let { onClose, dimmed = false }: Props = $props();
+  let { onClose }: Props = $props();
 
   // Handle Escape key to close
   function handleKeydown(event: KeyboardEvent) {
@@ -31,7 +30,6 @@
 <!-- Clickable backdrop that dims everything and exits on click -->
 <div
   class="help-backdrop"
-  class:dimmed
   onclick={handleBackdropClick}
   onkeydown={(e) => e.key === "Enter" && handleBackdropClick()}
   role="button"
@@ -42,7 +40,6 @@
 <!-- Instruction banner at top of viewport - tapping dismisses help mode -->
 <button
   class="help-banner"
-  class:dimmed
   onclick={handleBackdropClick}
   aria-label="Tap any setting to learn what it does. Tap here or press X to exit."
 >
@@ -61,12 +58,6 @@
     z-index: 200;
     cursor: pointer;
     animation: fadeIn 0.2s ease;
-    transition: opacity 0.2s ease;
-  }
-
-  .help-backdrop.dimmed {
-    opacity: 0.5;
-    pointer-events: none;
   }
 
   @keyframes fadeIn {
@@ -102,9 +93,7 @@
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     border: none;
     cursor: pointer;
-    transition:
-      background 0.15s ease,
-      opacity 0.2s ease;
+    transition: background 0.15s ease;
   }
 
   .help-banner:hover {

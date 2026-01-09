@@ -124,6 +124,14 @@
   let shouldRender = $state(false);
   let isAnimatedOpen = $state(false); // Controls visual state for animations
 
+  /**
+   * Detect if user prefers reduced motion (WCAG 2.2 / AAA).
+   * When true, animations are skipped entirely.
+   */
+  const prefersReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
   // Drawer stack management for nested drawers
   const drawerId = generateDrawerId();
   let stackZIndex = $state(50); // Default z-index
@@ -352,24 +360,35 @@
           isOpen = false;
         });
         shouldRender = true;
-        isAnimatedOpen = false; // Start closed
         swipeToDismiss?.reset(); // Reset drag state when opening
-        // Force browser to render the closed state first using RAF for reliability
-        requestAnimationFrame(() => {
+
+        // Helper to complete the open sequence
+        const completeOpen = () => {
+          // Open the native dialog (non-modal) for proper accessibility tree
+          // We use show() not showModal() to keep our custom backdrop and inert handling
+          drawerElement?.show();
+          isAnimatedOpen = true; // Trigger open animation (or instant show if reduced motion)
+          // Activate focus trap after element is in DOM
+          if (trapFocus && drawerElement && focusTrap) {
+            focusTrap.activate(drawerElement);
+          } else if (autoFocus && drawerElement) {
+            // Focus the drawer for proper interaction (unless autoFocus is disabled)
+            drawerElement.focus();
+          }
+        };
+
+        // Skip RAF timing for users who prefer reduced motion - show instantly
+        if (prefersReducedMotion()) {
+          isAnimatedOpen = true; // Instant (CSS handles the no-animation)
+          // Still need to wait for DOM to render the element
+          requestAnimationFrame(completeOpen);
+        } else {
+          isAnimatedOpen = false; // Start closed for animation
+          // Force browser to render the closed state first using double-RAF
           requestAnimationFrame(() => {
-            // Open the native dialog (non-modal) for proper accessibility tree
-            // We use show() not showModal() to keep our custom backdrop and inert handling
-            drawerElement?.show();
-            isAnimatedOpen = true; // Then transition to open
-            // Activate focus trap after animation starts (element is in DOM)
-            if (trapFocus && drawerElement && focusTrap) {
-              focusTrap.activate(drawerElement);
-            } else if (autoFocus && drawerElement) {
-              // Focus the drawer for proper interaction (unless autoFocus is disabled)
-              drawerElement.focus();
-            }
+            requestAnimationFrame(completeOpen);
           });
-        });
+        }
       }
 
       // When closing, animate to closed state, then remove from DOM
@@ -381,12 +400,20 @@
         focusTrap?.deactivate();
         // Unregister from drawer stack
         unregisterDrawer(drawerId);
-        // Keep in DOM during closing animation (350ms), then remove
-        setTimeout(() => {
-          // Close the native dialog
+
+        // Helper to complete the close sequence
+        const completeClose = () => {
           drawerElement?.close();
           shouldRender = false;
-        }, 400); // 350ms transition + 50ms buffer
+        };
+
+        // Skip animation delay for users who prefer reduced motion - close instantly
+        if (prefersReducedMotion()) {
+          completeClose();
+        } else {
+          // Keep in DOM during closing animation (350ms), then remove
+          setTimeout(completeClose, 400); // 350ms transition + 50ms buffer
+        }
       }
 
       // Update wasOpen without creating a new dependency
