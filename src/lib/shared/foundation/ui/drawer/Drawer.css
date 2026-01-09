@@ -73,6 +73,31 @@
   left: var(--desktop-sidebar-width, 220px);
 }
 
+/* ============================================
+   * Native <dialog> Element Support (2026)
+   *
+   * Using native <dialog> provides:
+   * - Proper accessibility tree integration
+   * - Native Escape key handling (cancel event)
+   * - Better screen reader announcements
+   *
+   * We use show() not showModal() to keep our custom
+   * backdrop and inert handling working.
+   * ============================================ */
+
+/* Reset default dialog styles - we apply our own */
+dialog.drawer-content {
+  padding: 0;
+  border: none;
+  margin: 0;
+  max-width: none;
+  max-height: none;
+  /* Hide native backdrop - we use our custom overlay */
+  &::backdrop {
+    display: none;
+  }
+}
+
 /* Drawer content container */
 .drawer-content {
   position: fixed;
@@ -354,12 +379,53 @@
   }
 }
 
-/* Reduced motion */
+/* ============================================
+   * Reduced Motion (WCAG 2.2 / AAA)
+   *
+   * For users with vestibular disorders, motion sensitivity,
+   * or those who simply prefer less animation.
+   *
+   * This completely disables:
+   * - CSS transitions (slide in/out)
+   * - CSS animations (spring bounce)
+   * - @starting-style entry animations
+   * - Backdrop fade effects
+   *
+   * The drawer appears/disappears instantly.
+   * ============================================ */
 @media (prefers-reduced-motion: reduce) {
   .drawer-content,
   .drawer-overlay {
-    transition: none;
-    animation: none;
+    /* Disable all motion */
+    transition: none !important;
+    animation: none !important;
+    /* Disable discrete transition behavior (prevents @starting-style animations) */
+    transition-behavior: normal !important;
+  }
+
+  /* Disable spring animation class */
+  .drawer-content.spring-animation {
+    animation: none !important;
+  }
+
+  /* Ensure backdrop is immediately visible/hidden */
+  .drawer-overlay[data-state="open"] {
+    opacity: 1;
+  }
+
+  .drawer-overlay[data-state="closed"] {
+    opacity: 0;
+  }
+
+  /* Ensure drawer is immediately in final position */
+  .drawer-content[data-state="open"] {
+    transform: translate3d(0, 0, 0) !important;
+    opacity: 1 !important;
+  }
+
+  /* Background scale effect should also be instant */
+  :global(.drawer-scale-bg) {
+    transition: none !important;
   }
 }
 

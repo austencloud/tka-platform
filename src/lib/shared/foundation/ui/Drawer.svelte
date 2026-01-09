@@ -193,7 +193,8 @@
   }
 
   // Swipe-to-dismiss handler - LAZILY CREATED on first open
-  let drawerElement = $state<HTMLElement | null>(null);
+  // Using native <dialog> element for proper semantic and accessibility support
+  let drawerElement = $state<HTMLDialogElement | null>(null);
   let swipeToDismiss = $state<SwipeToDismiss | null>(null);
 
   // Focus trap handler for accessibility - LAZILY CREATED on first open
@@ -356,6 +357,9 @@
         // Force browser to render the closed state first using RAF for reliability
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            // Open the native dialog (non-modal) for proper accessibility tree
+            // We use show() not showModal() to keep our custom backdrop and inert handling
+            drawerElement?.show();
             isAnimatedOpen = true; // Then transition to open
             // Activate focus trap after animation starts (element is in DOM)
             if (trapFocus && drawerElement && focusTrap) {
@@ -379,6 +383,8 @@
         unregisterDrawer(drawerId);
         // Keep in DOM during closing animation (350ms), then remove
         setTimeout(() => {
+          // Close the native dialog
+          drawerElement?.close();
           shouldRender = false;
         }, 400); // 350ms transition + 50ms buffer
       }
@@ -426,6 +432,21 @@
       emitClose("escape");
       isOpen = false;
     }
+  }
+
+  /**
+   * Handle native dialog `cancel` event (Escape key fires this on <dialog>).
+   * This is a backup to our custom keydown handler for browsers that fire
+   * the cancel event before our handler can preventDefault.
+   */
+  function handleDialogCancel(event: Event) {
+    if (!closeOnEscape || !isTopDrawer(drawerId)) {
+      event.preventDefault(); // Don't close if not allowed or not top drawer
+      return;
+    }
+    // Let it close naturally - our close logic will handle cleanup
+    emitClose("escape");
+    isOpen = false;
   }
 
   // Compute state attribute for CSS - use animated state for visual transitions
@@ -519,8 +540,8 @@
     style:z-index={stackZIndex - 1}
   ></div>
 
-  <!-- Drawer content -->
-  <div
+  <!-- Drawer content - uses native <dialog> for proper semantics and accessibility -->
+  <dialog
     bind:this={drawerElement}
     class={contentClasses}
     class:dragging={isDragging}
@@ -531,11 +552,11 @@
     data-snap-index={currentSnapIndex}
     data-drawer-id={drawerId}
     tabindex="-1"
-    {role}
     aria-modal="true"
     aria-labelledby={labelledBy}
     aria-label={ariaLabel}
     aria-describedby={describedBy}
+    oncancel={handleDialogCancel}
     style:z-index={stackZIndex}
     style:transform={computedTransform || undefined}
     style:transition={isDragging ? "none" : ""}
@@ -546,5 +567,5 @@
     <div class="drawer-inner">
       {@render children?.()}
     </div>
-  </div>
+  </dialog>
 {/if}
