@@ -6,7 +6,7 @@
   "type": "module",
   "description": "TKA Scribe - Browser-based sequence editor for flow arts",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "kill-port 5173 && vite --host 0.0.0.0",
     "dev:clean": "rimraf node_modules/.vite .svelte-kit && svelte-kit sync && npm run dev",
     "dev:debug": "NODE_OPTIONS='--inspect' vite --host 0.0.0.0",
     "dev:turbo": "vite --host 0.0.0.0 --force",

@@ -135,7 +135,11 @@
       "Bash(Select-Object FullName)",
       "Bash(Select-String -Pattern \"AnimationScreen|FramedSequence\")",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"PictographFilter.ts\")",
-      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"ArrowSvg.svelte\")"
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"ArrowSvg.svelte\")",
+      "Bash(do grep -H \">\\\\s*[A-Z][a-zA-Z ]*<\\\\|placeholder=\"\"\\\\|aria-label=\"\"\" \"$file\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\discover\" -Recurse -Filter \"*SequenceDetail*\")",
+      "Bash(do tail -5 \"$file\")",
+      "WebFetch(domain:www.manuelsanchezdev.com)"
     ]
   }
 }

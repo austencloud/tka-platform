@@ -251,7 +251,7 @@ export default defineConfig({
       scope: "/",
       base: "/",
       devOptions: {
-        enabled: false, // Enable in dev for PWA install testing
+        enabled: true, // PWA enabled in dev for testing fullscreen mode
         type: "module",
       },
       manifest: false, // We already have a manifest in static/pwa/
