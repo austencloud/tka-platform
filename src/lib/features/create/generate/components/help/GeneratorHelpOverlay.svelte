@@ -37,11 +37,18 @@
   aria-label="Exit help mode"
 ></div>
 
-<!-- Instruction banner at top of viewport -->
-<div class="help-banner">
+<!-- Instruction banner at top of viewport - tapping dismisses help mode -->
+<button
+  class="help-banner"
+  onclick={handleBackdropClick}
+  aria-label="Tap any setting to learn what it does. Tap here or press X to exit."
+>
   <i class="fas fa-hand-pointer" aria-hidden="true"></i>
   <span>Tap any setting to learn what it does</span>
-</div>
+  <span class="close-hint">
+    <i class="fas fa-times" aria-hidden="true"></i>
+  </span>
+</button>
 
 <style>
   .help-backdrop {
@@ -72,7 +79,7 @@
     justify-content: center;
     gap: 10px;
     padding: 14px 16px;
-    min-height: 44px;
+    min-height: 48px;
     background: linear-gradient(
       180deg,
       rgba(30, 64, 175, 0.98) 0%,
@@ -84,10 +91,55 @@
     z-index: 250;
     animation: fadeIn 0.2s ease;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .help-banner:hover {
+    background: linear-gradient(
+      180deg,
+      rgba(37, 78, 200, 0.98) 0%,
+      rgba(30, 48, 100, 0.98) 100%
+    );
+  }
+
+  .help-banner:active {
+    background: linear-gradient(
+      180deg,
+      rgba(25, 55, 150, 0.98) 0%,
+      rgba(18, 30, 70, 0.98) 100%
+    );
+  }
+
+  .help-banner:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.9);
+    outline-offset: -3px;
   }
 
   .help-banner i {
     font-size: var(--font-size-lg, 18px);
+  }
+
+  .close-hint {
+    position: absolute;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transition: background 0.15s ease;
+  }
+
+  .close-hint:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .close-hint i {
+    font-size: var(--font-size-min, 14px);
   }
 
   .help-backdrop:focus-visible {

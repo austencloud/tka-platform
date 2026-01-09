@@ -7,6 +7,8 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { fade, fly } from "svelte/transition";
+  import { cubicOut, backOut } from "svelte/easing";
   import {
     generatorHelpContent,
     type GeneratorHelpId,
@@ -19,6 +21,15 @@
   }
 
   let { controlId, onClose }: Props = $props();
+
+  // Track if we should show internal animations (only on entrance)
+  let hasEntered = $state(false);
+  onMount(() => {
+    // Small delay to ensure entrance animations play
+    requestAnimationFrame(() => {
+      hasEntered = true;
+    });
+  });
 
   // Lock body scroll when modal is open
   onMount(() => {
@@ -59,8 +70,14 @@
   aria-modal="true"
   aria-label="Help for {control?.name ?? 'control'}"
   tabindex="-1"
+  transition:fade={{ duration: 250, easing: cubicOut }}
 >
-  <div class="modal-container">
+  <div
+    class="modal-container"
+    class:entered={hasEntered}
+    in:fly={{ y: 40, duration: 400, easing: backOut }}
+    out:fly={{ y: 20, duration: 200, easing: cubicOut }}
+  >
     <!-- Header -->
     <div class="modal-header" style:--control-color={control?.color ?? "#3b82f6"}>
       <div class="header-icon">
@@ -118,6 +135,7 @@
     justify-content: center;
     z-index: 1000;
     padding: 20px;
+    /* Transitions handled by Svelte */
   }
 
   .modal-container {
@@ -131,6 +149,7 @@
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+    /* Transitions handled by Svelte fly */
   }
 
   /* Header */
@@ -160,9 +179,40 @@
     flex-shrink: 0;
   }
 
+  /* Only animate internal elements on entrance */
+  .modal-container.entered .header-icon {
+    animation: iconBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  }
+
+  @keyframes iconBounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0) rotate(-20deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+  }
+
   .header-text {
     flex: 1;
     min-width: 0;
+  }
+
+  .modal-container.entered .header-text {
+    animation: slideInRight 0.4s ease-out 0.05s backwards;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(-15px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   .header-title {
@@ -220,6 +270,21 @@
     color: rgba(255, 255, 255, 0.9);
   }
 
+  .modal-container.entered .description {
+    animation: contentFadeUp 0.4s ease-out 0.1s backwards;
+  }
+
+  @keyframes contentFadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Bullet list */
   .bullet-list {
     margin: 0;
@@ -237,6 +302,16 @@
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.85);
   }
+
+  /* Stagger bullet list items - only on entrance */
+  .modal-container.entered .bullet-list li {
+    animation: contentFadeUp 0.35s ease-out backwards;
+  }
+  .modal-container.entered .bullet-list li:nth-child(1) { animation-delay: 0.15s; }
+  .modal-container.entered .bullet-list li:nth-child(2) { animation-delay: 0.22s; }
+  .modal-container.entered .bullet-list li:nth-child(3) { animation-delay: 0.29s; }
+  .modal-container.entered .bullet-list li:nth-child(4) { animation-delay: 0.36s; }
+  .modal-container.entered .bullet-list li:nth-child(5) { animation-delay: 0.43s; }
 
   .bullet-list li::before {
     content: "";
@@ -262,10 +337,38 @@
     color: rgba(255, 255, 255, 0.9);
   }
 
+  .modal-container.entered .tip-box {
+    animation: tipBoxPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s backwards;
+  }
+
+  @keyframes tipBoxPop {
+    0% {
+      opacity: 0;
+      transform: scale(0.9) translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
   .tip-box i {
     flex-shrink: 0;
     color: #4ade80;
     margin-top: 2px;
+  }
+
+  .modal-container.entered .tip-box i {
+    animation: lightbulbGlow 2s ease-in-out 0.8s infinite;
+  }
+
+  @keyframes lightbulbGlow {
+    0%, 100% {
+      filter: drop-shadow(0 0 2px rgba(74, 222, 128, 0.3));
+    }
+    50% {
+      filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.6));
+    }
   }
 
   /* Footer */
@@ -274,6 +377,10 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     display: flex;
     justify-content: center;
+  }
+
+  .modal-container.entered .modal-footer {
+    animation: contentFadeUp 0.35s ease-out 0.4s backwards;
   }
 
   .done-btn {
@@ -287,6 +394,10 @@
     color: white;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  .done-btn:active {
+    transform: scale(0.96);
   }
 
   .done-btn:hover {
@@ -313,6 +424,20 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .modal-container.entered .header-icon,
+    .modal-container.entered .header-text,
+    .modal-container.entered .description,
+    .modal-container.entered .bullet-list li,
+    .modal-container.entered .tip-box,
+    .modal-container.entered .modal-footer {
+      animation: none;
+    }
+
+    .modal-container.entered .tip-box i {
+      animation: none;
+      filter: none;
+    }
+
     .close-btn,
     .done-btn {
       transition: none;

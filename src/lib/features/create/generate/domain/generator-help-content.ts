@@ -15,7 +15,7 @@ export type GeneratorHelpId =
   | "turn-intensity"
   | "loop-type"
   | "slice-size"
-  | "customize";
+  | "start-end";
 
 export interface GeneratorHelpItem {
   id: GeneratorHelpId;
@@ -154,11 +154,11 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     tip: "Halved is easier to follow. Quartered creates more intricate patterns.",
   },
 
-  // === CUSTOMIZATION ===
+  // === START/END POSITIONS ===
   {
-    id: "customize",
+    id: "start-end",
     icon: "fa-sliders",
-    name: "Customize",
+    name: "Start/End",
     color: "#22c55e",
     shortDesc: "Lock start/end positions",
     fullDesc:
