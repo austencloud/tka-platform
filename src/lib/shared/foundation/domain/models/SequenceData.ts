@@ -36,6 +36,10 @@ export interface SequenceData {
   readonly author?: string;
   readonly level?: number;
   readonly dateAdded?: Date;
+  /** Original creation date of the sequence (never changes after being set) */
+  readonly birthday?: Date;
+  /** When this library entry was created */
+  readonly createdAt?: Date;
   readonly gridMode?: GridMode;
   readonly propType?: PropType;
   /**

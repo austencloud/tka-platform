@@ -112,14 +112,14 @@ Supports two view modes:
 	<GridScrollView />
 {:else}
 	<!-- STEP MODE -->
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 	<div
 		class="grid-experience"
 		class:animate-in={experienceState.animateIn}
 		bind:this={containerRef}
 		onkeydown={handleKeydown}
 		tabindex="0"
-		role="region"
+		role="application"
 		aria-label="Grid lesson, use arrow keys to navigate"
 	>
 		<!-- Accessibility: Live region for announcements -->

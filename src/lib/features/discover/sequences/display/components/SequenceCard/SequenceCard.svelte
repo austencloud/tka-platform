@@ -85,6 +85,7 @@ Variation support:
       {redPropType}
       {catDogModeEnabled}
       {lightMode}
+      userName={displayedSequence.ownerDisplayName}
     />
   </div>
 

@@ -98,14 +98,25 @@ export class LibraryRepository implements ILibraryRepository {
   }
 
   /**
-   * Convert Firestore timestamp to Date
+   * Convert Firestore timestamp to Date, returning undefined if missing
    */
-  private toDate(timestamp: unknown): Date {
+  private toDateOrUndefined(timestamp: unknown): Date | undefined {
     if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
       return (timestamp as { toDate: () => Date }).toDate();
     }
     if (timestamp instanceof Date) {
       return timestamp;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get a date from multiple possible fields, with fallback chain
+   */
+  private getDateWithFallback(...timestamps: unknown[]): Date {
+    for (const ts of timestamps) {
+      const date = this.toDateOrUndefined(ts);
+      if (date) return date;
     }
     return new Date();
   }
@@ -140,27 +151,37 @@ export class LibraryRepository implements ILibraryRepository {
       word = data["word"] || data["name"] || id;
     }
 
+    // Smart date fallbacks for backwards compatibility with older sequences
+    // Priority: createdAt → birthday → dateAdded (some sequences only have birthday or dateAdded)
+    const createdAt = this.getDateWithFallback(
+      data["createdAt"],
+      data["birthday"],
+      data["dateAdded"]
+    );
+    const updatedAt = this.getDateWithFallback(
+      data["updatedAt"],
+      data["createdAt"],
+      data["birthday"]
+    );
+
     return {
       ...data,
       id,
       word, // Ensure word is always present
       sequenceTags,
       // Birthday field - original creation date (never changes after being set)
-      birthday: data["birthday"] ? this.toDate(data["birthday"]) : undefined,
-      createdAt: this.toDate(data["createdAt"]),
-      updatedAt: this.toDate(data["updatedAt"]),
+      birthday: this.toDateOrUndefined(data["birthday"]),
+      createdAt,
+      updatedAt,
       // Convert dateAdded if present (legacy field from SequenceData)
-      dateAdded: data["dateAdded"] ? this.toDate(data["dateAdded"]) : undefined,
-      visibilityChangedAt: data["visibilityChangedAt"]
-        ? this.toDate(data["visibilityChangedAt"])
-        : undefined,
-      lastAccessedAt: data["lastAccessedAt"]
-        ? this.toDate(data["lastAccessedAt"])
-        : undefined,
+      dateAdded: this.toDateOrUndefined(data["dateAdded"]),
+      visibilityChangedAt: this.toDateOrUndefined(data["visibilityChangedAt"]),
+      lastAccessedAt: this.toDateOrUndefined(data["lastAccessedAt"]),
       forkAttribution: forkAttr
         ? {
             ...forkAttr,
-            forkedAt: this.toDate(forkAttr.forkedAt),
+            forkedAt:
+              this.toDateOrUndefined(forkAttr.forkedAt) ?? new Date(),
           }
         : undefined,
     } as LibrarySequence;
@@ -472,14 +493,41 @@ export class LibraryRepository implements ILibraryRepository {
     const snapshot = await getDocs(q);
     const sequences: LibrarySequence[] = [];
 
-    snapshot.forEach((doc) => {
-      sequences.push(this.mapDocToLibrarySequence(doc.data(), doc.id));
+    snapshot.forEach((docSnap) => {
+      sequences.push(this.mapDocToLibrarySequence(docSnap.data(), docSnap.id));
     });
+
+    // Fetch owner profile to enrich sequences with display metadata
+    // This is needed when viewing another user's library (e.g., admin impersonation)
+    let ownerDisplayName: string | undefined;
+    let ownerAvatarUrl: string | undefined;
+
+    try {
+      const userDoc = await getDoc(doc(firestore, `users/${userId}`));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        ownerDisplayName = userData?.displayName;
+        ownerAvatarUrl = userData?.photoURL;
+      }
+    } catch (err) {
+      console.warn(
+        `[LibraryRepository] Failed to fetch owner profile for ${userId}:`,
+        err
+      );
+    }
+
+    // Enrich sequences with owner metadata
+    const enrichedSequences = sequences.map((seq) => ({
+      ...seq,
+      ownerId: userId,
+      ownerDisplayName: ownerDisplayName ?? seq.ownerDisplayName,
+      ownerAvatarUrl: ownerAvatarUrl ?? seq.ownerAvatarUrl,
+    }));
 
     // Client-side search filter (Firestore doesn't support full-text search)
     if (options?.searchQuery) {
       const searchLower = options.searchQuery.toLowerCase();
-      return sequences.filter(
+      return enrichedSequences.filter(
         (seq) =>
           seq.name.toLowerCase().includes(searchLower) ||
           seq.word.toLowerCase().includes(searchLower) ||
@@ -487,7 +535,7 @@ export class LibraryRepository implements ILibraryRepository {
       );
     }
 
-    return sequences;
+    return enrichedSequences;
   }
 
   // ============================================================

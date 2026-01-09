@@ -25,12 +25,12 @@
 
   // Joystick state
   let joystickActive = $state(false);
-  let joystickTouchId: number | null = null;
+  let joystickTouchId = $state<number | null>(null);
   let joystickCenter = { x: 0, y: 0 };
   let joystickOffset = $state({ x: 0, y: 0 });
 
   // Look state
-  let lookTouchId: number | null = null;
+  let lookTouchId = $state<number | null>(null);
   let lastLookPos = { x: 0, y: 0 };
 
   // Tap detection state
@@ -234,7 +234,7 @@
           height: {JOYSTICK_KNOB_SIZE}px;
           transform: translate({joystickOffset.x}px, {joystickOffset.y}px);
         "
-      />
+      ></div>
     </div>
 
     <!-- Look hint (shows when not using joystick) -->

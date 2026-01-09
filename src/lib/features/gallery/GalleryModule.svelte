@@ -32,8 +32,8 @@
   const gallerySettings = createGallerySettings();
 
   // Multiplayer state (initialized after services are resolved)
-  // NOTE: Do NOT wrap in $state - createMultiplayerState() already returns reactive getters
-  let multiplayerState: MultiplayerStateInstance | null = null;
+  // The outer variable needs $state for reactivity when assigned; inner object has its own reactive getters
+  let multiplayerState = $state<MultiplayerStateInstance | null>(null);
 
   // Current rotation and locomotion for position syncing
   let currentRotation = $state({ yaw: 0, pitch: 0 });

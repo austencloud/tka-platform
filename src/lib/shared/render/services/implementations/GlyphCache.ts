@@ -247,8 +247,19 @@ export class GlyphCache implements IGlyphCache {
 
       const svgContent = await response.text();
 
-      // Convert to base64 data URL for inline embedding
-      const dataUrl = `data:image/svg+xml;base64,${btoa(svgContent)}`;
+      // Validate this is actually SVG content
+      const trimmed = svgContent.trimStart();
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
+        this.failedCount++;
+        return;
+      }
+
+      // Convert to base64 data URL for inline embedding (UTF-8 safe)
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
 
       // Cache with multiple keys to handle different encoding scenarios:
       // 1. The letter enum value (e.g., "α")
@@ -296,8 +307,19 @@ export class GlyphCache implements IGlyphCache {
 
       const svgContent = await response.text();
 
-      // Convert to base64 data URL for inline embedding
-      const dataUrl = `data:image/svg+xml;base64,${btoa(svgContent)}`;
+      // Validate this is actually SVG content
+      const trimmed = svgContent.trimStart();
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
+        this.failedCount++;
+        return;
+      }
+
+      // Convert to base64 data URL for inline embedding (UTF-8 safe)
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
 
       // Cache with the path as the key
       this.cache.set(path, dataUrl);
@@ -322,8 +344,19 @@ export class GlyphCache implements IGlyphCache {
 
       const svgContent = await response.text();
 
-      // Convert to base64 data URL for inline embedding
-      const dataUrl = `data:image/svg+xml;base64,${btoa(svgContent)}`;
+      // Validate this is actually SVG content
+      const trimmed = svgContent.trimStart();
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
+        this.failedCount++;
+        return;
+      }
+
+      // Convert to base64 data URL for inline embedding (UTF-8 safe)
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
 
       // Cache with the path as the key
       this.cache.set(path, dataUrl);
@@ -348,8 +381,19 @@ export class GlyphCache implements IGlyphCache {
 
       const svgContent = await response.text();
 
-      // Convert to base64 data URL for inline embedding
-      const dataUrl = `data:image/svg+xml;base64,${btoa(svgContent)}`;
+      // Validate this is actually SVG content
+      const trimmed = svgContent.trimStart();
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
+        this.failedCount++;
+        return;
+      }
+
+      // Convert to base64 data URL for inline embedding (UTF-8 safe)
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
 
       // Cache with the path as the key
       this.cache.set(path, dataUrl);
@@ -374,8 +418,19 @@ export class GlyphCache implements IGlyphCache {
 
       const svgContent = await response.text();
 
-      // Convert to base64 data URL for inline embedding
-      const dataUrl = `data:image/svg+xml;base64,${btoa(svgContent)}`;
+      // Validate this is actually SVG content
+      const trimmed = svgContent.trimStart();
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
+        this.failedCount++;
+        return;
+      }
+
+      // Convert to base64 data URL for inline embedding (UTF-8 safe)
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
 
       // Cache with the path as the key
       this.cache.set(path, dataUrl);
@@ -445,7 +500,21 @@ export class GlyphCache implements IGlyphCache {
       }
 
       const svgContent = await response.text();
-      const dataUrl = `data:image/svg+xml;base64,${btoa(svgContent)}`;
+
+      // Validate this is actually SVG content, not HTML fallback
+      // SPA dev servers often return index.html with 200 status for missing files
+      const trimmed = svgContent.trimStart();
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
+        // This is likely the SPA fallback HTML, not an SVG
+        return null;
+      }
+
+      // Use UTF-8 safe base64 encoding (btoa only works with Latin1)
+      const dataUrl = `data:image/svg+xml;base64,${this.utf8ToBase64(svgContent)}`;
 
       // Cache with multiple keys
       this.cache.set(path, dataUrl);
@@ -472,6 +541,19 @@ export class GlyphCache implements IGlyphCache {
       this.failedCount++;
       return null;
     }
+  }
+
+  /**
+   * UTF-8 safe base64 encoding
+   * btoa() only works with Latin1, this handles full UTF-8
+   */
+  private utf8ToBase64(str: string): string {
+    // Encode string to UTF-8 bytes, then base64
+    const bytes = new TextEncoder().encode(str);
+    const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join(
+      ""
+    );
+    return btoa(binary);
   }
 
   isReady(): boolean {

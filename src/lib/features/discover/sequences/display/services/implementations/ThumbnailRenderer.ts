@@ -72,10 +72,18 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     // Build render options
     const renderOptions = this.buildRenderOptions(input, options);
 
+    // Add sequence's birthday for footer display
+    // Priority: sequence.birthday (original creation date) > createdAt > dateAdded
+    const birthday =
+      fullSequence.birthday ??
+      fullSequence.createdAt ??
+      fullSequence.dateAdded ??
+      undefined;
+
     // Render via ISequenceRenderer
     const blob = await this.sequenceRenderer.renderSequenceToBlob(
       sequenceWithStartPos,
-      renderOptions
+      { ...renderOptions, birthday }
     );
 
     return blob;

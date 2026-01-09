@@ -160,8 +160,12 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
         return sequence.author ?? "Unknown Author";
 
       case "date": {
-        if (!sequence.dateAdded) return "Unknown Date";
-        const date = new Date(sequence.dateAdded);
+        // Use dateAdded, falling back to createdAt or birthday for library sequences
+        const rawDate = sequence.dateAdded ?? sequence.createdAt ?? sequence.birthday;
+        if (!rawDate) return "Unknown Date";
+        const date = rawDate instanceof Date ? rawDate : new Date(rawDate);
+        // Handle invalid dates
+        if (isNaN(date.getTime())) return "Unknown Date";
         return date.toDateString();
       }
 

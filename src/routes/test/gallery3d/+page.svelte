@@ -37,7 +37,7 @@
       <p>Error: {error}</p>
     </div>
   {:else if GalleryModule}
-    <svelte:component this={GalleryModule} />
+    <GalleryModule />
   {/if}
 </div>
 
