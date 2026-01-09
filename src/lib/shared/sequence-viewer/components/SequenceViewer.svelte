@@ -209,6 +209,7 @@
 	// Copy to clipboard state
 	let isCopying = $state(false);
 	let copySuccess = $state(false);
+	let copyError = $state(false);
 
 	/**
 	 * Copy the current image to clipboard
@@ -263,7 +264,13 @@
 			}, 2000);
 		} catch (error) {
 			console.error("Failed to copy image to clipboard:", error);
+			copyError = true;
 			hapticService?.trigger("error");
+
+			// Reset error indicator after 3 seconds
+			setTimeout(() => {
+				copyError = false;
+			}, 3000);
 		} finally {
 			isCopying = false;
 		}
@@ -303,6 +310,7 @@
 	<div class="mode-switch-row">
 		{#if activeMediaType === "image" && hasAnimation}
 			<button
+				type="button"
 				class="mode-switch-btn primary"
 				onclick={() => selectMediaType("animation")}
 				aria-label="Play animation"
@@ -312,6 +320,7 @@
 			</button>
 		{:else if activeMediaType === "animation" && hasImages}
 			<button
+				type="button"
 				class="mode-switch-btn secondary"
 				onclick={() => selectMediaType("image")}
 				aria-label="View image"
@@ -324,6 +333,7 @@
 		<!-- Dark Mode Lamp Button - only shown when visibility settings are enabled (Share Hub) -->
 		{#if showVisibilitySettings}
 			<button
+				type="button"
 				class="lamp-btn"
 				class:lit={!darkMode}
 				onclick={toggleDarkMode}
@@ -337,17 +347,21 @@
 		<!-- Copy to Clipboard Button - only shown in image mode with visibility settings -->
 		{#if showVisibilitySettings && activeMediaType === "image"}
 			<button
+				type="button"
 				class="copy-btn"
 				class:success={copySuccess}
+				class:error={copyError}
 				onclick={copyImageToClipboard}
 				disabled={isCopying}
 				aria-label="Copy image to clipboard"
-				title="Copy image to clipboard"
+				title={copyError ? "Copy failed - try again" : "Copy image to clipboard"}
 			>
 				{#if isCopying}
 					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
 				{:else if copySuccess}
 					<i class="fas fa-check" aria-hidden="true"></i>
+				{:else if copyError}
+					<i class="fas fa-times" aria-hidden="true"></i>
 				{:else}
 					<i class="fas fa-copy" aria-hidden="true"></i>
 				{/if}
@@ -403,6 +417,7 @@
 				{#if showVisibilitySettings}
 					<div class="settings-chips">
 						<button
+							type="button"
 							class="chip"
 							class:active={addWord}
 							onclick={toggleWord}
@@ -411,6 +426,7 @@
 							Word
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={addBeatNumbers}
 							onclick={toggleBeatNumbers}
@@ -419,6 +435,7 @@
 							Beat #s
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={includeStartPosition}
 							onclick={toggleStartPosition}
@@ -427,6 +444,7 @@
 							Start Pos
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={addDifficultyLevel}
 							onclick={toggleDifficulty}
@@ -435,6 +453,7 @@
 							Difficulty
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={showCreatorName}
 							onclick={toggleShowCreatorName}
@@ -443,6 +462,7 @@
 							Name
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={showNotes}
 							onclick={toggleShowNotes}
@@ -451,6 +471,7 @@
 							Notes
 						</button>
 						<button
+							type="button"
 							class="chip birthday-chip"
 							class:active={showBirthday}
 							onclick={toggleShowBirthday}
@@ -484,6 +505,7 @@
 				{#if showVisibilitySettings && controlsLevel !== "full"}
 					<div class="settings-chips">
 						<button
+							type="button"
 							class="chip"
 							class:active={animGridVisible}
 							onclick={toggleAnimGrid}
@@ -492,6 +514,7 @@
 							Grid
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={animBeatNumbers}
 							onclick={toggleAnimBeatNumbers}
@@ -500,6 +523,7 @@
 							Beat #s
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={animTkaGlyph}
 							onclick={toggleAnimTkaGlyph}
@@ -508,6 +532,7 @@
 							TKA Glyph
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={animWordHeader}
 							onclick={toggleAnimWordHeader}
@@ -516,6 +541,7 @@
 							Word
 						</button>
 						<button
+							type="button"
 							class="chip"
 							class:active={animTrails}
 							onclick={toggleAnimTrails}
@@ -544,6 +570,7 @@
 				{/if}
 
 				<button
+					type="button"
 					class="back-btn"
 					onclick={() => selectMediaType("image")}
 					aria-label="Close video"
@@ -886,8 +913,10 @@
 		position: absolute;
 		top: 12px;
 		right: 12px;
-		width: 36px;
-		height: 36px;
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -900,8 +929,8 @@
 	}
 
 	.back-btn svg {
-		width: 18px;
-		height: 18px;
+		width: 20px;
+		height: 20px;
 	}
 
 	.back-btn:hover {

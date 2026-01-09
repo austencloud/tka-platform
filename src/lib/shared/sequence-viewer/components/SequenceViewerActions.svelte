@@ -27,6 +27,7 @@
 
 <section class="actions-section">
   <button
+    type="button"
     class="action-button primary"
     onclick={() => onAction("open-in-create")}
   >
@@ -36,6 +37,7 @@
 
   {#if isAuthenticated}
     <button
+      type="button"
       class="action-button"
       class:success={isSavedToLibrary}
       onclick={() => onAction("save")}
@@ -54,13 +56,14 @@
     </button>
   {/if}
 
-  <button class="action-button" onclick={() => onAction("share")}>
+  <button type="button" class="action-button" onclick={() => onAction("share")}>
     <i class="fas fa-share-alt" aria-hidden="true"></i>
     Share
   </button>
 
   {#if isAuthenticated}
     <button
+      type="button"
       class="action-button"
       class:active={isFavorite}
       onclick={() => onAction("favorite")}
@@ -94,10 +97,11 @@
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    min-height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
-    color: white;
+    color: var(--theme-text, white);
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
@@ -105,20 +109,18 @@
   }
 
   .action-button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .action-button.primary {
-    background: linear-gradient(135deg, var(--semantic-info), #2563eb);
+    background: var(--theme-accent, #6366f1);
     border: none;
+    color: white;
   }
 
   .action-button.primary:hover {
-    background: linear-gradient(
-      135deg,
-      var(--semantic-info),
-      var(--semantic-info)
-    );
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 85%, white);
   }
 
   .action-button.active {
@@ -134,6 +136,11 @@
   .action-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .action-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .save-error {

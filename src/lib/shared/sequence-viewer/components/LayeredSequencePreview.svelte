@@ -106,7 +106,7 @@
   let imageHeight = $state(0);
 
   // Derive word from sequence (with null safety)
-  const derivedWord = $derived(() => {
+  const derivedWord = $derived.by(() => {
     const rawWord = sequence.word || (sequence.beats ?? [])
       .filter(beat => beat.letter)
       .map(beat => beat.letter)
@@ -115,7 +115,7 @@
   });
 
   // Calculate difficulty level (with null safety)
-  const difficultyLevel = $derived(() => {
+  const difficultyLevel = $derived.by(() => {
     if (!sequence?.beats?.length) return 1;
     // Spread to convert readonly array to mutable for the calculator
     return difficultyCalculator.calculateDifficultyLevel([...sequence.beats]);
@@ -123,14 +123,14 @@
 
   // Show header when either word or difficulty is enabled
   const showHeader = $derived(
-    (showWord && derivedWord()) || showDifficultyLevel
+    (showWord && derivedWord) || showDifficultyLevel
   );
 
   // Show footer when any footer element is enabled
   const showFooter = $derived(showCreatorName || showNotes || showBirthday);
 
   // Format birthday date (current date when export is created)
-  const birthdayDate = $derived(() => {
+  const birthdayDate = $derived.by(() => {
     const date = new Date();
     const month = date.getMonth() + 1;
     const day = date.getDate();
@@ -151,12 +151,12 @@
     5: { bg: "linear-gradient(135deg, #ff4500, #8b0000)", border: "#000", text: "#fff" },
   };
 
-  const currentLevelStyle = $derived(levelStyles[difficultyLevel()] ?? defaultLevelStyle);
+  const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
 
   // Calculate beat positions for beat number overlays (percentage-based for scaling)
   // Matches BeatNumber.svelte: x="50", y="50" in 950x950 viewBox = ~5.26% from top-left
   // Font sizes: 100/950 = 10.526% for numbers, 80/950 = 8.42% for "Start"
-  const beatPositions = $derived(() => {
+  const beatPositions = $derived.by(() => {
     if (!columns || !rows) return [];
     const beats = sequence.beats ?? [];
     if (!beats.length) return [];
@@ -197,13 +197,13 @@
   // Calculate font sizes based on cell dimensions
   // BeatNumber.svelte uses font-size 100 in 950x950 viewBox = 10.526%
   // "Start" uses font-size 80 = 8.42%
-  const beatFontSize = $derived(() => {
+  const beatFontSize = $derived.by(() => {
     if (!renderedImageWidth || !columns) return 12;
     const cellWidth = renderedImageWidth / columns;
     return Math.max(8, cellWidth * 0.10526); // 10.526% of cell width, min 8px
   });
 
-  const startFontSize = $derived(() => {
+  const startFontSize = $derived.by(() => {
     if (!renderedImageWidth || !columns) return 10;
     const cellWidth = renderedImageWidth / columns;
     return Math.max(7, cellWidth * 0.0842); // 8.42% of cell width, min 7px
@@ -219,53 +219,41 @@
   const RENDER_BEAT_SIZE = 240; // Must match renderBaseImage beatSize
 
   // Scale factor: how much the rendered image is scaled from original
-  const scaleFactor = $derived(() => {
+  const scaleFactor = $derived.by(() => {
     if (!renderedImageWidth || !columns) return 1;
     const originalWidth = columns * RENDER_BEAT_SIZE;
     return renderedImageWidth / originalWidth;
   });
 
   // Header height: beatSize / 3 (matches ImageComposer.calculateHeaderHeight)
-  const scaledHeaderHeight = $derived(() => {
+  const scaledHeaderHeight = $derived.by(() => {
     const baseHeaderHeight = Math.floor(RENDER_BEAT_SIZE / 3); // 80px at full size
-    return Math.floor(baseHeaderHeight * scaleFactor());
+    return Math.floor(baseHeaderHeight * scaleFactor);
   });
 
   // Footer height: beatSize / 7 (matches ImageComposer.calculateFooterHeight)
-  const scaledFooterHeight = $derived(() => {
+  const scaledFooterHeight = $derived.by(() => {
     const baseFooterHeight = Math.floor(RENDER_BEAT_SIZE / 7); // 34px at full size
-    return Math.floor(baseFooterHeight * scaleFactor());
+    return Math.floor(baseFooterHeight * scaleFactor);
   });
 
   // Word font size: headerHeight * 0.9 (matches TextRenderer.renderWordHeader)
-  const wordFontSize = $derived(() => {
-    return Math.max(10, scaledHeaderHeight() * 0.9);
-  });
+  const wordFontSize = $derived(Math.max(10, scaledHeaderHeight * 0.9));
 
   // Badge size: headerHeight * 0.9 (matches TextRenderer.renderWordHeader)
-  const badgeSize = $derived(() => {
-    return Math.max(16, scaledHeaderHeight() * 0.9);
-  });
+  const badgeSize = $derived(Math.max(16, scaledHeaderHeight * 0.9));
 
   // Badge padding from edge: headerHeight * 0.05
-  const badgePadding = $derived(() => {
-    return Math.max(2, scaledHeaderHeight() * 0.05);
-  });
+  const badgePadding = $derived(Math.max(2, scaledHeaderHeight * 0.05));
 
   // Badge number font size: badgeSize / 1.75 (matches TextRenderer.renderLevelBadge)
-  const badgeNumberFontSize = $derived(() => {
-    return Math.max(8, Math.floor(badgeSize() / 1.75));
-  });
+  const badgeNumberFontSize = $derived(Math.max(8, Math.floor(badgeSize / 1.75)));
 
   // Footer font size: Math.max(10, floor(footerHeight * 0.55)) (matches TextRenderer.renderUserInfo)
-  const footerFontSize = $derived(() => {
-    return Math.max(10, Math.floor(scaledFooterHeight() * 0.55));
-  });
+  const footerFontSize = $derived(Math.max(10, Math.floor(scaledFooterHeight * 0.55)));
 
   // Footer margin: Math.max(8, floor(footerHeight * 0.3))
-  const footerMargin = $derived(() => {
-    return Math.max(8, Math.floor(scaledFooterHeight() * 0.3));
-  });
+  const footerMargin = $derived(Math.max(8, Math.floor(scaledFooterHeight * 0.3)));
 
   // Render base image on mount and when relevant props change
   async function renderBaseImage() {
@@ -393,7 +381,7 @@
       {#if showHeader}
         <div
           class="header-section"
-          style="height: {scaledHeaderHeight()}px;"
+          style="height: {scaledHeaderHeight}px;"
           transition:fly={{ y: -20, duration: 250, easing: cubicOut }}
         >
           <!-- Difficulty badge - absolute positioned at top-left -->
@@ -404,25 +392,25 @@
                 background: {currentLevelStyle.bg};
                 border-color: {currentLevelStyle.border};
                 color: {currentLevelStyle.text};
-                width: {badgeSize()}px;
-                height: {badgeSize()}px;
-                left: {badgePadding()}px;
-                font-size: {badgeNumberFontSize()}px;
+                width: {badgeSize}px;
+                height: {badgeSize}px;
+                left: {badgePadding}px;
+                font-size: {badgeNumberFontSize}px;
               "
               transition:scale={{ duration: 200, easing: cubicOut }}
             >
-              {difficultyLevel()}
+              {difficultyLevel}
             </div>
           {/if}
 
           <!-- Word text - centered across full width -->
-          {#if showWord && derivedWord()}
+          {#if showWord && derivedWord}
             <span
               class="word-text"
-              style="font-size: {wordFontSize()}px;"
+              style="font-size: {wordFontSize}px;"
               transition:fade={{ duration: 200 }}
             >
-              {derivedWord()}
+              {derivedWord}
             </span>
           {/if}
         </div>
@@ -446,10 +434,10 @@
             style="width: {renderedImageWidth}px; height: {renderedImageHeight}px; top: 50%; left: 50%; transform: translate(-50%, -50%);"
             transition:fade={{ duration: 200 }}
           >
-            {#each beatPositions() as pos}
+            {#each beatPositions as pos}
               <div
                 class="beat-number"
-                style="left: {pos.leftPct}%; top: {pos.topPct}%; font-size: {pos.isStart ? startFontSize() : beatFontSize()}px;"
+                style="left: {pos.leftPct}%; top: {pos.topPct}%; font-size: {pos.isStart ? startFontSize : beatFontSize}px;"
               >
                 {pos.label}
               </div>
@@ -462,7 +450,7 @@
       {#if showFooter}
         <div
           class="footer-section"
-          style="height: {scaledFooterHeight()}px; padding-left: {footerMargin()}px; padding-right: {footerMargin()}px; font-size: {footerFontSize()}px;"
+          style="height: {scaledFooterHeight}px; padding-left: {footerMargin}px; padding-right: {footerMargin}px; font-size: {footerFontSize}px;"
           transition:fly={{ y: 20, duration: 250, easing: cubicOut }}
         >
           {#if showCreatorName && effectiveUserName}
@@ -488,7 +476,7 @@
               class="footer-birthday"
               transition:fly={{ x: 20, duration: 200, easing: cubicOut }}
             >
-              🎂 {birthdayDate()}
+              🎂 {birthdayDate}
             </span>
           {/if}
         </div>
