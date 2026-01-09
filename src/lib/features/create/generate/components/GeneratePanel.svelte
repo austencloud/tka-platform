@@ -137,9 +137,10 @@ Card-based architecture with integrated Generate button:
 </div>
 
 <!-- Help mode overlays -->
-{#if helpMode === "selecting"}
-  <GeneratorHelpOverlay onClose={exitHelpMode} />
-{:else if helpMode === "viewing" && selectedControl}
+{#if helpMode !== "inactive"}
+  <GeneratorHelpOverlay onClose={exitHelpMode} dimmed={helpMode === "viewing"} />
+{/if}
+{#if helpMode === "viewing" && selectedControl}
   <GeneratorHelpModal controlId={selectedControl} onClose={closeHelpModal} />
 {/if}
 

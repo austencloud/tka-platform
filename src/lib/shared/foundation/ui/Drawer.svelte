@@ -39,6 +39,7 @@
     dismissible = true,
     labelledBy,
     ariaLabel,
+    describedBy,
     role = "dialog",
     showHandle = true,
     class: drawerClass = "",
@@ -73,6 +74,8 @@
     dismissible?: boolean;
     labelledBy?: string;
     ariaLabel?: string;
+    /** ID of element that describes the drawer content. For screen reader descriptions. */
+    describedBy?: string;
     role?: "dialog" | "menu" | "listbox" | "alertdialog";
     showHandle?: boolean;
     class?: string;
@@ -532,6 +535,7 @@
     aria-modal="true"
     aria-labelledby={labelledBy}
     aria-label={ariaLabel}
+    aria-describedby={describedBy}
     style:z-index={stackZIndex}
     style:transform={computedTransform || undefined}
     style:transition={isDragging ? "none" : ""}

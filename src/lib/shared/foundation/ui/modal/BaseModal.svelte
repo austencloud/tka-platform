@@ -79,6 +79,7 @@
   let dialogElement = $state<HTMLDialogElement | null>(null);
   let shouldRender = $state(false);
   let hasEntered = $state(false);
+  let isClosing = $state(false);
   let wasOpen = $state(false);
   let modalId = $state(generateModalId());
 
@@ -168,19 +169,20 @@
         });
       });
     } else {
-      // Closing
+      // Closing - trigger exit animation first, then close dialog
       hasEntered = false;
+      isClosing = true;
 
-      if (dialogElement?.open) {
-        dialogElement.close();
-      }
-
-      // Unregister from stack
+      // Unregister from stack immediately (so escape key goes to next modal)
       unregisterModal(modalId);
 
-      // Wait for exit animation, then remove from DOM
+      // Wait for exit animation to complete, then actually close the dialog
       const exitDuration = animation === "none" ? 0 : 200;
       setTimeout(() => {
+        if (dialogElement?.open) {
+          dialogElement.close();
+        }
+        isClosing = false;
         shouldRender = false;
         focusRestore?.restore();
       }, exitDuration);
@@ -210,6 +212,7 @@
     data-position={position}
     data-animation={animation}
     data-entered={hasEntered}
+    data-closing={isClosing}
     aria-labelledby={labelledBy}
     aria-describedby={describedBy}
     onclick={handleBackdropClick}

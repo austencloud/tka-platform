@@ -13,6 +13,16 @@
  * This is a plain helper class, not an inversify service - instantiated directly by components.
  */
 
+/**
+ * Default CSS class names that should remain interactive when drawer is open.
+ * These elements are excluded from the `inert` attribute.
+ */
+export const DEFAULT_INERT_EXCLUSIONS = [
+  "desktop-navigation-sidebar", // Allow navigation away from drawer
+  "bottom-navigation", // Allow module switching on mobile
+  "drawer-overlay", // Allow backdrop click to dismiss
+] as const;
+
 export interface FocusTrapOptions {
   /** Element to focus when trap activates. Defaults to first focusable element. */
   initialFocus?: HTMLElement | null;
@@ -20,6 +30,12 @@ export interface FocusTrapOptions {
   returnFocusOnDeactivate?: boolean;
   /** Whether to set inert on sibling elements. Default: true */
   setInertOnSiblings?: boolean;
+  /**
+   * CSS class names of elements that should remain interactive (not set to inert).
+   * Default: navigation sidebars and drawer overlays.
+   * Pass empty array to make everything except the drawer inert.
+   */
+  inertExclusions?: readonly string[];
   /** Callback when user tries to escape (optional) */
   onEscapeAttempt?: () => void;
 }
@@ -50,6 +66,7 @@ export class FocusTrap {
     this.options = {
       returnFocusOnDeactivate: true,
       setInertOnSiblings: true,
+      inertExclusions: DEFAULT_INERT_EXCLUSIONS,
       ...options,
     };
   }
@@ -220,6 +237,14 @@ export class FocusTrap {
   }
 
   /**
+   * Check if an element should be excluded from inert based on its classes
+   */
+  private shouldExcludeFromInert(element: HTMLElement): boolean {
+    const exclusions = this.options.inertExclusions ?? DEFAULT_INERT_EXCLUSIONS;
+    return exclusions.some((className) => element.classList.contains(className));
+  }
+
+  /**
    * Set inert attribute on sibling elements to prevent screen reader access
    */
   private setInertOnSiblings(inert: boolean) {
@@ -237,18 +262,8 @@ export class FocusTrap {
           const currentElement = current; // Capture for closure
           Array.from(parent.children).forEach((sibling) => {
             if (sibling !== currentElement && sibling instanceof HTMLElement) {
-              // Skip the desktop navigation sidebar - it should remain interactive
-              // even when drawers/modals are open, allowing users to navigate away
-              if (sibling.classList.contains("desktop-navigation-sidebar")) {
-                return;
-              }
-              // Skip the bottom navigation - it should remain interactive
-              // when sequence detail panel is open, allowing users to navigate between modules
-              if (sibling.classList.contains("bottom-navigation")) {
-                return;
-              }
-              // Skip the drawer overlay - it needs to remain clickable for backdrop dismiss
-              if (sibling.classList.contains("drawer-overlay")) {
+              // Skip elements in the exclusion list (navigation, overlays, etc.)
+              if (this.shouldExcludeFromInert(sibling)) {
                 return;
               }
               // Don't set inert on elements that already have it

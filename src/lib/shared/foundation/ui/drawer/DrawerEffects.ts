@@ -1,3 +1,15 @@
+/**
+ * DrawerEffects - Manages visual side effects when drawers open
+ *
+ * Handles:
+ * - Background scale effect (iOS-like depth)
+ * - Scroll lock (prevents body scroll while drawer is open)
+ *
+ * Note: Scroll lock no longer needs padding compensation because
+ * `scrollbar-gutter: stable` is set globally in app.css (2024 Baseline).
+ * This reserves scrollbar space even when overflow is hidden.
+ */
+
 export interface DrawerEffectsOptions {
   scaleBackground: boolean;
   preventScroll: boolean;
@@ -6,7 +18,6 @@ export interface DrawerEffectsOptions {
 
 export class DrawerEffects {
   private originalBodyOverflow: string | null = null;
-  private originalBodyPaddingRight: string | null = null;
   private options: DrawerEffectsOptions;
 
   constructor(options: DrawerEffectsOptions) {
@@ -61,23 +72,15 @@ export class DrawerEffects {
   private applyScrollLock() {
     if (this.options.isAnimatedOpen) {
       this.originalBodyOverflow = document.body.style.overflow;
-      this.originalBodyPaddingRight = document.body.style.paddingRight;
-
-      const scrollbarWidth =
-        window.innerWidth - document.documentElement.clientWidth;
+      // No padding compensation needed - scrollbar-gutter: stable handles this
       document.body.style.overflow = "hidden";
-      if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`;
-      }
     }
   }
 
   private cleanupScrollLock() {
     if (this.originalBodyOverflow !== null) {
       document.body.style.overflow = this.originalBodyOverflow;
-    }
-    if (this.originalBodyPaddingRight !== null) {
-      document.body.style.paddingRight = this.originalBodyPaddingRight;
+      this.originalBodyOverflow = null;
     }
   }
 }

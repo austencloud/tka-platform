@@ -412,18 +412,7 @@ export class SwipeToDismiss {
       this.delegatingToTopDrawer = false;
 
       // Check if gesture was significant enough to dismiss
-      let wasAboveThreshold = false;
-      if (this.options.placement === "bottom") {
-        wasAboveThreshold = deltaY > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-      } else if (this.options.placement === "top") {
-        wasAboveThreshold = deltaY < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-      } else if (this.options.placement === "right") {
-        wasAboveThreshold = deltaX > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-      } else if (this.options.placement === "left") {
-        wasAboveThreshold = deltaX < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-      }
-
-      if (wasAboveThreshold) {
+      if (this.isAboveDismissThreshold(deltaX, deltaY, duration)) {
         debug.log("delegating dismiss to top drawer");
         dismissTopDrawer();
       }
@@ -466,18 +455,8 @@ export class SwipeToDismiss {
       }
     }
 
-    let wasAboveThreshold = false;
-
     // Check dismissal threshold based on placement
-    if (this.options.placement === "bottom") {
-      wasAboveThreshold = deltaY > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-    } else if (this.options.placement === "top") {
-      wasAboveThreshold = deltaY < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaY < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-    } else if (this.options.placement === "right") {
-      wasAboveThreshold = deltaX > DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX > DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-    } else if (this.options.placement === "left") {
-      wasAboveThreshold = deltaX < -DISMISS_THRESHOLDS.DISTANCE_SLOW || (deltaX < -DISMISS_THRESHOLDS.DISTANCE_FAST && duration < DISMISS_THRESHOLDS.FAST_SWIPE_MAX_DURATION);
-    }
+    const wasAboveThreshold = this.isAboveDismissThreshold(deltaX, deltaY, duration);
 
     // Debug logging
     debug.log(
@@ -516,6 +495,33 @@ export class SwipeToDismiss {
       return Math.min(0, delta);
     }
     return 0;
+  }
+
+  /**
+   * Check if a swipe gesture exceeds the dismiss threshold.
+   * Considers both distance (slow swipe) and velocity (fast swipe).
+   */
+  private isAboveDismissThreshold(
+    deltaX: number,
+    deltaY: number,
+    duration: number
+  ): boolean {
+    const { DISTANCE_SLOW, DISTANCE_FAST, FAST_SWIPE_MAX_DURATION } =
+      DISMISS_THRESHOLDS;
+    const isFastSwipe = duration < FAST_SWIPE_MAX_DURATION;
+
+    switch (this.options.placement) {
+      case "bottom":
+        return deltaY > DISTANCE_SLOW || (deltaY > DISTANCE_FAST && isFastSwipe);
+      case "top":
+        return deltaY < -DISTANCE_SLOW || (deltaY < -DISTANCE_FAST && isFastSwipe);
+      case "right":
+        return deltaX > DISTANCE_SLOW || (deltaX > DISTANCE_FAST && isFastSwipe);
+      case "left":
+        return deltaX < -DISTANCE_SLOW || (deltaX < -DISTANCE_FAST && isFastSwipe);
+      default:
+        return false;
+    }
   }
 
   private handleClick(event: MouseEvent) {

@@ -22,12 +22,16 @@
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/features/discover/sequences/display/components/PropAwareThumbnail.svelte";
 	import LayeredSequencePreview from "./LayeredSequencePreview.svelte";
+	import MediaModeSwitch from "./MediaModeSwitch.svelte";
+	import ImageSettingsChips from "./ImageSettingsChips.svelte";
+	import AnimationSettingsChips from "./AnimationSettingsChips.svelte";
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 	import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 	import { authState } from "$lib/shared/auth/state/authState.svelte";
 	import { browser } from "$app/environment";
+	import { setSequenceViewerContext } from "../context/sequence-viewer-context.svelte";
 
 	const MEDIA_TYPE_STORAGE_KEY = "sequence-viewer-media-type";
 
@@ -303,71 +307,69 @@
 		}
 	}
 
+	// Set up context for compound components
+	// Uses $effect to ensure reactive values are always current
+	$effect(() => {
+		setSequenceViewerContext({
+			// Media type state
+			get activeMediaType() { return activeMediaType; },
+			get hasImages() { return hasImages; },
+			get hasAnimation() { return hasAnimation; },
+			get hasVideo() { return hasVideo; },
+			selectMediaType,
+
+			// Dark mode state
+			get darkMode() { return darkMode; },
+			toggleDarkMode,
+
+			// Copy to clipboard
+			get isCopying() { return isCopying; },
+			get copySuccess() { return copySuccess; },
+			get copyError() { return copyError; },
+			copyImageToClipboard,
+
+			// Image settings
+			get showVisibilitySettings() { return showVisibilitySettings; },
+			get addWord() { return addWord; },
+			get addBeatNumbers() { return addBeatNumbers; },
+			get includeStartPosition() { return includeStartPosition; },
+			get addDifficultyLevel() { return addDifficultyLevel; },
+			get showCreatorName() { return showCreatorName; },
+			get showNotes() { return showNotes; },
+			get showBirthday() { return showBirthday; },
+			toggleWord,
+			toggleBeatNumbers,
+			toggleStartPosition,
+			toggleDifficulty,
+			toggleShowCreatorName,
+			toggleShowNotes,
+			toggleShowBirthday,
+
+			// Animation settings
+			get animGridVisible() { return animGridVisible; },
+			get animBeatNumbers() { return animBeatNumbers; },
+			get animTkaGlyph() { return animTkaGlyph; },
+			get animWordHeader() { return animWordHeader; },
+			get animTrails() { return animTrails; },
+			toggleAnimGrid,
+			toggleAnimBeatNumbers,
+			toggleAnimTkaGlyph,
+			toggleAnimWordHeader,
+			toggleAnimTrails,
+
+			// Controls level
+			get controlsLevel() { return controlsLevel; },
+
+			// Haptic service
+			get hapticService() { return hapticService; },
+		});
+	});
+
 </script>
 
 <div class="media-viewer" bind:clientWidth={containerWidth}>
-	<!-- Mode Switch Button (at top, where tabs used to be) -->
-	<div class="mode-switch-row">
-		{#if activeMediaType === "image" && hasAnimation}
-			<button
-				type="button"
-				class="mode-switch-btn primary"
-				onclick={() => selectMediaType("animation")}
-				aria-label="Play animation"
-			>
-				<i class="fas fa-play" aria-hidden="true"></i>
-				<span>Play Animation</span>
-			</button>
-		{:else if activeMediaType === "animation" && hasImages}
-			<button
-				type="button"
-				class="mode-switch-btn secondary"
-				onclick={() => selectMediaType("image")}
-				aria-label="View image"
-			>
-				<i class="fas fa-image" aria-hidden="true"></i>
-				<span>View Image</span>
-			</button>
-		{/if}
-
-		<!-- Dark Mode Lamp Button - only shown when visibility settings are enabled (Share Hub) -->
-		{#if showVisibilitySettings}
-			<button
-				type="button"
-				class="lamp-btn"
-				class:lit={!darkMode}
-				onclick={toggleDarkMode}
-				aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-				title="Toggle dark/light mode"
-			>
-				<i class="fas fa-lightbulb" aria-hidden="true"></i>
-			</button>
-		{/if}
-
-		<!-- Copy to Clipboard Button - only shown in image mode with visibility settings -->
-		{#if showVisibilitySettings && activeMediaType === "image"}
-			<button
-				type="button"
-				class="copy-btn"
-				class:success={copySuccess}
-				class:error={copyError}
-				onclick={copyImageToClipboard}
-				disabled={isCopying}
-				aria-label="Copy image to clipboard"
-				title={copyError ? "Copy failed - try again" : "Copy image to clipboard"}
-			>
-				{#if isCopying}
-					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-				{:else if copySuccess}
-					<i class="fas fa-check" aria-hidden="true"></i>
-				{:else if copyError}
-					<i class="fas fa-times" aria-hidden="true"></i>
-				{:else}
-					<i class="fas fa-copy" aria-hidden="true"></i>
-				{/if}
-			</button>
-		{/if}
-	</div>
+	<!-- Mode Switch Row - compound component -->
+	<MediaModeSwitch />
 
 	<!-- Media Content Area -->
 	<div class="media-content">
@@ -413,75 +415,8 @@
 					{/if}
 				</div>
 
-				<!-- Image Export Settings Chips - only shown when visibility settings are enabled (Share Hub) -->
-				{#if showVisibilitySettings}
-					<div class="settings-chips">
-						<button
-							type="button"
-							class="chip"
-							class:active={addWord}
-							onclick={toggleWord}
-							aria-pressed={addWord}
-						>
-							Word
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={addBeatNumbers}
-							onclick={toggleBeatNumbers}
-							aria-pressed={addBeatNumbers}
-						>
-							Beat #s
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={includeStartPosition}
-							onclick={toggleStartPosition}
-							aria-pressed={includeStartPosition}
-						>
-							Start Pos
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={addDifficultyLevel}
-							onclick={toggleDifficulty}
-							aria-pressed={addDifficultyLevel}
-						>
-							Difficulty
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={showCreatorName}
-							onclick={toggleShowCreatorName}
-							aria-pressed={showCreatorName}
-						>
-							Name
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={showNotes}
-							onclick={toggleShowNotes}
-							aria-pressed={showNotes}
-						>
-							Notes
-						</button>
-						<button
-							type="button"
-							class="chip birthday-chip"
-							class:active={showBirthday}
-							onclick={toggleShowBirthday}
-							aria-pressed={showBirthday}
-							title="Birthday date"
-						>
-							🎂
-						</button>
-					</div>
-				{/if}
+				<!-- Image Export Settings Chips - compound component -->
+				<ImageSettingsChips />
 			</div>
 		{:else if activeMediaType === "animation"}
 			<!-- Animation View - using unified AnimationPlayer -->

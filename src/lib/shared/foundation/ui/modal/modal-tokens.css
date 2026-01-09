@@ -90,6 +90,12 @@ dialog.base-modal[open] {
   }
 }
 
+/* ===== Exit Animation State ===== */
+dialog.base-modal[data-closing="true"] {
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+}
+
 /* ===== Size Variants ===== */
 dialog.base-modal[data-size="sm"] {
   width: var(--modal-width-sm);
@@ -174,6 +180,13 @@ dialog.base-modal::backdrop {
   }
 }
 
+/* Exit animation for backdrop */
+dialog.base-modal[data-closing="true"]::backdrop {
+  opacity: 0;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
+
 /* ===== Content Animation System ===== */
 
 /* Staggered content animations - only when modal has entered */
@@ -249,6 +262,13 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
   dialog.base-modal[data-entered="true"] [data-animate],
   dialog.base-modal[data-entered="true"] [data-animate-icon] {
     animation: none;
+  }
+
+  /* No closing animation */
+  dialog.base-modal[data-closing="true"],
+  dialog.base-modal[data-closing="true"]::backdrop {
+    opacity: 1;
+    transform: none;
   }
 
   @starting-style {
