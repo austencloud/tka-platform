@@ -130,7 +130,7 @@ Card-based architecture with integrated Generate button:
       isGenerating={actionsState.isGenerating}
       onGenerateClicked={actionsState.onGenerateClicked}
       {startEndState}
-      helpMode={helpMode === "selecting"}
+      helpMode={helpMode !== "inactive"}
       onHelpSelect={selectControlHelp}
     />
   </div>

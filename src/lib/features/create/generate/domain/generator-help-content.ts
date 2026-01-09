@@ -26,6 +26,8 @@ export interface GeneratorHelpItem {
   fullDesc: string;
   /** Optional bullet points for complex explanations */
   bullets?: string[];
+  /** Optional images with labels */
+  images?: { src: string; label: string }[];
   /** Optional tip shown at bottom */
   tip?: string;
 }
@@ -39,13 +41,13 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
     color: "#3b82f6",
     shortDesc: "How complex the turns are",
     fullDesc:
-      "Controls the complexity of rotations in your generated sequence. Higher levels include more intricate spinning movements.",
-    bullets: [
-      "Level 1 (No Turns): Straight movements only - props travel without spinning",
-      "Level 2 (Whole Turns): Full 360° rotations - props complete full spins",
-      "Level 3 (Half Turns): Includes half rotations (180°) - the most variety",
+      "Controls how much your props can rotate during each motion.",
+    images: [
+      { src: "/images/level_images/level_1.png", label: "Level 1 — No rotation" },
+      { src: "/images/level_images/level_2.png", label: "Level 2 — 180° (whole)" },
+      { src: "/images/level_images/level_3.png", label: "Level 3 — 90° (half)" },
     ],
-    tip: "Start with Level 1 if you're new, then work up as you get comfortable.",
+    tip: "Start at Level 1 to learn the foundation, then progress to Level 3 for full variety.",
   },
   {
     id: "length",

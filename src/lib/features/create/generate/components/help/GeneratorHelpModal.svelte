@@ -61,6 +61,18 @@
     <!-- Description -->
     <p class="description" data-animate="2">{control?.fullDesc ?? ""}</p>
 
+    <!-- Images grid -->
+    {#if control?.images && control.images.length > 0}
+      <div class="image-grid" data-animate="3">
+        {#each control.images as image}
+          <figure class="image-item">
+            <img src={image.src} alt={image.label} />
+            <figcaption>{image.label}</figcaption>
+          </figure>
+        {/each}
+      </div>
+    {/if}
+
     <!-- Bullet points -->
     {#if control?.bullets && control.bullets.length > 0}
       <ul class="bullet-list">
@@ -101,6 +113,37 @@
     font-size: var(--font-size-min, 14px);
     line-height: 1.6;
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
+  }
+
+  /* Image grid */
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .image-item {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .image-item img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: contain;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .image-item figcaption {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-align: center;
+    line-height: 1.3;
   }
 
   /* Bullet list */
