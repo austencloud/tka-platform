@@ -53,9 +53,6 @@ export class SubscriptionManager implements ISubscriptionManager {
       const customerSnap = await getDoc(customerRef);
 
       if (!customerSnap.exists()) {
-        console.log(
-          "[SubscriptionManager] Creating customer document for existing user"
-        );
         // Create minimal customer doc - extension will sync to Stripe
         await setDoc(customerRef, {
           email: user.email,

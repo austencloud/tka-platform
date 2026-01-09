@@ -177,8 +177,6 @@ export class VegetationManager {
       side: 2,
     });
     this.createBatch("grass", grassGeometry, grassMaterial, this.config.maxGrassInstances);
-
-    console.log("[VegetationManager] Initialized batches (procedural)");
   }
 
   /**
@@ -221,8 +219,6 @@ export class VegetationManager {
       side: 2,
     });
     this.createBatch("grass", grassGeometry, grassMaterial, this.config.maxGrassInstances);
-
-    console.log("[VegetationManager] Initialized batches (GLTF) - 3 trees, 2 rocks, 2 bushes, 1 grass");
   }
 
   private createBatch(

@@ -61,7 +61,6 @@ export class HMRStateBackup<T = unknown> {
         };
 
         localStorage.setItem(this.key, JSON.stringify(backupState));
-        console.log(`💾 HMR: State backed up for key: ${this.key}`);
       } catch (error) {
         console.warn(
           `⚠️ HMR: Failed to backup state for key: ${this.key}`,
@@ -90,12 +89,10 @@ export class HMRStateBackup<T = unknown> {
       // Check if backup is recent (within last hour)
       const hourAgo = Date.now() - 60 * 60 * 1000;
       if (backupState.timestamp < hourAgo) {
-        console.log(`🗑️ HMR: Removing stale backup for key: ${this.key}`);
         this.clear();
         return null;
       }
 
-      console.log(`📂 HMR: State restored from backup for key: ${this.key}`);
       return backupState.data as T | null;
     } catch (error) {
       console.warn(
@@ -116,7 +113,6 @@ export class HMRStateBackup<T = unknown> {
 
     try {
       localStorage.removeItem(this.key);
-      console.log(`🗑️ HMR: Backup cleared for key: ${this.key}`);
     } catch (error) {
       console.warn(
         `⚠️ HMR: Failed to clear backup for key: ${this.key}`,
@@ -223,6 +219,4 @@ export function clearAllHMRBackups(): void {
   hmrKeys.forEach((key) => {
     localStorage.removeItem(key);
   });
-
-  console.log(`🗑️ HMR: Cleared ${hmrKeys.length} backup entries`);
 }

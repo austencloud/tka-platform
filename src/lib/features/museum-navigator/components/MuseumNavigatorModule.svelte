@@ -166,8 +166,6 @@
     // Start animation loop
     lastTime = performance.now();
     animate(lastTime);
-
-    console.log("[MuseumNavigator] Initialized");
   });
 
   /**
@@ -199,7 +197,6 @@
       await exhibitManager.createExhibitsForRoom(roomExhibits);
 
       exhibitCount = exhibitManager.getExhibitCount();
-      console.log(`[MuseumNavigator] Created ${exhibitCount} exhibits`);
     } catch (error) {
       console.error("[MuseumNavigator] Failed to load exhibits:", error);
     }

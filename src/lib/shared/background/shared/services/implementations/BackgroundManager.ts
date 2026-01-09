@@ -191,7 +191,5 @@ export class BackgroundManager implements IBackgroundManager {
 
   private handleVisibilityChange(): void {
     // Handle visibility changes - could update active state through callback
-    const isVisible = !document.hidden;
-    console.log(`Background visibility changed: ${isVisible}`);
   }
 }

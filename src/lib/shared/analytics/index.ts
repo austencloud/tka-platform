@@ -43,8 +43,6 @@ export async function initPerformanceMonitoring(): Promise<void> {
 
   if (!isDev) return;
 
-  console.log("🚀 [Performance] Initializing A+ monitoring suite...");
-
   // Web Vitals
   const { initWebVitals } = await import("./web-vitals");
   await initWebVitals();
@@ -56,9 +54,4 @@ export async function initPerformanceMonitoring(): Promise<void> {
   // Runtime Monitor
   const { runtimeMonitor } = await import("./runtime-monitor");
   runtimeMonitor.start();
-
-  console.log("🚀 [Performance] Monitoring active. Available commands:");
-  console.log("  - memoryProfiler.report()");
-  console.log("  - runtimeMonitor.report()");
-  console.log("  - budgetChecker.report()");
 }

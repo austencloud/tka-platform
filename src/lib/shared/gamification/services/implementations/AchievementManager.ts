@@ -113,7 +113,6 @@ export class AchievementManager implements IAchievementManager {
         // Also cache locally
         await db.userXP.add(initialXP);
 
-        console.log("✅ Initialized user XP record");
       } else {
         // Cache existing Firestore data locally
         const firestoreXP = xpDoc.data() as UserXP;
@@ -183,11 +182,6 @@ export class AchievementManager implements IAchievementManager {
         });
       }
 
-      if (missingAchievements.length > 0) {
-        console.log(
-          `✅ Initialized ${missingAchievements.length} new achievement records`
-        );
-      }
     } catch (error) {
       console.error(
         "❌ [AchievementManager] Failed to initialize user achievements:",
@@ -240,10 +234,6 @@ export class AchievementManager implements IAchievementManager {
       const achievementsUnlocked = await this.checkAchievementProgress(
         action,
         metadata
-      );
-
-      console.log(
-        `✅ Tracked action: ${action} (+${xpGained} XP, ${achievementsUnlocked.length} achievements unlocked)`
       );
 
       const result: {
@@ -464,8 +454,6 @@ export class AchievementManager implements IAchievementManager {
     await this.awardXPInternal(user.uid, amount, "achievement_unlocked", {
       reason: reason ?? "Manual XP award",
     });
-
-    console.log(`✅ Awarded ${amount} XP: ${reason ?? "Manual award"}`);
   }
 
   // ============================================================================
@@ -635,7 +623,6 @@ export class AchievementManager implements IAchievementManager {
           notificationShown: false,
         });
 
-        console.log(`🎉 Achievement unlocked: ${achievement.title}`);
         return true;
       } else {
         // Just update progress

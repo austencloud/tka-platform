@@ -46,8 +46,6 @@
   }
 
   onMount(() => {
-    console.log("🔐 Login page mounted");
-
     // Clear any stale auth attempt markers
     try {
       localStorage.removeItem("tka_auth_attempt");
@@ -61,7 +59,6 @@
   // OAuth redirect results are processed by authState.initializeAuthListener() in the root layout
   $effect(() => {
     if (authState.isAuthenticated && authState.initialized && !hasRedirected) {
-      console.log("✅ User is authenticated, redirecting to app...");
       hasRedirected = true;
       goto("/");
     }

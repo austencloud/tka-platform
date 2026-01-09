@@ -248,8 +248,6 @@
     // Start animation loop
     lastTime = performance.now();
     animate(lastTime);
-
-    console.log(`[InfiniteWorlds] Initialized with seed: ${worldSeedEncoded}`);
   });
 
   onDestroy(() => {

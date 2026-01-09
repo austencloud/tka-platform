@@ -126,8 +126,6 @@ export class AtmosphereManager {
     this.skyMesh.renderOrder = -1000;
 
     this.scene.add(this.skyMesh);
-
-    console.log("[Atmosphere] Sky created");
   }
 
   /**

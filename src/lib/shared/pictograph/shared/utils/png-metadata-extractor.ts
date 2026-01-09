@@ -307,62 +307,47 @@ export class PngMetadataExtractor {
    *
    * @param sequenceName - Name of the sequence to analyze
    */
-  static async debugSequenceMetadata(sequenceName: string): Promise<void> {
-    try {
-      console.log(
-        `🔍 [UNIFIED METADATA] Extracting complete metadata for ${sequenceName}...`
-      );
-      const metadata = await this.extractSequenceMetadata(sequenceName);
+  static async debugSequenceMetadata(sequenceName: string): Promise<{
+    metadata: Record<string, unknown>[];
+    author: string;
+    startPosition: string;
+    level: string;
+    beats: Array<{ letter: string; blueMotion: string; redMotion: string }>;
+  }> {
+    const metadata = await this.extractSequenceMetadata(sequenceName);
 
-      console.log(
-        `📋 [UNIFIED METADATA] Complete JSON structure for ${sequenceName}:`
-      );
-      console.log(JSON.stringify(metadata, null, 2));
+    const firstEntry = metadata[0] ?? {};
+    const startPositionEntries = metadata.filter(
+      (step: Record<string, unknown>) => step["sequence_start_position"]
+    );
 
-      // Show author and start position from the unified structure
-      const firstEntry = metadata[0] ?? {};
-      const startPositionEntries = metadata.filter(
-        (step: Record<string, unknown>) => step["sequence_start_position"]
-      );
+    const author = String(firstEntry["author"] ?? "MISSING");
+    const startPosition = String(
+      startPositionEntries[0]?.["sequence_start_position"] ?? "MISSING"
+    );
+    const level = String(firstEntry["level"] ?? "MISSING");
 
-      const author = String(firstEntry["author"] ?? "MISSING");
-      const startPosition = String(
-        startPositionEntries[0]?.["sequence_start_position"] ?? "MISSING"
+    const realBeats = metadata
+      .slice(1)
+      .filter(
+        (step: Record<string, unknown>) =>
+          step["letter"] && !step["sequence_start_position"]
       );
-      const level = String(firstEntry["level"] ?? "MISSING");
+    const beats = realBeats.map((step: Record<string, unknown>) => {
+      const blueAttrs = step["blueAttributes"] as
+        | Record<string, unknown>
+        | undefined;
+      const redAttrs = step["redAttributes"] as
+        | Record<string, unknown>
+        | undefined;
+      return {
+        letter: String(step["letter"] ?? "?"),
+        blueMotion: String(blueAttrs?.["motionType"] ?? "unknown"),
+        redMotion: String(redAttrs?.["motionType"] ?? "unknown"),
+      };
+    });
 
-      console.log(`👤 [UNIFIED METADATA] Author: ${author}`);
-      console.log(`📍 [UNIFIED METADATA] Start Position: ${startPosition}`);
-      console.log(`📊 [UNIFIED METADATA] Level: ${level}`);
-
-      // Extract motion types for each beat
-      console.log(`🎯 [UNIFIED METADATA] Motion types for ${sequenceName}:`);
-      const realBeats = metadata
-        .slice(1)
-        .filter(
-          (step: Record<string, unknown>) =>
-            step["letter"] && !step["sequence_start_position"]
-        );
-      realBeats.forEach((step: Record<string, unknown>, index: number) => {
-        const blueAttrs = step["blueAttributes"] as
-          | Record<string, unknown>
-          | undefined;
-        const redAttrs = step["redAttributes"] as
-          | Record<string, unknown>
-          | undefined;
-        const blueMotion = String(blueAttrs?.["motionType"] ?? "unknown");
-        const redMotion = String(redAttrs?.["motionType"] ?? "unknown");
-        const letter = String(step["letter"] ?? "?");
-        console.log(
-          `  Beat ${index + 1} (${letter}): blue=${blueMotion}, red=${redMotion}`
-        );
-      });
-    } catch (error) {
-      console.error(
-        `❌ [UNIFIED METADATA] Failed to extract metadata for ${sequenceName}:`,
-        error
-      );
-    }
+    return { metadata, author, startPosition, level, beats };
   }
 }
 

@@ -166,10 +166,6 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
 
     // Pre-populate for smooth initial animation
     this.prePopulateElements(dimensions);
-
-    console.log(
-      `🌊 Deep Ocean initialized: ${this.state.fish.length} fish, ${this.state.jellyfish.length} jellyfish, ${this.state.bubbles.length} bubbles`
-    );
   }
 
   private prePopulateElements(dimensions: Dimensions): void {

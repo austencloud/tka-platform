@@ -56,22 +56,16 @@
   // Handle direct LOOP click
   function handleDirectClick(loopType: LOOPType) {
     if (isApplying) {
-      console.warn("[LOOPPicker] Click ignored: already applying");
       return;
     }
-    console.log(`[LOOPPicker] Direct LOOP clicked: ${loopType}`);
     onSelect(null, loopType);
   }
 
   // Handle bridge letter LOOP click
   function handleBridgeClick(bridgeLetter: Letter, loopType: LOOPType) {
     if (isApplying) {
-      console.warn("[LOOPPicker] Click ignored: already applying");
       return;
     }
-    console.log(
-      `[LOOPPicker] Bridge LOOP clicked: ${bridgeLetter} + ${loopType}`
-    );
     onSelect(bridgeLetter, loopType);
   }
 </script>

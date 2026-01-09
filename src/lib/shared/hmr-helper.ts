@@ -41,19 +41,13 @@ export function handleHMRInit() {
   if (import.meta.hot) {
     // Before HMR invalidation, check if we should do a full reload instead
     import.meta.hot.on("vite:beforeUpdate", () => {
-      console.log("[HMR] Preparing for update...");
     });
 
     // After HMR update, verify the page is still functional
     import.meta.hot.on("vite:afterUpdate", () => {
-      console.log("[HMR] Update complete, verifying page state...");
-
       // Small delay to let Svelte finish rendering
       setTimeout(() => {
         if (shouldForceReload()) {
-          console.warn(
-            "[HMR] Page appears to be in a bad state, forcing reload..."
-          );
           window.location.reload();
         }
       }, 100);
@@ -61,10 +55,8 @@ export function handleHMRInit() {
 
     // Handle errors during HMR
     import.meta.hot.on("vite:error", (_error: unknown) => {
-      console.error("[HMR] Error detected:", _error);
       // Force reload on error
       setTimeout(() => {
-        console.warn("[HMR] Forcing reload due to error...");
         window.location.reload();
       }, 500);
     });

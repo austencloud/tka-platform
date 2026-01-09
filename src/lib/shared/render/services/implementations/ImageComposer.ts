@@ -37,7 +37,6 @@ const globalImageCache = new Map<string, HTMLImageElement>();
 // HMR: Clear cache when this module reloads (code changes in GridSvg, etc.)
 if (import.meta.hot) {
   import.meta.hot.accept(() => {
-    console.log("🔥 ImageComposer HMR: Clearing image cache");
     globalImageCache.clear();
   });
   // Also clear on dispose
@@ -187,10 +186,6 @@ export class ImageComposer implements IImageComposer {
     const headerHeight = showHeaderForLayout
         ? this.calculateHeaderHeight(beatCount, beatSize)
         : 0;
-
-    console.log(
-      `📐 Layout: beatSize=${beatSize}, headerHeight=${headerHeight}, rows=${rows}, cols=${columns}`
-    );
 
     // Calculate footer height if user info should be included
     // Check granular flags if provided, otherwise use addUserInfo for backwards compatibility

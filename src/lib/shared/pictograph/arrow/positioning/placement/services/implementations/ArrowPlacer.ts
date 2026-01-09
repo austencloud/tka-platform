@@ -270,12 +270,9 @@ export class ArrowPlacer implements IArrowPlacer {
   async debugAvailableKeys(
     motionType: MotionType,
     gridMode: GridMode = GridMode.DIAMOND
-  ): Promise<void> {
+  ): Promise<string[]> {
     const keys = await this.getAvailablePlacementKeys(motionType, gridMode);
-    console.log(
-      `Available placement keys for ${motionType} (${gridMode}):`,
-      keys
-    );
+    return keys;
   }
 
   /**

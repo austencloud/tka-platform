@@ -131,7 +131,6 @@ if (import.meta.hot) {
 
   // Listen for sprite file changes from Vite plugin
   import.meta.hot.on("arrow-sprite-update", async () => {
-    console.log("🎯 Arrow sprite updated - clearing cache and reloading");
 
     // Clear caches
     hmrSpriteCache.symbols.clear();
@@ -212,7 +211,6 @@ if (import.meta.hot) {
         }
 
         hmrSpriteCache.loaded = true;
-        console.log(`🎯 Sprite reloaded: ${hmrSpriteCache.symbols.size} symbols`);
 
         // Increment version to trigger reactive updates
         spriteVersionInternal++;
@@ -374,7 +372,6 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
         }
 
         this.spriteCache.loaded = true;
-        console.log(`Arrow sprite loaded: ${this.spriteCache.symbols.size} symbols`);
       } catch (error) {
         console.error("Failed to load arrow sprite:", error);
         throw error;

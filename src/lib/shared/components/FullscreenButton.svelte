@@ -25,14 +25,6 @@
     // Check if running as PWA - if so, don't show the button
     isPWA = fullscreenService.isPWA();
 
-    // Debug logging
-    console.log("🔍 FullscreenButton PWA Detection:", {
-      isPWA,
-      displayMode: window.matchMedia("(display-mode: standalone)").matches,
-      navigatorStandalone: window.navigator.standalone,
-      referrer: document.referrer,
-    });
-
     isSupported = !!(
       document.fullscreenEnabled ||
       document.webkitFullscreenEnabled ||

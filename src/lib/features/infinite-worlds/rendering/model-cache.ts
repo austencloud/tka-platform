@@ -65,7 +65,6 @@ export class ModelCache {
       this.loadModel(key, def)
     );
     await Promise.all(promises);
-    console.log("[ModelCache] Forest models preloaded");
   }
 
   /**

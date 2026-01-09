@@ -672,9 +672,6 @@
   function handleExportVideo() {
     // Use the best available video format (MP4 preferred for universal compatibility)
     const bestFormat = VideoExporter?.getBestFormat() ?? "webm";
-    console.log(
-      `🎬 AnimationSheetCoordinator: handleExportVideo called, using ${bestFormat}`
-    );
     _handleExport(bestFormat);
   }
 </script>

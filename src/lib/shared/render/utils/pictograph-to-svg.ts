@@ -144,30 +144,10 @@ export async function renderPictographToSVG(
     const viewBoxWidth = Math.max(950, Math.ceil(bbox.x + bbox.width));
     const viewBoxHeight = Math.max(950, Math.ceil(bbox.y + bbox.height));
 
-    // Detect if content extends beyond original viewBox
-    const isClipped = bbox.x + bbox.width > 950 || bbox.y + bbox.height > 950;
-
-    if (isClipped) {
-      const rightClip = Math.max(0, bbox.x + bbox.width - 950);
-      const bottomClip = Math.max(0, bbox.y + bbox.height - 950);
-      console.warn("⚠️ Content extends beyond original viewBox:", {
-        rightOverflow: rightClip,
-        bottomOverflow: bottomClip,
-        calculatedViewBox: `0 0 ${viewBoxWidth} ${viewBoxHeight}`,
-      });
-    }
-
     // Set explicit size and viewBox to accommodate all content
     svgElement.setAttribute("width", size.toString());
     svgElement.setAttribute("height", size.toString());
     svgElement.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-
-    // Verify TKA glyphs are present in final SVG
-    const finalImages = svgElement.querySelectorAll("image[href]");
-
-    if (finalImages.length === 0) {
-      console.error("❌ NO IMAGES FOUND IN FINAL SVG!");
-    }
 
     // Extract SVG string
     const svgString = svgElement.outerHTML;
@@ -217,9 +197,6 @@ async function waitForServicesInitialized(
     attempts++;
   }
 
-  console.warn(
-    `⚠️ Service initialization timeout after ${maxAttempts * 100}ms`
-  );
 }
 
 /**
@@ -301,17 +278,6 @@ async function waitForArrowsAndPropsCalculated(
       `expected ${expectedPropCount} props (found ${actualPropGroups} groups)`
   );
 
-  // Log additional debug info
-  const svg = container.querySelector("svg");
-  if (svg) {
-    console.log("📊 SVG debug:", {
-      hasGrid: !!svg.querySelector('.grid-svg, [class*="grid"]'),
-      hasGlyph: !!svg.querySelector(".tka-glyph"),
-      allClasses: Array.from(svg.querySelectorAll("[class]")).map(
-        (el) => el.className
-      ),
-    });
-  }
 }
 
 /**

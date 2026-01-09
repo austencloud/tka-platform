@@ -24,9 +24,7 @@ async function initializeContainer() {
       learnModule,
       writeModule
     );
-    console.log("✅ TKA Container: All modules loaded successfully");
   } catch (error) {
-    console.error("❌ TKA Container: Failed to load modules:", error);
     throw error;
   }
 }

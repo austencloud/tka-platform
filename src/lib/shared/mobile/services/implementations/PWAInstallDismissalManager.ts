@@ -69,22 +69,16 @@ export class PWAInstallDismissalManager implements IPWAInstallDismissalManager {
     this.state.dismissCount++;
     this.state.lastDismissed = Date.now();
     this.saveState();
-
-    console.log(
-      `📱 PWA install dismissed (count: ${this.state.dismissCount}). Next prompt in ${this.getDaysUntilNextPrompt()} days.`
-    );
   }
 
   recordInstallation(): void {
     this.state.hasInstalled = true;
     this.saveState();
-    console.log("✅ PWA installation recorded");
   }
 
   recordNeverAskAgain(): void {
     this.state.neverAskAgain = true;
     this.saveState();
-    console.log("🚫 User selected 'Never ask again' for PWA install");
   }
 
   canShowPrompt(): boolean {
@@ -152,6 +146,5 @@ export class PWAInstallDismissalManager implements IPWAInstallDismissalManager {
   reset(): void {
     this.state = this.getDefaultState();
     this.saveState();
-    console.log("🔄 PWA dismissal state reset");
   }
 }

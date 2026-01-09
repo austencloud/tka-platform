@@ -114,13 +114,7 @@ export const db = new TKADatabase();
  * Initialize database - call this when your app starts
  */
 export async function initializeDatabase(): Promise<void> {
-  try {
-    await db.open();
-    console.log("✅ TKA Database initialized successfully");
-  } catch (error) {
-    console.error("❌ Failed to initialize database:", error);
-    throw error;
-  }
+  await db.open();
 }
 
 /**
@@ -170,7 +164,6 @@ export async function clearAllData(): Promise<void> {
       await db.trainCalibrationProfiles.clear();
     }
   );
-  console.log("🗑️ All database data cleared");
 }
 
 /**
@@ -200,6 +193,5 @@ export async function getDatabaseInfo() {
     trainPerformances: await db.trainPerformances.count(),
     trainCalibrationProfiles: await db.trainCalibrationProfiles.count(),
   };
-  console.log("📊 Database info:", info);
   return info;
 }

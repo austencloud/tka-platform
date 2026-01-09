@@ -79,7 +79,6 @@ export class ExhibitManager {
     }
 
     this.state.roomExhibits.set(roomId, exhibitIds);
-    console.log(`[ExhibitManager] Created ${exhibitIds.length} exhibits for room "${roomId}"`);
   }
 
   /**
@@ -158,7 +157,6 @@ export class ExhibitManager {
     }
 
     this.state.roomExhibits.delete(roomId);
-    console.log(`[ExhibitManager] Removed exhibits for room "${roomId}"`);
   }
 
   /**

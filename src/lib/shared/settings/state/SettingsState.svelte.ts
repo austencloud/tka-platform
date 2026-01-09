@@ -516,16 +516,6 @@ class SettingsState implements ISettingsState {
 
   debugSettings(): void {
     if (!browser) return;
-
-    try {
-      console.log("🔍 Debug Settings:", {
-        stored: localStorage.getItem(SETTINGS_STORAGE_KEY),
-        parsed: JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) || "{}"),
-        current: settingsState,
-      });
-    } catch (error) {
-      console.error("Error debugging settings:", error);
-    }
   }
 
   // ============================================================================

@@ -24,7 +24,6 @@ export class ScreenshotInjector implements IScreenshotInjector {
 
   initialize(screenMesh: THREE.Mesh): void {
     this.screenMesh = screenMesh;
-    console.log("[ScreenshotInjector] Initialized with mesh:", screenMesh.name);
   }
 
   async loadScreenshot(source: string): Promise<void> {
@@ -40,8 +39,6 @@ export class ScreenshotInjector implements IScreenshotInjector {
 
     // Set as the only screenshot in timeline
     this.screenshotTimeline = [{ source, startTime: 0, endTime: 1 }];
-
-    console.log("[ScreenshotInjector] Screenshot loaded:", source);
   }
 
   async preloadScreenshots(screenshots: ScreenshotContent[]): Promise<void> {
@@ -67,10 +64,6 @@ export class ScreenshotInjector implements IScreenshotInjector {
         this.currentTexture = firstTexture;
       }
     }
-
-    console.log(
-      `[ScreenshotInjector] Preloaded ${screenshots.length} screenshots`
-    );
   }
 
   getActiveScreenshot(normalizedTime: number): string | null {
@@ -141,8 +134,6 @@ export class ScreenshotInjector implements IScreenshotInjector {
     this.currentTexture = null;
     this.screenMesh = null;
     this.screenshotTimeline = [];
-
-    console.log("[ScreenshotInjector] Disposed");
   }
 
   private async loadTexture(source: string): Promise<THREE.Texture> {

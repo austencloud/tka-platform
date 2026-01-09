@@ -87,8 +87,6 @@ export class WaterManager {
     this.waterMesh.renderOrder = 100;
 
     this.scene.add(this.waterMesh);
-
-    console.log("[Water] Created water plane");
   }
 
   /**

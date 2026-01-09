@@ -79,7 +79,6 @@ export class MobileFullscreenManager implements IMobileFullscreenManager {
     window.addEventListener("appinstalled", () => {
       this.deferredPrompt = null;
       this.installCallbacks.forEach((callback) => callback(false));
-      console.log("✅ PWA installed successfully");
     });
   }
 
@@ -123,10 +122,8 @@ export class MobileFullscreenManager implements IMobileFullscreenManager {
       const { outcome } = await this.deferredPrompt.userChoice;
 
       if (outcome === "accepted") {
-        console.log("✅ User accepted PWA install");
         return true;
       } else {
-        console.log("❌ User dismissed PWA install");
         return false;
       }
     } catch (error) {
@@ -233,7 +230,7 @@ export class MobileFullscreenManager implements IMobileFullscreenManager {
         this.showViewportPrompt();
         break;
       default:
-        console.log("Fullscreen not supported on this device");
+        break;
     }
   }
 
@@ -245,13 +242,11 @@ export class MobileFullscreenManager implements IMobileFullscreenManager {
 
   private showFullscreenAPIPrompt(): void {
     // This would show a custom UI prompt for fullscreen API
-    console.log("💡 Showing fullscreen API prompt");
     // Implementation would depend on your UI framework
   }
 
   private showViewportPrompt(): void {
     // This would show tips for manual fullscreen (browser menu)
-    console.log("💡 Showing viewport optimization tips");
     // Implementation would depend on your UI framework
   }
 

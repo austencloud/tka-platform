@@ -235,9 +235,6 @@ function createFirstRunState() {
           // CRITICAL FIX: Document doesn't exist - this is a brand new user!
           // We must RESET local state to prevent inheriting previous user's first-run status
           // (happens when multiple users share the same browser)
-          console.log(
-            "📱 [firstRunState] New user detected - resetting first-run status"
-          );
           state.hasCompleted = false;
           state.wasSkipped = false;
           state.completedAt = null;

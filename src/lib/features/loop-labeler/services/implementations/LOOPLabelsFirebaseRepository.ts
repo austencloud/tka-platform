@@ -137,9 +137,6 @@ export class LOOPLabelsFirebaseRepository implements ILOOPLabelsFirebaseReposito
       }
 
       this.syncStatus = successCount === entries.length ? "synced" : "error";
-      console.log(
-        `Synced ${successCount}/${entries.length} labels to Firebase`
-      );
     } catch (error) {
       console.error("Failed to sync to Firebase:", error);
       this.syncStatus = "error";

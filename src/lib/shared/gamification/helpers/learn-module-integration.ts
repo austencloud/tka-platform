@@ -15,8 +15,6 @@ export async function trackConceptLearned(conceptId: string): Promise<void> {
     conceptId,
     timestamp: Date.now(),
   });
-
-  console.log(`📚 Tracked concept completion: ${conceptId}`);
 }
 
 /**
@@ -32,10 +30,6 @@ export async function trackDrillCompleted(
     score,
     timestamp: Date.now(),
   });
-
-  console.log(
-    `🎯 Tracked drill completion: ${drillId} (score: ${score ?? "N/A"})`
-  );
 }
 
 /**

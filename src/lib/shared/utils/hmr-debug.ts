@@ -181,7 +181,6 @@ export function debugHMRError(error: Error | string, context?: string): void {
   const errorMessage = error instanceof Error ? error.message : error;
   const fullMessage = context ? `${context}: ${errorMessage}` : errorMessage;
 
-  console.error(`❌ HMR Error: ${fullMessage}`);
   debugHMR("Error occurred", fullMessage);
 }
 
@@ -192,7 +191,7 @@ export function logHMRReport(): void {
   if (!import.meta.env.DEV) return;
 
   const hmrDebugger = HMRDebugger.getInstance();
-  console.log(hmrDebugger.generateReport());
+  hmrDebugger.generateReport();
 }
 
 /**

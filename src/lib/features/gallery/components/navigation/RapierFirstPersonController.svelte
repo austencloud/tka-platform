@@ -147,8 +147,6 @@
         physicsState,
         layout.collisionWorld
       );
-
-      console.log(`[RapierFPC] Created ${wallColliders.length} wall colliders + floor`);
     }
 
     // Detect touch device
@@ -365,7 +363,6 @@
     if (e.key.toLowerCase() === "v") {
       cameraMode = cameraPreferences.toggleMode("gallery");
       startCameraTransition(cameraMode);
-      console.log(`[Camera] Switched to ${cameraMode} mode`);
       e.preventDefault();
     }
 

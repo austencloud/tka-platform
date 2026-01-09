@@ -384,9 +384,8 @@ export class LeaderboardManager implements ILeaderboardManager {
     return [];
   }
 
-  refreshLeaderboard(category: LeaderboardCategory): void {
+  refreshLeaderboard(_category: LeaderboardCategory): void {
     // Refresh is handled automatically by Firestore real-time listeners
     // This method could be used to trigger cache invalidation if needed
-    console.log(`LeaderboardManager: Refreshing ${category} leaderboard`);
   }
 }

@@ -168,23 +168,11 @@ export async function processInIdleChunks<T, R>(
  */
 export function deferInit(
   initFn: () => void | Promise<void>,
-  label?: string
+  _label?: string
 ): void {
   runWhenIdle(
     async () => {
-      const start = performance.now();
       await initFn();
-      const duration = performance.now() - start;
-
-      if (
-        typeof window !== "undefined" &&
-        (window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1")
-      ) {
-        console.log(
-          `⏳ [Idle Init] ${label ?? "anonymous"}: ${duration.toFixed(1)}ms`
-        );
-      }
     },
     { timeout: 5000 }
   );

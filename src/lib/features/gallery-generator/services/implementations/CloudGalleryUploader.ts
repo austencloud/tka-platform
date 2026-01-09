@@ -43,8 +43,6 @@ export class CloudGalleryUploader {
     const storagePath = `thumbnails/${propType}/${sequenceName}${modeSuffix}.webp`;
     const storageRef = ref(storage, storagePath);
 
-    console.log(`☁️ Uploading to Firebase: ${storagePath}`);
-
     await uploadBytes(storageRef, blob, {
       contentType: "image/webp",
       customMetadata: {
@@ -57,7 +55,6 @@ export class CloudGalleryUploader {
     });
 
     const url = await getDownloadURL(storageRef);
-    console.log(`✅ Uploaded: ${storagePath}`);
     return url;
   }
 

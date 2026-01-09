@@ -38,13 +38,11 @@ export class TextRenderer implements ITextRenderer {
     beatCount: number = 3 // Default to 3+ beats scaling
   ): void {
     if (!word || word.trim() === "") {
-      console.log("🚫 TextRenderer: No word to render");
       return;
     }
 
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-      console.log("🚫 TextRenderer: No canvas context");
       return;
     }
 
@@ -93,13 +91,11 @@ export class TextRenderer implements ITextRenderer {
     difficultyLevel: number = 1
   ): void {
     if (!word || word.trim() === "") {
-      console.log("🚫 TextRenderer: No word to render in footer");
       return;
     }
 
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-      console.log("🚫 TextRenderer: No canvas context");
       return;
     }
 
@@ -152,14 +148,12 @@ export class TextRenderer implements ITextRenderer {
   ): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-      console.log("🚫 TextRenderer: No canvas context");
       return;
     }
 
     // Allow rendering even with empty word if we need to show the difficulty badge
     const hasWord = word && word.trim() !== "";
     if (!hasWord && !showDifficultyBadge) {
-      console.log("🚫 TextRenderer: No word and no difficulty badge to render");
       return;
     }
 

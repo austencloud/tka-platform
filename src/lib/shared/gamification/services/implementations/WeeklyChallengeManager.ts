@@ -277,10 +277,6 @@ export class WeeklyChallengeManager implements IWeeklyChallengeManager {
           }
         }
 
-        console.log(
-          `🎉 Weekly challenge completed: ${challenge.title}${bonusEarned ? " (with bonus!)" : ""}`
-        );
-
         return { completed: true, progress: updatedProgress, bonusEarned };
       } else {
         // Update progress

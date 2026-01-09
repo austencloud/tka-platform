@@ -219,10 +219,6 @@
       const classToFill = parseStyleBlock(doc, spriteText);
       cssClassToFill = classToFill;
 
-      if (classToFill.size > 0) {
-        console.log(`Arrow sprite: parsed ${classToFill.size} CSS fill classes`);
-      }
-
       // Select all direct child groups with IDs (these are our arrows)
       const groups = doc.querySelectorAll("svg > g[id]");
 
@@ -272,8 +268,6 @@
       spriteSymbols = newSymbols;
       parsedSvgCache = new Map(parsedSvgCache); // trigger reactivity
       spriteLoaded = true;
-
-      console.log(`Arrow sprite loaded: ${spriteSymbols.size} arrows`);
     } catch (e) {
       console.error("Failed to load arrow sprite:", e);
     }

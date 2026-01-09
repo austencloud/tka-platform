@@ -71,9 +71,8 @@ export class PresenceTracker implements IPresenceTracker {
     if (this.presenceRef) {
       try {
         await remove(this.presenceRef);
-        console.log("[PresenceTracker] Cleaned up presence for deleted user");
       } catch (err) {
-        console.warn("[PresenceTracker] Could not remove presence:", err);
+        // Could not remove presence
       }
     }
 
@@ -94,9 +93,6 @@ export class PresenceTracker implements IPresenceTracker {
     // Verify user document exists in Firestore before setting up presence
     const userExists = await this.checkUserExists(userId);
     if (!userExists) {
-      console.log(
-        "[PresenceTracker] User document not found, skipping presence setup"
-      );
       await this.cleanupDeletedUser();
       return;
     }
@@ -177,7 +173,6 @@ export class PresenceTracker implements IPresenceTracker {
       if (user) {
         const userExists = await this.checkUserExists(user.uid);
         if (!userExists) {
-          console.log("[PresenceTracker] User deleted, cleaning up presence");
           await this.cleanupDeletedUser();
           return;
         }

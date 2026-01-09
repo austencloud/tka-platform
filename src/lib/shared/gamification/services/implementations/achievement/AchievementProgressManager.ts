@@ -186,7 +186,6 @@ export class AchievementProgressManager {
         notificationShown: false,
       });
 
-      console.log(`🎉 Achievement unlocked: ${achievement.title}`);
       return true;
     } else {
       // Just update progress

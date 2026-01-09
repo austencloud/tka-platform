@@ -114,13 +114,6 @@ class PerformanceBudgetChecker {
       };
       this.violations.push(violation);
 
-      if (!options?.silent) {
-        if (severity === "error") {
-          console.error(`❌ [Budget] EXCEEDED: ${message}`);
-        } else {
-          console.warn(`⚠️ [Budget] Over: ${message}`);
-        }
-      }
     }
 
     return isWithinBudget;
@@ -199,35 +192,8 @@ class PerformanceBudgetChecker {
    * Generate report
    */
   report(): void {
-    console.group("📊 [Performance Budget] Report");
-
     this.checkNavigationTiming();
     this.checkResources();
-
-    const errors = this.violations.filter((v) => v.severity === "error");
-    const warnings = this.violations.filter((v) => v.severity === "warning");
-
-    if (errors.length === 0 && warnings.length === 0) {
-      console.log("✅ All metrics within budget!");
-    } else {
-      if (errors.length > 0) {
-        console.error(`❌ ${errors.length} budget violation(s)`);
-      }
-      if (warnings.length > 0) {
-        console.warn(`⚠️ ${warnings.length} budget warning(s)`);
-      }
-    }
-
-    console.table(
-      this.violations.map((v) => ({
-        metric: v.metric,
-        actual: typeof v.actual === "number" ? v.actual.toFixed(2) : v.actual,
-        budget: v.budget,
-        severity: v.severity,
-      }))
-    );
-
-    console.groupEnd();
   }
 
   /**
@@ -250,7 +216,6 @@ if (typeof window !== "undefined") {
     // Wait for page to fully load before checking
     window.addEventListener("load", () => {
       setTimeout(() => {
-        console.log("📊 [Performance Budget] Running automatic check...");
         budgetChecker.report();
       }, 3000); // Wait 3s for all resources
     });

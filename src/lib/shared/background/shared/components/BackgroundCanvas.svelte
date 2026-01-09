@@ -84,12 +84,6 @@ backgrounds are visible simultaneously during the transition.
     }
 
     // Type changed - do a true crossfade
-    console.log(
-      "🎨 [Canvas] Crossfade:",
-      currentBackgroundType,
-      "→",
-      backgroundType
-    );
     targetBackgroundType = backgroundType;
     performCrossfade(backgroundType, quality);
   });

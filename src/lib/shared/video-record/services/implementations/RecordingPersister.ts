@@ -133,7 +133,6 @@ export class RecordingPersister implements IRecordingPersister {
 
     try {
       await setDoc(docRef, docData);
-      console.log(`✅ Saved recording metadata: ${recording.id}`);
     } catch (error) {
       console.error("[RecordingPersister] Failed to save recording:", error);
       toast.error("Failed to save recording. Please try again.");
@@ -225,7 +224,6 @@ export class RecordingPersister implements IRecordingPersister {
       const docRef = doc(firestore, collectionPath, recordingId);
 
       await deleteDoc(docRef);
-      console.log(`🗑️ Deleted recording metadata: ${recordingId}`);
     } catch (error) {
       console.error("[RecordingPersister] Failed to delete recording:", error);
       toast.error("Failed to delete recording. Please try again.");
@@ -237,9 +235,6 @@ export class RecordingPersister implements IRecordingPersister {
     try {
       const recordings = await this.getRecordingsForSequence(sequenceId);
       await Promise.all(recordings.map((r) => this.deleteRecording(r.id)));
-      console.log(
-        `🗑️ Deleted ${recordings.length} recordings for sequence ${sequenceId}`
-      );
     } catch (error) {
       console.error(
         "[RecordingPersister] Failed to delete recordings for sequence:",

@@ -554,11 +554,6 @@ export class SequenceEncoder implements ISequenceEncoder {
     const motionColor = color === "blue" ? MotionColor.BLUE : MotionColor.RED;
     const gridMode = this.inferGridModeFromMotion(startLocation, endLocation);
 
-    // DEBUG: Log decoded motion orientation
-    console.log(
-      `🔓 [URL Decoder] ${color} motion: startOri="${startOrientation}" → endOri="${endOrientation}" (from "${startOrientCode}" → "${endOrientCode}")`
-    );
-
     return {
       motionType,
       rotationDirection,

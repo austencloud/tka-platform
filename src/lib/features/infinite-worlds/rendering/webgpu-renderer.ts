@@ -91,8 +91,6 @@ export async function createRenderer(
 
       // Initialize WebGPU async
       await (renderer as any).init();
-
-      console.log("[InfiniteWorlds] WebGPU renderer initialized");
     } catch (error) {
       console.warn("[InfiniteWorlds] WebGPU init failed, falling back to WebGL:", error);
     }
@@ -108,8 +106,6 @@ export async function createRenderer(
       alpha: config.alpha ?? false,
       powerPreference: config.powerPreference ?? "high-performance",
     });
-
-    console.log("[InfiniteWorlds] WebGL renderer initialized (fallback)");
   }
 
   renderer.setSize(width, height);

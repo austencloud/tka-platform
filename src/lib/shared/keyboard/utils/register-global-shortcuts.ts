@@ -150,7 +150,6 @@ export function registerGlobalShortcuts(
     action: () => {
       // Block changes in preview mode - don't modify the previewed user's settings
       if (isSettingsPreviewMode()) {
-        console.log("[Keyboard L] Preview mode active - dark mode toggle blocked");
         return;
       }
 
@@ -170,10 +169,6 @@ export function registerGlobalShortcuts(
         ? "Dark Mode enabled — press L to toggle"
         : "Dark Mode disabled — press L to toggle";
       toast.info(message, 2500);
-
-      console.log(
-        `[Keyboard L] Toggled darkMode ${beforeValue} -> ${newValue}`
-      );
     },
   });
 
@@ -358,9 +353,6 @@ export function registerGlobalShortcuts(
       action: () => {
         // Block changes in preview mode
         if (isSettingsPreviewMode()) {
-          console.log(
-            "[Keyboard Shift+Number] Preview mode active - theme change blocked"
-          );
           return;
         }
 
@@ -390,9 +382,6 @@ export function registerGlobalShortcuts(
         }
 
         toast.info(`Theme: ${bgConfig.name}`, 1500);
-        console.log(
-          `[Keyboard Shift+${key}] Switched to ${bgConfig.name} theme`
-        );
       },
     });
   });

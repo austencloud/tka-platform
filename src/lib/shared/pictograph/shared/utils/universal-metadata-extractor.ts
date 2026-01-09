@@ -55,10 +55,6 @@ export class UniversalMetadataExtractor {
         extractionTime,
       };
     } catch (webpError) {
-      console.log(
-        `📝 WebP extraction failed for ${sequenceName}, trying PNG fallback...`
-      );
-
       // Strategy 2: Fallback to PNG extraction
       try {
         const pngMetadata = await PngMetadataExtractor.extractCompleteMetadata(

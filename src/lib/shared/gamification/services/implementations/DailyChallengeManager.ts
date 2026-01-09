@@ -225,8 +225,6 @@ export class DailyChallengeManager implements IDailyChallengeManager {
           );
         }
 
-        console.log(`🎉 Daily challenge completed: ${challenge.title}`);
-
         return { completed: true, progress: updatedProgress };
       } else {
         // Update progress

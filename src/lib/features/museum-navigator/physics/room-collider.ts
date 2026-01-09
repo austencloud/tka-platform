@@ -99,8 +99,6 @@ export class RoomColliderManager {
 
     this.colliders.set(roomId, roomCollider);
 
-    console.log(`[RoomCollider] Added colliders for room "${roomId}" (${wallColliders.length} walls)`);
-
     return roomCollider;
   }
 

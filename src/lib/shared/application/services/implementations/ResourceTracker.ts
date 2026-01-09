@@ -42,7 +42,6 @@ export class ResourceTracker implements IResourceTracker {
    */
   startTracking(): void {
     this.tracking = true;
-    console.log("🔍 Resource tracking started");
   }
 
   /**
@@ -50,7 +49,6 @@ export class ResourceTracker implements IResourceTracker {
    */
   stopTracking(): void {
     this.tracking = false;
-    console.log("⏹️ Resource tracking stopped");
   }
 
   /**

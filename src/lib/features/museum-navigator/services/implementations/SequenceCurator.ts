@@ -44,8 +44,6 @@ export class SequenceCurator implements ISequenceCurator {
       }
 
       this.loaded = true;
-      const filtered = allSequences.length - this.sequences.length;
-      console.log(`[SequenceCurator] Loaded ${this.sequences.length} sequences (${filtered} empty sequences filtered)`);
 
       return this.sequences;
     } catch (error) {

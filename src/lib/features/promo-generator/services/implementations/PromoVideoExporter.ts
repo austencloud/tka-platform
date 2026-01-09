@@ -39,8 +39,6 @@ export class PromoVideoExporter implements IPromoVideoExporter {
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
-
-    console.log("[PromoVideoExporter] Initialized");
   }
 
   async export(
@@ -213,10 +211,6 @@ export class PromoVideoExporter implements IPromoVideoExporter {
 
       onProgress?.(100, "complete");
 
-      console.log(
-        `[PromoVideoExporter] Export complete: ${blob.size} bytes in ${Math.round(duration)}ms`
-      );
-
       return {
         success: true,
         blob,
@@ -247,7 +241,6 @@ export class PromoVideoExporter implements IPromoVideoExporter {
   cancel(): void {
     if (this.abortController) {
       this.abortController.abort();
-      console.log("[PromoVideoExporter] Export cancelled");
     }
   }
 
@@ -282,8 +275,6 @@ export class PromoVideoExporter implements IPromoVideoExporter {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    console.log(`[PromoVideoExporter] Downloaded: ${downloadFilename}`);
   }
 
   dispose(): void {
@@ -296,8 +287,6 @@ export class PromoVideoExporter implements IPromoVideoExporter {
     this.camera = null;
     this.lastExportBlob = null;
     this.lastExportUrl = null;
-
-    console.log("[PromoVideoExporter] Disposed");
   }
 
   private calculateBitrate(

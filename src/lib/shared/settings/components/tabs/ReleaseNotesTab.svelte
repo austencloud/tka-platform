@@ -15,7 +15,6 @@
       window as unknown as { seedChangelog: () => Promise<void> }
     ).seedChangelog = async () => {
       await versionService.seedV010Changelog();
-      console.log("✅ Changelog seeded! Refresh the page to see changes.");
       versionState.loadVersions();
     };
   }

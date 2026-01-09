@@ -111,10 +111,6 @@ class RuntimeMonitor {
           this.fpsHistory.shift();
         }
 
-        // Warn on low FPS
-        if (fps < 30) {
-          console.warn(`Low FPS: ${fps}`);
-        }
 
         this.frameCount = 0;
         this.lastFrameTime = timestamp;
@@ -156,13 +152,6 @@ class RuntimeMonitor {
             this.longTasks.shift();
           }
 
-          // Warn on very long tasks (>100ms)
-          if (entry.duration > 100) {
-            console.warn(
-              `Long task: ${entry.duration.toFixed(1)}ms`,
-              taskEntry.attribution
-            );
-          }
         }
       });
 
@@ -203,13 +192,6 @@ class RuntimeMonitor {
 
             this.layoutShifts.push(layoutShift);
 
-            // Warn on significant shifts
-            if (shiftEntry.value > 0.1) {
-              console.warn(
-                `Layout shift: ${shiftEntry.value.toFixed(4)}`,
-                layoutShift.sources
-              );
-            }
           }
         }
       });
@@ -246,22 +228,7 @@ class RuntimeMonitor {
    * Generate a performance report
    */
   report(): void {
-    const stats = this.getStats();
-
-    console.group("Runtime Monitor Report");
-    console.log(`Average FPS: ${stats.avgFps}`);
-    console.log(`Long Tasks (>50ms): ${stats.longTasks.length}`);
-    console.log(`CLS: ${stats.cumulativeLayoutShift.toFixed(4)}`);
-
-    // Long tasks summary
-    if (stats.longTasks.length > 0) {
-      const avgDuration =
-        stats.longTasks.reduce((a, t) => a + t.duration, 0) /
-        stats.longTasks.length;
-      console.log(`Avg Long Task Duration: ${avgDuration.toFixed(1)}ms`);
-    }
-
-    console.groupEnd();
+    // Report data available via getStats()
   }
 
   /**

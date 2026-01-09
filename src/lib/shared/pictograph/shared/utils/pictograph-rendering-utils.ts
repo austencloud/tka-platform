@@ -39,10 +39,7 @@ interface IOverlayRenderer {
 export async function renderPictograph(
   data: PictographData
 ): Promise<SVGElement> {
-  console.log("🎨 renderPictograph called for letter:", data.letter);
-
   try {
-    console.log("🎨 Rendering pictograph:", data.letter);
 
     // Resolve required services directly
     const svgUtility = resolve<ISvgUtilityService>(TYPES.ISvgUtilityService);

@@ -62,7 +62,6 @@ export class StreakTracker implements IStreakTracker {
         // Cache locally
         await db.userStreaks.add(initialStreak);
 
-        console.log("✅ Initialized user streak record");
       } else {
         // Cache existing Firestore data locally
         const firestoreStreak = streakDoc.data() as UserStreak;
@@ -135,7 +134,6 @@ export class StreakTracker implements IStreakTracker {
         // Streak broken - reset to 1
         newStreak = 1;
         streakStartDate = today;
-        console.log("💔 Streak broken! Starting fresh.");
       } else {
         // Same day (shouldn't happen due to check above)
         newStreak = currentData.currentStreak;
@@ -169,10 +167,6 @@ export class StreakTracker implements IStreakTracker {
         lastActivityDate: today,
         streakStartDate,
       });
-
-      console.log(
-        `🔥 Streak updated: ${newStreak} day${newStreak !== 1 ? "s" : ""}`
-      );
 
       return {
         streakIncremented: daysDiff === 1,

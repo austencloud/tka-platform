@@ -78,8 +78,6 @@ export class PromoOrchestrator implements IPromoOrchestrator {
 
       // Start render loop
       this.startRenderLoop();
-
-      console.log("[PromoOrchestrator] Initialized");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to initialize";
@@ -115,8 +113,6 @@ export class PromoOrchestrator implements IPromoOrchestrator {
       if (deviceGroup && camera) {
         this.animationController.initialize(deviceGroup, camera, cameraDistance);
       }
-
-      console.log(`[PromoOrchestrator] Device loaded: ${device}`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to load device";
@@ -129,7 +125,6 @@ export class PromoOrchestrator implements IPromoOrchestrator {
     try {
       await this.screenshotInjector.loadScreenshot(source);
       this.updateState({ screenshots: [source] });
-      console.log(`[PromoOrchestrator] Screenshot loaded`);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to load screenshot";
@@ -142,9 +137,6 @@ export class PromoOrchestrator implements IPromoOrchestrator {
     try {
       await this.screenshotInjector.preloadScreenshots(screenshots);
       this.updateState({ screenshots: screenshots.map((s) => s.source) });
-      console.log(
-        `[PromoOrchestrator] ${screenshots.length} screenshots loaded`
-      );
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to load screenshots";
@@ -289,8 +281,6 @@ export class PromoOrchestrator implements IPromoOrchestrator {
 
     // Clear subscribers
     this.subscribers.clear();
-
-    console.log("[PromoOrchestrator] Disposed");
   }
 
   private startRenderLoop(): void {

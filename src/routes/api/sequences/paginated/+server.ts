@@ -68,10 +68,6 @@ export const GET: RequestHandler = async ({ url }) => {
     const validationResult = paginationSchema.safeParse(rawParams);
 
     if (!validationResult.success) {
-      console.error(
-        "❌ Invalid pagination parameters:",
-        validationResult.error
-      );
       return json(
         {
           success: false,
@@ -83,12 +79,6 @@ export const GET: RequestHandler = async ({ url }) => {
     }
 
     const { page, limit, priority } = validationResult.data;
-
-    const startTime = performance.now();
-
-    console.log(
-      `📄 Paginated API: Loading page ${page}, limit ${limit}, priority ${priority}`
-    );
 
     // Load sequences from manifest (cached after first load)
     if (!cachedSequences) {
@@ -112,11 +102,6 @@ export const GET: RequestHandler = async ({ url }) => {
     }
 
     const hasMore = endIndex < totalCount;
-    const duration = Math.round(performance.now() - startTime);
-
-    console.log(
-      `✅ Paginated API: Returning ${pageSequences.length} sequences (${startIndex + 1}-${Math.min(endIndex, totalCount)} of ${totalCount}) in ${duration}ms`
-    );
 
     return json({
       success: true,
@@ -128,7 +113,6 @@ export const GET: RequestHandler = async ({ url }) => {
       totalPages: Math.ceil(totalCount / limit),
     });
   } catch (error) {
-    console.error("❌ Paginated API: Error:", error);
     return json(
       {
         success: false,
@@ -147,9 +131,6 @@ export const GET: RequestHandler = async ({ url }) => {
  * This is 50-100x faster than scanning filesystem!
  */
 async function loadSequencesFromManifest(): Promise<SequenceMetadata[]> {
-  const startTime = performance.now();
-  console.log("🚀 Loading sequences from manifest...");
-
   try {
     const staticDir = join(__dirname, "../../../../../static");
     const manifestPath = join(staticDir, "Explore-manifest.json");
@@ -157,13 +138,6 @@ async function loadSequencesFromManifest(): Promise<SequenceMetadata[]> {
     // Read manifest file
     const manifestContent = await readFile(manifestPath, "utf-8");
     const manifest = JSON.parse(manifestContent) as ExploreManifest;
-
-    const duration = Math.round(performance.now() - startTime);
-
-    console.log(
-      `✅ Loaded ${manifest.sequences.length} sequences from manifest in ${duration}ms`
-    );
-    console.log(`📊 Manifest generated at: ${manifest.generatedAt}`);
 
     // Convert manifest format to API format
     const sequences: SequenceMetadata[] = manifest.sequences.map((seq) => ({
@@ -179,12 +153,7 @@ async function loadSequencesFromManifest(): Promise<SequenceMetadata[]> {
     }));
 
     return sequences;
-  } catch (error) {
-    console.error(
-      "❌ Failed to load manifest, falling back to filesystem scan:",
-      error
-    );
-
+  } catch {
     // Fallback to old method if manifest doesn't exist
     return await loadAllSequenceMetadataFallback();
   }
@@ -195,9 +164,6 @@ async function loadSequencesFromManifest(): Promise<SequenceMetadata[]> {
  * Only used if manifest file doesn't exist
  */
 async function loadAllSequenceMetadataFallback(): Promise<SequenceMetadata[]> {
-  console.log("⚠️  Using fallback filesystem scan (slow)");
-  console.log("💡 Tip: Run 'npm run build:manifest' to generate manifest");
-
   const { readdir } = await import("fs/promises");
   const staticDir = join(__dirname, "../../../../../static");
   const ExploreDir = join(staticDir, "Explore");
@@ -256,20 +222,16 @@ async function loadAllSequenceMetadataFallback(): Promise<SequenceMetadata[]> {
             priority: false,
           });
         }
-      } catch (error) {
-        console.warn(`⚠️ Could not process sequence ${sequenceName}:`, error);
+      } catch {
+        // Skip directories we can't read
       }
     }
 
     // Sort alphabetically for consistent pagination
     sequences.sort((a, b) => a.word.localeCompare(b.word));
 
-    console.log(
-      `✅ Loaded metadata for ${sequences.length} sequences (fallback)`
-    );
     return sequences;
-  } catch (error) {
-    console.error("❌ Failed to load sequence metadata:", error);
+  } catch {
     return [];
   }
 }

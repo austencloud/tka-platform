@@ -92,8 +92,6 @@ export function createGalleryWallColliders(
     }
   }
 
-  console.log(`[GalleryPhysics] Created ${colliders.length} wall colliders`);
-
   return colliders;
 }
 
@@ -120,8 +118,6 @@ export function createGalleryFloorCollider(
   floorDesc.setFriction(0.8); // High friction for floor
 
   const collider = physicsState.world.createCollider(floorDesc);
-
-  console.log(`[GalleryPhysics] Created floor collider (${floorWidth}x${floorDepth})`);
 
   return collider;
 }

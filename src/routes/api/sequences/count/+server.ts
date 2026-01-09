@@ -26,15 +26,12 @@ export const GET: RequestHandler = async () => {
       cacheTimestamp !== null &&
       now - cacheTimestamp < CACHE_DURATION
     ) {
-      console.log(`📊 Count API: Returning cached count: ${cachedCount}`);
       return json({
         success: true,
         count: cachedCount,
         cached: true,
       });
     }
-
-    console.log("🔄 Count API: Calculating sequence count...");
 
     const staticDir = join(__dirname, "../../../../../static");
     const ExploreDir = join(staticDir, "Explore");
@@ -79,15 +76,12 @@ export const GET: RequestHandler = async () => {
     cachedCount = count;
     cacheTimestamp = now;
 
-    console.log(`✅ Count API: Found ${count} valid sequences`);
-
     return json({
       success: true,
       count,
       cached: false,
     });
-  } catch (error) {
-    console.error("❌ Count API: Error:", error);
+  } catch {
     return json(
       {
         success: false,

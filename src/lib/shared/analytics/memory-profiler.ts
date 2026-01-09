@@ -91,7 +91,6 @@ class MemoryProfiler {
       return;
     }
     this.isEnabled = true;
-    console.log("🧠 [Memory Profiler] Enabled");
   }
 
   /**
@@ -115,9 +114,6 @@ class MemoryProfiler {
     };
 
     this.snapshots.push(snapshot);
-    console.log(
-      `🧠 [Memory Profiler] Snapshot "${label}": ${this.formatBytes(memory.usedJSHeapSize)}`
-    );
   }
 
   /**
@@ -132,10 +128,6 @@ class MemoryProfiler {
     this.trackingInterval = setInterval(() => {
       this.takeSnapshot(`auto-${Date.now()}`);
     }, intervalMs);
-
-    console.log(
-      `🧠 [Memory Profiler] Auto-tracking every ${intervalMs / 1000}s`
-    );
   }
 
   /**
@@ -145,7 +137,6 @@ class MemoryProfiler {
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval);
       this.trackingInterval = null;
-      console.log("🧠 [Memory Profiler] Auto-tracking stopped");
     }
   }
 
@@ -198,7 +189,6 @@ class MemoryProfiler {
    */
   report(): MemoryReport | null {
     if (!this.isEnabled || this.snapshots.length === 0) {
-      console.warn("🧠 [Memory Profiler] No snapshots available");
       return null;
     }
 
@@ -214,29 +204,6 @@ class MemoryProfiler {
       leakWarnings,
     };
 
-    // Log report
-    console.group("🧠 [Memory Profiler] Report");
-    console.log(`📊 Snapshots: ${this.snapshots.length}`);
-    console.log(`📈 Peak Usage: ${this.formatBytes(peakUsage)}`);
-    console.log(`📉 Average Usage: ${this.formatBytes(averageUsage)}`);
-
-    if (leakWarnings.length > 0) {
-      console.warn("⚠️ Warnings:");
-      leakWarnings.forEach((w) => console.warn(`  ${w}`));
-    } else {
-      console.log("✅ No memory issues detected");
-    }
-
-    console.table(
-      this.snapshots.slice(-10).map((s) => ({
-        label: s.label,
-        used: this.formatBytes(s.usedJSHeapSize),
-        total: this.formatBytes(s.totalJSHeapSize),
-        time: new Date(s.timestamp).toLocaleTimeString(),
-      }))
-    );
-    console.groupEnd();
-
     return report;
   }
 
@@ -245,7 +212,6 @@ class MemoryProfiler {
    */
   clear(): void {
     this.snapshots = [];
-    console.log("🧠 [Memory Profiler] Snapshots cleared");
   }
 
   /**

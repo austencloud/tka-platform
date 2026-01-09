@@ -35,37 +35,22 @@ export async function diagnoseCacheState(): Promise<CacheDiagnostics> {
       diagnostics.indexedDBDatabases = ["indexedDB.databases not supported"];
     }
 
-    console.log(
-      "📦 [Cache Diagnostics] IndexedDB Databases:",
-      diagnostics.indexedDBDatabases
-    );
   } catch (error) {
-    console.error("❌ [Cache Diagnostics] Failed to list IndexedDB:", error);
+    // IndexedDB listing failed
   }
 
   // 2. List ALL localStorage keys
   try {
     diagnostics.localStorageKeys = Object.keys(localStorage);
-    console.log(
-      "🗄️ [Cache Diagnostics] localStorage Keys:",
-      diagnostics.localStorageKeys
-    );
   } catch (error) {
-    console.error("❌ [Cache Diagnostics] Failed to list localStorage:", error);
+    // localStorage listing failed
   }
 
   // 3. List ALL sessionStorage keys
   try {
     diagnostics.sessionStorageKeys = Object.keys(sessionStorage);
-    console.log(
-      "📋 [Cache Diagnostics] sessionStorage Keys:",
-      diagnostics.sessionStorageKeys
-    );
   } catch (error) {
-    console.error(
-      "❌ [Cache Diagnostics] Failed to list sessionStorage:",
-      error
-    );
+    // sessionStorage listing failed
   }
 
   // 4. List ALL cookies
@@ -74,29 +59,8 @@ export async function diagnoseCacheState(): Promise<CacheDiagnostics> {
       .split(";")
       .map((c) => c.trim().split("=")[0])
       .filter((name): name is string => !!name);
-    console.log("🍪 [Cache Diagnostics] Cookies:", diagnostics.cookies);
   } catch (error) {
-    console.error("❌ [Cache Diagnostics] Failed to list cookies:", error);
-  }
-
-  // CRITICAL: Check for old project references
-  const oldProjectReferences = {
-    indexedDB: diagnostics.indexedDBDatabases.filter((db) =>
-      db.includes("the-kinetic-constructor")
-    ),
-    localStorage: diagnostics.localStorageKeys.filter((key) => {
-      const value = localStorage.getItem(key);
-      return value ? value.includes("the-kinetic-constructor") : false;
-    }),
-  };
-
-  if (
-    oldProjectReferences.indexedDB.length > 0 ||
-    oldProjectReferences.localStorage.length > 0
-  ) {
-    console.error("🚨 [Cache Diagnostics] OLD PROJECT DATA FOUND!");
-    console.error("🚨 IndexedDB:", oldProjectReferences.indexedDB);
-    console.error("🚨 localStorage:", oldProjectReferences.localStorage);
+    // cookie listing failed
   }
 
   return diagnostics;
@@ -107,20 +71,13 @@ export async function diagnoseCacheState(): Promise<CacheDiagnostics> {
  * This is the most aggressive cache clearing possible
  */
 export async function nuclearCacheClear(): Promise<void> {
-  console.log("💣 [NUCLEAR] Starting complete cache wipeout...");
-
-  const deletedItems: string[] = [];
-  const failedItems: string[] = [];
 
   // ============================================================================
   // 1. DELETE ALL INDEXEDDB DATABASES (not just Firebase ones)
   // ============================================================================
   try {
-    if (!window.indexedDB.databases) {
-      console.warn("💣 [NUCLEAR] indexedDB.databases not supported");
-    } else {
+    if (window.indexedDB.databases) {
       const databases = await window.indexedDB.databases();
-      console.log(`💣 [NUCLEAR] Found ${databases.length} IndexedDB databases`);
 
       for (const db of databases) {
         const dbName = db.name;
@@ -132,85 +89,43 @@ export async function nuclearCacheClear(): Promise<void> {
             const deleteRequest = window.indexedDB.deleteDatabase(dbName);
 
             deleteRequest.onsuccess = () => {
-              console.log(`✅ [NUCLEAR] Deleted IndexedDB: ${dbName}`);
-              deletedItems.push(`IndexedDB: ${dbName}`);
               resolve();
             };
 
             deleteRequest.onerror = () => {
-              console.error(
-                `❌ [NUCLEAR] Failed to delete IndexedDB: ${dbName}`
-              );
-              failedItems.push(`IndexedDB: ${dbName}`);
               reject(new Error(`Failed to delete IndexedDB: ${dbName}`));
             };
 
             deleteRequest.onblocked = () => {
-              console.warn(
-                `⚠️ [NUCLEAR] Delete blocked (close other tabs): ${dbName}`
-              );
               // Resolve anyway - we'll retry on next load
               resolve();
             };
           });
         } catch (error) {
-          console.error(`❌ [NUCLEAR] Error deleting ${dbName}:`, error);
-          failedItems.push(`IndexedDB: ${dbName}`);
+          // Continue with other databases
         }
       }
     }
   } catch (error) {
-    console.error("❌ [NUCLEAR] Failed to list IndexedDB databases:", error);
+    // IndexedDB listing failed
   }
 
   // ============================================================================
   // 2. CLEAR ALL LOCALSTORAGE
   // ============================================================================
   try {
-    const keysBefore = Object.keys(localStorage);
-    console.log(
-      `💣 [NUCLEAR] Clearing ${keysBefore.length} localStorage items`
-    );
-
     localStorage.clear();
-
-    const keysAfter = Object.keys(localStorage);
-    if (keysAfter.length === 0) {
-      console.log("✅ [NUCLEAR] localStorage completely cleared");
-      deletedItems.push(`localStorage: ${keysBefore.length} items`);
-    } else {
-      console.error(
-        `⚠️ [NUCLEAR] localStorage still has ${keysAfter.length} items`
-      );
-      failedItems.push(`localStorage: ${keysAfter.length} items remaining`);
-    }
   } catch (error) {
-    console.error("❌ [NUCLEAR] Failed to clear localStorage:", error);
+    // localStorage clear failed
   }
 
   // ============================================================================
   // 3. CLEAR ALL SESSIONSTORAGE
   // ============================================================================
   try {
-    const keysBefore = Object.keys(sessionStorage);
-    console.log(
-      `💣 [NUCLEAR] Clearing ${keysBefore.length} sessionStorage items`
-    );
-
     sessionStorage.clear();
-
-    const keysAfter = Object.keys(sessionStorage);
-    if (keysAfter.length === 0) {
-      console.log("✅ [NUCLEAR] sessionStorage completely cleared");
-      deletedItems.push(`sessionStorage: ${keysBefore.length} items`);
-    } else {
-      console.error(
-        `⚠️ [NUCLEAR] sessionStorage still has ${keysAfter.length} items`
-      );
-      failedItems.push(`sessionStorage: ${keysAfter.length} items remaining`);
-    }
   } catch (error) {
-    console.error("❌ [NUCLEAR] Failed to clear sessionStorage:", error);
+    // sessionStorage clear failed
   }
 
   // ============================================================================
@@ -218,7 +133,6 @@ export async function nuclearCacheClear(): Promise<void> {
   // ============================================================================
   try {
     const cookies = document.cookie.split(";");
-    console.log(`💣 [NUCLEAR] Deleting ${cookies.length} cookies`);
 
     for (const cookie of cookies) {
       const cookieName = cookie.split("=")[0]?.trim();
@@ -227,11 +141,9 @@ export async function nuclearCacheClear(): Promise<void> {
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
-      deletedItems.push(`Cookie: ${cookieName}`);
     }
-    console.log("✅ [NUCLEAR] All cookies deleted");
   } catch (error) {
-    console.error("❌ [NUCLEAR] Failed to delete cookies:", error);
+    // cookie deletion failed
   }
 
   // ============================================================================
@@ -240,53 +152,13 @@ export async function nuclearCacheClear(): Promise<void> {
   try {
     if ("caches" in window) {
       const cacheNames = await caches.keys();
-      console.log(`💣 [NUCLEAR] Deleting ${cacheNames.length} cache storages`);
 
       for (const cacheName of cacheNames) {
         await caches.delete(cacheName);
-        console.log(`✅ [NUCLEAR] Deleted cache: ${cacheName}`);
-        deletedItems.push(`Cache: ${cacheName}`);
       }
     }
   } catch (error) {
-    console.error("❌ [NUCLEAR] Failed to clear cache storage:", error);
-  }
-
-  // ============================================================================
-  // SUMMARY
-  // ============================================================================
-  console.log("");
-  console.log("🎉 [NUCLEAR] Cache wipeout complete!");
-  console.log(`✅ Successfully deleted: ${deletedItems.length} items`);
-  console.log(`❌ Failed to delete: ${failedItems.length} items`);
-
-  if (failedItems.length > 0) {
-    console.error("⚠️ [NUCLEAR] Failed items:", failedItems);
-    console.error(
-      "⚠️ You may need to close other tabs or restart your browser"
-    );
-  }
-
-  // Verify the clear worked
-  console.log("");
-  console.log("🔍 [NUCLEAR] Verifying cache is clear...");
-  const postClearDiagnostics = await diagnoseCacheState();
-
-  const hasRemainingFirebaseData =
-    postClearDiagnostics.indexedDBDatabases.some(
-      (db) => db.includes("firebase") || db.includes("firestore")
-    ) ||
-    postClearDiagnostics.localStorageKeys.some(
-      (key) => key.includes("firebase") || key.includes("firestore")
-    );
-
-  if (hasRemainingFirebaseData) {
-    console.error(
-      "🚨 [NUCLEAR] WARNING: Firebase data still present after clear!"
-    );
-    console.error("🚨 You MUST close all other tabs and restart the browser");
-  } else {
-    console.log("✅ [NUCLEAR] Verification passed - cache is clean!");
+    // cache storage clear failed
   }
 }
 
@@ -322,5 +194,4 @@ ${diagnostics.cookies.length > 10 ? `  ... and ${diagnostics.cookies.length - 10
   `.trim();
 
   alert(message);
-  console.log(message);
 }

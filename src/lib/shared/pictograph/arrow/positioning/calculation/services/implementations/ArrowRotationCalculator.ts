@@ -216,9 +216,6 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
     );
 
     if (overrideRotation !== null) {
-      console.log(
-        `🔄 [DashRotation] ${motion.color} → OVERRIDE angle: ${overrideRotation} (using endOri-based isRadial=${isEndRadial})`
-      );
       return overrideRotation;
     }
 
@@ -278,26 +275,13 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
     pictographData: PictographData | undefined,
     isRadial: boolean
   ): Promise<number | null> {
-    // DEBUG: Log rotation override check
-    const motionType = motion.motionType.toLowerCase();
-    const letter = pictographData?.letter;
-
     if (!pictographData) {
-      console.log(
-        `🔍 [RotationOverride] Skipping - no pictographData for ${motionType}`
-      );
       return null;
     }
     if (!this.SpecialPlacer) {
-      console.log(
-        `🔍 [RotationOverride] Skipping - no SpecialPlacer for ${letter} ${motionType}`
-      );
       return null;
     }
     if (!this.rotationOverrideKeyGenerator) {
-      console.log(
-        `🔍 [RotationOverride] Skipping - no rotationOverrideKeyGenerator for ${letter} ${motionType}`
-      );
       return null;
     }
 

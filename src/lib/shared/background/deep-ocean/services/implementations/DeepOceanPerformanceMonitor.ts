@@ -126,12 +126,7 @@ export class DeepOceanPerformanceMonitor implements IDeepOceanPerformanceMonitor
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (enabled) {
-      console.log(
-        "[DeepOcean Perf] Monitoring enabled. Call getDeepOceanMetrics() to see stats."
-      );
       this.reset();
-    } else {
-      console.log("[DeepOcean Perf] Monitoring disabled.");
     }
   }
 

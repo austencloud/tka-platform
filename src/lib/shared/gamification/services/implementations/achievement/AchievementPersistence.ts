@@ -58,7 +58,6 @@ export class AchievementPersistence {
       // Also cache locally
       await db.userXP.add(initialXP);
 
-      console.log("✅ Initialized user XP record");
     } else {
       // Cache existing Firestore data locally
       const firestoreXP = xpDoc.data() as UserXP;
@@ -120,11 +119,6 @@ export class AchievementPersistence {
       });
     }
 
-    if (missingAchievements.length > 0) {
-      console.log(
-        `✅ Initialized ${missingAchievements.length} new achievement records`
-      );
-    }
   }
 
   /**
