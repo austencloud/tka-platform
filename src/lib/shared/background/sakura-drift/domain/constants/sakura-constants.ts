@@ -304,3 +304,39 @@ export const SAKURA_BACKGROUND_GRADIENT = [
   { position: 0.6, color: "#4a3d52" }, // Soft lavender
   { position: 1, color: "#362d40" }, // Dark lavender
 ] as const;
+
+/**
+ * Parallax Depth Configuration
+ *
+ * Creates depth illusion with 3 layers:
+ * - Far: Small, faded, slow-moving petals (background)
+ * - Mid: Medium petals (middle ground)
+ * - Near: Large, vivid, fast-moving petals (foreground)
+ */
+export const SAKURA_PARALLAX = {
+  /** Far layer - distant petals */
+  far: {
+    /** Percentage of total petals in this layer */
+    distribution: 0.50,
+    /** Size multiplier (smaller = further away) */
+    sizeMultiplier: 0.5,
+    /** Opacity multiplier (more faded = further away) */
+    opacityMultiplier: 0.4,
+    /** Speed multiplier (slower = further away) */
+    speedMultiplier: 0.6,
+  },
+  /** Mid layer - middle distance petals */
+  mid: {
+    distribution: 0.35,
+    sizeMultiplier: 1.0,
+    opacityMultiplier: 0.7,
+    speedMultiplier: 1.0,
+  },
+  /** Near layer - foreground petals */
+  near: {
+    distribution: 0.15,
+    sizeMultiplier: 1.5,
+    opacityMultiplier: 1.0,
+    speedMultiplier: 1.3,
+  },
+} as const;

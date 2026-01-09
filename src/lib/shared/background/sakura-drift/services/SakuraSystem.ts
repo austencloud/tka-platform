@@ -2,7 +2,7 @@ import type {
   Dimensions,
   QualityLevel,
 } from "$lib/shared/background/shared/domain/types/background-types";
-import type { SakuraPetal } from "../domain/models/sakura-models";
+import type { SakuraPetal, PetalDepth } from "../domain/models/sakura-models";
 import {
   SAKURA_COUNTS,
   SAKURA_COUNTS_MOBILE,
@@ -16,6 +16,7 @@ import {
   SAKURA_FLOWER,
   SAKURA_PETAL,
   SAKURA_BOUNDS,
+  SAKURA_PARALLAX,
 } from "../domain/constants/sakura-constants";
 
 /**
@@ -24,6 +25,27 @@ import {
 function isMobile(): boolean {
   if (typeof window === "undefined") return false;
   return window.innerWidth < 768;
+}
+
+/**
+ * Assign a random depth layer based on distribution percentages
+ */
+function assignDepth(): PetalDepth {
+  const roll = Math.random();
+  if (roll < SAKURA_PARALLAX.far.distribution) {
+    return "far";
+  } else if (roll < SAKURA_PARALLAX.far.distribution + SAKURA_PARALLAX.mid.distribution) {
+    return "mid";
+  } else {
+    return "near";
+  }
+}
+
+/**
+ * Get parallax config for a depth layer
+ */
+function getDepthConfig(depth: PetalDepth) {
+  return SAKURA_PARALLAX[depth];
 }
 
 /**
