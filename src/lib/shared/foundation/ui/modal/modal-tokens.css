@@ -60,22 +60,26 @@ dialog.base-modal {
     0 10px 30px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 var(--theme-stroke-strong, rgba(255, 255, 255, 0.1));
   color: var(--theme-text, white);
-
-  /* Layout */
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 
-  /* Final state (open) */
-  opacity: 1;
-  transform: scale(1) translateY(0);
+  /* Closed state (default) */
+  opacity: 0;
+  transform: scale(0.95) translateY(15px);
 
-  /* Exit transition */
+  /* Transition for closing - allow-discrete keeps element visible during transition */
   transition:
     opacity var(--modal-duration-out) var(--modal-ease-out),
     transform var(--modal-duration-out) var(--modal-ease-out),
     overlay var(--modal-duration-out) allow-discrete,
     display var(--modal-duration-out) allow-discrete;
+}
+
+/* Open state */
+dialog.base-modal[open] {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
 
 /* ===== Entry Animation - @starting-style (2026) ===== */

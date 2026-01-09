@@ -62,11 +62,10 @@ export function getStackDepth(): number {
  * Dismiss the topmost modal (used for escape key handling)
  */
 export function dismissTopModal(): boolean {
-	if (modalStack.length === 0) return false;
-
 	const topId = modalStack[modalStack.length - 1];
-	const callback = dismissCallbacks.get(topId);
+	if (!topId) return false;
 
+	const callback = dismissCallbacks.get(topId);
 	if (callback) {
 		callback();
 		return true;
