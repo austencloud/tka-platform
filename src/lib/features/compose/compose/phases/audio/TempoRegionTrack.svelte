@@ -6,6 +6,7 @@
   Allows adding, editing, and removing tempo regions.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { TempoRegion } from "../../state/composition-state.svelte";
 
   let {
@@ -197,7 +198,7 @@
     <!-- Empty state -->
     {#if tempoRegions.length === 0 && !isAddingRegion}
       <div class="empty-state">
-        <span>No tempo regions - using constant BPM</span>
+        <span>{t("empty_no_tempo_regions")}</span>
       </div>
     {/if}
   </div>

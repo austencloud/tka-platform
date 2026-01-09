@@ -13,6 +13,7 @@
    * └──────────────────────────────────────────────────────────────────┘
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getTimelineState } from "../state/timeline-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import { getTimelineSnapper } from "../services/implementations/TimelineSnapService";
@@ -521,7 +522,7 @@
           <div class="skeleton-track"></div>
         </div>
       </div>
-      <span class="loading-text">Loading timeline...</span>
+      <span class="loading-text">{t("loading_timeline")}</span>
     </div>
   {:else}
     <!-- Error Banner (dismissible) -->

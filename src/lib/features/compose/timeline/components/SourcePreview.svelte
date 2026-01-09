@@ -11,6 +11,7 @@
   - Quick add to timeline button
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import {
@@ -64,7 +65,7 @@
   const totalBeats = $derived(sequence?.beats?.length || 0);
   const fullBeatRange = $derived(totalBeats + 1); // +1 for start position
   const displayName = $derived(
-    sequence?.word || sequence?.name || "No sequence loaded"
+    sequence?.word || sequence?.name || t("empty_no_sequence_loaded")
   );
 
   // Check if we're at start position (before beat 1)

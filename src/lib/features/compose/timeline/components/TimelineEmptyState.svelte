@@ -6,6 +6,8 @@
    * Small, focused component (~60 lines).
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
+
   interface Props {
     onBrowseLibrary?: () => void;
   }
@@ -23,7 +25,7 @@
     <i class="fa-solid fa-film" aria-hidden="true"></i>
   </div>
 
-  <h3 class="empty-title">No sequences on timeline</h3>
+  <h3 class="empty-title">{t("empty_no_sequences_timeline")}</h3>
 
   <p class="empty-description">
     Add sequences from your library to start composing your animation.

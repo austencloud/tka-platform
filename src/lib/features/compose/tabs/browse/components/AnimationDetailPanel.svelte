@@ -13,6 +13,7 @@ Features:
 - Mobile: Bottom sheet
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SavedAnimation } from "../state/browse-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { tryResolve } from "$lib/shared/inversify/di";
@@ -107,7 +108,7 @@ Features:
           class="fas {modeIcons[animation.mode]} placeholder-icon"
           aria-hidden="true"
         ></i>
-        <p class="placeholder-text">No preview available</p>
+        <p class="placeholder-text">{t("empty_no_preview")}</p>
       </div>
     {/if}
   </div>

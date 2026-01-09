@@ -13,6 +13,7 @@
 </script>
 
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
@@ -393,7 +394,7 @@
       {#if isSelectingSequence}
         <div class="selecting-overlay">
           <div class="spinner"></div>
-          <p>Loading sequence...</p>
+          <p>{t("loading_sequence")}</p>
         </div>
       {/if}
 
@@ -402,7 +403,7 @@
         {#if isLoading}
           <div class="loading-state">
             <div class="spinner"></div>
-            <p>Loading sequences...</p>
+            <p>{t("loading_sequences")}</p>
           </div>
         {:else if error}
           <div class="error-state">

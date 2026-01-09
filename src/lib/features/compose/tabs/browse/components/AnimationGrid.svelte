@@ -11,6 +11,7 @@ Features:
 - Loading skeleton support
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SavedAnimation } from "../state/browse-state.svelte";
   import { onMount } from "svelte";
   import { wrapGrid } from "animate-css-grid";
@@ -139,7 +140,7 @@ Features:
   <!-- Empty state -->
   <div class="empty-state">
     <i class="fas fa-film empty-icon" aria-hidden="true"></i>
-    <p class="empty-message">No animations found</p>
+    <p class="empty-message">{t("empty_no_animations")}</p>
     <p class="empty-hint">
       Create your first animation in the Single, Mirror, Tunnel, or Grid tabs
     </p>

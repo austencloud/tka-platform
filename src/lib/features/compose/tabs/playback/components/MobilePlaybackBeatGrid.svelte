@@ -5,6 +5,7 @@
   Shows sequence beats with playback sync highlighting (golden glow on current beat).
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
 
@@ -39,7 +40,7 @@
   {#if beats().length === 0}
     <div class="empty-state">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
-      <span>No sequence loaded</span>
+      <span>{t("empty_no_sequence_loaded")}</span>
     </div>
   {:else}
     <div class="beat-grid" style:--grid-cols={gridColumns()}>

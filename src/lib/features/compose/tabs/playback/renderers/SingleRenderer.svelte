@@ -5,6 +5,7 @@
   Displays one sequence on a single canvas.
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import {
@@ -241,7 +242,7 @@
   {#if loading}
     <div class="loading-message">
       <div class="spinner"></div>
-      <p>Loading animation...</p>
+      <p>{t("loading_animation")}</p>
     </div>
   {:else if error}
     <div class="error-message">
@@ -265,7 +266,7 @@
   {:else}
     <div class="empty-message">
       <i class="fas fa-video" aria-hidden="true"></i>
-      <p>No sequence loaded</p>
+      <p>{t("empty_no_sequence_loaded")}</p>
     </div>
   {/if}
 </div>

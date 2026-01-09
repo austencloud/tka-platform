@@ -6,6 +6,7 @@
    * Beat markers overlay on the waveform for visual alignment.
    */
 
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onDestroy } from "svelte";
   import WaveSurfer from "wavesurfer.js";
   import { getTimelineState } from "../state/timeline-state.svelte";
@@ -324,7 +325,7 @@
         {#if isLoadingAudio}
           <div class="loading-overlay">
             <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-            <span>Loading audio...</span>
+            <span>{t("loading_audio")}</span>
           </div>
         {/if}
       </div>

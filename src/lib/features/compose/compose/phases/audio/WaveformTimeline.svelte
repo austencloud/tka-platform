@@ -20,6 +20,7 @@
   - Home/End: Jump to start/end
 -->
 <script lang="ts">
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy } from "svelte";
   import WaveSurfer from "wavesurfer.js";
   import WaveformMinimap from "./WaveformMinimap.svelte";
@@ -333,7 +334,7 @@
     {#if !isReady}
       <div class="loading-overlay">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Loading waveform...</span>
+        <span>{t("loading_waveform")}</span>
       </div>
     {/if}
 
