@@ -1,16 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { NightSkyBackgroundSystem } from "$lib/shared/background/night-sky/services/NightSkyBackgroundSystem";
-  import { nightSkyBackgroundModule } from "$lib/shared/background/night-sky/inversify/NightSkyModule";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { AuroraBorealisBackgroundSystem } from "$lib/shared/background/aurora/services/AuroraBorealisBackgroundSystem";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
-  let backgroundSystem: NightSkyBackgroundSystem | null = $state(null);
+  let backgroundSystem: AuroraBorealisBackgroundSystem | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
 
@@ -19,25 +16,23 @@
 
   // Layer toggles
   let layers = $state({
-    stars: true,
-    moon: true,
-    nebula: true,
-    aurora: true, // 2036 Vision - flowing curtains
-    milkyWay: true, // 2036 Vision - particle river
+    gradient: true,
+    waves: true,
+    enhancedEffects: true,
   });
 
-  // Star density presets
-  type DensityPreset = "sparse" | "normal" | "dense" | "ultra";
-  let densityPreset: DensityPreset = $state("normal");
+  // Color palette options
+  type ColorPalette = "classic" | "purple" | "blue" | "rainbow";
+  let colorPalette: ColorPalette = $state("classic");
 
-  const densityMultipliers: Record<DensityPreset, number> = {
-    sparse: 0.5,
-    normal: 1.0,
-    dense: 1.8,
-    ultra: 3.0,
-  };
+  // Intensity presets
+  type IntensityPreset = "subtle" | "normal" | "vivid" | "intense";
+  let intensityPreset: IntensityPreset = $state("normal");
 
-  async function initializeSystem() {
+  // Stats
+  let stats = $state({ waves: 0 });
+
+  function initializeSystem() {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
@@ -49,16 +44,35 @@
       canvas.height = container.clientHeight;
     }
 
-    // Ensure DI module is loaded before creating the system
-    const diContainer = await getContainerInstance();
-    if (!diContainer.isBound(TYPES.INightSkyCalculationService)) {
-      await diContainer.load(nightSkyBackgroundModule);
-    }
-
-    backgroundSystem = NightSkyBackgroundSystem.create();
+    backgroundSystem = new AuroraBorealisBackgroundSystem();
     const dimensions = { width: canvas.width, height: canvas.height };
     backgroundSystem.initialize(dimensions, quality);
+
+    // Apply layer visibility if method exists
+    if (backgroundSystem.setLayerVisibility) {
+      backgroundSystem.setLayerVisibility(layers);
+    }
+
+    // Update stats
+    updateStats();
+
     startAnimation();
+  }
+
+  function updateStats() {
+    if (backgroundSystem?.getStats) {
+      stats = backgroundSystem.getStats();
+    } else {
+      // Fallback: estimate from quality
+      const waveCounts: Record<QualityLevel, number> = {
+        high: 12,
+        medium: 10,
+        low: 6,
+        minimal: 4,
+        "ultra-minimal": 2,
+      };
+      stats = { waves: waveCounts[quality] || 10 };
+    }
   }
 
   function startAnimation() {
@@ -79,6 +93,7 @@
       backgroundSystem.update(dimensions, frameMultiplier);
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
       backgroundSystem.draw(ctx, dimensions);
+
       animationFrame = requestAnimationFrame(animate);
     };
 
@@ -98,11 +113,8 @@
 
     const container = canvas.parentElement;
     if (container) {
-      const oldDimensions = { width: canvas.width, height: canvas.height };
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
-      const newDimensions = { width: canvas.width, height: canvas.height };
-      backgroundSystem.handleResize?.(oldDimensions, newDimensions);
     }
   }
 
@@ -120,15 +132,23 @@
     regenerate();
   }
 
-  function setDensity(preset: DensityPreset) {
-    densityPreset = preset;
-    regenerate();
+  function setColorPalette(palette: ColorPalette) {
+    colorPalette = palette;
+    if (backgroundSystem?.setColorPalette) {
+      backgroundSystem.setColorPalette(palette);
+    }
+  }
+
+  function setIntensity(preset: IntensityPreset) {
+    intensityPreset = preset;
+    if (backgroundSystem?.setIntensity) {
+      backgroundSystem.setIntensity(preset);
+    }
   }
 
   function toggleLayer(layer: keyof typeof layers) {
-    // Reassign entire object to ensure Svelte 5 reactivity triggers
     layers = { ...layers, [layer]: !layers[layer] };
-    if (backgroundSystem) {
+    if (backgroundSystem?.setLayerVisibility) {
       backgroundSystem.setLayerVisibility(layers);
     }
   }
@@ -147,35 +167,41 @@
   });
 </script>
 
-<div class="night-sky-lab">
+<div class="aurora-lab">
   <div class="controls">
     <div class="header">
-      <h2>Night Sky Lab</h2>
-      <span class="badge">2036 Vision</span>
+      <h2>Aurora Lab</h2>
+      <span class="badge">Northern Lights</span>
     </div>
 
     <!-- Quality Chips -->
     <ChipGroup label="Quality" variant="row">
-      <ChipToggle label="High" active={quality === "high"} onclick={() => setQuality("high")} />
-      <ChipToggle label="Medium" active={quality === "medium"} onclick={() => setQuality("medium")} />
-      <ChipToggle label="Low" active={quality === "low"} onclick={() => setQuality("low")} />
+      <ChipToggle label="High" active={quality === "high"} color="emerald" onclick={() => setQuality("high")} />
+      <ChipToggle label="Medium" active={quality === "medium"} color="emerald" onclick={() => setQuality("medium")} />
+      <ChipToggle label="Low" active={quality === "low"} color="emerald" onclick={() => setQuality("low")} />
     </ChipGroup>
 
     <!-- Layer Chips -->
     <ChipGroup label="Layers">
-      <ChipToggle label="Stars" icon="fa-star" active={layers.stars} onclick={() => toggleLayer("stars")} />
-      <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} onclick={() => toggleLayer("moon")} />
-      <ChipToggle label="Nebula" icon="fa-cloud" active={layers.nebula} onclick={() => toggleLayer("nebula")} />
-      <ChipToggle label="Aurora" icon="fa-wind" active={layers.aurora} onclick={() => toggleLayer("aurora")} />
-      <ChipToggle label="Milky Way" icon="fa-galaxy" active={layers.milkyWay} onclick={() => toggleLayer("milkyWay")} />
+      <ChipToggle label="Sky Gradient" icon="fa-moon" active={layers.gradient} color="emerald" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Aurora Waves" icon="fa-water" active={layers.waves} color="emerald" onclick={() => toggleLayer("waves")} />
+      <ChipToggle label="Wave Effects" icon="fa-wand-magic-sparkles" active={layers.enhancedEffects} color="emerald" onclick={() => toggleLayer("enhancedEffects")} />
     </ChipGroup>
 
-    <!-- Density Chips -->
-    <ChipGroup label="Star Density" variant="row">
-      <ChipToggle label="Sparse" active={densityPreset === "sparse"} onclick={() => setDensity("sparse")} />
-      <ChipToggle label="Normal" active={densityPreset === "normal"} onclick={() => setDensity("normal")} />
-      <ChipToggle label="Dense" active={densityPreset === "dense"} onclick={() => setDensity("dense")} />
-      <ChipToggle label="Ultra" active={densityPreset === "ultra"} onclick={() => setDensity("ultra")} />
+    <!-- Color Palette -->
+    <ChipGroup label="Color Palette" variant="row">
+      <ChipToggle label="Classic" active={colorPalette === "classic"} color="emerald" onclick={() => setColorPalette("classic")} />
+      <ChipToggle label="Purple" active={colorPalette === "purple"} color="default" onclick={() => setColorPalette("purple")} />
+      <ChipToggle label="Blue" active={colorPalette === "blue"} color="cyan" onclick={() => setColorPalette("blue")} />
+      <ChipToggle label="Rainbow" active={colorPalette === "rainbow"} color="rose" onclick={() => setColorPalette("rainbow")} />
+    </ChipGroup>
+
+    <!-- Intensity -->
+    <ChipGroup label="Intensity" variant="row">
+      <ChipToggle label="Subtle" active={intensityPreset === "subtle"} color="emerald" onclick={() => setIntensity("subtle")} />
+      <ChipToggle label="Normal" active={intensityPreset === "normal"} color="emerald" onclick={() => setIntensity("normal")} />
+      <ChipToggle label="Vivid" active={intensityPreset === "vivid"} color="emerald" onclick={() => setIntensity("vivid")} />
+      <ChipToggle label="Intense" active={intensityPreset === "intense"} color="emerald" onclick={() => setIntensity("intense")} />
     </ChipGroup>
 
     <!-- Regenerate -->
@@ -184,17 +210,26 @@
       Regenerate
     </button>
 
+    <!-- Stats -->
+    <div class="stats-section">
+      <span class="label">Scene Stats</span>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-value">{stats.waves}</span>
+          <span class="stat-label">Light Waves</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Progress Pills -->
     <div class="progress-section">
-      <span class="label">Progress</span>
+      <span class="label">Features</span>
       <div class="progress-pills">
-        <span class="pill complete">Clean Canvas</span>
-        <span class="pill complete">Lab Ready</span>
-        <span class="pill complete">Scintillation</span>
-        <span class="pill complete">Nebula</span>
-        <span class="pill complete">Aurora</span>
-        <span class="pill complete">Milky Way</span>
-        <span class="pill active">Meteors</span>
+        <span class="pill complete">Base Gradient</span>
+        <span class="pill complete">Light Waves</span>
+        <span class="pill complete">Wave Animation</span>
+        <span class="pill active">Layer Controls</span>
+        <span class="pill pending">Color Palettes</span>
       </div>
     </div>
   </div>
@@ -205,7 +240,7 @@
 </div>
 
 <style>
-  .night-sky-lab {
+  .aurora-lab {
     display: grid;
     grid-template-columns: 300px 1fr;
     gap: 20px;
@@ -239,12 +274,20 @@
 
   .badge {
     padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
-    border: 1px solid rgba(139, 92, 246, 0.4);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(52, 211, 153, 0.3));
+    border: 1px solid rgba(52, 211, 153, 0.4);
     border-radius: 20px;
     font-size: 0.7rem;
     font-weight: 600;
-    color: #a78bfa;
+    color: #34d399;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -255,7 +298,7 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(135deg, #10b981, #059669);
     border: none;
     border-radius: 12px;
     color: #ffffff;
@@ -267,11 +310,46 @@
 
   .action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
   }
 
   .action-btn:active {
     transform: translateY(0);
+  }
+
+  .stats-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #34d399;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    text-transform: uppercase;
   }
 
   .progress-section {
@@ -301,8 +379,8 @@
   }
 
   .pill.active {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
     animation: pulse 2s infinite;
   }
 
@@ -320,7 +398,7 @@
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    background: #050510;
+    background: rgb(5, 10, 25);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
@@ -331,7 +409,7 @@
   }
 
   @media (max-width: 800px) {
-    .night-sky-lab {
+    .aurora-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

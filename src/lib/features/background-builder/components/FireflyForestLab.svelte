@@ -4,28 +4,52 @@
     FireflyForestBackgroundSystem,
     type FireflyForestLayers,
   } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
+  import type { TreeTypeVisibility } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
-  let backgroundSystem: FireflyForestBackgroundSystem | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
 
-  // Quality settings
-  let quality: QualityLevel = $state("high");
-
-  // Layer toggles
+  // System
+  let system: FireflyForestBackgroundSystem | null = $state(null);
   let layers = $state<FireflyForestLayers>({
     gradient: true,
     stars: true,
+    moon: true,
     shootingStars: true,
     trees: true,
+    grass: true,
     fireflies: true,
   });
 
+  // Tree type visibility
+  let treeTypes = $state<TreeTypeVisibility>({
+    pine: true,
+    fir: true,
+    spruce: true,
+    oak: true,
+    maple: true,
+    poplar: true,
+    bare: true,
+  });
+
+  // Quality setting
+  let quality: QualityLevel = $state("high");
+
   // Stats display
-  let stats = $state({ fireflies: 0, stars: 0, hasShootingStar: false });
+  let stats = $state<{
+    fireflies: number;
+    stars: number;
+    hasShootingStar: boolean;
+  }>({
+    fireflies: 0,
+    stars: 0,
+    hasShootingStar: false,
+  });
   let lastStatsUpdate = 0;
 
   function initializeSystem() {
@@ -41,16 +65,13 @@
     }
 
     try {
-      backgroundSystem = new FireflyForestBackgroundSystem();
-
+      system = new FireflyForestBackgroundSystem();
       const dimensions = { width: canvas.width, height: canvas.height };
-      backgroundSystem.initialize(dimensions, quality);
+      system.initialize(dimensions, quality);
+      system.setLayerVisibility(layers);
 
-      // Apply initial layer visibility
-      backgroundSystem.setLayerVisibility(layers);
-
-      // Fetch initial stats
-      stats = backgroundSystem.getStats();
+      const systemStats = system.getStats();
+      stats = { ...stats, ...systemStats };
 
       startAnimation();
     } catch (error) {
@@ -59,24 +80,29 @@
   }
 
   function startAnimation() {
-    if (!canvas || !backgroundSystem) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const animate = (currentTime: number) => {
+      // Guard against destroyed component
+      if (!canvas || !system) return;
+
       const deltaTime = currentTime - lastFrameTime;
       const frameMultiplier = deltaTime / 16.67;
       lastFrameTime = currentTime;
 
-      const dimensions = { width: canvas!.width, height: canvas!.height };
-      backgroundSystem!.update(dimensions, frameMultiplier);
+      const dimensions = { width: canvas.width, height: canvas.height };
+
+      system.update(dimensions, frameMultiplier);
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-      backgroundSystem!.draw(ctx, dimensions);
+      system.draw(ctx, dimensions);
 
       // Update stats every second
-      if (currentTime - lastStatsUpdate > 1000) {
-        stats = backgroundSystem!.getStats();
+      if (currentTime - lastStatsUpdate > 1000 && system) {
+        const systemStats = system.getStats();
+        stats = { ...stats, ...systemStats };
         lastStatsUpdate = currentTime;
       }
 
@@ -95,7 +121,7 @@
   }
 
   function handleResize() {
-    if (!canvas || !backgroundSystem) return;
+    if (!canvas) return;
 
     const container = canvas.parentElement;
     if (container) {
@@ -103,31 +129,47 @@
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
       const newDimensions = { width: canvas.width, height: canvas.height };
-      backgroundSystem.handleResize(oldDimensions, newDimensions);
+
+      if (system) {
+        system.handleResize(oldDimensions, newDimensions);
+      }
+    }
+  }
+
+  function cleanup() {
+    if (system) {
+      system.cleanup();
+      system = null;
     }
   }
 
   function regenerate() {
     stopAnimation();
-    if (backgroundSystem) {
-      backgroundSystem.cleanup();
-    }
-    backgroundSystem = null;
+    cleanup();
     initializeSystem();
   }
 
   function setQuality(q: QualityLevel) {
     quality = q;
-    if (backgroundSystem) {
-      backgroundSystem.setQuality(q);
-      stats = backgroundSystem.getStats();
+    if (system) {
+      system.setQuality(q);
+      const systemStats = system.getStats();
+      stats = { ...stats, ...systemStats };
     }
   }
 
   function toggleLayer(layer: keyof FireflyForestLayers) {
     layers[layer] = !layers[layer];
-    if (backgroundSystem) {
-      backgroundSystem.setLayerVisibility(layers);
+    if (system) {
+      system.setLayerVisibility(layers);
+    }
+  }
+
+  function toggleTreeType(type: keyof TreeTypeVisibility) {
+    treeTypes[type] = !treeTypes[type];
+    if (system) {
+      system.setTreeVisibility(treeTypes);
+      system.regenerateTrees();
     }
   }
 
@@ -138,9 +180,7 @@
 
   onDestroy(() => {
     stopAnimation();
-    if (backgroundSystem) {
-      backgroundSystem.cleanup();
-    }
+    cleanup();
     window.removeEventListener("resize", handleResize);
   });
 </script>
@@ -149,83 +189,37 @@
   <div class="controls">
     <div class="header">
       <h2>Firefly Forest Lab</h2>
-      <span class="badge">Interactive</span>
+      <span class="badge">Classic</span>
     </div>
 
     <!-- Quality Chips -->
-    <div class="control-group">
-      <span class="label">Quality</span>
-      <div class="chip-row">
-        <button
-          class="chip"
-          class:active={quality === "high"}
-          onclick={() => setQuality("high")}
-        >
-          High
-        </button>
-        <button
-          class="chip"
-          class:active={quality === "medium"}
-          onclick={() => setQuality("medium")}
-        >
-          Medium
-        </button>
-        <button
-          class="chip"
-          class:active={quality === "low"}
-          onclick={() => setQuality("low")}
-        >
-          Low
-        </button>
-      </div>
-    </div>
+    <ChipGroup label="Quality" variant="row">
+      <ChipToggle label="High" active={quality === "high"} color="lime" onclick={() => setQuality("high")} />
+      <ChipToggle label="Medium" active={quality === "medium"} color="lime" onclick={() => setQuality("medium")} />
+      <ChipToggle label="Low" active={quality === "low"} color="lime" onclick={() => setQuality("low")} />
+    </ChipGroup>
 
     <!-- Layer Chips -->
-    <div class="control-group">
-      <span class="label">Layers</span>
-      <div class="chip-grid">
-        <button
-          class="chip layer-chip"
-          class:active={layers.gradient}
-          onclick={() => toggleLayer("gradient")}
-        >
-          <i class="fas fa-fill-drip"></i>
-          Gradient
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.stars}
-          onclick={() => toggleLayer("stars")}
-        >
-          <i class="fas fa-star"></i>
-          Stars
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.shootingStars}
-          onclick={() => toggleLayer("shootingStars")}
-        >
-          <i class="fas fa-meteor"></i>
-          Shooting Stars
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.trees}
-          onclick={() => toggleLayer("trees")}
-        >
-          <i class="fas fa-tree"></i>
-          Trees
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.fireflies}
-          onclick={() => toggleLayer("fireflies")}
-        >
-          <i class="fas fa-lightbulb"></i>
-          Fireflies
-        </button>
-      </div>
-    </div>
+    <ChipGroup label="Layers">
+      <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="lime" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Stars" icon="fa-star" active={layers.stars} color="lime" onclick={() => toggleLayer("stars")} />
+      <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} color="lime" onclick={() => toggleLayer("moon")} />
+      <ChipToggle label="Shooting Stars" icon="fa-meteor" active={layers.shootingStars} color="lime" onclick={() => toggleLayer("shootingStars")} />
+      <ChipToggle label="Trees" icon="fa-tree" active={layers.trees} color="lime" onclick={() => toggleLayer("trees")} />
+      <ChipToggle label="Grass" icon="fa-seedling" active={layers.grass} color="lime" onclick={() => toggleLayer("grass")} />
+      <ChipToggle label="Fireflies" icon="fa-lightbulb" active={layers.fireflies} color="lime" onclick={() => toggleLayer("fireflies")} />
+    </ChipGroup>
+
+    <!-- Tree Type Chips -->
+    <ChipGroup label="Tree Types">
+      <ChipToggle label="Pine" active={treeTypes.pine} color="lime" onclick={() => toggleTreeType("pine")} />
+      <ChipToggle label="Fir" active={treeTypes.fir} color="lime" onclick={() => toggleTreeType("fir")} />
+      <ChipToggle label="Spruce" active={treeTypes.spruce} color="lime" onclick={() => toggleTreeType("spruce")} />
+      <ChipToggle label="Oak" active={treeTypes.oak} color="lime" onclick={() => toggleTreeType("oak")} />
+      <ChipToggle label="Maple" active={treeTypes.maple} color="lime" onclick={() => toggleTreeType("maple")} />
+      <ChipToggle label="Poplar" active={treeTypes.poplar} color="lime" onclick={() => toggleTreeType("poplar")} />
+      <ChipToggle label="Bare" active={treeTypes.bare} color="lime" onclick={() => toggleTreeType("bare")} />
+    </ChipGroup>
 
     <!-- Regenerate -->
     <button class="action-btn" onclick={regenerate}>
@@ -245,9 +239,9 @@
           <span class="stat-value">{stats.stars}</span>
           <span class="stat-label">Stars</span>
         </div>
-        <div class="stat shooting-star-stat" class:active={stats.hasShootingStar}>
+        <div class="stat easter-egg-stat" class:active={stats.hasShootingStar}>
           <i class="fas fa-meteor"></i>
-          <span class="stat-label">{stats.hasShootingStar ? "Active!" : "Waiting..."}</span>
+          <span class="stat-label">{stats.hasShootingStar ? "Shooting!" : "Waiting..."}</span>
         </div>
       </div>
     </div>
@@ -261,7 +255,7 @@
 <style>
   .firefly-forest-lab {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 320px 1fr;
     gap: 20px;
     height: 100%;
     min-height: 600px;
@@ -303,64 +297,12 @@
     letter-spacing: 0.5px;
   }
 
-  .control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
   .label {
     font-size: 0.75rem;
     font-weight: 500;
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-  }
-
-  .chip-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .chip-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .chip {
-    padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    color: #9ca3af;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .chip:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: #e5e7eb;
-  }
-
-  .chip.active {
-    background: rgba(132, 204, 22, 0.2);
-    border-color: rgba(132, 204, 22, 0.5);
-    color: #bef264;
-    box-shadow: 0 0 12px rgba(132, 204, 22, 0.2);
-  }
-
-  .layer-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .layer-chip i {
-    font-size: 0.75rem;
   }
 
   .action-btn {
@@ -423,43 +365,36 @@
     text-transform: uppercase;
   }
 
-  .shooting-star-stat {
-    grid-column: span 2;
+  .easter-egg-stat {
     flex-direction: row;
     gap: 8px;
     color: #6b7280;
   }
 
-  .shooting-star-stat i {
+  .easter-egg-stat i {
     font-size: 1rem;
     opacity: 0.5;
     transition: all 0.3s ease;
   }
 
-  .shooting-star-stat.active {
+  .easter-egg-stat.active {
     background: rgba(250, 204, 21, 0.1);
   }
 
-  .shooting-star-stat.active i {
+  .easter-egg-stat.active i {
     color: #facc15;
     opacity: 1;
-    animation: shoot 0.5s ease-out;
   }
 
-  .shooting-star-stat.active .stat-label {
+  .easter-egg-stat.active .stat-label {
     color: #facc15;
-  }
-
-  @keyframes shoot {
-    0% { transform: translateX(-10px); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
   }
 
   .preview {
     position: relative;
     border-radius: 16px;
     overflow: hidden;
-    background: #0a1628;
+    background: linear-gradient(to bottom, #0a1628 0%, #162033 50%, #1a2a3d 100%);
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
@@ -469,14 +404,10 @@
     display: block;
   }
 
-  @media (max-width: 800px) {
+  @media (max-width: 900px) {
     .firefly-forest-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
-    }
-
-    .chip-row {
-      flex-wrap: wrap;
     }
   }
 </style>

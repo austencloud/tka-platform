@@ -2,6 +2,11 @@
   import NightSkyLab from "./components/NightSkyLab.svelte";
   import DeepOceanLab from "./components/DeepOceanLab.svelte";
   import FireflyForestLab from "./components/FireflyForestLab.svelte";
+  import CherryBlossomLab from "./components/CherryBlossomLab.svelte";
+  import AuroraLab from "./components/AuroraLab.svelte";
+  import EmberGlowLab from "./components/EmberGlowLab.svelte";
+  import SnowfallLab from "./components/SnowfallLab.svelte";
+  import AutumnDriftLab from "./components/AutumnDriftLab.svelte";
   import {
     backgroundBuilderState,
     type BackgroundBuilderTab,
@@ -17,6 +22,11 @@
     { id: "deep-ocean", label: "Deep Ocean", icon: "fa-water" },
     { id: "night-sky", label: "Night Sky", icon: "fa-moon" },
     { id: "firefly-forest", label: "Firefly Forest", icon: "fa-tree" },
+    { id: "cherry-blossom", label: "Cherry Blossom", icon: "fa-spa" },
+    { id: "aurora", label: "Aurora", icon: "fa-wand-magic-sparkles" },
+    { id: "ember-glow", label: "Ember Glow", icon: "fa-fire" },
+    { id: "snowfall", label: "Snowfall", icon: "fa-snowflake" },
+    { id: "autumn-drift", label: "Autumn Drift", icon: "fa-leaf" },
     { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
   ];
 
@@ -51,6 +61,16 @@
       <NightSkyLab />
     {:else if backgroundBuilderState.currentTab === "firefly-forest"}
       <FireflyForestLab />
+    {:else if backgroundBuilderState.currentTab === "cherry-blossom"}
+      <CherryBlossomLab />
+    {:else if backgroundBuilderState.currentTab === "aurora"}
+      <AuroraLab />
+    {:else if backgroundBuilderState.currentTab === "ember-glow"}
+      <EmberGlowLab />
+    {:else if backgroundBuilderState.currentTab === "snowfall"}
+      <SnowfallLab />
+    {:else if backgroundBuilderState.currentTab === "autumn-drift"}
+      <AutumnDriftLab />
     {:else if backgroundBuilderState.currentTab === "gradient"}
       <div class="placeholder">
         <i class="fas fa-fill-drip"></i>

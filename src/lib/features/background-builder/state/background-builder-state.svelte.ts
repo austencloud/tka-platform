@@ -11,9 +11,24 @@ export type BackgroundBuilderTab =
   | "deep-ocean"
   | "night-sky"
   | "firefly-forest"
+  | "cherry-blossom"
+  | "aurora"
+  | "ember-glow"
+  | "snowfall"
+  | "autumn-drift"
   | "gradient";
 
-const VALID_TABS: BackgroundBuilderTab[] = ["deep-ocean", "night-sky", "firefly-forest", "gradient"];
+const VALID_TABS: BackgroundBuilderTab[] = [
+  "deep-ocean",
+  "night-sky",
+  "firefly-forest",
+  "cherry-blossom",
+  "aurora",
+  "ember-glow",
+  "snowfall",
+  "autumn-drift",
+  "gradient",
+];
 const DEFAULT_TAB: BackgroundBuilderTab = "deep-ocean";
 
 function isValidTab(value: string): value is BackgroundBuilderTab {

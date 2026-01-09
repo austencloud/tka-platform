@@ -7,6 +7,8 @@
     type DeepOceanLayers,
   } from "$lib/shared/background/deep-ocean/services/DeepOceanBackgroundOrchestrator";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
@@ -98,18 +100,21 @@
     if (!ctx) return;
 
     const animate = (currentTime: number) => {
+      // Guard against destroyed component
+      if (!canvas || !backgroundSystem) return;
+
       const deltaTime = currentTime - lastFrameTime;
       const frameMultiplier = deltaTime / 16.67;
       lastFrameTime = currentTime;
 
-      const dimensions = { width: canvas!.width, height: canvas!.height };
-      backgroundSystem!.update(dimensions, frameMultiplier);
+      const dimensions = { width: canvas.width, height: canvas.height };
+      backgroundSystem.update(dimensions, frameMultiplier);
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-      backgroundSystem!.draw(ctx, dimensions);
+      backgroundSystem.draw(ctx, dimensions);
 
       // Update stats every second
-      if (currentTime - lastStatsUpdate > 1000) {
-        stats = backgroundSystem!.getStats();
+      if (currentTime - lastStatsUpdate > 1000 && backgroundSystem) {
+        stats = backgroundSystem.getStats();
         lastStatsUpdate = currentTime;
       }
 
@@ -183,95 +188,22 @@
     </div>
 
     <!-- Quality Chips -->
-    <div class="control-group">
-      <span class="label">Quality</span>
-      <div class="chip-row">
-        <button
-          class="chip"
-          class:active={quality === "high"}
-          onclick={() => setQuality("high")}
-        >
-          High
-        </button>
-        <button
-          class="chip"
-          class:active={quality === "medium"}
-          onclick={() => setQuality("medium")}
-        >
-          Medium
-        </button>
-        <button
-          class="chip"
-          class:active={quality === "low"}
-          onclick={() => setQuality("low")}
-        >
-          Low
-        </button>
-      </div>
-    </div>
+    <ChipGroup label="Quality" variant="row">
+      <ChipToggle label="High" active={quality === "high"} color="cyan" onclick={() => setQuality("high")} />
+      <ChipToggle label="Medium" active={quality === "medium"} color="cyan" onclick={() => setQuality("medium")} />
+      <ChipToggle label="Low" active={quality === "low"} color="cyan" onclick={() => setQuality("low")} />
+    </ChipGroup>
 
     <!-- Layer Chips -->
-    <div class="control-group">
-      <span class="label">Layers</span>
-      <div class="chip-grid">
-        <button
-          class="chip layer-chip"
-          class:active={layers.gradient}
-          onclick={() => toggleLayer("gradient")}
-        >
-          <i class="fas fa-fill-drip"></i>
-          Gradient
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.lightRays}
-          onclick={() => toggleLayer("lightRays")}
-        >
-          <i class="fas fa-sun"></i>
-          Light Rays
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.caustics}
-          onclick={() => toggleLayer("caustics")}
-        >
-          <i class="fas fa-water"></i>
-          Caustics
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.particles}
-          onclick={() => toggleLayer("particles")}
-        >
-          <i class="fas fa-sparkles"></i>
-          Particles
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.bubbles}
-          onclick={() => toggleLayer("bubbles")}
-        >
-          <i class="fas fa-circle"></i>
-          Bubbles
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.fish}
-          onclick={() => toggleLayer("fish")}
-        >
-          <i class="fas fa-fish"></i>
-          Fish
-        </button>
-        <button
-          class="chip layer-chip"
-          class:active={layers.jellyfish}
-          onclick={() => toggleLayer("jellyfish")}
-        >
-          <i class="fas fa-disease"></i>
-          Jellyfish
-        </button>
-      </div>
-    </div>
+    <ChipGroup label="Layers">
+      <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Light Rays" icon="fa-sun" active={layers.lightRays} color="cyan" onclick={() => toggleLayer("lightRays")} />
+      <ChipToggle label="Caustics" icon="fa-water" active={layers.caustics} color="cyan" onclick={() => toggleLayer("caustics")} />
+      <ChipToggle label="Particles" icon="fa-sparkles" active={layers.particles} color="cyan" onclick={() => toggleLayer("particles")} />
+      <ChipToggle label="Bubbles" icon="fa-circle" active={layers.bubbles} color="cyan" onclick={() => toggleLayer("bubbles")} />
+      <ChipToggle label="Fish" icon="fa-fish" active={layers.fish} color="cyan" onclick={() => toggleLayer("fish")} />
+      <ChipToggle label="Jellyfish" icon="fa-disease" active={layers.jellyfish} color="cyan" onclick={() => toggleLayer("jellyfish")} />
+    </ChipGroup>
 
     <!-- Regenerate -->
     <button class="action-btn" onclick={regenerate}>
@@ -353,66 +285,6 @@
     letter-spacing: 0.5px;
   }
 
-  .control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .chip-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .chip-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .chip {
-    padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    color: #9ca3af;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .chip:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: #e5e7eb;
-  }
-
-  .chip.active {
-    background: rgba(6, 182, 212, 0.2);
-    border-color: rgba(6, 182, 212, 0.5);
-    color: #67e8f9;
-    box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
-  }
-
-  .layer-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .layer-chip i {
-    font-size: 0.75rem;
-  }
-
   .action-btn {
     display: flex;
     align-items: center;
@@ -491,10 +363,6 @@
     .deep-ocean-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
-    }
-
-    .chip-row {
-      flex-wrap: wrap;
     }
   }
 </style>
