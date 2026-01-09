@@ -12,38 +12,25 @@
   // Quality settings
   let quality: QualityLevel = $state("high");
 
-  // Subsystem toggles (will be used when we implement toggle functionality)
-  let showStars = $state(true);
-  let showMoon = $state(true);
-  let showNebula = $state(true); // Procedural nebula enabled!
-  let showMilkyWay = $state(false); // Disabled by default (reimagining)
-  let showConstellations = $state(false); // Disabled by default (geometric issue)
-  let showAurora = $state(false); // Coming soon
+  // Layer toggles
+  let layers = $state({
+    stars: true,
+    moon: true,
+    nebula: true,
+    aurora: true, // 2036 Vision - flowing curtains
+    milkyWay: true, // 2036 Vision - particle river
+  });
 
-  // Star parameters
-  let starDensityMultiplier = $state(1.0);
+  // Star density presets
+  type DensityPreset = "sparse" | "normal" | "dense" | "ultra";
+  let densityPreset: DensityPreset = $state("normal");
 
-  // Accessibility settings for the background
-  const accessibilitySettings = {
-    reducedMotion: false,
-    highContrast: false,
-    visibleParticleSize: 1,
+  const densityMultipliers: Record<DensityPreset, number> = {
+    sparse: 0.5,
+    normal: 1.0,
+    dense: 1.8,
+    ultra: 3.0,
   };
-
-  // Quality settings for the background
-  function getQualitySettings() {
-    const multipliers: Record<QualityLevel, number> = {
-      high: 1.0,
-      medium: 0.7,
-      low: 0.4,
-      minimal: 0.2,
-      "ultra-minimal": 0.1,
-    };
-    return {
-      level: quality,
-      densityMultiplier: multipliers[quality] * starDensityMultiplier,
-    };
-  }
 
   function initializeSystem() {
     if (!canvas) return;
@@ -51,20 +38,15 @@
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Set canvas size
     const container = canvas.parentElement;
     if (container) {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
     }
 
-    // Create background system
     backgroundSystem = NightSkyBackgroundSystem.create();
-
     const dimensions = { width: canvas.width, height: canvas.height };
     backgroundSystem.initialize(dimensions, quality);
-
-    // Start animation
     startAnimation();
   }
 
@@ -76,20 +58,13 @@
 
     const animate = (currentTime: number) => {
       const deltaTime = currentTime - lastFrameTime;
-      const frameMultiplier = deltaTime / 16.67; // Normalize to 60fps
+      const frameMultiplier = deltaTime / 16.67;
       lastFrameTime = currentTime;
 
       const dimensions = { width: canvas!.width, height: canvas!.height };
-
-      // Update
       backgroundSystem!.update(dimensions, frameMultiplier);
-
-      // Clear canvas
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
-
-      // Draw
       backgroundSystem!.draw(ctx, dimensions);
-
       animationFrame = requestAnimationFrame(animate);
     };
 
@@ -126,6 +101,24 @@
     initializeSystem();
   }
 
+  function setQuality(q: QualityLevel) {
+    quality = q;
+    regenerate();
+  }
+
+  function setDensity(preset: DensityPreset) {
+    densityPreset = preset;
+    regenerate();
+  }
+
+  function toggleLayer(layer: keyof typeof layers) {
+    // Reassign entire object to ensure Svelte 5 reactivity triggers
+    layers = { ...layers, [layer]: !layers[layer] };
+    if (backgroundSystem) {
+      backgroundSystem.setLayerVisibility(layers);
+    }
+  }
+
   onMount(() => {
     initializeSystem();
     window.addEventListener("resize", handleResize);
@@ -142,87 +135,138 @@
 
 <div class="night-sky-lab">
   <div class="controls">
-    <h2>Night Sky Lab</h2>
-    <p class="description">Experiment with night sky parameters and effects</p>
-
-    <div class="control-section">
-      <h3>Quality</h3>
-      <select bind:value={quality} onchange={regenerate}>
-        <option value="high">High</option>
-        <option value="medium">Medium</option>
-        <option value="low">Low</option>
-        <option value="minimal">Minimal</option>
-      </select>
+    <div class="header">
+      <h2>Night Sky Lab</h2>
+      <span class="badge">2036 Vision</span>
     </div>
 
-    <div class="control-section">
-      <h3>Subsystems</h3>
-      <p class="note">Aurora and Milky Way coming soon</p>
-
-      <label class="toggle">
-        <input type="checkbox" bind:checked={showStars} disabled />
-        <span>Stars + Scintillation</span>
-      </label>
-
-      <label class="toggle">
-        <input type="checkbox" bind:checked={showMoon} disabled />
-        <span>Moon</span>
-      </label>
-
-      <label class="toggle disabled">
-        <input type="checkbox" bind:checked={showNebula} disabled />
-        <span>Procedural Nebula (optimizing...)</span>
-      </label>
-
-      <label class="toggle disabled">
-        <input type="checkbox" bind:checked={showAurora} disabled />
-        <span>Aurora (coming soon)</span>
-      </label>
-
-      <label class="toggle disabled">
-        <input type="checkbox" bind:checked={showMilkyWay} disabled />
-        <span>Milky Way (reimagining...)</span>
-      </label>
+    <!-- Quality Chips -->
+    <div class="control-group">
+      <span class="label">Quality</span>
+      <div class="chip-row">
+        <button
+          class="chip"
+          class:active={quality === "high"}
+          onclick={() => setQuality("high")}
+        >
+          High
+        </button>
+        <button
+          class="chip"
+          class:active={quality === "medium"}
+          onclick={() => setQuality("medium")}
+        >
+          Medium
+        </button>
+        <button
+          class="chip"
+          class:active={quality === "low"}
+          onclick={() => setQuality("low")}
+        >
+          Low
+        </button>
+      </div>
     </div>
 
-    <div class="control-section">
-      <h3>Star Parameters</h3>
-
-      <label class="slider">
-        <span>Density: {starDensityMultiplier.toFixed(1)}x</span>
-        <input
-          type="range"
-          min="0.2"
-          max="3.0"
-          step="0.1"
-          bind:value={starDensityMultiplier}
-          onchange={regenerate}
-        />
-      </label>
+    <!-- Layer Chips -->
+    <div class="control-group">
+      <span class="label">Layers</span>
+      <div class="chip-grid">
+        <button
+          class="chip layer-chip"
+          class:active={layers.stars}
+          onclick={() => toggleLayer("stars")}
+        >
+          <i class="fas fa-star"></i>
+          Stars
+        </button>
+        <button
+          class="chip layer-chip"
+          class:active={layers.moon}
+          onclick={() => toggleLayer("moon")}
+        >
+          <i class="fas fa-moon"></i>
+          Moon
+        </button>
+        <button
+          class="chip layer-chip"
+          class:active={layers.nebula}
+          onclick={() => toggleLayer("nebula")}
+        >
+          <i class="fas fa-cloud"></i>
+          Nebula
+        </button>
+        <button
+          class="chip layer-chip"
+          class:active={layers.aurora}
+          onclick={() => toggleLayer("aurora")}
+        >
+          <i class="fas fa-wind"></i>
+          Aurora
+        </button>
+        <button
+          class="chip layer-chip"
+          class:active={layers.milkyWay}
+          onclick={() => toggleLayer("milkyWay")}
+        >
+          <i class="fas fa-galaxy"></i>
+          Milky Way
+        </button>
+      </div>
     </div>
 
-    <div class="control-section">
-      <button class="regenerate-btn" onclick={regenerate}>
-        <i class="fas fa-sync-alt"></i>
-        Regenerate Sky
-      </button>
+    <!-- Density Chips -->
+    <div class="control-group">
+      <span class="label">Star Density</span>
+      <div class="chip-row">
+        <button
+          class="chip"
+          class:active={densityPreset === "sparse"}
+          onclick={() => setDensity("sparse")}
+        >
+          Sparse
+        </button>
+        <button
+          class="chip"
+          class:active={densityPreset === "normal"}
+          onclick={() => setDensity("normal")}
+        >
+          Normal
+        </button>
+        <button
+          class="chip"
+          class:active={densityPreset === "dense"}
+          onclick={() => setDensity("dense")}
+        >
+          Dense
+        </button>
+        <button
+          class="chip"
+          class:active={densityPreset === "ultra"}
+          onclick={() => setDensity("ultra")}
+        >
+          Ultra
+        </button>
+      </div>
     </div>
 
-    <div class="control-section status">
-      <h3>2036 Vision Progress</h3>
-      <div class="status-grid">
-        <span class="label">Phase 1:</span>
-        <span class="value complete">Clean canvas</span>
-        <span class="label">Phase 2:</span>
-        <span class="value complete">Lab ready</span>
-        <span class="label">Phase 3:</span>
-        <span class="value complete">Scintillation</span>
-        <span class="label">Phase 4:</span>
-        <span class="value active">Nebula (optimizing)</span>
-        <span class="label">Phase 5:</span>
-        <span class="value pending">Aurora system</span>
-        <span class="label">Phase 6:</span>
-        <span class="value pending">Particle Milky Way</span>
+    <!-- Regenerate -->
+    <button class="action-btn" onclick={regenerate}>
+      <i class="fas fa-sparkles"></i>
+      Regenerate
+    </button>
+
+    <!-- Progress Pills -->
+    <div class="progress-section">
+      <span class="label">Progress</span>
+      <div class="progress-pills">
+        <span class="pill complete">Clean Canvas</span>
+        <span class="pill complete">Lab Ready</span>
+        <span class="pill complete">Scintillation</span>
+        <span class="pill complete">Nebula</span>
+        <span class="pill complete">Aurora</span>
+        <span class="pill complete">Milky Way</span>
+        <span class="pill active">Meteors</span>
       </div>
     </div>
   </div>
@@ -235,8 +279,8 @@
 <style>
   .night-sky-lab {
     display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 24px;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
     height: 100%;
     min-height: 600px;
   }
@@ -244,160 +288,202 @@
   .controls {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 20px;
+    padding: 20px;
+    background: rgba(15, 15, 25, 0.8);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     overflow-y: auto;
   }
 
-  .controls h2 {
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header h2 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
-    color: #e0e7ff;
+    color: #ffffff;
   }
 
-  .description {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #8899aa;
-  }
-
-  .control-section {
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
-  }
-
-  .control-section h3 {
-    margin: 0 0 12px 0;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #a0aec0;
+  .badge {
+    padding: 4px 10px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #a78bfa;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
-  .note {
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .label {
     font-size: 0.75rem;
-    color: #667788;
-    font-style: italic;
-    margin: 0 0 12px 0;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
-  select {
-    width: 100%;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: #ffffff;
-    font-size: 0.875rem;
+  .chip-row {
+    display: flex;
+    gap: 8px;
   }
 
-  .toggle {
+  .chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    color: #9ca3af;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .chip:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #e5e7eb;
+  }
+
+  .chip.active,
+  .chip.active:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #a5b4fc;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+  }
+
+  .layer-chip {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    cursor: pointer;
+    gap: 6px;
   }
 
-  .toggle.disabled {
-    opacity: 0.5;
+  .layer-chip i {
+    font-size: 0.75rem;
+  }
+
+  /* Explicit active state for layer chips - fixes mobile touch rendering */
+  .layer-chip.active {
+    background: rgba(99, 102, 241, 0.2) !important;
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    color: #a5b4fc !important;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+  }
+
+  .layer-chip:not(.active) {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #9ca3af;
+    box-shadow: none;
+  }
+
+  .layer-chip.coming-soon {
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
-  .toggle input {
-    width: 16px;
-    height: 16px;
-  }
-
-  .toggle span {
-    font-size: 0.875rem;
-    color: #c0c8d0;
-  }
-
-  .slider {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .slider span {
-    font-size: 0.875rem;
-    color: #c0c8d0;
-  }
-
-  .slider input[type="range"] {
-    width: 100%;
-    height: 4px;
+  .layer-chip.coming-soon::after {
+    content: "Soon";
+    font-size: 0.6rem;
+    padding: 2px 5px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    cursor: pointer;
+    border-radius: 8px;
+    margin-left: 4px;
   }
 
-  .regenerate-btn {
-    width: 100%;
+  .action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 12px;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     color: #ffffff;
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
   }
 
-  .regenerate-btn:hover {
+  .action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
   }
 
-  .status-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 4px 12px;
-    font-size: 0.75rem;
+  .action-btn:active {
+    transform: translateY(0);
   }
 
-  .status-grid .label {
-    color: #667788;
+  .progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
-  .status-grid .value {
-    padding: 2px 6px;
-    border-radius: 4px;
+  .progress-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pill {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
     font-weight: 500;
   }
 
-  .status-grid .value.complete {
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
+  .pill.complete {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
   }
 
-  .status-grid .value.active {
+  .pill.active {
     background: rgba(59, 130, 246, 0.2);
-    color: #3b82f6;
+    color: #60a5fa;
+    animation: pulse 2s infinite;
   }
 
-  .status-grid .value.pending {
+  .pill.pending {
     background: rgba(255, 255, 255, 0.05);
-    color: #667788;
+    color: #6b7280;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 
   .preview {
     position: relative;
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
-    background: #0a0a1a;
+    background: #050510;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .preview canvas {
@@ -410,6 +496,10 @@
     .night-sky-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
+    }
+
+    .chip-row {
+      flex-wrap: wrap;
     }
   }
 </style>

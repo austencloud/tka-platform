@@ -5,43 +5,30 @@ import type {
 } from "$lib/shared/background/shared/domain/types/background-types";
 
 // ============================================================================
-// PROCEDURAL NEBULA SYSTEM
+// PROCEDURAL NEBULA SYSTEM (Optimized with Offscreen Canvas Caching)
 // ============================================================================
-// Generates organic, flowing nebula clouds using layered noise functions.
-// No geometric shapes - purely procedural generation for natural appearance.
-//
-// Based on: https://wwwtyro.net/2016/10/22/2D-space-scene-procgen.html
+// Renders nebula to offscreen canvas, then blits to main canvas each frame.
+// Offscreen canvas only updates every ~200ms for subtle animation.
 // ============================================================================
 
-/** Configuration for a single nebula cloud */
 interface NebulaCloud {
-  /** Center position (normalized 0-1) */
   centerX: number;
   centerY: number;
-  /** Base radius as fraction of screen diagonal */
   radiusFraction: number;
-  /** Color palette for this nebula */
   palette: NebulaColorPalette;
-  /** Noise seed offset for this nebula */
   seedOffset: number;
-  /** Animation phase */
   phase: number;
-  /** Rotation angle */
   rotation: number;
 }
 
 interface NebulaColorPalette {
-  /** Core color (brightest) */
   core: { r: number; g: number; b: number };
-  /** Mid color */
   mid: { r: number; g: number; b: number };
-  /** Edge color */
   edge: { r: number; g: number; b: number };
 }
 
-/** Pre-defined nebula color palettes based on real emission nebulae */
 const NEBULA_PALETTES: NebulaColorPalette[] = [
-  // Orion-like (pink/magenta emission)
+  // Orion-like (pink/magenta)
   {
     core: { r: 255, g: 180, b: 220 },
     mid: { r: 200, g: 100, b: 180 },
@@ -59,12 +46,6 @@ const NEBULA_PALETTES: NebulaColorPalette[] = [
     mid: { r: 220, g: 140, b: 120 },
     edge: { r: 180, g: 100, b: 120 },
   },
-  // Eagle nebula (teal/cyan)
-  {
-    core: { r: 150, g: 220, b: 220 },
-    mid: { r: 100, g: 160, b: 180 },
-    edge: { r: 80, g: 120, b: 160 },
-  },
 ];
 
 export class ProceduralNebulaSystem {
@@ -73,70 +54,33 @@ export class ProceduralNebulaSystem {
   private quality: QualityLevel = "high";
   private isEnabled: boolean = false;
 
-  // Pre-computed noise lookup for performance
-  private noiseCache: Float32Array | null = null;
-  private noiseCacheSize = 256;
+  // Offscreen canvas caching for performance
+  private offscreenCanvas: HTMLCanvasElement | null = null;
+  private offscreenCtx: CanvasRenderingContext2D | null = null;
+  private needsRedraw: boolean = true;
+  private lastRedrawTime: number = 0;
+  private readonly REDRAW_INTERVAL = 250; // ms between offscreen redraws
 
-  // Animation time accumulator
+  // Animation
   private time: number = 0;
 
-  // Quality settings - DISABLED until optimized with offscreen canvas caching
-  // The per-frame noise sampling was causing severe performance issues
+  // Quality settings - resolution is step size (larger = fewer samples = faster)
   private readonly QUALITY_CONFIG = {
-    high: { cloudCount: 0, resolution: 4, layers: 4 },
-    medium: { cloudCount: 0, resolution: 6, layers: 3 },
-    low: { cloudCount: 0, resolution: 8, layers: 2 },
+    high: { cloudCount: 2, resolution: 16, layers: 3 },
+    medium: { cloudCount: 1, resolution: 20, layers: 2 },
+    low: { cloudCount: 1, resolution: 24, layers: 2 },
     minimal: { cloudCount: 0, resolution: 0, layers: 0 },
     "ultra-minimal": { cloudCount: 0, resolution: 0, layers: 0 },
   };
 
-  constructor() {
-    this.initNoiseCache();
+  private noise(x: number, y: number, seed: number): number {
+    const s = seed * 0.1;
+    const n1 = Math.sin(x * 1.0 + y * 0.5 + s) * Math.cos(y * 0.8 - x * 0.3 + s);
+    const n2 = Math.sin(x * 2.1 - y * 1.3 + s * 1.3) * Math.cos(y * 1.7 + x * 0.9 + s) * 0.5;
+    const n3 = Math.sin(x * 4.3 + y * 3.7 + s * 0.7) * Math.cos(y * 2.9 - x * 2.1 + s) * 0.25;
+    return (n1 + n2 + n3) / 1.75;
   }
 
-  /**
-   * Pre-compute noise values for fast lookup
-   */
-  private initNoiseCache() {
-    this.noiseCache = new Float32Array(this.noiseCacheSize * this.noiseCacheSize);
-    for (let y = 0; y < this.noiseCacheSize; y++) {
-      for (let x = 0; x < this.noiseCacheSize; x++) {
-        const idx = y * this.noiseCacheSize + x;
-        this.noiseCache[idx] = this.rawNoise(x * 0.1, y * 0.1);
-      }
-    }
-  }
-
-  /**
-   * Raw noise function using layered sine waves (approximates Simplex noise)
-   * This avoids external dependencies while providing organic-looking results
-   */
-  private rawNoise(x: number, y: number): number {
-    // Layer multiple sine waves at different frequencies and angles
-    // This creates organic, cloud-like patterns
-    const n1 = Math.sin(x * 1.0 + y * 0.5) * Math.cos(y * 0.8 - x * 0.3);
-    const n2 = Math.sin(x * 2.1 - y * 1.3) * Math.cos(y * 1.7 + x * 0.9) * 0.5;
-    const n3 = Math.sin(x * 4.3 + y * 3.7) * Math.cos(y * 2.9 - x * 2.1) * 0.25;
-    const n4 = Math.sin(x * 8.7 - y * 7.3) * Math.cos(y * 6.1 + x * 5.3) * 0.125;
-
-    return (n1 + n2 + n3 + n4) / 1.875; // Normalize to roughly -1 to 1
-  }
-
-  /**
-   * Sample noise with interpolation from cache for animation
-   */
-  private sampleNoise(x: number, y: number, seed: number = 0): number {
-    // Add seed offset and time for animation
-    const sx = x + seed * 100;
-    const sy = y + seed * 73;
-
-    // Use raw noise for smooth animation (cache is for static patterns)
-    return this.rawNoise(sx, sy);
-  }
-
-  /**
-   * Fractal Brownian Motion - layered noise for natural cloud shapes
-   */
   private fbm(x: number, y: number, seed: number, octaves: number): number {
     let value = 0;
     let amplitude = 1;
@@ -144,7 +88,7 @@ export class ProceduralNebulaSystem {
     let maxValue = 0;
 
     for (let i = 0; i < octaves; i++) {
-      value += amplitude * this.sampleNoise(x * frequency, y * frequency, seed + i * 10);
+      value += amplitude * this.noise(x * frequency, y * frequency, seed + i * 10);
       maxValue += amplitude;
       amplitude *= 0.5;
       frequency *= 2;
@@ -162,27 +106,36 @@ export class ProceduralNebulaSystem {
 
     if (!this.isEnabled) {
       this.clouds = [];
+      this.offscreenCanvas = null;
+      this.offscreenCtx = null;
       return;
     }
 
-    // Generate nebula clouds
+    // Create offscreen canvas
+    this.offscreenCanvas = document.createElement("canvas");
+    this.offscreenCanvas.width = dim.width;
+    this.offscreenCanvas.height = dim.height;
+    this.offscreenCtx = this.offscreenCanvas.getContext("2d");
+
+    // Generate clouds
     this.clouds = [];
     for (let i = 0; i < config.cloudCount; i++) {
       this.clouds.push(this.generateCloud(i, config.cloudCount));
     }
+
+    this.needsRedraw = true;
+    this.lastRedrawTime = 0;
   }
 
   private generateCloud(index: number, total: number): NebulaCloud {
-    // Distribute clouds across the sky
-    // Avoid center and edges for natural placement
     const angle = (index / total) * Math.PI * 2 + Math.random() * 0.5;
-    const distance = 0.2 + Math.random() * 0.3; // 20-50% from center
+    const distance = 0.25 + Math.random() * 0.2;
 
     return {
       centerX: 0.5 + Math.cos(angle) * distance,
       centerY: 0.5 + Math.sin(angle) * distance,
-      radiusFraction: 0.15 + Math.random() * 0.15, // 15-30% of diagonal
-      palette: NEBULA_PALETTES[index % NEBULA_PALETTES.length],
+      radiusFraction: 0.18 + Math.random() * 0.1,
+      palette: NEBULA_PALETTES[index % NEBULA_PALETTES.length]!,
       seedOffset: Math.random() * 1000,
       phase: Math.random() * Math.PI * 2,
       rotation: Math.random() * Math.PI * 2,
@@ -192,34 +145,52 @@ export class ProceduralNebulaSystem {
   update(a11y: AccessibilitySettings, frameMultiplier: number = 1.0) {
     if (!this.isEnabled) return;
 
-    // Very slow animation - nebulae should feel massive and distant
-    const speed = a11y.reducedMotion ? 0.00002 : 0.0001;
+    const speed = a11y.reducedMotion ? 0.0002 : 0.001;
     this.time += speed * frameMultiplier;
 
-    // Update cloud phases for subtle pulsing
     for (const cloud of this.clouds) {
-      cloud.phase += 0.0005 * frameMultiplier * (a11y.reducedMotion ? 0.2 : 1);
+      cloud.phase += 0.002 * frameMultiplier * (a11y.reducedMotion ? 0.2 : 1);
+    }
+
+    // Mark for redraw periodically
+    const now = performance.now();
+    if (now - this.lastRedrawTime > this.REDRAW_INTERVAL) {
+      this.needsRedraw = true;
     }
   }
 
   draw(ctx: CanvasRenderingContext2D, a11y: AccessibilitySettings) {
-    if (!this.isEnabled || this.clouds.length === 0) return;
+    if (!this.isEnabled || !this.offscreenCanvas || !this.offscreenCtx) return;
+
+    // Redraw offscreen canvas if needed (throttled for performance)
+    if (this.needsRedraw) {
+      this.renderToOffscreen(a11y);
+      this.needsRedraw = false;
+      this.lastRedrawTime = performance.now();
+    }
+
+    // Fast: just blit the cached canvas
+    ctx.globalCompositeOperation = "screen";
+    ctx.drawImage(this.offscreenCanvas, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  private renderToOffscreen(a11y: AccessibilitySettings) {
+    const ctx = this.offscreenCtx;
+    if (!ctx) return;
 
     const config = this.QUALITY_CONFIG[this.quality];
     const { width, height } = this.dimensions;
     const diagonal = Math.sqrt(width * width + height * height);
 
-    // Use screen blend mode for additive glow
-    ctx.globalCompositeOperation = "screen";
+    ctx.clearRect(0, 0, width, height);
 
     for (const cloud of this.clouds) {
-      this.drawCloud(ctx, cloud, diagonal, config, a11y);
+      this.renderCloud(ctx, cloud, diagonal, config, a11y);
     }
-
-    ctx.globalCompositeOperation = "source-over";
   }
 
-  private drawCloud(
+  private renderCloud(
     ctx: CanvasRenderingContext2D,
     cloud: NebulaCloud,
     diagonal: number,
@@ -231,16 +202,10 @@ export class ProceduralNebulaSystem {
     const centerY = cloud.centerY * height;
     const radius = cloud.radiusFraction * diagonal;
 
-    // Sample grid for the nebula region
-    const resolution = config.resolution;
-    const sampleSize = radius * 2;
-    const step = resolution;
+    const step = config.resolution;
+    const pulse = 0.85 + 0.15 * Math.sin(cloud.phase);
+    const baseAlpha = (a11y.reducedMotion ? 0.05 : 0.08) * pulse;
 
-    // Pulsing intensity
-    const pulse = 0.8 + 0.2 * Math.sin(cloud.phase);
-    const baseAlpha = (a11y.reducedMotion ? 0.03 : 0.05) * pulse;
-
-    // Draw from outside in for proper layering
     const startX = Math.max(0, centerX - radius);
     const endX = Math.min(width, centerX + radius);
     const startY = Math.max(0, centerY - radius);
@@ -248,38 +213,32 @@ export class ProceduralNebulaSystem {
 
     for (let y = startY; y < endY; y += step) {
       for (let x = startX; x < endX; x += step) {
-        // Distance from center (normalized)
         const dx = (x - centerX) / radius;
         const dy = (y - centerY) / radius;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist > 1.2) continue; // Skip outside nebula
+        if (dist > 1.1) continue;
 
-        // Rotate coordinates for variety
         const rotX = dx * Math.cos(cloud.rotation) - dy * Math.sin(cloud.rotation);
         const rotY = dx * Math.sin(cloud.rotation) + dy * Math.cos(cloud.rotation);
 
-        // Sample noise at this position with time animation
-        const noiseX = rotX * 3 + this.time;
-        const noiseY = rotY * 3;
+        const noiseX = rotX * 2.5 + this.time;
+        const noiseY = rotY * 2.5;
         const density = this.fbm(noiseX, noiseY, cloud.seedOffset, config.layers);
 
-        // Convert noise to density (threshold for cloud shape)
-        // Use distance falloff for soft edges
-        const falloff = 1 - Math.pow(dist, 1.5);
+        const falloff = 1 - Math.pow(dist, 1.2);
         const cloudDensity = Math.max(0, (density * 0.5 + 0.5) * falloff);
 
-        if (cloudDensity < 0.1) continue; // Skip very thin areas
+        if (cloudDensity < 0.15) continue;
 
-        // Color based on distance from center
-        const color = this.getNebulaColor(cloud.palette, dist, cloudDensity);
+        const color = this.getColor(cloud.palette, dist);
         const alpha = cloudDensity * baseAlpha;
 
-        // Draw soft blob
-        const blobRadius = step * (0.8 + cloudDensity * 0.4);
+        // Draw larger, softer blobs (fewer but bigger)
+        const blobRadius = step * 1.5;
         const gradient = ctx.createRadialGradient(x, y, 0, x, y, blobRadius);
         gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
-        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.5})`);
+        gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.4})`);
         gradient.addColorStop(1, "transparent");
 
         ctx.fillStyle = gradient;
@@ -288,87 +247,47 @@ export class ProceduralNebulaSystem {
         ctx.fill();
       }
     }
-
-    // Add a few embedded bright spots (star-forming regions)
-    this.drawEmbeddedStars(ctx, cloud, centerX, centerY, radius, baseAlpha);
   }
 
-  private getNebulaColor(
-    palette: NebulaColorPalette,
-    distance: number,
-    density: number
-  ): { r: number; g: number; b: number } {
-    // Interpolate between core, mid, and edge colors based on distance
+  private getColor(palette: NebulaColorPalette, distance: number): { r: number; g: number; b: number } {
     const t = Math.min(1, distance);
 
-    let r: number, g: number, b: number;
-
     if (t < 0.4) {
-      // Core to mid transition
       const localT = t / 0.4;
-      r = palette.core.r + (palette.mid.r - palette.core.r) * localT;
-      g = palette.core.g + (palette.mid.g - palette.core.g) * localT;
-      b = palette.core.b + (palette.mid.b - palette.core.b) * localT;
+      return {
+        r: palette.core.r + (palette.mid.r - palette.core.r) * localT,
+        g: palette.core.g + (palette.mid.g - palette.core.g) * localT,
+        b: palette.core.b + (palette.mid.b - palette.core.b) * localT,
+      };
     } else {
-      // Mid to edge transition
       const localT = (t - 0.4) / 0.6;
-      r = palette.mid.r + (palette.edge.r - palette.mid.r) * localT;
-      g = palette.mid.g + (palette.edge.g - palette.mid.g) * localT;
-      b = palette.mid.b + (palette.edge.b - palette.mid.b) * localT;
-    }
-
-    // Boost brightness in denser regions
-    const brightnessBoost = 1 + density * 0.3;
-    return {
-      r: Math.min(255, r * brightnessBoost),
-      g: Math.min(255, g * brightnessBoost),
-      b: Math.min(255, b * brightnessBoost),
-    };
-  }
-
-  private drawEmbeddedStars(
-    ctx: CanvasRenderingContext2D,
-    cloud: NebulaCloud,
-    centerX: number,
-    centerY: number,
-    radius: number,
-    baseAlpha: number
-  ) {
-    // Add 2-4 bright spots within the nebula
-    const starCount = 2 + Math.floor(cloud.seedOffset % 3);
-
-    for (let i = 0; i < starCount; i++) {
-      // Position based on seed for consistency
-      const angle = (cloud.seedOffset * (i + 1) * 0.1) % (Math.PI * 2);
-      const dist = 0.2 + ((cloud.seedOffset * (i + 1) * 0.3) % 0.4);
-
-      const x = centerX + Math.cos(angle) * radius * dist;
-      const y = centerY + Math.sin(angle) * radius * dist;
-
-      // Pulsing brightness
-      const pulse = 0.7 + 0.3 * Math.sin(cloud.phase * 2 + i);
-      const starRadius = 4 + i * 2;
-      const alpha = baseAlpha * 3 * pulse;
-
-      // Bright core
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, starRadius * 3);
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-      gradient.addColorStop(0.2, `rgba(${cloud.palette.core.r}, ${cloud.palette.core.g}, ${cloud.palette.core.b}, ${alpha * 0.6})`);
-      gradient.addColorStop(1, "transparent");
-
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(x, y, starRadius * 3, 0, Math.PI * 2);
-      ctx.fill();
+      return {
+        r: palette.mid.r + (palette.edge.r - palette.mid.r) * localT,
+        g: palette.mid.g + (palette.edge.g - palette.mid.g) * localT,
+        b: palette.mid.b + (palette.edge.b - palette.mid.b) * localT,
+      };
     }
   }
 
   handleResize(dim: Dimensions) {
+    if (!this.isEnabled) return;
+
     this.dimensions = dim;
+
+    // Recreate offscreen canvas at new size
+    if (this.offscreenCanvas) {
+      this.offscreenCanvas.width = dim.width;
+      this.offscreenCanvas.height = dim.height;
+      this.offscreenCtx = this.offscreenCanvas.getContext("2d");
+    }
+
+    this.needsRedraw = true;
   }
 
   cleanup() {
     this.clouds = [];
+    this.offscreenCanvas = null;
+    this.offscreenCtx = null;
     this.time = 0;
   }
 }

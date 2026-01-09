@@ -180,7 +180,7 @@ export class ParallaxStarSystem {
     // Calculate combined noise from all frequency layers
     let noise = 0;
     for (let i = 0; i < 4; i++) {
-      noise += weights[i] * Math.sin(phases[i]);
+      noise += weights[i]! * Math.sin(phases[i]!);
     }
 
     // noise is now in range [-1, 1]
@@ -237,10 +237,10 @@ export class ParallaxStarSystem {
             // Frequency ratios based on atmospheric turbulence research:
             // Large air cells move slowly, small cells move fast
             const baseSpeed = s.twinkleSpeed * effectiveDrift;
-            s.scintillationPhases[0] += baseSpeed * 1.0; // Low freq (slow)
-            s.scintillationPhases[1] += baseSpeed * 2.3; // Medium-low
-            s.scintillationPhases[2] += baseSpeed * 5.7; // Medium-high
-            s.scintillationPhases[3] += baseSpeed * 13.0; // High freq (fast jitter)
+            s.scintillationPhases[0]! += baseSpeed * 1.0; // Low freq (slow)
+            s.scintillationPhases[1]! += baseSpeed * 2.3; // Medium-low
+            s.scintillationPhases[2]! += baseSpeed * 5.7; // Medium-high
+            s.scintillationPhases[3]! += baseSpeed * 13.0; // High freq (fast jitter)
 
             // Calculate combined scintillation effect
             s.currentOpacity =
