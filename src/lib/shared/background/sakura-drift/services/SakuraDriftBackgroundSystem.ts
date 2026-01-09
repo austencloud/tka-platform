@@ -6,14 +6,51 @@ import type { IBackgroundSystem } from "$lib/shared/background/shared/services/c
 import type { SakuraPetal } from "../domain/models/sakura-models";
 import { createSakuraSystem } from "./SakuraSystem";
 import { createSakuraWindSystem, type SakuraWindSystem } from "./SakuraWindSystem";
-import { SAKURA_BACKGROUND_GRADIENT } from "../domain/constants/sakura-constants";
+import {
+  type TimeOfDay,
+  type TimeOfDayPreset,
+  type GradientStop,
+  getTimeOfDayPreset,
+  TWILIGHT_PRESET,
+} from "../domain/constants/time-of-day-presets";
 
 /**
- * Sakura Drift Background System
+ * Cherry Blossom Background System
  *
- * Renders a soft twilight background with gently falling cherry blossom petals
- * Petals respond to gentle wind gusts for natural, organic movement
+ * Renders cherry blossom petals with three time-of-day modes:
+ * - Twilight: Soft purple-lavender (peaceful, contemplative)
+ * - Golden Hour: Warm orange-pink-gold (nostalgic, warm)
+ * - Night: Deep blue-purple with lanterns (magical, festival)
+ *
+ * All layers are toggleable for experimentation.
  */
+export interface CherryBlossomLayers {
+  // Core
+  gradient: boolean;
+  petals: boolean;
+
+  // Parallax depth layers (when petals=true)
+  petalsFar: boolean;
+  petalsMid: boolean;
+  petalsNear: boolean;
+
+  // Effects
+  trails: boolean;
+  accumulation: boolean;
+  vortex: boolean;
+
+  // Environmental
+  moon: boolean;
+  stars: boolean;
+  lightRays: boolean;
+  trees: boolean;
+  lanterns: boolean;
+  reflection: boolean;
+}
+
+// Alias for backwards compatibility
+export type SakuraDriftLayers = CherryBlossomLayers;
+
 export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
   private sakuraSystem: ReturnType<typeof createSakuraSystem>;
   private windSystem: SakuraWindSystem;
@@ -21,8 +58,27 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
   private quality: QualityLevel = "medium";
   private isInitialized = false;
 
-  // Soft twilight gradient colors from constants
-  private readonly gradientStops = SAKURA_BACKGROUND_GRADIENT;
+  // Time of day preset
+  private currentPreset: TimeOfDayPreset = TWILIGHT_PRESET;
+  private gradientStops: GradientStop[] = TWILIGHT_PRESET.gradient;
+
+  // Layer visibility - expanded for all features
+  private layers: CherryBlossomLayers = {
+    gradient: true,
+    petals: true,
+    petalsFar: true,
+    petalsMid: true,
+    petalsNear: true,
+    trails: false,
+    accumulation: false,
+    vortex: false,
+    moon: false,
+    stars: false,
+    lightRays: false,
+    trees: false,
+    lanterns: false,
+    reflection: false,
+  };
 
   constructor() {
     this.sakuraSystem = createSakuraSystem();
@@ -59,7 +115,65 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
   }
 
   public draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
-    // Draw soft twilight gradient background
+    // Layer 1: Background gradient
+    if (this.layers.gradient) {
+      this.drawGradient(ctx, dimensions);
+    }
+
+    // Layer 2: Stars (night mode only)
+    if (this.layers.stars) {
+      // TODO: Integrate CherryStarSystem
+    }
+
+    // Layer 3: Moon (night mode only)
+    if (this.layers.moon) {
+      // TODO: Integrate CherryMoonSystem
+    }
+
+    // Layer 4: Light rays (golden hour only)
+    if (this.layers.lightRays) {
+      // TODO: Integrate CanopyLightRaySystem
+    }
+
+    // Layer 5: Trees (back layer silhouettes)
+    if (this.layers.trees) {
+      // TODO: Integrate TreeSilhouetteSystem (back layer)
+    }
+
+    // Layer 6-8: Parallax petals (far, mid, near)
+    if (this.layers.petals && this.isInitialized) {
+      // For now, draw all petals together
+      // TODO: Separate into parallax depth layers
+      this.sakuraSystem.draw(this.petals, ctx, dimensions);
+    }
+
+    // Layer 9: Petal trails
+    if (this.layers.trails) {
+      // TODO: Integrate PetalTrailSystem
+    }
+
+    // Layer 10: Vortex effects
+    if (this.layers.vortex) {
+      // TODO: Integrate VortexSystem
+    }
+
+    // Layer 11: Water reflection
+    if (this.layers.reflection) {
+      // TODO: Integrate WaterReflectionSystem
+    }
+
+    // Layer 12: Ground accumulation
+    if (this.layers.accumulation) {
+      // TODO: Integrate GroundAccumulationSystem
+    }
+
+    // Layer 13: Lanterns (foreground glow)
+    if (this.layers.lanterns) {
+      // TODO: Integrate LanternSystem
+    }
+  }
+
+  private drawGradient(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
     const gradient = ctx.createLinearGradient(
       0,
       0,
@@ -72,11 +186,6 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
-
-    // Draw petals
-    if (this.isInitialized) {
-      this.sakuraSystem.draw(this.petals, ctx, dimensions);
-    }
   }
 
   public setQuality(quality: QualityLevel): void {
@@ -118,5 +227,66 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
   public cleanup(): void {
     this.petals = [];
     this.isInitialized = false;
+  }
+
+  /**
+   * Set the time of day mode
+   * Updates gradient and auto-enables appropriate layers
+   */
+  public setTimeOfDay(mode: TimeOfDay): void {
+    this.currentPreset = getTimeOfDayPreset(mode);
+    this.gradientStops = this.currentPreset.gradient;
+
+    // Apply default layers for this mode
+    this.layers = {
+      ...this.layers,
+      ...this.currentPreset.defaultLayers,
+    };
+  }
+
+  /**
+   * Get current time of day mode
+   */
+  public getTimeOfDay(): TimeOfDay {
+    return this.currentPreset.id;
+  }
+
+  /**
+   * Get current preset (for UI theming)
+   */
+  public getCurrentPreset(): TimeOfDayPreset {
+    return this.currentPreset;
+  }
+
+  /**
+   * Set layer visibility
+   */
+  public setLayerVisibility(layers: Partial<CherryBlossomLayers>): void {
+    this.layers = { ...this.layers, ...layers };
+  }
+
+  /**
+   * Get current layer visibility
+   */
+  public getLayerVisibility(): CherryBlossomLayers {
+    return { ...this.layers };
+  }
+
+  /**
+   * Get current scene statistics
+   */
+  public getStats(): { petals: number; flowers: number } {
+    const flowers = this.petals.filter((p) => p.isFlower).length;
+    return {
+      petals: this.petals.length - flowers,
+      flowers,
+    };
+  }
+
+  /**
+   * Trigger a wind gust manually
+   */
+  public triggerGust(direction?: number): void {
+    this.windSystem.triggerGust(direction);
   }
 }

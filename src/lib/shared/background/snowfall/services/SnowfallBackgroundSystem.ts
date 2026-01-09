@@ -15,6 +15,12 @@ import type {
 import { createSnowflakeSystem } from "./SnowflakeSystem";
 import type { GradientStop } from "$lib/shared/background/shared/domain/models/background-models";
 
+export interface SnowfallLayers {
+  gradient: boolean;
+  snowflakes: boolean;
+  shootingStars: boolean;
+}
+
 export class SnowfallBackgroundSystem implements IBackgroundSystem {
   private snowflakeSystem: ReturnType<typeof createSnowflakeSystem>;
   private shootingStarSystem = createShootingStarSystem();
@@ -28,6 +34,13 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
 
   private quality: QualityLevel = "medium";
   private isInitialized: boolean = false;
+
+  // Layer visibility
+  private layers: SnowfallLayers = {
+    gradient: true,
+    snowflakes: true,
+    shootingStars: true,
+  };
   constructor() {
     this.snowflakeSystem = createSnowflakeSystem();
     // Inject services
@@ -90,15 +103,19 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
   public draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
     const { config, qualitySettings } =
       this.configurationService.getOptimizedConfig(this.quality);
-    const gradientStops = [
-      ...config.core.background.gradientStops,
-    ] as GradientStop[];
 
-    this.renderingService.drawGradient(ctx, dimensions, gradientStops);
+    if (this.layers.gradient) {
+      const gradientStops = [
+        ...config.core.background.gradientStops,
+      ] as GradientStop[];
+      this.renderingService.drawGradient(ctx, dimensions, gradientStops);
+    }
 
     if (this.isInitialized) {
-      this.snowflakeSystem.draw(this.snowflakes, ctx, dimensions);
-      if (qualitySettings.enableShootingStars) {
+      if (this.layers.snowflakes) {
+        this.snowflakeSystem.draw(this.snowflakes, ctx, dimensions);
+      }
+      if (this.layers.shootingStars && qualitySettings.enableShootingStars) {
         this.shootingStarSystem.draw(this.shootingStarState, ctx);
       }
     }
@@ -132,5 +149,21 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
 
   public cleanup(): void {
     // Clean up any resources if needed
+  }
+
+  /**
+   * Set layer visibility
+   */
+  public setLayerVisibility(layers: Partial<SnowfallLayers>): void {
+    this.layers = { ...this.layers, ...layers };
+  }
+
+  /**
+   * Get current scene statistics
+   */
+  public getStats(): { snowflakes: number } {
+    return {
+      snowflakes: this.snowflakes.length,
+    };
   }
 }

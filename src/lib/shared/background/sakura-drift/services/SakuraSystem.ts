@@ -57,6 +57,8 @@ export function createSakuraSystem() {
 
   /**
    * Create petal at a specific Y position (for stratified initialization)
+   * Used during initial population - starts with zero horizontal velocity
+   * so petals appear in place rather than flying in from the side
    */
   function createPetalWithPosition(
     dimensions: Dimensions,
@@ -78,11 +80,12 @@ export function createSakuraSystem() {
         Math.random() * SAKURA_PHYSICS.FALLING_SPEED_RANGE) *
       (1 / (size / 4));
 
-    // Initial horizontal drift with bias
+    // Drift bias determines the petal's tendency to drift one direction
+    // but initial velocity is ZERO so petals don't fly in from the side
     const driftBias =
       (Math.random() - 0.5) * 2 * SAKURA_PHYSICS.DRIFT_BIAS_RANGE;
-    const vx =
-      (Math.random() - 0.5) * SAKURA_PHYSICS.DRIFT_AMPLITUDE + driftBias;
+    // Start with no horizontal velocity - wind will gradually move them
+    const vx = 0;
 
     // Rotation properties - flowers rotate slower
     const rotationSpeed = isFlower

@@ -141,7 +141,8 @@ export class SpaceColonizationTree {
       };
 
       if (i > 0) {
-        branches[i - 1].children.push(i);
+        const prevBranch = branches[i - 1];
+        if (prevBranch) prevBranch.children.push(i);
       }
 
       branches.push(branch);
@@ -217,6 +218,7 @@ export class SpaceColonizationTree {
         if (closestTip) {
           // Add this attractor's influence to the closest tip
           const tip = branches[closestTip.index];
+          if (!tip) continue;
           const dx = attractor.x - tip.x;
           const dy = attractor.y - tip.y;
           const dist = closestTip.distance;
@@ -239,6 +241,7 @@ export class SpaceColonizationTree {
 
       for (const [tipIndex, influence] of branchInfluences) {
         const tip = branches[tipIndex];
+        if (!tip) continue;
 
         // Normalize and apply variation
         const len = Math.sqrt(influence.x * influence.x + influence.y * influence.y);
@@ -289,6 +292,7 @@ export class SpaceColonizationTree {
 
     const calculateBranchThickness = (index: number): number => {
       const branch = branches[index];
+      if (!branch) return 1;
 
       if (branch.children.length === 0) {
         // Tip - minimum thickness
@@ -311,7 +315,9 @@ export class SpaceColonizationTree {
     calculateBranchThickness(0);
 
     // Normalize so trunk is reasonable size
-    const maxThickness = branches[0].thickness;
+    const trunkBranch = branches[0];
+    if (!trunkBranch) return;
+    const maxThickness = trunkBranch.thickness;
     const targetMaxThickness = 8;
     const scale = targetMaxThickness / maxThickness;
 

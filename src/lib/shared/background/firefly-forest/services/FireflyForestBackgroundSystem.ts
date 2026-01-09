@@ -11,7 +11,7 @@ import {
   SHOOTING_STAR,
 } from "../domain/constants/firefly-constants";
 import { createFireflySystem } from "./FireflySystem";
-import { createTreeSilhouetteSystem } from "./TreeSilhouetteSystem";
+import { createTreeSilhouetteSystem, type TreeTypeVisibility } from "./TreeSilhouetteSystem";
 
 interface Star {
   x: number;
@@ -28,11 +28,32 @@ interface ShootingStar {
   opacity: number;
 }
 
+interface CrescentMoon {
+  x: number;
+  y: number;
+  radius: number;
+  rotation: number; // Radians, controls crescent orientation
+  phase: number; // 0-1, how much of the moon is lit (0.2-0.3 for nice crescent)
+}
+
+interface GrassBlade {
+  x: number;
+  baseY: number; // Ground level (bottom of blade)
+  height: number;
+  width: number;
+  swayOffset: number; // Phase offset for sway animation
+  swaySpeed: number; // How fast it sways
+  color: string;
+  layer: "back" | "front"; // Render order relative to trees
+}
+
 export interface FireflyForestLayers {
   gradient: boolean;
   stars: boolean;
+  moon: boolean;
   shootingStars: boolean;
   trees: boolean;
+  grass: boolean;
   fireflies: boolean;
 }
 
@@ -41,8 +62,11 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   private treeSystem: ReturnType<typeof createTreeSilhouetteSystem>;
   private fireflies: Firefly[] = [];
   private stars: Star[] = [];
+  private moon: CrescentMoon | null = null;
+  private grassBlades: GrassBlade[] = [];
   private shootingStar: ShootingStar | null = null;
   private framesSinceLastShootingStar = 0;
+  private animationTime = 0;
   private quality: QualityLevel = "medium";
   private isInitialized = false;
   private reducedMotion = false;
@@ -54,8 +78,10 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   private layerVisibility: FireflyForestLayers = {
     gradient: true,
     stars: true,
+    moon: true,
     shootingStars: true,
     trees: true,
+    grass: true,
     fireflies: true,
   };
 
@@ -82,11 +108,85 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     return stars;
   }
 
+  private generateMoon(dimensions: Dimensions): CrescentMoon {
+    // Position moon in upper portion of sky, slightly off-center
+    // Randomize left or right side to add variety
+    const onRightSide = Math.random() > 0.5;
+    const horizontalOffset = 0.15 + Math.random() * 0.15; // 15-30% from edge
+
+    return {
+      x: onRightSide
+        ? dimensions.width * (1 - horizontalOffset)
+        : dimensions.width * horizontalOffset,
+      y: dimensions.height * (0.1 + Math.random() * 0.15), // 10-25% from top
+      radius: Math.min(dimensions.width, dimensions.height) * 0.04, // 4% of smaller dimension
+      rotation: onRightSide ? -0.3 : 0.3, // Tilt based on side
+      phase: 0.22 + Math.random() * 0.08, // Thin crescent (22-30% lit)
+    };
+  }
+
+  private generateGrass(dimensions: Dimensions, quality: QualityLevel): GrassBlade[] {
+    const blades: GrassBlade[] = [];
+
+    // Grass count based on quality
+    const countMap: Record<QualityLevel, number> = {
+      "ultra-minimal": 15,
+      minimal: 20,
+      low: 30,
+      medium: 60,
+      high: 100,
+    };
+    const count = countMap[quality];
+
+    // Ground line is at the bottom of the screen
+    const groundY = dimensions.height;
+
+    // Green color variations for natural look
+    const colors = [
+      "#1a3d1a", // Dark forest green
+      "#234523", // Medium dark green
+      "#1f3a1f", // Deep green
+      "#2d4a2d", // Muted green
+      "#1e331e", // Very dark green
+    ];
+
+    for (let i = 0; i < count; i++) {
+      // Distribute across width with some clustering
+      const x = Math.random() * dimensions.width;
+
+      // Vary height - taller blades are less common
+      const heightBase = 20 + Math.random() * 40; // 20-60 pixels base
+      const heightMultiplier = quality === "high" ? 1.2 : quality === "medium" ? 1 : 0.8;
+      const height = heightBase * heightMultiplier;
+
+      // Width proportional to height
+      const width = 2 + (height / 60) * 3;
+
+      // Front or back layer (roughly 30% in front of trees)
+      const layer: "back" | "front" = Math.random() > 0.7 ? "front" : "back";
+
+      blades.push({
+        x,
+        baseY: groundY,
+        height,
+        width,
+        swayOffset: Math.random() * Math.PI * 2, // Random phase
+        swaySpeed: 0.3 + Math.random() * 0.4, // 0.3-0.7 speed variation
+        color: colors[Math.floor(Math.random() * colors.length)]!,
+        layer,
+      });
+    }
+
+    return blades;
+  }
+
   public initialize(dimensions: Dimensions, quality: QualityLevel): void {
     this.dimensions = dimensions;
     this.quality = quality;
     this.fireflies = this.fireflySystem.initialize(dimensions, quality);
     this.stars = this.generateStars(dimensions, quality);
+    this.moon = this.generateMoon(dimensions);
+    this.grassBlades = this.generateGrass(dimensions, quality);
     this.treeSystem.initialize(dimensions);
     this.isInitialized = true;
   }
@@ -97,6 +197,7 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     this.dimensions = dimensions;
 
     if (!this.reducedMotion) {
+      this.animationTime += frameMultiplier * 0.02; // Slow time progression for gentle sway
       this.fireflies = this.fireflySystem.update(
         this.fireflies,
         dimensions,
@@ -184,14 +285,29 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
       this.drawStars(ctx);
     }
 
+    // Draw crescent moon with soft glow
+    if (this.layerVisibility.moon) {
+      this.drawMoon(ctx);
+    }
+
     // Draw shooting star (Easter egg)
     if (this.layerVisibility.shootingStars) {
       this.drawShootingStar(ctx);
     }
 
+    // Draw back layer grass (behind trees)
+    if (this.layerVisibility.grass) {
+      this.drawGrass(ctx, "back");
+    }
+
     // Draw tree silhouettes (static, cached)
     if (this.layerVisibility.trees) {
       this.treeSystem.draw(ctx, dimensions);
+    }
+
+    // Draw front layer grass (in front of trees)
+    if (this.layerVisibility.grass) {
+      this.drawGrass(ctx, "front");
     }
 
     // Draw fireflies on top
@@ -221,6 +337,65 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
       ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  private drawMoon(ctx: CanvasRenderingContext2D): void {
+    if (!this.moon) return;
+
+    const { x, y, radius, rotation } = this.moon;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+
+    // Outer glow (largest, most diffuse)
+    const outerGlow = ctx.createRadialGradient(0, 0, radius * 0.5, 0, 0, radius * 6);
+    outerGlow.addColorStop(0, "rgba(220, 230, 255, 0.08)");
+    outerGlow.addColorStop(0.4, "rgba(200, 215, 240, 0.04)");
+    outerGlow.addColorStop(1, "rgba(180, 200, 230, 0)");
+    ctx.fillStyle = outerGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner glow (tighter around moon)
+    const innerGlow = ctx.createRadialGradient(0, 0, radius * 0.8, 0, 0, radius * 2.5);
+    innerGlow.addColorStop(0, "rgba(235, 240, 255, 0.15)");
+    innerGlow.addColorStop(0.5, "rgba(220, 230, 250, 0.08)");
+    innerGlow.addColorStop(1, "rgba(200, 215, 240, 0)");
+    ctx.fillStyle = innerGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw crescent using offscreen canvas with destination-out technique
+    const moonSize = Math.ceil(radius * 2.5);
+    const offscreen = new OffscreenCanvas(moonSize, moonSize);
+    const offCtx = offscreen.getContext("2d");
+    if (!offCtx) {
+      ctx.restore();
+      return;
+    }
+
+    const center = moonSize / 2;
+
+    // Draw full moon circle
+    offCtx.fillStyle = "rgba(245, 248, 255, 0.95)";
+    offCtx.beginPath();
+    offCtx.arc(center, center, radius, 0, Math.PI * 2);
+    offCtx.fill();
+
+    // Cut out overlapping circle to create crescent
+    offCtx.globalCompositeOperation = "destination-out";
+    offCtx.beginPath();
+    // Offset to the right creates a left-facing crescent
+    offCtx.arc(center + radius * 0.7, center, radius * 0.9, 0, Math.PI * 2);
+    offCtx.fill();
+
+    // Draw the offscreen canvas onto main canvas
+    ctx.drawImage(offscreen, -moonSize / 2, -moonSize / 2);
+
+    ctx.restore();
   }
 
   private drawShootingStar(ctx: CanvasRenderingContext2D): void {
@@ -269,6 +444,64 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     ctx.fill();
   }
 
+  private drawGrass(ctx: CanvasRenderingContext2D, layer: "back" | "front"): void {
+    const bladesToDraw = this.grassBlades.filter((b) => b.layer === layer);
+
+    for (const blade of bladesToDraw) {
+      const { x, baseY, height, width, swayOffset, swaySpeed, color } = blade;
+
+      // Calculate sway based on animation time
+      // Uses sine wave with individual phase offset for natural variation
+      const sway = Math.sin(this.animationTime * swaySpeed + swayOffset) * (height * 0.15);
+
+      // Secondary sway for more organic movement
+      const sway2 = Math.sin(this.animationTime * swaySpeed * 0.7 + swayOffset * 1.3) * (height * 0.05);
+
+      const totalSway = sway + sway2;
+
+      // Draw blade as a curved quadratic bezier
+      ctx.beginPath();
+
+      // Base of blade (ground level)
+      ctx.moveTo(x - width / 2, baseY);
+
+      // Control point (middle of blade, offset by sway)
+      const controlX = x + totalSway * 0.5;
+      const controlY = baseY - height * 0.6;
+
+      // Tip of blade (top, full sway effect)
+      const tipX = x + totalSway;
+      const tipY = baseY - height;
+
+      // Left edge curve
+      ctx.quadraticCurveTo(controlX - width / 3, controlY, tipX, tipY);
+
+      // Right edge curve back down
+      ctx.quadraticCurveTo(controlX + width / 3, controlY, x + width / 2, baseY);
+
+      ctx.closePath();
+
+      // Fill with subtle gradient for depth
+      const gradient = ctx.createLinearGradient(x, baseY, tipX, tipY);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(1, this.lightenColor(color, 0.15));
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+  }
+
+  private lightenColor(hex: string, amount: number): string {
+    // Parse hex color and lighten it
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result || !result[1] || !result[2] || !result[3]) return hex;
+
+    const r = Math.min(255, parseInt(result[1], 16) + Math.floor(255 * amount));
+    const g = Math.min(255, parseInt(result[2], 16) + Math.floor(255 * amount));
+    const b = Math.min(255, parseInt(result[3], 16) + Math.floor(255 * amount));
+
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
   public setQuality(quality: QualityLevel): void {
     if (this.quality === quality) return;
 
@@ -280,6 +513,7 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
         quality
       );
       this.stars = this.generateStars(this.dimensions, quality);
+      this.grassBlades = this.generateGrass(this.dimensions, quality);
     }
   }
 
@@ -301,6 +535,8 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
       this.quality
     );
     this.stars = this.generateStars(newDimensions, this.quality);
+    this.moon = this.generateMoon(newDimensions);
+    this.grassBlades = this.generateGrass(newDimensions, this.quality);
     this.treeSystem.handleResize(oldDimensions, newDimensions);
   }
 
@@ -312,7 +548,25 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     return { ...this.layerVisibility };
   }
 
-  public getStats(): { fireflies: number; stars: number; hasShootingStar: boolean } {
+  public setTreeVisibility(visibility: Partial<TreeTypeVisibility>): void {
+    this.treeSystem.setTreeVisibility(visibility);
+  }
+
+  public getTreeVisibility(): TreeTypeVisibility {
+    return this.treeSystem.getTreeVisibility();
+  }
+
+  public regenerateTrees(): void {
+    if (this.isInitialized) {
+      this.treeSystem.regenerate(this.dimensions);
+    }
+  }
+
+  public getStats(): {
+    fireflies: number;
+    stars: number;
+    hasShootingStar: boolean;
+  } {
     return {
       fireflies: this.fireflies.length,
       stars: this.stars.length,
@@ -323,8 +577,11 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   public cleanup(): void {
     this.fireflies = [];
     this.stars = [];
+    this.moon = null;
+    this.grassBlades = [];
     this.shootingStar = null;
     this.framesSinceLastShootingStar = 0;
+    this.animationTime = 0;
     this.treeSystem.cleanup();
     this.isInitialized = false;
   }

@@ -1,10 +1,22 @@
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 
+export type TreeType = "pine" | "fir" | "spruce" | "oak" | "maple" | "poplar" | "bare";
+
+export interface TreeTypeVisibility {
+  pine: boolean;
+  fir: boolean;
+  spruce: boolean;
+  oak: boolean;
+  maple: boolean;
+  poplar: boolean;
+  bare: boolean;
+}
+
 interface Tree {
   x: number;
   height: number;
   width: number;
-  type: "pine" | "fir" | "spruce";
+  type: TreeType;
 }
 
 /**
@@ -14,13 +26,26 @@ interface Tree {
 export function createTreeSilhouetteSystem() {
   let cachedCanvas: OffscreenCanvas | null = null;
   let cachedDimensions: Dimensions | null = null;
+  let currentVisibility: TreeTypeVisibility = {
+    pine: true,
+    fir: true,
+    spruce: true,
+    oak: true,
+    maple: true,
+    poplar: true,
+    bare: true,
+  };
 
   type RenderContext =
     | CanvasRenderingContext2D
     | OffscreenCanvasRenderingContext2D;
 
+  // ===================
+  // CONIFER TREES
+  // ===================
+
   /**
-   * Pine tree - layered branches
+   * Pine tree - classic layered Christmas tree shape
    */
   function drawPine(
     ctx: RenderContext,
@@ -38,7 +63,7 @@ export function createTreeSilhouetteSystem() {
 
     const bodyStart = baseY - trunkH;
 
-    // Layered branches
+    // Layered branches - 4 tiers
     ctx.lineTo(x - width * 0.45, bodyStart);
     ctx.lineTo(x - width * 0.08, bodyStart - height * 0.25);
     ctx.lineTo(x - width * 0.38, bodyStart - height * 0.22);
@@ -48,7 +73,7 @@ export function createTreeSilhouetteSystem() {
     ctx.lineTo(x - width * 0.18, bodyStart - height * 0.65);
     ctx.lineTo(x, baseY - height);
 
-    // Right side
+    // Right side (mirror)
     ctx.lineTo(x + width * 0.18, bodyStart - height * 0.65);
     ctx.lineTo(x + width * 0.04, bodyStart - height * 0.68);
     ctx.lineTo(x + width * 0.28, bodyStart - height * 0.45);
@@ -64,7 +89,7 @@ export function createTreeSilhouetteSystem() {
   }
 
   /**
-   * Fir tree - triangular with texture
+   * Fir tree - dense triangular shape with subtle texture
    */
   function drawFir(
     ctx: RenderContext,
@@ -82,6 +107,7 @@ export function createTreeSilhouetteSystem() {
 
     const bodyStart = baseY - trunkH;
 
+    // Dense layered texture
     ctx.lineTo(x - width * 0.48, bodyStart);
     ctx.lineTo(x - width * 0.42, bodyStart - height * 0.12);
     ctx.lineTo(x - width * 0.44, bodyStart - height * 0.15);
@@ -93,6 +119,7 @@ export function createTreeSilhouetteSystem() {
     ctx.lineTo(x - width * 0.12, bodyStart - height * 0.78);
     ctx.lineTo(x, baseY - height);
 
+    // Right side (mirror)
     ctx.lineTo(x + width * 0.12, bodyStart - height * 0.78);
     ctx.lineTo(x + width * 0.18, bodyStart - height * 0.72);
     ctx.lineTo(x + width * 0.3, bodyStart - height * 0.53);
@@ -110,7 +137,7 @@ export function createTreeSilhouetteSystem() {
   }
 
   /**
-   * Spruce - tall and narrow
+   * Spruce - tall and narrow conifer
    */
   function drawSpruce(
     ctx: RenderContext,
@@ -128,6 +155,7 @@ export function createTreeSilhouetteSystem() {
 
     const bodyStart = baseY - trunkH;
 
+    // Narrow profile with many small tiers
     ctx.lineTo(x - width * 0.35, bodyStart);
     ctx.lineTo(x - width * 0.25, bodyStart - height * 0.15);
     ctx.lineTo(x - width * 0.3, bodyStart - height * 0.18);
@@ -139,6 +167,7 @@ export function createTreeSilhouetteSystem() {
     ctx.lineTo(x - width * 0.08, bodyStart - height * 0.85);
     ctx.lineTo(x, baseY - height);
 
+    // Right side (mirror)
     ctx.lineTo(x + width * 0.08, bodyStart - height * 0.85);
     ctx.lineTo(x + width * 0.1, bodyStart - height * 0.75);
     ctx.lineTo(x + width * 0.18, bodyStart - height * 0.58);
@@ -155,12 +184,240 @@ export function createTreeSilhouetteSystem() {
     ctx.fill();
   }
 
+  // ===================
+  // DECIDUOUS TREES
+  // ===================
+
+  /**
+   * Oak tree - rounded, full crown
+   */
+  function drawOak(
+    ctx: RenderContext,
+    x: number,
+    baseY: number,
+    width: number,
+    height: number
+  ): void {
+    const trunkW = width * 0.18;
+    const trunkH = height * 0.35;
+
+    ctx.beginPath();
+    ctx.moveTo(x - trunkW / 2, baseY);
+    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
+
+    const crownStart = baseY - trunkH;
+    const crownHeight = height - trunkH;
+
+    // Rounded crown with subtle bumps (cloud-like shape)
+    ctx.lineTo(x - width * 0.35, crownStart);
+    ctx.quadraticCurveTo(
+      x - width * 0.5,
+      crownStart - crownHeight * 0.2,
+      x - width * 0.48,
+      crownStart - crownHeight * 0.4
+    );
+    ctx.quadraticCurveTo(
+      x - width * 0.52,
+      crownStart - crownHeight * 0.6,
+      x - width * 0.4,
+      crownStart - crownHeight * 0.75
+    );
+    ctx.quadraticCurveTo(
+      x - width * 0.3,
+      crownStart - crownHeight * 0.95,
+      x - width * 0.15,
+      crownStart - crownHeight * 0.98
+    );
+    ctx.quadraticCurveTo(x, crownStart - crownHeight * 1.05, x + width * 0.15, crownStart - crownHeight * 0.98);
+    ctx.quadraticCurveTo(
+      x + width * 0.3,
+      crownStart - crownHeight * 0.95,
+      x + width * 0.4,
+      crownStart - crownHeight * 0.75
+    );
+    ctx.quadraticCurveTo(
+      x + width * 0.52,
+      crownStart - crownHeight * 0.6,
+      x + width * 0.48,
+      crownStart - crownHeight * 0.4
+    );
+    ctx.quadraticCurveTo(
+      x + width * 0.5,
+      crownStart - crownHeight * 0.2,
+      x + width * 0.35,
+      crownStart
+    );
+
+    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
+    ctx.lineTo(x + trunkW / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /**
+   * Maple tree - wide spreading crown with lobed silhouette
+   */
+  function drawMaple(
+    ctx: RenderContext,
+    x: number,
+    baseY: number,
+    width: number,
+    height: number
+  ): void {
+    const trunkW = width * 0.12;
+    const trunkH = height * 0.3;
+
+    ctx.beginPath();
+    ctx.moveTo(x - trunkW / 2, baseY);
+    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
+
+    const crownStart = baseY - trunkH;
+    const crownHeight = height - trunkH;
+
+    // Wide spreading crown with lobed edges
+    ctx.lineTo(x - width * 0.25, crownStart);
+    ctx.quadraticCurveTo(x - width * 0.55, crownStart - crownHeight * 0.1, x - width * 0.5, crownStart - crownHeight * 0.3);
+    ctx.lineTo(x - width * 0.55, crownStart - crownHeight * 0.35);
+    ctx.quadraticCurveTo(x - width * 0.5, crownStart - crownHeight * 0.5, x - width * 0.45, crownStart - crownHeight * 0.55);
+    ctx.lineTo(x - width * 0.48, crownStart - crownHeight * 0.6);
+    ctx.quadraticCurveTo(x - width * 0.4, crownStart - crownHeight * 0.8, x - width * 0.25, crownStart - crownHeight * 0.9);
+    ctx.lineTo(x - width * 0.2, crownStart - crownHeight * 0.95);
+    ctx.quadraticCurveTo(x, crownStart - crownHeight * 1.02, x + width * 0.2, crownStart - crownHeight * 0.95);
+    ctx.lineTo(x + width * 0.25, crownStart - crownHeight * 0.9);
+    ctx.quadraticCurveTo(x + width * 0.4, crownStart - crownHeight * 0.8, x + width * 0.48, crownStart - crownHeight * 0.6);
+    ctx.lineTo(x + width * 0.45, crownStart - crownHeight * 0.55);
+    ctx.quadraticCurveTo(x + width * 0.5, crownStart - crownHeight * 0.5, x + width * 0.55, crownStart - crownHeight * 0.35);
+    ctx.lineTo(x + width * 0.5, crownStart - crownHeight * 0.3);
+    ctx.quadraticCurveTo(x + width * 0.55, crownStart - crownHeight * 0.1, x + width * 0.25, crownStart);
+
+    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
+    ctx.lineTo(x + trunkW / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /**
+   * Poplar tree - tall columnar deciduous
+   */
+  function drawPoplar(
+    ctx: RenderContext,
+    x: number,
+    baseY: number,
+    width: number,
+    height: number
+  ): void {
+    const trunkW = width * 0.2;
+    const trunkH = height * 0.25;
+
+    ctx.beginPath();
+    ctx.moveTo(x - trunkW / 2, baseY);
+    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
+
+    const crownStart = baseY - trunkH;
+    const crownHeight = height - trunkH;
+
+    // Tall narrow columnar shape
+    ctx.lineTo(x - width * 0.25, crownStart);
+    ctx.quadraticCurveTo(x - width * 0.35, crownStart - crownHeight * 0.15, x - width * 0.3, crownStart - crownHeight * 0.3);
+    ctx.quadraticCurveTo(x - width * 0.32, crownStart - crownHeight * 0.5, x - width * 0.25, crownStart - crownHeight * 0.7);
+    ctx.quadraticCurveTo(x - width * 0.2, crownStart - crownHeight * 0.85, x - width * 0.1, crownStart - crownHeight * 0.95);
+    ctx.quadraticCurveTo(x, crownStart - crownHeight * 1.02, x + width * 0.1, crownStart - crownHeight * 0.95);
+    ctx.quadraticCurveTo(x + width * 0.2, crownStart - crownHeight * 0.85, x + width * 0.25, crownStart - crownHeight * 0.7);
+    ctx.quadraticCurveTo(x + width * 0.32, crownStart - crownHeight * 0.5, x + width * 0.3, crownStart - crownHeight * 0.3);
+    ctx.quadraticCurveTo(x + width * 0.35, crownStart - crownHeight * 0.15, x + width * 0.25, crownStart);
+
+    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
+    ctx.lineTo(x + trunkW / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // ===================
+  // BARE/WINTER TREES
+  // ===================
+
+  /**
+   * Bare tree - leafless winter silhouette with branches
+   */
+  function drawBare(
+    ctx: RenderContext,
+    x: number,
+    baseY: number,
+    width: number,
+    height: number
+  ): void {
+    const trunkW = width * 0.15;
+
+    ctx.beginPath();
+
+    // Main trunk tapers upward
+    ctx.moveTo(x - trunkW / 2, baseY);
+    ctx.lineTo(x - trunkW * 0.3, baseY - height * 0.6);
+
+    // Left major branch
+    ctx.lineTo(x - width * 0.35, baseY - height * 0.55);
+    ctx.lineTo(x - width * 0.45, baseY - height * 0.7);
+    ctx.lineTo(x - width * 0.38, baseY - height * 0.68);
+    ctx.lineTo(x - width * 0.42, baseY - height * 0.82);
+    ctx.lineTo(x - width * 0.35, baseY - height * 0.75);
+    ctx.lineTo(x - width * 0.3, baseY - height * 0.85);
+    ctx.lineTo(x - width * 0.25, baseY - height * 0.72);
+
+    // Back to trunk, continue up
+    ctx.lineTo(x - trunkW * 0.2, baseY - height * 0.65);
+    ctx.lineTo(x - width * 0.15, baseY - height * 0.78);
+    ctx.lineTo(x - width * 0.2, baseY - height * 0.88);
+    ctx.lineTo(x - width * 0.12, baseY - height * 0.85);
+    ctx.lineTo(x - width * 0.08, baseY - height * 0.95);
+
+    // Top
+    ctx.lineTo(x, baseY - height);
+
+    // Right side branches (mirror-ish)
+    ctx.lineTo(x + width * 0.08, baseY - height * 0.95);
+    ctx.lineTo(x + width * 0.12, baseY - height * 0.85);
+    ctx.lineTo(x + width * 0.2, baseY - height * 0.88);
+    ctx.lineTo(x + width * 0.15, baseY - height * 0.78);
+    ctx.lineTo(x + trunkW * 0.2, baseY - height * 0.65);
+
+    ctx.lineTo(x + width * 0.25, baseY - height * 0.72);
+    ctx.lineTo(x + width * 0.3, baseY - height * 0.85);
+    ctx.lineTo(x + width * 0.35, baseY - height * 0.75);
+    ctx.lineTo(x + width * 0.42, baseY - height * 0.82);
+    ctx.lineTo(x + width * 0.38, baseY - height * 0.68);
+    ctx.lineTo(x + width * 0.45, baseY - height * 0.7);
+    ctx.lineTo(x + width * 0.35, baseY - height * 0.55);
+
+    ctx.lineTo(x + trunkW * 0.3, baseY - height * 0.6);
+    ctx.lineTo(x + trunkW / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // ===================
+  // TREE GENERATION
+  // ===================
+
+  function getEnabledTypes(): TreeType[] {
+    const types: TreeType[] = [];
+    if (currentVisibility.pine) types.push("pine");
+    if (currentVisibility.fir) types.push("fir");
+    if (currentVisibility.spruce) types.push("spruce");
+    if (currentVisibility.oak) types.push("oak");
+    if (currentVisibility.maple) types.push("maple");
+    if (currentVisibility.poplar) types.push("poplar");
+    if (currentVisibility.bare) types.push("bare");
+    return types;
+  }
+
   function createTrees(dimensions: Dimensions): Tree[] {
     const trees: Tree[] = [];
     const { width, height } = dimensions;
+    const enabledTypes = getEnabledTypes();
 
-    // Intentional placement - a few trees at varying sizes
-    // These rise from below the screen, so baseY will be at screen bottom + some extra
+    if (enabledTypes.length === 0) return trees;
+
+    const pickType = (): TreeType => enabledTypes[Math.floor(Math.random() * enabledTypes.length)]!;
 
     // Large foreground trees (fewer, bigger)
     const foregroundPositions = [0.08, 0.25, 0.52, 0.78, 0.95];
@@ -169,9 +426,7 @@ export function createTreeSilhouetteSystem() {
         x: width * xRatio + (Math.random() - 0.5) * width * 0.05,
         height: height * (0.45 + Math.random() * 0.2),
         width: height * (0.12 + Math.random() * 0.06),
-        type: ["pine", "fir", "spruce"][
-          Math.floor(Math.random() * 3)
-        ] as Tree["type"],
+        type: pickType(),
       });
     }
 
@@ -182,9 +437,7 @@ export function createTreeSilhouetteSystem() {
         x: width * xRatio + (Math.random() - 0.5) * width * 0.08,
         height: height * (0.3 + Math.random() * 0.15),
         width: height * (0.08 + Math.random() * 0.04),
-        type: ["pine", "fir", "spruce"][
-          Math.floor(Math.random() * 3)
-        ] as Tree["type"],
+        type: pickType(),
       });
     }
 
@@ -195,9 +448,7 @@ export function createTreeSilhouetteSystem() {
         x: width * xRatio + (Math.random() - 0.5) * width * 0.06,
         height: height * (0.18 + Math.random() * 0.1),
         width: height * (0.05 + Math.random() * 0.03),
-        type: ["pine", "fir", "spruce"][
-          Math.floor(Math.random() * 3)
-        ] as Tree["type"],
+        type: pickType(),
       });
     }
 
@@ -218,16 +469,13 @@ export function createTreeSilhouetteSystem() {
     ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
     const trees = createTrees(dimensions);
-    const baseY = dimensions.height + dimensions.height * 0.05; // Trees extend below screen
+    const baseY = dimensions.height + dimensions.height * 0.05;
 
-    // Draw trees - smallest/shortest first, tallest last
     for (const tree of trees) {
-      // Taller trees are darker (closer to viewer)
-      // Dark green tones but dark enough to contrast against background
       const heightRatio = tree.height / (dimensions.height * 0.65);
-      const r = Math.floor(2 + heightRatio * 4); // 2-6
-      const g = Math.floor(6 + heightRatio * 8); // 6-14 (green tint but dark)
-      const b = Math.floor(3 + heightRatio * 4); // 3-7
+      const r = Math.floor(2 + heightRatio * 4);
+      const g = Math.floor(6 + heightRatio * 8);
+      const b = Math.floor(3 + heightRatio * 4);
       ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
 
       switch (tree.type) {
@@ -239,6 +487,18 @@ export function createTreeSilhouetteSystem() {
           break;
         case "spruce":
           drawSpruce(ctx, tree.x, baseY, tree.width, tree.height);
+          break;
+        case "oak":
+          drawOak(ctx, tree.x, baseY, tree.width, tree.height);
+          break;
+        case "maple":
+          drawMaple(ctx, tree.x, baseY, tree.width, tree.height);
+          break;
+        case "poplar":
+          drawPoplar(ctx, tree.x, baseY, tree.width, tree.height);
+          break;
+        case "bare":
+          drawBare(ctx, tree.x, baseY, tree.width, tree.height);
           break;
       }
     }
@@ -261,6 +521,18 @@ export function createTreeSilhouetteSystem() {
     initialize(newDimensions);
   }
 
+  function setTreeVisibility(visibility: Partial<TreeTypeVisibility>): void {
+    currentVisibility = { ...currentVisibility, ...visibility };
+  }
+
+  function getTreeVisibility(): TreeTypeVisibility {
+    return { ...currentVisibility };
+  }
+
+  function regenerate(dimensions: Dimensions): void {
+    renderToCache(dimensions);
+  }
+
   function cleanup(): void {
     cachedCanvas = null;
     cachedDimensions = null;
@@ -270,6 +542,9 @@ export function createTreeSilhouetteSystem() {
     initialize,
     draw,
     handleResize,
+    setTreeVisibility,
+    getTreeVisibility,
+    regenerate,
     cleanup,
   };
 }

@@ -8,6 +8,15 @@ import type {
 } from "$lib/shared/background/shared/domain/types/background-types";
 import type { IBackgroundSystem } from "$lib/shared/background/shared/services/contracts/IBackgroundSystem";
 
+export interface AuroraLayers {
+  gradient: boolean;
+  waves: boolean;
+  enhancedEffects: boolean;
+}
+
+export type AuroraColorPalette = "classic" | "purple" | "blue" | "rainbow";
+export type AuroraIntensity = "subtle" | "normal" | "vivid" | "intense";
+
 export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
   private quality: QualityLevel = "medium";
   private accessibility: AccessibilitySettings = {
@@ -20,8 +29,68 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
   private lightWaves: number[] = [];
   private isInitialized = false;
 
-  // Aurora Borealis color palette
-  private readonly auroraColors = [
+  // Layer visibility
+  private layers: AuroraLayers = {
+    gradient: true,
+    waves: true,
+    enhancedEffects: true,
+  };
+
+  // Color and intensity settings
+  private colorPalette: AuroraColorPalette = "classic";
+  private intensity: AuroraIntensity = "normal";
+
+  // Color palettes - alpha values set for visible aurora effect
+  private readonly colorPalettes: Record<AuroraColorPalette, Array<{ r: number; g: number; b: number; a: number }>> = {
+    classic: [
+      { r: 0, g: 80, b: 120, a: 0.6 },
+      { r: 0, g: 120, b: 100, a: 0.5 },
+      { r: 50, g: 180, b: 120, a: 0.45 },
+      { r: 80, g: 200, b: 150, a: 0.4 },
+      { r: 120, g: 230, b: 180, a: 0.35 },
+      { r: 150, g: 255, b: 200, a: 0.3 },
+    ],
+    purple: [
+      { r: 60, g: 0, b: 120, a: 0.6 },
+      { r: 100, g: 30, b: 180, a: 0.5 },
+      { r: 140, g: 60, b: 200, a: 0.45 },
+      { r: 180, g: 100, b: 220, a: 0.4 },
+      { r: 200, g: 150, b: 255, a: 0.35 },
+      { r: 230, g: 180, b: 255, a: 0.3 },
+    ],
+    blue: [
+      { r: 0, g: 60, b: 140, a: 0.6 },
+      { r: 0, g: 100, b: 180, a: 0.5 },
+      { r: 30, g: 140, b: 210, a: 0.45 },
+      { r: 60, g: 180, b: 230, a: 0.4 },
+      { r: 100, g: 210, b: 255, a: 0.35 },
+      { r: 150, g: 230, b: 255, a: 0.3 },
+    ],
+    rainbow: [
+      { r: 255, g: 80, b: 80, a: 0.45 },
+      { r: 255, g: 180, b: 80, a: 0.4 },
+      { r: 80, g: 255, b: 80, a: 0.4 },
+      { r: 80, g: 200, b: 255, a: 0.4 },
+      { r: 150, g: 80, b: 255, a: 0.4 },
+      { r: 255, g: 80, b: 200, a: 0.35 },
+    ],
+  };
+
+  // Intensity multipliers
+  private readonly intensityMultipliers: Record<AuroraIntensity, number> = {
+    subtle: 0.5,
+    normal: 1.0,
+    vivid: 1.5,
+    intense: 2.0,
+  };
+
+  // Aurora Borealis color palette (dynamic based on selection)
+  private get auroraColors() {
+    return this.colorPalettes[this.colorPalette];
+  }
+
+  // Legacy static reference for backwards compatibility
+  private readonly legacyAuroraColors = [
     { r: 0, g: 25, b: 50, a: 0.4 }, // Deep blue
     { r: 0, g: 50, b: 100, a: 0.2 }, // Medium blue
     { r: 0, g: 100, b: 150, a: 0.1 }, // Light blue
@@ -42,18 +111,22 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
     }
   }
 
-  public update(_dimensions: Dimensions): void {
+  public update(_dimensions: Dimensions, frameMultiplier: number = 1): void {
     if (!this.isInitialized) return;
 
     // Respect accessibility settings
-    const animationSpeed = this.accessibility.reducedMotion ? 0.002 : 1.0;
+    const animationSpeed = this.accessibility.reducedMotion ? 0.1 : 1.0;
+
+    // Normalize frame multiplier to prevent extreme values
+    const normalizedMultiplier = Math.min(Math.max(frameMultiplier, 0.1), 3);
 
     // Update light wave positions for smooth animation
     // Advance each wave at slightly different speeds for natural variation
     for (let i = 0; i < this.lightWaves.length; i++) {
       const currentWave = this.lightWaves[i];
       if (currentWave !== undefined) {
-        const waveSpeed = (0.008 + i * 0.002) * animationSpeed; // Varying speeds with accessibility consideration
+        // Base speed scaled by frame timing for consistent animation across refresh rates
+        const waveSpeed = (0.008 + i * 0.002) * animationSpeed * normalizedMultiplier;
         this.lightWaves[i] = currentWave + waveSpeed;
 
         // Keep waves within reasonable bounds to prevent overflow
@@ -69,10 +142,14 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
     if (!this.isInitialized) return;
 
     // Draw base gradient from dark to lighter
-    this.drawBaseGradient(ctx, dimensions);
+    if (this.layers.gradient) {
+      this.drawBaseGradient(ctx, dimensions);
+    }
 
     // Draw aurora light waves
-    this.drawAuroraWaves(ctx, dimensions);
+    if (this.layers.waves) {
+      this.drawAuroraWaves(ctx, dimensions);
+    }
   }
 
   public setQuality(quality: QualityLevel): void {
@@ -171,11 +248,13 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
       const color = this.auroraColors[colorIndex];
 
       if (color && this.lightWaves[waveIndex] !== undefined) {
-        // Add some dynamic intensity variation
+        // Add some dynamic intensity variation with minimum visibility
         const waveValue = this.lightWaves[waveIndex];
         if (waveValue !== undefined) {
-          const intensityFactor = (Math.sin(waveValue * 1.5) + 1) / 2;
-          const alpha = color.a * intensityFactor;
+          // Ensure minimum 40% intensity, oscillates between 0.4 and 1.0
+          const intensityFactor = 0.4 + 0.6 * ((Math.sin(waveValue * 1.5) + 1) / 2);
+          const intensityMult = this.intensityMultipliers[this.intensity];
+          const alpha = Math.min(1, color.a * intensityFactor * intensityMult);
 
           gradient.addColorStop(
             pos,
@@ -190,7 +269,7 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
     // Add additional wave effects for more realism
-    if (this.quality === "high") {
+    if (this.quality === "high" && this.layers.enhancedEffects) {
       this.drawAdditionalWaveEffects(ctx, dimensions);
     }
   }
@@ -238,5 +317,35 @@ export class AuroraBorealisBackgroundSystem implements IBackgroundSystem {
     }
 
     ctx.restore();
+  }
+
+  /**
+   * Set layer visibility
+   */
+  public setLayerVisibility(layers: Partial<AuroraLayers>): void {
+    this.layers = { ...this.layers, ...layers };
+  }
+
+  /**
+   * Get current scene statistics
+   */
+  public getStats(): { waves: number } {
+    return {
+      waves: this.lightWaves.length,
+    };
+  }
+
+  /**
+   * Set color palette
+   */
+  public setColorPalette(palette: AuroraColorPalette): void {
+    this.colorPalette = palette;
+  }
+
+  /**
+   * Set intensity level
+   */
+  public setIntensity(intensity: AuroraIntensity): void {
+    this.intensity = intensity;
   }
 }

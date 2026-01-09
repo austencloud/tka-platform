@@ -31,7 +31,9 @@ export class PerlinNoise {
     // Fisher-Yates shuffle
     for (let i = 255; i > 0; i--) {
       const j = Math.floor(random() * (i + 1));
-      [perm[i], perm[j]] = [perm[j], perm[i]];
+      const temp = perm[i]!;
+      perm[i] = perm[j]!;
+      perm[j] = temp;
     }
 
     return perm;
@@ -72,10 +74,10 @@ export class PerlinNoise {
     const v = this.fade(yf);
 
     // Hash coordinates of cube corners
-    const aa = this.p[this.p[X] + Y];
-    const ab = this.p[this.p[X] + Y + 1];
-    const ba = this.p[this.p[X + 1] + Y];
-    const bb = this.p[this.p[X + 1] + Y + 1];
+    const aa = this.p[this.p[X]! + Y]!;
+    const ab = this.p[this.p[X]! + Y + 1]!;
+    const ba = this.p[this.p[X + 1]! + Y]!;
+    const bb = this.p[this.p[X + 1]! + Y + 1]!;
 
     // Blend results from corners
     const x1 = this.lerp(this.grad(aa, xf, yf), this.grad(ba, xf - 1, yf), u);

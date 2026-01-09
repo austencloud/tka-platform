@@ -15,6 +15,11 @@ import {
   AUTUMN_BACKGROUND,
 } from "../domain/constants/autumn-constants";
 
+export interface AutumnDriftLayers {
+  gradient: boolean;
+  leaves: boolean;
+}
+
 export class AutumnDriftBackgroundSystem implements IBackgroundSystem {
   private leafSystem: LeafSystem;
   private windSystem: WindSystem;
@@ -26,6 +31,12 @@ export class AutumnDriftBackgroundSystem implements IBackgroundSystem {
 
   private dimensions: Dimensions = { width: 0, height: 0 };
   private frameCount = 0;
+
+  // Layer visibility
+  private layers: AutumnDriftLayers = {
+    gradient: true,
+    leaves: true,
+  };
 
   constructor() {
     this.leafSystem = createLeafSystem();
@@ -83,10 +94,14 @@ export class AutumnDriftBackgroundSystem implements IBackgroundSystem {
     if (!this.isInitialized) return;
 
     // Draw background gradient
-    this.drawBackground(ctx, dimensions);
+    if (this.layers.gradient) {
+      this.drawBackground(ctx, dimensions);
+    }
 
     // Draw leaves
-    this.leafSystem.draw(ctx);
+    if (this.layers.leaves) {
+      this.leafSystem.draw(ctx);
+    }
   }
 
   private drawBackground(
@@ -157,6 +172,22 @@ export class AutumnDriftBackgroundSystem implements IBackgroundSystem {
       fps: 0, // Would need timing to calculate
       particleCount: this.leafSystem.leaves.length,
       warnings: [],
+    };
+  }
+
+  /**
+   * Set layer visibility
+   */
+  public setLayerVisibility(layers: Partial<AutumnDriftLayers>): void {
+    this.layers = { ...this.layers, ...layers };
+  }
+
+  /**
+   * Get current scene statistics
+   */
+  public getStats(): { leaves: number } {
+    return {
+      leaves: this.leafSystem.leaves.length,
     };
   }
 }

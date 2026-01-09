@@ -198,7 +198,7 @@ export class ParallaxForestComposer {
     const positions = this.distributeTreePositions(count, width, treeSpacing, layer.index);
 
     for (let i = 0; i < count; i++) {
-      const x = positions[i];
+      const x = positions[i]!;
       const heightOffset =
         this.noise.noise2D(x * 0.01 + layer.index * 10, i) * heightVariation * layer.scale;
 
@@ -212,14 +212,14 @@ export class ParallaxForestComposer {
       if (normalizedRoll < coniferRatio) {
         treeType = "conifer";
         const types: ConiferType[] = ["pine", "fir", "spruce", "cedar"];
-        subType = types[Math.floor(Math.abs(this.noise.noise2D(x, i) * types.length)) % types.length];
+        subType = types[Math.floor(Math.abs(this.noise.noise2D(x, i) * types.length)) % types.length]!;
       } else if (normalizedRoll < coniferRatio + deciduousRatio) {
         treeType = "deciduous";
         subType = "oak"; // Space colonization is naturally oak-like
       } else {
         treeType = "bare";
         const types: BareTreeType[] = ["dead", "winter-oak", "birch", "willow"];
-        subType = types[Math.floor(Math.abs(this.noise.noise2D(x * 2, i) * types.length)) % types.length];
+        subType = types[Math.floor(Math.abs(this.noise.noise2D(x * 2, i) * types.length)) % types.length]!;
       }
 
       // Generate the tree
@@ -372,8 +372,8 @@ export class ParallaxForestComposer {
    * Regenerate trees in a specific layer
    */
   regenerateLayer(layerIndex: number): void {
-    if (layerIndex >= 0 && layerIndex < this.layers.length) {
-      const layer = this.layers[layerIndex];
+    const layer = this.layers[layerIndex];
+    if (layer) {
       layer.trees = this.generateTreesForLayer(layer, layer.treeCount);
     }
   }
@@ -414,13 +414,12 @@ export class ParallaxForestComposer {
 
   private hexToRgb(hex: string): { r: number; g: number; b: number } | null {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null;
+    if (!result || !result[1] || !result[2] || !result[3]) return null;
+    return {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    };
   }
 
   getConfig(): ParallaxForestConfig {
