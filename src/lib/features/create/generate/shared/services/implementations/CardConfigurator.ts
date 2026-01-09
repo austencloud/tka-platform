@@ -139,27 +139,27 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // Customize Options Card - for advanced constraints
+    // Start/End Options Card - for position constraints
     // In circular mode: Add to row 3 with LOOP/SliceSize
     // In freeform mode: Add to final row with Generate button
-    const hasCustomizeCard =
-      handlers.handleCustomizeChange && handlers.customizeOptions;
+    const hasStartEndCard =
+      handlers.handleStartEndChange && handlers.startEndOptions;
 
     // Conditional: LOOP Type (only in Circular mode)
-    // Row 3 layout depends on whether slice size and customize are shown:
-    // - SliceSize (2) + LOOP (2) + Customize (2) = 6 cols
-    // - LOOP (4) + Customize (2) = 6 cols
-    // - SliceSize (2) + LOOP (4) = 6 cols (no customize)
-    // - LOOP (6) = full row (no customize, no slice size)
+    // Row 3 layout depends on whether slice size and start/end are shown:
+    // - SliceSize (2) + LOOP (2) + StartEnd (2) = 6 cols
+    // - LOOP (4) + StartEnd (2) = 6 cols
+    // - SliceSize (2) + LOOP (4) = 6 cols (no start/end)
+    // - LOOP (6) = full row (no start/end, no slice size)
     if (!isFreeformMode) {
       // Determine LOOP column span based on what else is in row 3
       let loopColumnSpan: number;
-      if (loopTypeAllowsSliceChoice && hasCustomizeCard) {
-        loopColumnSpan = 2; // SliceSize(2) + LOOP(2) + Customize(2)
+      if (loopTypeAllowsSliceChoice && hasStartEndCard) {
+        loopColumnSpan = 2; // SliceSize(2) + LOOP(2) + StartEnd(2)
       } else if (loopTypeAllowsSliceChoice) {
         loopColumnSpan = 4; // SliceSize(2) + LOOP(4)
-      } else if (hasCustomizeCard) {
-        loopColumnSpan = 4; // LOOP(4) + Customize(2)
+      } else if (hasStartEndCard) {
+        loopColumnSpan = 4; // LOOP(4) + StartEnd(2)
       } else {
         loopColumnSpan = 6; // LOOP(6) full row
       }
@@ -176,13 +176,13 @@ export class CardConfigurator implements ICardConfigurator {
         gridColumnSpan: loopColumnSpan,
       });
 
-      // Add Customize card in row 3 for circular mode
-      if (hasCustomizeCard) {
+      // Add Start/End card in row 3 for circular mode
+      if (hasStartEndCard) {
         cardList.push({
-          id: "customize",
+          id: "start-end",
           props: {
-            currentOptions: handlers.customizeOptions,
-            onOptionsChange: handlers.handleCustomizeChange,
+            currentOptions: handlers.startEndOptions,
+            onOptionsChange: handlers.handleStartEndChange,
             isFreeformMode: false, // Circular mode - hide end position selector
             cardIndex: cardIndex++,
             headerFontSize,
@@ -194,13 +194,13 @@ export class CardConfigurator implements ICardConfigurator {
       }
     }
 
-    // In freeform mode: Customize shares row with Generate button
-    if (isFreeformMode && hasCustomizeCard) {
+    // In freeform mode: Start/End shares row with Generate button
+    if (isFreeformMode && hasStartEndCard) {
       cardList.push({
-        id: "customize",
+        id: "start-end",
         props: {
-          currentOptions: handlers.customizeOptions,
-          onOptionsChange: handlers.handleCustomizeChange,
+          currentOptions: handlers.startEndOptions,
+          onOptionsChange: handlers.handleStartEndChange,
           isFreeformMode: true, // Freeform mode - show end position selector
           cardIndex: cardIndex++,
           headerFontSize,
@@ -212,17 +212,17 @@ export class CardConfigurator implements ICardConfigurator {
     }
 
     // Generate Button Card - always at the end
-    // In freeform mode with Customize: 4 cols (shares row with Customize)
+    // In freeform mode with Start/End: 4 cols (shares row with Start/End)
     // Otherwise: 6 cols (full width)
     if (handlers.handleGenerateClick) {
-      const generateColumnSpan = isFreeformMode && hasCustomizeCard ? 4 : 6;
+      const generateColumnSpan = isFreeformMode && hasStartEndCard ? 4 : 6;
       cardList.push({
         id: "generate-button",
         props: {
           isGenerating,
           onGenerateClicked: handlers.handleGenerateClick,
           config, // Pass the config so the button can convert it to GenerationOptions
-          customizeOptions: handlers.customizeOptions, // Pass customize options for generation
+          startEndOptions: handlers.startEndOptions, // Pass start/end options for generation
         },
         gridColumnSpan: generateColumnSpan,
       });

@@ -62,7 +62,7 @@
   import { setCreateModuleContext } from "../context/create-module-context";
   import LOOPCoordinator from "./coordinators/LOOPCoordinator.svelte";
   import EditCoordinator from "./coordinators/EditCoordinator.svelte";
-  import CustomizeCoordinator from "./coordinators/CustomizeCoordinator.svelte";
+  import StartEndCoordinator from "./coordinators/StartEndCoordinator.svelte";
   import SequenceActionsCoordinator from "./coordinators/SequenceActionsCoordinator.svelte";
   import BeatEditorCoordinator from "./coordinators/BeatEditorCoordinator.svelte";
   import VideoRecordCoordinator from "./coordinators/VideoRecordCoordinator.svelte";
@@ -633,8 +633,8 @@
   <!-- LOOP Coordinator -->
   <LOOPCoordinator />
 
-  <!-- Customize Options Coordinator -->
-  <CustomizeCoordinator />
+  <!-- Start/End Options Coordinator -->
+  <StartEndCoordinator />
 
   <!-- Save to Library Panel - Rendered at root level to avoid stacking context issues -->
   <SaveToLibraryPanel

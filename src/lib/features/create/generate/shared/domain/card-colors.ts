@@ -20,7 +20,7 @@ export interface CardColors {
   continuity: CardColorSet;
   turnIntensity: CardColorSet;
   sliceSize: CardColorSet;
-  customize: CardColorSet;
+  startEnd: CardColorSet;
 }
 
 /**
@@ -55,7 +55,7 @@ const DEFAULT_COLORS: CardColors = {
     color: "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%)",
     shadowColor: "330deg 75% 55%",
   },
-  customize: {
+  startEnd: {
     color: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
     shadowColor: "215deg 20% 40%",
   },
@@ -101,7 +101,7 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
     color: "linear-gradient(135deg, #db2777 0%, #be185d 50%, #9d174d 100%)",
     shadowColor: "330deg 80% 45%",
   },
-  customize: {
+  startEnd: {
     // Rich deep slate
     color: "linear-gradient(135deg, #334155 0%, #1e293b 100%)",
     shadowColor: "220deg 25% 20%",

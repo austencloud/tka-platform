@@ -15,7 +15,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import type { ICardConfigurator } from "../shared/services/contracts/ICardConfigurator";
   import type { IResponsiveTypographer } from "../shared/services/contracts/IResponsiveTypographer";
   import type { UIGenerationConfig } from "../state/generate-config.svelte";
-  import type { CustomizeOptionsState } from "../state/customize-options-state.svelte";
+  import type { StartEndOptionsState } from "../state/start-end-options-state.svelte";
   import type {
     DifficultyLevel,
     GenerationMode,
@@ -40,7 +40,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import SliceSizeCard from "./cards/SliceSizeCard.svelte";
   import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
-  import CustomizeCard from "./cards/CustomizeCard.svelte";
+  import StartEndCard from "./cards/StartEndCard.svelte";
 
   // Props
   let {
@@ -49,7 +49,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     updateConfig,
     isGenerating,
     onGenerateClicked,
-    customizeState,
+    startEndState,
     helpMode = false,
     onHelpSelect,
   } = $props<{
@@ -58,7 +58,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     updateConfig: (updates: Partial<UIGenerationConfig>) => void;
     isGenerating: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
-    customizeState?: CustomizeOptionsState;
+    startEndState?: StartEndOptionsState;
     helpMode?: boolean;
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
   }>();
@@ -73,7 +73,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     "turn-intensity": "turn-intensity",
     "loop-type": "loop-type",
     "slice-size": "slice-size",
-    "customize": "customize",
+    "start-end": "start-end",
     "generate-button": null, // No help for generate button
   };
 
@@ -159,8 +159,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
     // Check if we have positions to clear
     const hasPositions =
-      customizeState?.options?.startPosition !== null ||
-      customizeState?.options?.endPosition !== null;
+      startEndState?.options?.startPosition !== null ||
+      startEndState?.options?.endPosition !== null;
 
     if (hasPositions) {
       // Trigger animation FIRST
@@ -169,7 +169,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       // Clear positions at animation midpoint (150ms into 300ms animation)
       // This makes the text change happen while it's invisible
       setTimeout(() => {
-        customizeState?.clearPositions();
+        startEndState?.clearPositions();
       }, 150);
     }
   }
@@ -186,9 +186,9 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     updateConfig({ sliceSize });
   }
 
-  // Customize options handler
-  function handleCustomizeChange(options: any) {
-    customizeState?.setOptions(options);
+  // Start/End options handler
+  function handleStartEndChange(options: any) {
+    startEndState?.setOptions(options);
   }
 
   // Build cards using service - reactive to all dependencies
@@ -208,10 +208,10 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         handleGenerationModeChange,
         handleLOOPTypeChange,
         handleSliceSizeChange,
-        handleCustomizeChange: customizeState
-          ? handleCustomizeChange
+        handleStartEndChange: startEndState
+          ? handleStartEndChange
           : undefined,
-        customizeOptions: customizeState?.options,
+        startEndOptions: startEndState?.options,
         positionsResetTrigger,
         currentGridMode: config.gridMode,
         handleGenerateClick: onGenerateClicked,
@@ -255,8 +255,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
         <TurnIntensityCard {...card.props as any} color={cardColors.turnIntensity.color} shadowColor={cardColors.turnIntensity.shadowColor} />
       {:else if card.id === "loop-type"}
         <LOOPCard {...card.props as any} />
-      {:else if card.id === "customize"}
-        <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
+      {:else if card.id === "start-end"}
+        <StartEndCard {...card.props as any} color={cardColors.startEnd.color} shadowColor={cardColors.startEnd.shadowColor} />
       {:else if card.id === "generate-button"}
         <GenerateButtonCard {...card.props as any} />
       {/if}
@@ -328,6 +328,11 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   /* Help mode styles */
   .card-settings-container.help-mode .card-wrapper.help-clickable {
     cursor: pointer;
+  }
+
+  /* Block pointer events on actual cards in help mode - wrapper handles clicks */
+  .card-settings-container.help-mode .card-wrapper.help-clickable > :global(*) {
+    pointer-events: none;
   }
 
   /* Highlight effect on clickable cards in help mode */

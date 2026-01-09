@@ -1,7 +1,7 @@
 /**
- * Customize Options State Management
+ * Start/End Options State Management
  *
- * Manages customize generation constraints:
+ * Manages start/end position generation constraints:
  * - Start position
  * - End position
  * - Must-contain letters
@@ -13,10 +13,10 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { CustomizeOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 
 // ===== Persistence =====
-const STORAGE_KEY = "tka-customize-options";
+const STORAGE_KEY = "tka-start-end-options";
 
 interface SerializedOptions {
   startPositionLetter?: string;
@@ -29,7 +29,7 @@ interface SerializedOptions {
 /**
  * Save options to localStorage
  */
-function saveOptions(options: CustomizeOptions): void {
+function saveOptions(options: StartEndOptions): void {
   try {
     const serialized: SerializedOptions = {
       startPositionLetter: options.startPosition?.letter || undefined,
@@ -43,14 +43,14 @@ function saveOptions(options: CustomizeOptions): void {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
   } catch (error) {
-    console.warn("⚠️ CustomizeOptions: Failed to save options:", error);
+    console.warn("⚠️ StartEndOptions: Failed to save options:", error);
   }
 }
 
 /**
  * Load options from localStorage
  */
-function loadOptions(): CustomizeOptions | null {
+function loadOptions(): StartEndOptions | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
@@ -72,7 +72,7 @@ function loadOptions(): CustomizeOptions | null {
       mustNotContainLetters: data.mustNotContainLetters as Letter[],
     };
   } catch (error) {
-    console.warn("⚠️ CustomizeOptions: Failed to load options:", error);
+    console.warn("⚠️ StartEndOptions: Failed to load options:", error);
     return null;
   }
 }
@@ -84,12 +84,12 @@ function clearOptions(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.warn("⚠️ CustomizeOptions: Failed to clear options:", error);
+    console.warn("⚠️ StartEndOptions: Failed to clear options:", error);
   }
 }
 
 // ===== Default Options =====
-const DEFAULT_OPTIONS: CustomizeOptions = {
+const DEFAULT_OPTIONS: StartEndOptions = {
   startPosition: null,
   endPosition: null,
   mustContainLetters: [],
@@ -99,17 +99,17 @@ const DEFAULT_OPTIONS: CustomizeOptions = {
 // ===== State Creator =====
 
 /**
- * Creates reactive state for customize generation options
+ * Creates reactive state for start/end position options
  * Automatically loads saved settings from localStorage and persists changes
  */
-export function createCustomizeOptionsState(
-  initialOptions?: Partial<CustomizeOptions>
+export function createStartEndOptionsState(
+  initialOptions?: Partial<StartEndOptions>
 ) {
   // Load saved options or use defaults
   const savedOptions = loadOptions();
 
   // Initialize options with priority: initialOptions > savedOptions > DEFAULT_OPTIONS
-  let options = $state<CustomizeOptions>({
+  let options = $state<StartEndOptions>({
     ...DEFAULT_OPTIONS,
     ...(savedOptions || {}),
     ...initialOptions,
@@ -146,13 +146,13 @@ export function createCustomizeOptionsState(
   });
 
   // Update function with persistence
-  function updateOptions(updates: Partial<CustomizeOptions>) {
+  function updateOptions(updates: Partial<StartEndOptions>) {
     options = { ...options, ...updates };
     saveOptions(options);
   }
 
   // Replace entire options (used by sheet onChange callback)
-  function setOptions(newOptions: CustomizeOptions) {
+  function setOptions(newOptions: StartEndOptions) {
     options = { ...newOptions };
     saveOptions(options);
   }
@@ -218,6 +218,10 @@ export function createCustomizeOptionsState(
   };
 }
 
-export type CustomizeOptionsState = ReturnType<
-  typeof createCustomizeOptionsState
->;
+export type StartEndOptionsState = ReturnType<typeof createStartEndOptionsState>;
+
+/** @deprecated Use createStartEndOptionsState instead */
+export const createCustomizeOptionsState = createStartEndOptionsState;
+
+/** @deprecated Use StartEndOptionsState instead */
+export type CustomizeOptionsState = StartEndOptionsState;

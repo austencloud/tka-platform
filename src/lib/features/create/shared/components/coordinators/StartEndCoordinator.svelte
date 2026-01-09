@@ -1,15 +1,15 @@
 <script lang="ts">
   /**
-   * Customize Options Coordinator Component
+   * Start/End Options Coordinator Component
    *
-   * Manages customize options sheet state at CreateModule level.
-   * Coordinates start/end position and letter constraint selection.
+   * Manages start/end options sheet state at CreateModule level.
+   * Coordinates start/end position selection.
    *
-   * Domain: Create module - Customize Options Panel Coordination
+   * Domain: Create module - Start/End Options Panel Coordination
    */
 
-  import type { CustomizeOptions } from "../../state/panel-coordination-state.svelte";
-  import CustomizeSheet from "../../../generate/components/modals/CustomizeSheet.svelte";
+  import type { StartEndOptions } from "../../state/panel-coordination-state.svelte";
+  import StartEndSheet from "../../../generate/components/modals/StartEndSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
 
   // Get context
@@ -17,12 +17,12 @@
   const { panelState } = ctx;
 
   // Local pending state - tracks changes before sheet closes
-  let pendingOptions = $state<CustomizeOptions | null>(null);
+  let pendingOptions = $state<StartEndOptions | null>(null);
 
   // Use pending options if available, otherwise use the original
   const displayOptions = $derived(
     pendingOptions ||
-      panelState.customizeOptions || {
+      panelState.startEndOptions || {
         startPosition: null,
         endPosition: null,
         mustContainLetters: [],
@@ -30,34 +30,34 @@
       }
   );
 
-  function handleChange(options: CustomizeOptions) {
+  function handleChange(options: StartEndOptions) {
     pendingOptions = { ...options };
 
     // Apply changes immediately to the callback
-    if (panelState.customizeOnChange) {
-      panelState.customizeOnChange(options);
+    if (panelState.startEndOnChange) {
+      panelState.startEndOnChange(options);
     }
   }
 
   function handleClose() {
     // Reset pending and close
     pendingOptions = null;
-    panelState.closeCustomizePanel();
+    panelState.closeStartEndPanel();
   }
 
   // Reset pending state when panel closes
   $effect(() => {
-    if (!panelState.isCustomizePanelOpen) {
+    if (!panelState.isStartEndPanelOpen) {
       pendingOptions = null;
     }
   });
 </script>
 
-<CustomizeSheet
-  isOpen={panelState.isCustomizePanelOpen}
+<StartEndSheet
+  isOpen={panelState.isStartEndPanelOpen}
   options={displayOptions}
   onChange={handleChange}
   onClose={handleClose}
-  isFreeformMode={panelState.customizeIsFreeformMode}
-  gridMode={panelState.customizeGridMode}
+  isFreeformMode={panelState.startEndIsFreeformMode}
+  gridMode={panelState.startEndGridMode}
 />

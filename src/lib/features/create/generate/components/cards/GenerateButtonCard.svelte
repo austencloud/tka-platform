@@ -8,7 +8,7 @@ Integrates the "Generate New" button into the card grid layout so it scales with
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { onMount } from "svelte";
   import type { UIGenerationConfig } from "../../state/generate-config.svelte";
-  import type { CustomizeOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { uiConfigToGenerationOptions } from "$lib/features/create/generate/shared/utils/config-mapper";
@@ -17,12 +17,12 @@ Integrates the "Generate New" button into the card grid layout so it scales with
     isGenerating,
     onGenerateClicked,
     config,
-    customizeOptions = null,
+    startEndOptions = null,
   } = $props<{
     isGenerating: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
     config: UIGenerationConfig;
-    customizeOptions?: CustomizeOptions | null;
+    startEndOptions?: StartEndOptions | null;
   }>();
 
   let hapticService: IHapticFeedback | null = $state(null);
@@ -33,11 +33,11 @@ Integrates the "Generate New" button into the card grid layout so it scales with
 
   async function handleClick() {
     hapticService?.trigger("selection");
-    // Pass customize options to include start/end position and letter constraints
+    // Pass start/end options to include position constraints
     const generationOptions = uiConfigToGenerationOptions(
       config,
       PropType.FAN,
-      customizeOptions
+      startEndOptions
     );
     await onGenerateClicked(generationOptions);
   }

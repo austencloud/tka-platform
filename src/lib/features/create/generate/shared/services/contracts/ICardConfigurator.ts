@@ -9,7 +9,7 @@ import type {
   SliceSize,
 } from "../../../circular/domain/models/circular-models";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { CustomizeOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 
 /**
  * Card descriptor for rendering in the UI
@@ -37,10 +37,10 @@ export interface CardHandlers {
   handleGenerationModeChange: (mode: GenerationMode) => void;
   handleLOOPTypeChange: (loopType: LOOPType) => void;
   handleSliceSizeChange: (sliceSize: SliceSize) => void;
-  handleCustomizeChange?: (options: CustomizeOptions) => void;
+  handleStartEndChange?: (options: StartEndOptions) => void;
   handleGenerateClick?: () => Promise<void>;
-  // Customize options (optional, for when customize card is shown)
-  customizeOptions?: CustomizeOptions;
+  // Start/End options (optional, for when start/end card is shown)
+  startEndOptions?: StartEndOptions;
   // Trigger value that increments when positions are reset due to grid mode change
   positionsResetTrigger?: number;
   // Current grid mode for position picker filtering

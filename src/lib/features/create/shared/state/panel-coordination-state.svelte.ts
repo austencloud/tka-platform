@@ -52,14 +52,17 @@ const shareHubPanelPersistence = createPersistenceHelper({
 });
 
 /**
- * Customize generation options - passed to the customize options sheet
+ * Start/End position options - passed to the start/end options sheet
  */
-export interface CustomizeOptions {
+export interface StartEndOptions {
   startPosition: PictographData | null;
   endPosition: PictographData | null;
   mustContainLetters: Letter[];
   mustNotContainLetters: Letter[];
 }
+
+/** @deprecated Use StartEndOptions instead */
+export type CustomizeOptions = StartEndOptions;
 
 export interface PanelCoordinationState {
   // Shift Start Mode State
@@ -177,19 +180,39 @@ export interface PanelCoordinationState {
   openCreationMethodPanel(): void;
   closeCreationMethodPanel(): void;
 
-  // Customize Options Panel State
-  get isCustomizePanelOpen(): boolean;
-  get customizeOptions(): CustomizeOptions | null;
-  get customizeOnChange(): ((options: CustomizeOptions) => void) | null;
-  get customizeIsFreeformMode(): boolean;
-  get customizeGridMode(): GridMode;
+  // Start/End Options Panel State
+  get isStartEndPanelOpen(): boolean;
+  get startEndOptions(): StartEndOptions | null;
+  get startEndOnChange(): ((options: StartEndOptions) => void) | null;
+  get startEndIsFreeformMode(): boolean;
+  get startEndGridMode(): GridMode;
 
-  openCustomizePanel(
-    currentOptions: CustomizeOptions,
-    onChange: (options: CustomizeOptions) => void,
+  openStartEndPanel(
+    currentOptions: StartEndOptions,
+    onChange: (options: StartEndOptions) => void,
     isFreeformMode?: boolean,
     gridMode?: GridMode
   ): void;
+  closeStartEndPanel(): void;
+
+  /** @deprecated Use isStartEndPanelOpen instead */
+  get isCustomizePanelOpen(): boolean;
+  /** @deprecated Use startEndOptions instead */
+  get customizeOptions(): StartEndOptions | null;
+  /** @deprecated Use startEndOnChange instead */
+  get customizeOnChange(): ((options: StartEndOptions) => void) | null;
+  /** @deprecated Use startEndIsFreeformMode instead */
+  get customizeIsFreeformMode(): boolean;
+  /** @deprecated Use startEndGridMode instead */
+  get customizeGridMode(): GridMode;
+  /** @deprecated Use openStartEndPanel instead */
+  openCustomizePanel(
+    currentOptions: StartEndOptions,
+    onChange: (options: StartEndOptions) => void,
+    isFreeformMode?: boolean,
+    gridMode?: GridMode
+  ): void;
+  /** @deprecated Use closeStartEndPanel instead */
   closeCustomizePanel(): void;
 
   // Close all panels at once (for clear sequence, etc.)
@@ -282,14 +305,14 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   // Creation method panel state
   let isCreationMethodPanelOpen = $state(false);
 
-  // Customize options panel state
-  let isCustomizePanelOpen = $state(false);
-  let customizeOptions = $state<CustomizeOptions | null>(null);
-  let customizeOnChange = $state<((options: CustomizeOptions) => void) | null>(
+  // Start/End options panel state
+  let isStartEndPanelOpen = $state(false);
+  let startEndOptions = $state<StartEndOptions | null>(null);
+  let startEndOnChange = $state<((options: StartEndOptions) => void) | null>(
     null
   );
-  let customizeIsFreeformMode = $state(true); // Default to freeform (shows end position)
-  let customizeGridMode = $state<GridMode>(GridMode.DIAMOND); // Grid mode for position picker
+  let startEndIsFreeformMode = $state(true); // Default to freeform (shows end position)
+  let startEndGridMode = $state<GridMode>(GridMode.DIAMOND); // Grid mode for position picker
 
   /**
    * CRITICAL: Close all panels to enforce mutual exclusivity
@@ -324,11 +347,11 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     isCreationMethodPanelOpen = false;
 
-    isCustomizePanelOpen = false;
-    customizeOptions = null;
-    customizeOnChange = null;
-    customizeIsFreeformMode = true;
-    customizeGridMode = GridMode.DIAMOND;
+    isStartEndPanelOpen = false;
+    startEndOptions = null;
+    startEndOnChange = null;
+    startEndIsFreeformMode = true;
+    startEndGridMode = GridMode.DIAMOND;
   }
 
   return {
@@ -643,43 +666,71 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       isCreationMethodPanelOpen = false;
     },
 
-    // Customize Options Panel Getters
-    get isCustomizePanelOpen() {
-      return isCustomizePanelOpen;
+    // Start/End Options Panel Getters
+    get isStartEndPanelOpen() {
+      return isStartEndPanelOpen;
     },
-    get customizeOptions() {
-      return customizeOptions;
+    get startEndOptions() {
+      return startEndOptions;
     },
-    get customizeOnChange() {
-      return customizeOnChange;
+    get startEndOnChange() {
+      return startEndOnChange;
     },
-    get customizeIsFreeformMode() {
-      return customizeIsFreeformMode;
+    get startEndIsFreeformMode() {
+      return startEndIsFreeformMode;
     },
-    get customizeGridMode() {
-      return customizeGridMode;
+    get startEndGridMode() {
+      return startEndGridMode;
     },
 
-    openCustomizePanel(
-      currentOptions: CustomizeOptions,
-      onChange: (options: CustomizeOptions) => void,
+    openStartEndPanel(
+      currentOptions: StartEndOptions,
+      onChange: (options: StartEndOptions) => void,
       isFreeformMode: boolean = true,
       gridMode: GridMode = GridMode.DIAMOND
     ) {
       closeAllPanels();
-      customizeOptions = currentOptions;
-      customizeOnChange = onChange;
-      customizeIsFreeformMode = isFreeformMode;
-      customizeGridMode = gridMode;
-      isCustomizePanelOpen = true;
+      startEndOptions = currentOptions;
+      startEndOnChange = onChange;
+      startEndIsFreeformMode = isFreeformMode;
+      startEndGridMode = gridMode;
+      isStartEndPanelOpen = true;
     },
 
+    closeStartEndPanel() {
+      isStartEndPanelOpen = false;
+      startEndOptions = null;
+      startEndOnChange = null;
+      startEndIsFreeformMode = true;
+      startEndGridMode = GridMode.DIAMOND;
+    },
+
+    // Deprecated aliases for backwards compatibility
+    get isCustomizePanelOpen() {
+      return isStartEndPanelOpen;
+    },
+    get customizeOptions() {
+      return startEndOptions;
+    },
+    get customizeOnChange() {
+      return startEndOnChange;
+    },
+    get customizeIsFreeformMode() {
+      return startEndIsFreeformMode;
+    },
+    get customizeGridMode() {
+      return startEndGridMode;
+    },
+    openCustomizePanel(
+      currentOptions: StartEndOptions,
+      onChange: (options: StartEndOptions) => void,
+      isFreeformMode: boolean = true,
+      gridMode: GridMode = GridMode.DIAMOND
+    ) {
+      this.openStartEndPanel(currentOptions, onChange, isFreeformMode, gridMode);
+    },
     closeCustomizePanel() {
-      isCustomizePanelOpen = false;
-      customizeOptions = null;
-      customizeOnChange = null;
-      customizeIsFreeformMode = true;
-      customizeGridMode = GridMode.DIAMOND;
+      this.closeStartEndPanel();
     },
 
     // Close all panels at once
@@ -697,7 +748,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isFilterPanelOpen ||
         isSequenceActionsPanelOpen ||
         isLOOPPanelOpen ||
-        isCustomizePanelOpen
+        isStartEndPanelOpen
       );
     },
   };

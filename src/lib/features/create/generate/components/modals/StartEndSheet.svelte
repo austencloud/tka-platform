@@ -1,12 +1,12 @@
 <!--
-CustomizeSheet.svelte - Sheet for configuring customize generation options
+StartEndSheet.svelte - Sheet for configuring start/end position options
 Follows modern 2026 Material Design patterns with 48px touch targets
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { CustomizeOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
@@ -26,8 +26,8 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     gridMode = GridMode.DIAMOND,
   } = $props<{
     isOpen: boolean;
-    options: CustomizeOptions | null;
-    onChange: (options: CustomizeOptions) => void;
+    options: StartEndOptions | null;
+    onChange: (options: StartEndOptions) => void;
     onClose: () => void;
     isFreeformMode?: boolean;
     gridMode?: GridMode;
@@ -36,7 +36,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
   let hapticService: IHapticFeedback;
 
   // Local pending state for editing
-  let pendingOptions = $state<CustomizeOptions>({
+  let pendingOptions = $state<StartEndOptions>({
     startPosition: null,
     endPosition: null,
     mustContainLetters: [],
@@ -113,19 +113,19 @@ Follows modern 2026 Material Design patterns with 48px touch targets
 <Drawer
   {isOpen}
   onOpenChange={(open) => !open && handleClose()}
-  labelledBy="customize-title"
+  labelledBy="start-end-title"
   closeOnBackdrop={true}
   showHandle={false}
   respectLayoutMode={true}
   placement={drawerPlacement}
-  class="customize-sheet"
-  backdropClass="customize-backdrop"
+  class="start-end-sheet"
+  backdropClass="start-end-backdrop"
 >
-  <div class="customize-content" class:desktop-layout={isSideBySideLayout}>
+  <div class="start-end-content" class:desktop-layout={isSideBySideLayout}>
     <SheetDragHandle class={isSideBySideLayout ? "side-handle" : ""} />
 
     <header class="sheet-header">
-      <h2 id="customize-title" class="sheet-title">Customize</h2>
+      <h2 id="start-end-title" class="sheet-title">Start/End</h2>
       <div class="header-actions">
         {#if hasAnyOptions}
           <button
@@ -139,7 +139,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
         <button
           class="close-button"
           onclick={handleClose}
-          aria-label="Close customize options"
+          aria-label="Close start/end options"
         >
           <svg
             viewBox="0 0 24 24"
@@ -185,7 +185,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
 
 <style>
   /* Custom styling for customize options sheet */
-  :global(.drawer-content.customize-sheet) {
+  :global(.drawer-content.start-end-sheet) {
     --sheet-backdrop-bg: rgba(0, 0, 0, 0.5);
     --sheet-backdrop-filter: blur(8px);
     --sheet-backdrop-pointer-events: auto;
@@ -200,31 +200,31 @@ Follows modern 2026 Material Design patterns with 48px touch targets
   }
 
   /* Slide animations for drawer */
-  :global(.drawer-content.customize-sheet[data-placement="bottom"]) {
+  :global(.drawer-content.start-end-sheet[data-placement="bottom"]) {
     transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  :global(.drawer-content.customize-sheet[data-placement="right"]) {
+  :global(.drawer-content.start-end-sheet[data-placement="right"]) {
     transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   :global(
-    .drawer-content.customize-sheet[data-state="closed"][data-placement="bottom"]
+    .drawer-content.start-end-sheet[data-state="closed"][data-placement="bottom"]
   ) {
     transform: translateY(100%);
   }
 
   :global(
-    .drawer-content.customize-sheet[data-state="closed"][data-placement="right"]
+    .drawer-content.start-end-sheet[data-state="closed"][data-placement="right"]
   ) {
     transform: translateX(100%);
   }
 
-  :global(.drawer-content.customize-sheet[data-state="open"]) {
+  :global(.drawer-content.start-end-sheet[data-state="open"]) {
     transform: translate(0, 0);
   }
 
-  .customize-content {
+  .start-end-content {
     container-type: inline-size;
     container-name: customize;
 
@@ -250,7 +250,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     overflow: hidden;
   }
 
-  .customize-content.desktop-layout {
+  .start-end-content.desktop-layout {
     height: 100vh;
   }
 
@@ -271,7 +271,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
   }
 
   /* Position drag handle on the left for side-by-side layout */
-  .customize-content.desktop-layout :global(.sheet-drag-handle.side-handle) {
+  .start-end-content.desktop-layout :global(.sheet-drag-handle.side-handle) {
     position: absolute;
     top: 50%;
     left: 18px;
@@ -372,7 +372,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .customize-content {
+    .start-end-content {
       animation: none;
       background-position: 0% 50%;
     }

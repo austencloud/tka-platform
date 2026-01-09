@@ -20,7 +20,7 @@ Card-based architecture with integrated Generate button:
   import { createDeviceState } from "../state/generate-device.svelte";
   import { createGenerationActionsState } from "../state/generate-actions.svelte";
   import { createGenerationConfigState } from "../state/generate-config.svelte";
-  import { createCustomizeOptionsState } from "../state/customize-options-state.svelte";
+  import { createStartEndOptionsState } from "../state/start-end-options-state.svelte";
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
@@ -48,16 +48,16 @@ Card-based architecture with integrated Generate button:
     () => isSequentialAnimation
   );
   const deviceState = createDeviceState();
-  const customizeState = createCustomizeOptionsState();
+  const startEndState = createStartEndOptionsState();
 
   // ===== Help Mode State =====
   let helpMode = $state<HelpMode>("inactive");
   let selectedControl = $state<GeneratorHelpId | null>(null);
   let hapticService = $state<IHapticFeedback | null>(null);
 
-  // Toggle body class for z-index boosting when help mode active
+  // Toggle body class for z-index boosting when help mode active (selecting or viewing)
   $effect(() => {
-    if (helpMode === "selecting") {
+    if (helpMode !== "inactive") {
       document.body.classList.add("generator-help-mode-active");
     } else {
       document.body.classList.remove("generator-help-mode-active");
@@ -106,7 +106,7 @@ Card-based architecture with integrated Generate button:
 
 <div
   class="generate-panel"
-  class:help-active={helpMode === "selecting"}
+  class:help-active={helpMode !== "inactive"}
   data-layout={deviceState.layoutMode}
   data-allow-scroll={deviceState.shouldAllowScrolling}
   data-is-desktop={isDesktop}
@@ -115,7 +115,7 @@ Card-based architecture with integrated Generate button:
   <!-- Help button in corner -->
   <button
     class="help-btn"
-    class:active={helpMode === "selecting"}
+    class:active={helpMode !== "inactive"}
     onclick={enterHelpMode}
     aria-label="Help with generator settings"
   >
@@ -129,7 +129,7 @@ Card-based architecture with integrated Generate button:
       updateConfig={configState.updateConfig}
       isGenerating={actionsState.isGenerating}
       onGenerateClicked={actionsState.onGenerateClicked}
-      {customizeState}
+      {startEndState}
       helpMode={helpMode === "selecting"}
       onHelpSelect={selectControlHelp}
     />
@@ -182,10 +182,8 @@ Card-based architecture with integrated Generate button:
   }
 
   .help-btn.active {
-    background: rgba(59, 130, 246, 0.2);
-    color: rgba(59, 130, 246, 1);
-    border-color: rgba(59, 130, 246, 0.5);
-    animation: help-pulse 1.5s ease-in-out infinite;
+    /* Hide button when help mode is active - banner provides the close action */
+    display: none;
   }
 
   .help-btn:focus-visible {
@@ -193,19 +191,14 @@ Card-based architecture with integrated Generate button:
     outline-offset: 2px;
   }
 
-  @keyframes help-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-    }
-    50% {
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
-    }
-  }
-
   /* Boost panel z-index when help mode is active (above backdrop at 200) */
   :global(body.generator-help-mode-active) .generate-panel {
     z-index: 210;
+  }
+
+  /* Push content down when help banner is visible so it doesn't overlap */
+  .generate-panel.help-active .generate-panel-inner {
+    padding-top: calc(48px + 1rem);
   }
 
   .generate-panel-inner {

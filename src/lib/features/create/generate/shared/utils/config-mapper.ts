@@ -17,7 +17,7 @@ import type {
   GenerationOptions,
 } from "../domain/models/generate-models";
 import { DifficultyLevel as DifficultyEnum } from "../domain/models/generate-models";
-import type { CustomizeOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
 
 /**
  * Map difficulty level number to DifficultyLevel enum
@@ -74,12 +74,12 @@ export interface UIGenerationConfig {
  *
  * @param uiConfig - The UI generation configuration
  * @param propType - The prop type to use (defaults to FAN)
- * @param customizeOptions - Optional customize constraints (start/end position, letter constraints)
+ * @param startEndOptions - Optional start/end position constraints
  */
 export function uiConfigToGenerationOptions(
   uiConfig: UIGenerationConfig,
   propType: PropType = PropTypeEnum.FAN,
-  customizeOptions?: CustomizeOptions | null
+  startEndOptions?: StartEndOptions | null
 ): GenerationOptions {
   // Force halved mode for LOOP types that only support halved (not quartered)
   // EXCEPTION: MIRRORED_ROTATED, MIRRORED_INVERTED_ROTATED, and MIRRORED_ROTATED_INVERTED_SWAPPED
@@ -121,11 +121,11 @@ export function uiConfigToGenerationOptions(
       ? (uiConfig.loopType as GenerationOptions["loopType"])
       : undefined,
 
-    // Include customize options if provided
-    startPosition: customizeOptions?.startPosition ?? undefined,
-    endPosition: customizeOptions?.endPosition ?? undefined,
-    mustContainLetters: customizeOptions?.mustContainLetters ?? undefined,
-    mustNotContainLetters: customizeOptions?.mustNotContainLetters ?? undefined,
+    // Include start/end options if provided
+    startPosition: startEndOptions?.startPosition ?? undefined,
+    endPosition: startEndOptions?.endPosition ?? undefined,
+    mustContainLetters: startEndOptions?.mustContainLetters ?? undefined,
+    mustNotContainLetters: startEndOptions?.mustNotContainLetters ?? undefined,
   };
   return options;
 }

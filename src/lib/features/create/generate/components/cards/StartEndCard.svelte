@@ -1,10 +1,10 @@
 <!--
-CustomizeCard.svelte - Card for opening customize generation options
-Opens sheet with start/end position and letter constraint options
+StartEndCard.svelte - Card for opening start/end position options
+Opens sheet with start/end position selection
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { CustomizeOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+  import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { resolve } from "$lib/shared/inversify/di";
   import { TYPES } from "$lib/shared/inversify/types";
@@ -24,8 +24,8 @@ Opens sheet with start/end position and letter constraint options
     positionsResetTrigger = 0,
     gridMode = GridMode.DIAMOND,
   } = $props<{
-    currentOptions: CustomizeOptions;
-    onOptionsChange: (options: CustomizeOptions) => void;
+    currentOptions: StartEndOptions;
+    onOptionsChange: (options: StartEndOptions) => void;
     isFreeformMode?: boolean;
     color?: string;
     shadowColor?: string;
@@ -69,11 +69,11 @@ Opens sheet with start/end position and letter constraint options
     hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
   });
 
-  // Open customize panel via coordinator (renders at CreateModule level)
+  // Open start/end panel via coordinator (renders at CreateModule level)
   function openExpanded() {
     hapticService?.trigger("selection");
 
-    panelState?.openCustomizePanel?.(
+    panelState?.openStartEndPanel?.(
       currentOptions,
       onOptionsChange,
       isFreeformMode,
@@ -112,9 +112,9 @@ Opens sheet with start/end position and letter constraint options
   });
 </script>
 
-<div class="customize-card-wrapper" class:resetting={isResetting}>
+<div class="start-end-card-wrapper" class:resetting={isResetting}>
   <BaseCard
-    title="Customize"
+    title="Start/End"
     currentValue={displayValue}
     {color}
     {shadowColor}
@@ -126,12 +126,12 @@ Opens sheet with start/end position and letter constraint options
 </div>
 
 <style>
-  .customize-card-wrapper {
+  .start-end-card-wrapper {
     display: contents;
   }
 
   /* Slide up animation when positions are reset */
-  .customize-card-wrapper.resetting :global(.card-value) {
+  .start-end-card-wrapper.resetting :global(.card-value) {
     animation: slideUp 0.3s ease-out;
   }
 
@@ -156,7 +156,7 @@ Opens sheet with start/end position and letter constraint options
 
   /* Respect motion preferences */
   @media (prefers-reduced-motion: reduce) {
-    .customize-card-wrapper.resetting :global(.card-value) {
+    .start-end-card-wrapper.resetting :global(.card-value) {
       animation: none;
     }
   }
