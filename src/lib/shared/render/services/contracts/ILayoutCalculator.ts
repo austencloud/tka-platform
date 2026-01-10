@@ -28,4 +28,26 @@ export interface ILayoutCalculator {
    * Validate layout parameters
    */
   validateLayout(beatCount: number, includeStartPosition: boolean): boolean;
+
+  /**
+   * Calculate the aspect ratio for gallery thumbnails given a beat count.
+   * Uses fixed gallery composition options (header + footer).
+   *
+   * @param beatCount Number of beats in the sequence (not including start position)
+   * @returns Aspect ratio (width / height) for the gallery thumbnail
+   */
+  calculateGalleryAspectRatio(beatCount: number): number;
+
+  /**
+   * Calculate the aspect ratio for a thumbnail given beat count and options.
+   * More flexible than calculateGalleryAspectRatio for custom compositions.
+   */
+  calculateThumbnailAspectRatio(
+    beatCount: number,
+    options?: {
+      includeStartPosition?: boolean;
+      hasHeader?: boolean;
+      hasFooter?: boolean;
+    }
+  ): number;
 }

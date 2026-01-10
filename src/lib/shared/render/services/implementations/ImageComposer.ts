@@ -27,7 +27,7 @@ import type {
 } from "../contracts/IImageComposer";
 import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
 import type { ITextRenderer } from "../contracts/ITextRenderer";
-import type { IPictographSVGCache } from "../contracts/IPictographSVGCache";
+import type { IPictographBlobCache } from "../contracts/IPictographBlobCache";
 import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
 import type { IBeatNumberRenderer } from "../contracts/IBeatNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
@@ -36,17 +36,22 @@ export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
 
-  // Two-layer caching stats
+  // Global two-layer caching stats (lifetime totals)
   private layer1Hits = 0;
   private layer1Misses = 0;
   private layer2Hits = 0;
   private layer2Misses = 0;
 
+  // Per-composition stats (reset each sequence)
+  private compositionL2Hits = 0;
+  private compositionL1Hits = 0;
+  private compositionFreshRenders = 0;
+
   constructor(
     private readonly layoutService: ILayoutCalculator,
     private readonly TextRenderer: ITextRenderer,
     private readonly DimensionCalculator: IDimensionCalculator,
-    private readonly svgCache: IPictographSVGCache,
+    private readonly blobCache: IPictographBlobCache,
     private readonly keyHasher: IPictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
     private readonly beatNumberRenderer: IBeatNumberRenderer
@@ -126,6 +131,11 @@ export class ImageComposer implements IImageComposer {
     if (!sequence.beats || sequence.beats.length === 0) {
       throw new Error("Sequence must have at least one beat");
     }
+
+    // Reset per-composition stats
+    this.compositionL2Hits = 0;
+    this.compositionL1Hits = 0;
+    this.compositionFreshRenders = 0;
 
     // Get visibility settings ONCE at the start of composition
     // Uses explicit overrides from options if provided, otherwise falls back to global settings
@@ -357,6 +367,19 @@ export class ImageComposer implements IImageComposer {
       );
     }
 
+    // Log per-sequence cache effectiveness
+    const totalPictographs = this.compositionL2Hits + this.compositionL1Hits + this.compositionFreshRenders;
+    if (totalPictographs > 0) {
+      const cachedCount = this.compositionL2Hits + this.compositionL1Hits;
+      const cacheRate = ((cachedCount / totalPictographs) * 100).toFixed(0);
+      const sequenceName = derivedWord || sequence.name || "unnamed";
+      console.log(
+        `[Render] "${sequenceName}" ${totalPictographs} beats: ` +
+        `${this.compositionL2Hits} L2, ${this.compositionL1Hits} L1, ${this.compositionFreshRenders} fresh ` +
+        `(${cacheRate}% cached)`
+      );
+    }
+
     return canvas;
   }
 
@@ -364,9 +387,14 @@ export class ImageComposer implements IImageComposer {
    * Render a single pictograph directly onto the canvas at the specified grid position
    * 🚀 PERF: Uses two-layer cache to avoid re-rendering identical pictographs
    *
-   * Layer 1 (IndexedDB): Base SVG without beat number - persistent across sessions
+   * Layer 1 (IndexedDB): Rasterized PNG blobs - persistent, instant image creation
    * Layer 2 (Memory): Sized HTMLImageElement - fast access, LRU eviction
    * Beat numbers are drawn as canvas text overlay after the base image
+   *
+   * Why blobs instead of SVG strings?
+   * - SVG strings must be re-parsed and rasterized by the browser on every load
+   * - Blobs are already rasterized, so creating images is instant (~10ms vs ~200ms)
+   * - Benchmark showed SVG L1 cache had 0.1% speedup vs 91.9% for L2 memory cache
    *
    * @param bluePropType Optional explicit blue prop type override (passed to PictographPreparer to prevent race conditions)
    * @param redPropType Optional explicit red prop type override (passed to PictographPreparer to prevent race conditions)
@@ -393,62 +421,61 @@ export class ImageComposer implements IImageComposer {
         redPropType: redPropType ?? visibilitySettings?.redPropType,
       };
 
-      // 🚀 PERF: Generate base cache key (WITHOUT beat number) for Layer 1
+      // 🚀 PERF: Generate base cache key (without beat number)
       const baseKey = this.keyHasher.deriveKey(pictographData, finalVisibilitySettings);
 
-      // 🚀 PERF: Check Layer 2 (memory) first - includes size
-      const memoryKey = this.memoryCache.getKey(baseKey, beatSize);
-      let img = this.memoryCache.get(memoryKey);
+      // 🚀 PERF: L1 blob cache is size-specific (blobs are rasterized at specific size)
+      const blobKey = `${baseKey}:${beatSize}`;
+
+      // 🚀 PERF: Check Layer 2 (memory) first - same key as blob cache
+      let img = this.memoryCache.get(blobKey);
 
       if (img) {
         // Layer 2 hit - use cached image directly
         this.layer2Hits++;
+        this.compositionL2Hits++;
       } else {
-        // Layer 2 miss - check Layer 1 (IndexedDB)
+        // Layer 2 miss - check Layer 1 (IndexedDB blob cache)
         this.layer2Misses++;
 
-        let baseSvg = await this.svgCache.get(baseKey);
+        const cachedBlob = await this.blobCache.get(blobKey);
 
-        if (baseSvg) {
-          // Layer 1 hit - convert to image at target size
+        if (cachedBlob) {
+          // Layer 1 hit - create image directly from blob (instant!)
           this.layer1Hits++;
+          this.compositionL1Hits++;
+          img = await this.blobToImage(cachedBlob);
         } else {
-          // Layer 1 miss - render base SVG (WITHOUT beat number)
+          // Layer 1 miss - render SVG and convert to blob
           this.layer1Misses++;
+          this.compositionFreshRenders++;
 
-          baseSvg = await renderPictographToSVG(
+          const svg = await renderPictographToSVG(
             pictographData,
             beatSize,
-            undefined, // No beat number in base SVG
+            undefined, // No beat number in base image
             finalVisibilitySettings
           );
 
-          // Store in Layer 1 (IndexedDB) - fire and forget
-          this.svgCache.set(baseKey, baseSvg).catch((err) => {
-            console.warn("[ImageComposer] Failed to cache SVG:", err);
+          // Convert SVG to image
+          img = await this.svgStringToImage(svg);
+
+          // Convert image to blob for L1 cache (async, non-blocking)
+          this.imageToBlob(img).then((blob) => {
+            this.blobCache.set(blobKey, blob).catch((err) => {
+              console.warn("[ImageComposer] Failed to cache blob:", err);
+            });
           });
         }
 
-        // Convert SVG to image
-        img = await this.svgStringToImage(baseSvg);
-
         // Store in Layer 2 (memory)
-        this.memoryCache.set(memoryKey, img);
+        this.memoryCache.set(blobKey, img);
       }
 
       // Draw base image onto the canvas at the correct position
       const x = column * beatSize;
       const y = row * beatSize + titleOffset;
       ctx.drawImage(img, x, y, beatSize, beatSize);
-
-      // Log cache performance periodically (every 50 renders)
-      const totalOperations = this.layer2Hits + this.layer2Misses;
-      if (totalOperations > 0 && totalOperations % 50 === 0) {
-        console.log(
-          `[PictographCache] Stats: L2=${this.layer2Hits}/${totalOperations} (${((this.layer2Hits / totalOperations) * 100).toFixed(1)}%), ` +
-          `L1=${this.layer1Hits}/${this.layer1Misses + this.layer1Hits} (${this.layer1Hits + this.layer1Misses > 0 ? ((this.layer1Hits / (this.layer1Hits + this.layer1Misses)) * 100).toFixed(1) : 0}%)`
-        );
-      }
 
       // Draw beat number as text overlay (if provided)
       if (beatNumber !== undefined) {
@@ -512,7 +539,7 @@ export class ImageComposer implements IImageComposer {
    * This is async because it queries IndexedDB
    */
   async getLayer1Stats() {
-    return this.svgCache.getStats();
+    return this.blobCache.getStats();
   }
 
   /**
@@ -525,7 +552,7 @@ export class ImageComposer implements IImageComposer {
 
     // Optionally clear Layer 1 (IndexedDB)
     if (includeIndexedDB) {
-      await this.svgCache.clear();
+      await this.blobCache.clear();
     }
 
     // Reset stats
@@ -623,7 +650,6 @@ export class ImageComposer implements IImageComposer {
     return new Promise((resolve, reject) => {
       const img = new Image();
 
-      img.onload = () => resolve(img);
       img.onerror = () => reject(new Error("Failed to load SVG as image"));
 
       // Convert SVG string to data URL
@@ -636,6 +662,58 @@ export class ImageComposer implements IImageComposer {
         URL.revokeObjectURL(url);
         resolve(img);
       };
+    });
+  }
+
+  /**
+   * 🚀 PERF: Convert image Blob to HTMLImageElement (instant for rasterized blobs)
+   * This is the key optimization - creating an image from a blob is much faster
+   * than parsing and rasterizing an SVG string.
+   */
+  private async blobToImage(blob: Blob): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+
+      img.onerror = () => reject(new Error("Failed to load blob as image"));
+
+      const url = URL.createObjectURL(blob);
+      img.src = url;
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+    });
+  }
+
+  /**
+   * 🚀 PERF: Convert HTMLImageElement to PNG Blob for L1 cache storage
+   * Draws the image to a temporary canvas and exports as PNG.
+   */
+  private async imageToBlob(img: HTMLImageElement): Promise<Blob> {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width || img.naturalWidth;
+    canvas.height = img.height || img.naturalHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Failed to get 2D context for blob conversion");
+    }
+
+    ctx.drawImage(img, 0, 0);
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to convert canvas to blob"));
+          }
+        },
+        "image/png",
+        1.0
+      );
     });
   }
 

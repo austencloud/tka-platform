@@ -30,7 +30,9 @@ if (import.meta.hot) {
   });
 }
 
-const DEFAULT_MAX_ENTRIES = 200;
+// Increased from 200 to 2000 to reduce L2 misses
+// Each HTMLImageElement is ~50-100KB, so 2000 entries ≈ 100-200MB max
+const DEFAULT_MAX_ENTRIES = 2000;
 
 export class PictographMemoryCache {
   private cache = hmrImageCache;

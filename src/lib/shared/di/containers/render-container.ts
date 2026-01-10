@@ -7,7 +7,7 @@
  * - DimensionCalculator, ImageFormatConverter
  * - SVGToCanvasConverter, TextRenderer
  * - GlyphCache, FilenameGenerator
- * - PictographSVGCache, PictographKeyHasher, PictographMemoryCache, BeatNumberRenderer
+ * - PictographBlobCache, PictographKeyHasher, PictographMemoryCache, BeatNumberRenderer
  */
 
 import { createContainer } from "iti";
@@ -22,7 +22,7 @@ import { LayoutCalculator } from "$lib/shared/render/services/implementations/La
 import { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { SVGToCanvasConverter } from "$lib/shared/render/services/implementations/SVGToCanvasConverter";
 import { TextRenderer } from "$lib/shared/render/services/implementations/TextRenderer";
-import { PictographSVGCache } from "$lib/shared/render/services/implementations/PictographSVGCache";
+import { PictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 import { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import { PictographMemoryCache } from "$lib/shared/render/services/implementations/PictographMemoryCache";
 import { BeatNumberRenderer } from "$lib/shared/render/services/implementations/BeatNumberRenderer";
@@ -42,7 +42,9 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     glyphCache: () => new GlyphCache(),
     filenameGenerator: () => new FilenameGenerator(),
     // Two-layer pictograph caching system
-    pictographSVGCache: () => new PictographSVGCache(),
+    // L1: Blob cache (IndexedDB) - stores rasterized PNG blobs for instant image creation
+    // L2: Memory cache - stores HTMLImageElements for direct canvas drawing
+    pictographBlobCache: () => new PictographBlobCache(),
     pictographKeyHasher: () => new PictographKeyHasher(),
     pictographMemoryCache: () => new PictographMemoryCache(),
     beatNumberRenderer: () => new BeatNumberRenderer(),
@@ -62,7 +64,7 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
         ctx.layoutCalculator,
         ctx.textRenderer,
         ctx.dimensionCalculator,
-        ctx.pictographSVGCache,
+        ctx.pictographBlobCache,
         ctx.pictographKeyHasher,
         ctx.pictographMemoryCache,
         ctx.beatNumberRenderer

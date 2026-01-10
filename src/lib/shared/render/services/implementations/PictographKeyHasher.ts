@@ -65,10 +65,13 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     data: BeatData | PictographData,
     visibility: PictographVisibilityOptions
   ): PictographKeyInput {
+    // Guard against missing motions data
+    const motions = data.motions ?? { blue: undefined, red: undefined };
+
     return {
       letter: data.letter ?? undefined,
-      blue: this.extractMotionKey(data.motions.blue),
-      red: this.extractMotionKey(data.motions.red),
+      blue: this.extractMotionKey(motions.blue),
+      red: this.extractMotionKey(motions.red),
       visibility: {
         showTKA: visibility.showTKA ?? true,
         showVTG: visibility.showVTG ?? false,

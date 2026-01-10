@@ -347,6 +347,67 @@ export class LayoutCalculator implements ILayoutCalculator {
   }
 
   /**
+   * Calculate the aspect ratio for gallery thumbnails given a beat count.
+   *
+   * Gallery thumbnails use fixed composition options:
+   * - includeStartPosition: true
+   * - addWord: true (headerHeight = beatSize / 3)
+   * - showCreatorName/Notes/Birthday: true (footerHeight = beatSize / 7)
+   *
+   * Formula:
+   *   width = columns * beatSize
+   *   height = rows * beatSize + beatSize/3 + beatSize/7
+   *          = beatSize * (rows + 10/21)
+   *   aspectRatio = columns / (rows + 10/21)
+   *
+   * @param beatCount Number of beats in the sequence (not including start position)
+   * @returns Aspect ratio (width / height) for the gallery thumbnail
+   */
+  calculateGalleryAspectRatio(beatCount: number): number {
+    // Gallery variant always includes start position
+    const [columns, rows] = this.calculateLayout(beatCount, true);
+
+    // Header = beatSize/3, Footer = beatSize/7
+    // Total fractional height: 1/3 + 1/7 = 7/21 + 3/21 = 10/21
+    const additionalHeightFraction = 10 / 21;
+
+    return columns / (rows + additionalHeightFraction);
+  }
+
+  /**
+   * Calculate the aspect ratio for a thumbnail given beat count and options.
+   * More flexible than calculateGalleryAspectRatio for custom compositions.
+   *
+   * @param beatCount Number of beats in the sequence
+   * @param options.includeStartPosition Whether start position is shown
+   * @param options.hasHeader Whether word/difficulty header is shown (adds beatSize/3)
+   * @param options.hasFooter Whether creator/notes/birthday footer is shown (adds beatSize/7)
+   */
+  calculateThumbnailAspectRatio(
+    beatCount: number,
+    options: {
+      includeStartPosition?: boolean;
+      hasHeader?: boolean;
+      hasFooter?: boolean;
+    } = {}
+  ): number {
+    const {
+      includeStartPosition = true,
+      hasHeader = true,
+      hasFooter = true,
+    } = options;
+
+    const [columns, rows] = this.calculateLayout(beatCount, includeStartPosition);
+
+    // Calculate additional height fraction relative to beatSize
+    let additionalHeightFraction = 0;
+    if (hasHeader) additionalHeightFraction += 1 / 3; // beatSize / 3
+    if (hasFooter) additionalHeightFraction += 1 / 7; // beatSize / 7
+
+    return columns / (rows + additionalHeightFraction);
+  }
+
+  /**
    * Debug method to verify layout table integrity
    */
   validateLayoutTables(): { valid: boolean; errors: string[] } {
