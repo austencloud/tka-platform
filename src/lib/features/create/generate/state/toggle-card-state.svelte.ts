@@ -12,8 +12,7 @@
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
 import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 
 // Touch tolerance constants
 // 75px is very generous for lazy/casual taps on mobile
@@ -61,9 +60,9 @@ export function createToggleCardState<T>(props: {
   async function initialize(): Promise<() => void> {
     try {
       // Resolve services from DI container
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-      rippleService = resolve<IRippleEffect>(TYPES.IRippleEffect);
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+      hapticService = container.items.hapticFeedback;
+      rippleService = container.items.rippleEffect;
+      deviceDetector = container.items.deviceDetector;
 
       // Set initial layout state
       isLandscapeMobile = deviceDetector.isLandscapeMobile();

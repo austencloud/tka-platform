@@ -1,5 +1,3 @@
-import { injectable } from "inversify";
-
 import type { ModuleDefinition } from "../domain/types";
 import type {
   ModuleSelectionState,
@@ -8,13 +6,12 @@ import type {
 } from "../domain/models/ModuleSelection";
 import type { IModuleSelector } from "./contracts/IModuleSelector";
 
-@injectable()
 export class ModuleSelector implements IModuleSelector {
-  private selectionState = $state<ModuleSelectionState>({
+  private selectionState: ModuleSelectionState = {
     isSelecting: false,
     lastSelected: null,
     selectionHistory: [],
-  });
+  };
 
   private subscriptions = new Set<(state: ModuleSelectionState) => void>();
 

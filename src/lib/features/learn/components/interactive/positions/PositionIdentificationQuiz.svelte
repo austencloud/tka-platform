@@ -4,8 +4,7 @@ Shows hand positions on grid, user identifies the type
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     POSITION_TYPE_INFO,
     generatePositionQuestions,
@@ -22,7 +21,7 @@ Shows hand positions on grid, user identifies the type
     onComplete?: () => void;
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   type AnswerState = "idle" | "correct" | "incorrect";
 

@@ -5,8 +5,6 @@
  * Extracts handler logic from component to improve testability and maintainability.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { CreateModuleState } from "../../state/create-module-state.svelte";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
@@ -18,12 +16,9 @@ import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrches
 import type { IBeatOperator } from "../contracts/IBeatOperator";
 import { executeClearSequenceWorkflow } from "../../utils/clearSequenceWorkflow";
 
-@injectable()
 export class CreateModuleHandlers implements ICreateModuleHandlers {
   constructor(
-    @inject(TYPES.ICreateModuleOrchestrator)
     private CreateModuleOrchestrator: ICreateModuleOrchestrator,
-    @inject(TYPES.IBeatOperator)
     private BeatOperator: IBeatOperator
   ) {}
 

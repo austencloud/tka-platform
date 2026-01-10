@@ -8,23 +8,24 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/features/discover/sequences/display/components/PropAwareThumbnail.svelte";
+  import WordCardQR from "./WordCardQR.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   interface Props {
     sequence: SequenceData;
     printMode?: boolean;
+    showQRCodes?: boolean;
   }
 
-  let { sequence, printMode = false }: Props = $props();
+  let { sequence, printMode = false, showQRCodes = false }: Props = $props();
 
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Get prop settings from global state
@@ -49,19 +50,27 @@
 <button
   class="word-card"
   class:print-mode={printMode}
+  class:with-qr={showQRCodes}
   onclick={handleClick}
   onkeydown={handleKeyDown}
   aria-label="View sequence {sequence.name}"
   type="button"
 >
-  <PropAwareThumbnail
-    {sequence}
-    bluePropType={propSettings.bluePropType}
-    redPropType={propSettings.redPropType}
-    catDogModeEnabled={propSettings.catDogMode}
-    lightMode={printMode}
-    variant="wordcard"
-  />
+  <div class="card-content">
+    <PropAwareThumbnail
+      {sequence}
+      bluePropType={propSettings.bluePropType}
+      redPropType={propSettings.redPropType}
+      catDogModeEnabled={propSettings.catDogMode}
+      lightMode={printMode}
+      variant="wordcard"
+    />
+    {#if showQRCodes}
+      <div class="qr-overlay">
+        <WordCardQR {sequence} size={60} />
+      </div>
+    {/if}
+  </div>
 </button>
 
 <style>
@@ -139,6 +148,42 @@
 
   .word-card :global(.letter) {
     color: var(--print-text-muted);
+  }
+
+  /* Card content wrapper for QR overlay positioning */
+  .card-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* QR code overlay - positioned bottom-left (below start position column) */
+  .qr-overlay {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    z-index: 1;
+    pointer-events: none; /* Allow clicks through to card */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+  }
+
+  /* Adjust card layout when QR codes are shown */
+  .word-card.with-qr .card-content {
+    /* Ensure thumbnail doesn't overlap QR code */
+    padding-bottom: 8px;
+  }
+
+  /* Print styles for QR codes */
+  @media print {
+    .qr-overlay {
+      box-shadow: none;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

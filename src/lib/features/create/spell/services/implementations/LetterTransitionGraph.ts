@@ -5,7 +5,6 @@
  * Uses BFS to find shortest bridge paths between letters that can't directly follow.
  */
 
-import { injectable } from "inversify";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
@@ -29,7 +28,6 @@ interface LetterMappingsJson {
   categories: Record<string, string[]>;
 }
 
-@injectable()
 export class LetterTransitionGraph implements ILetterTransitionGraph {
   private letterPositions: Map<Letter, LetterPositionInfo> = new Map();
   private lettersByStartGroup: Map<GridPositionGroup, Letter[]> = new Map();

@@ -15,8 +15,7 @@
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { onMount } from "svelte";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
@@ -105,13 +104,11 @@
   }
 
   // Initialize services
-  async function initializeServices() {
+  function initializeServices() {
     try {
-      await loadFeatureModule("discover");
-      loaderService = tryResolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-      thumbnailService = tryResolve<IDiscoverThumbnailProvider>(
-        TYPES.IDiscoverThumbnailProvider
-      );
+      loaderService = container.items.discoverLoader as IDiscoverLoader;
+      thumbnailService = container.items
+        .discoverThumbnailProvider as IDiscoverThumbnailProvider;
       servicesReady = !!(loaderService && thumbnailService);
     } catch (err) {
       console.error("TimelineMediaBrowser: Failed to init services:", err);
@@ -195,8 +192,8 @@
   }
 
   // Load on mount
-  onMount(async () => {
-    await initializeServices();
+  onMount(() => {
+    initializeServices();
     if (servicesReady) {
       loadSequences();
     }

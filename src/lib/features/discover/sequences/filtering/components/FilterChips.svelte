@@ -7,9 +7,8 @@ Shows visual feedback of active filters with easy removal.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 
   const {
@@ -23,7 +22,7 @@ Shows visual feedback of active filters with easy removal.
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Check if filter is active (not "all")

@@ -15,7 +15,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { fly, fade } from "svelte/transition";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import {
@@ -64,7 +64,7 @@
   // Check if user has seen this intro before
   onMount(() => {
     try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      hapticService = container.items.hapticFeedback as IHapticFeedback;
     } catch {
       /* Optional */
     }

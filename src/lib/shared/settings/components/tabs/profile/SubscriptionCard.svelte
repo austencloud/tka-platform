@@ -5,7 +5,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
-  import { tryResolve, TYPES } from "../../../../inversify/di";
+  import { container } from "$lib/shared/di";
   import type { ISubscriptionManager } from "../../../../subscription/services/contracts/ISubscriptionManager";
   import type { SubscriptionInfo } from "../../../../subscription/services/contracts/ISubscriptionManager";
   import type { IHapticFeedback } from "../../../../application/services/contracts/IHapticFeedback";
@@ -41,9 +41,7 @@
   );
 
   onMount(async () => {
-    subscriptionService = tryResolve<ISubscriptionManager>(
-      TYPES.ISubscriptionManager
-    );
+    subscriptionService = container.items.subscriptionManager;
 
     if (subscriptionService) {
       // Initial load

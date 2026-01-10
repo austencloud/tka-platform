@@ -5,7 +5,6 @@
  * Sessions support public discovery, private invite links, and friends-only access.
  */
 
-import { injectable } from 'inversify';
 import {
 	ref,
 	set,
@@ -36,7 +35,6 @@ import type {
 } from '../../domain/multiplayer-models';
 import { MULTIPLAYER_CONFIG as CONFIG } from '../../domain/multiplayer-models';
 
-@injectable()
 export class GallerySessionManager implements IGallerySessionManager {
 	private currentSessionId: string | null = null;
 	private currentHostId: string | null = null;

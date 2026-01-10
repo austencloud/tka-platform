@@ -5,8 +5,7 @@
  * Handles component selection, multiple designations, and freeform labeling.
  */
 
-import { tryResolve } from "$lib/shared/inversify/di";
-import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
+import { container } from "$lib/shared/di";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { ILOOPDesignator } from "../services/contracts/ILOOPDesignator";
 import type {
@@ -82,12 +81,10 @@ export function createWholeModeState(): WholeModeState {
   let pendingDesignations = $state<LOOPDesignation[]>([]);
 
   // Services
-  const labelsService = tryResolve<ILOOPLabelsFirebaseRepository>(
-    LOOPLabelerTypes.ILOOPLabelsFirebaseRepository
-  );
-  const designationService = tryResolve<ILOOPDesignator>(
-    LOOPLabelerTypes.ILOOPDesignator
-  );
+  const labelsService =
+    container.items.loopLabelsFirebaseRepository as ILOOPLabelsFirebaseRepository | null;
+  const designationService =
+    container.items.loopDesignator as ILOOPDesignator | null;
 
   // Actions
   const actions = {

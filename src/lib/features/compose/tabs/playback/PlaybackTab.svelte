@@ -7,7 +7,7 @@
 <script lang="ts">
   import { getPlaybackState } from "./state/playback-state.svelte";
   import { getComposeModuleState } from "../../shared/state/compose-module-state.svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import { onMount } from "svelte";
   import PlaybackHeader from "./components/PlaybackHeader.svelte";
@@ -32,7 +32,7 @@
   let isMobile = $state(false);
 
   onMount(() => {
-    deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+    deviceDetector = container.items.deviceDetector;
     // Check initial state
     isMobile = deviceDetector?.isMobile() ?? false;
 

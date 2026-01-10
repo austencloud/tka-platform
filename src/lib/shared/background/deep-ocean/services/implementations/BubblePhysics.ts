@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   Bubble,
   BubbleSize,
@@ -72,7 +71,6 @@ const BUBBLE_CONFIG = {
   clusterSpread: 20, // Pixels between clustered bubbles
 };
 
-@injectable()
 export class BubblePhysics implements IBubblePhysics {
   private nextClusterId = 1;
 

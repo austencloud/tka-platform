@@ -7,9 +7,7 @@
  */
 
 import type { IFileDownloader } from "../../../foundation/services/contracts/IFileDownloader";
-import { TYPES } from "../../../inversify/di";
 import { saveAs } from "file-saver";
-import { inject, injectable } from "inversify";
 import type { IImageFormatConverter } from "../contracts/IImageFormatConverter";
 
 // Define missing types locally for now
@@ -25,12 +23,8 @@ interface OptimizationSettings {
   progressive?: boolean;
 }
 
-@injectable()
 export class ImageFormatConverter implements IImageFormatConverter {
-  constructor(
-    @inject(TYPES.IFileDownloader)
-    private fileDownloadService: IFileDownloader
-  ) {}
+  constructor(private fileDownloadService: IFileDownloader) {}
   /**
    * Convert Canvas to Blob using native browser API
    */

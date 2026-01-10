@@ -4,8 +4,7 @@ Delegates ALL logic to services (SRP compliant)
 Supports help mode: when active, clicking cards opens help instead of normal action
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { quintOut } from "svelte/easing";
@@ -112,13 +111,9 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
   // Initialize services
   onMount(() => {
-    typographyService = resolve<IResponsiveTypographer>(
-      TYPES.IResponsiveTypographer
-    );
-    cardConfigService = resolve<ICardConfigurator>(TYPES.ICardConfigurator);
-    loopParamProvider = resolve<ILOOPParameterProvider>(
-      TYPES.ILOOPParameterProvider
-    );
+    typographyService = container.items.responsiveTypographer;
+    cardConfigService = container.items.cardConfigurator;
+    loopParamProvider = container.items.loopParameterProvider;
 
     updateFontSize();
     window.addEventListener("resize", updateFontSize);

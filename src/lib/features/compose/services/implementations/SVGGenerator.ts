@@ -1,5 +1,4 @@
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { injectable } from "inversify";
 import type { ISVGGenerator, PropSvgData } from "../contracts/ISVGGenerator";
 import {
   applyColorToSvg,
@@ -14,7 +13,6 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
  * Based on the exact implementation from standalone_animator.html
  */
 
-@injectable()
 export class SVGGenerator implements ISVGGenerator {
   // Static cache for fetched SVG content to avoid repeated network requests
   private static svgCache = new Map<string, string>();

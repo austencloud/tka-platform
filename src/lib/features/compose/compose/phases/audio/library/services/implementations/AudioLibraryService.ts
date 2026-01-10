@@ -4,7 +4,6 @@
  * Handles audio file uploads, local caching (IndexedDB), cloud storage, and Firestore sync.
  */
 
-import { injectable, inject } from "inversify";
 import type {
   IAudioLibrary,
   UploadResult,
@@ -27,7 +26,6 @@ import {
   updateTrackMetadata,
 } from "../../persistence/audio-library-metadata-sync";
 import type { IAudioStorageManager } from "../contracts/IAudioStorageManager";
-import { AudioTypes } from "../../../../../../../../shared/inversify/types/audio.types";
 
 /**
  * Generate unique track ID
@@ -59,13 +57,11 @@ async function extractAudioMetadata(file: File): Promise<{ duration: number }> {
   });
 }
 
-@injectable()
 export class AudioLibrary implements IAudioLibrary {
   private library: AudioTrackLocal[] = [];
   private libraryLoaded = false;
 
   constructor(
-    @inject(AudioTypes.IAudioStorageManager)
     private audioStorage: IAudioStorageManager
   ) {}
 

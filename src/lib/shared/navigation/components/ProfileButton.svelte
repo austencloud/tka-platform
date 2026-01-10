@@ -9,8 +9,7 @@
 -->
 <script lang="ts">
   import { authState } from "../../auth/state/authState.svelte";
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
   import { saveActiveTab } from "../../settings/utils/tab-persistence.svelte";
@@ -32,9 +31,9 @@
   let sheetRouterService: ISheetRouter | null = null;
 
   onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
     try {
-      sheetRouterService = await resolve<ISheetRouter>(TYPES.ISheetRouter);
+      sheetRouterService = container.items.sheetRouter;
     } catch {
       // Service not available
     }

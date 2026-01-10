@@ -8,8 +8,6 @@
  * Domain: Navigation - Letter Derivation
  */
 
-import { injectable, inject, optional } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
@@ -17,14 +15,9 @@ import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contra
 import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
 import type { ILetterDeriver } from "../contracts/ILetterDeriver";
 
-@injectable()
 export class LetterDeriver implements ILetterDeriver {
   constructor(
-    @inject(TYPES.IMotionQueryHandler)
-    @optional()
     private motionQueryHandler: IMotionQueryHandler | null,
-    @inject(TYPES.IGridModeDeriver)
-    @optional()
     private gridModeDeriver: IGridModeDeriver | null
   ) {}
 

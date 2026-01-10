@@ -5,7 +5,6 @@
  * Provides snap calculations for beats, clip edges, grid, and playhead.
  */
 
-import { injectable } from "inversify";
 import type {
   ITimelineSnapper,
   SnapResult,
@@ -21,7 +20,6 @@ import {
 } from "../SnapService";
 import { getTimelineState } from "../../state/timeline-state.svelte";
 
-@injectable()
 export class TimelineSnapper implements ITimelineSnapper {
   private _activeSnapResult: SnapResult | null = null;
   private _draggingClipIds: string[] = [];

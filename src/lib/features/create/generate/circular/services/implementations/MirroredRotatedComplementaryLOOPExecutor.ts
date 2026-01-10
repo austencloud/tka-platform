@@ -27,21 +27,14 @@
  * IMPORTANT: After rotation, sequence returns to home, which is valid for inverted mirror
  */
 
-import { inject, injectable } from "inversify";
-
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
-import { TYPES } from "$lib/shared/inversify/types";
 
 import { SliceSize } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 
-@injectable()
 export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
   constructor(
-    @inject(TYPES.IStrictRotatedLOOPExecutor)
     private readonly strictRotatedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IMirroredInvertedLOOPExecutor)
     private readonly mirroredInvertedExecutor: ILOOPExecutor
   ) {}
 

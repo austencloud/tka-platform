@@ -5,10 +5,9 @@
  * Handles device model loading, environment setup, and scene lifecycle.
  */
 
-import { injectable } from "inversify";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
+import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { IPromoSceneManager } from "../contracts/IPromoSceneManager";
 import type {
@@ -91,7 +90,6 @@ const ENVIRONMENT_PRESETS: Record<EnvironmentType, EnvironmentConfig> = {
   },
 };
 
-@injectable()
 export class PromoSceneManager implements IPromoSceneManager {
   private scene: THREE.Scene | null = null;
   private camera: THREE.PerspectiveCamera | null = null;
@@ -99,7 +97,7 @@ export class PromoSceneManager implements IPromoSceneManager {
   private device: THREE.Group | null = null;
   private screenMesh: THREE.Mesh | null = null;
   private gltfLoader: GLTFLoader;
-  private rgbeLoader: RGBELoader;
+  private hdrLoader: HDRLoader;
   private currentDeviceType: DeviceType | null = null;
   private orbitControls: OrbitControls | null = null;
 
@@ -108,7 +106,7 @@ export class PromoSceneManager implements IPromoSceneManager {
 
   constructor() {
     this.gltfLoader = new GLTFLoader();
-    this.rgbeLoader = new RGBELoader();
+    this.hdrLoader = new HDRLoader();
   }
 
   async initialize(
@@ -320,7 +318,7 @@ export class PromoSceneManager implements IPromoSceneManager {
 
     // Load HDR environment map if provided
     if (config.hdrPath) {
-      this.rgbeLoader.load(config.hdrPath, (texture) => {
+      this.hdrLoader.load(config.hdrPath, (texture) => {
         if (this.scene) {
           texture.mapping = THREE.EquirectangularReflectionMapping;
           this.scene.environment = texture;

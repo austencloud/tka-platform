@@ -17,8 +17,8 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
+  
   import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   import { GOOGLE_CLIENT_ID } from "../config/google-oauth";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -84,7 +84,7 @@
 
     try {
       if (!authService) {
-        authService = await resolve<IAuthenticator>(TYPES.IAuthenticator);
+        authService = container.items.authenticator;
       }
 
       await authService.signInWithGoogleCredential(response.credential);
@@ -150,7 +150,7 @@
 
   onMount(async () => {
     try {
-      authService = await resolve<IAuthenticator>(TYPES.IAuthenticator);
+      authService = container.items.authenticator;
       await loadGoogleScript();
       scriptLoaded = true;
       initializeOneTap();

@@ -5,10 +5,7 @@
   Saves the current sequence to the Explore.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
 
   // Props
   const {
@@ -18,11 +15,7 @@
   } = $props();
 
   // Services
-  let hapticService: IHapticFeedback;
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   function handleClick() {
     hapticService?.trigger("success");

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IApplicationInitializer } from "../contracts/IApplicationInitializer";
 
 /**
@@ -6,7 +5,6 @@ import type { IApplicationInitializer } from "../contracts/IApplicationInitializ
  *
  * Handles application startup sequence and initialization.
  */
-@injectable()
 export class ApplicationInitializer implements IApplicationInitializer {
   private initialized = false;
 

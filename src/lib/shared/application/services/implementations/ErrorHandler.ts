@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IErrorHandler } from "../contracts/IErrorHandler";
 import type {
   ShowErrorOptions,
@@ -18,7 +17,6 @@ import {
  * Centralized error handling for both internal logging and user-facing display.
  * Integrates with the error state for reactive UI updates.
  */
-@injectable()
 export class ErrorHandler implements IErrorHandler {
   private errors: Array<{ error: Error; context?: string; timestamp: Date }> =
     [];

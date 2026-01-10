@@ -4,7 +4,6 @@
  * Allows admins to view all users' activity and presence.
  */
 
-import { injectable, inject } from "inversify";
 import {
   collection,
   getDocs,
@@ -15,7 +14,6 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IPresenceTracker } from "$lib/shared/presence/services/contracts/IPresenceTracker";
 import type {
   IUserActivityTracker,
@@ -30,12 +28,8 @@ import type {
 } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
 
-@injectable()
 export class UserActivityTracker implements IUserActivityTracker {
-  constructor(
-    @inject(TYPES.IPresenceTracker)
-    private presenceService: IPresenceTracker
-  ) {}
+  constructor(private presenceService: IPresenceTracker) {}
 
   async getAllUsersWithPresence(): Promise<UserWithActivity[]> {
     try {

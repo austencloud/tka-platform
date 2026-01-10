@@ -8,8 +8,7 @@
   import { onMount } from "svelte";
   import { t, locales, baseLocale } from "$lib/shared/i18n/i18n.svelte.js";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import { resolve } from "../../../inversify/di";
-  import { TYPES } from "../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     getReactiveLocale,
     switchLocale,
@@ -37,12 +36,8 @@
   let isVisible = $state(false);
   let currentLocale = $derived(getReactiveLocale());
 
-  onMount(async () => {
-    try {
-      hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    } catch {
-      console.warn("Haptic service not available");
-    }
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
     setTimeout(() => (isVisible = true), 30);
   });
 

@@ -8,7 +8,6 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 import {
   HALF_PI,
   LOCATION_ANGLES,
@@ -59,7 +58,6 @@ export function mapOrientationToAngle(
 // Service class (uses standalone functions internally)
 // ============================================================================
 
-@injectable()
 export class AngleCalculator implements IAngleCalculator {
   /**
    * Normalize angle to positive range [0, 2π)

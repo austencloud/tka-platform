@@ -7,8 +7,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import LandscapeLayout from "./StepperLandscapeLayout.svelte";
   import PortraitLayout from "./StepperPortraitLayout.svelte";
@@ -60,8 +59,8 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   });
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    rippleService = resolve<IRippleEffect>(TYPES.IRippleEffect);
+    hapticService = container.items.hapticFeedback;
+    rippleService = container.items.rippleEffect;
 
     // Attach ripple effect
     if (cardElement) {

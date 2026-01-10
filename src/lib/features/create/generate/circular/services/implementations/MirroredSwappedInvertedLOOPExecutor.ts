@@ -20,8 +20,6 @@
  * IMPORTANT: End position must RETURN TO START POSITION (inverted effect)
  */
 
-import { inject, injectable } from "inversify";
-
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -29,7 +27,6 @@ import {
   MotionType,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { TYPES } from "$lib/shared/inversify/types";
 import type {
   GridLocation,
   GridPosition,
@@ -45,12 +42,9 @@ import {
 import type { SliceSize } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 
-@injectable()
 export class MirroredSwappedInvertedLOOPExecutor implements ILOOPExecutor {
   constructor(
-    @inject(TYPES.IOrientationCalculator)
     private OrientationCalculator: IOrientationCalculator,
-    @inject(TYPES.ILOOPParameterProvider)
     private loopParams: ILOOPParameterProvider
   ) {}
 

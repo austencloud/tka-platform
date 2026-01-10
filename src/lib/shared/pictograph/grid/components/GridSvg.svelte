@@ -6,8 +6,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
 -->
 <script lang="ts">
   import { GridMode, GridLocation } from "../domain/enums/grid-enums";
-  import { resolve, TYPES } from "../../../inversify/di";
-  import type { ISvgPreloader } from "../../shared/services/contracts/ISvgPreloader";
+  import { container } from "$lib/shared/di";
   import { getGridRotationDirection } from "../state/grid-rotation-state.svelte";
 
   let {
@@ -74,7 +73,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   let previousGridMode: GridMode | null = null;
 
   // Get SVG preload service
-  const SvgPreloader = resolve(TYPES.ISvgPreloader) as ISvgPreloader;
+  const SvgPreloader = container.items.svgPreloader;
 
   // Track which grid is currently loaded
   let loadedGridType = $state<"diamond" | "skewed" | null>(null);

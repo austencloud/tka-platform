@@ -14,8 +14,7 @@ import type { StartPositionData } from "$lib/features/create/shared/domain/model
 import type { IArrowRotationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowRotationCalculator";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import { isStartPosition } from "../../shared/domain/type-guards/pictograph-type-guards";
 
 /**
@@ -151,9 +150,7 @@ export async function exportBeatDebugData(
 async function exportStartPositionDebugData(
   startPosition: StartPositionData
 ): Promise<StartPositionDebugData> {
-  const rotationCalculator = resolve<IArrowRotationCalculator>(
-    TYPES.IArrowRotationCalculator
-  );
+  const rotationCalculator = container.items.arrowRotationCalculator;
 
   const debugData: StartPositionDebugData = {
     type: "start-position",
@@ -221,9 +218,7 @@ async function exportActualBeatDebugData(
   beatData: BeatData,
   pictographData?: PictographData
 ): Promise<BeatDebugData> {
-  const rotationCalculator = resolve<IArrowRotationCalculator>(
-    TYPES.IArrowRotationCalculator
-  );
+  const rotationCalculator = container.items.arrowRotationCalculator;
 
   const debugData: BeatDebugData = {
     type: "beat",

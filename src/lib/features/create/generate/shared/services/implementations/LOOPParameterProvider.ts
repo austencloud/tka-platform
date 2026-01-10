@@ -12,8 +12,6 @@
  */
 
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import { getInvertedLetter } from "../../../circular/domain/constants/strict-loop-position-maps";
 import type {
   RotationDirections,
@@ -26,12 +24,8 @@ import {
 import type { IPictographFilter } from "../contracts/IPictographFilter";
 import type { ILOOPParameterProvider } from "../contracts/ILOOPParameterProvider";
 
-@injectable()
 export class LOOPParameterProvider implements ILOOPParameterProvider {
-  constructor(
-    @inject(TYPES.IPictographFilter)
-    private PictographFilter: IPictographFilter
-  ) {}
+  constructor(private PictographFilter: IPictographFilter) {}
 
   // ============================================================================
   // INVERTED LETTER OPERATIONS

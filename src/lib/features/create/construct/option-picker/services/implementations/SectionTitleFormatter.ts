@@ -5,11 +5,9 @@
  * Extracted from OptionViewer.svelte.
  */
 
-import { injectable } from "inversify";
 import { LetterTypeTextPainter } from "../../utils/letter-type-text-painter";
 import type { ISectionTitleFormatter } from "../contracts/ISectionTitleFormatter";
 
-@injectable()
 export class SectionTitleFormatter implements ISectionTitleFormatter {
   private readonly typeDescriptions = {
     Type1: { description: "Dual-Shift", typeName: "Type 1" },

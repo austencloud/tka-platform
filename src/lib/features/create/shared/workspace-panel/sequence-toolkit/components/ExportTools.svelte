@@ -5,11 +5,8 @@ Handles sequence export operations like copy JSON and Save.
 Pure presentation component that delegates to sequence export services.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { Snippet } from "svelte";
-  import { onMount } from "svelte";
 
   let {
     disabled = false,
@@ -27,11 +24,7 @@ Pure presentation component that delegates to sequence export services.
     renderExtra?: Snippet;
   }>();
 
-  let hapticService: IHapticFeedback;
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   function handle(fn?: () => void) {
     if (disabled) return;

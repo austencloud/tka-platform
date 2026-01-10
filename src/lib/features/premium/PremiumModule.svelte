@@ -5,14 +5,14 @@
   Disappears after user subscribes.
 -->
 <script lang="ts">
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import PremiumShowcase from "./components/PremiumShowcase.svelte";
 
   let hapticService = $state<IHapticFeedback | null>(null);
 
   $effect(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 </script>
 

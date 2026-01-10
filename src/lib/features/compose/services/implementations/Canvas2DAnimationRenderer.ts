@@ -19,7 +19,6 @@
  * - Canvas2DFadeManager: Glyph fade transitions
  */
 
-import { injectable } from "inversify";
 import type {
   IAnimationRenderer,
   RenderSceneParams,
@@ -34,7 +33,6 @@ const VIEWBOX_SIZE = 950;
 const GRID_HALFWAY_POINT_OFFSET = 150; // Strict hand points (animation mode)
 const INWARD_FACTOR = 1.0; // No inward adjustment - use exact grid coordinates
 
-@injectable()
 export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   // Specialized service managers
   private appManager: Canvas2DApplicationManager;

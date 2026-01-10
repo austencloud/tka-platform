@@ -8,8 +8,7 @@
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import PictographRenderer from "./QuizPictographRenderer.svelte";
 
   // Services
@@ -17,7 +16,7 @@
 
   // Initialize haptic service
   $effect(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Props

@@ -10,10 +10,8 @@
   - Provide visual feedback for active tab
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Props
@@ -28,11 +26,7 @@
   }>();
 
   // Services
-  let hapticService: IHapticFeedback | null = $state(null);
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService: IHapticFeedback = container.items.hapticFeedback;
 
   // Handle tab click
   function handleTabClick(tab: "construct" | "generate") {

@@ -1,8 +1,7 @@
 <!-- QuizResultsView - Refactored with service architecture -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { QuizResults } from "../domain/models/quiz-models";
   import type { IQuizResultsAnalyzer } from "../QuizResultsAnalyzer";
@@ -33,8 +32,8 @@
 
   // Initialize services
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    analyzer = resolve<IQuizResultsAnalyzer>(TYPES.IQuizResultsAnalyzer);
+    hapticService = container.items.hapticFeedback;
+    analyzer = container.items.quizResultsAnalyzer;
   });
 
   // Handle navigation

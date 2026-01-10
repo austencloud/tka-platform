@@ -12,8 +12,7 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { inboxState } from "../../state/inbox-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -55,13 +54,8 @@
   });
 
   onMount(async () => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-
-    try {
-      userService = resolve<IUserRepository>(TYPES.IUserRepository);
-    } catch {
-      console.warn("[NewMessageSheet] UserRepository not available");
-    }
+    hapticService = container.items.hapticFeedback;
+    userService = container.items.userRepository;
 
     await loadSuggestions();
   });

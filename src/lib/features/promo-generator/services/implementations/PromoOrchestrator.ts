@@ -5,8 +5,6 @@
  * Coordinates scene management, animations, and video export.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IPromoOrchestrator } from "../contracts/IPromoOrchestrator";
 import type { IPromoSceneManager } from "../contracts/IPromoSceneManager";
 import type { IScreenshotInjector } from "../contracts/IScreenshotInjector";
@@ -29,7 +27,6 @@ import type {
   ScreenshotContent,
 } from "../../domain/promo-models";
 
-@injectable()
 export class PromoOrchestrator implements IPromoOrchestrator {
   private animationFrame: number | null = null;
   private subscribers: Set<(state: PromoGeneratorState) => void> = new Set();
@@ -46,16 +43,9 @@ export class PromoOrchestrator implements IPromoOrchestrator {
   };
 
   constructor(
-    @inject(TYPES.IPromoSceneManager)
     private readonly sceneManager: IPromoSceneManager,
-
-    @inject(TYPES.IScreenshotInjector)
     private readonly screenshotInjector: IScreenshotInjector,
-
-    @inject(TYPES.IPromoAnimationController)
     private readonly animationController: IPromoAnimationController,
-
-    @inject(TYPES.IPromoVideoExporter)
     private readonly videoExporter: IPromoVideoExporter
   ) {}
 

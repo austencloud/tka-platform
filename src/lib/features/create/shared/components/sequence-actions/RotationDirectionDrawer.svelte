@@ -19,8 +19,7 @@
     createUniformPattern,
     type RotationDirectionTemplateDefinition,
   } from "../../domain/templates/rotation-direction-templates";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IRotationDirectionPatternManager } from "../../services/contracts/IRotationDirectionPatternManager";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
@@ -60,9 +59,7 @@
   let errorMessage = $state<string | null>(null);
 
   // Service via DI
-  const rotationPatternService = resolve<IRotationDirectionPatternManager>(
-    TYPES.IRotationDirectionPatternManager
-  );
+  const rotationPatternService = container.items.rotationDirectionPatternManager;
 
   // Derived state
   const isMobile = $derived(!layoutState.isSideBySideLayout);

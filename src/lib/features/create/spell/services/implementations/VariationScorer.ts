@@ -5,7 +5,6 @@
  * Higher scores indicate better matches to user preferences.
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { SpellPreferences } from "../../domain/models/spell-models";
@@ -26,7 +25,6 @@ const WEIGHTS = {
   MOTION_TYPE_BONUS: 3, // Points per motion matching preference
 };
 
-@injectable()
 export class VariationScorer implements IVariationScorer {
   /**
    * Score a sequence based on user preferences.

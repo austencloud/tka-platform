@@ -3,7 +3,6 @@
  * Based on the exact implementation from standalone_animator.html
  */
 
-import { injectable } from "inversify";
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
@@ -13,7 +12,6 @@ import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-pane
 // From gridCoordinates.ts: n_diamond_hand_point_strict at (475, 325.0) = 152px from center
 const GRID_HALFWAY_POINT_OFFSET = 150;
 
-@injectable()
 export class CanvasRenderer implements ICanvasRenderer {
   /**
    * Render the complete animation scene

@@ -5,12 +5,10 @@
  * Provides validation and lookup methods for navigation elements.
  */
 
-import { injectable } from "inversify";
 import type { INavigationValidator } from "../contracts/INavigationValidator";
 import type { ModuleDefinition, ModuleId, Section } from "../../domain/types";
 import { MODULE_DEFINITIONS } from "../../config/module-definitions";
 
-@injectable()
 export class NavigationValidator implements INavigationValidator {
   /**
    * Check if a module ID is valid

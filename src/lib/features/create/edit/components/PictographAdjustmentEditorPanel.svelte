@@ -14,8 +14,7 @@ Features:
   import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import RotationOverrideButton from "./RotationOverrideButton.svelte";
   import Drawer from "../../../../shared/foundation/ui/Drawer.svelte";
@@ -125,10 +124,8 @@ Features:
   // Lifecycle
   onMount(() => {
     try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-      keyboardAdjustmentService = resolve<IKeyboardArrowAdjuster>(
-        TYPES.IKeyboardArrowAdjuster
-      );
+      hapticService = container.items.hapticFeedback;
+      keyboardAdjustmentService = container.items.keyboardArrowAdjuster;
     } catch (error) {
       console.error(
         "[PictographAdjustment] Failed to initialize services:",

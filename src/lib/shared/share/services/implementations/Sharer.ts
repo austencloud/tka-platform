@@ -7,8 +7,6 @@
 
 import type { ISequenceRenderer } from "../../../render/services/contracts/ISequenceRenderer";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import { TYPES } from "../../../inversify/types";
-import { inject, injectable } from "inversify";
 import type { ShareOptions } from "../../domain/models/ShareOptions";
 import type {
   ImageGenerationProgressCallback,
@@ -16,14 +14,10 @@ import type {
 } from "../contracts/ISharer";
 import { PreviewCache } from "./PreviewCache";
 
-@injectable()
 export class Sharer implements ISharer {
   private previewCache = new PreviewCache();
 
-  constructor(
-    @inject(TYPES.ISequenceRenderer)
-    private renderService: ISequenceRenderer
-  ) {}
+  constructor(private renderService: ISequenceRenderer) {}
 
   async generatePreview(
     sequence: SequenceData,

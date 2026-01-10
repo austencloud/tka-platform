@@ -25,7 +25,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   // State
@@ -63,7 +63,7 @@
   });
 
   onMount(() => {
-    settingsService = resolve<ISettingsState>(TYPES.ISettingsState);
+    settingsService = container.items.settingsState;
   });
 
   // Position to hand location mapping (only Zeta and Eta positions for skewed mode)

@@ -13,8 +13,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import NotificationBadge from "../NotificationBadge.svelte";
   import { createNotificationState } from "$lib/features/feedback/state/notification-state.svelte";
@@ -32,7 +31,7 @@
 
   onMount(() => {
     // Load haptic service synchronously
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Initialize notifications when user is authenticated
     if (authState.isAuthenticated) {

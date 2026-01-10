@@ -124,9 +124,8 @@ export function createCreateModulePersistenceController({
     let hasPendingEdit = false;
     let pendingEditWasProcessed = false;
     try {
-      const { resolve } = await import("$lib/shared/inversify/di");
-      const { TYPES } = await import("$lib/shared/inversify/types");
-      const deepLinkService = resolve<IDeepLinker>(TYPES.IDeepLinker);
+      const { container } = await import("$lib/shared/di");
+      const deepLinkService = container.items.deepLinker as IDeepLinker;
       hasDeepLink = deepLinkService.hasDataForModule("create") ?? false;
 
       // Also check for pending edit from Discover gallery (stored in localStorage)
@@ -135,9 +134,7 @@ export function createCreateModulePersistenceController({
 
       // CRITICAL: Also check session flag - pending edit may have already been processed
       // (and localStorage cleared) by the $effect before this function runs
-      const DeepLinkSequenceHandler = resolve<IDeepLinkSequenceHandler>(
-        TYPES.IDeepLinkSequenceHandler
-      );
+      const DeepLinkSequenceHandler = container.items.deepLinkSequenceHandler as IDeepLinkSequenceHandler;
       pendingEditWasProcessed =
         DeepLinkSequenceHandler.wasPendingEditProcessedThisSession();
     } catch {

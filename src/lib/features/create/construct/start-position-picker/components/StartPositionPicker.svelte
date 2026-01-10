@@ -7,8 +7,7 @@ Controls moved below the grid for better UX
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -48,7 +47,7 @@ Controls moved below the grid for better UX
 
   // Load persisted preferences on mount
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
     loadPersistedPreferences();
   });
 

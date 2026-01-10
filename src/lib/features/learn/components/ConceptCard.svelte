@@ -10,7 +10,7 @@ Displays:
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
-  import { resolve, TYPES } from "../../../shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { CONCEPT_CATEGORIES } from "../domain/concepts";
   import type { LearnConcept, ConceptStatus } from "../domain/types";
 
@@ -24,7 +24,7 @@ Displays:
     onClick?: (concept: LearnConcept) => void;
   } = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   const isClickable = $derived(status !== "locked");
 

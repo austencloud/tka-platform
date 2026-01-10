@@ -8,8 +8,6 @@
  * services to derive new positions and look up correct letters.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceTransformer } from "../../contracts/ISequenceTransformer";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
@@ -31,16 +29,11 @@ import {
   deriveSequenceLetters,
 } from "./sequence-transforms";
 
-@injectable()
 export class SequenceTransformer implements ISequenceTransformer {
   constructor(
-    @inject(TYPES.IMotionQueryHandler)
     private readonly motionQueryHandler: IMotionQueryHandler,
-    @inject(TYPES.IOrientationCalculator)
     private readonly orientationCalculator: IOrientationCalculator,
-    @inject(TYPES.IReversalDetector)
     private readonly reversalDetector: IReversalDetector,
-    @inject(TYPES.IGridPositionDeriver)
     private readonly positionDeriver: IGridPositionDeriver
   ) {}
 

@@ -5,7 +5,6 @@
  * Ensures every authenticated user has a Firestore profile document.
  */
 
-import { injectable, inject } from "inversify";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { getFirestoreInstance } from "../../firebase";
@@ -13,14 +12,10 @@ import type { IUserDocumentManager } from "../contracts/IUserDocumentManager";
 import type { IProfilePictureManager } from "../contracts/IProfilePictureManager";
 import type { IUsernameValidator } from "../contracts/IUsernameValidator";
 import { formatUsername } from "../../domain/models/UsernameValidation";
-import { TYPES } from "../../../inversify/types";
 
-@injectable()
 export class UserDocumentManager implements IUserDocumentManager {
   constructor(
-    @inject(TYPES.IProfilePictureManager)
     private readonly profilePictureService: IProfilePictureManager,
-    @inject(TYPES.IUsernameValidator)
     private readonly usernameValidator: IUsernameValidator
   ) {}
 

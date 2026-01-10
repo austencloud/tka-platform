@@ -7,8 +7,6 @@
  * Domain: Keyboard Shortcuts - Customization
  */
 
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IShortcutRegistry } from "../contracts/IShortcutRegistry";
 import type {
   IShortcutCustomizer,
@@ -29,12 +27,8 @@ import {
 } from "../../utils/key-combo-utils";
 import { keyboardShortcutState } from "../../state/keyboard-shortcut-state.svelte";
 
-@injectable()
 export class ShortcutCustomizer implements IShortcutCustomizer {
-  constructor(
-    @inject(TYPES.IShortcutRegistry)
-    private readonly registry: IShortcutRegistry
-  ) {}
+  constructor(private readonly registry: IShortcutRegistry) {}
 
   // ============================================
   // Binding Management

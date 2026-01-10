@@ -5,7 +5,6 @@
  * Handles challenge retrieval, progress tracking, and completion rewards.
  */
 
-import { inject, injectable } from "inversify";
 import {
   collection,
   doc,
@@ -33,15 +32,11 @@ import type {
 import { isChallengeAvailable } from "../../domain/models/TrainChallengeModels";
 import type { ITrainChallengeManager } from "../contracts/ITrainChallengeManager";
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
-import { TYPES } from "$lib/shared/inversify/types";
 
-@injectable()
 export class TrainChallengeManager implements ITrainChallengeManager {
   private _achievementService: IAchievementManager | null = null;
 
-  constructor(
-    @inject(TYPES.IAchievementManager) achievementService: IAchievementManager
-  ) {
+  constructor(achievementService: IAchievementManager) {
     this._achievementService = achievementService;
   }
 

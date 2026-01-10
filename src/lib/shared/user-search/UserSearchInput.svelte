@@ -6,11 +6,9 @@
 -->
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { onMount } from "svelte";
   import { collection, getDocs, limit, query } from "firebase/firestore";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
 
@@ -56,11 +54,7 @@
   let wasCleared = $state(false);
 
   // Haptic feedback service
-  let hapticService: IHapticFeedback | undefined;
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   // Auto-focus when requested
   $effect(() => {

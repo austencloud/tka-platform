@@ -4,7 +4,7 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
 -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -20,7 +20,7 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   type AnswerState = "idle" | "correct" | "incorrect";
 
@@ -45,9 +45,7 @@ Shows pictograph, user identifies the motion pattern (Pro-Pro, Anti-Anti, or Hyb
     lastLoadedQuestionIndex = questionIndex;
 
     try {
-      const letterQueryHandler = resolve<ILetterQueryHandler>(
-        TYPES.ILetterQueryHandler
-      );
+      const letterQueryHandler = container.items.letterQueryHandler as ILetterQueryHandler;
       const currentQuestion = questions[questionIndex];
       if (!currentQuestion) return;
 

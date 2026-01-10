@@ -10,22 +10,15 @@ import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IBeatConverter } from "../contracts/IBeatConverter";
 import type { IPictographFilter } from "../contracts/IPictographFilter";
 import type { IStartPositionSelector } from "../contracts/IStartPositionSelector";
 
-@injectable()
 export class StartPositionSelector implements IStartPositionSelector {
   constructor(
-    @inject(TYPES.ILetterQueryHandler)
     private letterQueryHandler: ILetterQueryHandler,
-    @inject(TYPES.IPictographFilter)
     private PictographFilter: IPictographFilter,
-    @inject(TYPES.IBeatConverter)
     private BeatConverter: IBeatConverter,
-    @inject(TYPES.IArrowPositioningOrchestrator)
     private arrowPositioningOrchestrator: IArrowPositioningOrchestrator
   ) {}
 

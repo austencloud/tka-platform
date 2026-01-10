@@ -18,8 +18,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type {
   IVideoPreRenderer,
   VideoRenderProgress,
@@ -184,7 +183,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       ]);
 
       // Get prop dimensions from SVG generator
-      const svgGenerator = resolve<ISVGGenerator>(TYPES.ISVGGenerator);
+      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
       const [bluePropData, redPropData] = await Promise.all([
         svgGenerator.generateBluePropSvg("staff"),
         svgGenerator.generateRedPropSvg("staff"),
@@ -200,9 +199,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       };
 
       // Get orchestrator for calculating prop states
-      const orchestrator = resolve<ISequenceAnimationOrchestrator>(
-        TYPES.ISequenceAnimationOrchestrator
-      );
+      const orchestrator = container.items.sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
 
       // Initialize orchestrator with sequence data
       const initSuccess = orchestrator.initializeWithDomainData(sequence);
@@ -261,7 +258,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       let bluePropFlipped = false;
       let redPropFlipped = false;
       try {
-        const settingsState = resolve<ISettingsState>(TYPES.ISettingsState);
+        const settingsState = container.items.settingsState as ISettingsState;
         const settings = settingsState.currentSettings;
         const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
         const bluePropType = (

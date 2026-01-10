@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPerformanceHistoryTracker } from "../../services/contracts/IPerformanceHistoryTracker";
   import type {
@@ -26,16 +25,13 @@
   let stats = $state<StatsOverview | null>(null);
   let personalBests = $state<PersonalBest[]>([]);
   let recentSessions = $state<StoredPerformance[]>([]);
-  let hapticService: IHapticFeedback | undefined;
+  const hapticService = container.items.hapticFeedback;
+  const historyService = container.items.performanceHistoryTracker;
 
   const hasData = $derived(stats && stats.totalSessions > 0);
 
   onMount(async () => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
     try {
-      const historyService = resolve<IPerformanceHistoryTracker>(
-        TYPES.IPerformanceHistoryTracker
-      );
 
       const [statsData, bestsData, sessionsData] = await Promise.all([
         historyService.getStatsOverview(),

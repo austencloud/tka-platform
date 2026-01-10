@@ -5,10 +5,8 @@
  * Handles event breakdowns, module usage, user activity over time, and recent activity.
  */
 
-import { injectable, inject } from "inversify";
 import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type {
   UserActivityPoint,
@@ -57,12 +55,8 @@ export interface IEventActivityAnalyzer {
   getRecentActivity(limit: number): Promise<RecentActivityEvent[]>;
 }
 
-@injectable()
 export class EventActivityAnalyzer implements IEventActivityAnalyzer {
-  constructor(
-    @inject(TYPES.IActivityLogger)
-    private readonly activityLogService: IActivityLogger
-  ) {}
+  constructor(private readonly activityLogService: IActivityLogger) {}
 
   /**
    * Get user activity over time

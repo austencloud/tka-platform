@@ -9,8 +9,7 @@
  * - Connection-aware image request throttling
  */
 
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type {
   ExploreLoadingState,
   IOptimizedDiscoverer,
@@ -21,9 +20,7 @@ import { getConnectionInfo } from "../utils/connection-quality";
 
 export function createOptimizedExploreState() {
   // Services
-  const galleryService = resolve<IOptimizedDiscoverer>(
-    TYPES.IOptimizedDiscoverer
-  );
+  const galleryService = container.items.optimizedDiscoverer;
 
   // Initialize connection-aware image request throttling
   const connectionInfo = getConnectionInfo();

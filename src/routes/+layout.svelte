@@ -1,6 +1,6 @@
 <script lang="ts">
   import FullscreenPrompt from "$lib/shared/components/FullscreenPrompt.svelte";
-  import type { Container } from "inversify";
+  import { container } from "$lib/shared/di";
   import type { Snippet } from "svelte";
   import { onMount, setContext } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -13,14 +13,13 @@
     children: Snippet;
   }>();
 
-  // Application bootstrap - simplified to just DI container setup
-  let container: Container | null = $state(null);
+  // Application bootstrap - ITI container is created synchronously on import
+  // No async setup needed - container.items is immediately available
+  let containerReady = $state(true);
   let containerError = $state<string | null>(null);
 
-  // Set context immediately (will be null initially)
-  setContext("di-container", () => {
-    return container;
-  });
+  // Set context for legacy code that expects di-container
+  setContext("di-container", () => container);
 
   // Update viewport height on window resize and visualViewport changes
   function updateViewportHeight() {
@@ -96,23 +95,10 @@
       }
     })();
 
-    // ⚡ PERFORMANCE: Initialize services in background without blocking render
-    // This allows Vite HMR WebSocket to connect immediately
-    (async () => {
-      try {
-        const { getContainer } = await import("$lib/shared/inversify/di");
-        container = await getContainer();
-
-        // ⚡ PERFORMANCE: Glyph cache now uses lazy loading
-        // SVGs are fetched on-demand when first needed, then cached
-        // This eliminates 70+ network requests at startup
-        // See GlyphCacheService.getOrLoadSvg() for the lazy loading implementation
-      } catch (error) {
-        console.error("❌ Root layout: Failed to set up DI container:", error);
-        containerError =
-          error instanceof Error ? error.message : "Container setup failed";
-      }
-    })();
+    // ⚡ PERFORMANCE: ITI container is created synchronously on import
+    // No async setup needed - container.items is immediately available
+    // Glyph cache uses lazy loading - SVGs are fetched on-demand when first needed
+    // This eliminates 70+ network requests at startup
 
     // Return synchronous cleanup function
     return () => {
@@ -146,8 +132,8 @@
     <p>{containerError}</p>
     <button onclick={() => window.location.reload()}>Retry</button>
   </div>
-{:else if container}
-  <!-- Only render children when container is ready -->
+{:else if containerReady}
+  <!-- ITI container is ready synchronously - render children immediately -->
   {@render children()}
 
   <!-- Fullscreen prompt for extreme constraints -->

@@ -9,37 +9,23 @@
  */
 
 import type { AppVersion } from "$lib/features/feedback/domain/models/version-models";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IOnboardingPersister } from "$lib/shared/onboarding/services/contracts/IOnboardingPersister";
 
 const STORAGE_KEY = "tka-last-seen-version";
 
 // Lazy service resolution to avoid circular dependencies
 let _onboardingService: IOnboardingPersister | null = null;
-let _serviceResolved = false;
 
 function getOnboardingService(): IOnboardingPersister | null {
-  if (_serviceResolved) return _onboardingService;
+  if (_onboardingService) return _onboardingService;
 
-  // Try to resolve synchronously if container is ready
   try {
-    // Dynamic import to avoid circular deps at load time
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const di = require("$lib/shared/inversify/di") as {
-      resolve: <T>(type: symbol) => T;
-      isContainerReady: () => boolean;
-    };
-    if (di.isContainerReady()) {
-      _onboardingService = di.resolve<IOnboardingPersister>(
-        TYPES.IOnboardingPersister
-      );
-      _serviceResolved = true;
-    }
+    _onboardingService = container.items.onboardingPersister as IOnboardingPersister;
+    return _onboardingService;
   } catch {
-    // Container not ready yet, will use localStorage
+    return null;
   }
-
-  return _onboardingService;
 }
 
 class WhatsNewState {

@@ -4,9 +4,8 @@ Displays available lengths as pill buttons with clear option
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
 
   let {
     currentLength = null,
@@ -23,7 +22,7 @@ Displays available lengths as pill buttons with clear option
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleLengthClick(length: number) {

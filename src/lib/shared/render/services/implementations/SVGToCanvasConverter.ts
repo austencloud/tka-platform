@@ -6,14 +6,12 @@
  */
 
 import { Canvas, loadSVGFromString, Rect, util } from "fabric";
-import { injectable } from "inversify";
 import type {
   RenderQualitySettings,
   SVGConversionOptions,
 } from "../../domain/models/SvgConversion";
 import type { ISVGToCanvasConverter } from "../contracts/ISVGToCanvasConverter";
 
-@injectable()
 export class SVGToCanvasConverter implements ISVGToCanvasConverter {
   private defaultQuality: RenderQualitySettings = {
     antialiasing: true,

@@ -5,11 +5,9 @@
  * Manages Facebook and Google profile pictures with proper fallback logic.
  */
 
-import { injectable } from "inversify";
 import { updateProfile, type User } from "firebase/auth";
 import type { IProfilePictureManager } from "../contracts/IProfilePictureManager";
 
-@injectable()
 export class ProfilePictureManager implements IProfilePictureManager {
   /**
    * Update Facebook profile picture to high resolution if needed.

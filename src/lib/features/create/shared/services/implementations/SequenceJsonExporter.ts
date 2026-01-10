@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../domain/models/BeatData";
 import type { StartPositionData } from "../../domain/models/StartPositionData";
@@ -19,7 +18,6 @@ type BeatLike = BeatData | StartPositionData | null | undefined;
  * Exports sequences to minimal JSON format for debugging/admin use.
  * Strips placement data fluff, keeps only essential motion data.
  */
-@injectable()
 export class SequenceJsonExporter implements ISequenceJsonExporter {
   toMinimalJson(sequence: SequenceData): MinimalSequence {
     return {

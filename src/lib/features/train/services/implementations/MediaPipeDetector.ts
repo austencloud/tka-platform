@@ -12,8 +12,6 @@
  * while internally using decomposed, single-responsibility services.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type {
   IPositionDetector,
   DetectionCapabilities,
@@ -36,7 +34,6 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 // How many frames to persist a hand after it disappears (for stability)
 const HAND_PERSISTENCE_FRAMES = 5;
 
-@injectable()
 export class MediaPipeDetector implements IPositionDetector {
   // Sub-services (injected via DI)
   private _landmarker: IHandLandmarker;
@@ -66,10 +63,10 @@ export class MediaPipeDetector implements IPositionDetector {
   private _redFramesMissing = 0;
 
   constructor(
-    @inject(TYPES.IHandLandmarker) landmarker: IHandLandmarker,
-    @inject(TYPES.IHandednessAnalyzer) handednessAnalyzer: IHandednessAnalyzer,
-    @inject(TYPES.IHandStateAnalyzer) stateAnalyzer: IHandStateAnalyzer,
-    @inject(TYPES.IHandTrackingStabilizer) stabilizer: IHandTrackingStabilizer
+    landmarker: IHandLandmarker,
+    handednessAnalyzer: IHandednessAnalyzer,
+    stateAnalyzer: IHandStateAnalyzer,
+    stabilizer: IHandTrackingStabilizer
   ) {
     this._landmarker = landmarker;
     this._handednessAnalyzer = handednessAnalyzer;

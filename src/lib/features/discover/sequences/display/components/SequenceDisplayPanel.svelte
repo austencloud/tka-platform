@@ -2,9 +2,8 @@
   import type { SequenceSection } from "./../../../shared/domain/models/discover-models.ts";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import type { IDiscoverThumbnailProvider } from "../services/contracts/IDiscoverThumbnailProvider";
   import DiscoverGrid from "./DiscoverGrid.svelte";
   import DiscoverThumbnailSkeleton from "./DiscoverThumbnailSkeleton.svelte";
@@ -45,17 +44,14 @@
   const isEmpty = $derived(!isInitializing && !error && sequences.length === 0);
   const hasSequences = $derived(!isInitializing && !error && sequences.length > 0);
 
-
   // Handle sequence actions
   function handleSequenceAction(action: string, sequence: SequenceData) {
     onAction(action, sequence);
   }
 
   onMount(async () => {
-    thumbnailService = tryResolve<IDiscoverThumbnailProvider>(
-      TYPES.IDiscoverThumbnailProvider
-    );
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    thumbnailService = container.items.discoverThumbnailProvider as IDiscoverThumbnailProvider;
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleRetry() {

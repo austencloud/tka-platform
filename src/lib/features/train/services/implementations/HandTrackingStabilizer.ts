@@ -5,7 +5,6 @@
  * apply temporal smoothing to reduce jitter, and track hand identity.
  */
 
-import { injectable, unmanaged } from "inversify";
 import type {
   IHandTrackingStabilizer,
   HandHistory,
@@ -19,7 +18,6 @@ const DEFAULT_CONFIG: StabilizerConfig = {
   handednessSwitchThreshold: 0.4,
 };
 
-@injectable()
 export class HandTrackingStabilizer implements IHandTrackingStabilizer {
   private _blueHistory: HandHistory = {
     positions: [],
@@ -35,7 +33,7 @@ export class HandTrackingStabilizer implements IHandTrackingStabilizer {
 
   private _config: StabilizerConfig;
 
-  constructor(@unmanaged() config?: Partial<StabilizerConfig>) {
+  constructor(config?: Partial<StabilizerConfig>) {
     this._config = { ...DEFAULT_CONFIG, ...config };
   }
 

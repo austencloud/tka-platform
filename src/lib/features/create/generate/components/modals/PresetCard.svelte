@@ -8,7 +8,7 @@ Displays a single preset with icon, name, summary, and action buttons
     type LOOPType,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { GenerationPreset } from "../../state/preset.svelte";
 
@@ -21,8 +21,8 @@ Displays a single preset with icon, name, summary, and action buttons
 
   let hapticService: IHapticFeedback;
 
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleSelect() {

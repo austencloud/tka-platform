@@ -7,8 +7,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type {
     IShortcutCustomizer,
     ShortcutWithBinding,
@@ -64,9 +63,7 @@
 
   onMount(() => {
     try {
-      customizationService = resolve<IShortcutCustomizer>(
-        TYPES.IShortcutCustomizer
-      );
+      customizationService = container.items.shortcutCustomizer;
       refreshShortcuts();
     } catch (error) {
       console.warn("Failed to resolve shortcut customization service:", error);

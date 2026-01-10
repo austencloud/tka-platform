@@ -24,7 +24,7 @@
 
   import { onMount } from "svelte";
   import type { Snippet } from "svelte";
-  import { resolve, TYPES } from "../../inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { desktopSidebarState } from "../../layout/desktop-sidebar-state.svelte";
@@ -78,7 +78,7 @@
     let cleanup: (() => void) | undefined;
 
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+      deviceDetector = container.items.deviceDetector;
       responsiveSettings = deviceDetector.getResponsiveSettings();
 
       cleanup = deviceDetector.onCapabilitiesChanged(() => {

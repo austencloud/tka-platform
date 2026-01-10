@@ -4,8 +4,7 @@ Refactored to use Drawer component for consistent behavior
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
@@ -31,12 +30,9 @@ Refactored to use Drawer component for consistent behavior
   let isMultiSelectMode = $state(false);
   const explanationGenerator = new LOOPExplanationTextGenerator();
 
-  onMount(async () => {
-    const container = await getContainerInstance();
-    hapticService = container.get<IHapticFeedback>(TYPES.IHapticFeedback);
-    LOOPTypeResolver = container.get<ILOOPTypeResolver>(
-      TYPES.ILOOPTypeResolver
-    );
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
+    LOOPTypeResolver = container.items.loopTypeResolver;
   });
 
   // Generate explanation text based on selected components

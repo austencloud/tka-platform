@@ -7,8 +7,6 @@ import type { MotionData } from "../../../../../shared/domain/models/MotionData"
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { ISpecialPlacer } from "../../../placement/services/contracts/IArrowPlacer";
 import type { IRotationAngleOverrideKeyGenerator } from "../../../key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
-import { injectable, inject, optional } from "inversify";
-import { TYPES } from "../../../../../../inversify/types";
 import { dashNoRotationMap } from "../../config/DashRotationMaps";
 import { RotationMapSelector } from "../../utils/RotationMapSelector";
 import { RotationOverrideChecker } from "../../utils/RotationOverrideChecker";
@@ -25,7 +23,6 @@ export interface IArrowRotationCalculator {
   validateMotionData(motion: MotionData): boolean;
 }
 
-@injectable()
 export class ArrowRotationCalculator implements IArrowRotationCalculator {
   /**
    * Pure algorithmic service for calculating arrow rotation angles.
@@ -46,28 +43,11 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
    * - Rotation direction normalization is handled by RotationDirectionUtils
    */
 
-  private SpecialPlacer: ISpecialPlacer | undefined;
-  private rotationOverrideKeyGenerator:
-    | IRotationAngleOverrideKeyGenerator
-    | undefined;
-  private handpathDirectionCalculator: IHandpathDirectionCalculator | undefined;
-
   constructor(
-    @inject(TYPES.ISpecialPlacer)
-    @optional()
-    SpecialPlacer?: ISpecialPlacer,
-    @inject(TYPES.IRotationAngleOverrideKeyGenerator)
-    @optional()
-    rotationOverrideKeyGenerator?: IRotationAngleOverrideKeyGenerator,
-    @inject(TYPES.IHandpathDirectionCalculator)
-    @optional()
-    handpathDirectionCalculator?: IHandpathDirectionCalculator
-  ) {
-    this.SpecialPlacer = SpecialPlacer ?? undefined;
-    this.rotationOverrideKeyGenerator =
-      rotationOverrideKeyGenerator ?? undefined;
-    this.handpathDirectionCalculator = handpathDirectionCalculator ?? undefined;
-  }
+    private SpecialPlacer?: ISpecialPlacer,
+    private rotationOverrideKeyGenerator?: IRotationAngleOverrideKeyGenerator,
+    private handpathDirectionCalculator?: IHandpathDirectionCalculator
+  ) {}
 
   async calculateRotation(
     motion: MotionData,

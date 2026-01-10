@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type {
   ILOOPDesignator,
@@ -21,7 +20,6 @@ const BASE_COMPONENTS = [
 /**
  * Service for formatting and managing LOOP designations
  */
-@injectable()
 export class LOOPDesignator implements ILOOPDesignator {
   formatDesignation(d: LOOPDesignation | SectionDesignation): string {
     if (d.components.length === 0) return "Freeform";

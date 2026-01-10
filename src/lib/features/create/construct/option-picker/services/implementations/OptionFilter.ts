@@ -9,8 +9,6 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type {
   EndPositionFilter,
   ReversalFilter,
@@ -21,11 +19,10 @@ import type { IReversalChecker } from "../contracts/IReversalChecker";
 import type { IOptionFilter } from "../contracts/IOptionFilter";
 import { LetterType } from "../../../../../../shared/foundation/domain/models/LetterType";
 
-@injectable()
 export class OptionFilter implements IOptionFilter {
   constructor(
-    @inject(TYPES.IReversalChecker) private ReversalChecker: IReversalChecker,
-    @inject(TYPES.IPositionAnalyzer) private positionAnalyzer: IPositionAnalyzer
+    private ReversalChecker: IReversalChecker,
+    private positionAnalyzer: IPositionAnalyzer
   ) {}
 
   /**

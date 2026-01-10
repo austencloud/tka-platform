@@ -17,7 +17,6 @@
  * 5. Return the minimum number of cycles needed
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../../shared/domain/models/BeatData";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -32,7 +31,6 @@ export interface OrientationCycleResult {
   redOrientations: Orientation[];
 }
 
-@injectable()
 export class OrientationCycleDetector {
   /**
    * Detect how many repetitions are needed to return to starting orientation

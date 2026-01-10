@@ -12,7 +12,7 @@
   import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -33,7 +33,7 @@
   let isLayoutStabilizing = $state(true);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Allow layout to settle
     const stabilizationTimer = setTimeout(() => {

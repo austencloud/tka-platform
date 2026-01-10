@@ -5,7 +5,6 @@
  * Phase 1: External linking without API integration.
  */
 
-import { injectable } from "inversify";
 import type { IInstagramLinker } from "../contracts/IInstagramLinker";
 import type {
   InstagramLink,
@@ -16,7 +15,6 @@ import {
   createInstagramLink,
 } from "../../domain/models/InstagramLink";
 
-@injectable()
 export class InstagramLinker implements IInstagramLinker {
   /**
    * Validate an Instagram URL and extract metadata

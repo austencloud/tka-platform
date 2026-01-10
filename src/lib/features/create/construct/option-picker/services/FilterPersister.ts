@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   SortMethod,
   TypeFilter,
@@ -24,7 +23,6 @@ export interface IFilterPersister {
   clearFilters(): void;
 }
 
-@injectable()
 export class FilterPersister implements IFilterPersister {
   private readonly STORAGE_KEY = "tka-option-picker-filters";
   private readonly CONTINUOUS_KEY = "tka-option-picker-continuous";

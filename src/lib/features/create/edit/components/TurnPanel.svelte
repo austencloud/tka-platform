@@ -2,8 +2,7 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { ITurnController } from "../services/TurnController";
 
@@ -32,7 +31,7 @@
   }>();
 
   // Services
-  const TurnController = resolve(TYPES.ITurnController) as ITurnController;
+  const TurnController = container.items.turnController;
   let hapticService: IHapticFeedback;
 
   // Display helpers
@@ -144,7 +143,7 @@
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 </script>
 

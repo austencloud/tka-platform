@@ -7,11 +7,9 @@
  * Domain: Keyboard Shortcuts - Command Palette
  */
 
-import { injectable } from "inversify";
 import type { ICommandPalette } from "../contracts/ICommandPalette";
 import type { CommandPaletteItem } from "../../domain/types/keyboard-types";
 
-@injectable()
 export class CommandPalette implements ICommandPalette {
   private commands: Map<string, CommandPaletteItem> = new Map();
   private recentCommandIds: string[] = [];

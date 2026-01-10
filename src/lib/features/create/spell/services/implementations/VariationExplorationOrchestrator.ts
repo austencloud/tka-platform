@@ -5,8 +5,6 @@
  * sequence variations for a given word.
  */
 
-import { inject, injectable } from "inversify";
-import { SPELL_TYPES } from "./spell-types";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ISpellServiceLoader } from "../contracts/ISpellServiceLoader";
@@ -18,12 +16,8 @@ import type {
 } from "../contracts/IVariationExplorationOrchestrator";
 import type { SpellPreferences } from "../../domain/models/spell-models";
 
-@injectable()
 export class VariationExplorationOrchestrator implements IVariationExplorationOrchestrator {
-  constructor(
-    @inject(SPELL_TYPES.ISpellServiceLoader)
-    private serviceLoader: ISpellServiceLoader
-  ) {}
+  constructor(private serviceLoader: ISpellServiceLoader) {}
 
   async parseWord(word: string): Promise<WordParseResult> {
     try {

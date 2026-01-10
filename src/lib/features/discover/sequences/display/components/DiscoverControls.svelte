@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { ExploreSortMethod } from "../../../shared/domain/enums/discover-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -23,7 +22,7 @@
   let hapticService: IHapticFeedback | null = $state(null);
 
   onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Sort options (reactive for i18n)

@@ -9,15 +9,12 @@ import type {
   PropState,
   PropStates,
 } from "../../shared/domain/types/PropState";
-import { injectable } from "inversify";
 import type {
   IAnimationStateManager,
   InterpolationResult,
 } from "../contracts/IAnimationStateManager";
 
-@injectable()
 export class AnimationStateManager implements IAnimationStateManager {
-  constructor() {}
 
   private bluePropState: PropState = {
     centerPathAngle: 0,

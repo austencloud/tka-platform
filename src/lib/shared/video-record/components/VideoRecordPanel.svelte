@@ -8,8 +8,7 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { loadFeatureModule, resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ICameraManager } from "$lib/features/train/services/contracts/ICameraManager";
   import { getVideoRecorder } from "../services/implementations/VideoRecorder";
   import type {
@@ -36,8 +35,8 @@
   let isSharing = $state(false);
   let settingsOpen = $state(false);
 
-  // Services (lazy-loaded)
-  let cameraService = $state<ICameraManager | null>(null);
+  // Services
+  const cameraService = container.items.cameraManager;
   const recordService = getVideoRecorder();
 
   // Settings
@@ -258,8 +257,6 @@
     }
 
     try {
-      await loadFeatureModule("train");
-      cameraService = resolve<ICameraManager>(TYPES.ICameraManager);
       await initializeCamera();
     } catch (error) {
       cameraError = "Failed to load camera service";

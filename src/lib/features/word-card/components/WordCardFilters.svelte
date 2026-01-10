@@ -5,8 +5,7 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   interface Props {
@@ -15,10 +14,12 @@
     gridMode: string | null;
     author: string | null;
     authors: string[];
+    showQRCodes: boolean;
     onDifficultyChange: (value: number | null) => void;
     onFavoritesChange: (value: boolean) => void;
     onGridModeChange: (value: string | null) => void;
     onAuthorChange: (value: string | null) => void;
+    onShowQRCodesChange: (value: boolean) => void;
   }
 
   let {
@@ -27,16 +28,18 @@
     gridMode,
     author,
     authors,
+    showQRCodes,
     onDifficultyChange,
     onFavoritesChange,
     onGridModeChange,
     onAuthorChange,
+    onShowQRCodesChange,
   }: Props = $props();
 
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Difficulty levels: 1=beginner (no turns), 2=intermediate (has turns), 3=advanced (non-radial)
@@ -73,6 +76,11 @@
     const target = event.target as HTMLSelectElement;
     onAuthorChange(target.value === "" ? null : target.value);
   }
+
+  function handleShowQRCodesClick() {
+    hapticService?.trigger("selection");
+    onShowQRCodesChange(!showQRCodes);
+  }
 </script>
 
 <div class="filters">
@@ -108,6 +116,20 @@
     >
       <i class="fas fa-heart" aria-hidden="true"></i>
       <span>Favorites Only</span>
+    </button>
+  </section>
+
+  <!-- QR Codes Toggle -->
+  <section class="section">
+    <button
+      class="qr-toggle"
+      class:active={showQRCodes}
+      onclick={handleShowQRCodesClick}
+      aria-pressed={showQRCodes}
+      type="button"
+    >
+      <i class="fas fa-qrcode" aria-hidden="true"></i>
+      <span>Show QR Codes</span>
     </button>
   </section>
 
@@ -262,6 +284,45 @@
     font-size: 0.9rem;
   }
 
+  /* QR Toggle */
+  .qr-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    width: 100%;
+    min-height: 48px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .qr-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .qr-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .qr-toggle.active {
+    background: var(--theme-accent, #f43f5e);
+    border-color: var(--theme-accent, #f43f5e);
+    color: #ffffff;
+  }
+
+  .qr-toggle i {
+    font-size: 0.9rem;
+  }
+
   /* Author Dropdown */
   .author-select {
     width: 100%;
@@ -314,6 +375,11 @@
       font-size: var(--font-size-compact, 12px);
     }
 
+    .qr-toggle {
+      width: auto;
+      font-size: var(--font-size-compact, 12px);
+    }
+
     .author-select {
       width: auto;
       min-width: 120px;
@@ -324,6 +390,7 @@
   @media (prefers-reduced-motion: reduce) {
     .filter-btn,
     .favorites-toggle,
+    .qr-toggle,
     .author-select {
       transition: none;
     }

@@ -7,21 +7,18 @@
  * USE THIS to fix cached difficulty levels after implementing the calculator!
  */
 
-import { resolve } from "../inversify/di";
-import { TYPES } from "../inversify/types";
+import { container } from "$lib/shared/di";
 import type { IDiscoverCache } from "../../features/discover/sequences/display/services/contracts/IDiscoverCache";
 import type { IOptimizedDiscoverer } from "../../features/discover/shared/services/contracts/IOptimizedDiscoverer";
 
 export async function clearAllGalleryCaches(): Promise<void> {
   try {
     // 1. Clear DiscoverCache
-    const exploreCacheService = resolve<IDiscoverCache>(TYPES.IDiscoverCache);
+    const exploreCacheService = container.items.discoverCache as IDiscoverCache;
     exploreCacheService.clearCache();
 
     // 2. Clear OptimizedDiscoverer
-    const optimizedService = resolve<IOptimizedDiscoverer>(
-      TYPES.IOptimizedDiscoverer
-    );
+    const optimizedService = container.items.optimizedDiscoverer as IOptimizedDiscoverer;
     optimizedService.clearCache();
 
     // 3. Clear IndexedDB/Dexie cache if it exists

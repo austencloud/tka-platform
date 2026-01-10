@@ -4,8 +4,7 @@ Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     type StaffQuizQuestion,
     generateStaffQuizQuestions,
@@ -16,7 +15,7 @@ Tests understanding of: Alpha/Beta/Gamma positions, Thumb orientations, Prospin/
 
   let { onComplete } = $props<{ onComplete?: () => void }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   type AnswerState = "idle" | "correct" | "incorrect";
 

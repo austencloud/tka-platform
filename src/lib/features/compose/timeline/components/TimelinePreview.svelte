@@ -12,12 +12,7 @@
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import {
-    resolve,
-    loadPixiModule,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import type { TimelineClip } from "../domain/timeline-types";
@@ -193,21 +188,15 @@
   });
 
   // Initialize services on mount
-  onMount(async () => {
+  onMount(() => {
     try {
       loading = true;
 
-      // Ensure animator module is loaded
-      await loadFeatureModule("animate");
-      await loadPixiModule();
-
-      // Resolve services
-      animationOrchestrator = resolve(
-        TYPES.ISequenceAnimationOrchestrator
-      ) as ISequenceAnimationOrchestrator;
-      startPositionDeriver = resolve(
-        TYPES.IStartPositionDeriver
-      ) as IStartPositionDeriver;
+      // Get services from ITI container
+      animationOrchestrator = container.items
+        .sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
+      startPositionDeriver = container.items
+        .startPositionDeriver as IStartPositionDeriver;
       initialized = true;
       loading = false;
     } catch (err) {

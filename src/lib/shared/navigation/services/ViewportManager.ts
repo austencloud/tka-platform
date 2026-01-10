@@ -1,5 +1,3 @@
-import { injectable } from "inversify";
-
 import type { INavigationViewportManager } from "./contracts/IViewportManager";
 import { ViewportMode } from "../domain/enums/ViewportMode";
 import type {
@@ -8,9 +6,8 @@ import type {
   ViewportDimensions,
 } from "../domain/models/ViewportState";
 
-@injectable()
 export class NavigationViewportManager implements INavigationViewportManager {
-  private viewportState = $state<ViewportState>({
+  private viewportState: ViewportState = {
     width: 0,
     height: 0,
     isMobile: false,
@@ -24,7 +21,7 @@ export class NavigationViewportManager implements INavigationViewportManager {
       browserUIOffset: 0,
       safeAreaInsets: { top: 0, bottom: 0, left: 0, right: 0 },
     },
-  });
+  };
 
   private subscriptions = new Set<(state: ViewportState) => void>();
 

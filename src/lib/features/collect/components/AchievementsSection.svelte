@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getLevelProgress } from "$lib/shared/gamification/domain/constants/xp-constants";
@@ -70,15 +70,11 @@
 
   // Initialize services
   onMount(async () => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
     try {
-      achievementService = await resolve<IAchievementManager>(
-        TYPES.IAchievementManager
-      );
-      streakService = await resolve<IStreakTracker>(TYPES.IStreakTracker);
-      leaderboardService = await resolve<ILeaderboardManager>(
-        TYPES.ILeaderboardManager
-      );
+      achievementService = container.items.achievementManager;
+      streakService = container.items.streakTracker;
+      leaderboardService = container.items.leaderboardManager;
       await loadData();
       // Load ranks in background (non-blocking)
       loadUserRanks();

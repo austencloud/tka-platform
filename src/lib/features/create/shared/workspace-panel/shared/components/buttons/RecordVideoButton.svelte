@@ -4,10 +4,7 @@
   Opens the video recording drawer from the ButtonPanel. Highlights when the drawer is visible.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
 
   const {
     onclick,
@@ -19,11 +16,7 @@
     disabled?: boolean;
   } = $props();
 
-  let hapticService: IHapticFeedback;
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   function handleClick() {
     if (disabled) return;

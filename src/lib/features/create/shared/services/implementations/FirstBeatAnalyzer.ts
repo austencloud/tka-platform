@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   IFirstBeatAnalyzer,
@@ -13,7 +12,6 @@ import type {
  * When user clicks a beat to become the new first beat,
  * this determines if confirmation is needed and calculates results.
  */
-@injectable()
 export class FirstBeatAnalyzer implements IFirstBeatAnalyzer {
   analyzeSelection(
     sequence: SequenceData,

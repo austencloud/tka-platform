@@ -6,12 +6,10 @@
  * the concatenation of all beat letters in order.
  */
 
-import { injectable } from "inversify";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { SequenceData } from "../../domain/models/SequenceData";
 import type { IWordDeriver } from "../contracts/IWordDeriver";
 
-@injectable()
 export class WordDeriver implements IWordDeriver {
   /**
    * Derive the word from a sequence's beats

@@ -5,7 +5,6 @@
  * Data is stored locally for fast access and offline support.
  */
 
-import { injectable } from "inversify";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
 import type {
   IPerformanceHistoryTracker,
@@ -14,7 +13,6 @@ import type {
 } from "../contracts/IPerformanceHistoryTracker";
 import type { StoredPerformance } from "../../domain/models/TrainDatabaseModels";
 
-@injectable()
 export class PerformanceHistoryTracker implements IPerformanceHistoryTracker {
   /**
    * Save a completed performance session to IndexedDB

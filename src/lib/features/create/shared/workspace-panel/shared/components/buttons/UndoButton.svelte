@@ -1,9 +1,7 @@
 <script lang="ts">
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
   import type { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   type CreateModuleState = ReturnType<typeof createCreateModuleState>;
 
@@ -17,7 +15,7 @@
   } = $props();
 
   // Resolve haptic feedback service
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   // Type descriptions for all operation types
   const typeDescriptions: Record<UndoOperationType, string> = {

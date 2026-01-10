@@ -7,7 +7,6 @@
  * MIGRATION NOTE: Now properly distinguishes between beats and start positions.
  */
 
-import { injectable } from "inversify";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -42,7 +41,6 @@ export interface IBeatConverter {
   ): StartPositionData;
 }
 
-@injectable()
 export class BeatConverter implements IBeatConverter {
   /**
    * Convert PictographData to BeatData - creates proper domain object for beats

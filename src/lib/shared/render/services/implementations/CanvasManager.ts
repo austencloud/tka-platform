@@ -6,7 +6,6 @@
  * leaks and improve performance during image export operations.
  */
 
-import { injectable } from "inversify";
 import type { ICanvasManager } from "../contracts/ICanvasManager";
 
 interface CanvasPoolEntry {
@@ -15,7 +14,6 @@ interface CanvasPoolEntry {
   inUse: boolean;
 }
 
-@injectable()
 export class CanvasManager implements ICanvasManager {
   // Canvas pool management
   private canvasPool = new Map<string, CanvasPoolEntry[]>();

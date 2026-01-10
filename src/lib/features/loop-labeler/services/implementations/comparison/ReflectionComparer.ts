@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IReflectionComparer } from "../../contracts/IReflectionComparer";
 import type {
   ColorData,
@@ -17,7 +16,6 @@ import {
 /**
  * Service for detecting reflection transformations (mirror and flip) between beat pairs.
  */
-@injectable()
 export class ReflectionComparer implements IReflectionComparer {
   checkReflections(
     b1Blue: ColorData,

@@ -5,8 +5,7 @@
    */
 
   import { onMount } from "svelte";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -19,7 +18,7 @@
 
   onMount(async () => {
     try {
-      const loader = tryResolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
+      const loader = container.items.discoverLoader;
       if (loader) {
         const allSequences = await loader.loadSequenceMetadata();
         // Filter to sequences from other users and sort by most recent

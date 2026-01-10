@@ -7,8 +7,7 @@ Delegates all rendering to child components.
 <script lang="ts">
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
@@ -165,20 +164,18 @@ Delegates all rendering to child components.
     let darkModeUnsubscribe: (() => void) | null = null;
 
     try {
-      const loader = resolve<IOptionLoader>(TYPES.IOptionLoader);
-      const filter = resolve<IOptionFilter>(TYPES.IOptionFilter);
-      const sorter = resolve<IOptionSorter>(TYPES.IOptionSorter);
+      const loader = container.items.optionLoader as IOptionLoader;
+      const filter = container.items.optionFilter as IOptionFilter;
+      const sorter = container.items.optionSorter as IOptionSorter;
 
-      organizerService = resolve<IOptionOrganizer>(
-        TYPES.IOptionOrganizerService
-      );
-      sizerService = resolve<IOptionGridFitCalculator>(TYPES.IGridFitCalculator);
-      preparer = resolve<IPictographPreparer>(TYPES.IPictographPreparer);
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      organizerService = container.items.optionOrganizer as IOptionOrganizer;
+      sizerService = container.items.optionGridFitCalculator as IOptionGridFitCalculator;
+      preparer = container.items.pictographPreparer as IPictographPreparer;
+      hapticService = container.items.hapticFeedback as IHapticFeedback;
 
       // Subscribe to Dark Mode changes for prop color updates
       try {
-        darkModeProvider = resolve<IDarkModeProvider>(TYPES.IDarkModeProvider);
+        darkModeProvider = container.items.darkModeProvider as IDarkModeProvider;
         darkModeUnsubscribe = darkModeProvider.subscribe((value) => {
           darkMode = value;
         });

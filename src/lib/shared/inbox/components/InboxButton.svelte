@@ -14,7 +14,7 @@
   import { notificationService } from "$lib/features/feedback/services/implementations/Notifier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import { loadFeatureModule } from "$lib/shared/inversify/container";
+  // Note: Module loading is handled by container
 
   let { isCollapsed = true } = $props<{ isCollapsed?: boolean }>();
 
@@ -22,9 +22,8 @@
   let unsubscribeNotifications: (() => void) | null = null;
   let messagingModuleLoaded = $state(false);
 
-  onMount(async () => {
-    // Load messaging module on mount
-    await loadFeatureModule("messaging");
+  onMount(() => {
+    // Module is now loaded via container
     messagingModuleLoaded = true;
   });
 

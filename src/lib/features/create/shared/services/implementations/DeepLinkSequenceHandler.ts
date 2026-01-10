@@ -8,8 +8,6 @@
  * Domain: Create module - Sequence Loading
  */
 
-import { injectable, inject, optional } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   DeepLinkLoadResult,
@@ -28,19 +26,10 @@ const PENDING_EDIT_KEY = "tka-pending-edit-sequence";
  */
 let pendingEditProcessedThisSession = false;
 
-@injectable()
 export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
   constructor(
-    @inject(TYPES.IDeepLinker)
-    @optional()
     private deepLinkService: IDeepLinker | null,
-
-    @inject(TYPES.ILetterDeriver)
-    @optional()
     private LetterDeriver: ILetterDeriver | null,
-
-    @inject(TYPES.IPositionDeriver)
-    @optional()
     private positionDeriverService: IPositionDeriver | null
   ) {}
 

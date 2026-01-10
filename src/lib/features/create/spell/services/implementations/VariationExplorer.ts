@@ -5,11 +5,9 @@
  * Yields sequences one at a time for memory efficiency.
  */
 
-import { inject, injectable } from "inversify";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IBeatConverter } from "$lib/features/create/generate/shared/services/contracts/IBeatConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
@@ -23,22 +21,16 @@ import type {
 } from "../contracts/IVariationExplorer";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
 import { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
-import { SPELL_TYPES } from "./spell-types";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 
 /** Default maximum variations (Infinity = no limit, user can cancel) */
 const DEFAULT_MAX_VARIATIONS = Infinity;
 
-@injectable()
 export class VariationExplorer implements IVariationExplorer {
   constructor(
-    @inject(SPELL_TYPES.ILetterTransitionGraph)
     private transitionGraph: ILetterTransitionGraph,
-    @inject(TYPES.ILetterQueryHandler)
     private letterQueryHandler: ILetterQueryHandler,
-    @inject(TYPES.IBeatConverter)
     private beatConverter: IBeatConverter,
-    @inject(TYPES.IOrientationCalculator)
     private orientationCalculator: IOrientationCalculator
   ) {}
 

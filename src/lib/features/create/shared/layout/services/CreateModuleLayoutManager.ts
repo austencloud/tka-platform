@@ -7,17 +7,14 @@ import type { IViewportManager } from "$lib/shared/device/services/contracts/IVi
  */
 
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { LayoutConfiguration } from "../../orchestration/types";
 import { LAYOUT_BREAKPOINTS } from "../models/LayoutState";
 import type { ICreateModuleLayoutManager } from "./ICreateModuleLayoutManager";
 
-@injectable()
 export class CreateModuleLayoutManager implements ICreateModuleLayoutManager {
   constructor(
-    @inject(TYPES.IDeviceDetector) private deviceDetector: IDeviceDetector,
-    @inject(TYPES.IViewportManager) private viewportService: IViewportManager
+    private deviceDetector: IDeviceDetector,
+    private viewportService: IViewportManager
   ) {}
 
   /**

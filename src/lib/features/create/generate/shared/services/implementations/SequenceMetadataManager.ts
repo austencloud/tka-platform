@@ -5,7 +5,6 @@
  * Single Responsibility: Generate sequence names, metadata, and word calculation.
  */
 
-import { injectable } from "inversify";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import {
   DifficultyLevel,
@@ -41,7 +40,6 @@ export interface ISequenceMetadataManager {
   }): Record<string, unknown>;
 }
 
-@injectable()
 export class SequenceMetadataManager implements ISequenceMetadataManager {
   /**
    * Generate sequence name based on options - matches legacy pattern

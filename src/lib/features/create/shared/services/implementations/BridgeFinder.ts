@@ -1,12 +1,10 @@
-﻿/**
+/**
  * Bridge Finder Implementation
  *
  * Finds bridge letters that can connect a sequence to a loopable position.
  * Analyzes pictograph candidates and determines available LOOP patterns.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   GridPosition} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -35,18 +33,12 @@ import {
 } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
 import type { LOOPOption } from "../contracts/ISequenceExtender";
 
-@injectable()
 export class BridgeFinder implements IBridgeFinder {
   constructor(
-    @inject(TYPES.ILetterQueryHandler)
     private letterQueryHandler: ILetterQueryHandler,
-    @inject(TYPES.IPositionAnalyzer)
     private positionAnalyzer: IPositionAnalyzer,
-    @inject(TYPES.ILOOPValidator)
     private loopValidator: ILOOPValidator,
-    @inject(TYPES.ISequenceAnalyzer)
     private sequenceAnalyzer: ISequenceAnalyzer,
-    @inject(TYPES.IOrientationAlignmentCalculator)
     private orientationCalculator: IOrientationAlignmentCalculator
   ) {}
 

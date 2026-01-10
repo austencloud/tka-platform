@@ -1,4 +1,3 @@
-﻿import { injectable } from "inversify";
 import { LOOPType } from "../../../circular/domain/models/circular-models";
 import { LOOPComponent } from "../../domain/models/generate-models";
 import type { ILOOPTypeResolver } from "../contracts/ILOOPTypeResolver";
@@ -10,7 +9,6 @@ import type { ILOOPTypeResolver } from "../contracts/ILOOPTypeResolver";
  * algorithmic logic from UI concerns. This service contains the complex
  * conditional logic for mapping between component sets and LOOP type enums.
  */
-@injectable()
 export class LOOPTypeResolver implements ILOOPTypeResolver {
   /**
    * Parse LOOP type to extract components

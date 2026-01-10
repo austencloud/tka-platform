@@ -4,8 +4,7 @@ Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     VTG_MODES,
     type VTGMode,
@@ -26,7 +25,7 @@ Teaches the 6 VTG modes: SS, TS, SO, TO, QS, QO
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   // Persistence for HMR/refresh survival
   const persistence = getExperiencePersistence("vtg");

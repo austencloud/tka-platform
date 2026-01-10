@@ -6,19 +6,13 @@
  */
 
 import { Point } from "fabric";
-import { inject, injectable } from "inversify";
-import { TYPES } from "../../../../../../inversify/types";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { ILetterClassifier } from "../contracts/ILetterClassifier";
 import type { ISpecialPlacementLookup } from "../contracts/ISpecialPlacementLookup";
 
-@injectable()
 export class SpecialPlacementLookup implements ISpecialPlacementLookup {
-  constructor(
-    @inject(TYPES.ILetterClassifier)
-    private readonly letterClassifier: ILetterClassifier
-  ) {}
+  constructor(private readonly letterClassifier: ILetterClassifier) {}
 
   /**
    * Look up special placement adjustment from placement data.

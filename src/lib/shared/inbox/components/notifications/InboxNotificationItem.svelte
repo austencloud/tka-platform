@@ -12,8 +12,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/features/feedback/state/notification-action-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
@@ -41,7 +40,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Get icon based on notification type

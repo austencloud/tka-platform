@@ -9,8 +9,6 @@
  * should use this service.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "../../../../inversify/types";
 import type { PictographData } from "../../domain/models/PictographData";
 import type { MotionData } from "../../domain/models/MotionData";
 import type {
@@ -31,14 +29,12 @@ import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
 import { getSettings } from "../../../../application/state/app-state.svelte";
 
-@injectable()
 export class PictographPreparer implements IPictographPreparer {
   constructor(
-    @inject(TYPES.IArrowLifecycleManager)
     private arrowManager: IArrowLifecycleManager,
-    @inject(TYPES.IPropSvgLoader) private propLoader: IPropSvgLoader,
-    @inject(TYPES.IPropPlacer) private propPlacer: IPropPlacer,
-    @inject(TYPES.IGridModeDeriver) private gridModeDeriver: IGridModeDeriver
+    private propLoader: IPropSvgLoader,
+    private propPlacer: IPropPlacer,
+    private gridModeDeriver: IGridModeDeriver
   ) {}
 
   async prepareBatch(

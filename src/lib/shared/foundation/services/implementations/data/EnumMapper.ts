@@ -14,7 +14,6 @@ import {
   Orientation,
   RotationDirection,
 } from "../../../../pictograph/shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 
 export interface IEnumMapper {
   mapMotionType(motionType: string): MotionType;
@@ -26,7 +25,6 @@ export interface IEnumMapper {
   ): GridPosition | null;
 }
 
-@injectable()
 export class EnumMapper implements IEnumMapper {
   /**
    * Map string motion type to MotionType enum

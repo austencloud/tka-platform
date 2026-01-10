@@ -27,8 +27,7 @@
   import { sidebarTourState } from "$lib/shared/onboarding/state/sidebar-tour-state.svelte";
   import { resetSidebarTour } from "$lib/shared/onboarding/config/storage-keys";
   import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type {
     IQuickAccessPersister,
     QuickAccessUser,
@@ -179,10 +178,7 @@
     introResetMessage = "Scanning cloud thumbnails...";
 
     try {
-      const container = await getContainerInstance();
-      const cloudCache = container.get<ICloudThumbnailCache>(
-        TYPES.ICloudThumbnailCache
-      );
+      const cloudCache = container.items.cloudThumbnailCache as ICloudThumbnailCache;
 
       let totalDeleted = 0;
 
@@ -236,22 +232,13 @@
       }
     });
 
-    // Resolve the service after mount (admin module loads async in Tier 2)
-    const tryResolve = async () => {
-      try {
-        const container = await getContainerInstance();
-        quickAccessPersister = container.get<IQuickAccessPersister>(
-          TYPES.IQuickAccessPersister
-        );
-        quickAccessUsers = quickAccessPersister.load();
-        return true;
-      } catch {
-        return false;
-      }
-    };
-
-    // Resolve async - will wait for Tier 2 modules
-    tryResolve();
+    // Resolve the service after mount
+    try {
+      quickAccessPersister = container.items.quickAccessPersister as IQuickAccessPersister;
+      quickAccessUsers = quickAccessPersister.load();
+    } catch {
+      console.warn("QuickAccessPersister not available");
+    }
   });
 </script>
 

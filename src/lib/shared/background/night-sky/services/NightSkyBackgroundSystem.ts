@@ -1,5 +1,4 @@
-import { resolve } from "../../../inversify/di";
-import { TYPES } from "../../../inversify/types";
+import { container } from "$lib/shared/di";
 import type { IGeoLocationProvider } from "$lib/shared/device/services/contracts/IGeoLocationProvider";
 import type {
   AccessibilitySettings,
@@ -88,19 +87,11 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
   static create(): NightSkyBackgroundSystem {
     const instance = new NightSkyBackgroundSystem();
 
-    // Inject services synchronously (container already initialized)
-    instance.renderingService = resolve<IBackgroundRenderingService>(
-      TYPES.IBackgroundRenderingService
-    );
-    instance.configurationService = resolve<IBackgroundConfigurationService>(
-      TYPES.IBackgroundConfigurationService
-    );
-    instance.calculationService = resolve<INightSkyCalculationService>(
-      TYPES.INightSkyCalculationService
-    );
-    instance.geoLocationProvider = resolve<IGeoLocationProvider>(
-      TYPES.IGeoLocationProvider
-    );
+    // Inject services from ITI container
+    instance.renderingService = container.items.backgroundRenderingService;
+    instance.configurationService = container.items.backgroundConfigurationService;
+    instance.calculationService = container.items.nightSkyCalculationService;
+    instance.geoLocationProvider = container.items.geoLocationProvider;
 
     // Set observer latitude from geolocation (sync for now, will be updated async)
     const latitude = instance.geoLocationProvider.getLatitude();

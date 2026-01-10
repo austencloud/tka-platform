@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type {
     ExtensionAnalysis,
@@ -94,13 +94,13 @@
     panelState.navigationBarHeight + panelState.toolPanelHeight
   );
 
-  // Services
-  let hapticService: IHapticFeedback | null = $state(null);
-  let extensionFlowCoordinator: IExtensionFlowCoordinator | null = $state(null);
-  let subDrawerPersister: ISubDrawerStatePersister | null = $state(null);
-  let transferHandler: ISequenceTransferHandler | null = $state(null);
-  let firstBeatAnalyzer: IFirstBeatAnalyzer | null = $state(null);
-  let jsonExporter: ISequenceJsonExporter | null = $state(null);
+  // Services - get from ITI container
+  const hapticService = container.items.hapticFeedback;
+  const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
+  const subDrawerPersister = container.items.subDrawerStatePersister;
+  const transferHandler = container.items.sequenceTransferHandler;
+  const firstBeatAnalyzer = container.items.firstBeatAnalyzer;
+  const jsonExporter = container.items.sequenceJsonExporter;
 
   // Local state - $effect below handles initial and prop changes
   let isOpen = $state(false);
@@ -168,46 +168,7 @@
     !!(sequence && sequence.beats && sequence.beats.length >= 2)
   );
 
-  onMount(() => {
-    try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    } catch {
-      /* Optional service */
-    }
-    try {
-      extensionFlowCoordinator = resolve<IExtensionFlowCoordinator>(
-        TYPES.IExtensionFlowCoordinator
-      );
-    } catch {
-      /* Optional service */
-    }
-    try {
-      subDrawerPersister = resolve<ISubDrawerStatePersister>(
-        TYPES.ISubDrawerStatePersister
-      );
-    } catch {
-      /* Optional service */
-    }
-    try {
-      transferHandler = resolve<ISequenceTransferHandler>(
-        TYPES.ISequenceTransferHandler
-      );
-    } catch {
-      /* Optional service */
-    }
-    try {
-      firstBeatAnalyzer = resolve<IFirstBeatAnalyzer>(TYPES.IFirstBeatAnalyzer);
-    } catch {
-      /* Optional service */
-    }
-    try {
-      jsonExporter = resolve<ISequenceJsonExporter>(
-        TYPES.ISequenceJsonExporter
-      );
-    } catch {
-      /* Optional service */
-    }
-  });
+  // Note: Services are resolved at module scope from ITI container
 
   // Restore sub-drawer state AFTER parent drawer has opened and registered
   // Watch for when isOpen becomes true, then restore with delay

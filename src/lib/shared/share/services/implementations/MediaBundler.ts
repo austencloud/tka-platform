@@ -5,7 +5,6 @@
  * Leverages the existing ShareService to generate sequence images and GIFs.
  */
 
-import { injectable, inject } from "inversify";
 import type { ISharer } from "../contracts/ISharer";
 import type { IMediaBundler } from "../contracts/IMediaBundler";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
@@ -15,11 +14,9 @@ import {
   INSTAGRAM_MEDIA_CONSTRAINTS,
   validateMediaItem,
 } from "../../domain/models/InstagramMedia";
-import { TYPES } from "../../../inversify/types";
 
-@injectable()
 export class MediaBundler implements IMediaBundler {
-  constructor(@inject(TYPES.ISharer) private shareService: ISharer) {}
+  constructor(private shareService: ISharer) {}
 
   /**
    * Bundle sequence into Instagram media items

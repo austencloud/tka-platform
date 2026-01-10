@@ -11,10 +11,8 @@ import {
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { ISvgImageConverter } from "$lib/shared/foundation/services/contracts/ISvgImageConverter";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IFileDownloader } from "$lib/shared/foundation/services/contracts/IFileDownloader";
 import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-import { inject, injectable } from "inversify";
 import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
 import type {
@@ -32,7 +30,6 @@ interface LetterOverlayAssets {
   dimensions: { width: number; height: number };
 }
 
-@injectable()
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;
   private shouldCancel = false;
@@ -41,15 +38,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private letterGlyphCache = new Map<Letter, LetterOverlayAssets>();
 
   constructor(
-    @inject(TYPES.IVideoExporter)
     private readonly VideoExporter: IVideoExporter,
-    @inject(TYPES.ICanvasRenderer)
     private readonly canvasRenderer: ICanvasRenderer,
-    @inject(TYPES.ISvgImageConverter)
     private readonly svgImageService: ISvgImageConverter,
-    @inject(TYPES.IFileDownloader)
     private readonly fileDownloadService: IFileDownloader,
-    @inject(TYPES.ICompositeVideoRenderer)
     private readonly compositeRenderer: ICompositeVideoRenderer
   ) {}
 

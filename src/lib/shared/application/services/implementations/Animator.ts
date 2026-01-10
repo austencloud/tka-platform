@@ -5,7 +5,6 @@
  * fade effects, and animation settings management.
  */
 
-import { injectable } from "inversify";
 import { cubicOut } from "svelte/easing";
 import type {
   AnimationSettings,
@@ -16,7 +15,6 @@ import type {
   TransitionResult,
 } from "../contracts/IAnimator";
 
-@injectable()
 export class Animator implements IAnimator {
   /**
    * Create a fold transition effect

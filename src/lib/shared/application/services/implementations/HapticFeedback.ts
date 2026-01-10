@@ -16,7 +16,6 @@ import type {
   HapticFeedbackType,
   IHapticFeedback,
 } from "../contracts/IHapticFeedback";
-import { injectable } from "inversify";
 
 // Feedback patterns (in milliseconds for Vibration API)
 // For iOS, these map to number of haptic pulses
@@ -49,7 +48,6 @@ const DEFAULT_CONFIG: HapticFeedbackConfig = {
   customPatterns: {},
 };
 
-@injectable()
 export class HapticFeedback implements IHapticFeedback {
   private lastFeedbackTime: number = 0;
   private config: HapticFeedbackConfig = { ...DEFAULT_CONFIG };

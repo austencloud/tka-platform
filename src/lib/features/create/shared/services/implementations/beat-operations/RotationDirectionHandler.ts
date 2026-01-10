@@ -28,8 +28,7 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getBeatDataFromState,
@@ -99,9 +98,7 @@ export function updateRotationDirection(
   // Note: DASH, STATIC, FLOAT don't flip
 
   // Recalculate endOrientation based on new rotation direction and motion type
-  const orientationCalculator = resolve<IOrientationCalculator>(
-    TYPES.IOrientationCalculator
-  );
+  const orientationCalculator = container.items.orientationCalculator as IOrientationCalculator;
   const tempMotionData = createMotionData({
     ...currentMotion,
     rotationDirection: newRotationDirection,
@@ -210,7 +207,7 @@ export function updateRotationDirection(
 
   // Process reversals to update reversal indicators after rotation direction change
   try {
-    const reversalService = resolve<IReversalDetector>(TYPES.IReversalDetector);
+    const reversalService = container.items.reversalDetector as IReversalDetector;
     updatedSequence = reversalService.processReversals(updatedSequence);
   } catch {
     // Reversal service is optional - continue without reversal processing

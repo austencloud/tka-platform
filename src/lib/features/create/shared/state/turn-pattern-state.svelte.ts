@@ -7,8 +7,7 @@
 
 import type { TurnPattern } from "../domain/models/TurnPatternData";
 import type { ITurnPatternManager } from "../services/contracts/ITurnPatternManager";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -25,9 +24,7 @@ let _initialized = false;
 let _turnPatternManager: ITurnPatternManager | null = null;
 function getTurnPatternManager(): ITurnPatternManager {
   if (!_turnPatternManager) {
-    _turnPatternManager = resolve<ITurnPatternManager>(
-      TYPES.ITurnPatternManager
-    );
+    _turnPatternManager = container.items.turnPatternManager as ITurnPatternManager;
   }
   return _turnPatternManager;
 }

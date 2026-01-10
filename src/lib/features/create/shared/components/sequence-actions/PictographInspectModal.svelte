@@ -14,8 +14,7 @@
   import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
   import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
   import { SpecialPlacementOriKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   import InspectModalHeader from "./pictograph-inspect/InspectModalHeader.svelte";
   import BasicInfoColumn from "./pictograph-inspect/BasicInfoColumn.svelte";
@@ -69,9 +68,7 @@
 
     isCalculating = true;
     try {
-      const arrowOrchestrator = resolve<IArrowPositioningOrchestrator>(
-        TYPES.IArrowPositioningOrchestrator
-      );
+      const arrowOrchestrator = container.items.arrowPositioningOrchestrator;
 
       const pictographData: PictographData = {
         id: beatData.id,
@@ -104,13 +101,9 @@
 
   function calculateLookupKeys(pictographData: PictographData) {
     try {
-      const tupleGenerator = resolve<ITurnsTupleGenerator>(
-        TYPES.ITurnsTupleGenerator
-      );
-      const gridModeDeriver = resolve<IGridModeDeriver>(TYPES.IGridModeDeriver);
-      const rotationKeyGenerator = resolve<IRotationAngleOverrideKeyGenerator>(
-        TYPES.IRotationAngleOverrideKeyGenerator
-      );
+      const tupleGenerator = container.items.turnsTupleGenerator;
+      const gridModeDeriver = container.items.gridModeDeriver;
+      const rotationKeyGenerator = container.items.rotationAngleOverrideKeyGenerator;
       const oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
 
       const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
@@ -174,10 +167,8 @@
 
   async function checkRotationOverrides(pictographData: PictographData) {
     try {
-      const specialPlacer = resolve<ISpecialPlacer>(TYPES.ISpecialPlacer);
-      const rotationKeyGenerator = resolve<IRotationAngleOverrideKeyGenerator>(
-        TYPES.IRotationAngleOverrideKeyGenerator
-      );
+      const specialPlacer = container.items.specialPlacer;
+      const rotationKeyGenerator = container.items.rotationAngleOverrideKeyGenerator;
 
       const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
       if (blueMotionData) {

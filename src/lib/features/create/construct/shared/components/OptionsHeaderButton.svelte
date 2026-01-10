@@ -1,8 +1,7 @@
 <!-- Options variant: entire header is clickable button -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { swipeGesture } from "$lib/shared/utils/swipeGesture";
 
   const {
@@ -19,7 +18,7 @@
     onOpenFilters?: (() => void) | undefined;
   } = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   function handleFilterClick() {
     hapticService?.trigger("selection");

@@ -1,11 +1,9 @@
-import { injectable } from "inversify";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 
 /**
  * Color manipulation utilities for fish rendering.
  * Extracted from FishRenderer to follow single-responsibility principle.
  */
-@injectable()
 export class ColorCalculator implements IColorCalculator {
   adjustAlpha(color: string, alpha: number): string {
     // Handle rgba

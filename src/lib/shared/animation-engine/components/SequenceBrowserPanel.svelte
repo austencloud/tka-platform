@@ -11,8 +11,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   import { onMount } from "svelte";
@@ -98,19 +97,14 @@
     return filtered;
   });
 
-  // Initialize services (load discover module first)
-  async function initializeServices() {
+  // Initialize services from container
+  function initializeServices() {
     try {
-      // Ensure discover module is loaded before resolving services
-      await loadFeatureModule("discover");
-
-      loaderService = tryResolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-      thumbnailService = tryResolve<IDiscoverThumbnailProvider>(
-        TYPES.IDiscoverThumbnailProvider
-      );
-      normalizationService = tryResolve<ISequenceNormalizer>(
-        TYPES.ISequenceNormalizer
-      );
+      // With ITI, all containers are already composed - no need for async module loading
+      loaderService = container.items.discoverLoader ?? null;
+      thumbnailService = container.items.discoverThumbnailProvider ?? null;
+      // Note: ISequenceNormalizer may not be in the container yet - check build container
+      normalizationService = (container.items as any).sequenceNormalizer ?? null;
 
       servicesReady = !!(loaderService && thumbnailService);
 
@@ -204,8 +198,8 @@
   }
 
   // Load on mount - initialize services first, then load sequences
-  onMount(async () => {
-    await initializeServices();
+  onMount(() => {
+    initializeServices();
     if (servicesReady) {
       loadSequences();
     }

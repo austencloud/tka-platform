@@ -63,6 +63,12 @@ export interface IPersistenceService {
   deleteSequence(id: string): Promise<void>;
 
   /**
+   * Load all sequences from persistent storage
+   * (Alias for getAllSequences for compatibility with IPersister interface)
+   */
+  loadAllSequences(): Promise<SequenceData[]>;
+
+  /**
    * Search sequences by name or word
    */
   searchSequences(query: string): Promise<SequenceData[]>;

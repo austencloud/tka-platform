@@ -23,7 +23,7 @@
  * - Parse commits since last tag
  * - Determine version from conventional commit types
  * - Generate changelog from commit messages
- * - Skip Firestore operations
+ * - Creates Firestore version document for What's New modal
  *
  * Usage:
  *   node scripts/release.js                    - Interactive flow
@@ -38,6 +38,7 @@
  *   node scripts/release.js --highlights 1,3,4   - Select highlight indices (comma-separated, or "none")
  *   node scripts/release.js --from-main        - Release directly from main (skip branch workflow)
  *   node scripts/release.js --skip-jargon-check - Bypass jargon detection (use with caution)
+ *   node scripts/release.js --update-notes 0.7.11 --changelog notes.json - Update existing release notes
  */
 
 import admin from "firebase-admin";
@@ -566,6 +567,114 @@ async function prepareFirestoreRelease(
 }
 
 /**
+ * Create version document in Firestore (for git history mode)
+ * Creates version record without archiving feedback items
+ */
+async function createFirestoreVersion(version, changelogEntries, highlights = []) {
+  const versionRef = db.collection("versions").doc(version);
+
+  const versionData = {
+    version,
+    feedbackCount: 0,
+    feedbackSummary: { bugs: 0, features: 0, general: 0 },
+    changelogEntries,
+    releasedAt: admin.firestore.FieldValue.serverTimestamp(),
+    source: "git-history", // Mark as generated from git history
+  };
+
+  // Only include highlights if there are any
+  if (highlights.length > 0) {
+    versionData.highlights = highlights;
+  }
+
+  // Use set with merge to handle both create and update scenarios
+  await versionRef.set(versionData, { merge: true });
+}
+
+/**
+ * Update release notes for an existing version
+ * Updates both Firestore and GitHub release
+ */
+async function updateReleaseNotes(version, changelogEntries, highlights = []) {
+  console.log(`\n📝 Updating release notes for v${version}...\n`);
+
+  // 1. Update Firestore
+  console.log("✓ Updating Firestore version document...");
+  const versionRef = db.collection("versions").doc(version);
+  const updateData = {
+    changelogEntries,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  if (highlights.length > 0) {
+    updateData.highlights = highlights;
+  }
+
+  await versionRef.set(updateData, { merge: true });
+
+  // 2. Update GitHub release
+  console.log("✓ Updating GitHub release...");
+  const releaseNotes = formatGitHubReleaseNotes(changelogEntries);
+
+  // Write to temp file
+  writeFileSync(".release-notes.tmp", releaseNotes);
+
+  try {
+    execSync(`gh release edit v${version} --notes-file .release-notes.tmp`, {
+      stdio: "inherit",
+    });
+  } finally {
+    try {
+      execSync("rm .release-notes.tmp", { stdio: "ignore" });
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+  }
+
+  console.log(`\n✅ Release notes updated for v${version}!\n`);
+}
+
+/**
+ * Format changelog entries for GitHub release notes
+ */
+function formatGitHubReleaseNotes(changelog) {
+  const fixed = changelog.filter((e) => e.category === "fixed");
+  const added = changelog.filter((e) => e.category === "added");
+  const improved = changelog.filter((e) => e.category === "improved");
+
+  let releaseNotes = "";
+
+  if (fixed.length > 0) {
+    releaseNotes += "## 🐛 Bug Fixes\n\n";
+    fixed.forEach((e) => {
+      releaseNotes += `- ${e.text}\n`;
+    });
+    releaseNotes += "\n";
+  }
+
+  if (added.length > 0) {
+    releaseNotes += "## ✨ New Features\n\n";
+    added.forEach((e) => {
+      releaseNotes += `- ${e.text}\n`;
+    });
+    releaseNotes += "\n";
+  }
+
+  if (improved.length > 0) {
+    releaseNotes += "## 🔧 Improvements\n\n";
+    improved.forEach((e) => {
+      releaseNotes += `- ${e.text}\n`;
+    });
+    releaseNotes += "\n";
+  }
+
+  releaseNotes +=
+    "\n---\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)";
+
+  return releaseNotes;
+}
+
+/**
  * Check git status
  */
 function checkGitStatus() {
@@ -677,39 +786,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>`;
  * Create GitHub release
  */
 function createGitHubRelease(version, changelog) {
-  // Format release notes
-  const fixed = changelog.filter((e) => e.category === "fixed");
-  const added = changelog.filter((e) => e.category === "added");
-  const improved = changelog.filter((e) => e.category === "improved");
-
-  let releaseNotes = "";
-
-  if (fixed.length > 0) {
-    releaseNotes += "## 🐛 Bug Fixes\n\n";
-    fixed.forEach((e) => {
-      releaseNotes += `- ${e.text}\n`;
-    });
-    releaseNotes += "\n";
-  }
-
-  if (added.length > 0) {
-    releaseNotes += "## ✨ New Features\n\n";
-    added.forEach((e) => {
-      releaseNotes += `- ${e.text}\n`;
-    });
-    releaseNotes += "\n";
-  }
-
-  if (improved.length > 0) {
-    releaseNotes += "## 🔧 Improvements\n\n";
-    improved.forEach((e) => {
-      releaseNotes += `- ${e.text}\n`;
-    });
-    releaseNotes += "\n";
-  }
-
-  releaseNotes +=
-    "\n---\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)";
+  const releaseNotes = formatGitHubReleaseNotes(changelog);
 
   // Write release notes to temp file to handle special characters
   writeFileSync(".release-notes.tmp", releaseNotes);
@@ -905,6 +982,46 @@ async function main() {
   const highlightsArg =
     highlightsIndex >= 0 ? args[highlightsIndex + 1] : null;
   const fromMain = args.includes("--from-main");
+  const updateNotesIndex = args.indexOf("--update-notes");
+  const updateNotesVersion =
+    updateNotesIndex >= 0 ? args[updateNotesIndex + 1] : null;
+
+  // Update existing release notes mode
+  if (updateNotesVersion) {
+    if (!changelogFile || !existsSync(changelogFile)) {
+      console.error("❌ --update-notes requires --changelog <file.json>");
+      console.error("   Usage: node scripts/release.js --update-notes 0.7.11 --changelog notes.json");
+      process.exit(1);
+    }
+
+    try {
+      const changelog = JSON.parse(readFileSync(changelogFile, "utf8"));
+
+      // Parse highlights if provided
+      let highlights = [];
+      if (highlightsArg && highlightsArg !== "none" && highlightsArg !== "0") {
+        const potentialHighlights = changelog
+          .filter((e) => e.category === "added" || e.category === "improved")
+          .map((e) => e.text);
+
+        if (highlightsArg === "all") {
+          highlights = potentialHighlights;
+        } else {
+          const indices = highlightsArg
+            .split(",")
+            .map((s) => parseInt(s.trim()) - 1)
+            .filter((i) => i >= 0 && i < potentialHighlights.length);
+          highlights = indices.map((i) => potentialHighlights[i]);
+        }
+      }
+
+      await updateReleaseNotes(updateNotesVersion, changelog, highlights);
+      process.exit(0);
+    } catch (error) {
+      console.error(`❌ Failed to update release notes: ${error.message}`);
+      process.exit(1);
+    }
+  }
 
   // Show last release mode
   if (showLast) {
@@ -1161,7 +1278,7 @@ async function main() {
   console.log("✓ Updating service worker cache version...");
   updateServiceWorkerVersion(suggestedVersion);
 
-  // Prepare Firestore (only if using feedback or custom changelog with feedback)
+  // Prepare Firestore
   if (!useGitHistory && feedbackItems.length > 0) {
     console.log("✓ Archiving feedback in Firestore...");
     // Use custom changelog entries if provided, otherwise use generated ones
@@ -1173,7 +1290,9 @@ async function main() {
       selectedHighlights
     );
   } else if (useGitHistory) {
-    console.log("⏭️  Skipping Firestore operations (git history mode)");
+    // Still create version document for What's New modal, just don't archive feedback
+    console.log("✓ Creating version record in Firestore (git history mode)...");
+    await createFirestoreVersion(suggestedVersion, changelog, selectedHighlights);
   }
 
   // Create git commit and tag

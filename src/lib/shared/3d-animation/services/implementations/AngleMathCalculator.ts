@@ -4,14 +4,12 @@
  * Provides angle normalization and interpolation operations.
  */
 
-import { injectable } from "inversify";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { IAngleMathCalculator } from "../contracts/IAngleMathCalculator";
 
 const TWO_PI = Math.PI * 2;
 const PI = Math.PI;
 
-@injectable()
 export class AngleMathCalculator implements IAngleMathCalculator {
   /**
    * Normalize angle to [0, 2π)

@@ -6,8 +6,6 @@
  * reconstruct them by examining the first beat's motion start locations.
  */
 
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IStartPositionDeriver } from "../contracts/IStartPositionDeriver";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
@@ -23,12 +21,8 @@ import {
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-@injectable()
 export class StartPositionDeriver implements IStartPositionDeriver {
-  constructor(
-    @inject(TYPES.IGridPositionDeriver)
-    private gridPositionDeriver: IGridPositionDeriver
-  ) {}
+  constructor(private gridPositionDeriver: IGridPositionDeriver) {}
 
   deriveFromFirstBeat(firstBeat: BeatData): StartPositionData {
     const blueMotion = firstBeat.motions?.[MotionColor.BLUE];

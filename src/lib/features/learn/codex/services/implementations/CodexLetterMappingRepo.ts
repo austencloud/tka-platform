@@ -6,7 +6,6 @@
  */
 
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 import type {
   CodexConfig,
   CodexLetterMapping,
@@ -15,7 +14,6 @@ import type {
 import { createLetterMapping } from "../../domain/models/codex-models";
 import type { ICodexLetterMappingRepo } from "../contracts/ICodexLetterMappingRepo";
 
-@injectable()
 export class CodexLetterMappingRepo implements ICodexLetterMappingRepo {
   private configuration: CodexConfig | null = null;
   private initialized = false;

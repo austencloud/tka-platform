@@ -5,14 +5,12 @@
  * Fetches users, challenges, and announcements once and derives all views from this snapshot.
  */
 
-import { injectable, inject } from "inversify";
 import {
   collection,
   getDocs,
   Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type {
   ISystemStateManager,
@@ -44,14 +42,10 @@ function withTimeout<T>(
   ]);
 }
 
-@injectable()
 export class SystemStateManager implements ISystemStateManager {
   private cachedState: SystemState | null = null;
 
-  constructor(
-    @inject(TYPES.IActivityLogger)
-    private readonly activityLogService: IActivityLogger
-  ) {}
+  constructor(private readonly activityLogService: IActivityLogger) {}
 
   /**
    * Check if Firestore is available

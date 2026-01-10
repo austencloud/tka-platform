@@ -3,8 +3,7 @@
   Drawer for selecting props - right on desktop, bottom on mobile
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -46,7 +45,7 @@
   let placement = $state<"bottom" | "right">("right");
 
   onMount(() => {
-    deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+    deviceDetector = container.items.deviceDetector as IDeviceDetector;
     updatePlacement();
 
     const cleanup = deviceDetector?.onCapabilitiesChanged(() => {
@@ -91,7 +90,7 @@
   }
 
   function handlePropSelect(propType: PropType) {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback as IHapticFeedback;
     hapticService?.trigger("selection");
     onSelect(propType);
     isOpen = false;

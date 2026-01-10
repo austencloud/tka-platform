@@ -1,4 +1,3 @@
-import { inject, injectable } from "inversify";
 import type { AccessibilitySettings } from "../../shared/domain/models/background-models";
 import type {
   Dimensions,
@@ -6,7 +5,6 @@ import type {
   QualityLevel,
 } from "../../shared/domain/types/background-types";
 import type { IBackgroundSystem } from "../../shared/services/contracts/IBackgroundSystem";
-import { TYPES } from "../../../inversify/types";
 import type { DeepOceanState } from "../domain/models/DeepOceanModels";
 
 // Physics & Animation contracts
@@ -46,7 +44,6 @@ export interface DeepOceanLayers {
   jellyfish: boolean;
 }
 
-@injectable()
 export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
   private state: DeepOceanState;
   private quality: QualityLevel = "medium";
@@ -71,26 +68,18 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
 
   constructor(
     // Physics services
-    @inject(TYPES.IBubblePhysics) private bubblePhysics: IBubblePhysics,
-    @inject(TYPES.IParticleSystem) private particleSystem: IParticleSystem,
-    @inject(TYPES.ILightRayCalculator)
+    private bubblePhysics: IBubblePhysics,
+    private particleSystem: IParticleSystem,
     private lightRayCalculator: ILightRayCalculator,
-
     // Animator services
-    @inject(TYPES.IFishAnimator) private fishAnimator: IFishAnimator,
-    @inject(TYPES.IJellyfishAnimator)
+    private fishAnimator: IFishAnimator,
     private jellyfishAnimator: IJellyfishAnimator,
-
     // Renderer services
-    @inject(TYPES.IGradientRenderer)
     private gradientRenderer: IGradientRenderer,
-    @inject(TYPES.ILightRayRenderer)
     private lightRayRenderer: ILightRayRenderer,
-    @inject(TYPES.IBubbleRenderer) private bubbleRenderer: IBubbleRenderer,
-    @inject(TYPES.IParticleRenderer)
+    private bubbleRenderer: IBubbleRenderer,
     private particleRenderer: IParticleRenderer,
-    @inject(TYPES.IFishRenderer) private fishRenderer: IFishRenderer,
-    @inject(TYPES.IJellyfishRenderer)
+    private fishRenderer: IFishRenderer,
     private jellyfishRenderer: IJellyfishRenderer
   ) {
     this.state = this.createEmptyState();

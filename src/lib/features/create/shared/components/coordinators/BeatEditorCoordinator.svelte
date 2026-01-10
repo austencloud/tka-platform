@@ -12,8 +12,7 @@
   Domain: Create module - Beat Editing Coordination
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import BeatEditorPanel from "../sequence-actions/BeatEditorPanel.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
@@ -38,21 +37,8 @@
   const { CreateModuleState, panelState } = ctx;
 
   // Services
-  let hapticService: IHapticFeedback | null = $state(null);
-  let BeatOperator: IBeatOperator | null = $state(null);
-
-  onMount(() => {
-    try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    } catch {
-      /* Optional service */
-    }
-    try {
-      BeatOperator = resolve<IBeatOperator>(TYPES.IBeatOperator);
-    } catch {
-      /* Optional service */
-    }
-  });
+  const hapticService: IHapticFeedback = container.items.hapticFeedback;
+  const BeatOperator: IBeatOperator = container.items.beatOperator;
 
   // Panel state
   const isOpen = $derived(panelState.isBeatEditorPanelOpen);

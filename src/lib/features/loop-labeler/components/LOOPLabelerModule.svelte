@@ -6,12 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    ensureContainerInitialized,
-    loadFeatureModule,
-    tryResolve,
-  } from "$lib/shared/inversify/di";
-  import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
+  import { container } from "$lib/shared/di";
   import type { IBeatDataConverter } from "../services/contracts/IBeatDataConverter";
   import type {
     ILOOPDetector,
@@ -60,25 +55,22 @@
   let wholeState = $state<ReturnType<typeof createWholeModeState>>();
 
   onMount(() => {
-    // Load LOOP labeler DI module and initialize
+    // Initialize LOOP labeler
     (async () => {
       // Check if state already has data (from HMR or previous session)
       const hasExistingData = loopLabelerState.hasData;
 
-      await ensureContainerInitialized();
-      await loadFeatureModule("loop-labeler");
+      // loop-labeler services available synchronously via ITI
 
-      // Store reference to detection service AFTER module is loaded
+      // Store reference to detection service
       let resolvedService: ILOOPDetector | null = null;
       try {
-        resolvedService = tryResolve<ILOOPDetector>(
-          LOOPLabelerTypes.ILOOPLabelerDetectionService
-        );
+        resolvedService = container.items.loopDetector as ILOOPDetector | null;
       } catch (err) {
         // Silent - will try direct import
       }
 
-      // If tryResolve failed, log error - LOOPDetector has too many dependencies for manual instantiation
+      // If resolution failed, log error - LOOPDetector has too many dependencies for manual instantiation
       if (!resolvedService) {
         console.error(
           "[LOOPLabelerModule] Failed to resolve LOOPDetector from DI container. Detection features will be unavailable."
@@ -88,9 +80,8 @@
       detectionService = resolvedService;
 
       // Also cache the conversion service for beat parsing
-      conversionService = tryResolve<IBeatDataConverter>(
-        LOOPLabelerTypes.IBeatDataConverter
-      );
+      conversionService =
+        container.items.beatDataConverter as IBeatDataConverter | null;
 
       // Pre-cache all services to ensure they're available for subsequent operations
       loopLabelerController.cacheServices();

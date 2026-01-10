@@ -1,9 +1,7 @@
-import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type { OceanParticle } from "../../domain/models/DeepOceanModels";
 import type { IParticleSystem } from "../contracts/IParticleSystem";
 
-@injectable()
 export class ParticleSystem implements IParticleSystem {
   initializeParticles(dimensions: Dimensions, count: number): OceanParticle[] {
     const particles: OceanParticle[] = [];

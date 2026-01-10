@@ -5,7 +5,6 @@
  * Weekly challenges span Monday-Sunday and offer larger rewards than daily challenges.
  */
 
-import { inject, injectable } from "inversify";
 import {
   collection,
   doc,
@@ -38,16 +37,12 @@ import {
 } from "../../domain/models/challenge-models";
 import type { IWeeklyChallengeManager } from "../contracts/IWeeklyChallengeManager";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
-import { TYPES } from "../../../inversify/types";
 
-@injectable()
 export class WeeklyChallengeManager implements IWeeklyChallengeManager {
   private _initialized = false;
   private _achievementService: IAchievementManager | null = null;
 
-  constructor(
-    @inject(TYPES.IAchievementManager) achievementService: IAchievementManager
-  ) {
+  constructor(achievementService: IAchievementManager) {
     this._achievementService = achievementService;
   }
 

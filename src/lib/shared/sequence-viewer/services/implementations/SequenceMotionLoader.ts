@@ -5,18 +5,12 @@
  * Delegates to IDiscoverLoader for gallery-based sequence loading.
  */
 
-import { inject, injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { ISequenceMotionLoader } from "../contracts/ISequenceMotionLoader";
 
-@injectable()
 export class SequenceMotionLoader implements ISequenceMotionLoader {
-  constructor(
-    @inject(TYPES.IDiscoverLoader)
-    private readonly discoverLoader: IDiscoverLoader
-  ) {}
+  constructor(private readonly discoverLoader: IDiscoverLoader) {}
 
   async ensureMotionData(seq: SequenceData): Promise<SequenceData | null> {
     // Check if sequence already has motion data

@@ -5,12 +5,10 @@
  * With the unified PropType enum, prop types are now used directly without mapping.
  */
 
-import { injectable } from "inversify";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
 import type { PropType } from "../../domain/enums/PropType";
 import type { IPropTypeConfigurator } from "../contracts/IPropTypeConfigurator";
 
-@injectable()
 export class PropTypeConfigurator implements IPropTypeConfigurator {
   /**
    * Convert UI prop type to filename format.

@@ -7,7 +7,6 @@
 
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
-import { injectable } from "inversify";
 import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
 import type {
   AllPlacementData,
@@ -18,7 +17,6 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("ArrowPlacer");
 
-@injectable()
 export class ArrowPlacer implements IArrowPlacer {
   private allPlacements: AllPlacementData = {
     [GridMode.DIAMOND]: {},

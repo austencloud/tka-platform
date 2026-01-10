@@ -12,8 +12,7 @@
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
-import { tryResolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
@@ -130,9 +129,7 @@ export function createSequencePersistenceCoordinator(
         // Log sequence save for analytics (non-blocking)
         if (currentSequence) {
           try {
-            const activityService = tryResolve<IActivityLogger>(
-              TYPES.IActivityLogger
-            );
+            const activityService = container.items.activityLogger as IActivityLogger | undefined;
             if (activityService) {
               void activityService.logSequenceAction(
                 "save",

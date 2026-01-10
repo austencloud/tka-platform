@@ -4,7 +4,6 @@
  * Supports preview mode for admin user viewing
  */
 
-import { loadFeatureModule } from "$lib/shared/inversify/di";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { featureFlagService } from "$lib/shared/auth/services/FeatureFlagService.svelte";
@@ -143,13 +142,8 @@ function createDashboardState() {
   $effect(() => {
     const userId = authState.effectiveUserId;
     if (userId) {
-      loadFeatureModule("library")
-        .then(() => {
-          libraryState.loadSequences();
-        })
-        .catch((error) => {
-          console.error("[Dashboard] Failed to load library module:", error);
-        });
+      // Library module is available synchronously via ITI
+      libraryState.loadSequences();
     }
   });
 

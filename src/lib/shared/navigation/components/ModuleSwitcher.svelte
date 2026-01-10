@@ -5,8 +5,7 @@
   Uses the shared Drawer component (vaul-svelte based) for consistent UX.
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import ModuleList from "./ModuleList.svelte";
@@ -57,12 +56,12 @@
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Resolve DeviceDetector service (same pattern as MobileNavigation)
     let deviceCleanup: (() => void) | undefined;
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+      deviceDetector = container.items.deviceDetector;
 
       // Get initial responsive settings
       responsiveSettings = deviceDetector.getResponsiveSettings();

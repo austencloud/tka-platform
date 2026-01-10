@@ -9,10 +9,8 @@
  * ensure identical image dimensions and beat positioning.
  */
 
-import { injectable } from "inversify";
 import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
 
-@injectable()
 export class LayoutCalculator implements ILayoutCalculator {
   // Base constants matching desktop application
   private static readonly BASE_BEAT_SIZE = 144; // Match desktop beat.width()

@@ -1,11 +1,9 @@
-﻿/**
+/**
  * Sequence Feature Extractor Service Implementation
  *
  * Extracts analyzable features from sequences for rule-based tagging.
  */
 
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type {
@@ -28,12 +26,8 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-@injectable()
 export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
-  constructor(
-    @inject(TYPES.ISequenceAnalyzer)
-    private readonly SequenceAnalyzer: ISequenceAnalyzer
-  ) {}
+  constructor(private readonly SequenceAnalyzer: ISequenceAnalyzer) {}
 
   /**
    * Extract all analyzable features from a sequence

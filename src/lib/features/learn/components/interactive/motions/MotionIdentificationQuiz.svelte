@@ -4,8 +4,7 @@ User must play animation first, then identify the motion type (1-6)
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     MOTION_QUIZ_QUESTIONS,
     MOTION_TYPE_INFO,
@@ -22,7 +21,7 @@ User must play animation first, then identify the motion type (1-6)
     onComplete?: () => void;
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   function shuffle<T>(array: T[]): T[] {
     const arr = [...array];

@@ -17,11 +17,8 @@ import type { PictographData } from "../../../../../shared/domain/models/Pictogr
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
-import { TYPES } from "../../../../../../inversify/types";
-import { inject, injectable } from "inversify";
 import type { DashLocationCalculator } from "./DashLocationCalculator";
 
-@injectable()
 export class ArrowLocationCalculator implements IArrowLocationCalculator {
   /**
    * Pure algorithmic service for calculating arrow locations.
@@ -29,8 +26,6 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
    * Implements location calculation algorithms without any UI dependencies.
    * Each motion type has its own calculation strategy.
    */
-
-  private dashLocationService: DashLocationCalculator;
 
   // Direction pairs mapping for shift arrows (PRO/ANTI/FLOAT)
   // Maps start/end location pairs to their calculated arrow location
@@ -63,18 +58,7 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
     ])]: GridLocation.WEST,
   };
 
-  constructor(
-    @inject(TYPES.IDashLocationCalculator)
-    dashLocationService: DashLocationCalculator
-  ) {
-    /**
-     * Initialize the location calculator.
-     *
-     * Args:
-     *     dashLocationService: Service for dash location calculations
-     */
-    this.dashLocationService = dashLocationService;
-  }
+  constructor(private dashLocationService: DashLocationCalculator) {}
 
   calculateLocation(
     motion: MotionData,

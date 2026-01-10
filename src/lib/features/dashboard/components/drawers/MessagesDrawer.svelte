@@ -18,8 +18,7 @@
   import NewMessageSheet from "$lib/shared/inbox/components/messages/NewMessageSheet.svelte";
   import { conversationService } from "$lib/shared/messaging/services/implementations/ConversationManager";
   import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   // Props
@@ -50,7 +49,7 @@
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     mediaQuery = window.matchMedia("(max-width: 768px)");
     isMobile = mediaQuery.matches;

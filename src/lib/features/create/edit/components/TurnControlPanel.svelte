@@ -2,8 +2,7 @@
 <script lang="ts">
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import TurnPanel from "./TurnPanel.svelte";
 
   // Props
@@ -25,7 +24,7 @@
   }>();
 
   // Services
-  const deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+  const deviceDetector = container.items.deviceDetector;
 
   // Computed device characteristics
   const isDesktop = $derived(deviceDetector.isDesktop());

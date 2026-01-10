@@ -1,7 +1,6 @@
 <!-- NavButton - Reusable Navigation Button Component -->
 <script lang="ts">
-  import { resolve } from "../../../inversify/di";
-  import { TYPES } from "../../../inversify/types";
+  import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
 
@@ -53,7 +52,7 @@
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 </script>
 

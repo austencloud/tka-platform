@@ -11,7 +11,7 @@ import {
   DEFAULT_SHARE_OPTIONS,
 } from "../domain/models/ShareOptions";
 import type { ISharer } from "../services/contracts/ISharer";
-import { tryResolve, TYPES } from "../../inversify/di";
+import { container } from "$lib/shared/di";
 import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
 import { getUser } from "../../auth/state/authState.svelte";
 import { settingsService } from "../../settings/state/SettingsState.svelte";
@@ -372,9 +372,7 @@ export function createShareState(shareService: ISharer): ShareState {
 
         // Log share/download action for analytics (non-blocking)
         try {
-          const activityService = tryResolve<IActivityLogger>(
-            TYPES.IActivityLogger
-          );
+          const activityService = container.items.activityLogger as IActivityLogger | undefined;
           if (activityService) {
             void activityService.logShareAction("sequence_export", {
               sequenceId: sequence.id,

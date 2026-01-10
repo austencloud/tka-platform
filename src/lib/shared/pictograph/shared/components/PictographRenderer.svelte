@@ -35,7 +35,7 @@ Usage:
   import ElementalGlyph from "./ElementalGlyph.svelte";
   import PositionGlyph from "./PositionGlyph.svelte";
   import BeatNumber from "./BeatNumber.svelte";
-  import { resolve, tryResolve, TYPES } from "../../../inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
   import type { ITurnsTupleGenerator } from "../../arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
@@ -137,7 +137,7 @@ Usage:
         return GridMode.DIAMOND;
       }
       try {
-        const service = resolve<IGridModeDeriver>(TYPES.IGridModeDeriver);
+        const service = container.items.gridModeDeriver;
         return service.deriveGridMode(
           pictograph.motions.blue,
           pictograph.motions.red
@@ -178,9 +178,7 @@ Usage:
       return "(s, 0, 0)";
     }
     try {
-      const generator = tryResolve<ITurnsTupleGenerator>(
-        TYPES.ITurnsTupleGenerator
-      );
+      const generator = container.items.turnsTupleGenerator;
       if (!generator) return "(s, 0, 0)";
       return generator.generateTurnsTuple(pictograph);
     } catch {

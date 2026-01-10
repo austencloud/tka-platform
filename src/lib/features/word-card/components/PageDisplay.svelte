@@ -5,8 +5,7 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
   import WordCard from "./WordCard.svelte";
@@ -16,15 +15,16 @@
     isLoading: boolean;
     error: string | null;
     columnCount?: number;
+    showQRCodes?: boolean;
     onRetry: () => void;
   }
 
-  let { pages, isLoading, error, columnCount = 1, onRetry }: Props = $props();
+  let { pages, isLoading, error, columnCount = 1, showQRCodes = false, onRetry }: Props = $props();
 
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleRetry() {
@@ -68,7 +68,7 @@
           <div class="page-content">
             <div class="sequence-grid">
               {#each page.sequences as sequence (sequence.id)}
-                <WordCard {sequence} printMode />
+                <WordCard {sequence} printMode {showQRCodes} />
               {/each}
             </div>
           </div>

@@ -29,8 +29,7 @@ import {
   EmailAuthProvider,
   type User,
 } from "firebase/auth";
-import { TYPES } from "../../inversify/types";
-import { tryResolve } from "../../inversify/resolve-utils";
+import { container } from "../../di";
 
 // Service imports
 import type { IProfilePictureManager } from "../services/contracts/IProfilePictureManager";
@@ -280,9 +279,7 @@ export async function initializeAuthListener() {
           role = (idTokenResult.claims.role as UserRole) || "user";
 
           // Create or update user document in Firestore
-          const userDocumentService = tryResolve<IUserDocumentManager>(
-            TYPES.IUserDocumentManager
-          );
+          const userDocumentService = container.items.userDocumentManager;
           if (userDocumentService) {
             try {
               await userDocumentService.createOrUpdateUserDocument(user);
@@ -295,9 +292,7 @@ export async function initializeAuthListener() {
           }
 
           // Update profile pictures from OAuth providers (non-blocking)
-          const profilePictureService = tryResolve<IProfilePictureManager>(
-            TYPES.IProfilePictureManager
-          );
+          const profilePictureService = container.items.profilePictureManager;
           if (profilePictureService) {
             profilePictureService
               .updateFacebookProfilePictureIfNeeded(user)
@@ -353,9 +348,7 @@ export async function initializeAuthListener() {
       // Log session start for analytics (non-blocking)
       if (user) {
         try {
-          const activityService = tryResolve<IActivityLogger>(
-            TYPES.IActivityLogger
-          );
+          const activityService = container.items.activityLogger;
           if (activityService) {
             activityService.logSessionStart().catch((error) => {
               console.warn(
@@ -369,22 +362,19 @@ export async function initializeAuthListener() {
         }
 
         // Initialize presence tracking (non-blocking)
-        import("../../inversify/di")
-          .then(async ({ ensureContainerInitialized, tryResolve: resolve }) => {
-            await ensureContainerInitialized(); // Ensure Tier 1 modules (including presence) are loaded
-            const presenceService = resolve<{
-              initialize: () => Promise<void>;
-            }>(TYPES.IPresenceTracker);
+        (async () => {
+          try {
+            const presenceService = container.items.presenceTracker;
             if (presenceService) {
               await presenceService.initialize();
             }
-          })
-          .catch((error) => {
+          } catch (error) {
             console.warn(
               "⚠️ [authState] Presence initialization failed:",
               error
             );
-          });
+          }
+        })();
 
         // Initialize settings Firebase sync (non-blocking)
         import("$lib/shared/settings/state/SettingsState.svelte")
@@ -438,27 +428,24 @@ export async function initializeAuthListener() {
           });
 
         // Initialize system collections (Favorites, etc.) - non-blocking
-        import("$lib/shared/inversify/di")
-          .then(async ({ loadFeatureModule, tryResolve }) => {
+        (async () => {
+          try {
             // Ensure Firestore is initialized before collection operations
             const { getFirestoreInstance } =
               await import("$lib/shared/auth/firebase");
             await getFirestoreInstance();
 
-            await loadFeatureModule("library");
-            const collectionService = tryResolve<{
-              ensureSystemCollections?: () => Promise<void>;
-            }>(TYPES.ICollectionManager);
+            const collectionService = container.items.collectionManager;
             if (collectionService?.ensureSystemCollections) {
               await collectionService.ensureSystemCollections();
             }
-          })
-          .catch((error) => {
+          } catch (error) {
             console.warn(
               "⚠️ [authState] System collections init failed:",
               error
             );
-          });
+          }
+        })();
 
         // Initialize subscription listener for real-time role sync
         void initializeSubscriptionListener(user);
@@ -528,9 +515,7 @@ export async function signOut() {
 
     // Mark user as offline in presence system before signing out
     try {
-      const presenceService = tryResolve<{ goOffline: () => Promise<void> }>(
-        TYPES.IPresenceTracker
-      );
+      const presenceService = container.items.presenceTracker;
       if (presenceService) {
         await presenceService.goOffline();
       }
@@ -702,9 +687,7 @@ export async function updateUsername(newUsername: string) {
   }
 
   try {
-    const usernameValidator = tryResolve<IUsernameValidator>(
-      TYPES.IUsernameValidator
-    );
+    const usernameValidator = container.items.usernameValidator;
 
     if (!usernameValidator) {
       throw new Error("Username validation service not available");

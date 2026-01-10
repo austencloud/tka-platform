@@ -4,7 +4,6 @@
    * Bypasses the navigation system to directly mount the GalleryModule.
    */
   import { onMount } from "svelte";
-  import { loadFeatureModule } from "$lib/shared/inversify/di";
 
   let GalleryModule: any = $state(null);
   let loading = $state(true);
@@ -12,9 +11,7 @@
 
   onMount(async () => {
     try {
-      // Load required DI modules
-      await loadFeatureModule("realm");
-
+      // ITI container is ready synchronously - no module loading needed
       // Import the gallery module
       const module = await import("$lib/features/gallery/GalleryModule.svelte");
       GalleryModule = module.default;

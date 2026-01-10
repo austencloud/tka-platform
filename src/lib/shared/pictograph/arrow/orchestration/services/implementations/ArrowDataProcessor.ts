@@ -7,23 +7,13 @@
 
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 import type { Point } from "fabric";
-import { inject, injectable } from "inversify";
-import { TYPES } from "../../../../../inversify/types";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
 import type { IArrowDataProcessor } from "../contracts/IArrowDataProcessor";
 
-@injectable()
 export class ArrowDataProcessor implements IArrowDataProcessor {
-  private coordinateSystem: IArrowGridCoordinator;
-
-  constructor(
-    @inject(TYPES.IArrowGridCoordinator)
-    coordinateSystem: IArrowGridCoordinator
-  ) {
-    this.coordinateSystem = coordinateSystem;
-  }
+  constructor(private coordinateSystem: IArrowGridCoordinator) {}
 
   getMotionFromPictograph(
     arrowColor: string, // ✅ FIXED: Pass color directly since ArrowPlacementData no longer has color

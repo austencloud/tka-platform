@@ -16,8 +16,6 @@ import type { IArrowSvgLoader } from "../contracts/IArrowSvgLoader";
 import type { IArrowSvgParser } from "../contracts/IArrowSvgParser";
 import type { ISvgColorTransformer } from "../contracts/IArrowSvgColorTransformer";
 
-import { TYPES } from "../../../../../inversify/types";
-import { inject, injectable } from "inversify";
 import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { createMotionData } from "../../../../shared/domain/models/MotionData";
@@ -55,14 +53,12 @@ export interface IArrowRenderer {
   applyColorToSvg(svgText: string, color: MotionColor): string;
 }
 
-@injectable()
 export class ArrowRenderer implements IArrowRenderer {
   constructor(
-    @inject(TYPES.IArrowPathResolver) private pathResolver: IArrowPathResolver,
-    @inject(TYPES.IArrowSvgParser) private svgParser: IArrowSvgParser,
-    @inject(TYPES.IArrowSvgColorTransformer)
+    private pathResolver: IArrowPathResolver,
+    private svgParser: IArrowSvgParser,
     private colorTransformer: ISvgColorTransformer,
-    @inject(TYPES.IArrowSvgLoader) private svgLoader: IArrowSvgLoader
+    private svgLoader: IArrowSvgLoader
   ) {}
 
   /**

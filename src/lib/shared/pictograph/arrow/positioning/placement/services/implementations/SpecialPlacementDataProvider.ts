@@ -5,11 +5,9 @@
  * Uses Promise-based caching to prevent race conditions during concurrent loads.
  */
 
-import { injectable } from "inversify";
 import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
 import type { ISpecialPlacementDataProvider } from "../contracts/ISpecialPlacementDataProvider";
 
-@injectable()
 export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvider {
   // Structure: [gridMode][oriKey][letter] -> Record<string, unknown>
   private cache: Record<

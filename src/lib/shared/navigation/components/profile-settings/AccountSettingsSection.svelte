@@ -13,8 +13,7 @@
   } from "../../state/profile-settings-state.svelte";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/authState.svelte";
-  import { tryResolve } from "../../../inversify/resolve-utils";
-  import { TYPES } from "../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IUsernameValidator } from "../../../auth/services/contracts/IUsernameValidator";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import { doc, getDoc } from "firebase/firestore";
@@ -51,8 +50,8 @@
   let showCurrentPassword = $state(false);
   let showNewPassword = $state(false);
 
-  // Get username validator service
-  const usernameValidator = tryResolve<IUsernameValidator>(TYPES.IUsernameValidator);
+  // Get username validator service from ITI container
+  const usernameValidator = container.items.usernameValidator as IUsernameValidator;
 
   // Load current username from Firestore on mount
   onMount(async () => {

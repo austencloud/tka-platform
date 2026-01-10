@@ -8,7 +8,7 @@ Uses singleton state for caching - data persists across tab switches.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, loadFeatureModule, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
@@ -66,17 +66,11 @@ Uses singleton state for caching - data persists across tab switches.
 
   onMount(async () => {
     try {
-      // Load required modules
-      await Promise.all([
-        loadFeatureModule("community"),
-        loadFeatureModule("library"),
-      ]);
-
-      // Resolve services
-      userService = resolve<IUserRepository>(TYPES.IUserRepository);
-      collectionService = resolve<ICollectionManager>(TYPES.ICollectionManager);
-      libraryService = resolve<ILibraryRepository>(TYPES.ILibraryRepository);
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      // Resolve services (ITI containers are synchronous - no module loading needed)
+      userService = container.items.userRepository;
+      collectionService = container.items.collectionManager;
+      libraryService = container.items.libraryRepository;
+      hapticService = container.items.hapticFeedback;
 
       // Load data (uses cache if already loaded)
       await collectionsBrowseState.loadCreatorLibraries(

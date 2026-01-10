@@ -5,7 +5,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { injectable } from "inversify";
 import type {
   SpotlightDisplayState,
   SpotlightImageState,
@@ -19,7 +18,6 @@ import {
 } from "../../domain/models/spotlight-models";
 import type { ISpotlightManager } from "../contracts/ISpotlightManager";
 
-@injectable()
 export class SpotlightManager implements ISpotlightManager {
   private displayState: SpotlightDisplayState =
     createDefaultSpotlightDisplayState();

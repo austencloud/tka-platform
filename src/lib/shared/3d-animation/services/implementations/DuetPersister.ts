@@ -5,8 +5,6 @@
  * to full SequenceData using the discover loader.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IDuetPersister } from "../contracts/IDuetPersister";
@@ -26,13 +24,10 @@ interface StoredDuet extends Omit<DuetSequence, "createdAt"> {
   createdAt: string;
 }
 
-@injectable()
 export class DuetPersister implements IDuetPersister {
   private sequenceCache: Map<string, SequenceData> | null = null;
 
-  constructor(
-    @inject(TYPES.IDiscoverLoader) private discoverLoader: IDiscoverLoader
-  ) {}
+  constructor(private discoverLoader: IDiscoverLoader) {}
 
   /**
    * Save a new duet sequence

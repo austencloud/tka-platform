@@ -11,7 +11,6 @@
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-import { injectable } from "inversify";
 import type {
   BuildSection,
   CreateModuleStateForSync,
@@ -19,7 +18,6 @@ import type {
   NavigationStateForSync,
 } from "../contracts/INavigationSyncer";
 
-@injectable()
 export class NavigationSyncer implements INavigationSyncer {
   private logger = createComponentLogger("CreateModule:NavigationSync");
 

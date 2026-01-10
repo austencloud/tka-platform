@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { SequenceEntry } from "../contracts/IBeatDataConverter";
 import type { LabeledSequence } from "../contracts/ILOOPLabelsFirebaseRepository";
 import type {
@@ -10,7 +9,6 @@ import type {
 /**
  * Service for loading and filtering sequences
  */
-@injectable()
 export class SequenceLoader implements ISequenceLoader {
   async loadSequences(): Promise<SequenceEntry[]> {
     try {

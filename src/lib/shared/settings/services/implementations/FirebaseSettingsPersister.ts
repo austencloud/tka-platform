@@ -8,7 +8,6 @@
  * - users/{uid}/settings (document containing all app settings)
  */
 
-import { injectable } from "inversify";
 import {
   doc,
   getDoc,
@@ -22,7 +21,6 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { AppSettings } from "../../domain/AppSettings";
 import type { ISettingsPersister } from "../contracts/ISettingsPersister";
 
-@injectable()
 export class FirebaseSettingsPersister implements ISettingsPersister {
   private unsubscribe: Unsubscribe | null = null;
 

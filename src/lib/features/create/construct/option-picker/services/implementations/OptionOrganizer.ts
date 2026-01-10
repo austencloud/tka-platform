@@ -10,14 +10,12 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
 import { LetterType } from "$lib/shared/foundation/domain/models/LetterType";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { injectable } from "inversify";
 import type {
   OrganizedSection,
   SortMethod,
 } from "../../domain/option-picker-types";
 import type { IOptionOrganizer } from "../contracts/IOptionOrganizer";
 
-@injectable()
 export class OptionOrganizer implements IOptionOrganizer {
   /**
    * Organize pictographs by sort method into sections

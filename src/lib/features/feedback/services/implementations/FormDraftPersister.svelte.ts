@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   IFormDraftPersister,
   DraftSaveStatus,
@@ -17,7 +16,6 @@ import {
 /**
  * Manages auto-saving feedback form drafts with debouncing.
  */
-@injectable()
 export class FormDraftPersister implements IFormDraftPersister {
   private _saveStatus = $state<DraftSaveStatus>("idle");
   private saveTimer: ReturnType<typeof setTimeout> | null = null;

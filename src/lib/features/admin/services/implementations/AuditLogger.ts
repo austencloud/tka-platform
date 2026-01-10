@@ -4,7 +4,6 @@
  * Writes immutable records of admin operations to Firestore.
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   addDoc,
@@ -22,7 +21,6 @@ import type {
   AuditActionType,
 } from "../contracts/IAuditLogger";
 
-@injectable()
 export class AuditLogger implements IAuditLogger {
   /**
    * Log an admin action

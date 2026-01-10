@@ -5,7 +5,6 @@
  * Handles subtask operations, blocking logic, and progress tracking.
  */
 
-import { injectable } from "inversify";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { IFeedbackSubtaskManager } from "../contracts/IFeedbackSubtaskManager";
@@ -14,7 +13,6 @@ import type {
   SubtaskStatus,
 } from "../../domain/models/feedback-models";
 
-@injectable()
 export class FeedbackSubtaskManager implements IFeedbackSubtaskManager {
   /**
    * Add a new subtask to feedback item

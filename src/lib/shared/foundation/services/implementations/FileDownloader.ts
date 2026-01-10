@@ -5,7 +5,6 @@
  * Handles browser compatibility and provides progress feedback.
  */
 
-import { injectable } from "inversify";
 import type {
   IFileDownloader,
   DownloadOptions,
@@ -13,7 +12,6 @@ import type {
   DownloadResult,
 } from "../contracts/IFileDownloader";
 
-@injectable()
 export class FileDownloader implements IFileDownloader {
   /**
    * Download a single file from a Blob

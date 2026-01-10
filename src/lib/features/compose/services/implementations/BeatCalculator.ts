@@ -6,13 +6,11 @@
  */
 
 import type { BeatData } from "../../../create/shared/domain/models/BeatData";
-import { injectable } from "inversify";
 import type {
   BeatCalculationResult,
   IBeatCalculator,
 } from "../contracts/IBeatCalculator";
 
-@injectable()
 export class BeatCalculator implements IBeatCalculator {
   /**
    * Calculate current beat index and progress from animation time

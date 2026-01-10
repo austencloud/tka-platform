@@ -13,8 +13,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
-  import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
@@ -80,14 +79,11 @@ Used by both desktop side panel and mobile slide-up overlay.
   }
 
   onMount(async () => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Load video count for the compact button
     try {
-      await loadFeatureModule("share");
-      videoService = tryResolve<ICollaborativeVideoManager>(
-        TYPES.ICollaborativeVideoManager
-      );
+      videoService = container.items.collaborativeVideoManager;
       if (videoService) {
         const videos = await videoService.getVideosForSequence(sequence.id);
         videoCount = videos.length;

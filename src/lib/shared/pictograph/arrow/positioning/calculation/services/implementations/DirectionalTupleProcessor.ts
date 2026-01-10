@@ -13,13 +13,10 @@
 
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
-import { TYPES } from "../../../../../../inversify/types";
 import { Point } from "fabric";
-import { inject, injectable } from "inversify";
 import type { IDirectionalTupleCalculator } from "../contracts/IDirectionalTupleGenerator";
 import type { IDirectionalTupleProcessor } from "../contracts/IDirectionalTupleGenerator";
 
-@injectable()
 export class DirectionalTupleCalculator implements IDirectionalTupleCalculator {
   /**
    * Calculator for directional tuples used in arrow positioning.
@@ -314,7 +311,6 @@ export class DirectionalTupleCalculator implements IDirectionalTupleCalculator {
   }
 }
 
-@injectable()
 export class QuadrantIndexCalculator {
   /**
    * Wrapper around ArrowQuadrantCalculator to maintain interface compatibility.
@@ -322,7 +318,7 @@ export class QuadrantIndexCalculator {
    */
   constructor(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    @inject(TYPES.IArrowQuadrantCalculator) private quadrantCalculator: any
+    private quadrantCalculator: any
   ) {}
 
   calculateQuadrantIndex(motion: MotionData, location: GridLocation): number {
@@ -330,16 +326,13 @@ export class QuadrantIndexCalculator {
   }
 }
 
-@injectable()
 export class DirectionalTupleProcessor implements IDirectionalTupleProcessor {
   /**
    * Processor for applying directional tuple adjustments to arrow positioning.
    */
 
   constructor(
-    @inject(TYPES.IDirectionalTupleCalculator)
     private DirectionalTupleGenerator: IDirectionalTupleCalculator,
-    @inject(TYPES.IQuadrantIndexCalculator)
     private quadrantIndexService: QuadrantIndexCalculator
   ) {}
 

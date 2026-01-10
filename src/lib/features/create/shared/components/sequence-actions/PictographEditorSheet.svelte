@@ -21,8 +21,7 @@
   import { SpecialPlacementOriKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
   import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -71,13 +70,9 @@
     if (!beatData) return;
 
     try {
-      const tupleGenerator = resolve<ITurnsTupleGenerator>(
-        TYPES.ITurnsTupleGenerator
-      );
-      const gridModeDeriver = resolve<IGridModeDeriver>(TYPES.IGridModeDeriver);
-      const rotationKeyGenerator = resolve<IRotationAngleOverrideKeyGenerator>(
-        TYPES.IRotationAngleOverrideKeyGenerator
-      );
+      const tupleGenerator = container.items.turnsTupleGenerator;
+      const gridModeDeriver = container.items.gridModeDeriver;
+      const rotationKeyGenerator = container.items.rotationAngleOverrideKeyGenerator;
       const oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
 
       const pictographData: PictographData = {
@@ -221,10 +216,8 @@ Red Rot Key: ${lookupKeys.redRotationOverrideKey ?? "N/A"}`;
 
   onMount(() => {
     try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-      keyboardAdjustmentService = resolve<IKeyboardArrowAdjuster>(
-        TYPES.IKeyboardArrowAdjuster
-      );
+      hapticService = container.items.hapticFeedback;
+      keyboardAdjustmentService = container.items.keyboardArrowAdjuster;
     } catch (error) {
       console.error("[PictographEditor] Failed to initialize services:", error);
     }

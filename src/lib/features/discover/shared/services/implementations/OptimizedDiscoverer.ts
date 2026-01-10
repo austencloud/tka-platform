@@ -8,8 +8,6 @@
  * - Virtual scrolling support
  */
 
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
 import type {
   IOptimizedDiscoverer,
@@ -28,7 +26,6 @@ interface SequenceCountResponse {
   count: number;
 }
 
-@injectable()
 export class OptimizedDiscoverer implements IOptimizedDiscoverer {
   private cache = new Map<number, SequenceMetadata[]>();
   private totalCount: number = 0;
@@ -36,7 +33,7 @@ export class OptimizedDiscoverer implements IOptimizedDiscoverer {
   private readonly DESKTOP_PAGE_SIZE = 40;
 
   constructor(
-    @inject(TYPES.IDeviceDetector) private deviceDetector: IDeviceDetector
+    private deviceDetector: IDeviceDetector
   ) {}
 
   private get pageSize(): number {

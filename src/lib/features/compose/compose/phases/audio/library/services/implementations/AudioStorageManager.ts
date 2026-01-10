@@ -4,7 +4,6 @@
  * Uploads and downloads audio files to/from Firebase Storage.
  */
 
-import { injectable } from "inversify";
 import {
   getStorage,
   ref,
@@ -19,7 +18,6 @@ import type {
   UploadProgress,
 } from "../contracts/IAudioStorageManager";
 
-@injectable()
 export class AudioStorageManager implements IAudioStorageManager {
   /**
    * Get storage path for audio file

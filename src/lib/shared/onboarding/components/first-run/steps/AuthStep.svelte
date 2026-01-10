@@ -8,8 +8,7 @@
   import { fly, fade } from "svelte/transition";
   import SocialAuthCompact from "$lib/shared/auth/components/SocialAuthCompact.svelte";
   import EmailPasswordAuth from "$lib/shared/auth/components/EmailPasswordAuth.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IAuthenticator } from "$lib/shared/auth/services/contracts/IAuthenticator";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { onMount } from "svelte";
@@ -28,11 +27,11 @@
   // Watch for authentication to complete
   const isAuthenticated = $derived(authState.isAuthenticated);
 
-  onMount(async () => {
+  onMount(() => {
     try {
-      authService = await resolve<IAuthenticator>(TYPES.IAuthenticator);
+      authService = container.items.authenticator as IAuthenticator;
     } catch (error) {
-      console.error("Failed to resolve auth service:", error);
+      console.error("Failed to get auth service:", error);
     }
   });
 

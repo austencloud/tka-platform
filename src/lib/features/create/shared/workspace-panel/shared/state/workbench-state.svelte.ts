@@ -7,8 +7,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../domain/models/BeatData";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IWorkbench } from "../services/contracts/IWorkbench";
 
 /**
@@ -16,7 +15,7 @@ import type { IWorkbench } from "../services/contracts/IWorkbench";
  */
 export function createWorkbenchState() {
   // Get the service
-  const Workbench = resolve<IWorkbench>(TYPES.IWorkbench);
+  const Workbench = container.items.workbench as IWorkbench;
 
   // Simple reactive state - just what we need
   let selectedBeatIndex = $state<number | null>(null);

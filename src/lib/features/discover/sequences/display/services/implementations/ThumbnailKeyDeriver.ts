@@ -5,7 +5,6 @@
  * Replaces 13 prev* state variables with a single hash.
  */
 
-import { injectable } from "inversify";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type {
   IThumbnailKeyDeriver,
@@ -31,7 +30,6 @@ const WORDCARD_DEFAULTS: CompositionDefaults = {
   addUserInfo: true,
 };
 
-@injectable()
 export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
   deriveKey(input: ThumbnailRenderInput): ThumbnailCacheKey {
     const defaults = this.getVariantDefaults(input.variant);

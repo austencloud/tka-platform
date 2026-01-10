@@ -5,8 +5,7 @@
    */
 
   import { onMount } from "svelte";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IChallengeCoordinator } from "$lib/shared/gamification/services/contracts/IChallengeCoordinator";
   import type {
     DailyChallenge,
@@ -22,9 +21,7 @@
 
   onMount(async () => {
     try {
-      const coordinator = tryResolve<IChallengeCoordinator>(
-        TYPES.IChallengeCoordinator
-      );
+      const coordinator = container.items.challengeCoordinator;
       if (coordinator) {
         await coordinator.initialize();
         const dashboard = await coordinator.getDashboard();

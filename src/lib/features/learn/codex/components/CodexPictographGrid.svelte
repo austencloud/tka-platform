@@ -8,9 +8,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
 
   // Props
   let { pictographsByLetter, letterRows, onPictographClick } = $props<{
@@ -20,11 +18,7 @@
   }>();
 
   // Services
-  let hapticService: IHapticFeedback;
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   // Handle pictograph click
   function handlePictographClick(pictograph: PictographData) {

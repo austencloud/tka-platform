@@ -45,16 +45,16 @@ export type PixiLoadResult = AnimationRendererLoadResult;
  */
 export interface IAnimatorLoader {
   /**
-   * Load core animator services (requires animate module).
+   * Load core animator services.
    * Does NOT load renderer - that's handled separately.
    */
-  loadAnimatorServices(): Promise<AnimatorServiceLoadResult>;
+  loadAnimatorServices(): AnimatorServiceLoadResult;
 
   /**
    * Load animation renderer.
    */
-  loadAnimationRenderer(): Promise<AnimationRendererLoadResult>;
+  loadAnimationRenderer(): AnimationRendererLoadResult;
 
   /** @deprecated Use loadAnimationRenderer() instead */
-  loadPixiRenderer(): Promise<AnimationRendererLoadResult>;
+  loadPixiRenderer(): AnimationRendererLoadResult;
 }

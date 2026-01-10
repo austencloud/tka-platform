@@ -5,11 +5,9 @@
  * the start and end positions/orientations of all props.
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
 
-@injectable()
 export class SequenceLoopabilityChecker implements ISequenceLoopabilityChecker {
   /**
    * Check if a sequence ends in the exact same position and orientation as it starts

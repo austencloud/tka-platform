@@ -9,20 +9,17 @@ import type { IViewportManager } from "$lib/shared/device/services/contracts/IVi
  */
 
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IResponsiveLayoutManager } from "../contracts/IResponsiveLayoutManager";
 import type { LayoutConfiguration } from "../../orchestration/types";
 
-@injectable()
 export class ResponsiveLayoutManager implements IResponsiveLayoutManager {
   private layoutChangeCallbacks: Set<(config: LayoutConfiguration) => void> =
     new Set();
   private viewportUnsubscribe: (() => void) | null = null;
 
   constructor(
-    @inject(TYPES.IDeviceDetector) private deviceDetector: IDeviceDetector,
-    @inject(TYPES.IViewportManager) private viewportService: IViewportManager
+    private deviceDetector: IDeviceDetector,
+    private viewportService: IViewportManager
   ) {}
 
   initialize(): void {

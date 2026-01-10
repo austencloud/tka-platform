@@ -5,7 +5,6 @@
  * Primarily for Step-by-Step mode advancement.
  */
 
-import { injectable } from "inversify";
 import type { IVoiceCommandHandler } from "../contracts/IVoiceCommandHandler";
 
 // Augment Window interface for webkit prefixed SpeechRecognition
@@ -14,7 +13,6 @@ interface WindowWithSpeechRecognition extends Window {
   webkitSpeechRecognition?: new () => SpeechRecognition;
 }
 
-@injectable()
 export class VoiceCommandHandler implements IVoiceCommandHandler {
   private recognition: SpeechRecognition | null = null;
   private listening = false;

@@ -11,8 +11,7 @@
   - Respects dismissal timing (7/30/90 days)
 -->
 <script lang="ts">
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { IMobileFullscreenManager } from "../services/contracts/IMobileFullscreenManager";
@@ -32,15 +31,9 @@
 
   onMount(() => {
     try {
-      fullscreenService = resolve<IMobileFullscreenManager>(
-        TYPES.IMobileFullscreenManager
-      );
-      engagementService = resolve<IPWAEngagementTracker>(
-        TYPES.IPWAEngagementTracker
-      );
-      dismissalService = resolve<IPWAInstallDismissalManager>(
-        TYPES.IPWAInstallDismissalManager
-      );
+      fullscreenService = container.items.mobileFullscreenManager;
+      engagementService = container.items.pwaEngagementTracker;
+      dismissalService = container.items.pwaInstallDismissalManager;
     } catch (error) {
       console.warn("Failed to resolve PWA services:", error);
       return;

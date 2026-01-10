@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   IGestureHandler,
   SwipeGestureConfig,
@@ -19,7 +18,6 @@ interface SwipeGestureState {
  *
  * Provides reusable touch gesture handling for common interaction patterns.
  */
-@injectable()
 export class GestureHandler implements IGestureHandler {
   createSwipeGestureHandler(config: SwipeGestureConfig): SwipeGestureHandler {
     const threshold = config.threshold ?? 100;

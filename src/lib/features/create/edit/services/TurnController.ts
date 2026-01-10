@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 
 export interface ITurnController {
@@ -22,7 +21,6 @@ export interface ITurnController {
   formatTurnDisplay(turnAmount: number | "fl"): string;
 }
 
-@injectable()
 export class TurnController implements ITurnController {
   private readonly turnValues = [0, 0.5, 1, 1.5, 2, 2.5, 3];
 

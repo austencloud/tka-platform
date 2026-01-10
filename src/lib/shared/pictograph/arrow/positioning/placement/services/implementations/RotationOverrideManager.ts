@@ -9,8 +9,6 @@
  * This is the web equivalent of the desktop app's special placement JSON modification.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "../../../../../../inversify/types";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
@@ -65,16 +63,12 @@ export interface IRotationOverrideManager {
   importOverrides(jsonData: string): void;
 }
 
-@injectable()
 export class RotationOverrideManager implements IRotationOverrideManager {
   private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
 
   constructor(
-    @inject(TYPES.ITurnsTupleGenerator)
     private readonly tupleGenerator: ITurnsTupleGenerator,
-    @inject(TYPES.IRotationAngleOverrideKeyGenerator)
     private readonly rotationKeyGenerator: IRotationAngleOverrideKeyGenerator,
-    @inject(TYPES.IGridModeDeriver)
     private readonly gridModeService: IGridModeDeriver
   ) {
     this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();

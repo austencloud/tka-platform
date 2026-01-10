@@ -12,10 +12,8 @@ Design Principles:
 - Consistent: Same size as other action buttons (48px circle), neutral slate color
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
 
   type TabType = "construct" | "generate";
 
@@ -29,11 +27,7 @@ Design Principles:
     showLabels?: boolean;
   }>();
 
-  let hapticService: IHapticFeedback | null = $state(null);
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService: IHapticFeedback = container.items.hapticFeedback;
 
   function handleClick() {
     hapticService?.trigger("selection");

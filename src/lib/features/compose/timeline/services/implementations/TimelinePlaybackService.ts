@@ -5,7 +5,6 @@
  * Handles transport, shuttle (J/K/L), and audio synchronization.
  */
 
-import { injectable } from "inversify";
 import type {
   ITimelinePlayer,
   ActiveClipInfo,
@@ -14,7 +13,6 @@ import type { TimeSeconds, TimelineClip } from "../../domain/timeline-types";
 import { getClipEndTime } from "../../domain/timeline-types";
 import { getTimelineState } from "../../state/timeline-state.svelte";
 
-@injectable()
 export class TimelinePlayer implements ITimelinePlayer {
   private animationFrameId: number | null = null;
   private lastFrameTime: number = 0;

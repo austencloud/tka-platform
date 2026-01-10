@@ -5,7 +5,6 @@
  * Combines grading, feedback, achievements, and formatting functionality.
  */
 
-import { injectable } from "inversify";
 import type { QuizResults } from "./domain/models/quiz-models";
 import { QuizMode, QuizType } from "./domain/enums/quiz-enums";
 
@@ -50,7 +49,6 @@ export interface IQuizResultsAnalyzer {
 // Implementation
 // ============================================================================
 
-@injectable()
 export class QuizResultsAnalyzer implements IQuizResultsAnalyzer {
   // ==========================================================================
   // Grading

@@ -4,8 +4,7 @@ Now with click interaction and selection visual feedback
 Now with intelligent rotation animation matching prop behavior!
 -->
 <script lang="ts">
-  import { resolve } from "../../../../inversify/di";
-  import { TYPES } from "../../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "../../../../application/services/contracts/IHapticFeedback";
   import type { MotionData } from "../../../shared/domain/models/MotionData";
   import type { PictographData } from "../../../shared/domain/models/PictographData";
@@ -308,18 +307,15 @@ Now with intelligent rotation animation matching prop behavior!
       : false
   );
 
-  let hapticService: IHapticFeedback | null = null;
-
-  // Initialize haptic service on mount (lazy load)
-  $effect(() => {
-    if (isClickable && !hapticService) {
-      try {
-        hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-      } catch (error) {
-        console.warn("Haptic service not available:", error);
-      }
+  // Get haptic service from container (lazy access)
+  const getHapticService = () => {
+    try {
+      return container.items.hapticFeedback;
+    } catch (error) {
+      console.warn("Haptic service not available:", error);
+      return null;
     }
-  });
+  };
 
   // Handle arrow click
   function handleArrowClick(event: MouseEvent | KeyboardEvent) {
@@ -328,7 +324,7 @@ Now with intelligent rotation animation matching prop behavior!
     event.stopPropagation();
 
     // Trigger haptic feedback
-    hapticService?.trigger("selection");
+    getHapticService()?.trigger("selection");
 
     // Select the arrow in global state
     selectedArrowState.selectArrow(motionData, color, pictographData);

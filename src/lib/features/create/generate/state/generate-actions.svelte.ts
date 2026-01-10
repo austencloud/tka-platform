@@ -8,8 +8,7 @@
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/beat-grid-display-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { resolve, tryResolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import type { IGenerationOrchestrator } from "../shared/services/contracts/IGenerationOrchestrator";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
@@ -31,9 +30,7 @@ export function createGenerationActionsState(
 
     try {
       if (!orchestrationService) {
-        orchestrationService = resolve<IGenerationOrchestrator>(
-          TYPES.IGenerationOrchestrator
-        );
+        orchestrationService = container.items.generationOrchestrator;
       }
 
       const generatedSequence =
@@ -45,7 +42,7 @@ export function createGenerationActionsState(
         error instanceof Error ? error.message : "Unknown generation error";
 
       // Show user-facing error with bug report option
-      const errorService = tryResolve<IErrorHandler>(TYPES.IErrorHandler);
+      const errorService = container.items.errorHandler;
       if (errorService) {
         errorService.showUserError({
           message: "Sequence generation failed",

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IViewportManager } from "../contracts/IViewportManager";
 
 /**
@@ -7,7 +6,6 @@ import type { IViewportManager } from "../contracts/IViewportManager";
  * Provides reactive viewport dimensions using browser APIs.
  * Automatically updates when window is resized.
  */
-@injectable()
 export class ViewportManager implements IViewportManager {
   private _width: number = 0;
   private _height: number = 0;

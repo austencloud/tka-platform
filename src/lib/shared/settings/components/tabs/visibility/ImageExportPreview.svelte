@@ -7,8 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -29,16 +28,14 @@
   async function generatePreview() {
     isGenerating = true;
     try {
-      const compositionService = resolve<IImageComposer>(TYPES.IImageComposer);
+      const compositionService = container.items.imageComposer as IImageComposer;
 
       // Derive start position from beat data if needed
       // Since we no longer store start position explicitly, derive it from first beat
       let derivedStartPosition = undefined;
       if (compositionManager.includeStartPosition) {
         try {
-          const startPosDeriver = resolve<IStartPositionDeriver>(
-            TYPES.IStartPositionDeriver
-          );
+          const startPosDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
           derivedStartPosition = startPosDeriver.deriveFromFirstBeat(beatData);
         } catch (e) {
           console.warn("Failed to derive start position for preview:", e);

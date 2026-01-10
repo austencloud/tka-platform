@@ -11,8 +11,6 @@
  * Non-critical steps (thumbnail, tags) fail gracefully without blocking the save.
  */
 
-import { injectable, inject, optional } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
@@ -28,7 +26,6 @@ import type {
   SaveResult,
 } from "../contracts/ILibrarySaveService";
 
-@injectable()
 export class LibrarySaveService implements ILibrarySaveService {
   private readonly shareService: ISharer | null;
   private readonly uploadService: IFirebaseVideoUploader | null;
@@ -36,11 +33,9 @@ export class LibrarySaveService implements ILibrarySaveService {
   private readonly persistenceService: SequencePersister;
 
   constructor(
-    @inject(TYPES.ISharer) @optional() shareService: ISharer | null,
-    @inject(TYPES.IFirebaseVideoUploader)
-    @optional()
+    shareService: ISharer | null,
     uploadService: IFirebaseVideoUploader | null,
-    @inject(TYPES.ITagManager) @optional() tagService: ITagManager | null
+    tagService: ITagManager | null
   ) {
     this.shareService = shareService ?? null;
     this.uploadService = uploadService ?? null;

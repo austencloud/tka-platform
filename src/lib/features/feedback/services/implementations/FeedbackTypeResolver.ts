@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   IFeedbackTypeResolver,
   FeedbackTypeConfig,
@@ -9,7 +8,6 @@ import { TYPE_CONFIG } from "../../domain/models/feedback-models";
 /**
  * Resolves type-specific configuration for feedback forms.
  */
-@injectable()
 export class FeedbackTypeResolver implements IFeedbackTypeResolver {
   private readonly encouragementMessages: Record<FeedbackType, string> = {
     bug: "Include steps to reproduce, error messages, and screenshots for faster fixes.",

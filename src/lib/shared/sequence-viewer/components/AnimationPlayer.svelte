@@ -21,8 +21,7 @@
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceMotionLoader } from "../services/contracts/ISequenceMotionLoader";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-	import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-	import { TYPES } from "$lib/shared/inversify/types";
+	import { container } from "$lib/shared/di";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import type { ControlsLevel } from "../domain/types";
@@ -116,9 +115,8 @@
 		}
 
 		try {
-			await loadFeatureModule("animate");
-			motionLoader = resolve<ISequenceMotionLoader>(TYPES.ISequenceMotionLoader);
-			controller = resolve<IAnimationPlaybackController>(TYPES.IAnimationPlaybackController);
+			motionLoader = container.items.sequenceMotionLoader;
+			controller = container.items.animationPlaybackController;
 			loading = false;
 		} catch (err) {
 			console.error("Failed to initialize animation player:", err);

@@ -2,7 +2,6 @@
  * LOOPExplanationTextGenerator - Generates explanation text for LOOP transformations
  */
 
-import { injectable } from "inversify";
 import { LOOPComponent } from "../../domain/models/generate-models";
 import { LOOP_COMPONENTS } from "../../domain/constants/loop-constants";
 import type { ILOOPExplanationTextGenerator } from "../contracts/ILOOPExplanationTextGenerator";
@@ -10,7 +9,6 @@ import type { ILOOPExplanationTextGenerator } from "../contracts/ILOOPExplanatio
 /**
  * Service for generating user-friendly explanation text for LOOP transformations
  */
-@injectable()
 export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerator {
   /**
    * Descriptions for each LOOP transformation type

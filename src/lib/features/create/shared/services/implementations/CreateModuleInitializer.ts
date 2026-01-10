@@ -14,10 +14,8 @@
  * - Testability (can pass mocks directly to constructor)
  */
 
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { injectable, inject } from "inversify";
 import type { IStartPositionManager } from "../../../construct/start-position-picker/services/contracts/IStartPositionManager";
 import { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
 import { createConstructTabState } from "$lib/features/create/shared/state/construct-tab-state.svelte";
@@ -54,45 +52,28 @@ import {
   type UndoMetadata,
 } from "../contracts/IUndoManager";
 
-@injectable()
 export class CreateModuleInitializer implements ICreateModuleInitializer {
   constructor(
     // Core services
-    @inject(TYPES.ISequenceRepository)
     private readonly sequenceService: ISequenceRepository,
-    @inject(TYPES.ISequencePersister)
     private readonly SequencePersister: ISequencePersister,
-    @inject(TYPES.IStartPositionManager)
     private readonly StartPositionManager: IStartPositionManager,
-    @inject(TYPES.ICreateModuleOrchestrator)
     private readonly CreateModuleOrchestrator: ICreateModuleOrchestrator,
-    @inject(TYPES.IResponsiveLayoutManager)
     private readonly layoutService: IResponsiveLayoutManager,
-    @inject(TYPES.INavigationSyncer)
     private readonly NavigationSyncer: INavigationSyncer,
-    @inject(TYPES.IBeatOperator)
     private readonly BeatOperator: IBeatOperator,
-    @inject(TYPES.IDeepLinkSequenceHandler)
     private readonly deepLinkService: IDeepLinkSequenceHandler,
-    @inject(TYPES.IDeepLinker)
     private readonly navigationDeepLinker: IDeepLinker,
 
     // UI coordination services
-    @inject(TYPES.ICreateModuleHandlers)
     private readonly handlers: ICreateModuleHandlers,
-    @inject(TYPES.ICreateModuleEffectCoordinator)
     private readonly effectCoordinator: ICreateModuleEffectCoordinator,
-    @inject(TYPES.ISharer)
     private readonly shareService: ISharer,
-    @inject(TYPES.IPanelPersister)
     private readonly panelPersistenceService: IPanelPersister,
 
     // Sequence operation services
-    @inject(TYPES.ISequenceStatsCalculator)
     private readonly sequenceStatisticsService: ISequenceStatsCalculator,
-    @inject(TYPES.ISequenceTransformer)
     private readonly SequenceTransformer: ISequenceTransformer,
-    @inject(TYPES.ISequenceValidator)
     private readonly sequenceValidationService: ISequenceValidator
   ) {}
 

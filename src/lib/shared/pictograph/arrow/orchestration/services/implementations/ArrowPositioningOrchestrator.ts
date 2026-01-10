@@ -11,38 +11,18 @@ import type { ArrowPlacementData } from "../../../positioning/placement/domain/A
 import type { IArrowPositioningOrchestrator } from "../../../positioning/services/contracts/IArrowPositioningOrchestrator";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
-import { TYPES } from "../../../../../inversify/types";
-import { inject, injectable } from "inversify";
 import type { IArrowRotationCalculator } from "../../../positioning/calculation/services/contracts/IArrowRotationCalculator";
 import type { IArrowDataProcessor } from "../contracts/IArrowDataProcessor";
 import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
 
-@injectable()
 export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrator {
-  private locationCalculator: IArrowLocationCalculator;
-  private rotationCalculator: IArrowRotationCalculator;
-  private adjustmentCalculator: IArrowAdjustmentCalculator;
-  private coordinateSystem: IArrowGridCoordinator;
-  private dataProcessor: IArrowDataProcessor;
-
   constructor(
-    @inject(TYPES.IArrowLocationCalculator)
-    locationCalculator: IArrowLocationCalculator,
-    @inject(TYPES.IArrowRotationCalculator)
-    rotationCalculator: IArrowRotationCalculator,
-    @inject(TYPES.IArrowAdjustmentCalculator)
-    adjustmentCalculator: IArrowAdjustmentCalculator,
-    @inject(TYPES.IArrowGridCoordinator)
-    coordinateSystem: IArrowGridCoordinator,
-    @inject(TYPES.IArrowDataProcessor)
-    dataProcessor: IArrowDataProcessor
-  ) {
-    this.locationCalculator = locationCalculator;
-    this.rotationCalculator = rotationCalculator;
-    this.adjustmentCalculator = adjustmentCalculator;
-    this.coordinateSystem = coordinateSystem;
-    this.dataProcessor = dataProcessor;
-  }
+    private locationCalculator: IArrowLocationCalculator,
+    private rotationCalculator: IArrowRotationCalculator,
+    private adjustmentCalculator: IArrowAdjustmentCalculator,
+    private coordinateSystem: IArrowGridCoordinator,
+    private dataProcessor: IArrowDataProcessor
+  ) {}
 
   async calculateArrowPoint(
     pictographData: PictographData,

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type {
   LightRay,
@@ -61,7 +60,6 @@ const CAUSTICS_CONFIG = {
   globalSpeed: 0.002,
 };
 
-@injectable()
 export class LightRayCalculator implements ILightRayCalculator {
   initializeLightRays(dimensions: Dimensions, count: number): LightRay[] {
     const lightRays: LightRay[] = [];

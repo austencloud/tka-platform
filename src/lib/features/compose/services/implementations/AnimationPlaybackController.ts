@@ -7,9 +7,7 @@
  * - Panel state (UI updates)
  */
 
-import { inject, injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { IAnimationLoop } from "../contracts/IAnimationLoop";
@@ -17,7 +15,6 @@ import type { IAnimationPlaybackController } from "../contracts/IAnimationPlayba
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
 
-@injectable()
 export class AnimationPlaybackController implements IAnimationPlaybackController {
   private state: AnimationPanelState | null = null;
   private sequenceData: SequenceData | null = null;
@@ -35,11 +32,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   private useLinearAnimation: boolean = false;
 
   constructor(
-    @inject(TYPES.ISequenceAnimationOrchestrator)
     private readonly animationEngine: ISequenceAnimationOrchestrator,
-    @inject(TYPES.IAnimationLoop)
     private readonly loopService: IAnimationLoop,
-    @inject(TYPES.ISequenceLoopabilityChecker)
     private readonly loopabilityChecker: ISequenceLoopabilityChecker
   ) {}
 

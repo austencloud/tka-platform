@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IRippleEffect, RippleOptions } from "../contracts/IRippleEffect";
 
 /**
@@ -7,7 +6,6 @@ import type { IRippleEffect, RippleOptions } from "../contracts/IRippleEffect";
  * Creates Material Design-style ripple effects emanating from click/tap point.
  * Works on both desktop (mouse) and mobile (touch) devices.
  */
-@injectable()
 export class RippleEffect implements IRippleEffect {
   private readonly DEFAULT_OPTIONS: Required<RippleOptions> = {
     duration: 600,

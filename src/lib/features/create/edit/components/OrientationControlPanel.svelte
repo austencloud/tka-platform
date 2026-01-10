@@ -2,8 +2,7 @@
 <script lang="ts">
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import ExpandedOrientationPanel from "./ExpandedOrientationPanel.svelte";
@@ -24,7 +23,7 @@
   }>();
 
   // Services
-  const deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+  const deviceDetector = container.items.deviceDetector;
 
   // State management for expansion
   const expansionState = createOrientationControlExpansionState();

@@ -13,8 +13,7 @@
 -->
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
@@ -60,8 +59,8 @@
   onMount(() => {
     // Resolve services
     try {
-      urlSyncService = resolve<IURLSyncer>(TYPES.IURLSyncer);
-      deepLinkService = resolve<IDeepLinker>(TYPES.IDeepLinker);
+      urlSyncService = container.items.urlSyncer;
+      deepLinkService = container.items.deepLinker;
     } catch (error) {
       console.warn("Failed to resolve navigation services:", error);
     }

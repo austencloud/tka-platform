@@ -15,7 +15,7 @@
 <script lang="ts">
   import type { ModuleDefinition, ModuleId } from "../domain/types";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
-  import { resolve, TYPES, preloadFeatureModule } from "../../inversify/di";
+  import { container } from "../../di";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { onMount } from "svelte";
   import { translateModule } from "$lib/shared/i18n/translate";
@@ -47,11 +47,8 @@
     startTime: 0,
   });
 
-  // Track hover timers for preloading (2025 standard: 50ms delay)
-  let hoverTimers = new Map<ModuleId, number>();
-
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Filter to main modules and dev modules
@@ -126,47 +123,6 @@
     onModuleSelect?.(moduleId);
   }
 
-  /**
-   * ⚡ PERFORMANCE: Hover-based preloading (2025 best practice)
-   * Preload module DI services after 50ms hover (user intent detection)
-   * By the time user clicks, module is already loaded = instant navigation
-   */
-  function handleModuleHoverStart(moduleId: ModuleId) {
-    // Don't preload if already active
-    if (moduleId === currentModule) {
-      return;
-    }
-
-    // Clear any existing timer
-    const existingTimer = hoverTimers.get(moduleId);
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
-
-    // Start 50ms timer before preloading (industry standard)
-    const timer = setTimeout(() => {
-      try {
-        preloadFeatureModule(moduleId);
-      } catch (error) {
-        // Silently ignore modules without DI dependencies (e.g., about page)
-        console.debug(`Module ${moduleId} has no DI dependencies to preload`);
-      }
-      hoverTimers.delete(moduleId);
-    }, 50) as unknown as number;
-
-    hoverTimers.set(moduleId, timer);
-  }
-
-  /**
-   * Cancel preload if user moves away before 50ms
-   */
-  function handleModuleHoverEnd(moduleId: ModuleId) {
-    const timer = hoverTimers.get(moduleId);
-    if (timer) {
-      clearTimeout(timer);
-      hoverTimers.delete(moduleId);
-    }
-  }
 
   /**
    * Get badge count for a module
@@ -207,8 +163,6 @@
         onpointerdown={handlePointerDown}
         onpointermove={handlePointerMove}
         onclick={(e) => handleModuleClick(module.id, e, isDisabled)}
-        onmouseenter={() => !isDisabled && handleModuleHoverStart(module.id)}
-        onmouseleave={() => !isDisabled && handleModuleHoverEnd(module.id)}
         style="--module-color: {moduleColor};"
         aria-disabled={isDisabled}
         disabled={isDisabled}
@@ -258,8 +212,6 @@
           onpointerdown={handlePointerDown}
           onpointermove={handlePointerMove}
           onclick={(e) => handleModuleClick(module.id, e, isDisabled)}
-          onmouseenter={() => !isDisabled && handleModuleHoverStart(module.id)}
-          onmouseleave={() => !isDisabled && handleModuleHoverEnd(module.id)}
           style="--module-color: {moduleColor};"
           aria-disabled={isDisabled}
           disabled={isDisabled}

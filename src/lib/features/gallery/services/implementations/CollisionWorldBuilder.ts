@@ -5,7 +5,6 @@
  * The collision world is used for efficient player movement collision detection.
  */
 
-import { injectable } from "inversify";
 import type { WallCollider, CollisionWorld } from "../../domain/models/WallCollider";
 import { createCollisionWorld } from "../../domain/models/WallCollider";
 import { PLAYER_EYE_HEIGHT } from "../../domain/constants/gallery-dimensions";
@@ -17,7 +16,6 @@ const PLAYER_RADIUS = 30;
 // Service
 // =============================================================================
 
-@injectable()
 export class CollisionWorldBuilder {
   /**
    * Build a collision world from wall colliders

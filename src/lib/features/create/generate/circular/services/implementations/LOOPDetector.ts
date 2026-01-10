@@ -11,7 +11,6 @@
  * 3. Map detected components to LOOPType
  */
 
-import { inject, injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../../../shared/domain/models/BeatData";
 import type { LOOPType } from "../../domain/models/circular-models";
@@ -24,7 +23,6 @@ import type {
 } from "../contracts/ILOOPDetector";
 import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
 import type { ILOOPTypeResolver } from "../../../shared/services/contracts/ILOOPTypeResolver";
-import { TYPES } from "$lib/shared/inversify/types";
 import {
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
@@ -40,12 +38,9 @@ import {
   MotionType,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-@injectable()
 export class LOOPDetector implements ILOOPDetector {
   constructor(
-    @inject(TYPES.ISequenceLoopabilityChecker)
     private loopabilityChecker: ISequenceLoopabilityChecker,
-    @inject(TYPES.ILOOPTypeResolver)
     private LOOPTypeResolver: ILOOPTypeResolver
   ) {}
 

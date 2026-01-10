@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     DeepOceanBackgroundOrchestrator,
     type DeepOceanLayers,
@@ -34,20 +33,6 @@
   let stats = $state({ fish: 0, jellyfish: 0, bubbles: 0, particles: 0 });
   let lastStatsUpdate = 0;
 
-  /**
-   * Load the Deep Ocean DI module on-demand
-   */
-  async function loadDeepOceanModule() {
-    const container = await getContainerInstance();
-    if (!container.isBound(TYPES.IBubblePhysics)) {
-      const { deepOceanBackgroundModule } = await import(
-        "$lib/shared/background/deep-ocean/inversify/DeepOceanModule"
-      );
-      await container.load(deepOceanBackgroundModule);
-    }
-    return container;
-  }
-
   async function initializeSystem() {
     if (!canvas) return;
 
@@ -61,22 +46,8 @@
     }
 
     try {
-      // Load Deep Ocean DI module and create orchestrator with dependencies
-      const container = await loadDeepOceanModule();
-
-      backgroundSystem = new DeepOceanBackgroundOrchestrator(
-        container.get(TYPES.IBubblePhysics),
-        container.get(TYPES.IParticleSystem),
-        container.get(TYPES.ILightRayCalculator),
-        container.get(TYPES.IFishAnimator),
-        container.get(TYPES.IJellyfishAnimator),
-        container.get(TYPES.IGradientRenderer),
-        container.get(TYPES.ILightRayRenderer),
-        container.get(TYPES.IBubbleRenderer),
-        container.get(TYPES.IParticleRenderer),
-        container.get(TYPES.IFishRenderer),
-        container.get(TYPES.IJellyfishRenderer)
-      );
+      // Get the pre-composed orchestrator from ITI container
+      backgroundSystem = container.items.deepOceanBackgroundSystem;
 
       const dimensions = { width: canvas.width, height: canvas.height };
       await backgroundSystem.initialize(dimensions, quality);

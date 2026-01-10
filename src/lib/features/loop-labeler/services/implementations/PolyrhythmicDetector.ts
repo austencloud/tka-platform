@@ -7,7 +7,6 @@
  * This runs alongside the beat-pair detection, providing a complementary analysis.
  */
 
-import { injectable } from "inversify";
 import {
   analyzeZoneCoverage,
   type ZoneCoverageAnalysis,
@@ -155,7 +154,6 @@ function getPropertyType(property: string): "motion" | "spatial" | "other" {
 // MAIN SERVICE
 // ============================================================================
 
-@injectable()
 export class PolyrhythmicDetector {
   /**
    * Analyze a sequence for polyrhythmic LOOP patterns

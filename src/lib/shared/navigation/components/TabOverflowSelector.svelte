@@ -2,8 +2,7 @@
 <script lang="ts">
   import type { Section } from "$lib/shared/navigation/domain/types";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let {
@@ -47,7 +46,7 @@
   // Set up toggle event listener for chevron rotation
   onMount(() => {
     // Resolve haptic service
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     const element = popoverElement;
     if (!element) return;

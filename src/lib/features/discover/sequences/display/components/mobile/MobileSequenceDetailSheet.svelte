@@ -12,9 +12,8 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import MobileDetailSheet from "./MobileDetailSheet.svelte";
   import FloatingActionCluster from "./FloatingActionCluster.svelte";
@@ -32,7 +31,7 @@
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Sheet state: 'peek' (shows just word), 'expanded' (shows all info)

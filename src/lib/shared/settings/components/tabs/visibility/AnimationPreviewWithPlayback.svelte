@@ -11,13 +11,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import {
-    resolve,
-    loadAnimationModule,
-    loadFeatureModule,
-    ensureContainerInitialized,
-  } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -181,20 +175,9 @@
       loading = true;
       error = null;
 
-      // Ensure container is fully initialized (handles HMR timing)
-      await ensureContainerInitialized();
-
-      // Load required modules (including create for TurnPatternManager)
-      await loadFeatureModule("animate");
-      await loadFeatureModule("discover");
-      await loadFeatureModule("create");
-      await loadAnimationModule();
-
-      // Get services
-      playbackController = resolve<IAnimationPlaybackController>(
-        TYPES.IAnimationPlaybackController
-      );
-      discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
+      // Get services from container
+      playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
+      discoverLoader = container.items.discoverLoader as IDiscoverLoader;
 
       // Ensure sequence metadata is loaded (populates the cache) - with retry
       await withRetry(() => discoverLoader!.loadSequenceMetadata());
@@ -209,12 +192,9 @@
       }
 
       // Create and apply 1,1 turn pattern to get visible trails
-      // Use DI to resolve the service (container should be ready by the time user opens settings)
       type ITurnPatternManager =
         import("$lib/features/create/shared/services/contracts/ITurnPatternManager").ITurnPatternManager;
-      const turnPatternManager = resolve<ITurnPatternManager>(
-        TYPES.ITurnPatternManager
-      );
+      const turnPatternManager = container.items.turnPatternManager as ITurnPatternManager;
       const turnPattern = createOneTurnPattern(baseSequence.beats.length);
       const result = turnPatternManager.applyPattern(turnPattern, baseSequence);
 

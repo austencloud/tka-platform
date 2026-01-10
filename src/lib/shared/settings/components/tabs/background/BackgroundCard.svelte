@@ -9,8 +9,7 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../../application/services/contracts/IHapticFeedback";
-  import { resolve } from "../../../../inversify/di";
-  import { TYPES } from "../../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import { BackgroundType } from "../../../../background/shared/domain/enums/background-enums";
   import { onMount } from "svelte";
   import type { BackgroundMetadata } from "./background-config";
@@ -41,8 +40,8 @@
   // Services
   let hapticService: IHapticFeedback;
 
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleClick() {

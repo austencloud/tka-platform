@@ -5,8 +5,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { IDiscoverLoader } from "../../discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
@@ -24,6 +23,7 @@
   const STORAGE_KEY_FAVORITES = "wordCard.favorites";
   const STORAGE_KEY_GRID_MODE = "wordCard.gridMode";
   const STORAGE_KEY_AUTHOR = "wordCard.author";
+  const STORAGE_KEY_SHOW_QR = "wordCard.showQRCodes";
 
   // Load persisted state or use defaults
   function getPersistedNumber(key: string, defaultValue: number): number {
@@ -63,6 +63,7 @@
   let favorites = $state<boolean>(getPersistedBoolean(STORAGE_KEY_FAVORITES, false));
   let gridMode = $state<string | null>(getPersistedString(STORAGE_KEY_GRID_MODE));
   let author = $state<string | null>(getPersistedString(STORAGE_KEY_AUTHOR));
+  let showQRCodes = $state<boolean>(getPersistedBoolean(STORAGE_KEY_SHOW_QR, false));
 
   // Derive unique authors from loaded sequences
   let authors = $derived(
@@ -115,6 +116,12 @@
       } else {
         localStorage.removeItem(STORAGE_KEY_AUTHOR);
       }
+    }
+  });
+
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY_SHOW_QR, String(showQRCodes));
     }
   });
 
@@ -205,8 +212,7 @@
   });
 
   onMount(async () => {
-    const container = await getContainerInstance();
-    loaderService = container.get<IDiscoverLoader>(TYPES.IDiscoverLoader);
+    loaderService = container.items.discoverLoader;
     await loadSequences();
   });
 
@@ -249,6 +255,10 @@
   function handleAuthorChange(value: string | null) {
     author = value;
   }
+
+  function handleShowQRCodesChange(value: boolean) {
+    showQRCodes = value;
+  }
 </script>
 
 <div class="word-card-tab">
@@ -283,10 +293,12 @@
           {gridMode}
           {author}
           {authors}
+          {showQRCodes}
           onDifficultyChange={handleDifficultyChange}
           onFavoritesChange={handleFavoritesChange}
           onGridModeChange={handleGridModeChange}
           onAuthorChange={handleAuthorChange}
+          onShowQRCodesChange={handleShowQRCodesChange}
         />
       </div>
     </aside>
@@ -298,6 +310,7 @@
         {isLoading}
         {error}
         {columnCount}
+        {showQRCodes}
         onRetry={loadSequences}
       />
     </main>

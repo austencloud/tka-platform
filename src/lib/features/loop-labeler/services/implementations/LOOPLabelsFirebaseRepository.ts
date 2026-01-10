@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import {
   collection,
   doc,
@@ -21,7 +20,6 @@ const LOCAL_STORAGE_KEY = "loop-labels";
 /**
  * Service for Firebase persistence of LOOP labels
  */
-@injectable()
 export class LOOPLabelsFirebaseRepository implements ILOOPLabelsFirebaseRepository {
   private firestore: Firestore | null = null;
   private syncStatus: "synced" | "syncing" | "error" = "synced";

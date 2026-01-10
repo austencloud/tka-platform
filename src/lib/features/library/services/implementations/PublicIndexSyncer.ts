@@ -5,7 +5,6 @@
  * Extracted from LibraryRepository for single responsibility.
  */
 
-import { injectable } from "inversify";
 import {
   doc,
   getDoc,
@@ -18,7 +17,6 @@ import { getPublicSequencePath } from "../../data/firestore-paths";
 import type { IPublicIndexSyncer } from "../contracts/IPublicIndexSyncer";
 import type { LibrarySequence } from "../../domain/models/LibrarySequence";
 
-@injectable()
 export class PublicIndexSyncer implements IPublicIndexSyncer {
   /**
    * Sync a public sequence to the publicSequences collection

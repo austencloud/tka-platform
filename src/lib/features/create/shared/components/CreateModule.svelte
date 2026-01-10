@@ -34,12 +34,7 @@
    */
 
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import {
-    ensureContainerInitialized,
-    loadFeatureModule,
-    resolve,
-    TYPES,
-  } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -242,24 +237,12 @@
 
     // Run async initialization in an IIFE
     (async () => {
-      try {
-        await ensureContainerInitialized();
-      } catch (initError) {
-        error = "Dependency injection container not initialized";
-        console.error("Container initialization failed:", initError);
-        return;
-      }
-
       // Track if a deep link was processed (declared once for entire async scope)
       let hasDeepLink = false;
 
       try {
-        // Load the create feature module before resolving its services
-        await loadFeatureModule("create");
-
-        const initService = resolve<ICreateModuleInitializer>(
-          TYPES.ICreateModuleInitializer
-        );
+        // Create services available synchronously via ITI
+        const initService = container.items.createModuleInitializer;
 
         const result = await initService.initialize();
 
@@ -301,7 +284,7 @@
         servicesInitialized = true;
 
         // Resolve settings service for user preferences
-        settingsService = resolve<ISettingsState>(TYPES.ISettingsState);
+        settingsService = container.items.settingsState;
 
         initService.configureEventCallbacks(CreateModuleState, panelState);
 

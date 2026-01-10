@@ -6,12 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import {
-    ensureContainerInitialized,
-    loadFeatureModule,
-    tryResolve,
-  } from "$lib/shared/inversify/di";
-  import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
+  import { container } from "$lib/shared/di";
   import type { IBeatDataConverter } from "$lib/features/loop-labeler/services/contracts/IBeatDataConverter";
   import { tagReviewerState } from "../state/tag-reviewer-state.svelte";
 
@@ -120,8 +115,7 @@ ${JSON.stringify(summary, null, 2)}
 
   onMount(() => {
     (async () => {
-      await ensureContainerInitialized();
-      await loadFeatureModule("loop-labeler");
+      // Services available synchronously via ITI
       await tagReviewerState.initialize();
       isReady = true;
     })();
@@ -133,7 +127,7 @@ ${JSON.stringify(summary, null, 2)}
 
   // Services for beat parsing
   const conversionService = $derived(
-    tryResolve<IBeatDataConverter>(LOOPLabelerTypes.IBeatDataConverter)
+    container.items.beatDataConverter as IBeatDataConverter | null
   );
 
   // Parse beats for current sequence

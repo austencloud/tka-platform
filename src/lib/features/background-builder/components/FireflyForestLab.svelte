@@ -25,66 +25,42 @@
   let treeLabCanvases = $state<HTMLCanvasElement[]>([]);
 
   // Algorithm types for spruce generation
-  type SpruceAlgorithm = "noise" | "tiered" | "recursive";
-  let spruceAlgorithm = $state<SpruceAlgorithm>("noise");
+  type SpruceAlgorithm = "smooth" | "whorl";
+  let spruceAlgorithm = $state<SpruceAlgorithm>("whorl");
 
-  // Algorithm 1: Organic Noise - tapered cone with multi-frequency noise
-  interface NoiseParams {
-    baseWidth: number;    // 0.25-0.55 - width at bottom
-    taper: number;        // 1.2-3.5 - how quickly it narrows
-    spikiness: number;    // 0-0.15 - edge variation amplitude
-    detail: number;       // 8-30 - number of edge points
-    asymmetry: number;    // 0-0.04 - left/right difference
+  // Algorithm 1: Smooth - tapered cone with organic waviness
+  interface SmoothParams {
+    spread: number;       // 0.45-0.65 - crown width relative to height
+    taperPower: number;   // 0.45-0.75 - how sharply it narrows (lower = wider at top)
+    waveFreq: number;     // 4-10 - frequency of edge waviness
+    waveAmp: number;      // 2-8 - amplitude of edge waviness
+    jitter: number;       // 0-4 - random edge variation
   }
 
-  // Algorithm 2: Tiered Branches - structured drooping branch layers
-  interface TieredParams {
-    baseWidth: number;    // 0.3-0.5 - width at bottom
-    tiers: number;        // 4-12 - number of branch tiers
-    droop: number;        // 0-0.4 - how much branches droop down
-    tierSpacing: number;  // 0.5-1.5 - regularity of tier spacing (1 = even)
-    branchWidth: number;  // 0.3-0.8 - how wide branches extend
-    gnarliness: number;   // 0-0.1 - twist/curl of branches
+  // Algorithm 2: Whorl - structured branch layers with jagged edges
+  interface WhorlParams {
+    spread: number;       // 0.40-0.65 - crown width relative to height
+    taperExponent: number;// 1.2-2.0 - how quickly it narrows toward top
+    layers: number;       // 6-12 - number of branch whorls
+    droop: number;        // 0.05-0.35 - how much lower branches droop
+    jaggedness: number;   // 0.5-2.0 - intensity of bottom-edge jagged points
   }
 
-  // Algorithm 3: Recursive/L-System - fractal branching
-  interface RecursiveParams {
-    trunkLength: number;  // 0.3-0.6 - initial trunk length ratio
-    branchAngle: number;  // 15-45 - angle of child branches (degrees)
-    branchRatio: number;  // 0.6-0.85 - length ratio of child to parent
-    levels: number;       // 3-7 - recursion depth
-    spread: number;       // 0.5-1.5 - how much branches spread out
-    randomness: number;   // 0-0.3 - variation in angles/lengths
-  }
-
-  let noiseParams = $state<NoiseParams>({
-    baseWidth: 0.42,
-    taper: 2.0,
-    spikiness: 0.05,
-    detail: 18,
-    asymmetry: 0.015,
+  let smoothParams = $state<SmoothParams>({
+    spread: 0.55,
+    taperPower: 0.58,
+    waveFreq: 6,
+    waveAmp: 5,
+    jitter: 2,
   });
 
-  let tieredParams = $state<TieredParams>({
-    baseWidth: 0.4,
-    tiers: 7,
-    droop: 0.15,
-    tierSpacing: 1.0,
-    branchWidth: 0.6,
-    gnarliness: 0.03,
+  let whorlParams = $state<WhorlParams>({
+    spread: 0.52,
+    taperExponent: 1.5,
+    layers: 8,
+    droop: 0.18,
+    jaggedness: 1.0,
   });
-
-  let recursiveParams = $state<RecursiveParams>({
-    trunkLength: 0.45,
-    branchAngle: 25,
-    branchRatio: 0.72,
-    levels: 5,
-    spread: 1.0,
-    randomness: 0.15,
-  });
-
-  // Legacy alias for compatibility
-  let spruceParams = $derived(noiseParams);
 
   // Fixed seeds for the 3 sample trees (so they stay consistent when adjusting params)
   let sampleSeeds = $state<number[]>([123456, 789012, 345678]);
@@ -98,45 +74,31 @@
     renderTreeLabSamples();
   }
 
-  function resetNoiseParams() {
-    noiseParams = {
-      baseWidth: 0.42,
-      taper: 2.0,
-      spikiness: 0.05,
-      detail: 18,
-      asymmetry: 0.015,
+  function resetSmoothParams() {
+    smoothParams = {
+      spread: 0.55,
+      taperPower: 0.58,
+      waveFreq: 6,
+      waveAmp: 5,
+      jitter: 2,
     };
     renderTreeLabSamples();
   }
 
-  function resetTieredParams() {
-    tieredParams = {
-      baseWidth: 0.4,
-      tiers: 7,
-      droop: 0.15,
-      tierSpacing: 1.0,
-      branchWidth: 0.6,
-      gnarliness: 0.03,
-    };
-    renderTreeLabSamples();
-  }
-
-  function resetRecursiveParams() {
-    recursiveParams = {
-      trunkLength: 0.45,
-      branchAngle: 25,
-      branchRatio: 0.72,
-      levels: 5,
-      spread: 1.0,
-      randomness: 0.15,
+  function resetWhorlParams() {
+    whorlParams = {
+      spread: 0.52,
+      taperExponent: 1.5,
+      layers: 8,
+      droop: 0.18,
+      jaggedness: 1.0,
     };
     renderTreeLabSamples();
   }
 
   function resetCurrentParams() {
-    if (spruceAlgorithm === "noise") resetNoiseParams();
-    else if (spruceAlgorithm === "tiered") resetTieredParams();
-    else resetRecursiveParams();
+    if (spruceAlgorithm === "smooth") resetSmoothParams();
+    else resetWhorlParams();
   }
 
   // Load saved tree feedback from localStorage
@@ -504,12 +466,10 @@
     switch (type) {
       case "spruce":
         // Dispatch to selected algorithm
-        if (spruceAlgorithm === "noise") {
-          drawSpruceNoise(ctx, x, baseY, width, height, trunkColor, gradient, seed, noiseParams);
-        } else if (spruceAlgorithm === "tiered") {
-          drawSpruceTiered(ctx, x, baseY, width, height, trunkColor, gradient, seed, tieredParams);
+        if (spruceAlgorithm === "smooth") {
+          drawSpruceSmooth(ctx, x, baseY, width, height, trunkColor, gradient, seed, smoothParams);
         } else {
-          drawSpruceRecursive(ctx, x, baseY, width, height, trunkColor, gradient, seed, recursiveParams);
+          drawSpruceWhorl(ctx, x, baseY, width, height, trunkColor, gradient, seed, whorlParams);
         }
         break;
       case "pine":
@@ -530,103 +490,11 @@
     }
   }
 
-  function drawSpruceNoise(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    baseY: number,
-    width: number,
-    height: number,
-    trunkColor: { r: number; g: number; b: number },
-    gradient: CanvasGradient,
-    seed: number,
-    params: NoiseParams
-  ) {
-    const trunkW = width * 0.14;
-    const trunkH = height * 0.12;
-    const bodyStart = baseY - trunkH;
-    const bodyHeight = height - trunkH;
-
-    // Draw trunk
-    ctx.fillStyle = `rgb(${trunkColor.r}, ${trunkColor.g}, ${trunkColor.b})`;
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Seeded random for this tree
-    let localSeed = seed;
-    const treeRandom = (): number => {
-      localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
-      return localSeed / 0x7fffffff;
-    };
-
-    // Use tunable parameters with small random variation for each tree
-    const baseWidthRatio = params.baseWidth + (treeRandom() - 0.5) * 0.04;
-    const taperPower = params.taper + (treeRandom() - 0.5) * 0.2;
-    const bumpCount = Math.round(params.detail + (treeRandom() - 0.5) * 4);
-    const spikinessBase = params.spikiness;
-    const asymmetryBase = params.asymmetry;
-
-    // Generate edge points with organic variation
-    interface EdgePoint {
-      y: number;
-      width: number;
-    }
-    const leftEdge: EdgePoint[] = [];
-    const rightEdge: EdgePoint[] = [];
-
-    for (let i = 0; i <= bumpCount; i++) {
-      const t = i / bumpCount;
-      const baseTaper = 1 - Math.pow(t, taperPower);
-      const baseWidth = baseWidthRatio * baseTaper;
-
-      // Spikiness controls the amplitude of edge variation
-      const lowFreq = Math.sin(t * Math.PI * 2 + treeRandom() * Math.PI) * spikinessBase * 0.6;
-      const midFreq = Math.sin(t * Math.PI * 5 + treeRandom() * Math.PI * 2) * spikinessBase * 0.4;
-      const highFreq = (treeRandom() - 0.5) * spikinessBase * 0.5;
-
-      const variationStrength = Math.sin(t * Math.PI) * 0.8 + 0.2;
-      const variation = (lowFreq + midFreq + highFreq) * variationStrength;
-
-      // Asymmetry controls left/right difference
-      const leftVar = variation + (treeRandom() - 0.5) * asymmetryBase;
-      const rightVar = variation + (treeRandom() - 0.5) * asymmetryBase;
-
-      const y = bodyStart - bodyHeight * t;
-
-      leftEdge.push({ y, width: Math.max(0.02, baseWidth + leftVar) });
-      rightEdge.push({ y, width: Math.max(0.02, baseWidth + rightVar) });
-    }
-
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.moveTo(x - width * leftEdge[0]!.width, bodyStart);
-
-    for (let i = 1; i < leftEdge.length; i++) {
-      const pt = leftEdge[i]!;
-      ctx.lineTo(x - width * pt.width, pt.y);
-    }
-
-    ctx.lineTo(x, baseY - height);
-
-    for (let i = rightEdge.length - 1; i >= 0; i--) {
-      const pt = rightEdge[i]!;
-      ctx.lineTo(x + width * pt.width, pt.y);
-    }
-
-    ctx.closePath();
-    ctx.fill();
-  }
-
   /**
-   * Algorithm 2: Tiered Skirts
-   * Creates a spruce with overlapping triangular "skirts" - like stacked triangles
-   * getting smaller toward the top. Classic Christmas tree silhouette.
+   * Smooth algorithm: tapered cone with organic waviness
+   * Key: wide spread, controlled waviness that decreases toward bottom for stability
    */
-  function drawSpruceTiered(
+  function drawSpruceSmooth(
     ctx: CanvasRenderingContext2D,
     x: number,
     baseY: number,
@@ -635,215 +503,235 @@
     trunkColor: { r: number; g: number; b: number },
     gradient: CanvasGradient,
     seed: number,
-    params: TieredParams
+    params: SmoothParams
   ) {
-    const trunkW = width * 0.14;
-    const trunkH = height * 0.10;
+    const trunkW = width * 0.08;
+    const trunkH = height * 0.05;
+    const treeTop = baseY - height;
     const bodyStart = baseY - trunkH;
     const bodyHeight = height - trunkH;
-
-    // Draw trunk
-    ctx.fillStyle = `rgb(${trunkColor.r}, ${trunkColor.g}, ${trunkColor.b})`;
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, bodyStart);
-    ctx.lineTo(x + trunkW / 2, bodyStart);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
 
     // Seeded random
     let localSeed = seed;
-    const treeRandom = (): number => {
+    const rand = (): number => {
       localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
       return localSeed / 0x7fffffff;
     };
-
-    // Per-tree variation
-    const tierCount = Math.round(params.tiers + (treeRandom() - 0.5) * 2);
-    const baseWidthRatio = params.baseWidth + (treeRandom() - 0.5) * 0.04;
-    const droopFactor = params.droop;
-    const branchExtend = params.branchWidth;
-    const gnarliness = params.gnarliness;
-
-    ctx.fillStyle = gradient;
-
-    // Draw overlapping triangular skirts from bottom to top
-    for (let tier = 0; tier < tierCount; tier++) {
-      const t = tier / tierCount;
-      const nextT = (tier + 1) / tierCount;
-
-      // Tier spacing - where this skirt starts and where the next one starts
-      const spacingPow = params.tierSpacing;
-      const tierStartY = bodyStart - bodyHeight * Math.pow(t, spacingPow);
-      const tierPeakY = bodyStart - bodyHeight * Math.pow(nextT, spacingPow) * 0.85; // Peak slightly below next tier
-
-      // Width at this tier (tapers toward top)
-      const tierWidth = width * baseWidthRatio * (1 - t * 0.75) * branchExtend;
-
-      // Random variations for this tier
-      const leftVar = (treeRandom() - 0.5) * gnarliness * width;
-      const rightVar = (treeRandom() - 0.5) * gnarliness * width;
-      const peakVar = (treeRandom() - 0.5) * gnarliness * width * 0.3;
-
-      // Droop affects where the skirt bottom sits
-      const droopY = droopFactor * (1 - t) * bodyHeight * 0.04;
-
-      // Draw this tier's triangular skirt
-      ctx.beginPath();
-      // Left corner (droops down)
-      ctx.moveTo(x - tierWidth + leftVar, tierStartY + droopY);
-      // Peak of this tier
-      ctx.lineTo(x + peakVar, tierPeakY);
-      // Right corner (droops down)
-      ctx.lineTo(x + tierWidth + rightVar, tierStartY + droopY);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Final apex triangle
-    const topStartY = bodyStart - bodyHeight * Math.pow((tierCount - 1) / tierCount, params.tierSpacing);
-    const apexWidth = width * baseWidthRatio * 0.25 * branchExtend;
-    ctx.beginPath();
-    ctx.moveTo(x - apexWidth, topStartY);
-    ctx.lineTo(x, baseY - height);
-    ctx.lineTo(x + apexWidth, topStartY);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  /**
-   * Algorithm 3: Jagged Fractal
-   * Creates a spruce with fractal-like jagged edges that look like visible branch tips.
-   * Each "level" adds smaller protrusions to the silhouette.
-   */
-  function drawSpruceRecursive(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    baseY: number,
-    width: number,
-    height: number,
-    trunkColor: { r: number; g: number; b: number },
-    gradient: CanvasGradient,
-    seed: number,
-    params: RecursiveParams
-  ) {
-    const trunkW = width * 0.14;
-    const trunkH = height * 0.10;
-    const bodyStart = baseY - trunkH;
-    const bodyHeight = height - trunkH;
 
     // Draw trunk
     ctx.fillStyle = `rgb(${trunkColor.r}, ${trunkColor.g}, ${trunkColor.b})`;
     ctx.beginPath();
     ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, bodyStart);
-    ctx.lineTo(x + trunkW / 2, bodyStart);
+    ctx.lineTo(x - trunkW / 3, bodyStart);
+    ctx.lineTo(x + trunkW / 3, bodyStart);
     ctx.lineTo(x + trunkW / 2, baseY);
     ctx.closePath();
     ctx.fill();
 
-    // Seeded random
-    let localSeed = seed;
-    const treeRandom = (): number => {
-      localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
-      return localSeed / 0x7fffffff;
-    };
+    // Apply parameters with per-tree variation
+    const maxWidth = width * (params.spread + (rand() - 0.5) * 0.06);
+    const taperPower = params.taperPower + (rand() - 0.5) * 0.08;
+    const waveFreq = params.waveFreq + (rand() - 0.5) * 2;
+    const waveAmp = params.waveAmp + (rand() - 0.5) * 1.5;
+    const jitter = params.jitter;
+    const numPoints = 30;
 
-    // Build edge points with recursive jagged detail
-    const leftEdge: Array<{ x: number; y: number }> = [];
-    const rightEdge: Array<{ x: number; y: number }> = [];
-
-    // Base silhouette parameters
-    const baseWidthRatio = 0.42 + (treeRandom() - 0.5) * 0.06;
-    const taperPower = 1.8 + params.trunkLength; // Use trunkLength to control overall shape
-
-    // Number of base points
-    const basePoints = 12 + Math.round(params.levels * 2);
-
-    // Generate base silhouette
-    for (let i = 0; i <= basePoints; i++) {
-      const t = i / basePoints;
-      const y = bodyStart - bodyHeight * t;
-
-      // Base taper
-      const baseTaper = 1 - Math.pow(t, taperPower);
-      const baseWidth = baseWidthRatio * baseTaper * width * params.spread;
-
-      leftEdge.push({ x: x - baseWidth, y });
-      rightEdge.push({ x: x + baseWidth, y });
-    }
-
-    // Add jagged detail recursively
-    function addJaggedDetail(
-      edge: Array<{ x: number; y: number }>,
-      level: number,
-      isLeft: boolean
-    ): Array<{ x: number; y: number }> {
-      if (level >= params.levels) return edge;
-
-      const newEdge: Array<{ x: number; y: number }> = [];
-      const jagSize = params.branchRatio * (0.15 / (level + 1)); // Decreasing jag size
-      const angleSpread = (params.branchAngle / 45) * 0.5; // Convert angle to radial factor
-
-      for (let i = 0; i < edge.length - 1; i++) {
-        const p1 = edge[i]!;
-        const p2 = edge[i + 1]!;
-
-        newEdge.push(p1);
-
-        // Add jagged protrusion between points
-        const midY = (p1.y + p2.y) / 2;
-        const midX = (p1.x + p2.x) / 2;
-
-        // Height-based scaling (more pronounced at bottom)
-        const heightFactor = 1 - (bodyStart - midY) / bodyHeight;
-        const jagAmount = jagSize * width * heightFactor * (0.7 + treeRandom() * 0.6);
-
-        // Direction of protrusion (outward)
-        const outwardX = isLeft ? -jagAmount : jagAmount;
-
-        // Add randomness
-        const randY = (treeRandom() - 0.5) * params.randomness * (p2.y - p1.y) * 0.5;
-
-        // Protrusion point
-        const protX = midX + outwardX * angleSpread;
-        const protY = midY + randY;
-
-        // Only add if it's actually pointing outward
-        if ((isLeft && protX < midX) || (!isLeft && protX > midX)) {
-          newEdge.push({ x: protX, y: protY });
-        }
-      }
-      newEdge.push(edge[edge.length - 1]!);
-
-      // Recurse for more detail
-      return addJaggedDetail(newEdge, level + 1, isLeft);
-    }
-
-    // Apply jagged detail
-    const jaggedLeft = addJaggedDetail(leftEdge, 0, true);
-    const jaggedRight = addJaggedDetail(rightEdge, 0, false);
-
-    // Draw the complete silhouette
     ctx.fillStyle = gradient;
     ctx.beginPath();
-
-    // Start at bottom left
-    ctx.moveTo(jaggedLeft[0]!.x, jaggedLeft[0]!.y);
-
-    // Left edge (bottom to top)
-    for (let i = 1; i < jaggedLeft.length; i++) {
-      ctx.lineTo(jaggedLeft[i]!.x, jaggedLeft[i]!.y);
-    }
-
-    // Apex
-    ctx.lineTo(x, baseY - height);
+    ctx.moveTo(x, treeTop);
 
     // Right edge (top to bottom)
-    for (let i = jaggedRight.length - 1; i >= 0; i--) {
-      ctx.lineTo(jaggedRight[i]!.x, jaggedRight[i]!.y);
+    for (let i = 1; i <= numPoints; i++) {
+      const t = i / numPoints;
+      const y = treeTop + bodyHeight * t;
+
+      // Base width at this height (tapered)
+      const baseWidth = maxWidth * Math.pow(t, taperPower);
+
+      // Waviness decreases toward bottom for stability
+      const ampScale = 0.4 + (1 - t) * 0.6;
+      const wave = Math.sin(t * Math.PI * waveFreq + seed) * waveAmp * ampScale;
+      const jitterVal = (rand() - 0.5) * jitter * ampScale;
+
+      ctx.lineTo(x + baseWidth + wave + jitterVal, y);
     }
+
+    // Bottom
+    ctx.lineTo(x, bodyStart);
+
+    // Left edge (bottom to top)
+    for (let i = numPoints; i >= 1; i--) {
+      const t = i / numPoints;
+      const y = treeTop + bodyHeight * t;
+      const baseWidth = maxWidth * Math.pow(t, taperPower);
+      const ampScale = 0.4 + (1 - t) * 0.6;
+      const wave = Math.sin(t * Math.PI * waveFreq + seed + 2) * waveAmp * ampScale;
+      const jitterVal = (rand() - 0.5) * jitter * ampScale;
+
+      ctx.lineTo(x - baseWidth - wave - jitterVal, y);
+    }
+
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /**
+   * Whorl algorithm: structured branch layers with jagged bottom edges
+   * Key insight: spruce silhouettes are built from LAYERS, with jaggedness
+   * only at the BOTTOM edge of each layer, not random chaos everywhere
+   */
+  function drawSpruceWhorl(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    baseY: number,
+    width: number,
+    height: number,
+    trunkColor: { r: number; g: number; b: number },
+    gradient: CanvasGradient,
+    seed: number,
+    params: WhorlParams
+  ) {
+    const trunkW = width * 0.08;
+    const trunkH = height * 0.05;
+    const treeTop = baseY - height;
+    const treeBodyStart = baseY - trunkH;
+    const bodyHeight = height - trunkH;
+
+    // Seeded random
+    let localSeed = seed;
+    const rand = (): number => {
+      localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
+      return localSeed / 0x7fffffff;
+    };
+
+    // Draw trunk
+    ctx.fillStyle = `rgb(${trunkColor.r}, ${trunkColor.g}, ${trunkColor.b})`;
+    ctx.beginPath();
+    ctx.moveTo(x - trunkW / 2, baseY);
+    ctx.lineTo(x - trunkW / 3, treeBodyStart);
+    ctx.lineTo(x + trunkW / 3, treeBodyStart);
+    ctx.lineTo(x + trunkW / 2, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Apply parameters with per-tree variation
+    const numLayers = Math.round(params.layers + (rand() - 0.5) * 3);
+    const widthMultiplier = params.spread + (rand() - 0.5) * 0.08;
+    const taperExponent = params.taperExponent + (rand() - 0.5) * 0.3;
+    const droopStrength = params.droop + (rand() - 0.5) * 0.08;
+    const jagIntensity = params.jaggedness;
+
+    // Pre-calculate layer positions with slight irregularity
+    const layerPositions: number[] = [];
+    for (let i = 0; i <= numLayers; i++) {
+      const baseT = i / numLayers;
+      const jitter = i > 0 && i < numLayers ? (rand() - 0.5) * 0.06 : 0;
+      layerPositions.push(Math.max(0, Math.min(1, baseT + jitter)));
+    }
+
+    // Build the silhouette as a single path
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+
+    // Start at the apex
+    ctx.moveTo(x, treeTop);
+
+    // Build RIGHT side going DOWN (top to bottom)
+    for (let layer = 0; layer < numLayers; layer++) {
+      const t = layerPositions[layer + 1]!;
+      const prevT = layerPositions[layer]!;
+
+      const layerY = treeTop + bodyHeight * t;
+      const prevY = treeTop + bodyHeight * prevT;
+
+      // Width at this layer (increases toward bottom)
+      const layerWidth = width * widthMultiplier * Math.pow(t, 1 / taperExponent);
+      const prevWidth = layer === 0 ? 0 : width * widthMultiplier * Math.pow(prevT, 1 / taperExponent);
+
+      // Droop increases toward bottom
+      const droop = droopStrength * t * (layerY - prevY);
+
+      // Slight inward curve at start of layer
+      const insetFactor = 0.7 + rand() * 0.2;
+      const insetX = x + prevWidth * insetFactor + rand() * 3;
+      const insetY = prevY + (layerY - prevY) * (0.15 + rand() * 0.1);
+      ctx.lineTo(insetX, insetY);
+
+      // Outward to the branch tip
+      const tipExtend = 1 + (rand() - 0.5) * 0.15;
+      const tipX = x + layerWidth * tipExtend + (rand() - 0.5) * 5;
+      const tipY = layerY - (layerY - prevY) * (0.25 + rand() * 0.15) + droop;
+      ctx.lineTo(tipX, tipY);
+
+      // Small jagged points along the bottom edge of this layer
+      const numPoints = Math.floor((1 + t * 2 + rand() * 1.5) * jagIntensity);
+      for (let p = 0; p < numPoints; p++) {
+        const frac = (p + 1) / (numPoints + 1);
+        const ptX = tipX - (tipX - x) * frac * (0.2 + rand() * 0.08);
+        const ptY = tipY + (rand() * 4 + 3) * jagIntensity + droop * 0.3;
+        ctx.lineTo(ptX, ptY);
+
+        // Small upward spike (needle cluster)
+        const spikeX = ptX - (rand() * 3 + 1.5) * jagIntensity;
+        const spikeY = ptY - (rand() * 4 + 2) * jagIntensity;
+        ctx.lineTo(spikeX, spikeY);
+      }
+    }
+
+    // Bottom right corner
+    const bottomWidth = width * widthMultiplier;
+    ctx.lineTo(x + bottomWidth * 0.85, treeBodyStart);
+
+    // Across bottom (close to trunk)
+    ctx.lineTo(x + trunkW * 0.6, treeBodyStart);
+    ctx.lineTo(x - trunkW * 0.6, treeBodyStart);
+
+    // Bottom left corner
+    ctx.lineTo(x - bottomWidth * 0.85, treeBodyStart);
+
+    // Build LEFT side going UP (bottom to top)
+    for (let layer = numLayers - 1; layer >= 0; layer--) {
+      const t = layerPositions[layer + 1]!;
+      const prevT = layerPositions[layer]!;
+
+      const layerY = treeTop + bodyHeight * t;
+      const prevY = treeTop + bodyHeight * prevT;
+
+      const layerWidth = width * widthMultiplier * Math.pow(t, 1 / taperExponent);
+      const prevWidth = layer === 0 ? 0 : width * widthMultiplier * Math.pow(prevT, 1 / taperExponent);
+
+      const droop = droopStrength * t * (layerY - prevY);
+
+      // Small jagged points first (going up)
+      const numPoints = Math.floor((1 + t * 2 + rand() * 1.5) * jagIntensity);
+      const tipExtend = 1 + (rand() - 0.5) * 0.15;
+      const tipX = x - layerWidth * tipExtend - (rand() - 0.5) * 5;
+      const tipY = layerY - (layerY - prevY) * (0.25 + rand() * 0.15) + droop;
+
+      for (let p = numPoints - 1; p >= 0; p--) {
+        const frac = (p + 1) / (numPoints + 1);
+        const ptX = tipX + (x - tipX) * frac * (0.2 + rand() * 0.08);
+        const ptY = tipY + (rand() * 4 + 3) * jagIntensity + droop * 0.3;
+
+        // Spike then point
+        const spikeX = ptX + (rand() * 3 + 1.5) * jagIntensity;
+        const spikeY = ptY - (rand() * 4 + 2) * jagIntensity;
+        ctx.lineTo(spikeX, spikeY);
+        ctx.lineTo(ptX, ptY);
+      }
+
+      // Branch tip
+      ctx.lineTo(tipX, tipY);
+
+      // Inward to trunk area
+      const insetFactor = 0.7 + rand() * 0.2;
+      const insetX = x - prevWidth * insetFactor - rand() * 3;
+      const insetY = prevY + (layerY - prevY) * (0.15 + rand() * 0.1);
+      ctx.lineTo(insetX, insetY);
+    }
+
+    // Back to apex
+    ctx.lineTo(x, treeTop);
 
     ctx.closePath();
     ctx.fill();
@@ -1293,208 +1181,130 @@
         <!-- Algorithm Selector -->
         <ChipGroup label="Algorithm" variant="row">
           <ChipToggle
+            label="Whorl"
+            active={spruceAlgorithm === "whorl"}
+            color="lime"
+            onclick={() => { spruceAlgorithm = "whorl"; renderTreeLabSamples(); }}
+          />
+          <ChipToggle
             label="Smooth"
-            active={spruceAlgorithm === "noise"}
+            active={spruceAlgorithm === "smooth"}
             color="lime"
-            onclick={() => { spruceAlgorithm = "noise"; renderTreeLabSamples(); }}
-          />
-          <ChipToggle
-            label="Layered"
-            active={spruceAlgorithm === "tiered"}
-            color="lime"
-            onclick={() => { spruceAlgorithm = "tiered"; renderTreeLabSamples(); }}
-          />
-          <ChipToggle
-            label="Jagged"
-            active={spruceAlgorithm === "recursive"}
-            color="lime"
-            onclick={() => { spruceAlgorithm = "recursive"; renderTreeLabSamples(); }}
+            onclick={() => { spruceAlgorithm = "smooth"; renderTreeLabSamples(); }}
           />
         </ChipGroup>
 
         <!-- Algorithm-specific Parameter Sliders -->
         <div class="params-section">
           <div class="section-header">
-            <span class="label">{spruceAlgorithm === "noise" ? "Smooth Taper" : spruceAlgorithm === "tiered" ? "Layered Skirts" : "Jagged Fractal"}</span>
+            <span class="label">{spruceAlgorithm === "whorl" ? "Branch Layers" : "Organic Taper"}</span>
             <button class="reset-btn" onclick={resetCurrentParams} title="Reset to defaults">
               <i class="fas fa-undo"></i>
             </button>
           </div>
 
-          {#if spruceAlgorithm === "noise"}
-            <!-- Noise Algorithm Parameters -->
+          {#if spruceAlgorithm === "whorl"}
+            <!-- Whorl Algorithm Parameters -->
             <div class="slider-group">
               <label class="slider-label">
-                <span>Base Width</span>
-                <span class="slider-value">{noiseParams.baseWidth.toFixed(2)}</span>
+                <span>Spread</span>
+                <span class="slider-value">{whorlParams.spread.toFixed(2)}</span>
               </label>
-              <input type="range" min="0.25" max="0.55" step="0.01" value={noiseParams.baseWidth}
-                oninput={(e) => { noiseParams.baseWidth = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <input type="range" min="0.40" max="0.65" step="0.01" value={whorlParams.spread}
+                oninput={(e) => { whorlParams.spread = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
               <div class="slider-labels"><span>Narrow</span><span>Wide</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
                 <span>Taper</span>
-                <span class="slider-value">{noiseParams.taper.toFixed(1)}</span>
+                <span class="slider-value">{whorlParams.taperExponent.toFixed(1)}</span>
               </label>
-              <input type="range" min="1.2" max="3.5" step="0.1" value={noiseParams.taper}
-                oninput={(e) => { noiseParams.taper = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <input type="range" min="1.2" max="2.0" step="0.1" value={whorlParams.taperExponent}
+                oninput={(e) => { whorlParams.taperExponent = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
               <div class="slider-labels"><span>Columnar</span><span>Conical</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
-                <span>Spikiness</span>
-                <span class="slider-value">{noiseParams.spikiness.toFixed(2)}</span>
+                <span>Layers</span>
+                <span class="slider-value">{whorlParams.layers}</span>
               </label>
-              <input type="range" min="0" max="0.15" step="0.005" value={noiseParams.spikiness}
-                oninput={(e) => { noiseParams.spikiness = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Smooth</span><span>Spiky</span></div>
-            </div>
-
-            <div class="slider-group">
-              <label class="slider-label">
-                <span>Detail</span>
-                <span class="slider-value">{Math.round(noiseParams.detail)}</span>
-              </label>
-              <input type="range" min="8" max="30" step="1" value={noiseParams.detail}
-                oninput={(e) => { noiseParams.detail = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Low</span><span>High</span></div>
-            </div>
-
-            <div class="slider-group">
-              <label class="slider-label">
-                <span>Asymmetry</span>
-                <span class="slider-value">{noiseParams.asymmetry.toFixed(3)}</span>
-              </label>
-              <input type="range" min="0" max="0.04" step="0.002" value={noiseParams.asymmetry}
-                oninput={(e) => { noiseParams.asymmetry = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Symmetric</span><span>Varied</span></div>
-            </div>
-
-          {:else if spruceAlgorithm === "tiered"}
-            <!-- Tiered Algorithm Parameters -->
-            <div class="slider-group">
-              <label class="slider-label">
-                <span>Base Width</span>
-                <span class="slider-value">{tieredParams.baseWidth.toFixed(2)}</span>
-              </label>
-              <input type="range" min="0.3" max="0.5" step="0.01" value={tieredParams.baseWidth}
-                oninput={(e) => { tieredParams.baseWidth = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Narrow</span><span>Wide</span></div>
-            </div>
-
-            <div class="slider-group">
-              <label class="slider-label">
-                <span>Tiers</span>
-                <span class="slider-value">{tieredParams.tiers}</span>
-              </label>
-              <input type="range" min="4" max="12" step="1" value={tieredParams.tiers}
-                oninput={(e) => { tieredParams.tiers = parseInt(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <input type="range" min="6" max="12" step="1" value={whorlParams.layers}
+                oninput={(e) => { whorlParams.layers = parseInt(e.currentTarget.value); renderTreeLabSamples(); }} />
               <div class="slider-labels"><span>Few</span><span>Many</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
                 <span>Droop</span>
-                <span class="slider-value">{tieredParams.droop.toFixed(2)}</span>
+                <span class="slider-value">{whorlParams.droop.toFixed(2)}</span>
               </label>
-              <input type="range" min="0" max="0.4" step="0.02" value={tieredParams.droop}
-                oninput={(e) => { tieredParams.droop = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <input type="range" min="0.05" max="0.35" step="0.02" value={whorlParams.droop}
+                oninput={(e) => { whorlParams.droop = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
               <div class="slider-labels"><span>Upright</span><span>Droopy</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
-                <span>Tier Spacing</span>
-                <span class="slider-value">{tieredParams.tierSpacing.toFixed(1)}</span>
+                <span>Jaggedness</span>
+                <span class="slider-value">{whorlParams.jaggedness.toFixed(1)}</span>
               </label>
-              <input type="range" min="0.5" max="1.5" step="0.1" value={tieredParams.tierSpacing}
-                oninput={(e) => { tieredParams.tierSpacing = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Clustered</span><span>Even</span></div>
-            </div>
-
-            <div class="slider-group">
-              <label class="slider-label">
-                <span>Branch Width</span>
-                <span class="slider-value">{tieredParams.branchWidth.toFixed(1)}</span>
-              </label>
-              <input type="range" min="0.3" max="0.8" step="0.05" value={tieredParams.branchWidth}
-                oninput={(e) => { tieredParams.branchWidth = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Compact</span><span>Spread</span></div>
-            </div>
-
-            <div class="slider-group">
-              <label class="slider-label">
-                <span>Gnarliness</span>
-                <span class="slider-value">{tieredParams.gnarliness.toFixed(2)}</span>
-              </label>
-              <input type="range" min="0" max="0.1" step="0.005" value={tieredParams.gnarliness}
-                oninput={(e) => { tieredParams.gnarliness = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Straight</span><span>Twisted</span></div>
+              <input type="range" min="0.5" max="2.0" step="0.1" value={whorlParams.jaggedness}
+                oninput={(e) => { whorlParams.jaggedness = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <div class="slider-labels"><span>Smooth</span><span>Jagged</span></div>
             </div>
 
           {:else}
-            <!-- Recursive Algorithm Parameters -->
+            <!-- Smooth Algorithm Parameters -->
             <div class="slider-group">
               <label class="slider-label">
-                <span>Trunk Length</span>
-                <span class="slider-value">{recursiveParams.trunkLength.toFixed(2)}</span>
+                <span>Spread</span>
+                <span class="slider-value">{smoothParams.spread.toFixed(2)}</span>
               </label>
-              <input type="range" min="0.3" max="0.6" step="0.02" value={recursiveParams.trunkLength}
-                oninput={(e) => { recursiveParams.trunkLength = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Short</span><span>Tall</span></div>
-            </div>
-
-            <div class="slider-group">
-              <label class="slider-label">
-                <span>Branch Angle</span>
-                <span class="slider-value">{recursiveParams.branchAngle}°</span>
-              </label>
-              <input type="range" min="15" max="45" step="1" value={recursiveParams.branchAngle}
-                oninput={(e) => { recursiveParams.branchAngle = parseInt(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <input type="range" min="0.45" max="0.65" step="0.01" value={smoothParams.spread}
+                oninput={(e) => { smoothParams.spread = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
               <div class="slider-labels"><span>Narrow</span><span>Wide</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
-                <span>Branch Ratio</span>
-                <span class="slider-value">{recursiveParams.branchRatio.toFixed(2)}</span>
+                <span>Taper</span>
+                <span class="slider-value">{smoothParams.taperPower.toFixed(2)}</span>
               </label>
-              <input type="range" min="0.6" max="0.85" step="0.01" value={recursiveParams.branchRatio}
-                oninput={(e) => { recursiveParams.branchRatio = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Short</span><span>Long</span></div>
+              <input type="range" min="0.45" max="0.75" step="0.02" value={smoothParams.taperPower}
+                oninput={(e) => { smoothParams.taperPower = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <div class="slider-labels"><span>Columnar</span><span>Conical</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
-                <span>Levels</span>
-                <span class="slider-value">{recursiveParams.levels}</span>
+                <span>Wave Frequency</span>
+                <span class="slider-value">{smoothParams.waveFreq.toFixed(0)}</span>
               </label>
-              <input type="range" min="3" max="7" step="1" value={recursiveParams.levels}
-                oninput={(e) => { recursiveParams.levels = parseInt(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Simple</span><span>Complex</span></div>
+              <input type="range" min="4" max="10" step="1" value={smoothParams.waveFreq}
+                oninput={(e) => { smoothParams.waveFreq = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <div class="slider-labels"><span>Few</span><span>Many</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
-                <span>Spread</span>
-                <span class="slider-value">{recursiveParams.spread.toFixed(1)}</span>
+                <span>Wave Amplitude</span>
+                <span class="slider-value">{smoothParams.waveAmp.toFixed(1)}</span>
               </label>
-              <input type="range" min="0.5" max="1.5" step="0.1" value={recursiveParams.spread}
-                oninput={(e) => { recursiveParams.spread = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Tight</span><span>Spread</span></div>
+              <input type="range" min="2" max="8" step="0.5" value={smoothParams.waveAmp}
+                oninput={(e) => { smoothParams.waveAmp = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <div class="slider-labels"><span>Subtle</span><span>Strong</span></div>
             </div>
 
             <div class="slider-group">
               <label class="slider-label">
-                <span>Randomness</span>
-                <span class="slider-value">{recursiveParams.randomness.toFixed(2)}</span>
+                <span>Jitter</span>
+                <span class="slider-value">{smoothParams.jitter.toFixed(1)}</span>
               </label>
-              <input type="range" min="0" max="0.3" step="0.02" value={recursiveParams.randomness}
-                oninput={(e) => { recursiveParams.randomness = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
-              <div class="slider-labels"><span>Regular</span><span>Random</span></div>
+              <input type="range" min="0" max="4" step="0.5" value={smoothParams.jitter}
+                oninput={(e) => { smoothParams.jitter = parseFloat(e.currentTarget.value); renderTreeLabSamples(); }} />
+              <div class="slider-labels"><span>None</span><span>Random</span></div>
             </div>
           {/if}
         </div>

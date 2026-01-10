@@ -13,7 +13,7 @@
   import type { DetectionFrame } from "../../domain/models/DetectionFrame";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IPositionDetector } from "../../services/contracts/IPositionDetector";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -74,7 +74,7 @@
   }: Props = $props();
 
   // Performance monitoring
-  let detectionService: IPositionDetector | null = null;
+  const detectionService = container.items.positionDetector;
   let fps = $state(0);
   let avgFrameTime = $state(0);
   let videoResolution = $state("N/A");
@@ -127,8 +127,6 @@
   }
 
   onMount(() => {
-    detectionService = resolve<IPositionDetector>(TYPES.IPositionDetector);
-
     // Update performance stats every 500ms
     perfInterval = window.setInterval(() => {
       if (detectionService?.getPerformanceStats) {

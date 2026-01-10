@@ -14,8 +14,7 @@ Renders a section with:
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
@@ -61,11 +60,9 @@ Renders a section with:
   let gridFitCalculator: IOptionGridFitCalculator | null = null;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    reversalDetector = resolve<IReversalDetector>(TYPES.IReversalDetector);
-    gridFitCalculator = resolve<IOptionGridFitCalculator>(
-      TYPES.IGridFitCalculator
-    );
+    hapticService = container.items.hapticFeedback;
+    reversalDetector = container.items.reversalDetector;
+    gridFitCalculator = container.items.optionGridFitCalculator;
   });
 
   // Pictographs are already filtered when passed to this component

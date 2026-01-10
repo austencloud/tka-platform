@@ -5,7 +5,6 @@
  * Extracted from OptionViewer456Group.svelte's calculateOptimalLayout function.
  */
 
-import { injectable } from "inversify";
 import type {
   IAspectLayoutPlanner,
   LayoutRow,
@@ -16,7 +15,6 @@ import type {
 const PORTRAIT_MAX = 0.6;
 const LANDSCAPE_MIN = 1.6;
 
-@injectable()
 export class AspectLayoutPlanner implements IAspectLayoutPlanner {
   /**
    * Calculate optimal layout based on container aspect ratio.

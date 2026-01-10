@@ -9,13 +9,11 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { injectable } from "inversify";
 // import type { IStartPositionManager } from "../../tool-panel/construct/start-position-picker/services/contracts";
 import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrchestrator";
 // IStartPositionSelectionService removed - using unified service
 import { constructTabEventService } from "./CreateModuleEventHandler";
 
-@injectable()
 export class CreateModuleOrchestrator implements ICreateModuleOrchestrator {
   private currentTab: string = "constructor"; // Default tab
   private tabStates: Map<string, unknown> = new Map();

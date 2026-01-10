@@ -5,7 +5,7 @@
  * Allows admins to view the app as another user for support/debugging.
  */
 
-import { injectable } from "inversify";
+
 import { doc, getDoc } from "firebase/firestore";
 import { getFirestoreInstance } from "../../firebase";
 import type {
@@ -16,7 +16,6 @@ import type { UserRole } from "../../domain/models/UserRole";
 import { isAdmin } from "../../state/authState.svelte";
 import { featureFlagService } from "../FeatureFlagService.svelte";
 
-@injectable()
 export class Impersonator implements IImpersonator {
   private _impersonatedUser: ImpersonatedUser | null = null;
 

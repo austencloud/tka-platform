@@ -9,8 +9,7 @@
   import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { formatRelativeTime, truncateText } from "../../utils/format";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
@@ -24,7 +23,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleClick() {

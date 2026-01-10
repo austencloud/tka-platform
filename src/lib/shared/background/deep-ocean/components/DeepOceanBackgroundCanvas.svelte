@@ -10,9 +10,8 @@
     Dimensions,
     QualityLevel,
   } from "$lib/shared/background/shared/domain/types/background-types";
-  import { resolve } from "../../../inversify/di";
-  import { TYPES } from "../../../inversify/types";
-  import type { IBackgroundSystem } from "../../shared/services/contracts/IBackgroundSystem";
+  import { container } from "$lib/shared/di";
+  import type { DeepOceanBackgroundOrchestrator } from "../services/DeepOceanBackgroundOrchestrator";
 
   // Props
   interface Props {
@@ -28,7 +27,7 @@
   let ctx: CanvasRenderingContext2D | null = null;
 
   // Service (resolved via DI)
-  let backgroundSystem: IBackgroundSystem | null = null;
+  let backgroundSystem: DeepOceanBackgroundOrchestrator | null = null;
 
   // Animation frame tracking
   let animationFrame: number | null = null;
@@ -36,10 +35,8 @@
 
   onMount(async () => {
     try {
-      // Resolve the new orchestrator service
-      backgroundSystem = await resolve<IBackgroundSystem>(
-        TYPES.IBackgroundSystem
-      );
+      // Get orchestrator from ITI container
+      backgroundSystem = container.items.deepOceanBackgroundSystem;
 
       // Initialize canvas context
       ctx = canvas.getContext("2d");

@@ -8,10 +8,8 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../domain/models/BeatData";
 import type { ValidationResult } from "../../../../../shared/validation/ValidationResult";
-import { injectable } from "inversify";
 import type { ISequenceValidator } from "../contracts/ISequenceValidator";
 
-@injectable()
 export class SequenceValidator implements ISequenceValidator {
   /**
    * Validate a complete sequence

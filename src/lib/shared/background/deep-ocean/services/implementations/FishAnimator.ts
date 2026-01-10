@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type {
   FishMarineLife,
@@ -288,7 +287,6 @@ const BODY_FLEX = {
   },
 };
 
-@injectable()
 export class FishAnimator implements IFishAnimator {
   private pendingSpawns: number[] = [];
   private nextSchoolId = 0;

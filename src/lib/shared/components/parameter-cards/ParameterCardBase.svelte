@@ -5,8 +5,7 @@ Used by both Generate and Discover for consistent Bento card styling
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let {
@@ -42,8 +41,8 @@ Used by both Generate and Discover for consistent Bento card styling
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    rippleService = tryResolve<IRippleEffect>(TYPES.IRippleEffect);
+    hapticService = container.items.hapticFeedback ?? null;
+    rippleService = container.items.rippleEffect ?? null;
 
     if (clickable && cardElement && rippleService) {
       return rippleService.attachRipple(cardElement, {

@@ -5,20 +5,14 @@
  * Call this when your app starts up to ensure the database is ready.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "../../../inversify/types";
 import type { IPersistenceService } from "../contracts/IPersistenceService";
 import type { IPersistenceInitializationService } from "../contracts/IPersistenceInitializationService";
 
-@injectable()
 export class PersistenceInitializationService implements IPersistenceInitializationService {
   private isInitialized = false;
   private initializationError?: string;
 
-  constructor(
-    @inject(TYPES.IPersistenceService)
-    private persistenceService: IPersistenceService
-  ) {}
+  constructor(private persistenceService: IPersistenceService) {}
 
   async initialize(): Promise<void> {
     try {

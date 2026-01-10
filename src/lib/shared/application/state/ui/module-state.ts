@@ -9,17 +9,11 @@ import {
   setIsTransitioning,
 } from "./ui-state.svelte";
 
-// Dynamic imports to avoid circular dependencies with DI system
-// These are loaded at runtime, not at module load time
-async function loadFeatureModule(feature: string): Promise<void> {
-  const { loadFeatureModule: load } = await import("../../../inversify/di");
-  return load(feature);
-}
-
-async function ensureContainerInitialized(): Promise<void> {
-  const { ensureContainerInitialized: ensure } =
-    await import("../../../inversify/di");
-  return ensure();
+// ITI containers are synchronous - no initialization needed
+// loadFeatureModule is now a no-op since all services are registered at container creation
+async function loadFeatureModule(_feature: string): Promise<void> {
+  // ITI containers are synchronous - all services are already available
+  return Promise.resolve();
 }
 
 const LOCAL_STORAGE_KEY = "tka-active-module-cache";
@@ -52,9 +46,7 @@ function isModuleAccessible(moduleId: ModuleId): boolean {
  * Also validates that current section is accessible (e.g., guided mode requires admin)
  */
 export async function revalidateCurrentModule(): Promise<void> {
-  // Ensure container is initialized before resolving any services
-  await ensureContainerInitialized();
-
+  // ITI containers are synchronous - no initialization needed
   const currentModule = getActiveModule();
 
   // Try to restore any cached module that user now has access to

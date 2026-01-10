@@ -2,8 +2,7 @@
 <!-- Footer with settings gear/back button -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "../../../inversify/container";
-  import { TYPES } from "../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import { releaseNotesDrawerState } from "../../../settings/state/release-notes-drawer-state.svelte";
 
   let { isCollapsed, isSettingsActive, onSettingsClick } = $props<{
@@ -15,7 +14,7 @@
   function handleVersionClick() {
     // Haptic feedback
     try {
-      const hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      const hapticService = container.items.hapticFeedback as IHapticFeedback;
       hapticService?.trigger("selection");
     } catch {
       // Ignore if not available

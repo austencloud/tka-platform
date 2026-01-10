@@ -9,15 +9,9 @@ import type { IGridPositionDeriver } from "../../../grid/services/contracts/IGri
 import type { GridPosition } from "../../../grid/domain/enums/grid-enums";
 import type { IBetaDetector } from "../contracts/IBetaDetector";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
-import { TYPES } from "../../../../inversify/types";
-import { inject, injectable } from "inversify";
 
-@injectable()
 export class BetaDetector implements IBetaDetector {
-  constructor(
-    @inject(TYPES.IGridPositionDeriver)
-    private positionMapper: IGridPositionDeriver
-  ) {}
+  constructor(private positionMapper: IGridPositionDeriver) {}
 
   /**
    * Check if a grid position is a beta position

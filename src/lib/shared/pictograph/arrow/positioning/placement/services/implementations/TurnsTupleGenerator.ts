@@ -5,7 +5,6 @@
  * Handles all 6 letter types with exact logic from legacy desktop app.
  */
 
-import { injectable } from "inversify";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
@@ -20,7 +19,6 @@ type LetterType =
   | "TYPE5"
   | "TYPE6";
 
-@injectable()
 export class TurnsTupleGenerator implements ITurnsTupleGenerator {
   private propRotationService: PropRotationStateTracker;
 

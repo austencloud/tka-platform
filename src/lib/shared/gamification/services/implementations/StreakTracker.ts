@@ -4,7 +4,6 @@
  * Tracks daily login/activity streaks with Firebase/Firestore.
  */
 
-import { injectable } from "inversify";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../../auth/firebase";
 import { db } from "../../../persistence/database/TKADatabase";
@@ -13,7 +12,6 @@ import { toast } from "../../../toast/state/toast-state.svelte";
 import type { UserStreak } from "../../domain/models/achievement-models";
 import type { IStreakTracker } from "../contracts/IStreakTracker";
 
-@injectable()
 export class StreakTracker implements IStreakTracker {
   private _initialized = false;
 

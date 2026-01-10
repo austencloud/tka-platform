@@ -8,7 +8,6 @@
  * This replaces storing difficulty in metadata and calculates it on-the-fly.
  */
 
-import { injectable } from "inversify";
 import type { BeatData } from "../../../../../create/shared/domain/models/BeatData";
 import {
   Orientation,
@@ -16,7 +15,6 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { ISequenceDifficultyCalculator } from "../contracts/ISequenceDifficultyCalculator";
 
-@injectable()
 export class SequenceDifficultyCalculator implements ISequenceDifficultyCalculator {
   /**
    * Calculate difficulty level by analyzing all beats in the sequence

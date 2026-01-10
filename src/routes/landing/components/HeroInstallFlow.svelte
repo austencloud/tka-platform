@@ -12,8 +12,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type {
     IPlatformDetector,
     Platform,
@@ -46,7 +45,7 @@
     "https://play.google.com/store/apps/details?id=com.tkascribe.app";
 
   onMount(async () => {
-    const platformService = resolve<IPlatformDetector>(TYPES.IPlatformDetector);
+    const platformService = container.items.platformDetector as IPlatformDetector;
     const info = platformService.detectPlatformAndBrowser();
 
     platform = info.platform;

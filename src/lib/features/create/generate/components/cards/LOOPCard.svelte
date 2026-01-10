@@ -9,8 +9,7 @@ Always opens selector panel when clicked
     LOOP_TYPE_LABELS,
     LOOPType,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount, getContext } from "svelte";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import BaseCard from "./BaseCard.svelte";
@@ -32,15 +31,13 @@ Always opens selector panel when clicked
   }>();
 
   let hapticService: IHapticFeedback;
-  let LOOPTypeResolver: ILOOPTypeResolver = resolve<ILOOPTypeResolver>(
-    TYPES.ILOOPTypeResolver
-  );
+  let LOOPTypeResolver: ILOOPTypeResolver = container.items.loopTypeResolver;
 
   // Get panel coordination state from context (provided by CreateModule)
   const panelState = getContext<PanelCoordinationState>("panelState");
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Get current selected components using service

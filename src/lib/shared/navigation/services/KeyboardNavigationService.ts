@@ -1,10 +1,8 @@
-import { injectable } from "inversify";
 import type { IKeyboardNavigator } from "./contracts/IKeyboardNavigator";
 
-@injectable()
 export class KeyboardNavigator implements IKeyboardNavigator {
-  private focusedIndex = $state<number>(-1);
-  private enabled = $state<boolean>(false);
+  private focusedIndex: number = -1;
+  private enabled: boolean = false;
   private focusSubscriptions = new Set<(index: number) => void>();
 
   handleArrowKey(direction: "up" | "down" | "left" | "right"): void {

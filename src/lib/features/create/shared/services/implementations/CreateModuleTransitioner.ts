@@ -10,10 +10,8 @@ import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
 // Simplified transition service without complex fade orchestrator
 
-import { injectable } from "inversify";
 import type { ICreateModuleTransitioner } from "../contracts/ICreateModuleTransitioner";
 
-@injectable()
 export class CreateModuleTransitioner implements ICreateModuleTransitioner {
   /**
    * Handle main tab transitions with fade animations

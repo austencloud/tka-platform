@@ -4,8 +4,7 @@ Asks users to tap specific points on both Diamond and Box grids.
 Provides instant visual feedback (correct = green glow, wrong = red shake).
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
@@ -14,7 +13,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
     onComplete?: () => void;
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   // Quiz questions configuration
   type PointType = "center" | "hand" | "outer";

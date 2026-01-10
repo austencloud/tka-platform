@@ -9,8 +9,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IAuthenticator } from "$lib/shared/auth/services/contracts/IAuthenticator";
   import { useUserPreview } from "$lib/shared/debug/context/user-preview-context";
@@ -48,8 +47,8 @@
 
   onMount(async () => {
     try {
-      hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-      authService = await resolve<IAuthenticator>(TYPES.IAuthenticator);
+      hapticService = container.items.hapticFeedback;
+      authService = container.items.authenticator;
     } catch {
       // Services may not be available in all contexts
     }

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   IPlatformDetector,
   Platform,
@@ -17,7 +16,6 @@ interface VendorNavigator extends Navigator {
  * Provides comprehensive platform, browser, and in-app browser detection.
  * Critical for determining the correct PWA installation flow.
  */
-@injectable()
 export class PlatformDetector implements IPlatformDetector {
   detectPlatformAndBrowser(): PlatformInfo {
     return {

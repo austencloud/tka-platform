@@ -9,39 +9,18 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IQuizRepoManager } from "../../../quiz/services/contracts/IQuizRepository";
-import type {
-  CodexLetterMapping,
-  CodexLetterRow,
-} from "../../domain/models/codex-models";
 import type { ICodexPictographUpdater } from "../contracts/ICodexPictographUpdater";
 import type { ICodex } from "../contracts/ICodex";
-// import type { ICodexLetterMappingRepo } from "../contracts/ICodexLetterMappingRepo";
+import type { CodexLetterMappingRepo } from "./CodexLetterMappingRepo";
 
-// Temporary interface definition
-interface ICodexLetterMappingRepo {
-  getMapping(letter: string): Promise<CodexLetterMapping>;
-  getAllMappings(): Promise<CodexLetterMapping[]>;
-  initialize(): Promise<void>;
-  getLetterRows(): Promise<CodexLetterRow[]>;
-  getAllLetters(): Promise<string[]>;
-  isValidLetter(letter: string): boolean;
-}
-
-@injectable()
 export class Codex implements ICodex {
   private initialized = false;
 
   constructor(
-    @inject(TYPES.ICodexLetterMappingRepo)
-    private letterMappingRepo: ICodexLetterMappingRepo,
-    @inject(TYPES.IQuizRepoManager)
+    private letterMappingRepo: CodexLetterMappingRepo,
     private lessonRepo: IQuizRepoManager,
-    @inject(TYPES.ICodexPictographUpdater)
     private operationsService: ICodexPictographUpdater,
-    @inject(TYPES.ILetterQueryHandler)
     private LetterQueryHandler: ILetterQueryHandler
   ) {}
 

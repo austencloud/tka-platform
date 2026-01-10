@@ -6,10 +6,8 @@
  * that was previously scattered throughout the massive ConstructTab component.
  */
 
-import { tryResolve } from "../../../../../shared/inversify/resolve-utils";
+import { container } from "$lib/shared/di";
 import type { SequenceData } from "../../../../../shared/foundation/domain/models/SequenceData";
-import { TYPES } from "../../../../../shared/inversify/types";
-import { injectable } from "inversify";
 import type { ICreateModuleEventHandler } from "../contracts/ICreateModuleEventHandler";
 import type { IBuildConstructSectionCoordinator } from "../contracts/IConstructCoordinator";
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
@@ -18,7 +16,6 @@ import type { IReversalDetector } from "../contracts/IReversalDetector";
 import type { BeatData } from "../../domain/models/BeatData";
 import { createBeatData } from "../../domain/factories/createBeatData";
 
-@injectable()
 export class CreateModuleEventHandler implements ICreateModuleEventHandler {
   private constructCoordinator: IBuildConstructSectionCoordinator | null = null;
   private OrientationCalculator: IOrientationCalculator | null = null;
@@ -49,15 +46,24 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       return; // Already initialized
     }
 
-    this.constructCoordinator = tryResolve<IBuildConstructSectionCoordinator>(
-      TYPES.IBuildConstructTabCoordinator
-    );
-    this.OrientationCalculator = tryResolve<IOrientationCalculator>(
-      TYPES.IOrientationCalculator
-    );
-    this.ReversalDetector = tryResolve<IReversalDetector>(
-      TYPES.IReversalDetector
-    );
+    // Resolve services via ITI container - services may be undefined if not registered
+    try {
+      this.constructCoordinator = container.items.constructCoordinator as unknown as IBuildConstructSectionCoordinator | undefined ?? null;
+    } catch {
+      this.constructCoordinator = null;
+    }
+
+    try {
+      this.OrientationCalculator = container.items.orientationCalculator as unknown as IOrientationCalculator | undefined ?? null;
+    } catch {
+      this.OrientationCalculator = null;
+    }
+
+    try {
+      this.ReversalDetector = container.items.reversalDetector as unknown as IReversalDetector | undefined ?? null;
+    } catch {
+      this.ReversalDetector = null;
+    }
 
     // Only mark as initialized if at least one service resolved
     if (

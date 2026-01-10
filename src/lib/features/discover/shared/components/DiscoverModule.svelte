@@ -1,9 +1,8 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
+  import { container } from "$lib/shared/di";
+    import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, setContext, untrack } from "svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
@@ -316,11 +315,9 @@
     // Initialize navigation state (restores from localStorage if available)
     discoverNavigationState.initialize("gallery");
 
-    // Resolve event handler service (feature module should be loaded by now)
+    // Resolve event handler service from ITI container
     try {
-      eventHandlerService = resolve<IDiscoverEventHandler>(
-        TYPES.IDiscoverEventHandler
-      );
+      eventHandlerService = container.items.discoverEventHandler as IDiscoverEventHandler;
 
       // Initialize event handler service with required parameters
       eventHandlerService.initialize({
@@ -342,7 +339,7 @@
     // Initialize DeviceDetector service
     let cleanup: (() => void) | undefined;
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+      deviceDetector = container.items.deviceDetector as IDeviceDetector;
       responsiveSettings = deviceDetector.getResponsiveSettings();
 
       // Store cleanup function from onCapabilitiesChanged

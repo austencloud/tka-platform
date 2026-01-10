@@ -14,9 +14,8 @@
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
 
-  import { TYPES } from "../../inversify/types";
+  
 
-  import type { Container } from "inversify";
   import { getContext, onMount } from "svelte";
   import MainInterface from "../../MainInterface.svelte";
   import AuthSheet from "../../navigation/components/AuthSheet.svelte";
@@ -55,10 +54,7 @@
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import type { ModuleId } from "../../navigation/domain/types";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
-  import {
-    ensureContainerInitialized,
-    isContainerReady,
-  } from "../../inversify/di";
+  import { container } from "../../di";
 
   // Get DI container from context
   const getContainer = getContext<() => Container | null>("di-container");
@@ -93,41 +89,20 @@
   let feedbackDetailItem = $derived(myFeedbackDetailState.selectedItem);
   let showFeedbackDetail = $derived(myFeedbackDetailState.isOpen);
 
-  // Resolve services when container is available
+  // Resolve services from ITI container (synchronous - no async needed)
   $effect(() => {
-    const container = getContainer?.();
-
-    if (container && !servicesResolved) {
-      (async () => {
-        try {
-          if (!isContainerReady()) {
-            console.warn(
-              "Container available but not cached, ensuring initialization..."
-            );
-            await ensureContainerInitialized();
-          }
-
-          if (!servicesResolved) {
-            initService = container.get<IApplicationInitializer>(
-              TYPES.IApplicationInitializer
-            );
-            settingsService = container.get<ISettingsState>(
-              TYPES.ISettingsState
-            );
-            deviceService = container.get<IDeviceDetector>(
-              TYPES.IDeviceDetector
-            );
-            sheetRouterService = container.get<ISheetRouter>(
-              TYPES.ISheetRouter
-            );
-            authService = container.get<IAuthenticator>(TYPES.IAuthenticator);
-            servicesResolved = true;
-          }
-        } catch (error) {
-          console.error("Failed to resolve services:", error);
-          setInitializationError(`Service resolution failed: ${error}`);
-        }
-      })();
+    if (!servicesResolved) {
+      try {
+        initService = container.items.applicationInitializer as IApplicationInitializer;
+        settingsService = container.items.settingsState as ISettingsState;
+        deviceService = container.items.deviceDetector as IDeviceDetector;
+        sheetRouterService = container.items.sheetRouter as ISheetRouter;
+        authService = container.items.authenticator as IAuthenticator;
+        servicesResolved = true;
+      } catch (error) {
+        console.error("Failed to resolve services:", error);
+        setInitializationError(`Service resolution failed: ${error}`);
+      }
     }
   });
 
@@ -139,28 +114,17 @@
     (async () => {
       try {
         setInitializationState(false, true, null, 0);
-        await ensureContainerInitialized();
+        // ITI container is created synchronously - no ensureContainerInitialized needed
         await initializeAppState();
 
-        const container = getContainer?.();
-        if (!container) {
-          console.error("No DI container available");
-          setInitializationError("No DI container available");
-          return;
-        }
-
-        // Wait for services to be resolved with timeout
-        let waitCount = 0;
-        const MAX_WAIT = 500; // 5 seconds max
-        while (!servicesResolved && waitCount < MAX_WAIT) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          waitCount++;
-        }
+        // Services are already resolved from ITI container in $effect above
+        // Wait briefly for $effect to run
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         if (!servicesResolved) {
-          console.error("Service resolution timeout");
+          console.error("Service resolution failed");
           setInitializationError(
-            "Service resolution timeout - services failed to initialize"
+            "Service resolution failed - services not available"
           );
           return;
         }

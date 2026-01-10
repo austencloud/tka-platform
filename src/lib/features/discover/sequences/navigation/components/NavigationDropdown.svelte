@@ -14,9 +14,8 @@ Responsive behavior:
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import { container } from "$lib/shared/di";
+    import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { onMount } from "svelte";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
@@ -169,7 +168,7 @@ Responsive behavior:
   });
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Initialize DeviceDetector
     let cleanup: (() => void) | undefined;

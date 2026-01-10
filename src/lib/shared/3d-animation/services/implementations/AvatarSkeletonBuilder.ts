@@ -5,7 +5,6 @@
  * Provides access to bones for IK solving and animation.
  */
 
-import { injectable } from "inversify";
 import type { Object3D, Bone, SkinnedMesh, Skeleton} from "three";
 import { Vector3, Box3 } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
@@ -61,7 +60,6 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
   RightFoot: ["RightFoot", "r_foot", "foot.R", "foot_r"],
 };
 
-@injectable()
 export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
   private state: SkeletonState = {
     isLoaded: false,

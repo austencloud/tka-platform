@@ -13,7 +13,6 @@
  * Scale: Designed to feel like the Louvre or British Museum
  */
 
-import { injectable, inject } from "inversify";
 import type { IGalleryLayoutGenerator } from "../contracts/IGalleryLayoutGenerator";
 import type {
   GalleryLayout,
@@ -68,16 +67,12 @@ const ALCOVE_WIDTH = 500;
 const ALCOVE_DEPTH = 350;
 const ALCOVE_SPACING = 1200;
 
-@injectable()
 export class MansionLayoutGenerator implements IGalleryLayoutGenerator {
   readonly name = "mansion";
 
   constructor(
-    @inject(RoomGeometryGenerator)
     private readonly geometryGenerator: RoomGeometryGenerator,
-    @inject(CollisionWorldBuilder)
     private readonly collisionBuilder: CollisionWorldBuilder,
-    @inject(ConnectionGeometryGenerator)
     private readonly connectionGenerator: ConnectionGeometryGenerator
   ) {}
 

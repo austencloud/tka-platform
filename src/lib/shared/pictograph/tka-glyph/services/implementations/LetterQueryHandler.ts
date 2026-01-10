@@ -9,8 +9,6 @@ import type { CodexLetterMapping } from "../../../../../features/learn/codex/dom
 import type { ICodexLetterMappingRepo } from "../../../../../features/learn/codex/services/contracts/ICodexLetterMappingRepo";
 import type { MotionType } from "../../../shared/domain/enums/pictograph-enums";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
-import { TYPES } from "../../../../inversify/types";
-import { inject, injectable, optional } from "inversify";
 import type { ParsedCsvRow } from "../../../../../features/create/generate/shared/domain/csv-handling/CsvModels";
 
 import type { Letter } from "../../../../foundation/domain/models/Letter";
@@ -41,22 +39,16 @@ interface ICSVParser {
   parseCSV(csvText: string): CsvParseResult;
 }
 
-@injectable()
 export class LetterQueryHandler implements ILetterQueryHandler {
   private parsedData: Record<GridMode, ParsedCsvRow[]> | null = null;
   private isInitialized = false;
 
   constructor(
-    @inject(TYPES.ICSVLoader)
     private csvLoader: ICSVLoader,
-    @inject(TYPES.ICSVParser)
     private CSVParser: ICSVParser,
-    @inject(TYPES.ICSVPictographParser)
     private csvPictographParser: ICSVPictographParser,
     // OPTIONAL: Only needed for Codex-specific methods (getPictographByLetter, getAllCodexPictographs)
     // NOT needed for getAllPictographVariations (used by Generate)
-    @inject(TYPES.ICodexLetterMappingRepo)
-    @optional()
     private letterMappingRepo?: ICodexLetterMappingRepo
   ) {}
 

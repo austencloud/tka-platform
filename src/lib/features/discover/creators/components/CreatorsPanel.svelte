@@ -9,8 +9,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import { discoverNavigationState } from "../../shared/state/discover-navigation-state.svelte";
@@ -68,12 +67,9 @@
 
   onMount(async () => {
     try {
-      // Ensure community module is loaded (provides IUserRepository)
-      await loadFeatureModule("community");
-
       // Resolve services from DI container
-      userService = resolve<IUserRepository>(TYPES.IUserRepository);
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      userService = container.items.userRepository;
+      hapticService = container.items.hapticFeedback;
 
       // Load creators data (uses cache if already loaded)
       await creatorsDataState.loadCreators(userService, currentUserId);

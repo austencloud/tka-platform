@@ -5,11 +5,9 @@
  * Handles date/time formatting, module/tab label resolution.
  */
 
-import { injectable } from "inversify";
 import type { IFeedbackFormatter } from "../contracts/IFeedbackFormatter";
 import { MODULE_DEFINITIONS } from "$lib/shared/navigation/state/navigation-state.svelte";
 
-@injectable()
 export class FeedbackFormatter implements IFeedbackFormatter {
   /**
    * Format date as "Jan 15, 2024 at 3:45 PM"

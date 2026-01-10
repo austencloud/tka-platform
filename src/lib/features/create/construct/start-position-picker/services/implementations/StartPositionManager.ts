@@ -13,19 +13,13 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IStartPositionManager } from "../contracts/IStartPositionManager";
 import { createPictographData } from "../../../../../../shared/pictograph/shared/domain/factories/createPictographData";
 import { createMotionData } from "../../../../../../shared/pictograph/shared/domain/models/MotionData";
 import type { IGridPositionDeriver } from "../../../../../../shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 
-@injectable()
 export class StartPositionManager implements IStartPositionManager {
-  constructor(
-    @inject(TYPES.IGridPositionDeriver)
-    private gridPositionDeriver: IGridPositionDeriver
-  ) {}
+  constructor(private gridPositionDeriver: IGridPositionDeriver) {}
 
   async getStartPositions(gridMode: GridMode): Promise<PictographData[]> {
     return this.getDefaultStartPositions(gridMode);

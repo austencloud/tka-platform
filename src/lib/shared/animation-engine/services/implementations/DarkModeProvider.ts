@@ -7,11 +7,9 @@
  * 3. Type-safe access to Dark Mode state
  */
 
-import { injectable } from "inversify";
 import type { IDarkModeProvider } from "../contracts/IDarkModeProvider";
 import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
-@injectable()
 export class DarkModeProvider implements IDarkModeProvider {
   private manager = getAnimationVisibilityManager();
   private subscribers = new Map<(darkMode: boolean) => void, () => void>();

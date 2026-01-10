@@ -12,11 +12,9 @@ import {
   type QuizSession,
   type QuizTimerState,
 } from "../../domain/models/quiz-models";
-import { injectable } from "inversify";
 import type { IQuizSessionManager } from "../contracts/IQuizSessionManager";
 import { QuizConfigurator } from "./QuizConfigurator";
 
-@injectable()
 export class QuizSessionManager implements IQuizSessionManager {
   private activeSessions: Map<string, QuizSession> = new Map();
   private timers: Map<string, NodeJS.Timeout> = new Map();

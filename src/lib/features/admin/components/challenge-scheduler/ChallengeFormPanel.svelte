@@ -2,9 +2,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequenceBrowserPanel from "../../../../shared/animation-engine/components/SequenceBrowserPanel.svelte";
   import type { IDiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
-  import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     selectedDate: string | null;
@@ -22,16 +20,8 @@
 
   let { selectedDate, showPanel, onClose, onSchedule }: Props = $props();
 
-  // Services - resolved lazily after module is loaded
-  let thumbnailService = $state<IDiscoverThumbnailProvider | null>(null);
-
-  // Initialize services on mount
-  onMount(async () => {
-    await loadFeatureModule("discover");
-    thumbnailService = tryResolve<IDiscoverThumbnailProvider>(
-      TYPES.IDiscoverThumbnailProvider
-    );
-  });
+  // Services - resolved synchronously via ITI
+  const thumbnailService: IDiscoverThumbnailProvider | null = container.items.discoverThumbnailProvider ?? null;
 
   // Local form state
   let showSequenceBrowser = $state(false);

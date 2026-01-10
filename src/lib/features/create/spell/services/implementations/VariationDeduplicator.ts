@@ -9,8 +9,6 @@
  * across all 8 possible rotations (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°).
  */
 
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -21,7 +19,6 @@ import { rotateSequence } from "$lib/features/create/shared/services/implementat
 /** Number of rotation steps to check (8 x 45° = 360°) */
 const ROTATION_STEPS = 8;
 
-@injectable()
 export class VariationDeduplicator implements IVariationDeduplicator {
   /** Set of canonical hashes for sequences that have been seen */
   private seenHashes = new Set<string>();
@@ -30,9 +27,7 @@ export class VariationDeduplicator implements IVariationDeduplicator {
   private totalCount = 0;
 
   constructor(
-    @inject(TYPES.IGridPositionDeriver)
     private positionDeriver: IGridPositionDeriver,
-    @inject(TYPES.IMotionQueryHandler)
     private motionQueryHandler: IMotionQueryHandler
   ) {}
 

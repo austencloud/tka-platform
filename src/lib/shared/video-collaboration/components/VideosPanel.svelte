@@ -5,11 +5,7 @@
   Replaces inline SequenceVideosSection with a dedicated, spacious interface.
 -->
 <script lang="ts">
-  import {
-    tryResolve,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/container";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
@@ -28,25 +24,15 @@
     onInviteCollaborators?: (video: CollaborativeVideo) => void;
   } = $props();
 
-  let videoService = $state<ICollaborativeVideoManager | null>(null);
-  let hapticService = $state<IHapticFeedback | null>(null);
+  const videoService = container.items.collaborativeVideoManager;
+  const hapticService = container.items.hapticFeedback;
   let videos = $state<CollaborativeVideo[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
   let showUploadSheet = $state(false);
   let selectedVideo = $state<CollaborativeVideo | null>(null);
 
-  onMount(async () => {
-    try {
-      await loadFeatureModule("share");
-    } catch (e) {
-      console.warn("[VideosPanel] Failed to load share module:", e);
-    }
-
-    videoService = tryResolve<ICollaborativeVideoManager>(
-      TYPES.ICollaborativeVideoManager
-    );
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
     loadVideos();
   });
 

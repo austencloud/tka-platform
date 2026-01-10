@@ -8,8 +8,7 @@
   import { Dialog as DialogPrimitive } from "bits-ui";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import BeatGrid from "../../workspace-panel/sequence-display/components/BeatGrid.svelte";
 
@@ -30,8 +29,8 @@
   // Services
   let hapticService: IHapticFeedback;
 
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
   });
 
   // Helper to get sequence display name

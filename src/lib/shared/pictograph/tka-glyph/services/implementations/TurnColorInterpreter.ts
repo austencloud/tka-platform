@@ -7,7 +7,6 @@
  * Ported from legacy TurnsTupleInterpreter logic.
  */
 
-import { injectable } from "inversify";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import { getMotionColor } from "../../../../utils/svg-color-utils";
@@ -32,7 +31,6 @@ type LetterType =
 const BLUE_HEX: TurnNumberColor = getMotionColor(MotionColor.BLUE, "dark");
 const RED_HEX: TurnNumberColor = getMotionColor(MotionColor.RED, "dark");
 
-@injectable()
 export class TurnColorInterpreter {
   /**
    * Determine the colors for top and bottom turn numbers

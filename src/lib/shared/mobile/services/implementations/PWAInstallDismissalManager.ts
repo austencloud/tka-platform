@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   IPWAInstallDismissalManager,
   PWADismissalState,
@@ -19,7 +18,6 @@ const DISMISSAL_DELAYS = {
  * Tracks dismissals and enforces respectful timing between prompts.
  * Uses localStorage for persistence.
  */
-@injectable()
 export class PWAInstallDismissalManager implements IPWAInstallDismissalManager {
   private state: PWADismissalState;
 

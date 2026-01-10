@@ -5,10 +5,8 @@
  * to prevent JSON parsing errors and undefined value issues.
  */
 
-import { injectable } from "inversify";
 import type { IStorageManager } from "../contracts/IStorageManager";
 
-@injectable()
 export class StorageManager implements IStorageManager {
   /**
    * Safely get and parse a value from sessionStorage

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/inversify/container";
-  import { BackgroundTypes } from "$lib/shared/inversify/types/background.types";
+  import { container } from "$lib/shared/di";
   import type { IFishRenderer } from "$lib/shared/background/deep-ocean/services/contracts/IFishRenderer";
   import type { FishMarineLife, FishSpecies } from "$lib/shared/background/deep-ocean/domain/models/DeepOceanModels";
   import { FishAnimator } from "$lib/shared/background/deep-ocean/services/implementations/FishAnimator";
@@ -433,40 +432,26 @@
   }
 
   onMount(() => {
-    // Load the DeepOceanModule first to ensure FishRenderer is available
-    loadDeepOceanModule().then(() => {
-      try {
-        fishRenderer = container.get<IFishRenderer>(BackgroundTypes.IFishRenderer);
-        // Create a local FishAnimator for spine-chain mode (not from DI to avoid singleton issues)
-        fishAnimator = new FishAnimator();
-      } catch (e) {
-        console.error("Failed to get FishRenderer:", e);
-      }
+    // Get fishRenderer from ITI container (deep ocean services are already registered)
+    try {
+      fishRenderer = container.items.fishRenderer;
+      // Create a local FishAnimator for spine-chain mode (not from DI to avoid singleton issues)
+      fishAnimator = new FishAnimator();
+    } catch (e) {
+      console.error("Failed to get FishRenderer:", e);
+    }
 
-      generateGallery();
+    generateGallery();
 
-      // Initial render after canvases are ready
-      setTimeout(() => {
-        galleryFishes.forEach(gf => drawStaticFish(gf));
-      }, 100);
-    });
+    // Initial render after canvases are ready
+    setTimeout(() => {
+      galleryFishes.forEach(gf => drawStaticFish(gf));
+    }, 100);
 
     return () => {
       stopAnimation();
     };
   });
-
-  async function loadDeepOceanModule(): Promise<void> {
-    // Check if module is already loaded
-    if (container.isBound(BackgroundTypes.IFishRenderer)) {
-      return;
-    }
-    // Dynamically load the DeepOceanModule
-    const { deepOceanBackgroundModule } = await import(
-      "$lib/shared/background/deep-ocean/inversify/DeepOceanModule"
-    );
-    await container.load(deepOceanBackgroundModule);
-  }
 </script>
 
 <div class="fish-gallery">

@@ -1,4 +1,3 @@
-import { inject, injectable } from "inversify";
 import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
 import type { IFishRenderer } from "../contracts/IFishRenderer";
 import type { IFishEffectRenderer } from "../contracts/IFishEffectRenderer";
@@ -8,7 +7,6 @@ import type { IFishPatternRenderer } from "../contracts/IFishPatternRenderer";
 import type { IFishBodyRenderer } from "../contracts/IFishBodyRenderer";
 import { SpineChain } from "../../physics/SpineChain";
 import { BodyOutlineCalculator, type Point } from "../../physics/BodyOutlineCalculator";
-import { TYPES } from "$lib/shared/inversify/types";
 
 /**
  * Fish Rendering Orchestrator
@@ -20,17 +18,15 @@ import { TYPES } from "$lib/shared/inversify/types";
  * - Facial features (FishFaceRenderer)
  * - Effects like bioluminescence (FishEffectRenderer)
  */
-
-@injectable()
 export class FishRenderer implements IFishRenderer {
   private bodyOutlineCalculator = new BodyOutlineCalculator();
 
   constructor(
-    @inject(TYPES.IFishEffectRenderer) private effectRenderer: IFishEffectRenderer,
-    @inject(TYPES.IFishFaceRenderer) private faceRenderer: IFishFaceRenderer,
-    @inject(TYPES.IFishFinRenderer) private finRenderer: IFishFinRenderer,
-    @inject(TYPES.IFishPatternRenderer) private patternRenderer: IFishPatternRenderer,
-    @inject(TYPES.IFishBodyRenderer) private bodyRenderer: IFishBodyRenderer
+    private effectRenderer: IFishEffectRenderer,
+    private faceRenderer: IFishFaceRenderer,
+    private finRenderer: IFishFinRenderer,
+    private patternRenderer: IFishPatternRenderer,
+    private bodyRenderer: IFishBodyRenderer
   ) {}
 
   drawFish(ctx: CanvasRenderingContext2D, fish: FishMarineLife[]): void {

@@ -1,9 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { NightSkyBackgroundSystem } from "$lib/shared/background/night-sky/services/NightSkyBackgroundSystem";
-  import { nightSkyBackgroundModule } from "$lib/shared/background/night-sky/inversify/NightSkyModule";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
@@ -59,12 +56,7 @@
       canvas.height = container.clientHeight;
     }
 
-    // Ensure DI module is loaded before creating the system
-    const diContainer = await getContainerInstance();
-    if (!diContainer.isBound(TYPES.INightSkyCalculationService)) {
-      await diContainer.load(nightSkyBackgroundModule);
-    }
-
+    // Night Sky services are now in ITI container - no inversify module needed
     backgroundSystem = NightSkyBackgroundSystem.create();
     const dimensions = { width: canvas.width, height: canvas.height };
     backgroundSystem.initialize(dimensions, quality);

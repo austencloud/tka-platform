@@ -6,8 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IAnnouncementManager } from "$lib/features/admin/services/contracts/IAnnouncementManager";
   import type { Announcement } from "$lib/features/admin/domain/models/announcement-models";
   import NotificationPreferencesPanel from "$lib/features/feedback/components/NotificationPreferencesPanel.svelte";
@@ -26,9 +25,7 @@
 
   onMount(async () => {
     try {
-      announcementService = resolve<IAnnouncementManager>(
-        TYPES.IAnnouncementManager
-      );
+      announcementService = container.items.announcementManager;
       await loadAnnouncements();
     } catch (error) {
       console.error("Failed to initialize notification center:", error);

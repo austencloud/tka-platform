@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type { LightRay, CausticsState } from "../../domain/models/DeepOceanModels";
 import type { ILightRayRenderer } from "../contracts/ILightRayRenderer";
@@ -15,7 +14,6 @@ import type { ILightRayRenderer } from "../contracts/ILightRayRenderer";
  * - Caustic patterns on the ocean floor
  * - Intensity pulsing (clouds passing)
  */
-@injectable()
 export class LightRayRenderer implements ILightRayRenderer {
   drawLightRays(
     ctx: CanvasRenderingContext2D,

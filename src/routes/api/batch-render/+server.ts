@@ -6,8 +6,7 @@
  */
 
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/SequenceExportOptions";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -154,7 +153,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     }
 
     // Resolve rendering service
-    const renderService = resolve<ISequenceRenderer>(TYPES.ISequenceRenderer);
+    const renderService = container.items.sequenceRenderer as ISequenceRenderer;
 
     // Determine if this sequence needs non-radial points shown
     const showNonRadial = requiresNonRadialPoints(sequence);

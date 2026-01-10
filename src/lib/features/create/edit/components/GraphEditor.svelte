@@ -2,8 +2,7 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IRotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
   import { onMount, onDestroy } from "svelte";
   import MainAdjustmentPanel from "./MainAdjustmentPanel.svelte";
@@ -169,10 +168,8 @@
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    rotationOverrideManager = resolve<IRotationOverrideManager>(
-      TYPES.IRotationOverrideManager
-    );
+    hapticService = container.items.hapticFeedback;
+    rotationOverrideManager = container.items.rotationOverrideManager;
 
     // Add keyboard event listener
     window.addEventListener("keydown", handleKeyDown);

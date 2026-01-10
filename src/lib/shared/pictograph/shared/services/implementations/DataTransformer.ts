@@ -5,7 +5,6 @@
  * Extracted from PictographRenderer.
  */
 
-import { injectable } from "inversify";
 import type { BeatData } from "../../../../../features/create/shared/domain/models/BeatData";
 import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import type {
@@ -19,7 +18,6 @@ import type { IDataTransformer } from "../contracts/IDataTransformer";
 
 // Interface moved to contracts/IDataTransformer.ts
 
-@injectable()
 export class DataTransformer implements IDataTransformer {
   /**
    * Convert beat data to pictograph data

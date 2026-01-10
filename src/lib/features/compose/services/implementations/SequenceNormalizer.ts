@@ -5,7 +5,6 @@
  * Always returns StartPositionData (never BeatData) for start positions.
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   ISequenceNormalizer,
@@ -15,7 +14,6 @@ import type { BeatData } from "../../../create/shared/domain/models/BeatData";
 import type { StartPositionData } from "../../../create/shared/domain/models/StartPositionData";
 import { createStartPositionData } from "../../../create/shared/domain/factories/createStartPositionData";
 
-@injectable()
 export class SequenceNormalizer implements ISequenceNormalizer {
   /**
    * Normalize sequence data by separating start position from beats array.

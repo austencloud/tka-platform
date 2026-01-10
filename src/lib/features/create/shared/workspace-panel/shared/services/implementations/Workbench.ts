@@ -9,8 +9,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import { createBeatData } from "../../../../domain/factories/createBeatData";
 import type { BeatData } from "../../../../domain/models/BeatData";
 import type { StartPositionData } from "../../../../domain/models/StartPositionData";
@@ -18,12 +16,9 @@ import type { IPersistenceService } from "../../../../services/contracts/IPersis
 import type { ISequenceRepository } from "../../../../services/contracts/ISequenceRepository";
 import type { IWorkbench } from "../contracts/IWorkbench";
 
-@injectable()
 export class Workbench implements IWorkbench {
   constructor(
-    @inject(TYPES.ISequenceRepository)
     private sequenceService: ISequenceRepository,
-    @inject(TYPES.IPersistenceService)
     private persistenceService: IPersistenceService
   ) {}
 

@@ -5,7 +5,6 @@
  * Skills represent long-term goals across Letter Mastery, Concept Mastery, and Practice Goals.
  */
 
-import { inject, injectable } from "inversify";
 import { auth } from "../../../auth/firebase";
 import type {
   SkillProgression,
@@ -19,7 +18,6 @@ import type {
   SkillProgressMetadata,
 } from "../contracts/ISkillProgressionTracker";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
-import { TYPES } from "../../../inversify/types";
 import { calculateSkillStats } from "./skill-progression/SkillProgressionStats";
 import { getRecommendedSkills } from "./skill-progression/SkillProgressionRecommendations";
 import { findRelevantSkills } from "./skill-progression/SkillProgressionRelevantSkills";
@@ -49,15 +47,12 @@ import {
   updateSkillProgressForUser,
 } from "./skill-progression/SkillProgressionMutations";
 
-@injectable()
 export class SkillProgressionTracker implements ISkillProgressionTracker {
   private _initialized = false;
   private _achievementService: IAchievementManager | null = null;
   private _userProgressCache: Map<string, UserSkillProgress> = new Map();
 
-  constructor(
-    @inject(TYPES.IAchievementManager) achievementService: IAchievementManager
-  ) {
+  constructor(achievementService: IAchievementManager) {
     this._achievementService = achievementService;
   }
 

@@ -4,7 +4,6 @@
  * Manages conversations between users with real-time Firestore subscriptions.
  */
 
-import { injectable } from "inversify";
 import type { Timestamp } from "firebase/firestore";
 import {
   collection,
@@ -35,7 +34,6 @@ import type { IConversationManager } from "../contracts/IConversationManager";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 
-@injectable()
 export class ConversationManager implements IConversationManager {
   private conversationsUnsubscribe: (() => void) | null = null;
   private unreadCountUnsubscribe: (() => void) | null = null;

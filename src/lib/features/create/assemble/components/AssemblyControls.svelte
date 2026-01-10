@@ -10,8 +10,7 @@ Shows contextual action buttons based on current phase:
 <script lang="ts">
   import type { HandPathPhase } from "../state/handpath-assemble-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   const {
     phase,
@@ -38,8 +37,8 @@ Shows contextual action buttons based on current phase:
     phase === "red" ? bluePathLength - redPathLength : 0
   );
 
-  // Resolve haptic feedback service
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  // Access haptic feedback service from ITI container
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   function handleNextHand() {
     hapticService?.trigger("selection");

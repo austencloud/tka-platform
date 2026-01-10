@@ -8,7 +8,6 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { injectable, inject, optional } from "inversify";
 import type { IBeatOperator } from "../contracts/IBeatOperator";
 import type {
   ICreateModuleState,
@@ -16,7 +15,6 @@ import type {
 } from "../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
-import { TYPES } from "$lib/shared/inversify/types";
 
 // Import handlers
 import { removeBeat } from "./beat-operations/BeatRemovalHandler";
@@ -29,14 +27,9 @@ import {
 } from "./beat-operations/PropTypeHandler";
 import { updateRotationDirection } from "./beat-operations/RotationDirectionHandler";
 
-@injectable()
 export class BeatOperator implements IBeatOperator {
   constructor(
-    @inject(TYPES.IMotionQueryHandler)
-    @optional()
     private motionQueryHandler: IMotionQueryHandler | null,
-    @inject(TYPES.IGridModeDeriver)
-    @optional()
     private gridModeDeriver: IGridModeDeriver | null
   ) {}
 

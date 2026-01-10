@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   FishMarineLife,
   FishSpecies,
@@ -138,7 +137,6 @@ const SPECIES_SHAPE: Record<
  * Legacy Fish Renderer - Kept for before/after comparison
  * Uses static bezier curves + sine wave body flex
  */
-@injectable()
 export class FishRendererLegacy implements IFishRenderer {
   drawFish(ctx: CanvasRenderingContext2D, fish: FishMarineLife[]): void {
     // Sort by depth layer for proper z-ordering (far first, near last)

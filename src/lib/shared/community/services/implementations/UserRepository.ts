@@ -5,7 +5,6 @@
  * Includes follow/unfollow functionality with atomic Firestore transactions.
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   getDocs,
@@ -72,7 +71,6 @@ interface FollowDocument {
   createdAt: Timestamp;
 }
 
-@injectable()
 export class UserRepository implements IUserRepository {
   private readonly USERS_COLLECTION = "users";
 

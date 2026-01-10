@@ -1,6 +1,5 @@
 import type { AccessibilitySettings } from "$lib/shared/background/shared/domain/models/background-models";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
-import { injectable } from "inversify";
 import type {
   StarConfig,
   Star,
@@ -16,7 +15,6 @@ const MS_PER_LUNAR_CYCLE = SYNODIC_MONTH_DAYS * MS_PER_DAY;
 // Reference new moon (known astronomical event)
 const REFERENCE_NEW_MOON = new Date("2024-01-11T11:57:00Z").getTime();
 
-@injectable()
 export class NightSkyCalculationService implements INightSkyCalculationService {
   private observerLatitude = 40; // Default: NYC area (northern hemisphere)
 

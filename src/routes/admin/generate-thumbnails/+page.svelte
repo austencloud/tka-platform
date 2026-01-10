@@ -26,11 +26,7 @@
     createSequenceData,
     type SequenceData,
   } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import {
-    loadSharedModules,
-    resolveAsync,
-  } from "$lib/shared/inversify/container";
+  import { container } from "$lib/shared/di";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 
   // Legacy data types from meta.json files
@@ -302,10 +298,8 @@
   async function loadRenderService() {
     try {
       console.log("Loading render service...");
-      await loadSharedModules();
-      renderService = await resolveAsync<ISequenceRenderer>(
-        TYPES.ISequenceRenderer
-      );
+      // ITI container is ready synchronously - get service directly
+      renderService = container.items.sequenceRenderer as ISequenceRenderer;
       console.log("Render service loaded:", !!renderService);
     } catch (error) {
       console.error("Failed to load render service:", error);

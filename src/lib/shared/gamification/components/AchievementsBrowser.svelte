@@ -13,7 +13,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "../../inversify/di";
+  import { container } from "../../di";
   import { authState } from "../../auth/state/authState.svelte";
   import { getLevelProgress } from "../domain/constants/xp-constants";
   import Drawer from "../../foundation/ui/Drawer.svelte";
@@ -80,13 +80,9 @@
   // Initialize services on mount
   onMount(async () => {
     try {
-      achievementService = await resolve<IAchievementManager>(
-        TYPES.IAchievementManager
-      );
-      challengeService = await resolve<IDailyChallengeManager>(
-        TYPES.IDailyChallengeManager
-      );
-      streakService = await resolve<IStreakTracker>(TYPES.IStreakTracker);
+      achievementService = container.items.achievementManager;
+      challengeService = container.items.dailyChallengeManager;
+      streakService = container.items.streakTracker;
     } catch (err) {
       console.error("Failed to initialize AchievementsPanel services:", err);
       isLoading = false;

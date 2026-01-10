@@ -5,7 +5,6 @@
  * Includes interpolation for smooth remote player movement.
  */
 
-import { injectable } from 'inversify';
 import {
 	ref,
 	update,
@@ -26,7 +25,6 @@ import type {
 } from '../../domain/multiplayer-models';
 import { MULTIPLAYER_CONFIG as CONFIG } from '../../domain/multiplayer-models';
 
-@injectable()
 export class GalleryPositionSyncer implements IGalleryPositionSyncer {
 	private sessionId: string | null = null;
 	private syncing = false;

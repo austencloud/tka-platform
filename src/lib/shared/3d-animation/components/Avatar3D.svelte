@@ -18,7 +18,6 @@
   import { onMount, onDestroy, untrack } from "svelte";
   import { T, useTask } from "@threlte/core";
   import { Vector3 } from "three";
-  import { loadFeatureModule } from "$lib/shared/inversify/container";
   import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
   import type { IIKSolver } from "../services/contracts/IIKSolver";
   import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
@@ -204,9 +203,6 @@
     }
 
     try {
-      // Load realm module (ensures GLTF loader etc are available)
-      await loadFeatureModule("realm");
-
       // Create per-avatar service instances manually
       // This ensures the animator uses the SAME skeleton instance we load models into
       // (Using DI would give animator its own skeleton via constructor injection)

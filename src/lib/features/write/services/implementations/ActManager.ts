@@ -1,10 +1,8 @@
 /**
  * ActManager - Implementation for Write tab Act operations
  */
-import { injectable } from "inversify";
 import type { ActSummary, IActManager } from "../contracts/IActManager";
 
-@injectable()
 export class ActManager implements IActManager {
   private acts: Map<string, ActSummary> = new Map();
   private initialized = false;

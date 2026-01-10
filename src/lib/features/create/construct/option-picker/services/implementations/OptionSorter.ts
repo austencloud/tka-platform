@@ -6,18 +6,15 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { SortMethod } from "../../domain/option-picker-types";
 import type { IPositionAnalyzer } from "../contracts/IPositionAnalyzer";
 import type { IReversalChecker } from "../contracts/IReversalChecker";
 import type { IOptionSorter } from "../contracts/IOptionSorter";
 
-@injectable()
 export class OptionSorter implements IOptionSorter {
   constructor(
-    @inject(TYPES.IReversalChecker) private reversalChecker: IReversalChecker,
-    @inject(TYPES.IPositionAnalyzer) private positionAnalyzer: IPositionAnalyzer
+    private reversalChecker: IReversalChecker,
+    private positionAnalyzer: IPositionAnalyzer
   ) {}
 
   /**

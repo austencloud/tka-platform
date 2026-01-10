@@ -1,9 +1,6 @@
 <script lang="ts">
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
   import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
@@ -45,16 +42,11 @@
   const logger = createComponentLogger("SequenceDisplay");
 
   // Services
-  let hapticService: IHapticFeedback;
+  const hapticService = container.items.hapticFeedback;
 
   // Get context for UndoButton and library save
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
-
-  // Initialize haptic service on mount
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
 
   // Library save handler - use panelState for mutual exclusivity with other panels
   function handleSaveButtonClick() {

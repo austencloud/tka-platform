@@ -1,8 +1,6 @@
-import { injectable } from "inversify";
 import type { OceanParticle } from "../../domain/models/DeepOceanModels";
 import type { IParticleRenderer } from "../contracts/IParticleRenderer";
 
-@injectable()
 export class ParticleRenderer implements IParticleRenderer {
   drawParticles(
     ctx: CanvasRenderingContext2D,

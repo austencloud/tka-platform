@@ -20,12 +20,10 @@ import {
   RotationDirection,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { TYPES } from "$lib/shared/inversify/types";
 import type {
   GridPosition,
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { inject, injectable } from "inversify";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
@@ -35,12 +33,8 @@ import {
 import type { SliceSize } from "../../domain/models/circular-models";
 import type { BeatData } from "../../../../shared/domain/models/BeatData";
 
-@injectable()
 export class StrictMirroredLOOPExecutor {
-  constructor(
-    @inject(TYPES.IOrientationCalculator)
-    private OrientationCalculator: IOrientationCalculator
-  ) {}
+  constructor(private OrientationCalculator: IOrientationCalculator) {}
 
   /**
    * Execute the strict mirrored LOOP

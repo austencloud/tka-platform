@@ -16,7 +16,7 @@
   import ResultsScreen from "./ResultsScreen.svelte";
   import type { IPositionDetector } from "../services/contracts/IPositionDetector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ITrainChallengeManager } from "../services/contracts/ITrainChallengeManager";
   import type { IPerformanceHistoryTracker } from "../services/contracts/IPerformanceHistoryTracker";
@@ -71,17 +71,11 @@
 
   // Services
   let detectionService: IPositionDetector | null = $state(null);
-  let hapticService: IHapticFeedback | undefined;
+  const hapticService = container.items.hapticFeedback;
   let isDetectionReady = $state(false);
-  const challengeService = resolve<ITrainChallengeManager>(
-    TYPES.ITrainChallengeManager
-  );
-  const achievementService = resolve<IAchievementManager>(
-    TYPES.IAchievementManager
-  );
-  const historyService = resolve<IPerformanceHistoryTracker>(
-    TYPES.IPerformanceHistoryTracker
-  );
+  const challengeService = container.items.trainChallengeManager;
+  const achievementService = container.items.achievementManager;
+  const historyService = container.items.performanceHistoryTracker;
 
   // Session tracking
   let sessionStartTime = 0;
@@ -135,7 +129,7 @@
 
   async function initDetection() {
     try {
-      detectionService = resolve<IPositionDetector>(TYPES.IPositionDetector);
+      detectionService = container.items.positionDetector;
       await detectionService.initialize();
       isDetectionReady = true;
     } catch (error) {
@@ -527,7 +521,6 @@
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
     initDetection();
   });
 

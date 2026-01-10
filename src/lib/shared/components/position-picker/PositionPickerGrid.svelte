@@ -8,8 +8,7 @@ Uses IStartPositionManager to load variations and displays actual pictographs
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IStartPositionManager } from "$lib/features/create/construct/start-position-picker/services/contracts/IStartPositionManager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
@@ -50,12 +49,10 @@ Uses IStartPositionManager to load variations and displays actual pictographs
   onMount(async () => {
     try {
       // Load haptic service
-      hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      hapticService = container.items.hapticFeedback ?? null;
 
       // Try to use StartPositionManager if available (in Create module)
-      StartPositionManager = tryResolve<IStartPositionManager>(
-        TYPES.IStartPositionManager
-      );
+      StartPositionManager = container.items.startPositionManager ?? null;
 
       // Load initial variations
       loadVariations(gridModeProp);

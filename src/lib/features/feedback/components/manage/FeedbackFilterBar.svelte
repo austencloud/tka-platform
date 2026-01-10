@@ -1,7 +1,6 @@
 <!-- FeedbackFilterBar - Responsive filters composed of child components -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { FeedbackManageState } from "../../state/feedback-manage-state.svelte";
   import { createFilterBarUIState } from "../../state/filter-bar-ui-state.svelte";
@@ -21,12 +20,8 @@
 
   const { manageState }: Props = $props();
 
-  let hapticService: IHapticFeedback | undefined;
+  const hapticService = container.items.hapticFeedback;
   const uiState = createFilterBarUIState(() => manageState);
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
 
   function clearSearch() {
     hapticService?.trigger("selection");

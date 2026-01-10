@@ -6,9 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { loadSharedModules } from "$lib/shared/inversify/container";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IAnnouncementManager } from "../services/contracts/IAnnouncementManager";
   import type { Announcement } from "../domain/models/announcement-models";
   import AnnouncementModal from "./AnnouncementModal.svelte";
@@ -29,12 +27,7 @@
 
   onMount(async () => {
     try {
-      // Wait for Tier 2 modules (including admin) to load
-      await loadSharedModules();
-
-      announcementService = resolve<IAnnouncementManager>(
-        TYPES.IAnnouncementManager
-      );
+      announcementService = container.items.announcementManager;
 
       if (authState.isAuthenticated) {
         checkForAnnouncements();

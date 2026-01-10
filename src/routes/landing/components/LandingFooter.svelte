@@ -4,6 +4,7 @@
 
   const footerLinks = [
     { href: APP_DOMAIN, label: "App" },
+    { href: "/about", label: "About" },
     { href: "#features", label: "Features" },
     { href: "#notation", label: "Notation" },
     { href: "#loops", label: "LOOPs" },

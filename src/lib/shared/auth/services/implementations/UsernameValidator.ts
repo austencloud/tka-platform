@@ -5,7 +5,6 @@
  * Uses Firestore transactions to prevent race conditions when claiming usernames.
  */
 
-import { injectable } from 'inversify';
 import {
 	doc,
 	getDoc,
@@ -18,7 +17,6 @@ import type { IUsernameValidator } from '../contracts/IUsernameValidator';
 import type { UsernameValidationResult } from '../../domain/models/UsernameValidation';
 import { validateUsernameFormat, formatUsername } from '../../domain/models/UsernameValidation';
 
-@injectable()
 export class UsernameValidator implements IUsernameValidator {
 	private readonly USERNAMES_COLLECTION = 'usernames';
 	private readonly USERS_COLLECTION = 'users';

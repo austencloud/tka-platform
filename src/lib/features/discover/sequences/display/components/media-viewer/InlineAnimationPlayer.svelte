@@ -14,9 +14,8 @@
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { container } from "$lib/shared/di";
+    import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 
   // BPM/Speed conversion constant
@@ -159,8 +158,7 @@
   onMount(async () => {
     try {
       // Load animator module
-      await loadFeatureModule("animate");
-
+      
       sequenceService = resolve<ISequenceRepository>(TYPES.ISequenceRepository);
       playbackController = resolve<IAnimationPlaybackController>(
         TYPES.IAnimationPlaybackController

@@ -7,8 +7,7 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
@@ -37,9 +36,7 @@ export class QuestionGeneratorService {
     if (this.isInitialized) return;
 
     try {
-      this.letterQueryHandler = resolve<ILetterQueryHandler>(
-        TYPES.ILetterQueryHandler
-      );
+      this.letterQueryHandler = container.items.letterQueryHandler;
 
       // Load ALL pictograph variations from CSV (Diamond mode)
       this.allPictographs =

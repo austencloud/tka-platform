@@ -6,12 +6,10 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { injectable } from "inversify";
 import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
 import type { IDiscoverSorter } from "../contracts/IDiscoverSorter";
 import { sortSequencesByKineticAlphabet } from "$lib/features/discover/shared/utils/kinetic-alphabet-sort";
 
-@injectable()
 export class DiscoverSorter implements IDiscoverSorter {
   sortSequences(
     sequences: SequenceData[],

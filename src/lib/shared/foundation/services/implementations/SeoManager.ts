@@ -5,10 +5,8 @@
  * and meta tag management.
  */
 
-import { injectable } from "inversify";
 import type { ISeoManager, SEOLinkOptions } from "../contracts/ISeoManager";
 
-@injectable()
 export class SeoManager implements ISeoManager {
   /**
    * Generate a special SEO link that will redirect users to the SPA

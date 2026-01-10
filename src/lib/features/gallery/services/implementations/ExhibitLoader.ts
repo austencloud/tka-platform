@@ -4,23 +4,17 @@
  * Loads sequences from various sources and assigns them to gallery exhibit slots.
  */
 
-import { injectable, inject } from "inversify";
 import type { IExhibitLoader } from "../contracts/IExhibitLoader";
 import type { GalleryLayout } from "../../domain/models/GalleryLayout";
 import type { Exhibit, ExhibitLoadOptions } from "../../domain/models/Exhibit";
 import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-import { TYPES } from "$lib/shared/inversify/types";
 import {
   AVATAR_OFFSET_FROM_WALL,
   AVATAR_OFFSET_X,
 } from "../../domain/constants/gallery-dimensions";
 
-@injectable()
 export class ExhibitLoader implements IExhibitLoader {
-  constructor(
-    @inject(TYPES.ILibraryRepository)
-    private readonly libraryRepository: ILibraryRepository
-  ) {}
+  constructor(private readonly libraryRepository: ILibraryRepository) {}
 
   async loadExhibits(
     layout: GalleryLayout,

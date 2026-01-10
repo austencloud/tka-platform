@@ -22,7 +22,7 @@
     ISheetRouter,
     RouteState,
   } from "../navigation/services/contracts/ISheetRouter";
-  import { resolve, TYPES } from "../inversify/di";
+  import { container } from "$lib/shared/di";
 
   // Legacy spotlight state (from global app state)
   let showSpotlight = $derived(getShowSpotlight());
@@ -39,9 +39,9 @@
       return;
     }
 
-    // Resolve sheet router service
+    // Resolve sheet router service via ITI container
     try {
-      sheetRouterService = resolve<ISheetRouter>(TYPES.ISheetRouter);
+      sheetRouterService = container.items.sheetRouter;
     } catch (error) {
       console.error("Failed to resolve SheetRouter:", error);
       return;

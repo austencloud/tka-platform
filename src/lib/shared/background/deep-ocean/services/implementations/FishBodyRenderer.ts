@@ -1,4 +1,3 @@
-import { inject, injectable } from "inversify";
 import type {
   FishMarineLife,
   FishSpecies,
@@ -7,7 +6,6 @@ import type { IFishBodyRenderer } from "../contracts/IFishBodyRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 import { SpineChain } from "../../physics/SpineChain";
 import { BodyOutlineCalculator, type Point } from "../../physics/BodyOutlineCalculator";
-import { TYPES } from "$lib/shared/inversify/types";
 
 /**
  * Body Shape Configuration
@@ -77,13 +75,10 @@ const SPECIES_SHAPE: Record<
 /**
  * Renders fish body shapes (spine-based and legacy Bezier).
  */
-@injectable()
 export class FishBodyRenderer implements IFishBodyRenderer {
   private bodyOutlineCalculator = new BodyOutlineCalculator();
 
-  constructor(
-    @inject(TYPES.IColorCalculator) private colorCalc: IColorCalculator
-  ) {}
+  constructor(private colorCalc: IColorCalculator) {}
 
   /**
    * Draw body from spine outline with gradient

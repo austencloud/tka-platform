@@ -18,8 +18,7 @@
   } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   import MobileSegmentControl from "./visibility/MobileSegmentControl.svelte";
@@ -215,7 +214,7 @@
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback as IHapticFeedback;
 
     // Load initial pictograph visibility
     tkaGlyphVisible = visibilityManager.getRawGlyphVisibility("tkaGlyph");

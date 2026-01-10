@@ -5,13 +5,11 @@
  * following the microservices architecture pattern.
  */
 
-import { injectable } from "inversify";
 import { StorageManager } from "$lib/shared/foundation/services/implementations/StorageManager";
 
 const storageService = new StorageManager();
 import type { IFavoritesManager } from "../contracts/IFavoritesManager";
 
-@injectable()
 export class FavoritesManager implements IFavoritesManager {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning
   private readonly STORAGE_KEY = `tka-${this.CACHE_VERSION}-favorites`;

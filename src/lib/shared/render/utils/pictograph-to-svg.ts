@@ -15,8 +15,7 @@ import type { BeatData } from "../../../features/create/shared/domain/models/Bea
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import PictographContainer from "../../pictograph/shared/components/PictographContainer.svelte";
 import { mount, tick, unmount } from "svelte";
-import { resolve as resolveService } from "../../inversify/di";
-import { TYPES } from "../../inversify/types";
+import { container } from "../../di";
 import type { IGlyphCache } from "../services/implementations/GlyphCache";
 
 /**
@@ -284,14 +283,14 @@ async function waitForArrowsAndPropsCalculated(
  * Wait for all images in the container to load and TKA glyphs to render
  * This ensures TKA glyph images are fully loaded before capturing SVG
  */
-async function waitForImagesLoaded(container: HTMLElement): Promise<void> {
+async function waitForImagesLoaded(domContainer: HTMLElement): Promise<void> {
   // First, wait for TKA glyph elements to appear (they render conditionally)
   let attempts = 0;
   const maxAttempts = 50; // 5 seconds max
 
   while (attempts < maxAttempts) {
-    const tkaGlyphs = container.querySelectorAll(".tka-glyph");
-    const images = container.querySelectorAll("image[href]");
+    const tkaGlyphs = domContainer.querySelectorAll(".tka-glyph");
+    const images = domContainer.querySelectorAll("image[href]");
 
     if (tkaGlyphs.length > 0 && images.length > 0) {
       break;
@@ -302,7 +301,7 @@ async function waitForImagesLoaded(container: HTMLElement): Promise<void> {
   }
 
   // Now wait for the actual images to load
-  const images = container.querySelectorAll("image[href]");
+  const images = domContainer.querySelectorAll("image[href]");
 
   if (images.length === 0) {
     await new Promise((resolve) => setTimeout(resolve, 200));
@@ -310,7 +309,7 @@ async function waitForImagesLoaded(container: HTMLElement): Promise<void> {
   }
 
   // Get glyph cache service
-  const glyphCache = await resolveService<IGlyphCache>(TYPES.IGlyphCache);
+  const glyphCache = container.items.glyphCache;
 
   const imagePromises = Array.from(images).map(async (img) => {
     const imageElement = img as SVGImageElement;

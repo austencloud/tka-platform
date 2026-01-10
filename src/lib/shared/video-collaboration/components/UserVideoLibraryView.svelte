@@ -9,8 +9,7 @@
   Also shows pending invites badge.
 -->
 <script lang="ts">
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type {
     ICollaborativeVideoManager,
     UserVideoLibrary,
@@ -28,17 +27,13 @@
 
   type Tab = "all" | "created" | "collaborations" | "invites";
 
-  let videoService = $state<ICollaborativeVideoManager>();
+  const videoService = container.items.collaborativeVideoManager;
   let library = $state<UserVideoLibrary | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
   let currentTab = $state<Tab>("all");
 
-  onMount(async () => {
-    const container = await getContainerInstance();
-    videoService = container.get<ICollaborativeVideoManager>(
-      TYPES.ICollaborativeVideoManager
-    );
+  onMount(() => {
     loadLibrary();
   });
 

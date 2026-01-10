@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -15,7 +14,6 @@ import { areSequencesEqual } from "../../utils/sequence-comparison";
  * Handles transferring sequences to the Constructor tab.
  * Manages the comparison logic and state synchronization.
  */
-@injectable()
 export class SequenceTransferHandler implements ISequenceTransferHandler {
   checkTransfer(
     sourceSequence: SequenceData,

@@ -8,8 +8,7 @@
   // Note: Vendor-prefixed types (webkit*, moz*, ms*) are declared in src/lib/shared/types/vendor-prefixed.d.ts
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IMobileFullscreenManager } from "$lib/shared/mobile/services/contracts/IMobileFullscreenManager";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   // Services
@@ -25,15 +24,13 @@
     const cleanupFns: Array<() => void> = [];
 
     try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      hapticService = container.items.hapticFeedback;
     } catch (error) {
       console.warn("Failed to resolve haptic feedback service:", error);
     }
 
     try {
-      fullscreenService = resolve<IMobileFullscreenManager>(
-        TYPES.IMobileFullscreenManager
-      );
+      fullscreenService = container.items.mobileFullscreenManager;
     } catch (error) {
       console.warn("Failed to resolve mobile fullscreen service:", error);
       fullscreenService = null;

@@ -26,7 +26,7 @@ import { ThumbnailRenderQueue } from "$lib/features/discover/sequences/display/s
 import { ThumbnailRenderer } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderer";
 import { ThumbnailRenderOrchestrator } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
 import { FavoritesManager } from "$lib/features/discover/shared/services/implementations/FavoritesManager";
-import { FilterPersister } from "$lib/shared/persistence/services/implementations/FilterPersister";
+import { FilterPersister as DiscoverFilterPersister } from "$lib/shared/persistence/services/implementations/FilterPersister";
 import { Navigator } from "$lib/features/discover/sequences/navigation/services/implementations/Navigator";
 import { DiscoverDeleter } from "$lib/features/discover/shared/services/implementations/DiscoverDeleter";
 import { DiscoverEventHandler } from "$lib/features/discover/shared/services/implementations/DiscoverEventHandler";
@@ -94,7 +94,7 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
     .add({
       // User preferences
       favoritesManager: () => new FavoritesManager(),
-      filterPersister: () => new FilterPersister(),
+      discoverFilterPersister: () => new DiscoverFilterPersister(),
     })
     .add({
       // Navigation (named discoverNavigator to avoid conflict with loop-labeler)

@@ -27,8 +27,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IPlatformDetector } from "$lib/shared/mobile/services/contracts/IPlatformDetector";
   import type { IShareHubExportOrchestrator } from "$lib/shared/share-hub/services/contracts/IShareHubExportOrchestrator";
-  import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -103,33 +102,31 @@
 
   // Resolve core services
   try {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   } catch (error) {
     console.warn("⚠️ Failed to resolve haptic feedback service:", error);
   }
 
   try {
-    exportOrchestrator = resolve<IShareHubExportOrchestrator>(
-      TYPES.IShareHubExportOrchestrator
-    );
+    exportOrchestrator = container.items.shareHubExportOrchestrator;
   } catch (error) {
     console.warn("⚠️ Failed to resolve export orchestrator:", error);
   }
 
   try {
-    platformService = resolve<IPlatformDetector>(TYPES.IPlatformDetector);
+    platformService = container.items.platformDetector;
   } catch (error) {
     console.warn("⚠️ Failed to resolve platform detection service:", error);
   }
 
   try {
-    sheetRouterService = resolve<ISheetRouter>(TYPES.ISheetRouter);
+    sheetRouterService = container.items.sheetRouter;
   } catch (error) {
     console.warn("⚠️ Failed to resolve sheet router service:", error);
   }
 
   try {
-    sequenceService = resolve<ISequenceRepository>(TYPES.ISequenceRepository);
+    sequenceService = container.items.sequenceRepository;
   } catch (error) {
     console.warn("⚠️ Failed to resolve sequence repository:", error);
   }
@@ -277,19 +274,11 @@
 
   async function loadAnimationServices() {
     try {
-      await loadFeatureModule("animate");
-      playbackController = resolve<IAnimationPlaybackController>(
-        TYPES.IAnimationPlaybackController
-      );
-      videoExportOrchestrator = resolve<IVideoExportOrchestrator>(
-        TYPES.IVideoExportOrchestrator
-      );
-      loopabilityChecker = resolve<ISequenceLoopabilityChecker>(
-        TYPES.ISequenceLoopabilityChecker
-      );
-      layoutService = resolve<IResponsiveLayoutManager>(
-        TYPES.IResponsiveLayoutManager
-      );
+      // Animation services available synchronously via ITI
+      playbackController = container.items.animationPlaybackController;
+      videoExportOrchestrator = container.items.videoExportOrchestrator;
+      loopabilityChecker = container.items.sequenceLoopabilityChecker;
+      layoutService = container.items.responsiveLayoutManager;
       setAnimationPlaybackRef(playbackController);
 
       // Pass video orchestrator to export orchestrator for animation exports

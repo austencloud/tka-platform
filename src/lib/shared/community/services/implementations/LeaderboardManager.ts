@@ -3,7 +3,6 @@
  * Service implementation for leaderboard data and rankings
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   query,
@@ -49,7 +48,6 @@ interface FirestoreUserData extends DocumentData {
   skillsCompleted?: number;
 }
 
-@injectable()
 export class LeaderboardManager implements ILeaderboardManager {
   constructor() {}
 

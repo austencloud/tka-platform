@@ -5,8 +5,7 @@ Provides consistent styling and interaction patterns for all generation setting 
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import CardHeader from "./shared/CardHeader.svelte";
 
@@ -41,8 +40,8 @@ Provides consistent styling and interaction patterns for all generation setting 
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    rippleService = resolve<IRippleEffect>(TYPES.IRippleEffect);
+    hapticService = container.items.hapticFeedback;
+    rippleService = container.items.rippleEffect;
 
     // 🌊 Attach ripple effect to clickable cards
     if (clickable && cardElement) {

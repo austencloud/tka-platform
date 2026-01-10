@@ -8,8 +8,7 @@
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
+  import { container } from "$lib/shared/di";
   import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
   import type {
     DuetSequence,
@@ -43,9 +42,7 @@
 
   onMount(async () => {
     try {
-      duetPersister = resolve<IDuetPersister>(
-        ANIMATION_3D_TYPES.IDuetPersister
-      );
+      duetPersister = container.items.duetPersister;
       await loadDuets();
     } catch (e) {
       error = "Failed to initialize duet browser";

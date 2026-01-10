@@ -4,7 +4,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   const {
@@ -28,7 +28,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Allow container queries to take effect after layout animation completes
     // (workspace collapse animation is 450ms, add buffer for safety)

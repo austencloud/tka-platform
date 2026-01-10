@@ -14,8 +14,7 @@
 -->
 <script lang="ts">
   import { getShareHubState } from "../../state/share-hub-state.svelte";
-  import { loadSharedModules, tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -42,18 +41,14 @@
 
   // Load render service on mount
   $effect(() => {
-    loadSharedModules()
-      .then(() => {
-        renderService = tryResolve<ISequenceRenderer>(TYPES.ISequenceRenderer);
-        if (!renderService) {
-          console.warn(
-            "⚠️ ISequenceRenderer not available after loading shared modules"
-          );
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to load shared modules:", error);
-      });
+    try {
+      renderService = container.items.sequenceRenderer;
+      if (!renderService) {
+        console.warn("⚠️ ISequenceRenderer not available in container");
+      }
+    } catch (error) {
+      console.error("Failed to get sequenceRenderer from container:", error);
+    }
   });
 
   // Sync settings from manager and listen for changes

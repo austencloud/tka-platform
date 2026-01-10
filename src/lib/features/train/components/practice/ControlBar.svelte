@@ -6,9 +6,8 @@
 -->
 <script lang="ts">
   import { TrainMode, PracticeMode } from "../../domain/enums/TrainEnums";
-  import { tryResolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
 
   interface Props {
     mode: TrainMode;
@@ -34,11 +33,7 @@
     onSettingsClick,
   }: Props = $props();
 
-  let hapticService: IHapticFeedback | null = null;
-
-  onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   // Get icon for current practice mode
   const modeIcon = $derived(() => {

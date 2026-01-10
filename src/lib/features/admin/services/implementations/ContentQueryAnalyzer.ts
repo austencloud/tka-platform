@@ -5,7 +5,6 @@
  * Handles top sequences and other content-specific queries.
  */
 
-import { injectable } from "inversify";
 import { collection, query, getDocs, orderBy, limit } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { TopSequenceData } from "../contracts/IAnalyticsDataProvider";
@@ -36,7 +35,6 @@ export interface IContentQueryAnalyzer {
   getTopSequences(limit: number): Promise<TopSequenceData[]>;
 }
 
-@injectable()
 export class ContentQueryAnalyzer implements IContentQueryAnalyzer {
   /**
    * Get top sequences by views from the publicSequences collection

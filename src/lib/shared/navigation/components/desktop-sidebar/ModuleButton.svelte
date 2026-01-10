@@ -2,7 +2,7 @@
 <!-- Button for a module that can expand/collapse to show sections -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ModuleDefinition } from "../../domain/types";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -40,7 +40,7 @@
   const inboxUnreadCount = $derived(inboxState.totalUnreadCount);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleClick() {

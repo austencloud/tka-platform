@@ -1,9 +1,13 @@
-import { injectable } from "inversify";
-import type { FishSprite } from "../../domain/models/DeepOceanModels";
 import type {
   IFishSpriteManager,
   PreRenderedSprite,
 } from "../contracts/IFishSpriteManager";
+
+/** Fish sprite definition */
+interface FishSprite {
+  name: string;
+  path: string;
+}
 
 /** Color variant definition for pre-rendering */
 interface ColorVariant {
@@ -12,7 +16,6 @@ interface ColorVariant {
   variantName: string;
 }
 
-@injectable()
 export class FishSpriteManager implements IFishSpriteManager {
   // Base sprites from Kenney pack
   private readonly baseSprites: FishSprite[] = [

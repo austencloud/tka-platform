@@ -1,5 +1,4 @@
 import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
-import { injectable } from "inversify";
 import {
   allClockwisePairs,
   allCounterClockwisePairs,
@@ -17,7 +16,6 @@ import type {
  *
  * Matches legacy HandpathCalculator logic.
  */
-@injectable()
 export class HandpathDirectionCalculator implements IHandpathDirectionCalculator {
   calculateDirection(
     startLocation: GridLocation,

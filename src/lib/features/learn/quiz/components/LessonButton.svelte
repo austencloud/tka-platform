@@ -7,8 +7,7 @@ and smooth hover animations.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { QuizType } from "../domain/enums/quiz-enums";
 
@@ -31,7 +30,7 @@ and smooth hover animations.
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Get icon and enhanced text based on game type

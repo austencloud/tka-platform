@@ -8,10 +8,8 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import SimpleGlassScroll from "$lib/shared/foundation/ui/SimpleGlassScroll.svelte";
-  import { onMount } from "svelte";
   import { createCodexState } from "../state/codex-state.svelte";
   import CodexControlPanel from "./CodexControlPanel.svelte";
   import CodexPictographGrid from "./CodexPictographGrid.svelte";
@@ -30,11 +28,7 @@
   // Create codex state using runes
   const codexState = createCodexState();
 
-  let hapticService: IHapticFeedback;
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   // Initialize pictographs when component mounts - only once
   $effect(() => {

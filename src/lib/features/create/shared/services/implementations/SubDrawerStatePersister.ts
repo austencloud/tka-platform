@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   ISubDrawerStatePersister,
   SubDrawerType,
@@ -13,7 +12,6 @@ const SUB_DRAWER_KEY = "tka_sequence_actions_sub_drawer";
  * - Survives HMR (hot module replacement)
  * - Clears when browser tab closes (session end)
  */
-@injectable()
 export class SubDrawerStatePersister implements ISubDrawerStatePersister {
   getActiveSubDrawer(): SubDrawerType {
     if (typeof sessionStorage === "undefined") return null;

@@ -15,8 +15,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -64,8 +63,8 @@
   let error = $state<string | null>(null);
 
   // Services
-  let userService: IUserRepository;
-  let hapticService: IHapticFeedback;
+  const userService = container.items.userRepository;
+  const hapticService = container.items.hapticFeedback;
 
   // Computed
   const currentUserId = $derived(authState.user?.uid);
@@ -95,9 +94,6 @@
 
   onMount(async () => {
     try {
-      await loadFeatureModule("community");
-      userService = resolve<IUserRepository>(TYPES.IUserRepository);
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
       await loadUsers();
     } catch (err) {
       console.error("[UserBrowserPanel] Error initializing:", err);

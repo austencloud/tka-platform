@@ -12,7 +12,6 @@
  * - Supports cancellation
  */
 
-import { injectable } from "inversify";
 import type { IThumbnailRenderQueue, QueueStats } from "../contracts/IThumbnailRenderQueue";
 
 interface QueuedTask<T> {
@@ -25,7 +24,6 @@ interface QueuedTask<T> {
 
 const DEFAULT_MAX_CONCURRENT = 3;
 
-@injectable()
 export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
   private queue: QueuedTask<unknown>[] = [];
   private activeCount = 0;
@@ -69,15 +67,17 @@ export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
   cancel(id: string): void {
     const index = this.queue.findIndex((t) => t.id === id);
     if (index !== -1) {
-      const task = this.queue.splice(index, 1)[0];
-      task?.reject(new Error("Cancelled"));
+      // Remove from queue without rejecting - the component is being destroyed
+      // or switching to a new key, so no one is waiting for this promise anymore.
+      // Let the promise hang rather than creating unhandled rejections.
+      this.queue.splice(index, 1);
       this.pendingPromises.delete(id);
     }
   }
 
   cancelAll(): void {
+    // Clear all pending promises without rejecting - avoids unhandled rejections
     for (const task of this.queue) {
-      task.reject(new Error("Cancelled"));
       this.pendingPromises.delete(task.id);
     }
     this.queue = [];

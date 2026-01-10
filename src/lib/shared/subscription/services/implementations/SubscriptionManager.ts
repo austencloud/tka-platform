@@ -7,7 +7,6 @@
  * Single $10/mo premium tier for simplicity.
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   addDoc,
@@ -37,7 +36,6 @@ const DEFAULT_SUBSCRIPTION_INFO: SubscriptionInfo = {
   cancelAtPeriodEnd: false,
 };
 
-@injectable()
 export class SubscriptionManager implements ISubscriptionManager {
   /**
    * Ensure a customer document exists for the current user.

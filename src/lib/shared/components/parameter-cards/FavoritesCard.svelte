@@ -4,8 +4,7 @@ Filter-specific card (not used in Generate)
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let {
@@ -25,7 +24,7 @@ Filter-specific card (not used in Generate)
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback ?? null;
   });
 
   function handleToggle() {

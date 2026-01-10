@@ -151,7 +151,7 @@ export const pictographContainer = createContainer()
     propSvgLoader: () => propSvgLoader,
 
     // Arrow calculation services (leaf)
-    arrowRotationCalculator: () => new ArrowRotationCalculator(),
+    // Note: arrowRotationCalculator moved to Layer 4 (needs specialPlacer, handpathDirectionCalculator)
     dashLocationCalculator: () => new DashLocationCalculator(),
     handpathDirectionCalculator: () => new HandpathDirectionCalculator(),
     // Note: QuadrantIndexCalculator needs arrowQuadrantCalculator, moved to layer 2
@@ -254,17 +254,26 @@ export const pictographContainer = createContainer()
         deps.arrowSvgLoader
       ),
 
-    // Special placer depends on specialPlacementDataProvider, turnsTupleGenerator, specialPlacementLookup
+    // Special placer depends on specialPlacementDataProvider, turnsTupleGenerator, specialPlacementLookup, gridModeDeriver
     specialPlacer: () =>
       new SpecialPlacer(
         deps.specialPlacementDataProvider,
         deps.turnsTupleGenerator,
-        deps.specialPlacementLookup
+        deps.specialPlacementLookup,
+        deps.gridModeDeriver
       ),
   }))
 
   // === Layer 4: Services depending on Layers 1-3 ===
   .add((deps) => ({
+    // ArrowRotationCalculator needs specialPlacer (Layer 3), rotationAngleOverrideKeyGenerator (Layer 1), handpathDirectionCalculator (Layer 1)
+    arrowRotationCalculator: () =>
+      new ArrowRotationCalculator(
+        deps.specialPlacer,
+        deps.rotationAngleOverrideKeyGenerator,
+        deps.handpathDirectionCalculator
+      ),
+
     // Rotation override manager depends on turnsTupleGenerator, rotationAngleOverrideKeyGenerator, gridModeDeriver
     rotationOverrideManager: () => {
       if (!rotationOverrideManager) {

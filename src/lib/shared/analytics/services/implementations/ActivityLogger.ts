@@ -5,7 +5,6 @@
  * Events are stored in users/{userId}/activityLog subcollection.
  */
 
-import { injectable, inject } from "inversify";
 import {
   collection,
   addDoc,
@@ -19,7 +18,6 @@ import {
 } from "firebase/firestore";
 import { logEvent } from "firebase/analytics";
 import { getFirestoreInstance, auth, analytics } from "../../../auth/firebase";
-import { TYPES } from "../../../inversify/types";
 import type {
   IActivityLogger,
   ActivityQueryOptions,
@@ -37,17 +35,13 @@ import type {
 const WRITE_BUFFER_MS = 1000;
 const MAX_BUFFER_SIZE = 10;
 
-@injectable()
 export class ActivityLogger implements IActivityLogger {
   private writeBuffer: ActivityEvent[] = [];
   private flushTimeout: ReturnType<typeof setTimeout> | null = null;
   private sessionTrackingService: ISessionTracker | null = null;
   private isFlushingBuffer = false; // Mutex to prevent concurrent flushes
 
-  constructor(
-    @inject(TYPES.ISessionTracker)
-    sessionTrackingService: ISessionTracker
-  ) {
+  constructor(sessionTrackingService: ISessionTracker) {
     this.sessionTrackingService = sessionTrackingService;
 
     // Set up session end callback

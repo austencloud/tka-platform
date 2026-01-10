@@ -6,8 +6,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { QuizMode } from "../domain/enums/quiz-enums";
 
@@ -26,7 +25,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Calculate slider position based on selected mode

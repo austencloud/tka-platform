@@ -14,9 +14,8 @@ Follows Svelte 5 runes + microservices architecture.
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import type {
+  import { container } from "$lib/shared/di";
+    import type {
     ExploreNavigationConfig,
     ExploreNavigationItem,
   } from "../domain/models/navigation-models";
@@ -41,7 +40,7 @@ Follows Svelte 5 runes + microservices architecture.
   let hapticService: IHapticFeedback | null = $state(null);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Handle section header click

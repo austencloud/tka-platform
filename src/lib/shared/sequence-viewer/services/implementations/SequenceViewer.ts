@@ -5,8 +5,6 @@
  * in the standalone Sequence Viewer context.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "../../../inversify/di";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -18,12 +16,9 @@ import {
   removeBeatFromSequence,
 } from "../../../foundation/domain/models/SequenceData";
 
-@injectable()
 export class SequenceViewer implements ISequenceViewer {
   constructor(
-    @inject(TYPES.IPersistenceService)
     private persistenceService: IPersistenceService,
-    @inject(TYPES.ISequenceEncoder)
     private SequenceEncoder: ISequenceEncoder
   ) {}
 

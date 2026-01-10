@@ -5,8 +5,6 @@
  * Handles summary metrics, content statistics, and engagement metrics.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { ISystemStateManager } from "../contracts/ISystemStateManager";
 import type {
   SummaryMetrics,
@@ -54,12 +52,8 @@ const EMPTY_ENGAGEMENT_METRICS: EngagementMetrics = {
   totalAchievementsPossible: 0,
 };
 
-@injectable()
 export class UserMetricsAnalyzer implements IUserMetricsAnalyzer {
-  constructor(
-    @inject(TYPES.ISystemStateManager)
-    private readonly systemStateManager: ISystemStateManager
-  ) {}
+  constructor(private readonly systemStateManager: ISystemStateManager) {}
 
   /**
    * Get summary metrics from cached user data

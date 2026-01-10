@@ -8,8 +8,7 @@
   gently remind the user again after dismissal.
 -->
 <script lang="ts">
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
   import { onMount } from "svelte";
   import type { IMobileFullscreenManager } from "../services/contracts/IMobileFullscreenManager";
 
@@ -134,9 +133,7 @@
 
   onMount(() => {
     try {
-      fullscreenService = resolve<IMobileFullscreenManager>(
-        TYPES.IMobileFullscreenManager
-      );
+      fullscreenService = container.items.mobileFullscreenManager;
     } catch (error) {
       console.warn("Failed to resolve mobile fullscreen service:", error);
       fullscreenService = null;

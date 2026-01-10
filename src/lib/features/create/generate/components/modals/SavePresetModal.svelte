@@ -4,8 +4,7 @@ Provides a beautiful, unified experience for creating new presets
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import IconGrid from "./IconGrid.svelte";
   import ModalActions from "./ModalActions.svelte";
@@ -24,7 +23,7 @@ Provides a beautiful, unified experience for creating new presets
 
   onMount(() => {
     // Service resolution
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Focus the modal for accessibility
     modalElement?.focus();

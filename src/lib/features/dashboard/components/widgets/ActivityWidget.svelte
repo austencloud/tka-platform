@@ -5,8 +5,7 @@
    */
 
   import { onMount } from "svelte";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ISessionTracker } from "$lib/shared/analytics/services/contracts/ISessionTracker";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
@@ -85,7 +84,7 @@
   });
 
   onMount(() => {
-    sessionService = tryResolve<ISessionTracker>(TYPES.ISessionTracker);
+    sessionService = container.items.sessionTracker;
 
     // Ensure library sequences are loaded
     if (

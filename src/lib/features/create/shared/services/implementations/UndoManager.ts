@@ -7,7 +7,6 @@
  * Uses Svelte 5 runes for reactive state management.
  */
 
-import { injectable } from "inversify";
 import type {
   CreateModuleStateSnapshot,
   IUndoManager,
@@ -58,7 +57,6 @@ const OPERATION_DESCRIPTIONS: Record<UndoOperationType, string> = {
   SPELL_APPLY_LOOP: "Spell Apply LOOP",
 };
 
-@injectable()
 export class UndoManager implements IUndoManager {
   // Pure TypeScript arrays - reactivity handled by wrapper
   private _undoHistory: UndoHistoryEntry[] = [];

@@ -8,7 +8,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { injectable } from "inversify";
 import type { BeatData } from "../../domain/models/BeatData";
 import type { IBuildConstructSectionCoordinator as IConstructCoordinator } from "../contracts/IConstructCoordinator";
 
@@ -20,7 +19,6 @@ interface ComponentWithEventHandler {
   handleEvent?: (eventType: string, data: unknown) => void;
 }
 
-@injectable()
 export class ConstructCoordinator implements IConstructCoordinator {
   private components: Record<string, ComponentWithEventHandler> = {};
   private isHandlingSequenceModification = false;

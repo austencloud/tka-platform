@@ -15,8 +15,7 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
@@ -205,9 +204,9 @@
 
   // Lifecycle
   onMount(() => {
-    viewerService = tryResolve<ISequenceViewer>(TYPES.ISequenceViewer);
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    libraryService = tryResolve<ILibraryRepository>(TYPES.ILibraryRepository);
+    viewerService = container.items.sequenceViewer;
+    hapticService = container.items.hapticFeedback;
+    libraryService = container.items.libraryRepository;
 
     updateWidth();
     window.addEventListener("resize", updateWidth);

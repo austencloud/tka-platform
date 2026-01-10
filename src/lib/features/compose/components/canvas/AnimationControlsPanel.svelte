@@ -18,8 +18,7 @@
     animationSettings,
     TrailMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { resolve } from "$lib/shared/inversify/resolve-utils";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   // Subcomponents
@@ -145,7 +144,7 @@
     if (!browser) return;
 
     // Initialize settings service
-    settingsService = resolve<ISettingsState>(TYPES.ISettingsState);
+    settingsService = container.items.settingsState as ISettingsState;
 
     const checkViewport = () => {
       viewportHeight = window.innerHeight;

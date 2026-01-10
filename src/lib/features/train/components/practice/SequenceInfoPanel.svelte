@@ -6,9 +6,8 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { tryResolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
 
   interface Props {
     sequence: SequenceData | null;
@@ -18,11 +17,7 @@
 
   let { sequence = null, totalBeats = 0, onBrowseSequences }: Props = $props();
 
-  let hapticService: IHapticFeedback | null = null;
-
-  onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   function handleClick() {
     hapticService?.trigger("selection");

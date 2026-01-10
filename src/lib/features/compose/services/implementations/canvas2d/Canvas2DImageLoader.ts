@@ -11,6 +11,7 @@
  */
 
 import type { ISVGGenerator } from "../../contracts/ISVGGenerator";
+import { container } from "$lib/shared/di";
 
 const VIEWBOX_SIZE = 950;
 
@@ -39,9 +40,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const { TYPES } = await import("$lib/shared/inversify/types");
-      const { resolve } = await import("$lib/shared/inversify/di");
-      const svgGenerator = resolve<ISVGGenerator>(TYPES.ISVGGenerator);
+      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
 
       // Generate blue and red prop SVGs
       const [bluePropData, redPropData] = await Promise.all([
@@ -96,9 +95,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const { TYPES } = await import("$lib/shared/inversify/types");
-      const { resolve } = await import("$lib/shared/inversify/di");
-      const svgGenerator = resolve<ISVGGenerator>(TYPES.ISVGGenerator);
+      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
 
       // Generate blue and red prop SVGs with different types
       // Pass darkMode to use local preview state instead of global
@@ -157,9 +154,7 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      const { TYPES } = await import("$lib/shared/inversify/types");
-      const { resolve } = await import("$lib/shared/inversify/di");
-      const svgGenerator = resolve<ISVGGenerator>(TYPES.ISVGGenerator);
+      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
 
       // Generate secondary prop SVGs with custom colors
       const [secondaryBluePropData, secondaryRedPropData] = await Promise.all([
@@ -203,11 +198,9 @@ export class Canvas2DImageLoader {
     canvasSize: number
   ): Promise<HTMLImageElement> {
     try {
-      const { TYPES } = await import("$lib/shared/inversify/types");
-      const { resolve } = await import("$lib/shared/inversify/di");
       const { GridMode } =
         await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
-      const svgGenerator = resolve<ISVGGenerator>(TYPES.ISVGGenerator);
+      const svgGenerator = container.items.svgGenerator as ISVGGenerator;
 
       // Convert gridMode string to GridMode enum
       const gridModeEnum =

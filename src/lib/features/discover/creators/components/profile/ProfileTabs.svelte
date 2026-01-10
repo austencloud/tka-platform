@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import PanelTabs from "$lib/shared/components/panel/PanelTabs.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
@@ -41,7 +41,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleSequenceClick(sequence: LibrarySequence) {

@@ -6,8 +6,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequenceBrowserPanel from "../../../shared/animation-engine/components/SequenceBrowserPanel.svelte";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -26,9 +25,8 @@
   let isMobile = $state(false);
   let isLoadingFullSequence = $state(false);
 
-  onMount(async () => {
-    const container = await getContainerInstance();
-    loaderService = container.get<IDiscoverLoader>(TYPES.IDiscoverLoader);
+  onMount(() => {
+    loaderService = container.items.discoverLoader;
   });
 
   $effect(() => {

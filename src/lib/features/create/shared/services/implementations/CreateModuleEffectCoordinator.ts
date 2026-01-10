@@ -7,7 +7,6 @@
  * Domain: Create module - Effect Orchestration
  */
 
-import { injectable } from "inversify";
 import type {
   ICreateModuleEffectCoordinator,
   CreateModuleEffectConfig,
@@ -26,7 +25,6 @@ import { createPendingEditEffect } from "../../state/managers/PendingEditManager
 import { createPropTypeSyncEffect } from "../../state/managers/PropTypeSyncManager.svelte";
 import { createAutosaveEffect } from "../../state/managers/AutosaveManager.svelte";
 
-@injectable()
 export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordinator {
   setupEffects(config: CreateModuleEffectConfig): () => void {
     const {

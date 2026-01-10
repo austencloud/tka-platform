@@ -8,8 +8,7 @@
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IAnnouncementManager } from "$lib/features/admin/services/contracts/IAnnouncementManager";
   import type { Announcement } from "$lib/features/admin/domain/models/announcement-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -32,9 +31,7 @@
     }
 
     try {
-      announcementService = tryResolve<IAnnouncementManager>(
-        TYPES.IAnnouncementManager
-      );
+      announcementService = container.items.announcementManager;
       if (announcementService) {
         // Get announcements user hasn't dismissed
         const active = await announcementService.getActiveAnnouncementsForUser(

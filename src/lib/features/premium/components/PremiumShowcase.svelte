@@ -6,7 +6,7 @@
 <script lang="ts">
   import { logEvent } from "firebase/analytics";
   import { analytics } from "../../../shared/auth/firebase";
-  import { tryResolve, TYPES } from "../../../shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { ISubscriptionManager } from "../../../shared/subscription/services/contracts/ISubscriptionManager";
   import type { IHapticFeedback } from "../../../shared/application/services/contracts/IHapticFeedback";
   import PremiumHero from "./PremiumHero.svelte";
@@ -40,9 +40,12 @@
   }
 
   $effect(() => {
-    subscriptionService = tryResolve<ISubscriptionManager>(
-      TYPES.ISubscriptionManager
-    );
+    // Try to get subscription manager - may not be available
+    try {
+      subscriptionService = container.items.subscriptionManager ?? null;
+    } catch {
+      subscriptionService = null;
+    }
 
     // Track page view
     trackEvent("premium_page_viewed", {

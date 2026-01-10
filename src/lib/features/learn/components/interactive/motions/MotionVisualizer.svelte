@@ -5,8 +5,7 @@ Shows shift (adjacent), dash (opposite), and static (stay) motions with animated
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     GRID_POINTS_4,
     lerp,
@@ -45,7 +44,7 @@ Shows shift (adjacent), dash (opposite), and static (stay) motions with animated
     showMotionType = true,
   }: Props = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   let animating = $state(false);
   let animationProgress = $state(0);

@@ -8,14 +8,12 @@
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../pictograph/shared/domain/models/MotionData";
-import { injectable } from "inversify";
 import type {
   IDataTransformer,
   MotionRenderData,
   PictographDisplayData,
 } from "../contracts/IDataTransformer";
 
-@injectable()
 export class DataTransformer implements IDataTransformer {
   /**
    * Transform pictograph data into display-ready format

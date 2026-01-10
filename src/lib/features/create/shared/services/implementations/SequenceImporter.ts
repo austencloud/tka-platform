@@ -14,19 +14,14 @@ import type { IEnumMapper } from "$lib/shared/foundation/services/contracts/data
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { ISequenceImporter } from "../contracts/ISequenceImporter";
 import { parseStrict } from "../../../../../shared/validation/validation-utils";
 import { PngMetadataArraySchema } from "$lib/shared/foundation/domain/schemas";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
-@injectable()
 export class SequenceImporter implements ISequenceImporter {
-  constructor(
-    @inject(TYPES.IEnumMapper) private readonly enumMapper: IEnumMapper
-  ) {}
+  constructor(private readonly enumMapper: IEnumMapper) {}
   /**
    * Import sequence from PNG metadata
    */

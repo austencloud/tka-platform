@@ -10,8 +10,7 @@
   - Optimized for Phase 1 of AI tagging system
 -->
 <script lang="ts">
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ITagManager } from "../../services/contracts/ITagManager";
   import type { LibraryTag } from "../../domain/models/Tag";
   import { TAG_COLORS } from "../../domain/models/Tag";
@@ -33,7 +32,7 @@
   }: Props = $props();
 
   // Services
-  const tagService = tryResolve<ITagManager>(TYPES.ITagManager);
+  const tagService = container.items.tagManager;
 
   // State
   let inputValue = $state("");

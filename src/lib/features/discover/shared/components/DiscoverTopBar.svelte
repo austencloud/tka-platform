@@ -15,9 +15,8 @@ Structure:
   import type { Snippet } from "svelte";
   import { discoverNavigationState } from "../state/discover-navigation-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
 
   interface Props {
     children?: Snippet;
@@ -34,7 +33,7 @@ Structure:
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Reactive state from navigation

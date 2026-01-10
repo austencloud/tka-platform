@@ -4,7 +4,6 @@
  * Handles CRUD operations for system announcements.
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   doc,
@@ -22,7 +21,6 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { IAnnouncementManager } from "../contracts/IAnnouncementManager";
 import type { Announcement } from "../../domain/models/announcement-models";
 
-@injectable()
 export class AnnouncementManager implements IAnnouncementManager {
   private readonly ANNOUNCEMENTS_COLLECTION = "announcements";
 

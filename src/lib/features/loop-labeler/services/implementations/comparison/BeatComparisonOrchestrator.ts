@@ -1,4 +1,3 @@
-import { injectable, inject } from "inversify";
 import type { IBeatComparisonOrchestrator } from "../../contracts/IBeatComparisonOrchestrator";
 import type { IRotationComparer } from "../../contracts/IRotationComparer";
 import type { IReflectionComparer } from "../../contracts/IReflectionComparer";
@@ -13,21 +12,15 @@ import {
   ROTATE_90_CCW,
   ROTATE_90_CW,
 } from "../../../domain/constants/transformation-maps";
-import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
 
 /**
  * Orchestrator that combines comparison services and manages beat pair generation.
  */
-@injectable()
 export class BeatComparisonOrchestrator implements IBeatComparisonOrchestrator {
   constructor(
-    @inject(LOOPLabelerTypes.IRotationComparer)
     private rotationService: IRotationComparer,
-    @inject(LOOPLabelerTypes.IReflectionComparer)
     private reflectionService: IReflectionComparer,
-    @inject(LOOPLabelerTypes.ISwapInvertComparer)
     private swapInvertService: ISwapInvertComparer,
-    @inject(LOOPLabelerTypes.ICandidateFormatter)
     private formattingService: ICandidateFormatter
   ) {}
 

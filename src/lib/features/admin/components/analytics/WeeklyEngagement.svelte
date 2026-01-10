@@ -8,7 +8,7 @@
    * Accessibility: WCAG AAA compliant
    */
   import { onMount } from "svelte";
-  import { resolve, TYPES, loadFeatureModule } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type {
     ISystemStateManager,
     CachedUserMetadata,
@@ -46,10 +46,7 @@
 
   onMount(async () => {
     try {
-      await loadFeatureModule("admin");
-      const systemStateService = resolve<ISystemStateManager>(
-        TYPES.ISystemStateManager
-      );
+      const systemStateService = container.items.systemStateManager;
       const state = await systemStateService.getSystemState();
       users = state.users;
 

@@ -10,8 +10,7 @@
   import { getTimelineState } from "../state/timeline-state.svelte";
   import TimelineClip from "./TimelineClip.svelte";
   import { timeToPixels } from "../domain/timeline-types";
-  import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
 
   interface Props {
@@ -76,8 +75,7 @@
       let sequence = sequenceData;
       if (sequenceData._needsFullLoad) {
         try {
-          await loadFeatureModule("discover");
-          const loader = tryResolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
+          const loader = container.items.discoverLoader as IDiscoverLoader;
           if (loader) {
             const fullSequence = await loader.loadFullSequenceData(
               sequenceData.word || sequenceData.name || sequenceData.id

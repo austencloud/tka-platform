@@ -8,12 +8,7 @@
 
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import {
-    resolve,
-    loadPixiModule,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { CellConfig } from "../../domain/types";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
@@ -44,19 +39,12 @@
   const hasSequence = $derived(cell.sequences.length > 0);
 
   // Initialize services on mount
-  onMount(async () => {
+  onMount(() => {
     try {
       loading = true;
 
-      // Ensure animator module is loaded (handles HMR recovery)
-      await loadFeatureModule("animate");
-
-      // Load Pixi module on-demand
-      await loadPixiModule();
-
-      playbackController = resolve(
-        TYPES.IAnimationPlaybackController
-      ) as IAnimationPlaybackController;
+      playbackController = container.items
+        .animationPlaybackController as IAnimationPlaybackController;
 
       initialized = true;
       loading = false;

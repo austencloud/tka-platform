@@ -8,7 +8,6 @@
  */
 
 import { browser } from "$app/environment";
-import { injectable } from "inversify";
 import type {
   ISheetRouter,
   SheetType,
@@ -16,7 +15,6 @@ import type {
   AnimationPanelState,
 } from "../contracts/ISheetRouter";
 
-@injectable()
 export class SheetRouter implements ISheetRouter {
   // ============================================================================
   // Private Helpers

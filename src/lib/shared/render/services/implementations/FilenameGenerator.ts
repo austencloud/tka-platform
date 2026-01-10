@@ -4,7 +4,6 @@
  * Generates appropriate filenames for exported sequences.
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
 
@@ -31,7 +30,6 @@ export interface IFilenameGenerator {
   validateFilename(filename: string): boolean;
 }
 
-@injectable()
 export class FilenameGenerator implements IFilenameGenerator {
   generateFilename(
     sequence: SequenceData,

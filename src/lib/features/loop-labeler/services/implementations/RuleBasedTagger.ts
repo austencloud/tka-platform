@@ -5,7 +5,6 @@
  * Applies simple rules based on sequence features to generate tag suggestions.
  */
 
-import { injectable } from "inversify";
 import type { IRuleBasedTagger } from "../contracts/IRuleBasedTagger";
 import type { SequenceFeatures } from "../../domain/models/sequence-features";
 import type {
@@ -19,7 +18,6 @@ import {
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-@injectable()
 export class RuleBasedTagger implements IRuleBasedTagger {
   /**
    * Suggest all applicable tags for a sequence

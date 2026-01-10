@@ -8,19 +8,9 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import {
-    loadFeatureModule,
-    resolveAsync,
-  } from "$lib/shared/inversify/container";
-  import { GALLERY_TYPES } from "./inversify/gallery.types";
-  import { ANIMATION_3D_TYPES } from "$lib/shared/3d-animation/inversify/animation-3d.types";
-  import type { IGalleryLayoutGenerator } from "./services/contracts/IGalleryLayoutGenerator";
-  import type { IExhibitLoader } from "./services/contracts/IExhibitLoader";
+  import { container } from "$lib/shared/di";
   import type { IPropStateInterpolator } from "$lib/shared/3d-animation/services/contracts/IPropStateInterpolator";
   import type { ISequenceConverter } from "$lib/shared/3d-animation/services/contracts/ISequenceConverter";
-  import type { IGallerySessionManager } from "./multiplayer/services/contracts/IGallerySessionManager";
-  import type { IGalleryPositionSyncer } from "./multiplayer/services/contracts/IGalleryPositionSyncer";
   import { createGalleryState } from "./state/gallery-state.svelte";
   import { createGallerySettings } from "./state/gallery-settings.svelte";
   import { createMultiplayerState, type MultiplayerStateInstance } from "./multiplayer/state/multiplayer-state.svelte";
@@ -53,37 +43,18 @@
     galleryState.setLoading(true);
 
     try {
-      // Load required feature modules
-      // - gamification: needed for IAchievementManager (dependency of ILibraryRepository)
-      // - library: needed for ILibraryRepository (dependency of IExhibitLoader)
-      // - realm: needed for 3D animation services
-      await Promise.all([
-        loadFeatureModule("gamification"),
-        loadFeatureModule("library"),
-        loadFeatureModule("realm"),
-      ]);
-
-      const propInterpolator = await resolveAsync<IPropStateInterpolator>(
-        ANIMATION_3D_TYPES.IPropStateInterpolator
-      );
-      const sequenceConverter = await resolveAsync<ISequenceConverter>(
-        ANIMATION_3D_TYPES.ISequenceConverter
-      );
+      // Get 3D animation services from ITI container
+      const propInterpolator = container.items.propStateInterpolator;
+      const sequenceConverter = container.items.sequenceConverter;
       avatarServiceDeps = { propInterpolator, sequenceConverter };
 
-      // Resolve gallery services
-      const layoutGenerator = resolve<IGalleryLayoutGenerator>(
-        GALLERY_TYPES.IGalleryLayoutGenerator
-      );
-      const exhibitLoader = resolve<IExhibitLoader>(GALLERY_TYPES.IExhibitLoader);
+      // Get gallery services from ITI container
+      const layoutGenerator = container.items.galleryLayoutGenerator;
+      const exhibitLoader = container.items.exhibitLoader;
 
-      // Resolve multiplayer services
-      const sessionManager = resolve<IGallerySessionManager>(
-        GALLERY_TYPES.IGallerySessionManager
-      );
-      const positionSyncer = resolve<IGalleryPositionSyncer>(
-        GALLERY_TYPES.IGalleryPositionSyncer
-      );
+      // Get multiplayer services from ITI container
+      const sessionManager = container.items.gallerySessionManager;
+      const positionSyncer = container.items.galleryPositionSyncer;
 
       // Initialize multiplayer state
       multiplayerState = createMultiplayerState(sessionManager, positionSyncer);

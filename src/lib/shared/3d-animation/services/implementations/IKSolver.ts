@@ -5,7 +5,6 @@
  * Primary use: positioning hands on staff positions.
  */
 
-import { injectable } from "inversify";
 import { Vector3, Quaternion, Matrix4, Euler } from "three";
 import type { Bone } from "three";
 import type {
@@ -18,7 +17,6 @@ import type {
 } from "../contracts/IIKSolver";
 import type { BoneChain } from "../contracts/IAvatarSkeletonBuilder";
 
-@injectable()
 export class IKSolver implements IIKSolver {
   private maxIterations = 10;
   private convergenceThreshold = 0.01;

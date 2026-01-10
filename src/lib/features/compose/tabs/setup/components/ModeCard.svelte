@@ -7,8 +7,7 @@
    */
 
   import type { ComposeMode } from "$lib/features/compose/shared/state/compose-module-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
@@ -70,7 +69,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   try {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   } catch (error) {
     console.warn("ModeCard: Failed to resolve HapticFeedback", error);
   }

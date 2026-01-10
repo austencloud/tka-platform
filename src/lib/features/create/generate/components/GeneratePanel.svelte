@@ -12,8 +12,7 @@ Card-based architecture with integrated Generate button:
 -->
 <script lang="ts">
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
@@ -91,13 +90,13 @@ Card-based architecture with integrated Generate button:
   // ===== Device Service Integration =====
   onMount(() => {
     try {
-      const deviceService = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+      const deviceService = container.items.deviceDetector;
       deviceState.initializeDevice(deviceService);
     } catch (error) {
       // Fallback handled in deviceState
     }
     try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      hapticService = container.items.hapticFeedback;
     } catch {
       // Optional service
     }

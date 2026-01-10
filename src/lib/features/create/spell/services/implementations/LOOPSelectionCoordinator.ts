@@ -6,8 +6,6 @@
  * Phase 2: LOOP Selection
  */
 
-import { inject, injectable } from "inversify";
-import { SPELL_TYPES } from "./spell-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
@@ -20,12 +18,8 @@ import type {
 } from "../contracts/ILOOPSelectionCoordinator";
 import type { SpellPreferences } from "../../domain/models/spell-models";
 
-@injectable()
 export class LOOPSelectionCoordinator implements ILOOPSelectionCoordinator {
-  constructor(
-    @inject(SPELL_TYPES.ISpellServiceLoader)
-    private serviceLoader: ISpellServiceLoader
-  ) {}
+  constructor(private serviceLoader: ISpellServiceLoader) {}
 
   async applyBridge(
     sequence: SequenceData,

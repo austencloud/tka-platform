@@ -8,9 +8,7 @@
 
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
+  import { container } from "$lib/shared/di";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { IDuetPersister } from "../../services/contracts/IDuetPersister";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -78,10 +76,8 @@
 
   onMount(async () => {
     try {
-      discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-      duetPersister = resolve<IDuetPersister>(
-        ANIMATION_3D_TYPES.IDuetPersister
-      );
+      discoverLoader = container.items.discoverLoader;
+      duetPersister = container.items.duetPersister;
       await loadSequences();
     } catch (e) {
       error = "Failed to initialize";

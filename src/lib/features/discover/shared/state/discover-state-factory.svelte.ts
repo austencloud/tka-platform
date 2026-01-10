@@ -6,8 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { resolve, tryResolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
 import type { IDiscoverFilter } from "../../sequences/display/services/contracts/IDiscoverFilter";
 import type { IDiscoverLoader } from "../../sequences/display/services/contracts/IDiscoverLoader";
@@ -37,20 +36,18 @@ interface PersistedControlsState {
 
 export function createExploreState() {
   // Services - Use specialized services directly instead of orchestration layer
-  const loaderService = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-  const filterService = resolve<IDiscoverFilter>(TYPES.IDiscoverFilter);
-  const sortService = resolve<IDiscoverSorter>(TYPES.IDiscoverSorter);
-  const Navigator = resolve<INavigator>(TYPES.INavigator);
-  const SectionManager = resolve<ISectionManager>(TYPES.ISectionManager);
-  const FavoritesManager = tryResolve<IFavoritesManager>(
-    TYPES.IFavoritesManager
-  );
+  const loaderService = container.items.discoverLoader;
+  const filterService = container.items.discoverFilter;
+  const sortService = container.items.discoverSorter;
+  const Navigator = container.items.discoverNavigator;
+  const SectionManager = container.items.discoverSectionManager;
+  const FavoritesManager = container.items.favoritesManager;
 
   // Library service for "My Library" mode - lazily resolved
   let libraryService: ILibraryRepository | null = null;
   function getLibraryRepository(): ILibraryRepository | null {
     if (!libraryService) {
-      libraryService = tryResolve<ILibraryRepository>(TYPES.ILibraryRepository);
+      libraryService = container.items.libraryRepository;
     }
     return libraryService;
   }

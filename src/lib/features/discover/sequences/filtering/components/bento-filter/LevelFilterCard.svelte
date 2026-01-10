@@ -4,9 +4,8 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
@@ -24,7 +23,7 @@ Supports levels 1-3 with TKA color gradients (sky blue, silver, gold)
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // TKA Level colors matching the existing pattern

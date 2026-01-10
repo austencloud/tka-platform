@@ -17,7 +17,7 @@ Matches the desktop version exactly:
   import type { IAnimator } from "$lib/shared/application/services/contracts/IAnimator";
   import type { IAspectLayoutPlanner } from "../../services/contracts/IAspectLayoutPlanner";
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { TypeFilter } from "../../domain/option-picker-types";
   import OptionViewerSection from "./OptionViewerSection.svelte";
@@ -28,13 +28,9 @@ Matches the desktop version exactly:
   let gridFitCalculator: IOptionGridFitCalculator;
 
   onMount(() => {
-    animationService = resolve<IAnimator>(TYPES.IAnimator);
-    aspectLayoutPlanner = resolve<IAspectLayoutPlanner>(
-      TYPES.IAspectLayoutPlanner
-    );
-    gridFitCalculator = resolve<IOptionGridFitCalculator>(
-      TYPES.IGridFitCalculator
-    );
+    animationService = container.items.animator;
+    aspectLayoutPlanner = container.items.aspectLayoutPlanner;
+    gridFitCalculator = container.items.optionGridFitCalculator;
   });
 
   // Animation functions following established app patterns

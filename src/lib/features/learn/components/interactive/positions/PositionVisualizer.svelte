@@ -4,8 +4,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   type HandPosition = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
   type PositionType = "alpha" | "beta" | "gamma";
@@ -26,7 +25,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     onPositionChange?: (left: HandPosition, right: HandPosition) => void;
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   // Grid point coordinates (8-point grid)
   const GRID_POINTS: Record<

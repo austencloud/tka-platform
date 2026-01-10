@@ -10,7 +10,7 @@
     TYPE_CONFIG,
     STATUS_CONFIG,
   } from "../../domain/models/feedback-models";
-  import { tryResolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
   import { onMount } from "svelte";
 
@@ -32,13 +32,10 @@
   }: Props = $props();
 
   // Responsive layout
-  let layoutService: IResponsiveLayoutManager | null = $state(null);
+  const layoutService = container.items.responsiveLayoutManager;
   let isSideBySide = $state(false);
 
   onMount(() => {
-    layoutService = tryResolve<IResponsiveLayoutManager>(
-      TYPES.IResponsiveLayoutManager
-    );
     if (layoutService) {
       isSideBySide = layoutService.shouldUseSideBySideLayout();
       // Subscribe to layout changes

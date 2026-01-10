@@ -5,10 +5,7 @@
   Saves the current constructed sequence to the user's Firebase library.
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
 
   // Props
   const {
@@ -20,11 +17,7 @@
   } = $props();
 
   // Services
-  let hapticService: IHapticFeedback;
-
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   function handleClick() {
     if (disabled) return;

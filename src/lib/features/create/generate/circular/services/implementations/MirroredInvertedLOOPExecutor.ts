@@ -22,12 +22,10 @@ import {
   MotionType,
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { TYPES } from "$lib/shared/inversify/types";
 import type {
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { inject, injectable } from "inversify";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ILOOPParameterProvider } from "$lib/features/create/generate/shared/services/contracts/ILOOPParameterProvider";
 import {
@@ -37,12 +35,9 @@ import {
 } from "../../domain/constants/strict-loop-position-maps";
 import type { SliceSize } from "../../domain/models/circular-models";
 
-@injectable()
 export class MirroredInvertedLOOPExecutor {
   constructor(
-    @inject(TYPES.IOrientationCalculator)
     private OrientationCalculator: IOrientationCalculator,
-    @inject(TYPES.ILOOPParameterProvider)
     private loopParams: ILOOPParameterProvider
   ) {}
 

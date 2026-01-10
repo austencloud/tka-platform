@@ -50,15 +50,9 @@
     "checkJs": false,
 
     // ============================================================================
-    // DECORATOR SUPPORT (For InversifyJS)
-    // ============================================================================
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": false, // Disabled to avoid 189 import type errors
-
-    // ============================================================================
     // TYPE DEFINITIONS
     // ============================================================================
-    "types": ["reflect-metadata", "vite/client"],
+    "types": ["vite/client"],
 
     // ============================================================================
     // ADDITIONAL SAFETY (2025 Best Practices)

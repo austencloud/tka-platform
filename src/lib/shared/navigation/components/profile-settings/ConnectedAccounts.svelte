@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import { authState } from "../../../auth/state/authState.svelte";
-  import { resolve, TYPES } from "../../../inversify/di";
+  import { container } from "../../../di";
   import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
@@ -33,8 +33,8 @@
   let providerToUnlink = $state<ProviderId | null>(null);
 
   onMount(() => {
-    authService = resolve<IAuthenticator>(TYPES.IAuthenticator);
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    authService = container.items.authenticator;
+    hapticService = container.items.hapticFeedback;
   });
 
   // Derived state

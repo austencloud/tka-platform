@@ -5,7 +5,6 @@
  * Handles all motion types and plane transformations.
  */
 
-import { injectable, inject } from "inversify";
 import type { Vector3 } from "three";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
@@ -20,16 +19,11 @@ import type { IPropStateInterpolator } from "../contracts/IPropStateInterpolator
 import type { IAngleMathCalculator } from "../contracts/IAngleMathCalculator";
 import type { IOrientationMapper } from "../contracts/IOrientationMapper";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
-import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
 
-@injectable()
 export class PropStateInterpolator implements IPropStateInterpolator {
   constructor(
-    @inject(ANIMATION_3D_TYPES.IAngleMathCalculator)
     private angleMath: IAngleMathCalculator,
-    @inject(ANIMATION_3D_TYPES.IOrientationMapper)
     private orientationService: IOrientationMapper,
-    @inject(ANIMATION_3D_TYPES.IMotionCalculator3D)
     private motionCalculator: IMotionCalculator
   ) {}
 

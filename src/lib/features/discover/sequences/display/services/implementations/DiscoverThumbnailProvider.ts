@@ -5,11 +5,9 @@
  * Manages caching and provides URLs for thumbnail access.
  */
 
-import { injectable } from "inversify";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { IDiscoverThumbnailProvider } from "../contracts/IDiscoverThumbnailProvider";
 
-@injectable()
 export class DiscoverThumbnailProvider implements IDiscoverThumbnailProvider {
   private thumbnailCache = new Map<string, Promise<void>>();
   private metadataCache = new Map<string, { width: number; height: number }>();

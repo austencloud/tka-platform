@@ -1,6 +1,4 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 
 import {
   SWAPPED_POSITION_MAP,
@@ -27,10 +25,8 @@ import type { IRotatedEndPositionSelector } from "../contracts/IRotatedEndPositi
  * 3. INVERTED (return to start takes precedence over swapped)
  * 4. SWAPPED (only for strict swapped)
  */
-@injectable()
 export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
   constructor(
-    @inject(TYPES.IRotatedEndPositionSelector)
     private readonly rotatedEndPositionSelector: IRotatedEndPositionSelector
   ) {}
 

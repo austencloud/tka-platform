@@ -13,8 +13,7 @@ HMR Test: Nested component change test
 <script lang="ts">
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import CreatePanelDrawer from "$lib/features/create/shared/components/CreatePanelDrawer.svelte";
   import PanelHeader from "$lib/features/create/shared/components/PanelHeader.svelte";
   import { onDestroy, onMount } from "svelte";
@@ -167,8 +166,8 @@ HMR Test: Nested component change test
 
   onMount(() => {
     // Resolve services
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+    hapticService = container.items.hapticFeedback;
+    deviceDetector = container.items.deviceDetector;
 
     // Add keyboard listener
     window.addEventListener("keydown", handleKeydown);

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IVoiceTranscriptCoordinator } from "../contracts/IVoiceTranscriptCoordinator";
 
 /**
@@ -7,7 +6,6 @@ import type { IVoiceTranscriptCoordinator } from "../contracts/IVoiceTranscriptC
  * Mobile browsers re-emit entire transcripts including previously finalized segments.
  * This service tracks what has been committed to prevent duplication.
  */
-@injectable()
 export class VoiceTranscriptCoordinator implements IVoiceTranscriptCoordinator {
   private lastVoiceCommit = "";
   private interimText = "";

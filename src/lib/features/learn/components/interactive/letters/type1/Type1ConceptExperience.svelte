@@ -12,7 +12,7 @@ Supports two view modes:
 - "scroll": All pages displayed vertically for scrolling (review mode)
 -->
 <script lang="ts">
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { createType1ConceptState } from "./state/type1-concept-state.svelte";
   import Type1IntroPage from "./pages/Type1IntroPage.svelte";
@@ -32,7 +32,7 @@ Supports two view modes:
 
   let { onComplete, viewMode = "step" }: { onComplete?: () => void; viewMode?: ExperienceViewMode } = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   // Only create interactive state in step mode
   const state = viewMode === "step"

@@ -1,4 +1,3 @@
-import { injectable, inject, optional } from "inversify";
 import type { SequenceEntry } from "../../domain/models/sequence-models";
 import type {
   ILOOPDetector,
@@ -23,26 +22,17 @@ import type {
   CandidateInfo,
 } from "../../domain/models/internal-beat-models";
 import type { ComponentId } from "../../domain/constants/loop-components";
-import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
 
 /**
  * Service for detecting Linked Offset Operation Patterns (LOOPs) in sequences.
  * Orchestrates the detection process using specialized services.
  */
-@injectable()
 export class LOOPDetector implements ILOOPDetector {
   constructor(
-    @inject(LOOPLabelerTypes.IBeatComparisonOrchestrator)
     private comparisonOrchestrator: IBeatComparisonOrchestrator,
-    @inject(LOOPLabelerTypes.ITransformationAnalyzer)
     private analysisService: ITransformationAnalyzer,
-    @inject(LOOPLabelerTypes.ICandidateFormatter)
     private formattingService: ICandidateFormatter,
-    @inject(LOOPLabelerTypes.IPolyrhythmicDetector)
-    @optional()
     private polyrhythmicService?: IPolyrhythmicDetector,
-    @inject(LOOPLabelerTypes.ILayeredPathDetector)
-    @optional()
     private layeredPathService?: ILayeredPathDetector
   ) {}
 

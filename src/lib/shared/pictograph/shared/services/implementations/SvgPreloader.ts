@@ -5,7 +5,6 @@
  * Uses aggressive caching and parallel loading for optimal performance.
  */
 
-import { injectable } from "inversify";
 import type { ISvgPreloader } from "../contracts/ISvgPreloader";
 
 interface PreloadProgress {
@@ -13,7 +12,6 @@ interface PreloadProgress {
   total: number;
 }
 
-@injectable()
 export class SvgPreloader implements ISvgPreloader {
   private svgCache = new Map<string, string>();
   private loadingPromises = new Map<string, Promise<string>>();

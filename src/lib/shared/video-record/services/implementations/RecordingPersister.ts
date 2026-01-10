@@ -5,7 +5,6 @@
  * Collection path: users/{userId}/recordings/{recordingId}
  */
 
-import { injectable } from "inversify";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import {
@@ -55,7 +54,6 @@ export interface IRecordingPersister {
   deleteRecordingsForSequence(sequenceId: string): Promise<void>;
 }
 
-@injectable()
 export class RecordingPersister implements IRecordingPersister {
   private getUserId(): string {
     const user = getAuthSync().currentUser;

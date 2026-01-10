@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IMobileFullscreenManager } from "../contracts/IMobileFullscreenManager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
@@ -39,7 +38,6 @@ interface BeforeInstallPromptEvent extends Event {
  *
  * Provides comprehensive fullscreen management for mobile devices
  */
-@injectable()
 export class MobileFullscreenManager implements IMobileFullscreenManager {
   private fullscreenCallbacks: ((isFullscreen: boolean) => void)[] = [];
   private installCallbacks: ((canInstall: boolean) => void)[] = [];

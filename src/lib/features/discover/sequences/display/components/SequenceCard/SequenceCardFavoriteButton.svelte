@@ -6,7 +6,7 @@ Handles click events and accessibility.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   const { isFavorite = false, onToggle = () => {} } = $props<{
@@ -17,7 +17,7 @@ Handles click events and accessibility.
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleClick(e: MouseEvent) {

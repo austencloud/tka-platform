@@ -5,10 +5,8 @@
  * Handles blob URL creation, cleanup, and error handling.
  */
 
-import { injectable } from "inversify";
 import type { ISvgImageConverter } from "../contracts/ISvgImageConverter";
 
-@injectable()
 export class SvgImageConverter implements ISvgImageConverter {
   private activeBlobUrls = new Set<string>();
 

@@ -25,9 +25,7 @@ import {
 } from "../../../../create/generate/circular/domain/constants/strict-loop-position-maps";
 import type { CodexTransformationOperation } from "../../domain/types/codex-types";
 import type { ICodexPictographUpdater } from "../contracts/ICodexPictographUpdater";
-import { injectable } from "inversify";
 
-@injectable()
 export class CodexPictographUpdater implements ICodexPictographUpdater {
   /**
    * Rotate all pictographs 45° clockwise

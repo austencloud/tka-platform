@@ -4,7 +4,6 @@
  * Extracted from OptionViewer.svelte to centralize transition choreography.
  */
 
-import { injectable } from "inversify";
 import type {
   IOptionTransitionCoordinator,
   TransitionCallbacks,
@@ -15,7 +14,6 @@ import type {
 const FADE_OUT_DURATION = 250;
 const FADE_IN_DURATION = 250;
 
-@injectable()
 export class OptionTransitionCoordinator implements IOptionTransitionCoordinator {
   private _isFadingOut = false;
   private _isTransitioning = false;

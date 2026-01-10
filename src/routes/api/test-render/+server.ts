@@ -1,6 +1,5 @@
 import type { ISequencePersister } from "$lib/features/create/shared/services/contracts/ISequencePersister";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
@@ -25,10 +24,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     const beatSizeValue = body.beatSize;
 
     // Resolve services
-    const renderService = resolve<ISequenceRenderer>(TYPES.ISequenceRenderer);
-    const persistenceService = resolve<ISequencePersister>(
-      TYPES.ISequencePersister
-    );
+    const renderService = container.items.sequenceRenderer as ISequenceRenderer;
+    const persistenceService = container.items.sequencePersister as ISequencePersister;
 
     // Load current sequence
     const state = await persistenceService.loadCurrentState();

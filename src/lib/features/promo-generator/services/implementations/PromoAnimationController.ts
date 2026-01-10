@@ -7,7 +7,6 @@
  * Uses MIT-licensed Timeline implementation instead of GSAP.
  */
 
-import { injectable } from "inversify";
 import * as THREE from "three";
 import { Timeline } from "../../animation/Timeline";
 import type {
@@ -27,7 +26,6 @@ import {
   DEFAULT_PRESET_ID,
 } from "../../presets/animation-presets";
 
-@injectable()
 export class PromoAnimationController implements IPromoAnimationController {
   private device: THREE.Group | null = null;
   private camera: THREE.PerspectiveCamera | null = null;

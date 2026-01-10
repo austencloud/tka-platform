@@ -5,7 +5,6 @@
  * Single Responsibility: Manage turn values and rotation directions for dash/static motions.
  */
 
-import { injectable } from "inversify";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import {
   MotionType,
@@ -54,7 +53,6 @@ export interface ITurnManager {
   getRandomRotationDirection(): RotationDirection;
 }
 
-@injectable()
 export class TurnManager implements ITurnManager {
   /**
    * Set turns - exact port from legacy set_turns()

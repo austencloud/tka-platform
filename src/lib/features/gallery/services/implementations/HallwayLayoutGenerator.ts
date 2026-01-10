@@ -5,7 +5,6 @@
  * exhibits on both walls. MVP layout for Phase 1.
  */
 
-import { injectable } from "inversify";
 import type { IGalleryLayoutGenerator } from "../contracts/IGalleryLayoutGenerator";
 import type {
   GalleryLayout,
@@ -33,7 +32,6 @@ import {
   SPAWN_DISTANCE,
 } from "../../domain/constants/gallery-dimensions";
 
-@injectable()
 export class HallwayLayoutGenerator implements IGalleryLayoutGenerator {
   readonly name = "hallway";
 

@@ -6,7 +6,6 @@
  * relying solely on MediaPipe's handedness classification.
  */
 
-import { injectable } from "inversify";
 import type {
   IHandednessAnalyzer,
   HandednessAnalysisResult,
@@ -15,7 +14,6 @@ import type {
 } from "../contracts/IHandednessAnalyzer";
 import type { HandLandmark } from "../contracts/IHandLandmarker";
 
-@injectable()
 export class HandednessAnalyzer implements IHandednessAnalyzer {
   /**
    * Detect if palm is facing the camera or facing away

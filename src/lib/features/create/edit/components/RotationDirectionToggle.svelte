@@ -10,8 +10,7 @@ Only shown when motion has turns > 0 and rotation direction is not NO_ROTATION.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { onMount } from "svelte";
 
@@ -54,8 +53,8 @@ Only shown when motion has turns > 0 and rotation direction is not NO_ROTATION.
     }
   }
 
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
   });
 </script>
 

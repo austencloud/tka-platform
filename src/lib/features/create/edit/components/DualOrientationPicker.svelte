@@ -3,8 +3,7 @@
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   // Props
@@ -76,7 +75,7 @@
   });
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 </script>
 

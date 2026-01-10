@@ -5,8 +5,7 @@
  * Handles beat selection, section designation, and saved sections.
  */
 
-import { tryResolve } from "$lib/shared/inversify/di";
-import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
+import { container } from "$lib/shared/di";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { SectionDesignation } from "../domain/models/section-models";
 import type { LabeledSequence } from "../domain/models/label-models";
@@ -66,9 +65,8 @@ export function createSectionModeState(): SectionModeState {
   let selectedBaseWord = $state<string | null>(null);
 
   // Services
-  const labelsService = tryResolve<ILOOPLabelsFirebaseRepository>(
-    LOOPLabelerTypes.ILOOPLabelsFirebaseRepository
-  );
+  const labelsService =
+    container.items.loopLabelsFirebaseRepository as ILOOPLabelsFirebaseRepository | null;
 
   // Actions
   const actions = {

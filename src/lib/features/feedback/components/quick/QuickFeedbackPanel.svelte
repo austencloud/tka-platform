@@ -16,7 +16,7 @@
   import FeedbackForm from "../submit/FeedbackForm.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import { tryResolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -25,7 +25,7 @@
 
   // Use shared form state so drafts persist between panel and tab
   const formState = getSharedFeedbackSubmitState();
-  let deviceDetector: IDeviceDetector | null = null;
+  const deviceDetector = container.items.deviceDetector;
   let responsiveSettings = $state<ResponsiveSettings | null>(null);
   let activeSnapPoint = $state<number | null>(null);
   let hasShownSuccessToast = $state(false);
@@ -57,15 +57,14 @@
   }
 
   onMount(() => {
-    deviceDetector = tryResolve<IDeviceDetector>(TYPES.IDeviceDetector);
     syncResponsiveSettings();
 
-    const cleanup = deviceDetector?.onCapabilitiesChanged(() => {
+    const cleanup = deviceDetector.onCapabilitiesChanged(() => {
       syncResponsiveSettings();
     });
 
     return () => {
-      cleanup?.();
+      cleanup();
     };
   });
 

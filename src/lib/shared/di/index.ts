@@ -44,6 +44,9 @@ import { createPromoContainer } from "./containers/promo-container";
 import { createLibraryContainer } from "./containers/library-container";
 import { createMuseumContainer } from "./containers/museum-container";
 import { createQRContainer } from "./containers/qr-container";
+import { createAnimation3DContainer } from "./containers/animation-3d-container";
+import { deepOceanContainer } from "./containers/deep-ocean-container";
+import { createGalleryContainer } from "./containers/gallery-container";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -90,11 +93,15 @@ const buildContainer = createBuildContainer({
   gridModeDeriver: pictographContainer.items.gridModeDeriver,
   motionQueryHandler: pictographContainer.items.motionQueryHandler,
   sequenceRepository: dataContainer.items.sequenceRepository,
+  persistenceService: dataContainer.items.persistenceService,
+  reversalDetector: dataContainer.items.reversalDetector,
   deepLinker: navigationContainer.items.deepLinker,
   letterDeriver: navigationContainer.items.letterDeriver,
   positionDeriver: navigationContainer.items.positionDeriver,
   orientationCalculator: pictographContainer.items.orientationCalculator,
   betaDetector: pictographContainer.items.betaDetector,
+  arrowPositioningOrchestrator: pictographContainer.items.arrowPositioningOrchestrator,
+  letterQueryHandler: pictographContainer.items.letterQueryHandler,
   sharer: shareContainer.items.sharer,
 });
 
@@ -153,6 +160,16 @@ const museumContainer = createMuseumContainer(
 // QR container needs sequenceEncoder from navigation
 const qrContainer = createQRContainer(navigationContainer.items.sequenceEncoder);
 
+// Animation 3D container needs discoverLoader
+const animation3DContainer = createAnimation3DContainer({
+  discoverLoader: discoverContainer.items.discoverLoader,
+});
+
+// Gallery container needs libraryRepository
+const galleryContainer = createGalleryContainer(
+  libraryContainer.items.libraryRepository
+);
+
 // ============================================================================
 // COMPOSE ALL CONTAINERS INTO ONE
 // ============================================================================
@@ -201,7 +218,10 @@ export const container = createContainer()
   .add(writeContainer.items)
   .add(mandalaContainer.items)
   .add(museumContainer.items)
-  .add(qrContainer.items);
+  .add(qrContainer.items)
+  .add(animation3DContainer.items)
+  .add(deepOceanContainer.items)
+  .add(galleryContainer.items);
 
 // Export type for the composed container
 export type AppContainer = typeof container;

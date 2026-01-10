@@ -22,8 +22,7 @@
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ILibrarySaveService } from "$lib/features/library/services/contracts/ILibrarySaveService";
   import { simplifyAndTruncate } from "../workspace-panel/shared/utils/word-simplifier";
   import { libraryState } from "$lib/features/library/state/library-state.svelte";
@@ -65,9 +64,12 @@
   let renderProgress = $state({ current: 0, total: 0 });
 
   // Get the save service
-  const librarySaveService = tryResolve<ILibrarySaveService>(
-    TYPES.ILibrarySaveService
-  );
+  let librarySaveService: ILibrarySaveService | null = null;
+  try {
+    librarySaveService = container.items.librarySaveService;
+  } catch (error) {
+    console.warn("Failed to resolve librarySaveService:", error);
+  }
 
   // Save steps definition
   const saveSteps = [

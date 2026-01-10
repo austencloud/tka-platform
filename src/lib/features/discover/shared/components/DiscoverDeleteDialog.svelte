@@ -7,9 +7,8 @@ about the sequence being deleted and potential consequences.
 <script lang="ts">
   import { onMount } from "svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import type { SequenceDeleteConfirmationData } from "../domain/models/discover-models";
+  import { container } from "$lib/shared/di";
+    import type { SequenceDeleteConfirmationData } from "../domain/models/discover-models";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
@@ -28,7 +27,7 @@ about the sequence being deleted and potential consequences.
   let hapticService: IHapticFeedback | null = $state(null);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Handle keyboard events

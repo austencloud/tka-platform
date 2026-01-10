@@ -23,11 +23,9 @@
  * ```
  */
 
-import { getContext } from "svelte";
 import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
 import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
-import { TYPES } from "$lib/shared/inversify/types";
-import type { Container } from "inversify";
+import { container } from "$lib/shared/di";
 
 export type LibraryTab = "all" | "created" | "collaborations";
 
@@ -96,10 +94,7 @@ export function createUserVideoLibraryState(): UserVideoLibraryState {
   });
 
   // Get service from DI container
-  const container = getContext<Container>("container");
-  const videoService = container?.get<ICollaborativeVideoManager>(
-    TYPES.ICollaborativeVideoManager
-  );
+  const videoService = container.items.collaborativeVideoManager;
 
   async function refresh(): Promise<void> {
     if (!videoService) {

@@ -13,9 +13,8 @@ Responsive behavior:
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import type { ExploreFilter } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -128,7 +127,7 @@ Responsive behavior:
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Initialize DeviceDetector
     let cleanup: (() => void) | undefined;

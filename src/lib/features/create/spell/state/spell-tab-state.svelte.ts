@@ -25,8 +25,7 @@ import {
   type UndoMetadata
 } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import { createUndoController } from "$lib/features/create/shared/state/create-module/undo-controller.svelte";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type {
   LetterSource,
   SpellPreferences,
@@ -87,7 +86,7 @@ export function createSpellTabState(
     : null;
 
   // Spell tab has its own independent undo controller
-  const UndoManager = resolve<IUndoManager>(TYPES.IUndoManager);
+  const UndoManager = container.items.undoManager as IUndoManager;
   const undoController = sequenceState
     ? createUndoController({
         UndoManager,

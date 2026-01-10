@@ -5,8 +5,6 @@
  * with ISequenceExtender for the actual operations.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/di";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
@@ -20,12 +18,8 @@ import type {
   LOOPType,
 } from "../contracts/ISequenceExtender";
 
-@injectable()
 export class ExtensionFlowCoordinator implements IExtensionFlowCoordinator {
-  constructor(
-    @inject(TYPES.ISequenceExtender)
-    private readonly sequenceExtender: ISequenceExtender
-  ) {}
+  constructor(private readonly sequenceExtender: ISequenceExtender) {}
 
   canExtend(sequence: SequenceData): boolean {
     try {

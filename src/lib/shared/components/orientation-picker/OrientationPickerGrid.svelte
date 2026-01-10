@@ -6,8 +6,7 @@ Shows all 4 orientations: in, out, clock, counter
 <script lang="ts">
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let { currentOrientation = null, onOrientationChange } = $props<{
@@ -18,7 +17,7 @@ Shows all 4 orientations: in, out, clock, counter
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback ?? null;
   });
 
   // Orientation options with display info

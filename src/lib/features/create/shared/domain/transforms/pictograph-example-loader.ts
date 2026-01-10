@@ -6,7 +6,7 @@
  * the selected example will show a visible change when transformed.
  */
 
-import { resolve, TYPES } from "$lib/shared/inversify/di";
+import { container } from "$lib/shared/di";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -120,9 +120,7 @@ export async function loadAllPictographs(): Promise<PictographData[]> {
 
   loadingPromise = (async () => {
     try {
-      const letterQueryHandler = resolve<ILetterQueryHandler>(
-        TYPES.ILetterQueryHandler
-      );
+      const letterQueryHandler = container.items.letterQueryHandler as ILetterQueryHandler;
       const pictographs = await letterQueryHandler.getAllPictographVariations(
         GridMode.DIAMOND
       );

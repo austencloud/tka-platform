@@ -1,8 +1,6 @@
-import { injectable } from "inversify";
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 import type { IFeedbackSorter } from "../contracts/IFeedbackSorter";
 
-@injectable()
 export class FeedbackSorter implements IFeedbackSorter {
   private readonly PRIORITY_ORDER: Record<string, number> = {
     "": 0, // No priority - highest sort priority (appears first)

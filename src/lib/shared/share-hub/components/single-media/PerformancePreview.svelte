@@ -17,8 +17,7 @@
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
   import { getShareHubState } from "../../state/share-hub-state.svelte";
-  import { loadFeatureModule, resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ICameraManager } from "$lib/features/train/services/contracts/ICameraManager";
   import { getVideoRecorder } from "$lib/shared/video-record/services/implementations/VideoRecorder";
   import type {
@@ -213,8 +212,7 @@
     if (!browser) return;
 
     try {
-      await loadFeatureModule("train");
-      cameraService = resolve<ICameraManager>(TYPES.ICameraManager);
+      cameraService = container.items.cameraManager as ICameraManager;
       await initializeCamera();
     } catch (err) {
       error = "Failed to load camera service";

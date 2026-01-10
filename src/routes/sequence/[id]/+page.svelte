@@ -9,7 +9,7 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import SharedSequenceView from "$lib/shared/sequence-viewer/components/SharedSequenceView.svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -21,7 +21,7 @@
     if (!encodedId) return null;
 
     try {
-      const encoderService = resolve<ISequenceEncoder>(TYPES.ISequenceEncoder);
+      const encoderService = container.items.sequenceEncoder as ISequenceEncoder;
       return encoderService.decodeWithCompression(
         decodeURIComponent(encodedId)
       );

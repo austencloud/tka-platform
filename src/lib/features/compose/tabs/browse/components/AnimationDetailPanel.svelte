@@ -16,8 +16,7 @@ Features:
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { SavedAnimation } from "../state/browse-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let hapticService: IHapticFeedback | null = null;
@@ -33,7 +32,7 @@ Features:
   }>();
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Mode display

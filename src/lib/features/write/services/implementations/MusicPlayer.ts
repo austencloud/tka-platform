@@ -1,10 +1,8 @@
 /**
  * MusicPlayer - Implementation for music playback in Write tab
  */
-import { injectable } from "inversify";
 import type { IMusicPlayer } from "../contracts/IMusicPlayer";
 
-@injectable()
 export class MusicPlayer implements IMusicPlayer {
   private audioContext: AudioContext | null = null;
   private currentAudio: HTMLAudioElement | null = null;

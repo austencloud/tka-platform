@@ -5,8 +5,6 @@
  * for a given position pair based on position symmetry rules.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPOption } from "../contracts/ISequenceExtender";
 import type {
@@ -111,12 +109,8 @@ const ALL_LOOP_TYPES = [
   LOOPType.REWOUND,
 ];
 
-@injectable()
 export class LOOPValidator implements ILOOPValidator {
-  constructor(
-    @inject(TYPES.ILOOPExecutorSelector)
-    private loopExecutorSelector: ILOOPExecutorSelector
-  ) {}
+  constructor(private loopExecutorSelector: ILOOPExecutorSelector) {}
 
   /**
    * Get LOOP options filtered by validity for a position pair

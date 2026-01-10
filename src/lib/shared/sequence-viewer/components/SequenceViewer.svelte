@@ -16,8 +16,7 @@
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 	import type { ControlsLevel, MediaType } from "../domain/types";
-	import { tryResolve } from "$lib/shared/inversify/di";
-	import { TYPES } from "$lib/shared/inversify/types";
+	import { container } from "$lib/shared/di";
 	import { onMount, onDestroy } from "svelte";
 	import AnimationPlayer from "./AnimationPlayer.svelte";
 	import PropAwareThumbnail from "$lib/features/discover/sequences/display/components/PropAwareThumbnail.svelte";
@@ -55,7 +54,7 @@
 	const useExternalControl = !!animationExportContext;
 
 	onMount(() => {
-		hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+		hapticService = container.items.hapticFeedback;
 		// Notify parent of initial/persisted media type so export button label syncs
 		onMediaTypeChange?.(activeMediaType);
 	});
@@ -222,11 +221,8 @@
 		copySuccess = false;
 
 		try {
-			// Get the container instance to access the renderer
-			const { getContainerInstance } = await import("$lib/shared/inversify/di");
-			const { TYPES } = await import("$lib/shared/inversify/types");
-			const container = await getContainerInstance();
-			const renderer = container.get<import("$lib/shared/render/services/contracts/ISequenceRenderer").ISequenceRenderer>(TYPES.ISequenceRenderer);
+			// Get the renderer from the ITI container
+			const renderer = container.items.sequenceRenderer;
 
 			// Render the image with current settings
 			const blob = await renderer.renderSequenceToBlob(sequence, {

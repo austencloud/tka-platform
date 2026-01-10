@@ -1,12 +1,10 @@
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { ITurnsTupleKeyGenerator } from "../contracts/ITurnsTupleKeyGenerator";
-import { injectable } from "inversify";
 
 /**
  * TurnsTupleKeyGenerator
  * Generates turns tuple array matching advanced lookup expectations.
  */
-@injectable()
 export class TurnsTupleKeyGenerator implements ITurnsTupleKeyGenerator {
   generateTurnsTuple(pictographData: PictographData): number[] {
     try {

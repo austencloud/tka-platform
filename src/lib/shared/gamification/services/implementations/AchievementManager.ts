@@ -5,7 +5,6 @@
  * Uses Firestore as source of truth with IndexedDB caching for performance.
  */
 
-import { inject, injectable } from "inversify";
 import {
   collection,
   doc,
@@ -43,17 +42,12 @@ import type {
 } from "../../domain/models/achievement-models";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
 import type { IGamificationNotifier } from "../contracts/IGamificationNotifier";
-import { TYPES } from "../../../inversify/types";
 
-@injectable()
 export class AchievementManager implements IAchievementManager {
   private _initialized = false;
   private _notificationService: IGamificationNotifier | null = null;
 
-  constructor(
-    @inject(TYPES.IGamificationNotifier)
-    notificationService: IGamificationNotifier
-  ) {
+  constructor(notificationService: IGamificationNotifier) {
     this._notificationService = notificationService;
   }
 

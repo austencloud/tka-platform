@@ -1,6 +1,4 @@
-import { inject, injectable } from "inversify";
 import { updatePassword, signOut } from "firebase/auth";
-import { TYPES } from "../../../inversify/types";
 import { auth } from "../../firebase";
 import { nuclearCacheClear } from "../../utils/nuclearCacheClear";
 import type { IAccountManager } from "../contracts/IAccountManager";
@@ -11,13 +9,11 @@ import type { IHapticFeedback } from "../../../application/services/contracts/IH
 /**
  * Manages user account operations (password changes, deletion, cache clearing)
  */
-@injectable()
 export class AccountManager implements IAccountManager {
   constructor(
-    @inject(TYPES.IProfileApiClient) private apiClient: IProfileApiClient,
-    @inject(TYPES.IStepUpAuthCoordinator)
+    private apiClient: IProfileApiClient,
     private stepUpCoordinator: IStepUpAuthCoordinator,
-    @inject(TYPES.IHapticFeedback) private haptics: IHapticFeedback
+    private haptics: IHapticFeedback
   ) {}
 
   async changePassword(

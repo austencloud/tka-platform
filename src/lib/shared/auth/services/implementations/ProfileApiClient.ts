@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import { auth } from "../../firebase";
 import type { IProfileApiClient } from "../contracts/IProfileApiClient";
 
@@ -21,7 +20,6 @@ interface ApiError extends Error {
 /**
  * Client for making authenticated API calls to /api/account/* endpoints
  */
-@injectable()
 export class ProfileApiClient implements IProfileApiClient {
   async request<T = unknown>(path: string, body?: unknown): Promise<T> {
     const user = auth.currentUser;

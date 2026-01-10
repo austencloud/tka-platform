@@ -4,7 +4,6 @@
  * Handles sending, fetching, and real-time subscription to messages.
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   query,
@@ -42,7 +41,6 @@ const MESSAGES_SUBCOLLECTION = "messages";
 // Typing indicator timeout (3 seconds of inactivity = not typing)
 const TYPING_TIMEOUT_MS = 3000;
 
-@injectable()
 export class Messenger implements IMessenger {
   private messageSubscriptions = new Map<string, () => void>();
   private typingSubscriptions = new Map<string, () => void>();

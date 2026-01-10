@@ -11,8 +11,6 @@ import type {
   GridPosition,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { GenerationOptions } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { PropContinuity } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
@@ -27,26 +25,16 @@ import { LOOPType } from "../../domain/models/circular-models";
 import type { IPartialSequenceGenerator } from "../contracts/IPartialSequenceGenerator";
 import type { IArrowPositioningOrchestrator } from "../../../../../../shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 
-@injectable()
 export class PartialSequenceGenerator implements IPartialSequenceGenerator {
   constructor(
-    @inject(TYPES.ILetterQueryHandler)
     private letterQueryHandler: ILetterQueryHandler,
-    @inject(TYPES.IPictographFilter)
     private PictographFilter: IPictographFilter,
-    @inject(TYPES.IBeatConverter)
     private BeatConverter: IBeatConverter,
-    @inject(TYPES.ITurnManager)
     private TurnManager: ITurnManager,
-    @inject(TYPES.ISequenceMetadataManager)
     private metadataService: ISequenceMetadataManager,
-    @inject(TYPES.IGridPositionDeriver)
     private gridPositionDeriver: IGridPositionDeriver,
-    @inject(TYPES.IOrientationCalculator)
     private OrientationCalculator: IOrientationCalculator,
-    @inject(TYPES.IArrowPositioningOrchestrator)
     private arrowPositioningOrchestrator: IArrowPositioningOrchestrator,
-    @inject(TYPES.ILOOPParameterProvider)
     private loopParams: ILOOPParameterProvider
   ) {}
 

@@ -6,7 +6,7 @@
     loadPreviewSection,
     isSectionLoaded,
   } from "../../../debug/state/user-preview-state.svelte";
-  import { resolve, TYPES } from "../../../inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
   import type { IAccountManager } from "../../../auth/services/contracts/IAccountManager";
   import type { IStepUpAuthCoordinator } from "../../../auth/services/contracts/IStepUpAuthCoordinator";
@@ -100,12 +100,10 @@
   });
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    authService = resolve<IAuthenticator>(TYPES.IAuthenticator);
-    accountManager = resolve<IAccountManager>(TYPES.IAccountManager);
-    stepUpCoordinator = resolve<IStepUpAuthCoordinator>(
-      TYPES.IStepUpAuthCoordinator
-    );
+    hapticService = container.items.hapticFeedback;
+    authService = container.items.authenticator;
+    accountManager = container.items.accountManager;
+    stepUpCoordinator = container.items.stepUpAuthCoordinator;
 
     setTimeout(() => (isVisible = true), 30);
   });

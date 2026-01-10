@@ -8,8 +8,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ICollectionManager } from "../services/contracts/ICollectionManager";
   import type { LibraryCollection } from "../domain/models/Collection";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -31,7 +30,7 @@
     }
 
     try {
-      collectionService = resolve<ICollectionManager>(TYPES.ICollectionManager);
+      collectionService = container.items.collectionManager;
       collections = await collectionService.getCollections();
       isLoading = false;
     } catch (err) {

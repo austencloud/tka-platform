@@ -5,18 +5,13 @@
   Handles: file selection → metadata extraction → upload → save to Firestore
 -->
 <script lang="ts">
-  import {
-    tryResolve,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/container";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { IFirebaseVideoUploader } from "$lib/shared/share/services/contracts/IFirebaseVideoUploader";
   import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getAuthSync } from "$lib/shared/auth/firebase";
-  import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import {
@@ -42,26 +37,9 @@
   } = $props();
 
   // Services
-  let uploadService = $state<IFirebaseVideoUploader | null>(null);
-  let videoService = $state<ICollaborativeVideoManager | null>(null);
-  let hapticService = $state<IHapticFeedback | null>(null);
-
-  onMount(async () => {
-    // Load the share module to ensure upload services are available
-    try {
-      await loadFeatureModule("share");
-    } catch (e) {
-      console.warn("[VideoUploadSheet] Failed to load share module:", e);
-    }
-
-    uploadService = tryResolve<IFirebaseVideoUploader>(
-      TYPES.IFirebaseVideoUploader
-    );
-    videoService = tryResolve<ICollaborativeVideoManager>(
-      TYPES.ICollaborativeVideoManager
-    );
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const uploadService = container.items.firebaseVideoUploader;
+  const videoService = container.items.collaborativeVideoManager;
+  const hapticService = container.items.hapticFeedback;
 
   // State
   let selectedFile = $state<File | null>(null);

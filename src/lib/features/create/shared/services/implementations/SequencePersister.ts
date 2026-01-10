@@ -12,17 +12,11 @@ import type { IPersistenceService } from "$lib/shared/persistence/services/contr
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { ISequencePersister } from "../contracts/ISequencePersister";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
-@injectable()
 export class SequencePersister implements ISequencePersister {
-  constructor(
-    @inject(TYPES.IPersistenceService)
-    private persistenceService: IPersistenceService
-  ) {}
+  constructor(private persistenceService: IPersistenceService) {}
 
   /**
    * Get the current active mode from navigation state

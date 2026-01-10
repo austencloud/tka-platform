@@ -22,7 +22,6 @@ import {
 } from "../../../../../../foundation/domain/models/Letter";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import { injectable } from "inversify";
 import { ShiftLocationCalculator } from "./ShiftLocationCalculator";
 import { LetterType } from "../../../../../../foundation/domain/models/LetterType";
 
@@ -46,7 +45,6 @@ export interface IDashLocationCalculator {
   ): GridLocation;
 }
 
-@injectable()
 export class DashLocationCalculator implements IDashLocationCalculator {
   /**
    * Dash location calculation service.

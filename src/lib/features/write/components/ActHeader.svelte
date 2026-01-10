@@ -3,8 +3,7 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ActData } from "$lib/features/word-card/domain/types/write";
   import { onMount } from "svelte";
 
@@ -29,7 +28,7 @@
   let isEditingDescription = $state(false);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   $effect(() => {

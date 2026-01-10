@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   IMandalaTransformer,
   TransformResult,
@@ -16,7 +15,6 @@ import { CANVAS_CENTER } from "../../domain/constants/symmetry-constants";
  * Core symmetry transformation engine for the mandala generator.
  * Handles all geometric transformations: rotation, mirroring, and combined kaleidoscope effects.
  */
-@injectable()
 export class MandalaTransformer implements IMandalaTransformer {
   /**
    * Convert degrees to radians.

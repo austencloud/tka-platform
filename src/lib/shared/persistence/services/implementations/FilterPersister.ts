@@ -4,7 +4,6 @@
  * Just saves/loads basic filter history - no complex state management.
  */
 
-import { injectable } from "inversify";
 import { ExploreFilterType } from "../../domain/enums/FilteringEnums";
 import type { ExploreFilterValue } from "../../domain/types/FilteringTypes";
 import type {
@@ -22,7 +21,6 @@ const safeSessionStorageSet =
 const safeSessionStorageRemove =
   storageService.removeSessionStorageItem.bind(storageService);
 
-@injectable()
 export class FilterPersister implements IFilterPersister {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning
   private readonly BROWSE_STATE_KEY = `tka-${this.CACHE_VERSION}-browse-state`;

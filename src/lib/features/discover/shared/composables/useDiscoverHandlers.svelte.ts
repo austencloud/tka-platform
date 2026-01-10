@@ -7,8 +7,7 @@ import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigatio
 import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
 import type { createExploreState } from "../state/discover-state-factory.svelte";
 import { openSpotlightViewer } from "../../../../shared/application/state/ui/ui-state.svelte";
-import { tryResolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 
 type ExploreState = ReturnType<typeof createExploreState>;
 
@@ -86,9 +85,7 @@ export function useDiscoverHandlers({
       // Gallery sequences have empty beats - need to load full sequence data
       let fullSequence = sequence;
       if (!sequence.beats || sequence.beats.length === 0) {
-        const loaderService = tryResolve<IDiscoverLoader>(
-          TYPES.IDiscoverLoader
-        );
+        const loaderService = container.items.discoverLoader;
         if (loaderService) {
           const sequenceName = sequence.word || sequence.id;
           const loaded = await loaderService.loadFullSequenceData(sequenceName);

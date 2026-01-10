@@ -10,7 +10,6 @@
  * and inline component calculations.
  */
 
-import { injectable } from "inversify";
 import type {
   DeviceAwareSizingParams,
   DeviceAwareSizingResult,
@@ -49,7 +48,6 @@ const DEVICE_CONFIGS: Record<string, DeviceConfig> = {
   },
 };
 
-@injectable()
 export class OptionGridFitCalculator implements IOptionGridFitCalculator {
   /**
    * Calculate the optimal pictograph size to fit all items

@@ -6,14 +6,12 @@
  */
 
 import type { PropState } from "../../shared/domain/types/PropState";
-import { injectable } from "inversify";
 import { ANIMATION_CONSTANTS } from "../../shared/domain/constants";
 import type { ICoordinateUpdater } from "../contracts/ICoordinateUpdater";
 
 // Grid constants from domain constants
 const { GRID_CENTER, GRID_HALFWAY_POINT_OFFSET } = ANIMATION_CONSTANTS;
 
-@injectable()
 export class CoordinateUpdater implements ICoordinateUpdater {
   /**
    * Update x,y coordinates from center path angle

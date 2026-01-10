@@ -1,8 +1,7 @@
 <!-- UserActivityDetail.svelte - Admin drill-down into user activity -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type {
     IUserActivityTracker,
     SessionSummary,
@@ -25,7 +24,7 @@
 
   onMount(async () => {
     try {
-      const service = resolve<IUserActivityTracker>(TYPES.IUserActivityTracker);
+      const service = container.items.userActivityTracker;
       sessions = await service.getUserSessions(userId, 20);
     } catch (e) {
       console.error("Failed to load user sessions:", e);
@@ -45,7 +44,7 @@
     isLoadingEvents = true;
 
     try {
-      const service = resolve<IUserActivityTracker>(TYPES.IUserActivityTracker);
+      const service = container.items.userActivityTracker;
       sessionEvents = await service.getSessionActivity(
         userId,
         session.sessionId

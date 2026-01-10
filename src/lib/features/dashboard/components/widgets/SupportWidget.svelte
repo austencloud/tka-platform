@@ -5,8 +5,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { SOCIAL_LINKS } from "$lib/shared/info/domain/content";
 
@@ -39,7 +38,7 @@
 
   onMount(() => {
     try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      hapticService = container.items.hapticFeedback;
     } catch {
       // Service may not be available
     }

@@ -10,8 +10,7 @@
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     animationSettings,
     TrackingMode,
@@ -162,16 +161,10 @@
       // Enable dark mode on mount for visual impact
       visibilityManager.setDarkMode(darkMode);
 
-      // Load both animate and discover modules for sequence loading
-      await loadFeatureModule("animate");
-      await loadFeatureModule("discover");
-      discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-      playbackController = resolve<IAnimationPlaybackController>(
-        TYPES.IAnimationPlaybackController
-      );
-      startPositionDeriver = resolve<IStartPositionDeriver>(
-        TYPES.IStartPositionDeriver
-      );
+      // ITI container is ready synchronously - get services directly
+      discoverLoader = container.items.discoverLoader as IDiscoverLoader;
+      playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
+      startPositionDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
 
       // CRITICAL: Populate sequence cache with bundled metadata from sequence-index.json
       // This ensures loadFullSequenceData() uses the pre-bundled data instead of

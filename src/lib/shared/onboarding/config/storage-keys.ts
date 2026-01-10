@@ -9,35 +9,21 @@
  * the service when available.
  */
 
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IOnboardingPersister } from "../services/contracts/IOnboardingPersister";
 
 // Lazy service resolution to avoid circular dependencies
 let _onboardingService: IOnboardingPersister | null = null;
-let _serviceResolved = false;
-let _servicePromise: Promise<IOnboardingPersister | null> | null = null;
 
 function getOnboardingService(): IOnboardingPersister | null {
-  if (_serviceResolved) return _onboardingService;
+  if (_onboardingService) return _onboardingService;
 
-  if (!_servicePromise) {
-    _servicePromise = import("$lib/shared/inversify/di")
-      .then((di) => {
-        _onboardingService = di.resolve<IOnboardingPersister>(
-          TYPES.IOnboardingPersister
-        );
-        return _onboardingService;
-      })
-      .catch(() => {
-        _onboardingService = null;
-        return null;
-      })
-      .finally(() => {
-        _serviceResolved = true;
-      });
+  try {
+    _onboardingService = container.items.onboardingPersister as IOnboardingPersister;
+    return _onboardingService;
+  } catch {
+    return null;
   }
-
-  return _onboardingService;
 }
 
 // ============================================================================

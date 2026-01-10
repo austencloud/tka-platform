@@ -10,7 +10,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
 -->
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount, untrack } from "svelte";
   import { fly } from "svelte/transition";
@@ -40,7 +40,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
     onHeaderChange?: (header: string) => void;
   } = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   // Active mode synced with navigation state
   let activeMode = $state<LearnMode>("concepts");

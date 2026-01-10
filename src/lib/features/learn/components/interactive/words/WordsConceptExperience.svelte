@@ -4,8 +4,7 @@ Orchestrator component that manages page navigation and state
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
   import WordsIntroPage from "./pages/WordsIntroPage.svelte";

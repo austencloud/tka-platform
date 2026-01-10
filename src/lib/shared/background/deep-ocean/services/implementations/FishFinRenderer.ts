@@ -1,9 +1,7 @@
-import { inject, injectable } from "inversify";
 import type { IFishFinRenderer } from "../contracts/IFishFinRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 import type { FishMarineLife, FinState, TailState, FishColorPalette, SpineFin } from "../../domain/models/DeepOceanModels";
 import type { SpineChain } from "../../physics/SpineChain";
-import { TYPES } from "../../../../inversify/types";
 
 /**
  * Fin attachment points for legacy Bezier fish
@@ -21,11 +19,8 @@ const FIN_CONFIG = {
  * Renders fish fins (spine-based and legacy Bezier).
  * Extracted from FishRenderer to follow single-responsibility principle.
  */
-@injectable()
 export class FishFinRenderer implements IFishFinRenderer {
-  constructor(
-    @inject(TYPES.IColorCalculator) private colorCalc: IColorCalculator
-  ) {}
+  constructor(private colorCalc: IColorCalculator) {}
 
   drawSpineFins(
     ctx: CanvasRenderingContext2D,

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -24,7 +23,6 @@ import type {
 /**
  * Service for converting raw sequence data to BeatData for rendering
  */
-@injectable()
 export class BeatDataConverter implements IBeatDataConverter {
   parseMotionType(value: string | undefined): MotionType {
     const str = String(value || "").toLowerCase();

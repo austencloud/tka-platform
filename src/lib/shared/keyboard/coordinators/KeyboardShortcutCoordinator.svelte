@@ -9,7 +9,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "../../inversify/di";
+  import { container } from "../../di";
 
   import type { IKeyboardShortcutManager } from "../services/contracts/IKeyboardShortcutManager";
   import type { ICommandPalette } from "../services/contracts/ICommandPalette";
@@ -29,10 +29,8 @@
     (async () => {
       try {
         // Resolve services
-        shortcutManager = resolve<IKeyboardShortcutManager>(
-          TYPES.IKeyboardShortcutManager
-        );
-        commandPalette = resolve<ICommandPalette>(TYPES.ICommandPalette);
+        shortcutManager = container.items.keyboardShortcutManager;
+        commandPalette = container.items.commandPalette;
 
         // Initialize the shortcut manager
         shortcutManager.initialize();

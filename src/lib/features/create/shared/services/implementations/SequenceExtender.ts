@@ -1,12 +1,10 @@
-﻿/**
+/**
  * Sequence Extender Implementation
  *
  * Detects when a sequence is in an extendable state and generates extension beats
  * using the LOOP (Linked Offset Operation Pattern) executor infrastructure.
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { BeatData } from "../../domain/models/BeatData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -37,24 +35,15 @@ import {
   SliceSize,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
-@injectable()
 export class SequenceExtender implements ISequenceExtender {
   constructor(
-    @inject(TYPES.ILOOPExecutorSelector)
     private loopExecutorSelector: ILOOPExecutorSelector,
-    @inject(TYPES.IReversalDetector)
     private reversalDetector: IReversalDetector,
-    @inject(TYPES.ILetterQueryHandler)
     private letterQueryHandler: ILetterQueryHandler,
-    @inject(TYPES.IBeatConverter)
     private beatConverter: IBeatConverter,
-    @inject(TYPES.IOrientationCalculator)
     private orientationCalculator: IOrientationCalculator,
-    @inject(TYPES.ILOOPValidator)
     private loopValidator: ILOOPValidator,
-    @inject(TYPES.ISequenceAnalyzer)
     private sequenceAnalyzer: ISequenceAnalyzer,
-    @inject(TYPES.IBridgeFinder)
     private bridgeFinder: IBridgeFinder
   ) {}
 

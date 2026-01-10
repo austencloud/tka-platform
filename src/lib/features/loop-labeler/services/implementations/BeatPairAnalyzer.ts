@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
@@ -15,7 +14,6 @@ import {
 /**
  * Service for analyzing relationships between beat pairs
  */
-@injectable()
 export class BeatPairAnalyzer implements IBeatPairAnalyzer {
   analyzeBeatPair(beat1: BeatData, beat2: BeatData): BeatPairRelationship {
     const transformations: string[] = [];

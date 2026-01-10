@@ -12,7 +12,6 @@
  */
 
 import { browser } from "$app/environment";
-import { injectable } from "inversify";
 import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
 import {
   updateBodyBackground,
@@ -22,8 +21,7 @@ import { ThemeService } from "../../theme/services/ThemeService";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { AppSettings } from "../domain/AppSettings";
-import { TYPES } from "../../inversify/types";
-import { tryResolve } from "../../inversify/resolve-utils";
+import { container } from "$lib/shared/di";
 import type { ISettingsPersister } from "../services/contracts/ISettingsPersister";
 import { auth } from "../../auth/firebase";
 import type { ISettingsState } from "../services/contracts/ISettingsState";
@@ -78,7 +76,6 @@ function getCustomBackgroundOptions(
   };
 }
 
-@injectable()
 class SettingsState implements ISettingsState {
   private firebasePersistence: ISettingsPersister | null = null;
   private unsubscribeFirebaseSync: (() => void) | null = null;
@@ -112,9 +109,7 @@ class SettingsState implements ISettingsState {
 
     // Try to get the Firebase persistence service
     try {
-      this.firebasePersistence = tryResolve<ISettingsPersister>(
-        TYPES.ISettingsPersister
-      );
+      this.firebasePersistence = container.items.settingsPersister as ISettingsPersister;
     } catch {
       console.warn(
         "⚠️ [SettingsState] Firebase persistence service not available"
@@ -342,9 +337,7 @@ class SettingsState implements ISettingsState {
 
     // Log settings change for analytics (non-blocking)
     try {
-      const activityService = tryResolve<IActivityLogger>(
-        TYPES.IActivityLogger
-      );
+      const activityService = container.items.activityLogger as IActivityLogger;
       if (activityService) {
         void activityService.logSettingChange(
           key,

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   JellyfishMarineLife,
   OralArm,
@@ -21,7 +20,6 @@ import type { IJellyfishRenderer } from "../contracts/IJellyfishRenderer";
  * - Particle trail from propulsion
  * - Species-specific characteristics
  */
-@injectable()
 export class JellyfishRenderer implements IJellyfishRenderer {
   drawJellyfish(
     ctx: CanvasRenderingContext2D,

@@ -8,12 +8,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import {
-    resolve,
-    loadAnimationModule,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
@@ -70,26 +65,13 @@
 
   // Initialize services
   onMount(() => {
-    const initialize = async () => {
-      try {
-        // Ensure animator module is loaded (handles HMR recovery)
-        await loadFeatureModule("animate");
-
-        playbackController = resolve(
-          TYPES.IAnimationPlaybackController
-        ) as IAnimationPlaybackController;
-
-        // Load animation module on-demand
-        await loadAnimationModule();
-        animationRenderer = resolve(
-          TYPES.IAnimationRenderer
-        ) as IAnimationRenderer;
-      } catch (err) {
-        console.error("❌ Failed to initialize single renderer:", err);
-        error = "Failed to initialize animation services";
-      }
-    };
-    initialize();
+    try {
+      playbackController = container.items.animationPlaybackController;
+      animationRenderer = container.items.animationRenderer;
+    } catch (err) {
+      console.error("Failed to initialize single renderer:", err);
+      error = "Failed to initialize animation services";
+    }
 
     return () => {
       animationState.dispose();

@@ -3,8 +3,7 @@ WordBeatNavigation - Beat navigation dots for letter sequence
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { LetterDefinition } from "../../../../domain/constants/word-visualizer-data";
 
   let {
@@ -21,7 +20,7 @@ WordBeatNavigation - Beat navigation dots for letter sequence
     onBeatChange: (index: number) => void;
   } = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   function goToBeat(index: number) {
     hapticService?.trigger("selection");

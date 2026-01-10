@@ -6,8 +6,6 @@
  */
 
 import { Point } from "fabric";
-import { injectable, inject } from "inversify";
-import { TYPES } from "../../../../../inversify/types";
 import type { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
@@ -15,16 +13,8 @@ import type { IArrowLocationCalculator } from "../../../positioning/calculation/
 import type { IArrowQuadrantCalculator } from "../contracts/IArrowQuadrantCalculator";
 import type { IArrowAdjustmentProcessor } from "../contracts/IArrowAdjustmentProcessor";
 
-@injectable()
 export class ArrowAdjustmentProcessor implements IArrowAdjustmentProcessor {
-  private quadrantCalculator: IArrowQuadrantCalculator;
-
-  constructor(
-    @inject(TYPES.IArrowQuadrantCalculator)
-    quadrantCalculator: IArrowQuadrantCalculator
-  ) {
-    this.quadrantCalculator = quadrantCalculator;
-  }
+  constructor(private quadrantCalculator: IArrowQuadrantCalculator) {}
 
   getBasicAdjustment(
     motion: MotionData,

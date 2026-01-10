@@ -1,8 +1,7 @@
 <!-- Guided variant: back button, title, optional next hand button -->
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import GridModeToggle from "./GridModeToggle.svelte";
 
@@ -24,7 +23,7 @@
     onGridModeChange?: ((gridMode: GridMode) => void) | undefined;
   } = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   function handleBackClick() {
     hapticService?.trigger("selection");

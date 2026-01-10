@@ -6,7 +6,6 @@
  * Syncs local progress to cloud on authentication.
  */
 
-import { injectable } from "inversify";
 import {
   doc,
   getDoc,
@@ -42,7 +41,6 @@ const MODULES_WITH_ONBOARDING = [
   "library",
 ];
 
-@injectable()
 export class OnboardingPersister implements IOnboardingPersister {
   private cachedStatus: OnboardingStatus | null = null;
   private unsubscribe: Unsubscribe | null = null;

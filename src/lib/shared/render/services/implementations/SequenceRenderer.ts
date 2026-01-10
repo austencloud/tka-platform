@@ -6,8 +6,6 @@
  */
 
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import { TYPES } from "../../../inversify/types";
-import { inject, injectable } from "inversify";
 
 import type { ISequenceRenderer } from "../contracts/ISequenceRenderer";
 import { LayoutCalculator } from "./LayoutCalculator";
@@ -18,12 +16,9 @@ import type {
 } from "../contracts/IImageComposer";
 import type { IImageFormatConverter } from "../contracts/IImageFormatConverter";
 
-@injectable()
 export class SequenceRenderer implements ISequenceRenderer {
   constructor(
-    @inject(TYPES.IImageComposer)
     private compositionService: IImageComposer,
-    @inject(TYPES.IImageFormatConverter)
     private formatService: IImageFormatConverter
   ) {}
 

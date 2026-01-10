@@ -5,15 +5,13 @@
  * on exported images. Matches desktop application text rendering patterns.
  */
 
-import { inject, injectable } from "inversify";
-import { TYPES } from "../../../inversify/types";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
 import type {
   TextRenderOptions,
   UserExportInfo,
 } from "../../domain/models/SequenceExportOptions";
 import type { ITextRenderer } from "../contracts/ITextRenderer";
-@injectable()
+
 export class TextRenderer implements ITextRenderer {
   // Font configuration matching WordLabel component exactly
   private readonly titleFontFamily = "Georgia, serif"; // Matches WordLabel
@@ -22,10 +20,7 @@ export class TextRenderer implements ITextRenderer {
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
   private readonly userInfoFontWeight = "400";
 
-  constructor(
-    @inject(TYPES.IDimensionCalculator)
-    private dimensionService: IDimensionCalculator
-  ) {}
+  constructor(private dimensionService: IDimensionCalculator) {}
 
   /**
    * Render sequence word/title text at the top center of the canvas

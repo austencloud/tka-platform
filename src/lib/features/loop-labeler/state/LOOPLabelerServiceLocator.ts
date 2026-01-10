@@ -5,8 +5,7 @@
  * Separates DI concerns from state management.
  */
 
-import { tryResolve } from "$lib/shared/inversify/di";
-import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
+import { container } from "$lib/shared/di";
 import type { ISequenceLoader } from "../services/contracts/ISequenceLoader";
 import type { ILOOPLabelsFirebaseRepository } from "../services/contracts/ILOOPLabelsFirebaseRepository";
 import type { INavigator } from "../services/contracts/INavigator";
@@ -20,9 +19,8 @@ export class LOOPLabelerServiceLocator {
 
   get sequenceLoader(): ISequenceLoader | null {
     if (!this.cachedSequenceLoader) {
-      this.cachedSequenceLoader = tryResolve<ISequenceLoader>(
-        LOOPLabelerTypes.ISequenceLoader
-      );
+      this.cachedSequenceLoader =
+        container.items.sequenceLoader as ISequenceLoader | null;
     }
     return this.cachedSequenceLoader;
   }
@@ -30,9 +28,9 @@ export class LOOPLabelerServiceLocator {
   get labelsRepository(): ILOOPLabelsFirebaseRepository | null {
     if (!this.cachedLabelsRepository) {
       try {
-        this.cachedLabelsRepository = tryResolve<ILOOPLabelsFirebaseRepository>(
-          LOOPLabelerTypes.ILOOPLabelsFirebaseRepository
-        );
+        this.cachedLabelsRepository =
+          container.items
+            .loopLabelsFirebaseRepository as ILOOPLabelsFirebaseRepository | null;
       } catch {
         return null;
       }
@@ -42,18 +40,14 @@ export class LOOPLabelerServiceLocator {
 
   get navigator(): INavigator | null {
     if (!this.cachedNavigator) {
-      this.cachedNavigator = tryResolve<INavigator>(
-        LOOPLabelerTypes.INavigator
-      );
+      this.cachedNavigator = container.items.navigator as INavigator | null;
     }
     return this.cachedNavigator;
   }
 
   get detector(): ILOOPDetector | null {
     if (!this.cachedDetector) {
-      this.cachedDetector = tryResolve<ILOOPDetector>(
-        LOOPLabelerTypes.ILOOPLabelerDetectionService
-      );
+      this.cachedDetector = container.items.loopDetector as ILOOPDetector | null;
     }
     return this.cachedDetector;
   }

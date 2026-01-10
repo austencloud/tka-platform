@@ -7,9 +7,7 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
   import { fade } from "svelte/transition";
 
   const {
@@ -21,11 +19,7 @@
   } = $props();
 
   // Services
-  let hapticService: IHapticFeedback;
-
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService: IHapticFeedback = container.items.hapticFeedback;
 
   function handleBack() {
     // Trigger navigation haptic feedback for back navigation

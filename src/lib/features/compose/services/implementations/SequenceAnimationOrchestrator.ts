@@ -16,8 +16,6 @@ import type {
   SequenceMetadata,
 } from "$lib/shared/foundation/domain/models/SequenceData";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IAnimationStateManager } from "../contracts/IAnimationStateManager";
 import type { IBeatCalculator } from "../contracts/IBeatCalculator";
 import type { IPropInterpolator } from "../contracts/IPropInterpolator";
@@ -34,7 +32,6 @@ import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnima
  * When currentBeat < 1: We're at the start position (derived from beats[0])
  * When currentBeat >= 1: We're at a motion beat (beat N uses this.beats[N-1])
  */
-@injectable()
 export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestrator {
   // Motion beats (beat 1 = beats[0], beat 2 = beats[1], etc.)
   // Start position is derived from beats[0].startLocation/startOrientation
@@ -50,11 +47,8 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   private atStartPosition = true; // Track if we're at start position
 
   constructor(
-    @inject(TYPES.IAnimationStateService)
     private readonly animationStateService: IAnimationStateManager,
-    @inject(TYPES.IBeatCalculationService)
     private readonly beatCalculationService: IBeatCalculator,
-    @inject(TYPES.IPropInterpolationService)
     private readonly propInterpolationService: IPropInterpolator
   ) {}
 

@@ -1,5 +1,3 @@
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import { LOOPType } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 import type { ILOOPExecutorSelector } from "../contracts/ILOOPExecutorSelector";
@@ -8,52 +6,24 @@ import type { ILOOPExecutorSelector } from "../contracts/ILOOPExecutorSelector";
  * Service for selecting the appropriate LOOP executor based on LOOP type
  *
  * Provides dependency injection-based executor selection, resolving
- * the correct executor instance from the inversify container based
+ * the correct executor instance from the ITI container based
  * on the requested LOOP type.
  */
-@injectable()
 export class LOOPExecutorSelector implements ILOOPExecutorSelector {
   constructor(
-    @inject(TYPES.IStrictRotatedLOOPExecutor)
     private readonly strictRotatedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IStrictMirroredLOOPExecutor)
     private readonly strictMirroredExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IStrictSwappedLOOPExecutor)
     private readonly strictSwappedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IStrictInvertedLOOPExecutor)
     private readonly strictInvertedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IMirroredSwappedLOOPExecutor)
     private readonly mirroredSwappedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.ISwappedInvertedLOOPExecutor)
     private readonly swappedInvertedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IMirroredInvertedLOOPExecutor)
     private readonly mirroredInvertedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IRotatedSwappedLOOPExecutor)
     private readonly rotatedSwappedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IRotatedInvertedLOOPExecutor)
     private readonly rotatedInvertedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IMirroredRotatedLOOPExecutor)
     private readonly mirroredRotatedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IMirroredRotatedInvertedLOOPExecutor)
     private readonly mirroredRotatedInvertedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IMirroredSwappedInvertedLOOPExecutor)
     private readonly mirroredSwappedInvertedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IMirroredRotatedInvertedSwappedLOOPExecutor)
     private readonly mirroredRotatedInvertedSwappedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IRewoundLOOPExecutor)
     private readonly rewoundLOOPExecutor: ILOOPExecutor
   ) {}
 

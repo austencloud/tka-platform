@@ -22,21 +22,13 @@
  * IMPORTANT: End position for generation must match the rotation requirement
  */
 
-import { inject, injectable } from "inversify";
-
-import { TYPES } from "$lib/shared/inversify/types";
-
 import { SliceSize } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 import type { BeatData } from "../../../../shared/domain/models/BeatData";
 
-@injectable()
 export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
   constructor(
-    @inject(TYPES.IStrictRotatedLOOPExecutor)
     private readonly strictRotatedExecutor: ILOOPExecutor,
-
-    @inject(TYPES.IStrictMirroredLOOPExecutor)
     private readonly strictMirroredExecutor: ILOOPExecutor
   ) {}
 

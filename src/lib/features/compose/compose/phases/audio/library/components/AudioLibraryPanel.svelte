@@ -5,9 +5,9 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "../../../../../../../shared/inversify/container";
-  import { AudioTypes } from "../../../../../../../shared/inversify/types/audio.types";
   import type { IAudioLibrary } from "../services/contracts/IAudioLibrary";
+  import { AudioLibraryService } from "../services/implementations/AudioLibraryService";
+  import { AudioStorageManager } from "../services/implementations/AudioStorageManager";
   import type { AudioTrackLocal } from "../domain/models/AudioTrack";
 
   let {
@@ -21,7 +21,9 @@
     onClose: () => void;
   } = $props();
 
-  const audioLibrary = container.get<IAudioLibrary>(AudioTypes.IAudioLibrary);
+  // Create audio library instance directly (not in main DI container)
+  const audioStorageManager = new AudioStorageManager();
+  const audioLibrary: IAudioLibrary = new AudioLibraryService(audioStorageManager);
 
   let tracks = $state<AudioTrackLocal[]>([]);
   let isLoading = $state(true);

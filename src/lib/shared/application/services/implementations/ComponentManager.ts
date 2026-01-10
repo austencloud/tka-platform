@@ -7,13 +7,11 @@
 
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import { MotionColor as MotionColorEnum } from "../../../pictograph/shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 import type {
   ComponentLoadingState,
   IComponentManager,
 } from "../contracts/IComponentManager";
 
-@injectable()
 export class ComponentManager implements IComponentManager {
   /**
    * Calculate required components based on pictograph data

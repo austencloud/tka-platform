@@ -4,7 +4,6 @@
  * Firestore-based service for managing sequences in a user's library.
  */
 
-import { injectable, inject } from "inversify";
 import {
   collection,
   doc,
@@ -30,7 +29,6 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { IOrientationCycleDetector } from "../../../create/generate/circular/services/contracts/IOrientationCycleDetector";
@@ -73,16 +71,11 @@ export class LibraryError extends Error {
   }
 }
 
-@injectable()
 export class LibraryRepository implements ILibraryRepository {
   constructor(
-    @inject(TYPES.IAchievementManager)
     private achievementService: IAchievementManager,
-    @inject(TYPES.ITagManager)
     private tagService: ITagManager,
-    @inject(TYPES.IOrientationCycleDetector)
     private orientationCycleDetector: IOrientationCycleDetector,
-    @inject(TYPES.IPublicIndexSyncer)
     private publicIndexSyncer: IPublicIndexSyncer
   ) {}
 

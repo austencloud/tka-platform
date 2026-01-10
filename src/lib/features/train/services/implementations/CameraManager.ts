@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { ICameraManager, CameraConfig } from "../contracts/ICameraManager";
 
 const DEFAULT_CONFIG: CameraConfig = {
@@ -8,7 +7,6 @@ const DEFAULT_CONFIG: CameraConfig = {
   frameRate: 30,
 };
 
-@injectable()
 export class CameraManager implements ICameraManager {
   private _stream: MediaStream | null = null;
   private _videoElement: HTMLVideoElement | null = null;

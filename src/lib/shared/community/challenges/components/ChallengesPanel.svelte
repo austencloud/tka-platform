@@ -6,8 +6,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IChallengeCoordinator } from "$lib/shared/gamification/services/contracts/IChallengeCoordinator";
   import type { ChallengeDashboard } from "$lib/shared/gamification/domain/models/challenge-models";
   import PanelHeader from "$lib/shared/components/panel/PanelHeader.svelte";
@@ -28,7 +27,7 @@
   );
 
   // Service
-  let coordinator: IChallengeCoordinator | null = null;
+  const coordinator = container.items.challengeCoordinator;
 
   // Tab configuration
   const tabs = [
@@ -40,17 +39,6 @@
 
   onMount(async () => {
     try {
-      coordinator = tryResolve<IChallengeCoordinator>(
-        TYPES.IChallengeCoordinator
-      );
-
-      if (!coordinator) {
-        // Services not yet loaded, try resolving
-        coordinator = resolve<IChallengeCoordinator>(
-          TYPES.IChallengeCoordinator
-        );
-      }
-
       await coordinator.initialize();
       dashboard = await coordinator.getDashboard();
       isLoading = false;

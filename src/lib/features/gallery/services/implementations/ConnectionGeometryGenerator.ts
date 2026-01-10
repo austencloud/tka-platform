@@ -9,7 +9,6 @@
  * we create architecturally coherent transitions.
  */
 
-import { injectable } from "inversify";
 import type { Room } from "../../domain/models/Room";
 import type { Doorway, DoorwayCorridor } from "../../domain/models/doorway";
 import { createCorridor } from "../../domain/models/doorway";
@@ -17,7 +16,6 @@ import type { Point2D } from "../../domain/models/geometry";
 import type { RectangularShape, CircularShape } from "../../domain/models/room-shapes";
 import { getShapeCenter } from "../../domain/models/room-shapes";
 
-@injectable()
 export class ConnectionGeometryGenerator {
   /**
    * Generate corridor geometry for all doorways that need bridging

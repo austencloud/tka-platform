@@ -6,7 +6,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { inject, injectable } from "inversify";
 import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
 import type {
   SectionConfig,
@@ -15,12 +14,9 @@ import type {
 import type { IDiscoverSectionManager } from "../contracts/IDiscoverSectionManager";
 import { sortSequencesByKineticAlphabet } from "$lib/features/discover/shared/utils/kinetic-alphabet-sort";
 import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
-import { TYPES } from "$lib/shared/inversify/types";
 
-@injectable()
 export class DiscoverSectionManager implements IDiscoverSectionManager {
   constructor(
-    @inject(TYPES.IWordDeriver)
     private wordDeriver: IWordDeriver
   ) {}
   organizeSections(

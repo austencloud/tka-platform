@@ -6,12 +6,7 @@
   import { createKanbanBoardState } from "../../state/kanban-board-state.svelte";
   import type { IStorageManager } from "$lib/shared/foundation/services/contracts/IStorageManager";
   import type { IFeedbackSorter } from "../../services/contracts/IFeedbackSorter";
-  import {
-    tryResolve,
-    TYPES,
-    loadFeatureModule,
-    ensureContainerInitialized,
-  } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import KanbanMobileView from "./KanbanMobileView.svelte";
   import KanbanDesktopView from "./KanbanDesktopView.svelte";
 
@@ -24,31 +19,14 @@
 
   // Resolve services
   let boardState = $state<KanbanBoardState | null>(null);
-  let sortingService: IFeedbackSorter | null = null;
-  let storageService: IStorageManager | null = null;
+  const sortingService = container.items.feedbackSorter;
+  const storageService = container.items.storageManager;
 
   onMount(() => {
     let resizeObserver: ResizeObserver | null = null;
 
     async function initializeBoard() {
       try {
-        // Ensure container is initialized before loading modules
-        await ensureContainerInitialized();
-
-        // Ensure feedback module is loaded (waits for Tier 2)
-        await loadFeatureModule("feedback");
-
-        // Now resolve services - feedback module is ready
-        sortingService = tryResolve<IFeedbackSorter>(TYPES.IFeedbackSorter);
-        storageService = tryResolve<IStorageManager>(TYPES.IStorageManager);
-
-        if (!sortingService) {
-          console.error(
-            `[FeedbackKanbanBoard] Failed to resolve IFeedbackSorter after feedback module load`
-          );
-          return;
-        }
-
         boardState = createKanbanBoardState(
           manageState,
           sortingService,

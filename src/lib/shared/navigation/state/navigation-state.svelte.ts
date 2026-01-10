@@ -15,10 +15,22 @@
  */
 
 import type { ModuleDefinition, ModuleId, Section } from "../domain/types";
-import { tryResolve } from "../../inversify/resolve-utils";
-import { TYPES } from "../../inversify/types";
+import { container } from "../../di";
 import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
 import type { IPresenceTracker } from "../../presence/services/contracts/IPresenceTracker";
+
+// Helper function to safely resolve services from container
+// Uses unknown cast to avoid deep type instantiation issues with ITI container
+function tryResolveService<T>(serviceName: string): T | null {
+  try {
+    // Access container.items through unknown to avoid TS2589 (type instantiation too deep)
+    const items = (container as unknown as { items: Record<string, unknown> }).items;
+    const service = items[serviceName];
+    return service ? (service as T) : null;
+  } catch {
+    return null;
+  }
+}
 
 // Import configurations from separated files
 import {
@@ -408,9 +420,7 @@ export function createNavigationState() {
       // Include the tab for more granular tracking (e.g., "create:generator")
       if (previousModuleLocal !== moduleId) {
         try {
-          const activityService = tryResolve<IActivityLogger>(
-            TYPES.IActivityLogger
-          );
+          const activityService = tryResolveService<IActivityLogger>("activityLogger");
           if (activityService) {
             const moduleWithTab = nextTab ? `${moduleId}:${nextTab}` : moduleId;
             void activityService.logModuleView(
@@ -424,9 +434,7 @@ export function createNavigationState() {
 
         // Update presence with new location (non-blocking)
         try {
-          const presenceService = tryResolve<IPresenceTracker>(
-            TYPES.IPresenceTracker
-          );
+          const presenceService = tryResolveService<IPresenceTracker>("presenceTracker");
           if (presenceService) {
             void presenceService.updateLocation(moduleId, nextTab || null);
           }
@@ -472,9 +480,7 @@ export function createNavigationState() {
       // Log tab switch for analytics (non-blocking)
       if (previousTab !== tabId) {
         try {
-          const activityService = tryResolve<IActivityLogger>(
-            TYPES.IActivityLogger
-          );
+          const activityService = tryResolveService<IActivityLogger>("activityLogger");
           if (activityService) {
             const moduleWithTab = `${currentModule}:${tabId}`;
             const previousModuleWithTab = `${currentModule}:${previousTab}`;
@@ -489,9 +495,7 @@ export function createNavigationState() {
 
         // Update presence with new tab (non-blocking)
         try {
-          const presenceService = tryResolve<IPresenceTracker>(
-            TYPES.IPresenceTracker
-          );
+          const presenceService = tryResolveService<IPresenceTracker>("presenceTracker");
           if (presenceService) {
             void presenceService.updateLocation(currentModule, tabId);
           }

@@ -7,8 +7,7 @@
 
 import type { MotionColor } from "../domain/enums/pictograph-enums";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
-import { resolve } from "../../../inversify/resolve-utils";
-import { TYPES } from "../../../inversify/types";
+import { container } from "../../../di";
 import type { IArrowPositioningOrchestrator } from "../../arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
 import type { PictographData } from "../domain/models/PictographData";
@@ -20,38 +19,64 @@ import type { ArrowPosition } from "../../arrow/orchestration/domain/arrow-model
 import type { IArrowRenderer } from "../../arrow/rendering/services/contracts/IArrowRenderer";
 import type { IGridRenderer } from "../../grid/services/contracts/IGridRenderer";
 
-// TODO: These services are archived - defining minimal interfaces for compilation
-interface ISvgUtilityService {
+// Archived services - using inline stub implementations
+// These services were archived but the rendering utils still need them
+const SVG_SIZE = 950;
+
+const stubSvgUtility: {
   createBaseSVG(): SVGElement;
   createErrorSVG(message: string): SVGElement;
-}
+} = {
+  createBaseSVG(): SVGElement {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${SVG_SIZE} ${SVG_SIZE}`);
+    svg.setAttribute("width", String(SVG_SIZE));
+    svg.setAttribute("height", String(SVG_SIZE));
+    return svg;
+  },
+  createErrorSVG(message: string): SVGElement {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${SVG_SIZE} ${SVG_SIZE}`);
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", "50%");
+    text.setAttribute("y", "50%");
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("fill", "red");
+    text.textContent = message;
+    svg.appendChild(text);
+    return svg;
+  }
+};
 
-interface IOverlayRenderer {
+const stubOverlayRenderer: {
   renderOverlays(svg: SVGElement, data: PictographData): Promise<void>;
   renderIdLabel(svg: SVGElement, data: PictographData): void;
-  renderDebugInfo(
-    svg: SVGElement,
-    data: PictographData,
-    positions: Map<string, ArrowPosition>
-  ): void;
-}
+  renderDebugInfo(svg: SVGElement, data: PictographData, positions: Map<string, ArrowPosition>): void;
+} = {
+  async renderOverlays(_svg: SVGElement, _data: PictographData): Promise<void> {
+    // Stub - no overlays rendered
+  },
+  renderIdLabel(_svg: SVGElement, _data: PictographData): void {
+    // Stub - no ID label rendered
+  },
+  renderDebugInfo(_svg: SVGElement, _data: PictographData, _positions: Map<string, ArrowPosition>): void {
+    // Stub - no debug info rendered
+  }
+};
 
 export async function renderPictograph(
   data: PictographData
 ): Promise<SVGElement> {
   try {
+    // Use stub for archived services, resolve others from container
+    const svgUtility = stubSvgUtility;
+    const gridRendering = container.items.gridRenderer as IGridRenderer;
+    const arrowRendering = container.items.arrowRenderer as IArrowRenderer;
+    const overlayRendering = stubOverlayRenderer;
+    const gridModeService = container.items.gridModeDeriver as IGridModeDeriver;
 
-    // Resolve required services directly
-    const svgUtility = resolve<ISvgUtilityService>(TYPES.ISvgUtilityService);
-    const gridRendering = resolve<IGridRenderer>(TYPES.IGridRenderer);
-    const arrowRendering = resolve<IArrowRenderer>(TYPES.IArrowRenderer);
-    const overlayRendering = resolve<IOverlayRenderer>(TYPES.IOverlayRenderer);
-    const gridModeService = resolve<IGridModeDeriver>(TYPES.IGridModeDeriver);
-
-    // Get arrow positioning from InversifyJS container
-    const arrowPositioning: IArrowPositioningOrchestrator = resolve(
-      TYPES.IArrowPositioningOrchestrator
-    );
+    // Get arrow positioning from container
+    const arrowPositioning = container.items.arrowPositioningOrchestrator as IArrowPositioningOrchestrator;
 
     // Create base SVG
     const svg = svgUtility.createBaseSVG();
@@ -123,8 +148,7 @@ export async function renderPictograph(
     console.error("❌ Error rendering pictograph:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    const svgUtility = resolve<ISvgUtilityService>(TYPES.ISvgUtilityService);
-    return svgUtility.createErrorSVG(errorMessage);
+    return stubSvgUtility.createErrorSVG(errorMessage);
   }
 }
 

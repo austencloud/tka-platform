@@ -6,8 +6,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
   import { openSpotlightViewer } from "$lib/shared/application/state/ui/ui-state.svelte";
@@ -101,23 +100,12 @@
 
   onMount(async () => {
     try {
-      // Ensure required feature modules are loaded
-      // Note: Load both community AND discover explicitly to ensure IDiscoverThumbnailProvider is available
-      await Promise.all([
-        loadFeatureModule("community"),
-        loadFeatureModule("discover"),
-      ]);
-
       // Resolve services
-      userService = resolve<IUserRepository>(TYPES.IUserRepository);
-      libraryService = resolve<ILibraryRepository>(TYPES.ILibraryRepository);
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-      leaderboardService = resolve<ILeaderboardManager>(
-        TYPES.ILeaderboardManager
-      );
-      thumbnailService = resolve<IDiscoverThumbnailProvider>(
-        TYPES.IDiscoverThumbnailProvider
-      );
+      userService = container.items.userRepository;
+      libraryService = container.items.libraryRepository;
+      hapticService = container.items.hapticFeedback;
+      leaderboardService = container.items.leaderboardManager;
+      thumbnailService = container.items.discoverThumbnailProvider;
 
       // Load user profile with current user context for follow status
       userProfile = await userService.getUserProfile(userId, currentUserId);

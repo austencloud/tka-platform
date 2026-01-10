@@ -5,8 +5,7 @@ Demonstrates Alpha, Beta, Gamma positions with thumb orientations (in, out, mixe
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     GRID_POINTS,
     LEFT_STAFF_COLOR,
@@ -56,7 +55,7 @@ Demonstrates Alpha, Beta, Gamma positions with thumb orientations (in, out, mixe
     ) => void;
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   const currentPositionType = $derived(
     getPositionType(leftPosition, rightPosition)

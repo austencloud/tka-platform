@@ -16,7 +16,6 @@
  * Domain: Navigation - Sequence URL Encoding
  */
 
-import { injectable } from "inversify";
 import LZString from "lz-string";
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -139,7 +138,6 @@ const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(
   Object.entries(PROP_TYPE_ENCODE).map(([k, v]) => [v, k as PropType])
 ) as Record<string, PropType>;
 
-@injectable()
 export class SequenceEncoder implements ISequenceEncoder {
   // ============================================================================
   // Public API

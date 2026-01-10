@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { FeedbackSubtask } from "../../../domain/models/feedback-models";
   import type { IFeedbackSubtaskManager } from "../../../services/contracts/IFeedbackSubtaskManager";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     subtasks: FeedbackSubtask[];
@@ -10,9 +9,7 @@
 
   const { subtasks }: Props = $props();
 
-  const subtaskService = tryResolve<IFeedbackSubtaskManager>(
-    TYPES.IFeedbackSubtaskManager
-  );
+  const subtaskService = container.items.feedbackSubtaskManager;
 
   function isBlocked(subtask: FeedbackSubtask): boolean {
     if (!subtaskService) return false;

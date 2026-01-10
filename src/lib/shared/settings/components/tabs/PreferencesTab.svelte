@@ -10,8 +10,7 @@
 -->
 <script lang="ts">
   import type { AppSettings } from "../../domain/AppSettings";
-  import { resolve } from "../../../inversify/di";
-  import { TYPES } from "../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import {
@@ -38,12 +37,8 @@
   const darkMode = $derived(getSettings().darkMode ?? false);
   const isPreview = $derived(isSettingsPreviewMode());
 
-  onMount(async () => {
-    try {
-      hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    } catch (e) {
-      console.warn("Haptic service not available");
-    }
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
     setTimeout(() => (isVisible = true), 30);
   });
 

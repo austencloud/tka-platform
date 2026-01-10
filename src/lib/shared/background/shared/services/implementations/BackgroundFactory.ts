@@ -7,9 +7,7 @@ import type {
 } from "../../domain/models/background-models";
 import type { QualityLevel } from "../../domain/types/background-types";
 import { BackgroundType } from "../../domain/enums/background-enums";
-import { getContainerInstance } from "../../../../inversify/di";
-import { TYPES } from "../../../../inversify/types";
-import type { Container } from "inversify";
+import { container } from "$lib/shared/di";
 
 // BackgroundFactoryParams doesn't exist in domain - define locally
 export interface BackgroundFactoryParams {
@@ -48,10 +46,6 @@ const backgroundLoaders = {
   simple: () => import("../../../simple/services/SimpleBackgroundSystem"),
 };
 
-// Track if DI modules are loaded
-let _deepOceanModuleLoaded = false;
-let _nightSkyModuleLoaded = false;
-
 export class BackgroundFactory {
   // Default accessibility settings
   private static readonly defaultAccessibility: AccessibilitySettings = {
@@ -59,38 +53,6 @@ export class BackgroundFactory {
     highContrast: false,
     visibleParticleSize: 2,
   };
-
-  /**
-   * Load Night Sky DI module on-demand (only when Night Sky background is needed)
-   */
-  private static async loadNightSkyModule(): Promise<void> {
-    // Use container.isBound() as the source of truth (survives code-splitting)
-    const container = await getContainerInstance();
-    if (container.isBound(TYPES.INightSkyCalculationService)) {
-      return; // Already loaded
-    }
-
-    const { nightSkyBackgroundModule } =
-      await import("../../../night-sky/inversify/NightSkyModule");
-    await container.load(nightSkyBackgroundModule);
-    _nightSkyModuleLoaded = true;
-  }
-
-  /**
-   * Load Deep Ocean DI module on-demand (only when Deep Ocean background is needed)
-   * @returns The container instance for resolving services
-   */
-  private static async loadDeepOceanModule(): Promise<Container> {
-    // Use container.isBound() as the source of truth (survives code-splitting)
-    const container = await getContainerInstance();
-    if (!container.isBound(TYPES.IBubblePhysics)) {
-      const { deepOceanBackgroundModule } =
-        await import("../../../deep-ocean/inversify/DeepOceanModule");
-      await container.load(deepOceanBackgroundModule);
-      _deepOceanModuleLoaded = true;
-    }
-    return container;
-  }
 
   public static async createBackgroundSystem(
     options: BackgroundFactoryParams
@@ -134,36 +96,14 @@ export class BackgroundFactory {
         break;
       }
       case BackgroundType.NIGHT_SKY: {
-        // Load Night Sky DI module on-demand (services only loaded when needed)
-        await this.loadNightSkyModule();
-
+        // Night Sky services are now in ITI container (no inversify module needed)
         const { NightSkyBackgroundSystem } = await backgroundLoaders.nightSky();
         backgroundSystem = NightSkyBackgroundSystem.create();
         break;
       }
       case BackgroundType.DEEP_OCEAN: {
-        // Load Deep Ocean DI module on-demand (services only loaded when needed)
-        const container = await this.loadDeepOceanModule();
-
-        const { DeepOceanBackgroundOrchestrator } =
-          await backgroundLoaders.deepOcean();
-        // Use the refactored orchestrator with all split services from container
-        backgroundSystem = new DeepOceanBackgroundOrchestrator(
-          // Physics services
-          container.get(TYPES.IBubblePhysics),
-          container.get(TYPES.IParticleSystem),
-          container.get(TYPES.ILightRayCalculator),
-          // Animator services
-          container.get(TYPES.IFishAnimator),
-          container.get(TYPES.IJellyfishAnimator),
-          // Renderer services
-          container.get(TYPES.IGradientRenderer),
-          container.get(TYPES.ILightRayRenderer),
-          container.get(TYPES.IBubbleRenderer),
-          container.get(TYPES.IParticleRenderer),
-          container.get(TYPES.IFishRenderer),
-          container.get(TYPES.IJellyfishRenderer)
-        );
+        // Deep Ocean services are now in ITI container
+        backgroundSystem = container.items.deepOceanBackgroundSystem;
         break;
       }
       case BackgroundType.EMBER_GLOW: {

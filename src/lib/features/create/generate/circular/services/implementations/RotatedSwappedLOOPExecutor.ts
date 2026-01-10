@@ -22,12 +22,10 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { TYPES } from "$lib/shared/inversify/types";
 import type {
   GridLocation,
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { inject, injectable } from "inversify";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import {
   getHandRotationDirection,
@@ -38,12 +36,9 @@ import {
 import { SliceSize } from "../../domain/models/circular-models";
 import type { BeatData } from "../../../../shared/domain/models/BeatData";
 
-@injectable()
 export class RotatedSwappedLOOPExecutor {
   constructor(
-    @inject(TYPES.IOrientationCalculator)
     private OrientationCalculator: IOrientationCalculator,
-    @inject(TYPES.IGridPositionDeriver)
     private gridPositionDeriver: IGridPositionDeriver
   ) {}
 

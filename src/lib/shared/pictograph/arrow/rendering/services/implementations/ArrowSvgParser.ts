@@ -7,9 +7,7 @@
 
 import type { IArrowSvgParser } from "../contracts/IArrowSvgParser";
 import type { SVGDimensions } from "../../../../shared/domain/models/svg-models";
-import { injectable } from "inversify";
 
-@injectable()
 export class ArrowSvgParser implements IArrowSvgParser {
   /**
    * Parse SVG to get proper dimensions and center point (extracted from Arrow.svelte)

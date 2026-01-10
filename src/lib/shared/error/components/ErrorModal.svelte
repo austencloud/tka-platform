@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import { getCurrentError, dismissError } from "../state/error-state.svelte";
-  import { resolve, tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
@@ -67,7 +66,7 @@
 
     isReporting = true;
     try {
-      const errorService = tryResolve<IErrorHandler>(TYPES.IErrorHandler);
+      const errorService = container.items.errorHandler as IErrorHandler | undefined;
       if (!errorService) {
         toast.error("Unable to submit bug report - service unavailable");
         return;

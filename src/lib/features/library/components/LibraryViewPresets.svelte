@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type {
     LibrarySortField,
@@ -42,7 +41,7 @@
   let hapticService: IHapticFeedback | null = $state(null);
 
   onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Preset definitions - removed "My Creations" as Library IS your creations

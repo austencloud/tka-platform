@@ -7,9 +7,7 @@
 
 import type { IGridPositionDeriver } from "../contracts/IGridPositionDeriver";
 import { GridLocation, GridPosition } from "../../domain/enums/grid-enums";
-import { injectable } from "inversify";
 
-@injectable()
 export class GridPositionDeriver implements IGridPositionDeriver {
   // Position mapping from (blue_location, red_location) to grid position
   // Using actual GridLocation enums as keys for type safety

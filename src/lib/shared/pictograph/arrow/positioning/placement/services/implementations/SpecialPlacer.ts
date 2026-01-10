@@ -14,9 +14,6 @@
  */
 
 import type { Point as FabricPoint } from "fabric";
-import { inject, injectable } from "inversify";
-import { resolve } from "../../../../../../inversify/resolve-utils";
-import { TYPES } from "../../../../../../inversify/types";
 import type { IGridModeDeriver } from "../../../../../grid/services/contracts/IGridModeDeriver";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
@@ -27,18 +24,14 @@ import type { ISpecialPlacementDataProvider } from "../contracts/ISpecialPlaceme
 import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
 import type { ISpecialPlacementLookup } from "../contracts/ISpecialPlacementLookup";
 
-@injectable()
 export class SpecialPlacer implements ISpecialPlacer {
   private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
-  private gridModeService: IGridModeDeriver | null = null;
 
   constructor(
-    @inject(TYPES.ISpecialPlacementDataProvider)
     private readonly dataService: ISpecialPlacementDataProvider,
-    @inject(TYPES.ITurnsTupleGenerator)
     private readonly tupleGenerator: ITurnsTupleGenerator,
-    @inject(TYPES.ISpecialPlacementLookup)
-    private readonly lookupService: ISpecialPlacementLookup
+    private readonly lookupService: ISpecialPlacementLookup,
+    private readonly gridModeService: IGridModeDeriver
   ) {
     this.oriKeyGenerator = new SpecialPlacementOriKeyGenerator();
   }
@@ -245,12 +238,9 @@ export class SpecialPlacer implements ISpecialPlacer {
   }
 
   /**
-   * Lazy-load grid mode service
+   * Get grid mode service
    */
   private getGridModeService(): IGridModeDeriver {
-    if (!this.gridModeService) {
-      this.gridModeService = resolve<IGridModeDeriver>(TYPES.IGridModeDeriver);
-    }
     return this.gridModeService;
   }
 }

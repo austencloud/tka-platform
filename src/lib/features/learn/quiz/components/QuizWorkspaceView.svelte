@@ -4,8 +4,7 @@
   import { onDestroy, onMount } from "svelte";
 
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   import LetterToPictographQuiz from "./LetterToPictographQuiz.svelte";
   import PictographToLetterQuiz from "./PictographToLetterQuiz.svelte";
@@ -50,10 +49,8 @@
   let timerComponent = $state<QuizTimer>();
 
   // Services
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  const quizSessionService = resolve<IQuizSessionManager>(
-    TYPES.IQuizSessionManager
-  );
+  const hapticService = container.items.hapticFeedback;
+  const quizSessionService = container.items.quizSessionManager;
 
   // Derived state
   const isCountdownMode = $derived(quizMode === QuizMode.COUNTDOWN);

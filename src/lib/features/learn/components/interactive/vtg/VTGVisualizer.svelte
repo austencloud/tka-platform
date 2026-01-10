@@ -4,8 +4,7 @@ Shows how hands coordinate their movements in different VTG patterns
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   type VTGMode = "SS" | "TS" | "SO" | "TO" | "QS" | "QO";
 
@@ -19,7 +18,7 @@ Shows how hands coordinate their movements in different VTG patterns
     showLabels?: boolean;
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   // VTG mode info
   const VTG_INFO: Record<

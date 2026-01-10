@@ -5,7 +5,6 @@
  * Stores animations in the user's collection: users/{userId}/animations/{animationId}
  */
 
-import { injectable } from "inversify";
 import {
   doc,
   getDoc,
@@ -54,7 +53,6 @@ interface AnimationFirestoreData {
   isPublic: boolean;
 }
 
-@injectable()
 export class AnimationStorageManager implements IAnimationStorageManager {
   /**
    * Get the Firestore collection reference for a user's animations

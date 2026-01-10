@@ -7,8 +7,7 @@
 <script lang="ts">
   import Drawer from "../../foundation/ui/Drawer.svelte";
 
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import AuthFooter from "../../auth/components/AuthFooter.svelte";
@@ -33,8 +32,8 @@
 
   onMount(async () => {
     try {
-      hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-      authService = await resolve<IAuthenticator>(TYPES.IAuthenticator);
+      hapticService = container.items.hapticFeedback;
+      authService = container.items.authenticator;
     } catch (error) {
       console.error("❌ [AuthSheet] Failed to resolve services:", error);
     }

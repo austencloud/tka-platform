@@ -5,7 +5,6 @@
  * Uses both Firestore (persistent history) and Svelte 5 runes (reactive UI).
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   doc,
@@ -31,7 +30,6 @@ import {
 } from "../../state/notification-state.svelte";
 import { addXPToast } from "../../state/xp-toast-state.svelte";
 
-@injectable()
 export class GamificationNotifier implements IGamificationNotifier {
   // ============================================================================
   // SHOW NOTIFICATIONS

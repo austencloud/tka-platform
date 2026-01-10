@@ -3,7 +3,6 @@ import type {
   Dimensions,
   PerformanceMetrics,
 } from "../../domain/types/background-types";
-import { injectable } from "inversify";
 import type { IBackgroundManager } from "../contracts/IBackgroundManager";
 import { PerformanceTracker } from "./PerformanceTracker";
 
@@ -12,7 +11,6 @@ import { PerformanceTracker } from "./PerformanceTracker";
  * Handles canvas management, animation loops, and performance tracking
  * State is managed separately in BackgroundState.svelte.ts
  */
-@injectable()
 export class BackgroundManager implements IBackgroundManager {
   private performanceTracker: PerformanceTracker;
   private canvas: HTMLCanvasElement | null = null;

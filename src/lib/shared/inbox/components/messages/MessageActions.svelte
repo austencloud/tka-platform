@@ -10,8 +10,7 @@
   import { onMount } from "svelte";
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { layoutState } from "$lib/shared/layout/layout-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
@@ -41,7 +40,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
     return () => {
       if (longPressTimer) clearTimeout(longPressTimer);
     };

@@ -5,7 +5,6 @@
  * Uses research-based ratios for realistic human body proportions.
  */
 
-import { injectable, inject } from "inversify";
 import { MeshStandardMaterial, Color } from "three";
 import type { Material } from "three";
 import type {
@@ -16,7 +15,6 @@ import type {
   AvatarCustomization,
   ProportionPreset,
 } from "../contracts/IAvatarCustomizer";
-import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
 import type { IAnimation3DPersister } from "../contracts/IAnimation3DPersister";
 
 /**
@@ -136,17 +134,13 @@ function deriveProportionsInternal(
   };
 }
 
-@injectable()
 export class AvatarCustomizer implements IAvatarCustomizer {
   private state: AvatarCustomization;
   private skinMaterial: MeshStandardMaterial;
   private bodyMaterial: MeshStandardMaterial;
   private listeners: Set<(state: AvatarCustomization) => void> = new Set();
 
-  constructor(
-    @inject(ANIMATION_3D_TYPES.IAnimation3DPersister)
-    private persistence: IAnimation3DPersister
-  ) {
+  constructor(private persistence: IAnimation3DPersister) {
     // Get Austen preset (index 2)
     const austenPreset = PROPORTION_PRESETS.find((p) => p.id === "tall-male");
     const defaultProportions =

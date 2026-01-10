@@ -7,7 +7,6 @@
  * Falls back to WASM-based h264-mp4-encoder for browsers without WebCodecs (Firefox).
  */
 
-import { injectable } from "inversify";
 import type {
   IVideoExporter,
   VideoExportOptions,
@@ -17,7 +16,6 @@ import { VIDEO_EXPORT_FPS } from "../../shared/domain/constants/timing";
 import { WebCodecsVideoEncoder } from "./WebCodecsVideoEncoder";
 import { WasmVideoEncoder } from "./WasmVideoEncoder";
 
-@injectable()
 export class VideoExporter implements IVideoExporter {
   private isCurrentlyExporting = false;
   private shouldCancel = false;

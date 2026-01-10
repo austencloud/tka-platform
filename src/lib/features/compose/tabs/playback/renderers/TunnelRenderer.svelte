@@ -8,12 +8,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import {
-    getContainerInstance,
-    loadAnimationModule,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
@@ -98,35 +93,20 @@
 
   // Initialize services
   onMount(() => {
-    const initialize = async () => {
-      try {
-        // Ensure animator module is loaded (handles HMR recovery)
-        await loadFeatureModule("animate");
+    try {
+      // ITI container for services
+      primaryPlaybackController = container.items.animationPlaybackController;
+      // Create a new instance for secondary controller (tunnel mode needs two)
+      secondaryPlaybackController = container.items.animationPlaybackController;
+      settingsService = container.items.settingsState;
+      animationRenderer = container.items.animationRenderer;
 
-        const container = await getContainerInstance();
-        primaryPlaybackController = container.get<IAnimationPlaybackController>(
-          TYPES.IAnimationPlaybackController
-        );
-        secondaryPlaybackController =
-          container.get<IAnimationPlaybackController>(
-            TYPES.IAnimationPlaybackController
-          );
-        settingsService = container.get<ISettingsState>(TYPES.ISettingsState);
-
-        // Load animation module on-demand
-        await loadAnimationModule();
-        animationRenderer = container.get<IAnimationRenderer>(
-          TYPES.IAnimationRenderer
-        );
-
-        // Load secondary prop textures for tunnel mode
-        loadSecondaryPropTextures();
-      } catch (err) {
-        console.error("❌ Failed to initialize tunnel renderer:", err);
-        error = "Failed to initialize animation services";
-      }
-    };
-    initialize();
+      // Load secondary prop textures for tunnel mode
+      loadSecondaryPropTextures();
+    } catch (err) {
+      console.error("Failed to initialize tunnel renderer:", err);
+      error = "Failed to initialize animation services";
+    }
 
     return () => {
       primaryAnimationState.dispose();

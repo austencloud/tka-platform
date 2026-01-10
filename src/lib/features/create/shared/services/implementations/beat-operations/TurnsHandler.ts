@@ -19,8 +19,7 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { IReversalDetector } from "../../../services/contracts/IReversalDetector";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
   getBeatDataFromState,
@@ -110,9 +109,7 @@ export function updateBeatTurns(
   }
 
   // Recalculate endOrientation based on new turn amount and updated rotation direction
-  const orientationCalculator = resolve<IOrientationCalculator>(
-    TYPES.IOrientationCalculator
-  );
+  const orientationCalculator = container.items.orientationCalculator as IOrientationCalculator;
   const tempMotionData = createMotionData({
     ...currentMotion,
     turns: turnAmount,
@@ -204,7 +201,7 @@ export function updateBeatTurns(
   // Process reversals to update reversal indicators after turns change
   // Turns changes can affect reversals when rotation direction changes (e.g., 0 to >0 turns)
   try {
-    const reversalService = resolve<IReversalDetector>(TYPES.IReversalDetector);
+    const reversalService = container.items.reversalDetector as IReversalDetector;
     updatedSequence = reversalService.processReversals(updatedSequence);
   } catch {
     // Reversal service is optional - continue without reversal processing

@@ -6,8 +6,7 @@ Can operate as stepper (inline) or panel opener (click to select)
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
 
@@ -44,8 +43,8 @@ Can operate as stepper (inline) or panel opener (click to select)
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    rippleService = tryResolve<IRippleEffect>(TYPES.IRippleEffect);
+    hapticService = container.items.hapticFeedback ?? null;
+    rippleService = container.items.rippleEffect ?? null;
 
     if (mode === "panel-opener" && cardElement && rippleService) {
       return rippleService.attachRipple(cardElement, {

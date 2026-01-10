@@ -8,8 +8,7 @@
    * Domain: Create module - LOOP Panel Coordination
    */
 
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
   import LOOPSelectionPanel from "../../../generate/components/modals/LOOPSelectionPanel.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
@@ -18,9 +17,7 @@
   const ctx = getCreateModuleContext();
   const { panelState } = ctx;
 
-  let LOOPTypeResolver: ILOOPTypeResolver = resolve<ILOOPTypeResolver>(
-    TYPES.ILOOPTypeResolver
-  );
+  const LOOPTypeResolver: ILOOPTypeResolver = container.items.loopTypeResolver;
 
   // Local pending state - tracks changes before applying
   let pendingComponents = $state<Set<any> | null>(null);

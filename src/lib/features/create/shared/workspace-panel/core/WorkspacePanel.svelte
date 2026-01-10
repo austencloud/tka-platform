@@ -5,8 +5,7 @@
 	Main area for viewing and interacting with the sequence.
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { openSpotlightWithBeatGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
   import { onMount } from "svelte";
@@ -172,7 +171,7 @@
 
   // Initialize services on mount
   onMount(() => {
-    BeatOperator = resolve<IBeatOperator>(TYPES.IBeatOperator);
+    BeatOperator = container.items.beatOperator;
   });
 </script>
 

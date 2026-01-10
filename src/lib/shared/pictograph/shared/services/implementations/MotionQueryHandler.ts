@@ -13,30 +13,23 @@ import { createMotionData } from "../../domain/models/MotionData";
 import type { PictographData } from "../../domain/models/PictographData";
 import type { ICSVPictographParser as ICSVPictographParser } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
 import type { CSVRow } from "../../../../foundation/services/contracts/data/ICSVPictographParser";
-import { inject, injectable } from "inversify";
 import type { ParsedCsvRow } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
 import type { ICSVLoader } from "../../../../foundation/services/contracts/data/ICSVLoader";
 import type { IMotionQueryHandler } from "../../../../foundation/services/contracts/data/data-contracts";
-import { TYPES } from "../../../../inversify/types";
 import type { IOrientationCalculator } from "../../../prop/services/contracts/IOrientationCalculator";
 // Temporary interface definition
 interface ICSVParser {
   parseCSV(csvText: string): { rows: ParsedCsvRow[] };
 }
 
-@injectable()
 export class MotionQueryHandler implements IMotionQueryHandler {
   private parsedData: Record<GridMode, ParsedCsvRow[]> | null = null;
   private isInitialized = false;
 
   constructor(
-    @inject(TYPES.ICSVLoader)
     private csvLoader: ICSVLoader,
-    @inject(TYPES.ICSVParser)
     private CSVParser: ICSVParser,
-    @inject(TYPES.ICSVPictographParser)
     private csvPictographParser: ICSVPictographParser,
-    @inject(TYPES.IOrientationCalculator)
     private OrientationCalculator: IOrientationCalculator
   ) {}
 

@@ -5,18 +5,8 @@
  * Provides access to core animation dependencies.
  */
 
-import {
-  loadAnimationModule,
-  loadFeatureModule,
-  getContainerInstance,
-} from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
-import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
-import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
-import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
-import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
-import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 import type {
   IAnimatorLoader,
   AnimatorServices,
@@ -25,34 +15,25 @@ import type {
 } from "../contracts/IAnimatorLoader";
 
 export class AnimatorLoader implements IAnimatorLoader {
-  async loadAnimatorServices(): Promise<AnimatorServiceLoadResult> {
+  loadAnimatorServices(): AnimatorServiceLoadResult {
     try {
-      // First ensure the animator module is loaded
-      await loadFeatureModule("animate");
-
-      // Get container and resolve services
-      const container = await getContainerInstance();
-
+      // With ITI, all services are already composed at startup - no async loading needed
       const services: AnimatorServices = {
-        svgGenerator: container.get<ISVGGenerator>(TYPES.ISVGGenerator),
-        settingsService: container.get<ISettingsState>(TYPES.ISettingsState),
-        orchestrator: container.get<ISequenceAnimationOrchestrator>(
-          TYPES.ISequenceAnimationOrchestrator
-        ),
-        TrailCapturer: container.get<ITrailCapturer>(TYPES.ITrailCapturer),
-        turnsTupleGenerator: container.get<ITurnsTupleGenerator>(
-          TYPES.ITurnsTupleGenerator
-        ),
+        svgGenerator: container.items.svgGenerator,
+        settingsService: container.items.settingsState,
+        orchestrator: container.items.sequenceAnimationOrchestrator,
+        TrailCapturer: container.items.trailCapturer,
+        turnsTupleGenerator: container.items.turnsTupleGenerator,
       };
 
       if (!services.svgGenerator) {
         console.error(
-          "[AnimatorLoader] CRITICAL: container.get() returned null/undefined for ISVGGenerator!"
+          "[AnimatorLoader] CRITICAL: container.items.svgGenerator returned null/undefined!"
         );
         return {
           success: false,
           error:
-            "DI container returned null for ISVGGenerator (this is a container bug)",
+            "DI container returned null for svgGenerator (this is a container bug)",
         };
       }
 
@@ -66,13 +47,17 @@ export class AnimatorLoader implements IAnimatorLoader {
     }
   }
 
-  async loadAnimationRenderer(): Promise<AnimationRendererLoadResult> {
+  loadAnimationRenderer(): AnimationRendererLoadResult {
     try {
-      await loadAnimationModule();
-      const container = await getContainerInstance();
-      const renderer = container.get<IAnimationRenderer>(
-        TYPES.IAnimationRenderer
-      );
+      // Note: IAnimationRenderer may not be migrated to ITI yet
+      // Check if it exists in the container
+      const renderer = (container.items as any).animationRenderer as IAnimationRenderer | undefined;
+      if (!renderer) {
+        return {
+          success: false,
+          error: "animationRenderer not found in container (may not be migrated to ITI yet)",
+        };
+      }
       return { success: true, renderer };
     } catch (err) {
       console.error("Failed to load animation renderer:", err);
@@ -87,7 +72,7 @@ export class AnimatorLoader implements IAnimatorLoader {
   }
 
   /** @deprecated Use loadAnimationRenderer() instead */
-  async loadPixiRenderer(): Promise<AnimationRendererLoadResult> {
+  loadPixiRenderer(): AnimationRendererLoadResult {
     return this.loadAnimationRenderer();
   }
 }
@@ -96,10 +81,10 @@ export class AnimatorLoader implements IAnimatorLoader {
 const animatorLoader = new AnimatorLoader();
 
 /**
- * Load core animator services (requires animate module).
+ * Load core animator services.
  * Convenience function for direct usage.
  */
-export async function loadAnimatorServices(): Promise<AnimatorServiceLoadResult> {
+export function loadAnimatorServices(): AnimatorServiceLoadResult {
   return animatorLoader.loadAnimatorServices();
 }
 
@@ -107,7 +92,7 @@ export async function loadAnimatorServices(): Promise<AnimatorServiceLoadResult>
  * Load animation renderer.
  * Convenience function for direct usage.
  */
-export async function loadAnimationRenderer(): Promise<AnimationRendererLoadResult> {
+export function loadAnimationRenderer(): AnimationRendererLoadResult {
   return animatorLoader.loadAnimationRenderer();
 }
 

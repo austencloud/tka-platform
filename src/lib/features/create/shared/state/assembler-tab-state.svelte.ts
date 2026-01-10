@@ -25,8 +25,7 @@ import {
   type UndoMetadata
 } from "../services/contracts/IUndoManager";
 import { createUndoController } from "./create-module/undo-controller.svelte";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 
 /**
  * Creates assembler tab state for assembler-specific concerns
@@ -68,7 +67,7 @@ export function createAssemblerTabState(
     : null;
 
   // Assembler tab has its own independent undo controller
-  const UndoManager = resolve<IUndoManager>(TYPES.IUndoManager);
+  const UndoManager = container.items.undoManager as IUndoManager;
   const undoController = sequenceState
     ? createUndoController({
         UndoManager,

@@ -12,8 +12,7 @@ import type { ExploreFilterType } from "$lib/shared/persistence/domain/enums/Fil
 import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
 import { ExploreSortMethod } from "$lib/features/discover/shared/domain/enums/discover-enums";
-import { tryResolve, loadFeatureModule } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 
 const BATCH_SIZE = 24;
 
@@ -110,15 +109,13 @@ export function createMediaBrowserState() {
   const hasMore = $derived(displayedCount < allFilteredSequences.length);
 
   // Initialize services
-  async function initializeServices(): Promise<boolean> {
+  function initializeServices(): boolean {
     try {
-      await loadFeatureModule("discover");
-      loaderService = tryResolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-      thumbnailService = tryResolve<IDiscoverThumbnailProvider>(
-        TYPES.IDiscoverThumbnailProvider
-      );
-      filterService = tryResolve<IDiscoverFilter>(TYPES.IDiscoverFilter);
-      sortService = tryResolve<IDiscoverSorter>(TYPES.IDiscoverSorter);
+      loaderService = container.items.discoverLoader as IDiscoverLoader;
+      thumbnailService = container.items
+        .discoverThumbnailProvider as IDiscoverThumbnailProvider;
+      filterService = container.items.discoverFilter as IDiscoverFilter;
+      sortService = container.items.discoverSorter as IDiscoverSorter;
       servicesReady = !!(loaderService && thumbnailService);
       return servicesReady;
     } catch (err) {

@@ -8,9 +8,8 @@ Follows Svelte 5 runes + microservices architecture.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
@@ -28,7 +27,7 @@ Follows Svelte 5 runes + microservices architecture.
 
   let hapticService: IHapticFeedback;
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Filter sections matching actual data

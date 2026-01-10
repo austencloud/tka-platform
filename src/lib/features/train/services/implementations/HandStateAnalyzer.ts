@@ -6,7 +6,6 @@
  * point selection and palm center calculation based on hand state.
  */
 
-import { injectable } from "inversify";
 import type {
   IHandStateAnalyzer,
   HandStateAnalysisResult,
@@ -27,7 +26,6 @@ const WRIST = 0;
 const MIDDLE_FINGER_PIP = 10; // Middle knuckle
 const MIDDLE_FINGER_TIP = 12;
 
-@injectable()
 export class HandStateAnalyzer implements IHandStateAnalyzer {
   /**
    * Analyze hand landmarks to determine hand state (open/closed/partial)

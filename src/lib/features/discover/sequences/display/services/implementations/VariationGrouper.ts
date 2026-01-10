@@ -5,11 +5,9 @@
  * Caches results for performance and sorts variations by date (newest first).
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IVariationGrouper } from "../contracts/IVariationGrouper";
 
-@injectable()
 export class VariationGrouper implements IVariationGrouper {
   // Cache for variation map to avoid recomputation
   private cachedMap: Map<string, SequenceData[]> | null = null;

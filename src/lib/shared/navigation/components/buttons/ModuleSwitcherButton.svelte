@@ -1,7 +1,7 @@
 <!-- ModuleSwitcherButton - Menu Button for Module Navigation -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -21,7 +21,7 @@
   let suppressClick = $state(false);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function startLongPress(event: PointerEvent) {

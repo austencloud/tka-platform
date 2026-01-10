@@ -5,8 +5,7 @@
  * Tags are generated on-the-fly when viewing each sequence for faster algorithm iteration.
  */
 
-import { tryResolve } from "$lib/shared/inversify/di";
-import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
+import { container } from "$lib/shared/di";
 import type { ISequenceFeatureExtractor } from "$lib/features/loop-labeler/services/contracts/ISequenceFeatureExtractor";
 import type { IRuleBasedTagger } from "$lib/features/loop-labeler/services/contracts/IRuleBasedTagger";
 import type { IBeatDataConverter } from "$lib/features/loop-labeler/services/contracts/IBeatDataConverter";
@@ -193,13 +192,11 @@ export function createTagReviewerState() {
     }
 
     // Resolve services
-    featureExtractor = tryResolve<ISequenceFeatureExtractor>(
-      LOOPLabelerTypes.ISequenceFeatureExtractor
-    );
-    tagger = tryResolve<IRuleBasedTagger>(LOOPLabelerTypes.IRuleBasedTagger);
-    conversionService = tryResolve<IBeatDataConverter>(
-      LOOPLabelerTypes.IBeatDataConverter
-    );
+    featureExtractor = container.items
+      .sequenceFeatureExtractor as ISequenceFeatureExtractor | null;
+    tagger = container.items.ruleBasedTagger as IRuleBasedTagger | null;
+    conversionService = container.items
+      .beatDataConverter as IBeatDataConverter | null;
 
     // Load sequences from sequence-index.json
     try {

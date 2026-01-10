@@ -3,8 +3,7 @@
   import "../types/vendor-prefixed";
   import type { IHapticFeedback } from "../application/services/contracts/IHapticFeedback";
   import type { IMobileFullscreenManager } from "../mobile/services/contracts/IMobileFullscreenManager";
-  import { resolve } from "../inversify/di";
-  import { TYPES } from "../inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
   let isFullscreen = $state(false);
@@ -17,10 +16,8 @@
 
   // Check if fullscreen is supported and if running as PWA
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    fullscreenService = resolve<IMobileFullscreenManager>(
-      TYPES.IMobileFullscreenManager
-    );
+    hapticService = container.items.hapticFeedback;
+    fullscreenService = container.items.mobileFullscreenManager;
 
     // Check if running as PWA - if so, don't show the button
     isPWA = fullscreenService.isPWA();

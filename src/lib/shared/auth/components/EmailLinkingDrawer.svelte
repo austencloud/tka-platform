@@ -12,7 +12,7 @@
 <script lang="ts">
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { authState } from "../state/authState.svelte";
-  import { resolve, TYPES } from "../../inversify/di";
+  import { container } from "../../di";
   import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount, onDestroy } from "svelte";
@@ -40,8 +40,8 @@
   let linkingState = $state<EmailLinkingState | null>(null);
 
   onMount(() => {
-    authService = resolve<IAuthenticator>(TYPES.IAuthenticator);
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    authService = container.items.authenticator;
+    hapticService = container.items.hapticFeedback;
   });
 
   onDestroy(() => {

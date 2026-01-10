@@ -5,7 +5,6 @@
  * timeline operations. Persists history to localStorage.
  */
 
-import { injectable } from "inversify";
 import type {
   ITimelineUndoManager,
   TimelineUndoOperationType,
@@ -18,7 +17,6 @@ const STORAGE_KEY_UNDO = "timeline-undo-history";
 const STORAGE_KEY_REDO = "timeline-redo-history";
 const MAX_HISTORY_SIZE = 50;
 
-@injectable()
 export class TimelineUndoManager implements ITimelineUndoManager {
   private undoStack: TimelineUndoEntry[] = [];
   private redoStack: TimelineUndoEntry[] = [];

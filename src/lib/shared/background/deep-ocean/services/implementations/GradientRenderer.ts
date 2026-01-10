@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type {
   GradientState,
@@ -45,7 +44,6 @@ const GRADIENT_CONFIG = {
   vignetteRadius: 0.7, // Start at 70% from center
 };
 
-@injectable()
 export class GradientRenderer implements IGradientRenderer {
   initializeGradientState(dimensions: Dimensions): GradientState {
     return {

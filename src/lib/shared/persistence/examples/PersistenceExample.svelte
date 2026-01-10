@@ -8,8 +8,7 @@
 <script lang="ts">
   import type { SequenceData } from "../../foundation/domain/models/SequenceData";
   import type { TabId } from "../../navigation/domain/types";
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { IPersistenceService } from "../services/contracts/IPersistenceService";
 
@@ -17,10 +16,8 @@
   // SERVICE INJECTION
   // ============================================================================
 
-  // Get the persistence service from your DI container
-  const persistenceService = resolve(
-    TYPES.IPersistenceService
-  ) as IPersistenceService;
+  // Get the persistence service from the ITI container
+  const persistenceService = container.items.persistenceService as IPersistenceService;
 
   // ============================================================================
   // REACTIVE STATE

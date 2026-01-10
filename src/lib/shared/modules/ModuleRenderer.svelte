@@ -9,10 +9,8 @@
    * - Coordinate with child module components via callbacks
    * - Provide loading states
    * - Code-split modules to reduce initial bundle size
-   * - Ensure DI modules are loaded before components
    */
   import { isModuleActive } from "../application/state/ui/ui-state.svelte";
-  import { loadFeatureModule } from "../inversify/di";
   import type { Component } from "svelte";
 
   interface Props {
@@ -98,11 +96,8 @@
       return moduleCache.get(moduleName)!;
     }
 
-    // Load the DI module FIRST to ensure services are available
-    // This is critical - the component will resolve services during import
-    await loadFeatureModule(moduleName);
-
     // Load and cache the component
+    // Services are already registered synchronously via ITI container
     const { default: ModuleComponent } = await moduleLoaders[moduleName]();
     moduleCache.set(moduleName, ModuleComponent);
     return ModuleComponent;

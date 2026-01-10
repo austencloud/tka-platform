@@ -10,9 +10,8 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
   import { sequenceSourceManager, type SequenceSource } from "../state/sequence-source-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import { ExploreSortMethod } from "../domain/enums/discover-enums";
 
   interface Props {
@@ -69,7 +68,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
   ];
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   function handleSortChange(method: ExploreSortMethod) {

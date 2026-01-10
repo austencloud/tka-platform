@@ -6,7 +6,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { injectable } from "inversify";
 import type { ISequenceIndexer } from "../contracts/ISequenceIndexer";
 
 interface SearchIndex {
@@ -16,7 +15,6 @@ interface SearchIndex {
   metadataIndex: Map<string, Set<string>>; // combined metadata -> sequence IDs
 }
 
-@injectable()
 export class SequenceIndexer implements ISequenceIndexer {
   buildIndex(_sequences: SequenceData[]): void {
     // Build search index for sequences - placeholder implementation

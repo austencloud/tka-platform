@@ -13,8 +13,6 @@ import {
   MotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IAngleCalculator } from "../contracts/IAngleCalculator";
 import type { IEndpointCalculator } from "../contracts/IEndpointCalculator";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
@@ -23,11 +21,10 @@ import { PI } from "../../shared/domain/math-constants.js";
 // ✅ ELIMINATED: StepEndpoints and StepDefinition - pointless reshuffling!
 // Work directly with MotionData and return simple objects
 
-@injectable()
 export class EndpointCalculator implements IEndpointCalculator {
   constructor(
-    @inject(TYPES.IAngleCalculator) private angleCalculator: IAngleCalculator,
-    @inject(TYPES.IMotionCalculator) private motionCalculator: IMotionCalculator
+    private angleCalculator: IAngleCalculator,
+    private motionCalculator: IMotionCalculator
   ) {}
 
   /**

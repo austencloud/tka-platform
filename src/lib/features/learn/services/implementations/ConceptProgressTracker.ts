@@ -5,7 +5,6 @@
  * Handles concept unlocking, progress tracking, and persistence.
  */
 
-import { injectable } from "inversify";
 import { TKA_CONCEPTS, isConceptUnlocked } from "../../domain/concepts";
 import type {
   ConceptProgress,
@@ -16,7 +15,6 @@ import type { IConceptProgressTracker } from "../contracts/IConceptProgressTrack
 
 const STORAGE_KEY = "tka_learning_progress";
 
-@injectable()
 export class ConceptProgressTracker implements IConceptProgressTracker {
   private progress: LearningProgress;
   private subscribers: Set<(progress: LearningProgress) => void> = new Set();

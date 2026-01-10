@@ -4,14 +4,12 @@
  * Maps prop orientations to angles relative to center path.
  */
 
-import { injectable } from "inversify";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { IOrientationMapper } from "../contracts/IOrientationMapper";
 
 const PI = Math.PI;
 const HALF_PI = PI / 2;
 
-@injectable()
 export class OrientationMapper implements IOrientationMapper {
   /**
    * Map orientation to angle relative to center path

@@ -9,7 +9,6 @@
  * For quartered LOOPs: Randomly chooses between clockwise or counter-clockwise 90° rotation
  */
 
-import { injectable } from "inversify";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   HALF_POSITION_MAP,
@@ -18,7 +17,6 @@ import {
 } from "../../domain/constants/circular-position-maps";
 import { SliceSize } from "../../domain/models/circular-models";
 
-@injectable()
 export class RotatedEndPositionSelector {
   /**
    * Determine the required end position for a rotated LOOP

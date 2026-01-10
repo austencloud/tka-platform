@@ -15,8 +15,7 @@
     getComposeModuleState,
     type ComposeMode,
   } from "$lib/features/compose/shared/state/compose-module-state.svelte";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   // Get state instances
@@ -52,7 +51,7 @@
   };
 
   onMount(async () => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Ensure animations are loaded
     if (browseState.animations.length === 0) {

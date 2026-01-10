@@ -5,7 +5,6 @@
  * Uses localStorage for persistence across sessions.
  */
 
-import { injectable } from "inversify";
 import type {
   IQuickAccessPersister,
   QuickAccessUser,
@@ -13,7 +12,6 @@ import type {
 
 const STORAGE_KEY = "tka-quick-access-users";
 
-@injectable()
 export class QuickAccessPersister implements IQuickAccessPersister {
   private cache: QuickAccessUser[] | null = null;
 

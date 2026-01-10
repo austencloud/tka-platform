@@ -5,7 +5,6 @@
  * Bridges the gap between 2D sequence data model and 3D animation system.
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -24,7 +23,6 @@ import type {
   BeatMotionConfigs,
 } from "../contracts/ISequenceConverter";
 
-@injectable()
 export class SequenceConverter implements ISequenceConverter {
   /**
    * Convert a MotionData object to MotionConfig3D

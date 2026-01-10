@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import type { AppSettings, PropPreset } from "../../domain/AppSettings";
-  import { resolve } from "../../../inversify/di";
-  import { TYPES } from "../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
@@ -32,8 +31,8 @@
   // Services
   let hapticService: IHapticFeedback;
 
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
     setTimeout(() => (isVisible = true), 30);
   });
 

@@ -1,17 +1,14 @@
-import { inject, injectable } from "inversify";
 import type { IFishEffectRenderer } from "../contracts/IFishEffectRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
 import type { SpineChain } from "../../physics/SpineChain";
 import type { Point } from "../../physics/BodyOutlineCalculator";
 import { BodyOutlineCalculator } from "../../physics/BodyOutlineCalculator";
-import { TYPES } from "../../../../inversify/types";
 
 /**
  * Renders visual effects for fish (wake trails, bioluminescence).
  * Extracted from FishRenderer to follow single-responsibility principle.
  */
-@injectable()
 export class FishEffectRenderer implements IFishEffectRenderer {
   private bodyOutlineCalculator = new BodyOutlineCalculator();
 
@@ -22,9 +19,7 @@ export class FishEffectRenderer implements IFishEffectRenderer {
     colors: ["#00fff7", "#7b68ee", "#00ced1"],
   };
 
-  constructor(
-    @inject(TYPES.IColorCalculator) private colorCalc: IColorCalculator
-  ) {}
+  constructor(private colorCalc: IColorCalculator) {}
 
   drawWakeTrail(ctx: CanvasRenderingContext2D, fish: FishMarineLife): void {
     if (fish.wakeTrail.length === 0) return;

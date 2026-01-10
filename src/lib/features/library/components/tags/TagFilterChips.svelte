@@ -10,14 +10,13 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ITagManager } from "../../services/contracts/ITagManager";
   import type { LibraryTag } from "../../domain/models/Tag";
   import { libraryState } from "../../state/library-state.svelte";
 
   // Services
-  const tagService = tryResolve<ITagManager>(TYPES.ITagManager);
+  const tagService = container.items.tagManager;
 
   // State
   let allTags = $state<LibraryTag[]>([]);

@@ -5,7 +5,6 @@
  * Includes system collections like Favorites which are auto-created.
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   doc,
@@ -29,7 +28,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
-import { tryResolve, TYPES } from "$lib/shared/inversify/di";
+import { container } from "$lib/shared/di";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { ICollectionManager } from "../contracts/ICollectionManager";
 import type {
@@ -68,7 +67,6 @@ export class CollectionError extends Error {
   }
 }
 
-@injectable()
 export class CollectionManager implements ICollectionManager {
   /**
    * Get the current user ID or throw if not authenticated
@@ -639,7 +637,7 @@ export class CollectionManager implements ICollectionManager {
    * Log a favorite/unfavorite action to the activity log
    */
   private logFavoriteAction(sequenceId: string, isFavorite: boolean): void {
-    const activityService = tryResolve<IActivityLogger>(TYPES.IActivityLogger);
+    const activityService = container.items.activityLogger;
     if (activityService) {
       activityService.log(
         isFavorite ? "sequence_favorite" : "sequence_unfavorite",

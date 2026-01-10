@@ -21,12 +21,10 @@ import {
 } from "../../../shared/domain/models/MotionData";
 import type { BeatData } from "../../../../../features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "../../../../../features/create/shared/domain/models/StartPositionData";
-import { injectable } from "inversify";
 import type { IOrientationCalculator } from "../contracts/IOrientationCalculator";
 import { GridLocation } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../domain/enums/PropType";
 
-@injectable()
 export class OrientationCalculator implements IOrientationCalculator {
   private handpathCalculator: HandpathCalculator;
 

@@ -13,7 +13,6 @@
 
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
-import { injectable } from "inversify";
 import type { PropRenderData } from "../../domain/models/PropRenderData";
 import type {
   IPropSvgLoader,
@@ -53,7 +52,6 @@ if (import.meta.hot) {
   });
 }
 
-@injectable()
 export class PropSvgLoader implements IPropSvgLoader {
   // 🚀 OPTIMIZATION: Use HMR-aware module-level caches
   private rawSvgCache = hmrRawSvgCache; // path -> raw SVG text

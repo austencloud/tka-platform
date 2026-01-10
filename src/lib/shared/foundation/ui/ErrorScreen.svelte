@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
+  
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
@@ -14,7 +14,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Handle retry with haptic feedback

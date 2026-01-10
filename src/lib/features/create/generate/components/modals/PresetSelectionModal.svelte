@@ -4,8 +4,7 @@ Displays user-saved presets with delete option and allows loading preset configu
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { GenerationPreset } from "../../state/preset.svelte";
   import ModalHeader from "./ModalHeader.svelte";
@@ -26,7 +25,7 @@ Displays user-saved presets with delete option and allows loading preset configu
 
   onMount(() => {
     // Service resolution
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Focus the modal for accessibility
     modalElement?.focus();

@@ -6,9 +6,8 @@ Uses chips/tags for quick filtering with less screen real estate.
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
 
   const {
@@ -103,7 +102,7 @@ Uses chips/tags for quick filtering with less screen real estate.
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 </script>
 

@@ -7,7 +7,6 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
  */
 
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 import { ArrowPlacer } from "./ArrowPlacer";
 
 /**
@@ -37,7 +36,6 @@ export interface IDefaultPlacerJson {
   debugAvailableKeys(motionType: MotionType, gridMode: GridMode): Promise<void>;
 }
 
-@injectable()
 export class DefaultPlacer implements IDefaultPlacerJson {
   private placementDataService: ArrowPlacer;
 

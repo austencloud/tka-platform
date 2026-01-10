@@ -5,7 +5,6 @@
  * Uses WebCodecs VideoEncoder and mp4-muxer for high-quality MP4 output.
  */
 
-import { injectable } from "inversify";
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 import type * as THREE from "three";
 import type {
@@ -21,7 +20,6 @@ import type {
 } from "../../domain/promo-models";
 import { RESOLUTION_DIMENSIONS } from "../../domain/promo-models";
 
-@injectable()
 export class PromoVideoExporter implements IPromoVideoExporter {
   private renderer: THREE.WebGLRenderer | null = null;
   private scene: THREE.Scene | null = null;

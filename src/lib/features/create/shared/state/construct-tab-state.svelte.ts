@@ -39,8 +39,7 @@ interface CreateModuleStateMinimal {
   readonly activeSection: BuildModeId | null;
 }
 import { createUndoController } from "./create-module/undo-controller.svelte";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 
 /**
  * Creates construct tab state for construct-specific concerns
@@ -97,9 +96,7 @@ export function createConstructTabState(
   function loadPersistedContinuousFilter(): boolean {
     try {
       if (!filterPersister) {
-        filterPersister = resolve<IFilterPersister>(
-          TYPES.IOptionPickerFilterPersister
-        );
+        filterPersister = container.items.filterPersister as IFilterPersister;
       }
       return filterPersister.loadContinuousOnly();
     } catch (e) {
@@ -127,7 +124,7 @@ export function createConstructTabState(
     : null;
 
   // Construct tab has its own independent undo controller
-  const UndoManager = resolve<IUndoManager>(TYPES.IUndoManager);
+  const UndoManager = container.items.undoManager as IUndoManager;
   const undoController = sequenceState
     ? createUndoController({
         UndoManager,
@@ -438,9 +435,7 @@ export function createConstructTabState(
     // Persist the continuous filter setting
     try {
       if (!filterPersister) {
-        filterPersister = resolve<IFilterPersister>(
-          TYPES.IOptionPickerFilterPersister
-        );
+        filterPersister = container.items.filterPersister as IFilterPersister;
       }
       filterPersister.saveContinuousOnly(continuous);
     } catch (e) {

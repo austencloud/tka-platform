@@ -9,7 +9,6 @@
  * - Each frame only composites cached grid + current animation + highlight
  */
 
-import { injectable, inject } from "inversify";
 import type {
   ICompositeVideoRenderer,
   CompositeDimensions,
@@ -19,9 +18,7 @@ import type {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
 import type { IDimensionCalculator } from "$lib/shared/render/services/contracts/IDimensionCalculator";
-import { TYPES } from "$lib/shared/inversify/types";
 
-@injectable()
 export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   private sequence: SequenceData | null = null;
   private options: CompositeLayoutOptions | null = null;
@@ -30,9 +27,7 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
   private gridDimensions: { width: number; height: number } | null = null;
 
   constructor(
-    @inject(TYPES.IImageComposer)
     private ImageComposer: IImageComposer,
-    @inject(TYPES.IDimensionCalculator)
     private dimensionService: IDimensionCalculator
   ) {}
 

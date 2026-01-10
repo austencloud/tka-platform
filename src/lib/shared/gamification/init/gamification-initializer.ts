@@ -4,26 +4,13 @@
  * Call this once on app startup to initialize all gamification services.
  */
 
-import {
-  resolve,
-  TYPES,
-  loadSharedModules,
-  loadFeatureModule,
-} from "../../inversify/di";
+import { container } from "../../di";
 import type { IAchievementManager } from "../services/contracts/IAchievementManager";
 import type { IDailyChallengeManager } from "../services/contracts/IDailyChallengeManager";
 import type { IStreakTracker } from "../services/contracts/IStreakTracker";
 import type { XPEventMetadata } from "../domain/models/achievement-models";
 
-// Track if gamification is loaded to avoid redundant imports
-let gamificationLoaded = false;
-
-async function ensureGamificationLoaded(): Promise<void> {
-  if (gamificationLoaded) return;
-  await loadSharedModules(); // Ensure base services are ready
-  await loadFeatureModule("gamification"); // Load gamification module
-  gamificationLoaded = true;
-}
+// ITI containers are loaded synchronously, no need for async loading
 
 export async function initializeGamification(): Promise<void> {
   try {
@@ -32,16 +19,10 @@ export async function initializeGamification(): Promise<void> {
     const { getFirestoreInstance } = await import("../../auth/firebase");
     await getFirestoreInstance();
 
-    // Ensure gamification module is loaded
-    await ensureGamificationLoaded();
-
-    // Resolve services
-    const [achievementService, challengeService, streakService] =
-      await Promise.all([
-        resolve<IAchievementManager>(TYPES.IAchievementManager),
-        resolve<IDailyChallengeManager>(TYPES.IDailyChallengeManager),
-        resolve<IStreakTracker>(TYPES.IStreakTracker),
-      ]);
+    // Resolve services from ITI container
+    const achievementService = container.items.achievementManager;
+    const challengeService = container.items.dailyChallengeManager;
+    const streakService = container.items.streakTracker;
 
     // Initialize in parallel
     await Promise.all([
@@ -100,12 +81,7 @@ export async function trackXP(
     const { getFirestoreInstance } = await import("../../auth/firebase");
     await getFirestoreInstance();
 
-    // Ensure gamification module is loaded
-    await ensureGamificationLoaded();
-
-    const achievementService = resolve<IAchievementManager>(
-      TYPES.IAchievementManager
-    );
+    const achievementService = container.items.achievementManager;
     await achievementService.trackAction(action, metadata);
   } catch (error) {
     console.error("Failed to track XP:", error);

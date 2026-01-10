@@ -28,7 +28,7 @@ with pre-prepared data for better performance.
 
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolveAsync, TYPES } from "../../../inversify/di";
+  import { container } from "$lib/shared/di";
   import { getVisibilityStateManager } from "../state/visibility-state.svelte";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
   import { getSettings } from "../../../application/state/app-state.svelte";
@@ -227,7 +227,7 @@ with pre-prepared data for better performance.
   // Prepared data state
   let preparedData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
-  let preparer: IPictographPreparer | null = null;
+  const preparer = container.items.pictographPreparer;
 
   // Create a stable key for data preparation dependencies
   // Include effectiveDarkMode so that when it changes (via prop OR global toggle), we re-prepare with correct colors
@@ -293,11 +293,6 @@ with pre-prepared data for better performance.
     (async () => {
       isLoading = true;
       try {
-        if (!preparer) {
-          preparer = await resolveAsync<IPictographPreparer>(
-            TYPES.IPictographPreparer
-          );
-        }
         // Always pass themeMode based on effectiveDarkMode for correct color selection
         // This ensures colors are correct whether dark mode is from prop (export) or global toggle (live)
         const currentDarkMode = effectiveDarkMode;

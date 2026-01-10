@@ -1,7 +1,7 @@
 <!-- FeedbackForm - Streamlined feedback form orchestrator -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IVoiceTranscriptCoordinator } from "../../services/contracts/IVoiceTranscriptCoordinator";
@@ -24,26 +24,17 @@
   }>();
 
   // Services
-  let hapticService = $state<IHapticFeedback | undefined>(undefined);
-  let deviceDetector = $state<IDeviceDetector | undefined>(undefined);
-  let voiceCoordinator = $state<IVoiceTranscriptCoordinator | undefined>(
-    undefined
-  );
-  let draftPersister = $state<IFormDraftPersister | undefined>(undefined);
-  let typeResolver = $state<IFeedbackTypeResolver | undefined>(undefined);
+  const hapticService = container.items.hapticFeedback;
+  const deviceDetector = container.items.deviceDetector;
+  const voiceCoordinator = container.items.voiceTranscriptCoordinator;
+  const draftPersister = container.items.formDraftPersister;
+  const typeResolver = container.items.feedbackTypeResolver;
 
   // Component state
   let isMobileDevice = $state(false);
   let voiceTimeoutMessage = $state(false);
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-    voiceCoordinator = resolve<IVoiceTranscriptCoordinator>(
-      TYPES.IVoiceTranscriptCoordinator
-    );
-    draftPersister = resolve<IFormDraftPersister>(TYPES.IFormDraftPersister);
-    typeResolver = resolve<IFeedbackTypeResolver>(TYPES.IFeedbackTypeResolver);
 
     isMobileDevice = deviceDetector.isMobile();
 

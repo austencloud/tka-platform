@@ -6,7 +6,6 @@
  * not just whether they have the app open.
  */
 
-import { injectable, inject } from "inversify";
 import {
   ref,
   set,
@@ -20,7 +19,6 @@ import {
 } from "firebase/database";
 import { doc, getDoc } from "firebase/firestore";
 import { database, auth, getFirestoreInstance } from "../../../auth/firebase";
-import { TYPES } from "../../../inversify/types";
 import type { IPresenceTracker } from "../contracts/IPresenceTracker";
 import type { ISessionTracker } from "../../../analytics/services/contracts/ISessionTracker";
 import type {
@@ -32,7 +30,6 @@ import type {
 import { computeActivityStatus } from "../../domain/models/presence-models";
 import { ActivityTracker } from "../../utils/activity-tracker";
 
-@injectable()
 export class PresenceTracker implements IPresenceTracker {
   private currentPresence: UserPresence | null = null;
   private initialized = false;
@@ -40,10 +37,7 @@ export class PresenceTracker implements IPresenceTracker {
   private activityTracker: ActivityTracker | null = null;
   private userDeleted = false;
 
-  constructor(
-    @inject(TYPES.ISessionTracker)
-    private sessionTrackingService: ISessionTracker
-  ) {}
+  constructor(private sessionTrackingService: ISessionTracker) {}
 
   /**
    * Check if the user's Firestore document exists.

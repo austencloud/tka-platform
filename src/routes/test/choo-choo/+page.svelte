@@ -7,12 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import {
-    resolve,
-    loadAnimationModule,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
@@ -50,14 +45,9 @@
     const init = async () => {
       loading = true;
       try {
-        await loadFeatureModule("animate");
-        await loadAnimationModule();
-        playbackController = resolve(
-          TYPES.IAnimationPlaybackController
-        ) as IAnimationPlaybackController;
-        motionQueryHandler = resolve(
-          TYPES.IMotionQueryHandler
-        ) as IMotionQueryHandler;
+        // ITI container is ready synchronously - get services directly
+        playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
+        motionQueryHandler = container.items.motionQueryHandler as IMotionQueryHandler;
         servicesReady = true;
 
         // Generate initial variations after services are ready

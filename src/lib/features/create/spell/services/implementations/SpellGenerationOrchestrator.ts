@@ -5,8 +5,6 @@
  * Handles generation, and extension options fetching.
  */
 
-import { inject, injectable } from "inversify";
-import { SPELL_TYPES } from "./spell-types";
 import type { ISpellServiceLoader } from "../contracts/ISpellServiceLoader";
 import type {
   ISpellGenerationOrchestrator,
@@ -15,12 +13,8 @@ import type {
 import type { SpellPreferences } from "../../domain/models/spell-models";
 import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 
-@injectable()
 export class SpellGenerationOrchestrator implements ISpellGenerationOrchestrator {
-  constructor(
-    @inject(SPELL_TYPES.ISpellServiceLoader)
-    private serviceLoader: ISpellServiceLoader
-  ) {}
+  constructor(private serviceLoader: ISpellServiceLoader) {}
 
   async generate(
     word: string,

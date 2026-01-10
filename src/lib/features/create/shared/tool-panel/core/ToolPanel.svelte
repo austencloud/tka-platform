@@ -19,8 +19,7 @@
 <script lang="ts">
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { createBeatData } from "../../domain/factories/createBeatData";
   import { createStartPositionData } from "../../domain/factories/createStartPositionData";
   import { onMount } from "svelte";
@@ -104,8 +103,8 @@
   // ============================================================================
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+    hapticService = container.items.hapticFeedback;
+    deviceDetector = container.items.deviceDetector;
 
     // Initialize navigation layout
     if (deviceDetector) {

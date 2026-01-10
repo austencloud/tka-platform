@@ -14,7 +14,7 @@
     ShortcutRegistrationOptions,
     ShortcutScope,
   } from "../domain/types/keyboard-types";
-  import { resolve, TYPES } from "../../inversify/di";
+  import { container } from "../../di";
 
   // Service
   let shortcutService: IKeyboardShortcutManager | null = null;
@@ -26,9 +26,7 @@
 
   onMount(async () => {
     try {
-      shortcutService = await resolve<IKeyboardShortcutManager>(
-        TYPES.IKeyboardShortcutManager
-      );
+      shortcutService = container.items.keyboardShortcutManager;
       loadShortcuts();
     } catch (error) {
       console.error("Failed to resolve shortcut service:", error);

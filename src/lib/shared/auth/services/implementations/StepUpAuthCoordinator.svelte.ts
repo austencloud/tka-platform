@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { auth } from "../../firebase";
 import type { IStepUpAuthCoordinator } from "../contracts/IStepUpAuthCoordinator";
@@ -33,7 +32,6 @@ async function passwordReauthIfPossible(
 /**
  * Coordinates step-up authentication for sensitive operations
  */
-@injectable()
 export class StepUpAuthCoordinator implements IStepUpAuthCoordinator {
   private _showStepUpModal = $state(false);
   private _pendingAction = $state<(() => Promise<void>) | null>(null);

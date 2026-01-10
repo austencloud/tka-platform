@@ -8,20 +8,14 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { GridPositionGroup } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type {
   IPositionAnalyzer,
   RotationRelation,
 } from "../contracts/IPositionAnalyzer";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 
-@injectable()
 export class PositionAnalyzer implements IPositionAnalyzer {
-  constructor(
-    @inject(TYPES.IGridPositionDeriver)
-    private positionMapper: IGridPositionDeriver
-  ) {}
+  constructor(private positionMapper: IGridPositionDeriver) {}
 
   /**
    * Get the position group (Alpha, Beta, Gamma) from a GridPosition

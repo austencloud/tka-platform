@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import { BACKGROUND_GRADIENTS } from "../../domain/constants/BackgroundGradients";
 import { BackgroundType } from "../../domain/enums/background-enums";
 import type { IBackgroundPreloader } from "../contracts/IBackgroundPreloader";
@@ -19,7 +18,6 @@ const BACKGROUND_ANIMATIONS: Record<BackgroundType, string> = {
   linearGradient: "", // No animation for gradients
 };
 
-@injectable()
 export class BackgroundPreLoader implements IBackgroundPreloader {
   /**
    * Updates the body background with smooth transition using ::before overlay technique

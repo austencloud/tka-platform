@@ -52,8 +52,7 @@
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { discoverScrollState } from "../features/discover/shared/state/DiscoverScrollState.svelte";
   import type { IViewportManager } from "./device/services/contracts/IViewportManager";
-  import { resolve } from "./inversify/di";
-  import { TYPES } from "./inversify/types";
+  import { container } from "./di";
   import type { IDeviceDetector } from "./device/services/contracts/IDeviceDetector";
   import type { ModuleId } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
@@ -181,7 +180,7 @@
 
     // Initialize deep linking for shareable sequence URLs
     try {
-      const deepLinkService = resolve<IDeepLinker>(TYPES.IDeepLinker);
+      const deepLinkService = container.items.deepLinker as IDeepLinker;
       deepLinkService.initialize();
     } catch (error) {
       console.warn("Failed to initialize deep link service:", error);
@@ -189,8 +188,8 @@
 
     // Initialize desktop sidebar visibility
     try {
-      const deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-      const viewportService = resolve<IViewportManager>(TYPES.IViewportManager);
+      const deviceDetector = container.items.deviceDetector as IDeviceDetector;
+      const viewportService = container.items.viewportManager as IViewportManager;
       desktopSidebarVisibility = useDesktopSidebarVisibility(
         deviceDetector,
         viewportService

@@ -5,7 +5,6 @@
  * following the microservices architecture pattern.
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   ExploreNavigationConfig,
@@ -18,7 +17,6 @@ type NavigationSection = ExploreNavigationConfig;
 
 // All interfaces now imported from domain and contracts
 
-@injectable()
 export class Navigator implements INavigator {
   generateNavigationSections(
     sequences: SequenceData[],

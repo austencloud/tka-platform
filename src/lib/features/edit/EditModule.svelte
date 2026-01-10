@@ -14,8 +14,7 @@
 -->
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
   import { onMount } from "svelte";
@@ -89,29 +88,25 @@
   // Initialize on mount
   onMount(() => {
     try {
-      transformService = resolve<ISequenceTransformer>(
-        TYPES.ISequenceTransformer
-      );
+      transformService = container.items.sequenceTransformer;
     } catch (error) {
       console.warn("Failed to resolve ISequenceTransformer:", error);
     }
 
     try {
-      exploreLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
+      exploreLoader = container.items.discoverLoader;
     } catch (error) {
       console.warn("Failed to resolve IDiscoverLoader:", error);
     }
 
     try {
-      motionQueryHandler = resolve<IMotionQueryHandler>(
-        TYPES.IMotionQueryHandler
-      );
+      motionQueryHandler = container.items.motionQueryHandler;
     } catch (error) {
       console.warn("Failed to resolve IMotionQueryHandler:", error);
     }
 
     try {
-      gridModeDeriver = resolve<IGridModeDeriver>(TYPES.IGridModeDeriver);
+      gridModeDeriver = container.items.gridModeDeriver;
     } catch (error) {
       console.warn("Failed to resolve IGridModeDeriver:", error);
     }

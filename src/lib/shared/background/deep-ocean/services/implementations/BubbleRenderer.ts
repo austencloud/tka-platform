@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { Bubble } from "../../domain/models/DeepOceanModels";
 import type { IBubbleRenderer } from "../contracts/IBubbleRenderer";
 
@@ -14,7 +13,6 @@ import type { IBubbleRenderer } from "../contracts/IBubbleRenderer";
  * - Trail particles (micro-bubbles following)
  * - Size-based visual characteristics
  */
-@injectable()
 export class BubbleRenderer implements IBubbleRenderer {
   drawBubbles(ctx: CanvasRenderingContext2D, bubbles: Bubble[]): void {
     // Sort by Y position for proper depth ordering (far first)

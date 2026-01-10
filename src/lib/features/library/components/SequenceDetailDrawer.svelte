@@ -18,8 +18,7 @@
   import { libraryState } from "../state/library-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ILibraryRepository } from "../services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "../domain/models/LibrarySequence";
 
@@ -119,7 +118,7 @@
 
     isSaving = true;
     try {
-      const service = tryResolve<ILibraryRepository>(TYPES.ILibraryRepository);
+      const service = container.items.libraryRepository;
       if (!service) {
         toast.error("Library service not available");
         return;

@@ -1,6 +1,4 @@
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type {
   ILayoutDetector,
   LayoutConfig,
@@ -9,11 +7,8 @@ import type {
 // Re-export LayoutConfig type to avoid duplicate type issues
 type LocalLayoutConfig = LayoutConfig;
 
-@injectable()
 export class LayoutDetector implements ILayoutDetector {
-  constructor(
-    @inject(TYPES.IDeviceDetector) private deviceDetector: IDeviceDetector
-  ) {}
+  constructor(private deviceDetector: IDeviceDetector) {}
 
   /**
    * SIMPLIFIED: Basic swipe detection logic

@@ -13,9 +13,8 @@ Matches the desktop Python app navigation pattern exactly.
 <script lang="ts">
   import { ExploreSortMethod } from "./../../../shared/domain/enums/discover-enums.ts";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
 
   let hapticService: IHapticFeedback;
 
@@ -55,7 +54,7 @@ Matches the desktop Python app navigation pattern exactly.
   }
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Get display text for section button - remove counts and extract clean text

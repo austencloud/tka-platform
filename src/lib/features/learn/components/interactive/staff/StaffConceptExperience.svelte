@@ -10,8 +10,7 @@ Manages navigation through 5 pages:
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import StaffIntroPage from "./pages/StaffIntroPage.svelte";
   import ThumbOrientationsPage from "./pages/ThumbOrientationsPage.svelte";
   import ProspinPage from "./pages/ProspinPage.svelte";
@@ -30,7 +29,7 @@ Manages navigation through 5 pages:
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticServiceRaw = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticServiceRaw = container.items.hapticFeedback as IHapticFeedback;
 
   // Wrap the haptic service to match the simpler interface expected by child components
   const hapticService = hapticServiceRaw

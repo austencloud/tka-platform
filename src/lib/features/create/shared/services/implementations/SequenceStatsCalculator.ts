@@ -7,10 +7,8 @@
 
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { injectable } from "inversify";
 import type { ISequenceStatsCalculator } from "../contracts/ISequenceStatsCalculator";
 
-@injectable()
 export class SequenceStatsCalculator implements ISequenceStatsCalculator {
   /**
    * Generate word from beat letters

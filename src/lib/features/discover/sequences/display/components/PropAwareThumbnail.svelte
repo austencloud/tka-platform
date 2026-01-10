@@ -17,8 +17,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { ThumbnailVariant } from "../services/contracts/ICloudThumbnailCache";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type {
     IThumbnailRenderOrchestrator,
     ThumbnailLoadStatus,
@@ -114,12 +113,9 @@
 
   onMount(async () => {
     // Resolve services
-    const container = await getContainerInstance();
-    orchestrator = container.get<IThumbnailRenderOrchestrator>(
-      TYPES.IThumbnailRenderOrchestrator
-    );
-    keyDeriver = container.get<IThumbnailKeyDeriver>(TYPES.IThumbnailKeyDeriver);
-    cloudCache = container.get<ICloudThumbnailCache>(TYPES.ICloudThumbnailCache);
+    orchestrator = container.items.thumbnailRenderOrchestrator;
+    keyDeriver = container.items.thumbnailKeyDeriver;
+    cloudCache = container.items.discoverThumbnailCache;
     servicesReady = true;
 
     // Set up intersection observer

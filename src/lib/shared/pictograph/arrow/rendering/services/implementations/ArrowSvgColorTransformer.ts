@@ -14,10 +14,8 @@ import {
   getMotionColor,
   type ThemeMode,
 } from "../../../../../utils/svg-color-utils";
-import { injectable } from "inversify";
 import { getAnimationVisibilityManager } from "../../../../../animation-engine/state/animation-visibility-state.svelte";
 
-@injectable()
 export class ArrowSvgColorTransformer implements IArrowSvgColorTransformer {
   /**
    * Get the current theme mode based on dark mode setting

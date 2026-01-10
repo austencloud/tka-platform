@@ -5,7 +5,6 @@
  * Matches the 2D EndpointCalculator logic for consistency.
  */
 
-import { injectable, inject } from "inversify";
 import {
   MotionType,
   RotationDirection,
@@ -14,16 +13,12 @@ import type { MotionConfig3D } from "../../domain/models/MotionData3D";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
 import type { IAngleMathCalculator } from "../contracts/IAngleMathCalculator";
 import type { IOrientationMapper } from "../contracts/IOrientationMapper";
-import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
 
 const PI = Math.PI;
 
-@injectable()
 export class MotionCalculator implements IMotionCalculator {
   constructor(
-    @inject(ANIMATION_3D_TYPES.IAngleMathCalculator)
     private angleMath: IAngleMathCalculator,
-    @inject(ANIMATION_3D_TYPES.IOrientationMapper)
     private orientationService: IOrientationMapper
   ) {}
 

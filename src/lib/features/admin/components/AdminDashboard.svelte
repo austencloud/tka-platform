@@ -6,7 +6,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, TYPES, loadFeatureModule } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IAdminChallengeManager } from "../services/contracts/IAdminChallengeManager";
   import DailyChallengeScheduler from "./DailyChallengeScheduler.svelte";
   import TrainChallengeManager from "./TrainChallengeManager.svelte";
@@ -24,15 +24,9 @@
   // Get current section from navigation coordinator
   const activeSection = $derived(navigationState.currentSection);
 
-  onMount(async () => {
+  onMount(() => {
     try {
-      // Ensure admin module is loaded before resolving services
-      // This is needed for HMR recovery and initial load scenarios
-      await loadFeatureModule("admin");
-
-      adminChallengeService = resolve<IAdminChallengeManager>(
-        TYPES.IAdminChallengeManager
-      );
+      adminChallengeService = container.items.adminChallengeManager;
       isLoading = false;
     } catch (error) {
       console.error("❌ Failed to initialize AdminDashboard:", error);

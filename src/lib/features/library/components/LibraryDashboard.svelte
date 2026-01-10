@@ -19,8 +19,7 @@
   import type { LibrarySequence } from "../domain/models/LibrarySequence";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { goto } from "$app/navigation";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import CollaborativeVideoCard from "$lib/shared/video-collaboration/components/CollaborativeVideoCard.svelte";
@@ -141,9 +140,7 @@
   // Initialize on mount
   onMount(() => {
     prevIsAuthenticated = isAuthenticated;
-    videoService = tryResolve<ICollaborativeVideoManager>(
-      TYPES.ICollaborativeVideoManager
-    );
+    videoService = container.items.collaborativeVideoManager;
     if (isAuthenticated) {
       libraryState.initialize();
       loadVideos();

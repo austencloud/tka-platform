@@ -9,11 +9,9 @@ import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import { Point } from "fabric";
-import { injectable } from "inversify";
 import { createGridPointData } from "../../../../grid/utils/grid-coordinate-utils";
 import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
 
-@injectable()
 export class ArrowGridCoordinator implements IArrowGridCoordinator {
   // Scene dimensions from grid module
   private readonly SCENE_SIZE = 950;

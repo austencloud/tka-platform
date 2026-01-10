@@ -7,7 +7,6 @@
 
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 import { PI } from "../../shared/domain/math-constants.js";
 import type { IMotionCalculator } from "../contracts/IMotionCalculator";
 import {
@@ -108,7 +107,6 @@ export function calculateFloatStaffAngle(startStaffAngle: number): number {
 // Service class (delegates to standalone functions)
 // ============================================================================
 
-@injectable()
 export class MotionCalculator implements IMotionCalculator {
   constructor() {}
 

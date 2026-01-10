@@ -9,18 +9,14 @@ import type { BeatData } from "../../../create/shared/domain/models/BeatData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IPropInterpolator } from "../contracts/IPropInterpolator";
 import type { InterpolationResult } from "../contracts/IAnimationStateManager";
 import type { IAngleCalculator } from "../contracts/IAngleCalculator";
 import type { IEndpointCalculator } from "../contracts/IEndpointCalculator";
 
-@injectable()
 export class PropInterpolator implements IPropInterpolator {
   constructor(
-    @inject(TYPES.IAngleCalculator) private angleCalculator: IAngleCalculator,
-    @inject(TYPES.IEndpointCalculator)
+    private angleCalculator: IAngleCalculator,
     private endpointCalculator: IEndpointCalculator
   ) {}
 

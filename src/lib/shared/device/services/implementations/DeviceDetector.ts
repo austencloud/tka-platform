@@ -1,5 +1,3 @@
-import { TYPES } from "../../../inversify/types";
-import { inject, injectable } from "inversify";
 import { createComponentLogger } from "../../../utils/debug-logger";
 import { DeviceType } from "../../domain/enums/device-enums";
 import type {
@@ -13,7 +11,6 @@ import type { IViewportManager } from "../contracts/IViewportManager";
  *
  * Detects device capabilities and characteristics using browser APIs.
  */
-@injectable()
 export class DeviceDetector implements IDeviceDetector {
   private logger = createComponentLogger("DeviceDetector");
   private capabilitiesCallbacks: ((caps: DeviceCapabilities) => void)[] = [];
@@ -21,9 +18,7 @@ export class DeviceDetector implements IDeviceDetector {
   private _lastViewportWidth: number = 0;
   private _lastViewportHeight: number = 0;
 
-  constructor(
-    @inject(TYPES.IViewportManager) private viewportService: IViewportManager
-  ) {
+  constructor(private viewportService: IViewportManager) {
     // Subscribe to viewport changes to make device detection reactive
     this.viewportService.onViewportChange(() => {
       // Clear cached device type to force recalculation

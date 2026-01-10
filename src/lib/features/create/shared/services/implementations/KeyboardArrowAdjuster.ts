@@ -16,10 +16,8 @@ import {
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/createArrowPlacementData";
-import { injectable } from "inversify";
 import type { IKeyboardArrowAdjuster } from "../contracts/IKeyboardArrowAdjuster";
 
-@injectable()
 export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
   private logger = createComponentLogger("KeyboardArrowAdjustment");
 

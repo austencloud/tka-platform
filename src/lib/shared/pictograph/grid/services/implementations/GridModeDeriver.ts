@@ -10,9 +10,7 @@ import type { IGridModeDeriver } from "../contracts/IGridModeDeriver";
 import { GridLocation, GridMode } from "../../domain/enums/grid-enums";
 import type { GridData } from "../../domain/models/grid-models";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
-import { injectable } from "inversify";
 
-@injectable()
 export class GridModeDeriver implements IGridModeDeriver {
   private readonly cardinalLocations = [
     GridLocation.NORTH,

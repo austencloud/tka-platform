@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import { NightSkyConfig } from "../../../night-sky/domain/constants/night-sky-constants";
 import {
   CoreBackgroundConfig,
@@ -7,7 +6,6 @@ import {
 import type { QualityLevel } from "../../domain/types/background-types";
 import type { IBackgroundConfigurationService } from "../contracts/IBackgroundConfigurationService";
 
-@injectable()
 export class BackgroundConfigurationService implements IBackgroundConfigurationService {
   /**
    * Detects the appropriate quality level based on device capabilities

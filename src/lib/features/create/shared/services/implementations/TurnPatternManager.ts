@@ -17,7 +17,6 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../domain/models/BeatData";
 import type {
@@ -41,14 +40,12 @@ import {
   RotationDirection,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("TurnPatternManager");
 
-@injectable()
 export class TurnPatternManager implements ITurnPatternManager {
   /**
    * Extract a turn pattern from a sequence
@@ -235,9 +232,7 @@ export class TurnPatternManager implements ITurnPatternManager {
     newStartOrientation: Orientation,
     color: MotionColor
   ): MotionData {
-    const orientationCalculator = resolve<IOrientationCalculator>(
-      TYPES.IOrientationCalculator
-    );
+    const orientationCalculator = container.items.orientationCalculator;
 
     const tempMotion = createMotionData({
       ...motion,
@@ -412,9 +407,7 @@ export class TurnPatternManager implements ITurnPatternManager {
     }
 
     // Recalculate end orientation
-    const orientationCalculator = resolve<IOrientationCalculator>(
-      TYPES.IOrientationCalculator
-    );
+    const orientationCalculator = container.items.orientationCalculator;
     const tempMotion = createMotionData({
       ...currentMotion,
       turns: turnValue,

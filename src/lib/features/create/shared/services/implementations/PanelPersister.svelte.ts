@@ -1,16 +1,14 @@
-﻿/**
+/**
  * Panel Persistence Service Implementation
  *
  * Extracted from CreateModule.svelte to handle panel state persistence
  * across navigation changes.
  */
 
-import { injectable } from "inversify";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { IPanelPersister, PanelId } from "../contracts/IPanelPersister";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
 
-@injectable()
 export class PanelPersister implements IPanelPersister {
   getCurrentOpenPanel(panelState: PanelCoordinationState): PanelId | null {
     if (panelState.isAnimationPanelOpen) return "animation";

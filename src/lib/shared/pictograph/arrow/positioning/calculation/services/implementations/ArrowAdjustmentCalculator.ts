@@ -25,56 +25,24 @@ import type { ISpecialPlacementOriKeyGenerator } from "../../../key-generation/s
 import type { ISpecialPlacer } from "../../../placement/services/contracts/ISpecialPlacer";
 import type { ITurnsTupleKeyGenerator } from "../../../key-generation/services/contracts/ITurnsTupleKeyGenerator";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
-import { TYPES } from "../../../../../../inversify/types";
 import { Point } from "fabric";
-import { inject, injectable } from "inversify";
 
-@injectable()
 export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
   /**
    * Consolidated service combining lookup and calculation logic.
    * Eliminates the pure delegation layer while maintaining identical behavior.
    */
 
-  // Lookup services (previously in ArrowAdjustmentLookup)
-  private SpecialPlacer: ISpecialPlacer;
-  private DefaultPlacer: IDefaultPlacer;
-  private orientationKeyService: ISpecialPlacementOriKeyGenerator;
-  private placementKeyService: ArrowPlacementKeyGenerator;
-  private turnsTupleService: ITurnsTupleKeyGenerator;
-  private attributeKeyService: IAttributeKeyGenerator;
-
-  // Processing services
-  private tupleProcessor: IDirectionalTupleProcessor;
-  private gridModeService: IGridModeDeriver;
-
   constructor(
-    @inject(TYPES.IGridModeDeriver) gridModeService: IGridModeDeriver,
-    @inject(TYPES.ISpecialPlacer)
-    SpecialPlacer: ISpecialPlacer,
-    @inject(TYPES.IDefaultPlacer)
-    DefaultPlacer: IDefaultPlacer,
-    @inject(TYPES.ISpecialPlacementOriKeyGenerator)
-    orientationKeyService: ISpecialPlacementOriKeyGenerator,
-    @inject(TYPES.IArrowPlacementKeyGenerator)
-    placementKeyService: ArrowPlacementKeyGenerator,
-    @inject(TYPES.ITurnsTupleKeyGenerator)
-    turnsTupleService: ITurnsTupleKeyGenerator,
-    @inject(TYPES.IAttributeKeyGenerator)
-    attributeKeyService: IAttributeKeyGenerator,
-    @inject(TYPES.IDirectionalTupleProcessor)
-    tupleProcessor: IDirectionalTupleProcessor
-  ) {
-    // Store all injected services
-    this.gridModeService = gridModeService;
-    this.SpecialPlacer = SpecialPlacer;
-    this.DefaultPlacer = DefaultPlacer;
-    this.orientationKeyService = orientationKeyService;
-    this.placementKeyService = placementKeyService;
-    this.turnsTupleService = turnsTupleService;
-    this.attributeKeyService = attributeKeyService;
-    this.tupleProcessor = tupleProcessor;
-  }
+    private gridModeService: IGridModeDeriver,
+    private SpecialPlacer: ISpecialPlacer,
+    private DefaultPlacer: IDefaultPlacer,
+    private orientationKeyService: ISpecialPlacementOriKeyGenerator,
+    private placementKeyService: ArrowPlacementKeyGenerator,
+    private turnsTupleService: ITurnsTupleKeyGenerator,
+    private attributeKeyService: IAttributeKeyGenerator,
+    private tupleProcessor: IDirectionalTupleProcessor
+  ) {}
 
   async calculateAdjustment(
     pictographData: PictographData,

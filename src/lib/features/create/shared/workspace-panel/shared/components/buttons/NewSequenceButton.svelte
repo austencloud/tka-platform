@@ -8,10 +8,7 @@
    * Domain: Create module - Session management
    */
 
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     onclick?: () => void;
@@ -20,11 +17,7 @@
 
   const { onclick, disabled = false }: Props = $props();
 
-  let hapticService: IHapticFeedback;
-
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   function handleClick() {
     if (disabled) return;

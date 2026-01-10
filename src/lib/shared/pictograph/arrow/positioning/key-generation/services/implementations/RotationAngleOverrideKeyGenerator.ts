@@ -15,7 +15,6 @@
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import { Orientation } from "../../../../../shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 
 export interface IRotationAngleOverrideKeyGenerator {
   generateRotationAngleOverrideKey(
@@ -24,7 +23,6 @@ export interface IRotationAngleOverrideKeyGenerator {
   ): string;
 }
 
-@injectable()
 export class RotationAngleOverrideKeyGenerator implements IRotationAngleOverrideKeyGenerator {
   /**
    * Generate rotation angle override key for special placement lookup.

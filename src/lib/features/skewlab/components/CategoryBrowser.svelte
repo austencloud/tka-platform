@@ -12,7 +12,7 @@
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
 
   // Cardinal locations (for determining grid type)
   const CARDINAL = new Set([GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST]);
@@ -64,9 +64,7 @@
   // Load data on mount
   onMount(async () => {
     try {
-      const letterQueryHandler = resolve<ILetterQueryHandler>(
-        TYPES.ILetterQueryHandler
-      );
+      const letterQueryHandler = container.items.letterQueryHandler;
       allPictographs = await letterQueryHandler.getAllPictographVariations(
         GridMode.SKEWED
       );

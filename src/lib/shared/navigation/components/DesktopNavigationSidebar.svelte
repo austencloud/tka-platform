@@ -1,8 +1,7 @@
 <!-- Desktop Navigation Sidebar -->
 <!-- Modern 2026-style sidebar navigation for desktop in side-by-side layout -->
 <script lang="ts">
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
   import { slide, fade } from "svelte/transition";
@@ -222,7 +221,7 @@
     initializeDesktopSidebarCollapsedState();
 
     // Initialize services
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Set up ResizeObserver to measure and report sidebar height
     let resizeObserver: ResizeObserver | null = null;

@@ -12,14 +12,12 @@ import type { StartPositionData } from "../../../../features/create/shared/domai
 import type { TabId } from "../../../foundation/ui/UITypes";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
-import { injectable } from "inversify";
 import { db } from "../../database/TKADatabase";
 import { UserWorkType } from "../../domain/enums/UserWorkType";
 import type { UserProject } from "../../domain/models/UserProject";
 import type { UserWorkData } from "../../domain/models/UserWorkData";
 import type { IPersistenceService } from "../contracts/IPersistenceService";
 
-@injectable()
 export class DexiePersistenceService implements IPersistenceService {
   // ============================================================================
   // INITIALIZATION
@@ -102,6 +100,13 @@ export class DexiePersistenceService implements IPersistenceService {
       console.error("❌ Failed to delete sequence:", error);
       throw error;
     }
+  }
+
+  /**
+   * Alias for getAllSequences (required by ISequenceRepository contract)
+   */
+  async loadAllSequences(): Promise<SequenceData[]> {
+    return this.getAllSequences();
   }
 
   async searchSequences(query: string): Promise<SequenceData[]> {

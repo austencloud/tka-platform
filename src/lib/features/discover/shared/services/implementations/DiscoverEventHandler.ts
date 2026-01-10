@@ -6,8 +6,6 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { injectable, inject, optional } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type {
   IDiscoverEventHandler,
   ExploreEventHandlerParams,
@@ -19,20 +17,13 @@ import type { IDiscoverLoader } from "../../../sequences/display/services/contra
 import { sequencePanelManager } from "../../state/sequence-panel-state.svelte";
 import type { ISheetRouter } from "../../../../../shared/navigation/services/contracts/ISheetRouter";
 import { handleModuleChange } from "../../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
-@injectable()
+
 export class DiscoverEventHandler implements IDiscoverEventHandler {
   private params: ExploreEventHandlerParams | null = null;
 
   constructor(
-    @inject(TYPES.IDiscoverThumbnailProvider)
     private thumbnailService: IDiscoverThumbnailProvider,
-
-    @inject(TYPES.ISheetRouter)
-    @optional()
     private sheetRouterService: ISheetRouter | null,
-
-    @inject(TYPES.IDiscoverLoader)
-    @optional()
     private loaderService: IDiscoverLoader | null
   ) {}
 

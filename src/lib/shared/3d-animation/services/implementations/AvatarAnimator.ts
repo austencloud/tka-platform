@@ -5,7 +5,6 @@
  * Bridges TKA prop states to skeleton IK targets.
  */
 
-import { injectable, inject } from "inversify";
 import { Vector3 } from "three";
 import type {
   IAvatarAnimator,
@@ -18,7 +17,6 @@ import type {
 import type { IIKSolver } from "../contracts/IIKSolver";
 import type { IAvatarSkeletonBuilder } from "../contracts/IAvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
-import { ANIMATION_3D_TYPES } from "../../inversify/animation-3d.types";
 
 /**
  * Default idle pose - arms relaxed at sides
@@ -37,7 +35,6 @@ function createIdlePose(): BodyPose {
   };
 }
 
-@injectable()
 export class AvatarAnimator implements IAvatarAnimator {
   private currentPose: BodyPose;
   private targetPose: BodyPose;
@@ -52,9 +49,7 @@ export class AvatarAnimator implements IAvatarAnimator {
   private transitionConfig: TransitionConfig | null = null;
 
   constructor(
-    @inject(ANIMATION_3D_TYPES.IIKSolver)
     private ikSolver: IIKSolver,
-    @inject(ANIMATION_3D_TYPES.IAvatarSkeletonBuilder)
     private skeleton: IAvatarSkeletonBuilder
   ) {
     this.idlePose = createIdlePose();

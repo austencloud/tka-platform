@@ -8,8 +8,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
@@ -43,8 +42,8 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     mustNotContainLetters: [],
   });
 
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
   });
 
   // Sync options when panel opens

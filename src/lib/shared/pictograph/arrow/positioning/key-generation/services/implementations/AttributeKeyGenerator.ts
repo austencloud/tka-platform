@@ -10,9 +10,7 @@
 import type { ArrowPlacementData } from "../../../placement/domain/ArrowPlacementData";
 import type { IAttributeKeyGenerator } from "../contracts/IAttributeKeyGenerator";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import { injectable } from "inversify";
 
-@injectable()
 export class AttributeKeyGenerator implements IAttributeKeyGenerator {
   /**
    * Modern implementation of attribute key generation for arrow positioning.

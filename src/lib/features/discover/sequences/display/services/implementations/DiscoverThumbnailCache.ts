@@ -5,7 +5,6 @@
  * Handles mixed-prop configurations where pre-rendered images don't exist.
  */
 
-import { injectable } from "inversify";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type {
   IDiscoverThumbnailCache,
@@ -17,7 +16,6 @@ const DB_NAME = "discover-thumbnail-cache";
 const STORE_NAME = "thumbnails";
 const DB_VERSION = 1;
 
-@injectable()
 export class DiscoverThumbnailCache implements IDiscoverThumbnailCache {
   private dbPromise: Promise<IDBDatabase> | null = null;
 

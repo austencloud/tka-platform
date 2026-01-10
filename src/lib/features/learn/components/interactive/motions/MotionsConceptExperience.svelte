@@ -4,8 +4,7 @@ Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     TYPE_EXAMPLES,
     MOTION_INFO,
@@ -26,7 +25,7 @@ Pages 1: Intro, Pages 2-7: Motion types, Page 8: Quiz
   // Note: Scroll mode not yet implemented for this experience
   // When viewMode === "scroll", falls back to step mode
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   // Persistence for HMR/refresh survival
   const persistence = getExperiencePersistence("motions");

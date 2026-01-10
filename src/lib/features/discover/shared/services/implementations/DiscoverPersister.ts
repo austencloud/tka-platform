@@ -15,11 +15,10 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { safeParseOrNull } from "$lib/shared/validation/validation-utils";
 import { SequenceDataSchema } from "$lib/shared/foundation/domain/schemas";
-import { injectable } from "inversify";
+
 /**
  * Standalone Discover persistence - no interface inheritance needed.
  */
-@injectable()
 export class DiscoverPersister {
   private readonly CACHE_VERSION = "v2.1"; // ✅ ROBUST: Cache versioning
   private readonly SEQUENCES_KEY = `tka-${this.CACHE_VERSION}-sequences`;

@@ -5,7 +5,6 @@
  * provide raw landmark detection for video frames and images.
  */
 
-import { injectable } from "inversify";
 import type {
   IHandLandmarker,
   HandLandmarkerResult,
@@ -14,7 +13,6 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MediaPipeHandLandmarker = any;
 
-@injectable()
 export class HandLandmarker implements IHandLandmarker {
   private _handLandmarker: MediaPipeHandLandmarker = null;
   private _isInitialized = false;

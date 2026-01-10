@@ -4,7 +4,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
 
   const {
     pictographs,
@@ -26,7 +26,7 @@
     onAnimationEnd: (id: string) => void;
   } = $props();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   function handleSelect(pictograph: PictographData) {
     hapticService?.trigger("selection");

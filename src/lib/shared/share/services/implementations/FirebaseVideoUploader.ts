@@ -5,14 +5,12 @@
  * Videos are stored at: users/{userId}/recordings/{sequenceId}/{timestamp}.mp4
  */
 
-import { injectable } from "inversify";
 import type {
   IFirebaseVideoUploader,
   VideoUploadResult,
 } from "../contracts/IFirebaseVideoUploader";
 import { getStorageInstance, getAuthSync } from "$lib/shared/auth/firebase";
 
-@injectable()
 export class FirebaseVideoUploader implements IFirebaseVideoUploader {
   /**
    * Get current user ID

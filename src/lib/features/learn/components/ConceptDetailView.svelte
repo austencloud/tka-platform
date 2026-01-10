@@ -6,8 +6,7 @@ Supports two navigation modes:
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -25,10 +24,8 @@ Supports two navigation modes:
     onClose?: () => void;
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  const conceptProgressService = resolve<IConceptProgressTracker>(
-    TYPES.IConceptProgressTracker
-  );
+  const hapticService = container.items.hapticFeedback;
+  const conceptProgressService = container.items.conceptProgressTracker;
 
   let progress = $state<ConceptProgress>({
     conceptId: "",

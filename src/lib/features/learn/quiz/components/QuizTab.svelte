@@ -9,8 +9,7 @@ Provides quiz functionality for learning TKA notation:
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onDestroy, onMount } from "svelte";
   import type { ICodex } from "../../codex/services/contracts/ICodex";
   import { QuizMode, QuizType } from "../domain/enums/quiz-enums";
@@ -25,13 +24,13 @@ Provides quiz functionality for learning TKA notation:
   // Import learn components
 
   // ============================================================================
-  // SERVICE RESOLUTION - Resolved lazily in onMount
+  // SERVICE RESOLUTION - Resolved from ITI container
   // ============================================================================
 
-  let codexService = $state<ICodex | null>(null);
-  let quizRepo = $state<IQuizRepoManager | null>(null);
-  let quizSessionService = $state<IQuizSessionManager | null>(null);
-  let hapticService = $state<IHapticFeedback | null>(null);
+  const codexService = container.items.codex;
+  const quizRepo = container.items.quizRepoManager;
+  const quizSessionService = container.items.quizSessionManager;
+  const hapticService = container.items.hapticFeedback;
 
   // ============================================================================
   // COMPONENT STATE
@@ -184,15 +183,6 @@ Provides quiz functionality for learning TKA notation:
   onMount(async () => {
     try {
       isLoading = true;
-
-      // Resolve services from container
-      const container = await getContainerInstance();
-      codexService = container.get<ICodex>(TYPES.ICodex);
-      quizRepo = container.get<IQuizRepoManager>(TYPES.IQuizRepoManager);
-      quizSessionService = container.get<IQuizSessionManager>(
-        TYPES.IQuizSessionManager
-      );
-      hapticService = container.get<IHapticFeedback>(TYPES.IHapticFeedback);
 
       // Initialize quiz repository
       await quizRepo.initialize();

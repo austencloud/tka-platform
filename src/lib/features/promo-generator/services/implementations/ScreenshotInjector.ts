@@ -5,12 +5,10 @@
  * Supports dynamic texture updates for multi-screen animations.
  */
 
-import { injectable } from "inversify";
 import * as THREE from "three";
 import type { IScreenshotInjector } from "../contracts/IScreenshotInjector";
 import type { ScreenshotContent } from "../../domain/promo-models";
 
-@injectable()
 export class ScreenshotInjector implements IScreenshotInjector {
   private screenMesh: THREE.Mesh | null = null;
   private currentTexture: THREE.Texture | null = null;

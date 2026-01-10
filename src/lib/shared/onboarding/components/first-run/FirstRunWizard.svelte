@@ -15,8 +15,7 @@
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { FirstRunStep } from "../../domain/first-run-types";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -81,7 +80,7 @@
 
   onMount(() => {
     try {
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      hapticService = container.items.hapticFeedback as IHapticFeedback;
     } catch {
       // Haptics optional
     }

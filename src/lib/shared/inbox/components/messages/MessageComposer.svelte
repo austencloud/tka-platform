@@ -9,8 +9,7 @@
   import { onMount } from "svelte";
   import { messagingService } from "../../../messaging/services/implementations/Messenger";
   import { toast } from "../../../toast/state/toast-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { inboxState } from "../../state/inbox-state.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
@@ -34,7 +33,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Cleanup typing on unmount
     return () => {

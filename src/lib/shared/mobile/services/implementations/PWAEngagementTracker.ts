@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   IPWAEngagementTracker,
   PWAEngagementMetrics,
@@ -20,7 +19,6 @@ const ENGAGEMENT_THRESHOLDS = {
  * Tracks user engagement to determine optimal timing for install prompts.
  * Uses localStorage for persistence across sessions.
  */
-@injectable()
 export class PWAEngagementTracker implements IPWAEngagementTracker {
   private metrics: PWAEngagementMetrics;
   private sessionStartTime: number | null = null;

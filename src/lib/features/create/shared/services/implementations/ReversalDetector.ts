@@ -9,7 +9,6 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../domain/models/BeatData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 import { createBeatData } from "../../domain/factories/createBeatData";
 import type {
   IReversalDetector,
@@ -17,7 +16,6 @@ import type {
   ReversalInfo,
 } from "../contracts/IReversalDetector";
 
-@injectable()
 export class ReversalDetector implements IReversalDetector {
   /**
    * Process reversals for an entire sequence

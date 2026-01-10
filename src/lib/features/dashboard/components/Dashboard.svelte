@@ -8,8 +8,7 @@
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
-  import { resolve, tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IFollowingFeedProvider } from "../services/contracts/IFollowingFeedProvider";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -96,8 +95,8 @@
   onMount(() => {
     let cleanup: (() => void) | undefined;
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      deviceDetector = container.items.deviceDetector;
+      hapticService = container.items.hapticFeedback;
       responsiveSettings = deviceDetector.getResponsiveSettings();
 
       cleanup = deviceDetector.onCapabilitiesChanged(() => {
@@ -130,9 +129,7 @@
     }
 
     try {
-      const feedService = tryResolve<IFollowingFeedProvider>(
-        TYPES.IFollowingFeedProvider
-      );
+      const feedService = container.items.followingFeedProvider;
       if (feedService) {
         hasFollowing = await feedService.hasFollowing(effectiveUserId);
       } else if (retryCount < 3) {

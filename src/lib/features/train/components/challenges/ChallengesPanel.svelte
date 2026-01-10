@@ -5,8 +5,7 @@
   Modern mobile-first design with slide-up filter panel and 52px touch targets.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ITrainChallengeManager } from "../../services/contracts/ITrainChallengeManager";
   import type {
@@ -25,10 +24,8 @@
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Services
-  const challengeService = resolve<ITrainChallengeManager>(
-    TYPES.ITrainChallengeManager
-  );
-  let hapticService: IHapticFeedback | undefined;
+  const challengeService = container.items.trainChallengeManager;
+  const hapticService = container.items.hapticFeedback;
 
   // Local UI state (filter preferences)
   let filter = $state<TrainChallengeFilter>("all");
@@ -111,7 +108,6 @@
 
   // Load challenges (will use cache if already loaded)
   onMount(async () => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
     await trainChallengesState.loadChallenges(challengeService);
   });
 

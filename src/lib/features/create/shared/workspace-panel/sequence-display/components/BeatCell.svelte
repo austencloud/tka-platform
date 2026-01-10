@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { BeatData } from "../../../domain/models/BeatData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 
@@ -36,11 +34,7 @@
   }>();
 
   // Services
-  let hapticService: IHapticFeedback;
-
-  onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const hapticService = container.items.hapticFeedback;
 
   const isStartPosition = $derived.by(() => {
     return beat.beatNumber === 0;

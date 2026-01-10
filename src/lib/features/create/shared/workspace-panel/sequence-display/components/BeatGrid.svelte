@@ -6,7 +6,7 @@
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
   import { createBeatData } from "../../../domain/factories/createBeatData";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import {
     createBeatGridDisplayState,
@@ -21,8 +21,8 @@
   import BeatCell from "./BeatCell.svelte";
 
   // Services
-  let hapticService: IHapticFeedback;
-  let deviceDetector: IDeviceDetector;
+  const hapticService = container.items.hapticFeedback;
+  const deviceDetector = container.items.deviceDetector;
 
   let {
     beats,
@@ -272,13 +272,10 @@
     );
   };
 
-  // Initialize services and event listeners on mount
+  // Initialize event listeners on mount
   // IMPORTANT: Event listeners must be set up in onMount (not $effect) to ensure
   // they're ready synchronously before any events are dispatched on first generation
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-
     // Set up animation event listeners synchronously on mount
     window.addEventListener("animation-mode-change", handleAnimationModeChange);
     window.addEventListener(

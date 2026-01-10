@@ -12,8 +12,7 @@
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { isCatDogMode } from "../services/implementations/DiscoverThumbnailCache";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   /**
    * VirtualizedSequenceGrid - High-performance grid for large sequence lists
@@ -39,7 +38,7 @@
   }>();
 
   // Variation grouper service for identifying sequences with same word
-  const variationGrouper = resolve<IVariationGrouper>(TYPES.IVariationGrouper);
+  const variationGrouper = container.items.variationGrouper;
 
   // Build variation map when sequences change
   const variationMap = $derived.by(() => {

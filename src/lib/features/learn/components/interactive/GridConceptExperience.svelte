@@ -7,8 +7,7 @@ Supports two view modes:
 - "scroll": All pages displayed vertically for review
 -->
 <script lang="ts">
-	import { resolve } from '$lib/shared/inversify/di';
-	import { TYPES } from '$lib/shared/inversify/types';
+	import { container } from '$lib/shared/di';
 	import type { IHapticFeedback } from '$lib/shared/application/services/contracts/IHapticFeedback';
 	import { onMount } from 'svelte';
 	import GridMergeAnimation from './grid-merge/GridMergeAnimation.svelte';
@@ -29,7 +28,7 @@ Supports two view modes:
 		viewMode?: ExperienceViewMode;
 	}>();
 
-	const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+	const hapticService = container.items.hapticFeedback;
 	const experienceState = createGridExperienceState(viewMode === 'scroll');
 
 	// Accessibility: refs for focus management

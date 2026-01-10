@@ -6,8 +6,7 @@
    * Displays: sequences created, sequences favorited, achievements earned
    */
 
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type {
     IFollowingFeedProvider,
     FollowingFeedItem,
@@ -33,9 +32,7 @@
     error = null;
 
     try {
-      const feedService = tryResolve<IFollowingFeedProvider>(
-        TYPES.IFollowingFeedProvider
-      );
+      const feedService = container.items.followingFeedProvider;
 
       if (!feedService || !effectiveUserId) {
         isLoading = false;

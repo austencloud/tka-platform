@@ -5,7 +5,6 @@
  * Coordinates Daily Challenges, Weekly Challenges, and Skill Progressions.
  */
 
-import { inject, injectable } from "inversify";
 import type {
   DailyChallenge,
   UserChallengeProgress,
@@ -30,22 +29,15 @@ import type { ISkillProgressionTracker } from "../contracts/ISkillProgressionTra
 import type { IAchievementManager } from "../contracts/IAchievementManager";
 import type { IStreakTracker } from "../contracts/IStreakTracker";
 import type { SkillProgressActionType } from "../contracts/ISkillProgressionTracker";
-import { TYPES } from "../../../inversify/types";
 
-@injectable()
 export class ChallengeCoordinator implements IChallengeCoordinator {
   private _initialized = false;
 
   constructor(
-    @inject(TYPES.IDailyChallengeManager)
     private _dailyChallengeService: IDailyChallengeManager,
-    @inject(TYPES.IWeeklyChallengeManager)
     private _weeklyChallengeService: IWeeklyChallengeManager,
-    @inject(TYPES.ISkillProgressionTracker)
     private _skillProgressionService: ISkillProgressionTracker,
-    @inject(TYPES.IAchievementManager)
     private _achievementService: IAchievementManager,
-    @inject(TYPES.IStreakTracker)
     private _streakService: IStreakTracker
   ) {}
 

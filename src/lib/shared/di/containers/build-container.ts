@@ -135,6 +135,10 @@ import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/service
 import type { IBetaDetector } from "$lib/shared/pictograph/prop/services/contracts/IBetaDetector";
 import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
+import type { IPersistenceService } from "$lib/shared/persistence/services/contracts/IPersistenceService";
+import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
+import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
+import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
 
 /**
  * External dependencies that must be provided when creating the container.
@@ -152,6 +156,8 @@ export interface BuildContainerDependencies {
   // Data services
   motionQueryHandler: IMotionQueryHandler;
   sequenceRepository: ISequenceRepository;
+  persistenceService: IPersistenceService;
+  reversalDetector: IReversalDetector;
 
   // Navigation services
   deepLinker: IDeepLinker | null;
@@ -161,6 +167,8 @@ export interface BuildContainerDependencies {
   // Pictograph services
   orientationCalculator: IOrientationCalculator;
   betaDetector: IBetaDetector;
+  arrowPositioningOrchestrator: IArrowPositioningOrchestrator;
+  letterQueryHandler: ILetterQueryHandler;
 
   // Share service
   sharer: ISharer;
@@ -410,7 +418,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         workbench: () =>
           new Workbench(
             deps.sequenceRepository,
-            null as any // IPersistenceService - temp fix (not in deps)
+            deps.persistenceService
           ),
 
         // Sequence services that need other sequence services
@@ -418,12 +426,12 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           new SequenceTransformer(
             deps.motionQueryHandler,
             deps.orientationCalculator,
-            null as any, // IReversalDetector - temp fix
+            deps.reversalDetector,
             deps.gridPositionDeriver
           ),
         sequenceExporter: () => new SequenceExporter(),
         sequencePersister: () =>
-          new SequencePersister(null as any), // IPersistenceService - temp fix
+          new SequencePersister(deps.persistenceService),
         sequenceIndexer: () => new SequenceIndexer(),
 
         // Sequence extension services - need many dependencies
@@ -446,10 +454,10 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         // BridgeFinder needs loopValidator and other services
         bridgeFinder: () =>
           new BridgeFinder(
-            null as any, // ILetterQueryHandler - temp fix
+            deps.letterQueryHandler,
             ctx.positionAnalyzer,
             ctx.loopValidator,
-            null as any, // ISequenceAnalyzer - temp fix
+            ctx.sequenceAnalyzer,
             ctx.orientationAlignmentCalculator
           ),
 
@@ -457,13 +465,13 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         sequenceExtender: () =>
           new SequenceExtender(
             ctx.loopExecutorSelector,
-            null as any, // IReversalDetector - temp fix
-            null as any, // ILetterQueryHandler - temp fix
+            deps.reversalDetector,
+            deps.letterQueryHandler,
             ctx.beatConverter,
             deps.orientationCalculator,
             ctx.loopValidator,
-            null as any, // ISequenceAnalyzer - temp fix
-            null as any // IBridgeFinder - circular, temp fix
+            ctx.sequenceAnalyzer,
+            null as any // IBridgeFinder - circular ref, must resolve later
           ),
 
         // LOOPDetector needs loopabilityChecker and loopTypeResolver
@@ -476,34 +484,34 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         // StartPositionSelector needs multiple dependencies
         startPositionSelector: () =>
           new StartPositionSelector(
-            null as any, // ILetterQueryHandler - temp fix
+            deps.letterQueryHandler,
             ctx.pictographFilter,
             ctx.beatConverter,
-            null as any // IArrowPositioningOrchestrator - temp fix
+            deps.arrowPositioningOrchestrator
           ),
 
         // BeatGenerationOrchestrator needs multiple dependencies
         beatGenerationOrchestrator: () =>
           new BeatGenerationOrchestrator(
-            null as any, // ILetterQueryHandler - temp fix
+            deps.letterQueryHandler,
             ctx.pictographFilter,
             ctx.beatConverter,
             ctx.turnManager,
             deps.orientationCalculator,
-            null as any // IArrowPositioningOrchestrator - temp fix
+            deps.arrowPositioningOrchestrator
           ),
 
         // PartialSequenceGenerator needs multiple dependencies
         partialSequenceGenerator: () =>
           new PartialSequenceGenerator(
-            null as any, // ILetterQueryHandler - temp fix
+            deps.letterQueryHandler,
             ctx.pictographFilter,
             ctx.beatConverter,
             ctx.turnManager,
             ctx.sequenceMetadataManager,
             deps.gridPositionDeriver,
             deps.orientationCalculator,
-            null as any, // IArrowPositioningOrchestrator - temp fix
+            deps.arrowPositioningOrchestrator,
             ctx.loopParameterProvider
           ),
 
@@ -518,7 +526,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.turnAllocator,
             ctx.beatGenerationOrchestrator,
             ctx.sequenceMetadataManager,
-            null as any, // IReversalDetector - temp fix
+            deps.reversalDetector,
             ctx.partialSequenceGenerator,
             ctx.loopEndPositionSelector,
             ctx.loopExecutorSelector
@@ -528,15 +536,15 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         wordSequenceGenerator: () =>
           new WordSequenceGenerator(
             ctx.letterTransitionGraph,
-            null as any, // ILetterQueryHandler - temp fix
+            deps.letterQueryHandler,
             ctx.beatConverter,
             deps.orientationCalculator,
-            null as any // ISequenceExtender - circular, temp fix
+            ctx.sequenceExtender
           ),
         variationExplorer: () =>
           new VariationExplorer(
             ctx.letterTransitionGraph,
-            null as any, // ILetterQueryHandler - temp fix
+            deps.letterQueryHandler,
             ctx.beatConverter,
             deps.orientationCalculator
           ),

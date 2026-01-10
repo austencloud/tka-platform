@@ -20,10 +20,8 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { TYPES } from "$lib/shared/inversify/types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { UniversalMetadataExtractor } from "$lib/shared/services/UniversalMetadataExtractor";
-import { inject, injectable } from "inversify";
 import type {
   IDiscoverMetadataExtractor,
   SequenceMetadata,
@@ -51,10 +49,8 @@ const DATE_FIELD_NAMES = [
   "timestamp",
 ] as const;
 
-@injectable()
 export class DiscoverMetadataExtractor implements IDiscoverMetadataExtractor {
   constructor(
-    @inject(TYPES.ISequenceDifficultyCalculator)
     private readonly difficultyCalculator: ISequenceDifficultyCalculator
   ) {}
 

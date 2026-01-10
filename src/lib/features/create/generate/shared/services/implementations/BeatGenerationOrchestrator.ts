@@ -8,8 +8,6 @@
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import { PropContinuity } from "../../domain/models/generate-models";
 import type { IBeatConverter } from "../contracts/IBeatConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
@@ -22,20 +20,13 @@ import type {
 } from "../contracts/IBeatGenerationOrchestrator";
 import type { IArrowPositioningOrchestrator } from "../../../../../../shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 
-@injectable()
 export class BeatGenerationOrchestrator implements IBeatGenerationOrchestrator {
   constructor(
-    @inject(TYPES.ILetterQueryHandler)
     private letterQueryHandler: ILetterQueryHandler,
-    @inject(TYPES.IPictographFilter)
     private PictographFilter: IPictographFilter,
-    @inject(TYPES.IBeatConverter)
     private BeatConverter: IBeatConverter,
-    @inject(TYPES.ITurnManager)
     private TurnManager: ITurnManager,
-    @inject(TYPES.IOrientationCalculator)
     private OrientationCalculator: IOrientationCalculator,
-    @inject(TYPES.IArrowPositioningOrchestrator)
     private arrowPositioningOrchestrator: IArrowPositioningOrchestrator
   ) {}
 

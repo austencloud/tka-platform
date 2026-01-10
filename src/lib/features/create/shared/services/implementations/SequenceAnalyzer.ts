@@ -1,5 +1,3 @@
-﻿import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { BeatData } from "../../domain/models/BeatData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -30,12 +28,8 @@ import {
  * - Uses predefined position maps (quartered, halved, mirrored, swapped, inverted)
  * - Intermediate pictographs are irrelevant - only start/end positions matter
  */
-@injectable()
 export class SequenceAnalyzer implements ISequenceAnalyzer {
-  constructor(
-    @inject(TYPES.IBetaDetector)
-    private readonly BetaDetector: IBetaDetector
-  ) {}
+  constructor(private readonly BetaDetector: IBetaDetector) {}
 
   /**
    * Analyze a sequence for circular properties

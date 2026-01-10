@@ -5,9 +5,7 @@
   4th button in Create module button panel (alongside Play, Image, Record).
 -->
 <script lang="ts">
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   let { onclick, isActive = false } = $props<{
     onclick?: () => void;
@@ -15,7 +13,7 @@
   }>();
 
   // Resolve haptic feedback service
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   function handleClick() {
     hapticService?.trigger("selection");

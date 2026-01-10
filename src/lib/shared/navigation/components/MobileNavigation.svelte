@@ -1,8 +1,7 @@
 <!-- Mobile Navigation - Responsive Bottom/Side Navigation Orchestrator -->
 <!-- Automatically adapts between bottom (portrait) and side (landscape) layouts -->
 <script lang="ts">
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
   import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { onMount } from "svelte";
@@ -71,7 +70,7 @@
     // Resolve DeviceDetector service
     let deviceCleanup: (() => void) | undefined;
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
+      deviceDetector = container.items.deviceDetector;
 
       // Get initial responsive settings
       responsiveSettings = deviceDetector.getResponsiveSettings();

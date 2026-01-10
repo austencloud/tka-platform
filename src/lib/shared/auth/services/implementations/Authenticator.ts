@@ -32,11 +32,9 @@ import {
   unlink,
   updateProfile,
 } from "firebase/auth";
-import { injectable } from "inversify";
 import { auth } from "../../firebase";
 import type { IAuthenticator } from "../contracts/IAuthenticator";
 
-@injectable()
 export class Authenticator implements IAuthenticator {
   async signInWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();

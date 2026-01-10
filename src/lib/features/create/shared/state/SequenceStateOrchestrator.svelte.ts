@@ -25,8 +25,7 @@ import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDeepLinker";
 import type { TargetHand } from "./panel-coordination-state.svelte";
-import { tryResolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { ISequencePersister } from "../services/contracts/ISequencePersister";
 import type { ISequenceRepository } from "../services/contracts/ISequenceRepository";
@@ -117,10 +116,8 @@ export function createSequenceState(services: SequenceStateServices) {
     let hasDeepLink = false;
     let hasPendingEdit = false;
     try {
-      const { resolve } = await import("$lib/shared/inversify/di");
-      const { TYPES } = await import("$lib/shared/inversify/types");
-      const deepLinkService = resolve<IDeepLinker>(TYPES.IDeepLinker);
-      hasDeepLink = deepLinkService.hasDataForModule("create") ?? false;
+      const deepLinkService = container.items.deepLinker as IDeepLinker | null;
+      hasDeepLink = deepLinkService?.hasDataForModule("create") ?? false;
 
       // Also check for pending edit from Discover gallery (stored in localStorage)
       hasPendingEdit =
@@ -208,9 +205,7 @@ export function createSequenceState(services: SequenceStateServices) {
 
       // Log sequence creation for analytics
       try {
-        const activityService = tryResolve<IActivityLogger>(
-          TYPES.IActivityLogger
-        );
+        const activityService = container.items.activityLogger as IActivityLogger | undefined;
         if (activityService) {
           void activityService.logSequenceAction("create", sequence.id, {
             sequenceWord: sequence.word,

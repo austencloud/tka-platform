@@ -14,7 +14,6 @@
  * 3. All subsequent users get the pre-rendered image instantly
  */
 
-import { injectable } from "inversify";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
 import type {
   ICloudThumbnailCache,
@@ -82,7 +81,6 @@ function releaseCheckSlot(): void {
   }
 }
 
-@injectable()
 export class CloudThumbnailCache implements ICloudThumbnailCache {
   /**
    * Get the storage path for a thumbnail

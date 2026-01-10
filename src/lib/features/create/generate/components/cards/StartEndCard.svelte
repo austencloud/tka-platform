@@ -6,8 +6,7 @@ Opens sheet with start/end position selection
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount, getContext } from "svelte";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import BaseCard from "./BaseCard.svelte";
@@ -65,8 +64,8 @@ Opens sheet with start/end position selection
   // Get panel coordination state from context (provided by CreateModule)
   const panelState = getContext<PanelCoordinationState>("panelState");
 
-  onMount(async () => {
-    hapticService = await resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
   });
 
   // Open start/end panel via coordinator (renders at CreateModule level)

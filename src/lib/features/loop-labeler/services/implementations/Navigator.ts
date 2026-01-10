@@ -1,11 +1,9 @@
-import { injectable } from "inversify";
 import type { INavigator } from "../contracts/INavigator";
 import type { LabeledSequence } from "../contracts/ILOOPLabelsFirebaseRepository";
 
 /**
  * Service for navigation and utility functions
  */
-@injectable()
 export class Navigator implements INavigator {
   getNextIndex(currentIndex: number, totalSequences: number): number {
     if (currentIndex < totalSequences - 1) {

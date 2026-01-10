@@ -4,7 +4,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
 -->
 <script lang="ts">
   import type { Type1LetterData } from "./Type1LetterData";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import {
     GridMode,
     GridPositionGroup,
@@ -28,7 +28,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     size?: "small" | "medium" | "large";
   }>();
 
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  const hapticService = container.items.hapticFeedback;
 
   // State for loaded pictograph data
   let pictographData = $state<PictographData | null>(null);
@@ -38,9 +38,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
   // Load pictograph data for the letter
   onMount(async () => {
     try {
-      const letterQueryHandler = resolve<ILetterQueryHandler>(
-        TYPES.ILetterQueryHandler
-      );
+      const letterQueryHandler = container.items.letterQueryHandler;
 
       const data = await letterQueryHandler.getPictographByLetter(
         letterData.letter,

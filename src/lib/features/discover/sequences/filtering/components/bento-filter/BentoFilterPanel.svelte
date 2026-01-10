@@ -5,9 +5,8 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import type { ExploreFilterValue } from "$lib/shared/persistence/domain/types/FilteringTypes";
   import type { DifficultyLevel } from "$lib/shared/domain/models/sequence-parameters";
 
@@ -48,7 +47,7 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
   let hapticService: IHapticFeedback | null = null;
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Derived filter values

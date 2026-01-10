@@ -27,7 +27,6 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { BeatData } from "../../domain/models/BeatData";
@@ -52,8 +51,7 @@ import {
   RotationDirection,
   type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -62,7 +60,6 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("RotationDirectionPatternManager");
 
-@injectable()
 export class RotationDirectionPatternManager implements IRotationDirectionPatternManager {
   /**
    * Extract a rotation direction pattern from a sequence
@@ -253,9 +250,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
   ): Promise<void> {
     let motionQueryHandler: IMotionQueryHandler | null = null;
     try {
-      motionQueryHandler = resolve<IMotionQueryHandler>(
-        TYPES.IMotionQueryHandler
-      );
+      motionQueryHandler = container.items.motionQueryHandler;
     } catch {
       logger.warn(
         "Could not resolve IMotionQueryHandler - letters will not be updated"
@@ -367,9 +362,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     // Note: DASH, STATIC don't flip
 
     // Recalculate end orientation
-    const orientationCalculator = resolve<IOrientationCalculator>(
-      TYPES.IOrientationCalculator
-    );
+    const orientationCalculator = container.items.orientationCalculator;
     const tempMotion = createMotionData({
       ...currentMotion,
       rotationDirection: newRotationDirection,
@@ -457,9 +450,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     newStartOrientation: Orientation,
     color: MotionColor
   ): MotionData {
-    const orientationCalculator = resolve<IOrientationCalculator>(
-      TYPES.IOrientationCalculator
-    );
+    const orientationCalculator = container.items.orientationCalculator;
 
     const tempMotion = createMotionData({
       ...motion,

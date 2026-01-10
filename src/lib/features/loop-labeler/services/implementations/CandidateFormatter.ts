@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   ICandidateFormatter,
   FormattedTransformations,
@@ -18,7 +17,6 @@ import { TRANSFORMATION_PRIORITY } from "../../domain/constants/transformation-p
 /**
  * Service for formatting transformations and building candidate designations.
  */
-@injectable()
 export class CandidateFormatter implements ICandidateFormatter {
   formatSingleTransformation(raw: string): string {
     let formatted = raw.toUpperCase();

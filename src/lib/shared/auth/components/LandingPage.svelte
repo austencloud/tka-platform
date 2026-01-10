@@ -24,8 +24,8 @@
   import AuthFooter from "./AuthFooter.svelte";
   import GoogleOneTap from "./GoogleOneTap.svelte";
   import LegalSheet from "../../legal/components/LegalSheet.svelte";
-  import { resolve } from "../../inversify/di";
-  import { TYPES } from "../../inversify/types";
+  import { container } from "../../di";
+  
   import type { IAuthenticator } from "../services/contracts/IAuthenticator";
   import { settingsService } from "../../settings/state/SettingsState.svelte";
   import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
@@ -67,7 +67,7 @@
 
   onMount(async () => {
     try {
-      authService = await resolve<IAuthenticator>(TYPES.IAuthenticator);
+      authService = container.items.authenticator;
     } catch (error) {
       console.error("Failed to resolve auth service:", error);
     }

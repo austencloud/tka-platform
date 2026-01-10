@@ -12,10 +12,8 @@
   } from "../../state/train-practice-state.svelte";
   import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
 
   interface Props {
     onSequenceSelect: (sequence: SequenceData) => void;
@@ -25,14 +23,10 @@
 
   const practiceState = getTrainPracticeState();
   let showBrowser = $state(false);
-  let hapticService: IHapticFeedback | null = null;
+  const hapticService = container.items.hapticFeedback;
 
   // Get recent sequences from state
   const recentSequences = $derived(practiceState.recentSequences);
-
-  onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
 
   function handleBrowseClick() {
     hapticService?.trigger("selection");

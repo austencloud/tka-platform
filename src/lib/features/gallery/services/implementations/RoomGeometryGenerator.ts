@@ -6,7 +6,6 @@
  * and collision-ready WallCollider format.
  */
 
-import { injectable } from "inversify";
 import type { Room, DoorwayOpening } from "../../domain/models/Room";
 import type { Doorway, DoorwayCorridor } from "../../domain/models/doorway";
 import type { WallSegment, ExhibitSlot } from "../../domain/models/GalleryLayout";
@@ -41,7 +40,6 @@ interface GeneratedGeometry {
 // Service
 // =============================================================================
 
-@injectable()
 export class RoomGeometryGenerator {
   /**
    * Generate wall segments and colliders from rooms and corridors

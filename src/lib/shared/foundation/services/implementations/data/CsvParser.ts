@@ -9,7 +9,6 @@ import type {
   CSVParseResult as CsvParseResult,
   ParsedCsvRow,
 } from "$lib/features/create/generate/shared/domain/csv-handling/CsvModels";
-import { injectable } from "inversify";
 // import type { ICSVParser } from "../../contracts";
 
 // Temporary interface definition
@@ -25,7 +24,6 @@ interface CsvParseError {
   lineNumber: number;
 }
 
-@injectable()
 export class CSVParser implements ICSVParser {
   // Interface methods (delegates to existing methods)
   parse(csvContent: string): Record<string, unknown>[] {

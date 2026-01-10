@@ -5,7 +5,6 @@
  * Single Responsibility: Filter pictographs by various criteria (rotation, continuity).
  */
 
-import { injectable } from "inversify";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
@@ -75,7 +74,6 @@ export interface IPictographFilter {
   selectRandom<T>(array: T[]): T;
 }
 
-@injectable()
 export class PictographFilter implements IPictographFilter {
   /**
    * Filter by continuity - next beat's start position must match last beat's end position

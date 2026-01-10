@@ -11,8 +11,6 @@
  * This is the main entry point for components.
  */
 
-import { inject, injectable } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type {
   IThumbnailRenderOrchestrator,
@@ -27,18 +25,13 @@ import type { IThumbnailRenderQueue } from "../contracts/IThumbnailRenderQueue";
 import type { IThumbnailRenderer } from "../contracts/IThumbnailRenderer";
 import type { ICloudThumbnailCache } from "../contracts/ICloudThumbnailCache";
 
-@injectable()
 export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator {
   private completedCount = 0;
 
   constructor(
-    @inject(TYPES.IThumbnailKeyDeriver)
     private keyDeriver: IThumbnailKeyDeriver,
-    @inject(TYPES.IThumbnailRenderQueue)
     private queue: IThumbnailRenderQueue,
-    @inject(TYPES.IThumbnailRenderer)
     private renderer: IThumbnailRenderer,
-    @inject(TYPES.ICloudThumbnailCache)
     private cloudCache: ICloudThumbnailCache
   ) {}
 

@@ -5,10 +5,8 @@
  * Provides clean abstraction over browser animation APIs.
  */
 
-import { injectable } from "inversify";
 import type { IAnimationLoop } from "../contracts/IAnimationLoop";
 
-@injectable()
 export class AnimationLoop implements IAnimationLoop {
   private animationFrameId: number | null = null;
   private lastTimestamp: number | null = null;

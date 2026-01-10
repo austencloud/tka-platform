@@ -7,8 +7,7 @@ Shown when sequence is empty.
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const { gridMode, onStart, onGridModeChange } = $props<{
@@ -19,8 +18,8 @@ Shown when sequence is empty.
 
   const isDiamond = $derived(gridMode === GridMode.DIAMOND);
 
-  // Resolve haptic feedback service
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  // Access haptic feedback service from ITI container
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   function handleStart() {
     hapticService?.trigger("selection");

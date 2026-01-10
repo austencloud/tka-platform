@@ -7,20 +7,14 @@
 
 import type { PictographData } from "../../domain/models/PictographData";
 import { createArrowLifecycleResult } from "../../../arrow/orchestration/domain/arrow-factories";
-import { TYPES } from "../../../../inversify/types";
-import { inject, injectable } from "inversify";
 import type { IArrowLifecycleManager } from "../../../arrow/orchestration/services/contracts/IArrowLifecycleManager";
 import type {
   IPictographCoordinator,
   PictographRenderingState,
 } from "../contracts/IPictographCoordinator";
 
-@injectable()
 export class PictographCoordinator implements IPictographCoordinator {
-  constructor(
-    @inject(TYPES.IArrowLifecycleManager)
-    private arrowLifecycleManager: IArrowLifecycleManager
-  ) {}
+  constructor(private arrowLifecycleManager: IArrowLifecycleManager) {}
 
   /**
    * Coordinate complete pictograph lifecycle

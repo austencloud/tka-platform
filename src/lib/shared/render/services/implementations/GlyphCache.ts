@@ -9,7 +9,6 @@
  * requests during development (1000+ requests would otherwise occur on each save).
  */
 
-import { injectable } from "inversify";
 import { getLetterImagePath } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter } from "../../../foundation/domain/models/Letter";
 
@@ -74,7 +73,6 @@ export interface IGlyphCache {
   getStats(): { total: number; loaded: number; failed: number };
 }
 
-@injectable()
 export class GlyphCache implements IGlyphCache {
   // Use HMR-aware module-level cache
   private cache = hmrGlyphCache;

@@ -8,9 +8,7 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
-// import type { IBetaDetector, IGridModeDeriver } from "../../contracts";
+import { container } from "$lib/shared/di";
 
 // Temporary interface definitions
 interface IBetaDetector {
@@ -95,7 +93,7 @@ export class PictographDataDebugger {
     const identifier = `${pictographData.letter}_${Date.now()}`;
 
     // Analyze the pictograph data using the new beta detection
-    const BetaDetector = resolve<IBetaDetector>(TYPES.IBetaDetector);
+    const BetaDetector = container.items.betaDetector as unknown as IBetaDetector;
     const endsWithBetaPosition = BetaDetector.endsWithBeta(pictographData);
     const hasValidMotionData = this.validateMotionData(pictographData);
     const hasValidPropPlacementData =
@@ -122,7 +120,7 @@ export class PictographDataDebugger {
     }
 
     // Compute gridMode from motion data
-    const gridModeService = resolve<IGridModeDeriver>(TYPES.IGridModeDeriver);
+    const gridModeService = container.items.gridModeDeriver as unknown as IGridModeDeriver;
     const gridMode =
       pictographData.motions.blue && pictographData.motions.red
         ? gridModeService.deriveGridMode(

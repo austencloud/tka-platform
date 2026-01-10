@@ -5,7 +5,6 @@
  * Uses deterministic selection based on room ID for consistent placement.
  */
 
-import { injectable, inject } from "inversify";
 import type {
   ISequenceCurator,
   ExhibitInfo,
@@ -13,19 +12,13 @@ import type {
 } from "../contracts/ISequenceCurator";
 import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
 import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
-import { LibraryTypes } from "$lib/shared/inversify/types/library.types";
-
-@injectable()
 export class SequenceCurator implements ISequenceCurator {
   private sequences: LibrarySequence[] = [];
   private sequenceMap: Map<string, LibrarySequence> = new Map();
   private loaded = false;
   private assignedSequences: Set<string> = new Set();
 
-  constructor(
-    @inject(LibraryTypes.ILibraryRepository)
-    private libraryRepository: ILibraryRepository
-  ) {}
+  constructor(private libraryRepository: ILibraryRepository) {}
 
   async loadSequences(): Promise<LibrarySequence[]> {
     try {

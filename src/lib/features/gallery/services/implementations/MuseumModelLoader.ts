@@ -7,7 +7,6 @@
  * Example: Slot_NorthWing_01, Slot_Rotunda_03
  */
 
-import { injectable } from "inversify";
 import type { Object3D } from "three";
 
 /**
@@ -37,7 +36,6 @@ export interface LoadedMuseum {
   readonly slots: readonly ModelSlot[];
 }
 
-@injectable()
 export class MuseumModelLoader {
   /**
    * Extract exhibit slots from a loaded museum scene.

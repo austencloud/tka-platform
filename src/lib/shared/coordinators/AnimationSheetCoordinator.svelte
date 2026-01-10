@@ -30,8 +30,7 @@
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
-  import { resolve, loadFeatureModule } from "../inversify/di";
-  import { TYPES } from "../inversify/types";
+  import { container } from "$lib/shared/di";
   import type { SequenceData } from "../foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "../application/services/contracts/IHapticFeedback";
   import { onMount, onDestroy } from "svelte";
@@ -213,93 +212,80 @@
   onMount(() => {
     debug.log("Resolving services...");
 
-    // Use an async IIFE to handle async initialization
-    (async () => {
-      // Resolve core services immediately (Tier 1 - navigation module)
-      try {
-        hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
-        sheetRouterService = resolve<ISheetRouter>(TYPES.ISheetRouter);
-        debug.success("Core services resolved");
-      } catch (error) {
-        console.error("❌ Failed to resolve core services:", error);
-      }
+    // Resolve core services via ITI container
+    try {
+      hapticService = container.items.hapticFeedback;
+      sheetRouterService = container.items.sheetRouter;
+      debug.success("Core services resolved");
+    } catch (error) {
+      console.error("Failed to resolve core services:", error);
+    }
 
-      // Load animator module and resolve animation-specific services
-      try {
-        await loadFeatureModule("animate");
-        debug.success("Animator module loaded");
+    // Resolve animation-specific services (all registered synchronously via ITI)
+    try {
+      discoverLoader = container.items.discoverLoader;
+      playbackController = container.items.animationPlaybackController;
+      videoExportOrchestrator = container.items.videoExportOrchestrator;
+      VideoExporter = container.items.videoExporter;
+      loopabilityChecker = container.items.sequenceLoopabilityChecker;
 
-        // IDiscoverLoader is in discover.module which is loaded with "animate"
-        discoverLoader = resolve<IDiscoverLoader>(TYPES.IDiscoverLoader);
-        playbackController = resolve<IAnimationPlaybackController>(
-          TYPES.IAnimationPlaybackController
-        );
-        videoExportOrchestrator = resolve<IVideoExportOrchestrator>(
-          TYPES.IVideoExportOrchestrator
-        );
-        VideoExporter = resolve<IVideoExporter>(TYPES.IVideoExporter);
-        loopabilityChecker = resolve<ISequenceLoopabilityChecker>(
-          TYPES.ISequenceLoopabilityChecker
-        );
+      // Expose playback controller for keyboard shortcuts
+      setAnimationPlaybackRef(playbackController);
 
-        // Expose playback controller for keyboard shortcuts
-        setAnimationPlaybackRef(playbackController);
+      servicesReady = true;
+      debug.success(
+        "Animation services resolved, ready to initialize playback"
+      );
+    } catch (error) {
+      console.error(
+        "Failed to resolve animation services:",
+        error
+      );
+      animationPanelState.setError("Failed to initialize animation services");
+    }
 
-        servicesReady = true;
-        debug.success(
-          "Animation services resolved, ready to initialize playback"
-        );
-      } catch (error) {
-        console.error(
-          "❌ Failed to load animator module or resolve services:",
-          error
-        );
-        animationPanelState.setError("Failed to initialize animation services");
-      }
+    // Listen for route changes to restore animation panel from URL
+    cleanupRouteListener = sheetRouterService?.onRouteChange((state) => {
+      isRespondingToRouteChange = true;
 
-      // Listen for route changes to restore animation panel from URL
-      cleanupRouteListener = sheetRouterService?.onRouteChange((state) => {
-        isRespondingToRouteChange = true;
-
-        const sheetType = state.sheet;
-        if (sheetType === "animation") {
-          // Open animation panel if it's not already open
-          if (!isOpen) {
-            isOpen = true;
-          }
-
-          // Restore animation state from URL if available
-          if (state.animationPanel) {
-            restoreAnimationState(state.animationPanel);
-          }
-        } else if (isOpen && sheetType && sheetType !== null) {
-          // Close animation panel if a different sheet is opened (not animation, not null)
-          const otherSheets: readonly string[] = [
-            "settings",
-            "auth",
-            "terms",
-            "privacy",
-          ];
-          if (otherSheets.includes(sheetType)) {
-            isOpen = false;
-          }
-        } else if (isOpen && !sheetType) {
-          // Close animation panel if no sheet is in URL (user swiped away or pressed back)
-          isOpen = false;
+      const sheetType = state.sheet;
+      if (sheetType === "animation") {
+        // Open animation panel if it's not already open
+        if (!isOpen) {
+          isOpen = true;
         }
 
-        // Reset flag after a tick to allow effects to run
-        setTimeout(() => {
-          isRespondingToRouteChange = false;
-        }, 0);
-      });
-
-      // Check if animation panel should be open on initial load
-      const initialState = sheetRouterService?.getCurrentAnimationPanelState();
-      if (initialState) {
-        isOpen = true;
+        // Restore animation state from URL if available
+        if (state.animationPanel) {
+          restoreAnimationState(state.animationPanel);
+        }
+      } else if (isOpen && sheetType && sheetType !== null) {
+        // Close animation panel if a different sheet is opened (not animation, not null)
+        const otherSheets: readonly string[] = [
+          "settings",
+          "auth",
+          "terms",
+          "privacy",
+        ];
+        if (otherSheets.includes(sheetType)) {
+          isOpen = false;
+        }
+      } else if (isOpen && !sheetType) {
+        // Close animation panel if no sheet is in URL (user swiped away or pressed back)
+        isOpen = false;
       }
-    })();
+
+      // Reset flag after a tick to allow effects to run
+      setTimeout(() => {
+        isRespondingToRouteChange = false;
+      }, 0);
+    });
+
+    // Check if animation panel should be open on initial load
+    const initialState = sheetRouterService?.getCurrentAnimationPanelState();
+    if (initialState) {
+      isOpen = true;
+    }
   });
 
   // Load and auto-start animation when panel becomes visible

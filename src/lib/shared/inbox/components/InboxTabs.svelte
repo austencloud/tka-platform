@@ -7,8 +7,7 @@
 
   import { onMount } from "svelte";
   import { inboxState, type InboxTab } from "../state/inbox-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { notificationService } from "$lib/features/feedback/services/implementations/Notifier";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -29,7 +28,7 @@
   let hapticService: IHapticFeedback | undefined;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Auto-mark notifications as read when viewing (Facebook/Instagram pattern)

@@ -14,12 +14,7 @@
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { onMount, onDestroy, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import {
-    resolve,
-    loadPixiModule,
-    loadFeatureModule,
-  } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ISequenceAnimationOrchestrator } from "../../services/contracts/ISequenceAnimationOrchestrator";
@@ -127,17 +122,13 @@
   });
 
   // Initialize services on mount
-  onMount(async () => {
+  onMount(() => {
     try {
       loading = true;
-      await loadFeatureModule("animate");
-      await loadPixiModule();
-      animationOrchestrator = resolve(
-        TYPES.ISequenceAnimationOrchestrator
-      ) as ISequenceAnimationOrchestrator;
-      startPositionDeriver = resolve(
-        TYPES.IStartPositionDeriver
-      ) as IStartPositionDeriver;
+      animationOrchestrator = container.items
+        .sequenceAnimationOrchestrator as ISequenceAnimationOrchestrator;
+      startPositionDeriver = container.items
+        .startPositionDeriver as IStartPositionDeriver;
       initialized = true;
       loading = false;
     } catch (err) {

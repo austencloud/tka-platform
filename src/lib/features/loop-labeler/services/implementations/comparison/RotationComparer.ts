@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IRotationComparer } from "../../contracts/IRotationComparer";
 import type {
   ColorData,
@@ -17,7 +16,6 @@ import {
 /**
  * Service for detecting rotation transformations between beat pairs.
  */
-@injectable()
 export class RotationComparer implements IRotationComparer {
   checkRotations(
     b1Blue: ColorData,

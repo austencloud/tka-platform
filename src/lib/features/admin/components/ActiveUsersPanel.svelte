@@ -1,9 +1,8 @@
 <!-- ActiveUsersPanel.svelte - Admin view of all users with activity-based presence -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { resolve, loadFeatureModule } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import { TYPES } from "$lib/shared/inversify/types";
   import type { IUserActivityTracker } from "../services/contracts/IUserActivityTracker";
   import type { UserPresenceWithId } from "$lib/shared/presence/domain/models/presence-models";
   import UserPresenceCard from "./active-users/UserPresenceCard.svelte";
@@ -28,8 +27,8 @@
   let isMobile = $state(false);
   const drawerPlacement = $derived(isMobile ? "bottom" : "right");
 
-  // Track if community module is loaded for profile panel
-  let communityModuleLoaded = $state(false);
+  // Community module is available synchronously via ITI
+  let communityModuleLoaded = $state(true);
 
   // Stats computed from activity status
   let activeCount = $derived(
@@ -65,9 +64,7 @@
     resizeListener = checkMobile;
 
     try {
-      userActivityService = resolve<IUserActivityTracker>(
-        TYPES.IUserActivityTracker
-      );
+      userActivityService = container.items.userActivityTracker;
 
       // Subscribe to all users (Firestore + presence data merged)
       unsubscribe = userActivityService.subscribeToAllUsers((allUsers) => {
@@ -90,7 +87,7 @@
     }
   });
 
-  async function selectUser(userId: string) {
+  function selectUser(userId: string) {
     if (selectedUserId === userId) {
       // Clicking same user - toggle drawer
       drawerOpen = !drawerOpen;
@@ -98,19 +95,6 @@
       // Clicking different user - select and open
       selectedUserId = userId;
       drawerOpen = true;
-
-      // Ensure community module is loaded for profile panel
-      if (!communityModuleLoaded) {
-        try {
-          await loadFeatureModule("community");
-          communityModuleLoaded = true;
-        } catch (err) {
-          console.error(
-            "[ActiveUsersPanel] Failed to load community module:",
-            err
-          );
-        }
-      }
     }
   }
 

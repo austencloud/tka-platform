@@ -5,7 +5,6 @@
  * Handles all localStorage/sessionStorage operations for navigation state.
  */
 
-import { injectable } from "inversify";
 import type { INavigationPersister } from "../contracts/INavigationPersister";
 import type { ModuleId } from "../../domain/types";
 import { MODULE_DEFINITIONS } from "../../config/module-definitions";
@@ -19,7 +18,6 @@ import {
   PREVIOUS_MODULE_SESSION_KEY,
 } from "../../config/storage-keys";
 
-@injectable()
 export class NavigationPersister implements INavigationPersister {
   // ─────────────────────────────────────────────────────────────────────────────
   // Module Persistence

@@ -37,6 +37,12 @@ import { BackgroundRenderingService } from "../../background/shared/services/imp
 import { BackgroundPreLoader } from "../../background/shared/services/implementations/BackgroundPreloader";
 import { BackgroundConfigurationService } from "../../background/shared/services/implementations/BackgroundConfigurationService";
 
+// Night Sky services
+import { NightSkyCalculationService } from "../../background/night-sky/services/implementations/NightSkyCalculationService";
+
+// Device services for background
+import { GeoLocationProvider } from "../../device/services/implementations/GeoLocationProvider";
+
 /**
  * Data container with all data/persistence service factories
  *
@@ -68,6 +74,12 @@ export const dataContainer = createContainer()
     backgroundRenderingService: () => new BackgroundRenderingService(),
     backgroundPreloader: () => new BackgroundPreLoader(),
     backgroundConfigurationService: () => new BackgroundConfigurationService(),
+
+    // Night Sky services
+    nightSkyCalculationService: () => new NightSkyCalculationService(),
+
+    // Device services for background
+    geoLocationProvider: () => new GeoLocationProvider(),
   })
 
   // === Layer 2: Services that depend on Layer 1 ===

@@ -15,13 +15,11 @@ import {
   Orientation,
   HandPath,
 } from "../../../../shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 
 /** Path to the consolidated arrow sprite file */
 export const ARROW_SPRITE_PATH = "/images/arrows-sprite.svg";
 
-@injectable()
 export class ArrowPathResolver implements IArrowPathResolver {
   /**
    * Get arrow symbol ID based on motion type and properties

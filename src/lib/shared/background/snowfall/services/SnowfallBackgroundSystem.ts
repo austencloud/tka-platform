@@ -1,5 +1,4 @@
-import { resolve } from "../../../inversify/di";
-import { TYPES } from "../../../inversify/types";
+import { container } from "$lib/shared/di";
 import type {
   Dimensions,
   QualityLevel,
@@ -44,12 +43,8 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
   constructor() {
     this.snowflakeSystem = createSnowflakeSystem();
     // Inject services
-    this.renderingService = resolve<IBackgroundRenderingService>(
-      TYPES.IBackgroundRenderingService
-    );
-    this.configurationService = resolve<IBackgroundConfigurationService>(
-      TYPES.IBackgroundConfigurationService
-    );
+    this.renderingService = container.items.backgroundRenderingService;
+    this.configurationService = container.items.backgroundConfigurationService;
 
     this.shootingStarState = this.shootingStarSystem.initialState;
     this.isInitialized = false;

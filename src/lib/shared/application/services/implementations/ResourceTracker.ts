@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { IResourceTracker } from "../contracts/IResourceTracker";
 
 interface Disposable {
@@ -21,7 +20,6 @@ type TrackedResource =
   | Map<unknown, TrackedResource>
   | unknown;
 
-@injectable()
 export class ResourceTracker implements IResourceTracker {
   private resources: Set<TrackedResource>;
   private active: boolean;

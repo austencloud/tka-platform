@@ -4,7 +4,6 @@
  * Generates and tracks daily challenges with Firebase/Firestore.
  */
 
-import { inject, injectable } from "inversify";
 import {
   collection,
   doc,
@@ -30,19 +29,15 @@ import type {
 } from "../../domain/models/achievement-models";
 import type { IDailyChallengeManager } from "../contracts/IDailyChallengeManager";
 import type { IAchievementManager } from "../contracts/IAchievementManager";
-import { TYPES } from "../../../inversify/types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("DailyChallengeManager");
 
-@injectable()
 export class DailyChallengeManager implements IDailyChallengeManager {
   private _initialized = false;
   private _achievementService: IAchievementManager | null = null;
 
-  constructor(
-    @inject(TYPES.IAchievementManager) achievementService: IAchievementManager
-  ) {
+  constructor(achievementService: IAchievementManager) {
     this._achievementService = achievementService;
   }
 

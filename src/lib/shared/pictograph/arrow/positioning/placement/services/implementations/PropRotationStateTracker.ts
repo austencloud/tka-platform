@@ -12,14 +12,12 @@
 
 import { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import { RotationDirection } from "../../../../../shared/domain/enums/pictograph-enums";
-import { injectable } from "inversify";
 
 export const OPENING = "op";
 export const CLOSING = "cl";
 
 type PropRotationMap = Map<string, string>;
 
-@injectable()
 export class PropRotationStateTracker {
   /**
    * Determine prop rotation state (opening/closing) for blue motion.

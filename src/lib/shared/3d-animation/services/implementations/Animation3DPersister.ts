@@ -4,7 +4,6 @@
  * Persists 3D animation UI state to localStorage.
  */
 
-import { injectable } from "inversify";
 import { Plane } from "../../domain/enums/Plane";
 import type {
   IAnimation3DPersister,
@@ -13,7 +12,6 @@ import type {
 
 const STORAGE_KEY = "tka-3d-animator-state";
 
-@injectable()
 export class Animation3DPersister implements IAnimation3DPersister {
   /**
    * Save state to localStorage (merges with existing)

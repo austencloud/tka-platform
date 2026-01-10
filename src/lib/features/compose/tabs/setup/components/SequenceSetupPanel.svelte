@@ -11,8 +11,7 @@
   import type { ComposeMode } from "$lib/features/compose/shared/state/compose-module-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
@@ -73,8 +72,8 @@
 
   onMount(() => {
     try {
-      deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-      hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+      deviceDetector = container.items.deviceDetector;
+      hapticService = container.items.hapticFeedback;
       responsiveSettings = deviceDetector.getResponsiveSettings();
 
       const cleanup = deviceDetector.onCapabilitiesChanged(() => {

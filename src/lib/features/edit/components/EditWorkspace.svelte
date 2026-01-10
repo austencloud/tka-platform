@@ -5,8 +5,7 @@
   Reuses the existing BeatGrid component from the Create module.
 -->
 <script lang="ts">
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StartPositionData } from "../../create/shared/domain/models/StartPositionData";
   import type { BeatData } from "../../create/shared/domain/models/BeatData";
@@ -38,9 +37,7 @@
 
   onMount(() => {
     try {
-      normalizationService = resolve<ISequenceNormalizer>(
-        TYPES.ISequenceNormalizer
-      );
+      normalizationService = container.items.sequenceNormalizer;
     } catch (error) {
       console.warn(
         "EditWorkspace: Failed to resolve ISequenceNormalizer:",

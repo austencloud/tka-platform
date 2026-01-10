@@ -18,8 +18,7 @@ import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISe
 import type { TrailSettings } from "../../shared/domain/types/TrailTypes";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { getLetterImagePath } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-import { resolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 /**
  * Pre-rendered frame data
  */
@@ -497,7 +496,7 @@ export class SequenceFramePreRenderer {
     let bluePropFlipped = false;
     let redPropFlipped = false;
     try {
-      const settingsState = resolve<ISettingsState>(TYPES.ISettingsState);
+      const settingsState = container.items.settingsState as ISettingsState;
       const settings = settingsState.currentSettings;
       const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
       const bluePropType = (

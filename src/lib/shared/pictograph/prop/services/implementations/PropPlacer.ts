@@ -6,8 +6,6 @@
  * Returns PropPlacementData that can be attached to PropPlacementData.
  */
 
-import { TYPES } from "../../../../inversify/types";
-import { inject, injectable } from "inversify";
 import { GridMode, GridLocation } from "../../../grid/domain/enums/grid-enums";
 import type { IGridModeDeriver } from "../../../grid/services/contracts/IGridModeDeriver";
 import {
@@ -31,11 +29,9 @@ import { BetaPropDirectionCalculator } from "./BetaPropDirectionCalculator";
 import DefaultPropPositioner from "./DefaultPropPositioner";
 import { PropRotAngleManager } from "./PropRotAngleManager";
 
-@injectable()
 export class PropPlacer implements IPropPlacer {
   constructor(
-    @inject(TYPES.IGridModeDeriver) private gridModeService: IGridModeDeriver,
-    @inject(TYPES.IBetaDetector)
+    private gridModeService: IGridModeDeriver,
     private BetaDetector: IBetaDetector
   ) {}
 

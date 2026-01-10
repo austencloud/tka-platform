@@ -5,14 +5,12 @@
   and a selectable invite message.
 -->
 <script lang="ts">
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
   import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
-  import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import AvatarImage from "$lib/features/discover/creators/components/profile/AvatarImage.svelte";
@@ -32,18 +30,9 @@
   } = $props();
 
   // Services
-  let userService = $state<IUserRepository>();
-  let videoService = $state<ICollaborativeVideoManager>();
-  let hapticService = $state<IHapticFeedback>();
-
-  onMount(async () => {
-    const container = await getContainerInstance();
-    userService = container.get<IUserRepository>(TYPES.IUserRepository);
-    videoService = container.get<ICollaborativeVideoManager>(
-      TYPES.ICollaborativeVideoManager
-    );
-    hapticService = container.get<IHapticFeedback>(TYPES.IHapticFeedback);
-  });
+  const userService = container.items.userRepository;
+  const videoService = container.items.collaborativeVideoManager;
+  const hapticService = container.items.hapticFeedback;
 
   // Search state
   let searchQuery = $state("");

@@ -7,9 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { resolve, loadPixiModule } from "$lib/shared/inversify/di";
-  import { loadFeatureModule } from "$lib/shared/inversify/container";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
@@ -42,29 +40,18 @@
   let isLoading = $state(true);
   let loadError = $state<string | null>(null);
 
-  // Initialize services and load Pixi
+  // Initialize services
   onMount(() => {
-    // Async initialization (not awaited for cleanup)
-    (async () => {
-      try {
-        // Load the animate feature module (contains IAnimationPlaybackController)
-        await loadFeatureModule("animate");
-
-        // Get playback controller
-        playbackController = resolve(
-          TYPES.IAnimationPlaybackController
-        ) as IAnimationPlaybackController;
-
-        // Load Pixi module on-demand
-        await loadPixiModule();
-        pixiReady = true;
-        isLoading = false;
-      } catch (error) {
-        console.error("[CanvasSection] Failed to initialize:", error);
-        loadError = "Failed to load animation canvas";
-        isLoading = false;
-      }
-    })();
+    // Get playback controller (available synchronously via ITI)
+    try {
+      playbackController = container.items.animationPlaybackController;
+      pixiReady = true;
+      isLoading = false;
+    } catch (error) {
+      console.error("[CanvasSection] Failed to initialize:", error);
+      loadError = "Failed to load animation canvas";
+      isLoading = false;
+    }
 
     return () => {
       animationState.dispose();

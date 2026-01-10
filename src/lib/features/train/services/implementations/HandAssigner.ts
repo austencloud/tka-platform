@@ -6,7 +6,6 @@
  * single-hand detection. Also handles hand persistence.
  */
 
-import { injectable, inject } from "inversify";
 import type {
   IHandAssigner,
   DetectedHandData,
@@ -14,13 +13,11 @@ import type {
 } from "../contracts/IHandAssigner";
 import type { IHandTrackingStabilizer } from "../contracts/IHandTrackingStabilizer";
 import type { DetectedPosition } from "../../domain/models/DetectionFrame";
-import { TYPES } from "$lib/shared/inversify/types";
 import { QuadrantMapper } from "./QuadrantMapper";
 
 // How many frames to persist a hand after it disappears
 const HAND_PERSISTENCE_FRAMES = 5;
 
-@injectable()
 export class HandAssigner implements IHandAssigner {
   private _quadrantMapper = new QuadrantMapper();
 
@@ -30,10 +27,7 @@ export class HandAssigner implements IHandAssigner {
   private _blueFramesMissing = 0;
   private _redFramesMissing = 0;
 
-  constructor(
-    @inject(TYPES.IHandTrackingStabilizer)
-    private _stabilizer: IHandTrackingStabilizer
-  ) {}
+  constructor(private _stabilizer: IHandTrackingStabilizer) {}
 
   /**
    * Assign detected hands to blue/red slots

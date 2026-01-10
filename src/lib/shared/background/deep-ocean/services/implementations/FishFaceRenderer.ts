@@ -1,9 +1,7 @@
-import { inject, injectable } from "inversify";
 import type { IFishFaceRenderer } from "../contracts/IFishFaceRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
 import type { SpineChain } from "../../physics/SpineChain";
-import { TYPES } from "../../../../inversify/types";
 
 /**
  * Eye and gill configuration for legacy Bezier fish
@@ -27,11 +25,8 @@ const GILL_CONFIG = {
  * Renders fish facial features (eyes, gills).
  * Extracted from FishRenderer to follow single-responsibility principle.
  */
-@injectable()
 export class FishFaceRenderer implements IFishFaceRenderer {
-  constructor(
-    @inject(TYPES.IColorCalculator) private colorCalc: IColorCalculator
-  ) {}
+  constructor(private colorCalc: IColorCalculator) {}
 
   drawSpineEye(
     ctx: CanvasRenderingContext2D,

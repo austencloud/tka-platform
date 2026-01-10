@@ -7,8 +7,6 @@
  * Domain: Share Hub - Export Orchestration
  */
 
-import { injectable, inject } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type {
   IVideoExportOrchestrator,
@@ -27,15 +25,11 @@ import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOpti
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 import { VIDEO_EXPORT_SUCCESS_DELAY_MS } from "$lib/features/compose/shared/domain/constants/timing";
 
-@injectable()
 export class ShareHubExportOrchestrator implements IShareHubExportOrchestrator {
   private exporting = false;
   private videoOrchestrator: IVideoExportOrchestrator | null = null;
 
-  constructor(
-    @inject(TYPES.ISharer)
-    private readonly sharer: ISharer
-  ) {}
+  constructor(private readonly sharer: ISharer) {}
 
   /**
    * Set the video export orchestrator (lazy-loaded from compose module)

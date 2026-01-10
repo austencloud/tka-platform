@@ -6,13 +6,11 @@
  *
  * REFACTORED: Converted from utils to proper service with interface.
  */
-import { injectable } from "inversify";
 import type {
   ArrowLocationInput,
   IArrowLocator,
 } from "../contracts/IArrowLocator";
 
-@injectable()
 export class ArrowLocator implements IArrowLocator {
   /**
    * Calculate arrow location based on start and end positions

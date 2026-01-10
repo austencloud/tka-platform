@@ -4,7 +4,6 @@
  * Firestore-based service for managing user-defined tags.
  */
 
-import { injectable } from "inversify";
 import {
   collection,
   doc,
@@ -44,7 +43,6 @@ export class TagError extends Error {
   }
 }
 
-@injectable()
 export class TagManager implements ITagManager {
   /**
    * Get the current user ID or throw if not authenticated

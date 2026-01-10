@@ -4,7 +4,6 @@
  * Handles admin operations for daily challenges
  */
 
-import { injectable, inject } from "inversify";
 import {
   doc,
   getDoc,
@@ -20,7 +19,6 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { db } from "$lib/shared/persistence/database/TKADatabase";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { DailyChallenge } from "$lib/shared/gamification/domain/models/achievement-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
@@ -30,12 +28,8 @@ import type {
 import type { IAdminChallengeManager } from "../contracts/IAdminChallengeManager";
 import type { IAuditLogger } from "../contracts/IAuditLogger";
 
-@injectable()
 export class AdminChallengeManager implements IAdminChallengeManager {
-  constructor(
-    @inject(TYPES.IAuditLogger)
-    private readonly auditLogger: IAuditLogger
-  ) {}
+  constructor(private readonly auditLogger: IAuditLogger) {}
   /**
    * Get all scheduled challenges for a date range
    * Optimized: Single batch query instead of per-day requests

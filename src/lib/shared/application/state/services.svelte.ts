@@ -1,6 +1,5 @@
 import type { IPersistenceService } from "../../persistence/services/contracts/IPersistenceService";
-import { resolve, waitForContainer } from "../../inversify/resolve-utils";
-import { TYPES } from "../../inversify/types";
+import { container } from "../../di";
 import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
 
@@ -12,8 +11,7 @@ let persistenceService: IPersistenceService | null = null;
 export async function initializeAppServices(): Promise<void> {
   if (isInitialized) return;
 
-  await waitForContainer();
-  settingsService = resolve<ISettingsState>(TYPES.ISettingsState);
+  settingsService = container.items.settingsState;
   isInitialized = true;
 
   // Sync darkMode from AppSettings to animation visibility manager
@@ -49,8 +47,7 @@ export function getSettingsServiceSync(): ISettingsState {
 
 export async function getSettingsService(): Promise<ISettingsState> {
   if (!settingsService) {
-    await waitForContainer();
-    settingsService = resolve<ISettingsState>(TYPES.ISettingsState);
+    settingsService = container.items.settingsState;
   }
   if (!settingsService) {
     throw new Error("Settings service is null after resolution");
@@ -60,10 +57,7 @@ export async function getSettingsService(): Promise<ISettingsState> {
 
 export async function getPersistenceService(): Promise<IPersistenceService> {
   if (!persistenceService) {
-    await waitForContainer();
-    persistenceService = resolve<IPersistenceService>(
-      TYPES.IPersistenceService
-    );
+    persistenceService = container.items.persistenceService;
   }
   if (!persistenceService) {
     throw new Error("Persistence service is null after resolution");

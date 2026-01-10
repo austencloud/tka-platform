@@ -10,8 +10,7 @@ Shows:
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import {
     TKA_CONCEPTS,
     CONCEPT_CATEGORIES,
@@ -31,9 +30,7 @@ Shows:
     $props();
 
   // Resolve service via DI
-  const conceptProgressService = resolve<IConceptProgressTracker>(
-    TYPES.IConceptProgressTracker
-  );
+  const conceptProgressService = container.items.conceptProgressTracker;
 
   // Progress state
   let progress = $state(conceptProgressService.getProgress());

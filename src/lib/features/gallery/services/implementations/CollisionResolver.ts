@@ -5,7 +5,6 @@
  * Uses room-based spatial partitioning for efficient collision checks.
  */
 
-import { injectable } from "inversify";
 import type { Point2D } from "../../domain/models/geometry";
 import type { CollisionWorld, WallCollider } from "../../domain/models/WallCollider";
 import {
@@ -36,7 +35,6 @@ export interface MovementResult {
 // Service
 // =============================================================================
 
-@injectable()
 export class CollisionResolver {
   /**
    * Resolve player movement with wall collision

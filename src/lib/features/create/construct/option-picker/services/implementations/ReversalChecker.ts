@@ -7,7 +7,6 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { injectable } from "inversify";
 import type { IReversalChecker } from "../contracts/IReversalChecker";
 
 /**
@@ -29,7 +28,6 @@ function isPathPoint(value: unknown): value is PathPoint {
   return typeof point.x === "number" && typeof point.y === "number";
 }
 
-@injectable()
 export class ReversalChecker implements IReversalChecker {
   /**
    * Calculate the number of reversals found in a pictograph. We look at both the

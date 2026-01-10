@@ -11,8 +11,6 @@
  * - Rendering via ISequenceRenderer pipeline
  */
 
-import { inject, injectable, optional } from "inversify";
-import { TYPES } from "$lib/shared/inversify/types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -46,15 +44,10 @@ const WORDCARD_DEFAULTS: CompositionDefaults = {
   addUserInfo: true,
 };
 
-@injectable()
 export class ThumbnailRenderer implements IThumbnailRenderer {
   constructor(
-    @inject(TYPES.ISequenceRenderer)
     private sequenceRenderer: ISequenceRenderer,
-    @inject(TYPES.IStartPositionDeriver)
     private startPositionDeriver: IStartPositionDeriver,
-    @inject(TYPES.IDiscoverLoader)
-    @optional()
     private discoverLoader: IDiscoverLoader | null
   ) {}
 

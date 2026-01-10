@@ -52,11 +52,7 @@
     position: [number, number, number];
     target: [number, number, number];
   }
-  import {
-    loadFeatureModule,
-    resolveAsync,
-  } from "$lib/shared/inversify/container";
-  import { ANIMATION_3D_TYPES } from "./inversify/animation-3d.types";
+  import { container } from "$lib/shared/di";
   import type { IPropStateInterpolator } from "./services/contracts/IPropStateInterpolator";
   import type { ISequenceConverter } from "./services/contracts/ISequenceConverter";
   import type { IAnimation3DPersister } from "./services/contracts/IAnimation3DPersister";
@@ -231,19 +227,10 @@
 
   // Initialize services asynchronously
   onMount(async () => {
-    // Load the realm feature module first (provides 3D animation services)
-    await loadFeatureModule("realm");
-
-    // Resolve services using resolveAsync for HMR resilience
-    const propInterpolator = await resolveAsync<IPropStateInterpolator>(
-      ANIMATION_3D_TYPES.IPropStateInterpolator
-    );
-    const sequenceConverter = await resolveAsync<ISequenceConverter>(
-      ANIMATION_3D_TYPES.ISequenceConverter
-    );
-    persistenceService = await resolveAsync<IAnimation3DPersister>(
-      ANIMATION_3D_TYPES.IAnimation3DPersister
-    );
+    // Get services from ITI container
+    const propInterpolator = container.items.propStateInterpolator;
+    const sequenceConverter = container.items.sequenceConverter;
+    persistenceService = container.items.animation3DPersister;
 
     // Create performer manager with resolved dependencies
     performerManager = createPerformerManager({

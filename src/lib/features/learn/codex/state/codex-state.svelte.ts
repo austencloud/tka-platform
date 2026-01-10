@@ -7,23 +7,12 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { TYPES } from "$lib/shared/inversify/types";
-
-// CRITICAL: Import container to ensure it loads
-import { resolve } from "$lib/shared/inversify/di";
+import { container } from "$lib/shared/di";
 import type { ICodex } from "../services/contracts/ICodex";
 
-// Container is now loaded successfully - debug messages removed
-
-// TEMPORARY: Import minimal container for testing - REMOVED TO TEST MODULE EXECUTION
-// import { resolve } from "$lib/services/inversify";
-
 export function createCodexState() {
-  // Using direct container import instead of context
-
   function getCodex(): ICodex {
-    // Use the directly imported container instead of context
-    return resolve<ICodex>(TYPES.ICodex);
+    return container.items.codex;
   }
 
   // Core reactive state using Svelte 5 runes

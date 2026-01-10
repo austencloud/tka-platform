@@ -17,7 +17,7 @@
 <script lang="ts">
   import "./drawer/Drawer.css";
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
-  import { tryResolve, TYPES } from "../../inversify/di";
+  import { container } from "../../di";
   import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
   import { SwipeToDismiss } from "./drawer/SwipeToDismiss";
   import { FocusTrap } from "./drawer/FocusTrap";
@@ -312,9 +312,7 @@
     if (respectLayoutMode) {
       // Try to resolve layout service (optional dependency)
       // Will be null if create module hasn't loaded yet
-      layoutService = tryResolve<IResponsiveLayoutManager>(
-        TYPES.IResponsiveLayoutManager
-      );
+      layoutService = container.items.responsiveLayoutManager;
 
       if (layoutService) {
         // Get initial value

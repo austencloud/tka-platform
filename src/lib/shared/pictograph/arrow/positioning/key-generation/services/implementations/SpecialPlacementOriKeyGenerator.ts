@@ -1,13 +1,11 @@
 import type { ISpecialPlacementOriKeyGenerator } from "../contracts/ISpecialPlacementOriKeyGenerator";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
-import { injectable } from "inversify";
 
 /**
  * SpecialPlacementOriKeyGenerator
  * Generates ori_key matching SpecialPlacer's internal logic.
  */
-@injectable()
 export class SpecialPlacementOriKeyGenerator implements ISpecialPlacementOriKeyGenerator {
   generateOrientationKey(
     _motionData: MotionData,

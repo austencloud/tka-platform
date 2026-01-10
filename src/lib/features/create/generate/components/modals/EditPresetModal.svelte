@@ -4,8 +4,7 @@ Provides a beautiful, unified experience for customizing presets
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import type { GenerationPreset } from "../../state/preset.svelte";
   import IconGrid from "./IconGrid.svelte";
@@ -32,7 +31,7 @@ Provides a beautiful, unified experience for customizing presets
   });
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
 
     // Focus the name input
     nameInput?.focus();

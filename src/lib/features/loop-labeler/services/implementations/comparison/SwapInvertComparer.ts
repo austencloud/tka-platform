@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { ISwapInvertComparer } from "../../contracts/ISwapInvertComparer";
 import type {
   ColorData,
@@ -12,7 +11,6 @@ import {
 /**
  * Service for detecting pure swap and invert transformations.
  */
-@injectable()
 export class SwapInvertComparer implements ISwapInvertComparer {
   checkRepeated(
     b1Blue: ColorData,

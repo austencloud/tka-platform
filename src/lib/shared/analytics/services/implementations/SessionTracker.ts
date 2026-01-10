@@ -5,7 +5,6 @@
  * Sessions persist to localStorage and resume within a timeout window.
  */
 
-import { injectable } from "inversify";
 import type {
   ISessionTracker,
   SessionInfo,
@@ -23,7 +22,6 @@ interface StoredSession {
   device: "desktop" | "mobile" | "tablet";
 }
 
-@injectable()
 export class SessionTracker implements ISessionTracker {
   private sessionInfo: SessionInfo | null = null;
   private sessionEndCallback: (() => Promise<void>) | null = null;

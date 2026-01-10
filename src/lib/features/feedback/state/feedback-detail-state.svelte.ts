@@ -16,8 +16,7 @@ import type { FeedbackManageState } from "./feedback-manage-state.svelte";
 import type { IFeedbackEditor } from "../services/contracts/IFeedbackEditor";
 import type { IFeedbackFormatter } from "../services/contracts/IFeedbackFormatter";
 import { TYPE_CONFIG, PRIORITY_CONFIG } from "../domain/models/feedback-models";
-import { tryResolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 
 /**
  * Creates reactive state for feedback detail panel
@@ -28,20 +27,8 @@ export function createFeedbackDetailState(
   readOnly: boolean = false
 ) {
   // Resolve services via DI
-  const editingService = tryResolve<IFeedbackEditor>(TYPES.IFeedbackEditor);
-  const formattingService = tryResolve<IFeedbackFormatter>(
-    TYPES.IFeedbackFormatter
-  );
-
-  if (!editingService || !formattingService) {
-    throw new Error(
-      "Required feedback services not registered in DI container"
-    );
-  }
-
-  // Type-narrow services (TypeScript doesn't recognize throw as type guard)
-  const editing = editingService!;
-  const formatting = formattingService!;
+  const editing = container.items.feedbackEditor;
+  const formatting = container.items.feedbackFormatter;
 
   // Current item (updated by parent when real-time changes arrive)
   let item = $state<FeedbackItem>(initialItem);

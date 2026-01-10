@@ -8,7 +8,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import type { IKeyboardShortcutManager } from "$lib/shared/keyboard/services/contracts/IKeyboardShortcutManager";
   import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
   import {
@@ -74,9 +74,7 @@
 
   onMount(async () => {
     try {
-      const shortcutService = await resolve<IKeyboardShortcutManager>(
-        TYPES.IKeyboardShortcutManager
-      );
+      const shortcutService = container.items.keyboardShortcutManager;
 
       // Set context to realm so our shortcuts are active
       shortcutService.setContext("realm");

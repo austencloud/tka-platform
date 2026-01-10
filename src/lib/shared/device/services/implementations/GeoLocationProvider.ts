@@ -7,7 +7,7 @@
  * 3. Default to Northern Hemisphere mid-latitude (40°N)
  */
 
-import { injectable } from "inversify";
+
 import type {
   IGeoLocationProvider,
   UserLocation,
@@ -23,7 +23,6 @@ const _DEFAULT_LOCATION: UserLocation = {
   timestamp: 0,
 };
 
-@injectable()
 export class GeoLocationProvider implements IGeoLocationProvider {
   private cachedLocation: UserLocation | null = null;
   private isRealLocation = false;

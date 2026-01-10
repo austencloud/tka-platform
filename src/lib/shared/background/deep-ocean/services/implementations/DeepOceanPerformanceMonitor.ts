@@ -1,5 +1,3 @@
-import { injectable } from "inversify";
-
 export interface PerformanceMetrics {
   fps: number;
   frameTime: number;
@@ -28,7 +26,6 @@ export interface IDeepOceanPerformanceMonitor {
  * Tracks FPS, frame times, and entity counts.
  * Disabled by default - enable via console or dev tools.
  */
-@injectable()
 export class DeepOceanPerformanceMonitor implements IDeepOceanPerformanceMonitor {
   private enabled = false;
   private frameStart = 0;

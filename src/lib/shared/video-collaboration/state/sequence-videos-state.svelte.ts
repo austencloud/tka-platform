@@ -23,11 +23,9 @@
  * ```
  */
 
-import { getContext } from "svelte";
 import type { CollaborativeVideo } from "../domain/CollaborativeVideo";
 import type { ICollaborativeVideoManager } from "../services/contracts/ICollaborativeVideoManager";
-import { TYPES } from "$lib/shared/inversify/types";
-import type { Container } from "inversify";
+import { container } from "$lib/shared/di";
 
 export interface SequenceVideosState {
   /** Videos linked to this sequence */
@@ -58,10 +56,7 @@ export function createSequenceVideosState(
   const videoCount = $derived(videos.length);
 
   // Get service from DI container
-  const container = getContext<Container>("container");
-  const videoService = container?.get<ICollaborativeVideoManager>(
-    TYPES.ICollaborativeVideoManager
-  );
+  const videoService = container.items.collaborativeVideoManager;
 
   async function refresh(): Promise<void> {
     if (!videoService) {
@@ -118,10 +113,7 @@ export function createVideoPresenceCheck(sequenceId: string): {
   let hasVideos = $state(false);
   let loading = $state(true);
 
-  const container = getContext<Container>("container");
-  const videoService = container?.get<ICollaborativeVideoManager>(
-    TYPES.ICollaborativeVideoManager
-  );
+  const videoService = container.items.collaborativeVideoManager;
 
   if (videoService) {
     videoService

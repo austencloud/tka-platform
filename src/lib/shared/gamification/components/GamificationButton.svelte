@@ -7,7 +7,7 @@
    */
 
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "../../inversify/di";
+  import { container } from "../../di";
   import type { IHapticFeedback } from "../../application/services/contracts/IHapticFeedback";
   import type { IAchievementManager } from "../services/contracts/IAchievementManager";
   import type { UserXP } from "../domain/models/achievement-models";
@@ -33,15 +33,13 @@
 
   // Initialize
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
     let interval: ReturnType<typeof setInterval> | null = null;
     let unsubscribe: (() => void) | null = null;
 
     (async () => {
       try {
-        achievementService = await resolve<IAchievementManager>(
-          TYPES.IAchievementManager
-        );
+        achievementService = container.items.achievementManager;
 
         // Listen for auth state changes
         unsubscribe = auth.onAuthStateChanged((user) => {

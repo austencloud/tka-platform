@@ -16,7 +16,6 @@
  * No position validation is needed (unlike rotation-based LOOPs).
  */
 
-import { injectable } from "inversify";
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
@@ -26,7 +25,6 @@ import {
 import type { SliceSize } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
 
-@injectable()
 export class RewoundLOOPExecutor implements ILOOPExecutor {
   /**
    * Execute the Rewound LOOP

@@ -6,13 +6,11 @@
  * to return to their starting state after LOOP application.
  */
 
-import { injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { OrientationAlignment } from "../contracts/ISequenceExtender";
 import type { IOrientationAlignmentCalculator } from "../contracts/IOrientationAlignmentCalculator";
 
-@injectable()
 export class OrientationAlignmentCalculator implements IOrientationAlignmentCalculator {
   /**
    * Get the starting orientations from a sequence's start position.

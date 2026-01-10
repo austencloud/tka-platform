@@ -15,8 +15,7 @@
   import { cubicOut } from "svelte/easing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { onMount, onDestroy, untrack } from "svelte";
-  import { getContainerInstance } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
   import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
   import { SequenceDifficultyCalculator } from "$lib/features/discover/sequences/display/services/implementations/SequenceDifficultyCalculator";
@@ -271,9 +270,8 @@
     isLoading = true;
 
     try {
-      const container = await getContainerInstance();
-      const renderer = container.get<ISequenceRenderer>(TYPES.ISequenceRenderer);
-      const layoutService = container.get<ILayoutCalculator>(TYPES.ILayoutCalculator);
+      const renderer = container.items.sequenceRenderer;
+      const layoutService = container.items.layoutCalculator;
 
       // Calculate layout
       const beatCount = sequence.beats.length;

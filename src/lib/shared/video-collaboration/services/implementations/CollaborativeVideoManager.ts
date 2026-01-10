@@ -11,7 +11,6 @@
  * - Public videos visible to all authenticated users
  */
 
-import { injectable } from "inversify";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import {
@@ -44,7 +43,6 @@ import type {
 
 const VIDEOS_COLLECTION = "videos";
 
-@injectable()
 export class CollaborativeVideoManager implements ICollaborativeVideoManager {
   // ============================================================================
   // HELPERS

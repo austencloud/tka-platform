@@ -12,28 +12,20 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { BeatData } from "../../domain/models/BeatData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IPersistenceService } from "../contracts/IPersister";
-import type { ISequenceDomainManager } from "../contracts/ISequenceDomainManager";
 import type { ISequenceImporter } from "../contracts/ISequenceImporter";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
 import type { ISequenceRepository } from "../contracts/ISequenceRepository";
 import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
+import type { ISequenceDomainManager } from "../contracts/ISequenceDomainManager";
 
-@injectable()
 export class SequenceRepository implements ISequenceRepository {
   constructor(
-    @inject(TYPES.ISequenceDomainManager)
-    private SequenceDomainManager: ISequenceDomainManager,
-    @inject(TYPES.IPersistenceService)
-    private persistenceService: IPersistenceService,
-    @inject(TYPES.IReversalDetector)
-    private ReversalDetector: IReversalDetector,
-    @inject(TYPES.ISequenceNormalizer)
-    private normalizationService: ISequenceNormalizer,
-    @inject(TYPES.ISequenceImporter)
-    private sequenceImportService?: ISequenceImporter
+    private readonly sequenceDomainManager: ISequenceDomainManager,
+    private readonly persistenceService: IPersistenceService,
+    private readonly reversalDetector: IReversalDetector,
+    private readonly normalizationService: ISequenceNormalizer,
+    private readonly sequenceImportService?: ISequenceImporter
   ) {}
 
   /**
@@ -42,7 +34,7 @@ export class SequenceRepository implements ISequenceRepository {
   async createSequence(request: SequenceCreateRequest): Promise<SequenceData> {
     try {
       // Use domain service to create the sequence
-      const sequence = this.SequenceDomainManager.createSequence(request);
+      const sequence = this.sequenceDomainManager.createSequence(request);
       await this.persistenceService.saveSequence(sequence);
       return sequence;
     } catch (error) {
@@ -70,7 +62,7 @@ export class SequenceRepository implements ISequenceRepository {
       }
 
       // Use domain service to update the beat
-      const updatedSequence = this.SequenceDomainManager.updateBeat(
+      const updatedSequence = this.sequenceDomainManager.updateBeat(
         currentSequence,
         beatIndex,
         beatData
@@ -108,7 +100,7 @@ export class SequenceRepository implements ISequenceRepository {
 
       // Apply reversal detection to ensure sequence has up-to-date reversal data
       if (sequence) {
-        sequence = this.ReversalDetector.processReversals(sequence);
+        sequence = this.reversalDetector.processReversals(sequence);
 
         // Normalize sequence data to ensure start position is separated from beats
         // This handles legacy data formats where beat 0 or startingPositionBeat was mixed into beats array
@@ -138,7 +130,7 @@ export class SequenceRepository implements ISequenceRepository {
       // Apply reversal detection and normalization to all sequences
       return sequences.map((sequence) => {
         // Apply reversal detection
-        const processed = this.ReversalDetector.processReversals(sequence);
+        const processed = this.reversalDetector.processReversals(sequence);
 
         // Normalize to separate start position from beats
         const normalized =

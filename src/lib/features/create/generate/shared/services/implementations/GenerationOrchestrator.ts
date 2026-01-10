@@ -3,9 +3,6 @@ import type { StartPositionData } from "$lib/features/create/shared/domain/model
 import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { createStartPositionFromBeatEnd } from "../../../../shared/services/implementations/sequence-transforms/sequence-transforms";
-import { inject, injectable } from "inversify";
-// Import TYPES directly from inversify/types to avoid HMR issues with re-exports
-import { TYPES } from "$lib/shared/inversify/types";
 import type { ILOOPEndPositionSelector } from "../../../circular/services/contracts/ILOOPEndPositionSelector";
 import type { ILOOPExecutorSelector } from "../../../circular/services/contracts/ILOOPExecutorSelector";
 import type { IPartialSequenceGenerator } from "../../../circular/services/contracts/IPartialSequenceGenerator";
@@ -29,34 +26,16 @@ import type { IReversalDetector } from "../../../../shared/services/contracts/IR
  * from state management. This service composes multiple focused services to
  * build complete sequences for both freeform and circular modes.
  */
-@injectable()
 export class GenerationOrchestrator implements IGenerationOrchestrator {
   constructor(
-    @inject(TYPES.IStartPositionSelector)
     private readonly startPositionSelector: IStartPositionSelector,
-
-    @inject(TYPES.ILOOPParameterProvider)
     private readonly loopParams: ILOOPParameterProvider,
-
-    @inject(TYPES.ITurnAllocationCalculator)
     private readonly turnAllocationCalculator: ITurnAllocator,
-
-    @inject(TYPES.IBeatGenerationOrchestrator)
     private readonly beatGenerationOrchestrator: IBeatGenerationOrchestrator,
-
-    @inject(TYPES.ISequenceMetadataManager)
     private readonly metadataService: ISequenceMetadataManager,
-
-    @inject(TYPES.IReversalDetector)
     private readonly ReversalDetector: IReversalDetector,
-
-    @inject(TYPES.IPartialSequenceGenerator)
     private readonly partialSequenceGenerator: IPartialSequenceGenerator,
-
-    @inject(TYPES.ILOOPEndPositionSelector)
     private readonly loopEndPositionSelector: ILOOPEndPositionSelector,
-
-    @inject(TYPES.ILOOPExecutorSelector)
     private readonly loopExecutorSelector: ILOOPExecutorSelector
   ) {}
 

@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type {
   ISequenceExporter,
   ExportableSequenceData,
@@ -15,7 +14,6 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
  * Service for exporting sequence data in various formats
  * Pure business logic - no Svelte dependencies
  */
-@injectable()
 export class SequenceExporter implements ISequenceExporter {
   /**
    * Create a condensed, human-readable version of sequence data

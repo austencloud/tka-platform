@@ -36,15 +36,9 @@ function mapHandPath(value: string | undefined): HandPath | null {
       return null;
   }
 }
-import { TYPES } from "../../../../inversify/types";
-import { inject, injectable } from "inversify";
-
-@injectable()
 export class CSVPictographParser implements ICSVPictographParser {
   constructor(
-    @inject(TYPES.IEnumMapper)
     private readonly enumMapper: IEnumMapper,
-    @inject(TYPES.IOrientationCalculator)
     private readonly orientationService: IOrientationCalculator
   ) {}
 

@@ -1,4 +1,3 @@
-import { inject, injectable } from "inversify";
 import type { IFishPatternRenderer } from "../contracts/IFishPatternRenderer";
 import type { IColorCalculator } from "../contracts/IColorCalculator";
 import type { IFishEffectRenderer } from "../contracts/IFishEffectRenderer";
@@ -8,7 +7,6 @@ import type { IFishBodyRenderer } from "../contracts/IFishBodyRenderer";
 import type { FishMarineLife, FishSpecies } from "../../domain/models/DeepOceanModels";
 import { SpineChain } from "../../physics/SpineChain";
 import { BodyOutlineCalculator, type Point } from "../../physics/BodyOutlineCalculator";
-import { TYPES } from "../../../../inversify/types";
 
 /**
  * Fish pattern rendering configuration (extracted from FishRenderer)
@@ -88,16 +86,15 @@ const SPECIES_SHAPE: Record<
  * Renders fish patterns (scales, stripes, spots, iridescence, lateral line).
  * Extracted from FishRenderer monolith (~430 lines of pattern rendering logic).
  */
-@injectable()
 export class FishPatternRenderer implements IFishPatternRenderer {
   private bodyOutlineCalculator = new BodyOutlineCalculator();
 
   constructor(
-    @inject(TYPES.IColorCalculator) private colorCalc: IColorCalculator,
-    @inject(TYPES.IFishEffectRenderer) private effectRenderer: IFishEffectRenderer,
-    @inject(TYPES.IFishFinRenderer) private finRenderer: IFishFinRenderer,
-    @inject(TYPES.IFishFaceRenderer) private faceRenderer: IFishFaceRenderer,
-    @inject(TYPES.IFishBodyRenderer) private bodyRenderer: IFishBodyRenderer
+    private colorCalc: IColorCalculator,
+    private effectRenderer: IFishEffectRenderer,
+    private finRenderer: IFishFinRenderer,
+    private faceRenderer: IFishFaceRenderer,
+    private bodyRenderer: IFishBodyRenderer
   ) {}
 
   // ========== EXTRACTED PATTERN METHODS ==========

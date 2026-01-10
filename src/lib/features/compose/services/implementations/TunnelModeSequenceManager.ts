@@ -4,9 +4,7 @@
  * Coordinates sequence loading and transformations for Tunnel Mode.
  */
 
-import { inject, injectable } from "inversify";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { TYPES } from "$lib/shared/inversify/types";
 
 import type {
   ITunnelModeSequenceManager,
@@ -16,12 +14,9 @@ import type {
 import type { ISequenceRepository } from "../../../create/shared/services/contracts/ISequenceRepository";
 import type { ISequenceTransformer } from "../../../create/shared/services/contracts/ISequenceTransformer";
 
-@injectable()
 export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
   constructor(
-    @inject(TYPES.ISequenceRepository)
     private readonly sequenceService: ISequenceRepository,
-    @inject(TYPES.ISequenceTransformer)
     private readonly transformationService: ISequenceTransformer
   ) {}
 

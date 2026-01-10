@@ -6,8 +6,7 @@
 -->
 <script lang="ts">
   import type { AppSettings } from "../../../domain/AppSettings";
-  import { resolve } from "../../../../inversify/di";
-  import { TYPES } from "../../../../inversify/types";
+  import { container } from "$lib/shared/di";
   import { BackgroundType } from "../../../../background/shared/domain/enums/background-enums";
   import type { IDeviceDetector } from "../../../../device/services/contracts/IDeviceDetector";
   import type { IViewportManager } from "../../../../device/services/contracts/IViewportManager";
@@ -73,8 +72,8 @@
 
   onMount(() => {
     // Initialize services
-    deviceDetector = resolve<IDeviceDetector>(TYPES.IDeviceDetector);
-    viewportService = resolve<IViewportManager>(TYPES.IViewportManager);
+    deviceDetector = container.items.deviceDetector;
+    viewportService = container.items.viewportManager;
 
     // Set initial orientation
     updateOrientation();

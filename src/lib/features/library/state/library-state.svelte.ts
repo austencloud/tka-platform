@@ -5,8 +5,7 @@
  * Integrates with ILibraryRepository for Firestore operations.
  */
 
-import { tryResolve } from "$lib/shared/inversify/di";
-import { TYPES } from "$lib/shared/inversify/types";
+import { container } from "$lib/shared/di";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import {
   userPreviewState,
@@ -719,7 +718,7 @@ class LibraryStateManager {
   // ============================================================
 
   private getService(): ILibraryRepository | null {
-    const service = tryResolve<ILibraryRepository>(TYPES.ILibraryRepository);
+    const service = container.items.libraryRepository;
     if (!service) {
       console.warn("📚 [LibraryState] LibraryRepository not available");
     }

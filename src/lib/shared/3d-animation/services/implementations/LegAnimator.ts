@@ -12,7 +12,6 @@
  * - Strafe right
  */
 
-import { injectable } from "inversify";
 import type { AnimationAction, Object3D, KeyframeTrack } from "three";
 import { AnimationMixer, AnimationClip, LoopRepeat } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -201,7 +200,6 @@ interface DirectionalClip {
   action: AnimationAction | null;
 }
 
-@injectable()
 export class LegAnimator implements ILegAnimator {
   private mixer: AnimationMixer | null = null;
   private root: Object3D | null = null;

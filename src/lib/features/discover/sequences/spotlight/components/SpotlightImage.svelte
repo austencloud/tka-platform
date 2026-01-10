@@ -1,9 +1,8 @@
 <!-- SpotlightImage.svelte - Image display and navigation for fullscreen viewer (Refactored) -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
   import type { SpotlightState } from "../state/SpotlightState.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
@@ -15,7 +14,7 @@
   let hapticService: IHapticFeedback;
 
   onMount(() => {
-    hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+    hapticService = container.items.hapticFeedback;
   });
 
   // Track current and previous image URLs for crossfade effect

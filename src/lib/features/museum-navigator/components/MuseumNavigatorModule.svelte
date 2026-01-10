@@ -42,9 +42,9 @@
   import { createRoom, type RoomMesh } from "../rendering/room-renderer";
   import { RoomColliderManager } from "../physics/room-collider";
   import { ExhibitManager } from "../exhibits/exhibit-manager";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { MUSEUM_TYPES } from "$lib/shared/inversify/types/museum.types";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
+  ;
+  ;
   import type { ISequenceCurator } from "../services/contracts/ISequenceCurator";
   import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
   import {
@@ -150,7 +150,7 @@
     roomColliders.addRoomCollider("hub", currentRoom);
 
     // Create exhibit manager
-    const imageComposer = tryResolve<IImageComposer>(TYPES.IImageComposer);
+    const imageComposer = container.items.imageComposer as IImageComposer;
     exhibitManager = new ExhibitManager(rendererState.scene, imageComposer);
 
     // Load exhibits
@@ -174,7 +174,7 @@
   async function loadExhibits(): Promise<void> {
     if (!exhibitManager) return;
 
-    const curator = tryResolve<ISequenceCurator>(MUSEUM_TYPES.ISequenceCurator);
+    const curator = container.items.sequenceCurator as ISequenceCurator | null;
     if (!curator) {
       console.warn("[MuseumNavigator] Sequence curator not available");
       return;

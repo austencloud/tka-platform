@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type {
   JellyfishMarineLife,
@@ -155,7 +154,6 @@ const SPECIES_DEFINITIONS: SpeciesDefinition[] = [
   },
 ];
 
-@injectable()
 export class JellyfishAnimator implements IJellyfishAnimator {
   initializeJellyfish(
     dimensions: Dimensions,

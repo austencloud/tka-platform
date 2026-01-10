@@ -16,8 +16,7 @@
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { tryGetCreateModuleContext } from "../context/create-module-context";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import type { IResponsiveLayoutManager } from "../services/contracts/IResponsiveLayoutManager";
   import type { Snippet } from "svelte";
 
@@ -66,13 +65,12 @@
   onMount(() => {
     if (!createModuleContext && browser) {
       // Try to use the layout service if available
-      layoutService = tryResolve<IResponsiveLayoutManager>(
-        TYPES.IResponsiveLayoutManager
-      );
-
-      if (layoutService) {
-        fallbackIsSideBySide = layoutService.shouldUseSideBySideLayout();
-      } else {
+      try {
+        layoutService = container.items.responsiveLayoutManager;
+        if (layoutService) {
+          fallbackIsSideBySide = layoutService.shouldUseSideBySideLayout();
+        }
+      } catch {
         // Direct viewport check as last resort
         fallbackIsSideBySide = window.innerWidth >= 1024;
       }

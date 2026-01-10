@@ -7,7 +7,6 @@
  * Domain: Keyboard Shortcuts
  */
 
-import { inject, injectable } from "inversify";
 import type { IShortcutRegistry } from "../contracts/IShortcutRegistry";
 import type { IKeyboardShortcutManager } from "../contracts/IKeyboardShortcutManager";
 import type {
@@ -17,21 +16,16 @@ import type {
 } from "../../domain/types/keyboard-types";
 import { Shortcut } from "../../domain/models/Shortcut";
 import { NormalizedKeyboardEvent } from "../../domain/models/KeyboardEvent";
-import { TYPES } from "../../../inversify/types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const debug = createComponentLogger("KeyboardShortcutManager");
 
-@injectable()
 export class KeyboardShortcutManager implements IKeyboardShortcutManager {
   private currentContext: ShortcutContext = "global";
   private isInitialized = false;
   private keydownHandler: ((event: KeyboardEvent) => void) | null = null;
 
-  constructor(
-    @inject(TYPES.IShortcutRegistry)
-    private registry: IShortcutRegistry
-  ) {}
+  constructor(private registry: IShortcutRegistry) {}
 
   initialize(): void {
     if (this.isInitialized) return;

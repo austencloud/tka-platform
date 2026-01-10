@@ -5,9 +5,8 @@ Provides consistent styling matching the Generate tab's card aesthetic
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IRippleEffect } from "$lib/shared/application/services/contracts/IRippleEffect";
-  import { tryResolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { onMount } from "svelte";
+  import { container } from "$lib/shared/di";
+    import { onMount } from "svelte";
 
   let {
     title,
@@ -36,8 +35,8 @@ Provides consistent styling matching the Generate tab's card aesthetic
   let cardElement: HTMLDivElement | null = $state(null);
 
   onMount(() => {
-    hapticService = tryResolve<IHapticFeedback>(TYPES.IHapticFeedback);
-    rippleService = tryResolve<IRippleEffect>(TYPES.IRippleEffect);
+    hapticService = container.items.hapticFeedback;
+    rippleService = container.items.rippleEffect as IRippleEffect | null;
 
     if (clickable && cardElement && rippleService) {
       return rippleService.attachRipple(cardElement, {

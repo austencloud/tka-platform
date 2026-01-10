@@ -5,7 +5,6 @@
  * Each hand has its own repeating cycle, and the combination creates the full sequence.
  */
 
-import { injectable } from "inversify";
 import type {
   ILayeredPathDetector,
   LayeredPathResult,
@@ -87,7 +86,6 @@ function categorizePosition(endPos: string): PositionalCategory | null {
 // MAIN SERVICE
 // ============================================================================
 
-@injectable()
 export class LayeredPathDetector implements ILayeredPathDetector {
   /**
    * Detect layered path patterns in a sequence

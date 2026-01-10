@@ -12,9 +12,7 @@ This component orchestrates the UI; business logic lives in extracted services.
 <script lang="ts">
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
-  import { SPELL_TYPES } from "../services/implementations/spell-types";
+  import { container } from "$lib/shared/di";
   import type { ISpellGenerationOrchestrator } from "../services/contracts/ISpellGenerationOrchestrator";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
   import type { ILOOPSelectionCoordinator } from "../services/contracts/ILOOPSelectionCoordinator";
@@ -54,27 +52,21 @@ This component orchestrates the UI; business logic lives in extracted services.
 
   function getGenerationOrchestrator(): ISpellGenerationOrchestrator {
     if (!generationOrchestrator) {
-      generationOrchestrator = resolve<ISpellGenerationOrchestrator>(
-        SPELL_TYPES.ISpellGenerationOrchestrator
-      );
+      generationOrchestrator = container.items.spellGenerationOrchestrator as ISpellGenerationOrchestrator;
     }
     return generationOrchestrator;
   }
 
   function getExplorationOrchestrator(): IVariationExplorationOrchestrator {
     if (!explorationOrchestrator) {
-      explorationOrchestrator = resolve<IVariationExplorationOrchestrator>(
-        SPELL_TYPES.IVariationExplorationOrchestrator
-      );
+      explorationOrchestrator = container.items.variationExplorationOrchestrator as IVariationExplorationOrchestrator;
     }
     return explorationOrchestrator;
   }
 
   function getLOOPCoordinator(): ILOOPSelectionCoordinator {
     if (!loopCoordinator) {
-      loopCoordinator = resolve<ILOOPSelectionCoordinator>(
-        SPELL_TYPES.ILOOPSelectionCoordinator
-      );
+      loopCoordinator = container.items.loopSelectionCoordinator as ILOOPSelectionCoordinator;
     }
     return loopCoordinator;
   }
@@ -266,9 +258,7 @@ This component orchestrates the UI; business logic lives in extracted services.
       // the sequence already has the bridge beat appended. We should just
       // apply the LOOP to the current sequence instead of regenerating.
       if (selectedBridge && sequenceState?.currentSequence) {
-        const sequenceExtender = resolve<ISequenceExtender>(
-          TYPES.ISequenceExtender
-        );
+        const sequenceExtender = container.items.sequenceExtender as ISequenceExtender;
 
         const extendedSequence = await sequenceExtender.extendSequence(
           sequenceState.currentSequence,

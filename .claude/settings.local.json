@@ -157,7 +157,11 @@
       "WebFetch(domain:www.cs.umd.edu)",
       "WebFetch(domain:www.houdinikitchen.net)",
       "WebFetch(domain:en.wikipedia.org)",
-      "WebFetch(domain:allenpike.com)"
+      "WebFetch(domain:allenpike.com)",
+      "WebFetch(domain:motion.dev)",
+      "Bash(do if grep -q '\\\\$state\\\\|\\\\$derived\\\\|\\\\$effect' \"$file\")",
+      "Bash(then echo \"$file\")",
+      "Bash(do head -5 \"$file\")"
     ]
   }
 }

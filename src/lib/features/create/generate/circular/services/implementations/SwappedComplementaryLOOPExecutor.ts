@@ -24,8 +24,6 @@ import {
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-import { TYPES } from "$lib/shared/inversify/types";
-import { inject, injectable } from "inversify";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import {
   INVERTED_LOOP_VALIDATION_SET,
@@ -33,12 +31,8 @@ import {
 } from "../../domain/constants/strict-loop-position-maps";
 import type { SliceSize } from "../../domain/models/circular-models";
 
-@injectable()
 export class SwappedInvertedLOOPExecutor {
-  constructor(
-    @inject(TYPES.IOrientationCalculator)
-    private OrientationCalculator: IOrientationCalculator
-  ) {}
+  constructor(private OrientationCalculator: IOrientationCalculator) {}
 
   /**
    * Execute the swapped-inverted LOOP

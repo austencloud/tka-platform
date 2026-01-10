@@ -23,8 +23,6 @@ import type {
   ArrowSvgLoadOptions,
 } from "../contracts/IArrowSvgLoader";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
-import { TYPES } from "../../../../../inversify/types";
-import { inject, injectable } from "inversify";
 import type { ThemeMode } from "../../../../../utils/svg-color-utils";
 import { getAnimationVisibilityManager } from "../../../../../animation-engine/state/animation-visibility-state.svelte";
 import { ARROW_SPRITE_PATH } from "./ArrowPathResolver";
@@ -224,7 +222,6 @@ if (import.meta.hot) {
   });
 }
 
-@injectable()
 export class ArrowSvgLoader implements IArrowSvgLoader {
   // Sprite cache (single file containing all symbols)
   private spriteCache = hmrSpriteCache;
@@ -236,9 +233,8 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
   private cacheMisses = 0;
 
   constructor(
-    @inject(TYPES.IArrowPathResolver) private pathResolver: IArrowPathResolver,
-    @inject(TYPES.IArrowSvgParser) private svgParser: IArrowSvgParser,
-    @inject(TYPES.IArrowSvgColorTransformer)
+    private pathResolver: IArrowPathResolver,
+    private svgParser: IArrowSvgParser,
     private colorTransformer: ISvgColorTransformer
   ) {}
 

@@ -14,13 +14,71 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // Behavioral contracts
-import { injectable } from "inversify";
-// import type { ISequenceDomainManager } from "../contracts";
+import type { ISequenceDomainManager } from "../contracts/ISequenceDomainManager";
+import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 
-@injectable()
-export class SequenceDomainManager {
-  validateSequence(_sequence: unknown): boolean {
-    // TODO: Implement sequence validation
+export class SequenceDomainManager implements ISequenceDomainManager {
+  /**
+   * Validate a sequence according to business rules
+   * Implements ISequenceDomainManager interface
+   */
+  validateSequence(sequence: SequenceData): {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!sequence.name || sequence.name.trim().length === 0) {
+      errors.push("Sequence name is required");
+    }
+
+    if (sequence.name && sequence.name.length > 100) {
+      errors.push("Sequence name must be less than 100 characters");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+    };
+  }
+
+  /**
+   * Calculate sequence statistics
+   * Implements ISequenceDomainManager interface
+   */
+  calculateStatistics(sequence: SequenceData): {
+    totalBeats: number;
+    filledBeats: number;
+    emptyBeats: number;
+    duration: number;
+  } {
+    const beats = sequence.beats || [];
+    const totalBeats = beats.length;
+    const filledBeats = beats.filter(b => !b?.isBlank && b?.letter).length;
+    const emptyBeats = totalBeats - filledBeats;
+    const duration = beats.reduce((sum, b) => sum + (b?.duration || 1), 0);
+
+    return { totalBeats, filledBeats, emptyBeats, duration };
+  }
+
+  /**
+   * Generate a word from sequence pictograph letters
+   * Implements ISequenceDomainManager interface
+   */
+  generateWord(sequence: SequenceData): string {
+    return this.calculateSequenceWord(sequence);
+  }
+
+  /**
+   * Check if a beat is valid for the sequence
+   * Implements ISequenceDomainManager interface
+   */
+  isValidBeat(_sequence: SequenceData, beat: BeatData): boolean {
+    if (!beat) return false;
+    if (beat.duration !== undefined && beat.duration < 0) return false;
     return true;
   }
 
@@ -28,8 +86,6 @@ export class SequenceDomainManager {
     // TODO: Implement sequence transformation
     return sequence;
   }
-
-  // Duplicate methods removed - using the detailed implementations below
 
   /**
    * Validate sequence creation request - REAL validation from desktop
@@ -100,7 +156,7 @@ export class SequenceDomainManager {
   /**
    * Create sequence with proper beat numbering - from desktop SequenceData
    */
-  createSequence(request: unknown): SequenceData {
+  createSequence(request: SequenceCreateRequest): SequenceData {
     const validation = this.validateCreateRequest(request);
     if (!validation.isValid) {
       throw new Error(
@@ -108,7 +164,7 @@ export class SequenceDomainManager {
       );
     }
 
-    const typedRequest = request as { name: string; length?: number };
+    const typedRequest = request;
 
     // Create beats with proper numbering (desktop logic)
     const beats: BeatData[] = [];

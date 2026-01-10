@@ -4,11 +4,9 @@
  * Determines letter types and orientation characteristics for special placement logic.
  */
 
-import { injectable } from "inversify";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { ILetterClassifier } from "../contracts/ILetterClassifier";
 
-@injectable()
 export class LetterClassifier implements ILetterClassifier {
   private static readonly HYBRID_LETTERS = [
     "C",

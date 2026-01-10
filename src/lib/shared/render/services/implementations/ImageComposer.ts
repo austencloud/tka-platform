@@ -10,8 +10,6 @@ import type { StartPositionData } from "../../../../features/create/shared/domai
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
-import { TYPES } from "../../../inversify/types";
-import { inject, injectable } from "inversify";
 import {
   renderPictographToSVG,
   type PictographVisibilityOptions,
@@ -45,12 +43,11 @@ if (import.meta.hot) {
   });
 }
 
-@injectable()
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
 
-  // 🚀 PERF: Cache rendered pictograph images to avoid re-rendering identical pictographs
+  // PERF: Cache rendered pictograph images to avoid re-rendering identical pictographs
   // Key: hash of pictograph data + size + beatNumber
   // Value: rendered HTMLImageElement ready for canvas drawing
   // Uses module-scoped cache for HMR awareness
@@ -61,11 +58,8 @@ export class ImageComposer implements IImageComposer {
   private cacheMisses = 0;
 
   constructor(
-    @inject(TYPES.ILayoutCalculator)
     private readonly layoutService: ILayoutCalculator,
-    @inject(TYPES.ITextRenderer)
     private readonly TextRenderer: ITextRenderer,
-    @inject(TYPES.IDimensionCalculator)
     private readonly DimensionCalculator: IDimensionCalculator
   ) {}
   /**

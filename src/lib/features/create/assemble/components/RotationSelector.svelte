@@ -7,15 +7,14 @@ for SHIFT motions in the completed hand paths.
 <script lang="ts">
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
 
   const { onSelect } = $props<{
     onSelect: (rotation: RotationDirection) => void;
   }>();
 
-  // Resolve haptic feedback service
-  const hapticService = resolve<IHapticFeedback>(TYPES.IHapticFeedback);
+  // Access haptic feedback service from ITI container
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
   function selectClockwise() {
     hapticService?.trigger("success");

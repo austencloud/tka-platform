@@ -10,9 +10,7 @@
  * - ContentQueryAnalyzer: Top sequences and content queries
  */
 
-import { injectable, inject } from "inversify";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
-import { TYPES } from "$lib/shared/inversify/types";
 import type {
   IAnalyticsDataProvider,
   SummaryMetrics,
@@ -43,14 +41,10 @@ const EMPTY_SUMMARY_METRICS: SummaryMetrics = {
   previousChallengesCompleted: 0,
 };
 
-@injectable()
 export class AnalyticsDataProvider implements IAnalyticsDataProvider {
   constructor(
-    @inject(TYPES.IUserMetricsAnalyzer)
     private readonly userMetricsAnalyzer: IUserMetricsAnalyzer,
-    @inject(TYPES.IEventActivityAnalyzer)
     private readonly eventActivityAnalyzer: IEventActivityAnalyzer,
-    @inject(TYPES.IContentQueryAnalyzer)
     private readonly contentQueryAnalyzer: IContentQueryAnalyzer
   ) {}
 

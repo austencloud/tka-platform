@@ -3,20 +3,13 @@
   Navigate to /test/math-foundations to explore the mathematical patterns in TKA
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { loadSharedModules } from "$lib/shared/inversify/di";
   import HeroSection from "$lib/features/math-foundations/components/HeroSection.svelte";
   import PositionGroupsSection from "$lib/features/math-foundations/components/PositionGroupsSection.svelte";
   import LetterTriadSection from "$lib/features/math-foundations/components/LetterTriadSection.svelte";
   import MotionTypesSection from "$lib/features/math-foundations/components/MotionTypesSection.svelte";
 
-  let servicesReady = $state(false);
-
-  onMount(() => {
-    loadSharedModules().then(() => {
-      servicesReady = true;
-    });
-  });
+  // ITI container is ready synchronously - no module loading needed
+  let servicesReady = $state(true);
 </script>
 
 <svelte:head>

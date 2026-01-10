@@ -1,4 +1,3 @@
-import { injectable, inject } from "inversify";
 import type {
   ITransformationAnalyzer,
   AxisAlternatingResult,
@@ -14,7 +13,6 @@ import {
   TRANSFORMATION_FAMILIES,
   RELATED_TRANSFORMATION_GROUPS,
 } from "../../domain/constants/transformation-families";
-import { LOOPLabelerTypes } from "$lib/shared/inversify/types/loop-labeler.types";
 
 // Suppressing unused import - keeping for future use
 void TRANSFORMATION_PRIORITY;
@@ -22,12 +20,8 @@ void TRANSFORMATION_PRIORITY;
 /**
  * Service for analyzing transformation patterns across beat pairs.
  */
-@injectable()
 export class TransformationAnalyzer implements ITransformationAnalyzer {
-  constructor(
-    @inject(LOOPLabelerTypes.ICandidateFormatter)
-    private formattingService: ICandidateFormatter
-  ) {}
+  constructor(private formattingService: ICandidateFormatter) {}
 
   normalizeToBase(transformation: string): string {
     return transformation

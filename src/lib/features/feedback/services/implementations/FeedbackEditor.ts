@@ -5,7 +5,6 @@
  * Used by FeedbackDetailState to track edits and restore from snapshots.
  */
 
-import { injectable } from "inversify";
 import type {
   IFeedbackEditor,
   EditSnapshot,
@@ -14,7 +13,6 @@ import type {
 } from "../contracts/IFeedbackEditor";
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 
-@injectable()
 export class FeedbackEditor implements IFeedbackEditor {
   /**
    * Create a snapshot of current feedback state for change tracking

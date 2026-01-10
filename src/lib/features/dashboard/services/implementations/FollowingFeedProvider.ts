@@ -5,9 +5,8 @@
  * Queries activity logs and favorites from followed users to build a personalized feed.
  */
 
-import { injectable } from "inversify";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
-import { tryResolve, TYPES } from "$lib/shared/inversify/di";
+import { container } from "$lib/shared/di";
 import type { IUserRepository } from "$lib/shared/community/services/contracts/IUserRepository";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
@@ -19,7 +18,6 @@ import type {
 import type { ActivityEvent } from "$lib/shared/analytics/domain/models/ActivityEvent";
 import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
 
-@injectable()
 export class FollowingFeedProvider implements IFollowingFeedProvider {
   private userService: IUserRepository | null = null;
   private activityLogService: IActivityLogger | null = null;
@@ -27,17 +25,13 @@ export class FollowingFeedProvider implements IFollowingFeedProvider {
 
   private getServices(): boolean {
     if (!this.userService) {
-      this.userService = tryResolve<IUserRepository>(TYPES.IUserRepository);
+      this.userService = container.items.userRepository;
     }
     if (!this.activityLogService) {
-      this.activityLogService = tryResolve<IActivityLogger>(
-        TYPES.IActivityLogger
-      );
+      this.activityLogService = container.items.activityLogger;
     }
     if (!this.collectionService) {
-      this.collectionService = tryResolve<ICollectionManager>(
-        TYPES.ICollectionManager
-      );
+      this.collectionService = container.items.collectionManager;
     }
     return !!(
       this.userService &&
@@ -145,7 +139,7 @@ export class FollowingFeedProvider implements IFollowingFeedProvider {
 
     // Only need UserRepository for this check
     if (!this.userService) {
-      this.userService = tryResolve<IUserRepository>(TYPES.IUserRepository);
+      this.userService = container.items.userRepository;
     }
 
     if (!this.userService) {

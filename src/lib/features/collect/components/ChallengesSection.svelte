@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { resolve, TYPES } from "$lib/shared/inversify/di";
+  import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import type { IDailyChallengeManager } from "$lib/shared/gamification/services/contracts/IDailyChallengeManager";
   import type {
@@ -55,9 +55,7 @@
   // Initialize services
   onMount(async () => {
     try {
-      challengeService = await resolve<IDailyChallengeManager>(
-        TYPES.IDailyChallengeManager
-      );
+      challengeService = container.items.dailyChallengeManager;
       await loadData();
     } catch (err) {
       console.error("Failed to initialize ChallengesSection:", err);
