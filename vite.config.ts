@@ -405,6 +405,13 @@ export default defineConfig({
       "@tsparticles/basic",
       "@tsparticles/engine",
       "@tsparticles/preset-snow",
+      // Three.js ecosystem - must be bundled to avoid circular initialization issues
+      "three",
+      "troika-three-text",
+      "@threlte/core",
+      "@threlte/extras",
+      "postprocessing",
+      "three-perf",
     ],
     external: ["pdfjs-dist", "page-flip"],
   },
