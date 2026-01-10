@@ -1,0 +1,445 @@
+/**
+ * Cache Benchmark Utility
+ *
+ * Comprehensive cache effectiveness testing using real sequence data.
+ * Tests cold/warm/hot renders, cross-sequence cache benefits, and gallery simulation.
+ *
+ * Usage (from browser console):
+ *   window.runCacheBenchmark()           // Quick test (10 sequences)
+ *   window.runCacheBenchmark(50)         // Full test (50 sequences)
+ *   window.runCacheBenchmark(100, true)  // Deep test with L1 clear
+ */
+
+import { browser } from "$app/environment";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+
+interface SequenceRenderResult {
+  name: string;
+  beatCount: number;
+  renderTimeMs: number;
+  l2Hits: number;
+  l1Hits: number;
+  freshRenders: number;
+  cacheRate: number;
+}
+
+interface BenchmarkResult {
+  testName: string;
+  totalSequences: number;
+  totalBeats: number;
+  totalRenderTimeMs: number;
+  avgRenderTimeMs: number;
+  avgTimePerBeatMs: number;
+  cacheStats: {
+    totalL2Hits: number;
+    totalL1Hits: number;
+    totalFreshRenders: number;
+    overallCacheRate: number;
+  };
+  sequences: SequenceRenderResult[];
+}
+
+interface ComprehensiveResult {
+  coldPass: BenchmarkResult;
+  warmPass: BenchmarkResult;
+  hotPass: BenchmarkResult;
+  crossSequenceBenefit: {
+    sharedPictographs: number;
+    uniquePictographs: number;
+    reuseRate: number;
+  };
+  summary: {
+    coldAvgMs: number;
+    warmAvgMs: number;
+    hotAvgMs: number;
+    l1Speedup: string;
+    l2Speedup: string;
+    memoryCacheSize: number;
+  };
+}
+
+// Capture per-render stats from console logs
+let capturedStats: { l2: number; l1: number; fresh: number } | null = null;
+
+/**
+ * Parse the render log to extract cache stats
+ */
+function parseRenderLog(log: string): { l2: number; l1: number; fresh: number } | null {
+  // Format: [Render] "Name" N beats: X L2, Y L1, Z fresh (N% cached)
+  const match = log.match(/(\d+) L2, (\d+) L1, (\d+) fresh/);
+  if (match) {
+    return {
+      l2: parseInt(match[1]!, 10),
+      l1: parseInt(match[2]!, 10),
+      fresh: parseInt(match[3]!, 10),
+    };
+  }
+  return null;
+}
+
+/**
+ * Run comprehensive cache benchmark with real sequence data
+ */
+export async function runCacheBenchmark(
+  sequenceCount = 10,
+  clearL1BetweenPasses = false
+): Promise<ComprehensiveResult | null> {
+  if (!browser) {
+    console.error("[CacheBenchmark] Must run in browser");
+    return null;
+  }
+
+  console.log("\n" + "=".repeat(70));
+  console.log("🧪 COMPREHENSIVE CACHE BENCHMARK");
+  console.log("=".repeat(70));
+  console.log(`Testing with ${sequenceCount} real sequences\n`);
+
+  try {
+    const { container } = await import("$lib/shared/di");
+    const imageComposer = container.items.imageComposer;
+
+    // Load real sequences from the discover index
+    const sequences = await loadRealSequences(sequenceCount);
+    if (sequences.length === 0) {
+      console.error("[CacheBenchmark] No valid sequences found");
+      return null;
+    }
+
+    console.log(`✓ Loaded ${sequences.length} sequences with valid beat data\n`);
+
+    const renderOptions = {
+      beatSize: 240,
+      includeStartPosition: true,
+      addBeatNumbers: true,
+      addWord: true,
+      addDifficultyLevel: true,
+      visibilityOverrides: {
+        showTKA: true,
+        showVTG: false,
+        showElemental: false,
+        showPositions: false,
+        showReversals: true,
+        showNonRadialPoints: false,
+        darkMode: false,
+      },
+    };
+
+    // Intercept console.log to capture render stats
+    const originalLog = console.log;
+    console.log = (...args) => {
+      const msg = args[0];
+      if (typeof msg === "string" && msg.startsWith("[Render]")) {
+        capturedStats = parseRenderLog(msg);
+      }
+      originalLog.apply(console, args);
+    };
+
+    // Cast to the expected shape for runPass (dev utility, type safety not critical)
+    const composer = imageComposer as unknown as {
+      composeSequenceImage: (seq: SequenceData, opts: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+      getCacheStats: () => unknown;
+      clearCache: (includeIndexedDB?: boolean) => Promise<void>;
+    };
+
+    // PASS 1: Cold renders (empty cache)
+    console.log("━".repeat(70));
+    console.log("📊 PASS 1: COLD RENDERS (empty cache - measuring baseline)\n");
+    await composer.clearCache(true); // Clear both L1 and L2
+    const coldPass = await runPass("Cold", sequences, composer, renderOptions);
+
+    // PASS 2: Warm renders (L1 populated, L2 cleared)
+    console.log("\n" + "━".repeat(70));
+    console.log("📊 PASS 2: WARM RENDERS (L1 blob cache populated)\n");
+    if (clearL1BetweenPasses) {
+      await composer.clearCache(true);
+    } else {
+      await composer.clearCache(false); // Clear only L2
+    }
+    const warmPass = await runPass("Warm", sequences, composer, renderOptions);
+
+    // PASS 3: Hot renders (both L1 and L2 populated)
+    console.log("\n" + "━".repeat(70));
+    console.log("📊 PASS 3: HOT RENDERS (L2 memory cache populated)\n");
+    const hotPass = await runPass("Hot", sequences, composer, renderOptions);
+
+    // Restore console.log
+    console.log = originalLog;
+
+    // Calculate cross-sequence benefit
+    const uniquePictographs = coldPass.cacheStats.totalFreshRenders;
+    const sharedPictographs = coldPass.totalBeats - uniquePictographs;
+    const reuseRate = coldPass.totalBeats > 0
+      ? (sharedPictographs / coldPass.totalBeats) * 100
+      : 0;
+
+    // Build result
+    const result: ComprehensiveResult = {
+      coldPass,
+      warmPass,
+      hotPass,
+      crossSequenceBenefit: {
+        sharedPictographs,
+        uniquePictographs,
+        reuseRate,
+      },
+      summary: {
+        coldAvgMs: coldPass.avgRenderTimeMs,
+        warmAvgMs: warmPass.avgRenderTimeMs,
+        hotAvgMs: hotPass.avgRenderTimeMs,
+        l1Speedup: ((1 - warmPass.avgRenderTimeMs / coldPass.avgRenderTimeMs) * 100).toFixed(1) + "%",
+        l2Speedup: ((1 - hotPass.avgRenderTimeMs / coldPass.avgRenderTimeMs) * 100).toFixed(1) + "%",
+        memoryCacheSize: (composer.getCacheStats() as { memoryCacheSize: number }).memoryCacheSize,
+      },
+    };
+
+    printComprehensiveSummary(result);
+    return result;
+
+  } catch (error) {
+    console.error("[CacheBenchmark] Failed:", error);
+    return null;
+  }
+}
+
+/**
+ * Run a single benchmark pass over all sequences
+ */
+async function runPass(
+  passName: string,
+  sequences: SequenceData[],
+  imageComposer: {
+    composeSequenceImage: (seq: SequenceData, opts: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+    getCacheStats: () => unknown;
+    clearCache: (includeIndexedDB?: boolean) => Promise<void>;
+  },
+  renderOptions: Record<string, unknown>
+): Promise<BenchmarkResult> {
+  const results: SequenceRenderResult[] = [];
+  let totalRenderTime = 0;
+  let totalBeats = 0;
+  let totalL2 = 0;
+  let totalL1 = 0;
+  let totalFresh = 0;
+
+  for (let i = 0; i < sequences.length; i++) {
+    const seq = sequences[i]!;
+    const beatCount = seq.beats?.length || 0;
+    totalBeats += beatCount;
+
+    capturedStats = null;
+    const start = performance.now();
+    await imageComposer.composeSequenceImage(seq, renderOptions);
+    const renderTime = performance.now() - start;
+    totalRenderTime += renderTime;
+
+    const stats = capturedStats || { l2: 0, l1: 0, fresh: beatCount };
+    totalL2 += stats.l2;
+    totalL1 += stats.l1;
+    totalFresh += stats.fresh;
+
+    const totalCached = stats.l2 + stats.l1;
+    const total = stats.l2 + stats.l1 + stats.fresh;
+    const cacheRate = total > 0 ? (totalCached / total) * 100 : 0;
+
+    results.push({
+      name: seq.word || seq.name || "unnamed",
+      beatCount,
+      renderTimeMs: renderTime,
+      l2Hits: stats.l2,
+      l1Hits: stats.l1,
+      freshRenders: stats.fresh,
+      cacheRate,
+    });
+
+    // Progress indicator every 10 sequences
+    if ((i + 1) % 10 === 0 || i === sequences.length - 1) {
+      const progress = ((i + 1) / sequences.length * 100).toFixed(0);
+      console.log(`  [${passName}] ${i + 1}/${sequences.length} (${progress}%) - Avg: ${(totalRenderTime / (i + 1)).toFixed(0)}ms/seq`);
+    }
+  }
+
+  const totalCached = totalL2 + totalL1;
+  const totalOps = totalL2 + totalL1 + totalFresh;
+
+  return {
+    testName: passName,
+    totalSequences: sequences.length,
+    totalBeats,
+    totalRenderTimeMs: totalRenderTime,
+    avgRenderTimeMs: totalRenderTime / sequences.length,
+    avgTimePerBeatMs: totalBeats > 0 ? totalRenderTime / totalBeats : 0,
+    cacheStats: {
+      totalL2Hits: totalL2,
+      totalL1Hits: totalL1,
+      totalFreshRenders: totalFresh,
+      overallCacheRate: totalOps > 0 ? (totalCached / totalOps) * 100 : 0,
+    },
+    sequences: results,
+  };
+}
+
+/**
+ * Load real sequences from the discover index using DiscoverLoader
+ */
+async function loadRealSequences(count: number): Promise<SequenceData[]> {
+  try {
+    const { container } = await import("$lib/shared/di");
+    const discoverLoader = container.items.discoverLoader as {
+      loadSequenceMetadata: () => Promise<SequenceData[]>;
+      loadFullSequenceData: (name: string) => Promise<SequenceData | null>;
+    };
+
+    // Ensure sequences are loaded first (populates the cache)
+    console.log("[CacheBenchmark] Loading sequence metadata...");
+    try {
+      await discoverLoader.loadSequenceMetadata();
+      console.log("[CacheBenchmark] ✓ Index loaded");
+    } catch (indexErr) {
+      const msg = indexErr instanceof Error ? indexErr.message : String(indexErr);
+      console.error("[CacheBenchmark] Failed to load index:", msg);
+      // Continue anyway - we'll fetch directly
+    }
+
+    // Get sequence names from the index
+    const response = await fetch("/data/sequence-index.json");
+    const data = await response.json();
+
+    if (!data.sequences || data.sequences.length === 0) {
+      return [];
+    }
+
+    // Shuffle and pick sequence names
+    const shuffled = data.sequences.sort(() => Math.random() - 0.5);
+    const selectedNames = shuffled.slice(0, count * 2).map((s: { word?: string; name?: string }) => s.word || s.name);
+
+    // Load full sequence data for each
+    const loadedSequences: SequenceData[] = [];
+    let loadAttempts = 0;
+
+    console.log(`[CacheBenchmark] Loading sequences from ${selectedNames.length} candidates...`);
+
+    for (const name of selectedNames) {
+      if (loadedSequences.length >= count) break;
+      if (!name) continue;
+
+      loadAttempts++;
+      try {
+        const fullSeq = await discoverLoader.loadFullSequenceData(name);
+        if (fullSeq && fullSeq.beats && fullSeq.beats.length > 0) {
+          // Just accept sequences with beats - the renderer will show what works
+          loadedSequences.push(fullSeq);
+          console.log(`[CacheBenchmark] ✓ Loaded "${name}" (${fullSeq.beats.length} beats)`);
+        } else {
+          console.log(`[CacheBenchmark] ✗ "${name}" has no beats or returned null`);
+        }
+      } catch (err) {
+        // Skip sequences that fail to load
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.log(`[CacheBenchmark] ✗ "${name}" failed: ${errorMsg}`);
+      }
+    }
+
+    console.log(`[CacheBenchmark] Loaded ${loadedSequences.length} sequences with beats`);
+
+    return loadedSequences;
+
+  } catch (error) {
+    console.error("[CacheBenchmark] Failed to load sequences:", error);
+    return [];
+  }
+}
+
+/**
+ * Print comprehensive summary
+ */
+function printComprehensiveSummary(result: ComprehensiveResult): void {
+  console.log("\n" + "=".repeat(70));
+  console.log("📊 COMPREHENSIVE BENCHMARK RESULTS");
+  console.log("=".repeat(70));
+
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│ RENDER TIMES                                                        │");
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+  console.log(`│ Cold (no cache):      ${result.summary.coldAvgMs.toFixed(0).padStart(6)}ms avg/sequence                       │`);
+  console.log(`│ Warm (L1 blob):       ${result.summary.warmAvgMs.toFixed(0).padStart(6)}ms avg/sequence  (${result.summary.l1Speedup.padStart(6)} faster)     │`);
+  console.log(`│ Hot (L2 memory):      ${result.summary.hotAvgMs.toFixed(0).padStart(6)}ms avg/sequence  (${result.summary.l2Speedup.padStart(6)} faster)     │`);
+  console.log("└─────────────────────────────────────────────────────────────────────┘");
+
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│ CACHE EFFECTIVENESS                                                 │");
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+  console.log(`│ Cold pass cache rate:  ${result.coldPass.cacheStats.overallCacheRate.toFixed(1).padStart(5)}% (cross-sequence pictograph reuse)    │`);
+  console.log(`│ Warm pass cache rate:  ${result.warmPass.cacheStats.overallCacheRate.toFixed(1).padStart(5)}% (L1 IndexedDB hits)                  │`);
+  console.log(`│ Hot pass cache rate:   ${result.hotPass.cacheStats.overallCacheRate.toFixed(1).padStart(5)}% (L2 memory hits)                     │`);
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+  console.log(`│ Unique pictographs:    ${String(result.crossSequenceBenefit.uniquePictographs).padStart(5)}                                       │`);
+  console.log(`│ Shared pictographs:    ${String(result.crossSequenceBenefit.sharedPictographs).padStart(5)} (reused across sequences)             │`);
+  console.log(`│ Pictograph reuse rate: ${result.crossSequenceBenefit.reuseRate.toFixed(1).padStart(5)}%                                       │`);
+  console.log("└─────────────────────────────────────────────────────────────────────┘");
+
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│ TOTALS                                                              │");
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+  console.log(`│ Sequences tested:      ${String(result.coldPass.totalSequences).padStart(5)}                                       │`);
+  console.log(`│ Total beats rendered:  ${String(result.coldPass.totalBeats).padStart(5)}                                       │`);
+  console.log(`│ Memory cache entries:  ${String(result.summary.memoryCacheSize).padStart(5)}                                       │`);
+  console.log("└─────────────────────────────────────────────────────────────────────┘");
+
+  // Performance interpretation
+  console.log("\n📈 INTERPRETATION:");
+
+  const l1SpeedupNum = parseFloat(result.summary.l1Speedup);
+  const l2SpeedupNum = parseFloat(result.summary.l2Speedup);
+  const coldCacheRate = result.coldPass.cacheStats.overallCacheRate;
+
+  if (coldCacheRate > 30) {
+    console.log(`   ✓ High cross-sequence reuse (${coldCacheRate.toFixed(0)}%) - pictographs are being shared well`);
+  } else if (coldCacheRate > 10) {
+    console.log(`   → Moderate cross-sequence reuse (${coldCacheRate.toFixed(0)}%) - some pictograph sharing`);
+  } else {
+    console.log(`   ⚠ Low cross-sequence reuse (${coldCacheRate.toFixed(0)}%) - sequences have unique pictographs`);
+  }
+
+  if (l1SpeedupNum > 50) {
+    console.log(`   ✓ L1 blob cache very effective (${l1SpeedupNum.toFixed(0)}% speedup)`);
+  } else if (l1SpeedupNum > 20) {
+    console.log(`   → L1 blob cache moderately effective (${l1SpeedupNum.toFixed(0)}% speedup)`);
+  } else {
+    console.log(`   ⚠ L1 blob cache underperforming (${l1SpeedupNum.toFixed(0)}% speedup)`);
+  }
+
+  if (l2SpeedupNum > 80) {
+    console.log(`   ✓ L2 memory cache excellent (${l2SpeedupNum.toFixed(0)}% speedup) - near instant re-renders`);
+  } else if (l2SpeedupNum > 50) {
+    console.log(`   → L2 memory cache good (${l2SpeedupNum.toFixed(0)}% speedup)`);
+  } else {
+    console.log(`   ⚠ L2 memory cache underperforming (${l2SpeedupNum.toFixed(0)}% speedup)`);
+  }
+
+  console.log("\n" + "=".repeat(70));
+}
+
+/**
+ * Quick single-sequence test (original behavior)
+ */
+export async function runQuickBenchmark(): Promise<void> {
+  if (!browser) {
+    console.error("[CacheBenchmark] Must run in browser");
+    return;
+  }
+
+  console.log("Running quick single-sequence benchmark...");
+  console.log("For comprehensive multi-sequence test, use: window.runCacheBenchmark(50)\n");
+
+  await runCacheBenchmark(1);
+}
+
+// Expose globally for console access
+if (browser && typeof window !== "undefined") {
+  (window as unknown as {
+    runCacheBenchmark: typeof runCacheBenchmark;
+    runQuickBenchmark: typeof runQuickBenchmark;
+  }).runCacheBenchmark = runCacheBenchmark;
+  (window as unknown as { runQuickBenchmark: typeof runQuickBenchmark }).runQuickBenchmark = runQuickBenchmark;
+  console.log("[CacheBenchmark] Utility loaded. Run: window.runCacheBenchmark()");
+}
