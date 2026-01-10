@@ -23,6 +23,7 @@ import { ProceduralNebulaSystem } from "./ProceduralNebulaSystem";
 import { ParallaxStarSystem } from "./ParallaxStarSystem";
 import { AuroraSystem } from "./AuroraSystem";
 import { UFOSystem } from "./UFOSystem";
+import { nightSkyContainer } from "$lib/shared/di/containers/night-sky-container";
 
 // TODO: Fix this - ShootingStarState should be imported from proper location
 interface ShootingStarState {
@@ -130,7 +131,13 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
 
     instance.ufoSystem = new UFOSystem(
       instance.cfg.ufo,
-      instance.calculationService
+      instance.calculationService,
+      nightSkyContainer.items.ufoRenderer,
+      nightSkyContainer.items.ufoParticleRenderer,
+      nightSkyContainer.items.ufoMoodManager,
+      nightSkyContainer.items.ufoStarScanner,
+      nightSkyContainer.items.ufoInteractionHandler,
+      nightSkyContainer.items.ufoBehaviorRunner
     );
 
     instance.cometSystem = new CometSystem(
@@ -314,7 +321,13 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     );
     this.ufoSystem = new UFOSystem(
       this.cfg.ufo,
-      this.calculationService
+      this.calculationService,
+      nightSkyContainer.items.ufoRenderer,
+      nightSkyContainer.items.ufoParticleRenderer,
+      nightSkyContainer.items.ufoMoodManager,
+      nightSkyContainer.items.ufoStarScanner,
+      nightSkyContainer.items.ufoInteractionHandler,
+      nightSkyContainer.items.ufoBehaviorRunner
     );
     // Re-wire UFO providers after recreation
     this.ufoSystem.setStarProvider(() => {
