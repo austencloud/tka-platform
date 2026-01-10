@@ -160,3 +160,87 @@ Defined in `src/app.css`. Two-tier minimum font size system:
   font-size: var(--font-size-compact, 12px);
 }
 ```
+
+---
+
+## Scrollbar System
+
+Themed scrollbars that adapt to background luminance automatically.
+
+### Quick Usage
+
+Add the utility class to any scrollable container:
+
+```svelte
+<div class="content themed-scrollbar">
+  <!-- scrollable content -->
+</div>
+```
+
+### Variants
+
+| Class | Purpose |
+|-------|---------|
+| `themed-scrollbar` | Neutral colors, adapts to light/dark backgrounds |
+| `themed-scrollbar-accent` | Uses theme accent color for the scrollbar thumb |
+
+### CSS Variables
+
+Defined in `background-theme-calculator.ts`, auto-injected based on background:
+
+| Variable | Purpose |
+|----------|---------|
+| `--scrollbar-thumb` | Scrollbar thumb color |
+| `--scrollbar-thumb-hover` | Thumb hover state |
+| `--scrollbar-track` | Track background (transparent on dark, subtle on light) |
+| `--scrollbar-accent` | Accent-colored thumb (30% opacity) |
+| `--scrollbar-accent-hover` | Accent thumb hover (50% opacity) |
+
+### Manual Scrollbar Styling
+
+For custom scrollbar styles in component-scoped CSS:
+
+```css
+.my-container {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.my-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.my-container::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, transparent);
+}
+
+.my-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+}
+
+.my-container::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
+}
+```
+
+### Touch Accessibility
+
+On mobile (< 768px), scrollbars automatically expand to 16px width for WCAG AAA touch target compliance.
+
+### Migration from Hardcoded Colors
+
+Replace hardcoded `rgba(255, 255, 255, 0.x)` scrollbar colors with theme variables:
+
+```css
+/* BEFORE */
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* AFTER */
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+```

@@ -148,7 +148,16 @@
       "WebFetch(domain:godotshaders.com)",
       "WebFetch(domain:www.solarsystemscope.com)",
       "WebFetch(domain:bjornlu.com)",
-      "WebFetch(domain:itijs.org)"
+      "WebFetch(domain:itijs.org)",
+      "WebFetch(domain:gpfault.net)",
+      "WebFetch(domain:aurbano.eu)",
+      "WebFetch(domain:www.cgchan.com)",
+      "WebFetch(domain:www.gamedev.net)",
+      "WebFetch(domain:www.kevs3d.co.uk)",
+      "WebFetch(domain:www.cs.umd.edu)",
+      "WebFetch(domain:www.houdinikitchen.net)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:allenpike.com)"
     ]
   }
 }
