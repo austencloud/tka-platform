@@ -13,6 +13,7 @@ import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import {
   MotionType,
   Orientation,
+  HandPath,
 } from "../../../../shared/domain/enums/pictograph-enums";
 import { injectable } from "inversify";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
@@ -75,7 +76,16 @@ export class ArrowPathResolver implements IArrowPathResolver {
       turnsStr = "0.0";
     }
 
-    // Build symbol ID: {motionType}_{turns}_{orientation}
-    return `${motionType}_${turnsStr}_${orientation}`;
+    // Determine skew suffix based on skewSteps and handPath
+    // skewSteps > 0 means motion crossed grid boundary (cardinal <-> intercardinal)
+    // handPath CW = skew+, handPath CCW = skew-
+    let skewSuffix = "";
+    if (motionData.skewSteps && motionData.skewSteps > 0 && motionData.handPath) {
+      skewSuffix =
+        motionData.handPath === HandPath.CLOCKWISE ? "_skew+" : "_skew-";
+    }
+
+    // Build symbol ID: {motionType}_{turns}_{orientation}[_skew+/-]
+    return `${motionType}_${turnsStr}_${orientation}${skewSuffix}`;
   }
 }
