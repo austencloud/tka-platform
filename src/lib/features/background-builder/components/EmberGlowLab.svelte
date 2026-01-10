@@ -2,8 +2,13 @@
   import { onMount, onDestroy } from "svelte";
   import { EmberGlowBackgroundSystem } from "$lib/shared/background/ember-glow/services/EmberGlowBackgroundSystem";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import type { HeatIntensity, DensityPreset } from "$lib/shared/background/ember-glow/domain/constants/ember-constants";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import {
+    getEmberGlowSettings,
+    updateEmberGlowSettings,
+  } from "../state/background-builder-state.svelte";
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
@@ -11,26 +16,27 @@
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
 
+  // Load persisted settings
+  const savedSettings = getEmberGlowSettings();
+
   // Quality settings
-  let quality: QualityLevel = $state("high");
+  let quality: QualityLevel = $state(savedSettings.quality);
 
   // Layer toggles
-  let layers = $state({
-    gradient: true,
-    embers: true,
-  });
+  let layers = $state({ ...savedSettings.layers });
 
   // Density presets
-  type DensityPreset = "sparse" | "normal" | "dense" | "inferno";
-  let densityPreset: DensityPreset = $state("normal");
+  let densityPreset: DensityPreset = $state(savedSettings.densityPreset);
 
   // Heat intensity
-  type HeatPreset = "smolder" | "warm" | "hot" | "blazing";
-  let heatPreset: HeatPreset = $state("warm");
+  let heatIntensity: HeatIntensity = $state(savedSettings.heatIntensity);
 
   // Stats
-  let stats = $state({ embers: 0 });
-  let lastStatsUpdate = 0;
+  let stats = $state({
+    embers: 0,
+    smoke: 0,
+    sparks: 0,
+  });
 
   function initializeSystem() {
     if (!canvas) return;
@@ -45,15 +51,25 @@
     }
 
     backgroundSystem = new EmberGlowBackgroundSystem();
+    backgroundSystem.setHeatIntensity(heatIntensity);
+    backgroundSystem.setDensityPreset(densityPreset);
     const dimensions = { width: canvas.width, height: canvas.height };
     backgroundSystem.initialize(dimensions, quality);
+    backgroundSystem.setLayerVisibility(layers);
 
-    // Apply layer visibility
-    if (backgroundSystem.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
-    }
-
+    updateStats();
     startAnimation();
+  }
+
+  function updateStats() {
+    if (backgroundSystem) {
+      const s = backgroundSystem.getStats();
+      stats = {
+        embers: s.embers,
+        smoke: s.smoke,
+        sparks: s.sparks,
+      };
+    }
   }
 
   function startAnimation() {
@@ -74,12 +90,6 @@
       backgroundSystem.update(dimensions, frameMultiplier);
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
       backgroundSystem.draw(ctx, dimensions);
-
-      // Update stats every second
-      if (currentTime - lastStatsUpdate > 1000 && backgroundSystem) {
-        stats = backgroundSystem.getStats();
-        lastStatsUpdate = currentTime;
-      }
 
       animationFrame = requestAnimationFrame(animate);
     };
@@ -105,6 +115,7 @@
       canvas.height = container.clientHeight;
       const newDimensions = { width: canvas.width, height: canvas.height };
       backgroundSystem.handleResize?.(oldDimensions, newDimensions);
+      updateStats();
     }
   }
 
@@ -119,24 +130,35 @@
 
   function setQuality(q: QualityLevel) {
     quality = q;
-    regenerate();
+    updateEmberGlowSettings({ quality: q });
+    if (backgroundSystem) {
+      backgroundSystem.setQuality(q);
+      updateStats();
+    }
   }
 
   function setDensity(preset: DensityPreset) {
     densityPreset = preset;
-    regenerate();
+    updateEmberGlowSettings({ densityPreset: preset });
+    if (backgroundSystem) {
+      backgroundSystem.setDensityPreset(preset);
+      updateStats();
+    }
   }
 
-  function setHeat(preset: HeatPreset) {
-    heatPreset = preset;
-    if (backgroundSystem?.setHeatIntensity) {
-      backgroundSystem.setHeatIntensity(preset);
+  function setHeat(intensity: HeatIntensity) {
+    heatIntensity = intensity;
+    updateEmberGlowSettings({ heatIntensity: intensity });
+    if (backgroundSystem) {
+      backgroundSystem.setHeatIntensity(intensity);
+      updateStats();
     }
   }
 
   function toggleLayer(layer: keyof typeof layers) {
     layers = { ...layers, [layer]: !layers[layer] };
-    if (backgroundSystem?.setLayerVisibility) {
+    updateEmberGlowSettings({ layers: { ...layers } });
+    if (backgroundSystem) {
       backgroundSystem.setLayerVisibility(layers);
     }
   }
@@ -171,12 +193,22 @@
 
     <!-- Layer Chips -->
     <ChipGroup label="Layers">
-      <ChipToggle label="Background" icon="fa-fill-drip" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Base" icon="fa-square" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Smoke" icon="fa-cloud" active={layers.smoke} color="amber" onclick={() => toggleLayer("smoke")} />
       <ChipToggle label="Embers" icon="fa-fire" active={layers.embers} color="amber" onclick={() => toggleLayer("embers")} />
+      <ChipToggle label="Sparks" icon="fa-sparkle" active={layers.sparks} color="amber" onclick={() => toggleLayer("sparks")} />
+    </ChipGroup>
+
+    <!-- Enhancement Chips -->
+    <ChipGroup label="Enhancements">
+      <ChipToggle label="Vignette" icon="fa-circle" active={layers.vignette} color="amber" onclick={() => toggleLayer("vignette")} />
+      <ChipToggle label="Bottom Glow" icon="fa-sun" active={layers.bottomGlow} color="amber" onclick={() => toggleLayer("bottomGlow")} />
+      <ChipToggle label="Spark Trails" icon="fa-comet" active={layers.sparkTrails} color="amber" onclick={() => toggleLayer("sparkTrails")} />
+      <ChipToggle label="Breathing" icon="fa-wind" active={layers.breathing} color="amber" onclick={() => toggleLayer("breathing")} />
     </ChipGroup>
 
     <!-- Density Chips -->
-    <ChipGroup label="Ember Density" variant="row">
+    <ChipGroup label="Density" variant="row">
       <ChipToggle label="Sparse" active={densityPreset === "sparse"} color="amber" onclick={() => setDensity("sparse")} />
       <ChipToggle label="Normal" active={densityPreset === "normal"} color="amber" onclick={() => setDensity("normal")} />
       <ChipToggle label="Dense" active={densityPreset === "dense"} color="amber" onclick={() => setDensity("dense")} />
@@ -185,10 +217,10 @@
 
     <!-- Heat Chips -->
     <ChipGroup label="Heat Intensity" variant="row">
-      <ChipToggle label="Smolder" active={heatPreset === "smolder"} color="amber" onclick={() => setHeat("smolder")} />
-      <ChipToggle label="Warm" active={heatPreset === "warm"} color="amber" onclick={() => setHeat("warm")} />
-      <ChipToggle label="Hot" active={heatPreset === "hot"} color="amber" onclick={() => setHeat("hot")} />
-      <ChipToggle label="Blazing" active={heatPreset === "blazing"} color="amber" onclick={() => setHeat("blazing")} />
+      <ChipToggle label="Smolder" active={heatIntensity === "smolder"} color="amber" onclick={() => setHeat("smolder")} />
+      <ChipToggle label="Warm" active={heatIntensity === "warm"} color="amber" onclick={() => setHeat("warm")} />
+      <ChipToggle label="Hot" active={heatIntensity === "hot"} color="amber" onclick={() => setHeat("hot")} />
+      <ChipToggle label="Blazing" active={heatIntensity === "blazing"} color="amber" onclick={() => setHeat("blazing")} />
     </ChipGroup>
 
     <!-- Regenerate -->
@@ -205,7 +237,26 @@
           <span class="stat-value">{stats.embers}</span>
           <span class="stat-label">Embers</span>
         </div>
+        <div class="stat">
+          <span class="stat-value">{stats.smoke}</span>
+          <span class="stat-label">Smoke</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{stats.sparks}</span>
+          <span class="stat-label">Sparks</span>
+        </div>
       </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+      <span class="label">About</span>
+      <p class="info-text">
+        A warm, cozy atmosphere with rising embers, drifting smoke particles,
+        and bright sparks. Heat intensity affects colors, speed, and glow.
+        Density controls particle count. Enhancements add vignette (darkens edges),
+        bottom glow (warm radial light), spark trails, and breathing (subtle pulsing).
+      </p>
     </div>
 
     <!-- Progress Pills -->
@@ -216,7 +267,15 @@
         <span class="pill complete">Rising Embers</span>
         <span class="pill complete">Glow Effects</span>
         <span class="pill complete">Flicker Animation</span>
-        <span class="pill active">Layer Controls</span>
+        <span class="pill complete">Smoke Particles</span>
+        <span class="pill complete">Bright Sparks</span>
+        <span class="pill complete">Heat Intensity</span>
+        <span class="pill complete">Density Presets</span>
+        <span class="pill complete">Quality Levels</span>
+        <span class="pill complete">Vignette Effect</span>
+        <span class="pill complete">Bottom Glow</span>
+        <span class="pill complete">Spark Trails</span>
+        <span class="pill complete">Breathing Effect</span>
       </div>
     </div>
   </div>
@@ -264,7 +323,7 @@
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.3));
     border: 1px solid rgba(251, 191, 36, 0.4);
     border-radius: 20px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: #fbbf24;
     text-transform: uppercase;
@@ -272,9 +331,9 @@
   }
 
   .label {
-    font-size: 0.75rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 500;
-    color: #6b7280;
+    color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -304,6 +363,11 @@
     transform: translateY(0);
   }
 
+  .action-btn:focus-visible {
+    outline: 2px solid #fcd34d;
+    outline-offset: 2px;
+  }
+
   .stats-section {
     display: flex;
     flex-direction: column;
@@ -314,7 +378,7 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
   }
 
@@ -334,9 +398,24 @@
   }
 
   .stat-label {
-    font-size: 0.7rem;
-    color: #6b7280;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: #9ca3af;
     text-transform: uppercase;
+  }
+
+  .info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .info-text {
+    margin: 0;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: #9ca3af;
+    line-height: 1.5;
   }
 
   .progress-section {
@@ -356,13 +435,13 @@
   .pill {
     padding: 4px 10px;
     border-radius: 12px;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 500;
   }
 
   .pill.complete {
-    background: rgba(16, 185, 129, 0.15);
-    color: #34d399;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
   }
 
   .pill.active {
@@ -373,7 +452,7 @@
 
   .pill.pending {
     background: rgba(255, 255, 255, 0.05);
-    color: #6b7280;
+    color: #9ca3af;
   }
 
   @keyframes pulse {
@@ -399,6 +478,36 @@
     .ember-glow-lab {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
+    }
+  }
+
+  /* Accessibility: Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn,
+    .pill.active {
+      transition: none;
+      animation: none;
+    }
+  }
+
+  /* Accessibility: High contrast */
+  @media (prefers-contrast: high) {
+    .controls {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .preview {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .label,
+    .stat-label,
+    .info-text {
+      color: #d1d5db;
     }
   }
 </style>

@@ -1,52 +1,52 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { SakuraDriftBackgroundSystem, type CherryBlossomLayers } from "$lib/shared/background/sakura-drift/services/SakuraDriftBackgroundSystem";
+  import { CherryBlossomBackgroundSystem, type CherryBlossomLayers } from "$lib/shared/background/cherry-blossom/services/CherryBlossomBackgroundSystem";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
-  import { type TimeOfDay, getTimeOfDayPreset } from "$lib/shared/background/sakura-drift/domain/constants/time-of-day-presets";
+  import { type TimeOfDay, getTimeOfDayPreset } from "$lib/shared/background/cherry-blossom/domain/constants/time-of-day-presets";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import {
+    getCherryBlossomSettings,
+    updateCherryBlossomSettings,
+  } from "../state/background-builder-state.svelte";
+  import type {
+    CherryBlossomDensityPreset,
+    CherryBlossomWindPreset,
+  } from "../domain/lab-settings-types";
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
-  let backgroundSystem: SakuraDriftBackgroundSystem | null = $state(null);
+  let backgroundSystem: CherryBlossomBackgroundSystem | null = $state(null);
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
 
+  // Load persisted settings
+  const savedSettings = getCherryBlossomSettings();
+
   // Quality settings
-  let quality: QualityLevel = $state("high");
+  let quality: QualityLevel = $state(savedSettings.quality);
 
   // Time of day
-  let timeOfDay: TimeOfDay = $state("twilight");
+  let timeOfDay: TimeOfDay = $state(savedSettings.timeOfDay);
 
   // Layer toggles - expanded for all features
-  let layers = $state<CherryBlossomLayers>({
-    gradient: true,
-    petals: true,
-    petalsFar: true,
-    petalsMid: true,
-    petalsNear: true,
-    trails: false,
-    accumulation: false,
-    vortex: false,
-    moon: false,
-    stars: false,
-    lightRays: false,
-    trees: false,
-    lanterns: false,
-    reflection: false,
-  });
+  let layers = $state<CherryBlossomLayers>({ ...savedSettings.layers });
 
   // Density presets
-  type DensityPreset = "sparse" | "normal" | "dense" | "ultra";
-  let densityPreset: DensityPreset = $state("normal");
+  let densityPreset: CherryBlossomDensityPreset = $state(savedSettings.densityPreset);
 
   // Wind presets
-  type WindPreset = "calm" | "gentle" | "breezy" | "gusty";
-  let windPreset: WindPreset = $state("gentle");
+  let windPreset: CherryBlossomWindPreset = $state(savedSettings.windPreset);
 
   // Stats
   let stats = $state({ petals: 0, flowers: 0 });
   let lastStatsUpdate = 0;
+
+  // Moon settings
+  let moonDetailLevel = $state(0.7);
+  let moonDarkness = $state(0.5);
+  let moonSpread = $state(0.7);
+  let moonGlow = $state(1.2);
 
   function initializeSystem() {
     if (!canvas) return;
@@ -60,15 +60,17 @@
       canvas.height = container.clientHeight;
     }
 
-    backgroundSystem = new SakuraDriftBackgroundSystem();
+    backgroundSystem = new CherryBlossomBackgroundSystem();
     const dimensions = { width: canvas.width, height: canvas.height };
     backgroundSystem.initialize(dimensions, quality);
 
     // Apply time of day
     backgroundSystem.setTimeOfDay(timeOfDay);
 
-    // Sync layers from preset defaults
-    layers = backgroundSystem.getLayerVisibility();
+    // Apply user's saved layer settings (don't overwrite with preset defaults)
+    if (backgroundSystem.setLayerVisibility) {
+      backgroundSystem.setLayerVisibility(layers);
+    }
 
     startAnimation();
   }
@@ -136,30 +138,36 @@
 
   function setQuality(q: QualityLevel) {
     quality = q;
+    updateCherryBlossomSettings({ quality: q });
     regenerate();
   }
 
   function setTimeOfDayMode(mode: TimeOfDay) {
     timeOfDay = mode;
+    updateCherryBlossomSettings({ timeOfDay: mode });
     if (backgroundSystem) {
       backgroundSystem.setTimeOfDay(mode);
       // Sync layers from new preset defaults
       layers = backgroundSystem.getLayerVisibility();
+      updateCherryBlossomSettings({ layers: { ...layers } });
     }
   }
 
-  function setDensity(preset: DensityPreset) {
+  function setDensity(preset: CherryBlossomDensityPreset) {
     densityPreset = preset;
+    updateCherryBlossomSettings({ densityPreset: preset });
     regenerate();
   }
 
-  function setWindPreset(preset: WindPreset) {
+  function setWindPreset(preset: CherryBlossomWindPreset) {
     windPreset = preset;
+    updateCherryBlossomSettings({ windPreset: preset });
     // Wind presets could be applied via the system if we add that capability
   }
 
   function toggleLayer(layer: keyof CherryBlossomLayers) {
     layers = { ...layers, [layer]: !layers[layer] };
+    updateCherryBlossomSettings({ layers: { ...layers } });
     if (backgroundSystem?.setLayerVisibility) {
       backgroundSystem.setLayerVisibility(layers);
     }
@@ -169,6 +177,37 @@
     if (backgroundSystem?.triggerGust) {
       backgroundSystem.triggerGust();
     }
+  }
+
+  function updateMoonConfig() {
+    if (backgroundSystem?.setMoonConfig) {
+      backgroundSystem.setMoonConfig({
+        detailLevel: moonDetailLevel,
+        surfaceDarkness: moonDarkness,
+        featureSpread: moonSpread,
+        glowIntensity: moonGlow,
+      });
+    }
+  }
+
+  function setMoonDetail(value: number) {
+    moonDetailLevel = value;
+    updateMoonConfig();
+  }
+
+  function setMoonDarkness(value: number) {
+    moonDarkness = value;
+    updateMoonConfig();
+  }
+
+  function setMoonSpread(value: number) {
+    moonSpread = value;
+    updateMoonConfig();
+  }
+
+  function setMoonGlow(value: number) {
+    moonGlow = value;
+    updateMoonConfig();
   }
 
   onMount(() => {
@@ -241,11 +280,65 @@
     <ChipGroup label="Environment">
       <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} color="cyan" onclick={() => toggleLayer("moon")} />
       <ChipToggle label="Stars" icon="fa-star" active={layers.stars} color="cyan" onclick={() => toggleLayer("stars")} />
-      <ChipToggle label="Light Rays" icon="fa-sun" active={layers.lightRays} color="amber" onclick={() => toggleLayer("lightRays")} />
       <ChipToggle label="Trees" icon="fa-tree" active={layers.trees} color="emerald" onclick={() => toggleLayer("trees")} />
       <ChipToggle label="Lanterns" icon="fa-lightbulb" active={layers.lanterns} color="amber" onclick={() => toggleLayer("lanterns")} />
       <ChipToggle label="Reflection" icon="fa-water" active={layers.reflection} color="cyan" onclick={() => toggleLayer("reflection")} />
     </ChipGroup>
+
+    <!-- Moon Settings (shown when moon is enabled) -->
+    {#if layers.moon}
+      <div class="slider-section">
+        <span class="label">Moon Settings</span>
+        <div class="slider-row">
+          <span class="slider-label">Detail</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={moonDetailLevel}
+            oninput={(e) => setMoonDetail(Number(e.currentTarget.value))}
+          />
+          <span class="slider-value">{Math.round(moonDetailLevel * 100)}%</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">Darkness</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={moonDarkness}
+            oninput={(e) => setMoonDarkness(Number(e.currentTarget.value))}
+          />
+          <span class="slider-value">{Math.round(moonDarkness * 100)}%</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">Spread</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={moonSpread}
+            oninput={(e) => setMoonSpread(Number(e.currentTarget.value))}
+          />
+          <span class="slider-value">{Math.round(moonSpread * 100)}%</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">Glow</span>
+          <input
+            type="range"
+            min="0.5"
+            max="2"
+            step="0.1"
+            value={moonGlow}
+            oninput={(e) => setMoonGlow(Number(e.currentTarget.value))}
+          />
+          <span class="slider-value">{moonGlow.toFixed(1)}x</span>
+        </div>
+      </div>
+    {/if}
 
     <!-- Effect Layers -->
     <ChipGroup label="Effects">
@@ -309,7 +402,6 @@
         <span class="pill complete">Layer Controls</span>
         <span class="pill active">Parallax Depth</span>
         <span class="pill pending">Moon & Stars</span>
-        <span class="pill pending">Light Rays</span>
         <span class="pill pending">Tree Silhouettes</span>
         <span class="pill pending">Lanterns</span>
       </div>
@@ -502,6 +594,67 @@
     width: 100%;
     height: 100%;
     display: block;
+  }
+
+  .slider-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .slider-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 45px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .slider-label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  .slider-value {
+    font-size: 0.75rem;
+    color: #06b6d4;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slider-section input[type="range"] {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .slider-section input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #06b6d4;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .slider-section input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .slider-section input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #06b6d4;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
   }
 
   @media (max-width: 800px) {

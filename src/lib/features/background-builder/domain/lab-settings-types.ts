@@ -1,0 +1,250 @@
+/**
+ * Background Lab Settings Types
+ *
+ * Defines the persisted settings for each background lab in the Background Builder.
+ * These are stored in AppSettings and synced via localStorage/Firebase.
+ */
+
+import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+
+// ============================================================================
+// Night Sky Lab
+// ============================================================================
+
+export interface NightSkyLabLayers {
+  stars: boolean;
+  nebula: boolean;
+  aurora: boolean;
+  milkyWay: boolean;
+  meteors: boolean;
+  comets: boolean;
+  ufo: boolean; // Easter egg - intelligent UFO
+}
+
+export type NightSkyDensityPreset = "sparse" | "normal" | "dense" | "ultra";
+
+export interface NightSkyLabSettings {
+  quality: QualityLevel;
+  layers: NightSkyLabLayers;
+  densityPreset: NightSkyDensityPreset;
+}
+
+// ============================================================================
+// Firefly Forest Lab
+// ============================================================================
+
+export interface FireflyForestLabLayers {
+  gradient: boolean;
+  stars: boolean;
+  moon: boolean;
+  shootingStars: boolean;
+  trees: boolean;
+  grass: boolean;
+  fireflies: boolean;
+}
+
+export interface FireflyForestTreeTypes {
+  pine: boolean;
+  fir: boolean;
+  spruce: boolean;
+  oak: boolean;
+  maple: boolean;
+  poplar: boolean;
+}
+
+export interface FireflyForestLabSettings {
+  quality: QualityLevel;
+  layers: FireflyForestLabLayers;
+  treeTypes: FireflyForestTreeTypes;
+}
+
+// ============================================================================
+// Cherry Blossom Lab
+// ============================================================================
+
+export type CherryBlossomTimeOfDay = "twilight" | "goldenHour" | "night";
+
+export interface CherryBlossomLabLayers {
+  gradient: boolean;
+  petals: boolean;
+  petalsFar: boolean;
+  petalsMid: boolean;
+  petalsNear: boolean;
+  trails: boolean;
+  accumulation: boolean;
+  vortex: boolean;
+  moon: boolean;
+  stars: boolean;
+  trees: boolean;
+  lanterns: boolean;
+  reflection: boolean;
+}
+
+export type CherryBlossomDensityPreset = "sparse" | "normal" | "dense" | "ultra";
+export type CherryBlossomWindPreset = "calm" | "gentle" | "breezy" | "gusty";
+
+export interface CherryBlossomLabSettings {
+  quality: QualityLevel;
+  timeOfDay: CherryBlossomTimeOfDay;
+  layers: CherryBlossomLabLayers;
+  densityPreset: CherryBlossomDensityPreset;
+  windPreset: CherryBlossomWindPreset;
+}
+
+// ============================================================================
+// Rainbow Lab
+// ============================================================================
+
+export type RainbowPridePalette =
+  | "classic"
+  | "progress"
+  | "trans"
+  | "bisexual"
+  | "pansexual"
+  | "nonbinary"
+  | "lesbian"
+  | "asexual";
+
+export interface RainbowLabLayers {
+  gradient: boolean;
+  bands: boolean;
+  shimmer: boolean;
+  bokeh: boolean;
+  sparkles: boolean;
+  hearts: boolean;
+}
+
+export interface RainbowLabSettings {
+  quality: QualityLevel;
+  palette: RainbowPridePalette;
+  layers: RainbowLabLayers;
+}
+
+// ============================================================================
+// Combined Lab Settings
+// ============================================================================
+
+export interface BackgroundLabSettings {
+  nightSky?: NightSkyLabSettings;
+  fireflyForest?: FireflyForestLabSettings;
+  cherryBlossom?: CherryBlossomLabSettings;
+  rainbow?: RainbowLabSettings;
+  emberGlow?: EmberGlowLabSettings;
+}
+
+// ============================================================================
+// Default Values
+// ============================================================================
+
+export const DEFAULT_NIGHT_SKY_SETTINGS: NightSkyLabSettings = {
+  quality: "high",
+  layers: {
+    stars: true,
+    nebula: true,
+    aurora: true,
+    milkyWay: true,
+    meteors: true,
+    comets: true,
+    ufo: false, // Easter egg - off by default
+  },
+  densityPreset: "normal",
+};
+
+export const DEFAULT_FIREFLY_FOREST_SETTINGS: FireflyForestLabSettings = {
+  quality: "high",
+  layers: {
+    gradient: true,
+    stars: true,
+    moon: true,
+    shootingStars: true,
+    trees: true,
+    grass: true,
+    fireflies: true,
+  },
+  treeTypes: {
+    pine: true,
+    fir: true,
+    spruce: true,
+    oak: true,
+    maple: true,
+    poplar: true,
+  },
+};
+
+export const DEFAULT_CHERRY_BLOSSOM_SETTINGS: CherryBlossomLabSettings = {
+  quality: "high",
+  timeOfDay: "twilight",
+  layers: {
+    gradient: true,
+    petals: true,
+    petalsFar: true,
+    petalsMid: true,
+    petalsNear: true,
+    trails: false,
+    accumulation: false,
+    vortex: false,
+    moon: false,
+    stars: false,
+    trees: false,
+    lanterns: false,
+    reflection: false,
+  },
+  densityPreset: "normal",
+  windPreset: "gentle",
+};
+
+export const DEFAULT_RAINBOW_SETTINGS: RainbowLabSettings = {
+  quality: "high",
+  palette: "classic",
+  layers: {
+    gradient: true,
+    bands: true,
+    shimmer: true,
+    bokeh: true,
+    sparkles: true,
+    hearts: true,
+  },
+};
+
+// ============================================================================
+// Ember Glow Lab
+// ============================================================================
+
+export interface EmberGlowLabLayers {
+  gradient: boolean;
+  smoke: boolean;
+  embers: boolean;
+  sparks: boolean;
+  // Enhancement layers
+  vignette: boolean;
+  bottomGlow: boolean;
+  sparkTrails: boolean;
+  breathing: boolean;
+}
+
+export type EmberGlowHeatIntensity = "smolder" | "warm" | "hot" | "blazing";
+export type EmberGlowDensityPreset = "sparse" | "normal" | "dense" | "inferno";
+
+export interface EmberGlowLabSettings {
+  quality: QualityLevel;
+  layers: EmberGlowLabLayers;
+  heatIntensity: EmberGlowHeatIntensity;
+  densityPreset: EmberGlowDensityPreset;
+}
+
+export const DEFAULT_EMBER_GLOW_SETTINGS: EmberGlowLabSettings = {
+  quality: "high",
+  layers: {
+    gradient: true,
+    smoke: true,
+    embers: true,
+    sparks: true,
+    // Enhancements off by default so user can try them
+    vignette: false,
+    bottomGlow: false,
+    sparkTrails: false,
+    breathing: false,
+  },
+  heatIntensity: "warm",
+  densityPreset: "normal",
+};

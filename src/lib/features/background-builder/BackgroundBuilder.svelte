@@ -3,7 +3,7 @@
   import DeepOceanLab from "./components/DeepOceanLab.svelte";
   import FireflyForestLab from "./components/FireflyForestLab.svelte";
   import CherryBlossomLab from "./components/CherryBlossomLab.svelte";
-  import AuroraLab from "./components/AuroraLab.svelte";
+  import PrideLab from "./components/PrideLab.svelte";
   import EmberGlowLab from "./components/EmberGlowLab.svelte";
   import SnowfallLab from "./components/SnowfallLab.svelte";
   import AutumnDriftLab from "./components/AutumnDriftLab.svelte";
@@ -23,7 +23,7 @@
     { id: "night-sky", label: "Night Sky", icon: "fa-moon" },
     { id: "firefly-forest", label: "Firefly Forest", icon: "fa-tree" },
     { id: "cherry-blossom", label: "Cherry Blossom", icon: "fa-spa" },
-    { id: "aurora", label: "Aurora", icon: "fa-wand-magic-sparkles" },
+    { id: "pride", label: "Pride", icon: "fa-rainbow" },
     { id: "ember-glow", label: "Ember Glow", icon: "fa-fire" },
     { id: "snowfall", label: "Snowfall", icon: "fa-snowflake" },
     { id: "autumn-drift", label: "Autumn Drift", icon: "fa-leaf" },
@@ -63,8 +63,8 @@
       <FireflyForestLab />
     {:else if backgroundBuilderState.currentTab === "cherry-blossom"}
       <CherryBlossomLab />
-    {:else if backgroundBuilderState.currentTab === "aurora"}
-      <AuroraLab />
+    {:else if backgroundBuilderState.currentTab === "pride"}
+      <PrideLab />
     {:else if backgroundBuilderState.currentTab === "ember-glow"}
       <EmberGlowLab />
     {:else if backgroundBuilderState.currentTab === "snowfall"}
