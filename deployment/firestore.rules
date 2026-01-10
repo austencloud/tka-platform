@@ -624,6 +624,28 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // QR CODE SHORT CODES
+    // ============================================================================
+
+    // Short codes for QR code URLs - maps 6-char codes to encoded sequences
+    // Public read so anyone can scan QR codes and resolve them
+    // Authenticated users can create new codes
+    match /shortcodes/{code} {
+      // ANYONE can read short codes (QR scanning works without auth)
+      allow read: if true;
+
+      // Authenticated users can create short codes
+      allow create: if isAuthenticated();
+
+      // Anyone can increment scan count (fire-and-forget analytics)
+      // Only allow updating the scanCount field
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount']);
+
+      // No deletion - short codes are permanent
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================================
     // PUBLIC SEQUENCES INDEX
     // ============================================================================
 

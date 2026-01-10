@@ -157,8 +157,8 @@ const museumContainer = createMuseumContainer(
   libraryContainer.items.libraryRepository
 );
 
-// QR container needs sequenceEncoder from navigation
-const qrContainer = createQRContainer(navigationContainer.items.sequenceEncoder);
+// QR container needs discoverLoader for loading full sequence data
+const qrContainer = createQRContainer(discoverContainer.items.discoverLoader);
 
 // Animation 3D container needs discoverLoader
 const animation3DContainer = createAnimation3DContainer({

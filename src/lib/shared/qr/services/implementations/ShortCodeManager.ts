@@ -23,8 +23,8 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
 import type {
   IShortCodeManager,
   ShortCodeRecord,
@@ -41,7 +41,7 @@ const ALPHABET =
 export class ShortCodeManager implements IShortCodeManager {
   private firestore: Firestore | null = null;
 
-  constructor(private readonly sequenceEncoder: ISequenceEncoder) {}
+  constructor(private readonly discoverLoader: IDiscoverLoader) {}
 
   /**
    * Initialize Firestore instance (called lazily)
@@ -78,11 +78,16 @@ export class ShortCodeManager implements IShortCodeManager {
   async createShortCode(sequence: SequenceData): Promise<CreateShortCodeResult> {
     const firestore = await this.ensureFirestore();
 
-    // Encode the sequence
-    const { encoded } = this.sequenceEncoder.encodeWithCompression(sequence);
+    // Use sequence word/name as the unique identifier
+    // This is more reliable than encoding beats (which may be empty for performance)
+    const sequenceId = sequence.word || sequence.name || sequence.id;
 
-    // Check if this exact sequence already has a short code
-    const existingCode = await this.findExistingCode(encoded);
+    if (!sequenceId) {
+      throw new Error("Sequence must have a word, name, or id for QR code generation");
+    }
+
+    // Check if this sequence already has a short code
+    const existingCode = await this.findExistingCode(sequenceId);
     if (existingCode) {
       return {
         code: existingCode,
@@ -105,7 +110,7 @@ export class ShortCodeManager implements IShortCodeManager {
         const record: Omit<ShortCodeRecord, "createdAt"> & {
           createdAt: string;
         } = {
-          sequence: encoded,
+          sequence: sequenceId, // Store the sequence identifier (word/name)
           createdAt: new Date().toISOString(),
           createdBy: "system", // TODO: Use actual user ID when auth context available
           scanCount: 0,
@@ -157,16 +162,18 @@ export class ShortCodeManager implements IShortCodeManager {
     }
 
     const data = docSnap.data() as {
-      sequence: string;
+      sequence: string; // This is now the sequence identifier (word/name)
       createdAt: string;
       createdBy: string;
       scanCount: number;
     };
 
     try {
-      return this.sequenceEncoder.decodeWithCompression(data.sequence);
+      // Load the full sequence data using the stored identifier
+      const fullSequence = await this.discoverLoader.loadFullSequenceData(data.sequence);
+      return fullSequence;
     } catch (error) {
-      console.error("Failed to decode sequence from short code:", error);
+      console.error("Failed to load sequence from short code:", error);
       return null;
     }
   }
