@@ -3,128 +3,302 @@ import type {
   QualityLevel,
 } from "$lib/shared/background/shared/domain/types/background-types";
 import type { IBackgroundSystem } from "$lib/shared/background/shared/services/contracts/IBackgroundSystem";
-import type { Ember } from "../domain/models/ember-models";
-import { createEmberSystem } from "./EmberSystem";
-import { EMBER_BACKGROUND_GRADIENT } from "../domain/constants/ember-constants";
+import type { EmberGlowLayers, EmberGlowStats } from "../domain/models/ember-models";
+import {
+  EMBER_BACKGROUND_GRADIENT,
+  EMBER_GLOW_QUALITY_CONFIGS,
+  DENSITY_MULTIPLIERS,
+  HEAT_INTENSITY_CONFIGS,
+  type HeatIntensity,
+  type DensityPreset,
+} from "../domain/constants/ember-constants";
 
-export interface EmberGlowLayers {
-  gradient: boolean;
-  embers: boolean;
-}
-
-export type HeatIntensity = "smolder" | "warm" | "hot" | "blazing";
+// Import runes-based subsystems (HMR-enabled)
+import * as EmberSystem from "./ember-system.svelte";
+import * as SmokeSystem from "./smoke-system.svelte";
+import * as SparkSystem from "./spark-system.svelte";
 
 /**
  * Ember Glow Background System
  *
- * Renders a dark amber background with rising, glowing embers
- * Embers flicker and drift as they rise, creating a warm, cozy atmosphere
+ * Orchestrates three particle subsystems (now runes-based for HMR):
+ * - Smoke: Dark, slow-rising particles for depth
+ * - Embers: Glowing orange/amber particles with flicker
+ * - Sparks: Small, bright, fast particles
+ *
+ * Supports heat intensity (affects all subsystems), density presets,
+ * quality levels, layer visibility, and accessibility settings.
  */
 export class EmberGlowBackgroundSystem implements IBackgroundSystem {
-  private emberSystem: ReturnType<typeof createEmberSystem>;
-  private embers: Ember[] = [];
+  // State
   private quality: QualityLevel = "medium";
+  private heatIntensity: HeatIntensity = "warm";
+  private densityPreset: DensityPreset = "normal";
   private isInitialized = false;
+  private dimensions: Dimensions = { width: 0, height: 0 };
+  private motionMultiplier = 1.0;
+
+  // Breathing effect state
+  private breathingPhase = 0;
+  private readonly breathingPeriod = 4; // seconds for full cycle
+  private readonly breathingAmplitude = 0.3; // ±30% intensity variation
 
   // Layer visibility
   private layers: EmberGlowLayers = {
     gradient: true,
+    smoke: true,
     embers: true,
+    sparks: true,
+    // Enhancement layers
+    vignette: false,
+    bottomGlow: false,
+    sparkTrails: false,
+    breathing: false,
   };
 
-  // Heat intensity
-  private heatIntensity: HeatIntensity = "warm";
-
-  // Dark amber gradient colors from constants
+  // Gradient colors
   private readonly gradientStops = EMBER_BACKGROUND_GRADIENT;
 
-  constructor() {
-    this.emberSystem = createEmberSystem();
-  }
+  // No constructor needed - subsystems are now module-level singletons
 
   public initialize(dimensions: Dimensions, quality: QualityLevel): void {
     this.quality = quality;
-    this.embers = this.emberSystem.initialize(dimensions, quality);
+    this.dimensions = dimensions;
+
+    const config = EMBER_GLOW_QUALITY_CONFIGS[quality];
+    const densityMult = DENSITY_MULTIPLIERS[this.densityPreset];
+    const heatConfig = HEAT_INTENSITY_CONFIGS[this.heatIntensity];
+
+    // Apply density to ember system
+    EmberSystem.setDensityMultiplier(densityMult);
+    EmberSystem.setHeatIntensity(this.heatIntensity);
+    EmberSystem.setFlicker(config.flickerEnabled, config.flickerSpeed);
+    EmberSystem.initialize(dimensions, config.emberCount);
+
+    // Initialize smoke
+    SmokeSystem.initialize(dimensions, Math.floor(config.smokeCount * densityMult));
+
+    // Sparks get heat bonus
+    const sparkCount = Math.floor(
+      config.sparkCount * densityMult * (1 + heatConfig.sparkBonus)
+    );
+    SparkSystem.initialize(dimensions, sparkCount);
+
     this.isInitialized = true;
   }
 
   public update(dimensions: Dimensions, frameMultiplier: number = 1.0): void {
+    // Auto-initialize if dimensions changed
     if (dimensions.width > 0 && dimensions.height > 0) {
-      if (!this.isInitialized || this.embers.length === 0) {
+      if (!this.isInitialized) {
         this.initialize(dimensions, this.quality);
       }
     }
 
-    if (this.isInitialized) {
-      this.embers = this.emberSystem.update(
-        this.embers,
-        dimensions,
-        frameMultiplier
-      );
+    if (!this.isInitialized) return;
+
+    this.dimensions = dimensions;
+
+    // Advance breathing phase (assuming 60fps base)
+    // Breathing respects motion multiplier for accessibility
+    if (this.layers.breathing) {
+      const secondsPerFrame = (frameMultiplier * this.motionMultiplier) / 60;
+      this.breathingPhase += (secondsPerFrame / this.breathingPeriod) * Math.PI * 2;
+      if (this.breathingPhase > Math.PI * 2) {
+        this.breathingPhase -= Math.PI * 2;
+      }
+    }
+
+    // Update all subsystems
+    if (this.layers.smoke) {
+      SmokeSystem.update(dimensions, frameMultiplier);
+    }
+
+    if (this.layers.embers) {
+      EmberSystem.update(dimensions, frameMultiplier);
+    }
+
+    if (this.layers.sparks) {
+      SparkSystem.update(dimensions, frameMultiplier);
     }
   }
 
   public draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
-    // Draw dark amber gradient background
+    // Calculate breathing intensity multiplier
+    const breathingMult = this.layers.breathing
+      ? 1 + Math.sin(this.breathingPhase) * this.breathingAmplitude
+      : 1;
+
+    // Layer 1: Background gradient
     if (this.layers.gradient) {
-      const gradient = ctx.createLinearGradient(
-        0,
-        0,
-        dimensions.width,
-        dimensions.height
-      );
+      const gradient = ctx.createLinearGradient(0, 0, dimensions.width, dimensions.height);
       this.gradientStops.forEach(({ position, color }) => {
         gradient.addColorStop(position, color);
       });
-
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, dimensions.width, dimensions.height);
     }
 
-    // Draw embers
-    if (this.layers.embers && this.isInitialized) {
-      this.emberSystem.draw(this.embers, ctx, dimensions);
+    // Layer 2: Bottom glow (warm radial glow from below)
+    if (this.layers.bottomGlow) {
+      this.drawBottomGlow(ctx, dimensions, breathingMult);
     }
+
+    // Layer 3: Smoke (behind embers)
+    if (this.layers.smoke && this.isInitialized) {
+      SmokeSystem.draw(ctx, dimensions);
+    }
+
+    // Layer 4: Embers
+    if (this.layers.embers && this.isInitialized) {
+      EmberSystem.draw(ctx, dimensions);
+    }
+
+    // Layer 5: Sparks (on top)
+    if (this.layers.sparks && this.isInitialized) {
+      SparkSystem.draw(ctx, dimensions);
+    }
+
+    // Layer 6: Vignette (darkens edges, focuses center)
+    if (this.layers.vignette) {
+      this.drawVignette(ctx, dimensions);
+    }
+
+    // Layer 7: Breathing overlay (warm pulse across entire scene)
+    if (this.layers.breathing) {
+      this.drawBreathingOverlay(ctx, dimensions, breathingMult);
+    }
+  }
+
+  /**
+   * Draw breathing overlay - a subtle warm color wash that pulses
+   */
+  private drawBreathingOverlay(
+    ctx: CanvasRenderingContext2D,
+    dimensions: Dimensions,
+    breathingMult: number
+  ): void {
+    // Only apply overlay when breathing is "inhaling" (above baseline)
+    const breathIntensity = Math.max(0, (breathingMult - 1) * 2); // 0 to 0.6
+
+    if (breathIntensity > 0.01) {
+      // Warm amber overlay from bottom
+      const gradient = ctx.createLinearGradient(0, dimensions.height, 0, 0);
+      gradient.addColorStop(0, `rgba(255, 120, 40, ${breathIntensity * 0.15})`);
+      gradient.addColorStop(0.4, `rgba(255, 80, 20, ${breathIntensity * 0.08})`);
+      gradient.addColorStop(1, `rgba(0, 0, 0, 0)`);
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+    }
+  }
+
+  /**
+   * Draw a warm radial glow emanating from bottom center
+   */
+  private drawBottomGlow(
+    ctx: CanvasRenderingContext2D,
+    dimensions: Dimensions,
+    breathingMult: number
+  ): void {
+    const centerX = dimensions.width / 2;
+    const centerY = dimensions.height + dimensions.height * 0.1; // Below screen
+    const radius = Math.max(dimensions.width, dimensions.height) * 0.8;
+
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+
+    // Warm amber glow with breathing intensity
+    const baseOpacity = 0.25 * breathingMult;
+    gradient.addColorStop(0, `rgba(255, 140, 50, ${baseOpacity})`);
+    gradient.addColorStop(0.3, `rgba(255, 100, 30, ${baseOpacity * 0.6})`);
+    gradient.addColorStop(0.6, `rgba(200, 60, 20, ${baseOpacity * 0.3})`);
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+  }
+
+  /**
+   * Draw a vignette effect (darkens edges)
+   */
+  private drawVignette(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
+    const centerX = dimensions.width / 2;
+    const centerY = dimensions.height / 2;
+    const radius = Math.max(dimensions.width, dimensions.height) * 0.7;
+
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+
+    // Transparent center, dark edges
+    gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(0.5, "rgba(0, 0, 0, 0)");
+    gradient.addColorStop(0.8, "rgba(0, 0, 0, 0.3)");
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0.6)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
   }
 
   public setQuality(quality: QualityLevel): void {
     this.quality = quality;
-    if (this.isInitialized && this.embers.length > 0) {
-      const dimensions = {
-        width: this.embers[0]?.x || 1920,
-        height: this.embers[0]?.y || 1080,
-      };
-      this.embers = this.emberSystem.setQuality(
-        this.embers,
-        dimensions,
-        quality
+
+    const config = EMBER_GLOW_QUALITY_CONFIGS[quality];
+    const densityMult = DENSITY_MULTIPLIERS[this.densityPreset];
+    const heatConfig = HEAT_INTENSITY_CONFIGS[this.heatIntensity];
+
+    // Update flicker settings
+    EmberSystem.setFlicker(config.flickerEnabled, config.flickerSpeed);
+
+    // Update particle counts
+    if (this.isInitialized) {
+      EmberSystem.setCount(this.dimensions, config.emberCount);
+      SmokeSystem.setCount(
+        this.dimensions,
+        Math.floor(config.smokeCount * densityMult)
+      );
+      SparkSystem.setCount(
+        this.dimensions,
+        Math.floor(config.sparkCount * densityMult),
+        heatConfig.sparkBonus
       );
     }
   }
 
-  public setAccessibility(_settings: {
+  public setAccessibility(settings: {
     reducedMotion: boolean;
     highContrast: boolean;
   }): void {
-    // Could implement motion reduction or contrast adjustments
+    if (settings.reducedMotion) {
+      // Slow all animations significantly
+      this.motionMultiplier = 0.2;
+
+      // Reduce spark trail length for reduced motion
+      SparkSystem.setTrailConfig(4, 0.7);
+    } else {
+      this.motionMultiplier = 1.0;
+
+      // Full trail length when motion is allowed
+      SparkSystem.setTrailConfig(10, 0.85);
+    }
+
+    // Pass to all subsystems
+    EmberSystem.setMotionMultiplier(this.motionMultiplier);
+    SmokeSystem.setMotionMultiplier(this.motionMultiplier);
+    SparkSystem.setMotionMultiplier(this.motionMultiplier);
   }
 
-  public handleResize(
-    oldDimensions: Dimensions,
-    newDimensions: Dimensions
-  ): void {
-    if (this.isInitialized) {
-      this.embers = this.emberSystem.adjustToResize(
-        this.embers,
-        oldDimensions,
-        newDimensions,
-        this.quality
-      );
-    }
+  public handleResize(oldDimensions: Dimensions, newDimensions: Dimensions): void {
+    if (!this.isInitialized) return;
+
+    this.dimensions = newDimensions;
+
+    EmberSystem.handleResize(oldDimensions, newDimensions);
+    // Smoke and sparks don't need resize handling - they respawn naturally
   }
 
   public cleanup(): void {
-    this.embers = [];
+    EmberSystem.cleanup();
+    SmokeSystem.cleanup();
+    SparkSystem.cleanup();
     this.isInitialized = false;
   }
 
@@ -133,21 +307,82 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
    */
   public setLayerVisibility(layers: Partial<EmberGlowLayers>): void {
     this.layers = { ...this.layers, ...layers };
+
+    // Wire up sparkTrails to SparkSystem
+    if (layers.sparkTrails !== undefined) {
+      SparkSystem.setTrailsEnabled(layers.sparkTrails);
+    }
   }
 
   /**
    * Get current scene statistics
    */
-  public getStats(): { embers: number } {
+  public getStats(): EmberGlowStats {
     return {
-      embers: this.embers.length,
+      embers: EmberSystem.getCount(),
+      smoke: SmokeSystem.getCount(),
+      sparks: SparkSystem.getCount(),
+      heatIntensity: this.heatIntensity,
+      densityPreset: this.densityPreset,
     };
   }
 
   /**
    * Set heat intensity level
+   * Affects ember colors, speed, glow, and spark bonus
    */
   public setHeatIntensity(intensity: HeatIntensity): void {
     this.heatIntensity = intensity;
+
+    // Update ember system
+    EmberSystem.setHeatIntensity(intensity);
+
+    // Update spark count with heat bonus
+    if (this.isInitialized) {
+      const config = EMBER_GLOW_QUALITY_CONFIGS[this.quality];
+      const densityMult = DENSITY_MULTIPLIERS[this.densityPreset];
+      const heatConfig = HEAT_INTENSITY_CONFIGS[intensity];
+
+      SparkSystem.setCount(
+        this.dimensions,
+        Math.floor(config.sparkCount * densityMult),
+        heatConfig.sparkBonus
+      );
+
+      // Reinitialize embers to apply new heat colors
+      EmberSystem.initialize(
+        this.dimensions,
+        Math.floor(config.emberCount * densityMult)
+      );
+    }
+  }
+
+  /**
+   * Set density preset
+   * Multiplies all particle counts
+   */
+  public setDensityPreset(preset: DensityPreset): void {
+    this.densityPreset = preset;
+    const densityMult = DENSITY_MULTIPLIERS[preset];
+
+    // Update density multiplier in ember system
+    EmberSystem.setDensityMultiplier(densityMult);
+
+    if (this.isInitialized) {
+      const config = EMBER_GLOW_QUALITY_CONFIGS[this.quality];
+      const heatConfig = HEAT_INTENSITY_CONFIGS[this.heatIntensity];
+
+      // Reinitialize all systems with new density
+      EmberSystem.initialize(this.dimensions, config.emberCount);
+      SmokeSystem.setCount(
+        this.dimensions,
+        Math.floor(config.smokeCount * densityMult)
+      );
+      SparkSystem.setCount(
+        this.dimensions,
+        Math.floor(config.sparkCount * densityMult),
+        heatConfig.sparkBonus
+      );
+    }
   }
 }

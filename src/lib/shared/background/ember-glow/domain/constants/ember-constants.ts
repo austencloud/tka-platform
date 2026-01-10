@@ -101,3 +101,163 @@ export const EMBER_BACKGROUND_GRADIENT = [
   { position: 0.6, color: "#4a1f1a" }, // Dark amber
   { position: 1, color: "#3d1814" }, // Dark rust
 ] as const;
+
+// ============================================================================
+// Heat Intensity Configuration
+// ============================================================================
+
+export type HeatIntensity = "smolder" | "warm" | "hot" | "blazing";
+
+/** Heat intensity affects color warmth, speed, and glow */
+export const HEAT_INTENSITY_CONFIGS: Record<
+  HeatIntensity,
+  {
+    speedMultiplier: number;
+    glowMultiplier: number;
+    colorShift: number; // 0 = cooler (more red), 1 = hotter (more yellow/white)
+    sparkBonus: number; // Additional spark multiplier
+  }
+> = {
+  smolder: {
+    speedMultiplier: 0.6,
+    glowMultiplier: 0.7,
+    colorShift: 0,
+    sparkBonus: 0,
+  },
+  warm: {
+    speedMultiplier: 1.0,
+    glowMultiplier: 1.0,
+    colorShift: 0.3,
+    sparkBonus: 0,
+  },
+  hot: {
+    speedMultiplier: 1.3,
+    glowMultiplier: 1.3,
+    colorShift: 0.6,
+    sparkBonus: 0.5,
+  },
+  blazing: {
+    speedMultiplier: 1.6,
+    glowMultiplier: 1.6,
+    colorShift: 1.0,
+    sparkBonus: 1.0,
+  },
+};
+
+// ============================================================================
+// Density Presets
+// ============================================================================
+
+export type DensityPreset = "sparse" | "normal" | "dense" | "inferno";
+
+/** Density multipliers for particle counts */
+export const DENSITY_MULTIPLIERS: Record<DensityPreset, number> = {
+  sparse: 0.5,
+  normal: 1.0,
+  dense: 1.5,
+  inferno: 2.0,
+};
+
+// ============================================================================
+// Full Quality Configuration (like Pride background)
+// ============================================================================
+
+import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+
+export interface EmberGlowQualityConfig {
+  emberCount: number;
+  smokeCount: number;
+  sparkCount: number;
+  glowIntensity: number;
+  flickerEnabled: boolean;
+  flickerSpeed: number;
+}
+
+export const EMBER_GLOW_QUALITY_CONFIGS: Record<QualityLevel, EmberGlowQualityConfig> = {
+  high: {
+    emberCount: 200,
+    smokeCount: 30,
+    sparkCount: 40,
+    glowIntensity: 1.2,
+    flickerEnabled: true,
+    flickerSpeed: 0.08,
+  },
+  medium: {
+    emberCount: 140,
+    smokeCount: 20,
+    sparkCount: 25,
+    glowIntensity: 1.0,
+    flickerEnabled: true,
+    flickerSpeed: 0.06,
+  },
+  low: {
+    emberCount: 80,
+    smokeCount: 10,
+    sparkCount: 15,
+    glowIntensity: 0.8,
+    flickerEnabled: true,
+    flickerSpeed: 0.04,
+  },
+  minimal: {
+    emberCount: 40,
+    smokeCount: 5,
+    sparkCount: 0,
+    glowIntensity: 0.6,
+    flickerEnabled: false,
+    flickerSpeed: 0,
+  },
+  "ultra-minimal": {
+    emberCount: 20,
+    smokeCount: 0,
+    sparkCount: 0,
+    glowIntensity: 0.4,
+    flickerEnabled: false,
+    flickerSpeed: 0,
+  },
+};
+
+// ============================================================================
+// Smoke Particle Configuration
+// ============================================================================
+
+export const SMOKE_CONFIG = {
+  /** Size range for smoke particles */
+  SIZE_MIN: 8,
+  SIZE_RANGE: 12,
+  /** Opacity range (low for wispy effect) */
+  OPACITY_MIN: 0.08,
+  OPACITY_RANGE: 0.12,
+  /** Rise speed (slower than embers) */
+  SPEED_BASE: 0.1,
+  SPEED_RANGE: 0.15,
+  /** Horizontal drift */
+  DRIFT_AMPLITUDE: 0.2,
+  /** Color range (dark grays) */
+  COLOR_MIN: 30,
+  COLOR_MAX: 60,
+} as const;
+
+// ============================================================================
+// Spark Particle Configuration
+// ============================================================================
+
+export const SPARK_CONFIG = {
+  /** Size range for sparks (small) */
+  SIZE_MIN: 1,
+  SIZE_RANGE: 1.5,
+  /** Opacity (bright) */
+  OPACITY_MIN: 0.8,
+  OPACITY_RANGE: 0.2,
+  /** Rise speed (faster than embers) */
+  SPEED_BASE: 1.5,
+  SPEED_RANGE: 1.0,
+  /** Lifetime in frames (short-lived) */
+  LIFETIME_MIN: 30,
+  LIFETIME_RANGE: 40,
+  /** Color: bright yellow to white */
+  COLOR_R: 255,
+  COLOR_G_MIN: 220,
+  COLOR_G_MAX: 255,
+  COLOR_B_MIN: 150,
+  COLOR_B_MAX: 220,
+} as const;
