@@ -18,10 +18,10 @@
   // Preview components
   import SnowfallPreview from "./previews/SnowfallPreview.svelte";
   import NightSkyPreview from "./previews/NightSkyPreview.svelte";
-  import AuroraPreview from "./previews/AuroraPreview.svelte";
+  import PridePreview from "./previews/PridePreview.svelte";
   import DeepOceanPreview from "./previews/DeepOceanPreview.svelte";
   import EmberGlowPreview from "./previews/EmberGlowPreview.svelte";
-  import SakuraDriftPreview from "./previews/SakuraDriftPreview.svelte";
+  import CherryBlossomPreview from "./previews/CherryBlossomPreview.svelte";
   import FireflyForestPreview from "./previews/FireflyForestPreview.svelte";
   import AutumnDriftPreview from "./previews/AutumnDriftPreview.svelte";
   import StaticGradientPreview from "./previews/StaticGradientPreview.svelte";
@@ -62,10 +62,10 @@
   const previewComponents = {
     [BackgroundType.SNOWFALL]: SnowfallPreview,
     [BackgroundType.NIGHT_SKY]: NightSkyPreview,
-    [BackgroundType.AURORA]: AuroraPreview,
+    [BackgroundType.PRIDE]: PridePreview,
     [BackgroundType.DEEP_OCEAN]: DeepOceanPreview,
     [BackgroundType.EMBER_GLOW]: EmberGlowPreview,
-    [BackgroundType.SAKURA_DRIFT]: SakuraDriftPreview,
+    [BackgroundType.SAKURA_DRIFT]: CherryBlossomPreview,
     [BackgroundType.FIREFLY_FOREST]: FireflyForestPreview,
     [BackgroundType.AUTUMN_DRIFT]: AutumnDriftPreview,
   } as const;

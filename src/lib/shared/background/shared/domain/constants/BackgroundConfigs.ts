@@ -33,15 +33,15 @@ export const SnowfallConfig = {
       "#e6f2ff", // Gentle sky
       "#fff8e7", // Warm white
     ],
-    minSize: 1.5,
-    maxSize: 3.5,
-    minSpeed: 0.6,
-    maxSpeed: 1.2,
+    minSize: 3,
+    maxSize: 5,
+    minSpeed: 0.012, // Graceful arc across sky (~1-1.5 seconds)
+    maxSpeed: 0.02,
     minInterval: 8000,
     maxInterval: 20000,
     tailLength: {
-      min: 15,
-      max: 30,
+      min: 50,
+      max: 100,
     },
   },
 };

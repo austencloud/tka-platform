@@ -41,7 +41,7 @@ import { setThemeMode } from "$lib/shared/theme/state/theme-mode-state.svelte";
  * - Middle/later colors are extracted as accent for buttons and interactive elements
  */
 export const BACKGROUND_THEME_COLORS: Record<BackgroundType, string[]> = {
-  [BackgroundType.AURORA]: ["#064e3b", "#0d9488", "#06b6d4", "#a855f7"],
+  [BackgroundType.PRIDE]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
   [BackgroundType.SNOWFALL]: ["#1e3a5f", "#3b82f6", "#93c5fd"],
   [BackgroundType.NIGHT_SKY]: ["#1e1b4b", "#4338ca", "#818cf8"],
   [BackgroundType.DEEP_OCEAN]: ["#0c4a6e", "#0891b2", "#22d3ee"],
@@ -483,6 +483,30 @@ export function applyThemeFromColors(
   root.style.setProperty("--prop-red-border", "rgba(237, 28, 36, 0.4)");
   root.style.setProperty("--prop-red-text", "#f87171");
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SCROLLBAR THEME VARIABLES
+  // Adapt based on background luminance for consistent scrollbar styling.
+  // ═══════════════════════════════════════════════════════════════════════════
+  root.style.setProperty(
+    "--scrollbar-thumb",
+    mode === "light" ? "rgba(15, 23, 42, 0.25)" : "rgba(255, 255, 255, 0.2)"
+  );
+  root.style.setProperty(
+    "--scrollbar-thumb-hover",
+    mode === "light" ? "rgba(15, 23, 42, 0.4)" : "rgba(255, 255, 255, 0.35)"
+  );
+  root.style.setProperty(
+    "--scrollbar-track",
+    mode === "light" ? "rgba(15, 23, 42, 0.05)" : "transparent"
+  );
+  root.style.setProperty(
+    "--scrollbar-accent",
+    `color-mix(in srgb, ${matteTheme.accent} 30%, transparent)`
+  );
+  root.style.setProperty(
+    "--scrollbar-accent-hover",
+    `color-mix(in srgb, ${matteTheme.accent} 50%, transparent)`
+  );
 }
 
 /**

@@ -10,12 +10,12 @@ import { BackgroundType } from "./domain/enums/background-enums";
 
 // Background animation mapping - same as app.html
 const BACKGROUND_ANIMATIONS: Record<BackgroundType, string> = {
-  aurora: "aurora-flow",
+  pride: "rainbow-flow",
   snowfall: "snow-fall",
   nightSky: "star-twinkle",
   deepOcean: "deep-ocean-flow",
   emberGlow: "ember-glow",
-  sakuraDrift: "sakura-drift",
+  sakuraDrift: "cherry-blossom",
   fireflyForest: "firefly-forest",
   autumnDrift: "autumn-drift",
   solidColor: "", // No animation for solid colors
@@ -57,7 +57,7 @@ function applyBackground(newGradient: string, newAnimation: string): void {
     "star-twinkle",
     "deep-ocean-flow",
     "ember-glow",
-    "sakura-drift"
+    "cherry-blossom"
   );
   if (newAnimation) {
     body.classList.add(newAnimation);

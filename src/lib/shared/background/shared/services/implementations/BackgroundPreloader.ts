@@ -7,12 +7,12 @@ let isTransitioning = false;
 
 // Background animation mapping - same as app.html
 const BACKGROUND_ANIMATIONS: Record<BackgroundType, string> = {
-  aurora: "aurora-flow",
+  pride: "rainbow-flow",
   snowfall: "snow-fall",
   nightSky: "star-twinkle",
   deepOcean: "deep-ocean-flow",
   emberGlow: "ember-glow",
-  sakuraDrift: "sakura-drift",
+  sakuraDrift: "cherry-blossom",
   fireflyForest: "firefly-forest",
   autumnDrift: "autumn-drift",
   solidColor: "", // No animation for solid colors
@@ -57,7 +57,7 @@ export class BackgroundPreLoader implements IBackgroundPreloader {
         "star-twinkle",
         "deep-ocean-flow",
         "ember-glow",
-        "sakura-drift",
+        "cherry-blossom",
         "firefly-forest",
         "autumn-drift"
       );

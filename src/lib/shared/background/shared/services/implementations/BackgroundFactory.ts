@@ -31,7 +31,7 @@ function _detectAppropriateQuality(): QualityLevel {
 
 // Lazy loaders for background systems
 const backgroundLoaders = {
-  aurora: () => import("../../../aurora/services/AuroraBackgroundSystem"),
+  pride: () => import("../../../rainbow/services/RainbowBackgroundSystem"),
   snowfall: () => import("../../../snowfall/services/SnowfallBackgroundSystem"),
   nightSky: () =>
     import("../../../night-sky/services/NightSkyBackgroundSystem"),
@@ -39,8 +39,8 @@ const backgroundLoaders = {
     import("../../../deep-ocean/services/DeepOceanBackgroundOrchestrator"),
   emberGlow: () =>
     import("../../../ember-glow/services/EmberGlowBackgroundSystem"),
-  sakuraDrift: () =>
-    import("../../../sakura-drift/services/SakuraDriftBackgroundSystem"),
+  cherryBlossom: () =>
+    import("../../../cherry-blossom/services/CherryBlossomBackgroundSystem"),
   fireflyForest: () =>
     import("../../../firefly-forest/services/FireflyForestBackgroundSystem"),
   autumnDrift: () =>
@@ -123,9 +123,9 @@ export class BackgroundFactory {
 
     // Switch statement for background types - now with lazy loading
     switch (options.type) {
-      case BackgroundType.AURORA: {
-        const { AuroraBackgroundSystem } = await backgroundLoaders.aurora();
-        backgroundSystem = new AuroraBackgroundSystem();
+      case BackgroundType.PRIDE: {
+        const { RainbowBackgroundSystem } = await backgroundLoaders.pride();
+        backgroundSystem = new RainbowBackgroundSystem();
         break;
       }
       case BackgroundType.SNOWFALL: {
@@ -173,9 +173,9 @@ export class BackgroundFactory {
         break;
       }
       case BackgroundType.SAKURA_DRIFT: {
-        const { SakuraDriftBackgroundSystem } =
-          await backgroundLoaders.sakuraDrift();
-        backgroundSystem = new SakuraDriftBackgroundSystem();
+        const { CherryBlossomBackgroundSystem } =
+          await backgroundLoaders.cherryBlossom();
+        backgroundSystem = new CherryBlossomBackgroundSystem();
         break;
       }
       case BackgroundType.FIREFLY_FOREST: {
@@ -209,10 +209,10 @@ export class BackgroundFactory {
       }
       default: {
         console.warn(
-          `Background type "${String(options.type)}" not implemented. Defaulting to Aurora.`
+          `Background type "${String(options.type)}" not implemented. Defaulting to Pride.`
         );
-        const { AuroraBackgroundSystem } = await backgroundLoaders.aurora();
-        backgroundSystem = new AuroraBackgroundSystem();
+        const { RainbowBackgroundSystem } = await backgroundLoaders.pride();
+        backgroundSystem = new RainbowBackgroundSystem();
       }
     }
 
@@ -251,7 +251,7 @@ export class BackgroundFactory {
     switch (type) {
       case BackgroundType.SNOWFALL:
       case BackgroundType.NIGHT_SKY:
-      case BackgroundType.AURORA:
+      case BackgroundType.PRIDE:
       case BackgroundType.DEEP_OCEAN:
       case BackgroundType.EMBER_GLOW:
       case BackgroundType.SAKURA_DRIFT:
@@ -267,7 +267,7 @@ export class BackgroundFactory {
     return [
       BackgroundType.NIGHT_SKY,
       BackgroundType.SNOWFALL,
-      BackgroundType.AURORA,
+      BackgroundType.PRIDE,
       BackgroundType.DEEP_OCEAN,
       BackgroundType.EMBER_GLOW,
       BackgroundType.SAKURA_DRIFT,

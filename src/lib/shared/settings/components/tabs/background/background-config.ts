@@ -21,12 +21,12 @@ export interface BackgroundMetadata {
  */
 export const backgroundsConfig: BackgroundMetadata[] = [
   {
-    type: BackgroundType.AURORA,
-    name: "Aurora",
-    description: "Colorful flowing aurora with lens flare",
-    icon: '<i class="fas fa-star"></i>',
-    // Aurora: greens, cyans, and magentas
-    themeColors: ["#064e3b", "#0d9488", "#06b6d4", "#a855f7"],
+    type: BackgroundType.PRIDE,
+    name: "Pride",
+    description: "Pride celebration with flowing rainbow waves",
+    icon: '<i class="fas fa-rainbow"></i>',
+    // Pride: pride flag spectrum (darkened for daily use)
+    themeColors: ["#8b1c1c", "#8b4513", "#6b6b00", "#004d1a", "#1a2d5c", "#4a1a5c"],
   },
   {
     type: BackgroundType.SNOWFALL,

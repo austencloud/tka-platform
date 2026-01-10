@@ -8,6 +8,7 @@
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import type { BackgroundType } from "../../background/shared/domain/enums/background-enums";
+import type { BackgroundLabSettings } from "$lib/features/background-builder/domain/lab-settings-types";
 
 /**
  * Prop Preset - A saved prop configuration for quick switching
@@ -50,6 +51,9 @@ export interface AppSettings {
   backgroundColor?: string; // For solid color backgrounds
   gradientColors?: string[]; // For gradient backgrounds (2-4 colors)
   gradientDirection?: number; // Gradient angle in degrees (0-360)
+
+  // Background Builder lab settings (persisted toggle states)
+  backgroundLabSettings?: BackgroundLabSettings;
 
   // Accessibility & User Experience settings
   hapticFeedback?: boolean;

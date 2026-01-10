@@ -3,7 +3,7 @@ export enum BackgroundType {
   // Animated backgrounds
   SNOWFALL = "snowfall",
   NIGHT_SKY = "nightSky",
-  AURORA = "aurora",
+  PRIDE = "pride",
   DEEP_OCEAN = "deepOcean",
   EMBER_GLOW = "emberGlow",
   SAKURA_DRIFT = "sakuraDrift",
