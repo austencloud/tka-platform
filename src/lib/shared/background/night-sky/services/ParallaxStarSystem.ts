@@ -592,6 +592,16 @@ export class ParallaxStarSystem {
     return this.layers.near.stars;
   }
 
+  /**
+   * Get all stars from all layers (for UFO scanning)
+   * Returns combined array with near and mid stars (brighter, better scan targets)
+   */
+  getAllBrightStars(): Star[] {
+    // Combine mid and near stars - these are the brighter ones worth scanning
+    // Far stars are too dim/small to be interesting scan targets
+    return [...this.layers.near.stars, ...this.layers.mid.stars];
+  }
+
   cleanup() {
     this.layers = {
       far: { stars: [], driftX: 0, driftY: 0 },

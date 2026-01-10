@@ -145,23 +145,79 @@ export const NightSkyConfig = {
     colors: ["#ffffff", "#ffff99", "#99ccff", "#ffcc99"],
     tailLength: 15,
   },
-  spaceship: {
-    size: 12,
-    speed: 1.5,
-    color: "#silver",
-    blinkInterval: 2000,
-    enabled: false, // Easter egg
-    speedPercent: 0.001,
-    enabledOnQuality: ["high"] as ("high" | "medium" | "low" | "minimal")[],
+  ufo: {
+    // Appearance
+    size: 28,
+    colors: {
+      hull: "#b8c4e0",
+      hullDark: "#6878a0",
+      dome: "rgba(200, 220, 255, 0.6)",
+      domeHighlight: "rgba(255, 255, 255, 0.8)",
+      shield: "rgba(100, 180, 255, 0.12)",
+      beam: "#fbbf24",
+      beamGlow: "rgba(251, 191, 36, 0.3)",
+      lights: ["#ff6b6b", "#4ecdc4", "#ffe66d", "#95e1d3", "#a78bfa", "#f472b6"],
+    },
+    // Movement - curious explorer, moves in gentle curves
+    speed: 0.0006, // Gentle cruising speed
+    bounceMargin: 0.1, // Stay 10% away from edges
+    // Curved exploration - alien moves in gentle arcs, not straight lines
+    turnSpeed: 0.003, // How fast it changes direction (creates curves)
+    turnVariation: 0.5, // Random variation in turn rate
+    // Timing (in frames at 60fps)
+    interval: 36000, // ~10 minutes between automatic appearances
+    enterDuration: 120, // 2 seconds fade in
+    exitDuration: 90, // 1.5 second fade out
+    minActiveDuration: 2400, // Stay at least 40 seconds
+    maxActiveDuration: 4200, // Stay at most 70 seconds
+    // Behavior - explorer that occasionally pauses
+    pauseChance: 0.004, // Pauses occasionally, not constantly
+    pauseDuration: { min: 90, max: 180 }, // 1.5-3 seconds pause (brief looks around)
+    // Movement style
+    driftChance: 0.15, // Only 15% chance to drift lazily
+    driftSpeedMultiplier: 0.4, // When drifting, still moves noticeably
+    // Beam behavior (when paused) - curious scanning
+    scanStarChance: 0.6, // 60% chance to scan nearby star
+    groundScanChance: 0.25, // 25% chance to scan ground
+    justVibeChance: 0.15, // 15% chance to just hover (reduced)
+    scanDuration: { min: 90, max: 180 }, // 1.5-3 seconds scan
+    beamChargeFrames: 25, // Moderate beam charge
+    // Animation speeds
+    shieldPulseSpeed: 0.012,
+    lightChaseSpeed: 0.05,
+    hoverBobSpeed: 0.015,
+    hoverBobAmount: 4,
+    // Mood system
+    mood: {
+      // Decay times (frames at 60fps) - how long until mood returns to curious
+      excitedDecay: 360, // 6 seconds
+      startledDecay: 180, // 3 seconds
+      playfulDecay: 480, // 8 seconds
+      boredThreshold: 300, // 5 seconds without interest → bored
+      // Tiredness accumulation
+      tirednessRate: 0.0002, // Accumulates per frame
+      tiredThreshold: 0.6, // When tiredness > this, enters tired mood
+      // Visual modifiers per mood
+      moodVisuals: {
+        curious: { lightSpeed: 1.0, bobDepth: 1.0, shieldBrightness: 1.0 },
+        excited: { lightSpeed: 1.8, bobDepth: 0.7, shieldBrightness: 1.4 },
+        bored: { lightSpeed: 0.5, bobDepth: 1.5, shieldBrightness: 0.7 },
+        startled: { lightSpeed: 2.5, bobDepth: 0.5, shieldBrightness: 1.8 },
+        playful: { lightSpeed: 1.5, bobDepth: 1.2, shieldBrightness: 1.2 },
+        tired: { lightSpeed: 0.3, bobDepth: 2.0, shieldBrightness: 0.5 },
+      },
+    },
+    // Quality gating
+    enabledOnQuality: ["high", "medium"] as ("high" | "medium" | "low" | "minimal")[],
   },
   comet: {
     size: 8,
     speed: 0.8,
     tailLength: 30,
     color: "#87ceeb",
-    enabled: false, // Easter egg
-    interval: 45000,
-    enabledOnQuality: ["high"] as ("high" | "medium" | "low" | "minimal")[],
+    // interval in frames: ~9000 frames at 60fps = ~2.5 minutes between comets
+    interval: 9000,
+    enabledOnQuality: ["high", "medium"] as ("high" | "medium" | "low" | "minimal")[],
   },
   milkyWay: {
     // Band dimensions

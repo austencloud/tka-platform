@@ -176,6 +176,12 @@ export class CometSystem {
     const arcOffset = Math.sin(t * Math.PI) * arcHeight;
     c.y = baseY - arcOffset;
 
+    // Calculate instantaneous velocity direction for tail orientation
+    // Derivatives: dx/dt = (endX - startX), dy/dt = (endY - startY) - cos(t*PI)*PI*arcHeight
+    const vx = c.endX - c.startX;
+    const vy = (c.endY - c.startY) - Math.cos(t * Math.PI) * Math.PI * arcHeight;
+    c.angle = Math.atan2(vy, vx);
+
     // Update animation phases
     c.comaPhase += 0.05 * speedMultiplier;
     c.ionTailPhase += 0.08 * speedMultiplier;
@@ -195,11 +201,16 @@ export class CometSystem {
   }
 
   private spawnDebris(comet: Comet): void {
+    // Debris trails behind - opposite to direction of travel
+    const tailAngle = comet.angle + Math.PI;
+    const speed = 0.2 + Math.random() * 0.3;
+    const spread = (Math.random() - 0.5) * 0.4;
+
     const particle: DebrisParticle = {
       x: comet.x + (Math.random() - 0.5) * comet.size,
       y: comet.y + (Math.random() - 0.5) * comet.size,
-      vx: -comet.direction * (0.2 + Math.random() * 0.3),
-      vy: (Math.random() - 0.5) * 0.2,
+      vx: Math.cos(tailAngle + spread) * speed,
+      vy: Math.sin(tailAngle + spread) * speed,
       size: 1 + Math.random() * 2,
       opacity: 0.6 + Math.random() * 0.4,
       age: 0,
@@ -272,7 +283,8 @@ export class CometSystem {
   }
 
   /**
-   * Draw the curved dust tail (like jellyfish tentacles)
+   * Draw the curved dust tail trailing behind the comet
+   * Uses a teardrop shape that wraps around the back of the nucleus
    */
   private drawDustTail(
     ctx: CanvasRenderingContext2D,
@@ -282,59 +294,81 @@ export class CometSystem {
     const tailLength = this.config.tailLength * 3;
     const segments = 20;
 
-    // Dust tail curves based on orbital mechanics
+    // Tail direction is opposite to movement (trails behind)
+    const tailAngle = comet.angle + Math.PI;
+    const perpAngle = tailAngle + Math.PI / 2;
+
+    // Nucleus radius - tail wraps around this
+    const nucleusRadius = comet.size * 0.8;
+
     ctx.globalAlpha = baseAlpha * 0.4;
 
     for (let layer = 0; layer < 3; layer++) {
       const layerOffset = layer * 0.3;
-      const layerWidth = comet.size * (1.5 - layer * 0.3);
+      const maxWidth = comet.size * (1.5 - layer * 0.3);
+      const layerRadius = nucleusRadius * (1 + layer * 0.2);
 
       ctx.beginPath();
 
+      // Start with an arc wrapping around the back of the comet
+      // Arc from one side of the comet, around the back, to the other side
+      const arcStart = tailAngle - Math.PI * 0.4; // Start 72° from tail direction
+      const arcEnd = tailAngle + Math.PI * 0.4;   // End 72° on other side
+
+      // Draw arc around back of comet (this connects to the circular head)
+      ctx.arc(comet.x, comet.y, layerRadius, arcStart, arcEnd, false);
+
+      // Width at arc endpoints - this is the starting width for the tail
+      // Must match the arc so there's no discontinuity
+      const arcSpread = Math.sin(Math.PI * 0.4) * layerRadius;
+
+      // Continue into the tail from the arc endpoint - one side
       for (let i = 0; i <= segments; i++) {
         const t = i / segments;
+        const dist = layerRadius + t * tailLength * (1 + layerOffset * 0.2);
 
-        // Base position along tail
-        const tailX =
-          comet.x - comet.direction * t * tailLength * (1 + layerOffset * 0.2);
+        const baseX = comet.x + Math.cos(tailAngle) * dist;
+        const baseY = comet.y + Math.sin(tailAngle) * dist;
 
-        // Curved tail - bends based on orbital path
-        const curve = Math.sin(t * Math.PI * 0.5) * tailLength * 0.3;
-        const wave =
-          Math.sin(comet.dustTailPhase + t * Math.PI * 2) * comet.size * 0.3;
-        const tailY = comet.y + curve + wave;
+        // Wave effect (subtle)
+        const wave = Math.sin(comet.dustTailPhase + t * Math.PI * 2) * comet.size * 0.2;
 
-        // Tapering width
-        const width = layerWidth * (1 - t * 0.8);
+        // Width: starts at arc spread, tapers to nothing - NEVER gets wider
+        const width = arcSpread * (1 - t * 0.95);
 
-        if (i === 0) {
-          ctx.moveTo(tailX, tailY - width);
-        } else {
-          ctx.lineTo(tailX, tailY - width);
-        }
+        const tailX = baseX + Math.cos(perpAngle) * (wave + width);
+        const tailY = baseY + Math.sin(perpAngle) * (wave + width);
+
+        ctx.lineTo(tailX, tailY);
       }
 
-      // Return path on bottom
+      // Return on other side
       for (let i = segments; i >= 0; i--) {
         const t = i / segments;
-        const tailX =
-          comet.x - comet.direction * t * tailLength * (1 + layerOffset * 0.2);
-        const curve = Math.sin(t * Math.PI * 0.5) * tailLength * 0.3;
-        const wave =
-          Math.sin(comet.dustTailPhase + t * Math.PI * 2) * comet.size * 0.3;
-        const tailY = comet.y + curve + wave;
-        const width = layerWidth * (1 - t * 0.8);
-        ctx.lineTo(tailX, tailY + width);
+        const dist = layerRadius + t * tailLength * (1 + layerOffset * 0.2);
+
+        const baseX = comet.x + Math.cos(tailAngle) * dist;
+        const baseY = comet.y + Math.sin(tailAngle) * dist;
+
+        const wave = Math.sin(comet.dustTailPhase + t * Math.PI * 2) * comet.size * 0.2;
+        const width = arcSpread * (1 - t * 0.95);
+
+        const tailX = baseX + Math.cos(perpAngle) * (wave - width);
+        const tailY = baseY + Math.sin(perpAngle) * (wave - width);
+
+        ctx.lineTo(tailX, tailY);
       }
 
       ctx.closePath();
 
       // Gradient fill - warm colors for dust tail
+      const tailEndX = comet.x + Math.cos(tailAngle) * tailLength;
+      const tailEndY = comet.y + Math.sin(tailAngle) * tailLength;
       const gradient = ctx.createLinearGradient(
         comet.x,
         comet.y,
-        comet.x - comet.direction * tailLength,
-        comet.y
+        tailEndX,
+        tailEndY
       );
       gradient.addColorStop(0, `rgba(255, 250, 220, ${0.6 - layer * 0.15})`);
       gradient.addColorStop(0.3, `rgba(255, 240, 200, ${0.4 - layer * 0.1})`);
@@ -346,7 +380,7 @@ export class CometSystem {
   }
 
   /**
-   * Draw the straight ion tail (pushed by solar wind)
+   * Draw the straight ion tail (trails behind comet)
    */
   private drawIonTail(
     ctx: CanvasRenderingContext2D,
@@ -357,8 +391,8 @@ export class CometSystem {
 
     ctx.globalAlpha = baseAlpha * 0.3;
 
-    // Ion tail is straight, pointing away from "sun" (top of screen)
-    const ionAngle = -Math.PI / 2 + comet.direction * 0.3; // Mostly upward, slightly back
+    // Ion tail trails behind the comet (opposite to direction of travel)
+    const ionAngle = comet.angle + Math.PI;
 
     for (let layer = 0; layer < 2; layer++) {
       const layerWidth = comet.size * (0.8 - layer * 0.2);
@@ -531,5 +565,30 @@ export class CometSystem {
   cleanup(): void {
     this.comet = null;
     this.timer = 0;
+  }
+
+  /**
+   * Manually trigger a comet to appear
+   */
+  trigger(dim: Dimensions): void {
+    // Only spawn if no comet is currently active
+    if (!this.comet) {
+      this.spawnComet(dim);
+      this.timer = 0;
+    }
+  }
+
+  /**
+   * Check if a comet is currently visible
+   */
+  isActive(): boolean {
+    return this.comet !== null;
+  }
+
+  /**
+   * Get comet position for external tracking (e.g., UFO beam targeting)
+   */
+  getPosition(): { x: number; y: number } | null {
+    return this.comet ? { x: this.comet.x, y: this.comet.y } : null;
   }
 }

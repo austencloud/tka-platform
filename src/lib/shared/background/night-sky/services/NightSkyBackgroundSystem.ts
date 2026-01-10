@@ -19,12 +19,11 @@ import { ConstellationSystem } from "./ConstellationSystem";
 import type { INightSkyCalculationService } from "./contracts/INightSkyCalculationService";
 import { MilkyWaySystem } from "./MilkyWaySystem";
 import { MilkyWayParticleSystem } from "./MilkyWayParticleSystem";
-import { MoonSystem } from "./MoonSystem";
 import { NebulaSystem } from "./NebulaSystem";
 import { ProceduralNebulaSystem } from "./ProceduralNebulaSystem";
 import { ParallaxStarSystem } from "./ParallaxStarSystem";
 import { AuroraSystem } from "./AuroraSystem";
-import { SpaceshipSystem } from "./SpaceshipSystem";
+import { UFOSystem } from "./UFOSystem";
 
 // TODO: Fix this - ShootingStarState should be imported from proper location
 interface ShootingStarState {
@@ -52,6 +51,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
   // core state -------------------------------------------------------------
   private quality: QualityLevel = "medium";
   private isInitialized: boolean = false;
+  private lastDimensions: Dimensions = { width: 1920, height: 1080 };
 
   // Services (initialized via factory method)
   private renderingService!: IBackgroundRenderingService;
@@ -64,8 +64,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
   private nebulaSystem!: NebulaSystem;
   private proceduralNebulaSystem!: ProceduralNebulaSystem;
   private constellationSystem!: ConstellationSystem;
-  private moonSystem!: MoonSystem;
-  private spaceshipSystem!: SpaceshipSystem;
+  private ufoSystem!: UFOSystem;
   private cometSystem!: CometSystem;
   private milkyWaySystem!: MilkyWaySystem;
   private milkyWayParticleSystem!: MilkyWayParticleSystem;
@@ -138,14 +137,8 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       instance.calculationService
     );
 
-    instance.moonSystem = new MoonSystem(
-      instance.cfg.Moon,
-      instance.cfg.background.gradientStops,
-      instance.calculationService
-    );
-
-    instance.spaceshipSystem = new SpaceshipSystem(
-      instance.cfg.spaceship,
+    instance.ufoSystem = new UFOSystem(
+      instance.cfg.ufo,
       instance.calculationService
     );
 
@@ -168,6 +161,36 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
 
     instance.shootingStarState = instance.shootingStarSystem.initialState;
 
+    // Wire up UFO's intelligent beam targeting
+    instance.ufoSystem.setStarProvider(() => {
+      // Get bright stars from near and mid layers for scanning targets
+      const brightStars = instance.parallaxStarSystem.getAllBrightStars();
+      return brightStars.map((star) => ({
+        x: star.x,
+        y: star.y,
+        brightness: star.currentOpacity ?? 0.8,
+      }));
+    });
+
+    instance.ufoSystem.setEventProvider(() => {
+      // Check for active meteor
+      if (instance.shootingStarState.star && !instance.shootingStarState.star.offScreen) {
+        return {
+          x: instance.shootingStarState.star.x,
+          y: instance.shootingStarState.star.y,
+          active: true,
+        };
+      }
+      // Check for active comet
+      if (instance.cometSystem.isActive()) {
+        const cometPos = instance.cometSystem.getPosition?.();
+        if (cometPos) {
+          return { x: cometPos.x, y: cometPos.y, active: true };
+        }
+      }
+      return null;
+    });
+
     return instance;
   }
 
@@ -183,13 +206,13 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     this.nebulaSystem.initialize(dim, this.quality);
     this.proceduralNebulaSystem.initialize(dim, this.quality);
     this.auroraSystem.initialize(dim, this.quality);
-    this.moonSystem.initialize(dim, this.quality, this.a11y);
 
     this.isInitialized = true;
   }
 
   /* UPDATE */
   public update(dim: Dimensions, frameMultiplier: number = 1.0) {
+    this.lastDimensions = dim;
     this.milkyWaySystem.update(this.a11y, frameMultiplier);
     this.milkyWayParticleSystem.update(this.a11y, frameMultiplier);
     this.parallaxStarSystem.update(dim, this.a11y, frameMultiplier);
@@ -202,16 +225,24 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       this.a11y,
       frameMultiplier
     );
-    this.moonSystem.update(dim, this.a11y, frameMultiplier);
 
-    if (this.Q.enableShootingStars)
+    // Update meteors (shooting stars)
+    if (this.layerVisibility.meteors && this.Q.enableShootingStars) {
       this.shootingStarState = this.shootingStarSystem.update(
         this.shootingStarState,
         dim
       );
+    }
 
-    this.spaceshipSystem.update(dim, this.a11y, this.quality);
-    this.cometSystem.update(dim, this.a11y, this.quality);
+    // Update UFO (Easter egg)
+    if (this.layerVisibility.ufo) {
+      this.ufoSystem.update(dim, this.a11y, this.quality);
+    }
+
+    // Update comets
+    if (this.layerVisibility.comets) {
+      this.cometSystem.update(dim, this.a11y, this.quality);
+    }
   }
 
   /* DRAW */
@@ -248,16 +279,20 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       // Draw constellations (disabled)
       // this.constellationSystem.draw(ctx, this.a11y);
 
-      // Draw moon
-      if (this.layerVisibility.moon) {
-        this.moonSystem.draw(ctx, this.a11y);
+      // Draw meteors (shooting stars)
+      if (this.layerVisibility.meteors && this.Q.enableShootingStars) {
+        this.shootingStarSystem.draw(this.shootingStarState, ctx);
       }
 
-      if (this.Q.enableShootingStars)
-        this.shootingStarSystem.draw(this.shootingStarState, ctx);
+      // Draw UFO (Easter egg - on top of most elements)
+      if (this.layerVisibility.ufo) {
+        this.ufoSystem.draw(ctx, this.a11y);
+      }
 
-      this.spaceshipSystem.draw(ctx, this.a11y);
-      this.cometSystem.draw(ctx, this.a11y);
+      // Draw comets
+      if (this.layerVisibility.comets) {
+        this.cometSystem.draw(ctx, this.a11y);
+      }
     }
   }
 
@@ -286,15 +321,35 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       this.cfg.constellations,
       this.calculationService
     );
-    this.moonSystem = new MoonSystem(
-      this.cfg.Moon,
-      this.cfg.background.gradientStops,
+    this.ufoSystem = new UFOSystem(
+      this.cfg.ufo,
       this.calculationService
     );
-    this.spaceshipSystem = new SpaceshipSystem(
-      this.cfg.spaceship,
-      this.calculationService
-    );
+    // Re-wire UFO providers after recreation
+    this.ufoSystem.setStarProvider(() => {
+      const brightStars = this.parallaxStarSystem.getAllBrightStars();
+      return brightStars.map((star) => ({
+        x: star.x,
+        y: star.y,
+        brightness: star.currentOpacity ?? 0.8,
+      }));
+    });
+    this.ufoSystem.setEventProvider(() => {
+      if (this.shootingStarState.star && !this.shootingStarState.star.offScreen) {
+        return {
+          x: this.shootingStarState.star.x,
+          y: this.shootingStarState.star.y,
+          active: true,
+        };
+      }
+      if (this.cometSystem.isActive()) {
+        const cometPos = this.cometSystem.getPosition?.();
+        if (cometPos) {
+          return { x: cometPos.x, y: cometPos.y, active: true };
+        }
+      }
+      return null;
+    });
     this.cometSystem = new CometSystem(
       this.cfg.comet,
       this.cfg.stars,
@@ -318,10 +373,12 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
    */
   public setLayerVisibility(layers: {
     stars?: boolean;
-    moon?: boolean;
     nebula?: boolean;
     aurora?: boolean;
     milkyWay?: boolean;
+    meteors?: boolean;
+    comets?: boolean;
+    ufo?: boolean;
   }) {
     if (layers.aurora !== undefined) {
       this.auroraSystem.setActive(layers.aurora);
@@ -330,12 +387,164 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     this.layerVisibility = { ...this.layerVisibility, ...layers };
   }
 
+  /**
+   * Manually trigger a meteor (shooting star) to appear
+   */
+  public triggerMeteor(): void {
+    if (!this.layerVisibility.meteors) return;
+
+    // Force spawn a shooting star by resetting state with a new star
+    const newStar = this.shootingStarSystem.update(
+      { star: null, timer: 999999, interval: 0 },
+      this.lastDimensions
+    );
+    this.shootingStarState = newStar;
+  }
+
+  /**
+   * Manually trigger a comet to appear
+   */
+  public triggerComet(): void {
+    if (!this.layerVisibility.comets) return;
+    this.cometSystem.trigger(this.lastDimensions);
+  }
+
+  /**
+   * Check if a comet is currently visible
+   */
+  public isCometActive(): boolean {
+    return this.cometSystem.isActive();
+  }
+
+  /**
+   * Manually trigger UFO to appear (Easter egg)
+   * Auto-enables UFO layer if not already enabled
+   */
+  public triggerUFO(): void {
+    // Auto-enable the layer when manually triggered
+    if (!this.layerVisibility.ufo) {
+      this.layerVisibility.ufo = true;
+    }
+    this.ufoSystem.trigger(this.lastDimensions);
+  }
+
+  /**
+   * Check if UFO is currently visible
+   */
+  public isUFOActive(): boolean {
+    return this.ufoSystem.isActive();
+  }
+
+  /**
+   * Get current UFO state for UI display
+   */
+  public getUFOState(): string | null {
+    return this.ufoSystem.getState();
+  }
+
+  // UFO Command Methods - for manual control
+  public commandUFOScanStar(): boolean {
+    return this.ufoSystem.commandScanStar();
+  }
+
+  public commandUFOScanGround(): void {
+    this.ufoSystem.commandScanGround();
+  }
+
+  public commandUFOPause(): void {
+    this.ufoSystem.commandPause();
+  }
+
+  public commandUFOWander(): void {
+    this.ufoSystem.commandWander();
+  }
+
+  public commandUFODrift(): void {
+    this.ufoSystem.commandDrift();
+  }
+
+  public commandUFOExit(): void {
+    this.ufoSystem.commandExit();
+  }
+
+  /**
+   * Trigger UFO with specific entrance animation
+   */
+  public triggerUFOWithEntrance(
+    entranceType: import("./UFOSystem").UFOEntranceType
+  ): void {
+    if (!this.layerVisibility.ufo) {
+      this.layerVisibility.ufo = true;
+    }
+    this.ufoSystem.triggerWithEntrance(this.lastDimensions, entranceType);
+  }
+
+  /**
+   * Command UFO to exit with specific animation
+   */
+  public commandUFOExitWith(
+    exitType: import("./UFOSystem").UFOExitType
+  ): void {
+    this.ufoSystem.commandExitWith(exitType);
+  }
+
+  /**
+   * Get available entrance types for UI
+   */
+  public getUFOEntranceTypes(): import("./UFOSystem").UFOEntranceType[] {
+    return this.ufoSystem.getAvailableEntranceTypes();
+  }
+
+  /**
+   * Get available exit types for UI
+   */
+  public getUFOExitTypes(): import("./UFOSystem").UFOExitType[] {
+    return this.ufoSystem.getAvailableExitTypes();
+  }
+
+  /**
+   * Get current UFO entrance/exit types
+   */
+  public getUFOEntranceExitTypes(): {
+    entrance: import("./UFOSystem").UFOEntranceType;
+    exit: import("./UFOSystem").UFOExitType;
+  } | null {
+    return this.ufoSystem.getEntranceExitTypes();
+  }
+
+  /**
+   * Handle click on canvas - UFO may react
+   * @param clickX - Click X position in canvas coordinates
+   * @param clickY - Click Y position in canvas coordinates
+   * @returns true if UFO reacted to the click
+   */
+  public handleCanvasClick(clickX: number, clickY: number): boolean {
+    if (!this.layerVisibility.ufo) return false;
+    return this.ufoSystem.handleClick(clickX, clickY);
+  }
+
+  /**
+   * Get current UFO mood
+   */
+  public getUFOMood(): import("./UFOSystem").UFOMood | null {
+    return this.ufoSystem.getMood();
+  }
+
+  /**
+   * Get UFO tiredness level (0-1)
+   */
+  public getUFOTiredness(): number | null {
+    return this.ufoSystem.getTiredness();
+  }
+
   private layerVisibility = {
     stars: true,
-    moon: true,
     nebula: true,
     aurora: true,
     milkyWay: true,
+    meteors: true,
+    comets: true,
+    ufo: false, // Easter egg - off by default
   };
 
   /**
@@ -366,8 +575,7 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     this.proceduralNebulaSystem.cleanup();
     this.auroraSystem.cleanup();
     this.constellationSystem.cleanup();
-    this.moonSystem.cleanup();
-    this.spaceshipSystem.cleanup();
+    this.ufoSystem.cleanup();
     this.cometSystem.cleanup();
   }
 
