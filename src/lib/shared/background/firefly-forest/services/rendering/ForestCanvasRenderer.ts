@@ -14,6 +14,7 @@ import type {
   ProceduralForestSystem,
   ForestRenderData,
 } from "../ProceduralForestSystem";
+import type { MoonRenderer } from "../../../shared/services/MoonRenderer";
 import type { ForestTreeInstance } from "../composition/ParallaxForestComposer";
 import type { GroundElement, GrassTuft } from "../ground/GroundLayerSystem";
 import type { FogPatch, GroundFogData, MistLayerData } from "../atmosphere/AtmosphericFogSystem";
@@ -92,45 +93,11 @@ export class ForestCanvasRenderer {
   }
 
   private renderMoon(ctx: CanvasRenderingContext2D, renderData: ForestRenderData): void {
-    const { moon } = renderData;
-    if (!moon.visible) return;
+    const { moonRenderer } = renderData;
+    if (!moonRenderer) return;
 
-    ctx.save();
-
-    // Moon glow
-    const gradient = ctx.createRadialGradient(
-      moon.x,
-      moon.y,
-      moon.radius * 0.5,
-      moon.x,
-      moon.y,
-      moon.radius * 3
-    );
-    gradient.addColorStop(0, "rgba(255, 255, 240, 0.3)");
-    gradient.addColorStop(0.5, "rgba(255, 255, 240, 0.1)");
-    gradient.addColorStop(1, "rgba(255, 255, 240, 0)");
-
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(moon.x, moon.y, moon.radius * 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Moon body
-    ctx.fillStyle = "rgba(255, 255, 250, 0.9)";
-    ctx.beginPath();
-    ctx.arc(moon.x, moon.y, moon.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Moon phase shadow (crescent effect)
-    if (moon.phase < 1) {
-      ctx.fillStyle = "rgba(15, 20, 30, 0.9)";
-      ctx.beginPath();
-      const shadowOffset = (1 - moon.phase) * moon.radius * 1.5;
-      ctx.arc(moon.x + shadowOffset, moon.y, moon.radius * 0.95, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
+    // Use the shared MoonRenderer for consistent rendering with real lunar phase
+    moonRenderer.render(ctx);
   }
 
   private renderShootingStars(

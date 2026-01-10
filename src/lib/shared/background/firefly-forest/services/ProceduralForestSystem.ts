@@ -44,10 +44,14 @@ import {
   type EasterEggConfig,
   type OwlSilhouette,
   type BatFlock,
-  type MoonGlow,
   type ShootingStar,
   type GlowingEyes,
 } from "./ambient/EasterEggSystem";
+import {
+  MoonRenderer,
+  type MoonConfig,
+  type MoonState,
+} from "../../shared/services/MoonRenderer";
 
 export type QualityLevel = "low" | "medium" | "high" | "ultra";
 
@@ -65,6 +69,7 @@ export interface ProceduralForestConfig {
   ground?: Partial<GroundLayerConfig>;
   wind?: Partial<WindConfig>;
   easterEggs?: Partial<EasterEggConfig>;
+  moon?: Partial<MoonConfig>;
 
   // Master controls
   seed?: number;
@@ -74,6 +79,7 @@ export interface ProceduralForestConfig {
   fogEnabled: boolean;
   groundEnabled: boolean;
   easterEggsEnabled: boolean;
+  moonEnabled: boolean;
 }
 
 export interface ProceduralForestStats {
@@ -105,7 +111,7 @@ export interface ForestRenderData {
   trees: ForestTreeInstance[];
   groundElements: GroundElement[];
   grassTufts: GrassTuft[];
-  moon: MoonGlow;
+  moonRenderer: MoonRenderer | null;
   shootingStars: ShootingStar[];
   batFlocks: BatFlock[];
   owls: OwlSilhouette[];
@@ -125,6 +131,7 @@ const DEFAULT_CONFIG: ProceduralForestConfig = {
   fogEnabled: true,
   groundEnabled: true,
   easterEggsEnabled: true,
+  moonEnabled: true,
 };
 
 export class ProceduralForestSystem {
@@ -136,6 +143,7 @@ export class ProceduralForestSystem {
   private groundSystem: GroundLayerSystem;
   private windAnimator: WindAnimator;
   private easterEggSystem: EasterEggSystem;
+  private moonRenderer: MoonRenderer;
 
   // State
   private initialized = false;
@@ -185,6 +193,16 @@ export class ProceduralForestSystem {
       this.config.easterEggs,
       seed ? seed + 4000 : undefined
     );
+
+    // Initialize moon renderer with real lunar phase
+    this.moonRenderer = new MoonRenderer(width, height, {
+      useRealPhase: true,
+      x: 0.15,
+      y: 0.12,
+      radiusFraction: 0.04,
+      maxRadius: 60,
+      ...this.config.moon,
+    });
   }
 
   /**
@@ -403,10 +421,19 @@ export class ProceduralForestSystem {
   }
 
   /**
-   * Get moon data
+   * Get moon renderer for direct rendering
    */
-  getMoon(): MoonGlow {
-    return this.easterEggSystem.getMoon();
+  getMoonRenderer(): MoonRenderer | null {
+    if (!this.config.moonEnabled) return null;
+    return this.moonRenderer;
+  }
+
+  /**
+   * Get moon state data
+   */
+  getMoonState(): MoonState | null {
+    if (!this.config.moonEnabled) return null;
+    return this.moonRenderer.getState();
   }
 
   /**
@@ -449,7 +476,7 @@ export class ProceduralForestSystem {
       trees: this.getAllTrees(),
       groundElements: this.getGroundElements(),
       grassTufts: this.getGrassTufts(),
-      moon: this.getMoon(),
+      moonRenderer: this.getMoonRenderer(),
       shootingStars: this.getShootingStars(),
       batFlocks: this.getBatFlocks(),
       owls: this.getOwls(),
@@ -519,6 +546,9 @@ export class ProceduralForestSystem {
       seed ? seed + 4000 : undefined
     );
 
+    // Moon renderer doesn't need regeneration, just refresh phase
+    this.moonRenderer.refreshPhase();
+
     this.generate();
   }
 
@@ -533,6 +563,7 @@ export class ProceduralForestSystem {
     this.fogSystem.resize(width, height);
     this.groundSystem.resize(width, height);
     this.easterEggSystem.resize(width, height);
+    this.moonRenderer.resize(width, height);
 
     // Regenerate content for new size
     this.generate();
@@ -564,6 +595,15 @@ export class ProceduralForestSystem {
 
   setEasterEggsEnabled(enabled: boolean): void {
     this.config.easterEggsEnabled = enabled;
+  }
+
+  setMoonEnabled(enabled: boolean): void {
+    this.config.moonEnabled = enabled;
+    this.moonRenderer.setVisible(enabled);
+  }
+
+  setMoonConfig(config: Partial<MoonConfig>): void {
+    this.moonRenderer.setConfig(config);
   }
 
   setWindConfig(config: Partial<WindConfig>): void {
@@ -672,7 +712,11 @@ export type {
   WindDisplacement,
   OwlSilhouette,
   BatFlock,
-  MoonGlow,
   ShootingStar,
   GlowingEyes,
+  MoonConfig,
+  MoonState,
 };
+
+// Re-export MoonRenderer for direct usage
+export { MoonRenderer };

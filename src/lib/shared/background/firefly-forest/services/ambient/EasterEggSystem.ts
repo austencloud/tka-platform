@@ -108,8 +108,9 @@ const DEFAULT_CONFIG: EasterEggConfig = {
   batFlockSize: 8,
   batSpawnChance: 0.01,
   batSpeed: 150,
-  moonEnabled: true,
-  moonPhase: 0.75, // Waning gibbous
+  // Moon is now handled by shared MoonRenderer in ProceduralForestSystem
+  moonEnabled: false,
+  moonPhase: 0.75, // Waning gibbous (legacy, not used)
   moonX: 0.15,
   moonY: 0.12,
   shootingStarsEnabled: true,
