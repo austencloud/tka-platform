@@ -1,13 +1,15 @@
 /**
  * Promo Animation Controller Implementation
  *
- * Controls device and camera animations using GSAP timelines.
+ * Controls device and camera animations using a lightweight timeline.
  * Manages animation presets and provides playback control.
+ *
+ * Uses MIT-licensed Timeline implementation instead of GSAP.
  */
 
 import { injectable } from "inversify";
 import * as THREE from "three";
-import gsap from "gsap";
+import { Timeline } from "../../animation/Timeline";
 import type {
   IPromoAnimationController,
   AnimationPlaybackState,
@@ -29,7 +31,7 @@ import {
 export class PromoAnimationController implements IPromoAnimationController {
   private device: THREE.Group | null = null;
   private camera: THREE.PerspectiveCamera | null = null;
-  private timeline: gsap.core.Timeline | null = null;
+  private timeline: Timeline | null = null;
   private currentPreset: AnimationPreset | null = null;
   private registeredPresets: Map<string, AnimationPreset> = new Map();
   private progressCallback: AnimationProgressCallback | null = null;
@@ -133,7 +135,7 @@ export class PromoAnimationController implements IPromoAnimationController {
     }
 
     // Create new timeline
-    this.timeline = gsap.timeline({
+    this.timeline = new Timeline({
       paused: true,
       onUpdate: () => {
         if (this.timeline && this.progressCallback) {
@@ -154,9 +156,7 @@ export class PromoAnimationController implements IPromoAnimationController {
     );
 
     // Build animation from keyframes
-    // GSAP requires animating the Vector3/Euler objects directly, not string paths
-    //
-    // IMPORTANT: When two keyframes have the same time, it's a "cut" point:
+    // When two keyframes have the same time, it's a "cut" point:
     // - The first keyframe is the END of the previous shot
     // - The second keyframe is the START of the next shot (instant set, not animation)
     for (let i = 0; i < sortedKeyframes.length; i++) {
@@ -179,8 +179,7 @@ export class PromoAnimationController implements IPromoAnimationController {
       // Get easing
       const ease = keyframe.easing || "power2.inOut";
 
-      // For cuts, use .set() for instant transition; for smooth, use .to()
-      const method = isCut ? "set" : "to";
+      // For cuts, use instant set; for smooth, use tween
       const animDuration = isCut ? 0 : duration;
 
       // Animate device position
@@ -296,11 +295,7 @@ export class PromoAnimationController implements IPromoAnimationController {
       if (keyframe.camera?.fov !== undefined && this.camera) {
         const camera = this.camera;
         if (isCut) {
-          this.timeline.set(
-            this.camera,
-            { fov: keyframe.camera.fov },
-            startTime
-          );
+          this.timeline.set(this.camera, { fov: keyframe.camera.fov }, startTime);
           // Need to update projection matrix after set
           this.timeline.call(() => camera.updateProjectionMatrix(), [], startTime);
         } else {

@@ -114,7 +114,7 @@ export interface AnimationKeyframe {
   device?: Partial<DeviceState>;
   /** Screenshot to display at this keyframe (path or data URL) */
   screenshot?: string;
-  /** GSAP easing function name */
+  /** Easing function name (e.g., "power2.inOut", "sine.out") */
   easing?: string;
 }
 

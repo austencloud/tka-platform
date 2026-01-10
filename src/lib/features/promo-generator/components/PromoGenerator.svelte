@@ -7,8 +7,7 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { resolve } from "$lib/shared/inversify/di";
-  import { TYPES } from "$lib/shared/inversify/types";
+  import { container } from "$lib/shared/di";
   import { loadFeatureModule } from "$lib/shared/inversify/di";
   import type { IPromoOrchestrator } from "../services/contracts/IPromoOrchestrator";
   import type {
@@ -84,7 +83,7 @@
 
     try {
       await loadFeatureModule("promo-generator");
-      orchestrator = resolve<IPromoOrchestrator>(TYPES.IPromoOrchestrator);
+      orchestrator = container.items.promoOrchestrator;
 
       // Get container dimensions for responsive canvas
       const rect = canvasContainer.getBoundingClientRect();
