@@ -22,12 +22,12 @@ let trailsEnabled = $state<boolean>(false);
 let trailLength = $state<number>(10);
 let trailFade = $state<number>(0.85);
 
-// Burst spawning state - tuned for chill, ambient vibe
+// Burst spawning state - tuned for very chill, ambient vibe
 let burstTimer = $state<number>(0);
-const BURST_INTERVAL_MIN = 90; // frames between bursts (1.5 sec at 60fps)
-const BURST_INTERVAL_MAX = 240; // frames (4 sec at 60fps)
+const BURST_INTERVAL_MIN = 180; // frames between bursts (3 sec at 60fps)
+const BURST_INTERVAL_MAX = 420; // frames (7 sec at 60fps)
 const BURST_COUNT_MIN = 1;
-const BURST_COUNT_MAX = 3;
+const BURST_COUNT_MAX = 2;
 
 // ============================================================================
 // DERIVED VALUES (exported as getters per Svelte rules)

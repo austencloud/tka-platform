@@ -36,6 +36,7 @@
     embers: 0,
     smoke: 0,
     sparks: 0,
+    coals: 0,
   });
 
   function initializeSystem() {
@@ -68,6 +69,7 @@
         embers: s.embers,
         smoke: s.smoke,
         sparks: s.sparks,
+        coals: s.coals,
       };
     }
   }
@@ -194,6 +196,7 @@
     <!-- Layer Chips -->
     <ChipGroup label="Layers">
       <ChipToggle label="Base" icon="fa-square" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Coal Bed" icon="fa-fire-burner" active={layers.coalBed} color="amber" onclick={() => toggleLayer("coalBed")} />
       <ChipToggle label="Smoke" icon="fa-cloud" active={layers.smoke} color="amber" onclick={() => toggleLayer("smoke")} />
       <ChipToggle label="Embers" icon="fa-fire" active={layers.embers} color="amber" onclick={() => toggleLayer("embers")} />
       <ChipToggle label="Sparks" icon="fa-sparkle" active={layers.sparks} color="amber" onclick={() => toggleLayer("sparks")} />
@@ -234,6 +237,10 @@
       <span class="label">Scene Stats</span>
       <div class="stats-grid">
         <div class="stat">
+          <span class="stat-value">{stats.coals}</span>
+          <span class="stat-label">Coals</span>
+        </div>
+        <div class="stat">
           <span class="stat-value">{stats.embers}</span>
           <span class="stat-label">Embers</span>
         </div>
@@ -252,10 +259,12 @@
     <div class="info-section">
       <span class="label">About</span>
       <p class="info-text">
-        A warm, cozy atmosphere with rising embers, drifting smoke particles,
-        and bright sparks. Heat intensity affects colors, speed, and glow.
-        Density controls particle count. Enhancements add vignette (darkens edges),
-        bottom glow (warm radial light), spark trails, and breathing (subtle pulsing).
+        A warm, cozy atmosphere with a glowing coal bed at the bottom,
+        rising embers, drifting smoke particles, and bright sparks.
+        Heat intensity affects colors, speed, and glow. Density controls
+        particle count. The coal bed pulses with offset phases and random
+        flare hotspots. Enhancements add vignette, bottom glow, spark trails,
+        and breathing (scene-wide pulsing synced with the coals).
       </p>
     </div>
 
@@ -264,6 +273,7 @@
       <span class="label">Features</span>
       <div class="progress-pills">
         <span class="pill complete">Dark Gradient</span>
+        <span class="pill complete">Coal Bed</span>
         <span class="pill complete">Rising Embers</span>
         <span class="pill complete">Glow Effects</span>
         <span class="pill complete">Flicker Animation</span>
@@ -276,6 +286,9 @@
         <span class="pill complete">Bottom Glow</span>
         <span class="pill complete">Spark Trails</span>
         <span class="pill complete">Breathing Effect</span>
+        <span class="pill complete">Playful Embers</span>
+        <span class="pill complete">Billowing Smoke</span>
+        <span class="pill complete">Phoenix Easter Egg</span>
       </div>
     </div>
   </div>
@@ -303,6 +316,28 @@
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     overflow-y: auto;
+
+    /* Themed scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
+  }
+
+  .controls::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .controls::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+    border-radius: 4px;
+  }
+
+  .controls::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-accent, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .controls::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-accent-hover, rgba(255, 255, 255, 0.35));
   }
 
   .header {
@@ -378,7 +413,7 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
   }
 

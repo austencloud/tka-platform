@@ -5,31 +5,31 @@
  * Extracted for easy tuning and AI-friendly selective reading.
  */
 
-/** Particle counts per quality tier */
+/** Particle counts per quality tier - reduced for chill ambient vibe */
 export const EMBER_COUNTS = {
-  high: 200,
-  medium: 140,
-  low: 80,
+  high: 120,
+  medium: 80,
+  low: 50,
 } as const;
 
-/** Physics behavior constants */
+/** Physics behavior constants - tuned for chill ambient vibe */
 export const EMBER_PHYSICS = {
   /** Base rising speed (negative = upward) */
-  RISING_SPEED_BASE: 0.3,
+  RISING_SPEED_BASE: 0.2,   // Reduced from 0.3
   /** Additional random rising speed range */
-  RISING_SPEED_RANGE: 0.8,
-  /** Horizontal drift amplitude */
-  DRIFT_AMPLITUDE: 0.3,
+  RISING_SPEED_RANGE: 0.5,  // Reduced from 0.8
+  /** Horizontal drift amplitude - disabled for realistic rise */
+  DRIFT_AMPLITUDE: 0,
   /** Glow radius multiplier (relative to ember size) */
-  GLOW_MULTIPLIER: 12,
+  GLOW_MULTIPLIER: 10,      // Slightly reduced
   /** Flicker animation speed (radians per frame) */
-  FLICKER_SPEED: 0.08,
+  FLICKER_SPEED: 0.04,      // Reduced from 0.08 - slower flicker
   /** Minimum opacity during flicker (prevents invisible embers) */
-  FLICKER_MIN_OPACITY: 0.4,
-  /** Flicker intensity range (0.8 to 1.0) */
-  FLICKER_AMPLITUDE: 0.2,
+  FLICKER_MIN_OPACITY: 0.5,
+  /** Flicker intensity range (0.85 to 1.0) - gentler flicker */
+  FLICKER_AMPLITUDE: 0.15,  // Reduced from 0.2
   /** Base flicker factor */
-  FLICKER_BASE: 0.8,
+  FLICKER_BASE: 0.85,       // Raised from 0.8
 } as const;
 
 /** Ember size configuration */
@@ -94,6 +94,46 @@ export const EMBER_BOUNDS = {
   RESPAWN_BUFFER: 20,
 } as const;
 
+// ============================================================================
+// Coal Bed Configuration (A+ Enhancement)
+// ============================================================================
+
+/** Coal bed - glowing heat source at bottom - tuned for subtle effect */
+export const COAL_CONFIG = {
+  /** Vertical position (bottom 10% of screen) */
+  BOTTOM_ZONE: 0.10,
+  /** Coal size range */
+  SIZE_MIN: 12,
+  SIZE_RANGE: 20, // 12-32px
+  /** Glow radius multiplier */
+  GLOW_MULTIPLIER: 2.5,
+  /** Pulse animation - slower, gentler */
+  PULSE_SPEED_MIN: 0.01,
+  PULSE_SPEED_RANGE: 0.015, // 0.01-0.025 rad/frame
+  PULSE_AMPLITUDE: 0.2, // ±20% intensity (reduced from 30%)
+  /** Base intensity range */
+  INTENSITY_MIN: 0.4,
+  INTENSITY_RANGE: 0.4, // 0.4-0.8
+  /** Flare (random hotspot) - less frequent */
+  FLARE_CHANCE: 0.0005, // Half as frequent
+  FLARE_DURATION_MIN: 40,
+  FLARE_DURATION_RANGE: 60,
+  FLARE_INTENSITY_BOOST: 0.3,
+  /** Colors - slightly cooler */
+  COLOR_COOL: { r: 160, g: 50, b: 25 },
+  COLOR_HOT: { r: 230, g: 120, b: 40 },
+  COLOR_FLARE: { r: 255, g: 200, b: 130 },
+} as const;
+
+/** Coal counts per quality tier */
+export const COAL_COUNTS = {
+  high: 25,
+  medium: 18,
+  low: 12,
+  minimal: 8,
+  "ultra-minimal": 5,
+} as const;
+
 /** Dark amber background gradient */
 export const EMBER_BACKGROUND_GRADIENT = [
   { position: 0, color: "#1a0a0a" }, // Very dark brown-red
@@ -108,7 +148,7 @@ export const EMBER_BACKGROUND_GRADIENT = [
 
 export type HeatIntensity = "smolder" | "warm" | "hot" | "blazing";
 
-/** Heat intensity affects color warmth, speed, and glow */
+/** Heat intensity affects color warmth, speed, and glow - tuned for chill vibe */
 export const HEAT_INTENSITY_CONFIGS: Record<
   HeatIntensity,
   {
@@ -119,28 +159,28 @@ export const HEAT_INTENSITY_CONFIGS: Record<
   }
 > = {
   smolder: {
-    speedMultiplier: 0.6,
-    glowMultiplier: 0.7,
+    speedMultiplier: 0.4,  // Even slower for ultra-chill
+    glowMultiplier: 0.5,   // Dimmer glow
     colorShift: 0,
-    sparkBonus: 0,
+    sparkBonus: -0.5,      // Fewer sparks
   },
   warm: {
-    speedMultiplier: 1.0,
-    glowMultiplier: 1.0,
-    colorShift: 0.3,
+    speedMultiplier: 0.7,  // Reduced from 1.0
+    glowMultiplier: 0.8,
+    colorShift: 0.2,
     sparkBonus: 0,
   },
   hot: {
-    speedMultiplier: 1.3,
-    glowMultiplier: 1.3,
-    colorShift: 0.6,
-    sparkBonus: 0.5,
+    speedMultiplier: 1.0,
+    glowMultiplier: 1.0,
+    colorShift: 0.5,
+    sparkBonus: 0.3,
   },
   blazing: {
-    speedMultiplier: 1.6,
-    glowMultiplier: 1.6,
-    colorShift: 1.0,
-    sparkBonus: 1.0,
+    speedMultiplier: 1.3,
+    glowMultiplier: 1.3,
+    colorShift: 0.8,
+    sparkBonus: 0.6,
   },
 };
 
@@ -175,42 +215,42 @@ export interface EmberGlowQualityConfig {
 
 export const EMBER_GLOW_QUALITY_CONFIGS: Record<QualityLevel, EmberGlowQualityConfig> = {
   high: {
-    emberCount: 200,
-    smokeCount: 30,
-    sparkCount: 40,
-    glowIntensity: 1.2,
-    flickerEnabled: true,
-    flickerSpeed: 0.08,
-  },
-  medium: {
-    emberCount: 140,
-    smokeCount: 20,
-    sparkCount: 25,
+    emberCount: 100,   // Reduced from 200
+    smokeCount: 15,    // Reduced from 30
+    sparkCount: 20,    // Reduced from 40
     glowIntensity: 1.0,
     flickerEnabled: true,
-    flickerSpeed: 0.06,
+    flickerSpeed: 0.05, // Slower flicker
   },
-  low: {
-    emberCount: 80,
-    smokeCount: 10,
-    sparkCount: 15,
-    glowIntensity: 0.8,
+  medium: {
+    emberCount: 70,    // Reduced from 140
+    smokeCount: 10,    // Reduced from 20
+    sparkCount: 12,    // Reduced from 25
+    glowIntensity: 0.9,
     flickerEnabled: true,
     flickerSpeed: 0.04,
   },
+  low: {
+    emberCount: 40,    // Reduced from 80
+    smokeCount: 6,
+    sparkCount: 8,
+    glowIntensity: 0.7,
+    flickerEnabled: true,
+    flickerSpeed: 0.03,
+  },
   minimal: {
-    emberCount: 40,
-    smokeCount: 5,
+    emberCount: 25,
+    smokeCount: 3,
     sparkCount: 0,
-    glowIntensity: 0.6,
+    glowIntensity: 0.5,
     flickerEnabled: false,
     flickerSpeed: 0,
   },
   "ultra-minimal": {
-    emberCount: 20,
+    emberCount: 15,
     smokeCount: 0,
     sparkCount: 0,
-    glowIntensity: 0.4,
+    glowIntensity: 0.3,
     flickerEnabled: false,
     flickerSpeed: 0,
   },
@@ -221,20 +261,20 @@ export const EMBER_GLOW_QUALITY_CONFIGS: Record<QualityLevel, EmberGlowQualityCo
 // ============================================================================
 
 export const SMOKE_CONFIG = {
-  /** Size range for smoke particles */
-  SIZE_MIN: 8,
-  SIZE_RANGE: 12,
-  /** Opacity range (low for wispy effect) */
-  OPACITY_MIN: 0.08,
-  OPACITY_RANGE: 0.12,
+  /** Size range for smoke particles - larger for visibility */
+  SIZE_MIN: 20,
+  SIZE_RANGE: 30,
+  /** Opacity range - increased for visibility */
+  OPACITY_MIN: 0.12,
+  OPACITY_RANGE: 0.15,
   /** Rise speed (slower than embers) */
-  SPEED_BASE: 0.1,
-  SPEED_RANGE: 0.15,
-  /** Horizontal drift */
-  DRIFT_AMPLITUDE: 0.2,
-  /** Color range (dark grays) */
-  COLOR_MIN: 30,
-  COLOR_MAX: 60,
+  SPEED_BASE: 0.08,
+  SPEED_RANGE: 0.1,
+  /** Horizontal drift - disabled */
+  DRIFT_AMPLITUDE: 0,
+  /** Color range (dark grays with slight warmth) */
+  COLOR_MIN: 40,
+  COLOR_MAX: 70,
 } as const;
 
 // ============================================================================

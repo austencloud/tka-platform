@@ -17,6 +17,7 @@ import {
 import * as EmberSystem from "./ember-system.svelte";
 import * as SmokeSystem from "./smoke-system.svelte";
 import * as SparkSystem from "./spark-system.svelte";
+import * as CoalBedSystem from "./coal-bed-system.svelte";
 
 /**
  * Ember Glow Background System
@@ -38,14 +39,15 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
   private dimensions: Dimensions = { width: 0, height: 0 };
   private motionMultiplier = 1.0;
 
-  // Breathing effect state
+  // Breathing effect state (A+ enhancement - stronger, more visible)
   private breathingPhase = 0;
   private readonly breathingPeriod = 4; // seconds for full cycle
-  private readonly breathingAmplitude = 0.3; // ±30% intensity variation
+  private readonly breathingAmplitude = 0.5; // ±50% intensity variation (increased from 0.3)
 
   // Layer visibility
   private layers: EmberGlowLayers = {
     gradient: true,
+    coalBed: true, // A+ - glowing heat source at bottom
     smoke: true,
     embers: true,
     sparks: true,
@@ -84,6 +86,9 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
     );
     SparkSystem.initialize(dimensions, sparkCount);
 
+    // Initialize coal bed (A+ enhancement)
+    CoalBedSystem.initialize(dimensions, quality);
+
     this.isInitialized = true;
   }
 
@@ -109,7 +114,17 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
       }
     }
 
+    // Calculate breathing multiplier for subsystems that sync with it
+    const breathingMult = this.layers.breathing
+      ? 1 + Math.sin(this.breathingPhase) * this.breathingAmplitude
+      : 1;
+
     // Update all subsystems
+    if (this.layers.coalBed) {
+      CoalBedSystem.setBreathingMultiplier(breathingMult);
+      CoalBedSystem.update(dimensions, frameMultiplier);
+    }
+
     if (this.layers.smoke) {
       SmokeSystem.update(dimensions, frameMultiplier);
     }
@@ -139,7 +154,12 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
       ctx.fillRect(0, 0, dimensions.width, dimensions.height);
     }
 
-    // Layer 2: Bottom glow (warm radial glow from below)
+    // Layer 2: Coal bed (A+ - glowing heat source at bottom)
+    if (this.layers.coalBed && this.isInitialized) {
+      CoalBedSystem.draw(ctx, dimensions);
+    }
+
+    // Layer 3: Bottom glow (warm radial glow from below)
     if (this.layers.bottomGlow) {
       this.drawBottomGlow(ctx, dimensions, breathingMult);
     }
@@ -159,9 +179,9 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
       SparkSystem.draw(ctx, dimensions);
     }
 
-    // Layer 6: Vignette (darkens edges, focuses center)
+    // Layer 6: Vignette (darkens edges, focuses center - pulses with breathing)
     if (this.layers.vignette) {
-      this.drawVignette(ctx, dimensions);
+      this.drawVignette(ctx, dimensions, breathingMult);
     }
 
     // Layer 7: Breathing overlay (warm pulse across entire scene)
@@ -171,24 +191,44 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
   }
 
   /**
-   * Draw breathing overlay - a subtle warm color wash that pulses
+   * Draw breathing overlay - a warm color wash that pulses visibly
+   * A+ Enhancement: Stronger, more noticeable breathing effect
    */
   private drawBreathingOverlay(
     ctx: CanvasRenderingContext2D,
     dimensions: Dimensions,
     breathingMult: number
   ): void {
-    // Only apply overlay when breathing is "inhaling" (above baseline)
-    const breathIntensity = Math.max(0, (breathingMult - 1) * 2); // 0 to 0.6
+    // Calculate intensity based on breathing phase
+    // Now with ±50% amplitude, breathingMult ranges from 0.5 to 1.5
+    const breathIntensity = Math.max(0, (breathingMult - 1) * 2); // 0 to 1.0
 
-    if (breathIntensity > 0.01) {
-      // Warm amber overlay from bottom
-      const gradient = ctx.createLinearGradient(0, dimensions.height, 0, 0);
-      gradient.addColorStop(0, `rgba(255, 120, 40, ${breathIntensity * 0.15})`);
-      gradient.addColorStop(0.4, `rgba(255, 80, 20, ${breathIntensity * 0.08})`);
-      gradient.addColorStop(1, `rgba(0, 0, 0, 0)`);
+    // Warm amber overlay from bottom (always visible when breathing enabled)
+    const baseOverlay = 0.03; // Constant subtle warmth
+    const pulseOverlay = breathIntensity * 0.12; // Pulsing component
 
-      ctx.fillStyle = gradient;
+    // Full-screen warm gradient from bottom
+    const gradient = ctx.createLinearGradient(0, dimensions.height, 0, 0);
+    gradient.addColorStop(0, `rgba(255, 140, 50, ${baseOverlay + pulseOverlay})`);
+    gradient.addColorStop(0.3, `rgba(255, 100, 30, ${(baseOverlay + pulseOverlay) * 0.7})`);
+    gradient.addColorStop(0.6, `rgba(255, 80, 20, ${(baseOverlay + pulseOverlay) * 0.3})`);
+    gradient.addColorStop(1, `rgba(0, 0, 0, 0)`);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+
+    // Additional center glow that pulses (like the fire is breathing)
+    if (breathIntensity > 0.1) {
+      const centerX = dimensions.width / 2;
+      const centerY = dimensions.height * 0.85;
+      const glowRadius = dimensions.width * 0.4 * (1 + breathIntensity * 0.2);
+
+      const centerGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowRadius);
+      centerGlow.addColorStop(0, `rgba(255, 160, 60, ${breathIntensity * 0.08})`);
+      centerGlow.addColorStop(0.5, `rgba(255, 100, 30, ${breathIntensity * 0.04})`);
+      centerGlow.addColorStop(1, `rgba(0, 0, 0, 0)`);
+
+      ctx.fillStyle = centerGlow;
       ctx.fillRect(0, 0, dimensions.width, dimensions.height);
     }
   }
@@ -219,20 +259,28 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
   }
 
   /**
-   * Draw a vignette effect (darkens edges)
+   * Draw a vignette effect (darkens edges, pulses with breathing)
+   * A+ Enhancement: Vignette pulses subtly with the breathing effect
    */
-  private drawVignette(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
+  private drawVignette(ctx: CanvasRenderingContext2D, dimensions: Dimensions, breathingMult: number): void {
     const centerX = dimensions.width / 2;
     const centerY = dimensions.height / 2;
     const radius = Math.max(dimensions.width, dimensions.height) * 0.7;
 
     const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
 
+    // Vignette opacity pulses with breathing (edges darken during "exhale")
+    // When breathing enabled, breathingMult ranges from 0.5 to 1.5
+    // Invert: darker edges when breathingMult is low (exhale)
+    const vignetteStrength = this.layers.breathing
+      ? 1 + (1 - breathingMult) * 0.3 // 0.85 to 1.15 multiplier
+      : 1;
+
     // Transparent center, dark edges
     gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
     gradient.addColorStop(0.5, "rgba(0, 0, 0, 0)");
-    gradient.addColorStop(0.8, "rgba(0, 0, 0, 0.3)");
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0.6)");
+    gradient.addColorStop(0.8, `rgba(0, 0, 0, ${0.3 * vignetteStrength})`);
+    gradient.addColorStop(1, `rgba(0, 0, 0, ${0.6 * vignetteStrength})`);
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
@@ -284,6 +332,7 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
     EmberSystem.setMotionMultiplier(this.motionMultiplier);
     SmokeSystem.setMotionMultiplier(this.motionMultiplier);
     SparkSystem.setMotionMultiplier(this.motionMultiplier);
+    CoalBedSystem.setMotionMultiplier(this.motionMultiplier);
   }
 
   public handleResize(oldDimensions: Dimensions, newDimensions: Dimensions): void {
@@ -299,6 +348,7 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
     EmberSystem.cleanup();
     SmokeSystem.cleanup();
     SparkSystem.cleanup();
+    CoalBedSystem.cleanup();
     this.isInitialized = false;
   }
 
@@ -322,6 +372,7 @@ export class EmberGlowBackgroundSystem implements IBackgroundSystem {
       embers: EmberSystem.getCount(),
       smoke: SmokeSystem.getCount(),
       sparks: SparkSystem.getCount(),
+      coals: CoalBedSystem.getCount(),
       heatIntensity: this.heatIntensity,
       densityPreset: this.densityPreset,
     };
