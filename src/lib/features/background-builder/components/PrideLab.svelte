@@ -1,0 +1,508 @@
+<script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+  import { RainbowBackgroundSystem } from "$lib/shared/background/rainbow/services/RainbowBackgroundSystem";
+  import { PRIDE_PALETTES, type PridePalette } from "$lib/shared/background/rainbow/domain/constants/rainbow-constants";
+  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import {
+    getRainbowSettings,
+    updateRainbowSettings,
+  } from "../state/background-builder-state.svelte";
+
+  // Canvas reference
+  let canvas: HTMLCanvasElement | null = $state(null);
+  let backgroundSystem: RainbowBackgroundSystem | null = $state(null);
+  let animationFrame: number | null = $state(null);
+  let lastFrameTime = 0;
+
+  // Load persisted settings
+  const savedSettings = getRainbowSettings();
+
+  // Quality settings
+  let quality: QualityLevel = $state(savedSettings.quality);
+
+  // Palette selection
+  let currentPalette: PridePalette = $state(savedSettings.palette);
+
+  // Layer toggles
+  let layers = $state({ ...savedSettings.layers });
+
+  // Stats
+  let stats = $state({
+    bands: 0,
+    bokeh: 0,
+    sparkles: 0,
+    hearts: 0,
+    shimmerPoints: 0,
+  });
+
+  // Palette display names
+  const paletteNames: Record<PridePalette, string> = {
+    classic: "Classic",
+    progress: "Progress",
+    trans: "Trans",
+    bisexual: "Bisexual",
+    pansexual: "Pansexual",
+    nonbinary: "Non-binary",
+    lesbian: "Lesbian",
+    asexual: "Asexual",
+    gay: "MLM",
+  };
+
+  function initializeSystem() {
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const container = canvas.parentElement;
+    if (container) {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+
+    backgroundSystem = new RainbowBackgroundSystem();
+    backgroundSystem.setPalette(currentPalette);
+    const dimensions = { width: canvas.width, height: canvas.height };
+    backgroundSystem.initialize(dimensions, quality);
+    backgroundSystem.setLayerVisibility(layers);
+
+    updateStats();
+    startAnimation();
+  }
+
+  function updateStats() {
+    if (backgroundSystem) {
+      const s = backgroundSystem.getStats();
+      stats = {
+        bands: s.bands,
+        bokeh: s.bokeh,
+        sparkles: s.sparkles,
+        hearts: s.hearts,
+        shimmerPoints: s.shimmerPoints,
+      };
+    }
+  }
+
+  function startAnimation() {
+    if (!canvas || !backgroundSystem) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const animate = (currentTime: number) => {
+      // Guard against destroyed component
+      if (!canvas || !backgroundSystem) return;
+
+      const deltaTime = currentTime - lastFrameTime;
+      const frameMultiplier = deltaTime / 16.67;
+      lastFrameTime = currentTime;
+
+      const dimensions = { width: canvas.width, height: canvas.height };
+      backgroundSystem.update(dimensions, frameMultiplier);
+      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+      backgroundSystem.draw(ctx, dimensions);
+
+      animationFrame = requestAnimationFrame(animate);
+    };
+
+    lastFrameTime = performance.now();
+    animationFrame = requestAnimationFrame(animate);
+  }
+
+  function stopAnimation() {
+    if (animationFrame !== null) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
+  }
+
+  function handleResize() {
+    if (!canvas || !backgroundSystem) return;
+
+    const container = canvas.parentElement;
+    if (container) {
+      const oldDimensions = { width: canvas.width, height: canvas.height };
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      const newDimensions = { width: canvas.width, height: canvas.height };
+      backgroundSystem.handleResize?.(oldDimensions, newDimensions);
+      updateStats();
+    }
+  }
+
+  function regenerate() {
+    stopAnimation();
+    if (backgroundSystem) {
+      backgroundSystem.cleanup?.();
+    }
+    backgroundSystem = null;
+    initializeSystem();
+  }
+
+  function setQuality(q: QualityLevel) {
+    quality = q;
+    updateRainbowSettings({ quality: q });
+    if (backgroundSystem) {
+      backgroundSystem.setQuality(q);
+      updateStats();
+    }
+  }
+
+  function setPalette(palette: PridePalette) {
+    currentPalette = palette;
+    updateRainbowSettings({ palette });
+    if (backgroundSystem) {
+      backgroundSystem.setPalette(palette);
+    }
+  }
+
+  function toggleLayer(layer: keyof typeof layers) {
+    layers = { ...layers, [layer]: !layers[layer] };
+    updateRainbowSettings({ layers: { ...layers } });
+    if (backgroundSystem) {
+      backgroundSystem.setLayerVisibility(layers);
+    }
+  }
+
+  onMount(() => {
+    initializeSystem();
+    window.addEventListener("resize", handleResize);
+  });
+
+  onDestroy(() => {
+    stopAnimation();
+    if (backgroundSystem) {
+      backgroundSystem.cleanup?.();
+    }
+    window.removeEventListener("resize", handleResize);
+  });
+</script>
+
+<div class="pride-lab">
+  <div class="controls">
+    <div class="header">
+      <h2>Pride Lab</h2>
+      <span class="badge">Pride</span>
+    </div>
+
+    <!-- Palette Chips -->
+    <ChipGroup label="Palette">
+      {#each Object.keys(PRIDE_PALETTES) as palette}
+        <ChipToggle
+          label={paletteNames[palette as PridePalette]}
+          active={currentPalette === palette}
+          color="rose"
+          size="sm"
+          onclick={() => setPalette(palette as PridePalette)}
+        />
+      {/each}
+    </ChipGroup>
+
+    <!-- Quality Chips -->
+    <ChipGroup label="Quality" variant="row">
+      <ChipToggle label="High" active={quality === "high"} color="rose" onclick={() => setQuality("high")} />
+      <ChipToggle label="Medium" active={quality === "medium"} color="rose" onclick={() => setQuality("medium")} />
+      <ChipToggle label="Low" active={quality === "low"} color="rose" onclick={() => setQuality("low")} />
+    </ChipGroup>
+
+    <!-- Layer Chips -->
+    <ChipGroup label="Layers">
+      <ChipToggle label="Base" icon="fa-square" active={layers.gradient} color="rose" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Bands" icon="fa-rainbow" active={layers.bands} color="rose" onclick={() => toggleLayer("bands")} />
+      <ChipToggle label="Shimmer" icon="fa-sparkle" active={layers.shimmer} color="rose" onclick={() => toggleLayer("shimmer")} />
+      <ChipToggle label="Bokeh" icon="fa-circle" active={layers.bokeh} color="rose" onclick={() => toggleLayer("bokeh")} />
+      <ChipToggle label="Sparkles" icon="fa-sparkles" active={layers.sparkles} color="rose" onclick={() => toggleLayer("sparkles")} />
+      <ChipToggle label="Hearts" icon="fa-heart" active={layers.hearts} color="rose" onclick={() => toggleLayer("hearts")} />
+    </ChipGroup>
+
+    <!-- Regenerate -->
+    <button class="action-btn" onclick={regenerate}>
+      <i class="fas fa-sparkles"></i>
+      Regenerate
+    </button>
+
+    <!-- Stats -->
+    <div class="stats-section">
+      <span class="label">Scene Stats</span>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-value">{stats.bands}</span>
+          <span class="stat-label">Bands</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{stats.bokeh}</span>
+          <span class="stat-label">Bokeh</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{stats.sparkles}</span>
+          <span class="stat-label">Sparkles</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{stats.hearts}</span>
+          <span class="stat-label">Hearts</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{stats.shimmerPoints}</span>
+          <span class="stat-label">Shimmer</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+      <span class="label">About</span>
+      <p class="info-text">
+        A celebration of Pride with flowing rainbow wave bands, dreamy bokeh orbs,
+        twinkling sparkles, shimmer effects, and floating hearts.
+        Choose from 9 different pride flag palettes.
+      </p>
+    </div>
+
+    <!-- Progress Pills -->
+    <div class="progress-section">
+      <span class="label">Features</span>
+      <div class="progress-pills">
+        <span class="pill complete">Wave Bands</span>
+        <span class="pill complete">Multiple Palettes</span>
+        <span class="pill complete">Bokeh Orbs</span>
+        <span class="pill complete">Sparkles</span>
+        <span class="pill complete">Shimmer</span>
+        <span class="pill complete">Hearts</span>
+        <span class="pill complete">Quality Levels</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview">
+    <canvas bind:this={canvas}></canvas>
+  </div>
+</div>
+
+<style>
+  .pride-lab {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    height: 100%;
+    min-height: 600px;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    background: rgba(15, 15, 25, 0.8);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow-y: auto;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header h2 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .badge {
+    padding: 4px 10px;
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.3), rgba(251, 146, 60, 0.3), rgba(250, 204, 21, 0.3), rgba(34, 197, 94, 0.3), rgba(59, 130, 246, 0.3), rgba(168, 85, 247, 0.3));
+    border: 1px solid rgba(244, 63, 94, 0.4);
+    border-radius: 20px;
+    font-size: var(--font-size-compact, 0.75rem); /* 12px minimum */
+    font-weight: 600;
+    color: #fda4af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .label {
+    font-size: var(--font-size-compact, 0.75rem); /* 12px minimum */
+    font-weight: 500;
+    color: #9ca3af; /* AAA contrast: ~7.7:1 on dark */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f43f5e, #ec4899);
+    border: none;
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(244, 63, 94, 0.35);
+  }
+
+  .action-btn:active {
+    transform: translateY(0);
+  }
+
+  .action-btn:focus-visible {
+    outline: 2px solid #fda4af;
+    outline-offset: 2px;
+  }
+
+  .stats-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #fda4af;
+  }
+
+  .stat-label {
+    font-size: var(--font-size-compact, 0.75rem); /* 12px minimum */
+    color: #9ca3af; /* AAA contrast: ~7.7:1 on dark */
+    text-transform: uppercase;
+  }
+
+  .info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .info-text {
+    margin: 0;
+    font-size: var(--font-size-compact, 0.75rem); /* 12px minimum */
+    color: #9ca3af; /* AAA contrast: ~7.7:1 on dark */
+    line-height: 1.5;
+  }
+
+  .progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .progress-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pill {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: var(--font-size-compact, 0.75rem); /* 12px minimum */
+    font-weight: 500;
+  }
+
+  .pill.complete {
+    background: rgba(244, 63, 94, 0.15);
+    color: #fda4af;
+  }
+
+  .pill.active {
+    background: rgba(244, 63, 94, 0.2);
+    color: #fda4af;
+    animation: pulse 2s infinite;
+  }
+
+  .pill.pending {
+    background: rgba(255, 255, 255, 0.05);
+    color: #9ca3af; /* AAA contrast: ~7.7:1 on dark */
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .preview {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgb(10, 10, 21);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .preview canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  @media (max-width: 800px) {
+    .pride-lab {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 400px;
+    }
+  }
+
+  /* Accessibility: Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .action-btn,
+    .pill.active {
+      transition: none;
+      animation: none;
+    }
+  }
+
+  /* Accessibility: High contrast */
+  @media (prefers-contrast: high) {
+    .controls {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .preview {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .label,
+    .stat-label,
+    .info-text {
+      color: #d1d5db; /* Higher contrast gray */
+    }
+  }
+</style>
