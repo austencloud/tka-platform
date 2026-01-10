@@ -27,6 +27,7 @@
     ThumbnailRenderInput,
   } from "../services/contracts/IThumbnailKeyDeriver";
   import type { ICloudThumbnailCache } from "../services/contracts/ICloudThumbnailCache";
+  import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
 
   interface Props {
     sequence: SequenceData;
@@ -85,8 +86,26 @@
   let cloudCache: ICloudThumbnailCache | null = null;
   let servicesReady = $state(false);
 
+  // Layout calculator resolved synchronously (no async deps, needed for initial aspect ratio)
+  const layoutCalculator: ILayoutCalculator = container.items.layoutCalculator;
+
   // Derived: sequence name
   const sequenceName = $derived(sequence.word || sequence.name || "");
+
+  // Derived: beat count for aspect ratio calculation
+  // Priority: beats array length > sequenceLength field > fallback to 4
+  const beatCount = $derived(
+    sequence.beats?.length ?? sequence.sequenceLength ?? 4
+  );
+
+  // Derived: aspect ratio based on beat count and variant
+  // Gallery variant has header + footer, wordcard uses natural aspect ratio
+  const aspectRatio = $derived.by(() => {
+    if (variant === "wordcard") {
+      return undefined; // Wordcard uses natural image aspect ratio
+    }
+    return layoutCalculator.calculateGalleryAspectRatio(beatCount);
+  });
 
   // Derived: Build render input from props
   const renderInput = $derived<ThumbnailRenderInput>({
@@ -115,7 +134,7 @@
     // Resolve services
     orchestrator = container.items.thumbnailRenderOrchestrator;
     keyDeriver = container.items.thumbnailKeyDeriver;
-    cloudCache = container.items.discoverThumbnailCache;
+    cloudCache = container.items.cloudThumbnailCache;
     servicesReady = true;
 
     // Set up intersection observer
@@ -269,7 +288,12 @@
   );
 </script>
 
-<div class="prop-thumbnail" data-variant={variant} bind:this={containerRef}>
+<div
+  class="prop-thumbnail"
+  data-variant={variant}
+  bind:this={containerRef}
+  style:aspect-ratio={aspectRatio}
+>
   {#if thumbnailUrl && !hasError}
     <img
       src={thumbnailUrl}
@@ -310,7 +334,7 @@
     width: 100%;
     max-width: 100%;
     max-height: 100%;
-    aspect-ratio: 4 / 3;
+    /* aspect-ratio is set dynamically via inline style based on beat count */
     display: flex;
     align-items: center;
     justify-content: center;

@@ -16,7 +16,7 @@ import { DiscoverMetadataExtractor } from "$lib/features/discover/sequences/disp
 import { DiscoverCache } from "$lib/features/discover/sequences/display/services/implementations/DiscoverCache";
 import { DiscoverFilter } from "$lib/features/discover/sequences/display/services/implementations/DiscoverFilter";
 import { DiscoverSorter } from "$lib/features/discover/sequences/display/services/implementations/DiscoverSorter";
-import { DiscoverLoader } from "$lib/features/discover/sequences/display/services/implementations/DiscoverLoader";
+import { PublicSequencesLoader } from "$lib/features/discover/sequences/display/services/implementations/PublicSequencesLoader";
 import { DiscoverSectionManager } from "$lib/features/discover/sequences/display/services/implementations/DiscoverSectionManager";
 import { VariationGrouper } from "$lib/features/discover/sequences/display/services/implementations/VariationGrouper";
 import { DiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/implementations/DiscoverThumbnailProvider";
@@ -111,14 +111,11 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
       new DiscoverMetadataExtractor(ctx.sequenceDifficultyCalculator),
   }));
 
-  // Tier 2: Services depending on tier 0 and 1 (singleton - caches sequence index)
-  const tier2 = tier1.add((ctx) => ({
-    discoverLoader: () =>
-      new DiscoverLoader(
-        ctx.discoverMetadataExtractor,
-        ctx.sequenceDifficultyCalculator
-      ),
-  }));
+  // Tier 2: Sequence loader (singleton - caches loaded sequences)
+  // Now loads from Firestore publicSequences collection instead of static manifest
+  const tier2 = tier1.add({
+    discoverLoader: () => new PublicSequencesLoader(),
+  });
 
   // Tier 3: Services depending on external dependencies
   const tier3 = tier2

@@ -26,6 +26,9 @@ import type {
 // Firebase download URLs expire after ~1 hour, so we refresh after 30 minutes
 const URL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
+// Longer TTL for "known missing" entries - no need to re-check frequently
+const MISSING_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 interface CachedUrl {
   url: string | null;
   timestamp: number;
@@ -33,6 +36,55 @@ interface CachedUrl {
 
 const urlCache = new Map<string, CachedUrl>();
 const pendingUploads = new Map<string, Promise<string>>();
+
+// Track thumbnails we've confirmed EXIST in cloud storage
+// This inverts the usual pattern: we assume things DON'T exist (render locally)
+// and only check cloud for things we KNOW exist (from previous uploads or checks)
+// This prevents 404 spam because we never request things that don't exist
+const KNOWN_EXISTS_KEY = "tka-cloud-thumbnails";
+let knownExists: Set<string> | null = null;
+
+function getKnownExists(): Set<string> {
+  if (knownExists) return knownExists;
+  try {
+    const stored = localStorage.getItem(KNOWN_EXISTS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { keys: string[]; timestamp: number };
+      // Keep for 7 days (thumbnails don't get deleted often)
+      if (Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000) {
+        knownExists = new Set(parsed.keys);
+        return knownExists;
+      }
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  knownExists = new Set();
+  return knownExists;
+}
+
+function addKnownExists(cacheKey: string): void {
+  const exists = getKnownExists();
+  exists.add(cacheKey);
+  // Persist periodically (every 10 additions) to avoid excessive writes
+  if (exists.size % 10 === 0) {
+    persistKnownExists();
+  }
+}
+
+function persistKnownExists(): void {
+  try {
+    const exists = getKnownExists();
+    // Limit size to prevent localStorage bloat (keep most recent 2000)
+    const keys = Array.from(exists).slice(-2000);
+    localStorage.setItem(
+      KNOWN_EXISTS_KEY,
+      JSON.stringify({ keys, timestamp: Date.now() })
+    );
+  } catch {
+    // Ignore localStorage errors
+  }
+}
 
 /**
  * Check if a cached entry is still valid (not expired)
@@ -105,25 +157,14 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
   /**
    * Prefetch opposite light mode URL in background
    * Called after a successful cloud cache hit to enable instant toggling
-   * Delayed significantly to avoid competing with immediate requests
+   *
+   * DISABLED: This was causing excessive 404 errors in the console for thumbnails
+   * that don't exist in the opposite mode. The latency savings aren't worth the noise.
+   * Users rarely toggle light/dark mode while viewing thumbnails anyway.
    */
-  private prefetchOppositeMode(key: CloudThumbnailKey): void {
-    // Delay prefetch by 3 seconds so immediate requests get priority
-    setTimeout(() => {
-      const oppositeKey = { ...key, lightMode: !key.lightMode };
-      const oppositeCacheKey = this.getCacheKey(oppositeKey);
-
-      // Skip if already in cache
-      const cached = urlCache.get(oppositeCacheKey);
-      if (cached && isCacheValid(cached)) {
-        return;
-      }
-
-      // Fire and forget - fetch opposite mode in background
-      this.getUrl(oppositeKey).catch(() => {
-        // Ignore errors - this is just a prefetch optimization
-      });
-    }, 3000);
+  private prefetchOppositeMode(_key: CloudThumbnailKey): void {
+    // Intentionally disabled - see comment above
+    // The 404 noise from non-existent opposite mode thumbnails isn't worth it
   }
 
   /**
@@ -146,8 +187,12 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
 
   /**
    * Get thumbnail URL from Firebase Storage
-   * Returns null if thumbnail doesn't exist in cloud
-   * Uses getMetadata first to avoid 404 errors in console (getDownloadURL logs network errors)
+   * Returns null if thumbnail doesn't exist in cloud (or we don't know if it exists)
+   *
+   * IMPORTANT: This method only fetches thumbnails we KNOW exist (from previous uploads).
+   * If we don't know it exists, we return null immediately to avoid 404 errors.
+   * The caller should render locally, then upload() will register it as "known to exist".
+   *
    * @param priority - Lower = higher priority (Y position). Visible thumbnails get served first.
    */
   async getUrl(key: CloudThumbnailKey, priority: number = Infinity): Promise<string | null> {
@@ -163,7 +208,16 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       urlCache.delete(cacheKey);
     }
 
-    // Acquire a slot before making Firebase request (respects priority queue)
+    // KEY CHANGE: Only fetch if we KNOW this thumbnail exists
+    // This prevents 404 errors entirely - we never request things we haven't confirmed
+    if (!getKnownExists().has(cacheKey)) {
+      // We don't know if it exists - return null, caller will render locally
+      // After upload(), this will be added to knownExists for next time
+      return null;
+    }
+
+    // We know this exists - safe to fetch without 404
+    // Acquire a slot before making request (respects priority queue)
     await acquireCheckSlot(priority);
 
     try {
@@ -173,62 +227,15 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
         return cachedAgain.url;
       }
 
-      const { ref, getMetadata, getDownloadURL } = await import("firebase/storage");
-      const storage = await getStorageInstance();
+      // Build the public URL directly
       const storagePath = this.getStoragePath(key);
-      const storageRef = ref(storage, storagePath);
+      const encodedPath = encodeURIComponent(storagePath);
+      const bucket = "the-kinetic-alphabet.firebasestorage.app";
+      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
 
-      // Add timeout to prevent hanging when Firebase is overloaded
-      const TIMEOUT_MS = 5000;
-
-      // First check if file exists using getMetadata (doesn't log 404 to console)
-      // This avoids the red 404 errors that getDownloadURL causes
-      try {
-        await Promise.race([
-          getMetadata(storageRef),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Cloud cache timeout")), TIMEOUT_MS)
-          ),
-        ]);
-      } catch (metadataError: unknown) {
-        // File doesn't exist - cache null and return silently (no console error)
-        if (
-          metadataError instanceof Error &&
-          (metadataError.message.includes("object-not-found") ||
-            metadataError.message.includes("storage/object-not-found"))
-        ) {
-          urlCache.set(cacheKey, { url: null, timestamp: Date.now() });
-          return null;
-        }
-        // Timeout - don't cache, render locally
-        if (metadataError instanceof Error && metadataError.message.includes("timeout")) {
-          return null;
-        }
-        // Other error - don't cache, might be transient
-        return null;
-      }
-
-      // File exists - now get the download URL (won't 404)
-      const url = await getDownloadURL(storageRef);
-
-      if (url) {
-        urlCache.set(cacheKey, { url, timestamp: Date.now() });
-
-        // Prefetch opposite light mode in background for instant toggling
-        this.prefetchOppositeMode(key);
-      }
-      return url;
-    } catch (error: unknown) {
-      // Shouldn't happen since we checked metadata first, but handle gracefully
-      if (
-        error instanceof Error &&
-        (error.message.includes("object-not-found") ||
-          error.message.includes("storage/object-not-found"))
-      ) {
-        urlCache.set(cacheKey, { url: null, timestamp: Date.now() });
-        return null;
-      }
-      return null;
+      // Cache and return - we know it exists, no need to verify
+      urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
+      return publicUrl;
     } finally {
       // Always release the slot
       releaseCheckSlot();
@@ -293,6 +300,7 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
     try {
       const url = await uploadPromise;
       urlCache.set(cacheKey, { url, timestamp: Date.now() });
+      addKnownExists(cacheKey); // Register as existing - future getUrl() calls will fetch it
       return url;
     } finally {
       pendingUploads.delete(cacheKey);
@@ -331,10 +339,19 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
 
   /**
    * Clear the in-memory URL cache
-   * (Firebase Storage content is persistent)
+   * @param includeKnownExists - Also clear the persistent "known exists" list
+   *        (use this after bulk-deleting thumbnails from storage)
    */
-  clearMemoryCache(): void {
+  clearMemoryCache(includeKnownExists: boolean = false): void {
     urlCache.clear();
+    if (includeKnownExists) {
+      knownExists = new Set();
+      try {
+        localStorage.removeItem(KNOWN_EXISTS_KEY);
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
   }
 
   /**
@@ -423,6 +440,15 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
           urlCache.delete(key);
         }
       }
+
+      // Also clear "known exists" entries for deleted thumbnails
+      const exists = getKnownExists();
+      for (const key of exists) {
+        if (key.startsWith(`${variant}/`)) {
+          exists.delete(key);
+        }
+      }
+      persistKnownExists();
 
       return deletedCount;
     } catch (error) {
