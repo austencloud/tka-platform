@@ -244,8 +244,10 @@ export default defineConfig({
     }),
     // ============================================================================
     // PWA CONFIGURATION (Google Play Store / Installable Web App)
+    // Only enabled when ENABLE_PWA=true (set this on tkascribe.com, not tkaflowarts.com)
     // ============================================================================
-    SvelteKitPWA({
+    process.env.ENABLE_PWA === "true" &&
+      SvelteKitPWA({
       registerType: "autoUpdate",
       // Force service worker to root scope - prevents relative path issues on nested routes
       scope: "/",
