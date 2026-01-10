@@ -142,9 +142,12 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
 
     // Layer 6-8: Parallax petals (far, mid, near)
     if (this.layers.petals && this.isInitialized) {
-      // For now, draw all petals together
-      // TODO: Separate into parallax depth layers
-      this.sakuraSystem.draw(this.petals, ctx, dimensions);
+      // Draw petals with parallax depth layering
+      this.sakuraSystem.draw(this.petals, ctx, dimensions, {
+        petalsFar: this.layers.petalsFar,
+        petalsMid: this.layers.petalsMid,
+        petalsNear: this.layers.petalsNear,
+      });
     }
 
     // Layer 9: Petal trails

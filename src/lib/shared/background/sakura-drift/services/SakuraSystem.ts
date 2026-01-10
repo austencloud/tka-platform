@@ -255,6 +255,9 @@ export function createSakuraSystem() {
       }
     }
 
+    // Assign depth layer for parallax effect
+    const depth = assignDepth();
+
     return {
       x,
       y,
@@ -277,6 +280,7 @@ export function createSakuraSystem() {
       driftBias,
       color: { r, g, b },
       isFlower,
+      depth,
     };
   }
 
@@ -468,6 +472,9 @@ export function createSakuraSystem() {
       }
     }
 
+    // Assign depth layer for parallax effect
+    const depth = assignDepth();
+
     return {
       x,
       y,
@@ -490,6 +497,7 @@ export function createSakuraSystem() {
       driftBias,
       color: { r, g, b },
       isFlower,
+      depth,
     };
   }
 
@@ -583,180 +591,136 @@ export function createSakuraSystem() {
   }
 
   /**
-   * Draw petals and flowers with soft edges
+   * Draw a single petal with depth-adjusted size and opacity
+   */
+  function drawPetal(
+    petal: SakuraPetal,
+    ctx: CanvasRenderingContext2D,
+    sizeMultiplier: number,
+    opacityMultiplier: number
+  ): void {
+    const { x, y, size, rotation, opacity, color, isFlower } = petal;
+    const adjustedSize = size * sizeMultiplier;
+    const adjustedOpacity = opacity * opacityMultiplier;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+
+    if (isFlower) {
+      // Draw glow effect behind flower
+      const glowRadius = adjustedSize * SAKURA_FLOWER.GLOW.RADIUS;
+      const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
+      glowGradient.addColorStop(
+        0,
+        `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity * SAKURA_FLOWER.GLOW.INNER_OPACITY})`
+      );
+      glowGradient.addColorStop(
+        0.4,
+        `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity * SAKURA_FLOWER.GLOW.OPACITY})`
+      );
+      glowGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+      ctx.fillStyle = glowGradient;
+      ctx.fillRect(-glowRadius, -glowRadius, glowRadius * 2, glowRadius * 2);
+
+      // Draw a full cherry blossom flower (5 petals)
+      for (let i = 0; i < SAKURA_FLOWER.PETAL_COUNT; i++) {
+        const angle = (i * Math.PI * 2) / SAKURA_FLOWER.PETAL_COUNT;
+        ctx.save();
+        ctx.rotate(angle);
+
+        const gradient = ctx.createRadialGradient(
+          0, adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, 0,
+          0, adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, adjustedSize * 0.6
+        );
+        gradient.addColorStop(SAKURA_FLOWER.GRADIENT_INNER, `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity})`);
+        gradient.addColorStop(SAKURA_FLOWER.GRADIENT_MID, `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity * SAKURA_FLOWER.MID_OPACITY})`);
+        gradient.addColorStop(SAKURA_FLOWER.GRADIENT_OUTER, `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity * SAKURA_FLOWER.OUTER_OPACITY})`);
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, adjustedSize * SAKURA_FLOWER.CURVE.TOP_Y, adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, adjustedSize * SAKURA_FLOWER.CURVE.MID_Y);
+        ctx.quadraticCurveTo(adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, adjustedSize * SAKURA_FLOWER.CURVE.BOTTOM_Y, 0, adjustedSize * SAKURA_FLOWER.CURVE.END_Y);
+        ctx.quadraticCurveTo(-adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, adjustedSize * SAKURA_FLOWER.CURVE.BOTTOM_Y, -adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, adjustedSize * SAKURA_FLOWER.CURVE.MID_Y);
+        ctx.quadraticCurveTo(-adjustedSize * SAKURA_FLOWER.CURVE.WIDTH_FACTOR, adjustedSize * SAKURA_FLOWER.CURVE.TOP_Y, 0, 0);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Draw yellow center
+      const centerGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, adjustedSize * SAKURA_FLOWER.CENTER.RADIUS_MULTIPLIER);
+      centerGradient.addColorStop(0, `rgba(${SAKURA_FLOWER.CENTER.COLOR.r}, ${SAKURA_FLOWER.CENTER.COLOR.g}, ${SAKURA_FLOWER.CENTER.COLOR.b}, ${adjustedOpacity})`);
+      centerGradient.addColorStop(1, `rgba(${SAKURA_FLOWER.CENTER.OUTER_COLOR.r}, ${SAKURA_FLOWER.CENTER.OUTER_COLOR.g}, ${SAKURA_FLOWER.CENTER.OUTER_COLOR.b}, ${adjustedOpacity * SAKURA_FLOWER.CENTER.OUTER_OPACITY})`);
+      ctx.fillStyle = centerGradient;
+      ctx.beginPath();
+      ctx.arc(0, 0, adjustedSize * SAKURA_FLOWER.CENTER.RADIUS_MULTIPLIER, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Draw single petal
+      const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, adjustedSize);
+      gradient.addColorStop(SAKURA_PETAL.GRADIENT.INNER, `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity})`);
+      gradient.addColorStop(SAKURA_PETAL.GRADIENT.MID, `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity * SAKURA_PETAL.OPACITY.MID})`);
+      gradient.addColorStop(SAKURA_PETAL.GRADIENT.OUTER, `rgba(${color.r}, ${color.g}, ${color.b}, ${adjustedOpacity * SAKURA_PETAL.OPACITY.OUTER})`);
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, adjustedSize * SAKURA_PETAL.ELLIPSE.PRIMARY.width, adjustedSize * SAKURA_PETAL.ELLIPSE.PRIMARY.height, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, adjustedSize * SAKURA_PETAL.ELLIPSE.SECONDARY.width, adjustedSize * SAKURA_PETAL.ELLIPSE.SECONDARY.height, SAKURA_PETAL.ELLIPSE.SECONDARY.rotation, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Draw petals and flowers with parallax depth ordering
+   * Renders far -> mid -> near for proper depth layering
    */
   function draw(
     petals: SakuraPetal[],
     ctx: CanvasRenderingContext2D,
-    _dimensions: Dimensions
+    _dimensions: Dimensions,
+    layerVisibility?: { petalsFar: boolean; petalsMid: boolean; petalsNear: boolean }
   ): void {
-    petals.forEach((petal) => {
-      const { x, y, size, rotation, opacity, color, isFlower } = petal;
+    // Default to all layers visible
+    const visibility = layerVisibility ?? { petalsFar: true, petalsMid: true, petalsNear: true };
 
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
+    // Group petals by depth
+    const farPetals: SakuraPetal[] = [];
+    const midPetals: SakuraPetal[] = [];
+    const nearPetals: SakuraPetal[] = [];
 
-      if (isFlower) {
-        // Draw glow effect behind flower
-        const glowRadius = size * SAKURA_FLOWER.GLOW.RADIUS;
-        const glowGradient = ctx.createRadialGradient(
-          0,
-          0,
-          0,
-          0,
-          0,
-          glowRadius
-        );
-        glowGradient.addColorStop(
-          0,
-          `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * SAKURA_FLOWER.GLOW.INNER_OPACITY})`
-        );
-        glowGradient.addColorStop(
-          0.4,
-          `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * SAKURA_FLOWER.GLOW.OPACITY})`
-        );
-        glowGradient.addColorStop(
-          1,
-          `rgba(${color.r}, ${color.g}, ${color.b}, 0)`
-        );
-        ctx.fillStyle = glowGradient;
-        ctx.fillRect(-glowRadius, -glowRadius, glowRadius * 2, glowRadius * 2);
+    for (const petal of petals) {
+      if (petal.depth === "far") farPetals.push(petal);
+      else if (petal.depth === "mid") midPetals.push(petal);
+      else nearPetals.push(petal);
+    }
 
-        // Draw a full cherry blossom flower (5 petals)
-        for (let i = 0; i < SAKURA_FLOWER.PETAL_COUNT; i++) {
-          const angle = (i * Math.PI * 2) / SAKURA_FLOWER.PETAL_COUNT;
-          ctx.save();
-          ctx.rotate(angle);
-
-          // Petal gradient
-          const gradient = ctx.createRadialGradient(
-            0,
-            size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            0,
-            0,
-            size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            size * 0.6
-          );
-          gradient.addColorStop(
-            SAKURA_FLOWER.GRADIENT_INNER,
-            `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`
-          );
-          gradient.addColorStop(
-            SAKURA_FLOWER.GRADIENT_MID,
-            `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * SAKURA_FLOWER.MID_OPACITY})`
-          );
-          gradient.addColorStop(
-            SAKURA_FLOWER.GRADIENT_OUTER,
-            `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * SAKURA_FLOWER.OUTER_OPACITY})`
-          );
-
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          // Heart-shaped petal
-          ctx.moveTo(0, 0);
-          ctx.quadraticCurveTo(
-            size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            size * SAKURA_FLOWER.CURVE.TOP_Y,
-            size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            size * SAKURA_FLOWER.CURVE.MID_Y
-          );
-          ctx.quadraticCurveTo(
-            size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            size * SAKURA_FLOWER.CURVE.BOTTOM_Y,
-            0,
-            size * SAKURA_FLOWER.CURVE.END_Y
-          );
-          ctx.quadraticCurveTo(
-            -size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            size * SAKURA_FLOWER.CURVE.BOTTOM_Y,
-            -size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            size * SAKURA_FLOWER.CURVE.MID_Y
-          );
-          ctx.quadraticCurveTo(
-            -size * SAKURA_FLOWER.CURVE.WIDTH_FACTOR,
-            size * SAKURA_FLOWER.CURVE.TOP_Y,
-            0,
-            0
-          );
-          ctx.fill();
-
-          ctx.restore();
-        }
-
-        // Draw yellow center
-        const centerGradient = ctx.createRadialGradient(
-          0,
-          0,
-          0,
-          0,
-          0,
-          size * SAKURA_FLOWER.CENTER.RADIUS_MULTIPLIER
-        );
-        centerGradient.addColorStop(
-          0,
-          `rgba(${SAKURA_FLOWER.CENTER.COLOR.r}, ${SAKURA_FLOWER.CENTER.COLOR.g}, ${SAKURA_FLOWER.CENTER.COLOR.b}, ${opacity})`
-        );
-        centerGradient.addColorStop(
-          1,
-          `rgba(${SAKURA_FLOWER.CENTER.OUTER_COLOR.r}, ${SAKURA_FLOWER.CENTER.OUTER_COLOR.g}, ${SAKURA_FLOWER.CENTER.OUTER_COLOR.b}, ${opacity * SAKURA_FLOWER.CENTER.OUTER_OPACITY})`
-        );
-        ctx.fillStyle = centerGradient;
-        ctx.beginPath();
-        ctx.arc(
-          0,
-          0,
-          size * SAKURA_FLOWER.CENTER.RADIUS_MULTIPLIER,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-      } else {
-        // Draw single petal
-        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
-        gradient.addColorStop(
-          SAKURA_PETAL.GRADIENT.INNER,
-          `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`
-        );
-        gradient.addColorStop(
-          SAKURA_PETAL.GRADIENT.MID,
-          `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * SAKURA_PETAL.OPACITY.MID})`
-        );
-        gradient.addColorStop(
-          SAKURA_PETAL.GRADIENT.OUTER,
-          `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * SAKURA_PETAL.OPACITY.OUTER})`
-        );
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-
-        // Draw stylized petal shape (two overlapping ellipses)
-        ctx.ellipse(
-          0,
-          0,
-          size * SAKURA_PETAL.ELLIPSE.PRIMARY.width,
-          size * SAKURA_PETAL.ELLIPSE.PRIMARY.height,
-          0,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.ellipse(
-          0,
-          0,
-          size * SAKURA_PETAL.ELLIPSE.SECONDARY.width,
-          size * SAKURA_PETAL.ELLIPSE.SECONDARY.height,
-          SAKURA_PETAL.ELLIPSE.SECONDARY.rotation,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
+    // Draw in depth order: far -> mid -> near
+    if (visibility.petalsFar) {
+      const cfg = SAKURA_PARALLAX.far;
+      for (const petal of farPetals) {
+        drawPetal(petal, ctx, cfg.sizeMultiplier, cfg.opacityMultiplier);
       }
+    }
 
-      ctx.restore();
-    });
+    if (visibility.petalsMid) {
+      const cfg = SAKURA_PARALLAX.mid;
+      for (const petal of midPetals) {
+        drawPetal(petal, ctx, cfg.sizeMultiplier, cfg.opacityMultiplier);
+      }
+    }
+
+    if (visibility.petalsNear) {
+      const cfg = SAKURA_PARALLAX.near;
+      for (const petal of nearPetals) {
+        drawPetal(petal, ctx, cfg.sizeMultiplier, cfg.opacityMultiplier);
+      }
+    }
   }
 
   /**

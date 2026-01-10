@@ -10,13 +10,13 @@ export const AUTUMN_PARTICLE_COUNTS = {
 } as const;
 
 export const AUTUMN_PHYSICS = {
-  // Base falling speed (faster than sakura's 0.2 for heavier feel)
+  // Base falling speed (faster than cherry blossom's 0.2 for heavier feel)
   baseSpeed: 0.5,
   speedVariance: 0.7,
   // Horizontal drift
   baseDrift: 0.15,
   driftVariance: 0.2,
-  // Rotation (faster than sakura for tumbling effect)
+  // Rotation (faster than cherry blossom for tumbling effect)
   rotationSpeed: { min: 0.02, max: 0.06 },
   // Secondary rotation axis for 3D tumble
   tumbleSpeed: { min: 0.015, max: 0.045 },
