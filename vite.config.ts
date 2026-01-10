@@ -244,9 +244,9 @@ export default defineConfig({
     }),
     // ============================================================================
     // PWA CONFIGURATION (Google Play Store / Installable Web App)
-    // Only enabled when ENABLE_PWA=true (set this on tkascribe.com, not tkaflowarts.com)
+    // Enabled by default for TKA Scribe. Set DISABLE_PWA=true for landing page builds.
     // ============================================================================
-    process.env.ENABLE_PWA === "true" &&
+    process.env.DISABLE_PWA !== "true" &&
       SvelteKitPWA({
       registerType: "autoUpdate",
       // Force service worker to root scope - prevents relative path issues on nested routes
@@ -375,8 +375,15 @@ export default defineConfig({
         // Strategic chunking for your actual dependencies
         manualChunks: (id) => {
           if (id.includes("node_modules")) {
-            // Heavy 3D libraries - Three.js is ~1.5MB+ and must be separate
-            if (id.includes("three") || id.includes("@threlte"))
+            // Heavy 3D libraries - Three.js ecosystem all in one chunk to avoid circular deps
+            if (
+              id.includes("three") ||
+              id.includes("@threlte") ||
+              id.includes("troika") ||
+              id.includes("postprocessing") ||
+              id.includes("three-perf") ||
+              id.includes("@dimforge/rapier")
+            )
               return "vendor-three";
             if (id.includes("fabric")) return "vendor-fabric";
             if (id.includes("pdfjs-dist")) return "vendor-pdf";
@@ -405,15 +412,23 @@ export default defineConfig({
       "@tsparticles/basic",
       "@tsparticles/engine",
       "@tsparticles/preset-snow",
-      // Three.js ecosystem - must be bundled to avoid circular initialization issues
+      // Three.js ecosystem - all bundled together to avoid circular init issues
       "three",
-      "troika-three-text",
       "@threlte/core",
       "@threlte/extras",
+      "@threlte/rapier",
+      "troika-three-text",
       "postprocessing",
       "three-perf",
     ],
-    external: ["pdfjs-dist", "page-flip"],
+    external: [
+      "pdfjs-dist",
+      "page-flip",
+    ],
+    // Include svelte condition for threlte packages, but node/module first for SSR
+    resolve: {
+      conditions: ["svelte", "node", "module", "import", "default"],
+    },
   },
   // ============================================================================
   // CSS
