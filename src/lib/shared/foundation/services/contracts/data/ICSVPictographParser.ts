@@ -22,6 +22,10 @@ export interface CSVRow {
   redRotationDirection: string;
   redStartLocation: string;
   redEndLocation: string;
+  // Skewed mode fields (optional - only present in SkewedPictographDataframe.csv)
+  blueSkewDir?: string;
+  redSkewDir?: string;
+  category?: string;
 }
 
 export interface ICSVPictographParser {

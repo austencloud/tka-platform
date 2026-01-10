@@ -111,6 +111,8 @@ export class CSVPictographParser implements ICSVPictographParser {
     });
 
     // CSV parsing completed successfully
+    // Parse category if present (skewed mode CSV only)
+    const category = row.category ? parseInt(row.category, 10) : null;
 
     return createPictographData({
       letter,
@@ -120,6 +122,7 @@ export class CSVPictographParser implements ICSVPictographParser {
         [MotionColor.BLUE]: blueMotion,
         [MotionColor.RED]: redMotion,
       },
+      ...(category !== null && { category }),
     });
   }
 

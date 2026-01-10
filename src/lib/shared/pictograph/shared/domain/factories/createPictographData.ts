@@ -13,5 +13,6 @@ export function createPictographData(
       startPosition: data.startPosition,
     }),
     ...(data.endPosition !== undefined && { endPosition: data.endPosition }),
+    ...(data.category !== undefined && { category: data.category }),
   };
 }

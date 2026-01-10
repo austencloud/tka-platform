@@ -58,6 +58,24 @@ interface PictographRow {
 interface SkewedRow extends PictographRow {
   blueSkewDir: SkewDir;
   redSkewDir: SkewDir;
+  category: 1 | 2; // 1 = ends skewed (zeta/eta), 2 = both skew but ends normal
+}
+
+// Classify which category a skewed motion belongs to
+function classifyCategory(
+  endPosition: string,
+  blueSkewDir: SkewDir,
+  redSkewDir: SkewDir
+): 1 | 2 {
+  const isSkewedEnd =
+    endPosition.startsWith("zeta") || endPosition.startsWith("eta");
+
+  // Category 1: Ends in a skewed position (one hand in each grid type)
+  if (isSkewedEnd) return 1;
+
+  // Category 2: Both hands skewed but ended in same grid type (normal position)
+  // This happens when both hands cross the boundary together
+  return 2;
 }
 
 // Helper to get index in location cycle
@@ -315,6 +333,8 @@ function generateSkewedVariants(base: PictographRow): SkewedRow[] {
         continue;
       }
 
+      const category = classifyCategory(newEndPosition, blueSkewDir, redSkewDir);
+
       variants.push({
         ...base,
         blueEndLocation: newBlueEnd,
@@ -322,6 +342,7 @@ function generateSkewedVariants(base: PictographRow): SkewedRow[] {
         endPosition: newEndPosition,
         blueSkewDir,
         redSkewDir,
+        category,
       });
     }
   }
@@ -347,6 +368,7 @@ function toCSVLine(row: SkewedRow): string {
     row.redSkewDir,
     row.redStartLocation,
     row.redEndLocation,
+    row.category,
   ].join(",");
 }
 
@@ -415,7 +437,7 @@ function main() {
 
   // Write output
   const outputHeader =
-    "letter,startPosition,endPosition,timing,direction,blueMotionType,blueRotationDirection,blueSkewDir,blueStartLocation,blueEndLocation,redMotionType,redRotationDirection,redSkewDir,redStartLocation,redEndLocation";
+    "letter,startPosition,endPosition,timing,direction,blueMotionType,blueRotationDirection,blueSkewDir,blueStartLocation,blueEndLocation,redMotionType,redRotationDirection,redSkewDir,redStartLocation,redEndLocation,category";
   const outputLines = [outputHeader, ...uniqueVariants.map(toCSVLine)];
 
   fs.writeFileSync(outputPath, outputLines.join("\n"), "utf-8");
@@ -424,11 +446,17 @@ function main() {
   // Stats
   const byLetter = new Map<string, number>();
   const byEndPosition = new Map<string, number>();
+  const byCategory = new Map<number, number>();
 
   for (const v of uniqueVariants) {
     byLetter.set(v.letter, (byLetter.get(v.letter) || 0) + 1);
     byEndPosition.set(v.endPosition, (byEndPosition.get(v.endPosition) || 0) + 1);
+    byCategory.set(v.category, (byCategory.get(v.category) || 0) + 1);
   }
+
+  console.log("\n=== CATEGORY DISTRIBUTION ===");
+  console.log(`  Category 1 (ends skewed): ${byCategory.get(1) || 0}`);
+  console.log(`  Category 2 (both skew, ends normal): ${byCategory.get(2) || 0}`);
 
   console.log("\nVariants by letter (top 10):");
   [...byLetter.entries()]

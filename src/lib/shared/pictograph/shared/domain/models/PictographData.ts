@@ -19,4 +19,11 @@ export interface PictographData {
 
   // Movement data - explicitly allow undefined values
   readonly motions: Partial<Record<MotionColor, MotionData | undefined>>;
+
+  // Skewed mode category (1-4, see docs/SKEW-AUDIT-FINDINGS.md)
+  // 1 = normal→skewed (one hand skews)
+  // 2 = normal→normal (both hands skew)
+  // 3 = skewed→skewed (future)
+  // 4 = skewed→normal (future)
+  readonly category?: number | null;
 }

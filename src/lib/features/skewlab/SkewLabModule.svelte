@@ -3,12 +3,14 @@
    * Skew Lab Module
    *
    * Admin-only experimental sandbox for validating skewed position rendering.
-   * Renders all Zeta (135°) and Eta (45°) positions as static pictographs
-   * using the user's prop preferences on a skewed grid.
+   * Has two tabs:
+   * - Positions: Renders all 32 Zeta/Eta positions as static pictographs
+   * - Categories: Browse skewed pictographs by category (1-4)
    */
 
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import CategoryBrowser from "./components/CategoryBrowser.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import {
     GridLocation,
@@ -27,6 +29,7 @@
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
   // State
+  let activeTab = $state<"positions" | "categories">("categories");
   let selectedGroup = $state<"all" | "zeta" | "eta">("all");
   let blueOrientation = $state<Orientation>(Orientation.IN);
   let redOrientation = $state<Orientation>(Orientation.IN);
@@ -185,12 +188,34 @@
       <h1>Skew Lab</h1>
       <span class="badge">Admin</span>
     </div>
-    <p class="description">
-      Validate skewed position rendering with your current prop settings
-    </p>
+    <nav class="tabs">
+      <button
+        class="tab"
+        class:active={activeTab === "categories"}
+        onclick={() => (activeTab = "categories")}
+      >
+        <i class="fas fa-layer-group" aria-hidden="true"></i>
+        Categories
+      </button>
+      <button
+        class="tab"
+        class:active={activeTab === "positions"}
+        onclick={() => (activeTab = "positions")}
+      >
+        <i class="fas fa-grip" aria-hidden="true"></i>
+        Positions
+      </button>
+    </nav>
   </header>
 
-  <nav class="filter-chips">
+  {#if activeTab === "categories"}
+    <CategoryBrowser />
+  {:else}
+    <p class="tab-description">
+      Validate skewed position rendering with your current prop settings
+    </p>
+
+    <nav class="filter-chips">
     <button
       class="chip"
       class:active={selectedGroup === "all"}
@@ -277,6 +302,7 @@
       </article>
     {/each}
   </div>
+  {/if}
 </div>
 
 <style>
@@ -315,6 +341,51 @@
     border-radius: 4px;
     background: rgba(249, 115, 22, 0.15);
     color: #f97316;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.25rem;
+    border-radius: 10px;
+    width: fit-content;
+  }
+
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-text-secondary, #888);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .tab:hover {
+    color: var(--theme-text, #fff);
+  }
+
+  .tab.active {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, #fff);
+  }
+
+  .tab i {
+    font-size: 0.875rem;
+  }
+
+  .tab-description {
+    margin: 0;
+    padding: 0 1.5rem 1rem;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-secondary, #888);
   }
 
   .description {
