@@ -91,12 +91,21 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
 
+      // Let cancellations propagate
       if (err.message === "Cancelled") {
         throw err;
       }
 
+      // Log the error but don't throw - return a failed result gracefully
+      // This prevents unhandled promise rejections for corrupt/orphaned sequences
+      console.warn(
+        `[ThumbnailRenderOrchestrator] Failed to render "${key.inputs.sequenceName}":`,
+        err.message
+      );
       request.onStatusChange?.({ state: "error", error: err });
-      throw err;
+
+      // Return a failed result instead of throwing
+      return { url: null, fromCache: false, key, error: err };
     }
   }
 

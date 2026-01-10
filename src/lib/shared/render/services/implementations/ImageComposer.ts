@@ -27,40 +27,29 @@ import type {
 } from "../contracts/IImageComposer";
 import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
 import type { ITextRenderer } from "../contracts/ITextRenderer";
-
-// HMR-aware cache: Store cache in module scope so HMR can invalidate it
-// Without this, cached images from before code changes would persist
-const globalImageCache = new Map<string, HTMLImageElement>();
-
-// HMR: Clear cache when this module reloads (code changes in GridSvg, etc.)
-if (import.meta.hot) {
-  import.meta.hot.accept(() => {
-    globalImageCache.clear();
-  });
-  // Also clear on dispose
-  import.meta.hot.dispose(() => {
-    globalImageCache.clear();
-  });
-}
+import type { IPictographSVGCache } from "../contracts/IPictographSVGCache";
+import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
+import type { IBeatNumberRenderer } from "../contracts/IBeatNumberRenderer";
+import type { PictographMemoryCache } from "./PictographMemoryCache";
 
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
   private readonly difficultyCalculator = new SequenceDifficultyCalculator();
 
-  // PERF: Cache rendered pictograph images to avoid re-rendering identical pictographs
-  // Key: hash of pictograph data + size + beatNumber
-  // Value: rendered HTMLImageElement ready for canvas drawing
-  // Uses module-scoped cache for HMR awareness
-  private get renderedImageCache() {
-    return globalImageCache;
-  }
-  private cacheHits = 0;
-  private cacheMisses = 0;
+  // Two-layer caching stats
+  private layer1Hits = 0;
+  private layer1Misses = 0;
+  private layer2Hits = 0;
+  private layer2Misses = 0;
 
   constructor(
     private readonly layoutService: ILayoutCalculator,
     private readonly TextRenderer: ITextRenderer,
-    private readonly DimensionCalculator: IDimensionCalculator
+    private readonly DimensionCalculator: IDimensionCalculator,
+    private readonly svgCache: IPictographSVGCache,
+    private readonly keyHasher: IPictographKeyHasher,
+    private readonly memoryCache: PictographMemoryCache,
+    private readonly beatNumberRenderer: IBeatNumberRenderer
   ) {}
   /**
    * Get visibility settings for export
@@ -373,7 +362,11 @@ export class ImageComposer implements IImageComposer {
 
   /**
    * Render a single pictograph directly onto the canvas at the specified grid position
-   * 🚀 PERF: Uses cache to avoid re-rendering identical pictographs
+   * 🚀 PERF: Uses two-layer cache to avoid re-rendering identical pictographs
+   *
+   * Layer 1 (IndexedDB): Base SVG without beat number - persistent across sessions
+   * Layer 2 (Memory): Sized HTMLImageElement - fast access, LRU eviction
+   * Beat numbers are drawn as canvas text overlay after the base image
    *
    * @param bluePropType Optional explicit blue prop type override (passed to PictographPreparer to prevent race conditions)
    * @param redPropType Optional explicit red prop type override (passed to PictographPreparer to prevent race conditions)
@@ -400,49 +393,73 @@ export class ImageComposer implements IImageComposer {
         redPropType: redPropType ?? visibilitySettings?.redPropType,
       };
 
-      // 🚀 PERF: Generate cache key and check cache first
-      // Include visibility settings in cache key for correct caching
-      const cacheKey = this.generatePictographCacheKey(
-        pictographData,
-        beatSize,
-        beatNumber,
-        finalVisibilitySettings
-      );
+      // 🚀 PERF: Generate base cache key (WITHOUT beat number) for Layer 1
+      const baseKey = this.keyHasher.deriveKey(pictographData, finalVisibilitySettings);
 
-      let img = this.renderedImageCache.get(cacheKey);
+      // 🚀 PERF: Check Layer 2 (memory) first - includes size
+      const memoryKey = this.memoryCache.getKey(baseKey, beatSize);
+      let img = this.memoryCache.get(memoryKey);
 
       if (img) {
-        // Cache hit - use cached image directly (skip SVG rendering!)
-        this.cacheHits++;
+        // Layer 2 hit - use cached image directly
+        this.layer2Hits++;
       } else {
-        // Cache miss - render SVG and cache the result
-        this.cacheMisses++;
+        // Layer 2 miss - check Layer 1 (IndexedDB)
+        this.layer2Misses++;
 
-        // Generate SVG with beat number and visibility settings (including prop type overrides)
-        const svgString = await renderPictographToSVG(
-          pictographData,
-          beatSize,
-          beatNumber,
-          finalVisibilitySettings
-        );
+        let baseSvg = await this.svgCache.get(baseKey);
+
+        if (baseSvg) {
+          // Layer 1 hit - convert to image at target size
+          this.layer1Hits++;
+        } else {
+          // Layer 1 miss - render base SVG (WITHOUT beat number)
+          this.layer1Misses++;
+
+          baseSvg = await renderPictographToSVG(
+            pictographData,
+            beatSize,
+            undefined, // No beat number in base SVG
+            finalVisibilitySettings
+          );
+
+          // Store in Layer 1 (IndexedDB) - fire and forget
+          this.svgCache.set(baseKey, baseSvg).catch((err) => {
+            console.warn("[ImageComposer] Failed to cache SVG:", err);
+          });
+        }
 
         // Convert SVG to image
-        img = await this.svgStringToImage(svgString);
+        img = await this.svgStringToImage(baseSvg);
 
-        // Store in cache for future use
-        this.renderedImageCache.set(cacheKey, img);
+        // Store in Layer 2 (memory)
+        this.memoryCache.set(memoryKey, img);
       }
 
-      // Draw directly onto the canvas at the correct position (offset by title)
+      // Draw base image onto the canvas at the correct position
       const x = column * beatSize;
       const y = row * beatSize + titleOffset;
-
       ctx.drawImage(img, x, y, beatSize, beatSize);
+
+      // Log cache performance periodically (every 50 renders)
+      const totalOperations = this.layer2Hits + this.layer2Misses;
+      if (totalOperations > 0 && totalOperations % 50 === 0) {
+        console.log(
+          `[PictographCache] Stats: L2=${this.layer2Hits}/${totalOperations} (${((this.layer2Hits / totalOperations) * 100).toFixed(1)}%), ` +
+          `L1=${this.layer1Hits}/${this.layer1Misses + this.layer1Hits} (${this.layer1Hits + this.layer1Misses > 0 ? ((this.layer1Hits / (this.layer1Hits + this.layer1Misses)) * 100).toFixed(1) : 0}%)`
+        );
+      }
+
+      // Draw beat number as text overlay (if provided)
+      if (beatNumber !== undefined) {
+        const isDarkMode = finalVisibilitySettings.darkMode ?? false;
+        this.beatNumberRenderer.drawBeatNumber(ctx, beatNumber, x, y, beatSize, isDarkMode);
+      }
     } catch (error) {
       console.error(`❌ Failed to render beat at (${column}, ${row}):`, error);
       // Draw error placeholder
       const x = column * beatSize;
-      const y = row * beatSize;
+      const y = row * beatSize + titleOffset;
       ctx.fillStyle = "#ffeeee";
       ctx.fillRect(x + 5, y + 5, beatSize - 10, beatSize - 10);
       ctx.fillStyle = "#cc0000";
@@ -453,80 +470,69 @@ export class ImageComposer implements IImageComposer {
   }
 
   /**
-   * 🚀 PERF: Generate a unique cache key for a pictograph based on its visual content
-   * This allows identical pictographs to be rendered once and reused
-   */
-  private generatePictographCacheKey(
-    data: BeatData | PictographData,
-    beatSize: number,
-    beatNumber?: number,
-    visibilitySettings?: PictographVisibilityOptions
-  ): string {
-    // Extract the key visual properties that affect rendering
-    const keyParts: string[] = [];
-
-    // Size and beat number affect layout
-    keyParts.push(`size:${beatSize}`);
-    keyParts.push(`beat:${beatNumber ?? "none"}`);
-
-    // Letter/glyph
-    keyParts.push(`letter:${data.letter ?? "none"}`);
-
-    // Blue motion data (including propType and gridMode which affect rendering)
-    if (data.motions.blue) {
-      const blue = data.motions.blue;
-      keyParts.push(
-        `blue:${blue.motionType ?? ""}|${blue.startLocation ?? ""}|${blue.endLocation ?? ""}|${blue.turns ?? 0}|${blue.startOrientation ?? ""}|${blue.endOrientation ?? ""}|${blue.rotationDirection ?? ""}|${blue.propType ?? "staff"}|${blue.gridMode ?? "diamond"}`
-      );
-    } else {
-      keyParts.push("blue:none");
-    }
-
-    // Red motion data (including propType and gridMode which affect rendering)
-    if (data.motions.red) {
-      const red = data.motions.red;
-      keyParts.push(
-        `red:${red.motionType ?? ""}|${red.startLocation ?? ""}|${red.endLocation ?? ""}|${red.turns ?? 0}|${red.startOrientation ?? ""}|${red.endOrientation ?? ""}|${red.rotationDirection ?? ""}|${red.propType ?? "staff"}|${red.gridMode ?? "diamond"}`
-      );
-    } else {
-      keyParts.push("red:none");
-    }
-
-    // Include visibility settings in cache key (important for correct caching!)
-    if (visibilitySettings) {
-      keyParts.push(
-        `vis:${visibilitySettings.showTKA ?? "d"}|${visibilitySettings.showVTG ?? "d"}|${visibilitySettings.showElemental ?? "d"}|${visibilitySettings.showPositions ?? "d"}|${visibilitySettings.showReversals ?? "d"}|${visibilitySettings.showNonRadialPoints ?? "d"}|darkMode:${visibilitySettings.darkMode ?? false}|blueProp:${visibilitySettings.bluePropType ?? "d"}|redProp:${visibilitySettings.redPropType ?? "d"}`
-      );
-    }
-
-    return keyParts.join(":");
-  }
-
-  /**
    * 🚀 PERF: Get cache statistics for debugging/monitoring
+   * Returns stats for both cache layers
    */
   getCacheStats() {
+    const memoryStats = this.memoryCache.getStats();
+    const totalHits = this.layer1Hits + this.layer2Hits;
+    const totalMisses = this.layer1Misses + this.layer2Misses;
+
     return {
-      cacheSize: this.renderedImageCache.size,
-      cacheHits: this.cacheHits,
-      cacheMisses: this.cacheMisses,
-      hitRate:
-        this.cacheHits + this.cacheMisses > 0
-          ? (
-              (this.cacheHits / (this.cacheHits + this.cacheMisses)) *
-              100
-            ).toFixed(2) + "%"
+      // Layer 2 (Memory) stats
+      memoryCacheSize: memoryStats.size,
+      memoryCacheMaxEntries: memoryStats.maxEntries,
+      layer2Hits: this.layer2Hits,
+      layer2Misses: this.layer2Misses,
+      layer2HitRate:
+        this.layer2Hits + this.layer2Misses > 0
+          ? ((this.layer2Hits / (this.layer2Hits + this.layer2Misses)) * 100).toFixed(2) + "%"
+          : "0%",
+
+      // Layer 1 (IndexedDB) stats
+      layer1Hits: this.layer1Hits,
+      layer1Misses: this.layer1Misses,
+      layer1HitRate:
+        this.layer1Hits + this.layer1Misses > 0
+          ? ((this.layer1Hits / (this.layer1Hits + this.layer1Misses)) * 100).toFixed(2) + "%"
+          : "0%",
+
+      // Combined stats
+      totalHits,
+      totalMisses,
+      overallHitRate:
+        totalHits + totalMisses > 0
+          ? ((totalHits / (totalHits + totalMisses)) * 100).toFixed(2) + "%"
           : "0%",
     };
   }
 
   /**
-   * 🚀 PERF: Clear the rendered image cache (useful for memory management)
+   * Get Layer 1 (IndexedDB) cache statistics
+   * This is async because it queries IndexedDB
    */
-  clearCache(): void {
-    this.renderedImageCache.clear();
-    this.cacheHits = 0;
-    this.cacheMisses = 0;
+  async getLayer1Stats() {
+    return this.svgCache.getStats();
+  }
+
+  /**
+   * 🚀 PERF: Clear all caches
+   * @param includeIndexedDB If true, also clears the persistent IndexedDB cache
+   */
+  async clearCache(includeIndexedDB: boolean = false): Promise<void> {
+    // Clear Layer 2 (memory)
+    this.memoryCache.clear();
+
+    // Optionally clear Layer 1 (IndexedDB)
+    if (includeIndexedDB) {
+      await this.svgCache.clear();
+    }
+
+    // Reset stats
+    this.layer1Hits = 0;
+    this.layer1Misses = 0;
+    this.layer2Hits = 0;
+    this.layer2Misses = 0;
   }
 
   /**

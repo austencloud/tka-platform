@@ -51,14 +51,17 @@ export interface ThumbnailRequest {
  * Result of a thumbnail load/render operation.
  */
 export interface ThumbnailResult {
-  /** URL to display (either cloud URL or blob URL) */
-  url: string;
+  /** URL to display (either cloud URL or blob URL), null if render failed */
+  url: string | null;
 
   /** Whether this came from cache (true) or was freshly rendered (false) */
   fromCache: boolean;
 
   /** The cache key used (for cancellation) */
   key: ThumbnailCacheKey;
+
+  /** Error if rendering failed (only present when url is null) */
+  error?: Error;
 }
 
 export interface IThumbnailRenderOrchestrator {
@@ -74,8 +77,7 @@ export interface IThumbnailRenderOrchestrator {
    * 6. Return URL
    *
    * @param request The sequence and render configuration
-   * @returns Promise with the thumbnail URL and metadata
-   * @throws If rendering fails and no cached version exists
+   * @returns Promise with the thumbnail URL and metadata (url is null if render failed)
    */
   getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult>;
 

@@ -54,16 +54,34 @@ export interface IImageComposer {
 
   /**
    * Get cache statistics for debugging/monitoring
+   * Returns stats for both Layer 1 (IndexedDB) and Layer 2 (Memory) caches
    */
   getCacheStats(): {
-    cacheSize: number;
-    cacheHits: number;
-    cacheMisses: number;
-    hitRate: string;
+    // Layer 2 (Memory) stats
+    memoryCacheSize: number;
+    memoryCacheMaxEntries: number;
+    layer2Hits: number;
+    layer2Misses: number;
+    layer2HitRate: string;
+    // Layer 1 (IndexedDB) stats
+    layer1Hits: number;
+    layer1Misses: number;
+    layer1HitRate: string;
+    // Combined stats
+    totalHits: number;
+    totalMisses: number;
+    overallHitRate: string;
   };
 
   /**
-   * Clear the rendered image cache
+   * Get Layer 1 (IndexedDB) cache statistics
+   * This is async because it queries IndexedDB
    */
-  clearCache(): void;
+  getLayer1Stats(): Promise<{ count: number; sizeBytes: number }>;
+
+  /**
+   * Clear all caches
+   * @param includeIndexedDB If true, also clears the persistent IndexedDB cache
+   */
+  clearCache(includeIndexedDB?: boolean): Promise<void>;
 }

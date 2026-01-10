@@ -7,6 +7,7 @@
  * - DimensionCalculator, ImageFormatConverter
  * - SVGToCanvasConverter, TextRenderer
  * - GlyphCache, FilenameGenerator
+ * - PictographSVGCache, PictographKeyHasher, PictographMemoryCache, BeatNumberRenderer
  */
 
 import { createContainer } from "iti";
@@ -21,6 +22,10 @@ import { LayoutCalculator } from "$lib/shared/render/services/implementations/La
 import { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { SVGToCanvasConverter } from "$lib/shared/render/services/implementations/SVGToCanvasConverter";
 import { TextRenderer } from "$lib/shared/render/services/implementations/TextRenderer";
+import { PictographSVGCache } from "$lib/shared/render/services/implementations/PictographSVGCache";
+import { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
+import { PictographMemoryCache } from "$lib/shared/render/services/implementations/PictographMemoryCache";
+import { BeatNumberRenderer } from "$lib/shared/render/services/implementations/BeatNumberRenderer";
 
 /**
  * Create the render container with external dependencies
@@ -36,6 +41,11 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     svgToCanvasConverter: () => new SVGToCanvasConverter(),
     glyphCache: () => new GlyphCache(),
     filenameGenerator: () => new FilenameGenerator(),
+    // Two-layer pictograph caching system
+    pictographSVGCache: () => new PictographSVGCache(),
+    pictographKeyHasher: () => new PictographKeyHasher(),
+    pictographMemoryCache: () => new PictographMemoryCache(),
+    beatNumberRenderer: () => new BeatNumberRenderer(),
   });
 
   // Layer 2: Services that depend on Layer 1
@@ -44,13 +54,18 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     imageFormatConverter: () => new ImageFormatConverter(fileDownloader),
   }));
 
-  // Layer 3: ImageComposer depends on layoutCalculator, textRenderer, dimensionCalculator
+  // Layer 3: ImageComposer depends on layoutCalculator, textRenderer, dimensionCalculator,
+  // plus two-layer caching services
   const layer3Container = layer2Container.add((ctx) => ({
     imageComposer: () =>
       new ImageComposer(
         ctx.layoutCalculator,
         ctx.textRenderer,
-        ctx.dimensionCalculator
+        ctx.dimensionCalculator,
+        ctx.pictographSVGCache,
+        ctx.pictographKeyHasher,
+        ctx.pictographMemoryCache,
+        ctx.beatNumberRenderer
       ),
   }));
 
