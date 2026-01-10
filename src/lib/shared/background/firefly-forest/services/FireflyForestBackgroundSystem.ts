@@ -11,7 +11,9 @@ import {
   SHOOTING_STAR,
 } from "../domain/constants/firefly-constants";
 import { createFireflySystem } from "./FireflySystem";
-import { createTreeSilhouetteSystem, type TreeTypeVisibility, type PlacementConfig } from "./TreeSilhouetteSystem";
+import { createTreeSilhouetteSystem, type TreeTypeVisibility, type PlacementConfig, NUM_LAYERS } from "./TreeSilhouetteSystem";
+import { createAmbientParticleSystem } from "./AmbientParticleSystem";
+import { createCampfireSystem } from "./CampfireSystem";
 import { MoonRenderer, createCrescentMoon } from "$lib/shared/background/shared/services/MoonRenderer";
 
 // Re-export for Lab UI
@@ -50,12 +52,16 @@ export interface FireflyForestLayers {
   shootingStars: boolean;
   trees: boolean;
   grass: boolean;
+  ambientParticles: boolean;
+  campfire: boolean;
   fireflies: boolean;
 }
 
 export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   private fireflySystem: ReturnType<typeof createFireflySystem>;
   private treeSystem: ReturnType<typeof createTreeSilhouetteSystem>;
+  private ambientParticleSystem: ReturnType<typeof createAmbientParticleSystem>;
+  private campfireSystem: ReturnType<typeof createCampfireSystem>;
   private moonRenderer: MoonRenderer;
   private fireflies: Firefly[] = [];
   private stars: Star[] = [];
@@ -68,6 +74,27 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   private reducedMotion = false;
   private dimensions: Dimensions = { width: 0, height: 0 };
 
+  // Mouse parallax state - normalized position from center (-1 to 1)
+  // Disabled by default - can be enabled via setParallaxEnabled()
+  private mouseX = 0;
+  private mouseY = 0;
+  private targetMouseX = 0;
+  private targetMouseY = 0;
+  private parallaxEnabled = false;
+
+  // Parallax intensity per layer type (subtle effect)
+  private readonly PARALLAX_CONFIG = {
+    stars: 0.008,      // Very subtle - stars are far away
+    moon: 0.012,       // Slightly more than stars
+    farTrees: 0.015,   // Far trees move slightly
+    midTrees: 0.025,   // Mid trees move more
+    nearTrees: 0.04,   // Near trees move most
+    farGrass: 0.02,    // Far grass
+    midGrass: 0.03,    // Mid grass
+    nearGrass: 0.045,  // Near grass moves most
+    fireflies: 0.02,   // Fireflies have subtle depth response
+  };
+
   private readonly gradientStops = FIREFLY_BACKGROUND_GRADIENT;
 
   // Layer visibility for lab mode
@@ -78,12 +105,16 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     shootingStars: true,
     trees: true,
     grass: true,
+    ambientParticles: true,
+    campfire: false, // Off by default - optional cozy element
     fireflies: true,
   };
 
   constructor() {
     this.fireflySystem = createFireflySystem();
     this.treeSystem = createTreeSilhouetteSystem();
+    this.ambientParticleSystem = createAmbientParticleSystem();
+    this.campfireSystem = createCampfireSystem();
     // Random position - left or right side
     const onRightSide = Math.random() > 0.5;
     const horizontalOffset = 0.15 + Math.random() * 0.15;
@@ -114,68 +145,102 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     return stars;
   }
 
+  /**
+   * Get the ground/base Y position for a grass layer
+   * Matches the tree layer ground positions (below the horizon)
+   */
+  private getGrassLayerBaseY(layer: 0 | 1 | 2, height: number): number {
+    // Map grass layers (0, 1, 2) to tree layer positions (0, 3, 6)
+    // Far grass (0) at ~82% (below horizon), near grass (2) at bottom (~100%)
+    const farBaseRatio = 0.82;   // Match tree far base
+    const nearBaseRatio = 1.0;
+
+    const t = layer / 2; // 0, 0.5, 1
+    // Ease-out curve matching tree system
+    const easedT = 1 - Math.pow(1 - t, 1.5);
+    const baseRatio = farBaseRatio + (nearBaseRatio - farBaseRatio) * easedT;
+
+    return height * baseRatio;
+  }
+
   private generateGrass(dimensions: Dimensions, quality: QualityLevel): GrassBlade[] {
     const blades: GrassBlade[] = [];
 
-    // Grass count based on quality (per layer)
+    // Grass count based on quality - tripled for dense meadow coverage
     const countMap: Record<QualityLevel, number> = {
-      "ultra-minimal": 5,
-      minimal: 10,
-      low: 15,
-      medium: 25,
-      high: 40,
+      "ultra-minimal": 40,
+      minimal: 80,
+      low: 140,
+      medium: 220,
+      high: 350,
     };
     const countPerLayer = countMap[quality];
 
-    // Ground line is at the bottom of the screen
-    const groundY = dimensions.height;
-
     // Layer configuration:
-    // - Far grass is SMALL (appears distant)
-    // - Near grass is LARGE (prominent foreground element)
+    // - Far layers need MORE grass to compensate for smaller visual size
+    // - Near grass is larger but fewer in count for balanced visual distribution
     const layerConfigs: Array<{
       layer: 0 | 1 | 2;
-      yOffset: number;
       heightMin: number;
       heightMax: number;
+      verticalSpread: number; // How much grass can vary vertically within the layer
+      densityMultiplier: number; // Extra density for this layer
       colors: string[];
     }> = [
       {
-        layer: 0, // Far - small, faded
-        yOffset: -12,
-        heightMin: 8,
-        heightMax: 15,
-        colors: ["#1a2d2a", "#1c2f2c", "#1b2e2b"], // Blue-tinted dark
+        layer: 0, // Far - many tiny grass blades at horizon
+        heightMin: 2,
+        heightMax: 5,
+        verticalSpread: 0.06, // Spread in far ground area
+        densityMultiplier: 1.8, // Many more to fill the distance
+        colors: ["#1a2d2a", "#1c2f2c", "#1b2e2b", "#182b28", "#1d302d"], // Blue-tinted (atmospheric)
       },
       {
-        layer: 1, // Mid - medium
-        yOffset: -5,
-        heightMin: 15,
-        heightMax: 30,
-        colors: ["#1a3520", "#1c3722", "#1b3621"], // Medium dark greens
+        layer: 1, // Mid - medium grass fills the mid-ground
+        heightMin: 6,
+        heightMax: 14,
+        verticalSpread: 0.08, // Spread in mid-ground
+        densityMultiplier: 1.3, // More than near, less than far
+        colors: ["#1a3520", "#1c3722", "#1b3621", "#193420", "#1e3923"], // Medium greens
       },
       {
-        layer: 2, // Near - large, prominent
-        yOffset: 0,
-        heightMin: 25,
-        heightMax: 50,
-        colors: ["#1a3d1a", "#1f4220", "#1d401d", "#234823"], // Rich forest greens
+        layer: 2, // Near - fewer but larger foreground grass
+        heightMin: 12,
+        heightMax: 24,
+        verticalSpread: 0.05, // Concentrated near bottom
+        densityMultiplier: 0.6, // Fewer blades - they're bigger
+        colors: ["#1a3d1a", "#1f4220", "#1d401d", "#234823", "#1e4220"], // Rich forest greens
       },
     ];
 
     for (const config of layerConfigs) {
-      for (let i = 0; i < countPerLayer; i++) {
+      // Get the base Y for this layer (matching tree horizon positions)
+      const layerBaseY = this.getGrassLayerBaseY(config.layer, dimensions.height);
+
+      // Apply density multiplier for this layer
+      const layerCount = Math.floor(countPerLayer * config.densityMultiplier);
+
+      for (let i = 0; i < layerCount; i++) {
+        // Spread horizontally across full width
         const x = Math.random() * dimensions.width;
+
+        // Vertical position: at the layer's ground line with spread BELOW the base
+        // Grass must stay BELOW the visible ground line (no floating grass in sky)
+        const groundStartY = dimensions.height * 0.80; // Just below sky/ground transition
+        const yVariation = Math.random() * dimensions.height * config.verticalSpread;
+        const baseY = Math.max(groundStartY, Math.min(dimensions.height, layerBaseY + yVariation));
+
+        // Size: far grass is tiny, near grass is large
         const height = config.heightMin + Math.random() * (config.heightMax - config.heightMin);
-        const width = 2 + (height / 50) * 3;
+        const width = 1.5 + (height / 45) * 2.5;
 
         blades.push({
           x,
-          baseY: groundY + config.yOffset,
+          baseY,
           height,
           width,
           swayOffset: Math.random() * Math.PI * 2,
-          swaySpeed: 0.3 + Math.random() * 0.4,
+          swaySpeed: 0.25 + Math.random() * 0.35,
           color: config.colors[Math.floor(Math.random() * config.colors.length)]!,
           layer: config.layer,
         });
@@ -193,6 +258,8 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     this.moonRenderer.initialize(dimensions.width, dimensions.height);
     this.grassBlades = this.generateGrass(dimensions, quality);
     this.treeSystem.initialize(dimensions);
+    this.ambientParticleSystem.initialize(dimensions, quality);
+    this.campfireSystem.initialize(dimensions, quality);
     this.isInitialized = true;
   }
 
@@ -203,11 +270,19 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
 
     if (!this.reducedMotion) {
       this.animationTime += frameMultiplier * 0.02; // Slow time progression for gentle sway
+
+      // Smooth mouse position interpolation (eased parallax response)
+      const smoothing = 0.08 * frameMultiplier;
+      this.mouseX += (this.targetMouseX - this.mouseX) * smoothing;
+      this.mouseY += (this.targetMouseY - this.mouseY) * smoothing;
+
       this.fireflies = this.fireflySystem.update(
         this.fireflies,
         dimensions,
         frameMultiplier
       );
+      this.ambientParticleSystem.update(dimensions, frameMultiplier);
+      this.campfireSystem.update(dimensions, frameMultiplier);
       this.updateShootingStar(dimensions, frameMultiplier);
     }
   }
@@ -303,23 +378,59 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     // Draw ground fill at the bottom to anchor the scene
     this.drawGround(ctx, dimensions);
 
-    // Draw grass and trees interleaved by depth layer
-    // Layer 0 (far) -> Layer 1 (mid) -> Layer 2 (near)
-    for (let layer = 0; layer < 3; layer++) {
-      // Draw grass for this layer
-      if (this.layerVisibility.grass) {
-        this.drawGrassLayer(ctx, layer as 0 | 1 | 2);
+    // Draw campfire ambient glow (affects the whole scene with warm light)
+    if (this.layerVisibility.campfire) {
+      this.campfireSystem.drawAmbientGlow(ctx, dimensions);
+    }
+
+    // Draw trees and grass interleaved by depth
+    // Trees have 7 layers (0-6), grass has 3 layers (0-2)
+    // Grass layers are drawn at tree layer positions: 0, 3, 6
+    const grassAtTreeLayer = [0, 3, 6]; // Which tree layers get grass drawn before them
+
+    for (let treeLayer = 0; treeLayer < NUM_LAYERS; treeLayer++) {
+      // Get parallax offset for this tree layer
+      const treeParallax = this.getParallaxOffset(this.getTreeLayerParallax(treeLayer));
+
+      // Draw grass and ambient particles before certain tree layers
+      const grassIndex = grassAtTreeLayer.indexOf(treeLayer);
+      if (grassIndex !== -1) {
+        const particleLayer = grassIndex as 0 | 1 | 2;
+        const particleParallax = this.getParallaxOffset(this.getGrassLayerParallax(particleLayer));
+
+        // Draw ambient particles for this depth layer (behind grass and trees)
+        if (this.layerVisibility.ambientParticles) {
+          this.ambientParticleSystem.drawLayer(ctx, particleLayer, particleParallax);
+        }
+
+        // Draw grass
+        if (this.layerVisibility.grass) {
+          this.drawGrassLayer(ctx, particleLayer);
+        }
       }
 
-      // Draw trees for this layer
+      // Draw trees for this layer with parallax
       if (this.layerVisibility.trees) {
-        this.treeSystem.drawLayer(ctx, dimensions, layer);
+        ctx.save();
+        ctx.translate(treeParallax.x, treeParallax.y);
+        this.treeSystem.drawLayer(ctx, dimensions, treeLayer);
+        ctx.restore();
+      }
+
+      // Draw campfire at far layer (layer 1) - distant Easter egg at the horizon
+      if (treeLayer === 1 && this.layerVisibility.campfire) {
+        const campfireParallax = this.getParallaxOffset(this.PARALLAX_CONFIG.farTrees);
+        this.campfireSystem.draw(ctx, dimensions, campfireParallax);
       }
     }
 
-    // Draw fireflies on top
+    // Draw fireflies on top with parallax
     if (this.layerVisibility.fireflies) {
+      const fireflyParallax = this.getParallaxOffset(this.PARALLAX_CONFIG.fireflies);
+      ctx.save();
+      ctx.translate(fireflyParallax.x, fireflyParallax.y);
       this.fireflySystem.draw(this.fireflies, ctx);
+      ctx.restore();
     }
   }
 
@@ -338,16 +449,22 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   }
 
   private drawStars(ctx: CanvasRenderingContext2D): void {
+    const parallax = this.getParallaxOffset(this.PARALLAX_CONFIG.stars);
+
     for (const star of this.stars) {
       ctx.fillStyle = `rgba(200, 212, 232, ${star.opacity})`;
       ctx.beginPath();
-      ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      ctx.arc(star.x + parallax.x, star.y + parallax.y, star.size, 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
   private drawMoon(ctx: CanvasRenderingContext2D): void {
+    const parallax = this.getParallaxOffset(this.PARALLAX_CONFIG.moon);
+    ctx.save();
+    ctx.translate(parallax.x, parallax.y);
     this.moonRenderer.draw(ctx);
+    ctx.restore();
   }
 
   private drawShootingStar(ctx: CanvasRenderingContext2D): void {
@@ -397,19 +514,33 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
   }
 
   private drawGround(ctx: CanvasRenderingContext2D, dimensions: Dimensions): void {
-    // Simple dark ground strip at the very bottom to anchor the scene
-    const groundHeight = dimensions.height * 0.025;
-    const groundY = dimensions.height - groundHeight;
+    // Ground extends from just below the sky transition down to the bottom
+    // Creates the visible meadow floor - lighter to contrast with dark tree silhouettes
+    const groundStartY = dimensions.height * 0.80; // Ground starts below sky gradient transition
+    const groundHeight = dimensions.height - groundStartY;
 
-    ctx.fillStyle = "rgb(4, 8, 6)";
-    ctx.fillRect(0, groundY, dimensions.width, groundHeight);
+    // Gradient from ground start (lighter, atmospheric) to bottom (darker but still visible)
+    // Significantly lighter than trees so silhouettes stand out
+    const gradient = ctx.createLinearGradient(0, groundStartY, 0, dimensions.height);
+    gradient.addColorStop(0, "rgb(18, 32, 24)");   // Lighter at horizon (forest green)
+    gradient.addColorStop(0.3, "rgb(14, 26, 18)"); // Mid-upper ground
+    gradient.addColorStop(0.6, "rgb(10, 20, 14)"); // Mid-lower ground
+    gradient.addColorStop(1, "rgb(6, 14, 10)");    // Darker at bottom but still visible
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, groundStartY, dimensions.width, groundHeight);
   }
 
   private drawGrassLayer(ctx: CanvasRenderingContext2D, layer: 0 | 1 | 2): void {
     const bladesToDraw = this.grassBlades.filter((b) => b.layer === layer);
+    const parallax = this.getParallaxOffset(this.getGrassLayerParallax(layer));
 
     for (const blade of bladesToDraw) {
-      const { x, baseY, height, width, swayOffset, swaySpeed, color } = blade;
+      const { x: bladeX, baseY: bladeBaseY, height, width, swayOffset, swaySpeed, color } = blade;
+
+      // Apply parallax offset
+      const x = bladeX + parallax.x;
+      const baseY = bladeBaseY + parallax.y;
 
       // Calculate sway based on animation time
       // Uses sine wave with individual phase offset for natural variation
@@ -475,6 +606,8 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
       );
       this.stars = this.generateStars(this.dimensions, quality);
       this.grassBlades = this.generateGrass(this.dimensions, quality);
+      this.ambientParticleSystem.setQuality(quality, this.dimensions);
+      this.campfireSystem.setQuality(quality, this.dimensions);
     }
   }
 
@@ -536,14 +669,86 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     this.treeSystem.resetPlacementConfig();
   }
 
+  // ===================
+  // MOUSE PARALLAX
+  // ===================
+
+  /**
+   * Update mouse position for parallax effect
+   * @param clientX - Mouse X position in viewport
+   * @param clientY - Mouse Y position in viewport
+   * @param viewportWidth - Viewport width
+   * @param viewportHeight - Viewport height
+   */
+  public updateMousePosition(
+    clientX: number,
+    clientY: number,
+    viewportWidth: number,
+    viewportHeight: number
+  ): void {
+    if (!this.parallaxEnabled || this.reducedMotion) return;
+
+    // Normalize to -1 to 1 range from center
+    this.targetMouseX = (clientX / viewportWidth - 0.5) * 2;
+    this.targetMouseY = (clientY / viewportHeight - 0.5) * 2;
+  }
+
+  /**
+   * Enable or disable parallax effect
+   */
+  public setParallaxEnabled(enabled: boolean): void {
+    this.parallaxEnabled = enabled;
+    if (!enabled) {
+      this.mouseX = 0;
+      this.mouseY = 0;
+      this.targetMouseX = 0;
+      this.targetMouseY = 0;
+    }
+  }
+
+  /**
+   * Calculate parallax offset for a given depth layer
+   * Returns pixel offset to apply when drawing
+   */
+  private getParallaxOffset(intensity: number): { x: number; y: number } {
+    return {
+      x: this.mouseX * this.dimensions.width * intensity,
+      y: this.mouseY * this.dimensions.height * intensity * 0.5, // Less vertical movement
+    };
+  }
+
+  /**
+   * Get parallax intensity for a tree layer (0-6)
+   */
+  private getTreeLayerParallax(layer: number): number {
+    const t = layer / (NUM_LAYERS - 1);
+    // Interpolate from far to near intensity
+    return this.PARALLAX_CONFIG.farTrees +
+      (this.PARALLAX_CONFIG.nearTrees - this.PARALLAX_CONFIG.farTrees) * t;
+  }
+
+  /**
+   * Get parallax intensity for a grass layer (0-2)
+   */
+  private getGrassLayerParallax(layer: 0 | 1 | 2): number {
+    const intensities: [number, number, number] = [
+      this.PARALLAX_CONFIG.farGrass,
+      this.PARALLAX_CONFIG.midGrass,
+      this.PARALLAX_CONFIG.nearGrass,
+    ];
+    return intensities[layer];
+  }
+
   public getStats(): {
     fireflies: number;
     stars: number;
+    ambientParticles: number;
     hasShootingStar: boolean;
   } {
     return {
       fireflies: this.fireflies.length,
       stars: this.stars.length,
+      ambientParticles: this.ambientParticleSystem.getCount(),
       hasShootingStar: this.shootingStar !== null,
     };
   }
@@ -557,6 +762,8 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     this.framesSinceLastShootingStar = 0;
     this.animationTime = 0;
     this.treeSystem.cleanup();
+    this.ambientParticleSystem.cleanup();
+    this.campfireSystem.cleanup();
     this.isInitialized = false;
   }
 }

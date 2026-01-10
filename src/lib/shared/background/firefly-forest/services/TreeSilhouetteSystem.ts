@@ -30,27 +30,53 @@ interface LayerConfig {
 
 // 10-column grid, each layer uses different columns
 // Heights are curated to create pleasing silhouette with variety
+// 7 layers for smooth depth gradation (far to near)
 const LAYER_CONFIGS: LayerConfig[] = [
-  // Far layer (small trees) - denser, fills gaps
+  // Layer 0: Farthest (tiny, hazy trees on horizon)
   {
-    columns: [0, 1.5, 3, 4.5, 6, 7.5, 9],
-    heightPresets: [0.20, 0.24, 0.18, 0.22, 0.25, 0.19, 0.21],
+    columns: [0.5, 2, 4, 6, 8, 9.5],
+    heightPresets: [0.12, 0.14, 0.11, 0.13, 0.15, 0.12],
+    widthRange: [0.03, 0.045],
+  },
+  // Layer 1: Very far
+  {
+    columns: [1, 3, 5, 7, 9],
+    heightPresets: [0.17, 0.19, 0.16, 0.18, 0.20],
+    widthRange: [0.04, 0.055],
+  },
+  // Layer 2: Far
+  {
+    columns: [0, 1.5, 3.5, 5.5, 7.5, 9],
+    heightPresets: [0.22, 0.25, 0.21, 0.24, 0.23, 0.22],
     widthRange: [0.05, 0.07],
   },
-  // Mid layer - offset from far layer
+  // Layer 3: Mid-far
   {
-    columns: [0.5, 2, 3.5, 5, 6.5, 8, 9.5],
-    heightPresets: [0.35, 0.40, 0.32, 0.42, 0.38, 0.36, 0.34],
-    widthRange: [0.08, 0.11],
+    columns: [0.5, 2.5, 4.5, 6.5, 8.5],
+    heightPresets: [0.29, 0.32, 0.28, 0.31, 0.30],
+    widthRange: [0.065, 0.085],
   },
-  // Foreground layer - fewer but strategic placement
+  // Layer 4: Mid
+  {
+    columns: [1, 3, 5, 7, 9.5],
+    heightPresets: [0.36, 0.40, 0.34, 0.38, 0.37],
+    widthRange: [0.08, 0.10],
+  },
+  // Layer 5: Mid-near
   {
     columns: [0, 2.5, 5, 7.5, 10],
-    heightPresets: [0.52, 0.58, 0.48, 0.55, 0.50],
-    widthRange: [0.12, 0.16],
+    heightPresets: [0.44, 0.48, 0.42, 0.46, 0.45],
+    widthRange: [0.10, 0.13],
+  },
+  // Layer 6: Nearest (large silhouettes)
+  {
+    columns: [1, 4, 7, 9.5],
+    heightPresets: [0.54, 0.60, 0.52, 0.56],
+    widthRange: [0.13, 0.17],
   },
 ];
 
+export const NUM_LAYERS = 7;
 const NUM_COLUMNS = 10;
 
 // ===================
@@ -103,7 +129,7 @@ function getPlacementConstants(config: PlacementConfig) {
  */
 export function createTreeSilhouetteSystem() {
   // One cached canvas per layer for interleaved rendering with grass
-  let layerCanvases: (OffscreenCanvas | null)[] = [null, null, null];
+  let layerCanvases: (OffscreenCanvas | null)[] = Array(NUM_LAYERS).fill(null);
   let cachedDimensions: Dimensions | null = null;
   let currentVisibility: TreeTypeVisibility = {
     pine: true,
@@ -121,17 +147,12 @@ export function createTreeSilhouetteSystem() {
     | CanvasRenderingContext2D
     | OffscreenCanvasRenderingContext2D;
 
-  // Night silhouette color palette
-  // All layers are DARK silhouettes - far trees are slightly lighter (atmospheric haze)
-  // but still read as dark shapes against the lighter sky
-  // Colors use gradual green-to-dark progression to avoid stark gray appearance on far trees
-  const FAR_FOLIAGE = { r: 8, g: 16, b: 12 }; // Distant green haze - still reads as forest
-  const MID_FOLIAGE = { r: 5, g: 10, b: 8 }; // Darker with green tint
+  // Night silhouette color palette - endpoints for interpolation
+  // Far trees are slightly lighter (atmospheric haze), near trees are dark silhouettes
+  const FAR_FOLIAGE = { r: 10, g: 20, b: 16 }; // Distant green haze
   const NEAR_FOLIAGE = { r: 2, g: 4, b: 3 }; // Near-black (true silhouette)
 
-  // Trunks should contrast with foliage at all depths
-  const FAR_TRUNK = { r: 18, g: 14, b: 12 }; // Visible brown, lighter than far foliage
-  const MID_TRUNK = { r: 10, g: 8, b: 6 }; // Dark brown
+  const FAR_TRUNK = { r: 20, g: 16, b: 14 }; // Visible brown
   const NEAR_TRUNK = { r: 4, g: 3, b: 2 }; // Very dark brown
 
   // Rim light color - subtle moonlight edge glow (reduced intensity)
@@ -192,17 +213,36 @@ export function createTreeSilhouetteSystem() {
 
   /**
    * Apply rim lighting to current path
-   * Simulates moonlight catching the edges of tree silhouettes
-   * @param layer - 0 (far) to 2 (near), affects rim intensity
+   * Creates visible edges so trees stand out against both sky and ground
+   * @param layer - 0 (far) to NUM_LAYERS-1 (near)
    * @param treeHeight - used to scale line width appropriately
    */
   function applyRimLight(ctx: RenderContext, layer: number, treeHeight: number): void {
-    // Rim intensity: far trees get more rim (atmospheric haze), near trees get subtle rim
-    // This creates depth - far trees appear hazier/lighter at edges
-    const baseOpacity = 0.35 - layer * 0.1; // 0.35 for far, 0.15 for near
-    const lineWidth = Math.max(1, treeHeight * 0.005 * (1.4 - layer * 0.15));
+    // Normalize layer to 0-1 range
+    const t = layer / (NUM_LAYERS - 1);
 
-    ctx.strokeStyle = rgbToString(RIM_LIGHT, baseOpacity);
+    // Near trees (against dark ground) need stronger rim lighting
+    // Far trees (against sky) get softer atmospheric glow
+    // U-shaped curve: strong at far (atmospheric), medium in mid, stronger at near (contrast)
+    const farOpacity = 0.4;   // Atmospheric haze on distant trees
+    const midOpacity = 0.25;  // Subtle in middle
+    const nearOpacity = 0.5;  // Strong outline against ground
+
+    // Blend using smoothstep-like curve
+    let opacity: number;
+    if (t < 0.5) {
+      // Far to mid: decrease
+      opacity = farOpacity + (midOpacity - farOpacity) * (t * 2);
+    } else {
+      // Mid to near: increase
+      opacity = midOpacity + (nearOpacity - midOpacity) * ((t - 0.5) * 2);
+    }
+
+    // Line width scales with tree size, thicker for near trees
+    const baseWidth = Math.max(0.8, treeHeight * 0.004);
+    const lineWidth = baseWidth * (0.6 + t * 0.8); // 0.6x for far, 1.4x for near
+
+    ctx.strokeStyle = rgbToString(RIM_LIGHT, opacity);
     ctx.lineWidth = lineWidth;
     ctx.stroke();
   }
@@ -345,8 +385,8 @@ export function createTreeSilhouetteSystem() {
   }
 
   /**
-   * Spruce - tall and narrow conifer with algorithmic variation
-   * Each tree gets unique but symmetrical branch pattern based on position
+   * Spruce - tall conifer with organic bumpy silhouette
+   * Uses noise-based edge variation for natural branch tip appearance
    */
   function drawSpruce(
     ctx: RenderContext,
@@ -358,8 +398,8 @@ export function createTreeSilhouetteSystem() {
     foliageColor: RGB,
     layer: number
   ): void {
-    const trunkW = width * 0.16;
-    const trunkH = height * 0.15;
+    const trunkW = width * 0.14;
+    const trunkH = height * 0.12;
     const bodyStart = baseY - trunkH;
     const bodyHeight = height - trunkH;
 
@@ -381,43 +421,53 @@ export function createTreeSilhouetteSystem() {
       return localSeed / 0x7fffffff;
     };
 
-    // Generate 4-6 tiers with variation
-    const tierCount = 4 + Math.floor(treeRandom() * 3); // 4-6 tiers
+    // Spruce shape parameters
+    const baseWidthRatio = 0.38 + treeRandom() * 0.08; // Wide at bottom
+    const taperPower = 1.8 + treeRandom() * 0.4; // Controls how quickly it narrows
+    const bumpCount = 14 + Math.floor(treeRandom() * 8); // 14-22 bumps per side
 
-    // Generate tier parameters with variation (symmetric left/right)
-    interface SpruceLayer {
-      heightRatio: number; // 0-1, position up the tree
-      outerWidth: number;  // Branch tip width
-      innerWidth: number;  // Indent after branch
+    // Generate edge points with organic variation
+    interface EdgePoint {
+      y: number;
+      width: number;
     }
 
-    const tiers: SpruceLayer[] = [];
+    const leftEdge: EdgePoint[] = [];
+    const rightEdge: EdgePoint[] = [];
 
-    // Base width at bottom, narrowing toward top
-    const baseWidthRatio = 0.32 + treeRandom() * 0.08; // 0.32-0.40
-    const tipNarrowness = 0.06 + treeRandom() * 0.04;  // 0.06-0.10 at very top
+    // Generate bumps along the tree height
+    for (let i = 0; i <= bumpCount; i++) {
+      const t = i / bumpCount; // 0 at base, 1 at tip
 
-    for (let i = 0; i < tierCount; i++) {
-      const t = i / tierCount;
+      // Base taper - exponential curve for natural spruce shape
+      const baseTaper = 1 - Math.pow(t, taperPower);
+      const baseWidth = baseWidthRatio * baseTaper;
 
-      // Height position with slight variation
-      const baseHeight = t * 0.85; // Leave room for pointy tip
-      const heightJitter = (treeRandom() - 0.5) * 0.04;
-      const heightRatio = Math.min(0.88, baseHeight + heightJitter);
+      // Add organic variation - bumps that simulate branch clusters
+      // Lower frequency for overall shape, higher for small bumps
+      const lowFreq = Math.sin(t * Math.PI * 2 + treeRandom() * Math.PI) * 0.03;
+      const midFreq = Math.sin(t * Math.PI * 5 + treeRandom() * Math.PI * 2) * 0.02;
+      const highFreq = (treeRandom() - 0.5) * 0.025;
 
-      // Width tapers from base to top (exponential curve looks more natural)
-      const taper = 1 - Math.pow(t, 0.7);
-      const tierBaseWidth = tipNarrowness + (baseWidthRatio - tipNarrowness) * taper;
+      // Combine variations - more variation in middle, less at base and tip
+      const variationStrength = Math.sin(t * Math.PI) * 0.8 + 0.2;
+      const variation = (lowFreq + midFreq + highFreq) * variationStrength;
 
-      // Add width variation per tier (±15%)
-      const widthVariation = 1 + (treeRandom() - 0.5) * 0.3;
-      const outerWidth = tierBaseWidth * widthVariation;
+      // Left and right sides get slightly different variations for asymmetry
+      const leftVar = variation + (treeRandom() - 0.5) * 0.015;
+      const rightVar = variation + (treeRandom() - 0.5) * 0.015;
 
-      // Inner indent is narrower (creates the layered look)
-      const indentRatio = 0.6 + treeRandom() * 0.2; // 60-80% of outer
-      const innerWidth = outerWidth * indentRatio;
+      const y = bodyStart - bodyHeight * t;
 
-      tiers.push({ heightRatio, outerWidth, innerWidth });
+      leftEdge.push({
+        y,
+        width: Math.max(0.02, baseWidth + leftVar),
+      });
+
+      rightEdge.push({
+        y,
+        width: Math.max(0.02, baseWidth + rightVar),
+      });
     }
 
     // Draw foliage with radial gradient
@@ -428,42 +478,22 @@ export function createTreeSilhouetteSystem() {
     ctx.beginPath();
 
     // Start at bottom left
-    ctx.moveTo(x - width * baseWidthRatio, bodyStart);
+    ctx.moveTo(x - width * leftEdge[0]!.width, bodyStart);
 
-    // Draw left side going up (tiers create the layered silhouette)
-    for (const tier of tiers) {
-      const tierY = bodyStart - bodyHeight * tier.heightRatio;
-      const nextTierY = tierY - bodyHeight * 0.03; // Small step up for indent
-
-      // Branch tip (outer)
-      ctx.lineTo(x - width * tier.innerWidth, tierY);
-      // Indent back toward trunk
-      ctx.lineTo(x - width * tier.outerWidth, nextTierY);
+    // Draw left side going up
+    for (let i = 1; i < leftEdge.length; i++) {
+      const pt = leftEdge[i]!;
+      ctx.lineTo(x - width * pt.width, pt.y);
     }
 
-    // Pointy tip at the very top (always sharp)
-    const tipApproachY = bodyStart - bodyHeight * 0.92;
-    const tipApproachWidth = tipNarrowness * 0.5;
-    ctx.lineTo(x - width * tipApproachWidth, tipApproachY);
-    ctx.lineTo(x, baseY - height); // Sharp tip at apex
+    // Sharp tip
+    ctx.lineTo(x, baseY - height);
 
-    // Right side going down (mirror of left)
-    ctx.lineTo(x + width * tipApproachWidth, tipApproachY);
-
-    // Draw right side going down (reverse order)
-    for (let i = tiers.length - 1; i >= 0; i--) {
-      const tier = tiers[i]!;
-      const tierY = bodyStart - bodyHeight * tier.heightRatio;
-      const nextTierY = tierY - bodyHeight * 0.03;
-
-      // Indent (outer)
-      ctx.lineTo(x + width * tier.outerWidth, nextTierY);
-      // Branch tip (inner)
-      ctx.lineTo(x + width * tier.innerWidth, tierY);
+    // Draw right side going down
+    for (let i = rightEdge.length - 1; i >= 0; i--) {
+      const pt = rightEdge[i]!;
+      ctx.lineTo(x + width * pt.width, pt.y);
     }
-
-    // Back to bottom right
-    ctx.lineTo(x + width * baseWidthRatio, bodyStart);
 
     ctx.closePath();
     ctx.fill();
@@ -674,15 +704,16 @@ export function createTreeSilhouetteSystem() {
 
   /**
    * Get minimum spacing for a layer (near trees need more room)
+   * Interpolates from far (tight spacing) to near (wide spacing)
    */
   function getMinSpacing(layer: number, canvasWidth: number): number {
     const placement = getPlacementConstants(placementConfig);
-    const spacings = [
-      placement.MIN_SPACING.far,
-      placement.MIN_SPACING.mid,
-      placement.MIN_SPACING.near,
-    ];
-    return canvasWidth * (spacings[layer] ?? spacings[0]!);
+    // Interpolate: layer 0 uses far spacing, layer NUM_LAYERS-1 uses near spacing
+    const t = layer / (NUM_LAYERS - 1);
+    const farSpacing = placement.MIN_SPACING.far;
+    const nearSpacing = placement.MIN_SPACING.near;
+    const spacing = farSpacing + (nearSpacing - farSpacing) * t;
+    return canvasWidth * spacing;
   }
 
   /**
@@ -814,8 +845,8 @@ export function createTreeSilhouetteSystem() {
         let idealX = getColumnX(column, width);
         let heightBoost = 1;
 
-        // For mid and near layers, check for hero anchor snapping
-        if (layerIndex >= 1) {
+        // For mid-to-near layers (second half), check for hero anchor snapping
+        if (layerIndex >= Math.floor(NUM_LAYERS / 2)) {
           const heroAnchor = getNearestHeroAnchor(idealX, width, usedHeroAnchors);
           if (heroAnchor !== null) {
             // Snap to hero position and mark as used
@@ -862,35 +893,51 @@ export function createTreeSilhouetteSystem() {
 
   /**
    * Get colors for a tree based on its layer depth
-   * Uses distinct colors per layer for clear depth separation
+   * Interpolates smoothly between far (light/hazy) and near (dark silhouette)
    */
   function getTreeColors(layer: number): { trunk: RGB; foliage: RGB } {
-    // Use distinct colors per layer for maximum depth perception
-    switch (layer) {
-      case 0: // Far - lighter, blue-tinted (atmospheric haze)
-        return { trunk: FAR_TRUNK, foliage: FAR_FOLIAGE };
-      case 1: // Mid - medium dark
-        return { trunk: MID_TRUNK, foliage: MID_FOLIAGE };
-      case 2: // Near - near-black silhouette
-      default:
-        return { trunk: NEAR_TRUNK, foliage: NEAR_FOLIAGE };
-    }
+    // Interpolate based on layer position (0 = farthest, NUM_LAYERS-1 = nearest)
+    const t = layer / (NUM_LAYERS - 1);
+    return {
+      trunk: lerpColor(FAR_TRUNK, NEAR_TRUNK, t),
+      foliage: lerpColor(FAR_FOLIAGE, NEAR_FOLIAGE, t),
+    };
+  }
+
+  /**
+   * Get the ground/base Y position for a given layer
+   * Far trees sit BELOW the visible horizon (not exactly on it - looks unrealistic)
+   * Near trees extend below the viewport (we only see their upper portions)
+   */
+  function getLayerBaseY(layer: number, height: number): number {
+    // Far trees (layer 0): base at ~82% down (below horizon at 78%, so they stand on ground)
+    // Near trees (layer 6): base at 101% (extends below viewport)
+    const farBaseRatio = 0.82;   // Far trees slightly below horizon
+    const nearBaseRatio = 1.01;  // Near trees extend below screen
+
+    const t = layer / (NUM_LAYERS - 1);
+    // Ease-out curve so the depth effect is more pronounced for far layers
+    const easedT = 1 - Math.pow(1 - t, 1.5);
+    const baseRatio = farBaseRatio + (nearBaseRatio - farBaseRatio) * easedT;
+
+    return height * baseRatio;
   }
 
   function renderToCache(dimensions: Dimensions): void {
     cachedDimensions = dimensions;
 
     const trees = createTrees(dimensions);
-    // Trees sit just at the bottom edge - only 1% below to hide any jagged bottom edges
-    const baseY = dimensions.height + dimensions.height * 0.01;
 
     // Create separate canvas for each layer
-    for (let layer = 0; layer < 3; layer++) {
+    for (let layer = 0; layer < NUM_LAYERS; layer++) {
       const canvas = new OffscreenCanvas(dimensions.width, dimensions.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) continue;
 
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+
+      // Get the ground line for this layer (far = higher up, near = below viewport)
+      const layerBaseY = getLayerBaseY(layer, dimensions.height);
 
       // Draw only trees in this layer
       const layerTrees = trees.filter((t) => t.layer === layer);
@@ -899,22 +946,22 @@ export function createTreeSilhouetteSystem() {
 
         switch (tree.type) {
           case "pine":
-            drawPine(ctx, tree.x, baseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
+            drawPine(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
             break;
           case "fir":
-            drawFir(ctx, tree.x, baseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
+            drawFir(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
             break;
           case "spruce":
-            drawSpruce(ctx, tree.x, baseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
+            drawSpruce(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
             break;
           case "oak":
-            drawOak(ctx, tree.x, baseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
+            drawOak(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
             break;
           case "maple":
-            drawMaple(ctx, tree.x, baseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
+            drawMaple(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
             break;
           case "poplar":
-            drawPoplar(ctx, tree.x, baseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
+            drawPoplar(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
             break;
         }
       }
@@ -974,7 +1021,7 @@ export function createTreeSilhouetteSystem() {
   }
 
   function cleanup(): void {
-    layerCanvases = [null, null, null];
+    layerCanvases = Array(NUM_LAYERS).fill(null);
     cachedDimensions = null;
   }
 

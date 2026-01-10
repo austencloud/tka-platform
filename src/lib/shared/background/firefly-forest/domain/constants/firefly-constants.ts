@@ -72,12 +72,15 @@ export const FIREFLY_COLORS = {
 } as const;
 
 export const FIREFLY_BACKGROUND_GRADIENT = [
-  // Night sky with forest green atmosphere in lower half
-  { position: 0, color: "#0a0e18" }, // Deep night sky (dark blue)
-  { position: 0.4, color: "#0a1118" }, // Sky continues
-  { position: 0.55, color: "#0a1414" }, // Transition to green begins
-  { position: 0.75, color: "#0c1812" }, // Forest green atmosphere
-  { position: 1, color: "#0a1a10" }, // Rich dark green at bottom
+  // Night sky extending down toward horizon (horizon at 78%)
+  // Sky stays dark blue-black until near the horizon, then transitions to green for meadow
+  { position: 0, color: "#0a0e18" },    // Deep night sky (dark blue)
+  { position: 0.35, color: "#0a1018" }, // Sky continues
+  { position: 0.55, color: "#0a1118" }, // Still mostly sky
+  { position: 0.70, color: "#0c1416" }, // Transition begins near horizon
+  { position: 0.78, color: "#0e1814" }, // At horizon - slight green tint
+  { position: 0.90, color: "#101a14" }, // Below horizon (ground color blends)
+  { position: 1, color: "#0c1610" },    // Bottom edge
 ] as const;
 
 // Stars in the upper sky area
