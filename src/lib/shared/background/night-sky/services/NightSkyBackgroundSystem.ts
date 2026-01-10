@@ -537,6 +537,55 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
     return this.ufoSystem.getTiredness();
   }
 
+  /**
+   * Set UFO mood externally
+   */
+  public setUFOMood(mood: import("./UFOSystem").UFOMood): void {
+    this.ufoSystem.setMood(mood);
+  }
+
+  /**
+   * Reset UFO tiredness to 0 (for testing)
+   */
+  public resetUFOTiredness(): void {
+    this.ufoSystem.resetTiredness();
+  }
+
+  /**
+   * Get count of scanned stars in UFO's memory
+   */
+  public getUFOScannedStarsCount(): number {
+    return this.ufoSystem.getScannedStarsCount();
+  }
+
+  /**
+   * Clear UFO's memory of scanned stars
+   */
+  public clearUFOScannedStars(): void {
+    this.ufoSystem.clearScannedStars();
+  }
+
+  /**
+   * Trigger UFO wobble animation (for testing)
+   */
+  public triggerUFOWobble(type: import("./UFOSystem").WobbleType): void {
+    this.ufoSystem.triggerWobble(type);
+  }
+
+  /**
+   * Get UFO heading in radians
+   */
+  public getUFOHeading(): number | null {
+    return this.ufoSystem.getHeading();
+  }
+
+  /**
+   * Get UFO position for UI display
+   */
+  public getUFOPosition(): { x: number; y: number } | null {
+    return this.ufoSystem.getPosition();
+  }
+
   private layerVisibility = {
     stars: true,
     nebula: true,

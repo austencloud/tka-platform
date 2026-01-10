@@ -83,6 +83,17 @@ type UFOState =
   | "tracking_event"
   | "chasing" // Pursuing a meteor/comet
   | "giving_up" // Slowing down after failed chase
+  | "collecting_sample" // Pulling sample from comet/meteor
+  | "photographing" // Taking photo of a star
+  | "investigating_ground" // Ground anomaly with particle effects
+  | "panicking" // Near miss evasive action
+  | "surfing" // Joy riding on a comet
+  | "communicating" // Trying to talk to a star
+  | "napping" // Power nap when tired
+  | "hiding" // Peek-a-boo hide
+  | "peeking" // Peek-a-boo peek
+  | "celebrating" // Rare discovery celebration
+  | "following" // Buddy system - following alongside something
   | "exiting"
   | "inactive";
 
@@ -109,6 +120,33 @@ export type WobbleType =
   | "disappointed_shake" // Side-to-side like shaking head
   | "happy_bounce" // Quick up-down pulse
   | "yawn_stretch"; // Bored stretch animation
+
+/** Narrative phase for multi-step interactions */
+type NarrativePhase =
+  | "none"
+  | "detection" // Spotting something
+  | "approach" // Moving toward it
+  | "action" // Main interaction
+  | "resolution" // Wrapping up
+  | "transition"; // Returning to normal
+
+/** A particle effect (sample, ground dust, etc.) */
+interface Particle {
+  x: number;
+  y: number;
+  targetX: number;
+  targetY: number;
+  progress: number; // 0-1
+  color: string;
+  size: number;
+  type: "sample" | "dust" | "sparkle" | "z";
+}
+
+/** Communication pulse for morse-like patterns */
+interface CommPulse {
+  duration: number; // frames
+  isOn: boolean;
+}
 
 interface UFO {
   // Position (in pixels)
@@ -176,6 +214,61 @@ interface UFO {
   isSneaky: boolean; // Sneaky approach mode
   scannedStars: Set<string>; // Memory of recently scanned star positions
   lookAroundTimer: number; // Cooldown for look-around behavior
+
+  // Narrative arc system
+  narrativePhase: NarrativePhase;
+  narrativeTimer: number; // Progress within current phase
+  narrativePhaseDuration: number; // How long current phase lasts
+
+  // Sample collection (from comet/meteor)
+  sampleParticle: Particle | null;
+  collectedSamples: number; // Count of collected samples
+
+  // Star photography
+  photographedStars: Set<string>; // Stars we've photographed
+  cameraFlashTimer: number; // Flash effect countdown
+  photoTarget: { x: number; y: number } | null;
+
+  // Ground investigation
+  groundParticles: Particle[]; // Dust/particles rising from ground
+  anomalyPosition: { x: number; y: number } | null;
+
+  // Panic / evasion
+  panicDirection: number; // Direction to flee (radians)
+  panicSpeed: number; // Current panic speed
+  afterimagePositions: Array<{ x: number; y: number; opacity: number }>;
+
+  // Comet surfing
+  surfTarget: { x: number; y: number; vx: number; vy: number } | null;
+  surfOffset: { x: number; y: number }; // Offset from comet center
+
+  // Communication
+  commPattern: CommPulse[]; // Current communication pattern
+  commPatternIndex: number; // Current position in pattern
+  commPulseTimer: number; // Timer for current pulse
+  commTarget: { x: number; y: number } | null;
+  awaitingResponse: boolean;
+
+  // Napping
+  sleepZs: Particle[]; // Floating Z particles
+  napStartY: number; // Original Y position before settling
+
+  // Peek-a-boo
+  hidePosition: { x: number; y: number } | null;
+  peekProgress: number; // How much we're peeking out (0-1)
+  peekDirection: number; // Which way we're peeking
+
+  // Celebration
+  celebrationSpinSpeed: number;
+  celebrationBouncePhase: number;
+  rainbowPhase: number; // For rainbow light effect
+
+  // Buddy system
+  buddyTarget: { x: number; y: number; vx: number; vy: number } | null;
+  buddyOffset: number; // Parallel distance to maintain
+
+  // Rare discovery tracking
+  rareDiscoveries: number;
 }
 
 /** External star data for beam targeting */
@@ -392,6 +485,61 @@ export class UFOSystem {
       isSneaky: false,
       scannedStars: new Set<string>(),
       lookAroundTimer: 0,
+
+      // Narrative arc system
+      narrativePhase: "none",
+      narrativeTimer: 0,
+      narrativePhaseDuration: 0,
+
+      // Sample collection
+      sampleParticle: null,
+      collectedSamples: 0,
+
+      // Star photography
+      photographedStars: new Set<string>(),
+      cameraFlashTimer: 0,
+      photoTarget: null,
+
+      // Ground investigation
+      groundParticles: [],
+      anomalyPosition: null,
+
+      // Panic / evasion
+      panicDirection: 0,
+      panicSpeed: 0,
+      afterimagePositions: [],
+
+      // Comet surfing
+      surfTarget: null,
+      surfOffset: { x: 0, y: 0 },
+
+      // Communication
+      commPattern: [],
+      commPatternIndex: 0,
+      commPulseTimer: 0,
+      commTarget: null,
+      awaitingResponse: false,
+
+      // Napping
+      sleepZs: [],
+      napStartY: y,
+
+      // Peek-a-boo
+      hidePosition: null,
+      peekProgress: 0,
+      peekDirection: 0,
+
+      // Celebration
+      celebrationSpinSpeed: 0,
+      celebrationBouncePhase: 0,
+      rainbowPhase: 0,
+
+      // Buddy system
+      buddyTarget: null,
+      buddyOffset: 50,
+
+      // Rare discovery tracking
+      rareDiscoveries: 0,
     };
   }
 
@@ -407,6 +555,11 @@ export class UFOSystem {
     u.shieldPhase += this.config.shieldPulseSpeed * speedMult;
     u.lightPhase += this.config.lightChaseSpeed * speedMult * moodVisuals.lightSpeed;
     u.hoverPhase += this.config.hoverBobSpeed * speedMult;
+
+    // Update narrative effect timers
+    if (u.cameraFlashTimer > 0) {
+      u.cameraFlashTimer = Math.max(0, u.cameraFlashTimer - speedMult);
+    }
 
     // Update mood system
     this.updateMood(speedMult);
@@ -444,6 +597,37 @@ export class UFOSystem {
         break;
       case "giving_up":
         this.updateGivingUp(speedMult);
+        break;
+      case "collecting_sample":
+        this.updateCollectingSample(speedMult);
+        break;
+      case "photographing":
+        this.updatePhotographing(speedMult);
+        break;
+      case "investigating_ground":
+        this.updateInvestigatingGround(speedMult);
+        break;
+      case "panicking":
+        this.updatePanicking(dim, speedMult);
+        break;
+      case "surfing":
+        this.updateSurfing(speedMult);
+        break;
+      case "communicating":
+        this.updateCommunicating(speedMult);
+        break;
+      case "napping":
+        this.updateNapping(speedMult);
+        break;
+      case "hiding":
+      case "peeking":
+        this.updatePeekaboo(speedMult);
+        break;
+      case "celebrating":
+        this.updateCelebrating(speedMult);
+        break;
+      case "following":
+        this.updateFollowing(dim, speedMult);
         break;
       case "exiting":
         this.updateExiting(speedMult);
@@ -594,9 +778,9 @@ export class UFOSystem {
   }
 
   /**
-   * Trigger a wobble animation
+   * Trigger a wobble animation (public for testing via UFO Lab)
    */
-  private triggerWobble(type: WobbleType): void {
+  triggerWobble(type: WobbleType): void {
     if (!this.ufo) return;
 
     // Don't interrupt existing wobble
@@ -1033,6 +1217,12 @@ export class UFOSystem {
     if (!this.ufo) return;
     const u = this.ufo;
 
+    // If tired, might take a nap
+    if (u.mood === "tired" && Math.random() < 0.4) {
+      this.startNapping();
+      return;
+    }
+
     // Sometimes the alien just wants to vibe - no scanning, just chill longer
     const justVibeChance = this.config.justVibeChance ?? 0.3;
     if (Math.random() < justVibeChance) {
@@ -1049,35 +1239,52 @@ export class UFOSystem {
       return;
     }
 
-    // Check for nearby bright star to scan - curious!
+    // Check for nearby bright star - decide how to interact based on mood
     if (Math.random() < this.config.scanStarChance) {
       const star = this.findNearbyBrightStar();
       if (star) {
-        u.state = "scanning_star";
-        u.stateTimer = 0;
-        u.stateDuration = this.calculationService.randInt(
-          this.config.scanDuration.min,
-          this.config.scanDuration.max
-        );
-        u.beamTarget = { x: star.x, y: star.y };
-        u.beamIntensity = 0;
-        this.markInterest(); // Found something to scan!
-        this.rememberScannedStar(star.x, star.y); // Remember this one
+        // Choose interaction style based on mood and randomness
+        const roll = Math.random();
+
+        if (u.mood === "playful" && roll < 0.3) {
+          // Try to communicate with the star!
+          this.startCommunicating(star);
+        } else if ((u.mood === "curious" || u.mood === "bored") && roll < 0.4) {
+          // Take a photo of the star (tourist mode)
+          this.startPhotographing(star);
+        } else {
+          // Default: just scan the star
+          u.state = "scanning_star";
+          u.stateTimer = 0;
+          u.stateDuration = this.calculationService.randInt(
+            this.config.scanDuration.min,
+            this.config.scanDuration.max
+          );
+          u.beamTarget = { x: star.x, y: star.y };
+          u.beamIntensity = 0;
+          this.markInterest();
+          this.rememberScannedStar(star.x, star.y);
+        }
         return;
       }
     }
 
     // Ground observation - what's down there?
     if (Math.random() < this.config.groundScanChance) {
-      u.state = "scanning_ground";
-      u.stateTimer = 0;
-      u.stateDuration = this.calculationService.randInt(
-        this.config.scanDuration.min,
-        this.config.scanDuration.max
-      );
-      // Point beam straight down, past bottom of screen
-      u.beamTarget = { x: u.x, y: this.dimensions.height + 100 };
-      u.beamIntensity = 0;
+      // Sometimes investigate ground more thoroughly with particles
+      if (Math.random() < 0.4) {
+        this.startInvestigatingGround();
+      } else {
+        // Simple ground scan
+        u.state = "scanning_ground";
+        u.stateTimer = 0;
+        u.stateDuration = this.calculationService.randInt(
+          this.config.scanDuration.min,
+          this.config.scanDuration.max
+        );
+        u.beamTarget = { x: u.x, y: this.dimensions.height + 100 };
+        u.beamIntensity = 0;
+      }
       return;
     }
 
@@ -1087,14 +1294,10 @@ export class UFOSystem {
 
   private startTrackingEvent(event: EventPosition): void {
     if (!this.ufo) return;
-    const u = this.ufo;
 
-    u.state = "tracking_event";
-    u.stateTimer = 0;
-    u.stateDuration = 9999; // Track until event ends
-    u.beamTarget = { x: event.x, y: event.y };
-    u.beamIntensity = 0;
-    this.markInterest(); // Celestial event is exciting!
+    // Instead of tracking forever, start the sample collection narrative
+    // This gives the UFO a clear goal: detect, scan, collect, celebrate
+    this.startCollectingSample(event);
   }
 
   // ============================================================================
@@ -1526,7 +1729,262 @@ export class UFOSystem {
     // Layer 6: Engine glow (underneath)
     this.drawEngineGlow(ctx, u, drawY);
 
+    // Layer 7: Narrative effects (particles, flashes, etc.)
+    this.drawNarrativeEffects(ctx, u);
+
     ctx.restore();
+  }
+
+  /**
+   * Draw all narrative arc visual effects
+   */
+  private drawNarrativeEffects(ctx: CanvasRenderingContext2D, u: UFO): void {
+    // Sample particle traveling up the beam
+    if (u.sampleParticle) {
+      this.drawSampleParticle(ctx, u.sampleParticle);
+    }
+
+    // Camera flash effect
+    if (u.cameraFlashTimer > 0) {
+      this.drawCameraFlash(ctx, u);
+    }
+
+    // Ground investigation particles
+    if (u.groundParticles.length > 0) {
+      this.drawGroundParticles(ctx, u.groundParticles);
+    }
+
+    // Panic afterimages
+    if (u.afterimagePositions.length > 0) {
+      this.drawAfterimages(ctx, u);
+    }
+
+    // Sleep Zs for napping
+    if (u.sleepZs.length > 0) {
+      this.drawSleepZs(ctx, u.sleepZs);
+    }
+
+    // Celebration rainbow lights
+    if (u.state === "celebrating") {
+      this.drawCelebrationEffects(ctx, u);
+    }
+
+    // Communication pulses
+    if (u.state === "communicating" && u.commTarget) {
+      this.drawCommunicationPulses(ctx, u);
+    }
+  }
+
+  /**
+   * Draw sample particle (golden orb traveling up beam)
+   */
+  private drawSampleParticle(ctx: CanvasRenderingContext2D, p: Particle): void {
+    const glow = 12 + Math.sin(p.progress * Math.PI * 4) * 4;
+
+    // Outer glow
+    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glow);
+    gradient.addColorStop(0, "rgba(251, 191, 36, 0.9)");
+    gradient.addColorStop(0.4, "rgba(251, 191, 36, 0.4)");
+    gradient.addColorStop(1, "rgba(251, 191, 36, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, glow, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = "#fef3c7";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sparkle highlight
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /**
+   * Draw camera flash effect (brief white burst)
+   */
+  private drawCameraFlash(ctx: CanvasRenderingContext2D, u: UFO): void {
+    const flashAlpha = Math.min(1, u.cameraFlashTimer / 8);
+    const flashRadius = u.size * 3;
+
+    const gradient = ctx.createRadialGradient(u.x, u.y, 0, u.x, u.y, flashRadius);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha})`);
+    gradient.addColorStop(0.3, `rgba(200, 220, 255, ${flashAlpha * 0.6})`);
+    gradient.addColorStop(1, "rgba(200, 220, 255, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(u.x, u.y, flashRadius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /**
+   * Draw ground investigation particles (dust rising)
+   */
+  private drawGroundParticles(ctx: CanvasRenderingContext2D, particles: Particle[]): void {
+    for (const p of particles) {
+      const alpha = 1 - p.progress;
+      const size = p.size * (1 + p.progress * 0.5);
+
+      // Dust particle
+      ctx.fillStyle = `rgba(180, 160, 140, ${alpha * 0.7})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sparkle for some particles
+      if (p.type === "sparkle") {
+        ctx.fillStyle = `rgba(255, 230, 180, ${alpha * 0.9})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  /**
+   * Draw panic afterimages (motion blur effect)
+   */
+  private drawAfterimages(ctx: CanvasRenderingContext2D, u: UFO): void {
+    for (const img of u.afterimagePositions) {
+      if (img.opacity <= 0) continue;
+
+      ctx.save();
+      ctx.globalAlpha = img.opacity * 0.3;
+
+      // Simple ghost silhouette
+      const gradient = ctx.createRadialGradient(
+        img.x, img.y, 0,
+        img.x, img.y, u.size
+      );
+      gradient.addColorStop(0, this.config.colors.shield);
+      gradient.addColorStop(1, "rgba(100, 200, 255, 0)");
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.ellipse(img.x, img.y, u.size * 0.8, u.size * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Draw floating sleep Zs
+   */
+  private drawSleepZs(ctx: CanvasRenderingContext2D, zs: Particle[]): void {
+    ctx.font = "bold 14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    for (const z of zs) {
+      const alpha = 1 - z.progress;
+      const scale = 0.5 + z.progress * 0.8;
+      const wobble = Math.sin(z.progress * Math.PI * 3) * 3;
+
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.8;
+      ctx.translate(z.x + wobble, z.y);
+      ctx.scale(scale, scale);
+
+      // Z shadow
+      ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+      ctx.fillText("Z", 1, 1);
+
+      // Z text
+      ctx.fillStyle = "#a5b4fc";
+      ctx.fillText("Z", 0, 0);
+
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Draw celebration effects (rainbow lights, sparkles)
+   */
+  private drawCelebrationEffects(ctx: CanvasRenderingContext2D, u: UFO): void {
+    const rainbowColors = [
+      "#ef4444", // red
+      "#f97316", // orange
+      "#eab308", // yellow
+      "#22c55e", // green
+      "#3b82f6", // blue
+      "#8b5cf6", // violet
+    ];
+
+    // Rainbow ring around UFO
+    const ringRadius = u.size * 1.5;
+    const numLights = 12;
+
+    for (let i = 0; i < numLights; i++) {
+      const angle = (i / numLights) * Math.PI * 2 + u.rainbowPhase;
+      const colorIndex = Math.floor((i / numLights) * rainbowColors.length);
+      const color = rainbowColors[colorIndex % rainbowColors.length]!;
+
+      const lx = u.x + Math.cos(angle) * ringRadius;
+      const ly = u.y + Math.sin(angle) * ringRadius * 0.4; // Flatten for perspective
+
+      const pulse = 0.7 + Math.sin(angle * 3 + u.celebrationBouncePhase) * 0.3;
+
+      // Light glow
+      const gradient = ctx.createRadialGradient(lx, ly, 0, lx, ly, 8);
+      gradient.addColorStop(0, color);
+      gradient.addColorStop(0.5, `${color}80`);
+      gradient.addColorStop(1, `${color}00`);
+
+      ctx.fillStyle = gradient;
+      ctx.globalAlpha = pulse;
+      ctx.beginPath();
+      ctx.arc(lx, ly, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Draw communication pulses traveling to target star
+   */
+  private drawCommunicationPulses(ctx: CanvasRenderingContext2D, u: UFO): void {
+    if (!u.commTarget) return;
+
+    // Draw a pulsing beam line toward the star
+    const currentPulse = u.commPattern[u.commPatternIndex];
+    if (!currentPulse?.isOn) return;
+
+    const dx = u.commTarget.x - u.x;
+    const dy = u.commTarget.y - u.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Animated pulse traveling along the beam
+    const pulseProgress = (u.commPulseTimer % 30) / 30;
+    const pulseX = u.x + dx * pulseProgress;
+    const pulseY = u.y + dy * pulseProgress;
+
+    // Beam line (thin)
+    ctx.strokeStyle = "rgba(147, 197, 253, 0.3)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(u.x, u.y);
+    ctx.lineTo(u.commTarget.x, u.commTarget.y);
+    ctx.stroke();
+
+    // Traveling pulse
+    const pulseSize = 6 + Math.sin(pulseProgress * Math.PI) * 3;
+    const gradient = ctx.createRadialGradient(pulseX, pulseY, 0, pulseX, pulseY, pulseSize * 2);
+    gradient.addColorStop(0, "rgba(147, 197, 253, 0.9)");
+    gradient.addColorStop(0.5, "rgba(147, 197, 253, 0.4)");
+    gradient.addColorStop(1, "rgba(147, 197, 253, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(pulseX, pulseY, pulseSize * 2, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   private drawWarpFlash(
@@ -1908,6 +2366,1175 @@ export class UFOSystem {
    */
   getTiredness(): number | null {
     return this.ufo?.tiredness ?? null;
+  }
+
+  /**
+   * Reset UFO tiredness to 0 (for testing)
+   */
+  resetTiredness(): void {
+    if (this.ufo) {
+      this.ufo.tiredness = 0;
+    }
+  }
+
+  /**
+   * Get count of scanned stars in UFO's memory
+   */
+  getScannedStarsCount(): number {
+    return this.ufo?.scannedStars.size ?? 0;
+  }
+
+  /**
+   * Clear UFO's memory of scanned stars
+   */
+  clearScannedStars(): void {
+    if (this.ufo) {
+      this.ufo.scannedStars.clear();
+    }
+  }
+
+  /**
+   * Get UFO heading in radians
+   */
+  getHeading(): number | null {
+    return this.ufo?.heading ?? null;
+  }
+
+  // ============================================================================
+  // NARRATIVE ARC UPDATE METHODS
+  // ============================================================================
+
+  /**
+   * Sample Collection - UFO collects a sample from comet/meteor
+   * Phases: detection -> action (beam lock) -> resolution (particle travel) -> transition
+   */
+  private updateCollectingSample(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    switch (u.narrativePhase) {
+      case "detection":
+        // Beam charging toward target
+        u.beamIntensity = Math.min(1, u.beamIntensity + speedMult * 0.03);
+        if (u.narrativeTimer >= 60) {
+          u.narrativePhase = "action";
+          u.narrativeTimer = 0;
+          u.narrativePhaseDuration = 120; // 2 seconds scanning
+          this.setMood("excited");
+        }
+        break;
+
+      case "action":
+        // Scanning - beam pulses
+        u.beamIntensity = 0.7 + Math.sin(u.narrativeTimer * 0.2) * 0.3;
+
+        // Update beam target if tracking moving object
+        const event = this.eventProvider?.();
+        if (event?.active && u.beamTarget) {
+          u.beamTarget = { x: event.x, y: event.y };
+        }
+
+        if (u.narrativeTimer >= u.narrativePhaseDuration) {
+          // Spawn sample particle at beam target
+          if (u.beamTarget) {
+            u.sampleParticle = {
+              x: u.beamTarget.x,
+              y: u.beamTarget.y,
+              targetX: u.x,
+              targetY: u.y,
+              progress: 0,
+              color: "#fbbf24", // Golden
+              size: 6,
+              type: "sample",
+            };
+          }
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+          u.narrativePhaseDuration = 90; // 1.5 seconds for particle travel
+        }
+        break;
+
+      case "resolution":
+        // Sample particle traveling up the beam
+        if (u.sampleParticle) {
+          u.sampleParticle.progress = Math.min(
+            1,
+            u.sampleParticle.progress + speedMult * 0.015
+          );
+          // Update particle position along beam
+          const p = u.sampleParticle.progress;
+          const eased = 1 - Math.pow(1 - p, 3); // Ease out cubic
+          u.sampleParticle.x =
+            u.beamTarget!.x + (u.x - u.beamTarget!.x) * eased;
+          u.sampleParticle.y =
+            u.beamTarget!.y + (u.y - u.beamTarget!.y) * eased;
+
+          // Particle reached UFO
+          if (u.sampleParticle.progress >= 1) {
+            u.collectedSamples++;
+            u.sampleParticle = null;
+            this.triggerWobble("happy_bounce");
+            u.narrativePhase = "transition";
+            u.narrativeTimer = 0;
+            // Flash effect
+            u.cameraFlashTimer = 15;
+          }
+        }
+        break;
+
+      case "transition":
+        // Brief satisfaction pause then return to wandering
+        u.beamIntensity = Math.max(0, u.beamIntensity - speedMult * 0.05);
+        if (u.narrativeTimer >= 30) {
+          u.beamTarget = null;
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start sample collection from a comet/meteor
+   */
+  private startCollectingSample(event: EventPosition): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "collecting_sample";
+    u.stateTimer = 0;
+    u.narrativePhase = "detection";
+    u.narrativeTimer = 0;
+    u.beamTarget = { x: event.x, y: event.y };
+    u.beamIntensity = 0;
+    this.markInterest();
+  }
+
+  /**
+   * Star Photography - UFO takes a photo of a star
+   */
+  private updatePhotographing(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    switch (u.narrativePhase) {
+      case "approach":
+        // Drift toward photo target
+        if (u.photoTarget) {
+          const dx = u.photoTarget.x - u.x;
+          const dy = u.photoTarget.y - u.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 100) {
+            // Move closer
+            const speed = this.config.speed * this.dimensions.width * speedMult * 0.5;
+            u.x += (dx / dist) * speed;
+            u.y += (dy / dist) * speed;
+          } else {
+            u.narrativePhase = "action";
+            u.narrativeTimer = 0;
+            this.triggerWobble("curious_tilt");
+          }
+        }
+        break;
+
+      case "action":
+        // Focusing - beam flickers
+        u.beamIntensity = 0.3 + Math.random() * 0.3; // Autofocus flicker
+        u.beamTarget = u.photoTarget;
+
+        if (u.narrativeTimer >= 90) {
+          // FLASH!
+          u.cameraFlashTimer = 20;
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+
+          // Remember this star
+          if (u.photoTarget) {
+            const key = `${Math.round(u.photoTarget.x / 50)},${Math.round(u.photoTarget.y / 50)}`;
+            u.photographedStars.add(key);
+          }
+        }
+        break;
+
+      case "resolution":
+        // Flash fade and admire
+        u.beamIntensity = Math.max(0, u.beamIntensity - speedMult * 0.05);
+        u.cameraFlashTimer = Math.max(0, u.cameraFlashTimer - speedMult);
+
+        if (u.narrativeTimer >= 30) {
+          this.triggerWobble("happy_bounce");
+          this.setMood("playful");
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        if (u.narrativeTimer >= 30) {
+          u.photoTarget = null;
+          u.beamTarget = null;
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start photographing a star
+   */
+  private startPhotographing(star: StarInfo): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "photographing";
+    u.stateTimer = 0;
+    u.narrativePhase = "approach";
+    u.narrativeTimer = 0;
+    u.photoTarget = { x: star.x, y: star.y };
+    u.beamIntensity = 0;
+    this.markInterest();
+  }
+
+  /**
+   * Ground Investigation - UFO finds something on the ground
+   */
+  private updateInvestigatingGround(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    switch (u.narrativePhase) {
+      case "detection":
+        // Pause and look down
+        this.triggerWobble("curious_tilt");
+        if (u.narrativeTimer >= 30) {
+          u.narrativePhase = "approach";
+          u.narrativeTimer = 0;
+          // Set anomaly position at bottom of screen
+          u.anomalyPosition = {
+            x: u.x + (Math.random() - 0.5) * 100,
+            y: this.dimensions.height - 50,
+          };
+        }
+        break;
+
+      case "approach":
+        // Descend toward anomaly
+        if (u.anomalyPosition) {
+          const targetY = this.dimensions.height * 0.7;
+          if (u.y < targetY) {
+            u.y += speedMult * 2;
+          } else {
+            u.narrativePhase = "action";
+            u.narrativeTimer = 0;
+            u.beamTarget = u.anomalyPosition;
+            u.beamIntensity = 0;
+          }
+        }
+        break;
+
+      case "action":
+        // Beam sweeps and collects particles
+        u.beamIntensity = Math.min(1, u.beamIntensity + speedMult * 0.02);
+
+        // Beam sweeps side to side
+        if (u.anomalyPosition) {
+          const sweep = Math.sin(u.narrativeTimer * 0.05) * 50;
+          u.beamTarget = {
+            x: u.anomalyPosition.x + sweep,
+            y: u.anomalyPosition.y,
+          };
+        }
+
+        // Spawn rising particles
+        if (Math.random() < 0.1 && u.groundParticles.length < 10) {
+          u.groundParticles.push({
+            x: u.beamTarget!.x + (Math.random() - 0.5) * 30,
+            y: u.beamTarget!.y,
+            targetX: u.x,
+            targetY: u.y,
+            progress: 0,
+            color: `hsl(${40 + Math.random() * 20}, 80%, 60%)`,
+            size: 2 + Math.random() * 3,
+            type: "dust",
+          });
+        }
+
+        // Update particles
+        u.groundParticles = u.groundParticles.filter((p) => {
+          p.progress += speedMult * 0.01;
+          const eased = 1 - Math.pow(1 - p.progress, 2);
+          p.x = p.x + (p.targetX - p.x) * eased * 0.1;
+          p.y = p.y + (p.targetY - p.y) * eased * 0.1;
+          return p.progress < 1;
+        });
+
+        if (u.narrativeTimer >= 180) {
+          this.setMood("excited");
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+          u.cameraFlashTimer = 10; // Dome flash
+        }
+        break;
+
+      case "resolution":
+        // Analysis complete - particles absorbed
+        u.groundParticles = u.groundParticles.filter((p) => {
+          p.progress += speedMult * 0.03;
+          return p.progress < 1;
+        });
+
+        u.beamIntensity = Math.max(0, u.beamIntensity - speedMult * 0.02);
+
+        if (u.narrativeTimer >= 60) {
+          // Random outcome
+          if (Math.random() < 0.7) {
+            this.triggerWobble("happy_bounce");
+          } else {
+            this.triggerWobble("curious_tilt");
+          }
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        // Rise back up
+        if (u.y > this.dimensions.height * 0.3) {
+          u.y -= speedMult * 2;
+        } else if (u.narrativeTimer >= 30) {
+          u.anomalyPosition = null;
+          u.beamTarget = null;
+          u.groundParticles = [];
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start ground investigation
+   */
+  private startInvestigatingGround(): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "investigating_ground";
+    u.stateTimer = 0;
+    u.narrativePhase = "detection";
+    u.narrativeTimer = 0;
+    u.groundParticles = [];
+    this.markInterest();
+  }
+
+  /**
+   * Panic - UFO reacts to near miss
+   */
+  private updatePanicking(dim: Dimensions, speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    switch (u.narrativePhase) {
+      case "detection":
+        // Initial jolt
+        this.triggerWobble("startled_jolt");
+        this.setMood("startled");
+        u.panicSpeed = this.config.speed * dim.width * 4; // 4x normal speed
+        u.narrativePhase = "action";
+        u.narrativeTimer = 0;
+        // Add afterimage at current position
+        u.afterimagePositions = [{ x: u.x, y: u.y, opacity: 0.8 }];
+        break;
+
+      case "action":
+        // Zip away in panic direction
+        u.x += Math.cos(u.panicDirection) * u.panicSpeed * speedMult;
+        u.y += Math.sin(u.panicDirection) * u.panicSpeed * speedMult;
+
+        // Gradually slow down
+        u.panicSpeed *= 0.95;
+
+        // Add afterimages
+        if (u.narrativeTimer % 5 < speedMult) {
+          u.afterimagePositions.push({ x: u.x, y: u.y, opacity: 0.6 });
+          if (u.afterimagePositions.length > 5) {
+            u.afterimagePositions.shift();
+          }
+        }
+
+        // Fade afterimages
+        u.afterimagePositions.forEach((a) => (a.opacity *= 0.9));
+
+        // Keep in bounds
+        const margin = dim.width * this.config.bounceMargin;
+        u.x = Math.max(margin, Math.min(dim.width - margin, u.x));
+        u.y = Math.max(margin, Math.min(dim.height - margin, u.y));
+
+        if (u.narrativeTimer >= 60) {
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "resolution":
+        // Shaky recovery
+        u.heading += (Math.random() - 0.5) * 0.1 * speedMult;
+
+        // Fade afterimages
+        u.afterimagePositions = u.afterimagePositions.filter((a) => {
+          a.opacity *= 0.9;
+          return a.opacity > 0.05;
+        });
+
+        if (u.narrativeTimer >= 120) {
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        // Cautiously return to wandering
+        if (u.narrativeTimer >= 60) {
+          u.afterimagePositions = [];
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Trigger panic from near miss
+   */
+  private startPanicking(fromX: number, fromY: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    // Calculate flee direction (away from threat)
+    const dx = u.x - fromX;
+    const dy = u.y - fromY;
+    u.panicDirection = Math.atan2(dy, dx);
+
+    u.state = "panicking";
+    u.stateTimer = 0;
+    u.narrativePhase = "detection";
+    u.narrativeTimer = 0;
+  }
+
+  /**
+   * Comet Surfing - UFO rides on a comet
+   */
+  private updateSurfing(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    // Check if comet is still active
+    const event = this.eventProvider?.();
+    if (!event?.active) {
+      // Comet gone - dismount
+      this.triggerWobble("curious_tilt");
+      this.setMood("playful");
+      u.surfTarget = null;
+      u.narrativePhase = "none";
+      this.resumeWandering();
+      return;
+    }
+
+    switch (u.narrativePhase) {
+      case "approach":
+        // Intercept the comet
+        if (u.surfTarget) {
+          const predictX = event.x + (event.vx ?? 0) * 30;
+          const predictY = event.y + (event.vy ?? 0) * 30;
+          const dx = predictX - u.x;
+          const dy = predictY - u.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          const speed = this.config.speed * this.dimensions.width * speedMult * 2;
+          u.x += (dx / dist) * speed;
+          u.y += (dy / dist) * speed;
+
+          if (dist < 50) {
+            u.narrativePhase = "action";
+            u.narrativeTimer = 0;
+            this.triggerWobble("happy_bounce");
+            this.setMood("playful");
+            // Calculate offset from comet center
+            u.surfOffset = { x: u.x - event.x, y: u.y - event.y - 20 };
+          }
+        }
+        break;
+
+      case "action":
+        // Riding the comet!
+        u.x = event.x + u.surfOffset.x;
+        u.y = event.y + u.surfOffset.y;
+
+        // Happy bobbing while riding
+        u.surfOffset.y += Math.sin(u.narrativeTimer * 0.1) * 0.5;
+
+        // Beam retracted while surfing
+        u.beamIntensity = 0;
+        u.beamTarget = null;
+
+        // Occasional playful spin
+        if (Math.random() < 0.005) {
+          u.spinAngle += Math.PI * 2;
+        }
+        u.spinAngle *= 0.95; // Decay spin
+
+        // Rainbow lights while surfing
+        u.rainbowPhase += speedMult * 0.1;
+
+        // Auto-dismount after a while or if near edge
+        if (
+          u.narrativeTimer >= 300 ||
+          event.x < 50 ||
+          event.x > this.dimensions.width - 50
+        ) {
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "resolution":
+        // Peel off from comet
+        u.y -= speedMult * 3; // Rise up
+        u.x += speedMult * 2; // Drift to side
+
+        if (u.narrativeTimer >= 60) {
+          this.triggerWobble("curious_tilt"); // Wave goodbye
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        if (u.narrativeTimer >= 30) {
+          u.surfTarget = null;
+          u.rainbowPhase = 0;
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start surfing a comet
+   */
+  private startSurfing(event: EventPosition): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "surfing";
+    u.stateTimer = 0;
+    u.narrativePhase = "approach";
+    u.narrativeTimer = 0;
+    u.surfTarget = {
+      x: event.x,
+      y: event.y,
+      vx: event.vx ?? 0,
+      vy: event.vy ?? 0,
+    };
+    this.markInterest();
+    this.setMood("excited");
+  }
+
+  /**
+   * Communication - UFO tries to talk to a star
+   */
+  private updateCommunicating(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    switch (u.narrativePhase) {
+      case "approach":
+        // Drift toward target star
+        if (u.commTarget) {
+          const dx = u.commTarget.x - u.x;
+          const dy = u.commTarget.y - u.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 150) {
+            const speed = this.config.speed * this.dimensions.width * speedMult * 0.5;
+            u.x += (dx / dist) * speed;
+            u.y += (dy / dist) * speed;
+          } else {
+            u.narrativePhase = "action";
+            u.narrativeTimer = 0;
+            // Generate communication pattern (morse-like)
+            u.commPattern = [
+              { duration: 10, isOn: true },
+              { duration: 10, isOn: false },
+              { duration: 10, isOn: true },
+              { duration: 10, isOn: false },
+              { duration: 30, isOn: true },
+              { duration: 20, isOn: false },
+            ];
+            u.commPatternIndex = 0;
+            u.commPulseTimer = 0;
+          }
+        }
+        break;
+
+      case "action":
+        // Send transmission - beam pulses in pattern
+        u.beamTarget = u.commTarget;
+
+        if (u.commPatternIndex < u.commPattern.length) {
+          const pulse = u.commPattern[u.commPatternIndex]!;
+          u.beamIntensity = pulse.isOn ? 1 : 0.2;
+
+          u.commPulseTimer += speedMult;
+          if (u.commPulseTimer >= pulse.duration) {
+            u.commPulseTimer = 0;
+            u.commPatternIndex++;
+          }
+        } else {
+          // Transmission complete - wait for response
+          u.beamIntensity = 0.3;
+          u.awaitingResponse = true;
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "resolution":
+        // Listening for response...
+        u.beamIntensity = 0.2 + Math.sin(u.narrativeTimer * 0.1) * 0.1;
+
+        // "Response" is random - if target star happens to twinkle (we fake this)
+        const gotResponse = u.narrativeTimer > 60 && Math.random() < 0.02;
+
+        if (gotResponse) {
+          this.triggerWobble("happy_bounce");
+          this.setMood("excited");
+          // Mark as contacted
+          if (u.commTarget) {
+            const key = `${Math.round(u.commTarget.x / 50)},${Math.round(u.commTarget.y / 50)}`;
+            u.photographedStars.add(key); // Reuse this set for contacted stars
+          }
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        } else if (u.narrativeTimer >= 120) {
+          // No response :(
+          this.triggerWobble("disappointed_shake");
+          this.setMood("bored");
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        u.beamIntensity = Math.max(0, u.beamIntensity - speedMult * 0.03);
+        if (u.narrativeTimer >= 60) {
+          u.commTarget = null;
+          u.beamTarget = null;
+          u.awaitingResponse = false;
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start communication attempt with a star
+   */
+  private startCommunicating(star: StarInfo): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "communicating";
+    u.stateTimer = 0;
+    u.narrativePhase = "approach";
+    u.narrativeTimer = 0;
+    u.commTarget = { x: star.x, y: star.y };
+    u.beamIntensity = 0;
+    this.markInterest();
+  }
+
+  /**
+   * Power Nap - UFO takes a rest when tired
+   */
+  private updateNapping(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    switch (u.narrativePhase) {
+      case "detection":
+        // Yawning
+        this.triggerWobble("yawn_stretch");
+        u.narrativePhase = "approach";
+        u.narrativeTimer = 0;
+        u.napStartY = u.y;
+        break;
+
+      case "approach":
+        // Settling down - drift to a quiet corner
+        const targetX = this.dimensions.width * 0.85;
+        const targetY = this.dimensions.height * 0.2;
+
+        const dx = targetX - u.x;
+        const dy = targetY - u.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 20) {
+          const speed = this.config.speed * this.dimensions.width * speedMult * 0.3;
+          u.x += (dx / dist) * speed;
+          u.y += (dy / dist) * speed;
+        } else {
+          u.narrativePhase = "action";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "action":
+        // Sleeping - very still, gentle bob, Zzz particles
+        u.beamIntensity = 0;
+        u.beamTarget = null;
+
+        // Slow, deep hover bob
+        u.y += Math.sin(u.narrativeTimer * 0.02) * 0.3;
+
+        // Lights dim
+        u.opacity = Math.max(0.6, u.opacity - speedMult * 0.001);
+
+        // Spawn Z particles occasionally
+        if (Math.random() < 0.02 && u.sleepZs.length < 5) {
+          u.sleepZs.push({
+            x: u.x + 15,
+            y: u.y - 10,
+            targetX: u.x + 40 + Math.random() * 20,
+            targetY: u.y - 60 - Math.random() * 40,
+            progress: 0,
+            color: "rgba(167, 139, 250, 0.8)",
+            size: 8 + Math.random() * 4,
+            type: "z",
+          });
+        }
+
+        // Update Z particles
+        u.sleepZs = u.sleepZs.filter((z) => {
+          z.progress += speedMult * 0.008;
+          const eased = z.progress;
+          z.x = z.x + (z.targetX - z.x) * eased * 0.02;
+          z.y = z.y + (z.targetY - z.y) * eased * 0.02;
+          z.size *= 0.995; // Shrink slightly
+          return z.progress < 1;
+        });
+
+        // Wake up after rest or if clicked (handled elsewhere)
+        if (u.narrativeTimer >= 600) {
+          // 10 seconds nap
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "resolution":
+        // Waking up - stretch
+        this.triggerWobble("yawn_stretch");
+        u.opacity = Math.min(1, u.opacity + speedMult * 0.02);
+
+        if (u.narrativeTimer >= 60) {
+          // Refreshed!
+          u.tiredness = Math.max(0, u.tiredness - 0.5);
+          this.setMood("curious");
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        u.sleepZs = [];
+        if (u.narrativeTimer >= 30) {
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start taking a nap
+   */
+  private startNapping(): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "napping";
+    u.stateTimer = 0;
+    u.narrativePhase = "detection";
+    u.narrativeTimer = 0;
+    u.sleepZs = [];
+    this.setMood("tired");
+  }
+
+  /**
+   * Peek-a-boo - UFO hides and peeks when clicked
+   */
+  private updatePeekaboo(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    if (u.state === "hiding") {
+      switch (u.narrativePhase) {
+        case "action":
+          // Zip to hide position
+          if (u.hidePosition) {
+            const dx = u.hidePosition.x - u.x;
+            const dy = u.hidePosition.y - u.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 10) {
+              const speed = this.config.speed * this.dimensions.width * speedMult * 3;
+              u.x += (dx / dist) * speed;
+              u.y += (dy / dist) * speed;
+            } else {
+              u.narrativePhase = "resolution";
+              u.narrativeTimer = 0;
+              u.scale = 0.3; // Shrink while hiding
+            }
+          }
+          break;
+
+        case "resolution":
+          // Wait hidden
+          if (u.narrativeTimer >= 90) {
+            u.state = "peeking";
+            u.narrativePhase = "action";
+            u.narrativeTimer = 0;
+            u.peekProgress = 0;
+          }
+          break;
+      }
+    } else if (u.state === "peeking") {
+      switch (u.narrativePhase) {
+        case "action":
+          // Slowly peek out
+          u.peekProgress = Math.min(1, u.peekProgress + speedMult * 0.02);
+          u.scale = 0.3 + u.peekProgress * 0.7;
+
+          // Move slightly in peek direction
+          u.x += Math.cos(u.peekDirection) * speedMult * 0.5;
+          u.y += Math.sin(u.peekDirection) * speedMult * 0.5;
+
+          if (u.peekProgress >= 1) {
+            u.narrativePhase = "resolution";
+            u.narrativeTimer = 0;
+          }
+          break;
+
+        case "resolution":
+          // Full reveal!
+          this.triggerWobble("happy_bounce");
+          this.setMood("playful");
+
+          if (u.narrativeTimer >= 60) {
+            u.narrativePhase = "transition";
+            u.narrativeTimer = 0;
+          }
+          break;
+
+        case "transition":
+          if (u.narrativeTimer >= 30) {
+            u.hidePosition = null;
+            u.peekProgress = 0;
+            u.narrativePhase = "none";
+            this.resumeWandering();
+          }
+          break;
+      }
+    }
+  }
+
+  /**
+   * Start peek-a-boo hide
+   */
+  private startHiding(): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    // Find a hide position (corner of screen)
+    const corners = [
+      { x: 50, y: 50 },
+      { x: this.dimensions.width - 50, y: 50 },
+      { x: 50, y: this.dimensions.height - 50 },
+      { x: this.dimensions.width - 50, y: this.dimensions.height - 50 },
+    ];
+
+    // Pick farthest corner from current position
+    let farthest = corners[0]!;
+    let maxDist = 0;
+    for (const corner of corners) {
+      const dist = Math.sqrt(
+        Math.pow(corner.x - u.x, 2) + Math.pow(corner.y - u.y, 2)
+      );
+      if (dist > maxDist) {
+        maxDist = dist;
+        farthest = corner;
+      }
+    }
+
+    u.hidePosition = farthest;
+    u.peekDirection = Math.atan2(u.y - farthest.y, u.x - farthest.x);
+    u.state = "hiding";
+    u.stateTimer = 0;
+    u.narrativePhase = "action";
+    u.narrativeTimer = 0;
+    this.setMood("playful");
+  }
+
+  /**
+   * Celebration - UFO celebrates a rare discovery
+   */
+  private updateCelebrating(speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    switch (u.narrativePhase) {
+      case "detection":
+        // Lights flash in unison
+        u.cameraFlashTimer = 15;
+        this.setMood("excited");
+        u.narrativePhase = "action";
+        u.narrativeTimer = 0;
+        u.celebrationSpinSpeed = 0.3;
+        break;
+
+      case "action":
+        // Spinning and bouncing celebration
+        u.spinAngle += u.celebrationSpinSpeed * speedMult;
+        u.celebrationBouncePhase += speedMult * 0.15;
+        u.y += Math.sin(u.celebrationBouncePhase) * 2;
+
+        // Rainbow lights
+        u.rainbowPhase += speedMult * 0.2;
+
+        // Gradually slow spin
+        u.celebrationSpinSpeed *= 0.995;
+
+        if (u.narrativeTimer >= 180) {
+          u.narrativePhase = "resolution";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "resolution":
+        // Satisfied hover
+        this.triggerWobble("happy_bounce");
+        u.spinAngle *= 0.9;
+        u.rainbowPhase += speedMult * 0.05;
+
+        if (u.narrativeTimer >= 60) {
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        u.rainbowPhase = 0;
+        u.spinAngle = 0;
+        if (u.narrativeTimer >= 30) {
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start celebrating a rare discovery
+   */
+  private startCelebrating(): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "celebrating";
+    u.stateTimer = 0;
+    u.narrativePhase = "detection";
+    u.narrativeTimer = 0;
+    u.rareDiscoveries++;
+    this.markInterest();
+  }
+
+  /**
+   * Following - UFO follows alongside another object
+   */
+  private updateFollowing(dim: Dimensions, speedMult: number): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.narrativeTimer += speedMult;
+
+    // Check if buddy is still around
+    const event = this.eventProvider?.();
+    if (!event?.active) {
+      this.triggerWobble("curious_tilt");
+      this.setMood("bored");
+      u.buddyTarget = null;
+      u.narrativePhase = "none";
+      this.resumeWandering();
+      return;
+    }
+
+    // Update buddy position
+    u.buddyTarget = {
+      x: event.x,
+      y: event.y,
+      vx: event.vx ?? 0,
+      vy: event.vy ?? 0,
+    };
+
+    switch (u.narrativePhase) {
+      case "approach":
+        // Move to parallel position
+        {
+          const targetX = event.x + u.buddyOffset;
+          const targetY = event.y;
+          const dx = targetX - u.x;
+          const dy = targetY - u.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 30) {
+            const speed = this.config.speed * dim.width * speedMult * 2;
+            u.x += (dx / dist) * speed;
+            u.y += (dy / dist) * speed;
+          } else {
+            u.narrativePhase = "action";
+            u.narrativeTimer = 0;
+            this.setMood("playful");
+          }
+        }
+        break;
+
+      case "action":
+        // Flying alongside
+        {
+          const targetX = event.x + u.buddyOffset;
+          const targetY = event.y;
+
+          // Match buddy velocity
+          u.x += (u.buddyTarget.vx ?? 0) * speedMult * 60;
+          u.y += (u.buddyTarget.vy ?? 0) * speedMult * 60;
+
+          // Correct drift
+          u.x += (targetX - u.x) * 0.05;
+          u.y += (targetY - u.y) * 0.05;
+
+          // Friendly beam pulse
+          u.beamTarget = { x: event.x, y: event.y };
+          u.beamIntensity = 0.3 + Math.sin(u.narrativeTimer * 0.1) * 0.2;
+
+          // Occasional playful up/down
+          if (Math.random() < 0.01) {
+            u.y += (Math.random() - 0.5) * 20;
+          }
+
+          // Break off after a while or at screen edge
+          if (
+            u.narrativeTimer >= 300 ||
+            event.x < 100 ||
+            event.x > dim.width - 100
+          ) {
+            u.narrativePhase = "resolution";
+            u.narrativeTimer = 0;
+          }
+        }
+        break;
+
+      case "resolution":
+        // Peel away
+        u.buddyOffset += speedMult * 2;
+        u.y -= speedMult;
+        u.beamIntensity *= 0.95;
+
+        if (u.narrativeTimer >= 60) {
+          this.triggerWobble("curious_tilt"); // Wave goodbye
+          u.narrativePhase = "transition";
+          u.narrativeTimer = 0;
+        }
+        break;
+
+      case "transition":
+        u.beamTarget = null;
+        if (u.narrativeTimer >= 60) {
+          u.buddyTarget = null;
+          u.narrativePhase = "none";
+          this.resumeWandering();
+        }
+        break;
+
+      default:
+        this.resumeWandering();
+    }
+  }
+
+  /**
+   * Start following alongside an object
+   */
+  private startFollowing(event: EventPosition): void {
+    if (!this.ufo) return;
+    const u = this.ufo;
+
+    u.state = "following";
+    u.stateTimer = 0;
+    u.narrativePhase = "approach";
+    u.narrativeTimer = 0;
+    u.buddyTarget = {
+      x: event.x,
+      y: event.y,
+      vx: event.vx ?? 0,
+      vy: event.vy ?? 0,
+    };
+    u.buddyOffset = 50 + Math.random() * 30;
+    this.markInterest();
   }
 
   // ============================================================================
