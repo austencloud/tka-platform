@@ -22,11 +22,13 @@ export interface NightSkyLabLayers {
 }
 
 export type NightSkyDensityPreset = "sparse" | "normal" | "dense" | "ultra";
+export type NightSkyLabMode = "default" | "ufoLab";
 
 export interface NightSkyLabSettings {
   quality: QualityLevel;
   layers: NightSkyLabLayers;
   densityPreset: NightSkyDensityPreset;
+  mode: NightSkyLabMode;
 }
 
 // ============================================================================
@@ -40,6 +42,8 @@ export interface FireflyForestLabLayers {
   shootingStars: boolean;
   trees: boolean;
   grass: boolean;
+  ambientParticles: boolean;
+  campfire: boolean;
   fireflies: boolean;
 }
 
@@ -148,6 +152,7 @@ export const DEFAULT_NIGHT_SKY_SETTINGS: NightSkyLabSettings = {
     ufo: false, // Easter egg - off by default
   },
   densityPreset: "normal",
+  mode: "default",
 };
 
 export const DEFAULT_FIREFLY_FOREST_SETTINGS: FireflyForestLabSettings = {
@@ -159,6 +164,8 @@ export const DEFAULT_FIREFLY_FOREST_SETTINGS: FireflyForestLabSettings = {
     shootingStars: true,
     trees: true,
     grass: true,
+    ambientParticles: true,
+    campfire: false, // Off by default - optional cozy element
     fireflies: true,
   },
   treeTypes: {
@@ -212,6 +219,7 @@ export const DEFAULT_RAINBOW_SETTINGS: RainbowLabSettings = {
 
 export interface EmberGlowLabLayers {
   gradient: boolean;
+  coalBed: boolean; // A+ - glowing heat source at bottom
   smoke: boolean;
   embers: boolean;
   sparks: boolean;
@@ -236,6 +244,7 @@ export const DEFAULT_EMBER_GLOW_SETTINGS: EmberGlowLabSettings = {
   quality: "high",
   layers: {
     gradient: true,
+    coalBed: true, // A+ - on by default, grounds the scene
     smoke: true,
     embers: true,
     sparks: true,

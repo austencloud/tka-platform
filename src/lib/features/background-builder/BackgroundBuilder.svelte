@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import NightSkyLab from "./components/NightSkyLab.svelte";
   import DeepOceanLab from "./components/DeepOceanLab.svelte";
   import FireflyForestLab from "./components/FireflyForestLab.svelte";
@@ -11,6 +12,8 @@
     backgroundBuilderState,
     type BackgroundBuilderTab,
   } from "./state/background-builder-state.svelte";
+  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
 
   interface Tab {
     id: BackgroundBuilderTab;
@@ -30,9 +33,35 @@
     { id: "gradient", label: "Gradient", icon: "fa-fill-drip" },
   ];
 
+  // Map tab IDs to BackgroundType for theme application
+  const tabToBackgroundType: Record<BackgroundBuilderTab, BackgroundType | null> = {
+    "deep-ocean": BackgroundType.DEEP_OCEAN,
+    "night-sky": BackgroundType.NIGHT_SKY,
+    "firefly-forest": BackgroundType.FIREFLY_FOREST,
+    "cherry-blossom": BackgroundType.SAKURA_DRIFT, // Cherry Blossom uses Sakura Drift theme
+    "pride": BackgroundType.PRIDE,
+    "ember-glow": BackgroundType.EMBER_GLOW,
+    "snowfall": BackgroundType.SNOWFALL,
+    "autumn-drift": BackgroundType.AUTUMN_DRIFT,
+    "gradient": BackgroundType.LINEAR_GRADIENT,
+  };
+
+  function applyThemeForTab(tabId: BackgroundBuilderTab) {
+    const backgroundType = tabToBackgroundType[tabId];
+    if (backgroundType) {
+      applyThemeForBackground(backgroundType);
+    }
+  }
+
   function setTab(tabId: BackgroundBuilderTab) {
     backgroundBuilderState.setCurrentTab(tabId);
+    applyThemeForTab(tabId);
   }
+
+  // Apply theme for initial tab on mount
+  onMount(() => {
+    applyThemeForTab(backgroundBuilderState.currentTab);
+  });
 </script>
 
 <div class="background-builder">

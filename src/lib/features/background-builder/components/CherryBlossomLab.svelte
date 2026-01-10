@@ -210,6 +210,11 @@
     updateMoonConfig();
   }
 
+  function copyMoonSettings() {
+    const settings = `detailLevel: ${moonDetailLevel}, surfaceDarkness: ${moonDarkness}, featureSpread: ${moonSpread}, glowIntensity: ${moonGlow}`;
+    navigator.clipboard.writeText(settings);
+  }
+
   onMount(() => {
     initializeSystem();
     window.addEventListener("resize", handleResize);
@@ -288,7 +293,12 @@
     <!-- Moon Settings (shown when moon is enabled) -->
     {#if layers.moon}
       <div class="slider-section">
-        <span class="label">Moon Settings</span>
+        <div class="slider-header">
+          <span class="label">Moon Settings</span>
+          <button class="copy-btn" onclick={copyMoonSettings} title="Copy settings">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
         <div class="slider-row">
           <span class="slider-label">Detail</span>
           <input
@@ -431,6 +441,28 @@
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     overflow-y: auto;
+
+    /* Themed scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
+  }
+
+  .controls::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .controls::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+    border-radius: 4px;
+  }
+
+  .controls::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-accent, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .controls::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-accent-hover, rgba(255, 255, 255, 0.35));
   }
 
   .header {
@@ -604,6 +636,29 @@
     background: rgba(255, 255, 255, 0.03);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .slider-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .copy-btn {
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .copy-btn:hover {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: rgba(6, 182, 212, 0.3);
+    color: #06b6d4;
   }
 
   .slider-row {
