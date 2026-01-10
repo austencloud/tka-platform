@@ -295,7 +295,7 @@
     scroll-behavior: smooth;
     /* Custom scrollbar styling */
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-accent) transparent;
+    scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
   }
 
   .virtual-scroll-container::-webkit-scrollbar {
@@ -303,11 +303,11 @@
   }
 
   .virtual-scroll-container::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .virtual-scroll-container::-webkit-scrollbar-thumb {
-    background: var(--theme-accent);
+    background: var(--scrollbar-accent);
     border-radius: 4px;
   }
 

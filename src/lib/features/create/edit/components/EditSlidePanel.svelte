@@ -354,7 +354,7 @@ HMR Test: Nested component change test
 
     /* Custom scrollbar for modern look */
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .edit-panel-content::-webkit-scrollbar {
@@ -362,17 +362,17 @@ HMR Test: Nested component change test
   }
 
   .edit-panel-content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .edit-panel-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
     transition: background 0.2s;
   }
 
   .edit-panel-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Reduced motion */

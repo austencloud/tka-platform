@@ -293,16 +293,16 @@ Matches the desktop Python app navigation pattern exactly.
   }
 
   .nav-buttons::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .nav-buttons::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 2px;
   }
 
   .nav-buttons::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text, white) 30%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Horizontal scrollbar styling */

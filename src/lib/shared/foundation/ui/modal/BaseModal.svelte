@@ -265,8 +265,7 @@
 
     /* Custom scrollbar */
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2))
-      transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .modal-body::-webkit-scrollbar {
@@ -274,16 +273,16 @@
   }
 
   .modal-body::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .modal-body::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .modal-body::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Footer slot */

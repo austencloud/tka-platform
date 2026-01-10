@@ -64,16 +64,16 @@
   }
 
   .analytics-dashboard :global(::-webkit-scrollbar-track) {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .analytics-dashboard :global(::-webkit-scrollbar-thumb) {
-    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    background: var(--scrollbar-accent);
     border-radius: 3px;
   }
 
   .analytics-dashboard :global(::-webkit-scrollbar-thumb:hover) {
-    background: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    background: var(--scrollbar-accent-hover);
   }
 
   @media (max-width: 768px) {

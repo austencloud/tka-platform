@@ -159,7 +159,7 @@ Features:
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-accent, #6366f1) transparent;
+    scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
     padding: 4px 0;
   }
 
@@ -168,11 +168,11 @@ Features:
   }
 
   .variation-strip::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .variation-strip::-webkit-scrollbar-thumb {
-    background: var(--theme-accent, #6366f1);
+    background: var(--scrollbar-accent);
     border-radius: 2px;
   }
 

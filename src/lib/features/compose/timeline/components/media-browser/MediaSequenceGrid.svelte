@@ -104,32 +104,32 @@
   }
 
   .sequence-list::-webkit-scrollbar-track {
-    background: var(--theme-panel-elevated-bg);
+    background: var(--scrollbar-track);
     border-left: 1px solid var(--theme-stroke);
   }
 
   .sequence-list::-webkit-scrollbar-thumb {
-    background: var(--theme-card-bg);
-    border: 3px solid var(--theme-panel-elevated-bg);
+    background: var(--scrollbar-thumb);
+    border: 3px solid var(--scrollbar-track);
     border-radius: 6px;
     transition: all 0.2s ease;
   }
 
   .sequence-list::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-accent);
-    border-color: var(--theme-panel-elevated-bg);
+    background: var(--scrollbar-accent-hover);
+    border-color: var(--scrollbar-track);
     box-shadow: 0 0 12px
       color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
   .sequence-list::-webkit-scrollbar-thumb:active {
-    background: var(--theme-accent-strong);
+    background: var(--scrollbar-accent);
   }
 
   /* Firefox scrollbar */
   .sequence-list {
     scrollbar-width: auto;
-    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.5);
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* State messages */

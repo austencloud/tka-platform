@@ -50,17 +50,17 @@ Displays a list of presets in a scrollable grid layout
   }
 
   .preset-list::-webkit-scrollbar-track {
-    background: var(--theme-shadow);
+    background: var(--scrollbar-track);
     border-radius: 4px;
   }
 
   .preset-list::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   .preset-list::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text) 50%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   .empty-state {

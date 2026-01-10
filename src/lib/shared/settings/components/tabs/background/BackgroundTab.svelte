@@ -387,16 +387,16 @@
   }
 
   .background-tab::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track, transparent);
   }
 
   .background-tab::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    background: var(--scrollbar-accent);
     border-radius: 3px;
   }
 
   .background-tab::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
+    background: var(--scrollbar-accent-hover);
   }
 
   /* ========================================

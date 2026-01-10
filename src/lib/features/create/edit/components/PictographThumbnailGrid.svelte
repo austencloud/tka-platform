@@ -48,7 +48,7 @@ Features:
     padding: var(--spacing-md) 0;
     overflow-x: auto;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .thumbnail-grid::-webkit-scrollbar {
@@ -56,7 +56,7 @@ Features:
   }
 
   .thumbnail-grid::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--scrollbar-thumb);
     border-radius: 2px;
   }
 

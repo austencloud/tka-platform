@@ -358,7 +358,7 @@
     overflow-y: hidden;
     padding-bottom: 4px;
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .chip-scroll::-webkit-scrollbar {
@@ -366,16 +366,16 @@
   }
 
   .chip-scroll::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .chip-scroll::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .chip-scroll::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-stroke);
+    background: var(--scrollbar-thumb-hover);
   }
 
   .type-chip {

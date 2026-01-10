@@ -275,12 +275,12 @@
   }
 
   .feedback-list::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .feedback-list::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Container query for responsive layout */

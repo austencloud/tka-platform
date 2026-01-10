@@ -84,7 +84,7 @@
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .page-display::-webkit-scrollbar {
@@ -92,11 +92,11 @@
   }
 
   .page-display::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .page-display::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 

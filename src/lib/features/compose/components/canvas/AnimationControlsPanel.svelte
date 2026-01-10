@@ -371,15 +371,15 @@
     width: 6px;
   }
   .controls-panel::-webkit-scrollbar-track {
-    background: var(--theme-panel-bg);
+    background: var(--scrollbar-track);
     border-radius: 3px;
   }
   .controls-panel::-webkit-scrollbar-thumb {
-    background: var(--theme-card-hover-bg);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
   .controls-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Control Rows */

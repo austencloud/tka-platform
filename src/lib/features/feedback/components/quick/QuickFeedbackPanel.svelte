@@ -344,7 +344,7 @@
 
     /* Custom scrollbar */
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .panel-body::-webkit-scrollbar {
@@ -356,12 +356,12 @@
   }
 
   .panel-body::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .panel-body::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text-dim) 60%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* ═══════════════════════════════════════════════════════════════════════════

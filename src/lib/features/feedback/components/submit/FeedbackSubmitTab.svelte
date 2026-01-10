@@ -162,7 +162,7 @@
   }
 
   .submit-tab::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke);
+    background: var(--scrollbar-thumb);
     border-radius: 2px;
   }
 </style>

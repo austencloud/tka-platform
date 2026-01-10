@@ -195,17 +195,17 @@
   }
 
   .announcement-management::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--scrollbar-track);
     border-radius: 4px;
   }
 
   .announcement-management::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   .announcement-management::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* ============================================================================

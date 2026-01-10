@@ -470,7 +470,7 @@
     overflow-y: auto;
     padding: 0 1rem;
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .panel-content::-webkit-scrollbar {
@@ -478,11 +478,11 @@
   }
 
   .panel-content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .panel-content::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke);
+    background: var(--scrollbar-thumb);
     border-radius: 2px;
   }
 

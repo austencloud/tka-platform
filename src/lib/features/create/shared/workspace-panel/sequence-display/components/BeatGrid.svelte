@@ -596,7 +596,7 @@
 
     /* Always-visible thin scrollbar styling */
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* Webkit scrollbar styling (Chrome, Safari, Edge) */
@@ -605,25 +605,24 @@
   }
 
   .beat-grid-scroll::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--scrollbar-track);
     border-radius: 4px;
   }
 
   .beat-grid-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
-    border: 1px solid var(--theme-stroke);
   }
 
   .beat-grid-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Mobile: make scrollbar more visible */
   @media (max-width: 768px) {
     .beat-grid-scroll {
       scrollbar-width: auto;
-      scrollbar-color: var(--theme-text-dim) rgba(255, 255, 255, 0.15);
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     }
 
     .beat-grid-scroll::-webkit-scrollbar {
@@ -631,7 +630,7 @@
     }
 
     .beat-grid-scroll::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.5);
+      background: var(--scrollbar-thumb);
     }
   }
 

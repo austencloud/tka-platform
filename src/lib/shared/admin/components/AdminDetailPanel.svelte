@@ -179,16 +179,16 @@
   }
 
   .detail-content::-webkit-scrollbar-track {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    background: var(--scrollbar-track);
   }
 
   .detail-content::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .detail-content::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Footer */

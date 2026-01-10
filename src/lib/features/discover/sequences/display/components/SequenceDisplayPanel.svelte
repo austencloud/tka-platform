@@ -136,22 +136,22 @@
   }
 
   .display-content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .display-content::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .display-content::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text, white) 25%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Firefox scrollbar */
   .display-content {
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke-strong) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* Error state */

@@ -191,17 +191,17 @@ Provides a beautiful, unified experience for creating new presets
   }
 
   .modal-body::-webkit-scrollbar-track {
-    background: var(--theme-shadow);
+    background: var(--scrollbar-track);
     border-radius: 4px;
   }
 
   .modal-body::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   .modal-body::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text) 50%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   .info-banner {

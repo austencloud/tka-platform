@@ -140,12 +140,16 @@
   }
 
   .tab-content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track, transparent);
   }
 
   .tab-content::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    background: var(--scrollbar-accent);
     border-radius: 3px;
+  }
+
+  .tab-content::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-accent-hover);
   }
 
   .versions-list {

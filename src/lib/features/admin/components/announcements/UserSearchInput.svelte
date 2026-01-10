@@ -299,15 +299,15 @@
   }
 
   .search-results::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--scrollbar-track);
   }
 
   .search-results::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   .search-results::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--scrollbar-thumb-hover);
   }
 </style>

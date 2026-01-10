@@ -204,7 +204,7 @@ Shows:
 
     /* Elegant thin scrollbar */
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* Webkit scrollbar styling */
@@ -213,17 +213,17 @@ Shows:
   }
 
   .concept-path::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .concept-path::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
     transition: background 0.2s ease;
   }
 
   .concept-path::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--scrollbar-thumb-hover);
   }
 
   .main-content {

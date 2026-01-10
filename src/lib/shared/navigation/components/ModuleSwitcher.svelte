@@ -319,7 +319,7 @@
 
     /* Thin scrollbar */
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke-strong) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .module-switcher-content::-webkit-scrollbar {
@@ -327,11 +327,11 @@
   }
 
   .module-switcher-content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .module-switcher-content::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 2px;
   }
 

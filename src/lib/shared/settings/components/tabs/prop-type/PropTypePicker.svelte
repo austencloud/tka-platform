@@ -219,7 +219,7 @@
     -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
     /* Scrollbar styling */
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-text-dim) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* 3 columns for landscape mobile and larger */
@@ -242,16 +242,16 @@
   }
 
   .picker-grid::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track, transparent);
   }
 
   .picker-grid::-webkit-scrollbar-thumb {
-    background: var(--theme-text-dim);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   .picker-grid::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-text);
+    background: var(--scrollbar-thumb-hover);
   }
 
   @media (prefers-reduced-motion: reduce) {

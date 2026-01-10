@@ -128,16 +128,16 @@ Features:
   }
 
   .detail-panel-desktop::-webkit-scrollbar-track {
-    background: color-mix(in srgb, var(--theme-shadow) 20%, transparent);
+    background: var(--scrollbar-track);
   }
 
   .detail-panel-desktop::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   .detail-panel-desktop::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text, white) 30%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Tablet adjustments for desktop panel */

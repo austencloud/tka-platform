@@ -489,7 +489,7 @@
 
     /* Custom scrollbar */
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* Tabs mode - VS Code activity bar layout when sidebar is collapsed */

@@ -354,11 +354,12 @@ dialog.drawer-content {
 }
 
 .drawer-inner::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 .drawer-inner::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Mobile adjustments */

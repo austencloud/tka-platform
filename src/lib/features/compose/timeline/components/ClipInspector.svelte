@@ -263,15 +263,15 @@
   }
 
   .inspector-content::-webkit-scrollbar-track {
-    background: var(--theme-panel-bg);
+    background: var(--scrollbar-track);
   }
 
   .inspector-content::-webkit-scrollbar-thumb {
-    background: var(--theme-card-bg);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
   .inspector-content::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-card-hover-bg);
+    background: var(--scrollbar-thumb-hover);
   }
 </style>

@@ -466,17 +466,17 @@ Responsive behavior:
   }
 
   .menu-items::-webkit-scrollbar-track {
-    background: var(--theme-card-bg);
+    background: var(--scrollbar-track);
     border-radius: 3px;
   }
 
   .menu-items::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .menu-items::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text, white) 30%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   .menu-item {

@@ -289,12 +289,12 @@
   }
 
   .cards-container::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--column-color) 40%, transparent);
+    background: var(--scrollbar-accent);
     border-radius: 3px;
   }
 
   .cards-container::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--column-color) 60%, transparent);
+    background: var(--scrollbar-accent-hover);
   }
 
   /* ===== EMPTY STATE ===== */

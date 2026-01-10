@@ -859,7 +859,7 @@
   }
 
   .feedback-detail-body::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 

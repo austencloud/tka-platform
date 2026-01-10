@@ -147,7 +147,7 @@
 
     /* Hide scrollbar but keep functionality */
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke-strong) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .auth-sheet__content::-webkit-scrollbar {
@@ -155,16 +155,16 @@
   }
 
   .auth-sheet__content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .auth-sheet__content::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .auth-sheet__content::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb-hover);
   }
 
   .auth-sheet__divider {

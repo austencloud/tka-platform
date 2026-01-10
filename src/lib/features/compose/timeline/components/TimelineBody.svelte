@@ -282,7 +282,7 @@
     position: relative;
     background: var(--theme-panel-bg);
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .tracks-container::-webkit-scrollbar {
@@ -291,17 +291,17 @@
   }
 
   .tracks-container::-webkit-scrollbar-track {
-    background: var(--theme-panel-elevated-bg);
+    background: var(--scrollbar-track);
   }
 
   .tracks-container::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 6px;
-    border: 2px solid var(--theme-panel-elevated-bg);
+    border: 2px solid var(--scrollbar-track);
   }
 
   .tracks-container::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-accent);
+    background: var(--scrollbar-accent-hover);
     box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 

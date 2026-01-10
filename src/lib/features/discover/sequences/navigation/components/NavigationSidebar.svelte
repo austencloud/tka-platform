@@ -391,16 +391,16 @@ Follows Svelte 5 runes + microservices architecture.
   }
 
   .navigation-sections::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--scrollbar-track);
   }
 
   .navigation-sections::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .navigation-sections::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Responsive Design */

@@ -360,17 +360,17 @@
   }
 
   .modal-body::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track, transparent);
   }
 
   .modal-body::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
     transition: background 0.2s;
   }
 
   .modal-body::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Highlights Section */

@@ -304,7 +304,7 @@
 
     /* Styled scrollbar */
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   .browser-content::-webkit-scrollbar {
@@ -312,19 +312,19 @@
   }
 
   .browser-content::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
     border-radius: 4px;
   }
 
   .browser-content::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
 
   .browser-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--scrollbar-thumb-hover);
     background-clip: padding-box;
   }
 

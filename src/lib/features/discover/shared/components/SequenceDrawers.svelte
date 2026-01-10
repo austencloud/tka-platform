@@ -436,22 +436,22 @@
   }
 
   .bento-filter-wrapper::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
   }
 
   .bento-filter-wrapper::-webkit-scrollbar-thumb {
-    background: var(--theme-stroke-strong);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
 
   .bento-filter-wrapper::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, var(--theme-text, white) 25%, transparent);
+    background: var(--scrollbar-thumb-hover);
   }
 
   /* Firefox scrollbar for bento filter */
   .bento-filter-wrapper {
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke-strong) transparent;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   /* Sheet content padding */
