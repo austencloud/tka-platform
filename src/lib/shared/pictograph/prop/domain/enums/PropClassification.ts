@@ -136,6 +136,45 @@ export function isSmallProp(propType: string): boolean {
 }
 
 /**
+ * Staff family props - use Thumb/Pinky terminology
+ */
+const STAFF_FAMILY_PROPS = [
+  "staff",
+  "simple_staff",
+  "staff_v2",
+  "bigstaff",
+] as const;
+
+/**
+ * Get human-readable labels for bilateral prop ends
+ * Returns [leftEndLabel, rightEndLabel] matching TrackingMode.LEFT_END and RIGHT_END
+ *
+ * Note: LEFT_END tracks what visually appears as the "pinky" side of a staff,
+ * RIGHT_END tracks the "thumb" side. Labels are swapped accordingly.
+ */
+export function getBilateralEndLabels(propType: string): [string, string] {
+  const normalizedType = propType.toLowerCase();
+
+  // Staff family: Pinky End / Thumb End (LEFT_END=pinky side, RIGHT_END=thumb side)
+  if ((STAFF_FAMILY_PROPS as readonly string[]).includes(normalizedType)) {
+    return ["Pinky End", "Thumb End"];
+  }
+
+  // Guitar: Body End / Neck End
+  if (normalizedType === "guitar") {
+    return ["Body End", "Neck End"];
+  }
+
+  // Sword: Tip End / Hilt End
+  if (normalizedType === "sword") {
+    return ["Tip End", "Hilt End"];
+  }
+
+  // Generic fallback for other bilateral props
+  return ["End 1", "End 2"];
+}
+
+/**
  * Get the beta offset size for a prop type
  *
  * Based on desktop calculations:

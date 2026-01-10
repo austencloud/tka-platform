@@ -19,8 +19,9 @@
     TrailMode,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+  import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 
   let {
     propType = null,
@@ -31,6 +32,14 @@
     bluePropType?: PropType | string | null;
     redPropType?: PropType | string | null;
   } = $props();
+
+  // Fall back to user's global settings when props not explicitly provided
+  const effectiveBluePropType = $derived(
+    bluePropType ?? propType ?? settingsService.settings.bluePropType ?? null
+  );
+  const effectiveRedPropType = $derived(
+    redPropType ?? propType ?? settingsService.settings.redPropType ?? null
+  );
 
   // Visibility state
   const visibilityManager = getAnimationVisibilityManager();
@@ -73,16 +82,32 @@
 
   // Both ends toggle for bilateral props
   const showBothEndsToggle = $derived.by(() => {
-    const blue = bluePropType ?? propType;
-    const red = redPropType ?? propType;
-    const blueIsBilateral = blue != null && isBilateralProp(blue);
-    const redIsBilateral = red != null && isBilateralProp(red);
+    const blueIsBilateral = effectiveBluePropType != null && isBilateralProp(effectiveBluePropType);
+    const redIsBilateral = effectiveRedPropType != null && isBilateralProp(effectiveRedPropType);
     return (blueIsBilateral || redIsBilateral) && currentTrailStyle !== "off";
   });
 
   const isBothEnds = $derived(
     animationSettings.trail.trackingMode === TrackingMode.BOTH_ENDS
   );
+
+  const isLeftEnd = $derived(
+    animationSettings.trail.trackingMode === TrackingMode.LEFT_END
+  );
+
+  const isRightEnd = $derived(
+    animationSettings.trail.trackingMode === TrackingMode.RIGHT_END
+  );
+
+  // Get prop-specific labels for the ends (e.g., "Thumb"/"Pinky" for staff)
+  const endLabels = $derived.by(() => {
+    // Use whichever prop is bilateral for the labels
+    const propToCheck = effectiveBluePropType ?? effectiveRedPropType;
+    if (propToCheck && isBilateralProp(propToCheck)) {
+      return getBilateralEndLabels(propToCheck);
+    }
+    return ["End 1", "End 2"];
+  });
 
   // Visibility getters (trigger on updateCounter)
   function getGridEnabled() {
@@ -184,11 +209,8 @@
     updateCounter++;
   }
 
-  function toggleBothEnds() {
-    const newMode = isBothEnds
-      ? TrackingMode.RIGHT_END
-      : TrackingMode.BOTH_ENDS;
-    animationSettings.setTrackingMode(newMode);
+  function setTrackingMode(mode: TrackingMode) {
+    animationSettings.setTrackingMode(mode);
     updateCounter++;
   }
 </script>
@@ -294,21 +316,33 @@
     <div class="ends-selector">
       <button
         class="ends-btn"
-        class:active={!isBothEnds}
-        onclick={() => isBothEnds && toggleBothEnds()}
+        class:active={isLeftEnd}
+        onclick={() => setTrackingMode(TrackingMode.LEFT_END)}
         type="button"
+        title="Track {endLabels[0]} end only"
       >
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        <span>One End</span>
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>{endLabels[0]}</span>
+      </button>
+      <button
+        class="ends-btn both"
+        class:active={isBothEnds}
+        onclick={() => setTrackingMode(TrackingMode.BOTH_ENDS)}
+        type="button"
+        title="Track both ends"
+      >
+        <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
+        <span>Both</span>
       </button>
       <button
         class="ends-btn"
-        class:active={isBothEnds}
-        onclick={() => !isBothEnds && toggleBothEnds()}
+        class:active={isRightEnd}
+        onclick={() => setTrackingMode(TrackingMode.RIGHT_END)}
         type="button"
+        title="Track {endLabels[1]} end only"
       >
-        <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
-        <span>Both Ends</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        <span>{endLabels[1]}</span>
       </button>
     </div>
   {/if}
