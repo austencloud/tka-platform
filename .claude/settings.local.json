@@ -142,7 +142,13 @@
       "WebFetch(domain:www.manuelsanchezdev.com)",
       "WebFetch(domain:algorithmicbotany.org)",
       "WebFetch(domain:www.jasonwebb.io)",
-      "Bash(ren:*)"
+      "Bash(ren:*)",
+      "WebFetch(domain:codepen.io)",
+      "WebFetch(domain:www.somagames.com)",
+      "WebFetch(domain:godotshaders.com)",
+      "WebFetch(domain:www.solarsystemscope.com)",
+      "WebFetch(domain:bjornlu.com)",
+      "WebFetch(domain:itijs.org)"
     ]
   }
 }

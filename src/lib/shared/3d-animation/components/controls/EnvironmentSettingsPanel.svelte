@@ -69,7 +69,7 @@
     },
     {
       type: BackgroundType.SAKURA_DRIFT,
-      name: "Sakura",
+      name: "Cherry Blossom",
       icon: "fa-spa",
       has3DScene: true,
     },

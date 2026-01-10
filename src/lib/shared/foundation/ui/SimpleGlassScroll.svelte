@@ -48,32 +48,26 @@
     border-radius: 8px;
   }
 
-  /* Primary Glass Scrollbar */
+  /* Primary Glass Scrollbar - uses themed variables */
   .glass-scrollable.primary::-webkit-scrollbar {
     width: 12px;
   }
 
   .glass-scrollable.primary::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--scrollbar-track, transparent);
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
   }
 
   .glass-scrollable.primary::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
+    border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    transition: all 0.3s ease;
+    transition: background 150ms ease-out;
   }
 
   .glass-scrollable.primary::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: scale(1.05);
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.25));
   }
 
   /* Secondary Glass Scrollbar */
@@ -82,25 +76,20 @@
   }
 
   .glass-scrollable.secondary::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--scrollbar-track, transparent);
+    border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
   }
 
   .glass-scrollable.secondary::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.1));
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 6px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.3s ease;
+    transition: background 150ms ease-out;
   }
 
   .glass-scrollable.secondary::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.18);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.18));
   }
 
   /* Minimal Glass Scrollbar */
@@ -113,15 +102,13 @@
   }
 
   .glass-scrollable.minimal::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.12));
     border-radius: 3px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: all 0.3s ease;
+    transition: background 150ms ease-out;
   }
 
   .glass-scrollable.minimal::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.2));
   }
 
   /* Hover Glass Scrollbar */
@@ -135,11 +122,9 @@
   }
 
   .glass-scrollable.hover::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--scrollbar-track, transparent);
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -149,11 +134,9 @@
   }
 
   .glass-scrollable.hover::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
+    border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
     opacity: 0;
     transition: all 0.3s ease;
   }
@@ -168,55 +151,38 @@
   }
 
   .glass-scrollable.gradient::-webkit-scrollbar-track {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0.02) 50%,
-      var(--theme-card-bg) 100%
-    );
+    background: var(--scrollbar-track, transparent);
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
   }
 
   .glass-scrollable.gradient::-webkit-scrollbar-thumb {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.25) 0%,
-      rgba(255, 255, 255, 0.15) 50%,
-      rgba(255, 255, 255, 0.25) 100%
-    );
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    transition: all 0.3s ease;
+    transition: background 150ms ease-out;
   }
 
   .glass-scrollable.gradient::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.35) 0%,
-      rgba(255, 255, 255, 0.25) 50%,
-      rgba(255, 255, 255, 0.35) 100%
-    );
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
-  /* Firefox support */
+  /* Firefox support - uses themed variables */
   .glass-scrollable.primary {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.03);
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15))
+      var(--scrollbar-track, transparent);
   }
 
   .glass-scrollable.secondary {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.02);
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.1))
+      var(--scrollbar-track, transparent);
   }
 
   .glass-scrollable.minimal {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.12)) transparent;
   }
 
   .glass-scrollable.hover {
@@ -225,12 +191,14 @@
 
   .glass-scrollable.hover:hover {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.03);
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15))
+      var(--scrollbar-track, transparent);
   }
 
   .glass-scrollable.gradient {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      var(--scrollbar-track, transparent);
   }
 
   /* Responsive - maintain touch-friendly sizes on mobile */

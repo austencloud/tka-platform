@@ -826,6 +826,76 @@ body.sakura-drift {
   box-shadow: var(--shadow-glass);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEMED SCROLLBAR UTILITIES
+   Usage: Add class="themed-scrollbar" to any scrollable container
+   Variables defined in background-theme-calculator.ts and adapt to background.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base themed scrollbar - neutral colors that adapt to light/dark */
+.themed-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+    var(--scrollbar-track, transparent);
+}
+
+.themed-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, transparent);
+  border-radius: 4px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
+  transition: background 150ms ease-out;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
+}
+
+/* Accent variant - uses theme accent color */
+.themed-scrollbar-accent {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-accent, rgba(99, 102, 241, 0.3))
+    var(--scrollbar-track, transparent);
+}
+
+.themed-scrollbar-accent::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.themed-scrollbar-accent::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, transparent);
+  border-radius: 4px;
+}
+
+.themed-scrollbar-accent::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-accent, rgba(99, 102, 241, 0.3));
+  border-radius: 4px;
+  transition: background 150ms ease-out;
+}
+
+.themed-scrollbar-accent::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-accent-hover, rgba(99, 102, 241, 0.5));
+}
+
+/* Touch accessibility - 16px on mobile for WCAG AAA */
+@media (max-width: 768px) {
+  .themed-scrollbar::-webkit-scrollbar,
+  .themed-scrollbar-accent::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 /* Button Styles */
 .btn {
   padding: var(--spacing-xs) var(--spacing-md);

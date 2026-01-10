@@ -13,7 +13,7 @@
   import WinterScene from "../scenes/WinterScene.svelte";
   import OceanScene from "../scenes/OceanScene.svelte";
   import EmberScene from "../scenes/EmberScene.svelte";
-  import SakuraScene from "../scenes/SakuraScene.svelte";
+  import CherryBlossomScene from "../scenes/CherryBlossomScene.svelte";
 
   interface Props {
     /** Background type from settings */
@@ -29,7 +29,7 @@
     | { scene: "winter" }
     | { scene: "ocean" }
     | { scene: "ember" }
-    | { scene: "sakura" }
+    | { scene: "cherryBlossom" }
     | { scene: "none" };
 
   function getSceneConfig(bg: BackgroundType): SceneConfig {
@@ -49,7 +49,7 @@
       case BackgroundType.EMBER_GLOW:
         return { scene: "ember" };
       case BackgroundType.SAKURA_DRIFT:
-        return { scene: "sakura" };
+        return { scene: "cherryBlossom" };
       // SOLID_COLOR and LINEAR_GRADIENT show no 3D scene
       default:
         return { scene: "none" };
@@ -69,8 +69,8 @@
   <OceanScene />
 {:else if config.scene === "ember"}
   <EmberScene />
-{:else if config.scene === "sakura"}
-  <SakuraScene />
+{:else if config.scene === "cherryBlossom"}
+  <CherryBlossomScene />
 {/if}
 
 <!-- SOLID_COLOR and LINEAR_GRADIENT render nothing - just the default grid -->

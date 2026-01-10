@@ -110,11 +110,11 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
 
 /**
  * Backgrounds that need darker card colors for visibility
- * Aurora: Bright cyan/teal glowing background
+ * Pride: Bright colorful flowing bands
  * Ember Glow: Strong warm glow that washes out lighter colors
  */
 const BRIGHT_BACKGROUNDS = new Set<BackgroundType>([
-  BackgroundType.AURORA,
+  BackgroundType.PRIDE,
   BackgroundType.EMBER_GLOW,
 ]);
 

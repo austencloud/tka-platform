@@ -89,15 +89,33 @@ When executing a release, complete ALL steps:
 
 **Audience: Flow artists, not developers.**
 
-**Include:**
-- Features they'll use
-- Bug fixes that affected their workflow
-- UX improvements they'll notice
+**Tone: Matter-of-fact, not promotional.**
 
-**Mark internal-only** (`node scripts/fetch-feedback.js <id> internal-only true`):
+Write release notes like Claude Code's changelog - straightforward statements of what changed. No selling, no hype, no filler words.
+
+### Good Examples (matter-of-fact)
+- "Smoother animations on help overlays"
+- "Fixed library sequences displaying wrong dates"
+- "Renamed 'Customize' to 'Start/End' in generator"
+- "New animated background options"
+
+### Bad Examples (promotional AI-speak)
+- ❌ "New animated backgrounds while you practice - aurora, galaxy, swimming fish, and forest themes"
+- ❌ "Stunning new Milky Way Galaxy effect brings your sequences to life!"
+- ❌ "Experience smoother, more polished animations throughout the app"
+
+The "while you practice" and dashes with feature lists are promotional filler. Just state what changed.
+
+### What NOT to feature prominently
+- Technical/cosmetic changes (backgrounds, particle effects) - consolidate into one line like "New background options"
+- Implementation details users don't care about
+- Things that only make sense to developers
+
+### Mark internal-only
+`node scripts/fetch-feedback.js <id> internal-only true`
 - Dev tooling, admin features, docs, refactoring, housekeeping
 
-**Test:** Would a flow artist who doesn't code care about this?
+**Test:** Read it out loud. Does it sound like a press release or a changelog?
 
 ---
 
