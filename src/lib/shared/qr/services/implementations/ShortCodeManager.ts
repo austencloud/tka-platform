@@ -1,0 +1,213 @@
+/**
+ * Short Code Manager Implementation
+ *
+ * Manages short codes for QR code URLs using Firebase Firestore.
+ * Short codes are 6-character alphanumeric strings that map to
+ * encoded sequence data for compact QR codes.
+ *
+ * Firebase collection: shortcodes
+ *
+ * Domain: QR - URL Shortening
+ */
+
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  increment,
+  type Firestore,
+} from "firebase/firestore";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type {
+  IShortCodeManager,
+  ShortCodeRecord,
+  CreateShortCodeResult,
+} from "../contracts/IShortCodeManager";
+
+const SHORTCODES_COLLECTION = "shortcodes";
+const CODE_LENGTH = 6;
+
+// Base62 alphabet for short codes (URL-safe, case-sensitive)
+const ALPHABET =
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+export class ShortCodeManager implements IShortCodeManager {
+  private firestore: Firestore | null = null;
+
+  constructor(private readonly sequenceEncoder: ISequenceEncoder) {}
+
+  /**
+   * Initialize Firestore instance (called lazily)
+   */
+  private async ensureFirestore(): Promise<Firestore> {
+    if (!this.firestore) {
+      this.firestore = await getFirestoreInstance();
+    }
+    return this.firestore;
+  }
+
+  /**
+   * Generate a random short code
+   */
+  private generateCode(): string {
+    let code = "";
+    for (let i = 0; i < CODE_LENGTH; i++) {
+      code += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+    }
+    return code;
+  }
+
+  /**
+   * Get the base URL for short code URLs
+   */
+  private getBaseUrl(): string {
+    if (typeof window !== "undefined") {
+      return window.location.origin;
+    }
+    // Fallback for SSR
+    return "https://thekineticalphabet.com";
+  }
+
+  async createShortCode(sequence: SequenceData): Promise<CreateShortCodeResult> {
+    const firestore = await this.ensureFirestore();
+
+    // Encode the sequence
+    const { encoded } = this.sequenceEncoder.encodeWithCompression(sequence);
+
+    // Check if this exact sequence already has a short code
+    const existingCode = await this.findExistingCode(encoded);
+    if (existingCode) {
+      return {
+        code: existingCode,
+        url: `${this.getBaseUrl()}/p/${existingCode}`,
+        isNew: false,
+      };
+    }
+
+    // Generate a new unique code
+    let code = this.generateCode();
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        // Code is unique, save it
+        const record: Omit<ShortCodeRecord, "createdAt"> & {
+          createdAt: string;
+        } = {
+          sequence: encoded,
+          createdAt: new Date().toISOString(),
+          createdBy: "system", // TODO: Use actual user ID when auth context available
+          scanCount: 0,
+          sequenceName: sequence.word || sequence.name,
+        };
+
+        await setDoc(docRef, record);
+
+        return {
+          code,
+          url: `${this.getBaseUrl()}/p/${code}`,
+          isNew: true,
+        };
+      }
+
+      // Code collision, try a new one
+      code = this.generateCode();
+      attempts++;
+    }
+
+    throw new Error("Failed to generate unique short code after max attempts");
+  }
+
+  /**
+   * Find an existing short code for an encoded sequence
+   */
+  private async findExistingCode(encoded: string): Promise<string | null> {
+    const firestore = await this.ensureFirestore();
+    const q = query(
+      collection(firestore, SHORTCODES_COLLECTION),
+      where("sequence", "==", encoded)
+    );
+
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return snapshot.docs[0]!.id;
+    }
+
+    return null;
+  }
+
+  async resolveShortCode(code: string): Promise<SequenceData | null> {
+    const firestore = await this.ensureFirestore();
+    const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    const data = docSnap.data() as {
+      sequence: string;
+      createdAt: string;
+      createdBy: string;
+      scanCount: number;
+    };
+
+    try {
+      return this.sequenceEncoder.decodeWithCompression(data.sequence);
+    } catch (error) {
+      console.error("Failed to decode sequence from short code:", error);
+      return null;
+    }
+  }
+
+  async incrementScanCount(code: string): Promise<void> {
+    try {
+      const firestore = await this.ensureFirestore();
+      const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
+
+      await updateDoc(docRef, {
+        scanCount: increment(1),
+      });
+    } catch (error) {
+      // Log but don't throw - analytics shouldn't break the user experience
+      console.error("Failed to increment scan count:", error);
+    }
+  }
+
+  async getAnalytics(code: string): Promise<ShortCodeRecord | null> {
+    const firestore = await this.ensureFirestore();
+    const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    const data = docSnap.data() as {
+      sequence: string;
+      createdAt: string;
+      createdBy: string;
+      scanCount: number;
+      sequenceName?: string;
+    };
+
+    return {
+      sequence: data.sequence,
+      createdAt: new Date(data.createdAt),
+      createdBy: data.createdBy,
+      scanCount: data.scanCount,
+      sequenceName: data.sequenceName,
+    };
+  }
+}

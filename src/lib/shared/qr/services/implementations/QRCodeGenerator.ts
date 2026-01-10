@@ -1,0 +1,185 @@
+/**
+ * QR Code Generator Implementation
+ *
+ * Generates styled QR codes using qr-code-styling library.
+ * Features modern styling options including rounded dots,
+ * custom corner styles, and TKA branding.
+ *
+ * Domain: QR - Code Generation
+ */
+
+import QRCodeStyling from "qr-code-styling";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { IShortCodeManager } from "../contracts/IShortCodeManager";
+import type {
+  IQRCodeGenerator,
+  QRCodeOptions,
+  QRCodeResult,
+  QRCodeStyle,
+  QRStylePreset,
+} from "../contracts/IQRCodeGenerator";
+
+/**
+ * Style presets for quick styling
+ */
+const STYLE_PRESETS: Record<QRStylePreset, QRCodeStyle> = {
+  modern: {
+    dotsType: "rounded",
+    cornersSquareType: "extra-rounded",
+    cornersDotType: "dot",
+    color: "#1a1a2e",
+    backgroundColor: "#ffffff",
+    errorCorrectionLevel: "M",
+  },
+  classic: {
+    dotsType: "square",
+    cornersSquareType: "square",
+    cornersDotType: "square",
+    color: "#000000",
+    backgroundColor: "#ffffff",
+    errorCorrectionLevel: "M",
+  },
+  minimal: {
+    dotsType: "dots",
+    cornersSquareType: "dot",
+    cornersDotType: "dot",
+    color: "#333333",
+    backgroundColor: "#ffffff",
+    errorCorrectionLevel: "L",
+  },
+};
+
+export class QRCodeGenerator implements IQRCodeGenerator {
+  constructor(private readonly shortCodeManager: IShortCodeManager) {}
+
+  /**
+   * Resolve style from preset name or object
+   */
+  private resolveStyle(
+    styleInput?: QRCodeStyle | QRStylePreset
+  ): QRCodeStyle {
+    if (!styleInput) {
+      return STYLE_PRESETS.modern;
+    }
+
+    if (typeof styleInput === "string") {
+      return STYLE_PRESETS[styleInput] || STYLE_PRESETS.modern;
+    }
+
+    // Merge with defaults
+    return {
+      ...STYLE_PRESETS.modern,
+      ...styleInput,
+    };
+  }
+
+  /**
+   * Create QRCodeStyling options from our style interface
+   */
+  private createQROptions(
+    url: string,
+    size: number,
+    margin: number,
+    style: QRCodeStyle
+  ): ConstructorParameters<typeof QRCodeStyling>[0] {
+    return {
+      width: size,
+      height: size,
+      type: "svg",
+      data: url,
+      margin: margin,
+      qrOptions: {
+        typeNumber: 0, // Auto-detect
+        mode: "Byte",
+        errorCorrectionLevel: style.errorCorrectionLevel || "M",
+      },
+      dotsOptions: {
+        color: style.color || "#1a1a2e",
+        type: style.dotsType || "rounded",
+      },
+      cornersSquareOptions: {
+        color: style.color || "#1a1a2e",
+        type: style.cornersSquareType || "extra-rounded",
+      },
+      cornersDotOptions: {
+        color: style.color || "#1a1a2e",
+        type: style.cornersDotType || "dot",
+      },
+      backgroundOptions: {
+        color: style.backgroundColor || "#ffffff",
+      },
+    };
+  }
+
+  /**
+   * Generate QR code and return SVG + data URL
+   */
+  private async generateQR(
+    url: string,
+    options?: QRCodeOptions
+  ): Promise<{ svg: string; dataUrl: string }> {
+    const size = options?.size || 200;
+    const margin = options?.margin || 1;
+    const style = this.resolveStyle(options?.style);
+
+    const qrCode = new QRCodeStyling(
+      this.createQROptions(url, size, margin, style)
+    );
+
+    // Get SVG blob
+    const svgBlob = await qrCode.getRawData("svg");
+    if (!svgBlob) {
+      throw new Error("Failed to generate QR code SVG");
+    }
+
+    // Convert blob/buffer to text for SVG string
+    let svgText: string;
+    if (svgBlob instanceof Blob) {
+      svgText = await svgBlob.text();
+    } else {
+      // Node.js Buffer case
+      svgText = svgBlob.toString("utf-8");
+    }
+
+    // Create data URL
+    const dataUrl = `data:image/svg+xml;base64,${btoa(svgText)}`;
+
+    return { svg: svgText, dataUrl };
+  }
+
+  async generateForSequence(
+    sequence: SequenceData,
+    options?: QRCodeOptions
+  ): Promise<QRCodeResult> {
+    // Create short code for the sequence
+    const { code, url: shortUrl } =
+      await this.shortCodeManager.createShortCode(sequence);
+
+    // Generate QR code
+    const { svg, dataUrl } = await this.generateQR(shortUrl, options);
+
+    return {
+      svg,
+      dataUrl,
+      encodedUrl: shortUrl,
+      shortCode: code,
+    };
+  }
+
+  async generateForUrl(
+    url: string,
+    options?: QRCodeOptions
+  ): Promise<QRCodeResult> {
+    const { svg, dataUrl } = await this.generateQR(url, options);
+
+    return {
+      svg,
+      dataUrl,
+      encodedUrl: url,
+    };
+  }
+
+  getPresetStyle(preset: QRStylePreset): QRCodeStyle {
+    return { ...STYLE_PRESETS[preset] };
+  }
+}

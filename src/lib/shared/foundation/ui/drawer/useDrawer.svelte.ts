@@ -1,0 +1,388 @@
+import { onMount, onDestroy, untrack } from "svelte";
+import { container } from "../../../di";
+import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
+import { SwipeToDismiss } from "./SwipeToDismiss";
+import { FocusTrap } from "./FocusTrap";
+import { SnapPoints } from "./SnapPoints";
+import { DrawerEffects } from "./DrawerEffects";
+import {
+  generateDrawerId,
+  registerDrawer,
+  unregisterDrawer,
+  isTopDrawer,
+} from "./DrawerStack";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useDrawer(props: any) {
+  let { isOpen, activeSnapPoint: _activeSnapPoint } = props;
+  const {
+    closeOnBackdrop,
+    closeOnEscape,
+    dismissible,
+    labelledBy,
+    ariaLabel,
+    role,
+    showHandle,
+    drawerClass,
+    backdropClass,
+    placement,
+    respectLayoutMode,
+    trapFocus,
+    initialFocusElement,
+    returnFocusOnClose,
+    setInertOnSiblings,
+    snapPoints,
+    closeOnSnapToZero,
+    springAnimation,
+    scaleBackground,
+    preventScroll,
+    onclose,
+    onOpenChange,
+    onbackdropclick,
+    onDragChange,
+    onSnapPointChange,
+    children,
+  } = props;
+
+  let layoutService: IResponsiveLayoutManager | null = null;
+  let isSideBySideLayout = $state(false);
+  let mounted = $state(false);
+  let wasOpen = $state(false);
+  let shouldRender = $state(false);
+  let isAnimatedOpen = $state(false); // Controls visual state for animations
+
+  // Drawer stack management for nested drawers
+  const drawerId = generateDrawerId();
+  let stackZIndex = $state(50); // Default z-index
+
+  // Reactive state for drag visuals
+  let isDragging = $state(false);
+  let dragOffsetX = $state(0);
+  let dragOffsetY = $state(0);
+
+  // Internal drag change handler that updates local state AND calls parent callback
+  function handleInternalDragChange(
+    offset: number,
+    progress: number,
+    dragging: boolean
+  ) {
+    isDragging = dragging;
+    if (placement === "right" || placement === "left") {
+      dragOffsetX = offset;
+      dragOffsetY = 0;
+    } else {
+      dragOffsetX = 0;
+      dragOffsetY = offset;
+    }
+    // Forward to parent callback
+    onDragChange?.(offset, progress, dragging);
+  }
+
+  // Handle drag end for snap points - returns true if handled
+  function handleDragEnd(
+    offset: number,
+    velocity: number,
+    duration: number
+  ): boolean {
+    if (!snapPointsInstance || !snapPoints || snapPoints.length === 0) {
+      return false; // Let default dismiss logic handle it
+    }
+
+    // Calculate target snap point based on gesture
+    const targetIndex = snapPointsInstance.snapToClosest(
+      offset,
+      velocity,
+      duration
+    );
+    snapPointOffset = snapPointsInstance.getTransformOffset();
+
+    // If snapping to index 0 with closeOnSnapToZero, let dismiss handle it
+    if (targetIndex === 0 && closeOnSnapToZero) {
+      return false; // Will trigger onDismiss
+    }
+
+    return true; // Handled - don't trigger default dismiss
+  }
+
+  // Swipe-to-dismiss handler
+  let drawerElement = $state<HTMLElement | null>(null);
+  const swipeToDismiss = new SwipeToDismiss({
+    placement,
+    dismissible,
+    onDismiss: () => {
+      isOpen = false;
+    },
+    onDragChange: handleInternalDragChange,
+    onDragEnd: handleDragEnd,
+  });
+
+  // Focus trap handler for accessibility
+  const focusTrap = new FocusTrap({
+    initialFocus: initialFocusElement,
+    returnFocusOnDeactivate: returnFocusOnClose,
+    setInertOnSiblings: setInertOnSiblings,
+  });
+
+  // Snap points handler (only created when snapPoints are provided)
+  let snapPointsInstance: SnapPoints | null = null;
+  let snapPointOffset = $state(0); // Current snap point transform offset
+  let currentSnapIndex = $state<number | null>(null);
+
+  // Drawer effects
+  const drawerEffects = new DrawerEffects({
+    scaleBackground,
+    preventScroll,
+    isAnimatedOpen,
+  });
+
+  // Initialize snap handler when snapPoints are provided
+  $effect(() => {
+    if (snapPoints && snapPoints.length > 0) {
+      snapPointsInstance = new SnapPoints({
+        placement,
+        snapPoints,
+        defaultSnapPoint: snapPoints.length - 1, // Start fully open
+        onSnapPointChange: (index, valuePx) => {
+          currentSnapIndex = index;
+          _activeSnapPoint = index;
+          onSnapPointChange?.(index, valuePx);
+
+          // Close drawer if snapping to zero and closeOnSnapToZero is true
+          if (index === 0 && closeOnSnapToZero) {
+            isOpen = false;
+          }
+        },
+      });
+    } else {
+      snapPointsInstance = null;
+      snapPointOffset = 0;
+      currentSnapIndex = null;
+    }
+  });
+
+  // Initialize snap handler dimensions when drawer element is available
+  $effect(() => {
+    if (drawerElement && snapPointsInstance && isAnimatedOpen) {
+      const rect = drawerElement.getBoundingClientRect();
+      snapPointsInstance.initialize(rect.width, rect.height);
+      snapPointOffset = snapPointsInstance.getTransformOffset();
+    }
+  });
+
+  // Initialize layout service if responsive layout is enabled
+  onMount(() => {
+    mounted = true;
+    if (respectLayoutMode) {
+      // Try to resolve layout service (optional dependency)
+      // Will be null if create module hasn't loaded yet
+      layoutService = container.items.responsiveLayoutManager;
+    }
+  });
+
+  // Reactive layout detection
+  $effect(() => {
+    if (respectLayoutMode && layoutService) {
+      isSideBySideLayout = layoutService.shouldUseSideBySideLayout();
+    }
+  });
+
+  // Track open state changes and notify parent
+  $effect(() => {
+    // Read wasOpen inside untrack to avoid creating a dependency
+    const previouslyOpen = untrack(() => wasOpen);
+
+    if (isOpen !== previouslyOpen) {
+      onOpenChange?.(isOpen);
+
+      // When opening, add to DOM in closed state, then animate open
+      if (isOpen) {
+        // Register with drawer stack and get z-index for nested support
+        stackZIndex = registerDrawer(drawerId);
+        shouldRender = true;
+        isAnimatedOpen = false; // Start closed
+        swipeToDismiss.reset(); // Reset drag state when opening
+        // Force browser to render the closed state first using RAF for reliability
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            isAnimatedOpen = true; // Then transition to open
+            // Activate focus trap after animation starts (element is in DOM)
+            if (trapFocus && drawerElement) {
+              focusTrap.activate(drawerElement);
+            }
+          });
+        });
+      }
+
+      // When closing, animate to closed state, then remove from DOM
+      if (previouslyOpen && !isOpen) {
+        emitClose("programmatic");
+        isAnimatedOpen = false; // Trigger close animation
+        swipeToDismiss.reset(); // Reset drag state when closing
+        // Deactivate focus trap immediately so focus can return
+        focusTrap.deactivate();
+        // Unregister from drawer stack
+        unregisterDrawer(drawerId);
+        // Keep in DOM during closing animation (350ms), then remove
+        setTimeout(() => {
+          shouldRender = false;
+        }, 400); // 350ms transition + 50ms buffer
+      }
+
+      // Update wasOpen without creating a new dependency
+      untrack(() => {
+        wasOpen = isOpen;
+      });
+    }
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function emitClose(reason: any) {
+    if (onclose) {
+      onclose(new CustomEvent("close", { detail: { reason } }));
+    }
+  }
+
+  function handleBackdropClick(event: MouseEvent) {
+    // If custom handler provided, use it to determine whether to close
+    if (onbackdropclick) {
+      const shouldClose = onbackdropclick(event);
+      if (shouldClose) {
+        emitClose("backdrop");
+        isOpen = false;
+      }
+      return;
+    }
+
+    // Default behavior
+    if (closeOnBackdrop) {
+      emitClose("backdrop");
+      isOpen = false;
+    }
+  }
+
+  // Handle escape key - only close if this is the topmost drawer
+  function handleKeydown(event: KeyboardEvent) {
+    if (
+      event.key === "Escape" &&
+      closeOnEscape &&
+      isOpen &&
+      isTopDrawer(drawerId)
+    ) {
+      event.preventDefault();
+      emitClose("escape");
+      isOpen = false;
+    }
+  }
+
+  // Compute state attribute for CSS - use animated state for visual transitions
+  const dataState = $derived(isAnimatedOpen ? "open" : "closed");
+
+  // Compute full class names
+  const overlayClasses = $derived(
+    `drawer-overlay ${backdropClass} ${respectLayoutMode && isSideBySideLayout ? "side-by-side-layout" : ""}`.trim()
+  );
+
+  const contentClasses = $derived(
+    `drawer-content ${drawerClass} ${respectLayoutMode && isSideBySideLayout ? "side-by-side-layout" : ""}`.trim()
+  );
+
+  // Compute transform including drag offset and snap point offset
+  const computedTransform = $derived.by(() => {
+    // During drag, show drag offset
+    if (isDragging && (dragOffsetY !== 0 || dragOffsetX !== 0)) {
+      const isHorizontal = placement === "left" || placement === "right";
+      if (isHorizontal) {
+        return `translateX(${dragOffsetX + snapPointOffset}px)`;
+      } else {
+        return `translateY(${dragOffsetY + snapPointOffset}px)`;
+      }
+    }
+
+    // When not dragging, show snap point offset if snap points are active
+    if (snapPointOffset !== 0 && isAnimatedOpen) {
+      const isHorizontal = placement === "left" || placement === "right";
+      if (isHorizontal) {
+        return `translateX(${snapPointOffset}px)`;
+      } else {
+        return `translateY(${snapPointOffset}px)`;
+      }
+    }
+
+    return "";
+  });
+
+  // Update handler options when props change
+  $effect(() => {
+    swipeToDismiss.updateOptions({
+      placement,
+      dismissible,
+      onDragChange: handleInternalDragChange,
+      onDragEnd: handleDragEnd,
+    });
+  });
+
+  // Update focus trap options when props change
+  $effect(() => {
+    focusTrap.updateOptions({
+      initialFocus: initialFocusElement,
+      returnFocusOnDeactivate: returnFocusOnClose,
+      setInertOnSiblings: setInertOnSiblings,
+    });
+  });
+
+  // Attach/detach swipe handler when element changes
+  $effect(() => {
+    if (drawerElement) {
+      swipeToDismiss.attach(drawerElement);
+    }
+    return () => {
+      swipeToDismiss.detach();
+    };
+  });
+
+  $effect(() => {
+    drawerEffects.update({
+      scaleBackground,
+      preventScroll,
+      isAnimatedOpen,
+    });
+  });
+
+  // Clean up on component destroy
+  onDestroy(() => {
+    swipeToDismiss.detach();
+    focusTrap.deactivate();
+    drawerEffects.cleanup();
+    // Unregister from drawer stack
+    unregisterDrawer(drawerId);
+  });
+
+  return {
+    get drawerElement() {
+      return drawerElement;
+    },
+    set drawerElement(el: HTMLElement | null) {
+      drawerElement = el;
+    },
+    handleKeydown,
+    mounted,
+    shouldRender,
+    overlayClasses,
+    dataState,
+    handleBackdropClick,
+    stackZIndex,
+    contentClasses,
+    isDragging,
+    snapPoints,
+    currentSnapIndex,
+    drawerId,
+    role,
+    labelledBy,
+    ariaLabel,
+    computedTransform,
+    springAnimation,
+    showHandle,
+    children,
+    placement,
+  };
+}

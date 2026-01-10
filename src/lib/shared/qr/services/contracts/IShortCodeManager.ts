@@ -1,0 +1,76 @@
+/**
+ * Short Code Manager Interface
+ *
+ * Manages short codes for QR code URLs. Short codes are 6-character
+ * alphanumeric strings that map to encoded sequence data, stored in Firebase.
+ *
+ * URL pattern: /p/{code} -> Full animation playback
+ *
+ * Domain: QR - URL Shortening
+ */
+
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+
+/**
+ * Metadata stored with each short code
+ */
+export interface ShortCodeRecord {
+  /** The encoded sequence data (using SequenceEncoder format) */
+  sequence: string;
+  /** When the short code was created */
+  createdAt: Date;
+  /** User ID who created it, or "system" for auto-generated */
+  createdBy: string;
+  /** Number of times this QR code has been scanned */
+  scanCount: number;
+  /** Optional: Original sequence name for debugging */
+  sequenceName?: string;
+}
+
+/**
+ * Result of creating a short code
+ */
+export interface CreateShortCodeResult {
+  /** The generated 6-character short code */
+  code: string;
+  /** Full URL for the animation spotlight */
+  url: string;
+  /** Whether this was a new code or existing one was reused */
+  isNew: boolean;
+}
+
+export interface IShortCodeManager {
+  /**
+   * Create or retrieve a short code for a sequence.
+   * If an identical sequence already has a code, returns the existing code.
+   *
+   * @param sequence - The sequence to create a short code for
+   * @returns The short code and full URL
+   */
+  createShortCode(sequence: SequenceData): Promise<CreateShortCodeResult>;
+
+  /**
+   * Resolve a short code to its sequence data.
+   * Returns null if the code doesn't exist.
+   *
+   * @param code - The 6-character short code
+   * @returns Decoded sequence data or null
+   */
+  resolveShortCode(code: string): Promise<SequenceData | null>;
+
+  /**
+   * Increment the scan count for analytics.
+   * Called when a QR code is scanned.
+   *
+   * @param code - The short code that was scanned
+   */
+  incrementScanCount(code: string): Promise<void>;
+
+  /**
+   * Get analytics for a short code.
+   *
+   * @param code - The short code to get analytics for
+   * @returns The short code record with scan count, or null
+   */
+  getAnalytics(code: string): Promise<ShortCodeRecord | null>;
+}
