@@ -38,6 +38,7 @@ const INTERCARDINAL_LOCATIONS = new Set<Location>(["ne", "se", "sw", "nw"]);
 
 type SkewDir = "+" | "-" | "";
 type MotionType = "pro" | "anti" | "static" | "dash" | "float";
+type HandPath = "cw" | "ccw" | "dash" | "static";
 
 interface PictographRow {
   letter: string;
@@ -58,6 +59,10 @@ interface PictographRow {
 interface SkewedRow extends PictographRow {
   blueSkewDir: SkewDir;
   redSkewDir: SkewDir;
+  blueHandPath: HandPath;
+  redHandPath: HandPath;
+  blueSkewSteps: number;
+  redSkewSteps: number;
   category: 1 | 2; // 1 = ends skewed (zeta/eta), 2 = both skew but ends normal
 }
 
@@ -100,6 +105,63 @@ function isCardinal(loc: Location): boolean {
 function isShiftableMotion(motionType: MotionType): boolean {
   // Only pro and anti motions can be skew (not static, dash, or float)
   return motionType === "pro" || motionType === "anti";
+}
+
+// Derive hand path from motion type and rotation direction
+// Pro: hand follows prop rotation (CW rotation = CW hand path)
+// Anti: hand opposes prop rotation (CW rotation = CCW hand path)
+// Float: must be specified explicitly (determined by skew direction for skewed floats)
+// Static/Dash: special cases
+function deriveHandPath(
+  motionType: MotionType,
+  rotationDirection: string,
+  skewDir: SkewDir
+): HandPath {
+  if (motionType === "static") return "static";
+  if (motionType === "dash") return "dash";
+
+  if (motionType === "pro") {
+    // Pro: hand path matches rotation direction
+    return rotationDirection === "cw" ? "cw" : "ccw";
+  }
+
+  if (motionType === "anti") {
+    // Anti: hand path opposes rotation direction
+    return rotationDirection === "cw" ? "ccw" : "cw";
+  }
+
+  if (motionType === "float") {
+    // Float: derive from skew direction
+    // + skew = CW step in location cycle
+    // - skew = CCW step in location cycle
+    if (skewDir === "+") return "cw";
+    if (skewDir === "-") return "ccw";
+    // Non-skewing float - would need external context
+    return "cw"; // Default, should be explicitly set
+  }
+
+  return "cw"; // Fallback
+}
+
+// Derive the natural rotation direction for a path from start to end
+// Returns the direction that takes the shorter path around the circle
+function deriveNaturalRotationDirection(
+  start: Location,
+  end: Location
+): "cw" | "ccw" | "no_rotation" {
+  if (start === end) return "no_rotation";
+
+  const startIdx = getLocationIndex(start);
+  const endIdx = getLocationIndex(end);
+
+  // Calculate CW steps (positive direction in array)
+  const cwSteps = (endIdx - startIdx + 8) % 8;
+  // CCW steps is the complement
+  const ccwSteps = 8 - cwSteps;
+
+  // Return the direction with fewer steps (shorter path)
+  // If equal (180°), prefer CW
+  return cwSteps <= ccwSteps ? "cw" : "ccw";
 }
 
 // Check if a motion crosses grid boundary (cardinal <-> intercardinal)
@@ -264,7 +326,7 @@ function parseRow(line: string, header: string[]): PictographRow | null {
   if (values.length !== header.length) return null;
 
   const row: Record<string, string> = {};
-  header.forEach((col, i) => (row[col] = values[i]));
+  header.forEach((col, i) => (row[col] = values[i].trim())); // TRIM whitespace!
 
   return {
     letter: row.letter,
@@ -274,12 +336,12 @@ function parseRow(line: string, header: string[]): PictographRow | null {
     direction: row.direction,
     blueMotionType: row.blueMotionType as MotionType,
     blueRotationDirection: row.blueRotationDirection,
-    blueStartLocation: row.blueStartLocation as Location,
-    blueEndLocation: row.blueEndLocation as Location,
+    blueStartLocation: row.blueStartLocation.toLowerCase() as Location,
+    blueEndLocation: row.blueEndLocation.toLowerCase() as Location,
     redMotionType: row.redMotionType as MotionType,
     redRotationDirection: row.redRotationDirection,
-    redStartLocation: row.redStartLocation as Location,
-    redEndLocation: row.redEndLocation as Location,
+    redStartLocation: row.redStartLocation.toLowerCase() as Location,
+    redEndLocation: row.redEndLocation.toLowerCase() as Location,
   };
 }
 
@@ -293,14 +355,15 @@ function generateSkewedVariants(base: PictographRow): SkewedRow[] {
   // If neither hand can skew, no variants possible
   if (!blueCanSkew && !redCanSkew) return [];
 
-  // Generate all combinations of skew directions
-  const blueOptions: SkewDir[] = blueCanSkew ? ["+", "-"] : [""];
-  const redOptions: SkewDir[] = redCanSkew ? ["+", "-"] : [""];
+  // Generate all combinations of skew directions (including no skew for each hand)
+  const blueOptions: SkewDir[] = blueCanSkew ? ["+", "-", ""] : [""];
+  const redOptions: SkewDir[] = redCanSkew ? ["+", "-", ""] : [""];
 
   for (const blueSkewDir of blueOptions) {
     for (const redSkewDir of redOptions) {
       // Skip the case where neither hand skews
       if (blueSkewDir === "" && redSkewDir === "") continue;
+
 
       // Calculate new end locations
       const newBlueEnd =
@@ -335,13 +398,76 @@ function generateSkewedVariants(base: PictographRow): SkewedRow[] {
 
       const category = classifyCategory(newEndPosition, blueSkewDir, redSkewDir);
 
+      // Determine if each motion actually crossed the boundary (cardinal <-> intercardinal)
+      const blueActuallyCrossed = crossesBoundary(base.blueStartLocation, newBlueEnd);
+      const redActuallyCrossed = crossesBoundary(base.redStartLocation, newRedEnd);
+
+      // Derive the correct rotation direction for the new paths
+      // For pro: rotation direction = hand path direction
+      // For anti: rotation direction = opposite of hand path direction
+      const blueNaturalDir = deriveNaturalRotationDirection(
+        base.blueStartLocation,
+        newBlueEnd
+      );
+      const redNaturalDir = deriveNaturalRotationDirection(
+        base.redStartLocation,
+        newRedEnd
+      );
+
+      // Determine actual rotation directions based on motion type and natural path
+      // Pro motions: prop rotates same direction as hand path
+      // Anti motions: prop rotates opposite direction to hand path
+      const blueRotationDir =
+        blueNaturalDir === "no_rotation"
+          ? base.blueRotationDirection
+          : base.blueMotionType === "pro"
+            ? blueNaturalDir
+            : base.blueMotionType === "anti"
+              ? blueNaturalDir === "cw"
+                ? "ccw"
+                : "cw"
+              : base.blueRotationDirection;
+
+      const redRotationDir =
+        redNaturalDir === "no_rotation"
+          ? base.redRotationDirection
+          : base.redMotionType === "pro"
+            ? redNaturalDir
+            : base.redMotionType === "anti"
+              ? redNaturalDir === "cw"
+                ? "ccw"
+                : "cw"
+              : base.redRotationDirection;
+
+      // Derive hand paths based on the correct rotation directions
+      const blueHandPath = deriveHandPath(
+        base.blueMotionType,
+        blueRotationDir,
+        blueSkewDir
+      );
+      const redHandPath = deriveHandPath(
+        base.redMotionType,
+        redRotationDir,
+        redSkewDir
+      );
+
+      // Skew steps: only 1 if the motion actually crossed the boundary
+      const blueSkewSteps = blueActuallyCrossed ? 1 : 0;
+      const redSkewSteps = redActuallyCrossed ? 1 : 0;
+
       variants.push({
         ...base,
         blueEndLocation: newBlueEnd,
         redEndLocation: newRedEnd,
+        blueRotationDirection: blueRotationDir,
+        redRotationDirection: redRotationDir,
         endPosition: newEndPosition,
         blueSkewDir,
         redSkewDir,
+        blueHandPath,
+        redHandPath,
+        blueSkewSteps,
+        redSkewSteps,
         category,
       });
     }
@@ -361,11 +487,15 @@ function toCSVLine(row: SkewedRow): string {
     row.blueMotionType,
     row.blueRotationDirection,
     row.blueSkewDir,
+    row.blueHandPath,
+    row.blueSkewSteps,
     row.blueStartLocation,
     row.blueEndLocation,
     row.redMotionType,
     row.redRotationDirection,
     row.redSkewDir,
+    row.redHandPath,
+    row.redSkewSteps,
     row.redStartLocation,
     row.redEndLocation,
     row.category,
@@ -437,7 +567,7 @@ function main() {
 
   // Write output
   const outputHeader =
-    "letter,startPosition,endPosition,timing,direction,blueMotionType,blueRotationDirection,blueSkewDir,blueStartLocation,blueEndLocation,redMotionType,redRotationDirection,redSkewDir,redStartLocation,redEndLocation,category";
+    "letter,startPosition,endPosition,timing,direction,blueMotionType,blueRotationDirection,blueSkewDir,blueHandPath,blueSkewSteps,blueStartLocation,blueEndLocation,redMotionType,redRotationDirection,redSkewDir,redHandPath,redSkewSteps,redStartLocation,redEndLocation,category";
   const outputLines = [outputHeader, ...uniqueVariants.map(toCSVLine)];
 
   fs.writeFileSync(outputPath, outputLines.join("\n"), "utf-8");

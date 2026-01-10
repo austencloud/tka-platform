@@ -24,7 +24,11 @@ export interface CSVRow {
   redEndLocation: string;
   // Skewed mode fields (optional - only present in SkewedPictographDataframe.csv)
   blueSkewDir?: string;
+  blueHandPath?: string;
+  blueSkewSteps?: string;
   redSkewDir?: string;
+  redHandPath?: string;
+  redSkewSteps?: string;
   category?: string;
 }
 

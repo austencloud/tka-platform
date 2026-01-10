@@ -18,6 +18,7 @@ import {
   MotionType,
   RotationDirection,
   Orientation,
+  HandPath,
 } from "../enums/pictograph-enums";
 
 export interface MotionData {
@@ -41,6 +42,14 @@ export interface MotionData {
   // Prefloat attributes for letter determination
   readonly prefloatMotionType?: MotionType | null;
   readonly prefloatRotationDirection?: RotationDirection | null;
+
+  // Hand path direction - essential for floats (no rotation to derive from),
+  // explicitly stored for all motion types for self-documenting data
+  readonly handPath?: HandPath | null;
+
+  // Number of extra 45° steps beyond natural endpoint
+  // 0 = normal shift/motion, 1 = skew (+), 2 = chu/double-skew (++), etc.
+  readonly skewSteps?: number | null;
 }
 
 // TODO: add derivation functions to get the motion type if you know start to end + rotation direction and vica versa
@@ -76,5 +85,8 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
 
     prefloatMotionType: data.prefloatMotionType ?? null,
     prefloatRotationDirection: data.prefloatRotationDirection ?? null,
+
+    handPath: data.handPath ?? null,
+    skewSteps: data.skewSteps ?? null,
   };
 }
