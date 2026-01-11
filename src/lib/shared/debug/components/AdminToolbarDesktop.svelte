@@ -40,6 +40,8 @@
     onPreviewSidebarTour: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
+    onClearLocalCache: () => void;
+    isClearingLocalCache: boolean;
     onClose: () => void;
   }
 
@@ -63,6 +65,8 @@
     onPreviewSidebarTour,
     onClearCloudThumbnails,
     isClearingThumbnails,
+    onClearLocalCache,
+    isClearingLocalCache,
     onClose,
   }: Props = $props();
 
@@ -90,6 +94,11 @@
 
   function handleClearCloudThumbnails() {
     onClearCloudThumbnails();
+    isActionsOpen = false;
+  }
+
+  function handleClearLocalCache() {
+    onClearLocalCache();
     isActionsOpen = false;
   }
 
@@ -259,6 +268,21 @@
               {:else}
                 <i class="fas fa-cloud-arrow-down" aria-hidden="true"></i>
                 <span>Clear Cloud Thumbnails</span>
+              {/if}
+            </button>
+
+            <button
+              type="button"
+              class="dropdown-item danger"
+              onclick={handleClearLocalCache}
+              disabled={isClearingLocalCache}
+            >
+              {#if isClearingLocalCache}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>Clearing...</span>
+              {:else}
+                <i class="fas fa-database" aria-hidden="true"></i>
+                <span>Clear Local Cache</span>
               {/if}
             </button>
           </div>

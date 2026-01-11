@@ -33,6 +33,7 @@
     QuickAccessUser,
   } from "../services/contracts/IQuickAccessPersister";
   import type { ICloudThumbnailCache } from "$lib/features/discover/sequences/display/services/contracts/ICloudThumbnailCache";
+  import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 
@@ -212,6 +213,47 @@
       isClearingThumbnails = false;
     }
   }
+
+  let isClearingLocalCache = $state(false);
+
+  async function clearLocalPictographCache() {
+    if (isClearingLocalCache) return;
+
+    console.log("🗑️ Starting local pictograph cache clear...");
+    isClearingLocalCache = true;
+    introResetMessage = "Clearing local pictograph cache...";
+
+    try {
+      const imageComposer = container.items.imageComposer as IImageComposer;
+
+      // Get stats before clearing
+      const statsBefore = imageComposer.getCacheStats();
+      const l1StatsBefore = await imageComposer.getLayer1Stats();
+
+      // Clear both L1 (IndexedDB) and L2 (Memory)
+      await imageComposer.clearCache(true);
+
+      const totalCleared = statsBefore.memoryCacheSize + l1StatsBefore.count;
+      introResetMessage = `Cleared ${totalCleared} cached pictographs`;
+
+      console.log(`✅ Cleared local pictograph cache:
+      - Memory (L2): ${statsBefore.memoryCacheSize} entries
+      - IndexedDB (L1): ${l1StatsBefore.count} entries (${(l1StatsBefore.sizeBytes / 1024 / 1024).toFixed(1)}MB)`);
+
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } catch (error) {
+      console.error("❌ Failed to clear local cache:", error);
+      introResetMessage = `Error: ${error instanceof Error ? error.message : "Unknown"}`;
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } finally {
+      isClearingLocalCache = false;
+    }
+  }
+
   function handleClose() {
     adminToolbarState.close();
   }
@@ -263,6 +305,8 @@
       onPreviewSidebarTour={previewSidebarTour}
       onClearCloudThumbnails={clearCloudThumbnails}
       {isClearingThumbnails}
+      onClearLocalCache={clearLocalPictographCache}
+      {isClearingLocalCache}
       onClose={handleClose}
     />
   {:else}
@@ -286,6 +330,8 @@
       onPreviewSidebarTour={previewSidebarTour}
       onClearCloudThumbnails={clearCloudThumbnails}
       {isClearingThumbnails}
+      onClearLocalCache={clearLocalPictographCache}
+      {isClearingLocalCache}
       onClose={handleClose}
     />
   {/if}
