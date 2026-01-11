@@ -16,10 +16,18 @@
  *   node scripts/find-monoliths.cjs --include-audited  # Include audited files in results
  *
  * Claiming (for multi-agent coordination):
- *   node scripts/find-monoliths.cjs --claim <path>   # Claim a file to work on
+ *   node scripts/find-monoliths.cjs --auto-claim     # ATOMIC: Find and claim top available file (RECOMMENDED)
+ *   node scripts/find-monoliths.cjs --claim <path>   # Claim a specific file (manual)
  *   node scripts/find-monoliths.cjs --release <path> # Release a claim
  *   node scripts/find-monoliths.cjs --claims         # Show all active claims
  *   node scripts/find-monoliths.cjs --clear-expired  # Clear claims older than 2 hours
+ *
+ * The --auto-claim flag uses file locking to prevent race conditions when
+ * multiple agents run /monolith simultaneously. It atomically:
+ *   1. Acquires an exclusive lock
+ *   2. Scans for monoliths
+ *   3. Claims the top available (non-audited, non-claimed) file
+ *   4. Releases the lock
  */
 
 const fs = require("fs");
@@ -29,6 +37,15 @@ const path = require("path");
 const SRC_DIR = path.join(__dirname, "..", "src");
 const DEFAULT_THRESHOLD = 300; // Files over this are worth reviewing
 const MONOLITH_THRESHOLD = 600; // Likely has multiple responsibilities
+
+// Orchestrator detection thresholds
+// Orchestrators coordinate many services with thin delegation methods
+const ORCHESTRATOR_THRESHOLDS = {
+  minFunctions: 20,        // Must have many functions (lots of small methods)
+  minImports: 8,           // Must coordinate many services
+  maxAvgLinesPerFunc: 45,  // Functions should be thin on average
+  minLines: 500,           // Only consider for larger files
+};
 
 /**
  * AUDITED ORCHESTRATORS
@@ -71,7 +88,84 @@ const WEIGHTS = {
 
 // Claims configuration
 const CLAIMS_FILE = path.join(__dirname, "..", ".monolith-claims.json");
+const LOCK_FILE = path.join(__dirname, "..", ".monolith-claims.lock");
 const CLAIM_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 hours
+const LOCK_TIMEOUT_MS = 5000; // 5 seconds to acquire lock
+const LOCK_STALE_MS = 30000; // Lock is stale after 30 seconds
+
+/**
+ * Acquire exclusive lock for atomic operations
+ * Uses a lock file with PID and timestamp to detect stale locks
+ */
+function acquireLock() {
+  const startTime = Date.now();
+  const myLockData = {
+    pid: process.pid,
+    timestamp: Date.now(),
+    id: `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  };
+
+  while (Date.now() - startTime < LOCK_TIMEOUT_MS) {
+    try {
+      // Check if lock exists
+      if (fs.existsSync(LOCK_FILE)) {
+        const lockContent = fs.readFileSync(LOCK_FILE, "utf-8");
+        const lockData = JSON.parse(lockContent);
+
+        // Check if lock is stale
+        if (Date.now() - lockData.timestamp > LOCK_STALE_MS) {
+          // Stale lock, remove it
+          fs.unlinkSync(LOCK_FILE);
+        } else {
+          // Lock is held by another process, wait
+          const waitMs = 50 + Math.random() * 100; // Random backoff
+          const waitUntil = Date.now() + waitMs;
+          while (Date.now() < waitUntil) {
+            // Busy wait (sync sleep)
+          }
+          continue;
+        }
+      }
+
+      // Try to create lock file exclusively
+      fs.writeFileSync(LOCK_FILE, JSON.stringify(myLockData), { flag: "wx" });
+
+      // Verify we own the lock (double-check pattern)
+      const verifyContent = fs.readFileSync(LOCK_FILE, "utf-8");
+      const verifyData = JSON.parse(verifyContent);
+      if (verifyData.id === myLockData.id) {
+        return true; // We have the lock
+      }
+    } catch (err) {
+      if (err.code === "EEXIST") {
+        // Lock file was created by another process, retry
+        const waitMs = 50 + Math.random() * 100;
+        const waitUntil = Date.now() + waitMs;
+        while (Date.now() < waitUntil) {
+          // Busy wait
+        }
+        continue;
+      }
+      // Other error, try again
+    }
+  }
+
+  console.error("❌ Could not acquire lock within timeout. Try again.");
+  return false;
+}
+
+/**
+ * Release the lock
+ */
+function releaseLock() {
+  try {
+    if (fs.existsSync(LOCK_FILE)) {
+      fs.unlinkSync(LOCK_FILE);
+    }
+  } catch (err) {
+    // Ignore errors releasing lock
+  }
+}
 
 /**
  * Read claims from file
@@ -289,6 +383,7 @@ const claimIdx = args.indexOf("--claim");
 const releaseIdx = args.indexOf("--release");
 const showClaimsFlag = args.includes("--claims");
 const clearExpiredFlag = args.includes("--clear-expired");
+const autoClaimFlag = args.includes("--auto-claim");
 
 // Handle claim commands before main scan
 if (showClaimsFlag) {
@@ -352,18 +447,33 @@ function analyzeFile(filePath) {
     content.match(/(?:function\s+\w+|=>\s*{|\w+\s*\([^)]*\)\s*{)/g) || []
   ).length;
 
-  // Calculate score
-  const score =
+  // Calculate base score
+  let score =
     lineCount * WEIGHTS.lines +
     effectCount * WEIGHTS.effects +
     derivedCount * WEIGHTS.deriveds +
     importCount * WEIGHTS.imports +
     functionCount * WEIGHTS.functions;
 
+  // Detect orchestrator pattern:
+  // Many functions + many imports + low average lines per function = coordination, not complexity
+  const avgLinesPerFunc = functionCount > 0 ? lineCount / functionCount : lineCount;
+  const isLikelyOrchestrator =
+    lineCount >= ORCHESTRATOR_THRESHOLDS.minLines &&
+    functionCount >= ORCHESTRATOR_THRESHOLDS.minFunctions &&
+    importCount >= ORCHESTRATOR_THRESHOLDS.minImports &&
+    avgLinesPerFunc <= ORCHESTRATOR_THRESHOLDS.maxAvgLinesPerFunc;
+
+  // Reduce score for orchestrators - they're not as problematic as dense monoliths
+  if (isLikelyOrchestrator && !isAudited) {
+    score = Math.round(score * 0.65);
+  }
+
   // Determine severity
   let severity = "candidate";
   if (lineCount >= MONOLITH_THRESHOLD) severity = "monolith";
   if (lineCount >= 1000) severity = "critical";
+  if (isLikelyOrchestrator && !isAudited) severity = "orchestrator";
   if (isAudited) severity = "audited";
   if (isClaimed) severity = "claimed";
 
@@ -374,11 +484,13 @@ function analyzeFile(filePath) {
     deriveds: derivedCount,
     imports: importCount,
     functions: functionCount,
+    avgLinesPerFunc: Math.round(avgLinesPerFunc),
     score,
     severity,
     isAudited,
     auditInfo,
     isClaimed,
+    isOrchestrator: isLikelyOrchestrator,
   };
 }
 
@@ -467,6 +579,7 @@ function main() {
     const severityIcon = {
       critical: "🔴",
       monolith: "🟠",
+      orchestrator: "🔵",
       candidate: "🟡",
       audited: "✅",
       claimed: "🔒",
@@ -500,6 +613,7 @@ function main() {
   // Summary
   const critical = analyses.filter((a) => a.severity === "critical").length;
   const monoliths = analyses.filter((a) => a.severity === "monolith").length;
+  const orchestrators = analyses.filter((a) => a.severity === "orchestrator").length;
   const candidates = analyses.filter((a) => a.severity === "candidate").length;
   const claimed = analyses.filter((a) => a.severity === "claimed").length;
   const audited = auditedFiles.length;
@@ -507,6 +621,9 @@ function main() {
   console.log("\n📊 Summary:");
   console.log(`   🔴 Critical (1000+ lines): ${critical}`);
   console.log(`   🟠 Monolith (500+ lines):  ${monoliths}`);
+  if (orchestrators > 0) {
+    console.log(`   🔵 Orchestrator (detected): ${orchestrators}`);
+  }
   console.log(`   🟡 Candidate (${threshold}+ lines): ${candidates}`);
   if (claimed > 0) {
     console.log(`   🔒 Claimed (in progress):  ${claimed}`);
@@ -515,8 +632,8 @@ function main() {
     console.log(`   ✅ Audited (excluded):     ${audited}`);
   }
 
-  // Top recommendation - skip audited AND claimed files
-  const availableToWork = toShow.filter((f) => !f.isAudited && !f.isClaimed);
+  // Top recommendation - skip audited, claimed, AND orchestrators (lower priority)
+  const availableToWork = toShow.filter((f) => !f.isAudited && !f.isClaimed && !f.isOrchestrator);
   if (availableToWork.length > 0) {
     const top = availableToWork[0];
     console.log("\n🎯 Top refactor candidate (available):");
@@ -526,10 +643,19 @@ function main() {
     );
     console.log(`   Score: ${top.score}`);
   } else if (toShow.length > 0) {
-    console.log("\n⚠️  All top candidates are either audited or claimed.");
-    console.log(
-      "   Use --claims to see active claims, or --include-audited to see audited files."
-    );
+    // Check if we have orchestrators we're skipping
+    const orchestratorFiles = toShow.filter((f) => f.isOrchestrator && !f.isAudited && !f.isClaimed);
+    if (orchestratorFiles.length > 0) {
+      console.log("\n🔵 Remaining files are orchestrators (coordination, not complexity):");
+      orchestratorFiles.slice(0, 3).forEach((f) => {
+        console.log(`   ${f.path} (${f.lines} lines, ${f.functions} funcs, ~${f.avgLinesPerFunc} lines/func)`);
+      });
+    } else {
+      console.log("\n⚠️  All top candidates are either audited or claimed.");
+      console.log(
+        "   Use --claims to see active claims, or --include-audited to see audited files."
+      );
+    }
   }
 
   // Show audited files summary if any
@@ -543,6 +669,81 @@ function main() {
   }
 
   console.log("");
+}
+
+/**
+ * Auto-claim: Atomically find and claim the top available monolith
+ * This prevents race conditions when multiple agents run /monolith simultaneously
+ */
+function autoClaimTopFile() {
+  // Determine file extensions
+  let extensions = [".svelte", ".ts"];
+  if (fileType === "svelte") extensions = [".svelte"];
+  if (fileType === "ts") extensions = [".ts"];
+
+  console.log("\n🔒 Auto-claim mode: Finding and claiming top available monolith...\n");
+
+  // Acquire lock to prevent race conditions
+  if (!acquireLock()) {
+    process.exit(1);
+  }
+
+  try {
+    // Scan for monoliths
+    const files = findFiles(SRC_DIR, extensions);
+    const allAnalyses = files
+      .map(analyzeFile)
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score);
+
+    // Find the first available file (not audited, not claimed)
+    const available = allAnalyses.find((f) => !f.isAudited && !f.isClaimed);
+
+    if (!available) {
+      console.log("⚠️  No available monoliths to claim.");
+      console.log("   All candidates are either audited or claimed by other agents.\n");
+      releaseLock();
+      process.exit(1);
+    }
+
+    // Normalize the path for claiming
+    const normalizedPath = available.path.replace(/\\/g, "/");
+
+    // Read current claims and add ours
+    const claimsData = readClaims();
+    claimsData.claims[normalizedPath] = {
+      claimedAt: new Date().toISOString(),
+      status: "in-progress",
+      agentId: `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    };
+
+    // Write the claim
+    if (!writeClaims(claimsData)) {
+      console.error("❌ Failed to write claim.\n");
+      releaseLock();
+      process.exit(1);
+    }
+
+    // Success - output the claimed file
+    console.log(`✅ Claimed: ${normalizedPath}`);
+    console.log(`   Lines: ${available.lines}`);
+    console.log(`   Score: ${available.score}`);
+    console.log(`   Effects: ${available.effects}, Derived: ${available.deriveds}, Imports: ${available.imports}`);
+    console.log(`   Expires: ${new Date(Date.now() + CLAIM_EXPIRY_MS).toLocaleTimeString()}`);
+    console.log(`\n📄 CLAIMED_FILE: src/${normalizedPath}\n`);
+
+    releaseLock();
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Error during auto-claim:", err.message);
+    releaseLock();
+    process.exit(1);
+  }
+}
+
+// Handle auto-claim before main
+if (autoClaimFlag) {
+  autoClaimTopFile();
 }
 
 main();

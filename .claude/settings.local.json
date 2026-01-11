@@ -161,7 +161,8 @@
       "WebFetch(domain:motion.dev)",
       "Bash(do if grep -q '\\\\$state\\\\|\\\\$derived\\\\|\\\\$effect' \"$file\")",
       "Bash(then echo \"$file\")",
-      "Bash(do head -5 \"$file\")"
+      "Bash(do head -5 \"$file\")",
+      "Bash(start \"\" \"C:\\\\Users\\\\Austen\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\F---THE-KINETIC-ALPHABET--TKA-SCRIBE\\\\f638d28e-e647-4e41-a667-368a463b75f7\\\\scratchpad\\\\resume-editor.html\")"
     ]
   }
 }

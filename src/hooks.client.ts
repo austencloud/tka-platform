@@ -20,6 +20,7 @@ if (browser) {
     .catch((err) => {
       console.error("[hooks.client] Failed to load cache benchmark:", err);
     });
+
 }
 
 if (browser && !dev) {

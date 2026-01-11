@@ -5,13 +5,24 @@ allowed-tools: Bash Read Edit Write Glob Grep Task TodoWrite
 
 Run monolith detection to identify files with multiple responsibilities.
 
-First, run the detection script:
+**IMPORTANT: Use auto-claim to prevent race conditions with other agents.**
+
+Run the detection script with `--auto-claim` to atomically find and claim the top available file:
 
 ```bash
-node scripts/find-monoliths.cjs
+node scripts/find-monoliths.cjs --auto-claim
 ```
 
-Show the results summary to the user, then **automatically read the top AVAILABLE candidate file** (skip any marked 🔒 claimed) and provide a full analysis:
+This command:
+1. Acquires an exclusive lock (blocks other agents)
+2. Scans for monoliths
+3. Claims the top available file (not audited, not claimed)
+4. Releases the lock
+5. Outputs `CLAIMED_FILE: src/<path>` - parse this to know which file to work on
+
+If auto-claim fails (no available files), inform the user and suggest `--claims` to see what's in progress.
+
+After successfully claiming, **read the claimed file** and provide a full analysis:
 
 1. **Read the file** - Don't ask permission, just read it
 2. **Identify responsibilities** - List each distinct thing the file does
@@ -192,13 +203,12 @@ This is NOT the same as "extracting CSS to a file" (which is forbidden). This is
 
 ## Multi-Agent Claiming (IMPORTANT)
 
-When multiple agents are working on monoliths simultaneously, use the claiming system to avoid conflicts:
+**ALWAYS use `--auto-claim` when running /monolith.** This is the only race-condition-safe way to claim files.
 
-**Before starting work**, claim the file:
-
-```bash
-node scripts/find-monoliths.cjs --claim "lib/path/to/File.svelte"
-```
+The auto-claim mechanism:
+1. Uses file locking to prevent two agents from claiming simultaneously
+2. Atomically selects and claims the top available file
+3. Blocks other agents until the claim is written
 
 **After completing the refactor**, release the claim:
 
@@ -210,12 +220,12 @@ node scripts/find-monoliths.cjs --release "lib/path/to/File.svelte"
 
 - `--claims` - See all active claims
 - `--clear-expired` - Remove claims older than 2 hours (stale/crashed agents)
+- `--claim <path>` - Manually claim a specific file (NOT race-safe, avoid using)
 
-**If a file is already claimed:**
+**If auto-claim reports no available files:**
 
-- The script will show who claimed it and when
-- Move to the next available candidate instead
-- Do NOT work on claimed files - another agent is already on it
+- Run `--claims` to see what's in progress
+- Either wait for other agents to finish, or help with a different task
 
 ---
 

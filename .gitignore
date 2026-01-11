@@ -121,6 +121,7 @@ mobile-dev.ps1
 
 # Monolith refactor claims (local multi-agent coordination)
 .monolith-claims.json
+.monolith-claims.lock
 
 # Large branding files
 static/branding/*.pdf
