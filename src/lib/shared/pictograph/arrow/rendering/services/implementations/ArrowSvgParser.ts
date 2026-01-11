@@ -78,7 +78,8 @@ export class ArrowSvgParser implements IArrowSvgParser {
     return {
       width: viewBox.width,
       height: viewBox.height,
-      viewBox: `${viewBox.width} ${viewBox.height}`,
+      // Return full 4-value viewBox string "minX minY width height" for Canvas2D rendering
+      viewBox: `0 0 ${viewBox.width} ${viewBox.height}`,
       center,
     };
   }
@@ -102,9 +103,11 @@ export class ArrowSvgParser implements IArrowSvgParser {
     // Extract SVG content (everything inside the <svg> tags)
     // Arrows are already correctly sized for 950x950 coordinate system
     const svgContentMatch = svgText.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
+    if (!svgContentMatch?.[1]) {
+      console.warn("Could not extract SVG content from non-static arrow");
+      return svgText;
+    }
 
-    // Return extracted content, or empty string if no content found
-    // (empty content is valid - some arrows may have no renderable paths)
-    return svgContentMatch?.[1] ?? "";
+    return svgContentMatch[1];
   }
 }

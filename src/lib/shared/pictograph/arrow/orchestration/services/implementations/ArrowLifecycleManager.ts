@@ -55,6 +55,8 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
       viewBox: {
         width: svgData.dimensions.width,
         height: svgData.dimensions.height,
+        // Include full viewBox string for Canvas2D rendering (preserves origin for negative coords)
+        fullViewBox: svgData.dimensions.viewBox || svgData.viewBox,
       },
       center: svgData.center ?? svgData.dimensions.center,
     });

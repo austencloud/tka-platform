@@ -7,7 +7,12 @@
 
 export interface ArrowAssets {
   readonly imageSrc: string;
-  readonly viewBox: { width: number; height: number };
+  readonly viewBox: {
+    width: number;
+    height: number;
+    /** Full viewBox string including origin, e.g., "-296 -2937 2784 3091" */
+    fullViewBox?: string;
+  };
   readonly center: { x: number; y: number };
 }
 

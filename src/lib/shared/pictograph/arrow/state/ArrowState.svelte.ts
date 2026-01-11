@@ -3,13 +3,11 @@
  *
  * Manages arrow positioning, assets, and lifecycle.
  * Independent sub-state - no dependencies on prop state.
- * Reacts to sprite HMR updates via getSpriteVersion().
  */
 
 import type { PictographData } from "../../shared/domain/models/PictographData";
 import type { ArrowAssets } from "../orchestration/domain/arrow-models";
 import type { IArrowLifecycleManager } from "../orchestration/services/contracts/IArrowLifecycleManager";
-import { getSpriteVersion } from "../rendering/services/implementations/ArrowSvgLoader";
 
 export interface ArrowState {
   readonly arrowPositions: Record<
@@ -33,24 +31,9 @@ export function createArrowState(
   let arrowAssets = $state<Record<string, ArrowAssets>>({});
   let showArrows = $state(false);
 
-  // Track last pictograph data for sprite HMR refresh
-  let lastPictographData: PictographData | null = null;
-
-  // React to sprite version changes (HMR: Illustrator edit → auto refresh)
-  $effect(() => {
-    const version = getSpriteVersion();
-    if (version > 0 && lastPictographData) {
-      // Sprite was updated - recalculate arrows with new graphics
-      calculateArrowPositions(lastPictographData);
-    }
-  });
-
   async function calculateArrowPositions(
     pictographData: PictographData | null
   ): Promise<void> {
-    // Store for HMR sprite refresh
-    lastPictographData = pictographData;
-
     if (!pictographData?.motions) {
       // Only clear if we don't have valid data - don't clear during transitions
       arrowPositions = {};
