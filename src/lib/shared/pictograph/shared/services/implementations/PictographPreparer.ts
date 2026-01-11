@@ -30,6 +30,12 @@ import { PropType } from "../../../prop/domain/enums/PropType";
 import { getSettings } from "../../../../application/state/app-state.svelte";
 
 export class PictographPreparer implements IPictographPreparer {
+  // Cache prepared data to avoid re-calculating for identical pictographs
+  private prepareCache = new Map<string, PreparedRenderData>();
+  private pendingPrepares = new Map<string, Promise<PreparedRenderData>>();
+  private cacheHits = 0;
+  private cacheMisses = 0;
+
   constructor(
     private arrowManager: IArrowLifecycleManager,
     private propLoader: IPropSvgLoader,
@@ -58,6 +64,48 @@ export class PictographPreparer implements IPictographPreparer {
     pictograph: PictographData,
     options?: PrepareOptions
   ): Promise<PreparedPictographData> {
+    // Generate cache key from pictograph motion data + options
+    const cacheKey = this.deriveCacheKey(pictograph, options);
+
+    // Check cache first
+    const cached = this.prepareCache.get(cacheKey);
+    if (cached) {
+      this.cacheHits++;
+      return { ...pictograph, _prepared: cached };
+    }
+
+    // Check if already preparing (deduplication)
+    const pending = this.pendingPrepares.get(cacheKey);
+    if (pending) {
+      const prepared = await pending;
+      return { ...pictograph, _prepared: prepared };
+    }
+
+    // Cache miss - do the expensive preparation
+    this.cacheMisses++;
+    const preparePromise = this.doPrepare(pictograph, options);
+    this.pendingPrepares.set(cacheKey, preparePromise);
+
+    try {
+      const prepared = await preparePromise;
+      this.prepareCache.set(cacheKey, prepared);
+
+      // Log cache stats periodically
+      if ((this.cacheHits + this.cacheMisses) % 100 === 0) {
+        const hitRate = ((this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100).toFixed(0);
+        console.log(`[Preparer] Cache: ${this.cacheHits} hits, ${this.cacheMisses} misses (${hitRate}% hit rate)`);
+      }
+
+      return { ...pictograph, _prepared: prepared };
+    } finally {
+      this.pendingPrepares.delete(cacheKey);
+    }
+  }
+
+  private async doPrepare(
+    pictograph: PictographData,
+    options?: PrepareOptions
+  ): Promise<PreparedRenderData> {
     const gridMode = this.deriveGridMode(pictograph);
     // Pass themeMode to arrow lifecycle for correct color selection
     const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
@@ -69,7 +117,7 @@ export class PictographPreparer implements IPictographPreparer {
       options
     );
 
-    const prepared: PreparedRenderData = {
+    return {
       gridMode,
       arrowPositions: arrowResult.positions,
       arrowAssets: arrowResult.assets,
@@ -77,11 +125,37 @@ export class PictographPreparer implements IPictographPreparer {
       propPositions,
       propAssets,
     };
+  }
 
-    return {
-      ...pictograph,
-      _prepared: prepared,
-    };
+  /**
+   * Generate a cache key based on the pictograph's motion data and options.
+   * Two pictographs with identical motions should share prepared data.
+   */
+  private deriveCacheKey(pictograph: PictographData, options?: PrepareOptions): string {
+    const blue = pictograph.motions?.blue;
+    const red = pictograph.motions?.red;
+
+    // Key components that affect arrow/prop positioning
+    const parts = [
+      // Blue motion
+      blue?.motionType ?? "none",
+      blue?.startLocation ?? "",
+      blue?.endLocation ?? "",
+      blue?.rotationDirection ?? "",
+      blue?.turns ?? 0,
+      options?.bluePropType ?? blue?.propType ?? "",
+      // Red motion
+      red?.motionType ?? "none",
+      red?.startLocation ?? "",
+      red?.endLocation ?? "",
+      red?.rotationDirection ?? "",
+      red?.turns ?? 0,
+      options?.redPropType ?? red?.propType ?? "",
+      // Theme affects colors
+      options?.themeMode ?? "dark",
+    ];
+
+    return parts.join("|");
   }
 
   private deriveGridMode(pictograph: PictographData): GridMode {

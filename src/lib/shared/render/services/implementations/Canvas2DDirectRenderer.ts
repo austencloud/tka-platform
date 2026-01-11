@@ -208,41 +208,55 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     pictograph: PreparedPictographData,
     options: DirectRenderOptions
   ): Promise<void> {
+    const totalStart = performance.now();
     const { size, visibility } = options;
     const isDarkMode = visibility.darkMode ?? true;
     const scale = size / VIEWBOX_SIZE;
 
     // Ensure the pictograph has prepared data
+    const prepareStart = performance.now();
     const preparedPictograph = await this.ensurePrepared(pictograph, options);
     const prepared = preparedPictograph._prepared;
+    const prepareTime = performance.now() - prepareStart;
 
     // 1. Draw background
     ctx.fillStyle = isDarkMode ? "#0a0a0f" : "#ffffff";
     ctx.fillRect(0, 0, size, size);
 
     // 2. Draw grid
+    const gridStart = performance.now();
     const gridMode = prepared?.gridMode ?? GridMode.DIAMOND;
     await this.drawGrid(ctx, size, gridMode, isDarkMode, visibility.showNonRadialPoints ?? false);
+    const gridTime = performance.now() - gridStart;
 
     // 3. Draw props (if prepared data exists)
+    let propsTime = 0;
     if (prepared) {
+      const propsStart = performance.now();
       await this.drawProps(ctx, prepared, size, preparedPictograph, options);
+      propsTime = performance.now() - propsStart;
     }
 
     // 4. Draw arrows (if prepared data exists)
+    let arrowsTime = 0;
     if (prepared) {
+      const arrowsStart = performance.now();
       await this.drawArrows(ctx, prepared, size);
+      arrowsTime = performance.now() - arrowsStart;
     }
 
     // 5. Draw TKA glyph (letter)
     let letterDimensions = { width: 100, height: 100 };
+    let glyphTime = 0;
     if (visibility.showTKA && preparedPictograph.letter) {
+      const glyphStart = performance.now();
       letterDimensions = await this.drawTKAGlyph(
         ctx,
         preparedPictograph.letter as Letter,
         size,
         isDarkMode
       );
+      glyphTime = performance.now() - glyphStart;
     }
 
     // 6. Draw turn numbers (TurnsColumn - to the RIGHT of letter)
@@ -264,6 +278,16 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     // 9. Draw reversal indicators
     if (visibility.showReversals && this.isBeatData(preparedPictograph)) {
       this.drawReversalIndicators(ctx, preparedPictograph as BeatData, size);
+    }
+
+    // Log timing breakdown for slow renders
+    const totalTime = performance.now() - totalStart;
+    if (totalTime > 50) {
+      console.log(
+        `[Canvas2D] Slow render ${totalTime.toFixed(0)}ms: ` +
+        `prepare=${prepareTime.toFixed(0)}ms, grid=${gridTime.toFixed(0)}ms, ` +
+        `props=${propsTime.toFixed(0)}ms, arrows=${arrowsTime.toFixed(0)}ms, glyph=${glyphTime.toFixed(0)}ms`
+      );
     }
   }
 
@@ -346,11 +370,20 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     innerContent: string,
     viewBoxWidth: number,
     viewBoxHeight: number,
-    expandViewBox: boolean = false
+    expandViewBox: boolean = false,
+    fullViewBox?: string
   ): { svg: string; offsetX: number; offsetY: number; newWidth: number; newHeight: number } {
+    // Parse viewBox origin if full viewBox string provided (e.g., "-322 -253 2730 426")
+    let minX = 0, minY = 0;
+    if (fullViewBox) {
+      const parts = fullViewBox.split(/\s+/);
+      minX = parseFloat(parts[0] || "0") || 0;
+      minY = parseFloat(parts[1] || "0") || 0;
+    }
+
     if (!expandViewBox) {
       return {
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" width="${viewBoxWidth}" height="${viewBoxHeight}">${innerContent}</svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${viewBoxWidth} ${viewBoxHeight}" width="${viewBoxWidth}" height="${viewBoxHeight}">${innerContent}</svg>`,
         offsetX: 0,
         offsetY: 0,
         newWidth: viewBoxWidth,
@@ -364,11 +397,12 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const newWidth = viewBoxWidth + expandX * 2;
     const newHeight = viewBoxHeight + expandY * 2;
 
-    // Translate content to center it in the expanded viewBox
-    const wrappedContent = `<g transform="translate(${expandX}, ${expandY})">${innerContent}</g>`;
+    // Expand the viewBox origin to accommodate the padding
+    const newMinX = minX - expandX;
+    const newMinY = minY - expandY;
 
     return {
-      svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${newWidth} ${newHeight}" width="${newWidth}" height="${newHeight}">${wrappedContent}</svg>`,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${newMinX} ${newMinY} ${newWidth} ${newHeight}" width="${newWidth}" height="${newHeight}">${innerContent}</svg>`,
       offsetX: expandX,
       offsetY: expandY,
       newWidth,
@@ -491,21 +525,38 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       if (!position || !assets?.imageSrc) continue;
 
       try {
-        const viewBoxWidth = assets.viewBox.width;
-        const viewBoxHeight = assets.viewBox.height;
+        // Get dimensions from the viewBox object
+        const viewBoxWidth = assets.viewBox.width || 100;
+        const viewBoxHeight = assets.viewBox.height || 100;
+        // Get full viewBox string including origin (e.g., "-296 -2937 2784 3091")
+        const fullViewBox = assets.viewBox.fullViewBox;
 
         // Wrap inner SVG content with EXPANDED viewBox to capture overflow
         // The expansion adds padding around the original viewBox
-        const wrapped = this.wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, true);
+        // Pass fullViewBox to preserve the origin coordinates (negative minX/minY)
+        const wrapped = this.wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, true, fullViewBox);
 
         // Convert SVG string to cached image
         const cacheKey = `arrow_${color}_exp_${this.hashString(wrapped.svg)}`;
         const img = await svgCache.getImage(wrapped.svg, cacheKey);
 
-        // Adjust center point to account for the expanded viewBox
-        // The content was translated by (offsetX, offsetY), so the center moves too
-        const adjustedCenterX = assets.center.x + wrapped.offsetX;
-        const adjustedCenterY = assets.center.y + wrapped.offsetY;
+        // Adjust center point to account for viewBox origin and expansion
+        // The center from ArrowSvgParser is in SVG coordinates.
+        // We need to convert to image pixel coordinates where (0,0) = top-left of image.
+        //
+        // Formula: pixelCenter = svgCenter - viewBoxOrigin + expansionOffset
+        //
+        // Example: viewBox="-296 -2937 2784 3091", center=(1096, -1391.5), expand=15%
+        //   pixelCenterX = 1096 - (-296) + 417.6 = 1809.6 (correct for 3202px wide image)
+        let viewBoxMinX = 0, viewBoxMinY = 0;
+        if (fullViewBox) {
+          const parts = fullViewBox.split(/\s+/);
+          viewBoxMinX = parseFloat(parts[0] || "0") || 0;
+          viewBoxMinY = parseFloat(parts[1] || "0") || 0;
+        }
+
+        const adjustedCenterX = (assets.center?.x ?? viewBoxWidth / 2) - viewBoxMinX + wrapped.offsetX;
+        const adjustedCenterY = (assets.center?.y ?? viewBoxHeight / 2) - viewBoxMinY + wrapped.offsetY;
 
         // Draw with transforms matching ArrowSvg.svelte
         this.drawElementWithTransform(ctx, img, {
@@ -591,31 +642,14 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     try {
       const letterPath = getLetterImagePath(letter);
 
-      // Fetch the SVG to get viewBox dimensions (matching TKAGlyph.svelte behavior)
-      const response = await fetch(letterPath);
-      if (!response.ok) throw new Error(`Failed to fetch ${letterPath}`);
-      const svgText = await response.text();
-
-      // Parse viewBox to get dimensions (same as TKAGlyph.svelte lines 233-244)
-      const viewBoxMatch = svgText.match(
-        /viewBox\s*=\s*"[\d.-]+\s+[\d.-]+\s+([\d.-]+)\s+([\d.-]+)"/i
-      );
-
-      let letterDimensions: { width: number; height: number };
-      if (!viewBoxMatch) {
-        letterDimensions = { width: 100, height: 100 };
-      } else {
-        letterDimensions = {
-          width: parseFloat(viewBoxMatch[1] || "100"),
-          height: parseFloat(viewBoxMatch[2] || "100"),
-        };
-      }
-
-      // Load the image using asset loader
+      // Load letter asset (image + dimensions) from cache
+      // This fetches and parses the SVG once, then caches both
       const assetLoader = getSvgAssetLoader();
-      const letterImg = await assetLoader.getLetterImage(letterPath);
+      const letterAsset = await assetLoader.getLetterAsset(letterPath);
 
-      if (letterImg) {
+      if (letterAsset) {
+        const { image: letterImg, dimensions: letterDimensions } = letterAsset;
+
         // Draw at viewBox dimensions scaled to canvas (matching TKAGlyph.svelte)
         const drawWidth = letterDimensions.width * TKA_GLYPH_SCALE * scale;
         const drawHeight = letterDimensions.height * TKA_GLYPH_SCALE * scale;

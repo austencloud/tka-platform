@@ -10,10 +10,7 @@ import type { StartPositionData } from "../../../../features/create/shared/domai
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
-import {
-  renderPictographToSVG,
-  type PictographVisibilityOptions,
-} from "../../utils/pictograph-to-svg";
+import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
@@ -462,21 +459,38 @@ export class ImageComposer implements IImageComposer {
           this.compositionL1Hits++;
           img = await this.blobToImage(cachedBlob);
         } else {
-          // Layer 1 miss - render from SVG (the only complete renderer)
+          // Layer 1 miss - render directly via Canvas 2D (faster than SVG parsing)
           this.layer1Misses++;
           this.compositionFreshRenders++;
 
-          // Render pictograph to SVG string
-          // Note: beatNumber is handled separately via overlay, so we pass undefined here
-          const svgString = await renderPictographToSVG(
-            pictographData,
-            beatSize,
-            undefined, // beatNumber handled by beatNumberRenderer overlay
-            finalVisibilitySettings
-          );
+          const freshStart = performance.now();
 
-          // Convert SVG to image
-          img = await this.svgToImage(svgString, beatSize);
+          // Ensure Canvas 2D renderer is initialized (loads assets on first call)
+          await this.ensureCanvas2DInitialized();
+
+          // Render pictograph directly to canvas
+          // Note: beatNumber is handled separately via overlay, so we pass undefined here
+          const renderStart = performance.now();
+          const pictographCanvas = await this.canvas2DRenderer.renderPictograph(
+            pictographData,
+            {
+              size: beatSize,
+              visibility: finalVisibilitySettings,
+              bluePropType: bluePropType,
+              redPropType: redPropType,
+            }
+          );
+          const renderTime = performance.now() - renderStart;
+
+          // Convert canvas to image for caching
+          const convertStart = performance.now();
+          img = await this.canvasToImage(pictographCanvas);
+          const convertTime = performance.now() - convertStart;
+
+          const freshTotal = performance.now() - freshStart;
+          if (freshTotal > 100) {
+            console.log(`[Fresh] ${freshTotal.toFixed(0)}ms total: render=${renderTime.toFixed(0)}ms, toImage=${convertTime.toFixed(0)}ms`);
+          }
 
           // Convert image to blob for L1 cache (async, non-blocking)
           this.imageToBlob(img).then((blob) => {

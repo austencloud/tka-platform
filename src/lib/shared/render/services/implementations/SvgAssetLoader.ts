@@ -9,6 +9,13 @@
  */
 
 import { getSvgImageCache } from "./SvgImageCache";
+import { Letter } from "../../../foundation/domain/models/Letter";
+import { getLetterImagePath } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
+
+export interface LetterAsset {
+  image: HTMLImageElement;
+  dimensions: { width: number; height: number };
+}
 
 export interface LoadedAssets {
   grids: {
@@ -17,7 +24,7 @@ export interface LoadedAssets {
     diamondNonRadial: HTMLImageElement | null;
     boxNonRadial: HTMLImageElement | null;
   };
-  letters: Map<string, HTMLImageElement>;
+  letters: Map<string, LetterAsset>;
   turnNumbers: Map<string, HTMLImageElement>;
 }
 
@@ -82,6 +89,43 @@ export class SvgAssetLoader {
 
     this.initialized = true;
     console.log("[SvgAssetLoader] Initialized with grid assets");
+
+    // Pre-warm letter cache in background (non-blocking)
+    this.preWarmLetterCache();
+  }
+
+  /**
+   * Pre-load all letter SVGs to avoid on-demand fetching during renders.
+   * Runs in background - doesn't block initialization.
+   */
+  private async preWarmLetterCache(): Promise<void> {
+    const start = performance.now();
+
+    // Get unique letter paths (Type3/Type5 use Type2/Type4 base letters)
+    const allLetters = Object.values(Letter);
+    const uniquePaths = new Set(allLetters.map((letter) => getLetterImagePath(letter)));
+
+    // Load all letters in parallel (limit concurrency to avoid overwhelming browser)
+    const BATCH_SIZE = 10;
+    const paths = Array.from(uniquePaths);
+    let loaded = 0;
+
+    for (let i = 0; i < paths.length; i += BATCH_SIZE) {
+      const batch = paths.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (path) => {
+          try {
+            await this.getLetterAsset(path);
+            loaded++;
+          } catch {
+            // Ignore failures - letter will be loaded on-demand if needed
+          }
+        })
+      );
+    }
+
+    const elapsed = performance.now() - start;
+    console.log(`[SvgAssetLoader] Pre-warmed ${loaded}/${paths.length} letters in ${elapsed.toFixed(0)}ms`);
   }
 
   /**
@@ -100,23 +144,67 @@ export class SvgAssetLoader {
       : this.assets.grids.diamondNonRadial;
   }
 
+  // Pending letter loads to prevent duplicate fetches
+  private pendingLetters = new Map<string, Promise<LetterAsset | null>>();
+
   /**
-   * Load a letter SVG as an image (lazy-loaded and cached)
+   * Load a letter SVG as an image with dimensions (lazy-loaded and cached)
+   * This fetches the SVG once, parses dimensions, and caches both.
    */
-  async getLetterImage(letterPath: string): Promise<HTMLImageElement | null> {
+  async getLetterAsset(letterPath: string): Promise<LetterAsset | null> {
     // Check local cache first
     const cached = this.assets.letters.get(letterPath);
     if (cached) return cached;
 
-    // Load from SvgImageCache
+    // Check if already loading
+    const pending = this.pendingLetters.get(letterPath);
+    if (pending) return pending;
+
+    // Start loading
+    const loadPromise = this.loadLetterAsset(letterPath);
+    this.pendingLetters.set(letterPath, loadPromise);
+
     try {
+      const asset = await loadPromise;
+      return asset;
+    } finally {
+      this.pendingLetters.delete(letterPath);
+    }
+  }
+
+  private async loadLetterAsset(letterPath: string): Promise<LetterAsset | null> {
+    try {
+      // Fetch SVG to get dimensions (done once and cached)
+      const response = await fetch(letterPath);
+      if (!response.ok) return null;
+      const svgText = await response.text();
+
+      // Parse viewBox to get dimensions
+      const viewBoxMatch = svgText.match(
+        /viewBox\s*=\s*"[\d.-]+\s+[\d.-]+\s+([\d.-]+)\s+([\d.-]+)"/i
+      );
+      const dimensions = viewBoxMatch
+        ? { width: parseFloat(viewBoxMatch[1] || "100"), height: parseFloat(viewBoxMatch[2] || "100") }
+        : { width: 100, height: 100 };
+
+      // Load image from cache
       const cache = getSvgImageCache();
-      const img = await cache.getImageFromUrl(letterPath);
-      this.assets.letters.set(letterPath, img);
-      return img;
+      const image = await cache.getImageFromUrl(letterPath);
+
+      const asset: LetterAsset = { image, dimensions };
+      this.assets.letters.set(letterPath, asset);
+      return asset;
     } catch {
       return null;
     }
+  }
+
+  /**
+   * @deprecated Use getLetterAsset() instead - returns both image and dimensions
+   */
+  async getLetterImage(letterPath: string): Promise<HTMLImageElement | null> {
+    const asset = await this.getLetterAsset(letterPath);
+    return asset?.image ?? null;
   }
 
   /**
