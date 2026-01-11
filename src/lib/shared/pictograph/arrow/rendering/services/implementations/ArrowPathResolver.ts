@@ -13,7 +13,7 @@ import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import {
   MotionType,
   Orientation,
-  HandPath,
+  SkewDirection,
 } from "../../../../shared/domain/enums/pictograph-enums";
 import type { ArrowPlacementData } from "../../../positioning/placement/domain/ArrowPlacementData";
 
@@ -48,6 +48,18 @@ export class ArrowPathResolver implements IArrowPathResolver {
       return "static_0.5_radial";
     }
 
+    // DEBUG: Log first skew motion to verify detection (only once)
+    if ((motionData.skewSteps || motionData.skewDir) && !(globalThis as Record<string, unknown>).__arrowSkewDebugLogged) {
+      (globalThis as Record<string, unknown>).__arrowSkewDebugLogged = true;
+      console.log('[ArrowPathResolver] First skew motion detected:', {
+        motionType: motionData.motionType,
+        skewSteps: motionData.skewSteps,
+        skewDir: motionData.skewDir,
+        turns: motionData.turns,
+        startOrientation: motionData.startOrientation,
+      });
+    }
+
     const motionType = motionData.motionType;
 
     // Float is a special case - single symbol
@@ -74,16 +86,28 @@ export class ArrowPathResolver implements IArrowPathResolver {
       turnsStr = "0.0";
     }
 
-    // Determine skew suffix based on skewSteps and handPath
-    // skewSteps > 0 means motion crossed grid boundary (cardinal <-> intercardinal)
-    // handPath CW = skew+, handPath CCW = skew-
+    // Determine skew suffix for PRO/ANTI motions with skewDir
+    // Only PRO and ANTI can be skewed - use skewDir (+/-) for the suffix
     let skewSuffix = "";
-    if (motionData.skewSteps && motionData.skewSteps > 0 && motionData.handPath) {
+    if (
+      motionData.skewSteps &&
+      motionData.skewSteps > 0 &&
+      motionData.skewDir &&
+      (motionType === MotionType.PRO || motionType === MotionType.ANTI)
+    ) {
       skewSuffix =
-        motionData.handPath === HandPath.CLOCKWISE ? "_skew+" : "_skew-";
+        motionData.skewDir === SkewDirection.PLUS ? "_skew+" : "_skew-";
     }
 
     // Build symbol ID: {motionType}_{turns}_{orientation}[_skew+/-]
-    return `${motionType}_${turnsStr}_${orientation}${skewSuffix}`;
+    const symbolId = `${motionType}_${turnsStr}_${orientation}${skewSuffix}`;
+
+    // DEBUG: Log final symbol ID for first skewed motion
+    if (skewSuffix && !(globalThis as Record<string, unknown>).__arrowIdDebugLogged) {
+      (globalThis as Record<string, unknown>).__arrowIdDebugLogged = true;
+      console.log('[ArrowPathResolver] First skew arrow ID:', symbolId);
+    }
+
+    return symbolId;
   }
 }

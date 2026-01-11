@@ -8,7 +8,7 @@
 import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { GridPosition } from "../../../grid/domain/enums/grid-enums";
 import type { Letter } from "../../../../foundation/domain/models/Letter";
-import { MotionColor, HandPath } from "../../domain/enums/pictograph-enums";
+import { MotionColor, HandPath, SkewDirection } from "../../domain/enums/pictograph-enums";
 import { createMotionData } from "../../domain/models/MotionData";
 import type { PictographData } from "../../domain/models/PictographData";
 import { createPictographData } from "../../domain/factories/createPictographData";
@@ -32,6 +32,19 @@ function mapHandPath(value: string | undefined): HandPath | null {
       return HandPath.DASH;
     case "static":
       return HandPath.STATIC;
+    default:
+      return null;
+  }
+}
+
+// Map CSV skew direction strings to SkewDirection enum
+function mapSkewDir(value: string | undefined): SkewDirection | null {
+  if (!value) return null;
+  switch (value.trim()) {
+    case "+":
+      return SkewDirection.PLUS;
+    case "-":
+      return SkewDirection.MINUS;
     default:
       return null;
   }
@@ -71,9 +84,21 @@ export class CSVPictographParser implements ICSVPictographParser {
       MotionColor.BLUE
     );
 
-    // Parse blue hand path and skew steps if present (skewed mode CSV)
+    // Parse blue hand path, skew steps, and skew direction if present (skewed mode CSV)
     const blueHandPath = mapHandPath(row.blueHandPath);
     const blueSkewSteps = row.blueSkewSteps ? parseInt(row.blueSkewSteps, 10) : null;
+    const blueSkewDir = mapSkewDir(row.blueSkewDir);
+
+    // DEBUG: Log first skewed row to verify parsing (only once)
+    if (blueSkewSteps && blueSkewSteps > 0 && !(globalThis as Record<string, unknown>).__skewDebugLogged) {
+      (globalThis as Record<string, unknown>).__skewDebugLogged = true;
+      console.log('[CSVParser] First blue skew data:', {
+        letter: row.letter,
+        rawSkewDir: row.blueSkewDir,
+        parsedSkewDir: blueSkewDir,
+        skewSteps: blueSkewSteps,
+      });
+    }
 
     // Create final blue motion with calculated end orientation
     const blueMotion = createMotionData({
@@ -90,6 +115,7 @@ export class CSVPictographParser implements ICSVPictographParser {
       gridMode: gridMode, // Set grid mode for positioning
       ...(blueHandPath !== null && { handPath: blueHandPath }),
       ...(blueSkewSteps !== null && { skewSteps: blueSkewSteps }),
+      ...(blueSkewDir !== null && { skewDir: blueSkewDir }),
     });
 
     // Create temporary red motion for orientation calculation
@@ -112,9 +138,10 @@ export class CSVPictographParser implements ICSVPictographParser {
       MotionColor.RED
     );
 
-    // Parse red hand path and skew steps if present (skewed mode CSV)
+    // Parse red hand path, skew steps, and skew direction if present (skewed mode CSV)
     const redHandPath = mapHandPath(row.redHandPath);
     const redSkewSteps = row.redSkewSteps ? parseInt(row.redSkewSteps, 10) : null;
+    const redSkewDir = mapSkewDir(row.redSkewDir);
 
     // Create final red motion with calculated end orientation
     const redMotion = createMotionData({
@@ -131,6 +158,7 @@ export class CSVPictographParser implements ICSVPictographParser {
       gridMode: gridMode, // Set grid mode for positioning
       ...(redHandPath !== null && { handPath: redHandPath }),
       ...(redSkewSteps !== null && { skewSteps: redSkewSteps }),
+      ...(redSkewDir !== null && { skewDir: redSkewDir }),
     });
 
     // CSV parsing completed successfully

@@ -40,6 +40,16 @@ export enum HandPath {
   STATIC = "static",
 }
 
+/**
+ * Skew direction for skewed motions (crossing between cardinal/intercardinal).
+ * - PLUS: Motion goes one step further than normal (larger arc)
+ * - MINUS: Motion goes one step less than normal (smaller arc)
+ */
+export enum SkewDirection {
+  PLUS = "+",
+  MINUS = "-",
+}
+
 export enum MotionColor {
   BLUE = "blue",
   RED = "red",

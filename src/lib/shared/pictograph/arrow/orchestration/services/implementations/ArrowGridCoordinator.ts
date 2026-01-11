@@ -108,6 +108,18 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
       layer2Points[GridLocation.EAST] = layer2Points[GridLocation.SOUTHEAST];
       layer2Points[GridLocation.SOUTH] = layer2Points[GridLocation.SOUTHWEST];
       layer2Points[GridLocation.WEST] = layer2Points[GridLocation.NORTHWEST];
+    } else if (gridMode === GridMode.SKEWED) {
+      // SKEWED mode: arrows can be at ANY of the 8 positions
+      // Cardinal positions (where skewed arrows typically land)
+      layer2Points[GridLocation.NORTH] = new Point(475.0, 325.0);
+      layer2Points[GridLocation.EAST] = new Point(625.0, 475.0);
+      layer2Points[GridLocation.SOUTH] = new Point(475.0, 625.0);
+      layer2Points[GridLocation.WEST] = new Point(325.0, 475.0);
+      // Intercardinal positions (for motions ending at box positions)
+      layer2Points[GridLocation.NORTHEAST] = new Point(625.0, 325.0);
+      layer2Points[GridLocation.SOUTHEAST] = new Point(625.0, 625.0);
+      layer2Points[GridLocation.SOUTHWEST] = new Point(325.0, 625.0);
+      layer2Points[GridLocation.NORTHWEST] = new Point(325.0, 325.0);
     } else {
       // For box mode, use strict layer2 points from grid data
       const locationMap: Record<string, GridLocation> = {

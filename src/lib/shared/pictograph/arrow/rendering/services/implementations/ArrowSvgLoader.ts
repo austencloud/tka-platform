@@ -79,6 +79,23 @@ function parseStyleBlock(doc: Document, rawSvgText?: string): Map<string, string
 }
 
 /**
+ * Normalize SVG symbol IDs by decoding XML entity escapes from Illustrator.
+ * Illustrator encodes special characters in layer names:
+ * - _x5F_ = underscore (_)
+ * - _x2B_ = plus sign (+)
+ * - _x2D_ = hyphen (-)
+ *
+ * This ensures IDs like "pro_x5F_0.5_x5F_radial_x5F_skew_x2B_" become "pro_0.5_radial_skew+"
+ */
+function normalizeSymbolId(id: string): string {
+  return id
+    .replace(/_x5F_/g, "_") // underscore
+    .replace(/_x2B_/g, "+") // plus
+    .replace(/_x2D_/g, "-") // hyphen (just in case)
+    .replace(/_00000\d+_/g, ""); // Remove Illustrator duplicate suffixes like _00000129180853...
+}
+
+/**
  * Inline CSS fill classes as direct fill attributes
  * Replaces class="st0" with fill="#2E3192" based on the style block mapping
  */
@@ -189,8 +206,10 @@ if (import.meta.hot) {
         const symbols = doc.querySelectorAll("symbol");
         if (symbols.length > 0) {
           symbols.forEach((symbol) => {
-            const id = symbol.getAttribute("id");
-            if (!id) return;
+            const rawId = symbol.getAttribute("id");
+            if (!rawId) return;
+            // Normalize ID to decode Illustrator's XML entity encoding
+            const id = normalizeSymbolId(rawId);
             const viewBox = symbol.getAttribute("viewBox") || "0 0 100 100";
             // Inline CSS fills so color transformation works
             const innerContent = inlineCssFills(symbol.innerHTML.trim(), classToFill);
@@ -199,8 +218,10 @@ if (import.meta.hot) {
         } else {
           const groups = doc.querySelectorAll("svg > g[id]");
           groups.forEach((group) => {
-            const id = group.getAttribute("id");
-            if (!id) return;
+            const rawId = group.getAttribute("id");
+            if (!rawId) return;
+            // Normalize ID to decode Illustrator's XML entity encoding
+            const id = normalizeSymbolId(rawId);
             const viewBox = calculateGroupViewBox(group);
             // Inline CSS fills so color transformation works
             const innerContent = inlineCssFills(group.innerHTML.trim(), classToFill);
@@ -341,8 +362,10 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
 
         if (symbols.length > 0) {
           symbols.forEach((symbol) => {
-            const id = symbol.getAttribute("id");
-            if (!id) return;
+            const rawId = symbol.getAttribute("id");
+            if (!rawId) return;
+            // Normalize ID to decode Illustrator's XML entity encoding
+            const id = normalizeSymbolId(rawId);
 
             const viewBox = symbol.getAttribute("viewBox") || "0 0 100 100";
             // Inline CSS fills so color transformation works
@@ -355,8 +378,10 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
           const groups = doc.querySelectorAll("svg > g[id]");
 
           groups.forEach((group) => {
-            const id = group.getAttribute("id");
-            if (!id) return;
+            const rawId = group.getAttribute("id");
+            if (!rawId) return;
+            // Normalize ID to decode Illustrator's XML entity encoding
+            const id = normalizeSymbolId(rawId);
 
             // Calculate viewBox from path bounds (or use data-viewbox if present)
             const viewBox = this.calculateGroupViewBox(group);
@@ -419,8 +444,24 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
     // Get symbol from sprite
     const symbolData = this.getSymbolData(symbolId);
 
+    // DEBUG: Log skew arrow loading
+    if (symbolId.includes('skew') && !(globalThis as Record<string, unknown>).__skewLoadDebugLogged) {
+      (globalThis as Record<string, unknown>).__skewLoadDebugLogged = true;
+      console.log('[ArrowSvgLoader] Loading skew arrow:', {
+        symbolId,
+        found: !!symbolData,
+        viewBox: symbolData?.viewBox,
+        contentPreview: symbolData?.innerContent?.substring(0, 200),
+      });
+    }
+
     if (!symbolData) {
-      console.warn(`Arrow symbol not found: ${symbolId}`);
+      // Log available skew symbols for debugging
+      const skewSymbols = Array.from(this.spriteCache.symbols.keys()).filter(k => k.includes('skew'));
+      console.warn(`Arrow symbol not found: ${symbolId}`, {
+        availableSkewSymbols: skewSymbols,
+        totalSymbols: this.spriteCache.symbols.size
+      });
       // Return empty arrow data for missing symbols (placeholders)
       return {
         id: `arrow-${symbolId}`,

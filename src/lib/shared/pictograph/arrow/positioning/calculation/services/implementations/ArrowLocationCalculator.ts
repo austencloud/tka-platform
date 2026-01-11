@@ -30,7 +30,7 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
   // Direction pairs mapping for shift arrows (PRO/ANTI/FLOAT)
   // Maps start/end location pairs to their calculated arrow location
   private readonly shiftDirectionPairs: Record<string, GridLocation> = {
-    // Cardinal + Diagonal combinations
+    // Cardinal + Adjacent Cardinal combinations (normal shifts)
     [this.createLocationPairKey([GridLocation.NORTH, GridLocation.EAST])]:
       GridLocation.NORTHEAST,
     [this.createLocationPairKey([GridLocation.EAST, GridLocation.SOUTH])]:
@@ -39,7 +39,7 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
       GridLocation.SOUTHWEST,
     [this.createLocationPairKey([GridLocation.WEST, GridLocation.NORTH])]:
       GridLocation.NORTHWEST,
-    // Diagonal + Cardinal combinations
+    // Adjacent Intercardinal combinations (normal shifts)
     [this.createLocationPairKey([
       GridLocation.NORTHEAST,
       GridLocation.NORTHWEST,
@@ -56,6 +56,25 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
       GridLocation.NORTHWEST,
       GridLocation.SOUTHWEST,
     ])]: GridLocation.WEST,
+
+    // SKEWED motion combinations (cardinal ↔ non-adjacent intercardinal)
+    // These cross through an intermediate cardinal position
+    [this.createLocationPairKey([GridLocation.WEST, GridLocation.NORTHEAST])]:
+      GridLocation.NORTH, // W→NE or NE→W crosses through N
+    [this.createLocationPairKey([GridLocation.WEST, GridLocation.SOUTHEAST])]:
+      GridLocation.SOUTH, // W→SE or SE→W crosses through S
+    [this.createLocationPairKey([GridLocation.NORTH, GridLocation.SOUTHEAST])]:
+      GridLocation.EAST, // N→SE or SE→N crosses through E
+    [this.createLocationPairKey([GridLocation.NORTH, GridLocation.SOUTHWEST])]:
+      GridLocation.WEST, // N→SW or SW→N crosses through W
+    [this.createLocationPairKey([GridLocation.EAST, GridLocation.SOUTHWEST])]:
+      GridLocation.SOUTH, // E→SW or SW→E crosses through S
+    [this.createLocationPairKey([GridLocation.EAST, GridLocation.NORTHWEST])]:
+      GridLocation.NORTH, // E→NW or NW→E crosses through N
+    [this.createLocationPairKey([GridLocation.SOUTH, GridLocation.NORTHWEST])]:
+      GridLocation.WEST, // S→NW or NW→S crosses through W
+    [this.createLocationPairKey([GridLocation.SOUTH, GridLocation.NORTHEAST])]:
+      GridLocation.EAST, // S→NE or NE→S crosses through E
   };
 
   constructor(private dashLocationService: DashLocationCalculator) {}

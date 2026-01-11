@@ -19,6 +19,7 @@ import {
   RotationDirection,
   Orientation,
   HandPath,
+  SkewDirection,
 } from "../enums/pictograph-enums";
 
 export interface MotionData {
@@ -47,9 +48,12 @@ export interface MotionData {
   // explicitly stored for all motion types for self-documenting data
   readonly handPath?: HandPath | null;
 
-  // Number of extra 45° steps beyond natural endpoint
-  // 0 = normal shift/motion, 1 = skew (+), 2 = chu/double-skew (++), etc.
+  // Number of 45° steps the motion travels (0 = normal, 1+ = skewed)
   readonly skewSteps?: number | null;
+
+  // Direction of skew: + goes further, - goes less far than normal
+  // Only meaningful when skewSteps > 0
+  readonly skewDir?: SkewDirection | null;
 }
 
 // TODO: add derivation functions to get the motion type if you know start to end + rotation direction and vica versa
@@ -88,5 +92,6 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
 
     handPath: data.handPath ?? null,
     skewSteps: data.skewSteps ?? null,
+    skewDir: data.skewDir ?? null,
   };
 }
