@@ -15,6 +15,8 @@ Integrates all Assembly components and manages state transitions.
     GridLocation,
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import { container } from "$lib/shared/di";
   import {
     MotionColor,
     RotationDirection,
@@ -44,6 +46,15 @@ Integrates all Assembly components and manages state transitions.
     undo: () => void;
   }
 
+  /**
+   * Back ref interface - exposed to parent for workspace back button
+   * Returns to welcome screen (abandons current sequence)
+   */
+  export interface AssemblyBackRef {
+    canGoBack: boolean;
+    back: () => void;
+  }
+
   let {
     initialGridMode = GridMode.DIAMOND,
     hasExistingSequence = false,
@@ -56,6 +67,8 @@ Integrates all Assembly components and manages state transitions.
     onStartPositionSet,
     // Bindable undo ref for workspace integration
     undoRef = $bindable(),
+    // Bindable back ref for workspace back button
+    backRef = $bindable(),
   } = $props<{
     initialGridMode?: GridMode;
     hasExistingSequence?: boolean;
@@ -68,6 +81,8 @@ Integrates all Assembly components and manages state transitions.
     onStartPositionSet?: (startPosition: PictographData) => void;
     // Bindable undo ref for workspace integration
     undoRef?: AssemblyUndoRef | null;
+    // Bindable back ref for workspace back button
+    backRef?: AssemblyBackRef | null;
   }>();
 
   // Local state for whether user has started building
@@ -160,6 +175,164 @@ Integrates all Assembly components and manages state transitions.
   const bluePathLength = $derived(assemblyState.blueHandPath.length);
   const redPathLength = $derived(assemblyState.redHandPath.length);
 
+  // Haptic feedback service
+  const hapticService = container.items.hapticFeedback as IHapticFeedback;
+
+  /**
+   * Numpad-to-GridLocation mapping
+   * Numpad layout mirrors the 3x3 grid:
+   *   7(NW)  8(N)   9(NE)
+   *   4(W)   5(C)   6(E)
+   *   1(SW)  2(S)   3(SE)
+   */
+  const numpadToPosition: Record<string, GridLocation> = {
+    Numpad7: GridLocation.NORTHWEST,
+    Numpad8: GridLocation.NORTH,
+    Numpad9: GridLocation.NORTHEAST,
+    Numpad4: GridLocation.WEST,
+    // Numpad5 = Center (disabled)
+    Numpad6: GridLocation.EAST,
+    Numpad1: GridLocation.SOUTHWEST,
+    Numpad2: GridLocation.SOUTH,
+    Numpad3: GridLocation.SOUTHEAST,
+    // Also support regular number keys (top row)
+    Digit7: GridLocation.NORTHWEST,
+    Digit8: GridLocation.NORTH,
+    Digit9: GridLocation.NORTHEAST,
+    Digit4: GridLocation.WEST,
+    Digit6: GridLocation.EAST,
+    Digit1: GridLocation.SOUTHWEST,
+    Digit2: GridLocation.SOUTH,
+    Digit3: GridLocation.SOUTHEAST,
+  };
+
+  /**
+   * Check if a position is enabled based on current grid mode
+   */
+  function isPositionEnabled(position: GridLocation): boolean {
+    const cardinalPositions = [
+      GridLocation.NORTH,
+      GridLocation.EAST,
+      GridLocation.SOUTH,
+      GridLocation.WEST,
+    ];
+    const intercardinalPositions = [
+      GridLocation.NORTHEAST,
+      GridLocation.SOUTHEAST,
+      GridLocation.SOUTHWEST,
+      GridLocation.NORTHWEST,
+    ];
+
+    if (gridMode === GridMode.DIAMOND) {
+      return cardinalPositions.includes(position);
+    } else if (gridMode === GridMode.BOX) {
+      return intercardinalPositions.includes(position);
+    }
+    return false;
+  }
+
+  /**
+   * Handle keyboard events for rapid sequence building
+   * - Numpad 1-9: Select grid positions
+   * - Enter: Advance to next phase
+   * - Backspace: Undo last position
+   */
+  function handleKeydown(event: KeyboardEvent) {
+    // Ignore if user is typing in an input field
+    const target = event.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    ) {
+      return;
+    }
+
+    // Handle different phases
+    if (!hasStarted) {
+      // Welcome screen: Enter to start
+      if (event.code === "Enter" || event.code === "NumpadEnter") {
+        event.preventDefault();
+        hapticService?.trigger("selection");
+        handleStart();
+      }
+      return;
+    }
+
+    // Grid building phases (blue or red)
+    if (currentPhase === "blue" || currentPhase === "red") {
+      // Numpad/number keys for position selection
+      const position = numpadToPosition[event.code];
+      if (position && isPositionEnabled(position)) {
+        event.preventDefault();
+        hapticService?.trigger("selection");
+        handlePositionSelect(position);
+        return;
+      }
+
+      // Enter to advance phase (if allowed)
+      if (event.code === "Enter" || event.code === "NumpadEnter") {
+        event.preventDefault();
+        if (currentPhase === "blue" && canProceedToRed) {
+          hapticService?.trigger("success");
+          handleNextHand();
+        } else if (currentPhase === "red" && canComplete) {
+          hapticService?.trigger("success");
+          handleProceedToRotation();
+        }
+        return;
+      }
+
+      // Backspace to undo
+      if (event.code === "Backspace") {
+        event.preventDefault();
+        if (canUndoAssembly) {
+          hapticService?.trigger("selection");
+          handleUndo();
+        }
+        return;
+      }
+      return;
+    }
+
+    // Rotation selection phase
+    if (currentPhase === "rotation-selection") {
+      // 1 or Numpad1 for clockwise
+      if (event.code === "Digit1" || event.code === "Numpad1") {
+        event.preventDefault();
+        hapticService?.trigger("success");
+        handleRotationSelect(RotationDirection.CLOCKWISE);
+        return;
+      }
+      // 2 or Numpad2 for counter-clockwise
+      if (event.code === "Digit2" || event.code === "Numpad2") {
+        event.preventDefault();
+        hapticService?.trigger("success");
+        handleRotationSelect(RotationDirection.COUNTER_CLOCKWISE);
+        return;
+      }
+      // Backspace to go back to red hand phase
+      if (event.code === "Backspace") {
+        event.preventDefault();
+        hapticService?.trigger("selection");
+        handleBack();
+        return;
+      }
+      return;
+    }
+
+    // Complete phase
+    if (currentPhase === "complete") {
+      // Enter to build another
+      if (event.code === "Enter" || event.code === "NumpadEnter") {
+        event.preventDefault();
+        hapticService?.trigger("selection");
+        handleFullReset();
+        return;
+      }
+    }
+  }
+
   // Are we selecting the start position? (first position of either phase)
   const isSelectingStartPosition = $derived(
     (currentPhase === "blue" && bluePathLength === 0) ||
@@ -189,6 +362,15 @@ Integrates all Assembly components and manages state transitions.
     undoRef = {
       canUndo: canUndoAssembly,
       undo: handleUndo,
+    };
+  });
+
+  // Expose back ref to parent for workspace back button
+  // Back is available when user has started building (to return to welcome screen)
+  $effect(() => {
+    backRef = {
+      canGoBack: hasStarted,
+      back: handleFullReset,
     };
   });
 
@@ -449,6 +631,8 @@ Integrates all Assembly components and manages state transitions.
   }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="handpath-orchestrator">
   {#if !hasStarted}
     <!-- Welcome Screen -->
@@ -512,9 +696,11 @@ Integrates all Assembly components and manages state transitions.
           {redPathLength}
           {canProceedToRed}
           {canComplete}
+          canUndo={canUndoAssembly}
           onNextHand={handleNextHand}
           onComplete={handleProceedToRotation}
           onReset={handleFullReset}
+          onUndo={handleUndo}
         />
       {/if}
     </div>

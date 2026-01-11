@@ -18,18 +18,22 @@ Shows contextual action buttons based on current phase:
     redPathLength = 0,
     canProceedToRed,
     canComplete,
+    canUndo = false,
     onNextHand,
     onComplete,
     onReset,
+    onUndo,
   } = $props<{
     phase: HandPathPhase;
     bluePathLength: number;
     redPathLength?: number;
     canProceedToRed: boolean;
     canComplete: boolean;
+    canUndo?: boolean;
     onNextHand: () => void;
     onComplete: () => void;
     onReset: () => void;
+    onUndo?: () => void;
   }>();
 
   // Calculate remaining positions needed in red phase
@@ -54,29 +58,26 @@ Shows contextual action buttons based on current phase:
     hapticService?.trigger("selection");
     onReset();
   }
+
+  function handleUndo() {
+    hapticService?.trigger("selection");
+    onUndo?.();
+  }
 </script>
 
 <div class="assembly-controls">
   {#if phase === "blue"}
-    <!-- Hint text area - always reserves space -->
-    <p
-      class="hint-text"
-      class:visible={bluePathLength > 0 && bluePathLength < 2}
-    >
-      Add at least 2 positions to continue
-    </p>
-
     <!-- Blue hand phase controls -->
-    <div class="controls-row centered">
+    <div class="controls-row">
       <button
-        class="control-button primary blue"
-        onclick={handleNextHand}
-        disabled={!canProceedToRed}
+        class="control-button secondary undo"
+        onclick={handleUndo}
+        disabled={!canUndo}
+        aria-label="Undo"
       >
-        <span>Next: Red Hand</span>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path
-            d="M8 4L14 10L8 16"
+            d="M4 10C4 6.68629 6.68629 4 10 4C12.2208 4 14.1599 5.21171 15.1973 7M4 4V8H8"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
@@ -84,31 +85,65 @@ Shows contextual action buttons based on current phase:
           />
         </svg>
       </button>
+      <button
+        class="control-button primary blue"
+        onclick={handleNextHand}
+        disabled={!canProceedToRed}
+      >
+        {#if bluePathLength < 2}
+          <span class="progress-hint">{2 - bluePathLength} more → Red Hand</span>
+        {:else}
+          <span>Red Hand</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M8 4L14 10L8 16"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        {/if}
+      </button>
     </div>
   {:else if phase === "red"}
-    <!-- Hint text area - always reserves space -->
-    <p class="hint-text" class:visible={remainingPositions > 0}>
-      {remainingPositions} position{remainingPositions !== 1 ? "s" : ""} remaining
-      to match blue hand
-    </p>
-
     <!-- Red hand phase controls -->
-    <div class="controls-row centered">
+    <div class="controls-row">
       <button
-        class="control-button primary red"
-        onclick={handleComplete}
-        disabled={!canComplete}
+        class="control-button secondary undo"
+        onclick={handleUndo}
+        disabled={!canUndo}
+        aria-label="Undo"
       >
-        <span>Choose Rotation</span>
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path
-            d="M8 4L14 10L8 16"
+            d="M4 10C4 6.68629 6.68629 4 10 4C12.2208 4 14.1599 5.21171 15.1973 7M4 4V8H8"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
         </svg>
+      </button>
+      <button
+        class="control-button primary red"
+        onclick={handleComplete}
+        disabled={!canComplete}
+      >
+        {#if remainingPositions > 0}
+          <span class="progress-hint">{remainingPositions} more → Rotation</span>
+        {:else}
+          <span>Choose Rotation</span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M8 4L14 10L8 16"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        {/if}
       </button>
     </div>
   {:else if phase === "complete"}
@@ -218,19 +253,31 @@ Shows contextual action buttons based on current phase:
     box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
   }
 
-  /* Hint text - themed, always reserves space */
-  .hint-text {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    margin: 0;
-    text-align: center;
-    min-height: 1.4em; /* Reserve space for text */
-    opacity: 0;
-    transition: opacity 0.2s ease;
+  /* Progress hint inside disabled button */
+  .progress-hint {
+    opacity: 0.9;
+    font-weight: 500;
   }
 
-  .hint-text.visible {
-    opacity: 1;
+  /* Secondary button (undo) */
+  .control-button.secondary {
+    flex-shrink: 0;
+    width: 48px;
+    padding: 14px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text-dim);
+  }
+
+  .control-button.secondary:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
+    transform: scale(1.05);
+  }
+
+  .control-button.secondary:active:not(:disabled) {
+    transform: scale(0.95);
   }
 
   /* Mobile adjustments */

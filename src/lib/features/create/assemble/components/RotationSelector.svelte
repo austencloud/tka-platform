@@ -28,25 +28,59 @@ for SHIFT motions in the completed hand paths.
 </script>
 
 <div class="rotation-selector">
-  <h2 class="title">Select Rotation Direction</h2>
+  <h2 class="title">Choose Rotation</h2>
   <p class="description">
-    Choose the rotation direction for SHIFT motions in your sequence.
+    How should your props rotate between positions?
   </p>
 
   <div class="rotation-options">
     <button class="rotation-button clockwise" onclick={selectClockwise}>
-      <div class="icon">↻</div>
+      <div class="icon-container">
+        <svg class="rotation-icon" viewBox="0 0 48 48" fill="none">
+          <path
+            class="arrow-path"
+            d="M24 8C15.2 8 8 15.2 8 24s7.2 16 16 16c6.2 0 11.5-3.5 14.2-8.6"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            fill="none"
+          />
+          <path
+            class="arrow-head"
+            d="M38 24l-4-6h8l-4 6z"
+            fill="currentColor"
+          />
+        </svg>
+      </div>
       <div class="label">Clockwise</div>
-      <div class="sublabel">Pro Rotation</div>
+      <div class="sublabel">Props rotate right</div>
+      <div class="keyboard-hint">Press 1</div>
     </button>
 
     <button
       class="rotation-button counter-clockwise"
       onclick={selectCounterClockwise}
     >
-      <div class="icon">↺</div>
+      <div class="icon-container">
+        <svg class="rotation-icon" viewBox="0 0 48 48" fill="none">
+          <path
+            class="arrow-path"
+            d="M24 8C32.8 8 40 15.2 40 24s-7.2 16-16 16c-6.2 0-11.5-3.5-14.2-8.6"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            fill="none"
+          />
+          <path
+            class="arrow-head"
+            d="M10 24l4-6H6l4 6z"
+            fill="currentColor"
+          />
+        </svg>
+      </div>
       <div class="label">Counter-Clockwise</div>
-      <div class="sublabel">Anti Rotation</div>
+      <div class="sublabel">Props rotate left</div>
+      <div class="keyboard-hint">Press 2</div>
     </button>
   </div>
 </div>
@@ -58,12 +92,12 @@ for SHIFT motions in the completed hand paths.
     align-items: center;
     gap: 24px;
     padding: 40px;
-    max-width: 600px;
+    max-width: 500px;
     margin: 0 auto;
   }
 
   .title {
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
     font-weight: 700;
     margin: 0;
     color: var(--theme-text);
@@ -72,19 +106,18 @@ for SHIFT motions in the completed hand paths.
 
   .description {
     font-size: var(--font-size-sm);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     text-align: center;
     margin: 0;
-    max-width: 400px;
     line-height: 1.5;
   }
 
   .rotation-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
     width: 100%;
-    margin-top: 16px;
+    margin-top: 8px;
   }
 
   .rotation-button {
@@ -92,48 +125,79 @@ for SHIFT motions in the completed hand paths.
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 32px;
+    gap: 16px;
+    padding: 28px 20px;
     background: var(--theme-card-bg);
-    border: 2px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 16px;
+    border: 2px solid var(--theme-stroke);
+    border-radius: 20px;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 200px;
   }
 
-  .rotation-button .icon {
-    font-size: var(--font-size-3xl);
-    line-height: 1;
-    transition: transform 0.3s ease;
+  /* Icon container with continuous animation */
+  .icon-container {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .rotation-icon {
+    width: 100%;
+    height: 100%;
     color: var(--theme-text-dim);
+    transition: color 0.2s ease;
+  }
+
+  /* Continuous rotation animation */
+  .rotation-button.clockwise .icon-container {
+    animation: spin-cw 4s linear infinite;
+  }
+
+  .rotation-button.counter-clockwise .icon-container {
+    animation: spin-ccw 4s linear infinite;
+  }
+
+  @keyframes spin-cw {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes spin-ccw {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
   }
 
   .rotation-button .label {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
     font-weight: 700;
     color: var(--theme-text);
   }
 
   .rotation-button .sublabel {
     font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
+  }
+
+  .rotation-button .keyboard-hint {
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    opacity: 0.5;
+    padding: 4px 10px;
+    background: var(--theme-stroke);
+    border-radius: 6px;
+    margin-top: 4px;
   }
 
   /* Hover effects */
   @media (hover: hover) {
     .rotation-button:hover {
       transform: translateY(-4px);
-      box-shadow: 0 8px 24px var(--theme-shadow);
     }
 
-    .rotation-button.clockwise:hover .icon {
-      transform: rotate(45deg);
-    }
-
-    .rotation-button.counter-clockwise:hover .icon {
-      transform: rotate(-45deg);
+    .rotation-button:hover .icon-container {
+      animation-duration: 1s; /* Speed up on hover */
     }
   }
 
@@ -142,52 +206,32 @@ for SHIFT motions in the completed hand paths.
     transition: transform 0.1s ease;
   }
 
-  /* Color themes - keep domain colors (blue=CW, red=CCW) with themed base */
+  /* Color themes */
   .rotation-button.clockwise {
-    background: linear-gradient(
-      135deg,
-      var(--theme-card-bg),
-      rgba(59, 130, 246, 0.12)
-    );
+    background: linear-gradient(135deg, var(--theme-card-bg), rgba(59, 130, 246, 0.08));
   }
 
   .rotation-button.clockwise:hover {
     border-color: rgba(59, 130, 246, 0.5);
-    background: linear-gradient(
-      135deg,
-      rgba(59, 130, 246, 0.15),
-      rgba(59, 130, 246, 0.25)
-    );
-    box-shadow:
-      0 8px 24px var(--theme-shadow, var(--theme-shadow)),
-      0 0 32px rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.2));
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.1);
   }
 
-  .rotation-button.clockwise:hover .icon {
+  .rotation-button.clockwise:hover .rotation-icon {
     color: var(--semantic-info);
   }
 
   .rotation-button.counter-clockwise {
-    background: linear-gradient(
-      135deg,
-      var(--theme-card-bg),
-      rgba(239, 68, 68, 0.12)
-    );
+    background: linear-gradient(135deg, var(--theme-card-bg), rgba(239, 68, 68, 0.08));
   }
 
   .rotation-button.counter-clockwise:hover {
     border-color: rgba(239, 68, 68, 0.5);
-    background: linear-gradient(
-      135deg,
-      rgba(239, 68, 68, 0.15),
-      rgba(239, 68, 68, 0.25)
-    );
-    box-shadow:
-      0 8px 24px var(--theme-shadow, var(--theme-shadow)),
-      0 0 32px rgba(239, 68, 68, 0.2);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.2));
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2), 0 0 0 1px rgba(239, 68, 68, 0.1);
   }
 
-  .rotation-button.counter-clockwise:hover .icon {
+  .rotation-button.counter-clockwise:hover .rotation-icon {
     color: var(--semantic-error);
   }
 
@@ -199,33 +243,45 @@ for SHIFT motions in the completed hand paths.
     }
 
     .title {
-      font-size: var(--font-size-2xl);
+      font-size: var(--font-size-xl);
     }
 
     .rotation-options {
       grid-template-columns: 1fr;
-      gap: 16px;
+      gap: 12px;
     }
 
     .rotation-button {
-      min-height: 152px;
-      padding: 24px;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 20px;
+      padding: 20px 24px;
     }
 
-    .rotation-button .icon {
-      font-size: var(--font-size-3xl);
+    .icon-container {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
     }
 
-    .rotation-button .label {
-      font-size: var(--font-size-base);
+    .rotation-button .label,
+    .rotation-button .sublabel,
+    .rotation-button .keyboard-hint {
+      text-align: left;
+    }
+
+    .rotation-button .keyboard-hint {
+      margin-top: 0;
+      margin-left: auto;
     }
   }
 
-  /* Accessibility */
+  /* Accessibility - reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .rotation-button,
-    .rotation-button .icon {
+    .rotation-button .icon-container {
       transition: none;
+      animation: none;
     }
   }
 </style>

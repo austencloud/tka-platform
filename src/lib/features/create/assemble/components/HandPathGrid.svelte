@@ -38,9 +38,8 @@ The hand overlay shows the current position and animates between positions.
   let previousColor = $state<"blue" | "red">("blue");
   let isTransitioning = $state(false);
 
-  // Track ghost hand selection animations
-  let selectedGhostPosition = $state<GridLocation | null>(null);
-  let isAnimatingGhostSelection = $state(false);
+  // Track hovered position for floating ghost hand
+  let hoveredPosition = $state<GridLocation | null>(null);
 
   // Detect color changes and trigger transition animation
   $effect(() => {
@@ -54,25 +53,23 @@ The hand overlay shows the current position and animates between positions.
     }
   });
 
-  // Handle position selection with ghost animation
+  // Handle position selection
   function handlePositionSelect(position: GridLocation) {
-    if (isSelectingStartPosition) {
-      // Trigger ghost selection animation for visual feedback
-      selectedGhostPosition = position;
-      isAnimatingGhostSelection = true;
-
-      // Call handler immediately so hand appears right away
-      onPositionSelect(position);
-
-      // Clean up animation state after animation completes
-      setTimeout(() => {
-        isAnimatingGhostSelection = false;
-        selectedGhostPosition = null;
-      }, 400); // Match ghost-fade-in animation duration
-    } else {
-      onPositionSelect(position);
-    }
+    onPositionSelect(position);
   }
+
+  // Handle hover for floating ghost
+  function handlePositionHover(position: GridLocation | null) {
+    hoveredPosition = position;
+  }
+
+  // Get ghost hand position (follows hover, or null if nothing hovered)
+  const ghostPosition = $derived.by(() => {
+    if (!isSelectingStartPosition || !hoveredPosition) return null;
+    const coords = positionToGridCoords[hoveredPosition as GridLocation];
+    if (!coords) return null;
+    return { row: coords.row, col: coords.col };
+  });
 
   /**
    * Map GridLocation to grid position (row, col) for positioning the hand overlay
@@ -218,14 +215,10 @@ The hand overlay shows the current position and animates between positions.
               {position}
               enabled={isPositionEnabled(position)}
               isCurrent={currentPosition === position}
-              showGhostHand={isSelectingStartPosition}
-              ghostHandColor={handColor}
-              isGhostFadingOut={isAnimatingGhostSelection &&
-                selectedGhostPosition !== position}
-              isGhostFadingIn={isAnimatingGhostSelection &&
-                selectedGhostPosition === position}
+              isSelectingStart={isSelectingStartPosition}
               entranceDelay={getEntranceDelay(position)}
               onSelect={handlePositionSelect}
+              onHover={handlePositionHover}
             />
           {:else}
             <!-- Center position (disabled) -->
@@ -236,7 +229,28 @@ The hand overlay shows the current position and animates between positions.
         {/each}
       {/each}
 
-      <!-- Animated hand overlay -->
+      <!-- Floating ghost hand (follows hover during start position selection) -->
+      {#if ghostPosition}
+        <div
+          class="ghost-overlay"
+          class:blue={handColor === "blue"}
+          class:red={handColor === "red"}
+          style:--ghost-row={ghostPosition.row}
+          style:--ghost-col={ghostPosition.col}
+        >
+          <svg
+            class="ghost-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 75 100"
+          >
+            <path
+              d="M11.17 44.59h3.37V12.7a5.61 5.61 0 1 1 11.2-.01v31.9h3.32V5.72A5.5 5.5 0 0 1 34.66 0a5.55 5.55 0 0 1 5.58 5.77v38.81h3.32V13.56c0-2.99 1.95-5.19 4.97-5.64 3.08-.45 6.18 2.1 6.19 5.15q.02 5.73 0 11.46v38.13c0 .79.16 1.47.94 1.87.85.44 1.73.15 2.27-.77l6.41-10.87c1.64-2.79 4.42-3.73 7.43-2.48 3.04 1.26 4.15 4.73 2.41 7.7L65.3 73.19c-2.17 3.68-4.29 7.4-6.55 11.03a18 18 0 0 1-2.81 3.27 46 46 0 0 1-14.76 9.87c-5.01 2.03-10.23 3.03-15.63 2.51-9.85-.94-17.1-5.78-21.71-14.35A32 32 0 0 1 .26 73a76 76 0 0 1-.25-6.23L0 25.08a5.6 5.6 0 0 1 5.74-5.7 5.5 5.5 0 0 1 5.42 5.41z"
+            />
+          </svg>
+        </div>
+      {/if}
+
+      <!-- Animated hand overlay (shows after position is selected) -->
       {#if handPosition}
         <div
           class="hand-overlay"
@@ -281,7 +295,55 @@ The hand overlay shows the current position and animates between positions.
     /* Width and height are set dynamically via inline styles */
   }
 
-  /* Animated hand overlay */
+  /* Floating ghost overlay (follows hover during start position selection) */
+  .ghost-overlay {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+
+    --cell-size: calc((100% - 24px) / 3);
+    --gap: 12px;
+
+    width: var(--cell-size);
+    height: var(--cell-size);
+
+    left: calc(var(--ghost-col) * (var(--cell-size) + var(--gap)));
+    top: calc(var(--ghost-row) * (var(--cell-size) + var(--gap)));
+
+    /* Quick, responsive following */
+    transition:
+      left 0.15s ease-out,
+      top 0.15s ease-out,
+      opacity 0.2s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+  }
+
+  .ghost-icon {
+    width: 50%;
+    height: 50%;
+    animation: ghost-breathe 2s ease-in-out infinite;
+  }
+
+  @keyframes ghost-breathe {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.08); opacity: 1; }
+  }
+
+  .ghost-overlay.blue .ghost-icon {
+    fill: #3b82f6;
+    filter: drop-shadow(0 2px 12px rgba(59, 130, 246, 0.5));
+  }
+
+  .ghost-overlay.red .ghost-icon {
+    fill: #ef4444;
+    filter: drop-shadow(0 2px 12px rgba(239, 68, 68, 0.5));
+  }
+
+  /* Animated hand overlay (shows after position is selected) */
   .hand-overlay {
     position: absolute;
     pointer-events: none;
@@ -405,6 +467,7 @@ The hand overlay shows the current position and animates between positions.
       gap: 8px;
     }
 
+    .ghost-overlay,
     .hand-overlay {
       /* Adjust for smaller gap on mobile */
       --cell-size: calc((100% - 16px) / 3); /* 16px = 2 gaps × 8px */
@@ -414,8 +477,13 @@ The hand overlay shows the current position and animates between positions.
 
   /* Reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
+    .ghost-overlay,
     .hand-overlay {
       transition: none;
+    }
+
+    .ghost-icon {
+      animation: none;
     }
 
     .hand-icon {

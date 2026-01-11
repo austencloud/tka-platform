@@ -79,110 +79,107 @@ Undo is handled by the workspace-level undo button, not here.
 </script>
 
 <div class="phase-header" style:--phase-color={phaseInfo.color}>
-  <!-- Phase info -->
-  <div class="phase-info">
-    <div class="phase-badge">
-      <span class="phase-dot"></span>
-      <span class="phase-title">{phaseInfo.title}</span>
+  <!-- Phase badge with hand icon -->
+  <div class="phase-badge">
+    <div class="phase-icon">
+      <svg viewBox="0 0 75 100" class="hand-icon">
+        <path
+          d="M11.17 44.59h3.37V12.7a5.61 5.61 0 1 1 11.2-.01v31.9h3.32V5.72A5.5 5.5 0 0 1 34.66 0a5.55 5.55 0 0 1 5.58 5.77v38.81h3.32V13.56c0-2.99 1.95-5.19 4.97-5.64 3.08-.45 6.18 2.1 6.19 5.15q.02 5.73 0 11.46v38.13c0 .79.16 1.47.94 1.87.85.44 1.73.15 2.27-.77l6.41-10.87c1.64-2.79 4.42-3.73 7.43-2.48 3.04 1.26 4.15 4.73 2.41 7.7L65.3 73.19c-2.17 3.68-4.29 7.4-6.55 11.03a18 18 0 0 1-2.81 3.27 46 46 0 0 1-14.76 9.87c-5.01 2.03-10.23 3.03-15.63 2.51-9.85-.94-17.1-5.78-21.71-14.35A32 32 0 0 1 .26 73a76 76 0 0 1-.25-6.23L0 25.08a5.6 5.6 0 0 1 5.74-5.7 5.5 5.5 0 0 1 5.42 5.41z"
+        />
+      </svg>
     </div>
-  </div>
-
-  <!-- Step indicator -->
-  <div class="step-indicator">
-    <span class="step-current">{phaseInfo.step}</span>
-    <span class="step-divider">/</span>
-    <span class="step-total">3</span>
+    <span class="phase-title">{phaseInfo.title}</span>
   </div>
 </div>
 
-<!-- Progress bar -->
+<!-- Segmented progress bar -->
 <div class="progress-bar-container">
-  <div class="progress-bar" style:width="{progressPercent}%"></div>
+  <div class="progress-segment" class:active={phaseInfo.step >= 1} class:complete={phaseInfo.step > 1} style:--segment-color="var(--semantic-info)"></div>
+  <div class="progress-segment" class:active={phaseInfo.step >= 2} class:complete={phaseInfo.step > 2} style:--segment-color="var(--semantic-error)"></div>
+  <div class="progress-segment" class:active={phaseInfo.step >= 3} style:--segment-color="var(--semantic-success)"></div>
 </div>
 
 <style>
   .phase-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
+    justify-content: center;
+    padding: 16px;
     background: var(--theme-panel-bg);
-    border-bottom: 1px solid var(--theme-stroke);
-    gap: 12px;
-  }
-
-  .phase-info {
-    flex: 1;
-    min-width: 0;
-    text-align: center;
   }
 
   .phase-badge {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
   }
 
-  .phase-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--phase-color);
-    box-shadow: 0 0 8px var(--phase-color);
+  .phase-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 2px 8px var(--phase-color));
+  }
+
+  .hand-icon {
+    width: 100%;
+    height: 100%;
+    fill: var(--phase-color);
+    transition: fill 0.3s ease;
   }
 
   .phase-title {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--theme-text);
   }
 
-  .step-indicator {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    font-size: var(--font-size-sm);
-    flex-shrink: 0;
-    padding: 6px 12px;
-    background: var(--theme-card-bg);
-    border-radius: 8px;
-  }
-
-  .step-current {
-    font-weight: 700;
-    color: var(--phase-color);
-    font-size: var(--font-size-base);
-  }
-
-  .step-divider {
-    color: var(--theme-stroke);
-  }
-
-  .step-total {
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  /* Progress bar */
+  /* Segmented progress bar */
   .progress-bar-container {
-    height: 3px;
-    background: var(--theme-stroke);
-    overflow: hidden;
+    display: flex;
+    gap: 4px;
+    padding: 0 16px 12px;
+    background: var(--theme-panel-bg);
   }
 
-  .progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--phase-color), var(--phase-color));
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  .progress-segment {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--theme-stroke);
+    transition: all 0.3s ease;
+  }
+
+  .progress-segment.active {
+    background: var(--segment-color);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--segment-color) 50%, transparent);
+  }
+
+  .progress-segment.complete {
+    background: var(--segment-color);
+    opacity: 0.6;
+    box-shadow: none;
   }
 
   /* Mobile adjustments */
   @media (max-width: 480px) {
     .phase-header {
-      padding: 10px 12px;
+      padding: 12px;
+    }
+
+    .phase-icon {
+      width: 28px;
+      height: 28px;
     }
 
     .phase-title {
-      font-size: var(--font-size-sm);
+      font-size: var(--font-size-base);
+    }
+
+    .progress-bar-container {
+      padding: 0 12px 10px;
     }
   }
 </style>

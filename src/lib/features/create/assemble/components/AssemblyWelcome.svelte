@@ -34,79 +34,80 @@ Shown when sequence is empty.
 
 <div class="assembly-welcome">
   <div class="welcome-content">
-    <!-- Icon -->
+    <!-- Animated Icon -->
     <div class="welcome-icon">
       <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Grid dots -->
-        <circle cx="32" cy="12" r="4" fill="currentColor" opacity="0.8" />
-        <circle cx="52" cy="32" r="4" fill="currentColor" opacity="0.8" />
-        <circle cx="32" cy="52" r="4" fill="currentColor" opacity="0.8" />
-        <circle cx="12" cy="32" r="4" fill="currentColor" opacity="0.8" />
-        <!-- Path lines -->
+        <!-- Grid dots that match current mode -->
+        {#if isDiamond}
+          <circle cx="32" cy="8" r="5" class="grid-dot active" style="--delay: 0" />
+          <circle cx="56" cy="32" r="5" class="grid-dot active" style="--delay: 1" />
+          <circle cx="32" cy="56" r="5" class="grid-dot active" style="--delay: 2" />
+          <circle cx="8" cy="32" r="5" class="grid-dot active" style="--delay: 3" />
+          <circle cx="8" cy="8" r="4" class="grid-dot inactive" />
+          <circle cx="56" cy="8" r="4" class="grid-dot inactive" />
+          <circle cx="8" cy="56" r="4" class="grid-dot inactive" />
+          <circle cx="56" cy="56" r="4" class="grid-dot inactive" />
+        {:else}
+          <circle cx="8" cy="8" r="5" class="grid-dot active" style="--delay: 0" />
+          <circle cx="56" cy="8" r="5" class="grid-dot active" style="--delay: 1" />
+          <circle cx="56" cy="56" r="5" class="grid-dot active" style="--delay: 2" />
+          <circle cx="8" cy="56" r="5" class="grid-dot active" style="--delay: 3" />
+          <circle cx="32" cy="8" r="4" class="grid-dot inactive" />
+          <circle cx="56" cy="32" r="4" class="grid-dot inactive" />
+          <circle cx="32" cy="56" r="4" class="grid-dot inactive" />
+          <circle cx="8" cy="32" r="4" class="grid-dot inactive" />
+        {/if}
+        <!-- Animated path trace -->
         <path
-          d="M32 12 L52 32 L32 52 L12 32 Z"
-          stroke="currentColor"
+          class="trace-path"
+          d={isDiamond
+            ? "M32 8 L56 32 L32 56 L8 32 Z"
+            : "M8 8 L56 8 L56 56 L8 56 Z"}
+          stroke="var(--theme-accent)"
           stroke-width="2"
-          stroke-dasharray="4 4"
           fill="none"
-          opacity="0.4"
         />
-        <!-- Hand indicator -->
-        <circle cx="32" cy="32" r="8" fill="rgba(59, 130, 246, 0.3)" />
-        <circle cx="32" cy="32" r="4" fill="var(--semantic-info)" />
       </svg>
     </div>
 
     <!-- Title -->
     <h1 class="welcome-title">{t("assembly_title")}</h1>
 
-    <!-- Description -->
+    <!-- Compact description -->
     <p class="welcome-description">
-      {t("assembly_description")}
+      Trace hand paths on a grid, then merge them into a sequence.
     </p>
 
-    <!-- How it works -->
-    <div class="how-it-works">
-      <h2 class="section-title">{t("assembly_how_it_works")}</h2>
-      <ol class="steps-list">
-        <li>
-          <span class="step-number blue">1</span>
-          <span class="step-text"
-            >{t("assembly_step1", { hand: "" })} <strong>{t("assembly_blue_hand")}</strong></span
-          >
-        </li>
-        <li>
-          <span class="step-number red">2</span>
-          <span class="step-text"
-            >{t("assembly_step2", { hand: "" })} <strong>{t("assembly_red_hand")}</strong></span
-          >
-        </li>
-        <li>
-          <span class="step-number green">3</span>
-          <span class="step-text">{t("assembly_step3")}</span>
-        </li>
-      </ol>
-    </div>
-
-    <!-- Grid Mode Toggle -->
+    <!-- Grid Mode Toggle - Hero element -->
     <div class="grid-mode-section">
-      <span class="grid-mode-label">{t("assembly_grid_mode")}</span>
       <div class="grid-mode-toggle">
         <button
           class="mode-button"
           class:active={isDiamond}
           onclick={() => handleGridModeChange(GridMode.DIAMOND)}
         >
-          <span class="mode-icon">◇</span>
-          {t("assembly_diamond")}
+          <div class="mode-preview diamond">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+          <span class="mode-name">{t("assembly_diamond")}</span>
+          <span class="mode-positions">N · E · S · W</span>
         </button>
         <button
           class="mode-button"
           class:active={!isDiamond}
           onclick={() => handleGridModeChange(GridMode.BOX)}
         >
-          <span class="mode-icon">□</span>
-          {t("assembly_box")}
+          <div class="mode-preview box">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+          <span class="mode-name">{t("assembly_box")}</span>
+          <span class="mode-positions">NW · NE · SE · SW</span>
         </button>
       </div>
     </div>
@@ -116,6 +117,11 @@ Shown when sequence is empty.
       <span class="button-text">{t("assembly_start_building")}</span>
       <span class="button-icon">→</span>
     </button>
+
+    <!-- Minimal hint -->
+    <p class="keyboard-hint">
+      Tip: Use numpad keys for rapid building
+    </p>
   </div>
 </div>
 
@@ -135,25 +141,55 @@ Shown when sequence is empty.
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 400px;
+    max-width: 420px;
     text-align: center;
-    gap: 20px;
+    gap: 24px;
   }
 
+  /* Animated welcome icon */
   .welcome-icon {
-    width: 80px;
-    height: 80px;
-    color: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 90%,
-      transparent
-    );
-    margin-bottom: 8px;
+    width: 100px;
+    height: 100px;
   }
 
   .welcome-icon svg {
     width: 100%;
     height: 100%;
+  }
+
+  /* Grid dots in the icon */
+  .welcome-icon :global(.grid-dot) {
+    transition: all 0.3s ease;
+  }
+
+  .welcome-icon :global(.grid-dot.active) {
+    fill: var(--theme-accent);
+    animation: dot-pulse 2s ease-in-out infinite;
+    animation-delay: calc(var(--delay) * 0.15s);
+  }
+
+  .welcome-icon :global(.grid-dot.inactive) {
+    fill: var(--theme-stroke);
+    opacity: 0.3;
+  }
+
+  @keyframes dot-pulse {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  /* Animated trace path */
+  .welcome-icon :global(.trace-path) {
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    animation: trace-draw 3s ease-in-out infinite;
+    opacity: 0.6;
+  }
+
+  @keyframes trace-draw {
+    0% { stroke-dashoffset: 200; opacity: 0.3; }
+    50% { stroke-dashoffset: 0; opacity: 0.6; }
+    100% { stroke-dashoffset: -200; opacity: 0.3; }
   }
 
   .welcome-title {
@@ -167,136 +203,89 @@ Shown when sequence is empty.
   .welcome-description {
     font-size: var(--font-size-sm);
     line-height: 1.6;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    margin: 0;
-  }
-
-  /* How it works section */
-  .how-it-works {
-    width: 100%;
-    background: var(--theme-card-bg);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-top: 4px;
-  }
-
-  .section-title {
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     color: var(--theme-text-dim);
-    margin: 0 0 12px 0;
-  }
-
-  .steps-list {
-    list-style: none;
-    padding: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    max-width: 320px;
   }
 
-  .steps-list li {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-align: left;
-  }
-
-  .step-number {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-compact);
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .step-number.blue {
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--semantic-info);
-  }
-
-  .step-number.red {
-    background: rgba(239, 68, 68, 0.2);
-    color: var(--semantic-error);
-  }
-
-  .step-number.green {
-    background: rgba(16, 185, 129, 0.2);
-    color: var(--semantic-success);
-  }
-
-  .step-text {
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .step-text strong {
-    color: var(--theme-text, var(--theme-text));
-  }
-
-  /* Grid mode toggle */
+  /* Grid mode toggle - Hero element */
   .grid-mode-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
     width: 100%;
-  }
-
-  .grid-mode-label {
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .grid-mode-toggle {
-    display: flex;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border-radius: 8px;
-    padding: 4px;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
 
   .mode-button {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: var(--font-size-sm);
-    font-weight: 500;
+    gap: 12px;
+    padding: 20px 16px;
+    border: 2px solid var(--theme-stroke);
+    background: var(--theme-card-bg);
+    border-radius: 16px;
+    color: var(--theme-text-dim);
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
   .mode-button.active {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 20%,
-      transparent
-    );
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 10%, var(--theme-card-bg));
     color: var(--theme-text);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--theme-accent) 20%, transparent);
   }
 
   .mode-button:hover:not(.active) {
+    border-color: var(--theme-stroke-strong);
     background: var(--theme-card-hover-bg);
-    color: var(--theme-text-dim, var(--theme-text-dim));
   }
 
-  .mode-icon {
+  /* Mini grid preview in mode buttons */
+  .mode-preview {
+    width: 48px;
+    height: 48px;
+    position: relative;
+  }
+
+  .mode-preview .dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+    transition: all 0.2s ease;
+  }
+
+  /* Diamond mode: N, E, S, W */
+  .mode-preview.diamond .dot:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); }
+  .mode-preview.diamond .dot:nth-child(2) { top: 50%; right: 0; transform: translateY(-50%); }
+  .mode-preview.diamond .dot:nth-child(3) { bottom: 0; left: 50%; transform: translateX(-50%); }
+  .mode-preview.diamond .dot:nth-child(4) { top: 50%; left: 0; transform: translateY(-50%); }
+
+  /* Box mode: corners */
+  .mode-preview.box .dot:nth-child(1) { top: 0; left: 0; }
+  .mode-preview.box .dot:nth-child(2) { top: 0; right: 0; }
+  .mode-preview.box .dot:nth-child(3) { bottom: 0; right: 0; }
+  .mode-preview.box .dot:nth-child(4) { bottom: 0; left: 0; }
+
+  .mode-button.active .mode-preview .dot {
+    background: var(--theme-accent);
+    box-shadow: 0 0 8px var(--theme-accent);
+  }
+
+  .mode-name {
     font-size: var(--font-size-base);
+    font-weight: 600;
+  }
+
+  .mode-positions {
+    font-size: var(--font-size-compact);
+    opacity: 0.7;
   }
 
   /* Start button */
@@ -306,37 +295,21 @@ Shown when sequence is empty.
     justify-content: center;
     gap: 8px;
     width: 100%;
-    max-width: 280px;
-    padding: 16px 24px;
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent-strong, var(--theme-accent-strong)),
-      var(--theme-accent-strong)
-    );
+    padding: 18px 24px;
+    background: linear-gradient(135deg, var(--theme-accent-strong), var(--theme-accent));
     border: none;
-    border-radius: 12px;
+    border-radius: 14px;
     color: white;
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-lg);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 16px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 30%,
-        transparent
-      );
-    margin-top: 8px;
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent-strong) 35%, transparent);
   }
 
   .start-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 40%,
-        transparent
-      );
+    box-shadow: 0 6px 24px color-mix(in srgb, var(--theme-accent-strong) 45%, transparent);
   }
 
   .start-button:active {
@@ -344,12 +317,20 @@ Shown when sequence is empty.
   }
 
   .button-icon {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
     transition: transform 0.2s ease;
   }
 
   .start-button:hover .button-icon {
     transform: translateX(4px);
+  }
+
+  /* Keyboard hint */
+  .keyboard-hint {
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    opacity: 0.6;
+    margin: 0;
   }
 
   /* Mobile adjustments */
@@ -358,17 +339,45 @@ Shown when sequence is empty.
       padding: 16px;
     }
 
+    .welcome-content {
+      gap: 20px;
+    }
+
     .welcome-icon {
-      width: 64px;
-      height: 64px;
+      width: 80px;
+      height: 80px;
     }
 
     .welcome-title {
       font-size: var(--font-size-2xl);
     }
 
-    .welcome-description {
-      font-size: var(--font-size-sm);
+    .mode-button {
+      padding: 16px 12px;
+    }
+
+    .mode-preview {
+      width: 40px;
+      height: 40px;
+    }
+
+    .mode-preview .dot {
+      width: 8px;
+      height: 8px;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .welcome-icon :global(.grid-dot.active),
+    .welcome-icon :global(.trace-path) {
+      animation: none;
+    }
+
+    .welcome-icon :global(.trace-path) {
+      stroke-dasharray: none;
+      stroke-dashoffset: 0;
+      opacity: 0.5;
     }
   }
 </style>
