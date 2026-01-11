@@ -99,11 +99,9 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
           (sequenceData.metadata?.["author"] as string) ||
           "",
         totalBeats: beats.length, // Number of motion beats (NOT including start position)
-        propType: sequenceData.propType, // Legacy fallback
-        bluePropType:
-          settings.bluePropType || settings.propType || sequenceData.propType,
-        redPropType:
-          settings.redPropType || settings.propType || sequenceData.propType,
+        // propType removed from sequences - use settings (viewer preference)
+        bluePropType: settings.bluePropType || settings.propType,
+        redPropType: settings.redPropType || settings.propType,
         gridMode: sequenceData.gridMode,
       };
 

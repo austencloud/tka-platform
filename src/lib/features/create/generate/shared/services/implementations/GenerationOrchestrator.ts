@@ -168,7 +168,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       startingPositionBeat: startPosition,
       startPosition,
       gridMode: options.gridMode,
-      propType: options.propType,
+      // propType removed - prop type is viewer preference, not sequence data
       difficultyLevel: options.difficulty,
       isFavorite: false,
       isCircular: false,
@@ -274,7 +274,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       ...(startPositionBeat && { startingPositionBeat: startPositionBeat }),
       ...(startPositionBeat && { startPosition: startPositionBeat }),
       gridMode: options.gridMode,
-      propType: options.propType,
+      // propType removed - prop type is viewer preference, not sequence data
       difficultyLevel: options.difficulty,
       isFavorite: false,
       isCircular: true,

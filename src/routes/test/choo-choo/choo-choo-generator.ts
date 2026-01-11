@@ -170,7 +170,7 @@ export async function generateChooChoo(
     ],
     metadata: { generatedBy: "ChooChooGenerator", config: fullConfig },
     gridMode: GridMode.DIAMOND,
-    propType: PropType.STAFF,
+    // propType removed - prop type is viewer preference, not sequence data
   };
 }
 

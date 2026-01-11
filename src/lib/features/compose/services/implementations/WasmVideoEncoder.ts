@@ -5,7 +5,20 @@
  * This provides the same frame-by-frame encoding with explicit timing.
  */
 
-import { createH264MP4Encoder, type H264MP4Encoder } from "h264-mp4-encoder";
+// h264-mp4-encoder types
+type H264MP4Encoder = {
+  width: number;
+  height: number;
+  frameRate: number;
+  kbps: number;
+  groupOfPictures: number;
+  initialize: () => void;
+  addFrameRgba: (data: Uint8ClampedArray) => void;
+  finalize: () => void;
+  FS: { readFile: (filename: string) => Uint8Array };
+  outputFilename: string;
+  delete: () => void;
+};
 
 export interface WasmEncoderOptions {
   width: number;
@@ -36,8 +49,18 @@ export class WasmVideoEncoder {
   }
 
   async initialize(): Promise<void> {
+    // Dynamically import to avoid ESM/CommonJS interop issues at module load time
+    const h264Mp4Encoder = await import("h264-mp4-encoder");
+    const createEncoder =
+      h264Mp4Encoder.createH264MP4Encoder ??
+      (h264Mp4Encoder.default as { createH264MP4Encoder: () => Promise<H264MP4Encoder> })?.createH264MP4Encoder;
+
+    if (!createEncoder) {
+      throw new Error("Failed to load h264-mp4-encoder: createH264MP4Encoder not found");
+    }
+
     // Load the WASM encoder
-    this.encoder = await createH264MP4Encoder();
+    this.encoder = await createEncoder();
 
     // Configure encoder
     this.encoder.width = this.encoderWidth;

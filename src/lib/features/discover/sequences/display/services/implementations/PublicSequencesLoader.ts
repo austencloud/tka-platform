@@ -184,7 +184,7 @@ export class PublicSequencesLoader implements IDiscoverLoader {
       level: data.level as number | undefined,
       dateAdded: data.dateAdded ? new Date(data.dateAdded as string) : undefined,
       gridMode: data.gridMode as SequenceData["gridMode"],
-      propType: data.propType as SequenceData["propType"],
+      // propType removed - prop type is a viewer preference, not sequence data
       isFavorite: (data.isFavorite as boolean) ?? false,
       isCircular: (data.isCircular as boolean) ?? false,
       loopType: data.loopType as SequenceData["loopType"],

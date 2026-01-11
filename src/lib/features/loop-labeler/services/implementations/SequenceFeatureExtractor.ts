@@ -61,7 +61,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
 
     return {
       beatCount: validBeats.length,
-      propType: sequence.propType ?? null,
+      // propType removed - prop type is viewer preference, not sequence data
       gridMode: sequence.gridMode ?? null,
       circularity,
       detectedCapTypes,

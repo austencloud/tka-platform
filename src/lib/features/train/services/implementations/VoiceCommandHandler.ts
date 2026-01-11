@@ -5,6 +5,7 @@
  * Primarily for Step-by-Step mode advancement.
  */
 
+import { browser } from "$app/environment";
 import type { IVoiceCommandHandler } from "../contracts/IVoiceCommandHandler";
 
 // Augment Window interface for webkit prefixed SpeechRecognition
@@ -20,6 +21,11 @@ export class VoiceCommandHandler implements IVoiceCommandHandler {
   private currentCallback: (() => void) | null = null;
 
   constructor() {
+    // Skip during SSR - no window available
+    if (!browser) {
+      return;
+    }
+
     // Check for browser support - use the global SpeechRecognition or webkit prefix
     const win = window as WindowWithSpeechRecognition;
     const SpeechRecognitionCtor = win.SpeechRecognition || win.webkitSpeechRecognition;
@@ -121,6 +127,9 @@ export class VoiceCommandHandler implements IVoiceCommandHandler {
   }
 
   isSupported(): boolean {
+    if (!browser) {
+      return false;
+    }
     const win = window as WindowWithSpeechRecognition;
     return !!(win.SpeechRecognition || win.webkitSpeechRecognition);
   }

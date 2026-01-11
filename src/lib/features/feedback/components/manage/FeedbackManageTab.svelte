@@ -32,18 +32,13 @@
 
   // Check for target on mount (handles navigation from other pages)
   onMount(() => {
-    // Check URL param first (from FeedbackMessageCard navigation)
+    // Check URL param first (from FeedbackMessageCard navigation or page refresh)
     const urlParams = new URLSearchParams(window.location.search);
     const urlFeedbackId = urlParams.get("openFeedback");
 
     if (urlFeedbackId) {
+      // Keep the URL param - it will persist across refresh
       pendingTargetId = urlFeedbackId;
-      // Clear the URL param
-      urlParams.delete("openFeedback");
-      const newUrl = urlParams.toString()
-        ? `${window.location.pathname}?${urlParams.toString()}`
-        : window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
     } else {
       // Fallback to notification target state
       const targetId = getNotificationTargetFeedback();
@@ -51,6 +46,27 @@
         pendingTargetId = targetId;
         setNotificationTargetFeedback(null);
       }
+    }
+  });
+
+  // Sync URL with selected item for persistence across refresh/navigation
+  $effect(() => {
+    const selectedId = manageState.selectedItem?.id;
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentUrlId = urlParams.get("openFeedback");
+
+    // Only update URL if it's different from current selection
+    if (selectedId && selectedId !== currentUrlId) {
+      urlParams.set("openFeedback", selectedId);
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+      window.history.replaceState({}, "", newUrl);
+    } else if (!selectedId && currentUrlId) {
+      // Clear URL param when panel is closed
+      urlParams.delete("openFeedback");
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
     }
   });
 

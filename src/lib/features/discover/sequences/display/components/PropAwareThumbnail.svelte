@@ -93,9 +93,11 @@
   const sequenceName = $derived(sequence.word || sequence.name || "");
 
   // Derived: beat count for aspect ratio calculation
-  // Priority: beats array length > sequenceLength field > fallback to 4
+  // Priority: beats array length (if not empty) > sequenceLength field > fallback to 4
+  // NOTE: Use || not ?? because beats is often [] (empty array) for Community sequences,
+  // and [].length is 0 which ?? treats as valid (only null/undefined fall through)
   const beatCount = $derived(
-    sequence.beats?.length ?? sequence.sequenceLength ?? 4
+    sequence.beats?.length || sequence.sequenceLength || 4
   );
 
   // Derived: aspect ratio based on beat count and variant

@@ -6,7 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { IAudioLibrary } from "../services/contracts/IAudioLibrary";
-  import { AudioLibraryService } from "../services/implementations/AudioLibraryService";
+  import { AudioLibrary } from "../services/implementations/AudioLibraryService";
   import { AudioStorageManager } from "../services/implementations/AudioStorageManager";
   import type { AudioTrackLocal } from "../domain/models/AudioTrack";
 
@@ -23,7 +23,7 @@
 
   // Create audio library instance directly (not in main DI container)
   const audioStorageManager = new AudioStorageManager();
-  const audioLibrary: IAudioLibrary = new AudioLibraryService(audioStorageManager);
+  const audioLibrary: IAudioLibrary = new AudioLibrary(audioStorageManager);
 
   let tracks = $state<AudioTrackLocal[]>([]);
   let isLoading = $state(true);

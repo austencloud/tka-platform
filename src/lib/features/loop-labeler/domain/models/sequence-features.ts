@@ -76,8 +76,8 @@ export interface SequenceFeatures {
   /** Number of beats in the sequence */
   readonly beatCount: number;
 
-  /** Prop type used in the sequence */
-  readonly propType: PropType | null;
+  // NOTE: propType removed - prop type is a viewer preference, not sequence data
+  // Tags should not include prop type since any sequence can be viewed with any prop
 
   /** Grid mode (diamond, box, skewed) */
   readonly gridMode: GridMode | null;
@@ -123,7 +123,6 @@ export interface SequenceFeatures {
 export function createDefaultSequenceFeatures(): SequenceFeatures {
   return {
     beatCount: 0,
-    propType: null,
     gridMode: null,
     circularity: {
       isCircular: false,

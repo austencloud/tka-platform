@@ -47,6 +47,7 @@ import { createQRContainer } from "./containers/qr-container";
 import { createAnimation3DContainer } from "./containers/animation-3d-container";
 import { deepOceanContainer } from "./containers/deep-ocean-container";
 import { createGalleryContainer } from "./containers/gallery-container";
+import { backgroundBuilderContainer } from "./containers/background-builder-container";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -221,7 +222,8 @@ export const container = createContainer()
   .add(qrContainer.items)
   .add(animation3DContainer.items)
   .add(deepOceanContainer.items)
-  .add(galleryContainer.items);
+  .add(galleryContainer.items)
+  .add(backgroundBuilderContainer.items);
 
 // Export type for the composed container
 export type AppContainer = typeof container;

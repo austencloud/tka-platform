@@ -50,23 +50,11 @@ export class RuleBasedTagger implements IRuleBasedTagger {
 
   /**
    * Get prop type tags
+   * NOTE: Returns empty - prop type is viewer preference, not sequence data
+   * Sequences should not be tagged by prop type since they can be viewed with any prop
    */
-  private getPropTags(features: SequenceFeatures): SuggestedTag[] {
-    const tags: SuggestedTag[] = [];
-
-    if (features.propType) {
-      const propName = this.getPropName(features.propType);
-      tags.push(
-        createSuggestedTag(
-          propName,
-          "prop",
-          1.0,
-          `Sequence uses ${propName} props`
-        )
-      );
-    }
-
-    return tags;
+  private getPropTags(_features: SequenceFeatures): SuggestedTag[] {
+    return [];
   }
 
   /**
