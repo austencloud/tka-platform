@@ -189,6 +189,7 @@ export function createFunnelState() {
 
   /**
    * Count how many variations match a specific filter value
+   * Uses a temporary filter object to avoid mutating state during render
    */
   function countForFilterValue(
     filterKey: keyof FunnelFilters,
@@ -202,13 +203,54 @@ export function createFunnelState() {
         ? applyFiltersUpToStep(allVariations, previousStepIndex)
         : allVariations;
 
-    // Temporarily set the filter value and count
-    const originalValue = filters[filterKey];
-    (filters as Record<keyof FunnelFilters, unknown>)[filterKey] = value;
-    const count = applyFilter(baseVariations, filterKey).length;
-    (filters as Record<keyof FunnelFilters, unknown>)[filterKey] = originalValue;
+    // Create a temporary filter object with the test value (no state mutation)
+    const tempFilters: FunnelFilters = { ...filters, [filterKey]: value };
+    const count = applyFilterWithFilters(baseVariations, filterKey, tempFilters).length;
 
     return count;
+  }
+
+  /**
+   * Apply a single filter using a provided filters object (no state dependency)
+   */
+  function applyFilterWithFilters(
+    variations: ScoredVariation[],
+    filterKey: keyof FunnelFilters,
+    filterValues: FunnelFilters
+  ): ScoredVariation[] {
+    switch (filterKey) {
+      case "beatCount":
+        if (filterValues.beatCount === null) return variations;
+        return variations.filter(
+          (v) => v.sequence.beats.length === filterValues.beatCount
+        );
+
+      case "motionStyle":
+        if (filterValues.motionStyle === null) return variations;
+        if (filterValues.motionStyle === "dash") {
+          return variations.filter((v) => v.score.motionTypeScore > 0);
+        } else {
+          return variations.filter((v) => v.score.motionTypeScore <= 0);
+        }
+
+      case "maxReversals":
+        if (filterValues.maxReversals === null) return variations;
+        return variations.filter(
+          (v) => v.score.reversalCount <= filterValues.maxReversals!
+        );
+
+      case "highContinuity":
+        if (!filterValues.highContinuity) return variations;
+        const sortedContinuity = [...variations]
+          .map((v) => v.score.continuityScore)
+          .sort((a, b) => a - b);
+        const median =
+          sortedContinuity[Math.floor(sortedContinuity.length / 2)] ?? 0;
+        return variations.filter((v) => v.score.continuityScore >= median);
+
+      default:
+        return variations;
+    }
   }
 
   // ============================================================================

@@ -3,6 +3,7 @@
   import { container } from "$lib/shared/di";
   import type { SequenceState } from "../../../state/SequenceStateOrchestrator.svelte";
   import { getCreateModuleContext } from "../../../context/create-module-context";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import BeatGrid from "./BeatGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
@@ -16,6 +17,7 @@
     onStartPositionSelected,
     onBeatDelete,
     onBeatLongPress,
+    onAssemblerBack,
     selectedBeatNumber = null,
     practiceBeatNumber = null,
     isSideBySideLayout = false,
@@ -29,6 +31,7 @@
     onStartPositionSelected?: () => void;
     onBeatDelete?: (beatNumber: number) => void;
     onBeatLongPress?: () => void;
+    onAssemblerBack?: () => void;
     selectedBeatNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     practiceBeatNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     isSideBySideLayout?: boolean;
@@ -38,6 +41,9 @@
     /** Optional: When provided for spell tab, enables original vs bridge letter styling */
     letterSources?: LetterSource[] | null;
   }>();
+
+  // Check if we're in the assembler tab
+  const isAssemblerTab = $derived(navigationState.activeTab === "assembler");
 
   const logger = createComponentLogger("SequenceDisplay");
 
@@ -104,10 +110,28 @@
 <div class="sequence-container">
   <div class="content-wrapper">
     <div class="label-and-beatframe-unit">
-      <!-- Top bar: Undo button (left) + Word label (center) -->
+      <!-- Top bar: Undo/Back button (left) + Word label (center) -->
       <div class="top-bar">
         <div class="top-left-zone">
-          <UndoButton {CreateModuleState} />
+          {#if isAssemblerTab && onAssemblerBack}
+            <button
+              class="back-button"
+              onclick={onAssemblerBack}
+              aria-label="Back to grid mode selection"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M12 16L6 10L12 4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          {:else}
+            <UndoButton {CreateModuleState} />
+          {/if}
         </div>
         <div class="word-label-area">
           <WordLabel
@@ -233,5 +257,29 @@
     box-shadow:
       0 0 0 2px rgba(6, 182, 212, 0.5),
       0 0 20px rgba(6, 182, 212, 0.2);
+  }
+
+  /* Back button for Assembler tab */
+  .back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: var(--theme-card-bg);
+    border-radius: 10px;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .back-button:hover {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
+  .back-button:active {
+    transform: scale(0.95);
   }
 </style>

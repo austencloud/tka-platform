@@ -549,17 +549,16 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             deps.orientationCalculator
           ),
         spellServiceLoader: () => new SpellServiceLoader(),
-        spellGenerationOrchestrator: () =>
-          new SpellGenerationOrchestrator(null as any), // ISpellServiceLoader - temp fix
-        variationExplorationOrchestrator: () =>
-          new VariationExplorationOrchestrator(null as any), // ISpellServiceLoader - temp fix
-        loopSelectionCoordinator: () =>
-          new LOOPSelectionCoordinator(null as any), // ISpellServiceLoader - temp fix
-
       }))
 
-      // === Layer 4.6: Services needing Layer 4.5 services ===
+      // === Layer 4.6: Services needing spellServiceLoader ===
       .add((ctx) => ({
+        spellGenerationOrchestrator: () =>
+          new SpellGenerationOrchestrator(ctx.spellServiceLoader),
+        variationExplorationOrchestrator: () =>
+          new VariationExplorationOrchestrator(ctx.spellServiceLoader),
+        loopSelectionCoordinator: () =>
+          new LOOPSelectionCoordinator(ctx.spellServiceLoader),
         // ExtensionFlowCoordinator needs sequenceExtender
         extensionFlowCoordinator: () =>
           new ExtensionFlowCoordinator(ctx.sequenceExtender),

@@ -87,6 +87,10 @@ export function createCreateModuleState(
   // This is set by the HandPathOrchestrator component when in assembler mode
   let _assemblyUndoRef: { canUndo: boolean; undo: () => void } | null = null;
 
+  // Assembly handpath builder back ref - returns to welcome screen
+  // This is set by the HandPathOrchestrator component when building
+  let _assemblyBackRef: { canGoBack: boolean; back: () => void } | null = null;
+
   /**
    * Get the sequence state for a specific tab
    * Used by persistence controller to save/restore the correct tab's state
@@ -396,6 +400,13 @@ export function createCreateModuleState(
     },
     set assemblyUndoRef(value: { canUndo: boolean; undo: () => void } | null) {
       _assemblyUndoRef = value;
+    },
+    // Assembly handpath builder back ref - set by HandPathOrchestrator for workspace back button
+    get assemblyBackRef() {
+      return _assemblyBackRef;
+    },
+    set assemblyBackRef(value: { canGoBack: boolean; back: () => void } | null) {
+      _assemblyBackRef = value;
     },
     get generatorTabState() {
       return _generatorTabState;

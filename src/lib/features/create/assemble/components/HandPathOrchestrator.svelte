@@ -65,6 +65,7 @@ Integrates all Assembly components and manages state transitions.
     onSequenceUpdate,
     onHeaderTextChange,
     onStartPositionSet,
+    onClearSequence,
     // Bindable undo ref for workspace integration
     undoRef = $bindable(),
     // Bindable back ref for workspace back button
@@ -79,6 +80,7 @@ Integrates all Assembly components and manages state transitions.
     onSequenceUpdate?: (sequence: PictographData[]) => void;
     onHeaderTextChange?: (text: string) => void;
     onStartPositionSet?: (startPosition: PictographData) => void;
+    onClearSequence?: () => void;
     // Bindable undo ref for workspace integration
     undoRef?: AssemblyUndoRef | null;
     // Bindable back ref for workspace back button
@@ -626,7 +628,7 @@ Integrates all Assembly components and manages state transitions.
   // Full reset (back to welcome screen)
   function handleFullReset() {
     assemblyState.reset();
-    onSequenceUpdate?.([]);
+    onClearSequence?.(); // Fully clear sequence including start position
     hasStarted = false;
   }
 </script>

@@ -37,6 +37,9 @@ Used by both desktop side panel and mobile slide-up overlay.
   // Share Hub state
   let showShareHub = $state(false);
 
+  // Copy for Claude state
+  let justCopied = $state(false);
+
   const {
     sequence,
     variations = [],
@@ -132,6 +135,65 @@ Used by both desktop side panel and mobile slide-up overlay.
     onAction("fullscreen", sequence);
   }
 
+  /**
+   * Copy sequence data as a prompt for Claude Code agents
+   */
+  async function copyForClaudeCode() {
+    hapticService?.trigger("selection");
+
+    // Build comprehensive sequence context
+    const beatCount = sequence.beats?.length ?? 0;
+    const difficultyText = sequence.difficultyLevel || sequence.level?.toString() || "Unknown";
+    const tagsText = sequence.tags?.length ? sequence.tags.join(", ") : "None";
+
+    // Format beat data compactly (just the essential motion info)
+    const beatSummary = sequence.beats?.map((beat, i) => {
+      const blueMotion = beat.blueMotion;
+      const redMotion = beat.redMotion;
+      return `  Beat ${i + 1}: Blue(${blueMotion?.motionType || "?"} ${blueMotion?.startLocation || "?"}->${blueMotion?.endLocation || "?"}) Red(${redMotion?.motionType || "?"} ${redMotion?.startLocation || "?"}->${redMotion?.endLocation || "?"})`;
+    }).join("\n") || "  No beat data";
+
+    // Build the prompt
+    const text = `Analyze sequence ID: ${sequence.id}
+
+**${sequence.word || sequence.name || "Untitled"}**
+Difficulty: ${difficultyText} | Length: ${beatCount} beats | LOOP Type: ${sequence.loopType || "Unknown"}
+Tags: ${tagsText}
+Owner: ${sequence.ownerDisplayName || sequence.author || "Unknown"} (${sequence.ownerId || "no-id"})
+
+---
+**Database Location:**
+- Collection: \`sequences\` (public) or \`users/{ownerId}/library\` (private)
+- Document ID: \`${sequence.id}\`
+- Owner ID: \`${sequence.ownerId || "unknown"}\`
+
+**Starting Position:**
+- Group: ${sequence.startingPositionGroup || "Unknown"}
+- Beat: ${JSON.stringify(sequence.startPosition || sequence.startingPositionBeat || {}, null, 2)}
+
+**Beat Sequence:**
+${beatSummary}
+
+---
+**Full Sequence JSON:**
+\`\`\`json
+${JSON.stringify(sequence, null, 2)}
+\`\`\`
+
+---
+Use this data to investigate issues, analyze the sequence structure, or make modifications. The sequence is stored in Firebase Firestore.`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      justCopied = true;
+      setTimeout(() => {
+        justCopied = false;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy sequence for Claude:", err);
+    }
+  }
+
   function handleCreatorClick() {
     if (!sequence.ownerId) return;
     hapticService?.trigger("selection");
@@ -161,6 +223,26 @@ Used by both desktop side panel and mobile slide-up overlay.
   <header class="detail-header">
     <span class="header-title">Sequence Details</span>
     <div class="header-buttons">
+      <!-- Copy for Claude Code button -->
+      <button
+        class="header-btn copy-btn"
+        class:copied={justCopied}
+        onclick={copyForClaudeCode}
+        aria-label="Copy for Claude Code"
+        title="Copy sequence data for AI analysis"
+      >
+        {#if justCopied}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        {:else}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+        {/if}
+      </button>
+
       {#if sequencePanelManager.isDetailExpanded}
         <button
           class="collapse-button"
@@ -542,6 +624,49 @@ Used by both desktop side panel and mobile slide-up overlay.
     transform: scale(0.95);
   }
 
+  /* Header button base style */
+  .header-btn {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-card-bg, var(--theme-card-bg));
+    border: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
+    border-radius: 50%;
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .header-btn svg {
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
+  }
+
+  .header-btn:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text, white);
+  }
+
+  .header-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Copy button - terminal/code icon style */
+  .copy-btn:hover {
+    border-color: var(--semantic-info, #3b82f6);
+    color: var(--semantic-info, #3b82f6);
+  }
+
+  .copy-btn.copied {
+    background: var(--semantic-success, #22c55e);
+    border-color: var(--semantic-success, #22c55e);
+    color: white;
+  }
+
   /* Media Container - holds the unified media viewer */
   /* flex: 1 lets it grow to fill available space between header and buttons */
   .media-container {
@@ -810,6 +935,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   @media (prefers-reduced-motion: reduce) {
     .close-button,
     .collapse-button,
+    .header-btn,
     .action-btn,
     .creator-badge {
       transition: none;
@@ -817,6 +943,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 
     .close-button:active,
     .collapse-button:active,
+    .header-btn:active,
     .action-btn:active,
     .creator-badge:active {
       transform: none;

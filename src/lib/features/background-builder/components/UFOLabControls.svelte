@@ -50,8 +50,8 @@
     onTriggerComet,
   }: Props = $props();
 
-  // Collapsible section state
-  let expandedSections = $state<Set<string>>(new Set(["mood"]));
+  // Collapsible section state - expand all by default since we have vertical space
+  let expandedSections = $state<Set<string>>(new Set(["mood", "reactions", "animations", "events"]));
 
   function toggleSection(section: string) {
     const next = new Set(expandedSections);
@@ -122,20 +122,26 @@
       <i class="fas fa-satellite"></i>
       <span>Spawn UFO</span>
     </button>
-    <div class="quick-commands">
-      <button class="cmd-btn" onclick={onWander} title="Wander">
-        <i class="fas fa-random"></i>
-      </button>
-      <button class="cmd-btn" onclick={onDrift} title="Drift">
-        <i class="fas fa-cloud"></i>
-      </button>
-      <button class="cmd-btn" onclick={onPause} title="Pause">
-        <i class="fas fa-pause"></i>
-      </button>
-      <button class="cmd-btn" onclick={onScanStar} title="Scan">
-        <i class="fas fa-crosshairs"></i>
-      </button>
-    </div>
+  </div>
+
+  <!-- Quick Commands -->
+  <div class="quick-commands">
+    <button class="cmd-btn" onclick={onWander}>
+      <i class="fas fa-random"></i>
+      <span>Wander</span>
+    </button>
+    <button class="cmd-btn" onclick={onDrift}>
+      <i class="fas fa-cloud"></i>
+      <span>Drift</span>
+    </button>
+    <button class="cmd-btn" onclick={onPause}>
+      <i class="fas fa-pause"></i>
+      <span>Pause</span>
+    </button>
+    <button class="cmd-btn" onclick={onScanStar}>
+      <i class="fas fa-crosshairs"></i>
+      <span>Scan</span>
+    </button>
   </div>
 
   <!-- Collapsible: Mood -->
@@ -183,7 +189,7 @@
       <div class="section-content">
         <div class="reaction-grid">
           {#each wobbleOptions as { type, label, icon }}
-            <button class="reaction-btn" onclick={() => onTriggerWobble(type)}>
+            <button class="reaction-btn" onclick={() => onTriggerWobble(type)} title={label}>
               <i class="fas {icon}"></i>
               <span>{label}</span>
             </button>
@@ -267,21 +273,23 @@
   .status-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     padding: 8px 10px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
   }
 
   .status-chip {
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.65rem;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 0.6rem;
     font-weight: 600;
     text-transform: capitalize;
     background: rgba(255, 255, 255, 0.05);
     color: #6b7280;
+    white-space: nowrap;
   }
 
   .status-chip.wandering { background: rgba(96, 165, 250, 0.2); color: #93c5fd; }
@@ -347,22 +355,20 @@
   /* ===== Primary Actions ===== */
   .primary-actions {
     display: flex;
-    gap: 10px;
-    align-items: stretch;
   }
 
   .spawn-btn {
-    flex: 1;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 14px 20px;
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 10px;
     color: #ffffff;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -378,24 +384,31 @@
     transform: translateY(0);
   }
 
+  /* ===== Quick Commands ===== */
   .quick-commands {
-    display: flex;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
   }
 
   .cmd-btn {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    gap: 4px;
+    padding: 10px 8px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     color: #d1d5db;
-    font-size: 0.85rem;
+    font-size: 0.65rem;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  .cmd-btn i {
+    font-size: 0.9rem;
   }
 
   .cmd-btn:hover {
@@ -466,21 +479,21 @@
   /* ===== Mood Section ===== */
   .mood-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 6px;
-    margin-bottom: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .mood-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 1;
+    padding: 12px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     color: var(--mood-color, #d1d5db);
-    font-size: 0.85rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -498,17 +511,17 @@
   }
 
   .mood-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
 
   .secondary-btn {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
@@ -525,28 +538,27 @@
   }
 
   .secondary-btn i {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     opacity: 0.7;
   }
 
   /* ===== Reactions Section ===== */
   .reaction-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
 
   .reaction-btn {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 10px 4px;
+    gap: 8px;
+    padding: 10px 12px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     color: #d1d5db;
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     cursor: pointer;
     transition: all 0.15s ease;
   }
@@ -563,7 +575,7 @@
   }
 
   .reaction-btn i {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   /* ===== Animations Section ===== */
@@ -593,12 +605,13 @@
 
   .anim-btn {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
+    padding: 10px;
     border-radius: 6px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.15s ease;
   }

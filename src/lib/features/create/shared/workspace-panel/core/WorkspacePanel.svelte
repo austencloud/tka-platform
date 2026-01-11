@@ -41,6 +41,9 @@
 
     // Letter sources for spell tab
     letterSources = null,
+
+    // Assembler back handler (returns to welcome screen)
+    onAssemblerBack = null,
   }: {
     sequenceState?: SequenceState;
     createModuleState?: CreateModuleState;
@@ -60,6 +63,9 @@
 
     /** Letter sources for spell tab - enables original vs bridge letter styling */
     letterSources?: LetterSource[] | null;
+
+    /** Handler for assembler back button - returns to welcome screen */
+    onAssemblerBack?: (() => void) | null;
   } = $props();
 
   // Local beat selection state (beatNumber: 0=start, 1=first beat, etc.)
@@ -185,6 +191,7 @@
         onStartPositionSelected={handleStartPositionSelected}
         onBeatDelete={handleBeatDelete}
         onBeatLongPress={handleBeatLongPress}
+        {onAssemblerBack}
         selectedBeatNumber={localSelectedBeatNumber}
         practiceBeatNumber={practiceBeatIndex}
         {isSideBySideLayout}

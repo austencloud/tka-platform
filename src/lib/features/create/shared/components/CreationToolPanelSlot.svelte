@@ -18,7 +18,10 @@
   import GeneratePanel from "../../generate/components/GeneratePanel.svelte";
   import ConstructTabContent from "./ConstructTabContent.svelte";
   import AssemblerTab from "../../assemble/components/AssemblerTab.svelte";
-  import type { AssemblyUndoRef } from "../../assemble/components/HandPathOrchestrator.svelte";
+  import type {
+    AssemblyUndoRef,
+    AssemblyBackRef,
+  } from "../../assemble/components/HandPathOrchestrator.svelte";
   import SpellPanel from "../../spell/components/SpellPanel.svelte";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
@@ -102,16 +105,25 @@
   // Assembly undo ref - synced to CreateModuleState for workspace-level undo
   let assemblyUndoRef: AssemblyUndoRef | null = $state(null);
 
+  // Assembly back ref - synced to CreateModuleState for workspace back button
+  let assemblyBackRef: AssemblyBackRef | null = $state(null);
+
   // Sync assembly undo ref to CreateModuleState when it changes
   $effect(() => {
     createModuleState.assemblyUndoRef = assemblyUndoRef;
   });
 
-  // Reset assembly undo ref when assembly tab remounts (via key change)
+  // Sync assembly back ref to CreateModuleState when it changes
   $effect(() => {
-    // Track key changes to clear stale undo ref
+    createModuleState.assemblyBackRef = assemblyBackRef;
+  });
+
+  // Reset assembly refs when assembly tab remounts (via key change)
+  $effect(() => {
+    // Track key changes to clear stale refs
     void assemblyTabKey;
     assemblyUndoRef = null;
+    assemblyBackRef = null;
   });
 
   // Props (only callbacks and bindable refs)
@@ -161,6 +173,15 @@
               existingStartPositionBeat={existingStartBeat}
               existingBeats={existingBeatsArray}
               bind:undoRef={assemblyUndoRef}
+              bind:backRef={assemblyBackRef}
+              onClearSequence={() => {
+                // Fully clear the assembler's sequence (beats + start position)
+                const assemblerSequenceState =
+                  createModuleState.assemblerTabState?.sequenceState;
+                if (assemblerSequenceState) {
+                  assemblerSequenceState.setCurrentSequence(null);
+                }
+              }}
               onStartPositionSet={(startPosition) => {
                 // IMPORTANT: Use assemblerTabState.sequenceState directly, NOT getActiveTabSequenceState()
                 // getActiveTabSequenceState() returns state based on navigationState.activeTab at call time,

@@ -9,6 +9,7 @@ Handles real-time workspace updates and sequence completion.
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import HandPathOrchestrator, {
     type AssemblyUndoRef,
+    type AssemblyBackRef,
   } from "./HandPathOrchestrator.svelte";
 
   let {
@@ -16,23 +17,29 @@ Handles real-time workspace updates and sequence completion.
     onSequenceComplete,
     onHeaderTextChange,
     onStartPositionSet,
+    onClearSequence,
     initialGridMode,
     hasExistingSequence = false,
     existingStartPositionBeat = null,
     existingBeats = [],
     // Bindable undo ref for workspace integration
     undoRef = $bindable(),
+    // Bindable back ref for workspace back button
+    backRef = $bindable(),
   } = $props<{
     onSequenceUpdate?: (sequence: PictographData[]) => void;
     onSequenceComplete?: (sequence: PictographData[]) => void;
     onHeaderTextChange?: (text: string) => void;
     onStartPositionSet?: (startPosition: PictographData) => void;
+    onClearSequence?: () => void;
     initialGridMode?: GridMode;
     hasExistingSequence?: boolean;
     existingStartPositionBeat?: PictographData | null;
     existingBeats?: PictographData[];
     // Bindable undo ref for workspace integration
     undoRef?: AssemblyUndoRef | null;
+    // Bindable back ref for workspace back button
+    backRef?: AssemblyBackRef | null;
   }>();
 
   // Handle sequence updates (during building)
@@ -61,7 +68,9 @@ Handles real-time workspace updates and sequence completion.
     onSequenceComplete={handleSequenceComplete}
     onStartPositionSet={handleStartPositionSet}
     {onHeaderTextChange}
+    {onClearSequence}
     bind:undoRef
+    bind:backRef
   />
 </div>
 
