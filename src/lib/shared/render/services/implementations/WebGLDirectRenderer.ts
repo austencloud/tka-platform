@@ -15,8 +15,10 @@ import type {
   RenderTiming,
   ArrowPathsData,
 } from "../contracts/IDirectRenderer";
-import type { PictographData } from "../../../../pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../../../../../features/create/shared/domain/models/BeatData";
+import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
+import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { MotionData } from "../../../pictograph/shared/domain/models/MotionData";
+import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 import { drawPathCommands, type PathCommand } from "../../utils/svg-path-parser";
 
 // Vertex shader - transforms vertices and passes texture coordinates
@@ -366,18 +368,22 @@ export class WebGLDirectRenderer implements IDirectRenderer {
     // Draw grid
     this.drawGrid(size, isDarkMode);
 
+    // Get motion data from the motions object
+    const blueMotion = pictograph.motions?.[MotionColor.BLUE];
+    const redMotion = pictograph.motions?.[MotionColor.RED];
+
     // Draw arrows
-    if (pictograph.blueMotionData) {
-      const arrowId = this.getArrowId(pictograph.blueMotionData);
+    if (blueMotion) {
+      const arrowId = this.getArrowId(blueMotion);
       if (arrowId) {
-        this.drawArrow(arrowId, size, BLUE_COLOR, pictograph.blueMotionData);
+        this.drawArrow(arrowId, size, BLUE_COLOR, blueMotion);
       }
     }
 
-    if (pictograph.redMotionData) {
-      const arrowId = this.getArrowId(pictograph.redMotionData);
+    if (redMotion) {
+      const arrowId = this.getArrowId(redMotion);
       if (arrowId) {
-        this.drawArrow(arrowId, size, RED_COLOR, pictograph.redMotionData);
+        this.drawArrow(arrowId, size, RED_COLOR, redMotion);
       }
     }
 
@@ -420,7 +426,7 @@ export class WebGLDirectRenderer implements IDirectRenderer {
     arrowId: string,
     size: number,
     color: number[],
-    motionData: unknown
+    _motion: MotionData
   ): void {
     if (!this.gl || !this.atlasTexture) return;
 
@@ -575,18 +581,18 @@ export class WebGLDirectRenderer implements IDirectRenderer {
   /**
    * Get arrow ID from motion data
    */
-  private getArrowId(motionData: { motionType?: string; turns?: number | string; orientation?: string }): string | null {
-    if (!motionData.motionType) return null;
-
-    const type = motionData.motionType.toLowerCase();
-    const turns = motionData.turns ?? 0;
-    const orientation = motionData.orientation ?? "radial";
+  private getArrowId(motion: MotionData): string | null {
+    const type = motion.motionType.toLowerCase();
+    const turns = motion.turns;
+    // Map orientation to radial/nonradial for arrow lookup
+    const isRadial = motion.startOrientation === "in" || motion.startOrientation === "out";
+    const orientationStr = isRadial ? "radial" : "nonradial";
 
     if (type === "float") return "float";
     if (type === "dash") return "dash_base";
-    if (type === "static") return `static_${turns}_${orientation}`;
+    if (type === "static") return `static_${turns}_${orientationStr}`;
 
-    return `${type}_${turns}_${orientation}`;
+    return `${type}_${turns}_${orientationStr}`;
   }
 
   getMemoryUsage(): number {

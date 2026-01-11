@@ -10,9 +10,9 @@
  * current SVG-based renderer for A/B comparison.
  */
 
-import type { PictographData } from "../../../../pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../../../../../features/create/shared/domain/models/BeatData";
-import type { PictographVisibilityOptions } from "../../../utils/pictograph-to-svg";
+import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
+import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 
 /**
  * Render options for direct rendering

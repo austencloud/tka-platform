@@ -31,6 +31,7 @@ import type { IPictographBlobCache } from "../contracts/IPictographBlobCache";
 import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
 import type { IBeatNumberRenderer } from "../contracts/IBeatNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
+import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
 
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
@@ -47,6 +48,9 @@ export class ImageComposer implements IImageComposer {
   private compositionL1Hits = 0;
   private compositionFreshRenders = 0;
 
+  // Canvas 2D direct renderer initialization flag
+  private canvas2DInitialized = false;
+
   constructor(
     private readonly layoutService: ILayoutCalculator,
     private readonly TextRenderer: ITextRenderer,
@@ -54,8 +58,20 @@ export class ImageComposer implements IImageComposer {
     private readonly blobCache: IPictographBlobCache,
     private readonly keyHasher: IPictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
-    private readonly beatNumberRenderer: IBeatNumberRenderer
+    private readonly beatNumberRenderer: IBeatNumberRenderer,
+    private readonly canvas2DRenderer: Canvas2DDirectRenderer
   ) {}
+
+  /**
+   * Initialize the Canvas 2D renderer (loads arrow path data)
+   * Called once on first fresh render
+   */
+  private async ensureCanvas2DInitialized(): Promise<void> {
+    if (!this.canvas2DInitialized) {
+      await this.canvas2DRenderer.initialize();
+      this.canvas2DInitialized = true;
+    }
+  }
   /**
    * Get visibility settings for export
    * Uses explicit overrides from options if provided, otherwise falls back to global settings
@@ -446,19 +462,21 @@ export class ImageComposer implements IImageComposer {
           this.compositionL1Hits++;
           img = await this.blobToImage(cachedBlob);
         } else {
-          // Layer 1 miss - render SVG and convert to blob
+          // Layer 1 miss - render from SVG (the only complete renderer)
           this.layer1Misses++;
           this.compositionFreshRenders++;
 
-          const svg = await renderPictographToSVG(
+          // Render pictograph to SVG string
+          // Note: beatNumber is handled separately via overlay, so we pass undefined here
+          const svgString = await renderPictographToSVG(
             pictographData,
             beatSize,
-            undefined, // No beat number in base image
+            undefined, // beatNumber handled by beatNumberRenderer overlay
             finalVisibilitySettings
           );
 
           // Convert SVG to image
-          img = await this.svgStringToImage(svg);
+          img = await this.svgToImage(svgString, beatSize);
 
           // Convert image to blob for L1 cache (async, non-blocking)
           this.imageToBlob(img).then((blob) => {
@@ -658,6 +676,50 @@ export class ImageComposer implements IImageComposer {
       img.src = url;
 
       // Clean up blob URL after image loads
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+    });
+  }
+
+  /**
+   * 🚀 PERF: Convert HTMLCanvasElement to HTMLImageElement
+   * Used for Canvas 2D direct rendering output
+   */
+  private async canvasToImage(canvas: HTMLCanvasElement): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+
+      img.onerror = () => reject(new Error("Failed to convert canvas to image"));
+
+      // Get data URL from canvas (already rasterized, so this is fast)
+      const dataUrl = canvas.toDataURL("image/png");
+      img.src = dataUrl;
+
+      img.onload = () => {
+        resolve(img);
+      };
+    });
+  }
+
+  /**
+   * Convert SVG string to HTMLImageElement
+   * This is the expensive operation (~300ms per pictograph) that we cache to avoid
+   */
+  private async svgToImage(svgString: string, size: number): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.width = size;
+      img.height = size;
+
+      img.onerror = () => reject(new Error("Failed to load SVG as image"));
+
+      // Create blob from SVG string
+      const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      img.src = url;
+
       img.onload = () => {
         URL.revokeObjectURL(url);
         resolve(img);

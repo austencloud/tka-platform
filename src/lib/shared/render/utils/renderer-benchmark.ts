@@ -12,8 +12,11 @@
  */
 
 import { browser } from "$app/environment";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { MotionColor, MotionType, RotationDirection, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { IDirectRenderer, RenderTiming } from "../services/contracts/IDirectRenderer";
 import { Canvas2DDirectRenderer } from "../services/implementations/Canvas2DDirectRenderer";
 import { WebGLDirectRenderer } from "../services/implementations/WebGLDirectRenderer";
@@ -68,11 +71,14 @@ const RENDER_SIZE = 240; // Standard beat size
 function generateTestPictographs(count: number): PictographData[] {
   const pictographs: PictographData[] = [];
 
-  const motionTypes = ["pro", "anti", "dash", "static", "float"];
+  const motionTypes = [MotionType.PRO, MotionType.ANTI, MotionType.DASH, MotionType.STATIC, MotionType.FLOAT];
   const turns = [0, 0.5, 1, 1.5, 2, 2.5, 3];
-  const orientations = ["radial", "nonradial"];
-  const letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
-  const gridModes = ["diamond", "box"];
+  const orientations = [Orientation.IN, Orientation.OUT, Orientation.CLOCK, Orientation.COUNTER];
+  const letters = [Letter.A, Letter.B, Letter.C, Letter.D, Letter.E, Letter.F, Letter.G, Letter.H, Letter.I, Letter.J, Letter.K, Letter.L];
+  const gridModes = [GridMode.DIAMOND, GridMode.BOX];
+  const startLocations = [GridLocation.NORTH, GridLocation.SOUTH, GridLocation.EAST, GridLocation.WEST];
+  const endLocations = [GridLocation.SOUTH, GridLocation.NORTH, GridLocation.WEST, GridLocation.EAST];
+  const rotations = [RotationDirection.CLOCKWISE, RotationDirection.COUNTER_CLOCKWISE, RotationDirection.NO_ROTATION];
 
   for (let i = 0; i < count; i++) {
     const motionType = motionTypes[i % motionTypes.length]!;
@@ -80,30 +86,42 @@ function generateTestPictographs(count: number): PictographData[] {
     const orientation = orientations[i % orientations.length]!;
     const letter = letters[i % letters.length]!;
     const gridMode = gridModes[i % gridModes.length]!;
+    const startLoc = startLocations[i % startLocations.length]!;
+    const endLoc = endLocations[i % endLocations.length]!;
+    const rotation = rotations[i % rotations.length]!;
+
+    const blueMotion = createMotionData({
+      motionType,
+      turns: turn,
+      startOrientation: orientation,
+      endOrientation: orientation,
+      startLocation: startLoc,
+      endLocation: endLoc,
+      rotationDirection: rotation,
+      color: MotionColor.BLUE,
+      gridMode,
+    });
+
+    const redMotion = createMotionData({
+      motionType: motionTypes[(i + 2) % motionTypes.length],
+      turns: turns[(i + 1) % turns.length],
+      startOrientation: orientations[(i + 1) % orientations.length],
+      endOrientation: orientations[(i + 1) % orientations.length],
+      startLocation: startLocations[(i + 1) % startLocations.length],
+      endLocation: endLocations[(i + 1) % endLocations.length],
+      rotationDirection: rotations[(i + 1) % rotations.length],
+      color: MotionColor.RED,
+      gridMode,
+    });
 
     pictographs.push({
       id: `test-${i}`,
       letter,
-      gridMode,
-      blueMotionData: {
-        motionType,
-        turns: turn,
-        orientation,
-        startLocation: "n",
-        endLocation: "s",
-        propType: "staff",
+      motions: {
+        [MotionColor.BLUE]: blueMotion,
+        [MotionColor.RED]: redMotion,
       },
-      redMotionData: {
-        motionType: motionTypes[(i + 2) % motionTypes.length],
-        turns: turns[(i + 1) % turns.length],
-        orientation: orientations[(i + 1) % orientations.length],
-        startLocation: "e",
-        endLocation: "w",
-        propType: "staff",
-      },
-      blueReversal: i % 5 === 0,
-      redReversal: i % 7 === 0,
-    } as PictographData);
+    });
   }
 
   return pictographs;

@@ -26,6 +26,7 @@ import { PictographBlobCache } from "$lib/shared/render/services/implementations
 import { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import { PictographMemoryCache } from "$lib/shared/render/services/implementations/PictographMemoryCache";
 import { BeatNumberRenderer } from "$lib/shared/render/services/implementations/BeatNumberRenderer";
+import { Canvas2DDirectRenderer } from "$lib/shared/render/services/implementations/Canvas2DDirectRenderer";
 
 /**
  * Create the render container with external dependencies
@@ -48,6 +49,8 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     pictographKeyHasher: () => new PictographKeyHasher(),
     pictographMemoryCache: () => new PictographMemoryCache(),
     beatNumberRenderer: () => new BeatNumberRenderer(),
+    // Canvas 2D direct renderer - bypasses SVG for 1000x faster fresh renders
+    canvas2DRenderer: () => new Canvas2DDirectRenderer(),
   });
 
   // Layer 2: Services that depend on Layer 1
@@ -57,7 +60,7 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
   }));
 
   // Layer 3: ImageComposer depends on layoutCalculator, textRenderer, dimensionCalculator,
-  // plus two-layer caching services
+  // plus two-layer caching services and Canvas 2D renderer for fast fresh renders
   const layer3Container = layer2Container.add((ctx) => ({
     imageComposer: () =>
       new ImageComposer(
@@ -67,7 +70,8 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
         ctx.pictographBlobCache,
         ctx.pictographKeyHasher,
         ctx.pictographMemoryCache,
-        ctx.beatNumberRenderer
+        ctx.beatNumberRenderer,
+        ctx.canvas2DRenderer
       ),
   }));
 
