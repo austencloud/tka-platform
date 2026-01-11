@@ -247,3 +247,113 @@ export const JELLYFISH_COUNTS: Record<string, number> = {
   medium: 3,
   high: 5,
 };
+
+// =============================================================================
+// MOOD SYSTEM
+// =============================================================================
+
+import type { FishMood, MoodVisuals } from "../types/fish-personality-types";
+
+/**
+ * Mood decay rates (per second)
+ * Higher = faster return to calm
+ */
+export const MOOD_DECAY_RATES: Record<FishMood, number> = {
+  calm: 0, // Never decays (it's the default)
+  curious: 0.1, // 10 seconds to calm
+  alert: 0.2, // 5 seconds to calm
+  playful: 0.05, // 20 seconds to calm
+  hungry: 0.02, // 50 seconds (builds over time anyway)
+  tired: 0.015, // Very slow recovery
+  social: 0.08, // 12 seconds to calm
+};
+
+/**
+ * Visual modifiers for each mood
+ * Applied to rendering to express emotional state
+ */
+export const MOOD_VISUALS: Record<FishMood, MoodVisuals> = {
+  calm: {
+    finFrequency: 1.0,
+    tailIntensity: 1.0,
+    glowPulse: 0.0,
+    colorSaturation: 1.0,
+  },
+  curious: {
+    finFrequency: 0.8, // Slower, careful movement
+    tailIntensity: 0.7,
+    glowPulse: 0.3, // Slight glow increase
+    colorSaturation: 1.1,
+  },
+  alert: {
+    finFrequency: 1.5, // Quick, nervous fins
+    tailIntensity: 1.3,
+    glowPulse: 0.5, // Higher glow
+    colorSaturation: 1.2,
+  },
+  playful: {
+    finFrequency: 1.3, // Energetic
+    tailIntensity: 1.2,
+    glowPulse: 0.2,
+    colorSaturation: 1.15,
+  },
+  hungry: {
+    finFrequency: 1.1,
+    tailIntensity: 1.1,
+    glowPulse: 0.1,
+    colorSaturation: 0.95, // Slightly washed out
+  },
+  tired: {
+    finFrequency: 0.5, // Slow, droopy
+    tailIntensity: 0.4,
+    glowPulse: 0.0,
+    colorSaturation: 0.85, // Desaturated
+  },
+  social: {
+    finFrequency: 1.0,
+    tailIntensity: 0.9,
+    glowPulse: 0.15,
+    colorSaturation: 1.05,
+  },
+};
+
+/**
+ * Mood thresholds for automatic transitions
+ */
+export const MOOD_THRESHOLDS = {
+  /** Energy below this triggers tired mood */
+  tiredEnergy: 0.25,
+  /** Hunger above this triggers hungry mood */
+  hungryLevel: 0.7,
+  /** Seconds without stimulus before mood decays */
+  boredTimeout: 30,
+  /** Energy below this prevents playful mood */
+  playfulMinEnergy: 0.4,
+};
+
+/**
+ * Stimulus effects on mood
+ */
+export const STIMULUS_EFFECTS: Record<
+  "food" | "threat" | "friend" | "novelty",
+  { mood: FishMood; energyCost: number; hungerEffect: number }
+> = {
+  food: { mood: "hungry", energyCost: 0, hungerEffect: -0.3 },
+  threat: { mood: "alert", energyCost: 0.1, hungerEffect: 0 },
+  friend: { mood: "social", energyCost: 0, hungerEffect: 0 },
+  novelty: { mood: "curious", energyCost: 0.02, hungerEffect: 0 },
+};
+
+/**
+ * Energy and hunger drift rates per second
+ */
+export const METABOLISM_RATES = {
+  /** Energy drain per second (base rate) */
+  energyDrain: 0.002,
+  /** Energy drain multiplier when moving fast */
+  fastMovementDrain: 2.5,
+  /** Hunger increase per second */
+  hungerIncrease: 0.003,
+  /** Energy recovery when resting */
+  restRecovery: 0.01,
+};

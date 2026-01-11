@@ -20,6 +20,18 @@ import { LightRayCalculator } from "../../background/deep-ocean/services/impleme
 import { FishAnimator } from "../../background/deep-ocean/services/implementations/FishAnimator";
 import { JellyfishAnimator } from "../../background/deep-ocean/services/implementations/JellyfishAnimator";
 
+// Fish subsystem services
+import { FishFactory } from "../../background/deep-ocean/services/implementations/FishFactory";
+import { FishSpineController } from "../../background/deep-ocean/services/implementations/FishSpineController";
+import { FishMovementController } from "../../background/deep-ocean/services/implementations/FishMovementController";
+import { FishFlockingCalculator } from "../../background/deep-ocean/services/implementations/FishFlockingCalculator";
+import { FishVisualUpdater } from "../../background/deep-ocean/services/implementations/FishVisualUpdater";
+import { FishPropulsionCalculator } from "../../background/deep-ocean/services/implementations/FishPropulsionCalculator";
+import { FishPersonalityGenerator } from "../../background/deep-ocean/services/implementations/FishPersonalityGenerator";
+import { FishMoodManager } from "../../background/deep-ocean/services/implementations/FishMoodManager";
+import { FishDecisionMaker } from "../../background/deep-ocean/services/implementations/FishDecisionMaker";
+import { FishWobbleAnimator } from "../../background/deep-ocean/services/implementations/FishWobbleAnimator";
+
 // Renderer services
 import { GradientRenderer } from "../../background/deep-ocean/services/implementations/GradientRenderer";
 import { LightRayRenderer } from "../../background/deep-ocean/services/implementations/LightRayRenderer";
@@ -56,8 +68,25 @@ export const deepOceanContainer = createContainer()
     particleSystem: () => new ParticleSystem(),
     lightRayCalculator: () => new LightRayCalculator(),
 
-    // Animator services
-    fishAnimator: () => new FishAnimator(),
+    // Fish propulsion (calculates thrust from tail physics)
+    fishPropulsionCalculator: () => new FishPropulsionCalculator(),
+
+    // Fish personality (generates unique traits per fish)
+    fishPersonalityGenerator: () => new FishPersonalityGenerator(),
+
+    // Fish mood (manages emotional state transitions)
+    fishMoodManager: () => new FishMoodManager(),
+
+    // Fish decision making (personality-influenced behavior decisions)
+    fishDecisionMaker: () => new FishDecisionMaker(),
+
+    // Fish wobble animations (expressive visual animations)
+    fishWobbleAnimator: () => new FishWobbleAnimator(),
+
+    fishFlockingCalculator: () => new FishFlockingCalculator(),
+    fishVisualUpdater: () => new FishVisualUpdater(),
+
+    // Other animators
     jellyfishAnimator: () => new JellyfishAnimator(),
 
     // Simple renderer services
@@ -70,6 +99,27 @@ export const deepOceanContainer = createContainer()
     // Base fish utility
     colorCalculator: () => new ColorCalculator(),
   })
+
+  // === Layer 1.25: Services that depend on other fish services ===
+  .add((deps) => ({
+    fishSpineController: () => new FishSpineController(deps.fishPropulsionCalculator),
+    fishFactory: () => new FishFactory(deps.fishPersonalityGenerator),
+    fishMovementController: () => new FishMovementController(deps.fishDecisionMaker),
+  }))
+
+  // === Layer 1.5: FishAnimator depends on fish subsystem services ===
+  .add((deps) => ({
+    fishAnimator: () =>
+      new FishAnimator(
+        deps.fishFactory,
+        deps.fishSpineController,
+        deps.fishMovementController,
+        deps.fishFlockingCalculator,
+        deps.fishVisualUpdater,
+        deps.fishMoodManager,
+        deps.fishWobbleAnimator
+      ),
+  }))
 
   // === Layer 2: Fish renderers that depend on ColorCalculator ===
   .add((deps) => ({

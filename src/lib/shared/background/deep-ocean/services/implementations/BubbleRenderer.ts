@@ -27,6 +27,13 @@ export class BubbleRenderer implements IBubbleRenderer {
     ctx: CanvasRenderingContext2D,
     bubble: Bubble
   ): void {
+    // Guard against non-finite values that would crash canvas operations
+    if (!Number.isFinite(bubble.x) || !Number.isFinite(bubble.y) ||
+        !Number.isFinite(bubble.radius) || bubble.radius <= 0 ||
+        !Number.isFinite(bubble.opacity)) {
+      return;
+    }
+
     ctx.save();
     ctx.globalAlpha = bubble.opacity;
     ctx.translate(bubble.x, bubble.y);
@@ -59,6 +66,11 @@ export class BubbleRenderer implements IBubbleRenderer {
       const alpha = (1 - particle.age) * 0.5;
       const relX = particle.x - bubble.x;
       const relY = particle.y - bubble.y;
+
+      // Skip if values are non-finite (prevents canvas errors)
+      if (!Number.isFinite(relX) || !Number.isFinite(relY) || !Number.isFinite(particle.size) || particle.size <= 0) {
+        continue;
+      }
 
       ctx.save();
       ctx.globalAlpha = alpha * bubble.opacity;

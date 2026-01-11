@@ -281,6 +281,54 @@ export interface FishMarineLife extends MarineLifeBase {
   spineFins?: SpineFin[];
 
   // ============================================================================
+  // PERSONALITY & MOOD SYSTEM
+  // ============================================================================
+
+  /**
+   * Individual personality traits (0-1 for each)
+   * Generated at spawn, influences behavior throughout lifetime
+   */
+  personality?: {
+    boldness: number;
+    sociability: number;
+    activity: number;
+    curiosity: number;
+  };
+
+  /**
+   * Current emotional state
+   * Affects behavior decisions and visual expression
+   */
+  mood?: "calm" | "curious" | "alert" | "playful" | "hungry" | "tired" | "social";
+
+  /** Time spent in current mood (for decay calculations) */
+  moodTimer?: number;
+
+  /** Time since last interesting stimulus */
+  lastStimulusTime?: number;
+
+  /** Current energy level (0-1), affects speed and rest behavior */
+  energy?: number;
+
+  /** Current hunger level (0-1), drives feeding behavior */
+  hunger?: number;
+
+  /** Current wobble animation for expression */
+  wobbleType?: "none" | "curious_tilt" | "startled_dart" | "playful_wiggle" | "tired_drift" | "feeding_lunge" | "social_shimmer";
+
+  /** Frames remaining in current wobble */
+  wobbleTimer?: number;
+
+  /** Current wobble intensity (0-1, decays) */
+  wobbleIntensity?: number;
+
+  /** Target point for behaviors (feeding, exploring) */
+  behaviorTarget?: { x: number; y: number };
+
+  /** What the fish is "looking at" */
+  focusPoint?: { x: number; y: number };
+
+  // ============================================================================
 
   // Legacy compatibility (for existing behavior code)
   width: number;

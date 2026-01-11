@@ -8,6 +8,11 @@
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import FishBehaviorLab from "./FishBehaviorLab.svelte";
+
+  // Sub-tab state
+  type SubTab = "scene" | "fish-behavior";
+  let currentSubTab: SubTab = $state("scene");
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
@@ -152,6 +157,28 @@
 </script>
 
 <div class="deep-ocean-lab">
+  <!-- Sub-tab navigation -->
+  <div class="sub-tabs">
+    <button
+      class="sub-tab"
+      class:active={currentSubTab === "scene"}
+      onclick={() => currentSubTab = "scene"}
+    >
+      <i class="fas fa-water"></i>
+      Full Scene
+    </button>
+    <button
+      class="sub-tab"
+      class:active={currentSubTab === "fish-behavior"}
+      onclick={() => currentSubTab = "fish-behavior"}
+    >
+      <i class="fas fa-fish"></i>
+      Fish Behavior
+    </button>
+  </div>
+
+  {#if currentSubTab === "scene"}
+  <div class="scene-content">
   <div class="controls">
     <div class="header">
       <h2>Deep Ocean Lab</h2>
@@ -209,15 +236,65 @@
   <div class="preview">
     <canvas bind:this={canvas}></canvas>
   </div>
+  </div>
+  {:else if currentSubTab === "fish-behavior"}
+    <FishBehaviorLab />
+  {/if}
 </div>
 
 <style>
   .deep-ocean-lab {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+    min-height: 600px;
+  }
+
+  .sub-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 4px;
+    background: rgba(15, 15, 25, 0.6);
+    border-radius: 12px;
+    width: fit-content;
+  }
+
+  .sub-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #9ca3af;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .sub-tab:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .sub-tab.active {
+    color: #22d3ee;
+    background: rgba(34, 211, 238, 0.1);
+  }
+
+  .sub-tab i {
+    font-size: 0.875rem;
+  }
+
+  .scene-content {
     display: grid;
     grid-template-columns: 300px 1fr;
     gap: 20px;
-    height: 100%;
-    min-height: 600px;
+    flex: 1;
+    min-height: 0;
   }
 
   .controls {
@@ -353,7 +430,12 @@
   }
 
   @media (max-width: 800px) {
-    .deep-ocean-lab {
+    .sub-tabs {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .scene-content {
       grid-template-columns: 1fr;
       grid-template-rows: auto 400px;
     }

@@ -1,5 +1,6 @@
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
+import type { WobbleOffset } from "../../domain/types/fish-personality-types";
 
 /**
  * Contract for fish animation and behavior
@@ -45,4 +46,10 @@ export interface IFishAnimator {
     dimensions: Dimensions,
     currentTime: number
   ): FishMarineLife[];
+
+  /**
+   * Get wobble offset for rendering
+   * Returns rotation, scale, and position adjustments for expressive animations
+   */
+  getWobbleOffset(fish: FishMarineLife): WobbleOffset;
 }
