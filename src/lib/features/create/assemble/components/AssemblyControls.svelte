@@ -70,14 +70,28 @@ Shows contextual action buttons based on current phase:
     <!-- Blue hand phase controls -->
     <div class="controls-row">
       <button
-        class="control-button secondary undo"
+        class="undo-button"
         onclick={handleUndo}
         disabled={!canUndo}
         aria-label="Undo"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <svg
+          class="undo-icon"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
-            d="M4 10C4 6.68629 6.68629 4 10 4C12.2208 4 14.1599 5.21171 15.1973 7M4 4V8H8"
+            d="M9 14L4 9L9 4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M4 9H15A6 6 0 0 1 15 21H13"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
@@ -110,14 +124,28 @@ Shows contextual action buttons based on current phase:
     <!-- Red hand phase controls -->
     <div class="controls-row">
       <button
-        class="control-button secondary undo"
+        class="undo-button"
         onclick={handleUndo}
         disabled={!canUndo}
         aria-label="Undo"
       >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <svg
+          class="undo-icon"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
-            d="M4 10C4 6.68629 6.68629 4 10 4C12.2208 4 14.1599 5.21171 15.1973 7M4 4V8H8"
+            d="M9 14L4 9L9 4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M4 9H15A6 6 0 0 1 15 21H13"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
@@ -259,25 +287,58 @@ Shows contextual action buttons based on current phase:
     font-weight: 500;
   }
 
-  /* Secondary button (undo) */
-  .control-button.secondary {
+  /* Undo button - matches standard UndoButton styling */
+  .undo-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    width: 48px;
-    padding: 14px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    color: var(--theme-text-dim);
-  }
-
-  .control-button.secondary:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--theme-text);
-    transform: scale(1.05);
+
+    /* Purple gradient matching standard UndoButton */
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent-strong) 0%,
+      color-mix(in srgb, var(--theme-accent-strong) 85%, var(--theme-accent-strong)) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--theme-accent-strong) 30%, transparent);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent-strong) 40%, transparent);
   }
 
-  .control-button.secondary:active:not(:disabled) {
+  .undo-button:hover:not(:disabled) {
+    transform: scale(1.05);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent-strong) 85%, var(--theme-accent-strong)) 0%,
+      color-mix(in srgb, var(--theme-accent-strong) 70%, var(--theme-accent-strong)) 100%
+    );
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-accent-strong) 60%, transparent);
+  }
+
+  .undo-button:active:not(:disabled) {
     transform: scale(0.95);
+    transition: all 0.1s ease;
+  }
+
+  .undo-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .undo-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .undo-icon {
+    flex-shrink: 0;
   }
 
   /* Mobile adjustments */

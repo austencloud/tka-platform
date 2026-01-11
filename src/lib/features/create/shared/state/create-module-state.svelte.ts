@@ -85,11 +85,13 @@ export function createCreateModuleState(
 
   // Assembly handpath builder undo ref - separate from sequence-level undo
   // This is set by the HandPathOrchestrator component when in assembler mode
-  let _assemblyUndoRef: { canUndo: boolean; undo: () => void } | null = null;
+  // Uses $state for reactivity so derived values in components update correctly
+  let _assemblyUndoRef = $state<{ canUndo: boolean; undo: () => void } | null>(null);
 
   // Assembly handpath builder back ref - returns to welcome screen
   // This is set by the HandPathOrchestrator component when building
-  let _assemblyBackRef: { canGoBack: boolean; back: () => void } | null = null;
+  // Uses $state for reactivity so derived values in components update correctly
+  let _assemblyBackRef = $state<{ canGoBack: boolean; back: () => void } | null>(null);
 
   /**
    * Get the sequence state for a specific tab
