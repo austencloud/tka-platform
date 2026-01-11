@@ -277,7 +277,22 @@ export function createTreeSilhouetteSystem() {
   // ===================
 
   /**
-   * Pine tree - classic layered Christmas tree shape
+   * Create a seeded random generator from a position value
+   * Each tree at the same x position will always look the same
+   */
+  function createPositionSeededRandom(position: number): () => number {
+    // Derive seed from position - multiply to spread values, add to ensure positive
+    let localSeed = Math.floor(Math.abs(position * 10000)) + 1;
+    return () => {
+      localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
+      return localSeed / 0x7fffffff;
+    };
+  }
+
+  /**
+   * Pine tree - procedural tiered structure with distinct horizontal branch plates
+   * Based on botanical research: pines grow in pseudo-whorls, one per year
+   * Uses seeded randomness for deterministic variation based on position
    */
   function drawPine(
     ctx: RenderContext,
@@ -289,42 +304,145 @@ export function createTreeSilhouetteSystem() {
     foliageColor: RGB,
     layer: number
   ): void {
-    const trunkW = width * 0.14;
-    const trunkH = height * 0.2;
+    const rand = createPositionSeededRandom(x);
+
+    // Default parameters tuned for silhouette rendering
+    const tierCount = 6 + Math.round(rand() * 2); // 6-8 tiers
+    const tierSpacing = 0.95 + rand() * 0.15; // 0.95-1.1
+    const spread = 0.42 + rand() * 0.08; // 0.42-0.50
+    const uplift = 0.12 + rand() * 0.08; // 0.12-0.20
+    const gapVisibility = 0.22 + rand() * 0.08; // 0.22-0.30
+
+    const trunkW = width * 0.1;
+    const trunkH = height * 0.15;
+    const treeTop = baseY - height;
     const bodyStart = baseY - trunkH;
+    const bodyHeight = height - trunkH;
 
     // Draw trunk first
     ctx.fillStyle = rgbToString(trunkColor);
     ctx.beginPath();
     ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
+    ctx.lineTo(x - trunkW / 3, baseY - trunkH);
+    ctx.lineTo(x + trunkW / 3, baseY - trunkH);
     ctx.lineTo(x + trunkW / 2, baseY);
     ctx.closePath();
     ctx.fill();
+
+    // Calculate tier positions with spacing variation
+    const tierPositions: number[] = [];
+    for (let i = 0; i <= tierCount; i++) {
+      const baseT = i / tierCount;
+      const adjustedT = Math.pow(baseT, tierSpacing);
+      const jitter = i > 0 && i < tierCount ? (rand() - 0.5) * 0.04 : 0;
+      tierPositions.push(Math.max(0, Math.min(1, adjustedT + jitter)));
+    }
 
     // Draw foliage with radial gradient
     const foliageCenterY = baseY - height * 0.5;
     const gradient = createFoliageGradient(ctx, x, foliageCenterY, height * 0.6, foliageColor);
     ctx.fillStyle = gradient;
+
+    // Draw each tier as a separate foliage plate
+    for (let tier = 0; tier < tierCount; tier++) {
+      const t = tierPositions[tier + 1]!;
+      const prevT = tierPositions[tier]!;
+
+      const tierY = treeTop + bodyHeight * t;
+      const prevY = treeTop + bodyHeight * prevT;
+      const tierHeight = (tierY - prevY) * (1 - gapVisibility);
+
+      // Width tapers toward top
+      const tierWidth = width * spread * Math.pow(t, 0.6);
+
+      // Asymmetric variation
+      const leftExtend = 1 + (rand() - 0.5) * 0.2;
+      const rightExtend = 1 + (rand() - 0.5) * 0.2;
+
+      // Branch uplift (candle effect)
+      const baseUplift = uplift * tierHeight;
+      const leftUplift = baseUplift * (0.8 + rand() * 0.4);
+      const rightUplift = baseUplift * (0.8 + rand() * 0.4);
+
+      ctx.beginPath();
+
+      // Start at trunk connection (left side)
+      const trunkLeft = x - trunkW * 0.4;
+      const trunkRight = x + trunkW * 0.4;
+      ctx.moveTo(trunkLeft, tierY - tierHeight * 0.3);
+
+      // Left branch tip
+      const leftTipX = x - tierWidth * leftExtend;
+      const leftTipY = tierY - tierHeight * 0.5 - leftUplift;
+
+      // Curved path to left tip
+      const numLeftPoints = 3 + Math.floor(rand() * 2);
+      for (let p = 0; p <= numLeftPoints; p++) {
+        const frac = p / numLeftPoints;
+        const ptX = trunkLeft - (trunkLeft - leftTipX) * frac;
+        const curve = Math.sin(frac * Math.PI) * tierHeight * 0.12;
+        const wave = Math.sin(frac * Math.PI * 3 + x) * 1.5;
+        const ptY = tierY - tierHeight * (0.3 + frac * 0.2) - leftUplift * frac - curve + wave;
+        ctx.lineTo(ptX, ptY);
+      }
+
+      // Left tip to bottom edge with small jags
+      const numJags = 2 + Math.floor(rand() * 2);
+      for (let j = 0; j < numJags; j++) {
+        const frac = (j + 1) / (numJags + 1);
+        const jagX = leftTipX + (trunkLeft - leftTipX) * frac * 0.7;
+        const jagY = tierY + rand() * 2;
+        ctx.lineTo(jagX, jagY);
+        const spikeX = jagX + rand() * 3 + 1;
+        const spikeY = jagY - rand() * 4 - 2;
+        ctx.lineTo(spikeX, spikeY);
+      }
+
+      // Across bottom to right side
+      ctx.lineTo(trunkLeft, tierY);
+      ctx.lineTo(trunkRight, tierY);
+
+      // Right side mirror
+      const rightTipX = x + tierWidth * rightExtend;
+      const rightTipY = tierY - tierHeight * 0.5 - rightUplift;
+
+      for (let j = numJags - 1; j >= 0; j--) {
+        const frac = (j + 1) / (numJags + 1);
+        const spikeX = rightTipX - (rightTipX - trunkRight) * frac * 0.7 - rand() * 3 - 1;
+        const spikeY = tierY - rand() * 4 - 2;
+        ctx.lineTo(spikeX, spikeY);
+        const jagX = rightTipX - (rightTipX - trunkRight) * frac * 0.7;
+        const jagY = tierY + rand() * 2;
+        ctx.lineTo(jagX, jagY);
+      }
+
+      // Right tip
+      for (let p = numLeftPoints; p >= 0; p--) {
+        const frac = p / numLeftPoints;
+        const ptX = trunkRight + (rightTipX - trunkRight) * frac;
+        const curve = Math.sin(frac * Math.PI) * tierHeight * 0.12;
+        const wave = Math.sin(frac * Math.PI * 3 + x + 2) * 1.5;
+        const ptY = tierY - tierHeight * (0.3 + frac * 0.2) - rightUplift * frac - curve + wave;
+        ctx.lineTo(ptX, ptY);
+      }
+
+      ctx.lineTo(trunkRight, tierY - tierHeight * 0.3);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Draw apex (top tuft)
+    const apexHeight = bodyHeight * tierPositions[1]! * 0.8;
+    const apexWidth = width * spread * 0.25;
     ctx.beginPath();
-    ctx.moveTo(x - width * 0.45, bodyStart);
-    ctx.lineTo(x - width * 0.08, bodyStart - height * 0.25);
-    ctx.lineTo(x - width * 0.38, bodyStart - height * 0.22);
-    ctx.lineTo(x - width * 0.06, bodyStart - height * 0.48);
-    ctx.lineTo(x - width * 0.28, bodyStart - height * 0.45);
-    ctx.lineTo(x - width * 0.04, bodyStart - height * 0.68);
-    ctx.lineTo(x - width * 0.18, bodyStart - height * 0.65);
-    ctx.lineTo(x, baseY - height);
-    ctx.lineTo(x + width * 0.18, bodyStart - height * 0.65);
-    ctx.lineTo(x + width * 0.04, bodyStart - height * 0.68);
-    ctx.lineTo(x + width * 0.28, bodyStart - height * 0.45);
-    ctx.lineTo(x + width * 0.06, bodyStart - height * 0.48);
-    ctx.lineTo(x + width * 0.38, bodyStart - height * 0.22);
-    ctx.lineTo(x + width * 0.08, bodyStart - height * 0.25);
-    ctx.lineTo(x + width * 0.45, bodyStart);
+    ctx.moveTo(x, treeTop);
+    ctx.lineTo(x + apexWidth * (0.8 + rand() * 0.4), treeTop + apexHeight * 0.7);
+    ctx.lineTo(x + apexWidth * 0.3, treeTop + apexHeight);
+    ctx.lineTo(x - apexWidth * 0.3, treeTop + apexHeight);
+    ctx.lineTo(x - apexWidth * (0.8 + rand() * 0.4), treeTop + apexHeight * 0.7);
     ctx.closePath();
     ctx.fill();
+
     applyRimLight(ctx, layer, height);
   }
 

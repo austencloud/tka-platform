@@ -1,0 +1,311 @@
+<script lang="ts">
+  import type { FireflyForestLayers } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
+  import type { TreeTypeVisibility } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
+  import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
+  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+
+  interface PreviewStats {
+    fireflies: number;
+    stars: number;
+    ambientParticles: number;
+    hasShootingStar: boolean;
+  }
+
+  interface Props {
+    quality: QualityLevel;
+    layers: FireflyForestLayers;
+    treeTypes: TreeTypeVisibility;
+    density: number;
+    style: number;
+    stats: PreviewStats;
+    onQualityChange: (quality: QualityLevel) => void;
+    onLayerToggle: (layer: keyof FireflyForestLayers) => void;
+    onTreeTypeToggle: (type: keyof TreeTypeVisibility) => void;
+    onDensityChange: (value: number) => void;
+    onStyleChange: (value: number) => void;
+    onResetPlacement: () => void;
+    onRegenerate: () => void;
+  }
+
+  let {
+    quality,
+    layers,
+    treeTypes,
+    density,
+    style,
+    stats,
+    onQualityChange,
+    onLayerToggle,
+    onTreeTypeToggle,
+    onDensityChange,
+    onStyleChange,
+    onResetPlacement,
+    onRegenerate,
+  }: Props = $props();
+</script>
+
+<!-- Quality Chips -->
+<ChipGroup label="Quality" variant="row">
+  <ChipToggle label="High" active={quality === "high"} color="lime" onclick={() => onQualityChange("high")} />
+  <ChipToggle label="Medium" active={quality === "medium"} color="lime" onclick={() => onQualityChange("medium")} />
+  <ChipToggle label="Low" active={quality === "low"} color="lime" onclick={() => onQualityChange("low")} />
+</ChipGroup>
+
+<!-- Layer Chips -->
+<ChipGroup label="Layers">
+  <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="lime" onclick={() => onLayerToggle("gradient")} />
+  <ChipToggle label="Stars" icon="fa-star" active={layers.stars} color="lime" onclick={() => onLayerToggle("stars")} />
+  <ChipToggle label="Moon" icon="fa-moon" active={layers.moon} color="lime" onclick={() => onLayerToggle("moon")} />
+  <ChipToggle label="Shooting Stars" icon="fa-meteor" active={layers.shootingStars} color="lime" onclick={() => onLayerToggle("shootingStars")} />
+  <ChipToggle label="Trees" icon="fa-tree" active={layers.trees} color="lime" onclick={() => onLayerToggle("trees")} />
+  <ChipToggle label="Grass" icon="fa-seedling" active={layers.grass} color="lime" onclick={() => onLayerToggle("grass")} />
+  <ChipToggle label="Dust Motes" icon="fa-sparkles" active={layers.ambientParticles} color="lime" onclick={() => onLayerToggle("ambientParticles")} />
+  <ChipToggle label="Campfire" icon="fa-fire" active={layers.campfire} color="orange" onclick={() => onLayerToggle("campfire")} />
+  <ChipToggle label="Fireflies" icon="fa-lightbulb" active={layers.fireflies} color="lime" onclick={() => onLayerToggle("fireflies")} />
+</ChipGroup>
+
+<!-- Tree Type Chips -->
+<ChipGroup label="Tree Types">
+  <ChipToggle label="Pine" active={treeTypes.pine} color="lime" onclick={() => onTreeTypeToggle("pine")} />
+  <ChipToggle label="Fir" active={treeTypes.fir} color="lime" onclick={() => onTreeTypeToggle("fir")} />
+  <ChipToggle label="Spruce" active={treeTypes.spruce} color="lime" onclick={() => onTreeTypeToggle("spruce")} />
+  <ChipToggle label="Oak" active={treeTypes.oak} color="lime" onclick={() => onTreeTypeToggle("oak")} />
+  <ChipToggle label="Maple" active={treeTypes.maple} color="lime" onclick={() => onTreeTypeToggle("maple")} />
+  <ChipToggle label="Poplar" active={treeTypes.poplar} color="lime" onclick={() => onTreeTypeToggle("poplar")} />
+</ChipGroup>
+
+<!-- Tree Placement Sliders -->
+<div class="placement-section">
+  <div class="section-header">
+    <span class="label">Tree Placement</span>
+    <button class="reset-btn" onclick={onResetPlacement} title="Reset to defaults">
+      <i class="fas fa-undo"></i>
+    </button>
+  </div>
+
+  <div class="slider-group">
+    <label class="slider-label">
+      <span>Density</span>
+      <span class="slider-value">{density < 0.33 ? "Sparse" : density > 0.66 ? "Dense" : "Medium"}</span>
+    </label>
+    <input type="range" min="0" max="1" step="0.05" value={density}
+      oninput={(e) => onDensityChange(parseFloat(e.currentTarget.value))} />
+    <div class="slider-labels"><span>Sparse</span><span>Dense</span></div>
+  </div>
+
+  <div class="slider-group">
+    <label class="slider-label">
+      <span>Style</span>
+      <span class="slider-value">{style < 0.33 ? "Natural" : style > 0.66 ? "Composed" : "Balanced"}</span>
+    </label>
+    <input type="range" min="0" max="1" step="0.05" value={style}
+      oninput={(e) => onStyleChange(parseFloat(e.currentTarget.value))} />
+    <div class="slider-labels"><span>Natural</span><span>Composed</span></div>
+  </div>
+</div>
+
+<button class="action-btn" onclick={onRegenerate}>
+  <i class="fas fa-rotate"></i>
+  Regenerate
+</button>
+
+<!-- Stats -->
+<div class="stats-section">
+  <span class="label">Scene Stats</span>
+  <div class="stats-grid">
+    <div class="stat">
+      <span class="stat-value">{stats.fireflies}</span>
+      <span class="stat-label">Fireflies</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{stats.stars}</span>
+      <span class="stat-label">Stars</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{stats.ambientParticles}</span>
+      <span class="stat-label">Dust Motes</span>
+    </div>
+    <div class="stat easter-egg-stat" class:active={stats.hasShootingStar}>
+      <i class="fas fa-meteor"></i>
+      <span class="stat-label">{stats.hasShootingStar ? "Shooting!" : "Waiting..."}</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    border: none;
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(132, 204, 22, 0.35);
+  }
+
+  .action-btn:active { transform: translateY(0); }
+
+  .placement-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .reset-btn {
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .reset-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #d1d5db;
+  }
+
+  .slider-value {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #a3e635;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: #6b7280;
+    margin-top: 2px;
+  }
+
+  .placement-section input[type="range"] {
+    width: 100%;
+    height: 6px;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .placement-section input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .placement-section input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+  .placement-section input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #84cc16, #65a30d);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .stats-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #bef264;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    text-transform: uppercase;
+  }
+
+  .easter-egg-stat {
+    flex-direction: row;
+    gap: 8px;
+    color: #6b7280;
+  }
+
+  .easter-egg-stat i {
+    font-size: 1rem;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+  }
+
+  .easter-egg-stat.active { background: rgba(250, 204, 21, 0.1); }
+  .easter-egg-stat.active i { color: #facc15; opacity: 1; }
+  .easter-egg-stat.active .stat-label { color: #facc15; }
+</style>
