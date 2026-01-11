@@ -95,6 +95,22 @@
       }
     })();
 
+    // ⚡ PERFORMANCE: Load cloud thumbnail manifest for instant cache hits
+    // This pre-populates the "known exists" list so all users can get cloud-cached
+    // thumbnails instantly instead of re-rendering locally
+    (async () => {
+      try {
+        const { CloudThumbnailCache } = await import(
+          "$lib/features/discover/sequences/display/services/implementations/CloudThumbnailCache"
+        );
+        const cache = new CloudThumbnailCache();
+        await cache.loadManifest();
+      } catch (error) {
+        console.warn("Cloud thumbnail manifest failed to load:", error);
+        // Non-fatal - thumbnails will render locally on cache miss
+      }
+    })();
+
     // ⚡ PERFORMANCE: ITI container is created synchronously on import
     // No async setup needed - container.items is immediately available
     // Glyph cache uses lazy loading - SVGs are fetched on-demand when first needed

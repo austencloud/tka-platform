@@ -44,6 +44,14 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Thumbnail manifest - public read for instant cache hits
+    // Contains list of all existing thumbnails for pre-populating cache
+    match /thumbnails/manifest.json {
+      allow read: if true;
+      // Only allow authenticated users to update manifest (via admin script)
+      allow write: if request.auth != null;
+    }
+
     // Crowd-sourced thumbnails - first user to view renders and uploads
     // New structure with variant: thumbnails/{variant}/{propType}/{sequenceName}_{mode}.webp
     // Variants: gallery (no user data), wordcard (with user data footer)

@@ -1295,6 +1295,16 @@ async function main() {
     await createFirestoreVersion(suggestedVersion, changelog, selectedHighlights);
   }
 
+  // Sync static thumbnails from cloud for instant loading
+  console.log("✓ Syncing static thumbnails from cloud...");
+  try {
+    execSync("node scripts/sync-static-thumbnails.cjs", { stdio: "inherit" });
+    // Stage the new/updated thumbnails
+    execSync("git add static/thumbnails", { stdio: "pipe" });
+  } catch (error) {
+    console.log("   ⚠️  Thumbnail sync failed (non-fatal):", error.message);
+  }
+
   // Create git commit and tag
   console.log("✓ Creating git commit and tag...");
   createGitRelease(suggestedVersion, changelog);

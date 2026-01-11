@@ -74,4 +74,18 @@ export default defineConfig({
   resolve: {
     conditions: ["browser"],
   },
+
+  // ============================================================================
+  // DEPENDENCY OPTIMIZATION (Fix inversify resolution)
+  // ============================================================================
+  optimizeDeps: {
+    include: ["inversify", "reflect-metadata"],
+  },
+
+  // ============================================================================
+  // SSR (Prevent inversify CJS issues)
+  // ============================================================================
+  ssr: {
+    noExternal: ["inversify", "reflect-metadata"],
+  },
 });
