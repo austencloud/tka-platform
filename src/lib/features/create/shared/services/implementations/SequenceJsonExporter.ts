@@ -25,7 +25,7 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
       word: sequence.word || "",
       isCircular: sequence.isCircular || false,
       gridMode: sequence.gridMode || "",
-      propType: sequence.propType || "",
+      // propType removed - prop type is a viewer preference, not sequence data
       startPosition: this.minimalBeat(
         sequence.startPosition || sequence.startingPositionBeat
       ),

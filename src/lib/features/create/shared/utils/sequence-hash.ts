@@ -118,7 +118,7 @@ export function generateSequenceHash(sequence: SequenceData | null): string {
       const hashable = {
         sp: hashableStartPosition(startPos),
         gm: sequence.gridMode,
-        pt: sequence.propType,
+        // propType removed from hash - prop type is viewer preference, not sequence identity
       };
       return djb2Hash(JSON.stringify(hashable));
     }
@@ -126,13 +126,13 @@ export function generateSequenceHash(sequence: SequenceData | null): string {
   }
 
   // Build hashable structure
+  // NOTE: propType excluded - prop type is viewer preference, not sequence identity
   const hashable = {
     b: sequence.beats.map(hashableBeat),
     sp: hashableStartPosition(
       sequence.startPosition || sequence.startingPositionBeat
     ),
     gm: sequence.gridMode,
-    pt: sequence.propType,
   };
 
   return djb2Hash(JSON.stringify(hashable));

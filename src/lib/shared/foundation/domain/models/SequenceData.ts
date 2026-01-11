@@ -41,7 +41,8 @@ export interface SequenceData {
   /** When this library entry was created */
   readonly createdAt?: Date;
   readonly gridMode?: GridMode;
-  readonly propType?: PropType;
+  // NOTE: propType removed - prop type is a viewer preference, not sequence data
+  // Each motion stores its own propType, and rendering uses viewer's settings
   /**
    * @deprecated Use ICollectionManager.isFavorite(sequenceId) instead.
    * Favorites are now stored as collection membership, not as a boolean flag.
@@ -103,7 +104,6 @@ export function createSequenceData(
     ...(data.level !== undefined && { level: data.level }),
     ...(data.dateAdded !== undefined && { dateAdded: data.dateAdded }),
     ...(data.gridMode !== undefined && { gridMode: data.gridMode }),
-    ...(data.propType !== undefined && { propType: data.propType }),
     ...(data.startingPositionBeat !== undefined && {
       startingPositionBeat: data.startingPositionBeat,
     }),
@@ -197,8 +197,7 @@ export interface SequenceMetadata {
   word: string;
   author: string;
   totalBeats: number;
-  // Optional animation-related properties
-  propType?: PropType; // Legacy - kept for backward compatibility
+  // Optional animation-related properties (viewer preferences, not stored with sequence)
   bluePropType?: PropType; // Per-color prop type for blue motions
   redPropType?: PropType; // Per-color prop type for red motions
   gridMode?: GridMode;

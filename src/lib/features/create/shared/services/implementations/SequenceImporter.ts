@@ -158,7 +158,7 @@ export class SequenceImporter implements ISequenceImporter {
       level: 1,
       dateAdded: new Date(),
       gridMode: GridMode.DIAMOND,
-      propType: PropType.FAN,
+      // propType removed - prop type is viewer preference, not sequence data
       isFavorite: false,
       isCircular: false,
       difficultyLevel: "beginner",
@@ -181,7 +181,7 @@ export class SequenceImporter implements ISequenceImporter {
       isCircular: sequenceData.isCircular,
       tags: sequenceData.tags,
       metadata: sequenceData.metadata,
-      propType: sequenceData.propType,
+      // propType removed - prop type is viewer preference, not sequence data
       gridMode: sequenceData.gridMode,
       difficultyLevel: sequenceData.difficultyLevel,
       author: sequenceData.author,
@@ -203,7 +203,7 @@ export class SequenceImporter implements ISequenceImporter {
       ...(validSequenceData.metadata
         ? { metadata: validSequenceData.metadata }
         : {}),
-      propType: validSequenceData.propType ?? PropType.FAN,
+      // propType removed - prop type is a viewer preference, not sequence data
       gridMode: validSequenceData.gridMode ?? GridMode.DIAMOND,
       difficultyLevel: validSequenceData.difficultyLevel ?? "beginner",
       author: validSequenceData.author ?? "PNG Import",

@@ -31,7 +31,7 @@ export interface MinimalSequence {
   word: string;
   isCircular: boolean;
   gridMode: string;
-  propType: string;
+  // propType removed - prop type is viewer preference, not sequence data
   startPosition: MinimalBeat | null;
   beats: (MinimalBeat | null)[];
 }

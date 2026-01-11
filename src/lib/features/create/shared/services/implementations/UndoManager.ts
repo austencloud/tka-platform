@@ -7,6 +7,7 @@
  * Uses Svelte 5 runes for reactive state management.
  */
 
+import { browser } from "$app/environment";
 import type {
   CreateModuleStateSnapshot,
   IUndoManager,
@@ -309,6 +310,11 @@ export class UndoManager implements IUndoManager {
    * Load history from persistent storage
    */
   async loadHistory(): Promise<void> {
+    // Skip during SSR - no localStorage available
+    if (!browser) {
+      return;
+    }
+
     try {
       // Load undo history
       const undoData = localStorage.getItem(UNDO_HISTORY_STORAGE_KEY);
@@ -340,6 +346,11 @@ export class UndoManager implements IUndoManager {
    * Save history to persistent storage
    */
   async saveHistory(): Promise<void> {
+    // Skip during SSR - no localStorage available
+    if (!browser) {
+      return;
+    }
+
     try {
       localStorage.setItem(
         UNDO_HISTORY_STORAGE_KEY,

@@ -207,11 +207,15 @@ export interface ISequenceExtender {
    * before choosing which LOOP to apply.
    * @param sequence The sequence to append to
    * @param bridgeLetter The bridge letter to append
+   * @param pictographData Optional specific pictograph to use. If provided, this exact
+   *        pictograph will be used instead of randomly selecting a variation.
+   *        This ensures the sequence ends at the expected position for LOOP application.
    * @returns A new sequence with the bridge beat appended
    * @throws Error if no valid pictograph found for the bridge letter
    */
   appendBridgeBeat(
     sequence: SequenceData,
-    bridgeLetter: Letter
+    bridgeLetter: Letter,
+    pictographData?: PictographData
   ): Promise<SequenceData>;
 }

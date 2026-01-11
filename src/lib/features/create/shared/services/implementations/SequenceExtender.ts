@@ -245,10 +245,16 @@ export class SequenceExtender implements ISequenceExtender {
    * Append just a bridge beat to a sequence (without applying LOOP).
    * Used when user selects a bridge pictograph and wants to see it in the sequence
    * before choosing which LOOP to apply.
+   *
+   * @param sequence The sequence to append to
+   * @param bridgeLetter The bridge letter to append
+   * @param pictographData Optional specific pictograph to use. If provided, this exact
+   *        pictograph will be used instead of randomly selecting a variation.
    */
   async appendBridgeBeat(
     sequence: SequenceData,
-    bridgeLetter: Letter
+    bridgeLetter: Letter,
+    pictographData?: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData
   ): Promise<SequenceData> {
     const endPosition = this.sequenceAnalyzer.getCurrentEndPosition(sequence);
     if (!endPosition) {
@@ -257,25 +263,39 @@ export class SequenceExtender implements ISequenceExtender {
 
     const gridMode = sequence.gridMode || GridMode.DIAMOND;
 
-    // Find a pictograph for the bridge letter that starts at current end position
-    const allPictographs =
-      await this.letterQueryHandler.getAllPictographVariations(gridMode);
+    let bridgeVariation: import("$lib/shared/pictograph/shared/domain/models/PictographData").PictographData;
 
-    const bridgeVariations = allPictographs.filter(
-      (p) => p.letter === bridgeLetter && p.startPosition === endPosition
-    );
+    // Use the specific pictograph if provided (preferred - ensures correct end position)
+    if (pictographData) {
+      // Validate that the provided pictograph starts at the current end position
+      if (pictographData.startPosition !== endPosition) {
+        throw new Error(
+          `Provided pictograph for "${bridgeLetter}" starts at "${pictographData.startPosition}" but sequence ends at "${endPosition}"`
+        );
+      }
+      bridgeVariation = pictographData;
+    } else {
+      // Fallback: Find a pictograph for the bridge letter that starts at current end position
+      const allPictographs =
+        await this.letterQueryHandler.getAllPictographVariations(gridMode);
 
-    if (bridgeVariations.length === 0) {
-      throw new Error(
-        `No variation of "${bridgeLetter}" starts at position "${endPosition}"`
+      const bridgeVariations = allPictographs.filter(
+        (p) => p.letter === bridgeLetter && p.startPosition === endPosition
       );
-    }
 
-    // Pick a random variation for variety
-    const randomIndex = Math.floor(Math.random() * bridgeVariations.length);
-    const bridgeVariation = bridgeVariations[randomIndex];
-    if (!bridgeVariation) {
-      throw new Error("Failed to select bridge variation");
+      if (bridgeVariations.length === 0) {
+        throw new Error(
+          `No variation of "${bridgeLetter}" starts at position "${endPosition}"`
+        );
+      }
+
+      // Pick a random variation for variety
+      const randomIndex = Math.floor(Math.random() * bridgeVariations.length);
+      const selected = bridgeVariations[randomIndex];
+      if (!selected) {
+        throw new Error("Failed to select bridge variation");
+      }
+      bridgeVariation = selected;
     }
 
     // Convert to beat and append
