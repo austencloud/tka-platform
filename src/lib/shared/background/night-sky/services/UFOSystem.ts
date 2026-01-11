@@ -25,6 +25,11 @@ import type { IUFOMoodManager } from "./contracts/IUFOMoodManager";
 import type { IUFOStarScanner } from "./contracts/IUFOStarScanner";
 import type { IUFOInteractionHandler, UFOStateCallbacks } from "./contracts/IUFOInteractionHandler";
 import type { IUFOBehaviorRunner, BehaviorContext, BehaviorCallbacks } from "./contracts/IUFOBehaviorRunner";
+import type { IUFOEntranceAnimator } from "./contracts/IUFOEntranceAnimator";
+import type { IUFOExitAnimator } from "./contracts/IUFOExitAnimator";
+import type { IUFOMovementController, MovementContext } from "./contracts/IUFOMovementController";
+import type { IUFODecisionMaker, DecisionContext } from "./contracts/IUFODecisionMaker";
+import { UFOFactory } from "./implementations/UFOFactory";
 import type {
   MoodVisuals,
   UFOConfig,
@@ -59,6 +64,11 @@ export class UFOSystem {
   private starScanner: IUFOStarScanner;
   private interactionHandler: IUFOInteractionHandler;
   private behaviorRunner: IUFOBehaviorRunner;
+  private entranceAnimator: IUFOEntranceAnimator;
+  private exitAnimator: IUFOExitAnimator;
+  private movementController: IUFOMovementController;
+  private decisionMaker: IUFODecisionMaker;
+  private ufoFactory: UFOFactory;
 
   // Callbacks for interaction handler state transitions
   private stateCallbacks: UFOStateCallbacks;
@@ -76,7 +86,11 @@ export class UFOSystem {
     moodManager: IUFOMoodManager,
     starScanner: IUFOStarScanner,
     interactionHandler: IUFOInteractionHandler,
-    behaviorRunner: IUFOBehaviorRunner
+    behaviorRunner: IUFOBehaviorRunner,
+    entranceAnimator: IUFOEntranceAnimator,
+    exitAnimator: IUFOExitAnimator,
+    movementController: IUFOMovementController,
+    decisionMaker: IUFODecisionMaker
   ) {
     this.config = config;
     this.calculationService = calculationService;
@@ -86,6 +100,11 @@ export class UFOSystem {
     this.starScanner = starScanner;
     this.interactionHandler = interactionHandler;
     this.behaviorRunner = behaviorRunner;
+    this.entranceAnimator = entranceAnimator;
+    this.exitAnimator = exitAnimator;
+    this.movementController = movementController;
+    this.decisionMaker = decisionMaker;
+    this.ufoFactory = new UFOFactory(calculationService);
 
     // Create callbacks for interaction handler
     this.stateCallbacks = {
@@ -190,178 +209,12 @@ export class UFOSystem {
     entranceType?: UFOEntranceType,
     exitType?: UFOExitType
   ): void {
-    const margin = dim.width * this.config.bounceMargin * 1.5;
-
-    // Pick random entrance/exit types if not specified
-    const entrance =
-      entranceType ??
-      this.entranceTypes[Math.floor(Math.random() * this.entranceTypes.length)]!;
-    const exit =
-      exitType ??
-      this.exitTypes[Math.floor(Math.random() * this.exitTypes.length)]!;
-
-    // Position depends on entrance type
-    let x: number;
-    let y: number;
-    let startY = 0;
-    let targetY = 0;
-
-    if (entrance === "descend") {
-      // Start above screen, descend to random position
-      x = margin + Math.random() * (dim.width - margin * 2);
-      targetY = margin + Math.random() * (dim.height * 0.5 - margin); // Upper half
-      startY = -this.config.size * 2;
-      y = startY;
-    } else {
-      // All other entrances: random position in viewable area
-      x = margin + Math.random() * (dim.width - margin * 2);
-      y = margin + Math.random() * (dim.height - margin * 2);
-      targetY = y;
-      startY = y;
-    }
-
-    // Random initial heading
-    const heading = Math.random() * Math.PI * 2;
-
-    // Random initial turn rate for curved movement
-    const turnSpeed = this.config.turnSpeed ?? 0.003;
-    const turnVariation = this.config.turnVariation ?? 0.5;
-    const turnRate = (Math.random() - 0.5) * 2 * turnSpeed * turnVariation;
-
-    const activeDuration = this.calculationService.randInt(
-      this.config.minActiveDuration,
-      this.config.maxActiveDuration
-    );
-
-    // Decide initial movement style
-    const startsDrifting = Math.random() < (this.config.driftChance ?? 0.15);
-
-    // Initial state based on entrance type
-    let initialOpacity = 0;
-    let initialScale = 1;
-
-    if (entrance === "warp") {
-      // Warp: start invisible, flash in
-      initialOpacity = 0;
-      initialScale = 1;
-    } else if (entrance === "zoom") {
-      // Zoom: start tiny and distant
-      initialOpacity = 0.5;
-      initialScale = 0.05;
-    } else if (entrance === "descend") {
-      // Descend: start visible, move down
-      initialOpacity = 0.8;
-      initialScale = 1;
-    } else {
-      // Fade: simple opacity fade
-      initialOpacity = 0;
-      initialScale = 1;
-    }
-
-    this.ufo = {
-      x,
-      y,
-      heading,
-      turnRate,
-      state: "entering",
-      stateTimer: 0,
-      stateDuration: this.config.enterDuration,
-      activeDuration,
-      totalTime: 0,
-      entranceType: entrance,
-      exitType: exit,
-      targetY,
-      startY,
-      flashIntensity: entrance === "warp" ? 1 : 0,
-      decloakPhase: 0,
-      shieldPhase: 0,
-      lightPhase: 0,
-      beamPhase: 0,
-      hoverPhase: Math.random() * Math.PI * 2,
-      isDrifting: startsDrifting,
-      beamTarget: null,
-      beamIntensity: 0,
-      opacity: initialOpacity,
-      scale: initialScale,
-      size: this.config.size,
-      // Mood system - start curious and fresh
-      mood: "curious",
-      moodTimer: 0,
-      tiredness: 0,
-      lastInterestTime: 0,
-      // Click interaction - fresh start
-      lastClickTime: -9999, // Long ago, so first click doesn't count as consecutive
-      clickCount: 0,
-      clickTarget: null,
-      // Chase behavior - not chasing yet
-      chaseTarget: null,
-      chaseStartTime: 0,
-      lastChaseDistance: Infinity,
-      giveUpTimer: 0,
-      // Idle animations / personality
-      wobbleType: "none",
-      wobbleTimer: 0,
-      wobbleIntensity: 0,
-      spinAngle: 0,
-      isSneaky: false,
-      scannedStars: new Set<string>(),
-      lookAroundTimer: 0,
-
-      // Narrative arc system
-      narrativePhase: "none",
-      narrativeTimer: 0,
-      narrativePhaseDuration: 0,
-
-      // Sample collection
-      sampleParticle: null,
-      collectedSamples: 0,
-
-      // Star photography
-      photographedStars: new Set<string>(),
-      cameraFlashTimer: 0,
-      photoTarget: null,
-
-      // Ground investigation
-      groundParticles: [],
-      anomalyPosition: null,
-
-      // Panic / evasion
-      panicDirection: 0,
-      panicSpeed: 0,
-      afterimagePositions: [],
-
-      // Comet surfing
-      surfTarget: null,
-      surfOffset: { x: 0, y: 0 },
-
-      // Communication
-      commPattern: [],
-      commPatternIndex: 0,
-      commPulseTimer: 0,
-      commTarget: null,
-      awaitingResponse: false,
-
-      // Napping
-      sleepZs: [],
-      napStartY: y,
-
-      // Peek-a-boo
-      hidePosition: null,
-      peekProgress: 0,
-      peekDirection: 0,
-
-      // Celebration
-      celebrationSpinSpeed: 0,
-      celebrationBouncePhase: 0,
-      rainbowPhase: 0,
-
-      // Buddy system
-      buddyTarget: null,
-      buddyOffset: 50,
-
-      // Rare discovery tracking
-      rareDiscoveries: 0,
-    };
+    this.ufo = this.ufoFactory.create({
+      dimensions: dim,
+      config: this.config,
+      entranceType,
+      exitType,
+    });
   }
 
   private updateUFO(dim: Dimensions, speedMult: number): void {
@@ -473,57 +326,24 @@ export class UFOSystem {
     this.moodManager.triggerWobble(this.ufo, type);
   }
 
-  private updateEntering(dim: Dimensions, speedMult: number): void {
+  private updateEntering(_dim: Dimensions, _speedMult: number): void {
     if (!this.ufo) return;
     const u = this.ufo;
 
-    const progress = Math.min(1, u.stateTimer / this.config.enterDuration);
+    const result = this.entranceAnimator.calculate({
+      stateTimer: u.stateTimer,
+      enterDuration: this.config.enterDuration,
+      entranceType: u.entranceType,
+      startY: u.startY,
+      targetY: u.targetY,
+    });
 
-    switch (u.entranceType) {
-      case "warp":
-        // Warp: bright flash then instant appear
-        if (progress < 0.3) {
-          // Flash phase - bright shield pulse
-          u.flashIntensity = 1 - progress / 0.3;
-          u.opacity = progress / 0.3;
-          u.scale = 0.8 + 0.4 * (progress / 0.3); // Slight scale pulse
-        } else {
-          // Settle phase
-          u.flashIntensity = 0;
-          u.opacity = 1;
-          u.scale = 1.2 - 0.2 * ((progress - 0.3) / 0.7); // Shrink back to normal
-        }
-        break;
+    u.opacity = result.opacity;
+    u.scale = result.scale;
+    u.flashIntensity = result.flashIntensity;
+    u.y = result.y;
 
-      case "zoom":
-        // Zoom: approach from far away (tiny to full size)
-        // Ease-out for deceleration effect
-        const zoomEase = 1 - Math.pow(1 - progress, 3);
-        u.scale = 0.05 + 0.95 * zoomEase;
-        u.opacity = 0.5 + 0.5 * zoomEase;
-        break;
-
-      case "descend":
-        // Descend: drop down from above, slowing as it arrives
-        const descendEase = 1 - Math.pow(1 - progress, 2); // Ease-out
-        u.y = u.startY + (u.targetY - u.startY) * descendEase;
-        u.opacity = 0.8 + 0.2 * progress;
-        u.scale = 1;
-        break;
-
-      case "fade":
-      default:
-        // Simple fade in
-        u.opacity = progress;
-        u.scale = 1;
-        break;
-    }
-
-    // Transition to wandering once complete
-    if (progress >= 1) {
-      u.opacity = 1;
-      u.scale = 1;
-      u.flashIntensity = 0;
+    if (result.isComplete) {
       u.state = "wandering";
       u.stateTimer = 0;
     }
@@ -531,156 +351,38 @@ export class UFOSystem {
 
   private updateWandering(dim: Dimensions, speedMult: number): void {
     if (!this.ufo) return;
-    const u = this.ufo;
 
-    // Check if we're heading toward a click target
-    if (u.clickTarget) {
-      const dx = u.clickTarget.x - u.x;
-      const dy = u.clickTarget.y - u.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+    const ctx: MovementContext = {
+      ufo: this.ufo,
+      config: this.config,
+      dimensions: dim,
+      speedMult,
+      moodManager: this.moodManager,
+      eventProvider: this.eventProvider,
+    };
 
-      if (dist < 30) {
-        // Arrived at click target! Scan it.
+    const result = this.movementController.updateWandering(ctx);
+
+    switch (result.action) {
+      case "arrived_at_target":
         this.arriveAtClickTarget();
-        return;
-      }
-
-      // Steer toward click target
-      const targetAngle = Math.atan2(dy, dx);
-      const angleDiff = this.angleDiff(u.heading, targetAngle);
-      u.heading += angleDiff * 0.1 * speedMult; // Gradual steering
-    } else {
-      // Normal wandering - smoothly update heading for curved movement
-      const turnSpeed = this.config.turnSpeed ?? 0.003;
-      u.heading += u.turnRate * speedMult;
-
-      // Occasionally vary the turn rate for more organic curves
-      if (Math.random() < 0.02 * speedMult) {
-        const turnVariation = this.config.turnVariation ?? 0.5;
-        u.turnRate = (Math.random() - 0.5) * 2 * turnSpeed * turnVariation;
-
-        // Small chance to switch drift mode
-        if (Math.random() < 0.15) {
-          u.isDrifting = !u.isDrifting;
-        }
-      }
-    }
-
-    // Calculate speed (slower when drifting, faster when investigating)
-    const driftMult = this.config.driftSpeedMultiplier ?? 0.4;
-    const investigateMult = u.clickTarget ? 1.3 : 1.0; // Bit faster when investigating
-    const speedMod = u.isDrifting ? driftMult : investigateMult;
-    const speed = this.config.speed * dim.width * speedMult * speedMod;
-
-    // Move in direction of heading (curved path)
-    u.x += Math.cos(u.heading) * speed;
-    u.y += Math.sin(u.heading) * speed;
-
-    // Gently steer away from edges (creates natural curved boundaries)
-    const margin = dim.width * this.config.bounceMargin;
-    const steerStrength = 0.05;
-
-    if (u.x < margin) {
-      // Steer right
-      u.heading += steerStrength * speedMult;
-      u.x = Math.max(margin * 0.5, u.x);
-    } else if (u.x > dim.width - margin) {
-      // Steer left
-      u.heading -= steerStrength * speedMult;
-      u.x = Math.min(dim.width - margin * 0.5, u.x);
-    }
-
-    if (u.y < margin) {
-      // Steer down
-      const targetAngle = Math.PI / 2; // Down
-      const diff = this.angleDiff(u.heading, targetAngle);
-      u.heading += diff * steerStrength * speedMult;
-      u.y = Math.max(margin * 0.5, u.y);
-    } else if (u.y > dim.height - margin) {
-      // Steer up
-      const targetAngle = -Math.PI / 2; // Up
-      const diff = this.angleDiff(u.heading, targetAngle);
-      u.heading += diff * steerStrength * speedMult;
-      u.y = Math.min(dim.height - margin * 0.5, u.y);
-    }
-
-    // Check for celestial event
-    const event = this.eventProvider?.();
-    if (event?.active) {
-      // Check for near-miss (meteor passing very close - startle!)
-      const dx = event.x - u.x;
-      const dy = event.y - u.y;
-      const eventDist = Math.sqrt(dx * dx + dy * dy);
-
-      if (eventDist < 50) {
-        // TOO CLOSE! Startle and dodge!
-        this.reactToNearMiss(event);
-        return;
-      }
-
-      // Decide whether to chase or just watch based on mood
-      if (u.mood === "curious" || u.mood === "excited" || u.mood === "playful") {
-        // Chase the celestial event!
-        this.startChasing(event);
-        return;
-      } else if (u.mood === "bored" || u.mood === "tired") {
-        // Just watch passively (track with beam briefly)
-        this.startTrackingEvent(event);
-        return;
-      }
-    }
-
-    // Occasional pause to look around
-    if (Math.random() < this.config.pauseChance * speedMult) {
-      this.startPause();
-    }
-
-    // Idle behavior: Look around occasionally
-    if (u.lookAroundTimer <= 0 && Math.random() < 0.003 * speedMult) {
-      this.moodManager.triggerWobble(this.ufo,"curious_tilt");
-      u.lookAroundTimer = 180; // Cooldown before next look-around
-    }
-
-    // Idle behavior: Yawn when bored
-    if (u.mood === "bored" && Math.random() < 0.002 * speedMult) {
-      this.moodManager.triggerWobble(this.ufo,"yawn_stretch");
-      // Dim lights during yawn (handled by mood visuals)
+        break;
+      case "start_pause":
+        this.startPause();
+        break;
+      case "start_chasing":
+        this.startChasing(result.event);
+        break;
+      case "start_tracking":
+        this.startTrackingEvent(result.event);
+        break;
+      // "continue" and "near_miss_handled" - just keep wandering
     }
   }
 
-  /**
-   * React to a near-miss - something passed too close!
-   */
-  private reactToNearMiss(event: EventPosition): void {
-    if (!this.ufo) return;
-    const u = this.ufo;
-
-    // Calculate dodge direction (opposite to event)
-    const dx = u.x - event.x;
-    const dy = u.y - event.y;
-    const dodgeAngle = Math.atan2(dy, dx);
-
-    // Jolt away
-    u.heading = dodgeAngle;
-    u.x += Math.cos(dodgeAngle) * 15; // Quick dodge
-    u.y += Math.sin(dodgeAngle) * 15;
-
-    // Startled jolt wobble
-    this.moodManager.triggerWobble(this.ufo,"startled_jolt");
-
-    // Enter startled mood
-    this.moodManager.setMood(this.ufo!,"startled");
-
-    // Quick flash of lights (acceleration)
-    u.lightPhase += Math.PI;
-
-    // Stay in wandering but with startled mood
-    // (mood decay will return to curious)
-  }
-
-  /** Calculate shortest angle difference - delegated to interaction handler */
+  /** Calculate shortest angle difference - delegated to movement controller */
   private angleDiff(from: number, to: number): number {
-    return this.interactionHandler.angleDiff(from, to);
+    return this.movementController.angleDiff(from, to);
   }
 
   private updatePaused(speedMult: number): void {
@@ -750,62 +452,21 @@ export class UFOSystem {
     if (!this.ufo) return;
     const u = this.ufo;
 
-    const progress = Math.min(1, u.stateTimer / this.config.exitDuration);
+    const result = this.exitAnimator.calculate({
+      stateTimer: u.stateTimer,
+      exitDuration: this.config.exitDuration,
+      exitType: u.exitType,
+      currentY: u.y,
+      size: u.size,
+      speedMult,
+    });
 
-    switch (u.exitType) {
-      case "warp":
-        // Warp out: flash bright then vanish instantly
-        if (progress < 0.4) {
-          // Charge-up phase - shield brightens
-          u.flashIntensity = progress / 0.4;
-          u.opacity = 1;
-          u.scale = 1 + 0.2 * (progress / 0.4); // Slight grow
-        } else if (progress < 0.5) {
-          // Flash peak
-          u.flashIntensity = 1;
-          u.opacity = 1;
-          u.scale = 1.2;
-        } else {
-          // Instant vanish after flash
-          u.opacity = 0;
-          u.flashIntensity = Math.max(0, 1 - (progress - 0.5) / 0.5);
-        }
-        break;
+    u.opacity = result.opacity;
+    u.scale = result.scale;
+    u.flashIntensity = result.flashIntensity;
+    u.y += result.yDelta;
 
-      case "zoom":
-        // Zoom away: rapidly shrink to dot and vanish
-        // Ease-in for acceleration effect
-        const zoomEase = Math.pow(progress, 2);
-        u.scale = Math.max(0, 1 - zoomEase);
-        u.opacity = Math.max(0, 1 - zoomEase * 0.8);
-        // Slight upward drift as it flies away
-        u.y -= 2 * speedMult;
-        break;
-
-      case "shootUp":
-        // Shoot up: rapid acceleration upward, leaves screen
-        // Quadratic acceleration
-        const shootSpeed = progress * progress * 25 * speedMult;
-        u.y -= shootSpeed;
-        u.opacity = u.y > -u.size * 2 ? 1 : 0;
-        u.scale = 1;
-        break;
-
-      case "fade":
-      default:
-        // Simple fade out
-        u.opacity = Math.max(0, 1 - progress);
-        u.scale = 1;
-        break;
-    }
-
-    // Check if exit is complete
-    const exitComplete =
-      progress >= 1 ||
-      (u.exitType === "shootUp" && u.y < -u.size * 2) ||
-      (u.exitType === "warp" && progress >= 0.6);
-
-    if (exitComplete) {
+    if (result.isComplete) {
       this.ufo = null;
     }
   }
@@ -826,79 +487,54 @@ export class UFOSystem {
     if (!this.ufo) return;
     const u = this.ufo;
 
-    // If tired, might take a nap
-    if (u.mood === "tired" && Math.random() < 0.4) {
-      this.startNapping();
-      return;
-    }
+    const ctx: DecisionContext = {
+      ufo: u,
+      config: this.config,
+      calculationService: this.calculationService,
+      screenHeight: this.dimensions.height,
+      findNearbyBrightStar: () => this.findNearbyBrightStar(),
+    };
 
-    // Sometimes the alien just wants to vibe - no scanning, just chill longer
-    const justVibeChance = this.config.justVibeChance ?? 0.3;
-    if (Math.random() < justVibeChance) {
-      // Keep paused state, but reset timer for another rest
-      u.stateTimer = 0;
-      u.stateDuration = this.calculationService.randInt(
-        this.config.pauseDuration.min,
-        this.config.pauseDuration.max
-      );
-      // Maybe switch drift mode while vibing
-      if (Math.random() < 0.5) {
-        u.isDrifting = true; // Get extra lazy after vibing
-      }
-      return;
-    }
+    const decision = this.decisionMaker.decideAfterPause(ctx);
 
-    // Check for nearby bright star - decide how to interact based on mood
-    if (Math.random() < this.config.scanStarChance) {
-      const star = this.findNearbyBrightStar();
-      if (star) {
-        // Choose interaction style based on mood and randomness
-        const roll = Math.random();
-
-        if (u.mood === "playful" && roll < 0.3) {
-          // Try to communicate with the star!
-          this.startCommunicating(star);
-        } else if ((u.mood === "curious" || u.mood === "bored") && roll < 0.4) {
-          // Take a photo of the star (tourist mode)
-          this.startPhotographing(star);
-        } else {
-          // Default: just scan the star
-          u.state = "scanning_star";
-          u.stateTimer = 0;
-          u.stateDuration = this.calculationService.randInt(
-            this.config.scanDuration.min,
-            this.config.scanDuration.max
-          );
-          u.beamTarget = { x: star.x, y: star.y };
-          u.beamIntensity = 0;
-          this.moodManager.markInterest(this.ufo!);
-          this.rememberScannedStar(star.x, star.y);
-        }
-        return;
-      }
-    }
-
-    // Ground observation - what's down there?
-    if (Math.random() < this.config.groundScanChance) {
-      // Sometimes investigate ground more thoroughly with particles
-      if (Math.random() < 0.4) {
+    switch (decision.action) {
+      case "nap":
+        this.startNapping();
+        break;
+      case "vibe_longer":
+        u.stateTimer = 0;
+        u.stateDuration = decision.newDuration;
+        if (Math.random() < 0.5) u.isDrifting = true;
+        break;
+      case "communicate":
+        this.startCommunicating(decision.star);
+        break;
+      case "photograph":
+        this.startPhotographing(decision.star);
+        break;
+      case "scan_star":
+        u.state = "scanning_star";
+        u.stateTimer = 0;
+        u.stateDuration = decision.duration;
+        u.beamTarget = { x: decision.star.x, y: decision.star.y };
+        u.beamIntensity = 0;
+        this.moodManager.markInterest(u);
+        this.rememberScannedStar(decision.star.x, decision.star.y);
+        break;
+      case "investigate_ground":
         this.startInvestigatingGround();
-      } else {
-        // Simple ground scan
+        break;
+      case "scan_ground":
         u.state = "scanning_ground";
         u.stateTimer = 0;
-        u.stateDuration = this.calculationService.randInt(
-          this.config.scanDuration.min,
-          this.config.scanDuration.max
-        );
+        u.stateDuration = decision.duration;
         u.beamTarget = { x: u.x, y: this.dimensions.height + 100 };
         u.beamIntensity = 0;
-      }
-      return;
+        break;
+      case "resume_wandering":
+        this.resumeWandering();
+        break;
     }
-
-    // Alright, time to wander again (maybe lazily)
-    this.resumeWandering();
   }
 
   private startTrackingEvent(event: EventPosition): void {
@@ -986,19 +622,7 @@ export class UFOSystem {
 
   private resumeWandering(): void {
     if (!this.ufo) return;
-    const u = this.ufo;
-
-    u.state = "wandering";
-    u.stateTimer = 0;
-
-    // Give a new random turn rate for variety in curve direction
-    const turnSpeed = this.config.turnSpeed ?? 0.003;
-    const turnVariation = this.config.turnVariation ?? 0.5;
-    u.turnRate = (Math.random() - 0.5) * 2 * turnSpeed * turnVariation;
-
-    // Decide movement style
-    const driftChance = this.config.driftChance ?? 0.15;
-    u.isDrifting = Math.random() < driftChance;
+    this.movementController.resetWanderingState(this.ufo, this.config);
   }
 
   private startExiting(exitType?: UFOExitType): void {

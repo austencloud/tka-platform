@@ -20,6 +20,10 @@ import { UFOMoodManager } from "../../background/night-sky/services/implementati
 import { UFOStarScanner } from "../../background/night-sky/services/implementations/UFOStarScanner";
 import { UFOInteractionHandler } from "../../background/night-sky/services/implementations/UFOInteractionHandler";
 import { UFOBehaviorRunner } from "../../background/night-sky/services/implementations/UFOBehaviorRunner";
+import { UFOEntranceAnimator } from "../../background/night-sky/services/implementations/UFOEntranceAnimator";
+import { UFOExitAnimator } from "../../background/night-sky/services/implementations/UFOExitAnimator";
+import { UFOMovementController } from "../../background/night-sky/services/implementations/UFOMovementController";
+import { UFODecisionMaker } from "../../background/night-sky/services/implementations/UFODecisionMaker";
 
 /**
  * Night Sky container with UFO animation services
@@ -37,6 +41,11 @@ export const nightSkyContainer = createContainer()
     ufoStarScanner: () => new UFOStarScanner(),
     ufoInteractionHandler: () => new UFOInteractionHandler(),
     ufoBehaviorRunner: () => new UFOBehaviorRunner(),
+    // UFO animation services
+    ufoEntranceAnimator: () => new UFOEntranceAnimator(),
+    ufoExitAnimator: () => new UFOExitAnimator(),
+    ufoMovementController: () => new UFOMovementController(),
+    ufoDecisionMaker: () => new UFODecisionMaker(),
   });
 
 export type NightSkyContainerType = typeof nightSkyContainer;

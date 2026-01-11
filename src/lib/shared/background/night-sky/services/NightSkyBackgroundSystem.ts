@@ -137,7 +137,11 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       nightSkyContainer.items.ufoMoodManager,
       nightSkyContainer.items.ufoStarScanner,
       nightSkyContainer.items.ufoInteractionHandler,
-      nightSkyContainer.items.ufoBehaviorRunner
+      nightSkyContainer.items.ufoBehaviorRunner,
+      nightSkyContainer.items.ufoEntranceAnimator,
+      nightSkyContainer.items.ufoExitAnimator,
+      nightSkyContainer.items.ufoMovementController,
+      nightSkyContainer.items.ufoDecisionMaker
     );
 
     instance.cometSystem = new CometSystem(
@@ -327,7 +331,11 @@ export class NightSkyBackgroundSystem implements IBackgroundSystem {
       nightSkyContainer.items.ufoMoodManager,
       nightSkyContainer.items.ufoStarScanner,
       nightSkyContainer.items.ufoInteractionHandler,
-      nightSkyContainer.items.ufoBehaviorRunner
+      nightSkyContainer.items.ufoBehaviorRunner,
+      nightSkyContainer.items.ufoEntranceAnimator,
+      nightSkyContainer.items.ufoExitAnimator,
+      nightSkyContainer.items.ufoMovementController,
+      nightSkyContainer.items.ufoDecisionMaker
     );
     // Re-wire UFO providers after recreation
     this.ufoSystem.setStarProvider(() => {
