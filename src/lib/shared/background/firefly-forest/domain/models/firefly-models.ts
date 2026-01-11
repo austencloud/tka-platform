@@ -13,4 +13,5 @@ export interface Firefly {
   wanderSpeed: number;
   baseOpacity: number;
   isSpecial: boolean; // Easter egg: rare rose-colored firefly
+  depth: number; // 0 = far (behind trees), 1 = near (in front)
 }

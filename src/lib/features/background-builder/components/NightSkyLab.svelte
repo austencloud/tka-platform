@@ -96,6 +96,8 @@
   }
 
   // --- UFO Commands ---
+  const UFO_ACTIVE_KEY = "nightsky-ufo-active";
+
   function spawnUFO() {
     const system = controller.getSystem();
     if (!system) return;
@@ -109,6 +111,9 @@
     const entrances: EntranceType[] = ["fade", "warp", "zoom", "descend"];
     const randomEntrance = entrances[Math.floor(Math.random() * entrances.length)]!;
     system.triggerUFOWithEntrance(randomEntrance);
+
+    // Persist UFO active state for HMR
+    sessionStorage.setItem(UFO_ACTIVE_KEY, "true");
   }
 
   function handleEntranceType(type: EntranceType) {
@@ -126,6 +131,8 @@
     const system = controller.getSystem();
     if (system?.isUFOActive()) {
       system.commandUFOExitWith(type);
+      // Clear HMR persistence - user explicitly exited
+      sessionStorage.removeItem(UFO_ACTIVE_KEY);
     }
   }
 
@@ -183,6 +190,19 @@
     }
   }
 
+  // Track if UFO has been active this session (to avoid clearing on initial load)
+  let ufoHasBeenActive = $state(false);
+
+  // Clear HMR persistence when UFO exits naturally (tired, panicked, etc.)
+  $effect(() => {
+    if (ufoStatus.active) {
+      ufoHasBeenActive = true;
+    } else if (ufoHasBeenActive && sessionStorage.getItem(UFO_ACTIVE_KEY) === "true") {
+      // Only clear if UFO was active and then became inactive
+      sessionStorage.removeItem(UFO_ACTIVE_KEY);
+    }
+  });
+
   // --- Canvas Interaction ---
   function handleCanvasClick(event: MouseEvent) {
     if (!canvas) return;
@@ -202,6 +222,15 @@
     if (canvas) {
       controller.initialize(canvas, quality, layers);
       controller.start();
+
+      // Auto-spawn UFO if it was active before HMR
+      const wasUFOActive = sessionStorage.getItem(UFO_ACTIVE_KEY) === "true";
+      if (wasUFOActive && mode === "ufoLab") {
+        // Short delay to ensure system is ready
+        requestAnimationFrame(() => {
+          spawnUFO();
+        });
+      }
 
       // Start UFO polling if in UFO Lab mode
       if (mode === "ufoLab") {

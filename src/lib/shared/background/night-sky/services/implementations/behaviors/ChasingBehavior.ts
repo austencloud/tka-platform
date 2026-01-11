@@ -17,6 +17,7 @@ export class ChasingBehavior implements IUFOBehavior {
     u.state = "chasing";
     u.stateTimer = 0;
     u.chaseStartTime = u.totalTime;
+    u.targetZ = 0.1; // Approach to catch
     u.lastChaseDistance = Infinity;
 
     // Remember chase target with velocity for prediction

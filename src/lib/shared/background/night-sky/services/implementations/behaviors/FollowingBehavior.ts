@@ -18,6 +18,7 @@ export class FollowingBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "approach";
     u.narrativeTimer = 0;
+    u.targetZ = 0.2; // Fly alongside, close
     u.buddyTarget = {
       x: event.x,
       y: event.y,

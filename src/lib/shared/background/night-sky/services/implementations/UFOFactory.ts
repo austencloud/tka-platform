@@ -44,11 +44,18 @@ export class UFOFactory implements IUFOFactory {
     // Decide initial movement style
     const startsDrifting = Math.random() < (config.driftChance ?? 0.15);
 
+    // Start at mid-depth (0.4-0.6) for natural appearance
+    const initialDepth = 0.4 + Math.random() * 0.2;
+
     return {
       // Position
       x: position.x,
       y: position.y,
+      z: initialDepth,
       size: config.size,
+
+      // Depth targeting
+      targetZ: initialDepth,
 
       // Movement
       heading,

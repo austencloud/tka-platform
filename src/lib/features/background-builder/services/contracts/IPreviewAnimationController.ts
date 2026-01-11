@@ -3,7 +3,7 @@
  */
 
 import type { FireflyForestLayers } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-import type { TreeTypeVisibility } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
+import type { TreeTypeVisibility, EcologicalPattern } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
 import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
 
 export interface PreviewStats {
@@ -93,4 +93,24 @@ export interface IPreviewAnimationController {
    * Check if system is initialized
    */
   isInitialized(): boolean;
+
+  /**
+   * Get all available ecological patterns
+   */
+  getAvailablePatterns(): EcologicalPattern[];
+
+  /**
+   * Get current ecological pattern ID
+   */
+  getEcologicalPatternId(): string;
+
+  /**
+   * Set ecological pattern by ID
+   */
+  setEcologicalPattern(patternId: string): void;
+
+  /**
+   * Set a random ecological pattern
+   */
+  setRandomEcologicalPattern(): string;
 }

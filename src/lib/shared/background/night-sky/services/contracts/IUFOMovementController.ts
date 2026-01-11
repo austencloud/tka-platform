@@ -44,4 +44,10 @@ export interface IUFOMovementController {
    * Calculate shortest angle difference between two angles
    */
   angleDiff(from: number, to: number): number;
+
+  /**
+   * Update UFO depth (z-axis) for 3D space effect
+   * Smoothly lerps toward targetZ
+   */
+  updateDepth(ufo: UFO, speedMult: number): void;
 }

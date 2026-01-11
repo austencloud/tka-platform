@@ -102,6 +102,44 @@ export const STAR_CONFIG = {
 
 export const RESPAWN_BUFFER = 50;
 
+// Depth layers for fireflies (0 = far, 1 = near)
+// Far fireflies are smaller, dimmer, slower - create atmospheric depth
+// Near fireflies are the classic prominent ones
+export const FIREFLY_DEPTH = {
+  // How many depth "bands" to divide fireflies into (0 to NUM_DEPTH_LAYERS-1)
+  NUM_LAYERS: 4,
+
+  // Distribution: what fraction of fireflies go to each depth band
+  // Index 0 = farthest, last = nearest
+  // More fireflies far away for atmospheric effect
+  LAYER_DISTRIBUTION: [0.35, 0.25, 0.25, 0.15], // 35% far, 25% mid-far, 25% mid-near, 15% near
+
+  // Size multiplier per depth (far = tiny, near = normal)
+  SIZE_SCALE: [0.4, 0.6, 0.8, 1.0],
+
+  // Opacity multiplier per depth (far = dim, near = bright)
+  OPACITY_SCALE: [0.4, 0.6, 0.8, 1.0],
+
+  // Speed multiplier per depth (far = slow, near = normal)
+  SPEED_SCALE: [0.5, 0.65, 0.8, 1.0],
+
+  // Glow radius multiplier (far = smaller glow)
+  GLOW_SCALE: [0.5, 0.7, 0.85, 1.0],
+
+  // Vertical zone constraints per layer (as fraction of canvas)
+  // Far fireflies stay higher (behind trees), near fireflies lower (in front)
+  ZONE_TOP: [0.08, 0.15, 0.25, 0.35],
+  ZONE_BOTTOM: [0.55, 0.70, 0.85, 0.92],
+
+  // Color warmth shift - far fireflies appear slightly cooler (atmospheric)
+  COLOR_SHIFT: [
+    { r: -20, g: -10, b: 10 },  // Far: cooler, bluer
+    { r: -10, g: -5, b: 5 },   // Mid-far: slightly cooler
+    { r: 0, g: 0, b: 0 },       // Mid-near: normal
+    { r: 10, g: 5, b: -5 },     // Near: slightly warmer
+  ],
+} as const;
+
 // Easter egg: Rare special firefly (1% chance)
 export const SPECIAL_FIREFLY = {
   CHANCE: 0.01, // 1% chance per firefly

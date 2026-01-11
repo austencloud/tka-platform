@@ -11,7 +11,13 @@ import {
   SHOOTING_STAR,
 } from "../domain/constants/firefly-constants";
 import { createFireflySystem } from "./FireflySystem";
-import { createTreeSilhouetteSystem, type TreeTypeVisibility, type PlacementConfig, NUM_LAYERS } from "./TreeSilhouetteSystem";
+import {
+  createTreeSilhouetteSystem,
+  type TreeTypeVisibility,
+  type PlacementConfig,
+  type EcologicalPattern,
+  NUM_LAYERS,
+} from "./TreeSilhouetteSystem";
 import { createAmbientParticleSystem } from "./AmbientParticleSystem";
 import { createCampfireSystem } from "./CampfireSystem";
 import { MoonRenderer, createCrescentMoon } from "$lib/shared/background/shared/services/MoonRenderer";
@@ -92,8 +98,20 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
     farGrass: 0.02,    // Far grass
     midGrass: 0.03,    // Mid grass
     nearGrass: 0.045,  // Near grass moves most
-    fireflies: 0.02,   // Fireflies have subtle depth response
+    // Firefly parallax by depth layer (far = less, near = more)
+    fireflyLayers: [0.01, 0.015, 0.025, 0.035],
   };
+
+  // Map firefly depth layers to tree layers for interleaving
+  // Fireflies have 4 layers, trees have 7 layers
+  // Format: [fireflyLayer, drawAfterTreeLayer]
+  // -1 means draw before any trees, 7 means draw after all trees
+  private readonly FIREFLY_TREE_INTERLEAVE = [
+    { fireflyLayer: 0, drawAfterTreeLayer: 1 },  // Far fireflies after tree layer 1
+    { fireflyLayer: 1, drawAfterTreeLayer: 3 },  // Mid-far fireflies after tree layer 3
+    { fireflyLayer: 2, drawAfterTreeLayer: 5 },  // Mid-near fireflies after tree layer 5
+    { fireflyLayer: 3, drawAfterTreeLayer: 7 },  // Near fireflies after all trees (last)
+  ];
 
   private readonly gradientStops = FIREFLY_BACKGROUND_GRADIENT;
 
@@ -383,8 +401,8 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
       this.campfireSystem.drawAmbientGlow(ctx, dimensions);
     }
 
-    // Draw trees and grass interleaved by depth
-    // Trees have 7 layers (0-6), grass has 3 layers (0-2)
+    // Draw trees, grass, and fireflies interleaved by depth
+    // Trees have 7 layers (0-6), grass has 3 layers (0-2), fireflies have 4 layers (0-3)
     // Grass layers are drawn at tree layer positions: 0, 3, 6
     const grassAtTreeLayer = [0, 3, 6]; // Which tree layers get grass drawn before them
 
@@ -422,15 +440,36 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
         const campfireParallax = this.getParallaxOffset(this.PARALLAX_CONFIG.farTrees);
         this.campfireSystem.draw(ctx, dimensions, campfireParallax);
       }
+
+      // Draw firefly layers that should appear after this tree layer
+      if (this.layerVisibility.fireflies) {
+        for (const mapping of this.FIREFLY_TREE_INTERLEAVE) {
+          if (mapping.drawAfterTreeLayer === treeLayer) {
+            const fireflyParallax = this.getParallaxOffset(
+              this.PARALLAX_CONFIG.fireflyLayers[mapping.fireflyLayer] ?? 0.02
+            );
+            ctx.save();
+            ctx.translate(fireflyParallax.x, fireflyParallax.y);
+            this.fireflySystem.drawLayer(this.fireflies, ctx, mapping.fireflyLayer);
+            ctx.restore();
+          }
+        }
+      }
     }
 
-    // Draw fireflies on top with parallax
+    // Draw any firefly layers that come after all tree layers (layer 7+)
     if (this.layerVisibility.fireflies) {
-      const fireflyParallax = this.getParallaxOffset(this.PARALLAX_CONFIG.fireflies);
-      ctx.save();
-      ctx.translate(fireflyParallax.x, fireflyParallax.y);
-      this.fireflySystem.draw(this.fireflies, ctx);
-      ctx.restore();
+      for (const mapping of this.FIREFLY_TREE_INTERLEAVE) {
+        if (mapping.drawAfterTreeLayer >= NUM_LAYERS) {
+          const fireflyParallax = this.getParallaxOffset(
+            this.PARALLAX_CONFIG.fireflyLayers[mapping.fireflyLayer] ?? 0.02
+          );
+          ctx.save();
+          ctx.translate(fireflyParallax.x, fireflyParallax.y);
+          this.fireflySystem.drawLayer(this.fireflies, ctx, mapping.fireflyLayer);
+          ctx.restore();
+        }
+      }
     }
   }
 
@@ -667,6 +706,47 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
 
   public resetPlacementConfig(): void {
     this.treeSystem.resetPlacementConfig();
+  }
+
+  // ===================
+  // ECOLOGICAL PATTERNS
+  // ===================
+
+  /**
+   * Set the ecological pattern for tree distribution
+   * @param patternId Pattern ID (e.g., "random", "conifer-ridge", "riparian")
+   */
+  public setEcologicalPattern(patternId: string): void {
+    this.treeSystem.setEcologicalPattern(patternId);
+  }
+
+  /**
+   * Get the current ecological pattern ID
+   */
+  public getEcologicalPatternId(): string {
+    return this.treeSystem.getEcologicalPatternId();
+  }
+
+  /**
+   * Get the current ecological pattern details
+   */
+  public getEcologicalPattern(): EcologicalPattern {
+    return this.treeSystem.getEcologicalPattern();
+  }
+
+  /**
+   * Get all available ecological patterns
+   */
+  public getAvailablePatterns(): EcologicalPattern[] {
+    return this.treeSystem.getAvailablePatterns();
+  }
+
+  /**
+   * Set a random ecological pattern (excluding "random" uniform distribution)
+   * Returns the selected pattern ID
+   */
+  public setRandomEcologicalPattern(): string {
+    return this.treeSystem.setRandomEcologicalPattern();
   }
 
   // ===================

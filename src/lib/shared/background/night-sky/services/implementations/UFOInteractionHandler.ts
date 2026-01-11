@@ -100,6 +100,7 @@ export class UFOInteractionHandler implements IUFOInteractionHandler {
     if (ufo.mood === "curious" || ufo.mood === "playful" || ufo.mood === "excited") {
       // Set click target - UFO will head there
       ufo.clickTarget = { x: clickX, y: clickY };
+      ufo.targetZ = 0.15; // Approach to investigate
 
       // Turn toward click location
       const dx = clickX - ufo.x;
@@ -138,6 +139,7 @@ export class UFOInteractionHandler implements IUFOInteractionHandler {
     ufo.state = "paused";
     ufo.stateTimer = 0;
     ufo.stateDuration = 60; // 1 second pause
+    ufo.targetZ = 0.2; // Come closer when curious
 
     // Stop any beam
     ufo.beamTarget = null;

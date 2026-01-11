@@ -10,6 +10,7 @@ import {
   FIREFLY_SIZE,
   FIREFLY_OPACITY,
   FIREFLY_COLORS,
+  FIREFLY_DEPTH,
   RESPAWN_BUFFER,
   SPECIAL_FIREFLY,
 } from "../domain/constants/firefly-constants";
@@ -64,30 +65,76 @@ function createFireflyColor(): { r: number; g: number; b: number } {
 }
 
 export function createFireflySystem() {
+  /**
+   * Assign a depth layer based on distribution weights
+   */
+  function assignDepthLayer(): number {
+    const rand = Math.random();
+    let cumulative = 0;
+    for (let i = 0; i < FIREFLY_DEPTH.NUM_LAYERS; i++) {
+      cumulative += FIREFLY_DEPTH.LAYER_DISTRIBUTION[i]!;
+      if (rand < cumulative) return i;
+    }
+    return FIREFLY_DEPTH.NUM_LAYERS - 1;
+  }
+
+  /**
+   * Get normalized depth value (0-1) from layer index
+   */
+  function getDepthValue(layer: number): number {
+    return layer / (FIREFLY_DEPTH.NUM_LAYERS - 1);
+  }
+
   function createFirefly(
     dimensions: Dimensions,
-    randomizePosition: boolean = true
+    randomizePosition: boolean = true,
+    depthLayer?: number
   ): Firefly {
-    const zoneTop = dimensions.height * FIREFLY_PHYSICS.ZONE_TOP;
-    const zoneBottom = dimensions.height * FIREFLY_PHYSICS.ZONE_BOTTOM;
+    // Assign depth layer if not provided
+    const layer = depthLayer ?? assignDepthLayer();
+    const depth = getDepthValue(layer);
+
+    // Get depth-specific zone constraints
+    const zoneTop = dimensions.height * FIREFLY_DEPTH.ZONE_TOP[layer]!;
+    const zoneBottom = dimensions.height * FIREFLY_DEPTH.ZONE_BOTTOM[layer]!;
     const zoneHeight = zoneBottom - zoneTop;
 
-    // Easter egg: 1% chance for a special rose-colored firefly
-    const isSpecial = Math.random() < SPECIAL_FIREFLY.CHANCE;
+    // Easter egg: 1% chance for a special rose-colored firefly (only in near layers)
+    const isSpecial = layer >= FIREFLY_DEPTH.NUM_LAYERS - 2 && Math.random() < SPECIAL_FIREFLY.CHANCE;
 
-    const baseSize = randomInRange(FIREFLY_SIZE.MIN, FIREFLY_SIZE.RANGE);
+    // Apply depth-based size scaling
+    const sizeScale = FIREFLY_DEPTH.SIZE_SCALE[layer]!;
+    const baseSize = randomInRange(FIREFLY_SIZE.MIN, FIREFLY_SIZE.RANGE) * sizeScale;
     const size = isSpecial
       ? baseSize * SPECIAL_FIREFLY.SIZE_MULTIPLIER
       : baseSize;
-    const glowMultiplier = isSpecial
-      ? SPECIAL_FIREFLY.GLOW_MULTIPLIER
-      : FIREFLY_PHYSICS.GLOW_MULTIPLIER;
 
+    // Apply depth-based glow scaling
+    const glowScale = FIREFLY_DEPTH.GLOW_SCALE[layer]!;
+    const glowMultiplier = isSpecial
+      ? SPECIAL_FIREFLY.GLOW_MULTIPLIER * glowScale
+      : FIREFLY_PHYSICS.GLOW_MULTIPLIER * glowScale;
+
+    // Apply depth-based speed scaling (far = slower for parallax effect)
+    const speedScale = FIREFLY_DEPTH.SPEED_SCALE[layer]!;
     const wanderAngle = Math.random() * Math.PI * 2;
     const wanderSpeed = randomInRange(
       FIREFLY_PHYSICS.WANDER_SPEED_BASE,
       FIREFLY_PHYSICS.WANDER_SPEED_RANGE
-    );
+    ) * speedScale;
+
+    // Apply depth-based opacity scaling
+    const opacityScale = FIREFLY_DEPTH.OPACITY_SCALE[layer]!;
+    const baseOpacity = randomInRange(FIREFLY_OPACITY.MIN, FIREFLY_OPACITY.RANGE) * opacityScale;
+
+    // Apply atmospheric color shift (far = cooler, near = warmer)
+    let color = isSpecial ? { ...SPECIAL_FIREFLY.COLOR } : createFireflyColor();
+    const colorShift = FIREFLY_DEPTH.COLOR_SHIFT[layer]!;
+    color = {
+      r: Math.max(0, Math.min(255, color.r + colorShift.r)),
+      g: Math.max(0, Math.min(255, color.g + colorShift.g)),
+      b: Math.max(0, Math.min(255, color.b + colorShift.b)),
+    };
 
     return {
       x: randomizePosition ? Math.random() * dimensions.width : -RESPAWN_BUFFER,
@@ -105,11 +152,12 @@ export function createFireflySystem() {
       blinkCycleLength:
         FIREFLY_PHYSICS.BLINK_CYCLE_MIN +
         Math.random() * FIREFLY_PHYSICS.BLINK_CYCLE_RANGE,
-      color: isSpecial ? { ...SPECIAL_FIREFLY.COLOR } : createFireflyColor(),
+      color,
       wanderAngle,
       wanderSpeed,
-      baseOpacity: randomInRange(FIREFLY_OPACITY.MIN, FIREFLY_OPACITY.RANGE),
+      baseOpacity,
       isSpecial,
+      depth,
     };
   }
 
@@ -127,14 +175,19 @@ export function createFireflySystem() {
     return fireflies;
   }
 
+  /**
+   * Get depth layer index from normalized depth value
+   */
+  function getLayerFromDepth(depth: number): number {
+    return Math.round(depth * (FIREFLY_DEPTH.NUM_LAYERS - 1));
+  }
+
   function update(
     fireflies: Firefly[],
     dimensions: Dimensions,
     frameMultiplier: number = 1.0,
     a11y?: AccessibilitySettings
   ): Firefly[] {
-    const zoneTop = dimensions.height * FIREFLY_PHYSICS.ZONE_TOP;
-    const zoneBottom = dimensions.height * FIREFLY_PHYSICS.ZONE_BOTTOM;
     const reducedMotion = a11y?.reducedMotion ?? false;
 
     // For reduced motion: 95% reduction in movement, static glow (no blinking)
@@ -143,6 +196,11 @@ export function createFireflySystem() {
       : frameMultiplier;
 
     return fireflies.map((firefly) => {
+      // Get depth-specific zone constraints
+      const layer = getLayerFromDepth(firefly.depth);
+      const zoneTop = dimensions.height * FIREFLY_DEPTH.ZONE_TOP[layer]!;
+      const zoneBottom = dimensions.height * FIREFLY_DEPTH.ZONE_BOTTOM[layer]!;
+
       // Update wander angle with smooth random changes
       const angleChange =
         (Math.random() - 0.5) *
@@ -200,7 +258,7 @@ export function createFireflySystem() {
         newX = -RESPAWN_BUFFER;
       }
 
-      // Clamp vertically within zone
+      // Clamp vertically within depth-specific zone
       newY = Math.max(zoneTop, Math.min(zoneBottom, newY));
 
       return {
@@ -216,44 +274,103 @@ export function createFireflySystem() {
     });
   }
 
+  /**
+   * Draw a single firefly
+   */
+  function drawFirefly(firefly: Firefly, ctx: CanvasRenderingContext2D): void {
+    if (firefly.glowIntensity < 0.01) return; // Skip if nearly invisible
+
+    const { x, y, size, glowRadius, glowIntensity, color, baseOpacity } =
+      firefly;
+    const opacity = baseOpacity * glowIntensity;
+
+    // Draw outer glow
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowRadius);
+    gradient.addColorStop(
+      0,
+      `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`
+    );
+    gradient.addColorStop(
+      0.3,
+      `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * 0.5})`
+    );
+    gradient.addColorStop(
+      0.6,
+      `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * 0.2})`
+    );
+    gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(
+      x - glowRadius,
+      y - glowRadius,
+      glowRadius * 2,
+      glowRadius * 2
+    );
+
+    // Draw bright core
+    ctx.fillStyle = `rgba(${Math.min(255, color.r + 40)}, ${Math.min(255, color.g + 20)}, ${Math.min(255, color.b + 20)}, ${Math.min(1, opacity * FIREFLY_OPACITY.CORE_MULTIPLIER)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /**
+   * Draw all fireflies (backwards compatibility)
+   */
   function draw(fireflies: Firefly[], ctx: CanvasRenderingContext2D): void {
     for (const firefly of fireflies) {
-      if (firefly.glowIntensity < 0.01) continue; // Skip if nearly invisible
-
-      const { x, y, size, glowRadius, glowIntensity, color, baseOpacity } =
-        firefly;
-      const opacity = baseOpacity * glowIntensity;
-
-      // Draw outer glow
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowRadius);
-      gradient.addColorStop(
-        0,
-        `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity})`
-      );
-      gradient.addColorStop(
-        0.3,
-        `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * 0.5})`
-      );
-      gradient.addColorStop(
-        0.6,
-        `rgba(${color.r}, ${color.g}, ${color.b}, ${opacity * 0.2})`
-      );
-      gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(
-        x - glowRadius,
-        y - glowRadius,
-        glowRadius * 2,
-        glowRadius * 2
-      );
-
-      // Draw bright core
-      ctx.fillStyle = `rgba(${Math.min(255, color.r + 40)}, ${Math.min(255, color.g + 20)}, ${Math.min(255, color.b + 20)}, ${Math.min(1, opacity * FIREFLY_OPACITY.CORE_MULTIPLIER)})`;
-      ctx.beginPath();
-      ctx.arc(x, y, size * 0.6, 0, Math.PI * 2);
-      ctx.fill();
+      drawFirefly(firefly, ctx);
     }
+  }
+
+  /**
+   * Draw fireflies within a specific depth range
+   * @param fireflies All fireflies
+   * @param ctx Canvas context
+   * @param minDepth Minimum depth (0 = farthest)
+   * @param maxDepth Maximum depth (1 = nearest)
+   */
+  function drawByDepthRange(
+    fireflies: Firefly[],
+    ctx: CanvasRenderingContext2D,
+    minDepth: number,
+    maxDepth: number
+  ): void {
+    for (const firefly of fireflies) {
+      if (firefly.depth >= minDepth && firefly.depth <= maxDepth) {
+        drawFirefly(firefly, ctx);
+      }
+    }
+  }
+
+  /**
+   * Draw fireflies for a specific depth layer (for interleaving with tree layers)
+   * @param fireflies All fireflies
+   * @param ctx Canvas context
+   * @param layer Depth layer index (0 = far, NUM_LAYERS-1 = near)
+   */
+  function drawLayer(
+    fireflies: Firefly[],
+    ctx: CanvasRenderingContext2D,
+    layer: number
+  ): void {
+    const numLayers = FIREFLY_DEPTH.NUM_LAYERS;
+    const minDepth = layer / (numLayers - 1) - 0.01;
+    const maxDepth = (layer + 1) / (numLayers - 1) + 0.01;
+
+    for (const firefly of fireflies) {
+      if (firefly.depth >= minDepth && firefly.depth < maxDepth) {
+        drawFirefly(firefly, ctx);
+      }
+    }
+  }
+
+  /**
+   * Get the number of depth layers
+   */
+  function getNumDepthLayers(): number {
+    return FIREFLY_DEPTH.NUM_LAYERS;
   }
 
   function adjustToResize(
@@ -305,6 +422,9 @@ export function createFireflySystem() {
     initialize,
     update,
     draw,
+    drawLayer,
+    drawByDepthRange,
+    getNumDepthLayers,
     adjustToResize,
     setQuality,
   };

@@ -18,6 +18,7 @@ export class GroundInvestigationBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "detection";
     u.narrativeTimer = 0;
+    u.targetZ = 0.1; // Descend closer
     u.groundParticles = [];
     ctx.moodManager.markInterest(u);
   }

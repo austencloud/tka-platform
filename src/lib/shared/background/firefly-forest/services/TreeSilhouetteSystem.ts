@@ -1,6 +1,11 @@
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
+import {
+  createTreeSilhouetteImageLoader,
+  type TreeCategory,
+  type TreeSilhouetteImageLoader,
+} from "./TreeSilhouetteImageLoader";
 
-export type TreeType = "pine" | "fir" | "spruce" | "oak" | "maple" | "poplar";
+export type TreeType = "pine" | "fir" | "spruce" | "oak" | "maple" | "poplar" | "willow" | "dead";
 
 export interface TreeTypeVisibility {
   pine: boolean;
@@ -9,6 +14,8 @@ export interface TreeTypeVisibility {
   oak: boolean;
   maple: boolean;
   poplar: boolean;
+  willow: boolean;
+  dead: boolean;
 }
 
 interface Tree {
@@ -17,6 +24,7 @@ interface Tree {
   width: number;
   type: TreeType;
   layer: number; // 0 = far, 1 = mid, 2 = near
+  seed: number; // For deterministic image selection
 }
 
 // Grid-based placement configuration
@@ -79,6 +87,242 @@ const LAYER_CONFIGS: LayerConfig[] = [
 export const NUM_LAYERS = 7;
 const NUM_COLUMNS = 10;
 
+// Species-specific scale factors for realistic proportions
+// Based on natural growth characteristics of each tree type
+interface TreeTypeScale {
+  heightMin: number;  // Multiplier for minimum height
+  heightMax: number;  // Multiplier for maximum height
+  widthMin: number;   // Multiplier for minimum width
+  widthMax: number;   // Multiplier for maximum width
+}
+
+const TREE_TYPE_SCALES: Record<TreeType, TreeTypeScale> = {
+  // Oak: Massive, wide spreading crown, moderate height
+  oak: { heightMin: 0.85, heightMax: 1.05, widthMin: 1.3, widthMax: 1.6 },
+
+  // Pine: Tall with visible trunk, medium spread
+  pine: { heightMin: 1.0, heightMax: 1.2, widthMin: 0.85, widthMax: 1.1 },
+
+  // Fir: Very tall, narrow conical shape (Douglas fir, etc.)
+  fir: { heightMin: 1.1, heightMax: 1.35, widthMin: 0.65, widthMax: 0.85 },
+
+  // Spruce: Tall, conical, slightly wider than fir
+  spruce: { heightMin: 1.05, heightMax: 1.25, widthMin: 0.7, widthMax: 0.9 },
+
+  // Maple: Medium height broadleaf, rounded crown
+  maple: { heightMin: 0.8, heightMax: 1.0, widthMin: 1.0, widthMax: 1.25 },
+
+  // Poplar: Very tall and narrow, columnar shape (Lombardy poplar)
+  poplar: { heightMin: 1.2, heightMax: 1.45, widthMin: 0.45, widthMax: 0.65 },
+
+  // Willow: Medium height, very wide drooping crown
+  willow: { heightMin: 0.75, heightMax: 0.95, widthMin: 1.25, widthMax: 1.55 },
+
+  // Dead: Variable, typically shorter and narrower than living trees
+  dead: { heightMin: 0.65, heightMax: 0.95, widthMin: 0.6, widthMax: 0.9 },
+};
+
+// ===================
+// ECOLOGICAL PATTERN SYSTEM
+// ===================
+
+/**
+ * Ecological zone defines which tree types are weighted in a region of the canvas
+ * x positions are normalized 0-1 across the canvas width
+ */
+interface EcologicalZone {
+  startX: number;  // 0-1 normalized start position
+  endX: number;    // 0-1 normalized end position
+  weights: Partial<Record<TreeType, number>>;  // Higher weight = more likely
+}
+
+/**
+ * An ecological pattern defines how tree types are distributed across the scene
+ */
+export interface EcologicalPattern {
+  id: string;
+  name: string;
+  description: string;
+  zones: EcologicalZone[];
+}
+
+/**
+ * Preset ecological patterns based on real-world forest biomes
+ *
+ * VISUAL DISTINCTIVENESS GUIDE:
+ * - Conifers (pine/fir/spruce): Triangular, pointed tops
+ * - Oak/Maple: Wide, rounded crowns
+ * - Poplar: VERY tall and narrow (columnar) - most distinctive!
+ * - Willow: Wide, droopy branches
+ * - Dead: Sparse, skeletal
+ *
+ * Patterns are designed to create VISIBLE differences through shape variety
+ */
+export const ECOLOGICAL_PATTERNS: EcologicalPattern[] = [
+  {
+    id: "random",
+    name: "Random Mix",
+    description: "Uniform random distribution of all tree types",
+    zones: [
+      {
+        startX: 0,
+        endX: 1,
+        weights: { pine: 1, fir: 1, spruce: 1, oak: 1, maple: 1, poplar: 1, willow: 1, dead: 1 },
+      },
+    ],
+  },
+  // === SINGLE-TYPE PATTERNS (for testing/dramatic effect) ===
+  {
+    id: "conifers-only",
+    name: "Conifer Forest",
+    description: "100% conifers - triangular silhouettes only",
+    zones: [
+      {
+        startX: 0,
+        endX: 1,
+        weights: { pine: 3, fir: 3, spruce: 3 },
+      },
+    ],
+  },
+  {
+    id: "deciduous-only",
+    name: "Deciduous Grove",
+    description: "100% broadleaf - wide rounded crowns",
+    zones: [
+      {
+        startX: 0,
+        endX: 1,
+        weights: { oak: 4, maple: 4, willow: 2 },
+      },
+    ],
+  },
+  {
+    id: "poplar-avenue",
+    name: "Poplar Avenue",
+    description: "Tall narrow poplars - dramatic columnar silhouettes",
+    zones: [
+      {
+        startX: 0,
+        endX: 1,
+        weights: { poplar: 10, dead: 1 },
+      },
+    ],
+  },
+  {
+    id: "willow-wetland",
+    name: "Willow Wetland",
+    description: "Drooping willows with scattered dead trees",
+    zones: [
+      {
+        startX: 0,
+        endX: 1,
+        weights: { willow: 10, dead: 2 },
+      },
+    ],
+  },
+  {
+    id: "haunted-forest",
+    name: "Haunted Forest",
+    description: "Mostly dead trees with sparse survivors",
+    zones: [
+      {
+        startX: 0,
+        endX: 1,
+        weights: { dead: 8, oak: 1, pine: 1 },
+      },
+    ],
+  },
+  // === MIXED PATTERNS (realistic biomes) ===
+  {
+    id: "conifer-ridge",
+    name: "Conifer Ridge",
+    description: "Triangular conifers on left, rounded deciduous on right",
+    zones: [
+      {
+        startX: 0,
+        endX: 0.4,
+        weights: { pine: 5, fir: 5, spruce: 5 },
+      },
+      {
+        startX: 0.4,
+        endX: 0.6,
+        weights: { pine: 2, oak: 3, maple: 3, dead: 1 },
+      },
+      {
+        startX: 0.6,
+        endX: 1,
+        weights: { oak: 5, maple: 4, willow: 2 },
+      },
+    ],
+  },
+  {
+    id: "riparian",
+    name: "Riparian Corridor",
+    description: "Tall poplars and droopy willows in center stream",
+    zones: [
+      {
+        startX: 0,
+        endX: 0.25,
+        weights: { oak: 5, maple: 4 },
+      },
+      {
+        startX: 0.25,
+        endX: 0.75,
+        weights: { willow: 6, poplar: 6, dead: 1 },
+      },
+      {
+        startX: 0.75,
+        endX: 1,
+        weights: { oak: 5, maple: 4 },
+      },
+    ],
+  },
+  {
+    id: "edge-habitat",
+    name: "Poplar Windbreak",
+    description: "Tall narrow poplars at edges, mixed forest center",
+    zones: [
+      {
+        startX: 0,
+        endX: 0.15,
+        weights: { poplar: 10 },
+      },
+      {
+        startX: 0.15,
+        endX: 0.85,
+        weights: { oak: 3, maple: 3, pine: 2, fir: 2, dead: 1 },
+      },
+      {
+        startX: 0.85,
+        endX: 1,
+        weights: { poplar: 10 },
+      },
+    ],
+  },
+  {
+    id: "alpine-transition",
+    name: "Alpine Treeline",
+    description: "Dense conifers thin to dead trees at treeline",
+    zones: [
+      {
+        startX: 0,
+        endX: 0.4,
+        weights: { pine: 4, fir: 4, spruce: 4 },
+      },
+      {
+        startX: 0.4,
+        endX: 0.7,
+        weights: { pine: 2, spruce: 2, dead: 3 },
+      },
+      {
+        startX: 0.7,
+        endX: 1,
+        weights: { dead: 10, pine: 1 },
+      },
+    ],
+  },
+];
+
 // ===================
 // A+ PLACEMENT SYSTEM
 // Cross-layer collision avoidance, minimum spacing, compositional anchors
@@ -138,25 +382,34 @@ export function createTreeSilhouetteSystem() {
     oak: true,
     maple: true,
     poplar: true,
+    willow: true,
+    dead: true,
   };
+
+  // Image-based tree rendering
+  const imageLoader: TreeSilhouetteImageLoader = createTreeSilhouetteImageLoader();
+  let imagesLoaded = false;
+
+  // Track used images to prevent duplicates in the same scene
+  let usedImages: Set<string> = new Set();
 
   // Configurable placement parameters
   let placementConfig: PlacementConfig = { ...DEFAULT_PLACEMENT };
+
+  // Ecological pattern state
+  let currentPatternId: string = "random";  // Default to random distribution
 
   type RenderContext =
     | CanvasRenderingContext2D
     | OffscreenCanvasRenderingContext2D;
 
-  // Night silhouette color palette - endpoints for interpolation
-  // Far trees are slightly lighter (atmospheric haze), near trees are dark silhouettes
-  const FAR_FOLIAGE = { r: 10, g: 20, b: 16 }; // Distant green haze
-  const NEAR_FOLIAGE = { r: 2, g: 4, b: 3 }; // Near-black (true silhouette)
+  // Night silhouette color palette - pure darkness with subtle atmospheric fade
+  // Most trees stay dark; only the very farthest get a subtle haze lift
+  const FAR_SILHOUETTE = { r: 18, g: 22, b: 28 }; // Subtle distant haze - very dark blue-gray
+  const NEAR_SILHOUETTE = { r: 0, g: 0, b: 0 }; // Pure black silhouette
 
-  const FAR_TRUNK = { r: 20, g: 16, b: 14 }; // Visible brown
-  const NEAR_TRUNK = { r: 4, g: 3, b: 2 }; // Very dark brown
-
-  // Rim light color - subtle moonlight edge glow (reduced intensity)
-  const RIM_LIGHT = { r: 30, g: 40, b: 50 }; // Subtle blue moonlight
+  // Rim light color - subtle moonlight edge glow
+  const RIM_LIGHT = { r: 35, g: 45, b: 55 };
 
   interface RGB {
     r: number;
@@ -173,78 +426,12 @@ export function createTreeSilhouetteSystem() {
     };
   }
 
-  /** Adjust brightness of an RGB color (factor > 1 = lighter, < 1 = darker) */
-  function adjustBrightness(color: RGB, factor: number): RGB {
-    return {
-      r: Math.min(255, Math.floor(color.r * factor)),
-      g: Math.min(255, Math.floor(color.g * factor)),
-      b: Math.min(255, Math.floor(color.b * factor)),
-    };
-  }
-
   /** Convert RGB to CSS string */
   function rgbToString(color: RGB, alpha = 1): string {
     if (alpha < 1) {
       return `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
     }
     return `rgb(${color.r}, ${color.g}, ${color.b})`;
-  }
-
-  /** Create a radial gradient for tree foliage */
-  function createFoliageGradient(
-    ctx: RenderContext,
-    x: number,
-    centerY: number,
-    radius: number,
-    baseColor: RGB
-  ): CanvasGradient {
-    const gradient = ctx.createRadialGradient(x, centerY, 0, x, centerY, radius);
-    // Subtle gradient for silhouettes - slightly lighter center, darker edges
-    // Keep it subtle so trees read as solid dark shapes
-    const lighter = adjustBrightness(baseColor, 1.15); // Center: 15% lighter
-    const darker = adjustBrightness(baseColor, 0.85); // Edge: 15% darker
-
-    gradient.addColorStop(0, rgbToString(lighter));
-    gradient.addColorStop(0.6, rgbToString(baseColor));
-    gradient.addColorStop(1, rgbToString(darker));
-
-    return gradient;
-  }
-
-  /**
-   * Apply rim lighting to current path
-   * Creates visible edges so trees stand out against both sky and ground
-   * @param layer - 0 (far) to NUM_LAYERS-1 (near)
-   * @param treeHeight - used to scale line width appropriately
-   */
-  function applyRimLight(ctx: RenderContext, layer: number, treeHeight: number): void {
-    // Normalize layer to 0-1 range
-    const t = layer / (NUM_LAYERS - 1);
-
-    // Near trees (against dark ground) need stronger rim lighting
-    // Far trees (against sky) get softer atmospheric glow
-    // U-shaped curve: strong at far (atmospheric), medium in mid, stronger at near (contrast)
-    const farOpacity = 0.4;   // Atmospheric haze on distant trees
-    const midOpacity = 0.25;  // Subtle in middle
-    const nearOpacity = 0.5;  // Strong outline against ground
-
-    // Blend using smoothstep-like curve
-    let opacity: number;
-    if (t < 0.5) {
-      // Far to mid: decrease
-      opacity = farOpacity + (midOpacity - farOpacity) * (t * 2);
-    } else {
-      // Mid to near: increase
-      opacity = midOpacity + (nearOpacity - midOpacity) * ((t - 0.5) * 2);
-    }
-
-    // Line width scales with tree size, thicker for near trees
-    const baseWidth = Math.max(0.8, treeHeight * 0.004);
-    const lineWidth = baseWidth * (0.6 + t * 0.8); // 0.6x for far, 1.4x for near
-
-    ctx.strokeStyle = rgbToString(RIM_LIGHT, opacity);
-    ctx.lineWidth = lineWidth;
-    ctx.stroke();
   }
 
   // Seeded random for small variations (jitter)
@@ -257,6 +444,70 @@ export function createTreeSilhouetteSystem() {
 
   function resetSeed(): void {
     seed = Date.now();
+  }
+
+  /**
+   * Get the current ecological pattern
+   */
+  function getCurrentPattern(): EcologicalPattern {
+    return ECOLOGICAL_PATTERNS.find(p => p.id === currentPatternId) || ECOLOGICAL_PATTERNS[0]!;
+  }
+
+  /**
+   * Find which zone a position falls into for the current pattern
+   */
+  function getZoneForPosition(normalizedX: number): EcologicalZone | null {
+    const pattern = getCurrentPattern();
+    for (const zone of pattern.zones) {
+      if (normalizedX >= zone.startX && normalizedX < zone.endX) {
+        return zone;
+      }
+    }
+    // Fallback to last zone if at exact end
+    return pattern.zones[pattern.zones.length - 1] || null;
+  }
+
+  /**
+   * Pick a tree type based on position and current ecological pattern
+   * Respects visibility settings and zone weights
+   */
+  function pickTypeForPosition(normalizedX: number, enabledTypes: TreeType[]): TreeType {
+    const zone = getZoneForPosition(normalizedX);
+
+    if (!zone) {
+      // Fallback to uniform random from enabled types
+      return enabledTypes[Math.floor(seededRandom() * enabledTypes.length)]!;
+    }
+
+    // Build weighted list of enabled types only
+    const weightedOptions: Array<{ type: TreeType; weight: number }> = [];
+    let totalWeight = 0;
+
+    for (const type of enabledTypes) {
+      const weight = zone.weights[type] ?? 0;
+      if (weight > 0) {
+        weightedOptions.push({ type, weight });
+        totalWeight += weight;
+      }
+    }
+
+    // If no weighted options available, fall back to uniform random
+    if (weightedOptions.length === 0 || totalWeight === 0) {
+      return enabledTypes[Math.floor(seededRandom() * enabledTypes.length)]!;
+    }
+
+    // Weighted random selection
+    const roll = seededRandom() * totalWeight;
+    let cumulative = 0;
+    for (const option of weightedOptions) {
+      cumulative += option.weight;
+      if (roll < cumulative) {
+        return option.type;
+      }
+    }
+
+    // Fallback (shouldn't reach here)
+    return weightedOptions[weightedOptions.length - 1]!.type;
   }
 
   /**
@@ -273,527 +524,74 @@ export function createTreeSilhouetteSystem() {
   }
 
   // ===================
-  // CONIFER TREES
+  // IMAGE-BASED TREE RENDERING
   // ===================
 
   /**
-   * Create a seeded random generator from a position value
-   * Each tree at the same x position will always look the same
+   * Draw a tree using a pre-loaded silhouette image
+   * Applies depth-based tinting for atmospheric perspective
    */
-  function createPositionSeededRandom(position: number): () => number {
-    // Derive seed from position - multiply to spread values, add to ensure positive
-    let localSeed = Math.floor(Math.abs(position * 10000)) + 1;
-    return () => {
-      localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
-      return localSeed / 0x7fffffff;
-    };
-  }
-
-  /**
-   * Pine tree - procedural tiered structure with distinct horizontal branch plates
-   * Based on botanical research: pines grow in pseudo-whorls, one per year
-   * Uses seeded randomness for deterministic variation based on position
-   */
-  function drawPine(
+  function drawTreeImage(
     ctx: RenderContext,
     x: number,
     baseY: number,
     width: number,
     height: number,
-    trunkColor: RGB,
-    foliageColor: RGB,
-    layer: number
-  ): void {
-    const rand = createPositionSeededRandom(x);
+    treeType: TreeType,
+    layer: number,
+    seed: number
+  ): boolean {
+    // Use unique selector to prevent duplicate trees in the same scene
+    const treeImage = imageLoader.getUniqueFromCategory(treeType as TreeCategory, usedImages, seed);
+    if (!treeImage) return false;
 
-    // Default parameters tuned for silhouette rendering
-    const tierCount = 6 + Math.round(rand() * 2); // 6-8 tiers
-    const tierSpacing = 0.95 + rand() * 0.15; // 0.95-1.1
-    const spread = 0.42 + rand() * 0.08; // 0.42-0.50
-    const uplift = 0.12 + rand() * 0.08; // 0.12-0.20
-    const gapVisibility = 0.22 + rand() * 0.08; // 0.22-0.30
+    // Track this image as used
+    usedImages.add(treeImage.filename);
 
-    const trunkW = width * 0.1;
-    const trunkH = height * 0.15;
-    const treeTop = baseY - height;
-    const bodyStart = baseY - trunkH;
-    const bodyHeight = height - trunkH;
+    // Calculate draw dimensions maintaining aspect ratio
+    const targetHeight = height;
+    const targetWidth = targetHeight * treeImage.aspectRatio;
 
-    // Draw trunk first
-    ctx.fillStyle = rgbToString(trunkColor);
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 3, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 3, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
+    // Position: center horizontally at x, bottom at baseY
+    const drawX = x - targetWidth / 2;
+    const drawY = baseY - targetHeight;
 
-    // Calculate tier positions with spacing variation
-    const tierPositions: number[] = [];
-    for (let i = 0; i <= tierCount; i++) {
-      const baseT = i / tierCount;
-      const adjustedT = Math.pow(baseT, tierSpacing);
-      const jitter = i > 0 && i < tierCount ? (rand() - 0.5) * 0.04 : 0;
-      tierPositions.push(Math.max(0, Math.min(1, adjustedT + jitter)));
-    }
+    // Get depth-based color
+    const colors = getTreeColors(layer);
 
-    // Draw foliage with radial gradient
-    const foliageCenterY = baseY - height * 0.5;
-    const gradient = createFoliageGradient(ctx, x, foliageCenterY, height * 0.6, foliageColor);
-    ctx.fillStyle = gradient;
+    // Create a temporary canvas for tinting
+    const tempCanvas = new OffscreenCanvas(Math.ceil(targetWidth), Math.ceil(targetHeight));
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return false;
 
-    // Draw each tier as a separate foliage plate
-    for (let tier = 0; tier < tierCount; tier++) {
-      const t = tierPositions[tier + 1]!;
-      const prevT = tierPositions[tier]!;
-
-      const tierY = treeTop + bodyHeight * t;
-      const prevY = treeTop + bodyHeight * prevT;
-      const tierHeight = (tierY - prevY) * (1 - gapVisibility);
-
-      // Width tapers toward top
-      const tierWidth = width * spread * Math.pow(t, 0.6);
-
-      // Asymmetric variation
-      const leftExtend = 1 + (rand() - 0.5) * 0.2;
-      const rightExtend = 1 + (rand() - 0.5) * 0.2;
-
-      // Branch uplift (candle effect)
-      const baseUplift = uplift * tierHeight;
-      const leftUplift = baseUplift * (0.8 + rand() * 0.4);
-      const rightUplift = baseUplift * (0.8 + rand() * 0.4);
-
-      ctx.beginPath();
-
-      // Start at trunk connection (left side)
-      const trunkLeft = x - trunkW * 0.4;
-      const trunkRight = x + trunkW * 0.4;
-      ctx.moveTo(trunkLeft, tierY - tierHeight * 0.3);
-
-      // Left branch tip
-      const leftTipX = x - tierWidth * leftExtend;
-      const leftTipY = tierY - tierHeight * 0.5 - leftUplift;
-
-      // Curved path to left tip
-      const numLeftPoints = 3 + Math.floor(rand() * 2);
-      for (let p = 0; p <= numLeftPoints; p++) {
-        const frac = p / numLeftPoints;
-        const ptX = trunkLeft - (trunkLeft - leftTipX) * frac;
-        const curve = Math.sin(frac * Math.PI) * tierHeight * 0.12;
-        const wave = Math.sin(frac * Math.PI * 3 + x) * 1.5;
-        const ptY = tierY - tierHeight * (0.3 + frac * 0.2) - leftUplift * frac - curve + wave;
-        ctx.lineTo(ptX, ptY);
-      }
-
-      // Left tip to bottom edge with small jags
-      const numJags = 2 + Math.floor(rand() * 2);
-      for (let j = 0; j < numJags; j++) {
-        const frac = (j + 1) / (numJags + 1);
-        const jagX = leftTipX + (trunkLeft - leftTipX) * frac * 0.7;
-        const jagY = tierY + rand() * 2;
-        ctx.lineTo(jagX, jagY);
-        const spikeX = jagX + rand() * 3 + 1;
-        const spikeY = jagY - rand() * 4 - 2;
-        ctx.lineTo(spikeX, spikeY);
-      }
-
-      // Across bottom to right side
-      ctx.lineTo(trunkLeft, tierY);
-      ctx.lineTo(trunkRight, tierY);
-
-      // Right side mirror
-      const rightTipX = x + tierWidth * rightExtend;
-      const rightTipY = tierY - tierHeight * 0.5 - rightUplift;
-
-      for (let j = numJags - 1; j >= 0; j--) {
-        const frac = (j + 1) / (numJags + 1);
-        const spikeX = rightTipX - (rightTipX - trunkRight) * frac * 0.7 - rand() * 3 - 1;
-        const spikeY = tierY - rand() * 4 - 2;
-        ctx.lineTo(spikeX, spikeY);
-        const jagX = rightTipX - (rightTipX - trunkRight) * frac * 0.7;
-        const jagY = tierY + rand() * 2;
-        ctx.lineTo(jagX, jagY);
-      }
-
-      // Right tip
-      for (let p = numLeftPoints; p >= 0; p--) {
-        const frac = p / numLeftPoints;
-        const ptX = trunkRight + (rightTipX - trunkRight) * frac;
-        const curve = Math.sin(frac * Math.PI) * tierHeight * 0.12;
-        const wave = Math.sin(frac * Math.PI * 3 + x + 2) * 1.5;
-        const ptY = tierY - tierHeight * (0.3 + frac * 0.2) - rightUplift * frac - curve + wave;
-        ctx.lineTo(ptX, ptY);
-      }
-
-      ctx.lineTo(trunkRight, tierY - tierHeight * 0.3);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Draw apex (top tuft)
-    const apexHeight = bodyHeight * tierPositions[1]! * 0.8;
-    const apexWidth = width * spread * 0.25;
-    ctx.beginPath();
-    ctx.moveTo(x, treeTop);
-    ctx.lineTo(x + apexWidth * (0.8 + rand() * 0.4), treeTop + apexHeight * 0.7);
-    ctx.lineTo(x + apexWidth * 0.3, treeTop + apexHeight);
-    ctx.lineTo(x - apexWidth * 0.3, treeTop + apexHeight);
-    ctx.lineTo(x - apexWidth * (0.8 + rand() * 0.4), treeTop + apexHeight * 0.7);
-    ctx.closePath();
-    ctx.fill();
-
-    applyRimLight(ctx, layer, height);
-  }
-
-  /**
-   * Fir tree - dense triangular shape with subtle texture
-   */
-  function drawFir(
-    ctx: RenderContext,
-    x: number,
-    baseY: number,
-    width: number,
-    height: number,
-    trunkColor: RGB,
-    foliageColor: RGB,
-    layer: number
-  ): void {
-    const trunkW = width * 0.12;
-    const trunkH = height * 0.18;
-    const bodyStart = baseY - trunkH;
-
-    // Draw trunk first
-    ctx.fillStyle = rgbToString(trunkColor);
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Draw foliage with radial gradient
-    const foliageCenterY = baseY - height * 0.5;
-    const gradient = createFoliageGradient(ctx, x, foliageCenterY, height * 0.6, foliageColor);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.moveTo(x - width * 0.48, bodyStart);
-    ctx.lineTo(x - width * 0.42, bodyStart - height * 0.12);
-    ctx.lineTo(x - width * 0.44, bodyStart - height * 0.15);
-    ctx.lineTo(x - width * 0.36, bodyStart - height * 0.3);
-    ctx.lineTo(x - width * 0.38, bodyStart - height * 0.33);
-    ctx.lineTo(x - width * 0.28, bodyStart - height * 0.5);
-    ctx.lineTo(x - width * 0.3, bodyStart - height * 0.53);
-    ctx.lineTo(x - width * 0.18, bodyStart - height * 0.72);
-    ctx.lineTo(x - width * 0.12, bodyStart - height * 0.78);
-    ctx.lineTo(x, baseY - height);
-    ctx.lineTo(x + width * 0.12, bodyStart - height * 0.78);
-    ctx.lineTo(x + width * 0.18, bodyStart - height * 0.72);
-    ctx.lineTo(x + width * 0.3, bodyStart - height * 0.53);
-    ctx.lineTo(x + width * 0.28, bodyStart - height * 0.5);
-    ctx.lineTo(x + width * 0.38, bodyStart - height * 0.33);
-    ctx.lineTo(x + width * 0.36, bodyStart - height * 0.3);
-    ctx.lineTo(x + width * 0.44, bodyStart - height * 0.15);
-    ctx.lineTo(x + width * 0.42, bodyStart - height * 0.12);
-    ctx.lineTo(x + width * 0.48, bodyStart);
-    ctx.closePath();
-    ctx.fill();
-    applyRimLight(ctx, layer, height);
-  }
-
-  /**
-   * Spruce - tall conifer with organic bumpy silhouette
-   * Uses noise-based edge variation for natural branch tip appearance
-   */
-  function drawSpruce(
-    ctx: RenderContext,
-    x: number,
-    baseY: number,
-    width: number,
-    height: number,
-    trunkColor: RGB,
-    foliageColor: RGB,
-    layer: number
-  ): void {
-    const trunkW = width * 0.14;
-    const trunkH = height * 0.12;
-    const bodyStart = baseY - trunkH;
-    const bodyHeight = height - trunkH;
-
-    // Draw trunk first
-    ctx.fillStyle = rgbToString(trunkColor);
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Create position-based seed for this specific tree
-    const treeSeed = Math.floor(x * 1000 + layer * 10000);
-    let localSeed = treeSeed;
-    const treeRandom = (): number => {
-      localSeed = (localSeed * 1103515245 + 12345) & 0x7fffffff;
-      return localSeed / 0x7fffffff;
-    };
-
-    // Spruce shape parameters
-    const baseWidthRatio = 0.38 + treeRandom() * 0.08; // Wide at bottom
-    const taperPower = 1.8 + treeRandom() * 0.4; // Controls how quickly it narrows
-    const bumpCount = 14 + Math.floor(treeRandom() * 8); // 14-22 bumps per side
-
-    // Generate edge points with organic variation
-    interface EdgePoint {
-      y: number;
-      width: number;
-    }
-
-    const leftEdge: EdgePoint[] = [];
-    const rightEdge: EdgePoint[] = [];
-
-    // Generate bumps along the tree height
-    for (let i = 0; i <= bumpCount; i++) {
-      const t = i / bumpCount; // 0 at base, 1 at tip
-
-      // Base taper - exponential curve for natural spruce shape
-      const baseTaper = 1 - Math.pow(t, taperPower);
-      const baseWidth = baseWidthRatio * baseTaper;
-
-      // Add organic variation - bumps that simulate branch clusters
-      // Lower frequency for overall shape, higher for small bumps
-      const lowFreq = Math.sin(t * Math.PI * 2 + treeRandom() * Math.PI) * 0.03;
-      const midFreq = Math.sin(t * Math.PI * 5 + treeRandom() * Math.PI * 2) * 0.02;
-      const highFreq = (treeRandom() - 0.5) * 0.025;
-
-      // Combine variations - more variation in middle, less at base and tip
-      const variationStrength = Math.sin(t * Math.PI) * 0.8 + 0.2;
-      const variation = (lowFreq + midFreq + highFreq) * variationStrength;
-
-      // Left and right sides get slightly different variations for asymmetry
-      const leftVar = variation + (treeRandom() - 0.5) * 0.015;
-      const rightVar = variation + (treeRandom() - 0.5) * 0.015;
-
-      const y = bodyStart - bodyHeight * t;
-
-      leftEdge.push({
-        y,
-        width: Math.max(0.02, baseWidth + leftVar),
-      });
-
-      rightEdge.push({
-        y,
-        width: Math.max(0.02, baseWidth + rightVar),
-      });
-    }
-
-    // Draw foliage with radial gradient
-    const foliageCenterY = baseY - height * 0.5;
-    const gradient = createFoliageGradient(ctx, x, foliageCenterY, height * 0.6, foliageColor);
-    ctx.fillStyle = gradient;
-
-    ctx.beginPath();
-
-    // Start at bottom left
-    ctx.moveTo(x - width * leftEdge[0]!.width, bodyStart);
-
-    // Draw left side going up
-    for (let i = 1; i < leftEdge.length; i++) {
-      const pt = leftEdge[i]!;
-      ctx.lineTo(x - width * pt.width, pt.y);
-    }
-
-    // Sharp tip
-    ctx.lineTo(x, baseY - height);
-
-    // Draw right side going down
-    for (let i = rightEdge.length - 1; i >= 0; i--) {
-      const pt = rightEdge[i]!;
-      ctx.lineTo(x + width * pt.width, pt.y);
-    }
-
-    ctx.closePath();
-    ctx.fill();
-    applyRimLight(ctx, layer, height);
-  }
-
-  // ===================
-  // DECIDUOUS TREES
-  // ===================
-
-  /**
-   * Oak tree - rounded, full crown
-   */
-  function drawOak(
-    ctx: RenderContext,
-    x: number,
-    baseY: number,
-    width: number,
-    height: number,
-    trunkColor: RGB,
-    foliageColor: RGB,
-    layer: number
-  ): void {
-    const trunkW = width * 0.18;
-    const trunkH = height * 0.35;
-    const crownStart = baseY - trunkH;
-    const crownHeight = height - trunkH;
-
-    // Draw trunk first
-    ctx.fillStyle = rgbToString(trunkColor);
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Draw foliage with radial gradient
-    const foliageCenterY = crownStart - crownHeight * 0.5;
-    const gradient = createFoliageGradient(ctx, x, foliageCenterY, crownHeight * 0.6, foliageColor);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.moveTo(x - width * 0.35, crownStart);
-    ctx.quadraticCurveTo(
-      x - width * 0.5,
-      crownStart - crownHeight * 0.2,
-      x - width * 0.48,
-      crownStart - crownHeight * 0.4
+    // Draw the silhouette scaled
+    tempCtx.drawImage(
+      treeImage.canvas as CanvasImageSource,
+      0, 0, treeImage.width, treeImage.height,
+      0, 0, targetWidth, targetHeight
     );
-    ctx.quadraticCurveTo(
-      x - width * 0.52,
-      crownStart - crownHeight * 0.6,
-      x - width * 0.4,
-      crownStart - crownHeight * 0.75
-    );
-    ctx.quadraticCurveTo(
-      x - width * 0.3,
-      crownStart - crownHeight * 0.95,
-      x - width * 0.15,
-      crownStart - crownHeight * 0.98
-    );
-    ctx.quadraticCurveTo(x, crownStart - crownHeight * 1.05, x + width * 0.15, crownStart - crownHeight * 0.98);
-    ctx.quadraticCurveTo(
-      x + width * 0.3,
-      crownStart - crownHeight * 0.95,
-      x + width * 0.4,
-      crownStart - crownHeight * 0.75
-    );
-    ctx.quadraticCurveTo(
-      x + width * 0.52,
-      crownStart - crownHeight * 0.6,
-      x + width * 0.48,
-      crownStart - crownHeight * 0.4
-    );
-    ctx.quadraticCurveTo(
-      x + width * 0.5,
-      crownStart - crownHeight * 0.2,
-      x + width * 0.35,
-      crownStart
-    );
-    ctx.closePath();
-    ctx.fill();
-    applyRimLight(ctx, layer, height);
-  }
 
-  /**
-   * Maple tree - wide spreading crown with lobed silhouette
-   */
-  function drawMaple(
-    ctx: RenderContext,
-    x: number,
-    baseY: number,
-    width: number,
-    height: number,
-    trunkColor: RGB,
-    foliageColor: RGB,
-    layer: number
-  ): void {
-    const trunkW = width * 0.12;
-    const trunkH = height * 0.3;
-    const crownStart = baseY - trunkH;
-    const crownHeight = height - trunkH;
+    // Apply darkness-based tint using composite operation
+    // Far trees get lifted by atmospheric haze, near trees stay pure black
+    tempCtx.globalCompositeOperation = 'source-atop';
+    tempCtx.fillStyle = rgbToString(colors.silhouette);
+    tempCtx.fillRect(0, 0, targetWidth, targetHeight);
 
-    // Draw trunk first
-    ctx.fillStyle = rgbToString(trunkColor);
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
+    // Draw to main canvas
+    ctx.drawImage(tempCanvas as CanvasImageSource, drawX, drawY);
 
-    // Draw foliage with radial gradient
-    const foliageCenterY = crownStart - crownHeight * 0.5;
-    const gradient = createFoliageGradient(ctx, x, foliageCenterY, crownHeight * 0.6, foliageColor);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.moveTo(x - width * 0.25, crownStart);
-    ctx.quadraticCurveTo(x - width * 0.55, crownStart - crownHeight * 0.1, x - width * 0.5, crownStart - crownHeight * 0.3);
-    ctx.lineTo(x - width * 0.55, crownStart - crownHeight * 0.35);
-    ctx.quadraticCurveTo(x - width * 0.5, crownStart - crownHeight * 0.5, x - width * 0.45, crownStart - crownHeight * 0.55);
-    ctx.lineTo(x - width * 0.48, crownStart - crownHeight * 0.6);
-    ctx.quadraticCurveTo(x - width * 0.4, crownStart - crownHeight * 0.8, x - width * 0.25, crownStart - crownHeight * 0.9);
-    ctx.lineTo(x - width * 0.2, crownStart - crownHeight * 0.95);
-    ctx.quadraticCurveTo(x, crownStart - crownHeight * 1.02, x + width * 0.2, crownStart - crownHeight * 0.95);
-    ctx.lineTo(x + width * 0.25, crownStart - crownHeight * 0.9);
-    ctx.quadraticCurveTo(x + width * 0.4, crownStart - crownHeight * 0.8, x + width * 0.48, crownStart - crownHeight * 0.6);
-    ctx.lineTo(x + width * 0.45, crownStart - crownHeight * 0.55);
-    ctx.quadraticCurveTo(x + width * 0.5, crownStart - crownHeight * 0.5, x + width * 0.55, crownStart - crownHeight * 0.35);
-    ctx.lineTo(x + width * 0.5, crownStart - crownHeight * 0.3);
-    ctx.quadraticCurveTo(x + width * 0.55, crownStart - crownHeight * 0.1, x + width * 0.25, crownStart);
-    ctx.closePath();
-    ctx.fill();
-    applyRimLight(ctx, layer, height);
-  }
+    // Apply rim light effect
+    // For images, we draw a subtle glow behind
+    const t = layer / (NUM_LAYERS - 1);
+    const rimOpacity = 0.15 + t * 0.2;
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.shadowColor = rgbToString(RIM_LIGHT, rimOpacity);
+    ctx.shadowBlur = 2 + t * 3;
+    ctx.drawImage(tempCanvas as CanvasImageSource, drawX, drawY);
+    ctx.shadowBlur = 0;
+    ctx.globalCompositeOperation = 'source-over';
 
-  /**
-   * Poplar tree - tall columnar deciduous
-   */
-  function drawPoplar(
-    ctx: RenderContext,
-    x: number,
-    baseY: number,
-    width: number,
-    height: number,
-    trunkColor: RGB,
-    foliageColor: RGB,
-    layer: number
-  ): void {
-    const trunkW = width * 0.2;
-    const trunkH = height * 0.25;
-    const crownStart = baseY - trunkH;
-    const crownHeight = height - trunkH;
-
-    // Draw trunk first
-    ctx.fillStyle = rgbToString(trunkColor);
-    ctx.beginPath();
-    ctx.moveTo(x - trunkW / 2, baseY);
-    ctx.lineTo(x - trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY - trunkH);
-    ctx.lineTo(x + trunkW / 2, baseY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Draw foliage with radial gradient
-    const foliageCenterY = crownStart - crownHeight * 0.5;
-    const gradient = createFoliageGradient(ctx, x, foliageCenterY, crownHeight * 0.6, foliageColor);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.moveTo(x - width * 0.25, crownStart);
-    ctx.quadraticCurveTo(x - width * 0.35, crownStart - crownHeight * 0.15, x - width * 0.3, crownStart - crownHeight * 0.3);
-    ctx.quadraticCurveTo(x - width * 0.32, crownStart - crownHeight * 0.5, x - width * 0.25, crownStart - crownHeight * 0.7);
-    ctx.quadraticCurveTo(x - width * 0.2, crownStart - crownHeight * 0.85, x - width * 0.1, crownStart - crownHeight * 0.95);
-    ctx.quadraticCurveTo(x, crownStart - crownHeight * 1.02, x + width * 0.1, crownStart - crownHeight * 0.95);
-    ctx.quadraticCurveTo(x + width * 0.2, crownStart - crownHeight * 0.85, x + width * 0.25, crownStart - crownHeight * 0.7);
-    ctx.quadraticCurveTo(x + width * 0.32, crownStart - crownHeight * 0.5, x + width * 0.3, crownStart - crownHeight * 0.3);
-    ctx.quadraticCurveTo(x + width * 0.35, crownStart - crownHeight * 0.15, x + width * 0.25, crownStart);
-    ctx.closePath();
-    ctx.fill();
-    applyRimLight(ctx, layer, height);
+    return true;
   }
 
   // ===================
@@ -808,6 +606,8 @@ export function createTreeSilhouetteSystem() {
     if (currentVisibility.oak) types.push("oak");
     if (currentVisibility.maple) types.push("maple");
     if (currentVisibility.poplar) types.push("poplar");
+    if (currentVisibility.willow) types.push("willow");
+    if (currentVisibility.dead) types.push("dead");
     return types;
   }
 
@@ -942,8 +742,10 @@ export function createTreeSilhouetteSystem() {
     // Reset seed for deterministic generation
     resetSeed();
 
-    const pickType = (): TreeType =>
-      enabledTypes[Math.floor(seededRandom() * enabledTypes.length)]!;
+    // Debug: Log which pattern is being used
+    const pattern = getCurrentPattern();
+    console.log(`[TreeSilhouetteSystem] Creating trees with pattern: "${pattern.name}" (${pattern.id})`);
+    console.log(`[TreeSilhouetteSystem] Enabled types:`, enabledTypes);
 
     // Track placed trees for collision detection
     const placedTrees: PlacedTree[] = [];
@@ -980,23 +782,43 @@ export function createTreeSilhouetteSystem() {
         // Skip tree if no valid position found
         if (finalX === null) return;
 
-        // Calculate height with variation and potential hero boost
+        // Pick tree type based on position and ecological pattern
+        const normalizedX = finalX / width;
+        const treeType = pickTypeForPosition(normalizedX, enabledTypes);
+        const typeScale = TREE_TYPE_SCALES[treeType];
+
+        // Calculate height with species scaling and variation
         const baseHeight = heightPresets[i] ?? heightPresets[0]!;
         const heightVariation = baseHeight * 0.05 * (seededRandom() - 0.5);
-        const finalHeight = height * (baseHeight + heightVariation) * heightBoost;
+        // Apply species height scale (interpolate between min/max based on random)
+        const speciesHeightScale = typeScale.heightMin + seededRandom() * (typeScale.heightMax - typeScale.heightMin);
+        const finalHeight = height * (baseHeight + heightVariation) * heightBoost * speciesHeightScale;
+
+        // Calculate width with species scaling
+        const baseWidth = minWidth + seededRandom() * (maxWidth - minWidth);
+        const speciesWidthScale = typeScale.widthMin + seededRandom() * (typeScale.widthMax - typeScale.widthMin);
+        const finalWidth = height * baseWidth * speciesWidthScale;
 
         trees.push({
           x: finalX,
           height: finalHeight,
-          width: height * (minWidth + seededRandom() * (maxWidth - minWidth)),
-          type: pickType(),
+          width: finalWidth,
+          type: treeType,
           layer: layerIndex,
+          seed: finalX * 1000 + layerIndex, // Deterministic seed based on position
         });
 
         // Track for collision detection
         placedTrees.push({ x: finalX, layer: layerIndex });
       });
     });
+
+    // Debug: Log tree type distribution
+    const typeCounts: Record<string, number> = {};
+    for (const tree of trees) {
+      typeCounts[tree.type] = (typeCounts[tree.type] || 0) + 1;
+    }
+    console.log(`[TreeSilhouetteSystem] Generated ${trees.length} trees:`, typeCounts);
 
     // Sort by layer first (far layers draw first), then by height within layer
     return trees.sort((a, b) => {
@@ -1006,19 +828,40 @@ export function createTreeSilhouetteSystem() {
   }
 
   function initialize(dimensions: Dimensions): void {
+    // Start image preloading in the background
+    if (!imagesLoaded) {
+      imageLoader.preload().then(() => {
+        imagesLoaded = true;
+        console.log('[TreeSilhouetteSystem] Images loaded, re-rendering with image-based trees');
+        // Re-render with images now that they're loaded
+        if (cachedDimensions) {
+          renderToCache(cachedDimensions);
+        }
+      });
+    }
     renderToCache(dimensions);
   }
 
   /**
-   * Get colors for a tree based on its layer depth
-   * Interpolates smoothly between far (light/hazy) and near (dark silhouette)
+   * Preload tree images (call before first render for best experience)
    */
-  function getTreeColors(layer: number): { trunk: RGB; foliage: RGB } {
+  async function preloadImages(): Promise<void> {
+    await imageLoader.preload();
+    imagesLoaded = true;
+  }
+
+  /**
+   * Get silhouette color for a tree based on its layer depth
+   * Most trees stay dark; only the very farthest get subtle atmospheric lift
+   */
+  function getTreeColors(layer: number): { silhouette: RGB } {
     // Interpolate based on layer position (0 = farthest, NUM_LAYERS-1 = nearest)
     const t = layer / (NUM_LAYERS - 1);
+    // Ease-out curve: trees get dark quickly, only far layers stay light
+    // t^0.4 makes mid-layers much darker while preserving the far->near gradient
+    const easedT = Math.pow(t, 0.4);
     return {
-      trunk: lerpColor(FAR_TRUNK, NEAR_TRUNK, t),
-      foliage: lerpColor(FAR_FOLIAGE, NEAR_FOLIAGE, t),
+      silhouette: lerpColor(FAR_SILHOUETTE, NEAR_SILHOUETTE, easedT),
     };
   }
 
@@ -1044,6 +887,9 @@ export function createTreeSilhouetteSystem() {
   function renderToCache(dimensions: Dimensions): void {
     cachedDimensions = dimensions;
 
+    // Clear used images tracker for fresh scene
+    usedImages.clear();
+
     const trees = createTrees(dimensions);
 
     // Create separate canvas for each layer
@@ -1060,28 +906,17 @@ export function createTreeSilhouetteSystem() {
       // Draw only trees in this layer
       const layerTrees = trees.filter((t) => t.layer === layer);
       for (const tree of layerTrees) {
-        const colors = getTreeColors(tree.layer);
-
-        switch (tree.type) {
-          case "pine":
-            drawPine(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
-            break;
-          case "fir":
-            drawFir(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
-            break;
-          case "spruce":
-            drawSpruce(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
-            break;
-          case "oak":
-            drawOak(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
-            break;
-          case "maple":
-            drawMaple(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
-            break;
-          case "poplar":
-            drawPoplar(ctx, tree.x, layerBaseY, tree.width, tree.height, colors.trunk, colors.foliage, tree.layer);
-            break;
-        }
+        // Draw tree using pre-loaded silhouette image
+        drawTreeImage(
+          ctx,
+          tree.x,
+          layerBaseY,
+          tree.width,
+          tree.height,
+          tree.type,
+          tree.layer,
+          tree.seed
+        );
       }
 
       layerCanvases[layer] = canvas;
@@ -1156,8 +991,54 @@ export function createTreeSilhouetteSystem() {
     placementConfig = { ...DEFAULT_PLACEMENT };
   }
 
+  // ===================
+  // ECOLOGICAL PATTERN API
+  // ===================
+
+  /**
+   * Set the ecological pattern by ID
+   */
+  function setEcologicalPattern(patternId: string): void {
+    const pattern = ECOLOGICAL_PATTERNS.find(p => p.id === patternId);
+    if (pattern) {
+      currentPatternId = patternId;
+    }
+  }
+
+  /**
+   * Get the current ecological pattern ID
+   */
+  function getEcologicalPatternId(): string {
+    return currentPatternId;
+  }
+
+  /**
+   * Get the current ecological pattern details
+   */
+  function getEcologicalPattern(): EcologicalPattern {
+    return getCurrentPattern();
+  }
+
+  /**
+   * Get all available ecological patterns
+   */
+  function getAvailablePatterns(): EcologicalPattern[] {
+    return [...ECOLOGICAL_PATTERNS];
+  }
+
+  /**
+   * Set a random ecological pattern (excluding "random" itself)
+   */
+  function setRandomEcologicalPattern(): string {
+    const nonRandomPatterns = ECOLOGICAL_PATTERNS.filter(p => p.id !== "random");
+    const randomPattern = nonRandomPatterns[Math.floor(Math.random() * nonRandomPatterns.length)]!;
+    currentPatternId = randomPattern.id;
+    return randomPattern.id;
+  }
+
   return {
     initialize,
+    preloadImages,
     draw,
     drawLayer,
     handleResize,
@@ -1166,6 +1047,12 @@ export function createTreeSilhouetteSystem() {
     setPlacementConfig,
     getPlacementConfig,
     resetPlacementConfig,
+    // Ecological pattern API
+    setEcologicalPattern,
+    getEcologicalPatternId,
+    getEcologicalPattern,
+    getAvailablePatterns,
+    setRandomEcologicalPattern,
     regenerate,
     cleanup,
   };

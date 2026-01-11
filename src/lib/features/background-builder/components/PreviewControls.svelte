@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { FireflyForestLayers } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-  import type { TreeTypeVisibility } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
+  import type { TreeTypeVisibility, EcologicalPattern } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
   import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
@@ -19,6 +19,8 @@
     density: number;
     style: number;
     stats: PreviewStats;
+    patterns: EcologicalPattern[];
+    currentPatternId: string;
     onQualityChange: (quality: QualityLevel) => void;
     onLayerToggle: (layer: keyof FireflyForestLayers) => void;
     onTreeTypeToggle: (type: keyof TreeTypeVisibility) => void;
@@ -26,6 +28,8 @@
     onStyleChange: (value: number) => void;
     onResetPlacement: () => void;
     onRegenerate: () => void;
+    onPatternChange: (patternId: string) => void;
+    onRandomPattern: () => void;
   }
 
   let {
@@ -35,6 +39,8 @@
     density,
     style,
     stats,
+    patterns,
+    currentPatternId,
     onQualityChange,
     onLayerToggle,
     onTreeTypeToggle,
@@ -42,7 +48,12 @@
     onStyleChange,
     onResetPlacement,
     onRegenerate,
+    onPatternChange,
+    onRandomPattern,
   }: Props = $props();
+
+  // Get current pattern details for description
+  let currentPattern = $derived(patterns.find(p => p.id === currentPatternId));
 </script>
 
 <!-- Quality Chips -->
@@ -74,6 +85,26 @@
   <ChipToggle label="Maple" active={treeTypes.maple} color="lime" onclick={() => onTreeTypeToggle("maple")} />
   <ChipToggle label="Poplar" active={treeTypes.poplar} color="lime" onclick={() => onTreeTypeToggle("poplar")} />
 </ChipGroup>
+
+<!-- Ecological Pattern Selector -->
+<div class="pattern-section">
+  <div class="section-header">
+    <span class="label">Ecological Pattern</span>
+    <button class="random-btn" onclick={onRandomPattern} title="Pick random pattern">
+      <i class="fas fa-dice"></i>
+    </button>
+  </div>
+
+  <select class="pattern-select" value={currentPatternId} onchange={(e) => onPatternChange(e.currentTarget.value)}>
+    {#each patterns as pattern}
+      <option value={pattern.id}>{pattern.name}</option>
+    {/each}
+  </select>
+
+  {#if currentPattern}
+    <p class="pattern-description">{currentPattern.description}</p>
+  {/if}
+</div>
 
 <!-- Tree Placement Sliders -->
 <div class="placement-section">
@@ -164,6 +195,74 @@
   }
 
   .action-btn:active { transform: translateY(0); }
+
+  .pattern-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .pattern-select {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+  }
+
+  .pattern-select:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .pattern-select:focus {
+    outline: none;
+    border-color: rgba(132, 204, 22, 0.5);
+  }
+
+  .pattern-select option {
+    background: #1a1a2e;
+    color: #ffffff;
+    padding: 8px;
+  }
+
+  .pattern-description {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+    line-height: 1.4;
+    font-style: italic;
+  }
+
+  .random-btn {
+    padding: 6px 10px;
+    background: linear-gradient(135deg, rgba(132, 204, 22, 0.2), rgba(163, 230, 53, 0.2));
+    border: 1px solid rgba(163, 230, 53, 0.3);
+    border-radius: 6px;
+    color: #a3e635;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .random-btn:hover {
+    background: linear-gradient(135deg, rgba(132, 204, 22, 0.3), rgba(163, 230, 53, 0.3));
+    border-color: rgba(163, 230, 53, 0.5);
+    transform: rotate(10deg);
+  }
 
   .placement-section {
     display: flex;

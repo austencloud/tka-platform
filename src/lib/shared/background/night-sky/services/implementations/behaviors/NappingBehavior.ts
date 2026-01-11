@@ -18,6 +18,7 @@ export class NappingBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "detection";
     u.narrativeTimer = 0;
+    u.targetZ = 0.7; // Drift to quiet far corner
     u.sleepZs = [];
     ctx.moodManager.setMood(u, "tired");
   }

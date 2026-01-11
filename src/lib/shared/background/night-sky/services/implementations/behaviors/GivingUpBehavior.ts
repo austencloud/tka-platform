@@ -17,6 +17,7 @@ export class GivingUpBehavior implements IUFOBehavior {
     u.state = "giving_up";
     u.stateTimer = 0;
     u.giveUpTimer = 90; // 1.5 seconds to give up animation
+    u.targetZ = Math.min(1, u.z + 0.2); // Retreat in disappointment
 
     // Keep beam briefly pointing at last known position
     // (will fade during giving_up)

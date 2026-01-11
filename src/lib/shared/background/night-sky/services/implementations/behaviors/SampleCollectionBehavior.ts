@@ -18,6 +18,7 @@ export class SampleCollectionBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "detection";
     u.narrativeTimer = 0;
+    u.targetZ = 0.2; // Close to target
     u.beamTarget = { x: event.x, y: event.y };
     u.beamIntensity = 0;
     ctx.moodManager.markInterest(u);

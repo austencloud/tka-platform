@@ -171,6 +171,7 @@ export interface UFORenderState {
   // Position
   x: number;
   y: number;
+  z: number; // Depth: 0 = close (100% size), 1 = far (30% size)
   size: number;
 
   // State
@@ -209,6 +210,9 @@ export interface UFORenderState {
  * Full UFO state - complete state for the state machine
  */
 export interface UFO extends UFORenderState {
+  // Depth targeting (for smooth depth transitions)
+  targetZ: number; // Target depth we're moving toward
+
   // Movement
   heading: number;
   turnRate: number;

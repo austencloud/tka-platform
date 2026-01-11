@@ -6,7 +6,11 @@ import {
   FireflyForestBackgroundSystem,
   type FireflyForestLayers,
 } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-import type { TreeTypeVisibility } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
+import {
+  type TreeTypeVisibility,
+  type EcologicalPattern,
+  ECOLOGICAL_PATTERNS,
+} from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
 import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
 import type { IPreviewAnimationController, PreviewStats, PlacementConfig } from "../contracts/IPreviewAnimationController";
 
@@ -109,8 +113,11 @@ export class PreviewAnimationController implements IPreviewAnimationController {
 
   regenerate(): void {
     if (!this.canvas) return;
-    const quality = this.system ? "high" : "high"; // Preserve current quality if possible
+
+    // Preserve current settings before cleanup
+    const quality = this.system ? "high" : "high";
     const layers = this.getDefaultLayers();
+    const patternId = this.system?.getEcologicalPatternId() ?? "random";
 
     this.stop();
     this.system?.cleanup();
@@ -125,6 +132,9 @@ export class PreviewAnimationController implements IPreviewAnimationController {
       const dimensions = { width: this.canvas.width, height: this.canvas.height };
       this.system.initialize(dimensions, quality);
       this.system.setLayerVisibility(layers);
+      // Restore the ecological pattern
+      this.system.setEcologicalPattern(patternId);
+      this.system.regenerateTrees();
       this.updateStats();
       this.start();
     } catch (error) {
@@ -189,6 +199,30 @@ export class PreviewAnimationController implements IPreviewAnimationController {
 
   isInitialized(): boolean {
     return this.system !== null;
+  }
+
+  getAvailablePatterns(): EcologicalPattern[] {
+    return ECOLOGICAL_PATTERNS;
+  }
+
+  getEcologicalPatternId(): string {
+    return this.system?.getEcologicalPatternId() ?? "random";
+  }
+
+  setEcologicalPattern(patternId: string): void {
+    if (this.system) {
+      this.system.setEcologicalPattern(patternId);
+      this.system.regenerateTrees();
+    }
+  }
+
+  setRandomEcologicalPattern(): string {
+    if (this.system) {
+      const patternId = this.system.setRandomEcologicalPattern();
+      this.system.regenerateTrees();
+      return patternId;
+    }
+    return "random";
   }
 
   private updateStats(): void {

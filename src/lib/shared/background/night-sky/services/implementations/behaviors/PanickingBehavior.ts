@@ -23,6 +23,7 @@ export class PanickingBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "detection";
     u.narrativeTimer = 0;
+    u.targetZ = 0.9; // Flee far away
   }
 
   update(ctx: BehaviorContext): void {

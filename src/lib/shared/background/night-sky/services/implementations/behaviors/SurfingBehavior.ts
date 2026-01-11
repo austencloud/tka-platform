@@ -18,6 +18,7 @@ export class SurfingBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "approach";
     u.narrativeTimer = 0;
+    u.targetZ = 0.4; // Mid-depth ride
     u.surfTarget = {
       x: event.x,
       y: event.y,

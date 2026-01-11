@@ -57,6 +57,11 @@ export class UFOMovementController implements IUFOMovementController {
     // Idle behaviors
     this.updateIdleBehaviors(u, moodManager, speedMult);
 
+    // Occasionally drift to new depth during wandering
+    if (Math.random() < 0.005 * speedMult) {
+      u.targetZ = 0.2 + Math.random() * 0.6; // Random between 0.2-0.8
+    }
+
     return { action: "continue" };
   }
 
@@ -91,6 +96,15 @@ export class UFOMovementController implements IUFOMovementController {
 
     const driftChance = config.driftChance ?? 0.15;
     ufo.isDrifting = Math.random() < driftChance;
+  }
+
+  updateDepth(ufo: UFO, speedMult: number): void {
+    // Smooth lerp toward targetZ
+    const lerpSpeed = 0.02 * speedMult;
+    ufo.z += (ufo.targetZ - ufo.z) * lerpSpeed;
+
+    // Clamp to valid range
+    ufo.z = Math.max(0, Math.min(1, ufo.z));
   }
 
   angleDiff(from: number, to: number): number {

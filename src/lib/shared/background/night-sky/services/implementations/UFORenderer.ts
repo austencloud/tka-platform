@@ -25,8 +25,11 @@ export class UFORenderer implements IUFORenderer {
   ): void {
     const baseAlpha = a11y.reducedMotion ? 0.7 : 1;
 
+    // Apply depth-based opacity dimming (1.0 at z=0, 0.8 at z=1)
+    const depthOpacity = 1 - ufo.z * 0.2;
+
     ctx.save();
-    ctx.globalAlpha = ufo.opacity * baseAlpha;
+    ctx.globalAlpha = ufo.opacity * depthOpacity * baseAlpha;
 
     // Calculate hover bob offset with mood-based depth
     const bobOffset =
@@ -36,8 +39,10 @@ export class UFORenderer implements IUFORenderer {
     const drawX = ufo.x + wobble.x;
     const drawY = ufo.y + bobOffset + wobble.y;
 
-    // Apply scale transform (for zoom entrance/exit + wobble scale)
-    const totalScale = ufo.scale * wobble.scale;
+    // Apply scale transform (depth + entrance/exit + wobble)
+    // Depth scale: 1.0 at z=0 (close), 0.3 at z=1 (far)
+    const depthScale = 1 - ufo.z * 0.7;
+    const totalScale = ufo.scale * wobble.scale * depthScale;
     if (totalScale !== 1 || wobble.rotation !== 0) {
       ctx.translate(drawX, drawY);
       if (totalScale !== 1) ctx.scale(totalScale, totalScale);

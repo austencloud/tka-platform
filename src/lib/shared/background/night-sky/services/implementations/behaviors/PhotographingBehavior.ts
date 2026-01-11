@@ -18,6 +18,7 @@ export class PhotographingBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "approach";
     u.narrativeTimer = 0;
+    u.targetZ = 0.15; // Get close for the shot
     u.photoTarget = { x: star.x, y: star.y };
     u.beamIntensity = 0;
     ctx.moodManager.markInterest(u);

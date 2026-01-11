@@ -241,6 +241,9 @@ export class UFOSystem {
     // Update wobble animation
     this.moodManager.updateWobble(this.ufo, speedMult);
 
+    // Update depth (z-axis) for 3D space effect
+    this.movementController.updateDepth(this.ufo, speedMult);
+
     // Update state timer and total time
     u.stateTimer += speedMult;
     u.totalTime += speedMult;

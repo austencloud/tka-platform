@@ -43,6 +43,7 @@ export class PeekabooBehavior implements IUFOBehavior {
     u.stateTimer = 0;
     u.narrativePhase = "action";
     u.narrativeTimer = 0;
+    u.targetZ = 0.8; // Hide far away
     moodManager.setMood(u, "playful");
   }
 
@@ -88,6 +89,7 @@ export class PeekabooBehavior implements IUFOBehavior {
           u.narrativePhase = "action";
           u.narrativeTimer = 0;
           u.peekProgress = 0;
+          u.targetZ = 0.3; // Come closer for reveal
         }
         break;
     }
