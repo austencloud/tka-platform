@@ -13,6 +13,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
+  import type { IDiscoverLoader } from "../services/contracts/IDiscoverLoader";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
@@ -29,6 +30,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   let hapticService: IHapticFeedback | null = null;
   let videoService: ICollaborativeVideoManager | null = null;
+  let loaderService: IDiscoverLoader | null = null;
 
   // Video state - now just tracking count and panel visibility
   let videoCount = $state(0);
@@ -39,6 +41,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   // Copy for Claude state
   let justCopied = $state(false);
+  let isCopyLoading = $state(false);
 
   const {
     sequence,
@@ -83,6 +86,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
+    loaderService = container.items.discoverLoader;
 
     // Load video count for the compact button
     try {
@@ -137,39 +141,76 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   /**
    * Copy sequence data as a prompt for Claude Code agents
+   * Fetches full sequence data (including beats) if not already loaded
    */
   async function copyForClaudeCode() {
     hapticService?.trigger("selection");
+    isCopyLoading = true;
+
+    // Start with the current sequence, but fetch full data if beats are missing
+    let fullSequence = sequence;
+
+    // Gallery sequences have empty beats - load full data for comprehensive copy
+    if ((!sequence.beats || sequence.beats.length === 0) && loaderService) {
+      const sequenceName = sequence.word || sequence.id;
+      try {
+        const loaded = await loaderService.loadFullSequenceData(sequenceName);
+        if (loaded) {
+          fullSequence = loaded;
+        }
+      } catch (err) {
+        console.warn("[SequenceDetailContent] Failed to load full sequence data:", err);
+      }
+    }
+
+    isCopyLoading = false;
 
     // Build comprehensive sequence context
-    const beatCount = sequence.beats?.length ?? 0;
-    const difficultyText = sequence.difficultyLevel || sequence.level?.toString() || "Unknown";
-    const tagsText = sequence.tags?.length ? sequence.tags.join(", ") : "None";
+    const beatCount = fullSequence.beats?.length ?? 0;
+    const difficultyText = fullSequence.difficultyLevel || fullSequence.level?.toString() || "Unknown";
+    const tagsText = fullSequence.tags?.length ? fullSequence.tags.join(", ") : "None";
 
     // Format beat data compactly (just the essential motion info)
-    const beatSummary = sequence.beats?.map((beat, i) => {
-      const blueMotion = beat.blueMotion;
-      const redMotion = beat.redMotion;
-      return `  Beat ${i + 1}: Blue(${blueMotion?.motionType || "?"} ${blueMotion?.startLocation || "?"}->${blueMotion?.endLocation || "?"}) Red(${redMotion?.motionType || "?"} ${redMotion?.startLocation || "?"}->${redMotion?.endLocation || "?"})`;
-    }).join("\n") || "  No beat data";
+    // Motion data lives in beat.motions.blue/red (from PictographData)
+    const beatSummary = fullSequence.beats?.length
+      ? fullSequence.beats.map((beat: (typeof fullSequence.beats)[number], i: number) => {
+          const blueMotion = beat.motions?.blue;
+          const redMotion = beat.motions?.red;
+          const blueInfo = blueMotion
+            ? `${blueMotion.motionType} ${blueMotion.startLocation}->${blueMotion.endLocation}`
+            : "none";
+          const redInfo = redMotion
+            ? `${redMotion.motionType} ${redMotion.startLocation}->${redMotion.endLocation}`
+            : "none";
+          return `  Beat ${i + 1}: Blue(${blueInfo}) Red(${redInfo})`;
+        }).join("\n")
+      : "  No beat data available";
+
+    // Derive starting position from first beat's motion data
+    // Starting position = startLocation + startOrientation of each prop at beat 1
+    const firstBeat = fullSequence.beats?.[0];
+    const blueStart = firstBeat?.motions?.blue;
+    const redStart = firstBeat?.motions?.red;
+    const startPosText = firstBeat
+      ? `Blue: ${blueStart?.startLocation || "?"} (${blueStart?.startOrientation || "?"}), Red: ${redStart?.startLocation || "?"} (${redStart?.startOrientation || "?"})`
+      : "No beats to derive from";
 
     // Build the prompt
-    const text = `Analyze sequence ID: ${sequence.id}
+    const text = `Analyze sequence ID: ${fullSequence.id}
 
-**${sequence.word || sequence.name || "Untitled"}**
-Difficulty: ${difficultyText} | Length: ${beatCount} beats | LOOP Type: ${sequence.loopType || "Unknown"}
+**${fullSequence.word || fullSequence.name || "Untitled"}**
+Difficulty: ${difficultyText} | Length: ${beatCount} beats | LOOP Type: ${fullSequence.loopType || "Unknown"}
 Tags: ${tagsText}
-Owner: ${sequence.ownerDisplayName || sequence.author || "Unknown"} (${sequence.ownerId || "no-id"})
+Owner: ${fullSequence.ownerDisplayName || fullSequence.author || "Unknown"} (${fullSequence.ownerId || "no-id"})
 
 ---
 **Database Location:**
 - Collection: \`sequences\` (public) or \`users/{ownerId}/library\` (private)
-- Document ID: \`${sequence.id}\`
-- Owner ID: \`${sequence.ownerId || "unknown"}\`
+- Document ID: \`${fullSequence.id}\`
+- Owner ID: \`${fullSequence.ownerId || "unknown"}\`
 
-**Starting Position:**
-- Group: ${sequence.startingPositionGroup || "Unknown"}
-- Beat: ${JSON.stringify(sequence.startPosition || sequence.startingPositionBeat || {}, null, 2)}
+**Starting Position (derived from beat 1):**
+${startPosText}
 
 **Beat Sequence:**
 ${beatSummary}
@@ -177,7 +218,7 @@ ${beatSummary}
 ---
 **Full Sequence JSON:**
 \`\`\`json
-${JSON.stringify(sequence, null, 2)}
+${JSON.stringify(fullSequence, null, 2)}
 \`\`\`
 
 ---
@@ -227,11 +268,17 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
       <button
         class="header-btn copy-btn"
         class:copied={justCopied}
+        class:loading={isCopyLoading}
         onclick={copyForClaudeCode}
+        disabled={isCopyLoading}
         aria-label="Copy for Claude Code"
         title="Copy sequence data for AI analysis"
       >
-        {#if justCopied}
+        {#if isCopyLoading}
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle>
+          </svg>
+        {:else if justCopied}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
@@ -665,6 +712,25 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     background: var(--semantic-success, #22c55e);
     border-color: var(--semantic-success, #22c55e);
     color: white;
+  }
+
+  .copy-btn.loading {
+    border-color: var(--semantic-info, #3b82f6);
+    color: var(--semantic-info, #3b82f6);
+    cursor: wait;
+  }
+
+  .copy-btn .spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* Media Container - holds the unified media viewer */

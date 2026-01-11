@@ -1,13 +1,14 @@
 /**
  * ThumbnailRenderOrchestrator
  *
- * Coordinates the thumbnail loading pipeline:
- * 1. Derive cache key from inputs
- * 2. Check cloud cache (instant if hit)
- * 3. Queue render (throttled, max 3 concurrent)
- * 4. Render locally
- * 5. Upload to cloud (async, for next user)
+ * Coordinates the 4-tier thumbnail loading pipeline:
+ * 1. Static bundled (instant) - pre-rendered thumbnails in /static/thumbnails/
+ * 2. Local IndexedDB (instant) - personalized cache of viewed thumbnails
+ * 3. Cloud cache (fast) - Firebase Storage with manifest
+ * 4. Local render (slow) - Canvas2D rendering as final fallback
  *
+ * Static thumbnails are synced from cloud during releases for instant loading.
+ * Local cache provides instant loading for frequently-viewed sequences.
  * This is the main entry point for components.
  */
 
@@ -24,6 +25,37 @@ import type {
 import type { IThumbnailRenderQueue } from "../contracts/IThumbnailRenderQueue";
 import type { IThumbnailRenderer } from "../contracts/IThumbnailRenderer";
 import type { ICloudThumbnailCache } from "../contracts/ICloudThumbnailCache";
+import type { IThumbnailLocalCache } from "../contracts/IThumbnailLocalCache";
+
+// Static thumbnail manifest - loaded once, lists all bundled thumbnails
+let staticManifest: Set<string> | null = null;
+let staticManifestLoading: Promise<Set<string>> | null = null;
+
+async function getStaticManifest(): Promise<Set<string>> {
+  if (staticManifest) return staticManifest;
+  if (staticManifestLoading) return staticManifestLoading;
+
+  staticManifestLoading = (async () => {
+    try {
+      const response = await fetch("/thumbnails/manifest.json");
+      if (!response.ok) {
+        staticManifest = new Set();
+        return staticManifest;
+      }
+      const data = await response.json() as { keys: string[] };
+      staticManifest = new Set(data.keys);
+      console.log(`[Static] Loaded manifest: ${staticManifest.size} thumbnails`);
+      return staticManifest;
+    } catch {
+      staticManifest = new Set();
+      return staticManifest;
+    } finally {
+      staticManifestLoading = null;
+    }
+  })();
+
+  return staticManifestLoading;
+}
 
 export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator {
   private completedCount = 0;
@@ -32,41 +64,66 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     private keyDeriver: IThumbnailKeyDeriver,
     private queue: IThumbnailRenderQueue,
     private renderer: IThumbnailRenderer,
-    private cloudCache: ICloudThumbnailCache
+    private cloudCache: ICloudThumbnailCache,
+    private localCache: IThumbnailLocalCache
   ) {}
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
     const key = this.keyDeriver.deriveKey(request.input);
     const cloudKey = this.buildCloudKey(key);
 
-    // Step 1: Check in-memory cache FIRST (instant, no network)
+    // Step 1: Check STATIC bundled thumbnails (instant, no network latency)
+    // These are synced from cloud during releases for instant loading
+    // Only for default settings (static thumbnails use standard rendering)
+    if (key.usesDefaults && !request.skipCache) {
+      const staticKey = this.buildStaticKey(key);
+      const manifest = await getStaticManifest();
+
+      if (manifest.has(staticKey)) {
+        const staticUrl = `/thumbnails/${staticKey}.webp`;
+        this.completedCount++;
+        request.onStatusChange?.({ state: "complete", url: staticUrl });
+        return { url: staticUrl, fromCache: true, key };
+      }
+    }
+
+    // Step 2: Check LOCAL IndexedDB cache (instant, personalized)
+    // Works for ALL thumbnails - cat-dog, custom settings, everything
+    if (!request.skipCache) {
+      const localBlob = await this.localCache.get(key.hash);
+      if (localBlob) {
+        const url = URL.createObjectURL(localBlob);
+        this.completedCount++;
+        request.onStatusChange?.({ state: "complete", url });
+        return { url, fromCache: true, key };
+      }
+    }
+
+    // Step 3: Check in-memory URL cache (instant, session-only)
     if (key.usesDefaults && !request.skipCache) {
       const memoryCached = this.cloudCache.getCachedUrl(cloudKey);
       if (memoryCached) {
-        // Instant return - URL is in memory
         this.completedCount++;
         request.onStatusChange?.({ state: "complete", url: memoryCached });
         return { url: memoryCached, fromCache: true, key };
       }
 
-      // Step 2: If not in memory, check cloud cache (network request)
+      // Step 4: Check cloud cache (network request)
       // This runs BEFORE queueing so cached items don't wait in line
-      // Priority ensures visible thumbnails are checked first
       if (memoryCached === undefined) {
-        // undefined = never checked; null = checked and doesn't exist
         request.onStatusChange?.({ state: "checking-cache" });
         const cloudUrl = await this.cloudCache.getUrl(cloudKey, request.priority);
         if (cloudUrl) {
-          // Found in cloud - instant return
+          // Found in cloud - fetch blob and save to local cache
+          this.saveCloudBlobToLocal(cloudUrl, key.hash);
           this.completedCount++;
           request.onStatusChange?.({ state: "complete", url: cloudUrl });
           return { url: cloudUrl, fromCache: true, key };
         }
-        // Not in cloud - will need to render (cached as null, won't check again)
       }
     }
 
-    // Step 3: Need to render - queue to throttle concurrent renders
+    // Step 5: Need to render - queue to throttle concurrent renders
     request.onStatusChange?.({ state: "queued", position: 0 });
 
     try {
@@ -78,7 +135,10 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
         // Create blob URL for display
         const url = URL.createObjectURL(blob);
 
-        // Upload to cloud (for default settings, async/non-blocking)
+        // Save to local cache (for ALL thumbnails - instant next time)
+        this.localCache.set(key.hash, blob).catch(() => {});
+
+        // Upload to cloud (for default settings only - shared cache)
         if (key.usesDefaults) {
           this.uploadToCloud(key, blob);
         }
@@ -135,11 +195,39 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     };
   }
 
+  /**
+   * Build key for static manifest lookup
+   * Format: {propType}/{sequenceName}_{mode}
+   * Static thumbnails use legacy format (no variant level) for backwards compatibility
+   * Must match the keys in /static/thumbnails/manifest.json
+   */
+  private buildStaticKey(key: ThumbnailCacheKey): string {
+    const modeSuffix = key.inputs.lightMode ? "_light" : "_dark";
+    // Sanitize sequence name for Windows compatibility (colons from timestamps, etc.)
+    const sanitizedName = key.inputs.sequenceName
+      .replace(/:/g, "-")
+      .replace(/[?<>"|*]/g, "_");
+    return `${key.propKey}/${sanitizedName}${modeSuffix}`;
+  }
+
   private uploadToCloud(key: ThumbnailCacheKey, blob: Blob): void {
     this.cloudCache
       .upload(this.buildCloudKey(key), blob)
       .catch(() => {
         // Non-fatal - image is displayed, just couldn't upload for others
+      });
+  }
+
+  /**
+   * Fetch blob from cloud URL and save to local cache (async, non-blocking)
+   * This ensures cloud-cached images are also saved locally for offline/instant access
+   */
+  private saveCloudBlobToLocal(url: string, hash: string): void {
+    fetch(url)
+      .then((response) => response.blob())
+      .then((blob) => this.localCache.set(hash, blob))
+      .catch(() => {
+        // Non-fatal - cloud URL still works, just won't be cached locally
       });
   }
 }

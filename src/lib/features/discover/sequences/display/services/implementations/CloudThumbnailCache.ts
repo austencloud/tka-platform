@@ -37,6 +37,12 @@ interface CachedUrl {
 const urlCache = new Map<string, CachedUrl>();
 const pendingUploads = new Map<string, Promise<string>>();
 
+// Manifest loading state
+let manifestLoaded = false;
+let manifestLoadPromise: Promise<number> | null = null;
+const MANIFEST_PATH = "thumbnails/manifest.json";
+const MANIFEST_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
+
 // Track thumbnails we've confirmed EXIST in cloud storage
 // This inverts the usual pattern: we assume things DON'T exist (render locally)
 // and only check cloud for things we KNOW exist (from previous uploads or checks)
@@ -361,6 +367,78 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
   invalidateUrl(key: CloudThumbnailKey): void {
     const cacheKey = this.getCacheKey(key);
     urlCache.delete(cacheKey);
+  }
+
+  /**
+   * Load the thumbnail manifest from cloud storage
+   * Pre-populates the "known exists" list for instant cache hits across all devices
+   * Should be called once on app startup
+   * Returns the number of thumbnails registered
+   */
+  async loadManifest(): Promise<number> {
+    // Already loaded
+    if (manifestLoaded) {
+      return getKnownExists().size;
+    }
+
+    // Already loading - wait for it
+    if (manifestLoadPromise) {
+      return manifestLoadPromise;
+    }
+
+    // Start loading
+    manifestLoadPromise = this.doLoadManifest();
+    return manifestLoadPromise;
+  }
+
+  private async doLoadManifest(): Promise<number> {
+    const startTime = performance.now();
+    try {
+      // Build direct URL to manifest (public read)
+      const encodedPath = encodeURIComponent(MANIFEST_PATH);
+      const manifestUrl = `https://firebasestorage.googleapis.com/v0/b/${MANIFEST_BUCKET}/o/${encodedPath}?alt=media`;
+
+      const response = await fetch(manifestUrl);
+      if (!response.ok) {
+        // Manifest doesn't exist yet - that's OK, will be created on first upload
+        console.log("[CloudThumbnailCache] No manifest found, will use local-first approach");
+        manifestLoaded = true;
+        return 0;
+      }
+
+      const manifest = await response.json() as { keys: string[]; generated: string };
+      const exists = getKnownExists();
+      let added = 0;
+
+      for (const key of manifest.keys) {
+        if (!exists.has(key)) {
+          exists.add(key);
+          added++;
+        }
+      }
+
+      // Persist the merged set
+      persistKnownExists();
+      manifestLoaded = true;
+
+      const elapsed = performance.now() - startTime;
+      console.log(`[CloudThumbnailCache] Loaded manifest: ${manifest.keys.length} thumbnails (${added} new) in ${elapsed.toFixed(0)}ms`);
+
+      return exists.size;
+    } catch (error) {
+      console.warn("[CloudThumbnailCache] Failed to load manifest:", error);
+      manifestLoaded = true; // Don't retry continuously
+      return getKnownExists().size;
+    } finally {
+      manifestLoadPromise = null;
+    }
+  }
+
+  /**
+   * Check if manifest has been loaded
+   */
+  isManifestLoaded(): boolean {
+    return manifestLoaded;
   }
 
   /**

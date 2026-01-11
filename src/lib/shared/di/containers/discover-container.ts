@@ -25,6 +25,7 @@ import { ThumbnailKeyDeriver } from "$lib/features/discover/sequences/display/se
 import { ThumbnailRenderQueue } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderQueue";
 import { ThumbnailRenderer } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderer";
 import { ThumbnailRenderOrchestrator } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
+import { ThumbnailLocalCache } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailLocalCache";
 import { FavoritesManager } from "$lib/features/discover/shared/services/implementations/FavoritesManager";
 import { FilterPersister as DiscoverFilterPersister } from "$lib/shared/persistence/services/implementations/FilterPersister";
 import { Navigator } from "$lib/features/discover/sequences/navigation/services/implementations/Navigator";
@@ -80,8 +81,12 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
       discoverThumbnailProvider: () => new DiscoverThumbnailProvider(),
     })
     .add({
-      // IndexedDB cache for rendered thumbnails (singleton - maintains DB connection)
+      // IndexedDB cache for cat-dog mode thumbnails (legacy, singleton)
       discoverThumbnailCache: () => new DiscoverThumbnailCache(),
+    })
+    .add({
+      // IndexedDB cache for ALL thumbnails (unified local cache, singleton)
+      thumbnailLocalCache: () => new ThumbnailLocalCache(),
     })
     .add({
       // Thumbnail key derivation (singleton - stateless but for consistency)
@@ -147,7 +152,8 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
         ctx.thumbnailKeyDeriver,
         ctx.thumbnailRenderQueue,
         ctx.thumbnailRenderer,
-        deps.cloudThumbnailCache
+        deps.cloudThumbnailCache,
+        ctx.thumbnailLocalCache
       ),
   }));
 

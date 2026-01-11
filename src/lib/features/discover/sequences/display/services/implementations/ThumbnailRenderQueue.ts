@@ -22,7 +22,8 @@ interface QueuedTask<T> {
   priority: number;
 }
 
-const DEFAULT_MAX_CONCURRENT = 3;
+// Increased from 3 to 12 since Canvas2D rendering is lighter than SVG parsing
+const DEFAULT_MAX_CONCURRENT = 12;
 
 export class ThumbnailRenderQueue implements IThumbnailRenderQueue {
   private queue: QueuedTask<unknown>[] = [];

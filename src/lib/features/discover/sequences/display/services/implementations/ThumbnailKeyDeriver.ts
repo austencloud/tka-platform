@@ -130,7 +130,10 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       return false;
     // Any custom text means not using defaults
     if (input.customNotesText !== undefined) return false;
-    if (input.userName !== undefined && input.userName !== "") return false;
+    // userName only matters if addUserInfo is enabled (otherwise it's not displayed)
+    const userInfoEnabled = input.addUserInfo ?? defaults.addUserInfo;
+    if (userInfoEnabled && input.userName !== undefined && input.userName !== "")
+      return false;
 
     return true;
   }

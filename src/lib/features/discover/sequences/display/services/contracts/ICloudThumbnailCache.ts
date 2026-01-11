@@ -100,4 +100,17 @@ export interface ICloudThumbnailCache {
    * Call this when an image fails to load (e.g., 404) to allow retry
    */
   invalidateUrl(key: CloudThumbnailKey): void;
+
+  /**
+   * Load the thumbnail manifest from cloud storage
+   * Pre-populates the "known exists" list for instant cache hits across all devices
+   * Should be called once on app startup
+   * Returns the number of thumbnails registered
+   */
+  loadManifest(): Promise<number>;
+
+  /**
+   * Check if manifest has been loaded
+   */
+  isManifestLoaded(): boolean;
 }
