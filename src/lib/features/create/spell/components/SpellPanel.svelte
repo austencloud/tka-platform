@@ -1,38 +1,26 @@
-﻿<!--
-SpellPanel.svelte - Word-to-Sequence Generation Panel
+<!--
+SpellPanel.svelte - Word-to-Sequence Generation Panel (Funnel Wizard)
 
-Allows users to type a word and generate a valid TKA sequence with bridge letters.
-- Word input with autocomplete for Greek letters
-- Letter palette for clicking to insert Greek symbols
-- Preferences for generation constraints
-- Result display showing original vs expanded word
+New UX flow:
+1. SETUP: Word input + Grid mode + Loop toggle → Generate All
+2. GENERATING: Progress bar while finding all variations
+3. WIZARD: Step-by-step filter (length → motion → reversals → flow)
+4. BROWSING: Manual selection from filtered variations
 
-This component orchestrates the UI; business logic lives in extracted services.
+This component orchestrates the UI phases; business logic lives in services.
 -->
 <script lang="ts">
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
   import type { SpellTabState } from "../state/spell-tab-state.svelte";
   import { container } from "$lib/shared/di";
-  import type { ISpellGenerationOrchestrator } from "../services/contracts/ISpellGenerationOrchestrator";
   import type { IVariationExplorationOrchestrator } from "../services/contracts/IVariationExplorationOrchestrator";
-  import type { ILOOPSelectionCoordinator } from "../services/contracts/ILOOPSelectionCoordinator";
-  import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
   import { UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
-  import type { LOOPType } from "../domain/models/spell-models";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import type { CircularizationOption } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
-  import { slide } from "svelte/transition";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import WordInput from "./WordInput.svelte";
-  import LetterPalette from "./LetterPalette.svelte";
-  import PreferencesPanel from "./PreferencesPanel.svelte";
-  import ResultDisplay from "./ResultDisplay.svelte";
-  import LOOPPicker from "$lib/shared/components/loop-picker/LOOPPicker.svelte";
-  import BridgePictographGrid from "$lib/shared/components/loop-picker/BridgePictographGrid.svelte";
+  import QuickGreekBar from "./QuickGreekBar.svelte";
+  import FunnelWizard from "./FunnelWizard.svelte";
   import VariationGrid from "./VariationGrid.svelte";
-  import { getVariationState } from "../state/variation-state.svelte";
-
-  type LOOPPhase = "bridge-selection" | "loop-selection";
+  import { getVariationState, type ScoredVariation } from "../state/variation-state.svelte";
 
   // Props
   let {
@@ -46,16 +34,7 @@ This component orchestrates the UI; business logic lives in extracted services.
   } = $props();
 
   // Lazy-resolved services
-  let generationOrchestrator: ISpellGenerationOrchestrator | null = null;
   let explorationOrchestrator: IVariationExplorationOrchestrator | null = null;
-  let loopCoordinator: ILOOPSelectionCoordinator | null = null;
-
-  function getGenerationOrchestrator(): ISpellGenerationOrchestrator {
-    if (!generationOrchestrator) {
-      generationOrchestrator = container.items.spellGenerationOrchestrator as ISpellGenerationOrchestrator;
-    }
-    return generationOrchestrator;
-  }
 
   function getExplorationOrchestrator(): IVariationExplorationOrchestrator {
     if (!explorationOrchestrator) {
@@ -64,93 +43,38 @@ This component orchestrates the UI; business logic lives in extracted services.
     return explorationOrchestrator;
   }
 
-  function getLOOPCoordinator(): ILOOPSelectionCoordinator {
-    if (!loopCoordinator) {
-      loopCoordinator = container.items.loopSelectionCoordinator as ILOOPSelectionCoordinator;
-    }
-    return loopCoordinator;
-  }
-
-  // Extension options (ALL valid next pictographs from current position)
-  let extensionOptions = $state<CircularizationOption[]>([]);
-
-  // Variation exploration mode
-  type GenerationMode = "single" | "all";
-  let generationMode = $state<GenerationMode>("single");
+  // Variation state (for generation progress)
   const variationState = getVariationState();
 
-  // Generate sequence from the input word
-  async function handleGenerate() {
-    if (!spellState.inputWord.trim()) return;
+  // All collected variations (for wizard)
+  let allVariations = $state<ScoredVariation[]>([]);
 
-    spellState.setGenerating(true);
-    spellState.clearError();
+  // Filtered variations (after wizard filtering)
+  let filteredVariations = $state<ScoredVariation[]>([]);
 
-    try {
-      const orchestrator = getGenerationOrchestrator();
-      const result = await orchestrator.generate(
-        spellState.inputWord,
-        spellState.preferences
-      );
+  // ============================================================================
+  // SETUP PHASE
+  // ============================================================================
 
-      if (result.success) {
-        // Update spell state with results
-        spellState.setExpandedWord(result.expandedWord);
-        spellState.setLetterSources(result.letterSources);
-
-        if (result.loopAnalysis) {
-          spellState.setLoopAnalysis(result.loopAnalysis);
-        }
-        spellState.setCircularizationOptions(result.circularizationOptions);
-        spellState.setDirectLoopUnavailableReason(
-          result.directLoopUnavailableReason
-        );
-
-        // Update extension options
-        extensionOptions = result.extensionOptions;
-
-        // Push to sequence state
-        if (sequenceState) {
-          sequenceState.setCurrentSequence({
-            ...result.sequence,
-            name: result.originalWord,
-            word: result.expandedWord,
-          });
-        }
-
-        // Push undo snapshot
-        spellState.pushUndoSnapshot(UndoOperationType.SPELL_GENERATE, {
-          word: result.originalWord,
-        });
-      } else {
-        spellState.setError(result.error);
-      }
-    } catch (error) {
-      console.error("Failed to generate sequence:", error);
-      spellState.setError(
-        error instanceof Error ? error.message : "Unknown error"
-      );
-    } finally {
-      spellState.setGenerating(false);
-    }
-  }
-
-  // Handle letter insertion from palette
   function handleLetterInsert(letter: string) {
     spellState.insertLetter(letter);
   }
 
-  // Handle regenerate - generates a new variation
-  function handleRegenerate() {
-    handleGenerate();
+  function handleGridModeChange(mode: GridMode) {
+    spellState.setGridMode(mode);
   }
 
-  // Handle "Generate All" - explores all variations
+  // ============================================================================
+  // GENERATION PHASE
+  // ============================================================================
+
   async function handleGenerateAll() {
     if (!spellState.inputWord.trim()) return;
 
+    spellState.setWizardPhase("generating");
     spellState.setGenerating(true);
     spellState.clearError();
+    allVariations = [];
 
     try {
       const orchestrator = getExplorationOrchestrator();
@@ -159,32 +83,32 @@ This component orchestrates the UI; business logic lives in extracted services.
       const parseResult = await orchestrator.parseWord(spellState.inputWord);
       if (!parseResult.success || !parseResult.expandedLetters) {
         spellState.setError(parseResult.error || "Could not parse word");
+        spellState.setWizardPhase("setup");
         return;
       }
 
-      // Store expanded word for display
-      spellState.setExpandedWord(
-        parseResult.expandedWord || spellState.inputWord
-      );
+      spellState.setExpandedWord(parseResult.expandedWord || spellState.inputWord);
 
-      // Estimate total variations for progress UI
-      const gridMode = GridMode.DIAMOND;
+      // Estimate total variations
       const estimatedTotal = await orchestrator.estimateVariationCount(
         parseResult.expandedLetters,
-        gridMode
+        spellState.selectedGridMode
       );
 
-      // Start exploration
+      // Start exploration with progress tracking
       const abortSignal = variationState.startExploration(estimatedTotal);
       orchestrator.resetDeduplicator();
 
-      // Run exploration with callbacks
+      // Collect all variations
+      const collected: ScoredVariation[] = [];
+
       const result = await orchestrator.exploreVariations(
         parseResult.expandedLetters,
         spellState.preferences,
-        gridMode,
+        spellState.selectedGridMode,
         {
           onVariationFound: (variation) => {
+            collected.push(variation);
             variationState.addVariation(variation);
           },
           onProgress: (count) => {
@@ -197,35 +121,47 @@ This component orchestrates the UI; business logic lives in extracted services.
       variationState.completeExploration();
 
       if (result.error) {
-        variationState.setError(result.error);
         spellState.setError(result.error);
+        spellState.setWizardPhase("setup");
+        return;
       }
 
-      // Auto-select the best variation
-      const best = variationState.variations[0];
-      if (best) {
-        variationState.selectVariation(best.id);
-        handleVariationSelect(best.id);
+      // Store all variations and move to wizard phase
+      allVariations = collected;
+      spellState.markHasGeneratedOnce();
+
+      if (collected.length === 0) {
+        spellState.setError("No valid variations found for this word.");
+        spellState.setWizardPhase("setup");
+      } else if (collected.length === 1) {
+        // Only one variation - skip wizard, select it directly
+        handleVariationComplete(collected[0]!);
+      } else {
+        spellState.setWizardPhase("wizard");
       }
     } catch (error) {
       console.error("Failed to explore variations:", error);
       if (error instanceof Error && error.name !== "AbortError") {
-        variationState.setError(error.message);
         spellState.setError(error.message);
       }
+      spellState.setWizardPhase("setup");
     } finally {
       spellState.setGenerating(false);
     }
   }
 
-  // Handle variation selection
-  function handleVariationSelect(variationId: string) {
-    const variation = variationState.allVariations.find(
-      (v) => v.id === variationId
-    );
-    if (!variation || !sequenceState) return;
+  function handleCancelExploration() {
+    variationState.cancelExploration();
+    spellState.setWizardPhase("setup");
+    spellState.setGenerating(false);
+  }
 
-    variationState.selectVariation(variationId);
+  // ============================================================================
+  // WIZARD PHASE
+  // ============================================================================
+
+  function handleVariationComplete(variation: ScoredVariation) {
+    if (!sequenceState) return;
 
     sequenceState.setCurrentSequence({
       ...variation.sequence,
@@ -233,350 +169,212 @@ This component orchestrates the UI; business logic lives in extracted services.
       word: spellState.expandedWord || spellState.inputWord,
     });
 
-    spellState.setExpandedWord(variation.sequence.word || spellState.inputWord);
+    spellState.pushUndoSnapshot(UndoOperationType.SPELL_GENERATE, {
+      word: spellState.inputWord,
+    });
+
+    // Reset to setup for next generation
+    spellState.setWizardPhase("setup");
   }
 
-  // Cancel ongoing variation exploration
-  function handleCancelExploration() {
-    variationState.cancelExploration();
+  function handleBrowseVariations(filtered: ScoredVariation[]) {
+    filteredVariations = filtered;
+    spellState.setWizardPhase("browsing");
   }
 
-  // Handle LOOP chip click - apply LOOP with optional bridge
-  async function handleApplyLOOP(
-    bridgeLetter: Letter | null,
-    loopType: LOOPType
-  ) {
-    if (!spellState.inputWord.trim()) {
-      return;
-    }
-
-    spellState.setGenerating(true);
-    spellState.clearError();
-
-    try {
-      // If we're in the two-phase flow (user selected a bridge pictograph),
-      // the sequence already has the bridge beat appended. We should just
-      // apply the LOOP to the current sequence instead of regenerating.
-      if (selectedBridge && sequenceState?.currentSequence) {
-        const sequenceExtender = container.items.sequenceExtender as ISequenceExtender;
-
-        const extendedSequence = await sequenceExtender.extendSequence(
-          sequenceState.currentSequence,
-          { loopType }
-        );
-
-        // Update sequence state
-        sequenceState.setCurrentSequence({
-          ...extendedSequence,
-          name: spellState.inputWord,
-          word: extendedSequence.word || spellState.expandedWord,
-        });
-
-        // Clear circularization options since we just applied one
-        spellState.setCircularizationOptions([]);
-        spellState.setDirectLoopUnavailableReason(null);
-
-        spellState.pushUndoSnapshot(UndoOperationType.SPELL_APPLY_LOOP, {
-          word: spellState.inputWord,
-          loopType,
-          bridgeLetter: selectedBridge.bridgeLetters[0],
-        });
-      } else {
-        // No bridge selected - regenerate from scratch with LOOP + bridge
-        const coordinator = getLOOPCoordinator();
-        const result = await coordinator.applyLOOP(
-          spellState.inputWord,
-          spellState.preferences,
-          bridgeLetter,
-          loopType
-        );
-
-        if (result.success && result.sequence) {
-          spellState.setExpandedWord(result.expandedWord || "");
-          spellState.setCircularizationOptions([]);
-          spellState.setDirectLoopUnavailableReason(null);
-
-          if (sequenceState) {
-            sequenceState.setCurrentSequence({
-              ...result.sequence,
-              name: spellState.inputWord,
-              word: result.expandedWord ?? spellState.inputWord,
-            });
-          }
-
-          spellState.pushUndoSnapshot(UndoOperationType.SPELL_APPLY_LOOP, {
-            word: spellState.inputWord,
-            loopType,
-            bridgeLetter,
-          });
-        } else {
-          const errorMsg = result.error || "Failed to apply LOOP";
-          console.error("[SpellPanel] LOOP application failed:", errorMsg);
-          spellState.setError(errorMsg);
-        }
-      }
-    } catch (error) {
-      console.error("[SpellPanel] Exception while applying LOOP:", error);
-      spellState.setError(
-        error instanceof Error ? error.message : "Unknown error"
-      );
-    } finally {
-      spellState.setGenerating(false);
-    }
+  function handleBackToSetup() {
+    spellState.setWizardPhase("setup");
+    allVariations = [];
+    filteredVariations = [];
   }
 
-  // Handle clear
+  // ============================================================================
+  // BROWSING PHASE
+  // ============================================================================
+
+  function handleVariationSelect(variationId: string) {
+    const variation = filteredVariations.find((v) => v.id === variationId);
+    if (!variation) return;
+
+    variationState.selectVariation(variationId);
+    handleVariationComplete(variation);
+  }
+
+  function handleBackToWizard() {
+    spellState.setWizardPhase("wizard");
+  }
+
+  // ============================================================================
+  // SHARED
+  // ============================================================================
+
   function handleClear() {
     spellState.clearSpellState();
     variationState.reset();
+    allVariations = [];
+    filteredVariations = [];
     if (sequenceState) {
       sequenceState.clearSequenceCompletely();
     }
   }
 
-  // Track input focus for showing/hiding palette
-  let isInputFocused = $state(false);
-
-  function handleInputFocusChange(focused: boolean) {
-    isInputFocused = focused;
-  }
-
-  // ============================================
-  // Two-Phase LOOP Selection Flow
-  // ============================================
-
-  let selectedBridge = $state<CircularizationOption | null>(null);
-
-  const hasExtensionOptions = $derived(extensionOptions.length > 0);
-
-  const loopPhase = $derived<LOOPPhase>(
-    selectedBridge ? "loop-selection" : "bridge-selection"
-  );
-
-  const activeLoopOptions = $derived(
-    selectedBridge ? selectedBridge.availableLOOPs : []
-  );
-
-  async function handleBridgeSelect(option: CircularizationOption) {
-    if (spellState.isGenerating || !sequenceState) return;
-
-    const currentSequence = sequenceState.currentSequence;
-    if (!currentSequence) {
-      console.error("[SpellPanel] No current sequence to extend");
-      return;
-    }
-
-    try {
-      spellState.setGenerating(true);
-
-      const coordinator = getLOOPCoordinator();
-      const result = await coordinator.applyBridge(currentSequence, option);
-
-      if (result.success && result.sequence) {
-        sequenceState.setCurrentSequence(result.sequence);
-        selectedBridge = option;
-      } else {
-        spellState.setError(result.error || "Failed to add bridge");
-      }
-    } catch (error) {
-      console.error("[SpellPanel] Failed to append bridge beat:", error);
-      spellState.setError("Failed to add bridge letter");
-    } finally {
-      spellState.setGenerating(false);
-    }
-  }
-
-  async function handleLoopSelect(
-    bridgeLetter: Letter | null,
-    loopType: LOOPType
-  ) {
-    if (spellState.isGenerating) {
-      return;
-    }
-
-    const finalBridgeLetter = selectedBridge
-      ? (selectedBridge.bridgeLetters[0] as Letter)
-      : bridgeLetter;
-
-    // Apply the LOOP and wait for it to complete before resetting selection
-    await handleApplyLOOP(finalBridgeLetter, loopType);
-
-    // Only reset selectedBridge after LOOP application completes
-    selectedBridge = null;
-  }
-
-  function handleBackToBridges() {
-    if (spellState.isGenerating) return;
-    selectedBridge = null;
-  }
-
-  // Reset bridge selection when extension options change
-  $effect(() => {
-    extensionOptions;
-    selectedBridge = null;
+  // Progress percentage for generation phase
+  const progressPercent = $derived(() => {
+    const { totalExplored, estimatedTotal } = variationState.progress;
+    if (estimatedTotal === 0) return 0;
+    return Math.min(100, Math.round((totalExplored / estimatedTotal) * 100));
   });
 </script>
 
 <div class="spell-panel" data-is-desktop={isDesktop}>
-  <div class="spell-panel-inner">
-    <!-- Word Input Section -->
-    <div class="input-section">
-      <WordInput
-        value={spellState.inputWord}
-        onInput={(value) => spellState.setInputWord(value)}
-        onFocusChange={handleInputFocusChange}
-        disabled={spellState.isGenerating}
-      />
-    </div>
+  {#if spellState.wizardPhase === "setup"}
+    <!-- SETUP PHASE -->
+    <div class="spell-panel-scroll">
+      <h2 class="spell-title">Turn words into sequences</h2>
 
-    <!-- Letter Palette (visible when input is focused) -->
-    {#if isInputFocused}
-      <div class="palette-section" transition:slide={{ duration: 200 }}>
-        <LetterPalette onSelect={handleLetterInsert} />
+      <!-- Word Input -->
+      <div class="input-section">
+        <WordInput
+          value={spellState.inputWord}
+          onInput={(value) => spellState.setInputWord(value)}
+          disabled={spellState.isGenerating}
+        />
       </div>
-    {/if}
 
-    <!-- Preferences Section -->
-    <div class="preferences-section">
-      <PreferencesPanel
-        preferences={spellState.preferences}
-        onUpdate={(key, value) => spellState.updatePreference(key, value)}
-      />
-    </div>
+      <!-- Quick Greek Letters -->
+      <div class="greek-bar-section">
+        <QuickGreekBar onSelect={handleLetterInsert} />
+      </div>
 
-    <!-- LOOP Selection (shown when makeCircular is on and sequence exists) -->
-    {#if spellState.preferences.makeCircular && spellState.hasSequence()}
-      <div class="loop-selection-section">
-        <!-- Phase 1: Pictograph Selection -->
-        {#if loopPhase === "bridge-selection" && hasExtensionOptions}
-          <div class="loop-phase-header">
-            <h3>Choose Next Pictograph</h3>
-            <p class="phase-subtitle">
-              Select a pictograph to extend your sequence
-            </p>
-          </div>
-          <BridgePictographGrid
-            options={extensionOptions}
-            onSelect={handleBridgeSelect}
-            isLoading={spellState.isGenerating}
-          />
-        {:else if loopPhase === "loop-selection"}
-          <!-- Phase 2: LOOP Selection -->
-          <div class="loop-phase-header">
-            {#if selectedBridge}
-              <button
-                class="back-button"
-                onclick={handleBackToBridges}
-                disabled={spellState.isGenerating}
-                aria-label="Back to bridge selection"
-              >
-                <i class="fas fa-arrow-left" aria-hidden="true"></i>
-              </button>
-              <div class="header-text">
-                <h3>Choose Extension Pattern</h3>
-                <p class="phase-subtitle">
-                  Via "{selectedBridge.bridgeLetters[0]}" → {selectedBridge.endPosition}
-                </p>
-              </div>
+      <!-- Grid Mode Selector -->
+      <div class="setup-option">
+        <span class="option-label">Grid Mode</span>
+        <div class="mode-chips" role="radiogroup" aria-label="Grid mode">
+          <button
+            class="mode-chip"
+            class:active={spellState.selectedGridMode === GridMode.DIAMOND}
+            onclick={() => handleGridModeChange(GridMode.DIAMOND)}
+            role="radio"
+            aria-checked={spellState.selectedGridMode === GridMode.DIAMOND}
+          >
+            <i class="fas fa-gem" aria-hidden="true"></i>
+            Diamond
+          </button>
+          <button
+            class="mode-chip"
+            class:active={spellState.selectedGridMode === GridMode.BOX}
+            onclick={() => handleGridModeChange(GridMode.BOX)}
+            role="radio"
+            aria-checked={spellState.selectedGridMode === GridMode.BOX}
+          >
+            <i class="fas fa-square" aria-hidden="true"></i>
+            Box
+          </button>
+        </div>
+      </div>
+
+      <!-- Make Loopable Toggle -->
+      <div class="setup-option">
+        <button
+          class="loop-toggle"
+          class:active={spellState.preferences.makeCircular}
+          onclick={() =>
+            spellState.updatePreference(
+              "makeCircular",
+              !spellState.preferences.makeCircular
+            )}
+          aria-pressed={spellState.preferences.makeCircular}
+        >
+          <span class="loop-icon" aria-hidden="true">
+            {#if spellState.preferences.makeCircular}
+              <i class="fas fa-check-circle"></i>
             {:else}
-              <div class="header-text">
-                <h3>Choose Extension Pattern</h3>
-                <p class="phase-subtitle">Select how to extend your sequence</p>
-              </div>
+              <i class="fas fa-circle"></i>
             {/if}
-          </div>
-          <LOOPPicker
-            directOptions={activeLoopOptions}
-            circularizationOptions={[]}
-            onSelect={handleLoopSelect}
-            directUnavailableReason={null}
-            isApplying={spellState.isGenerating}
-          />
-        {:else}
-          <div class="no-loop-options">
-            <i class="fas fa-info-circle" aria-hidden="true"></i>
-            <p>No extension patterns available for this sequence position.</p>
-          </div>
-        {/if}
-      </div>
-    {/if}
-
-    <!-- Generation Mode Toggle -->
-    <div class="mode-toggle-section">
-      <div class="mode-toggle">
-        <button
-          class="mode-button"
-          class:active={generationMode === "single"}
-          onclick={() => (generationMode = "single")}
-          disabled={variationState.progress.isExploring}
-        >
-          <i class="fas fa-dice-one" aria-hidden="true"></i>
-          Single
+          </span>
+          <span class="loop-label">Make it loop back to start</span>
         </button>
-        <button
-          class="mode-button"
-          class:active={generationMode === "all"}
-          onclick={() => (generationMode = "all")}
-          disabled={variationState.progress.isExploring}
-        >
-          <i class="fas fa-layer-group" aria-hidden="true"></i>
-          All Variations
+      </div>
+
+      <!-- Error Display -->
+      {#if spellState.error}
+        <div class="error-message">
+          {spellState.error}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Sticky Generate Button -->
+    <div class="button-area">
+      <button
+        class="generate-button"
+        onclick={handleGenerateAll}
+        disabled={!spellState.canGenerate}
+      >
+        <i class="fas fa-search" aria-hidden="true"></i>
+        Find All Variations
+      </button>
+    </div>
+
+  {:else if spellState.wizardPhase === "generating"}
+    <!-- GENERATING PHASE -->
+    <div class="generation-phase">
+      <div class="progress-content">
+        <h3 class="progress-title">Finding all possibilities...</h3>
+
+        <div class="progress-stats">
+          <span class="count">{variationState.stats.totalUnique}</span>
+          <span class="label">unique variations found</span>
+        </div>
+
+        <div class="progress-bar-container">
+          <div
+            class="progress-bar"
+            style="width: {progressPercent()}%"
+            role="progressbar"
+            aria-valuenow={progressPercent()}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          ></div>
+        </div>
+
+        <p class="progress-hint">
+          Exploring {variationState.progress.totalExplored} paths...
+        </p>
+
+        <button class="cancel-button" onclick={handleCancelExploration}>
+          Cancel
         </button>
       </div>
     </div>
 
-    <!-- Generate Button -->
-    <div class="actions-section">
-      {#if generationMode === "single"}
-        <button
-          class="generate-button"
-          onclick={handleGenerate}
-          disabled={!spellState.canGenerate}
-        >
-          {#if spellState.isGenerating}
-            <span class="spinner"></span>
-            Generating...
-          {:else}
-            Generate Sequence
-          {/if}
-        </button>
-      {:else}
-        <button
-          class="generate-button"
-          onclick={handleGenerateAll}
-          disabled={!spellState.canGenerate ||
-            variationState.progress.isExploring}
-        >
-          {#if variationState.progress.isExploring}
-            <span class="spinner"></span>
-            Exploring... ({variationState.stats.totalUnique} unique)
-          {:else}
-            <i class="fas fa-search" aria-hidden="true"></i>
-            Explore All Variations
-          {/if}
-        </button>
-      {/if}
+  {:else if spellState.wizardPhase === "wizard"}
+    <!-- WIZARD PHASE -->
+    <FunnelWizard
+      variations={allVariations}
+      onComplete={handleVariationComplete}
+      onBrowse={handleBrowseVariations}
+      onBack={handleBackToSetup}
+    />
 
-      {#if spellState.hasSequence() && generationMode === "single"}
-        <button class="secondary-button" onclick={handleRegenerate}>
-          Regenerate
+  {:else if spellState.wizardPhase === "browsing"}
+    <!-- BROWSING PHASE -->
+    <div class="browsing-phase">
+      <div class="browsing-header">
+        <button class="back-button" onclick={handleBackToWizard}>
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          Back to Filter
         </button>
-      {/if}
+        <h3 class="browsing-title">
+          {filteredVariations.length} Variations
+        </h3>
+      </div>
 
-      {#if spellState.hasSequence() || variationState.stats.totalUnique > 0}
-        <button class="secondary-button danger" onclick={handleClear}>
-          Clear
-        </button>
-      {/if}
-    </div>
-
-    <!-- Variation Grid -->
-    {#if generationMode === "all" && (variationState.stats.totalUnique > 0 || variationState.progress.isExploring)}
-      <div class="variation-section">
+      <div class="variation-grid-container">
         <VariationGrid
-          variations={variationState.variations}
-          progress={variationState.progress}
-          stats={variationState.stats}
+          variations={filteredVariations}
+          progress={{ ...variationState.progress, isExploring: false }}
+          stats={{ ...variationState.stats, totalUnique: filteredVariations.length, totalFiltered: filteredVariations.length }}
           selectedVariationId={variationState.selectedVariationId}
           sortBy={variationState.sortBy}
           sortDescending={variationState.sortDescending}
@@ -584,29 +382,11 @@ This component orchestrates the UI; business logic lives in extracted services.
           onSelect={handleVariationSelect}
           onToggleFilter={(key) => variationState.toggleFilter(key)}
           onSetSortBy={(option) => variationState.setSortBy(option)}
-          onCancel={handleCancelExploration}
+          onCancel={() => {}}
         />
       </div>
-    {/if}
-
-    <!-- Error Display -->
-    {#if spellState.error}
-      <div class="error-message">
-        {spellState.error}
-      </div>
-    {/if}
-
-    <!-- Result Display -->
-    {#if spellState.expandedWord}
-      <div class="result-section">
-        <ResultDisplay
-          originalWord={spellState.inputWord}
-          expandedWord={spellState.expandedWord}
-          letterSources={spellState.letterSources}
-        />
-      </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -618,39 +398,170 @@ This component orchestrates the UI; business logic lives in extracted services.
     flex-direction: column;
     height: 100%;
     width: 100%;
-    overflow: auto;
-    padding: var(--settings-spacing-sm, 8px);
+    overflow: hidden;
   }
 
-  .spell-panel-inner {
+  .spell-panel-scroll {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-md, 16px);
     width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    overflow-y: auto;
+    padding: var(--settings-spacing-sm, 8px);
+    padding-bottom: var(--settings-spacing-md, 16px);
   }
 
-  .input-section,
-  .palette-section,
-  .preferences-section,
-  .actions-section,
-  .result-section {
+  .spell-title {
+    margin: 0;
+    padding: 8px 0;
+    font-size: var(--font-size-lg, 18px);
+    font-weight: 600;
+    color: var(--theme-text);
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    .spell-title {
+      display: none;
+    }
+  }
+
+  /* Setup sections */
+  .input-section {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-md, 12px);
     padding: var(--settings-spacing-md, 16px);
   }
 
-  .actions-section {
+  .greek-bar-section {
+    padding: 0 var(--settings-spacing-sm, 8px);
+  }
+
+  .setup-option {
+    padding: 0 var(--settings-spacing-sm, 8px);
+  }
+
+  .option-label {
+    display: block;
+    margin-bottom: var(--settings-spacing-sm, 8px);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .mode-chips {
     display: flex;
     gap: var(--settings-spacing-sm, 8px);
-    flex-wrap: wrap;
+  }
+
+  .mode-chip {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    min-height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--settings-radius-md, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mode-chip:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .mode-chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .mode-chip.active {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+    color: white;
+  }
+
+  /* Loop toggle */
+  .loop-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--settings-spacing-sm, 8px);
+    width: 100%;
+    min-height: 48px;
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--settings-radius-md, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-md, 16px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .loop-toggle:hover {
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-text, #ffffff);
+  }
+
+  .loop-toggle.active {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent) 0%,
+      color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent) 100%
+    );
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-text, #ffffff);
+  }
+
+  .loop-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .loop-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-lg, 18px);
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .loop-label {
+    flex: 1;
+    text-align: left;
+  }
+
+  /* Button area */
+  .button-area {
+    position: sticky;
+    bottom: 0;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    padding: var(--settings-spacing-md, 16px);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    z-index: 10;
+    display: flex;
     justify-content: center;
   }
 
   .generate-button {
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
+    max-width: 480px;
     padding: var(--settings-spacing-md, 16px);
     background: var(--theme-accent, #6366f1);
     color: white;
@@ -676,41 +587,7 @@ This component orchestrates the UI; business logic lives in extracted services.
     cursor: not-allowed;
   }
 
-  .secondary-button {
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    color: var(--theme-text, #ffffff);
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-sm, 8px);
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .secondary-button:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .secondary-button.danger:hover {
-    border-color: var(--semantic-error, #ef4444);
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
+  /* Error message */
   .error-message {
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid var(--semantic-error, #ef4444);
@@ -720,28 +597,74 @@ This component orchestrates the UI; business logic lives in extracted services.
     font-size: var(--font-size-min, 14px);
   }
 
-  /* Mode Toggle */
-  .mode-toggle-section {
+  /* Generation phase */
+  .generation-phase {
+    flex: 1;
     display: flex;
+    align-items: center;
     justify-content: center;
+    padding: var(--settings-spacing-lg, 24px);
   }
 
-  .mode-toggle {
-    display: inline-flex;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-md, 12px);
-    padding: 4px;
+  .progress-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--settings-spacing-md, 16px);
+    max-width: 400px;
+    text-align: center;
+  }
+
+  .progress-title {
+    margin: 0;
+    font-size: var(--font-size-lg, 18px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .progress-stats {
+    display: flex;
+    flex-direction: column;
     gap: 4px;
   }
 
-  .mode-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  .progress-stats .count {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--theme-accent, #6366f1);
+    line-height: 1;
+  }
+
+  .progress-stats .label {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    transition: width 0.3s ease;
+  }
+
+  .progress-hint {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .cancel-button {
     padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    min-height: 48px;
     background: transparent;
-    border: none;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-sm, 8px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-min, 14px);
@@ -749,146 +672,73 @@ This component orchestrates the UI; business logic lives in extracted services.
     transition: all 0.2s ease;
   }
 
-  .mode-button:hover:not(:disabled) {
-    color: var(--theme-text, #ffffff);
-    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.05));
+  .cancel-button:hover {
+    border-color: var(--semantic-error, #ef4444);
+    color: var(--semantic-error, #ef4444);
   }
 
-  .mode-button.active {
-    background: var(--theme-accent, #6366f1);
-    color: white;
-  }
-
-  .mode-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Variation Section */
-  .variation-section {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-md, 12px);
-    padding: var(--settings-spacing-md, 16px);
-    min-height: 300px;
-    max-height: 500px;
-    overflow: hidden;
+  /* Browsing phase */
+  .browsing-phase {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
-  /* Desktop layout */
-  @media (min-width: 1024px) {
-    .spell-panel-inner {
-      justify-content: center;
-    }
-
-    .variation-section {
-      min-height: 400px;
-      max-height: 600px;
-    }
-  }
-
-  /* LOOP Selection Styles */
-  .loop-selection-section {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-md, 12px);
-    padding: var(--settings-spacing-md, 16px);
-  }
-
-  .loop-phase-header {
+  .browsing-header {
     display: flex;
-    align-items: flex-start;
-    gap: var(--settings-spacing-sm, 8px);
-    margin-bottom: var(--settings-spacing-md, 16px);
+    align-items: center;
+    gap: var(--settings-spacing-md, 16px);
+    padding: var(--settings-spacing-md, 16px);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .loop-phase-header h3 {
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    min-height: 48px;
+    background: transparent;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--settings-radius-sm, 8px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .back-button:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .browsing-title {
     margin: 0;
     font-size: var(--font-size-md, 16px);
     font-weight: 600;
     color: var(--theme-text, #ffffff);
   }
 
-  .phase-subtitle {
-    margin: 4px 0 0 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .header-text {
+  .variation-grid-container {
     flex: 1;
+    overflow: hidden;
+    padding: var(--settings-spacing-md, 16px);
   }
 
-  .back-button {
-    background: transparent;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-lg, 18px);
-    cursor: pointer;
-    padding: 8px;
-    border-radius: var(--settings-radius-sm, 8px);
-    min-width: 48px;
-    min-height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-  }
-
-  .back-button:hover:not(:disabled) {
-    background: var(--theme-hover-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .back-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .back-button:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  .no-loop-options {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--settings-spacing-sm, 8px);
-    padding: var(--settings-spacing-lg, 24px);
-    text-align: center;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .no-loop-options i {
-    font-size: var(--font-size-xl, 1.5rem);
-    opacity: 0.6;
-  }
-
-  .no-loop-options p {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-  }
-
-  /* Reduced motion preference */
+  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
+    .mode-chip,
+    .loop-toggle,
     .generate-button,
-    .secondary-button,
-    .back-button {
+    .cancel-button,
+    .back-button,
+    .progress-bar {
       transition: none;
     }
 
-    .generate-button:hover:not(:disabled),
-    .back-button:hover:not(:disabled) {
+    .generate-button:hover:not(:disabled) {
       transform: none;
-    }
-
-    .spinner {
-      animation: none;
-      border-color: white;
     }
   }
 </style>

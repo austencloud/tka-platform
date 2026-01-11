@@ -2,7 +2,7 @@
 PreferencesPanel.svelte - Generation preferences controls
 
 Modern chip-based UI for sequence generation preferences:
-- Prominent LOOP toggle with helpful explanation
+- Prominent LOOP toggle with helpful explanation (can be hidden when extracted to parent)
 - Toggle chips for other boolean preferences
 - Chip group for motion type preference
 -->
@@ -12,12 +12,15 @@ Modern chip-based UI for sequence generation preferences:
   let {
     preferences,
     onUpdate,
+    showLoopToggle = true,
   }: {
     preferences: SpellPreferences;
     onUpdate: <K extends keyof SpellPreferences>(
       key: K,
       value: SpellPreferences[K]
     ) => void;
+    /** Whether to show the Make Loopable toggle (can be hidden when extracted to parent) */
+    showLoopToggle?: boolean;
   } = $props();
 
   // Motion preference options
@@ -30,33 +33,37 @@ Modern chip-based UI for sequence generation preferences:
 
 <div class="preferences-panel">
   <!-- Prominent LOOP Toggle Section -->
-  <div class="loop-toggle-section">
-    <button
-      class="loop-toggle"
-      class:active={preferences.makeCircular}
-      onclick={() => onUpdate("makeCircular", !preferences.makeCircular)}
-      aria-pressed={preferences.makeCircular}
-    >
-      <span class="loop-icon" aria-hidden="true">
+  {#if showLoopToggle}
+    <div class="loop-toggle-section">
+      <button
+        class="loop-toggle"
+        class:active={preferences.makeCircular}
+        onclick={() => onUpdate("makeCircular", !preferences.makeCircular)}
+        aria-pressed={preferences.makeCircular}
+      >
+        <span class="loop-icon" aria-hidden="true">
+          {#if preferences.makeCircular}
+            <i class="fas fa-check-circle"></i>
+          {:else}
+            <i class="fas fa-circle"></i>
+          {/if}
+        </span>
+        <span class="loop-label">Make Loopable</span>
+      </button>
+      <p class="loop-hint">
         {#if preferences.makeCircular}
-          <i class="fas fa-check-circle"></i>
+          Sequence will loop back to start. Choose bridge pictographs below.
         {:else}
-          <i class="fas fa-circle"></i>
+          Turn on to create a sequence that connects end to start.
         {/if}
-      </span>
-      <span class="loop-label">Make Loopable</span>
-    </button>
-    <p class="loop-hint">
-      {#if preferences.makeCircular}
-        Sequence will loop back to start. Choose bridge pictographs below.
-      {:else}
-        Turn on to create a sequence that connects end to start.
-      {/if}
-    </p>
-  </div>
+      </p>
+    </div>
+  {/if}
 
-  <!-- Other preferences -->
-  <h4 class="section-title">Other Preferences</h4>
+  <!-- Other preferences (shown without header when loop toggle is hidden) -->
+  {#if showLoopToggle}
+    <h4 class="section-title">Other Preferences</h4>
+  {/if}
 
   <!-- Boolean toggles as chips -->
   <div class="toggle-chips">

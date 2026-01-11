@@ -32,9 +32,15 @@ export class LOOPSelectionCoordinator implements ILOOPSelectionCoordinator {
       }
 
       const extender = await this.serviceLoader.getSequenceExtender();
+
+      // Pass the specific pictographData from the option to ensure we use
+      // the exact pictograph variation the user selected. This is critical
+      // because different variations of the same letter can end at different
+      // positions, and we need the correct end position for LOOP to work.
       const sequenceWithBridge = await extender.appendBridgeBeat(
         sequence,
-        bridgeLetter
+        bridgeLetter,
+        option.pictographData
       );
 
       return {

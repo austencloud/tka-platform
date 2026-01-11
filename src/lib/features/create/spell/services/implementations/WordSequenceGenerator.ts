@@ -542,7 +542,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       startPosition: startPositionData, // Primary field for orientation propagation
       startingPositionBeat: startPositionData, // Legacy field for backward compatibility
       gridMode,
-      propType: PropType.STAFF,
+      // propType removed - prop type is viewer preference, not sequence data
       difficultyLevel: DifficultyLevel.INTERMEDIATE,
       isCircular,
       isFavorite: false,

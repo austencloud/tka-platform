@@ -26,6 +26,7 @@ import {
 } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import { createUndoController } from "$lib/features/create/shared/state/create-module/undo-controller.svelte";
 import { container } from "$lib/shared/di";
+import { browser } from "$app/environment";
 import type {
   LetterSource,
   SpellPreferences,
@@ -34,6 +35,11 @@ import type {
   CircularizationOption,
 } from "../domain/models/spell-models";
 import { DEFAULT_SPELL_PREFERENCES } from "../domain/constants/spell-constants";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { WizardPhase } from "./funnel-state.svelte";
+
+const HAS_GENERATED_STORAGE_KEY = "spell-has-generated-once";
+const GRID_MODE_STORAGE_KEY = "spell-grid-mode";
 
 /**
  * Creates spell tab state for spell-specific concerns
@@ -71,6 +77,33 @@ export function createSpellTabState(
   let loopAnalysis = $state<ExtensionAnalysis | null>(null);
   let circularizationOptions = $state<CircularizationOption[]>([]);
   let directLoopUnavailableReason = $state<string | null>(null);
+
+  // Track if user has generated at least once (for progressive disclosure)
+  const getInitialHasGenerated = (): boolean => {
+    if (!browser) return false;
+    try {
+      return localStorage.getItem(HAS_GENERATED_STORAGE_KEY) === "true";
+    } catch {
+      return false;
+    }
+  };
+  let hasGeneratedOnce = $state(getInitialHasGenerated());
+
+  // Funnel wizard state
+  let wizardPhase = $state<WizardPhase>("setup");
+
+  // Grid mode selection (persisted)
+  const getInitialGridMode = (): GridMode => {
+    if (!browser) return GridMode.DIAMOND;
+    try {
+      const stored = localStorage.getItem(GRID_MODE_STORAGE_KEY);
+      if (stored === "BOX") return GridMode.BOX;
+      return GridMode.DIAMOND;
+    } catch {
+      return GridMode.DIAMOND;
+    }
+  };
+  let selectedGridMode = $state<GridMode>(getInitialGridMode());
 
   // Spell tab has its own independent sequence state
   // IMPORTANT: Pass tabId="spell" to ensure persistence loads/saves only spell's data
@@ -292,6 +325,18 @@ export function createSpellTabState(
     directLoopUnavailableReason = reason;
   }
 
+  function markHasGeneratedOnce() {
+    if (hasGeneratedOnce) return;
+    hasGeneratedOnce = true;
+    if (browser) {
+      try {
+        localStorage.setItem(HAS_GENERATED_STORAGE_KEY, "true");
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  }
+
   function clearSpellState() {
     inputWord = "";
     expandedWord = "";
@@ -301,6 +346,22 @@ export function createSpellTabState(
     loopAnalysis = null;
     circularizationOptions = [];
     directLoopUnavailableReason = null;
+    wizardPhase = "setup";
+  }
+
+  function setWizardPhase(phase: WizardPhase) {
+    wizardPhase = phase;
+  }
+
+  function setGridMode(mode: GridMode) {
+    selectedGridMode = mode;
+    if (browser) {
+      try {
+        localStorage.setItem(GRID_MODE_STORAGE_KEY, mode);
+      } catch {
+        // Ignore storage errors
+      }
+    }
   }
 
   /**
@@ -393,6 +454,19 @@ export function createSpellTabState(
       return directLoopUnavailableReason;
     },
 
+    // Progressive disclosure - track if user has generated before
+    get hasGeneratedOnce() {
+      return hasGeneratedOnce;
+    },
+
+    // Funnel wizard state
+    get wizardPhase() {
+      return wizardPhase;
+    },
+    get selectedGridMode() {
+      return selectedGridMode;
+    },
+
     // Sequence state access
     get sequenceState() {
       return sequenceState;
@@ -450,6 +524,13 @@ export function createSpellTabState(
     // Circularization-related mutations
     setCircularizationOptions,
     setDirectLoopUnavailableReason,
+
+    // Progressive disclosure
+    markHasGeneratedOnce,
+
+    // Funnel wizard mutations
+    setWizardPhase,
+    setGridMode,
 
     // Initialization
     initializeSpellTab,

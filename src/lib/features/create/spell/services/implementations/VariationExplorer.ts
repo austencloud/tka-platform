@@ -309,7 +309,7 @@ export class VariationExplorer implements IVariationExplorer {
       startPosition: startPositionData,
       startingPositionBeat: startPositionData, // Legacy field
       gridMode,
-      propType: PropType.STAFF,
+      // propType removed - prop type is viewer preference, not sequence data
       difficultyLevel: DifficultyLevel.INTERMEDIATE,
       isCircular: false,
       isFavorite: false,
