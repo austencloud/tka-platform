@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinetic Fire Retreat | 4-Day Fire & Flow Arts Festival</title>
+    <meta name="description" content="Join us for a 4-day fire performer's paradise at Hannon's Camp America in Ohio. Poi, hoops, aerial silks, and more. 13 years of building memories.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --fire-orange: #ff6b35;
+            --fire-red: #d62828;
+            --fire-yellow: #fcbf49;
+            --ember-glow: #ff9f1c;
+            --dark-bg: #0a0a0f;
+            --darker-bg: #050508;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --text-primary: #f5f5f5;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated fire gradient background */
+        .fire-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(214, 40, 40, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 30% 80%, rgba(255, 107, 53, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse at 70% 90%, rgba(252, 191, 73, 0.08) 0%, transparent 35%),
+                var(--darker-bg);
+            animation: fireGlow 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes fireGlow {
+            0% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .logo {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--fire-yellow), var(--fire-orange), var(--fire-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--fire-orange);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--fire-orange);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            background: linear-gradient(135deg, var(--fire-orange), var(--fire-red));
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+        }
+
+        /* Mobile menu */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--fire-orange);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+
+        .hero h1 span {
+            display: block;
+            background: linear-gradient(135deg, var(--fire-yellow), var(--fire-orange), var(--fire-red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--fire-orange), var(--fire-red));
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--fire-orange);
+            color: var(--fire-orange);
+        }
+
+        .hero-details {
+            display: flex;
+            gap: 3rem;
+            margin-top: 4rem;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+
+        .hero-detail {
+            text-align: center;
+        }
+
+        .hero-detail-value {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--fire-orange);
+        }
+
+        .hero-detail-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator svg {
+            width: 30px;
+            height: 30px;
+            stroke: var(--text-muted);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* Section styling */
+        section {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* About Section */
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .about-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2.5rem;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .about-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 107, 53, 0.3);
+        }
+
+        .about-card-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(214, 40, 40, 0.2));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .about-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .about-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Experience Section */
+        .experience {
+            background: linear-gradient(180deg, transparent, rgba(255, 107, 53, 0.03), transparent);
+        }
+
+        .experience-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .experience-content h2 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            margin-bottom: 1.5rem;
+        }
+
+        .experience-content p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .experience-list {
+            list-style: none;
+        }
+
+        .experience-list li {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .experience-list li::before {
+            content: '🔥';
+            font-size: 1.2rem;
+        }
+
+        .experience-visual {
+            position: relative;
+        }
+
+        .experience-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .experience-card-number {
+            font-family: 'Cinzel', serif;
+            font-size: 5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--fire-yellow), var(--fire-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .experience-card-label {
+            font-size: 1.5rem;
+            margin-top: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        /* Props/Activities Section */
+        .activities {
+            text-align: center;
+        }
+
+        .activity-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .activity-tag {
+            padding: 0.75rem 1.5rem;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            font-size: 1rem;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .activity-tag:hover {
+            border-color: var(--fire-orange);
+            background: rgba(255, 107, 53, 0.1);
+            transform: scale(1.05);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 8rem 2rem;
+            position: relative;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 107, 53, 0.3), transparent);
+        }
+
+        .cta-section h2 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-section p {
+            color: var(--text-secondary);
+            max-width: 500px;
+            margin: 0 auto 2.5rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 4rem 2rem 2rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            max-width: 300px;
+        }
+
+        .footer-links h4 {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: block;
+            padding: 0.4rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--fire-orange);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            border-color: var(--fire-orange);
+            color: var(--fire-orange);
+            transform: translateY(-3px);
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 3rem auto 0;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .experience-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .hero-details {
+                gap: 2rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero-details {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .hero-cta-group {
+                flex-direction: column;
+                width: 100%;
+                padding: 0 1rem;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
+
+            section {
+                padding: 4rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="fire-bg"></div>
+
+    <nav>
+        <a href="#" class="logo">KINETIC FIRE</a>
+        <ul class="nav-links">
+            <li><a href="#about">About</a></li>
+            <li><a href="#experience">Experience</a></li>
+            <li><a href="#activities">Activities</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <a href="https://www.eventbrite.com/o/kinetic-fire-llc-8aborede0a" class="nav-cta" target="_blank">Get Tickets</a>
+        <button class="mobile-menu-btn" aria-label="Menu">☰</button>
+    </nav>
+
+    <section class="hero">
+        <span class="hero-badge">🔥 13th Year Celebration</span>
+        <h1>
+            Building Memories
+            <span>& Experiences</span>
+        </h1>
+        <p class="hero-subtitle">
+            A 4-day fire performer's paradise at Hannon's Camp America in College Corner, Ohio.
+            Where flow artists become family.
+        </p>
+        <div class="hero-cta-group">
+            <a href="https://www.eventbrite.com/o/kinetic-fire-llc-8adorede0a" class="btn-primary" target="_blank">Get Your Tickets</a>
+            <a href="#about" class="btn-secondary">Learn More</a>
+        </div>
+        <div class="hero-details">
+            <div class="hero-detail">
+                <div class="hero-detail-value">4</div>
+                <div class="hero-detail-label">Days</div>
+            </div>
+            <div class="hero-detail">
+                <div class="hero-detail-value">13</div>
+                <div class="hero-detail-label">Years Running</div>
+            </div>
+            <div class="hero-detail">
+                <div class="hero-detail-value">∞</div>
+                <div class="hero-detail-label">Memories</div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+        </div>
+    </section>
+
+    <section id="about">
+        <div class="section-header">
+            <h2>What We're About</h2>
+            <p>Creating a welcoming communal environment for object manipulators and fire artists from across the Midwest and beyond.</p>
+        </div>
+        <div class="about-grid">
+            <div class="about-card">
+                <div class="about-card-icon">🎓</div>
+                <h3>World-Class Training</h3>
+                <p>High-level instruction grounded in foundational skills. Modern spinning techniques taught by experienced performers.</p>
+            </div>
+            <div class="about-card">
+                <div class="about-card-icon">🤝</div>
+                <h3>Community First</h3>
+                <p>A supportive environment where artists of all skill levels learn, teach, and grow together in the flow arts.</p>
+            </div>
+            <div class="about-card">
+                <div class="about-card-icon">✨</div>
+                <h3>Holistic Experience</h3>
+                <p>Personal and professional development training. Not just skills—we nurture the complete artist within you.</p>
+            </div>
+            <div class="about-card">
+                <div class="about-card-icon">🔥</div>
+                <h3>Fire Safety</h3>
+                <p>Comprehensive safety protocols and training ensure everyone can enjoy fire performance responsibly.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="experience" class="experience">
+        <div class="experience-grid">
+            <div class="experience-content">
+                <h2>More Than a Festival</h2>
+                <p>
+                    Kinetic Fire Retreat brings together jugglers, prop manipulators, and fire enthusiasts
+                    for four unforgettable days of learning, performing, and connecting.
+                </p>
+                <ul class="experience-list">
+                    <li>Workshops led by renowned instructors</li>
+                    <li>Late-night fire circles under the stars</li>
+                    <li>Vendor village with the latest flow gear</li>
+                    <li>Live music and performances</li>
+                    <li>Camping in beautiful Ohio countryside</li>
+                </ul>
+                <a href="https://www.eventbrite.com/o/kinetic-fire-llc-8adorede0a" class="btn-primary" target="_blank" style="display: inline-block; margin-top: 1rem;">Join Us This Year</a>
+            </div>
+            <div class="experience-visual">
+                <div class="experience-card">
+                    <div class="experience-card-number">13</div>
+                    <div class="experience-card-label">Years of Magic</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="activities" class="activities">
+        <div class="section-header">
+            <h2>Explore Your Flow</h2>
+            <p>From beginners to professionals, there's something for every flow artist.</p>
+        </div>
+        <div class="activity-tags">
+            <span class="activity-tag">Poi</span>
+            <span class="activity-tag">Hula Hoops</span>
+            <span class="activity-tag">Aerial Silks</span>
+            <span class="activity-tag">Fire Fans</span>
+            <span class="activity-tag">Staff</span>
+            <span class="activity-tag">Dragon Staff</span>
+            <span class="activity-tag">Levitation Wand</span>
+            <span class="activity-tag">Juggling</span>
+            <span class="activity-tag">Contact Juggling</span>
+            <span class="activity-tag">Fire Breathing</span>
+            <span class="activity-tag">LED Props</span>
+            <span class="activity-tag">Rope Dart</span>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <h2>Ready to Ignite Your Journey?</h2>
+        <p>Join hundreds of flow artists for 4 days of workshops, performances, and community at Hannon's Camp America.</p>
+        <a href="https://www.eventbrite.com/o/kinetic-fire-llc-8adorede0a" class="btn-primary" target="_blank">Get Your Tickets Now</a>
+    </section>
+
+    <footer id="contact">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <a href="#" class="logo">KINETIC FIRE</a>
+                <p>Building memories and experiences for the flow arts community since 2012. Located at Hannon's Camp America, College Corner, Ohio.</p>
+                <div class="social-links">
+                    <a href="https://facebook.com/kineticfireretreat" target="_blank" aria-label="Facebook">f</a>
+                    <a href="https://instagram.com/kineticfireretreat" target="_blank" aria-label="Instagram">ig</a>
+                    <a href="https://twitter.com/kineticfire" target="_blank" aria-label="Twitter">𝕏</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>Event Info</h4>
+                <ul>
+                    <li><a href="#">General Information</a></li>
+                    <li><a href="#">Workshops</a></li>
+                    <li><a href="#">Vendors</a></li>
+                    <li><a href="#">Fire Safety</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Get Involved</h4>
+                <ul>
+                    <li><a href="https://www.eventbrite.com/o/kinetic-fire-llc-8adorede0a" target="_blank">Buy Tickets</a></li>
+                    <li><a href="#">Become an Ambassador</a></li>
+                    <li><a href="#">Submit Art</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2025 Kinetic Fire LLC. All rights reserved. Made with 🔥 for the flow community.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple scroll animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.about-card, .activity-tag').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
