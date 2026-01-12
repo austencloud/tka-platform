@@ -44,9 +44,14 @@ export interface PictographVisibilityOptions {
   redPropType?: PropType;
   /**
    * Hand point visibility setting for grid rendering.
-   * "all" shows all hand positions, "active" shows only active ones.
+   * "all" shows all hand positions, "active" shows only active ones, "none" hides all.
    */
-  handPointVisibility?: "all" | "active";
+  handPointVisibility?: "all" | "active" | "none";
+  /**
+   * Whether to show the grid background.
+   * When false, hides the entire grid (center, hand points, outer corners).
+   */
+  showGrid?: boolean;
   /**
    * When true, render only the base grid (center + outer corner points).
    * Hand points and layer 2 points are excluded - they're rendered in a separate layer.

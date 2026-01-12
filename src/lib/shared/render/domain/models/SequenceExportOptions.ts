@@ -61,6 +61,10 @@ export interface SequenceExportOptions {
     showTurnNumbers?: boolean;
     /** Dark Mode - dark background, inverted grid, white text/outlines */
     darkMode?: boolean;
+    /** Show/hide grid background */
+    showGrid?: boolean;
+    /** Hand point visibility: "all" | "active" | "none" */
+    handPointVisibility?: "all" | "active" | "none";
   };
 
   // User information

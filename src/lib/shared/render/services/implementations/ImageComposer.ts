@@ -118,6 +118,8 @@ export class ImageComposer implements IImageComposer {
         showReversals: overrides.showReversals,
         showNonRadialPoints: overrides.showNonRadialPoints,
         darkMode: overrides.darkMode,
+        showGrid: overrides.showGrid,
+        handPointVisibility: overrides.handPointVisibility,
       };
     }
 
@@ -136,6 +138,7 @@ export class ImageComposer implements IImageComposer {
       showReversals: visibilityManager.getGlyphVisibility("reversalIndicators"),
       showNonRadialPoints: visibilityManager.getNonRadialVisibility(),
       darkMode: animVisibilityManager.isDarkMode(),
+      handPointVisibility: visibilityManager.getHandPointVisibility(),
     };
 
     // Merge overrides with global settings (overrides take precedence)
@@ -149,6 +152,8 @@ export class ImageComposer implements IImageComposer {
         showNonRadialPoints:
           overrides.showNonRadialPoints ?? globalSettings.showNonRadialPoints,
         darkMode: overrides.darkMode ?? globalSettings.darkMode,
+        showGrid: overrides.showGrid ?? true, // Default to showing grid
+        handPointVisibility: overrides.handPointVisibility ?? globalSettings.handPointVisibility,
       };
     }
 
