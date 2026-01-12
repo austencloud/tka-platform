@@ -189,6 +189,7 @@
     "animate-css-grid": "^1.5.1",
     "bits-ui": "^2.14.4",
     "dexie": "^4.2.1",
+    "dom-to-image-more": "^3.7.2",
     "embla-carousel": "^8.6.0",
     "embla-carousel-svelte": "^8.6.0",
     "fabric": "^7.0.0",
