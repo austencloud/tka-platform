@@ -34,6 +34,7 @@
   } from "../services/contracts/IQuickAccessPersister";
   import type { ICloudThumbnailCache } from "$lib/features/discover/sequences/display/services/contracts/ICloudThumbnailCache";
   import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
+  import type { IThumbnailLocalCache } from "$lib/features/discover/sequences/display/services/contracts/IThumbnailLocalCache";
   import AdminToolbarDesktop from "./AdminToolbarDesktop.svelte";
   import AdminToolbarMobile from "./AdminToolbarMobile.svelte";
 
@@ -263,6 +264,45 @@
     }
   }
 
+  let isClearingThumbnailCache = $state(false);
+
+  async function clearThumbnailLocalCache() {
+    if (isClearingThumbnailCache) return;
+
+    console.log("🗑️ Starting thumbnail local cache clear...");
+    isClearingThumbnailCache = true;
+    introResetMessage = "Clearing thumbnail cache...";
+
+    try {
+      const thumbnailCache = container.items.thumbnailLocalCache as IThumbnailLocalCache;
+
+      // Get stats before clearing
+      const statsBefore = await thumbnailCache.getStats();
+
+      // Clear the cache
+      await thumbnailCache.clear();
+
+      const sizeMB = (statsBefore.sizeBytes / 1024 / 1024).toFixed(1);
+      introResetMessage = `Cleared ${statsBefore.count} thumbnails (${sizeMB}MB)`;
+
+      console.log(`✅ Cleared thumbnail local cache:
+      - Entries: ${statsBefore.count}
+      - Size: ${sizeMB}MB`);
+
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } catch (error) {
+      console.error("❌ Failed to clear thumbnail cache:", error);
+      introResetMessage = `Error: ${error instanceof Error ? error.message : "Unknown"}`;
+      setTimeout(() => {
+        introResetMessage = null;
+      }, 5000);
+    } finally {
+      isClearingThumbnailCache = false;
+    }
+  }
+
   function handleClose() {
     adminToolbarState.close();
   }
@@ -317,6 +357,8 @@
       {isClearingThumbnails}
       onClearLocalCache={clearLocalPictographCache}
       {isClearingLocalCache}
+      onClearThumbnailCache={clearThumbnailLocalCache}
+      {isClearingThumbnailCache}
       onClose={handleClose}
     />
   {:else}
@@ -343,6 +385,8 @@
       {isClearingThumbnails}
       onClearLocalCache={clearLocalPictographCache}
       {isClearingLocalCache}
+      onClearThumbnailCache={clearThumbnailLocalCache}
+      {isClearingThumbnailCache}
       onClose={handleClose}
     />
   {/if}

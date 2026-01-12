@@ -43,6 +43,8 @@
     isClearingThumbnails: boolean;
     onClearLocalCache: () => void;
     isClearingLocalCache: boolean;
+    onClearThumbnailCache: () => void;
+    isClearingThumbnailCache: boolean;
     onClose: () => void;
   }
 
@@ -69,6 +71,8 @@
     isClearingThumbnails,
     onClearLocalCache,
     isClearingLocalCache,
+    onClearThumbnailCache,
+    isClearingThumbnailCache,
     onClose,
   }: Props = $props();
 
@@ -106,6 +110,11 @@
 
   function handleClearLocalCache() {
     onClearLocalCache();
+    isActionsOpen = false;
+  }
+
+  function handleClearThumbnailCache() {
+    onClearThumbnailCache();
     isActionsOpen = false;
   }
 
@@ -298,7 +307,22 @@
                 <span>Clearing...</span>
               {:else}
                 <i class="fas fa-database" aria-hidden="true"></i>
-                <span>Clear Local Cache</span>
+                <span>Clear Pictograph Cache</span>
+              {/if}
+            </button>
+
+            <button
+              type="button"
+              class="dropdown-item danger"
+              onclick={handleClearThumbnailCache}
+              disabled={isClearingThumbnailCache}
+            >
+              {#if isClearingThumbnailCache}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>Clearing...</span>
+              {:else}
+                <i class="fas fa-images" aria-hidden="true"></i>
+                <span>Clear Thumbnail Cache</span>
               {/if}
             </button>
           </div>
