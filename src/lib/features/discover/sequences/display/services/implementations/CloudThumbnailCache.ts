@@ -41,7 +41,9 @@ const pendingUploads = new Map<string, Promise<string>>();
 let manifestLoaded = false;
 let manifestLoadPromise: Promise<number> | null = null;
 const MANIFEST_PATH = "thumbnails/manifest.json";
-const MANIFEST_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
+
+// Firebase Storage bucket - single source of truth
+const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
 
 // Track thumbnails we've confirmed EXIST in cloud storage
 // This inverts the usual pattern: we assume things DON'T exist (render locally)
@@ -236,8 +238,7 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
       // Build the public URL directly
       const storagePath = this.getStoragePath(key);
       const encodedPath = encodeURIComponent(storagePath);
-      const bucket = "the-kinetic-alphabet.firebasestorage.app";
-      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
+      const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}?alt=media`;
 
       // Cache and return - we know it exists, no need to verify
       urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
@@ -396,7 +397,7 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
     try {
       // Build direct URL to manifest (public read)
       const encodedPath = encodeURIComponent(MANIFEST_PATH);
-      const manifestUrl = `https://firebasestorage.googleapis.com/v0/b/${MANIFEST_BUCKET}/o/${encodedPath}?alt=media`;
+      const manifestUrl = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_STORAGE_BUCKET}/o/${encodedPath}?alt=media`;
 
       const response = await fetch(manifestUrl);
       if (!response.ok) {
