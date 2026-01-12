@@ -18,14 +18,18 @@ export interface TreeTypeVisibility {
   dead: boolean;
 }
 
-interface Tree {
+export interface RenderedTree {
+  id: string;
   x: number;
   height: number;
   width: number;
   type: TreeType;
-  layer: number; // 0 = far, 1 = mid, 2 = near
+  layer: number; // 0 = far, 6 = near
   seed: number; // For deterministic image selection
+  imageFilename?: string; // The actual image used for this tree
 }
+
+interface Tree extends RenderedTree {}
 
 // Grid-based placement configuration
 // Each layer uses specific columns to avoid overlap within a layer
@@ -399,6 +403,9 @@ export function createTreeSilhouetteSystem() {
   // Ecological pattern state
   let currentPatternId: string = "random";  // Default to random distribution
 
+  // Store current trees for inspection and deletion
+  let currentTrees: Tree[] = [];
+
   type RenderContext =
     | CanvasRenderingContext2D
     | OffscreenCanvasRenderingContext2D;
@@ -530,6 +537,7 @@ export function createTreeSilhouetteSystem() {
   /**
    * Draw a tree using a pre-loaded silhouette image
    * Applies depth-based tinting for atmospheric perspective
+   * Returns the filename of the image used (for tracking)
    */
   function drawTreeImage(
     ctx: RenderContext,
@@ -540,10 +548,10 @@ export function createTreeSilhouetteSystem() {
     treeType: TreeType,
     layer: number,
     seed: number
-  ): boolean {
+  ): string | null {
     // Use unique selector to prevent duplicate trees in the same scene
     const treeImage = imageLoader.getUniqueFromCategory(treeType as TreeCategory, usedImages, seed);
-    if (!treeImage) return false;
+    if (!treeImage) return null;
 
     // Track this image as used
     usedImages.add(treeImage.filename);
@@ -562,7 +570,7 @@ export function createTreeSilhouetteSystem() {
     // Create a temporary canvas for tinting
     const tempCanvas = new OffscreenCanvas(Math.ceil(targetWidth), Math.ceil(targetHeight));
     const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx) return false;
+    if (!tempCtx) return null;
 
     // Draw the silhouette scaled
     tempCtx.drawImage(
@@ -591,7 +599,7 @@ export function createTreeSilhouetteSystem() {
     ctx.shadowBlur = 0;
     ctx.globalCompositeOperation = 'source-over';
 
-    return true;
+    return treeImage.filename;
   }
 
   // ===================
@@ -799,13 +807,15 @@ export function createTreeSilhouetteSystem() {
         const speciesWidthScale = typeScale.widthMin + seededRandom() * (typeScale.widthMax - typeScale.widthMin);
         const finalWidth = height * baseWidth * speciesWidthScale;
 
+        const treeSeed = finalX * 1000 + layerIndex;
         trees.push({
+          id: `tree-${layerIndex}-${i}-${treeSeed.toFixed(0)}`,
           x: finalX,
           height: finalHeight,
           width: finalWidth,
           type: treeType,
           layer: layerIndex,
-          seed: finalX * 1000 + layerIndex, // Deterministic seed based on position
+          seed: treeSeed,
         });
 
         // Track for collision detection
@@ -892,6 +902,9 @@ export function createTreeSilhouetteSystem() {
 
     const trees = createTrees(dimensions);
 
+    // Store trees for external access
+    currentTrees = trees;
+
     // Create separate canvas for each layer
     for (let layer = 0; layer < NUM_LAYERS; layer++) {
       const canvas = new OffscreenCanvas(dimensions.width, dimensions.height);
@@ -907,7 +920,7 @@ export function createTreeSilhouetteSystem() {
       const layerTrees = trees.filter((t) => t.layer === layer);
       for (const tree of layerTrees) {
         // Draw tree using pre-loaded silhouette image
-        drawTreeImage(
+        const imageFilename = drawTreeImage(
           ctx,
           tree.x,
           layerBaseY,
@@ -917,6 +930,53 @@ export function createTreeSilhouetteSystem() {
           tree.layer,
           tree.seed
         );
+        // Track which image was used for this tree
+        if (imageFilename) {
+          tree.imageFilename = imageFilename;
+        }
+      }
+
+      layerCanvases[layer] = canvas;
+    }
+  }
+
+  /**
+   * Re-render the cache using the current trees (without regenerating)
+   * Used after removing trees to update the display
+   */
+  function rerenderCurrentTrees(dimensions: Dimensions): void {
+    cachedDimensions = dimensions;
+
+    // Clear used images tracker
+    usedImages.clear();
+
+    // Create separate canvas for each layer
+    for (let layer = 0; layer < NUM_LAYERS; layer++) {
+      const canvas = new OffscreenCanvas(dimensions.width, dimensions.height);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) continue;
+
+      ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+
+      // Get the ground line for this layer
+      const layerBaseY = getLayerBaseY(layer, dimensions.height);
+
+      // Draw only trees in this layer that still exist
+      const layerTrees = currentTrees.filter((t) => t.layer === layer);
+      for (const tree of layerTrees) {
+        const imageFilename = drawTreeImage(
+          ctx,
+          tree.x,
+          layerBaseY,
+          tree.width,
+          tree.height,
+          tree.type,
+          tree.layer,
+          tree.seed
+        );
+        if (imageFilename) {
+          tree.imageFilename = imageFilename;
+        }
       }
 
       layerCanvases[layer] = canvas;
@@ -1036,6 +1096,62 @@ export function createTreeSilhouetteSystem() {
     return randomPattern.id;
   }
 
+  // ===================
+  // TREE MANAGEMENT API
+  // ===================
+
+  /**
+   * Get all currently rendered trees
+   */
+  function getRenderedTrees(): RenderedTree[] {
+    return currentTrees.map(t => ({ ...t }));
+  }
+
+  /**
+   * Remove a tree by its ID and re-render
+   * Returns true if tree was found and removed
+   */
+  function removeTree(treeId: string): boolean {
+    const index = currentTrees.findIndex(t => t.id === treeId);
+    if (index === -1) return false;
+
+    currentTrees.splice(index, 1);
+
+    // Re-render with remaining trees
+    if (cachedDimensions) {
+      rerenderCurrentTrees(cachedDimensions);
+    }
+
+    return true;
+  }
+
+  /**
+   * Remove all trees using a specific image filename
+   * Returns the number of trees removed
+   */
+  function removeTreesByImage(imageFilename: string): number {
+    const initialCount = currentTrees.length;
+    currentTrees = currentTrees.filter(t => t.imageFilename !== imageFilename);
+    const removedCount = initialCount - currentTrees.length;
+
+    if (removedCount > 0 && cachedDimensions) {
+      rerenderCurrentTrees(cachedDimensions);
+    }
+
+    return removedCount;
+  }
+
+  /**
+   * Get the count of trees by layer
+   */
+  function getTreeCounts(): { total: number; byLayer: number[] } {
+    const byLayer = Array(NUM_LAYERS).fill(0);
+    for (const tree of currentTrees) {
+      byLayer[tree.layer]++;
+    }
+    return { total: currentTrees.length, byLayer };
+  }
+
   return {
     initialize,
     preloadImages,
@@ -1053,6 +1169,11 @@ export function createTreeSilhouetteSystem() {
     getEcologicalPattern,
     getAvailablePatterns,
     setRandomEcologicalPattern,
+    // Tree management API
+    getRenderedTrees,
+    removeTree,
+    removeTreesByImage,
+    getTreeCounts,
     regenerate,
     cleanup,
   };

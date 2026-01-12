@@ -16,6 +16,7 @@ import {
   type TreeTypeVisibility,
   type PlacementConfig,
   type EcologicalPattern,
+  type RenderedTree,
   NUM_LAYERS,
 } from "./TreeSilhouetteSystem";
 import { createAmbientParticleSystem } from "./AmbientParticleSystem";
@@ -831,6 +832,38 @@ export class FireflyForestBackgroundSystem implements IBackgroundSystem {
       ambientParticles: this.ambientParticleSystem.getCount(),
       hasShootingStar: this.shootingStar !== null,
     };
+  }
+
+  // ===================
+  // TREE MANAGEMENT
+  // ===================
+
+  /**
+   * Get all currently rendered trees
+   */
+  public getRenderedTrees(): RenderedTree[] {
+    return this.treeSystem.getRenderedTrees();
+  }
+
+  /**
+   * Remove a tree by its ID and re-render
+   */
+  public removeTree(treeId: string): boolean {
+    return this.treeSystem.removeTree(treeId);
+  }
+
+  /**
+   * Remove all trees using a specific image filename
+   */
+  public removeTreesByImage(imageFilename: string): number {
+    return this.treeSystem.removeTreesByImage(imageFilename);
+  }
+
+  /**
+   * Get tree counts by layer
+   */
+  public getTreeCounts(): { total: number; byLayer: number[] } {
+    return this.treeSystem.getTreeCounts();
   }
 
   public cleanup(): void {

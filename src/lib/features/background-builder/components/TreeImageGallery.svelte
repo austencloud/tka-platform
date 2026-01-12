@@ -1,76 +1,66 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import type { TreeCategory } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteImageLoader";
+  import type { RenderedTree } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
 
   interface Props {
     selectedCategory: TreeCategory | "all";
     onCategoryChange: (category: TreeCategory | "all") => void;
+    onDeleteTree?: (imageFilename: string) => void;
+    sceneTrees: RenderedTree[];
   }
 
-  let { selectedCategory, onCategoryChange }: Props = $props();
-
-  // Tree image counts per category (from TreeSilhouetteImageLoader)
-  const TREE_COUNTS: Record<TreeCategory, number> = {
-    pine: 12,
-    fir: 5,
-    spruce: 4,
-    oak: 12,
-    maple: 12,
-    poplar: 6,
-    willow: 13,
-    dead: 18,
-  };
+  let { selectedCategory, onCategoryChange, onDeleteTree, sceneTrees }: Props = $props();
 
   const CATEGORIES: TreeCategory[] = ["pine", "fir", "spruce", "oak", "maple", "poplar", "willow", "dead"];
   const BASE_PATH = "/images/trees/curated";
 
   interface TreeImageInfo {
     category: TreeCategory;
-    index: number;
     filename: string;
     path: string;
+    count: number;
   }
 
-  // Generate list of all tree images
-  function getAllImages(): TreeImageInfo[] {
-    const images: TreeImageInfo[] = [];
-    for (const category of CATEGORIES) {
-      const count = TREE_COUNTS[category];
-      for (let i = 1; i <= count; i++) {
-        const paddedIndex = String(i).padStart(2, "0");
-        const filename = `${category}_${paddedIndex}.png`;
-        images.push({
-          category,
-          index: i,
-          filename,
-          path: `${BASE_PATH}/${filename}`,
+  // Build image list from scene trees
+  function buildImageList(trees: RenderedTree[]): TreeImageInfo[] {
+    const imageMap = new Map<string, TreeImageInfo>();
+
+    for (const tree of trees) {
+      if (!tree.imageFilename) continue;
+
+      const existing = imageMap.get(tree.imageFilename);
+      if (existing) {
+        existing.count++;
+      } else {
+        imageMap.set(tree.imageFilename, {
+          category: tree.type as TreeCategory,
+          filename: tree.imageFilename,
+          path: `${BASE_PATH}/${tree.imageFilename}`,
+          count: 1,
         });
       }
     }
-    return images;
+
+    return Array.from(imageMap.values());
   }
 
-  const allImages = getAllImages();
+  let sceneImages = $derived(buildImageList(sceneTrees));
 
-  // Filter images by selected category
   let displayedImages = $derived(
     selectedCategory === "all"
-      ? allImages
-      : allImages.filter((img) => img.category === selectedCategory)
+      ? sceneImages
+      : sceneImages.filter((img) => img.category === selectedCategory)
   );
 
-  // Group images by category for "all" view
-  let groupedImages = $derived(() => {
-    if (selectedCategory !== "all") return null;
-    const groups: Record<TreeCategory, TreeImageInfo[]> = {} as Record<TreeCategory, TreeImageInfo[]>;
-    for (const category of CATEGORIES) {
-      groups[category] = allImages.filter((img) => img.category === category);
+  function getCategoryCounts(images: TreeImageInfo[]): Record<string, number> {
+    const counts: Record<string, number> = { all: images.length };
+    for (const cat of CATEGORIES) {
+      counts[cat] = images.filter(img => img.category === cat).length;
     }
-    return groups;
-  });
+    return counts;
+  }
 
-  // Total count
-  const totalCount = allImages.length;
+  let categoryCounts = $derived(getCategoryCounts(sceneImages));
 </script>
 
 <div class="tree-image-gallery">
@@ -81,50 +71,49 @@
       class:active={selectedCategory === "all"}
       onclick={() => onCategoryChange("all")}
     >
-      All ({totalCount})
+      All ({categoryCounts.all})
     </button>
     {#each CATEGORIES as category}
-      <button
-        class="category-btn"
-        class:active={selectedCategory === category}
-        onclick={() => onCategoryChange(category)}
-      >
-        {category.charAt(0).toUpperCase() + category.slice(1)} ({TREE_COUNTS[category]})
-      </button>
+      {#if categoryCounts[category] > 0}
+        <button
+          class="category-btn"
+          class:active={selectedCategory === category}
+          onclick={() => onCategoryChange(category)}
+        >
+          {category.charAt(0).toUpperCase() + category.slice(1)} ({categoryCounts[category]})
+        </button>
+      {/if}
     {/each}
   </div>
 
   <!-- Image Grid -->
   <div class="gallery-scroll">
-    {#if selectedCategory === "all"}
-      <!-- Grouped view -->
-      {#each CATEGORIES as category}
-        <div class="category-section">
-          <h3 class="category-header">
-            {category.charAt(0).toUpperCase() + category.slice(1)}
-            <span class="count">({TREE_COUNTS[category]})</span>
-          </h3>
-          <div class="image-grid">
-            {#each allImages.filter((img) => img.category === category) as image}
-              <div class="image-card">
-                <div class="image-wrapper">
-                  <img src={image.path} alt={image.filename} loading="lazy" />
-                </div>
-                <span class="image-label">{image.filename}</span>
-              </div>
-            {/each}
-          </div>
-        </div>
-      {/each}
+    {#if displayedImages.length === 0}
+      <div class="empty-state">
+        No trees in scene. Go to Preview and click Regenerate.
+      </div>
     {:else}
-      <!-- Single category view -->
       <div class="image-grid large">
-        {#each displayedImages as image}
+        {#each displayedImages as image (image.filename)}
           <div class="image-card">
             <div class="image-wrapper">
               <img src={image.path} alt={image.filename} loading="lazy" />
             </div>
-            <span class="image-label">{image.filename}</span>
+            {#if onDeleteTree}
+              <button
+                class="delete-btn"
+                onclick={() => onDeleteTree(image.filename)}
+                title="Remove {image.count} tree(s) using this image"
+              >
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            {/if}
+            <div class="image-info">
+              <span class="image-label">{image.filename}</span>
+              {#if image.count > 1}
+                <span class="tree-count">×{image.count}</span>
+              {/if}
+            </div>
           </div>
         {/each}
       </div>
@@ -188,25 +177,6 @@
   .gallery-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)); border-radius: 4px; }
   .gallery-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35)); }
 
-  .category-section {
-    margin-bottom: 24px;
-  }
-
-  .category-header {
-    margin: 0 0 12px 0;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 1rem;
-    font-weight: 600;
-    color: #a3e635;
-  }
-
-  .category-header .count {
-    font-weight: 400;
-    color: #6b7280;
-    font-size: 0.875rem;
-  }
-
   .image-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -219,6 +189,7 @@
   }
 
   .image-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -233,6 +204,42 @@
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(255, 255, 255, 0.12);
     transform: translateY(-2px);
+  }
+
+  .image-card:hover .delete-btn {
+    opacity: 1;
+  }
+
+  .delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(239, 68, 68, 0.9);
+    border: none;
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.15s ease;
+    z-index: 1;
+  }
+
+  .delete-btn:hover {
+    background: #ef4444;
+    transform: scale(1.1);
+  }
+
+  .delete-btn:active {
+    transform: scale(0.95);
+  }
+
+  .delete-btn i {
+    font-size: 0.75rem;
   }
 
   .image-wrapper {
@@ -255,13 +262,39 @@
     opacity: 0.9;
   }
 
-  .image-label {
+  .image-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     margin-top: 6px;
+  }
+
+  .image-label {
     font-size: 0.65rem;
     font-family: monospace;
     color: #6b7280;
     text-align: center;
     word-break: break-all;
+  }
+
+  .tree-count {
+    padding: 2px 6px;
+    background: rgba(132, 204, 22, 0.2);
+    border-radius: 8px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #a3e635;
+  }
+
+  .empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #6b7280;
+    font-size: 0.9rem;
+    text-align: center;
   }
 
   @media (max-width: 600px) {

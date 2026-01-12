@@ -14,6 +14,7 @@
   import PreviewControls from "./PreviewControls.svelte";
   import TreeImageGallery from "./TreeImageGallery.svelte";
   import type { TreeCategory } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteImageLoader";
+  import type { RenderedTree } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
 
   // Get services from DI container
   const previewController = container.items.previewAnimationController;
@@ -25,8 +26,9 @@
   type LabMode = "preview" | "treeLab";
   let mode: LabMode = $state("preview");
 
-  // Tree Lab state - now just an image gallery
+  // Tree Lab state - image gallery with delete capability
   let selectedGalleryCategory = $state<TreeCategory | "all">("all");
+  let sceneTrees = $state<RenderedTree[]>([]);
 
   // Preview state
   let canvas: HTMLCanvasElement | null = $state(null);
@@ -144,10 +146,25 @@
 
   function setMode(newMode: LabMode) {
     mode = newMode;
+    if (newMode === "treeLab") {
+      refreshSceneTrees();
+    }
+  }
+
+  function refreshSceneTrees() {
+    sceneTrees = previewController.getRenderedTrees();
   }
 
   function handleGalleryCategoryChange(category: TreeCategory | "all") {
     selectedGalleryCategory = category;
+  }
+
+  function handleDeleteTreesByImage(imageFilename: string) {
+    const removed = previewController.removeTreesByImage(imageFilename);
+    console.log(`[TreeDelete] Removed ${removed} trees using ${imageFilename}`);
+    if (removed > 0) {
+      refreshSceneTrees();
+    }
   }
 
   // ============================================================================
@@ -180,8 +197,8 @@
         Preview
       </button>
       <button class="mode-btn" class:active={mode === "treeLab"} onclick={() => setMode("treeLab")}>
-        <i class="fas fa-flask"></i>
-        Tree Lab
+        <i class="fas fa-images"></i>
+        Gallery
       </button>
     </div>
 
@@ -206,7 +223,7 @@
         onRandomPattern={handleRandomPattern}
       />
     {:else}
-      <p class="gallery-hint">Browse all curated tree silhouettes to review quality and identify any faulty extractions.</p>
+      <p class="gallery-hint">Click the trash icon on any tree to remove it from the scene.</p>
     {/if}
   </div>
 
@@ -219,6 +236,8 @@
     <TreeImageGallery
       selectedCategory={selectedGalleryCategory}
       onCategoryChange={handleGalleryCategoryChange}
+      onDeleteTree={handleDeleteTreesByImage}
+      {sceneTrees}
     />
   {/if}
 </div>
