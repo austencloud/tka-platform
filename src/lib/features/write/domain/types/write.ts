@@ -57,6 +57,8 @@ export interface MusicPlayerState {
   volume: number; // 0-1
   isMuted: boolean;
   isLoading: boolean;
+  isLoaded: boolean;
+  filename?: string;
   error: string | null;
 }
 
@@ -71,6 +73,8 @@ export function createDefaultMusicPlayerState(): MusicPlayerState {
     volume: 1,
     isMuted: false,
     isLoading: false,
+    isLoaded: false,
+    filename: undefined,
     error: null,
   };
 }
