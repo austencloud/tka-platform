@@ -5,6 +5,7 @@ import {
   BEHAVIOR_CONFIG,
   FISH_MOVEMENT,
 } from "../../domain/constants/fish-constants";
+import { fishDebugConfig } from "../../domain/debug-config";
 
 /**
  * FishFlockingCalculator - Implements Boids algorithm for schooling behavior
@@ -16,6 +17,11 @@ export class FishFlockingCalculator implements IFishFlockingCalculator {
   private nextSchoolId = 0;
 
   applyFlockingForces(fish: FishMarineLife[], deltaSeconds: number): void {
+    // DEBUG: Skip flocking if disabled via toggle
+    if (!fishDebugConfig.enableFlocking) {
+      return;
+    }
+
     const schoolingFish = fish.filter(
       (f) => f.behavior === "schooling" && f.schoolId !== undefined
     );

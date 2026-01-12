@@ -16,6 +16,9 @@ import {
  * and provides visual modifiers for rendering.
  */
 export class FishMoodManager implements IFishMoodManager {
+  // Debug: Track mood changes (enable for debugging mood issues)
+  private static DEBUG_MOOD = false;
+
   updateMood(fish: FishMarineLife, deltaSeconds: number): void {
     // Initialize if needed
     if (fish.mood === undefined) fish.mood = "calm";
@@ -23,6 +26,20 @@ export class FishMoodManager implements IFishMoodManager {
     if (fish.energy === undefined) fish.energy = 0.8;
     if (fish.hunger === undefined) fish.hunger = 0.2;
     if (fish.lastStimulusTime === undefined) fish.lastStimulusTime = 0;
+
+    // Check if mood was manually set recently (from Fish Behavior Lab)
+    // If so, skip ALL automatic mood processing for 5 seconds
+    const manualSetAt = (fish as { _manualMoodSetAt?: number })._manualMoodSetAt;
+    if (manualSetAt) {
+      const elapsed = performance.now() - manualSetAt;
+      if (elapsed < 5000) {
+        // Only update timers, don't change mood
+        fish.moodTimer += deltaSeconds;
+        fish.lastStimulusTime += deltaSeconds;
+        this.updateMetabolism(fish, deltaSeconds);
+        return;
+      }
+    }
 
     // Update metabolism
     this.updateMetabolism(fish, deltaSeconds);
@@ -92,7 +109,7 @@ export class FishMoodManager implements IFishMoodManager {
         this.setMood(fish, "curious");
         // Might trigger wobble
         fish.wobbleType = "curious_tilt";
-        fish.wobbleTimer = 40;
+        fish.wobbleTimer = 0.6; // Match WOBBLE_CONFIGS duration
         fish.wobbleIntensity = 1;
         return;
       }
@@ -153,14 +170,28 @@ export class FishMoodManager implements IFishMoodManager {
     const energy = fish.energy ?? 0.8;
     const hunger = fish.hunger ?? 0;
     const currentMood = fish.mood ?? "calm";
+    const moodTimer = fish.moodTimer ?? 0;
+
+    // Don't override moods that were just set (within 2 seconds)
+    // This allows manual mood changes from the lab to persist
+    if (moodTimer < 2 && currentMood !== "calm") {
+      if (FishMoodManager.DEBUG_MOOD && currentMood !== "calm") {
+        // Only log occasionally to avoid spam
+        if (Math.random() < 0.01) {
+          console.log(`🛡️ GUARD PROTECTED: ${currentMood} (timer: ${moodTimer.toFixed(3)})`);
+        }
+      }
+      return;
+    }
 
     // Tired overrides most moods when energy is very low
     if (energy < MOOD_THRESHOLDS.tiredEnergy && currentMood !== "alert") {
       if (currentMood !== "tired") {
+        console.log(`⚡ TIRED OVERRIDE: energy ${energy.toFixed(2)} < threshold, changing ${currentMood} → tired`);
         this.setMood(fish, "tired");
         // Trigger tired wobble
         fish.wobbleType = "tired_drift";
-        fish.wobbleTimer = 60;
+        fish.wobbleTimer = 1.2; // Match WOBBLE_CONFIGS duration
         fish.wobbleIntensity = 1;
       }
       return;
@@ -183,7 +214,7 @@ export class FishMoodManager implements IFishMoodManager {
       if (Math.random() < 0.001 * fish.personality.activity) {
         this.setMood(fish, "playful");
         fish.wobbleType = "playful_wiggle";
-        fish.wobbleTimer = 30;
+        fish.wobbleTimer = 0.8; // Match WOBBLE_CONFIGS duration
         fish.wobbleIntensity = 1;
       }
     }
@@ -196,13 +227,19 @@ export class FishMoodManager implements IFishMoodManager {
     const decayRate = MOOD_DECAY_RATES[mood];
     const moodTimer = fish.moodTimer ?? 0;
 
+    // Minimum time before decay can start (gives manual changes time to be observed)
+    const minMoodDuration = Math.max(3, 1 / decayRate);
+
     // Check if mood should decay back to calm
     // Decay probability increases with time and decay rate
     const decayChance = decayRate * deltaSeconds;
 
-    if (moodTimer > 1 / decayRate && Math.random() < decayChance) {
+    if (moodTimer > minMoodDuration && Math.random() < decayChance) {
       // Check if there's a natural "step down" mood
       const nextMood = this.getDecayMood(mood, fish);
+      if (FishMoodManager.DEBUG_MOOD) {
+        console.log(`📉 DECAY: ${mood} → ${nextMood} (timer: ${moodTimer.toFixed(2)}, minDuration: ${minMoodDuration.toFixed(2)})`);
+      }
       this.setMood(fish, nextMood);
     }
   }

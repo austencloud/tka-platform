@@ -41,9 +41,10 @@ export class FishAnimator implements IFishAnimator {
   async initializeFish(
     dimensions: Dimensions,
     count: number,
-    useSpineChain: boolean = true
+    useSpineChain: boolean = true,
+    spawnOnScreen: boolean = false
   ): Promise<FishMarineLife[]> {
-    const fish = this.fishFactory.initializeFish(dimensions, count, useSpineChain);
+    const fish = this.fishFactory.initializeFish(dimensions, count, useSpineChain, spawnOnScreen);
 
     // Initialize spine chains for spine-enabled fish
     for (const f of fish) {
@@ -58,8 +59,8 @@ export class FishAnimator implements IFishAnimator {
     return fish;
   }
 
-  createFish(dimensions: Dimensions, useSpineChain: boolean = true): FishMarineLife {
-    const fish = this.fishFactory.createFish(dimensions, useSpineChain);
+  createFish(dimensions: Dimensions, useSpineChain: boolean = true, spawnOnScreen: boolean = false): FishMarineLife {
+    const fish = this.fishFactory.createFish(dimensions, useSpineChain, spawnOnScreen);
 
     if (fish.useSpineChain) {
       this.spineController.initializeSpineChain(fish);
@@ -67,6 +68,10 @@ export class FishAnimator implements IFishAnimator {
 
     return fish;
   }
+
+  // Debug: Track position jumps (disabled - was causing console spam)
+  private static DEBUG_POSITION_JUMPS = false;
+  private static JUMP_THRESHOLD = 30; // pixels
 
   updateFish(
     fish: FishMarineLife[],
@@ -82,6 +87,15 @@ export class FishAnimator implements IFishAnimator {
 
     // Update each fish
     for (const f of fish) {
+      // DEBUG: Capture position before update
+      const beforeX = f.x;
+      const beforeY = f.y;
+      const beforeSpineX = f.spineJoints?.[0]?.x;
+      const beforeSpineY = f.spineJoints?.[0]?.y;
+      const stepPositions: Array<{step: string, x: number, y: number, spineX?: number, spineY?: number}> = [];
+      if (FishAnimator.DEBUG_POSITION_JUMPS) {
+        stepPositions.push({ step: 'start', x: f.x, y: f.y, spineX: f.spineJoints?.[0]?.x, spineY: f.spineJoints?.[0]?.y });
+      }
       // Update behavior timer
       f.behaviorTimer -= deltaSeconds;
       if (f.behaviorTimer <= 0) {
@@ -102,19 +116,31 @@ export class FishAnimator implements IFishAnimator {
 
       // Update mood state (handles energy, hunger, mood decay)
       this.moodManager.updateMood(f, deltaSeconds);
+      if (FishAnimator.DEBUG_POSITION_JUMPS) {
+        stepPositions.push({ step: 'afterMood', x: f.x, y: f.y, spineX: f.spineJoints?.[0]?.x, spineY: f.spineJoints?.[0]?.y });
+      }
 
       // Update propulsion from tail physics BEFORE movement
       // This connects tail animation to actual speed
       if (f.useSpineChain) {
         this.spineController.updatePropulsion(f, deltaSeconds);
       }
+      if (FishAnimator.DEBUG_POSITION_JUMPS) {
+        stepPositions.push({ step: 'afterPropulsion', x: f.x, y: f.y, spineX: f.spineJoints?.[0]?.x, spineY: f.spineJoints?.[0]?.y });
+      }
 
       // Apply behavior-specific movement (now uses thrust-modulated speed)
       this.movementController.applyBehavior(f, deltaSeconds, frameMultiplier, dimensions);
+      if (FishAnimator.DEBUG_POSITION_JUMPS) {
+        stepPositions.push({ step: 'afterBehavior', x: f.x, y: f.y, spineX: f.spineJoints?.[0]?.x, spineY: f.spineJoints?.[0]?.y });
+      }
 
       // Update animation based on mode
       if (f.useSpineChain) {
         this.spineController.updateSpineChain(f, deltaSeconds, frameMultiplier);
+        if (FishAnimator.DEBUG_POSITION_JUMPS) {
+          stepPositions.push({ step: 'afterSpineUpdate', x: f.x, y: f.y, spineX: f.spineJoints?.[0]?.x, spineY: f.spineJoints?.[0]?.y });
+        }
       } else {
         this.visualUpdater.updateBodyFlex(f, frameMultiplier);
         this.visualUpdater.updateFinPhysics(f, frameMultiplier);
@@ -122,9 +148,76 @@ export class FishAnimator implements IFishAnimator {
 
       // Update visual animations
       this.visualUpdater.updateVisuals(f, frameMultiplier, animationTime);
+      if (FishAnimator.DEBUG_POSITION_JUMPS) {
+        stepPositions.push({ step: 'afterVisuals', x: f.x, y: f.y, spineX: f.spineJoints?.[0]?.x, spineY: f.spineJoints?.[0]?.y });
+      }
 
       // Update wobble animations (decay timer and intensity)
       this.wobbleAnimator.updateWobble(f, deltaSeconds);
+
+      // DEBUG: Detect position jumps
+      if (FishAnimator.DEBUG_POSITION_JUMPS) {
+        const afterX = f.x;
+        const afterY = f.y;
+        const afterSpineX = f.spineJoints?.[0]?.x;
+        const afterSpineY = f.spineJoints?.[0]?.y;
+
+        const deltaX = Math.abs(afterX - beforeX);
+        const deltaY = Math.abs(afterY - beforeY);
+        const deltaSpineX = beforeSpineX !== undefined && afterSpineX !== undefined
+          ? Math.abs(afterSpineX - beforeSpineX) : 0;
+        const deltaSpineY = beforeSpineY !== undefined && afterSpineY !== undefined
+          ? Math.abs(afterSpineY - beforeSpineY) : 0;
+
+        const maxDelta = Math.max(deltaX, deltaY, deltaSpineX, deltaSpineY);
+
+        if (maxDelta > FishAnimator.JUMP_THRESHOLD) {
+          // Find where the jump happened
+          let jumpStep = 'unknown';
+          for (let i = 1; i < stepPositions.length; i++) {
+            const prev = stepPositions[i - 1]!;
+            const curr = stepPositions[i]!;
+            const stepDeltaX = Math.abs(curr.x - prev.x);
+            const stepDeltaY = Math.abs(curr.y - prev.y);
+            const stepDeltaSpineX = prev.spineX !== undefined && curr.spineX !== undefined
+              ? Math.abs(curr.spineX - prev.spineX) : 0;
+            const stepDeltaSpineY = prev.spineY !== undefined && curr.spineY !== undefined
+              ? Math.abs(curr.spineY - prev.spineY) : 0;
+            const stepMaxDelta = Math.max(stepDeltaX, stepDeltaY, stepDeltaSpineX, stepDeltaSpineY);
+            if (stepMaxDelta > FishAnimator.JUMP_THRESHOLD) {
+              jumpStep = `${prev.step} → ${curr.step} (delta: ${stepMaxDelta.toFixed(1)})`;
+              break;
+            }
+          }
+
+          console.warn(`🐟 POSITION JUMP DETECTED!`, {
+            jumpStep,
+            species: f.species,
+            behavior: f.behavior,
+            mood: f.mood,
+            wobbleType: f.wobbleType,
+            wobbleTimer: f.wobbleTimer?.toFixed(3),
+            wobbleIntensity: f.wobbleIntensity?.toFixed(3),
+            frameMultiplier: frameMultiplier.toFixed(3),
+            deltaSeconds: deltaSeconds.toFixed(4),
+            speed: f.speed.toFixed(1),
+            baseSpeed: f.baseSpeed.toFixed(1),
+            position: {
+              before: { x: beforeX.toFixed(1), y: beforeY.toFixed(1) },
+              after: { x: afterX.toFixed(1), y: afterY.toFixed(1) },
+              deltaX: deltaX.toFixed(1),
+              deltaY: deltaY.toFixed(1),
+            },
+            spine: beforeSpineX !== undefined ? {
+              before: { x: beforeSpineX.toFixed(1), y: beforeSpineY?.toFixed(1) },
+              after: { x: afterSpineX?.toFixed(1), y: afterSpineY?.toFixed(1) },
+              deltaX: deltaSpineX.toFixed(1),
+              deltaY: deltaSpineY.toFixed(1),
+            } : 'no spine',
+            stepTrace: stepPositions.map(s => `${s.step}: (${s.x.toFixed(0)}, ${s.y.toFixed(0)}) spine:(${s.spineX?.toFixed(0) ?? '?'}, ${s.spineY?.toFixed(0) ?? '?'})`),
+          });
+        }
+      }
 
       // Check if off screen
       if (this.movementController.isOffScreen(f, dimensions)) {
@@ -152,6 +245,14 @@ export class FishAnimator implements IFishAnimator {
    */
   getWobbleOffset(fish: FishMarineLife) {
     return this.wobbleAnimator.getWobbleOffset(fish);
+  }
+
+  /**
+   * Reposition a fish's spine chain by a delta
+   * Call this after manually moving a fish's position to keep physics in sync
+   */
+  repositionFish(fish: FishMarineLife, dx: number, dy: number): void {
+    this.spineController.repositionSpineChain(fish, dx, dy);
   }
 
   getFishCount(quality: string): number {

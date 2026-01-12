@@ -154,24 +154,28 @@ export const deepOceanContainer = createContainer()
   }))
 
   // === Layer 5: DeepOceanBackgroundOrchestrator (combines everything) ===
-  .add((deps) => ({
-    deepOceanBackgroundSystem: () =>
-      new DeepOceanBackgroundOrchestrator(
-        // Physics services
-        deps.bubblePhysics,
-        deps.particleSystem,
-        deps.lightRayCalculator,
-        // Animator services
-        deps.fishAnimator,
-        deps.jellyfishAnimator,
-        // Renderer services
-        deps.gradientRenderer,
-        deps.lightRayRenderer,
-        deps.bubbleRenderer,
-        deps.particleRenderer,
-        deps.fishRenderer,
-        deps.jellyfishRenderer
-      ),
-  }));
+  // NOTE: This MUST be a singleton - multiple components share the same fish state
+  .add((deps) => {
+    // Create singleton instance eagerly to ensure all components share the same fish
+    const orchestratorInstance = new DeepOceanBackgroundOrchestrator(
+      // Physics services
+      deps.bubblePhysics,
+      deps.particleSystem,
+      deps.lightRayCalculator,
+      // Animator services
+      deps.fishAnimator,
+      deps.jellyfishAnimator,
+      // Renderer services
+      deps.gradientRenderer,
+      deps.lightRayRenderer,
+      deps.bubbleRenderer,
+      deps.particleRenderer,
+      deps.fishRenderer,
+      deps.jellyfishRenderer
+    );
+    return {
+      deepOceanBackgroundSystem: orchestratorInstance,
+    };
+  });
 
 export type DeepOceanContainerType = typeof deepOceanContainer;

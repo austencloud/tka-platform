@@ -9,10 +9,32 @@
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
   import FishBehaviorLab from "./FishBehaviorLab.svelte";
+  import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
+  import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
+  import { browser } from "$app/environment";
 
-  // Sub-tab state
+  // Sub-tab persistence
+  const SUB_TAB_STORAGE_KEY = "tka-deep-ocean-lab-subtab";
   type SubTab = "scene" | "fish-behavior";
-  let currentSubTab: SubTab = $state("scene");
+
+  function loadSubTab(): SubTab {
+    if (!browser) return "scene";
+    const stored = localStorage.getItem(SUB_TAB_STORAGE_KEY);
+    return stored === "fish-behavior" ? "fish-behavior" : "scene";
+  }
+
+  function saveSubTab(tab: SubTab): void {
+    if (!browser) return;
+    localStorage.setItem(SUB_TAB_STORAGE_KEY, tab);
+  }
+
+  // Sub-tab state with persistence
+  let currentSubTab: SubTab = $state(loadSubTab());
+
+  function setSubTab(tab: SubTab) {
+    currentSubTab = tab;
+    saveSubTab(tab);
+  }
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
@@ -37,6 +59,14 @@
   // Stats display
   let stats = $state({ fish: 0, jellyfish: 0, bubbles: 0, particles: 0 });
   let lastStatsUpdate = 0;
+
+  // Status bar counters derived from stats
+  let statusCounters = $derived([
+    { icon: "fa-fish", value: stats.fish, label: "Fish" },
+    { icon: "fa-disease", value: stats.jellyfish, label: "Jellyfish" },
+    { icon: "fa-circle", value: stats.bubbles, label: "Bubbles" },
+  ]);
+
 
   async function initializeSystem() {
     if (!canvas) return;
@@ -111,11 +141,11 @@
   function handleResize() {
     if (!canvas || !backgroundSystem) return;
 
-    const container = canvas.parentElement;
-    if (container) {
+    const containerEl = canvas.parentElement;
+    if (containerEl) {
       const oldDimensions = { width: canvas.width, height: canvas.height };
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
+      canvas.width = containerEl.clientWidth;
+      canvas.height = containerEl.clientHeight;
       const newDimensions = { width: canvas.width, height: canvas.height };
       backgroundSystem.handleResize?.(oldDimensions, newDimensions);
     }
@@ -128,6 +158,35 @@
     }
     backgroundSystem = null;
     await initializeSystem();
+  }
+
+  function spawnFish() {
+    if (!backgroundSystem || !canvas) return;
+    const dimensions = { width: canvas.width, height: canvas.height };
+    backgroundSystem.spawnFish?.(dimensions);
+    stats = backgroundSystem.getStats();
+  }
+
+  function spawnJellyfish() {
+    if (!backgroundSystem || !canvas) return;
+    const dimensions = { width: canvas.width, height: canvas.height };
+    backgroundSystem.spawnJellyfish?.(dimensions);
+    stats = backgroundSystem.getStats();
+  }
+
+  function enableAllLayers() {
+    layers = {
+      gradient: true,
+      lightRays: true,
+      caustics: true,
+      particles: true,
+      bubbles: true,
+      fish: true,
+      jellyfish: true,
+    };
+    if (backgroundSystem) {
+      backgroundSystem.setLayerVisibility(layers);
+    }
   }
 
   function setQuality(q: QualityLevel) {
@@ -162,7 +221,7 @@
     <button
       class="sub-tab"
       class:active={currentSubTab === "scene"}
-      onclick={() => currentSubTab = "scene"}
+      onclick={() => setSubTab("scene")}
     >
       <i class="fas fa-water"></i>
       Full Scene
@@ -170,7 +229,7 @@
     <button
       class="sub-tab"
       class:active={currentSubTab === "fish-behavior"}
-      onclick={() => currentSubTab = "fish-behavior"}
+      onclick={() => setSubTab("fish-behavior")}
     >
       <i class="fas fa-fish"></i>
       Fish Behavior
@@ -185,33 +244,41 @@
       <span class="badge">Interactive</span>
     </div>
 
-    <!-- Quality Chips -->
-    <ChipGroup label="Quality" variant="row">
-      <ChipToggle label="High" active={quality === "high"} color="cyan" onclick={() => setQuality("high")} />
-      <ChipToggle label="Medium" active={quality === "medium"} color="cyan" onclick={() => setQuality("medium")} />
-      <ChipToggle label="Low" active={quality === "low"} color="cyan" onclick={() => setQuality("low")} />
+    <!-- Status Bar -->
+    <LabStatusBar counters={statusCounters} />
+
+    <!-- Quick Commands -->
+    <ChipGroup columns={4}>
+      <ChipToggle icon="fa-sync" label="Regen" layout="vertical" color="cyan" onclick={regenerate} />
+      <ChipToggle icon="fa-plus" label="Fish" layout="vertical" color="cyan" onclick={spawnFish} />
+      <ChipToggle icon="fa-plus" label="Jelly" layout="vertical" color="cyan" onclick={spawnJellyfish} />
+      <ChipToggle icon="fa-eye" label="All On" layout="vertical" color="cyan" onclick={enableAllLayers} />
     </ChipGroup>
 
-    <!-- Layer Chips -->
-    <ChipGroup label="Layers">
-      <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
-      <ChipToggle label="Light Rays" icon="fa-sun" active={layers.lightRays} color="cyan" onclick={() => toggleLayer("lightRays")} />
-      <ChipToggle label="Caustics" icon="fa-water" active={layers.caustics} color="cyan" onclick={() => toggleLayer("caustics")} />
-      <ChipToggle label="Particles" icon="fa-sparkles" active={layers.particles} color="cyan" onclick={() => toggleLayer("particles")} />
-      <ChipToggle label="Bubbles" icon="fa-circle" active={layers.bubbles} color="cyan" onclick={() => toggleLayer("bubbles")} />
-      <ChipToggle label="Fish" icon="fa-fish" active={layers.fish} color="cyan" onclick={() => toggleLayer("fish")} />
-      <ChipToggle label="Jellyfish" icon="fa-disease" active={layers.jellyfish} color="cyan" onclick={() => toggleLayer("jellyfish")} />
-    </ChipGroup>
+    <!-- Quality -->
+    <CollapsibleLabSection title="Quality" icon="fa-sliders-h" defaultOpen={true} accentColor="cyan">
+      <ChipGroup variant="row">
+        <ChipToggle label="High" active={quality === "high"} color="cyan" onclick={() => setQuality("high")} />
+        <ChipToggle label="Medium" active={quality === "medium"} color="cyan" onclick={() => setQuality("medium")} />
+        <ChipToggle label="Low" active={quality === "low"} color="cyan" onclick={() => setQuality("low")} />
+      </ChipGroup>
+    </CollapsibleLabSection>
 
-    <!-- Regenerate -->
-    <button class="action-btn" onclick={regenerate}>
-      <i class="fas fa-rotate"></i>
-      Regenerate
-    </button>
+    <!-- Layers -->
+    <CollapsibleLabSection title="Layers" icon="fa-layer-group" defaultOpen={true} accentColor="cyan">
+      <ChipGroup variant="grid">
+        <ChipToggle label="Gradient" icon="fa-fill-drip" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
+        <ChipToggle label="Rays" icon="fa-sun" active={layers.lightRays} color="cyan" onclick={() => toggleLayer("lightRays")} />
+        <ChipToggle label="Caustics" icon="fa-water" active={layers.caustics} color="cyan" onclick={() => toggleLayer("caustics")} />
+        <ChipToggle label="Particles" icon="fa-sparkles" active={layers.particles} color="cyan" onclick={() => toggleLayer("particles")} />
+        <ChipToggle label="Bubbles" icon="fa-circle" active={layers.bubbles} color="cyan" onclick={() => toggleLayer("bubbles")} />
+        <ChipToggle label="Fish" icon="fa-fish" active={layers.fish} color="cyan" onclick={() => toggleLayer("fish")} />
+        <ChipToggle label="Jellyfish" icon="fa-disease" active={layers.jellyfish} color="cyan" onclick={() => toggleLayer("jellyfish")} />
+      </ChipGroup>
+    </CollapsibleLabSection>
 
     <!-- Stats -->
-    <div class="stats-section">
-      <span class="label">Scene Stats</span>
+    <CollapsibleLabSection title="Stats" icon="fa-chart-bar" defaultOpen={false} accentColor="cyan">
       <div class="stats-grid">
         <div class="stat">
           <span class="stat-value">{stats.fish}</span>
@@ -230,7 +297,7 @@
           <span class="stat-label">Particles</span>
         </div>
       </div>
-    </div>
+    </CollapsibleLabSection>
   </div>
 
   <div class="preview">
@@ -291,7 +358,7 @@
 
   .scene-content {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 360px 1fr;
     gap: 20px;
     flex: 1;
     min-height: 0;
@@ -300,14 +367,12 @@
   .controls {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 20px;
+    gap: 12px;
+    padding: 16px;
     background: rgba(15, 15, 25, 0.8);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     overflow-y: auto;
-
-    /* Themed scrollbar */
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-accent) var(--scrollbar-track);
   }
@@ -353,39 +418,6 @@
     color: #22d3ee;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-  }
-
-  .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
-    border: none;
-    border-radius: 12px;
-    color: #ffffff;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.35);
-  }
-
-  .action-btn:active {
-    transform: translateY(0);
-  }
-
-  .stats-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .stats-grid {

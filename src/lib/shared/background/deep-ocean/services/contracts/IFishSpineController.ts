@@ -40,4 +40,10 @@ export interface IFishSpineController {
    * Remove spine chain reference when fish is removed
    */
   removeSpineChain(fish: FishMarineLife): void;
+
+  /**
+   * Reposition a fish's spine chain by a delta
+   * Call after manually moving a fish's position
+   */
+  repositionSpineChain(fish: FishMarineLife, dx: number, dy: number): void;
 }

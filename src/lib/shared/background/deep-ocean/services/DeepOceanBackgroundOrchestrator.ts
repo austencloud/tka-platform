@@ -5,7 +5,7 @@ import type {
   QualityLevel,
 } from "../../shared/domain/types/background-types";
 import type { IBackgroundSystem } from "../../shared/services/contracts/IBackgroundSystem";
-import type { DeepOceanState } from "../domain/models/DeepOceanModels";
+import type { DeepOceanState, FishMarineLife } from "../domain/models/DeepOceanModels";
 
 // Physics & Animation contracts
 import type { IBubblePhysics } from "./contracts/IBubblePhysics";
@@ -105,10 +105,12 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
 
   async initialize(
     dimensions: Dimensions,
-    quality: QualityLevel
+    quality: QualityLevel,
+    options?: { spawnFishOnScreen?: boolean }
   ): Promise<void> {
     this.quality = quality;
     this.animationTime = 0;
+    const spawnOnScreen = options?.spawnFishOnScreen ?? false;
 
     // Initialize bubbles
     const bubbleCount = this.bubblePhysics.getBubbleCount(quality);
@@ -121,7 +123,9 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
     const fishCount = this.fishAnimator.getFishCount(quality);
     this.state.fish = await this.fishAnimator.initializeFish(
       dimensions,
-      fishCount
+      fishCount,
+      true, // useSpineChain
+      spawnOnScreen
     );
 
     // Initialize jellyfish
@@ -328,6 +332,13 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
       bubbles: this.state.bubbles.length,
       particles: this.state.particles.length,
     };
+  }
+
+  /**
+   * Get the current fish array for external access (e.g., Fish Behavior Lab)
+   */
+  getFish(): FishMarineLife[] {
+    return this.state.fish;
   }
 
   getMetrics(): PerformanceMetrics {

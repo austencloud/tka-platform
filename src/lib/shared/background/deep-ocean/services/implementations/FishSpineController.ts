@@ -8,6 +8,7 @@ import type { IFishSpineController } from "../contracts/IFishSpineController";
 import type { IFishPropulsionCalculator } from "../contracts/IFishPropulsionCalculator";
 import { SpineChain } from "../../physics/SpineChain";
 import { FishPropulsionCalculator, smoothSpeed } from "./FishPropulsionCalculator";
+import { fishDebugConfig } from "../../domain/debug-config";
 
 /**
  * FishSpineController - Manages spine chain physics for organic swimming
@@ -60,6 +61,11 @@ export class FishSpineController implements IFishSpineController {
   }
 
   updatePropulsion(fish: FishMarineLife, deltaSeconds: number): void {
+    // DEBUG: Skip propulsion if disabled via toggle
+    if (!fishDebugConfig.enablePropulsion) {
+      return;
+    }
+
     // Only apply propulsion to spine-chain fish
     if (!fish.useSpineChain || fish.swimPhase === undefined) {
       return;
@@ -86,21 +92,24 @@ export class FishSpineController implements IFishSpineController {
     const speedRatio = fish.speed / fish.baseSpeed;
     fish.swimPhase += fish.swimSpeed * speedRatio * frameMultiplier;
 
-    // Calculate head target position
-    const headTargetX = fish.x + fish.direction * fish.speed * deltaSeconds;
+    // Head target is where the movement controller already placed the fish
+    // DO NOT add velocity again - applyCruising/applyBehavior already moved fish.x
+    const headTargetX = fish.x;
     const bob = Math.sin(fish.animationPhase) * fish.bobAmplitude;
     const headTargetY = fish.baseY + bob;
 
-    // Apply tail oscillation
-    spine.applyTailOscillation(
-      fish.tailAmplitude * speedRatio,
-      fish.swimPhase
-    );
+    // Apply tail oscillation (DEBUG: can be disabled via toggle)
+    if (fishDebugConfig.enableTailOscillation) {
+      spine.applyTailOscillation(
+        fish.tailAmplitude * speedRatio,
+        fish.swimPhase
+      );
+    }
 
     // Update spine chain (head follows target, body follows head)
     spine.update(headTargetX, headTargetY);
 
-    // Update fish position from spine head
+    // Sync fish position with spine head (should be very close, small adjustment from tail physics)
     fish.x = spine.head.x;
     fish.y = spine.head.y;
 
@@ -120,6 +129,24 @@ export class FishSpineController implements IFishSpineController {
 
   removeSpineChain(fish: FishMarineLife): void {
     this.spineChains.delete(fish);
+  }
+
+  /**
+   * Reposition a fish's spine chain to match updated fish.x/y
+   * Call this after manually moving a fish's position
+   */
+  repositionSpineChain(fish: FishMarineLife, dx: number, dy: number): void {
+    const spine = this.spineChains.get(fish);
+    if (!spine) return;
+
+    // Move all joints in the physics spine chain
+    for (const joint of spine.joints) {
+      joint.x += dx;
+      joint.y += dy;
+    }
+
+    // Update fish.spineJoints to match
+    fish.spineJoints = spine.joints.map((j) => ({ ...j }));
   }
 
   /**

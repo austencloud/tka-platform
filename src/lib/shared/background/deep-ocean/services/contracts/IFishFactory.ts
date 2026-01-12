@@ -10,15 +10,18 @@ import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
 export interface IFishFactory {
   /**
    * Create a single fish with all properties initialized
+   * @param spawnOnScreen - If true, fish spawns within visible area instead of off-screen
    */
-  createFish(dimensions: Dimensions, useSpineChain?: boolean): FishMarineLife;
+  createFish(dimensions: Dimensions, useSpineChain?: boolean, spawnOnScreen?: boolean): FishMarineLife;
 
   /**
    * Initialize a population of fish
+   * @param spawnOnScreen - If true, fish spawn within visible area instead of off-screen
    */
   initializeFish(
     dimensions: Dimensions,
     count: number,
-    useSpineChain?: boolean
+    useSpineChain?: boolean,
+    spawnOnScreen?: boolean
   ): FishMarineLife[];
 }

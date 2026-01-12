@@ -8,16 +8,20 @@ import type { WobbleOffset } from "../../domain/types/fish-personality-types";
 export interface IFishAnimator {
   /**
    * Initialize fish population
+   * @param spawnOnScreen - If true, fish spawn within visible area
    */
   initializeFish(
     dimensions: Dimensions,
-    count: number
+    count: number,
+    useSpineChain?: boolean,
+    spawnOnScreen?: boolean
   ): Promise<FishMarineLife[]>;
 
   /**
    * Create a single fish with behavior properties
+   * @param spawnOnScreen - If true, fish spawns within visible area
    */
-  createFish(dimensions: Dimensions): FishMarineLife;
+  createFish(dimensions: Dimensions, useSpineChain?: boolean, spawnOnScreen?: boolean): FishMarineLife;
 
   /**
    * Update all fish positions, behaviors, and animations

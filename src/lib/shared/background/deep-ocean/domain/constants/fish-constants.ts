@@ -9,7 +9,7 @@
 // DEPTH LAYER CONFIGURATION
 // =============================================================================
 
-import type { DepthLayer } from "../models/DeepOceanModels";
+import type { DepthLayer, FishSpecies } from "../models/DeepOceanModels";
 
 /**
  * Depth layer visual properties.
@@ -67,7 +67,7 @@ export const DEPTH_LAYER_DISTRIBUTION = {
 
 export const FISH_MOVEMENT = {
   /** Base horizontal speed range [min, max] in pixels per second */
-  baseSpeed: [10, 22] as const,
+  baseSpeed: [25, 55] as const,
 
   /** Vertical drift range (pixels per second, centered at 0) */
   verticalDrift: 4,
@@ -80,6 +80,17 @@ export const FISH_MOVEMENT = {
 
   /** Maximum spawn offset from screen edge (pixels or fraction of width) */
   spawnOffset: { pixels: 140, fractionOfWidth: 0.2 },
+};
+
+/**
+ * Species-specific speed multipliers
+ * Fast fish like sleek predators swim faster than tropical fish
+ */
+export const SPECIES_SPEED_MULTIPLIERS: Record<FishSpecies, [number, number]> = {
+  tropical: [0.7, 1.0],    // Slower, casual swimmers
+  sleek: [1.2, 1.8],       // Fast, streamlined predators
+  deep: [0.5, 0.8],        // Slow, energy-conserving
+  schooling: [0.9, 1.3],   // Medium speed, stay together
 };
 
 // =============================================================================

@@ -15,6 +15,7 @@ import {
   FISH_MOVEMENT,
   BEHAVIOR_CONFIG,
   SPAWN_CONFIG,
+  SPECIES_SPEED_MULTIPLIERS,
 } from "../../domain/constants/fish-constants";
 import { FishPersonalityGenerator } from "./FishPersonalityGenerator";
 
@@ -248,18 +249,20 @@ export class FishFactory implements IFishFactory {
   initializeFish(
     dimensions: Dimensions,
     count: number,
-    useSpineChain: boolean = true
+    useSpineChain: boolean = true,
+    spawnOnScreen: boolean = false
   ): FishMarineLife[] {
     const fish: FishMarineLife[] = [];
     for (let i = 0; i < count; i++) {
-      fish.push(this.createFish(dimensions, useSpineChain));
+      fish.push(this.createFish(dimensions, useSpineChain, spawnOnScreen));
     }
     return fish;
   }
 
   createFish(
     dimensions: Dimensions,
-    useSpineChain: boolean = true
+    useSpineChain: boolean = true,
+    spawnOnScreen: boolean = false
   ): FishMarineLife {
     const depthLayer = this.assignDepthLayer();
     const species = this.assignSpecies(depthLayer);
@@ -286,20 +289,29 @@ export class FishFactory implements IFishFactory {
       max: dimensions.height * config.verticalBand[1],
     };
 
-    const maxOffset = Math.max(
-      SPAWN_CONFIG.offScreenBuffer,
-      dimensions.width * FISH_MOVEMENT.spawnOffset.fractionOfWidth
-    );
-
-    const startX =
-      direction === 1
-        ? -bodyLength - Math.random() * maxOffset
-        : dimensions.width + bodyLength + Math.random() * maxOffset;
+    let startX: number;
+    if (spawnOnScreen) {
+      // Spawn within visible area with some margin
+      const margin = bodyLength;
+      startX = margin + Math.random() * (dimensions.width - 2 * margin);
+    } else {
+      // Spawn off-screen (default behavior)
+      const maxOffset = Math.max(
+        SPAWN_CONFIG.offScreenBuffer,
+        dimensions.width * FISH_MOVEMENT.spawnOffset.fractionOfWidth
+      );
+      startX =
+        direction === 1
+          ? -bodyLength - Math.random() * maxOffset
+          : dimensions.width + bodyLength + Math.random() * maxOffset;
+    }
     const baseY =
       depthBand.min + Math.random() * (depthBand.max - depthBand.min);
 
+    // Apply species-specific speed multiplier on top of depth layer multiplier
+    const speciesSpeedMult = this.randomInRange(SPECIES_SPEED_MULTIPLIERS[species]);
     const baseSpeed =
-      this.randomInRange(FISH_MOVEMENT.baseSpeed) * config.speedMultiplier;
+      this.randomInRange(FISH_MOVEMENT.baseSpeed) * config.speedMultiplier * speciesSpeedMult;
     const opacity = this.randomInRange(config.opacity);
 
     // Create fin states
