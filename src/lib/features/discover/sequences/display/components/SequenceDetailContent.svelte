@@ -30,6 +30,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { untrack } from "svelte";
 
   let hapticService: IHapticFeedback | null = null;
   let videoService: ICollaborativeVideoManager | null = null;
@@ -110,12 +111,13 @@ Used by both desktop side panel and mobile slide-up overlay.
   // Load full sequence data when sequence changes (for LayeredSequencePreview)
   $effect(() => {
     const currentSequence = sequence;
+    const loader = loaderService;
 
     // Reset on sequence change
     fullSequence = null;
     isLoadingFullSequence = false;
 
-    if (!currentSequence) return;
+    if (!currentSequence || !loader) return;
 
     // If sequence already has beats, use it directly
     if (currentSequence.beats && currentSequence.beats.length > 0) {
@@ -123,45 +125,50 @@ Used by both desktop side panel and mobile slide-up overlay.
       return;
     }
 
-    // Otherwise, load full sequence data
-    if (!loaderService) return;
+    // Otherwise, load full sequence data (untrack to prevent infinite loops)
+    untrack(() => {
+      isLoadingFullSequence = true;
+      const sequenceName = currentSequence.word || currentSequence.id;
 
-    isLoadingFullSequence = true;
-    const sequenceName = currentSequence.word || currentSequence.id;
-
-    loaderService.loadFullSequenceData(sequenceName)
-      .then((loaded) => {
-        // Only update if still viewing same sequence
-        if (sequence.id === currentSequence.id && loaded) {
-          fullSequence = loaded;
-        }
-      })
-      .catch((err) => {
-        console.warn("[SequenceDetailContent] Failed to load full sequence data:", err);
-      })
-      .finally(() => {
-        if (sequence.id === currentSequence.id) {
-          isLoadingFullSequence = false;
-        }
-      });
+      loader.loadFullSequenceData(sequenceName)
+        .then((loaded) => {
+          // Only update if still viewing same sequence
+          if (sequence.id === currentSequence.id && loaded) {
+            fullSequence = loaded;
+          }
+        })
+        .catch((err) => {
+          console.warn("[SequenceDetailContent] Failed to load full sequence data:", err);
+        })
+        .finally(() => {
+          if (sequence.id === currentSequence.id) {
+            isLoadingFullSequence = false;
+          }
+        });
+    });
   });
 
   // Load video count when sequence changes
   $effect(() => {
     const currentSequence = sequence;
+    const videoSvc = videoService;
+
     videoCount = 0;
 
-    if (!videoService || !currentSequence) return;
+    if (!videoSvc || !currentSequence) return;
 
-    videoService.getVideosForSequence(currentSequence.id)
-      .then((videos) => {
-        if (sequence.id === currentSequence.id) {
-          videoCount = videos.length;
-        }
-      })
-      .catch((e) => {
-        console.warn("[SequenceDetailContent] Failed to load video count:", e);
-      });
+    // Untrack to prevent infinite loops
+    untrack(() => {
+      videoSvc.getVideosForSequence(currentSequence.id)
+        .then((videos) => {
+          if (sequence.id === currentSequence.id) {
+            videoCount = videos.length;
+          }
+        })
+        .catch((e) => {
+          console.warn("[SequenceDetailContent] Failed to load video count:", e);
+        });
+    });
   });
 
   // Handlers
