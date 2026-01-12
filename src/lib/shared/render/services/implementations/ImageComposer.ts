@@ -29,6 +29,7 @@ import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
 import type { IBeatNumberRenderer } from "../contracts/IBeatNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
+import type { ILayerCompositor } from "../contracts/ILayerCompositor";
 
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
@@ -48,6 +49,11 @@ export class ImageComposer implements IImageComposer {
   // Canvas 2D direct renderer initialization flag
   private canvas2DInitialized = false;
 
+  // Flag to enable compositional layer caching
+  // When enabled, base layers are cached separately from overlays,
+  // so visibility changes only require re-compositing, not re-rendering
+  private useCompositionalCaching = true;
+
   constructor(
     private readonly layoutService: ILayoutCalculator,
     private readonly TextRenderer: ITextRenderer,
@@ -56,8 +62,25 @@ export class ImageComposer implements IImageComposer {
     private readonly keyHasher: IPictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
     private readonly beatNumberRenderer: IBeatNumberRenderer,
-    private readonly canvas2DRenderer: Canvas2DDirectRenderer
+    private readonly canvas2DRenderer: Canvas2DDirectRenderer,
+    private readonly layerCompositor?: ILayerCompositor
   ) {}
+
+  /**
+   * Enable or disable compositional layer caching
+   * When enabled, uses LayerCompositor for visibility-resilient caching
+   */
+  setCompositionalCaching(enabled: boolean): void {
+    this.useCompositionalCaching = enabled && !!this.layerCompositor;
+    console.log(`[ImageComposer] Compositional caching: ${this.useCompositionalCaching ? "enabled" : "disabled"}`);
+  }
+
+  /**
+   * Get LayerCompositor cache stats (when compositional caching is enabled)
+   */
+  getLayerCacheStats() {
+    return this.layerCompositor?.getCacheStats() ?? null;
+  }
 
   /**
    * Initialize the Canvas 2D renderer (loads arrow path data)
@@ -433,6 +456,21 @@ export class ImageComposer implements IImageComposer {
         bluePropType: bluePropType ?? visibilitySettings?.bluePropType,
         redPropType: redPropType ?? visibilitySettings?.redPropType,
       };
+
+      // 🧪 EXPERIMENTAL: Use compositional layer caching for visibility-resilient cache
+      if (this.useCompositionalCaching && this.layerCompositor) {
+        await this.renderPictographWithLayerCompositor(
+          ctx,
+          pictographData,
+          column,
+          row,
+          beatSize,
+          beatNumber,
+          titleOffset,
+          finalVisibilitySettings
+        );
+        return;
+      }
 
       // 🚀 PERF: Generate base cache key (without beat number)
       const baseKey = this.keyHasher.deriveKey(pictographData, finalVisibilitySettings);
@@ -893,5 +931,83 @@ export class ImageComposer implements IImageComposer {
 
     // Default fallback
     return 1;
+  }
+
+  /**
+   * 🧪 EXPERIMENTAL: Render using LayerCompositor for visibility-resilient caching
+   *
+   * This method uses compositional caching where:
+   * - Base layer (grid + props + arrows) is cached separately from overlays
+   * - TKA and reversal overlays are cached independently
+   * - Visibility toggles only require re-compositing, not re-rendering
+   *
+   * Expected improvement: ~15,000x faster when toggling visibility settings
+   */
+  private async renderPictographWithLayerCompositor(
+    ctx: CanvasRenderingContext2D,
+    pictographData: BeatData | PictographData,
+    column: number,
+    row: number,
+    beatSize: number,
+    beatNumber: number | undefined,
+    titleOffset: number,
+    visibilitySettings: PictographVisibilityOptions
+  ): Promise<void> {
+    if (!this.layerCompositor) {
+      throw new Error("LayerCompositor not available");
+    }
+
+    // Ensure pictograph has prepared data
+    await this.ensureCanvas2DInitialized();
+
+    // Get prepared pictograph data
+    const { container } = await import("../../../di");
+    const preparer = container.items.pictographPreparer as {
+      prepareSingle: (data: PictographData | BeatData, opts: object) => Promise<PictographData>;
+    };
+
+    const preparedPictograph = await preparer.prepareSingle(pictographData, {
+      themeMode: visibilitySettings.darkMode ? "dark" : "light",
+      bluePropType: visibilitySettings.bluePropType,
+      redPropType: visibilitySettings.redPropType,
+    });
+
+    // Build layer render options
+    const layerOptions = {
+      size: beatSize,
+      darkMode: visibilitySettings.darkMode ?? false,
+      showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? false,
+      handPointVisibility: visibilitySettings.handPointVisibility ?? "all",
+      bluePropType: visibilitySettings.bluePropType,
+      redPropType: visibilitySettings.redPropType,
+    };
+
+    // Build layer visibility
+    const layerVisibility = {
+      showTKA: visibilitySettings.showTKA ?? true,
+      showReversals: visibilitySettings.showReversals ?? true,
+    };
+
+    // Compose using LayerCompositor
+    const result = await this.layerCompositor.compose(
+      preparedPictograph as unknown as import("../../../pictograph/shared/domain/models/PreparedPictographData").PreparedPictographData,
+      layerOptions,
+      layerVisibility,
+      beatNumber
+    );
+
+    // Track stats
+    if (result.cacheStats.baseFromCache) {
+      this.compositionL2Hits++;
+      this.layer2Hits++;
+    } else {
+      this.compositionFreshRenders++;
+      this.layer1Misses++;
+    }
+
+    // Draw composited result onto the main canvas
+    const x = column * beatSize;
+    const y = row * beatSize + titleOffset;
+    ctx.drawImage(result.canvas, x, y, beatSize, beatSize);
   }
 }

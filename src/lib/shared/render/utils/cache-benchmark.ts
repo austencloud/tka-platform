@@ -58,6 +58,20 @@ interface ComprehensiveResult {
   };
 }
 
+interface VisibilityChangeResult {
+  defaultPass: BenchmarkResult;
+  warmCachePass: BenchmarkResult;
+  changedVisibilityPass: BenchmarkResult;
+  restoredVisibilityPass: BenchmarkResult;
+  analysis: {
+    warmCacheHitRate: number;
+    visibilityChangeHitRate: number;
+    restoredCacheHitRate: number;
+    cacheFullyInvalidated: boolean;
+    cacheSurvivedToggle: boolean;
+  };
+}
+
 // Capture per-render stats from console logs
 let capturedStats: { l2: number; l1: number; fresh: number } | null = null;
 
@@ -434,12 +448,254 @@ export async function runQuickBenchmark(): Promise<void> {
   await runCacheBenchmark(1);
 }
 
+/**
+ * Run visibility change benchmark to measure cache invalidation behavior
+ *
+ * Tests the hypothesis: "Changing visibility settings invalidates ALL cached thumbnails"
+ *
+ * Pass 1: Default visibility (showTKA=true, showReversals=true) - cold start
+ * Pass 2: Same visibility - warm cache test (should hit cache)
+ * Pass 3: Changed visibility (showTKA=false) - cache invalidation test
+ * Pass 4: Restored visibility (showTKA=true) - cache survival test
+ */
+export async function runVisibilityChangeBenchmark(
+  sequenceCount = 10
+): Promise<VisibilityChangeResult | null> {
+  if (!browser) {
+    console.error("[CacheBenchmark] Must run in browser");
+    return null;
+  }
+
+  console.log("\n" + "=".repeat(70));
+  console.log("🔄 VISIBILITY CHANGE CACHE BENCHMARK");
+  console.log("=".repeat(70));
+  console.log(`Testing cache invalidation with ${sequenceCount} sequences\n`);
+  console.log("This test measures what happens to the cache when visibility toggles.\n");
+
+  try {
+    const { container } = await import("$lib/shared/di");
+    const imageComposer = container.items.imageComposer;
+
+    // Load real sequences
+    const sequences = await loadRealSequences(sequenceCount);
+    if (sequences.length === 0) {
+      console.error("[CacheBenchmark] No valid sequences found");
+      return null;
+    }
+
+    console.log(`✓ Loaded ${sequences.length} sequences with valid beat data\n`);
+
+    // Base render options (without visibility)
+    const baseRenderOptions = {
+      beatSize: 240,
+      includeStartPosition: true,
+      addBeatNumbers: true,
+      addWord: true,
+      addDifficultyLevel: true,
+    };
+
+    // Default visibility (TKA and Reversals ON)
+    const defaultVisibility = {
+      showTKA: true,
+      showVTG: false,
+      showElemental: false,
+      showPositions: false,
+      showReversals: true,
+      showNonRadialPoints: false,
+      darkMode: false,
+      showGrid: true,
+      handPointVisibility: "all" as const,
+    };
+
+    // Changed visibility (TKA OFF - overlay change)
+    const changedVisibility = {
+      ...defaultVisibility,
+      showTKA: false,
+    };
+
+    // Intercept console.log to capture render stats
+    const originalLog = console.log;
+    console.log = (...args) => {
+      const msg = args[0];
+      if (typeof msg === "string" && msg.startsWith("[Render]")) {
+        capturedStats = parseRenderLog(msg);
+      }
+      originalLog.apply(console, args);
+    };
+
+    // Cast for dev utility
+    const composer = imageComposer as unknown as {
+      composeSequenceImage: (seq: SequenceData, opts: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+      getCacheStats: () => unknown;
+      clearCache: (includeIndexedDB?: boolean) => Promise<void>;
+    };
+
+    // Clear all caches before starting
+    await composer.clearCache(true);
+
+    // PASS 1: Default visibility (cold start)
+    console.log("━".repeat(70));
+    console.log("📊 PASS 1: DEFAULT VISIBILITY (cold cache - baseline)\n");
+    console.log("   Visibility: showTKA=true, showReversals=true, showGrid=true\n");
+    const defaultPass = await runPass(
+      "Default",
+      sequences,
+      composer,
+      { ...baseRenderOptions, visibilityOverrides: defaultVisibility }
+    );
+
+    // PASS 2: Same visibility (warm cache test)
+    console.log("\n" + "━".repeat(70));
+    console.log("📊 PASS 2: SAME VISIBILITY (warm cache - should hit cache)\n");
+    console.log("   Visibility: showTKA=true, showReversals=true, showGrid=true\n");
+    const warmCachePass = await runPass(
+      "Warm",
+      sequences,
+      composer,
+      { ...baseRenderOptions, visibilityOverrides: defaultVisibility }
+    );
+
+    // PASS 3: Changed visibility (TKA toggled off)
+    console.log("\n" + "━".repeat(70));
+    console.log("📊 PASS 3: CHANGED VISIBILITY (cache invalidation test)\n");
+    console.log("   Visibility: showTKA=FALSE, showReversals=true, showGrid=true\n");
+    console.log("   EXPECTED: Cache MISS - visibility is part of cache key\n");
+    const changedVisibilityPass = await runPass(
+      "Changed",
+      sequences,
+      composer,
+      { ...baseRenderOptions, visibilityOverrides: changedVisibility }
+    );
+
+    // PASS 4: Restored visibility (cache survival test)
+    console.log("\n" + "━".repeat(70));
+    console.log("📊 PASS 4: RESTORED VISIBILITY (cache survival test)\n");
+    console.log("   Visibility: showTKA=true, showReversals=true, showGrid=true\n");
+    console.log("   EXPECTED: Cache HIT if original cache survived visibility toggle\n");
+    const restoredVisibilityPass = await runPass(
+      "Restored",
+      sequences,
+      composer,
+      { ...baseRenderOptions, visibilityOverrides: defaultVisibility }
+    );
+
+    // Restore console.log
+    console.log = originalLog;
+
+    // Analyze results
+    const warmCacheHitRate = warmCachePass.cacheStats.overallCacheRate;
+    const visibilityChangeHitRate = changedVisibilityPass.cacheStats.overallCacheRate;
+    const restoredCacheHitRate = restoredVisibilityPass.cacheStats.overallCacheRate;
+
+    // Cache is "fully invalidated" if changing visibility causes ~0% cache hits
+    const cacheFullyInvalidated = visibilityChangeHitRate < 5;
+
+    // Cache "survived" the toggle if restoring visibility still hits cache
+    const cacheSurvivedToggle = restoredCacheHitRate > 50;
+
+    const result: VisibilityChangeResult = {
+      defaultPass,
+      warmCachePass,
+      changedVisibilityPass,
+      restoredVisibilityPass,
+      analysis: {
+        warmCacheHitRate,
+        visibilityChangeHitRate,
+        restoredCacheHitRate,
+        cacheFullyInvalidated,
+        cacheSurvivedToggle,
+      },
+    };
+
+    printVisibilityChangeSummary(result);
+    return result;
+
+  } catch (error) {
+    console.error("[CacheBenchmark] Failed:", error);
+    return null;
+  }
+}
+
+/**
+ * Print visibility change benchmark summary
+ */
+function printVisibilityChangeSummary(result: VisibilityChangeResult): void {
+  console.log("\n" + "=".repeat(70));
+  console.log("📊 VISIBILITY CHANGE BENCHMARK RESULTS");
+  console.log("=".repeat(70));
+
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│ CACHE HIT RATES BY PASS                                             │");
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+  console.log(`│ Pass 1 (Default - cold):     ${result.defaultPass.cacheStats.overallCacheRate.toFixed(1).padStart(5)}%  (expected: low/0%)            │`);
+  console.log(`│ Pass 2 (Same visibility):    ${result.analysis.warmCacheHitRate.toFixed(1).padStart(5)}%  (expected: high ~100%)        │`);
+  console.log(`│ Pass 3 (TKA toggled off):    ${result.analysis.visibilityChangeHitRate.toFixed(1).padStart(5)}%  (tests cache invalidation)   │`);
+  console.log(`│ Pass 4 (Restored default):   ${result.analysis.restoredCacheHitRate.toFixed(1).padStart(5)}%  (tests cache survival)       │`);
+  console.log("└─────────────────────────────────────────────────────────────────────┘");
+
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│ RENDER TIMES                                                        │");
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+  console.log(`│ Default (cold):      ${result.defaultPass.avgRenderTimeMs.toFixed(0).padStart(6)}ms avg/sequence                       │`);
+  console.log(`│ Same visibility:     ${result.warmCachePass.avgRenderTimeMs.toFixed(0).padStart(6)}ms avg/sequence                       │`);
+  console.log(`│ Changed visibility:  ${result.changedVisibilityPass.avgRenderTimeMs.toFixed(0).padStart(6)}ms avg/sequence                       │`);
+  console.log(`│ Restored visibility: ${result.restoredVisibilityPass.avgRenderTimeMs.toFixed(0).padStart(6)}ms avg/sequence                       │`);
+  console.log("└─────────────────────────────────────────────────────────────────────┘");
+
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│ ANALYSIS                                                            │");
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+
+  // Cache invalidation analysis
+  if (result.analysis.cacheFullyInvalidated) {
+    console.log("│ ⚠️  VISIBILITY CHANGE INVALIDATES CACHE                              │");
+    console.log(`│    Toggling TKA caused ${(100 - result.analysis.visibilityChangeHitRate).toFixed(0)}% cache miss rate                       │`);
+  } else {
+    console.log("│ ✓  Cache partially survived visibility change                       │");
+    console.log(`│    ${result.analysis.visibilityChangeHitRate.toFixed(0)}% of pictographs still cached after toggle               │`);
+  }
+
+  // Cache survival analysis
+  if (result.analysis.cacheSurvivedToggle) {
+    console.log("│ ✓  Original cache survived the visibility toggle                    │");
+    console.log(`│    Restored ${result.analysis.restoredCacheHitRate.toFixed(0)}% cache hit rate on return to default            │`);
+  } else {
+    console.log("│ ⚠️  Original cache was evicted during visibility change              │");
+    console.log(`│    Only ${result.analysis.restoredCacheHitRate.toFixed(0)}% cache hit rate after returning to default        │`);
+  }
+
+  console.log("└─────────────────────────────────────────────────────────────────────┘");
+
+  // Cost calculation
+  const costOfVisibilityChange = result.changedVisibilityPass.avgRenderTimeMs;
+
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│ COST OF VISIBILITY CHANGE                                           │");
+  console.log("├─────────────────────────────────────────────────────────────────────┤");
+  console.log(`│ Time to re-render on visibility change: ${costOfVisibilityChange.toFixed(0).padStart(5)}ms avg/sequence        │`);
+
+  if (result.analysis.cacheFullyInvalidated) {
+    console.log("│                                                                     │");
+    console.log("│ 💡 RECOMMENDATION: Implement compositional caching                  │");
+    console.log("│    - Separate BASE layer (grid+props+arrows) from OVERLAYS         │");
+    console.log("│    - Base layer cache survives visibility toggles                  │");
+    console.log("│    - Only re-composite on visibility change (~1-2ms)               │");
+  }
+
+  console.log("└─────────────────────────────────────────────────────────────────────┘");
+  console.log("\n" + "=".repeat(70));
+}
+
 // Expose globally for console access
 if (browser && typeof window !== "undefined") {
   (window as unknown as {
     runCacheBenchmark: typeof runCacheBenchmark;
     runQuickBenchmark: typeof runQuickBenchmark;
+    runVisibilityChangeBenchmark: typeof runVisibilityChangeBenchmark;
   }).runCacheBenchmark = runCacheBenchmark;
   (window as unknown as { runQuickBenchmark: typeof runQuickBenchmark }).runQuickBenchmark = runQuickBenchmark;
-  console.log("[CacheBenchmark] Utility loaded. Run: window.runCacheBenchmark()");
+  (window as unknown as { runVisibilityChangeBenchmark: typeof runVisibilityChangeBenchmark }).runVisibilityChangeBenchmark = runVisibilityChangeBenchmark;
+  console.log("[CacheBenchmark] Utility loaded.");
+  console.log("  - window.runCacheBenchmark(n)           - Standard cache benchmark");
+  console.log("  - window.runVisibilityChangeBenchmark(n) - Visibility change benchmark");
 }

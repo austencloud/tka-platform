@@ -42,6 +42,17 @@ export interface PictographVisibilityOptions {
    * When provided, passed through to PictographPreparer for consistency.
    */
   redPropType?: PropType;
+  /**
+   * Hand point visibility setting for grid rendering.
+   * "all" shows all hand positions, "active" shows only active ones.
+   */
+  handPointVisibility?: "all" | "active";
+  /**
+   * When true, render only the base grid (center + outer corner points).
+   * Hand points and layer 2 points are excluded - they're rendered in a separate layer.
+   * Used by LayerCompositor for compositional caching.
+   */
+  baseGridOnly?: boolean;
 }
 
 /**

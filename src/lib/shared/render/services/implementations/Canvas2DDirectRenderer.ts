@@ -101,6 +101,22 @@ const TURN_NUMBER_HEIGHT = 45;
 const BLUE_COLOR = "#2E77AE";
 const RED_COLOR = "#ED1C24";
 
+// Base grid points (center + outer corners only - hand points and layer 2 are separate)
+// These are rendered in the base layer and never change with visibility toggles
+const BASE_GRID_POINTS = {
+  center: { x: 475, y: 475, r: 12 },
+  outer: {
+    n: { x: 475, y: 175, r: 25 },
+    e: { x: 775, y: 475, r: 25 },
+    s: { x: 475, y: 775, r: 25 },
+    w: { x: 175, y: 475, r: 25 },
+  },
+};
+
+// Grid point color
+const GRID_POINT_COLOR_LIGHT = "#000000"; // Black in SVG, shown at reduced opacity
+const GRID_POINT_COLOR_DARK = "#ffffff"; // White for dark mode
+
 export class Canvas2DDirectRenderer implements IDirectRenderer {
   private initialized = false;
   private memoryUsage = 0;
@@ -226,7 +242,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     // 2. Draw grid
     const gridStart = performance.now();
     const gridMode = prepared?.gridMode ?? GridMode.DIAMOND;
-    await this.drawGrid(ctx, size, gridMode, isDarkMode, visibility.showNonRadialPoints ?? false);
+    if (visibility.baseGridOnly) {
+      // Base layer mode: draw only center + outer points (no hand points or layer 2)
+      this.drawBaseGridOnly(ctx, size, isDarkMode);
+    } else {
+      // Full mode: draw complete grid with all points
+      await this.drawGrid(ctx, size, gridMode, isDarkMode, visibility.showNonRadialPoints ?? false);
+    }
     const gridTime = performance.now() - gridStart;
 
     // 3. Draw props (if prepared data exists)
@@ -355,6 +377,42 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         ctx.restore();
       }
     }
+  }
+
+  /**
+   * Draw only the base grid points (center + outer corners)
+   *
+   * This is used by the LayerCompositor for the base layer, which excludes
+   * toggleable grid points (hand points and layer 2 points).
+   * Those are rendered separately in the gridPoints layer.
+   */
+  drawBaseGridOnly(
+    ctx: CanvasRenderingContext2D,
+    size: number,
+    isDarkMode: boolean
+  ): void {
+    const scale = size / VIEWBOX_SIZE;
+    const pointColor = isDarkMode ? GRID_POINT_COLOR_DARK : GRID_POINT_COLOR_LIGHT;
+
+    // Set opacity to match grid SVG rendering
+    ctx.save();
+    ctx.globalAlpha = isDarkMode ? 0.85 : 0.7;
+    ctx.fillStyle = pointColor;
+
+    // Draw center point
+    const center = BASE_GRID_POINTS.center;
+    ctx.beginPath();
+    ctx.arc(center.x * scale, center.y * scale, center.r * scale, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw outer points (corners)
+    for (const point of Object.values(BASE_GRID_POINTS.outer)) {
+      ctx.beginPath();
+      ctx.arc(point.x * scale, point.y * scale, point.r * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   /**
