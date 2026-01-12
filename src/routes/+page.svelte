@@ -27,8 +27,8 @@
     <title>TKA Scribe - The Flow Arts Choreography Toolbox</title>
   {:else}
     <title
-      >The Kinetic Alphabet - Digital Sheet Music for Flow Arts | Staff, Clubs,
-      Fans, Hoops Choreography</title
+      >TKA - The Kinetic Alphabet | Digital Sheet Music for Flow Arts | Staff,
+      Clubs, Fans, Hoops Choreography</title
     >
   {/if}
   <meta
@@ -39,7 +39,7 @@
   <!-- Keywords for search engines and AI systems -->
   <meta
     name="keywords"
-    content="flow arts, staff spinning, club manipulation, fan spinning, hoop dance, buugeng, prop manipulation, choreography app, sequence creator, flow arts tutorials, staff patterns, antispin, isolation, flower patterns, tech spinning, fire dancing, contact staff, double staff, flow toys, movement notation, dance notation, circus arts, juggling, object manipulation, flow state, spinning tutorials"
+    content="TKA, The Kinetic Alphabet, TKA flow arts, TKA notation, TKA staff, TKA poi, TKA choreography, Kinetic Alphabet notation, flow arts, staff spinning, club manipulation, fan spinning, hoop dance, buugeng, prop manipulation, choreography app, sequence creator, flow arts tutorials, staff patterns, antispin, isolation, flower patterns, tech spinning, fire dancing, contact staff, double staff, flow toys, movement notation, dance notation, circus arts, juggling, object manipulation, flow state, spinning tutorials"
   />
 
   <!-- Additional SEO meta tags -->
@@ -108,10 +108,10 @@
 	{
 		"@context": "https://schema.org",
 		"@type": "WebSite",
-		"name": "The Kinetic Alphabet",
-		"alternateName": ["TKA", "TKA Scribe", "Kinetic Alphabet"],
+		"name": "TKA - The Kinetic Alphabet",
+		"alternateName": ["The Kinetic Alphabet", "TKA Scribe", "Kinetic Alphabet", "TKA"],
 		"url": "https://tkaflowarts.com/",
-		"description": "The universal notation system for flow arts - create, animate, and share prop manipulation sequences",
+		"description": "TKA is the universal notation system for flow arts - create, animate, and share prop manipulation sequences like digital sheet music",
 		"inLanguage": "en-US",
 		"potentialAction": {
 			"@type": "SearchAction",
