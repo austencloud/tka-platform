@@ -37,6 +37,7 @@ interface CachedEntry {
 export class ThumbnailLocalCache implements IThumbnailLocalCache {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private maxSizeBytes: number;
+  private isPruning = false; // Concurrency guard to prevent overlapping prune operations
 
   constructor(maxSizeBytes: number = DEFAULT_MAX_SIZE_BYTES) {
     this.maxSizeBytes = maxSizeBytes;
@@ -198,9 +199,19 @@ export class ThumbnailLocalCache implements IThumbnailLocalCache {
   async prune(maxSizeBytes: number): Promise<number> {
     if (!browser) return 0;
 
+    // Concurrency guard: prevent overlapping prune operations
+    if (this.isPruning) {
+      return 0;
+    }
+
+    this.isPruning = true;
+
     try {
       const stats = await this.getStats();
-      if (stats.sizeBytes <= maxSizeBytes) return 0;
+      if (stats.sizeBytes <= maxSizeBytes) {
+        this.isPruning = false;
+        return 0;
+      }
 
       const db = await this.getDB();
       const tx = db.transaction(STORE_NAME, "readwrite");
@@ -225,31 +236,52 @@ export class ThumbnailLocalCache implements IThumbnailLocalCache {
         };
       });
 
-      // Delete oldest entries until under limit
+      // Determine which entries to delete (oldest first until under limit)
       let currentSize = stats.sizeBytes;
-      let deletedCount = 0;
+      const entriesToDelete: Array<{ key: string; size: number }> = [];
 
       for (const entry of entries) {
         if (currentSize <= maxSizeBytes) break;
-
-        await new Promise<void>((resolve, reject) => {
-          const request = store.delete(entry.key);
-          request.onerror = () => reject(request.error);
-          request.onsuccess = () => resolve();
-        });
-
+        entriesToDelete.push(entry);
         currentSize -= entry.size;
-        deletedCount++;
       }
 
-      if (deletedCount > 0) {
-        console.log(`[ThumbnailLocalCache] Pruned ${deletedCount} entries (freed ${((stats.sizeBytes - currentSize) / 1024 / 1024).toFixed(1)} MB)`);
+      if (entriesToDelete.length === 0) {
+        this.isPruning = false;
+        return 0;
       }
 
-      return deletedCount;
+      // Delete entries with graceful error handling (individual failures don't stop the batch)
+      const deleteResults = await Promise.all(
+        entriesToDelete.map(
+          (entry) =>
+            new Promise<{ key: string; size: number; success: boolean }>((resolve) => {
+              const request = store.delete(entry.key);
+              request.onsuccess = () => resolve({ ...entry, success: true });
+              request.onerror = () => {
+                console.warn(`[ThumbnailLocalCache] Failed to delete entry: ${entry.key}`);
+                resolve({ ...entry, success: false });
+              };
+            })
+        )
+      );
+
+      // Count successful deletions
+      const successfulDeletes = deleteResults.filter((r) => r.success);
+      const freedBytes = successfulDeletes.reduce((sum, r) => sum + r.size, 0);
+
+      if (successfulDeletes.length > 0) {
+        console.log(
+          `[ThumbnailLocalCache] Pruned ${successfulDeletes.length} entries (freed ${(freedBytes / 1024 / 1024).toFixed(1)} MB)`
+        );
+      }
+
+      return successfulDeletes.length;
     } catch (error) {
       console.warn("[ThumbnailLocalCache] prune failed:", error);
       return 0;
+    } finally {
+      this.isPruning = false;
     }
   }
 }
