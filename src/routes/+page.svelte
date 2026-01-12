@@ -57,11 +57,11 @@
 
   <!-- Open Graph (Facebook, LinkedIn, Pinterest) -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="The Kinetic Alphabet" />
+  <meta property="og:site_name" content="TKA - The Kinetic Alphabet" />
   <meta property="og:url" content="https://tkaflowarts.com/" />
   <meta
     property="og:title"
-    content="The Kinetic Alphabet - Digital Sheet Music for Flow Arts"
+    content="TKA | Digital Sheet Music for Flow Arts"
   />
   <meta
     property="og:description"
@@ -85,7 +85,7 @@
   <meta name="twitter:creator" content="@tkaflowarts" />
   <meta
     name="twitter:title"
-    content="The Kinetic Alphabet - Digital Sheet Music for Flow Arts"
+    content="TKA | Digital Sheet Music for Flow Arts"
   />
   <meta
     name="twitter:description"
@@ -129,11 +129,11 @@
 	{
 		"@context": "https://schema.org",
 		"@type": "Organization",
-		"name": "The Kinetic Alphabet",
-		"alternateName": "TKA",
+		"name": "TKA - The Kinetic Alphabet",
+		"alternateName": ["The Kinetic Alphabet", "TKA"],
 		"url": "https://tkaflowarts.com/",
 		"logo": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
-		"description": "Creating the universal notation system for flow arts and prop manipulation",
+		"description": "TKA provides digital sheet music for flow arts and prop manipulation - the universal notation system for staff, poi, hoops, clubs, fans, and more",
 		"foundingDate": "2024",
 		"sameAs": [
 			"https://instagram.com/tkaflowarts",
@@ -191,6 +191,22 @@
 		"@context": "https://schema.org",
 		"@type": "FAQPage",
 		"mainEntity": [
+			{
+				"@type": "Question",
+				"name": "What does TKA stand for?",
+				"acceptedAnswer": {
+					"@type": "Answer",
+					"text": "TKA stands for The Kinetic Alphabet, a universal notation system for flow arts and prop manipulation. TKA provides digital sheet music for documenting and sharing choreography across languages."
+				}
+			},
+			{
+				"@type": "Question",
+				"name": "What is TKA notation?",
+				"acceptedAnswer": {
+					"@type": "Answer",
+					"text": "TKA notation uses pictographs - visual diagrams showing prop position and movement - to communicate flow arts choreography. Each pictograph represents a beat, showing where your hands are, what motion type is being used, and the prop orientation."
+				}
+			},
 			{
 				"@type": "Question",
 				"name": "What is The Kinetic Alphabet?",
