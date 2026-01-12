@@ -75,6 +75,11 @@ const AUDITED_FILES = {
       "AnimationPrecomputationService",
     ],
   },
+  "routes/test/render-compare/+page.svelte": {
+    auditDate: "2026-01-11",
+    reason: "False positive: Test utility page scheduled for deletion. Not production code.",
+  },
+  // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 
 // Scoring weights

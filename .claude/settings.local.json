@@ -165,7 +165,20 @@
       "Bash(start \"\" \"C:\\\\Users\\\\Austen\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\F---THE-KINETIC-ALPHABET--TKA-SCRIBE\\\\f638d28e-e647-4e41-a667-368a463b75f7\\\\scratchpad\\\\resume-editor.html\")",
       "WebFetch(domain:lh3.googleusercontent.com)",
       "WebFetch(domain:work.fife.usercontent.google.com)",
-      "Bash(gsutil ls:*)"
+      "Bash(gsutil ls:*)",
+      "WebFetch(domain:pixabay.com)",
+      "WebFetch(domain:mixkit.co)",
+      "WebFetch(domain:opengameart.org)",
+      "WebFetch(domain:drexfactor.com)",
+      "WebFetch(domain:noelyee.com)",
+      "Bash(do grep -l -i \"loop\" \"$f\")",
+      "WebFetch(domain:kineticfire.org)",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*.svelte\")",
+      "Bash(Where-Object { $_Name -match \"Orientation|TurnNumber\" })",
+      "Bash(Select-String -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\app.css\" -Pattern \"prop-blue|prop-red|--blue|--red\")",
+      "Bash(do echo \"=== $comp ===\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\shared\\\\pictograph\\\\arrow\\\\positioning\\\\calculation\\\\services\" -Recurse -Filter \"*.ts\")",
+      "Bash(do)"
     ]
   }
 }

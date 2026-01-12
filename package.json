@@ -116,6 +116,7 @@
     "stripe": "^20.1.0",
     "svelte": "^5.46.1",
     "svelte-check": "^4.3.5",
+    "svelte-confetti": "^2.3.2",
     "svg-path-commander": "^2.1.11",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",

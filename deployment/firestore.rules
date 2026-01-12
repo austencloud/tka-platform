@@ -663,6 +663,22 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // GLOBAL ARROW ADJUSTMENTS
+    // Admin-only collection for arrow position overrides
+    // ============================================================================
+
+    // Global arrow adjustments - admin-set arrow position overrides
+    // These adjustments apply to ALL pictographs matching the same key
+    // Document ID format: {gridMode}|{oriKey}|{letter}|{turnsTuple}|{arrowKey}
+    match /global_arrow_adjustments/{adjustmentId} {
+      // ANYONE authenticated can read (required for rendering pipeline)
+      allow read: if isAuthenticated();
+
+      // Only admin can write (create, update, delete)
+      allow write: if isAdmin();
+    }
+
+    // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
     // ============================================================================

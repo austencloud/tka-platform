@@ -1,32 +1,5 @@
 import "@testing-library/jest-dom";
-import { Container } from "inversify";
-import { afterEach, beforeEach, vi } from "vitest";
-
-// Use vi.hoisted to ensure critical modules are imported and initialized BEFORE any service classes
-// This prevents "Cannot read properties of undefined" errors with InversifyJS decorators and enums
-// IMPORTANT: vi.hoisted() runs synchronously at module evaluation time, not async
-const hoistedModules = await (async () => {
-  // Import TYPES first to ensure it's available when service decorators execute
-  const typesModule = await import("../../src/lib/shared/inversify/types");
-  // Import domain enums that are used in module-level object literals
-  await import("../../src/lib/shared/pictograph/grid/domain/enums/grid-enums");
-  await import("../../src/lib/shared/pictograph/shared/domain/enums/pictograph-enums");
-  await import("../../src/lib/shared/foundation/domain/models/LetterType");
-  // Import files that use enums in module-level object literals
-  await import("../../src/lib/shared/pictograph/shared/domain/constants/pictograph-constants");
-  // Import factory functions that are used by services
-  await import("../../src/lib/shared/pictograph/shared/domain/factories/createPictographData");
-
-  // Verify TYPES is properly loaded
-  if (!typesModule.TYPES || !typesModule.TYPES.IVideoExporter) {
-    throw new Error("TYPES module failed to load properly in test setup");
-  }
-
-  return typesModule;
-})();
-
-// Global Inversify container for tests
-let testContainer: Container;
+import { vi } from "vitest";
 
 // Mock browser APIs BEFORE any imports that might use them
 Object.defineProperty(window, "matchMedia", {
@@ -81,26 +54,6 @@ if (!document.body) {
   nodes: [],
   errors: [],
 };
-
-// Global test setup
-beforeEach(() => {
-  // Initialize a fresh Inversify container for each test
-  try {
-    testContainer = new Container();
-  } catch (error) {
-    console.warn(
-      "Failed to initialize Inversify container in test setup:",
-      error
-    );
-  }
-});
-
-afterEach(() => {
-  // Clean up the container after each test
-  if (testContainer) {
-    void testContainer.unbindAll();
-  }
-});
 
 // Mock $app/stores for SvelteKit
 vi.mock("$app/stores", () => ({

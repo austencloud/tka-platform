@@ -1,25 +1,24 @@
 ---
-description: Mark the current feedback item as completed
+description: Complete work - either mark existing feedback done OR auto-create and complete new feedback
 allowed-tools: Bash Read
 ---
 
 # Done Command
 
-Mark the current feedback item as `completed` after you've reviewed and approved the work.
+Complete work and log it to the feedback system. Supports two modes:
 
-## Usage
+1. **Mark existing feedback as completed** - when you have a document ID
+2. **Auto-create and complete** - when you just finished work with no existing feedback item
 
-When you've reviewed a feedback item and verified it works correctly, use this command to move it to the completed column.
+## Mode 1: Complete Existing Feedback
 
-The command supports two notes formats:
-
-### Basic (admin notes only)
+When you have a document ID (from `/fb` or the Kanban board):
 
 ```bash
 /done <document-id> "Brief summary of what was changed"
 ```
 
-### Full (admin notes + user-facing notes)
+With user-facing notes (for user-submitted feedback):
 
 ```bash
 /done <document-id> "Admin notes" "User-facing notes"
@@ -28,75 +27,105 @@ The command supports two notes formats:
 **Examples:**
 
 ```bash
-# Basic - admin notes only (for internal fixes)
-/done abc123xyz "Fixed card height overflow in Kanban board"
-
-# Full - with user-facing message (for user-submitted feedback)
-/done abc123xyz "Fixed card overflow" "Cards now display at the correct height without being cut off"
+/done abc123xyz "Fixed card height overflow"
+/done abc123xyz "Fixed card overflow" "Cards now display correctly"
 ```
 
-**Note:** The document ID is shown when the agent runs `/fb`. Copy it from the agent's output.
+## Mode 2: Auto-Create and Complete (Quick Log)
 
-## What happens
+When you just finished work and there's no existing feedback item:
 
-1. Moves the feedback item from any status to `completed`
-2. Updates `adminNotes` (admin-only) with your summary
-3. Updates `userFacingNotes` (visible to submitter) if provided
-4. The item is now staged for the next release
-5. If user-facing notes are provided, the submitter is notified
+```bash
+/done "Title of what you did"
+```
 
-## When to include user-facing notes
+Or with a description:
 
-| Scenario | Include user-facing notes? |
-|----------|---------------------------|
-| User-submitted feedback (source: "app") | Yes - they want to know what changed |
-| Admin/internal features | No - they won't see it anyway |
-| Terminal-submitted feedback (source: "terminal") | Optional - depends on context |
-| Bug fixes visible to users | Yes - explain the improvement |
-| Refactoring/infrastructure | No - not user-visible |
+```bash
+/done "Title" "Description of the work"
+```
 
-## Resolution notes guidelines
+**Examples:**
 
-### Admin notes (adminNotes)
+```bash
+/done "Help button discovery overlay"
+/done "Fix thumbnail cache invalidation" "Updated cache key derivation to include prop type"
+```
 
-- **Brief summary** of what was fixed (1 line, ~5-10 words)
-- Focus on **WHAT** was addressed, not HOW
-- Example: "Fixed card height overflow"
-- NOT: "Updated MyFeedbackCard.svelte:88-92 to set min-height: 120px"
-- NO file paths, line numbers, or testing steps
+### What happens in auto-create mode:
 
-### User-facing notes (userFacingNotes)
+1. Creates new feedback under Austen's profile
+2. Sets status directly to `completed`
+3. Marks as `internal-only` (dev work, excluded from user changelog)
+4. Sets source as `terminal` (distinguishes from user-submitted feedback)
+5. Reports what was created with the document ID
 
-- **Friendly explanation** for the person who submitted feedback
-- Use natural language, not technical jargon
-- Focus on the **benefit** or **change** they'll notice
-- Example: "Cards now display at the correct height without being cut off"
-- NOT: "Fixed the CSS min-height property on the card component"
+## How to tell which mode
+
+The command detects the mode automatically:
+
+| First argument | Mode |
+|----------------|------|
+| 20-char alphanumeric (e.g., `gD1ts7gMR4LIXRV1eumk`) | Complete existing |
+| Text with spaces or descriptive title | Auto-create |
+
+## Implementation
+
+Parse the arguments and determine the mode:
+
+### If first argument looks like a document ID (20+ alphanumeric chars, no spaces):
+
+```bash
+# Complete existing feedback
+node scripts/fetch-feedback.js <document-id> completed "admin notes"
+
+# With user-facing notes
+node scripts/fetch-feedback.js <document-id> completed "admin notes" --user-notes "user-facing notes"
+```
+
+### If first argument is a title (has spaces or is descriptive text):
+
+Run these commands in sequence:
+
+```bash
+# 1. Create feedback (captures the ID from output)
+node scripts/submit-feedback.js "Title" "Description" --type feature --module system --tab general --user austen
+
+# 2. Mark as completed (using the ID from step 1)
+node scripts/fetch-feedback.js <new-id> completed "Title"
+
+# 3. Mark as internal-only
+node scripts/fetch-feedback.js <new-id> internal-only true
+```
+
+**Important:** Parse the feedback ID from the submit-feedback.js output (line containing "Feedback ID:") to use in subsequent commands.
+
+## Options for auto-create mode
+
+The command can accept optional flags to customize the created feedback:
+
+```bash
+/done "Title" "Description" --module create --tab generator --type bug
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--module` | system | Module where work was done |
+| `--tab` | general | Tab within the module |
+| `--type` | feature | bug, feature, or general |
+
+## When to use each mode
+
+| Scenario | Use |
+|----------|-----|
+| Working on user-submitted feedback | Mode 1 (complete existing) |
+| Working on feedback from `/fb` | Mode 1 (complete existing) |
+| Quick fix you did without a ticket | Mode 2 (auto-create) |
+| Refactoring/cleanup work | Mode 2 (auto-create) |
+| Small improvement you just made | Mode 2 (auto-create) |
 
 ## Workflow context
 
 - `completed` items are staged for the next release
-- They stay visible in the "completed" column until `/release` is run
-- When `/release` runs, they're archived and tagged with the version number
-- This lets you batch multiple fixes into one release
-
-## Full workflow
-
-1. Agent runs `/fb` - claims item, moves to `in-progress`
-2. Agent implements fix - moves to `in-review`, adds resolution notes
-3. **You review and test** - run `/done` - moves to `completed`
-4. Later, run `/release` - batches all completed items into a versioned release
-
-## Implementation
-
-The command will extract the document ID and notes from the command arguments and run:
-
-```bash
-# Basic (admin notes only)
-node scripts/fetch-feedback.js <document-id> completed "admin notes"
-
-# Full (with user-facing notes)
-node scripts/fetch-feedback.js <document-id> completed "admin notes" --user-notes "user-facing notes"
-```
-
-This marks the item as completed and ready for the next release.
+- Auto-created items are marked `internal-only` by default (won't appear in user changelog)
+- When `/release` runs, all completed items are archived and tagged with the version

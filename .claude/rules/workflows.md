@@ -121,14 +121,36 @@ The "while you practice" and dashes with feature lists are promotional filler. J
 
 ## /done Command
 
-When `/done` is called with no matching feedback item:
+Two modes - automatically detected based on the first argument:
 
-1. Auto-create feedback under Austen's profile
-2. Auto-complete it immediately
-3. Mark internal-only if it's dev/infrastructure work
-4. Report what was created
+### Mode 1: Complete Existing Feedback
 
-**Source field:** `"terminal"` (vs `"app"` for user-submitted) - allows filtering dev work from real user feedback.
+When first arg is a document ID (20-char alphanumeric):
+
+```bash
+/done abc123xyz "Fixed the issue"
+/done abc123xyz "Admin notes" "User-facing notes"
+```
+
+### Mode 2: Auto-Create and Complete (Quick Log)
+
+When first arg is a title (has spaces or descriptive text):
+
+```bash
+/done "Help button discovery overlay"
+/done "Fix thumbnail cache" "Updated cache key derivation"
+```
+
+**What happens in auto-create mode:**
+
+1. Creates feedback under Austen's profile
+2. Sets status directly to `completed`
+3. Marks as `internal-only` (excluded from user changelog)
+4. Reports what was created with document ID
+
+**Detection:** If first arg is 20+ alphanumeric chars with no spaces → existing ID. Otherwise → title for auto-create.
+
+**Implementation:** See `.claude/commands/done.md` for full details.
 
 ---
 

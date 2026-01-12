@@ -33,8 +33,8 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   let hapticService: IHapticFeedback | null = null;
   let videoService: ICollaborativeVideoManager | null = null;
-  // Using \ so the effect re-runs when loaderService is set in onMount
-  let loaderService = \<IDiscoverLoader | null>(null);
+  // Using $state so the effect re-runs when loaderService is set in onMount
+  let loaderService = $state<IDiscoverLoader | null>(null);
 
   // Video state - now just tracking count and panel visibility
   let videoCount = $state(0);
