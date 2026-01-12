@@ -300,12 +300,25 @@ Now with intelligent rotation animation matching prop behavior!
   // SELECTION & INTERACTION LOGIC
   // ============================================================================
 
-  // Check if this arrow is currently selected
-  const isSelected = $derived(
-    isClickable && pictographData
+  // Track selection changes with local reactive state
+  let selectionVersion = $state(0);
+
+  // Subscribe to selection state changes
+  $effect(() => {
+    const unsubscribe = selectedArrowState.subscribe(() => {
+      selectionVersion++;
+    });
+    return unsubscribe;
+  });
+
+  // Check if this arrow is currently selected (re-evaluates when selectionVersion changes)
+  const isSelected = $derived.by(() => {
+    // Reference selectionVersion to trigger re-evaluation
+    void selectionVersion;
+    return isClickable && pictographData
       ? selectedArrowState.isSelected(motionData, color)
-      : false
-  );
+      : false;
+  });
 
   // Get haptic service from container (lazy access)
   const getHapticService = () => {
@@ -394,7 +407,8 @@ Now with intelligent rotation animation matching prop behavior!
 
   .arrow-svg.clickable {
     pointer-events: all;
-    cursor: pointer;
+    /* !important needed to override drawer's cursor: grab */
+    cursor: pointer !important;
   }
 
   .arrow-svg.clickable:hover {
@@ -422,6 +436,19 @@ Now with intelligent rotation animation matching prop behavior!
     50% {
       opacity: 1;
       stroke-width: 6;
+    }
+  }
+
+  /* Respect user preference for reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .selection-glow {
+      animation: none;
+      opacity: 0.8;
+      stroke-width: 5;
+    }
+
+    .arrow-svg {
+      transition: none;
     }
   }
 </style>

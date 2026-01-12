@@ -61,11 +61,32 @@ export enum RotationDirection {
   NO_ROTATION = "noRotation",
 }
 
+/**
+ * Orientation describes the direction a prop points relative to the center.
+ *
+ * Cardinal orientations (Level 1-5):
+ * - IN: Points toward center
+ * - OUT: Points away from center
+ * - CLOCK: Perpendicular, 90° clockwise from radial
+ * - COUNTER: Perpendicular, 90° counter-clockwise from radial
+ *
+ * Interradial orientations (Level 6 / poi gravity at intercardinals):
+ * - CLOCK_IN: Between CLOCK and IN (gravity at NE)
+ * - CLOCK_OUT: Between CLOCK and OUT (gravity at SE)
+ * - COUNTER_IN: Between COUNTER and IN (gravity at NW)
+ * - COUNTER_OUT: Between COUNTER and OUT (gravity at SW)
+ */
 export enum Orientation {
+  // Cardinal orientations
   IN = "in",
   OUT = "out",
   CLOCK = "clock",
   COUNTER = "counter",
+  // Interradial orientations (compound/diagonal)
+  CLOCK_IN = "clockIn",
+  CLOCK_OUT = "clockOut",
+  COUNTER_IN = "counterIn",
+  COUNTER_OUT = "counterOut",
 }
 
 export enum VectorDirection {

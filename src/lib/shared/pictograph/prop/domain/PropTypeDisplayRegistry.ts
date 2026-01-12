@@ -128,6 +128,10 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
 
     // === QUIAD ===
     [PropType.QUIAD]: { label: "Quiad", image: "/images/props/quiad.svg" },
+
+    // === POI FAMILY (Momentum-based) ===
+    // Uses club.svg as placeholder until proper poi SVG (~175px) is created
+    [PropType.POI]: { label: "Poi", image: "/images/props/club.svg" },
   } as const;
 
 /**

@@ -51,6 +51,32 @@ export class PropRotAngleManager {
       [GridLocation.WEST]: 90,
       [GridLocation.EAST]: 270,
     } as Record<GridLocation, number>,
+    // Interradial orientations (Level 6 / poi) - interpolated angles
+    // Note: These are approximate; exact values may need refinement
+    [Orientation.CLOCK_IN]: {
+      [GridLocation.NORTH]: 45,
+      [GridLocation.SOUTH]: 225,
+      [GridLocation.WEST]: 315,
+      [GridLocation.EAST]: 135,
+    } as Record<GridLocation, number>,
+    [Orientation.CLOCK_OUT]: {
+      [GridLocation.NORTH]: 315,
+      [GridLocation.SOUTH]: 135,
+      [GridLocation.WEST]: 225,
+      [GridLocation.EAST]: 45,
+    } as Record<GridLocation, number>,
+    [Orientation.COUNTER_IN]: {
+      [GridLocation.NORTH]: 135,
+      [GridLocation.SOUTH]: 315,
+      [GridLocation.WEST]: 45,
+      [GridLocation.EAST]: 225,
+    } as Record<GridLocation, number>,
+    [Orientation.COUNTER_OUT]: {
+      [GridLocation.NORTH]: 225,
+      [GridLocation.SOUTH]: 45,
+      [GridLocation.WEST]: 135,
+      [GridLocation.EAST]: 315,
+    } as Record<GridLocation, number>,
   };
 
   /** Box grid angle mappings */
@@ -81,6 +107,32 @@ export class PropRotAngleManager {
       [GridLocation.NORTHWEST]: 135,
       [GridLocation.SOUTHWEST]: 45,
       [GridLocation.SOUTHEAST]: 315,
+    } as Record<GridLocation, number>,
+    // Interradial orientations (Level 6 / poi) - interpolated angles
+    // Note: These are approximate; exact values may need refinement
+    [Orientation.CLOCK_IN]: {
+      [GridLocation.NORTHEAST]: 90,
+      [GridLocation.NORTHWEST]: 0,
+      [GridLocation.SOUTHWEST]: 270,
+      [GridLocation.SOUTHEAST]: 180,
+    } as Record<GridLocation, number>,
+    [Orientation.CLOCK_OUT]: {
+      [GridLocation.NORTHEAST]: 0,
+      [GridLocation.NORTHWEST]: 270,
+      [GridLocation.SOUTHWEST]: 180,
+      [GridLocation.SOUTHEAST]: 90,
+    } as Record<GridLocation, number>,
+    [Orientation.COUNTER_IN]: {
+      [GridLocation.NORTHEAST]: 180,
+      [GridLocation.NORTHWEST]: 90,
+      [GridLocation.SOUTHWEST]: 0,
+      [GridLocation.SOUTHEAST]: 270,
+    } as Record<GridLocation, number>,
+    [Orientation.COUNTER_OUT]: {
+      [GridLocation.NORTHEAST]: 270,
+      [GridLocation.NORTHWEST]: 180,
+      [GridLocation.SOUTHWEST]: 90,
+      [GridLocation.SOUTHEAST]: 0,
     } as Record<GridLocation, number>,
   };
 

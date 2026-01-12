@@ -144,6 +144,9 @@ export class PictographPreparer implements IPictographPreparer {
       blue?.rotationDirection ?? "",
       blue?.turns ?? 0,
       options?.bluePropType ?? blue?.propType ?? "",
+      // Blue manual adjustments (for admin arrow positioning via WASD)
+      blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
+      blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
       // Red motion
       red?.motionType ?? "none",
       red?.startLocation ?? "",
@@ -151,6 +154,9 @@ export class PictographPreparer implements IPictographPreparer {
       red?.rotationDirection ?? "",
       red?.turns ?? 0,
       options?.redPropType ?? red?.propType ?? "",
+      // Red manual adjustments (for admin arrow positioning via WASD)
+      red?.arrowPlacementData?.manualAdjustmentX ?? 0,
+      red?.arrowPlacementData?.manualAdjustmentY ?? 0,
       // Theme affects colors
       options?.themeMode ?? "dark",
     ];

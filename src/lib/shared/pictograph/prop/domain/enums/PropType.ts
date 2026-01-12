@@ -1,11 +1,11 @@
 /**
  * TKA Supported Prop Types
  *
- * NOTE: TKA is a STATIC PROP system for manipulation arts.
- * Dynamic/spinning props like poi are NOT supported.
+ * TKA supports both STATIC PROPS (staff, fans, clubs) and MOMENTUM-BASED PROPS (poi).
+ * Momentum-based props use physics constraints to limit valid motions and transitions.
  *
- * Supported props are held and manipulated directly by the performer,
- * showing positions, orientations, and movements through space.
+ * Static props are held and manipulated directly by the performer.
+ * Momentum props swing freely and are affected by gravity.
  *
  * This is the single source of truth for ALL prop types in the application.
  * Each enum value corresponds to an available prop SVG file in /images/props/
@@ -66,4 +66,9 @@ export enum PropType {
 
   // === QUIAD ===
   QUIAD = "quiad",
+
+  // === POI FAMILY (Momentum-based) ===
+  // Poi uses physics constraints - see PoiConstraintValidator
+  // Uses club.svg as placeholder until proper poi SVG (~175px) is created
+  POI = "poi",
 }

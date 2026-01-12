@@ -248,6 +248,9 @@ with pre-prepared data for better performance.
       endPos: blueMotion.endPosition,
       motionType: blueMotion.motionType,
       rotation: blueMotion.rotationDirection,
+      // Include manual adjustments so arrow moves when adjusted
+      manualAdjustX: blueMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
+      manualAdjustY: blueMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
     } : null;
 
     const redFingerprint = redMotion ? {
@@ -257,6 +260,9 @@ with pre-prepared data for better performance.
       endPos: redMotion.endPosition,
       motionType: redMotion.motionType,
       rotation: redMotion.rotationDirection,
+      // Include manual adjustments so arrow moves when adjusted
+      manualAdjustX: redMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
+      manualAdjustY: redMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
     } : null;
 
     // Use explicit overrides if provided, otherwise use global settings

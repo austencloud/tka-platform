@@ -5,10 +5,11 @@
  * Provides pixel-perfect special placement adjustments for specific pictograph configurations.
  *
  * ORCHESTRATES SPECIAL PLACEMENT PIPELINE:
- * - Data loading (SpecialPlacementDataProvider)
- * - Orientation key generation (SpecialPlacementOriKeyGenerator)
- * - Turns tuple generation (TurnsTupleGenerator)
- * - Placement lookup with fallback strategies (SpecialPlacementLookup)
+ * 1. Check global adjustments (Firestore-backed, admin-set overrides) - NEW
+ * 2. Data loading (SpecialPlacementDataProvider)
+ * 3. Orientation key generation (SpecialPlacementOriKeyGenerator)
+ * 4. Turns tuple generation (TurnsTupleGenerator)
+ * 5. Placement lookup with fallback strategies (SpecialPlacementLookup)
  *
  * Direct TypeScript mirror of reference/modern/application/services/positioning/arrows/placement/special_placement_service.py
  */
@@ -23,6 +24,7 @@ import type { ISpecialPlacer } from "../contracts/ISpecialPlacer";
 import type { ISpecialPlacementDataProvider } from "../contracts/ISpecialPlacementDataProvider";
 import type { ITurnsTupleGenerator } from "../contracts/ITurnsTupleGenerator";
 import type { ISpecialPlacementLookup } from "../contracts/ISpecialPlacementLookup";
+import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
 
 export class SpecialPlacer implements ISpecialPlacer {
   private oriKeyGenerator: SpecialPlacementOriKeyGenerator;
@@ -40,6 +42,7 @@ export class SpecialPlacer implements ISpecialPlacer {
    * Get special adjustment for arrow based on special placement logic.
    *
    * Orchestrates the pipeline:
+   * 0. Check global adjustments (Firestore-backed, admin-set overrides)
    * 1. Generate orientation key
    * 2. Determine grid mode
    * 3. Generate turns tuple
@@ -76,7 +79,26 @@ export class SpecialPlacer implements ISpecialPlacer {
     // Step 3: Generate turns tuple
     const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
 
-    // Step 4: Load letter data
+    // Determine the arrow key for global adjustment lookup
+    const arrowKey = arrowColor || motionData.color || "blue";
+
+    // Step 0 (NEW): Check global adjustments first (Firestore-backed overrides)
+    const globalAdjustmentRepo = getGlobalAdjustmentRepository();
+    if (globalAdjustmentRepo?.isInitialized) {
+      const globalAdjustment = globalAdjustmentRepo.getAdjustment({
+        gridMode,
+        oriKey,
+        letter,
+        turnsTuple,
+        arrowKey,
+      });
+
+      if (globalAdjustment) {
+        return globalAdjustment;
+      }
+    }
+
+    // Step 4: Load letter data from static JSON
     const letterData = await this.dataService.getLetterData(
       gridMode,
       oriKey,

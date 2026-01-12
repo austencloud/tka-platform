@@ -39,6 +39,7 @@ import {
   QuadrantIndexCalculator,
 } from "../../pictograph/arrow/positioning/calculation/services/implementations/DirectionalTupleProcessor";
 import { HandpathDirectionCalculator } from "../../pictograph/arrow/positioning/calculation/services/implementations/HandpathDirectionCalculator";
+import { ScreenSpaceAdjustmentTransformer } from "../../pictograph/arrow/positioning/calculation/services/implementations/ScreenSpaceAdjustmentTransformer";
 
 // ============================================================================
 // ARROW KEY GENERATION SERVICES
@@ -234,6 +235,14 @@ export const pictographContainer = createContainer()
       new DirectionalTupleProcessor(
         deps.directionalTupleCalculator,
         deps.quadrantIndexCalculator
+      ),
+
+    // Screen space adjustment transformer - converts WASD input to reference values
+    // Uses directionalTupleCalculator (Layer 2) and arrowQuadrantCalculator (Layer 1)
+    screenSpaceAdjustmentTransformer: () =>
+      new ScreenSpaceAdjustmentTransformer(
+        deps.directionalTupleCalculator,
+        deps.arrowQuadrantCalculator
       ),
 
     // Arrow locator (no constructor dependencies)
