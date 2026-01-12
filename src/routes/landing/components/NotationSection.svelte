@@ -4,9 +4,9 @@
 
 <section class="notation" id="notation">
   <div class="container">
-    <h2>The Notation System</h2>
+    <h2>Flow Arts Notation</h2>
     <p class="section-intro">
-      Every beat of movement becomes a <strong>pictograph</strong> — a visual diagram
+      A notation system for poi, staff, hoop, club, and fan choreography. Every beat of movement becomes a <strong>pictograph</strong> — a visual diagram
       showing exactly where your hands are and how they move.
     </p>
 

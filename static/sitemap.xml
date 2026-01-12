@@ -103,4 +103,12 @@
 		<changefreq>monthly</changefreq>
 		<priority>0.6</priority>
 	</url>
+
+	<!-- Flow Arts Notation -->
+	<url>
+		<loc>https://tkaflowarts.com/notation</loc>
+		<lastmod>2026-01-12</lastmod>
+		<changefreq>monthly</changefreq>
+		<priority>0.8</priority>
+	</url>
 </urlset>

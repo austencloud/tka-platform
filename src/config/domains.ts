@@ -128,9 +128,9 @@ export function isAppDomain(currentOrigin: string): boolean {
 export const LANDING_SEO_CONFIG = {
   siteName: "TKA - The Kinetic Alphabet",
   description:
-    "TKA is the universal notation system for flow arts - digital sheet music for props like staff, hoop, fans, clubs, and buugeng.",
+    "TKA is a flow arts notation system for documenting and sharing poi, staff, hoop, club, fan, and buugeng choreography.",
   keywords:
-    "TKA, The Kinetic Alphabet, TKA notation, TKA flow arts, flow arts, notation, staff, clubs, fans, hoop, buugeng, swords, choreography",
+    "flow arts notation, flow arts notation system, poi notation, staff notation, hoop notation, TKA, The Kinetic Alphabet, TKA notation, TKA flow arts, prop notation, movement notation",
   author: "Austen Cloud",
   language: "en",
   type: "website",

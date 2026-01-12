@@ -27,19 +27,19 @@
     <title>TKA Scribe - The Flow Arts Choreography Toolbox</title>
   {:else}
     <title
-      >TKA - The Kinetic Alphabet | Digital Sheet Music for Flow Arts | Staff,
-      Clubs, Fans, Hoops Choreography</title
+      >TKA - The Kinetic Alphabet | A Flow Arts Notation System for Staff,
+      Clubs, Fans, Hoops & More</title
     >
   {/if}
   <meta
     name="description"
-    content="Free flow arts choreography app. Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences with TKA Scribe - the first universal notation system for prop manipulation."
+    content="TKA is a flow arts notation system for documenting and sharing poi, staff, hoop, club, fan, and buugeng choreography. Create sequences, animate them, and share with flow artists worldwide."
   />
 
   <!-- Keywords for search engines and AI systems -->
   <meta
     name="keywords"
-    content="TKA, The Kinetic Alphabet, TKA flow arts, TKA notation, TKA staff, TKA poi, TKA choreography, Kinetic Alphabet notation, flow arts, staff spinning, club manipulation, fan spinning, hoop dance, buugeng, prop manipulation, choreography app, sequence creator, flow arts tutorials, staff patterns, antispin, isolation, flower patterns, tech spinning, fire dancing, contact staff, double staff, flow toys, movement notation, dance notation, circus arts, juggling, object manipulation, flow state, spinning tutorials"
+    content="flow arts notation, flow arts notation system, poi notation, staff notation, staff spinning notation, hoop notation, club notation, fan notation, buugeng notation, prop notation, TKA, The Kinetic Alphabet, TKA flow arts, TKA notation, flow arts choreography, movement notation, dance notation, prop manipulation notation, sequence notation, pictograph notation, flow arts, staff spinning, club manipulation, fan spinning, hoop dance, buugeng, prop manipulation, choreography app, sequence creator"
   />
 
   <!-- Additional SEO meta tags -->
@@ -61,11 +61,11 @@
   <meta property="og:url" content="https://tkaflowarts.com/" />
   <meta
     property="og:title"
-    content="TKA | Digital Sheet Music for Flow Arts"
+    content="TKA | A Flow Arts Notation System"
   />
   <meta
     property="og:description"
-    content="Free app to create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. The universal notation system for flow artists worldwide."
+    content="A flow arts notation system for poi, staff, hoop, club, and fan choreography. Document, animate, and share sequences with flow artists worldwide."
   />
   <meta
     property="og:image"
@@ -85,11 +85,11 @@
   <meta name="twitter:creator" content="@tkaflowarts" />
   <meta
     name="twitter:title"
-    content="TKA | Digital Sheet Music for Flow Arts"
+    content="TKA | A Flow Arts Notation System"
   />
   <meta
     name="twitter:description"
-    content="Free app to create, animate, and share poi, staff, and hoop sequences. The universal notation system for flow artists worldwide."
+    content="A flow arts notation system for poi, staff, hoop, club, and fan choreography. Document, animate, and share sequences with flow artists worldwide."
   />
   <meta
     name="twitter:image"
@@ -109,9 +109,9 @@
 		"@context": "https://schema.org",
 		"@type": "WebSite",
 		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "TKA Scribe", "Kinetic Alphabet", "TKA"],
+		"alternateName": ["The Kinetic Alphabet", "TKA Scribe", "Kinetic Alphabet", "TKA", "Flow Arts Notation"],
 		"url": "https://tkaflowarts.com/",
-		"description": "TKA is the universal notation system for flow arts - create, animate, and share prop manipulation sequences like digital sheet music",
+		"description": "TKA is a flow arts notation system for documenting poi, staff, hoop, club, fan, and buugeng choreography. Create, animate, and share sequences with flow artists worldwide.",
 		"inLanguage": "en-US",
 		"potentialAction": {
 			"@type": "SearchAction",
@@ -130,10 +130,10 @@
 		"@context": "https://schema.org",
 		"@type": "Organization",
 		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "TKA"],
+		"alternateName": ["The Kinetic Alphabet", "TKA", "Flow Arts Notation"],
 		"url": "https://tkaflowarts.com/",
 		"logo": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
-		"description": "TKA provides digital sheet music for flow arts and prop manipulation - the universal notation system for staff, poi, hoops, clubs, fans, and more",
+		"description": "TKA is a flow arts notation system for documenting and sharing poi, staff, hoop, club, fan, and buugeng choreography",
 		"foundingDate": "2024",
 		"sameAs": [
 			"https://instagram.com/tkaflowarts",
@@ -193,18 +193,34 @@
 		"mainEntity": [
 			{
 				"@type": "Question",
-				"name": "What does TKA stand for?",
+				"name": "What is flow arts notation?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA stands for The Kinetic Alphabet, a universal notation system for flow arts and prop manipulation. TKA provides digital sheet music for documenting and sharing choreography across languages."
+					"text": "Flow arts notation is a system for writing down prop manipulation movements like poi, staff, hoop, and club choreography. TKA (The Kinetic Alphabet) is a flow arts notation system that uses pictographs to represent each beat of movement, showing hand positions, motion types, and prop orientation."
 				}
 			},
 			{
 				"@type": "Question",
-				"name": "What is TKA notation?",
+				"name": "Is there a notation system for poi?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA notation uses pictographs - visual diagrams showing prop position and movement - to communicate flow arts choreography. Each pictograph represents a beat, showing where your hands are, what motion type is being used, and the prop orientation."
+					"text": "Yes, TKA (The Kinetic Alphabet) is a notation system that supports poi and many other props. It lets you document poi patterns like flowers, antispins, isolations, and extensions using visual pictographs. Each pictograph shows exactly where your hands are and how the poi moves."
+				}
+			},
+			{
+				"@type": "Question",
+				"name": "How do you write down staff spinning moves?",
+				"acceptedAnswer": {
+					"@type": "Answer",
+					"text": "TKA provides staff notation using pictographs that capture hand positions on a grid, motion types (prospin, antispin, static), direction, and number of turns. You can notate contact staff, double staff, and dragon staff sequences and share them with other spinners."
+				}
+			},
+			{
+				"@type": "Question",
+				"name": "What does TKA stand for?",
+				"acceptedAnswer": {
+					"@type": "Answer",
+					"text": "TKA stands for The Kinetic Alphabet, a flow arts notation system for documenting and sharing poi, staff, hoop, club, fan, and buugeng choreography."
 				}
 			},
 			{
