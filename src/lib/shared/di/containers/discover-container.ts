@@ -20,7 +20,6 @@ import { PublicSequencesLoader } from "$lib/features/discover/sequences/display/
 import { DiscoverSectionManager } from "$lib/features/discover/sequences/display/services/implementations/DiscoverSectionManager";
 import { VariationGrouper } from "$lib/features/discover/sequences/display/services/implementations/VariationGrouper";
 import { DiscoverThumbnailProvider } from "$lib/features/discover/sequences/display/services/implementations/DiscoverThumbnailProvider";
-import { DiscoverThumbnailCache } from "$lib/features/discover/sequences/display/services/implementations/DiscoverThumbnailCache";
 import { ThumbnailKeyDeriver } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailKeyDeriver";
 import { ThumbnailRenderQueue } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderQueue";
 import { ThumbnailRenderer } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderer";
@@ -34,6 +33,12 @@ import { DiscoverDeleter } from "$lib/features/discover/shared/services/implemen
 import { DiscoverEventHandler } from "$lib/features/discover/shared/services/implementations/DiscoverEventHandler";
 import { OptimizedDiscoverer } from "$lib/features/discover/shared/services/implementations/OptimizedDiscoverer";
 
+// Sequence detail services
+import { SequenceDetailLoader } from "$lib/features/discover/sequences/display/services/implementations/SequenceDetailLoader";
+import { VideoCountManager } from "$lib/features/discover/sequences/display/services/implementations/VideoCountManager";
+import { SequenceImageSharer } from "$lib/features/discover/sequences/display/services/implementations/SequenceImageSharer";
+import { ClaudeCodeCopier } from "$lib/features/discover/sequences/display/services/implementations/ClaudeCodeCopier";
+
 // External dependency types
 import type { IWordDeriver } from "$lib/shared/foundation/services/contracts/IWordDeriver";
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -41,6 +46,7 @@ import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/IS
 import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
 import type { ICloudThumbnailCache } from "$lib/features/discover/sequences/display/services/contracts/ICloudThumbnailCache";
 import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
+import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
 
 /**
  * External dependencies required by the discover container.
@@ -53,6 +59,7 @@ export interface DiscoverContainerDeps {
   startPositionDeriver: IStartPositionDeriver;
   cloudThumbnailCache: ICloudThumbnailCache;
   sheetRouter: ISheetRouter | null;
+  collaborativeVideoManager: ICollaborativeVideoManager;
 }
 
 /**
@@ -80,10 +87,6 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
     .add({
       // Thumbnail URL handling
       discoverThumbnailProvider: () => new DiscoverThumbnailProvider(),
-    })
-    .add({
-      // IndexedDB cache for cat-dog mode thumbnails (legacy, singleton)
-      discoverThumbnailCache: () => new DiscoverThumbnailCache(),
     })
     .add({
       // IndexedDB cache for ALL thumbnails (unified local cache, singleton)
@@ -171,13 +174,25 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
   }));
 
   // Tier 6: Event handler (depends on multiple services)
-  const container = tier5.add((ctx) => ({
+  const tier6 = tier5.add((ctx) => ({
     discoverEventHandler: () =>
       new DiscoverEventHandler(
         ctx.discoverThumbnailProvider,
         deps.sheetRouter,
         ctx.discoverLoader
       ),
+  }));
+
+  // Tier 7: Sequence detail services (for SequenceDetailContent decomposition)
+  const tier7 = tier6.add((ctx) => ({
+    sequenceDetailLoader: () => new SequenceDetailLoader(ctx.discoverLoader),
+    videoCountManager: () => new VideoCountManager(deps.collaborativeVideoManager),
+    sequenceImageSharer: () => new SequenceImageSharer(deps.sequenceRenderer),
+  }));
+
+  // Tier 8: Services depending on tier 7
+  const container = tier7.add((ctx) => ({
+    claudeCodeCopier: () => new ClaudeCodeCopier(ctx.sequenceDetailLoader),
   }));
 
   return container;

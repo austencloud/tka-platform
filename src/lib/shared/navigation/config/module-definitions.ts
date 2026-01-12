@@ -92,11 +92,11 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   // Removed: edit module (Edit functionality is now a slide-out panel accessible from Create and Sequence Viewer)
   // Removed: about module (content moved to Dashboard > Support widget)
   {
-    id: "word_card",
-    label: "Word Card",
+    id: "choreo_card",
+    label: "Choreo Card",
     icon: '<i class="fas fa-id-card" style="color: #6366f1;" aria-hidden="true"></i>',
     color: "#6366f1", // Indigo - flashcards/learning
-    description: "Browse words as flashcard sequences",
+    description: "Browse choreography as printable reference cards",
     isMain: true,
     sections: [], // Single-tab module
   },

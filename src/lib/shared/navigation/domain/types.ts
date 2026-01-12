@@ -32,7 +32,8 @@ export type ModuleId =
   | "compose"
   | "train"
   | "library"
-  | "word_card"
+  | "choreo_card" // Choreography reference cards (printable)
+  | "word_card" // Legacy alias for choreo_card
   | "write"
   | "feedback"
   | "ml-training"

@@ -52,8 +52,11 @@
     // library module retired - functionality now in Discover > Sequences via scope toggle
     // inbox module retired - Messages/notifications accessible via Dashboard widget drawer
     // edit module retired - Edit is now a slide-out panel, not a standalone module
+    choreo_card: () =>
+      import("../../features/choreo-card/components/ChoreoCardTab.svelte"),
+    // Backwards compatibility alias for old bookmarks/deep links
     word_card: () =>
-      import("../../features/word-card/components/WordCardTab.svelte"),
+      import("../../features/choreo-card/components/ChoreoCardTab.svelte"),
     write: () => import("../../features/write/components/WriteTab.svelte"),
     // account module retired - merged into dashboard (profile widget handles auth, library is a Discover tab)
     feedback: () =>

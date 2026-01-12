@@ -86,6 +86,7 @@ const discoverContainer = createDiscoverContainer({
   startPositionDeriver: pictographContainer.items.startPositionDeriver,
   cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
   sheetRouter: navigationContainer.items.sheetRouter,
+  collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
 });
 
 // Build container needs many external deps
