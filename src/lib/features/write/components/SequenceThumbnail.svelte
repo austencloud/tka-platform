@@ -3,7 +3,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
-  import { generateSequenceThumbnail } from "$lib../domain/types/write";
+  import { generateSequenceThumbnail } from "../domain/types/write";
   import { onMount } from "svelte";
 
   // Props

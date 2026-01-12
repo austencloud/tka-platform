@@ -7,7 +7,7 @@
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import type { ActThumbnailInfo } from "$lib../domain/types/write";
+  import type { ActThumbnailInfo } from "../domain/types/write";
   import { onMount } from "svelte";
 
   interface Props {

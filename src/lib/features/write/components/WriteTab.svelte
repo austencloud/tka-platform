@@ -14,7 +14,7 @@
     type ActData,
     type ActThumbnailInfo,
     type MusicPlayerState,
-  } from "$lib../domain/types/write";
+  } from "../domain/types/write";
 
   // State management using runes
 
