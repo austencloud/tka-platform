@@ -136,3 +136,6 @@ android-twa/keystore.properties
 
 # Screenshot capture credentials
 scripts/screenshot-capture/screenshot-config.local.json
+
+# Claude Code temporary directories
+tmpclaude-*/
