@@ -127,7 +127,8 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   admin: false,
   settings: true, // Settings always available
   realm: false, // 3D experiences - Stage + Museum (admin-only)
-  word_card: false, // Word card generator (internal tool)
+  choreo_card: false, // Choreo card generator (internal tool)
+  word_card: false, // Legacy alias for choreo_card
   write: false, // Write module (unreleased)
   mandala: false, // Mandala generator (internal tool)
   skewlab: false, // Skewlab internal tool

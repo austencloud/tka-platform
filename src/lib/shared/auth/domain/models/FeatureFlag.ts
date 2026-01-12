@@ -81,7 +81,7 @@ const FEATURE_ROLE_OVERRIDES: Partial<Record<FeatureId, UserRole>> = {
   "module:admin": "admin",
   "module:realm": "admin", // 3D experiences (Stage + Museum) - admin-only for now
   "module:premium": "admin", // Premium module is admin-only for now
-  "module:word_card": "admin", // Word Card is admin-only for now
+  "module:choreo_card": "admin", // Choreo Card is admin-only for now
   "module:write": "admin", // Write module is admin-only for now
   "module:mandala": "admin", // Mandala generator is admin-only for now
   "module:skewlab": "admin", // Skew Lab is admin-only (temporary dev module)

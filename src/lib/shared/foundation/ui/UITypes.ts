@@ -16,7 +16,9 @@ import type { ModuleId as ImportedModuleId } from "../../navigation/domain/types
 export type LegacyTabId =
   | "construct" // Legacy ID that maps to "build" module
   | "browse" // Legacy ID for browse/explore
-  | "word-card" // Legacy hyphenated version
+  | "word-card" // Legacy hyphenated version (now choreo_card)
+  | "word_card" // Legacy underscore version (now choreo_card)
+  | "choreo-card" // Legacy hyphenated version of choreo_card
   | "about" // About page (not a proper module)
   | "animator"; // Animator feature
 
