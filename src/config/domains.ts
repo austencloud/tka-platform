@@ -126,10 +126,11 @@ export function isAppDomain(currentOrigin: string): boolean {
  * Landing page SEO config
  */
 export const LANDING_SEO_CONFIG = {
-  siteName: "The Kinetic Alphabet",
+  siteName: "TKA - The Kinetic Alphabet",
   description:
-    "The universal notation system for flow arts - digital sheet music for props like staff, hoop, fans, clubs, and buugeng.",
-  keywords: "flow arts, notation, staff, clubs, fans, hoop, buugeng, swords, choreography",
+    "TKA is the universal notation system for flow arts - digital sheet music for props like staff, hoop, fans, clubs, and buugeng.",
+  keywords:
+    "TKA, The Kinetic Alphabet, TKA notation, TKA flow arts, flow arts, notation, staff, clubs, fans, hoop, buugeng, swords, choreography",
   author: "Austen Cloud",
   language: "en",
   type: "website",
@@ -147,7 +148,8 @@ export const APP_SEO_CONFIG = {
   siteName: "TKA Scribe",
   description:
     "Create, animate, and share flow arts sequences with TKA Scribe - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
-  keywords: "flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
+  keywords:
+    "TKA Scribe, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
   author: "Austen Cloud",
   language: "en",
   type: "website",
