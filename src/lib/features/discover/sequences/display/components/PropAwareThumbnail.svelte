@@ -25,6 +25,7 @@
   import type {
     IThumbnailKeyDeriver,
     ThumbnailRenderInput,
+    ThumbnailVisibilitySettings,
   } from "../services/contracts/IThumbnailKeyDeriver";
   import type { ICloudThumbnailCache } from "../services/contracts/ICloudThumbnailCache";
   import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
@@ -48,6 +49,8 @@
     showNotes?: boolean;
     showBirthday?: boolean;
     customNotesText?: string;
+    // Visibility overrides (grid, hand points, glyphs)
+    visibility?: ThumbnailVisibilitySettings;
   }
 
   const {
@@ -67,6 +70,7 @@
     showNotes,
     showBirthday,
     customNotesText,
+    visibility,
   }: Props = $props();
 
   // State
@@ -131,6 +135,7 @@
     showNotes,
     showBirthday,
     customNotesText,
+    visibility,
   });
 
   // Intersection observer for lazy loading
@@ -215,6 +220,10 @@
     // Debounce the state reset to prevent rapid cycling
     errorDebounceTimer = setTimeout(() => {
       errorDebounceTimer = null;
+      // Revoke blob URL before clearing to prevent memory leak
+      if (thumbnailUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(thumbnailUrl);
+      }
       // Clear current state to force re-fetch
       thumbnailUrl = null;
       currentKeyHash = null; // This will trigger the $effect to re-run

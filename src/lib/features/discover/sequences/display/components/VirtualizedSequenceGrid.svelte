@@ -10,7 +10,7 @@
   import type { IVariationGrouper } from "../services/contracts/IVariationGrouper";
   import SequenceCard from "./SequenceCard/SequenceCard.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { isCatDogMode } from "../services/implementations/DiscoverThumbnailCache";
+  import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
 

@@ -10,7 +10,7 @@
   import SectionHeader from "./SectionHeader.svelte";
   import VirtualizedSequenceGrid from "./VirtualizedSequenceGrid.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { isCatDogMode } from "../services/implementations/DiscoverThumbnailCache";
+  import { isCatDogMode } from "../utils/prop-mode-helpers";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { container } from "$lib/shared/di";
 

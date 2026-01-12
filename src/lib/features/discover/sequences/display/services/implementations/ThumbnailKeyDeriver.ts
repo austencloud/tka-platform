@@ -135,9 +135,28 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
     if (userInfoEnabled && input.userName !== undefined && input.userName !== "")
       return false;
 
-    // ALL visibility settings are IGNORED for cloud-cacheability
-    // Thumbnails always use canonical form (all overlays ON)
-    // This ensures maximum cache effectiveness
+    // Visibility settings affect rendered appearance - check if any are non-default
+    if (input.visibility) {
+      // Default values for visibility
+      const defaultVisibility = {
+        showTKA: true,
+        showReversals: true,
+        showGrid: true,
+        showNonRadialPoints: false,
+        handPointVisibility: "all" as const,
+      };
+      // If any visibility setting differs from default, not using defaults
+      if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
+        return false;
+      if (input.visibility.showReversals !== undefined && input.visibility.showReversals !== defaultVisibility.showReversals)
+        return false;
+      if (input.visibility.showGrid !== undefined && input.visibility.showGrid !== defaultVisibility.showGrid)
+        return false;
+      if (input.visibility.showNonRadialPoints !== undefined && input.visibility.showNonRadialPoints !== defaultVisibility.showNonRadialPoints)
+        return false;
+      if (input.visibility.handPointVisibility !== undefined && input.visibility.handPointVisibility !== defaultVisibility.handPointVisibility)
+        return false;
+    }
 
     return true;
   }

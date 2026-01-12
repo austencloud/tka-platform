@@ -190,21 +190,19 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       bluePropTypeOverride: isCatDog ? input.bluePropType : undefined,
       redPropTypeOverride: isCatDog ? input.redPropType : undefined,
 
-      // Visibility settings
-      // CANONICAL (always ON): TKA, reversals - these don't need to update thumbnails
-      // USER-CONTROLLED: Grid settings - user wants to toggle these and see updates
+      // Visibility settings - respect user preferences from input
       visibilityOverrides: {
-        showTKA: true, // CANONICAL: Always ON in thumbnails
+        showTKA: input.visibility?.showTKA ?? true, // Default ON, user can toggle
         showVTG: false, // Never shown in thumbnails
         showElemental: false, // Never shown in thumbnails
         showPositions: false, // Never shown in thumbnails
-        showReversals: true, // CANONICAL: Always ON in thumbnails
-        showTurnNumbers: true,
+        showReversals: input.visibility?.showReversals ?? true, // Default ON, user can toggle
+        showTurnNumbers: input.visibility?.showTKA ?? true, // Follows TKA setting
         darkMode: !input.lightMode,
         // Grid settings respect user preferences - they affect visible dots
         showGrid: input.visibility?.showGrid ?? true,
         handPointVisibility: input.visibility?.handPointVisibility ?? "all",
-        showNonRadialPoints: input.visibility?.showNonRadialPoints ?? true,
+        showNonRadialPoints: input.visibility?.showNonRadialPoints ?? false,
       },
     };
   }

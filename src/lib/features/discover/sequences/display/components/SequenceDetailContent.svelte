@@ -12,32 +12,43 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
-  import type { IDiscoverLoader } from "../services/contracts/IDiscoverLoader";
+  import type { ISequenceDetailLoader } from "../services/contracts/ISequenceDetailLoader";
+  import type { IVideoCountManager } from "../services/contracts/IVideoCountManager";
+  import type { ISequenceImageSharer } from "../services/contracts/ISequenceImageSharer";
+  import type { IClaudeCodeCopier } from "../services/contracts/IClaudeCodeCopier";
   import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
+
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
+  import { untrack } from "svelte";
+  import { getAuthSync } from "$lib/shared/auth/firebase";
+
+  // Child components
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
+  import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
+  import VideosPanel from "$lib/shared/video-collaboration/components/VideosPanel.svelte";
+  import VariationStrip from "./VariationStrip.svelte";
+  import DetailHeader from "./DetailHeader.svelte";
+  import ShareOptionsRow from "./ShareOptionsRow.svelte";
+  import SequenceActionButtons from "./SequenceActionButtons.svelte";
+
+  // State imports
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
   import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
   import { openSpotlightWithAnimation } from "$lib/shared/application/state/ui/ui-state.svelte";
-  import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
-  import VideosPanel from "$lib/shared/video-collaboration/components/VideosPanel.svelte";
-  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
-  import { getAuthSync } from "$lib/shared/auth/firebase";
-  import VariationStrip from "./VariationStrip.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { untrack } from "svelte";
 
+  // Services (resolved in onMount)
   let hapticService: IHapticFeedback | null = null;
-  let videoService: ICollaborativeVideoManager | null = null;
-  // Using $state so the effect re-runs when loaderService is set in onMount
-  let loaderService = $state<IDiscoverLoader | null>(null);
+  let detailLoader = $state<ISequenceDetailLoader | null>(null);
+  let videoCountManager = $state<IVideoCountManager | null>(null);
+  let imageSharer = $state<ISequenceImageSharer | null>(null);
+  let claudeCopier = $state<IClaudeCodeCopier | null>(null);
 
-  // Video state - now just tracking count and panel visibility
+  // Video state
   let videoCount = $state(0);
   let showVideosPanel = $state(false);
 
@@ -49,7 +60,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   // Current media type (tracked for maximize behavior)
   let currentMediaType = $state<MediaType>("image");
 
-  // Full sequence with beats loaded (for LayeredSequencePreview)
+  // Full sequence with beats loaded
   let fullSequence = $state<SequenceData | null>(null);
   let isLoadingFullSequence = $state(false);
 
@@ -57,8 +68,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   let justCopied = $state(false);
   let isCopyLoading = $state(false);
 
-  // Image composition settings for share
-  const imageSettings = getImageCompositionManager();
+  // User name for sharing
   const userName = $derived(authState.user?.displayName ?? "");
 
   const {
@@ -79,66 +89,62 @@ Used by both desktop side panel and mobile slide-up overlay.
     onVariationSelect?: (index: number, sequence: SequenceData) => void;
   }>();
 
-  // Get light mode from visibility state
+  // Light mode from visibility state
   const visibilityManager = getAnimationVisibilityManager();
   const lightMode = $derived(!visibilityManager.isDarkMode());
 
-  // Get prop settings for variation thumbnails
+  // Prop settings for variation thumbnails
   const propSettings = $derived({
     bluePropType: settingsService.settings.bluePropType as PropType | undefined,
     redPropType: settingsService.settings.redPropType as PropType | undefined,
     catDogMode: settingsService.settings.catDogMode,
   });
 
-  // Check if cat-dog mode is enabled
   const isCatDog = $derived(
     propSettings.bluePropType !== propSettings.redPropType ||
       propSettings.catDogMode
   );
 
-  // Handle variation selection
-  function handleVariationSelect(index: number, selectedSequence: SequenceData) {
-    hapticService?.trigger("selection");
-    onVariationSelect(index, selectedSequence);
-  }
+  // Creator info
+  const hasCreatorInfo = $derived(Boolean(sequence.ownerId));
+  const currentUserId = $derived(getAuthSync().currentUser?.uid);
+  const isOwned = $derived(
+    Boolean(currentUserId && sequence.ownerId === currentUserId)
+  );
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
-    loaderService = container.items.discoverLoader;
-    videoService = container.items.collaborativeVideoManager;
+    detailLoader = container.items.sequenceDetailLoader;
+    videoCountManager = container.items.videoCountManager;
+    imageSharer = container.items.sequenceImageSharer;
+    claudeCopier = container.items.claudeCodeCopier;
   });
 
-  // Load full sequence data when sequence changes (for LayeredSequencePreview)
+  // Load full sequence data when sequence changes
   $effect(() => {
     const currentSequence = sequence;
-    const loader = loaderService;
+    const loader = detailLoader;
 
-    // Reset on sequence change
     fullSequence = null;
     isLoadingFullSequence = false;
 
     if (!currentSequence || !loader) return;
 
-    // If sequence already has beats, use it directly
     if (currentSequence.beats && currentSequence.beats.length > 0) {
       fullSequence = currentSequence;
       return;
     }
 
-    // Otherwise, load full sequence data (untrack to prevent infinite loops)
     untrack(() => {
       isLoadingFullSequence = true;
-      const sequenceName = currentSequence.word || currentSequence.id;
-
-      loader.loadFullSequenceData(sequenceName)
+      loader.loadFullSequence(currentSequence)
         .then((loaded) => {
-          // Only update if still viewing same sequence
           if (sequence.id === currentSequence.id && loaded) {
             fullSequence = loaded;
           }
         })
         .catch((err) => {
-          console.warn("[SequenceDetailContent] Failed to load full sequence data:", err);
+          console.warn("[SequenceDetailContent] Failed to load full sequence:", err);
         })
         .finally(() => {
           if (sequence.id === currentSequence.id) {
@@ -151,18 +157,16 @@ Used by both desktop side panel and mobile slide-up overlay.
   // Load video count when sequence changes
   $effect(() => {
     const currentSequence = sequence;
-    const videoSvc = videoService;
+    const manager = videoCountManager;
 
     videoCount = 0;
+    if (!manager || !currentSequence) return;
 
-    if (!videoSvc || !currentSequence) return;
-
-    // Untrack to prevent infinite loops
     untrack(() => {
-      videoSvc.getVideosForSequence(currentSequence.id)
-        .then((videos) => {
+      manager.getVideoCount(currentSequence.id)
+        .then((count) => {
           if (sequence.id === currentSequence.id) {
-            videoCount = videos.length;
+            videoCount = count;
           }
         })
         .catch((e) => {
@@ -171,15 +175,18 @@ Used by both desktop side panel and mobile slide-up overlay.
     });
   });
 
-  // Handlers
+  // Event handlers
+  function handleVariationSelect(index: number, selectedSequence: SequenceData) {
+    hapticService?.trigger("selection");
+    onVariationSelect(index, selectedSequence);
+  }
+
   function handleAction(action: string) {
     hapticService?.trigger("selection");
-
     if (action === "share") {
       showShareOptions = !showShareOptions;
       return;
     }
-
     onAction(action, sequence);
   }
 
@@ -190,347 +197,100 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   function handleVideosPanelClose() {
     showVideosPanel = false;
-    // Refresh video count when panel closes
-    refreshVideoCount();
-  }
-
-  async function refreshVideoCount() {
-    if (videoService) {
-      try {
-        const videos = await videoService.getVideosForSequence(sequence.id);
-        videoCount = videos.length;
-      } catch (e) {
-        console.warn("[SequenceDetailContent] Failed to refresh video count:", e);
-      }
-    }
+    videoCountManager?.refreshCount(sequence.id).then((count) => {
+      videoCount = count;
+    });
   }
 
   function handleMaximize() {
     hapticService?.trigger("selection");
     const seq = fullSequence ?? sequence;
     if (currentMediaType === "animation") {
-      // Open animation in fullscreen spotlight
       openSpotlightWithAnimation(seq);
     } else {
-      // Use existing image spotlight
       onAction("fullscreen", seq);
-    }
-  }
-
-  /**
-   * Copy sequence image to clipboard
-   */
-  async function copyImageToClipboard() {
-    if (isShareCopying) return;
-    isShareCopying = true;
-    shareSuccess = false;
-
-    try {
-      const renderer = container.items.sequenceRenderer;
-      const blob = await renderer.renderSequenceToBlob(sequence, {
-        beatSize: 240,
-        format: "PNG",
-        quality: 1.0,
-        includeStartPosition: imageSettings.includeStartPosition,
-        addBeatNumbers: imageSettings.addBeatNumbers,
-        addWord: imageSettings.addWord,
-        addDifficultyLevel: imageSettings.addDifficultyLevel,
-        addUserInfo: imageSettings.addUserInfo,
-        userName,
-        showCreatorName: imageSettings.showCreatorName,
-        showNotes: imageSettings.showNotes,
-        showBirthday: imageSettings.showBirthday,
-        addReversalSymbols: true,
-        visibilityOverrides: {
-          darkMode: imageSettings.darkMode,
-        },
-      });
-
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
-
-      shareSuccess = true;
-      hapticService?.trigger("success");
-      setTimeout(() => { shareSuccess = false; }, 2000);
-    } catch (error) {
-      console.error("Failed to copy image:", error);
-      hapticService?.trigger("error");
-    } finally {
-      isShareCopying = false;
-    }
-  }
-
-  /**
-   * Download sequence image
-   */
-  async function downloadImage() {
-    hapticService?.trigger("selection");
-    try {
-      const renderer = container.items.sequenceRenderer;
-      const blob = await renderer.renderSequenceToBlob(sequence, {
-        beatSize: 240,
-        format: "PNG",
-        quality: 1.0,
-        includeStartPosition: imageSettings.includeStartPosition,
-        addBeatNumbers: imageSettings.addBeatNumbers,
-        addWord: imageSettings.addWord,
-        addDifficultyLevel: imageSettings.addDifficultyLevel,
-        addUserInfo: imageSettings.addUserInfo,
-        userName,
-        showCreatorName: imageSettings.showCreatorName,
-        showNotes: imageSettings.showNotes,
-        showBirthday: imageSettings.showBirthday,
-        addReversalSymbols: true,
-        visibilityOverrides: {
-          darkMode: imageSettings.darkMode,
-        },
-      });
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${sequence.word || sequence.name || "sequence"}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      hapticService?.trigger("success");
-    } catch (error) {
-      console.error("Failed to download image:", error);
-      hapticService?.trigger("error");
-    }
-  }
-
-  /**
-   * Native share using Web Share API
-   */
-  async function nativeShare() {
-    hapticService?.trigger("selection");
-    try {
-      const renderer = container.items.sequenceRenderer;
-      const blob = await renderer.renderSequenceToBlob(sequence, {
-        beatSize: 240,
-        format: "PNG",
-        quality: 1.0,
-        includeStartPosition: imageSettings.includeStartPosition,
-        addBeatNumbers: imageSettings.addBeatNumbers,
-        addWord: imageSettings.addWord,
-        addDifficultyLevel: imageSettings.addDifficultyLevel,
-        addUserInfo: imageSettings.addUserInfo,
-        userName,
-        showCreatorName: imageSettings.showCreatorName,
-        showNotes: imageSettings.showNotes,
-        showBirthday: imageSettings.showBirthday,
-        addReversalSymbols: true,
-        visibilityOverrides: {
-          darkMode: imageSettings.darkMode,
-        },
-      });
-
-      const file = new File([blob], `${sequence.word || "sequence"}.png`, { type: "image/png" });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: sequence.word || sequence.name || "Sequence",
-          files: [file],
-        });
-        hapticService?.trigger("success");
-      } else {
-        // Fallback to copy
-        await copyImageToClipboard();
-      }
-    } catch (error) {
-      if ((error as Error).name !== "AbortError") {
-        console.error("Failed to share:", error);
-        hapticService?.trigger("error");
-      }
-    }
-  }
-
-  /**
-   * Copy sequence data as a prompt for Claude Code agents
-   * Fetches full sequence data (including beats) if not already loaded
-   */
-  async function copyForClaudeCode() {
-    hapticService?.trigger("selection");
-    isCopyLoading = true;
-
-    // Start with the current sequence, but fetch full data if beats are missing
-    let fullSequence = sequence;
-
-    // Gallery sequences have empty beats - load full data for comprehensive copy
-    if ((!sequence.beats || sequence.beats.length === 0) && loaderService) {
-      const sequenceName = sequence.word || sequence.id;
-      try {
-        const loaded = await loaderService.loadFullSequenceData(sequenceName);
-        if (loaded) {
-          fullSequence = loaded;
-        }
-      } catch (err) {
-        console.warn("[SequenceDetailContent] Failed to load full sequence data:", err);
-      }
-    }
-
-    isCopyLoading = false;
-
-    // Build comprehensive sequence context
-    const beatCount = fullSequence.beats?.length ?? 0;
-    const difficultyText = fullSequence.difficultyLevel || fullSequence.level?.toString() || "Unknown";
-    const tagsText = fullSequence.tags?.length ? fullSequence.tags.join(", ") : "None";
-
-    // Format beat data compactly (just the essential motion info)
-    // Motion data lives in beat.motions.blue/red (from PictographData)
-    const beatSummary = fullSequence.beats?.length
-      ? fullSequence.beats.map((beat: (typeof fullSequence.beats)[number], i: number) => {
-          const blueMotion = beat.motions?.blue;
-          const redMotion = beat.motions?.red;
-          const blueInfo = blueMotion
-            ? `${blueMotion.motionType} ${blueMotion.startLocation}->${blueMotion.endLocation}`
-            : "none";
-          const redInfo = redMotion
-            ? `${redMotion.motionType} ${redMotion.startLocation}->${redMotion.endLocation}`
-            : "none";
-          return `  Beat ${i + 1}: Blue(${blueInfo}) Red(${redInfo})`;
-        }).join("\n")
-      : "  No beat data available";
-
-    // Derive starting position from first beat's motion data
-    // Starting position = startLocation + startOrientation of each prop at beat 1
-    const firstBeat = fullSequence.beats?.[0];
-    const blueStart = firstBeat?.motions?.blue;
-    const redStart = firstBeat?.motions?.red;
-    const startPosText = firstBeat
-      ? `Blue: ${blueStart?.startLocation || "?"} (${blueStart?.startOrientation || "?"}), Red: ${redStart?.startLocation || "?"} (${redStart?.startOrientation || "?"})`
-      : "No beats to derive from";
-
-    // Build the prompt
-    const text = `Analyze sequence ID: ${fullSequence.id}
-
-**${fullSequence.word || fullSequence.name || "Untitled"}**
-Difficulty: ${difficultyText} | Length: ${beatCount} beats | LOOP Type: ${fullSequence.loopType || "Unknown"}
-Tags: ${tagsText}
-Owner: ${fullSequence.ownerDisplayName || fullSequence.author || "Unknown"} (${fullSequence.ownerId || "no-id"})
-
----
-**Database Location:**
-- Collection: \`sequences\` (public) or \`users/{ownerId}/library\` (private)
-- Document ID: \`${fullSequence.id}\`
-- Owner ID: \`${fullSequence.ownerId || "unknown"}\`
-
-**Starting Position (derived from beat 1):**
-${startPosText}
-
-**Beat Sequence:**
-${beatSummary}
-
----
-**Full Sequence JSON:**
-\`\`\`json
-${JSON.stringify(fullSequence, null, 2)}
-\`\`\`
-
----
-Use this data to investigate issues, analyze the sequence structure, or make modifications. The sequence is stored in Firebase Firestore.`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      justCopied = true;
-      setTimeout(() => {
-        justCopied = false;
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy sequence for Claude:", err);
     }
   }
 
   function handleCreatorClick() {
     if (!sequence.ownerId) return;
     hapticService?.trigger("selection");
-
-    // Close the detail panel
     sequencePanelManager.close();
-
-    // Navigate to creator profile using unified navigation state
     discoverNavigationState.viewCreatorProfile(
       sequence.ownerId,
       sequence.ownerDisplayName
     );
   }
 
-  // Check if we have creator info to display
-  const hasCreatorInfo = $derived(Boolean(sequence.ownerId));
-  const currentUserId = $derived(getAuthSync().currentUser?.uid);
+  // Copy for Claude handler
+  async function handleCopyForClaude() {
+    if (isCopyLoading || !claudeCopier) return;
+    hapticService?.trigger("selection");
+    isCopyLoading = true;
 
-  // Check if current user owns this sequence (for ownership-aware edit controls)
-  const isOwned = $derived(
-    Boolean(currentUserId && sequence.ownerId === currentUserId)
-  );
+    const result = await claudeCopier.copyForClaude(sequence);
+    isCopyLoading = false;
+
+    if (result.success) {
+      justCopied = true;
+      setTimeout(() => { justCopied = false; }, 2000);
+    }
+  }
+
+  // Share handlers
+  async function handleCopyImage() {
+    if (isShareCopying || !imageSharer) return;
+    isShareCopying = true;
+    shareSuccess = false;
+
+    const result = await imageSharer.copyToClipboard(sequence, userName);
+    isShareCopying = false;
+
+    if (result.success) {
+      shareSuccess = true;
+      hapticService?.trigger("success");
+      setTimeout(() => { shareSuccess = false; }, 2000);
+    } else {
+      hapticService?.trigger("error");
+    }
+  }
+
+  async function handleDownloadImage() {
+    if (!imageSharer) return;
+    hapticService?.trigger("selection");
+    const result = await imageSharer.downloadImage(sequence, userName);
+    if (result.success) {
+      hapticService?.trigger("success");
+    } else {
+      hapticService?.trigger("error");
+    }
+  }
+
+  async function handleNativeShare() {
+    if (!imageSharer) return;
+    hapticService?.trigger("selection");
+    const result = await imageSharer.nativeShare(sequence, userName);
+    if (result.success) {
+      hapticService?.trigger("success");
+    } else if (result.error) {
+      hapticService?.trigger("error");
+    }
+  }
 </script>
 
 <div class="detail-content">
-  <!-- Header with collapse/close buttons -->
-  <header class="detail-header">
-    <span class="header-title">Sequence Details</span>
-    <div class="header-buttons">
-      <!-- Copy for Claude Code button -->
-      <button
-        class="header-btn copy-btn"
-        class:copied={justCopied}
-        class:loading={isCopyLoading}
-        onclick={copyForClaudeCode}
-        disabled={isCopyLoading}
-        aria-label="Copy for Claude Code"
-        title="Copy sequence data for AI analysis"
-      >
-        {#if isCopyLoading}
-          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle>
-          </svg>
-        {:else if justCopied}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        {:else}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="4 17 10 11 4 5"></polyline>
-            <line x1="12" y1="19" x2="20" y2="19"></line>
-          </svg>
-        {/if}
-      </button>
+  <!-- Header -->
+  <DetailHeader
+    title="Sequence Details"
+    isExpanded={sequencePanelManager.isDetailExpanded}
+    isCopying={isCopyLoading}
+    {justCopied}
+    onCopyForClaude={handleCopyForClaude}
+    onCollapse={() => sequencePanelManager.setDetailExpanded(false)}
+    {onClose}
+  />
 
-      {#if sequencePanelManager.isDetailExpanded}
-        <button
-          class="collapse-button"
-          onclick={() => sequencePanelManager.setDetailExpanded(false)}
-          aria-label="Collapse panel"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <polyline points="11 17 6 12 11 7"></polyline>
-            <polyline points="18 17 13 12 18 7"></polyline>
-          </svg>
-        </button>
-      {/if}
-      <button class="close-button" onclick={onClose} aria-label="Close">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Variation Strip (when sequence has variations) -->
+  <!-- Variation Strip -->
   {#if variations.length > 1}
     <VariationStrip
       {variations}
@@ -543,9 +303,8 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     />
   {/if}
 
-  <!-- Media Viewer (Images, Animation, Video) -->
+  <!-- Media Viewer -->
   <div class="media-container">
-    <!-- Creator avatar badge (upper left) -->
     {#if hasCreatorInfo}
       <button
         class="creator-badge"
@@ -575,11 +334,9 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
       <div class="metadata-row">
         {#if hasCreatorInfo}
           <button class="creator-link" onclick={handleCreatorClick}>
-            <span class="creator-label"
-              >By {sequence.ownerDisplayName ||
-                sequence.author ||
-                "Unknown"}</span
-            >
+            <span class="creator-label">
+              By {sequence.ownerDisplayName || sequence.author || "Unknown"}
+            </span>
             <svg
               class="creator-arrow"
               width="16"
@@ -600,204 +357,33 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
   </div>
 
   <!-- Action Buttons -->
-  <div class="action-buttons">
-    <button
-      class="action-btn action-btn-primary"
-      class:favorited={sequence.isFavorite}
-      onclick={() => handleAction("favorite")}
-      aria-label={sequence.isFavorite
-        ? "Remove from favorites"
-        : "Add to favorites"}
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill={sequence.isFavorite ? "currentColor" : "none"}
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path
-          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-        />
-      </svg>
-      <span>{sequence.isFavorite ? "Saved" : "Save"}</span>
-    </button>
+  <SequenceActionButtons
+    isFavorite={sequence.isFavorite}
+    {isOwned}
+    {videoCount}
+    onFavorite={() => handleAction("favorite")}
+    onEdit={() => handleAction("edit")}
+    onFork={() => handleAction("fork")}
+    onShare={() => handleAction("share")}
+    onVideos={handleVideosClick}
+    onDelete={() => handleAction("delete")}
+    onMaximize={handleMaximize}
+  />
 
-    {#if isOwned}
-      <button
-        class="action-btn"
-        onclick={() => handleAction("edit")}
-        aria-label="Edit sequence"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg>
-      </button>
-    {:else}
-      <!-- Fork button for non-owned sequences -->
-      <button
-        class="action-btn"
-        onclick={() => handleAction("fork")}
-        aria-label="Fork sequence"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <circle cx="12" cy="18" r="3" />
-          <circle cx="6" cy="6" r="3" />
-          <circle cx="18" cy="6" r="3" />
-          <path d="M18 9a9 9 0 0 1-9 9" />
-          <path d="M6 9a9 9 0 0 0 9 9" />
-        </svg>
-      </button>
-    {/if}
-
-    <button
-      class="action-btn"
-      onclick={() => handleAction("share")}
-      aria-label="Share sequence"
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <circle cx="18" cy="5" r="3" />
-        <circle cx="6" cy="12" r="3" />
-        <circle cx="18" cy="19" r="3" />
-        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-      </svg>
-    </button>
-
-    <!-- Videos Button -->
-    <button
-      class="action-btn action-btn-videos"
-      onclick={handleVideosClick}
-      aria-label={videoCount > 0 ? `View ${videoCount} videos` : "Record performance"}
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <polygon points="23 7 16 12 23 17 23 7" />
-        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-      </svg>
-      {#if videoCount > 0}
-        <span class="video-count">{videoCount}</span>
-      {:else}
-        <span>Record</span>
-      {/if}
-    </button>
-
-    {#if isOwned}
-      <button
-        class="action-btn action-btn-danger"
-        onclick={() => handleAction("delete")}
-        aria-label="Delete sequence"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="3 6 5 6 21 6" />
-          <path
-            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-          />
-        </svg>
-      </button>
-    {/if}
-
-    <button
-      class="action-btn action-btn-maximize"
-      onclick={handleMaximize}
-      aria-label="Maximize details"
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path
-          d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
-        />
-      </svg>
-      <span>Maximize</span>
-    </button>
-  </div>
-
-  <!-- Share Options Row (inline share actions) -->
+  <!-- Share Options Row -->
   {#if showShareOptions}
-    <div class="share-options-row">
-      <button
-        class="share-option-btn"
-        class:success={shareSuccess}
-        onclick={copyImageToClipboard}
-        disabled={isShareCopying}
-        aria-label="Copy image to clipboard"
-      >
-        {#if isShareCopying}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {:else if shareSuccess}
-          <i class="fas fa-check" aria-hidden="true"></i>
-        {:else}
-          <i class="fas fa-copy" aria-hidden="true"></i>
-        {/if}
-        <span>Copy</span>
-      </button>
-
-      <button
-        class="share-option-btn"
-        onclick={downloadImage}
-        aria-label="Download image"
-      >
-        <i class="fas fa-download" aria-hidden="true"></i>
-        <span>Download</span>
-      </button>
-
-      {#if typeof navigator !== "undefined" && "share" in navigator}
-        <button
-          class="share-option-btn"
-          onclick={nativeShare}
-          aria-label="Share"
-        >
-          <i class="fas fa-share-alt" aria-hidden="true"></i>
-          <span>Share</span>
-        </button>
-      {/if}
-    </div>
+    <ShareOptionsRow
+      isCopying={isShareCopying}
+      copySuccess={shareSuccess}
+      canNativeShare={imageSharer?.canNativeShare() ?? false}
+      onCopy={handleCopyImage}
+      onDownload={handleDownloadImage}
+      onNativeShare={handleNativeShare}
+    />
   {/if}
 </div>
 
-<!-- Videos Panel (full overlay) -->
+<!-- Videos Panel -->
 {#if showVideosPanel}
   <VideosPanel
     {sequence}
@@ -818,155 +404,7 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     container-name: detail-panel;
   }
 
-  /* Header row with title and close button */
-  .detail-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: clamp(8px, 2cqi, 12px);
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
-    flex-shrink: 0;
-  }
-
-  .header-title {
-    font-size: clamp(14px, 4cqi, 18px);
-    font-weight: 600;
-    color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
-  }
-
-  /* Header buttons container */
-  .header-buttons {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  /* Collapse button - shrinks panel back to normal width */
-  .collapse-button {
-    width: var(--touch-target-min);
-    height: var(--touch-target-min);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-accent, #3b82f6);
-    border: 1px solid var(--theme-accent, #3b82f6);
-    border-radius: 50%;
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .collapse-button svg {
-    width: var(--icon-size-md);
-    height: var(--icon-size-md);
-  }
-
-  .collapse-button:hover {
-    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
-    border-color: color-mix(in srgb, var(--theme-accent, #3b82f6) 85%, black);
-    transform: scale(1.05);
-  }
-
-  .collapse-button:active {
-    transform: scale(0.95);
-  }
-
-  /* Close button - uses global touch target token */
-  .close-button {
-    width: var(--touch-target-min);
-    height: var(--touch-target-min);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
-    border-radius: 50%;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .close-button svg {
-    width: var(--icon-size-md);
-    height: var(--icon-size-md);
-  }
-
-  .close-button:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text, white);
-  }
-
-  .close-button:active {
-    transform: scale(0.95);
-  }
-
-  /* Header button base style */
-  .header-btn {
-    width: var(--touch-target-min);
-    height: var(--touch-target-min);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
-    border-radius: 50%;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .header-btn svg {
-    width: var(--icon-size-md);
-    height: var(--icon-size-md);
-  }
-
-  .header-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text, white);
-  }
-
-  .header-btn:active {
-    transform: scale(0.95);
-  }
-
-  /* Copy button - terminal/code icon style */
-  .copy-btn:hover {
-    border-color: var(--semantic-info, #3b82f6);
-    color: var(--semantic-info, #3b82f6);
-  }
-
-  .copy-btn.copied {
-    background: var(--semantic-success, #22c55e);
-    border-color: var(--semantic-success, #22c55e);
-    color: white;
-  }
-
-  .copy-btn.loading {
-    border-color: var(--semantic-info, #3b82f6);
-    color: var(--semantic-info, #3b82f6);
-    cursor: wait;
-  }
-
-  .copy-btn .spinner {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Media Container - holds the unified media viewer */
-  /* flex: 1 lets it grow to fill available space between header and buttons */
+  /* Media Container */
   .media-container {
     flex: 1;
     min-height: clamp(200px, 45cqi, 350px);
@@ -979,7 +417,7 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     position: relative;
   }
 
-  /* Creator avatar badge - clickable, upper left corner */
+  /* Creator avatar badge */
   .creator-badge {
     position: absolute;
     top: 8px;
@@ -1005,7 +443,6 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     transform: scale(0.95);
   }
 
-  /* Style the avatar inside the badge */
   .creator-badge :global(.avatar-image) {
     display: block;
   }
@@ -1070,251 +507,15 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     transform: translateX(2px);
   }
 
-  /* Action Buttons */
-  .action-buttons {
-    display: flex;
-    gap: clamp(8px, 2cqi, 12px);
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: auto;
-    padding-top: clamp(8px, 2cqi, 12px);
-  }
-
-  /* Action buttons - uses global touch target token */
-  .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(6px, 2cqi, 10px);
-    padding: clamp(10px, 2.5cqi, 14px) clamp(12px, 3cqi, 18px);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: clamp(6px, 2cqi, 10px);
-    color: var(--theme-text, white);
-    font-size: clamp(12px, 3cqi, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-height: var(--touch-target-min);
-    min-width: var(--touch-target-min);
-  }
-
-  .action-btn svg {
-    width: var(--icon-size-md);
-    height: var(--icon-size-md);
-    flex-shrink: 0;
-  }
-
-  .action-btn:hover {
-    background: var(--theme-card-hover-bg);
-  }
-
-  .action-btn:active {
-    transform: scale(0.97);
-  }
-
-  .action-btn-primary {
-    background: linear-gradient(
-      135deg,
-      var(--semantic-info, var(--semantic-info)) 0%,
-      var(--semantic-info) 100%
-    );
-    border-color: transparent;
-    flex: 1;
-    min-width: clamp(100px, 30cqi, 140px);
-  }
-
-  .action-btn-primary:hover {
-    background: linear-gradient(
-      135deg,
-      var(--semantic-info) 0%,
-      color-mix(in srgb, var(--semantic-info) 90%, #000) 100%
-    );
-  }
-
-  .action-btn-maximize {
-    flex: 1;
-    min-width: clamp(100px, 30cqi, 140px);
-  }
-
-  .action-btn.favorited {
-    color: var(--semantic-error, var(--semantic-error));
-    border-color: var(--semantic-error, var(--semantic-error));
-  }
-
-  /* Primary button favorited state - pink/red gradient */
-  .action-btn-primary.favorited {
-    background: linear-gradient(
-      135deg,
-      color-mix(
-          in srgb,
-          var(--semantic-error, var(--semantic-error)) 90%,
-          var(--semantic-error)
-        )
-        0%,
-      var(--semantic-error, var(--semantic-error)) 100%
-    );
-    border-color: transparent;
-    color: var(--theme-text, white);
-  }
-
-  .action-btn-primary.favorited:hover {
-    background: linear-gradient(
-      135deg,
-      var(--semantic-error, var(--semantic-error)) 0%,
-      color-mix(in srgb, var(--semantic-error, var(--semantic-error)) 90%, #000)
-        100%
-    );
-  }
-
-  /* Danger button style for delete */
-  .action-btn-danger {
-    color: var(--semantic-error);
-    border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
-  }
-
-  .action-btn-danger:hover {
-    background: color-mix(in srgb, var(--semantic-error) 15%, transparent);
-    border-color: var(--semantic-error);
-  }
-
-  /* Compact layout for smaller containers */
-  @container detail-panel (max-width: 320px) {
-    .action-btn span {
-      display: none;
-    }
-
-    .action-btn-primary,
-    .action-btn-maximize {
-      flex: 0;
-      min-width: var(--touch-target-min);
-    }
-  }
-
-  /* Videos button style */
-  .action-btn-videos {
-    position: relative;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--semantic-info) 20%, transparent) 0%,
-      color-mix(in srgb, var(--semantic-info) 10%, transparent) 100%
-    );
-    border-color: color-mix(in srgb, var(--semantic-info) 40%, transparent);
-  }
-
-  .action-btn-videos:hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--semantic-info) 30%, transparent) 0%,
-      color-mix(in srgb, var(--semantic-info) 20%, transparent) 100%
-    );
-    border-color: var(--semantic-info);
-  }
-
-  .action-btn-videos svg {
-    color: var(--semantic-info);
-  }
-
-  .video-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    background: var(--semantic-info);
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 700;
-    color: white;
-  }
-
-  /* Share Options Row */
-  .share-options-row {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-    padding: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    animation: slideDown 0.2s ease-out;
-  }
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .share-option-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 20px;
-    min-height: 48px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    border-radius: 24px;
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex: 1;
-    min-width: 100px;
-  }
-
-  .share-option-btn:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .share-option-btn:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-
-  .share-option-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .share-option-btn.success {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
-    border-color: var(--semantic-success, #22c55e);
-    color: var(--semantic-success, #22c55e);
-  }
-
-  .share-option-btn i {
-    font-size: 16px;
-  }
-
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .close-button,
-    .collapse-button,
-    .header-btn,
-    .action-btn,
     .creator-badge,
-    .share-option-btn,
-    .share-options-row {
+    .creator-link {
       transition: none;
-      animation: none;
     }
 
-    .close-button:active,
-    .collapse-button:active,
-    .header-btn:active,
-    .action-btn:active,
     .creator-badge:active,
-    .share-option-btn:active {
+    .creator-link:active {
       transform: none;
     }
   }
