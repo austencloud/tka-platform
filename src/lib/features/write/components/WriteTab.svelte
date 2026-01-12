@@ -14,7 +14,7 @@
     type ActData,
     type ActThumbnailInfo,
     type MusicPlayerState,
-  } from "$lib/features/word-card/domain/types/write";
+  } from "$lib../domain/types/write";
 
   // State management using runes
 
