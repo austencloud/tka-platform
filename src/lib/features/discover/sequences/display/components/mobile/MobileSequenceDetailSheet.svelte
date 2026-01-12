@@ -51,7 +51,12 @@
 <div class="mobile-detail">
   <!-- Full-bleed media viewer -->
   <div class="media-fullbleed">
-    <SequenceViewer {sequence} initialMediaType="image" controlsLevel="standard" />
+    <SequenceViewer
+      {sequence}
+      initialMediaType="image"
+      controlsLevel="standard"
+      showVisibilitySettings={true}
+    />
   </div>
 
   <!-- Gradient fade at bottom for readability -->

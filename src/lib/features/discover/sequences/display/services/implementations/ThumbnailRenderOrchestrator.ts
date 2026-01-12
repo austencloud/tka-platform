@@ -26,6 +26,7 @@ import type { IThumbnailRenderQueue } from "../contracts/IThumbnailRenderQueue";
 import type { IThumbnailRenderer } from "../contracts/IThumbnailRenderer";
 import type { ICloudThumbnailCache } from "../contracts/ICloudThumbnailCache";
 import type { IThumbnailLocalCache } from "../contracts/IThumbnailLocalCache";
+import type { IThumbnailMetricsCollector } from "../contracts/IThumbnailMetricsCollector";
 
 // Static thumbnail manifest - loaded once, lists all bundled thumbnails
 let staticManifest: Set<string> | null = null;
@@ -65,12 +66,16 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     private queue: IThumbnailRenderQueue,
     private renderer: IThumbnailRenderer,
     private cloudCache: ICloudThumbnailCache,
-    private localCache: IThumbnailLocalCache
+    private localCache: IThumbnailLocalCache,
+    private metrics?: IThumbnailMetricsCollector
   ) {}
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
     const key = this.keyDeriver.deriveKey(request.input);
     const cloudKey = this.buildCloudKey(key);
+
+    // Start metrics tracking
+    const requestId = this.metrics?.startRequest(true) ?? "";
 
     // Step 1: Check STATIC bundled thumbnails (instant, no network latency)
     // These are synced from cloud during releases for instant loading
@@ -82,8 +87,12 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
       if (manifest.has(staticKey)) {
         const staticUrl = `/thumbnails/${staticKey}.webp`;
         this.completedCount++;
+        this.metrics?.endRequest(requestId, "static");
         request.onStatusChange?.({ state: "complete", url: staticUrl });
         return { url: staticUrl, fromCache: true, key };
+      } else if (manifest.size > 0) {
+        // Log sequences not found in static manifest (for debugging cache coverage)
+        console.debug(`[Static] Not in manifest: "${staticKey}" (sequence: ${key.inputs.sequenceName})`);
       }
     }
 
@@ -94,6 +103,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
       if (localBlob) {
         const url = URL.createObjectURL(localBlob);
         this.completedCount++;
+        this.metrics?.endRequest(requestId, "local");
         request.onStatusChange?.({ state: "complete", url });
         return { url, fromCache: true, key };
       }
@@ -104,6 +114,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
       const memoryCached = this.cloudCache.getCachedUrl(cloudKey);
       if (memoryCached) {
         this.completedCount++;
+        this.metrics?.endRequest(requestId, "cloud");
         request.onStatusChange?.({ state: "complete", url: memoryCached });
         return { url: memoryCached, fromCache: true, key };
       }
@@ -117,6 +128,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
           // Found in cloud - fetch blob and save to local cache
           this.saveCloudBlobToLocal(cloudUrl, key.hash);
           this.completedCount++;
+          this.metrics?.endRequest(requestId, "cloud");
           request.onStatusChange?.({ state: "complete", url: cloudUrl });
           return { url: cloudUrl, fromCache: true, key };
         }
@@ -125,12 +137,37 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
 
     // Step 5: Need to render - queue to throttle concurrent renders
     request.onStatusChange?.({ state: "queued", position: 0 });
+    const queueStartTime = performance.now();
+
+    // Track queue depth
+    const queueStats = this.queue.getStats();
+    this.metrics?.recordQueueDepth(queueStats.queued + queueStats.active);
 
     try {
       return await this.queue.enqueue(key.hash, async () => {
-        // Render locally
+        const queueWaitTime = performance.now() - queueStartTime;
+        const renderStartTime = performance.now();
+
+        // Render locally with progress tracking
         request.onStatusChange?.({ state: "rendering" });
-        const blob = await this.renderer.render(request.sequence, key.inputs);
+        const blob = await this.renderer.render(
+          request.sequence,
+          key.inputs,
+          undefined, // use default render options
+          (progress) => {
+            // Forward progress updates to status callback
+            request.onStatusChange?.({
+              state: "rendering",
+              progress: {
+                current: progress.current,
+                total: progress.total,
+                stage: progress.stage,
+              },
+            });
+          }
+        );
+
+        const renderTime = performance.now() - renderStartTime;
 
         // Create blob URL for display
         const url = URL.createObjectURL(blob);
@@ -144,6 +181,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
         }
 
         this.completedCount++;
+        this.metrics?.endRequest(requestId, "render", { queueWaitTime, renderTime });
         request.onStatusChange?.({ state: "complete", url });
 
         return { url, fromCache: false, key };
@@ -153,6 +191,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
 
       // Let cancellations propagate
       if (err.message === "Cancelled") {
+        this.metrics?.cancelRequest(requestId);
         throw err;
       }
 
@@ -162,6 +201,7 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
         `[ThumbnailRenderOrchestrator] Failed to render "${key.inputs.sequenceName}":`,
         err.message
       );
+      this.metrics?.endRequest(requestId, "failed");
       request.onStatusChange?.({ state: "error", error: err });
 
       // Return a failed result instead of throwing
@@ -213,8 +253,12 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
   private uploadToCloud(key: ThumbnailCacheKey, blob: Blob): void {
     this.cloudCache
       .upload(this.buildCloudKey(key), blob)
+      .then(() => {
+        this.metrics?.recordUpload(true);
+      })
       .catch(() => {
         // Non-fatal - image is displayed, just couldn't upload for others
+        this.metrics?.recordUpload(false);
       });
   }
 

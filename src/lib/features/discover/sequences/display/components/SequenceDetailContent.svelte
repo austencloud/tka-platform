@@ -14,34 +14,51 @@ Used by both desktop side panel and mobile slide-up overlay.
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import type { IDiscoverLoader } from "../services/contracts/IDiscoverLoader";
+  import type { MediaType } from "$lib/shared/sequence-viewer/domain/types";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import AvatarImage from "../../../creators/components/profile/AvatarImage.svelte";
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
   import { sequencePanelManager } from "../../../shared/state/sequence-panel-state.svelte";
+  import { openSpotlightWithAnimation } from "$lib/shared/application/state/ui/ui-state.svelte";
   import SequenceViewer from "$lib/shared/sequence-viewer/components/SequenceViewer.svelte";
   import VideosPanel from "$lib/shared/video-collaboration/components/VideosPanel.svelte";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import { getAuthSync } from "$lib/shared/auth/firebase";
-  import ShareHubDrawer from "$lib/shared/share-hub/components/ShareHubDrawer.svelte";
   import VariationStrip from "./VariationStrip.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   let hapticService: IHapticFeedback | null = null;
   let videoService: ICollaborativeVideoManager | null = null;
-  let loaderService: IDiscoverLoader | null = null;
+  // Using \ so the effect re-runs when loaderService is set in onMount
+  let loaderService = \<IDiscoverLoader | null>(null);
 
   // Video state - now just tracking count and panel visibility
   let videoCount = $state(0);
   let showVideosPanel = $state(false);
 
-  // Share Hub state
-  let showShareHub = $state(false);
+  // Share options state
+  let showShareOptions = $state(false);
+  let isShareCopying = $state(false);
+  let shareSuccess = $state(false);
+
+  // Current media type (tracked for maximize behavior)
+  let currentMediaType = $state<MediaType>("image");
+
+  // Full sequence with beats loaded (for LayeredSequencePreview)
+  let fullSequence = $state<SequenceData | null>(null);
+  let isLoadingFullSequence = $state(false);
 
   // Copy for Claude state
   let justCopied = $state(false);
   let isCopyLoading = $state(false);
+
+  // Image composition settings for share
+  const imageSettings = getImageCompositionManager();
+  const userName = $derived(authState.user?.displayName ?? "");
 
   const {
     sequence,
@@ -84,20 +101,67 @@ Used by both desktop side panel and mobile slide-up overlay.
     onVariationSelect(index, selectedSequence);
   }
 
-  onMount(async () => {
+  onMount(() => {
     hapticService = container.items.hapticFeedback;
     loaderService = container.items.discoverLoader;
+    videoService = container.items.collaborativeVideoManager;
+  });
 
-    // Load video count for the compact button
-    try {
-      videoService = container.items.collaborativeVideoManager;
-      if (videoService) {
-        const videos = await videoService.getVideosForSequence(sequence.id);
-        videoCount = videos.length;
-      }
-    } catch (e) {
-      console.warn("[SequenceDetailContent] Failed to load video count:", e);
+  // Load full sequence data when sequence changes (for LayeredSequencePreview)
+  $effect(() => {
+    const currentSequence = sequence;
+
+    // Reset on sequence change
+    fullSequence = null;
+    isLoadingFullSequence = false;
+
+    if (!currentSequence) return;
+
+    // If sequence already has beats, use it directly
+    if (currentSequence.beats && currentSequence.beats.length > 0) {
+      fullSequence = currentSequence;
+      return;
     }
+
+    // Otherwise, load full sequence data
+    if (!loaderService) return;
+
+    isLoadingFullSequence = true;
+    const sequenceName = currentSequence.word || currentSequence.id;
+
+    loaderService.loadFullSequenceData(sequenceName)
+      .then((loaded) => {
+        // Only update if still viewing same sequence
+        if (sequence.id === currentSequence.id && loaded) {
+          fullSequence = loaded;
+        }
+      })
+      .catch((err) => {
+        console.warn("[SequenceDetailContent] Failed to load full sequence data:", err);
+      })
+      .finally(() => {
+        if (sequence.id === currentSequence.id) {
+          isLoadingFullSequence = false;
+        }
+      });
+  });
+
+  // Load video count when sequence changes
+  $effect(() => {
+    const currentSequence = sequence;
+    videoCount = 0;
+
+    if (!videoService || !currentSequence) return;
+
+    videoService.getVideosForSequence(currentSequence.id)
+      .then((videos) => {
+        if (sequence.id === currentSequence.id) {
+          videoCount = videos.length;
+        }
+      })
+      .catch((e) => {
+        console.warn("[SequenceDetailContent] Failed to load video count:", e);
+      });
   });
 
   // Handlers
@@ -105,7 +169,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     hapticService?.trigger("selection");
 
     if (action === "share") {
-      showShareHub = true;
+      showShareOptions = !showShareOptions;
       return;
     }
 
@@ -136,7 +200,145 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   function handleMaximize() {
     hapticService?.trigger("selection");
-    onAction("fullscreen", sequence);
+    const seq = fullSequence ?? sequence;
+    if (currentMediaType === "animation") {
+      // Open animation in fullscreen spotlight
+      openSpotlightWithAnimation(seq);
+    } else {
+      // Use existing image spotlight
+      onAction("fullscreen", seq);
+    }
+  }
+
+  /**
+   * Copy sequence image to clipboard
+   */
+  async function copyImageToClipboard() {
+    if (isShareCopying) return;
+    isShareCopying = true;
+    shareSuccess = false;
+
+    try {
+      const renderer = container.items.sequenceRenderer;
+      const blob = await renderer.renderSequenceToBlob(sequence, {
+        beatSize: 240,
+        format: "PNG",
+        quality: 1.0,
+        includeStartPosition: imageSettings.includeStartPosition,
+        addBeatNumbers: imageSettings.addBeatNumbers,
+        addWord: imageSettings.addWord,
+        addDifficultyLevel: imageSettings.addDifficultyLevel,
+        addUserInfo: imageSettings.addUserInfo,
+        userName,
+        showCreatorName: imageSettings.showCreatorName,
+        showNotes: imageSettings.showNotes,
+        showBirthday: imageSettings.showBirthday,
+        addReversalSymbols: true,
+        visibilityOverrides: {
+          darkMode: imageSettings.darkMode,
+        },
+      });
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": blob }),
+      ]);
+
+      shareSuccess = true;
+      hapticService?.trigger("success");
+      setTimeout(() => { shareSuccess = false; }, 2000);
+    } catch (error) {
+      console.error("Failed to copy image:", error);
+      hapticService?.trigger("error");
+    } finally {
+      isShareCopying = false;
+    }
+  }
+
+  /**
+   * Download sequence image
+   */
+  async function downloadImage() {
+    hapticService?.trigger("selection");
+    try {
+      const renderer = container.items.sequenceRenderer;
+      const blob = await renderer.renderSequenceToBlob(sequence, {
+        beatSize: 240,
+        format: "PNG",
+        quality: 1.0,
+        includeStartPosition: imageSettings.includeStartPosition,
+        addBeatNumbers: imageSettings.addBeatNumbers,
+        addWord: imageSettings.addWord,
+        addDifficultyLevel: imageSettings.addDifficultyLevel,
+        addUserInfo: imageSettings.addUserInfo,
+        userName,
+        showCreatorName: imageSettings.showCreatorName,
+        showNotes: imageSettings.showNotes,
+        showBirthday: imageSettings.showBirthday,
+        addReversalSymbols: true,
+        visibilityOverrides: {
+          darkMode: imageSettings.darkMode,
+        },
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${sequence.word || sequence.name || "sequence"}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      hapticService?.trigger("success");
+    } catch (error) {
+      console.error("Failed to download image:", error);
+      hapticService?.trigger("error");
+    }
+  }
+
+  /**
+   * Native share using Web Share API
+   */
+  async function nativeShare() {
+    hapticService?.trigger("selection");
+    try {
+      const renderer = container.items.sequenceRenderer;
+      const blob = await renderer.renderSequenceToBlob(sequence, {
+        beatSize: 240,
+        format: "PNG",
+        quality: 1.0,
+        includeStartPosition: imageSettings.includeStartPosition,
+        addBeatNumbers: imageSettings.addBeatNumbers,
+        addWord: imageSettings.addWord,
+        addDifficultyLevel: imageSettings.addDifficultyLevel,
+        addUserInfo: imageSettings.addUserInfo,
+        userName,
+        showCreatorName: imageSettings.showCreatorName,
+        showNotes: imageSettings.showNotes,
+        showBirthday: imageSettings.showBirthday,
+        addReversalSymbols: true,
+        visibilityOverrides: {
+          darkMode: imageSettings.darkMode,
+        },
+      });
+
+      const file = new File([blob], `${sequence.word || "sequence"}.png`, { type: "image/png" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: sequence.word || sequence.name || "Sequence",
+          files: [file],
+        });
+        hapticService?.trigger("success");
+      } else {
+        // Fallback to copy
+        await copyImageToClipboard();
+      }
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        console.error("Failed to share:", error);
+        hapticService?.trigger("error");
+      }
+    }
   }
 
   /**
@@ -352,10 +554,11 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     {/if}
 
     <SequenceViewer
-      {sequence}
+      sequence={fullSequence ?? sequence}
       initialMediaType="image"
       controlsLevel="standard"
-      showVisibilitySettings={false}
+      showVisibilitySettings={true}
+      onMediaTypeChange={(type) => currentMediaType = type}
     />
   </div>
 
@@ -543,6 +746,48 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
       <span>Maximize</span>
     </button>
   </div>
+
+  <!-- Share Options Row (inline share actions) -->
+  {#if showShareOptions}
+    <div class="share-options-row">
+      <button
+        class="share-option-btn"
+        class:success={shareSuccess}
+        onclick={copyImageToClipboard}
+        disabled={isShareCopying}
+        aria-label="Copy image to clipboard"
+      >
+        {#if isShareCopying}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        {:else if shareSuccess}
+          <i class="fas fa-check" aria-hidden="true"></i>
+        {:else}
+          <i class="fas fa-copy" aria-hidden="true"></i>
+        {/if}
+        <span>Copy</span>
+      </button>
+
+      <button
+        class="share-option-btn"
+        onclick={downloadImage}
+        aria-label="Download image"
+      >
+        <i class="fas fa-download" aria-hidden="true"></i>
+        <span>Download</span>
+      </button>
+
+      {#if typeof navigator !== "undefined" && "share" in navigator}
+        <button
+          class="share-option-btn"
+          onclick={nativeShare}
+          aria-label="Share"
+        >
+          <i class="fas fa-share-alt" aria-hidden="true"></i>
+          <span>Share</span>
+        </button>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <!-- Videos Panel (full overlay) -->
@@ -553,26 +798,6 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     {onInviteCollaborators}
   />
 {/if}
-
-<!-- Share Hub Drawer -->
-<ShareHubDrawer
-  bind:isOpen={showShareHub}
-  {sequence}
-  mode="discover"
-  {isOwned}
-  creatorInfo={hasCreatorInfo
-    ? {
-        ownerId: sequence.ownerId ?? "",
-        displayName: sequence.ownerDisplayName ?? "Unknown",
-        avatarUrl: sequence.ownerAvatarUrl,
-      }
-    : null}
-  isFavorite={sequence.isFavorite ?? false}
-  onFavoriteToggle={() => handleAction("favorite")}
-  onFork={() => handleAction("fork")}
-  onDelete={isOwned ? () => handleAction("delete") : undefined}
-  onClose={() => (showShareHub = false)}
-/>
 
 <style>
   .detail-content {
@@ -997,21 +1222,92 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
     color: white;
   }
 
+  /* Share Options Row */
+  .share-options-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    animation: slideDown 0.2s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .share-option-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    min-height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    border-radius: 24px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .share-option-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .share-option-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .share-option-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .share-option-btn.success {
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
+    border-color: var(--semantic-success, #22c55e);
+    color: var(--semantic-success, #22c55e);
+  }
+
+  .share-option-btn i {
+    font-size: 16px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .close-button,
     .collapse-button,
     .header-btn,
     .action-btn,
-    .creator-badge {
+    .creator-badge,
+    .share-option-btn,
+    .share-options-row {
       transition: none;
+      animation: none;
     }
 
     .close-button:active,
     .collapse-button:active,
     .header-btn:active,
     .action-btn:active,
-    .creator-badge:active {
+    .creator-badge:active,
+    .share-option-btn:active {
       transform: none;
     }
   }

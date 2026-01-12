@@ -15,6 +15,16 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ThumbnailRenderInput, ThumbnailCacheKey } from "./IThumbnailKeyDeriver";
 
 /**
+ * Progress data for rendering state.
+ * Tracks how many beats have been rendered out of total.
+ */
+export interface RenderProgress {
+  current: number;
+  total: number;
+  stage: "preparing" | "rendering" | "finalizing";
+}
+
+/**
  * Status updates during thumbnail loading.
  * Components can use this to show appropriate UI states.
  */
@@ -22,7 +32,7 @@ export type ThumbnailLoadStatus =
   | { state: "idle" }
   | { state: "checking-cache" }
   | { state: "queued"; position: number }
-  | { state: "rendering" }
+  | { state: "rendering"; progress?: RenderProgress }
   | { state: "uploading" }
   | { state: "complete"; url: string }
   | { state: "error"; error: Error };

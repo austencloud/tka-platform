@@ -26,6 +26,7 @@ import { ThumbnailRenderQueue } from "$lib/features/discover/sequences/display/s
 import { ThumbnailRenderer } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderer";
 import { ThumbnailRenderOrchestrator } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailRenderOrchestrator";
 import { ThumbnailLocalCache } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailLocalCache";
+import { ThumbnailMetricsCollector } from "$lib/features/discover/sequences/display/services/implementations/ThumbnailMetricsCollector";
 import { FavoritesManager } from "$lib/features/discover/shared/services/implementations/FavoritesManager";
 import { FilterPersister as DiscoverFilterPersister } from "$lib/shared/persistence/services/implementations/FilterPersister";
 import { Navigator } from "$lib/features/discover/sequences/navigation/services/implementations/Navigator";
@@ -97,6 +98,17 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
       thumbnailRenderQueue: () => new ThumbnailRenderQueue(),
     })
     .add({
+      // Metrics collector (singleton - tracks performance data)
+      thumbnailMetricsCollector: () => {
+        const collector = new ThumbnailMetricsCollector();
+        // Auto-start logging in dev mode
+        if (import.meta.env.DEV) {
+          collector.startLogging(30000); // Log every 30s
+        }
+        return collector;
+      },
+    })
+    .add({
       // User preferences
       favoritesManager: () => new FavoritesManager(),
       discoverFilterPersister: () => new DiscoverFilterPersister(),
@@ -153,7 +165,8 @@ export function createDiscoverContainer(deps: DiscoverContainerDeps) {
         ctx.thumbnailRenderQueue,
         ctx.thumbnailRenderer,
         deps.cloudThumbnailCache,
-        ctx.thumbnailLocalCache
+        ctx.thumbnailLocalCache,
+        ctx.thumbnailMetricsCollector
       ),
   }));
 

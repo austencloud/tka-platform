@@ -18,6 +18,7 @@ import type { IDiscoverLoader } from "../contracts/IDiscoverLoader";
 import type {
   IThumbnailRenderer,
   RenderOptions,
+  RenderProgressCallback,
 } from "../contracts/IThumbnailRenderer";
 import type {
   ThumbnailRenderInput,
@@ -54,7 +55,8 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
   async render(
     sequence: SequenceData,
     input: ThumbnailRenderInput,
-    options?: RenderOptions
+    options?: RenderOptions,
+    onProgress?: RenderProgressCallback
   ): Promise<Blob> {
     // Load full sequence data if needed
     const fullSequence = await this.ensureFullSequenceData(sequence, input.sequenceName);
@@ -73,10 +75,11 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       fullSequence.dateAdded ??
       undefined;
 
-    // Render via ISequenceRenderer
+    // Render via ISequenceRenderer (pass through progress callback)
     const blob = await this.sequenceRenderer.renderSequenceToBlob(
       sequenceWithStartPos,
-      { ...renderOptions, birthday }
+      { ...renderOptions, birthday },
+      onProgress
     );
 
     return blob;
@@ -188,14 +191,20 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       redPropTypeOverride: isCatDog ? input.redPropType : undefined,
 
       // Visibility settings
+      // CANONICAL (always ON): TKA, reversals - these don't need to update thumbnails
+      // USER-CONTROLLED: Grid settings - user wants to toggle these and see updates
       visibilityOverrides: {
-        showTKA: true,
-        showVTG: false,
-        showElemental: false,
-        showPositions: false,
-        showReversals: true,
+        showTKA: true, // CANONICAL: Always ON in thumbnails
+        showVTG: false, // Never shown in thumbnails
+        showElemental: false, // Never shown in thumbnails
+        showPositions: false, // Never shown in thumbnails
+        showReversals: true, // CANONICAL: Always ON in thumbnails
         showTurnNumbers: true,
         darkMode: !input.lightMode,
+        // Grid settings respect user preferences - they affect visible dots
+        showGrid: input.visibility?.showGrid ?? true,
+        handPointVisibility: input.visibility?.handPointVisibility ?? "all",
+        showNonRadialPoints: input.visibility?.showNonRadialPoints ?? true,
       },
     };
   }

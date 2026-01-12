@@ -12,6 +12,18 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType
 import type { ThumbnailVariant } from "./ICloudThumbnailCache";
 
 /**
+ * Visibility settings that affect pictograph rendering.
+ * Each setting toggles a visual layer on/off.
+ */
+export interface ThumbnailVisibilitySettings {
+  showTKA?: boolean;
+  showReversals?: boolean;
+  showGrid?: boolean;
+  showNonRadialPoints?: boolean;
+  handPointVisibility?: "all" | "active";
+}
+
+/**
  * All inputs that affect the visual output of a thumbnail.
  * A change to ANY of these requires a new render.
  */
@@ -39,6 +51,9 @@ export interface ThumbnailRenderInput {
   showBirthday?: boolean;
   customNotesText?: string;
   userName?: string;
+
+  // Visibility overrides (undefined = use defaults: showTKA=true, showReversals=true, etc.)
+  visibility?: ThumbnailVisibilitySettings;
 }
 
 /**

@@ -1,10 +1,11 @@
-<!-- SpotlightViewer.svelte - Fullscreen viewer for images or beat grids -->
+<!-- SpotlightViewer.svelte - Fullscreen viewer for images, beat grids, or animations -->
 <script lang="ts">
   import { browser } from "$app/environment";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDiscoverThumbnailProvider } from "../../display/services/contracts/IDiscoverThumbnailProvider";
   import type { SpotlightDisplayMode } from "$lib/shared/application/state/ui/ui-state.svelte";
   import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import AnimationPlayer from "$lib/shared/sequence-viewer/components/AnimationPlayer.svelte";
 
   // ✅ PURE RUNES: Props using modern Svelte 5 runes
   const {
@@ -339,20 +340,53 @@
   onorientationchange={handleResize}
 />
 
-{#if isVisible && (imageUrl || displayMode === "beatgrid")}
-  <!-- Fullscreen overlay - clicking anywhere closes -->
+{#if isVisible && (imageUrl || displayMode === "beatgrid" || displayMode === "animation")}
+  <!-- Fullscreen overlay - clicking anywhere closes (except animation mode) -->
   <div
     bind:this={_spotlightElement}
     class="spotlight"
     class:closing={isClosing}
-    onclick={handleClose}
+    onclick={displayMode !== "animation" ? handleClose : undefined}
     onkeydown={handleDialogKeydown}
     role="dialog"
     aria-modal="true"
     aria-label="Maximized sequence view"
     tabindex="-1"
   >
-    {#if displayMode === "beatgrid" && sequence}
+    {#if displayMode === "animation" && sequence}
+      <!-- Animation mode: fullscreen AnimationPlayer with minimal controls -->
+      <div class="spotlight-animation">
+        <AnimationPlayer
+          {sequence}
+          autoPlay={true}
+          showControls={true}
+          controlsLevel="minimal"
+          layout="vertical"
+        />
+      </div>
+
+      <!-- Close button - top right corner (animation mode) -->
+      <button
+        class="close-button"
+        onclick={handleClose}
+        aria-label="Close fullscreen view"
+        title="Close (Escape)"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    {:else if displayMode === "beatgrid" && sequence}
       <!-- Beat grid mode: render sequence directly, filling viewport -->
       <!-- Tap anywhere to close - no buttons needed -->
       <div class="spotlight-beatgrid">
@@ -526,6 +560,56 @@
     /* When rotated, swap width/height constraints */
     max-width: 100vh;
     max-height: 100vw;
+  }
+
+  /* Animation container - fills viewport with AnimationPlayer */
+  .spotlight-animation {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 16px;
+    /* Animation controls need pointer events */
+    pointer-events: auto;
+  }
+
+  /* Close button for animation mode */
+  .close-button {
+    position: fixed;
+    top: max(env(safe-area-inset-top, 16px), 16px);
+    right: max(env(safe-area-inset-right, 16px), 16px);
+    width: var(--min-touch-target, 48px);
+    height: var(--min-touch-target, 48px);
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(0, 0, 0, 0.6));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10001;
+    pointer-events: auto;
+  }
+
+  .close-button:hover {
+    background: var(--theme-card-hover-bg, rgba(0, 0, 0, 0.8));
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+  }
+
+  .close-button:active {
+    transform: scale(0.95);
+  }
+
+  .close-button svg {
+    width: 24px;
+    height: 24px;
   }
 
   /* Beat grid container - fills entire viewport, tap anywhere to close */
@@ -745,7 +829,9 @@
     .spotlight,
     .spotlight-image,
     .spotlight-beatgrid,
+    .spotlight-animation,
     .rotate-button,
+    .close-button,
     .column-picker-button,
     .column-picker-menu,
     .layout-hint {
@@ -755,6 +841,11 @@
 
     .spotlight-image.rotated {
       transition: none;
+    }
+
+    .close-button:hover,
+    .close-button:active {
+      transform: none;
     }
 
     /* Still show pulsing hint visually but without animation */

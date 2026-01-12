@@ -135,11 +135,22 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
     if (userInfoEnabled && input.userName !== undefined && input.userName !== "")
       return false;
 
+    // ALL visibility settings are IGNORED for cloud-cacheability
+    // Thumbnails always use canonical form (all overlays ON)
+    // This ensures maximum cache effectiveness
+
     return true;
   }
 
   private buildFullHashInput(input: ThumbnailRenderInput): object {
     // Include all fields that affect visual output
+    //
+    // CANONICAL (excluded from hash) - these are overlays that don't affect base pictograph:
+    // - showTKA, showReversals: text/symbol overlays
+    //
+    // INCLUDED in hash - these affect the rendered appearance:
+    // - showGrid, handPointVisibility, showNonRadialPoints: grid dot visibility
+    //   (User wants to toggle these and see thumbnails update)
     return {
       seq: input.sequenceName,
       blue: input.bluePropType,
@@ -157,6 +168,11 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       showBirthday: input.showBirthday,
       customNotesText: input.customNotesText,
       userName: input.userName,
+      // Grid visibility settings - user wants these to update thumbnails
+      showGrid: input.visibility?.showGrid,
+      handPointVisibility: input.visibility?.handPointVisibility,
+      showNonRadialPoints: input.visibility?.showNonRadialPoints,
+      // EXCLUDED: showTKA, showReversals - these are canonical (always ON)
     };
   }
 

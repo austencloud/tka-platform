@@ -25,6 +25,15 @@ export interface RenderOptions {
   quality?: number;
 }
 
+/**
+ * Progress callback for tracking render progress.
+ */
+export type RenderProgressCallback = (progress: {
+  current: number;
+  total: number;
+  stage: "preparing" | "rendering" | "finalizing";
+}) => void;
+
 export interface IThumbnailRenderer {
   /**
    * Render a sequence to a blob image.
@@ -36,11 +45,13 @@ export interface IThumbnailRenderer {
    * @param sequence The sequence to render (may be partial)
    * @param input Render configuration (props, light mode, composition settings)
    * @param options Optional format/quality settings
+   * @param onProgress Optional callback for progress updates during rendering
    * @returns Blob containing the rendered image
    */
   render(
     sequence: SequenceData,
     input: ThumbnailRenderInput,
-    options?: RenderOptions
+    options?: RenderOptions,
+    onProgress?: RenderProgressCallback
   ): Promise<Blob>;
 }

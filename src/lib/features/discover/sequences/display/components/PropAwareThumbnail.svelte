@@ -28,6 +28,7 @@
   } from "../services/contracts/IThumbnailKeyDeriver";
   import type { ICloudThumbnailCache } from "../services/contracts/ICloudThumbnailCache";
   import type { ILayoutCalculator } from "$lib/shared/render/services/contracts/ILayoutCalculator";
+  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   interface Props {
     sequence: SequenceData;
@@ -89,8 +90,11 @@
   // Layout calculator resolved synchronously (no async deps, needed for initial aspect ratio)
   const layoutCalculator: ILayoutCalculator = container.items.layoutCalculator;
 
-  // Derived: sequence name
+  // Derived: sequence name (raw)
   const sequenceName = $derived(sequence.word || sequence.name || "");
+
+  // Derived: simplified display name (removes repeated patterns like "ABCABC" → "ABC")
+  const displayName = $derived(simplifyRepeatedWord(sequenceName));
 
   // Derived: beat count for aspect ratio calculation
   // Priority: beats array length (if not empty) > sequenceLength field > fallback to 4
@@ -238,11 +242,11 @@
     }
     currentKeyHash = key.hash;
 
-    // Revoke old blob URL
+    // Clear old thumbnail - don't show stale image while loading new one
     if (thumbnailUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(thumbnailUrl);
-      thumbnailUrl = null;
     }
+    thumbnailUrl = null; // Always clear so we show loading placeholder, not old image
 
     // Capture and reset the skipCache flag
     const shouldSkipCache = skipCacheOnNextRequest;
@@ -284,10 +288,66 @@
     status.state === "uploading"
   );
   const hasError = $derived(status.state === "error");
-  // Simplified loading text - just show spinner, no distracting text
-  const loadingText = $derived(
-    status.state === "rendering" ? "Rendering" : ""
-  );
+
+  // Derive progress percentage from status state
+  // Maps to where time is ACTUALLY spent:
+  // - Waiting (cache/queue): 0% - no work started yet
+  // - Rendering beats: 0-98% of bar (all the real work)
+  // - Finalize: instant → 98-100% of bar
+  const progressPercent = $derived.by(() => {
+    switch (status.state) {
+      case "idle":
+      case "checking-cache":
+      case "queued":
+        // No progress until rendering actually starts
+        return 0;
+      case "rendering": {
+        // Rendering gets 98% of the bar since it's virtually all the work
+        if (status.progress) {
+          const { current, total } = status.progress;
+          if (total > 0) {
+            // Scale beat progress to 0-98% range
+            const beatProgress = (current / total) * 98;
+            return Math.round(beatProgress);
+          }
+        }
+        // Fallback when no progress data yet (just started)
+        return 0;
+      }
+      case "uploading":
+        return 99;
+      case "complete":
+        return 100;
+      case "error":
+        return 0;
+      default:
+        return 0;
+    }
+  });
+
+  // Status label for accessibility
+  // Uses beatCount (defined above) for display instead of progress.total which includes start position
+  const statusLabel = $derived.by(() => {
+    switch (status.state) {
+      case "checking-cache":
+        return "Checking";
+      case "queued":
+        return "Queued";
+      case "rendering": {
+        if (status.progress && status.progress.total > 0) {
+          // Show progress relative to beat count, not total (which includes start position)
+          // current starts at 1 for start position, so subtract 1 for beat-only display
+          const currentBeat = Math.max(0, status.progress.current - (status.progress.total - beatCount));
+          return `${currentBeat}/${beatCount}`;
+        }
+        return "Rendering";
+      }
+      case "uploading":
+        return "Saving";
+      default:
+        return "Loading";
+    }
+  });
 </script>
 
 <div
@@ -306,27 +366,49 @@
       onload={handleImageLoad}
       onerror={handleImageError}
     />
-    <!-- Loading overlay during re-renders -->
-    {#if isLoading && loadingText}
-      <div class="loading-overlay" aria-label="Re-rendering thumbnail">
-        <div class="spinner"></div>
-        <span class="loading-status" aria-live="polite">{loadingText}</span>
+    <!-- Loading overlay during re-renders (e.g., prop change) -->
+    {#if isLoading}
+      <div class="loading-overlay" aria-label={statusLabel}>
+        <div class="overlay-content">
+          <div class="spinner"></div>
+          <span class="overlay-status">{statusLabel}</span>
+        </div>
+        <div
+          class="progress-bar"
+          role="progressbar"
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div class="progress-fill" style:width="{progressPercent}%"></div>
+        </div>
       </div>
     {/if}
-  {:else if isLoading}
-    <div class="loading-placeholder" aria-label="Loading thumbnail">
-      <div class="spinner"></div>
-      {#if loadingText}
-        <span class="loading-status" aria-live="polite">{loadingText}</span>
-      {/if}
-    </div>
   {:else if hasError}
     <div class="error-placeholder" aria-label="Failed to load">
       <span class="error-icon">!</span>
+      <span class="placeholder-word">{displayName}</span>
     </div>
   {:else}
-    <div class="empty-placeholder" aria-label="Sequence preview">
-      <span class="letter">{sequenceName?.slice(0, 1) ?? "?"}</span>
+    <!-- Unified placeholder: always shows word, conditionally shows loading indicators -->
+    <div class="loading-placeholder" aria-label={isLoading ? statusLabel : "Waiting to load"}>
+      <span class="placeholder-word">{displayName}</span>
+      {#if isLoading}
+        <div class="loading-indicator">
+          <div class="spinner"></div>
+          <span class="loading-status">{statusLabel}</span>
+        </div>
+        <div
+          class="progress-bar"
+          role="progressbar"
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={statusLabel}
+        >
+          <div class="progress-fill" style:width="{progressPercent}%"></div>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -388,21 +470,49 @@
   }
 
   .loading-placeholder,
-  .empty-placeholder,
   .error-placeholder {
+    position: relative;
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 12px;
+    padding: 12px;
     background: linear-gradient(
       135deg,
       var(--theme-card-hover-bg),
       var(--theme-panel-bg)
     );
     color: var(--theme-text-dim);
+    box-sizing: border-box;
+  }
+
+  .placeholder-word {
+    /* Scale with container - larger base, scales down for small containers */
+    font-size: clamp(16px, 6cqi, 28px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+    text-align: center;
+    max-width: 95%;
+    line-height: 1.15;
+    opacity: 0.95;
+    /* Allow wrapping for long words, but break anywhere if needed */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .loading-status {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-transform: capitalize;
   }
 
   .error-placeholder {
@@ -428,23 +538,28 @@
     animation: spin 0.8s linear infinite;
   }
 
-  .loading-status {
-    font-size: 10px;
-    opacity: 0.7;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
 
-  .letter {
-    font-size: 3rem;
-    font-weight: 700;
-    opacity: 0.5;
+  /* Progress bar */
+  .progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    transition: width 0.3s ease-out;
+    border-radius: 0 2px 2px 0;
   }
 
   /* Loading overlay on top of existing image */
@@ -455,10 +570,22 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 10;
+  }
+
+  .overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .overlay-status {
+    font-size: var(--font-size-compact, 12px);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    opacity: 0.9;
   }
 
   .loading-overlay .spinner {
@@ -467,27 +594,60 @@
     border-width: 3px;
   }
 
-  .loading-overlay .loading-status {
-    color: white;
-    font-size: 11px;
-    opacity: 0.9;
+  .loading-overlay .progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .loading-overlay .progress-fill {
+    background: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 8px var(--theme-accent, #6366f1);
   }
 
   /* Container query responsive sizing */
   @container sequence-card (max-width: 249px) {
-    .letter {
-      font-size: 2rem;
+    .placeholder-word {
+      font-size: clamp(12px, 5cqi, 18px);
+    }
+    .loading-indicator {
+      gap: 4px;
+    }
+    .loading-status {
+      font-size: 10px;
     }
     .spinner {
       width: 16px;
       height: 16px;
     }
-    .loading-status {
-      display: none;
+    .progress-bar {
+      height: 3px;
+    }
+    .overlay-status {
+      font-size: 10px;
     }
     .loading-overlay .spinner {
       width: 20px;
       height: 20px;
+    }
+    .loading-overlay .progress-bar {
+      height: 4px;
+    }
+  }
+
+  /* Very small cards - hide some elements */
+  @container sequence-card (max-width: 149px) {
+    .placeholder-word {
+      font-size: clamp(10px, 4cqi, 14px);
+    }
+    .loading-status {
+      display: none;
+    }
+    .loading-indicator {
+      gap: 0;
     }
   }
 </style>
