@@ -9,10 +9,14 @@
   import { onMount } from "svelte";
   import type { IDiscoverLoader } from "../../discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { PrintPreviewPage } from "../domain/types/PageLayoutTypes";
+  import { SequenceDifficultyCalculator } from "../../discover/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import ChoreoCardNavigation from "./Navigation.svelte";
   import ChoreoCardFilters from "./ChoreoCardFilters.svelte";
   import ChoreoCardVisibility from "./ChoreoCardVisibility.svelte";
   import PageDisplay from "./PageDisplay.svelte";
+
+  // Difficulty calculator for dynamic level calculation
+  const difficultyCalculator = new SequenceDifficultyCalculator();
 
   // Services
   let loaderService = $state<IDiscoverLoader | null>(null);
@@ -210,9 +214,15 @@
       result = result.filter((seq) => seq.sequenceLength === selectedLength);
     }
 
-    // Difficulty filter (uses calculated 'level' field: 1=beginner, 2=intermediate, 3=advanced)
+    // Difficulty filter - calculate level dynamically from beats if not stored
     if (difficulty !== null) {
-      result = result.filter((seq) => seq.level === difficulty);
+      result = result.filter((seq) => {
+        // Use stored level if available, otherwise calculate from beats
+        const level = seq.level ?? (seq.beats?.length > 0
+          ? difficultyCalculator.calculateDifficultyLevel([...seq.beats])
+          : 1);
+        return level === difficulty;
+      });
     }
 
     // Favorites filter

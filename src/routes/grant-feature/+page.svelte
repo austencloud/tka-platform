@@ -171,13 +171,13 @@
               drawWidth = prop.size * aspectRatio;
             }
 
-            // Draw the color first
+            // Draw the SVG first
+            ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+
+            // Multiply the TKA brand color onto it
+            ctx.globalCompositeOperation = 'multiply';
             ctx.fillStyle = prop.color === 'red' ? '#EF4444' : '#3B82F6';
             ctx.fillRect(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-
-            // Use the SVG as a mask - only keep color where SVG has content
-            ctx.globalCompositeOperation = 'destination-in';
-            ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
             ctx.globalCompositeOperation = 'source-over'; // Reset
 
             ctx.restore();
