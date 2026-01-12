@@ -20,6 +20,8 @@ Provides quiz functionality for learning TKA notation:
   import QuizResultsView from "./QuizResultsView.svelte";
   import QuizSelectorView from "./QuizSelectorView.svelte";
   import QuizWorkspaceView from "./QuizWorkspaceView.svelte";
+  import StreakDisplay from "./StreakDisplay.svelte";
+  import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
 
   // Import learn components
 
@@ -31,6 +33,10 @@ Provides quiz functionality for learning TKA notation:
   const quizRepo = container.items.quizRepoManager;
   const quizSessionService = container.items.quizSessionManager;
   const hapticService = container.items.hapticFeedback;
+  const delightOrchestrator = getDelightOrchestrator();
+
+  // Component refs
+  let streakDisplayRef = $state<StreakDisplay | null>(null);
 
   // ============================================================================
   // COMPONENT STATE
@@ -138,10 +144,20 @@ Provides quiz functionality for learning TKA notation:
     try {
       await quizSessionService.completeQuiz();
       currentView = "results";
+
+      // Record daily activity for streak tracking
+      await streakDisplayRef?.recordActivity();
     } catch (err) {
       console.error("❌ QuizTab: Failed to complete quiz:", err);
       error = err instanceof Error ? err.message : "Failed to complete quiz";
     }
+  }
+
+  function handleStreakMilestone(streak: number) {
+    // Trigger major celebration for streak milestones
+    delightOrchestrator?.trigger('streak-milestone', {
+      toastMessage: `${streak} day streak! 🔥`
+    });
   }
 
   function handleReturnToSelector() {
@@ -208,6 +224,14 @@ Provides quiz functionality for learning TKA notation:
 <!-- ============================================================================ -->
 
 <div class="learn-tab" data-testid="learn-tab">
+  <!-- Streak display header -->
+  <div class="quiz-header">
+    <StreakDisplay
+      bind:this={streakDisplayRef}
+      onStreakMilestone={handleStreakMilestone}
+    />
+  </div>
+
   <!-- Error display -->
   {#if error}
     <div class="error-banner">
@@ -276,6 +300,14 @@ Provides quiz functionality for learning TKA notation:
     position: relative;
     background: transparent;
     color: var(--foreground, #ffffff);
+  }
+
+  .quiz-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
   }
 
   .learn-layout {

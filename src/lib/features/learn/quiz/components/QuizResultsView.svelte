@@ -5,11 +5,14 @@
   import { onMount } from "svelte";
   import type { QuizResults } from "../domain/models/quiz-models";
   import type { IQuizResultsAnalyzer } from "../QuizResultsAnalyzer";
+  import type { AchievementDefinition } from "../domain/achievement-definitions";
   import QuizResultsHeader from "./QuizResultsHeader.svelte";
   import QuizPerformanceGrade from "./QuizPerformanceGrade.svelte";
   import QuizAchievementsBadges from "./QuizAchievementsBadges.svelte";
   import QuizStatsGrid from "./QuizStatsGrid.svelte";
   import QuizResultsActions from "./QuizResultsActions.svelte";
+  import AchievementUnlockOverlay from "./AchievementUnlockOverlay.svelte";
+  import PerfectQuizCelebration from "./PerfectQuizCelebration.svelte";
 
   // Props
   let {
@@ -30,11 +33,62 @@
   let hapticService = $state<IHapticFeedback | null>(null);
   let analyzer = $state<IQuizResultsAnalyzer | null>(null);
 
-  // Initialize services
+  // Celebration overlay states
+  let showPerfectCelebration = $state(false);
+  let currentAchievement = $state<AchievementDefinition | null>(null);
+
+  // Check if this was a perfect quiz
+  const isPerfectQuiz = $derived(results?.accuracyPercentage === 100);
+
+  // Initialize services and queue celebrations
   onMount(() => {
     hapticService = container.items.hapticFeedback;
     analyzer = container.items.quizResultsAnalyzer;
+
+    if (results && analyzer) {
+      // Show perfect quiz celebration first if applicable
+      if (isPerfectQuiz) {
+        setTimeout(() => {
+          showPerfectCelebration = true;
+        }, 300);
+      } else {
+        // Otherwise, check for achievements
+        queueAchievementCelebration();
+      }
+    }
   });
+
+  function queueAchievementCelebration() {
+    if (!results || !analyzer) return;
+
+    const achievements = analyzer.getAchievementDefinitions(results);
+    // Sort by tier: gold first, then silver, then bronze
+    const tierOrder = { gold: 0, silver: 1, bronze: 2 };
+    achievements.sort((a, b) => tierOrder[a.tier] - tierOrder[b.tier]);
+
+    // Only show the top achievement to avoid overwhelming
+    if (achievements.length > 0) {
+      // Show gold/silver achievements, skip bronze (too common)
+      const worthyAchievement = achievements.find(
+        (a) => a.tier === "gold" || a.tier === "silver"
+      );
+      if (worthyAchievement) {
+        setTimeout(() => {
+          currentAchievement = worthyAchievement;
+        }, 500);
+      }
+    }
+  }
+
+  function handlePerfectDismiss() {
+    showPerfectCelebration = false;
+    // After perfect celebration, show any remaining achievements
+    queueAchievementCelebration();
+  }
+
+  function handleAchievementDismiss() {
+    currentAchievement = null;
+  }
 
   // Handle navigation
   function handleBackClick() {
@@ -51,6 +105,19 @@
 </script>
 
 <div class="lesson-results">
+  <!-- Perfect quiz celebration (shown first for 100% scores) -->
+  {#if showPerfectCelebration}
+    <PerfectQuizCelebration onDismiss={handlePerfectDismiss} />
+  {/if}
+
+  <!-- Achievement unlock overlay -->
+  {#if currentAchievement}
+    <AchievementUnlockOverlay
+      achievement={currentAchievement}
+      onDismiss={handleAchievementDismiss}
+    />
+  {/if}
+
   {#if results}
     <QuizResultsHeader
       lessonName={analyzer?.getLessonDisplayName(results.lessonType) ||

@@ -42,6 +42,8 @@ export class QuizSessionManager implements IQuizSessionManager {
       lastInteraction: new Date(),
       isActive: true,
       isCompleted: false,
+      currentStreak: 0,
+      longestStreak: 0,
     };
 
     this.activeSessions.set(sessionId, session);
@@ -72,8 +74,15 @@ export class QuizSessionManager implements IQuizSessionManager {
     session.questionsAnswered++;
     if (isCorrect) {
       session.correctAnswers++;
+      // Update streak tracking
+      session.currentStreak++;
+      if (session.currentStreak > session.longestStreak) {
+        session.longestStreak = session.currentStreak;
+      }
     } else {
       session.incorrectGuesses++;
+      // Reset current streak on incorrect answer
+      session.currentStreak = 0;
     }
 
     // Update timing
@@ -170,7 +179,7 @@ export class QuizSessionManager implements IQuizSessionManager {
       completionTimeSeconds: Math.round(completionTime),
       completedAt: new Date(),
       averageTimePerQuestion: Math.round(averageTimePerQuestion * 100) / 100,
-      streakLongestCorrect: 0, // TODO: Implement streak tracking
+      streakLongestCorrect: session.longestStreak,
     };
   }
 
@@ -191,8 +200,8 @@ export class QuizSessionManager implements IQuizSessionManager {
       incorrectAnswers: session.incorrectGuesses,
       questionsAnswered: session.questionsAnswered,
       timeElapsed: Math.round(timeElapsed),
-      streakCurrent: 0, // TODO: Implement streak tracking
-      streakLongest: 0,
+      streakCurrent: session.currentStreak,
+      streakLongest: session.longestStreak,
     };
   }
 

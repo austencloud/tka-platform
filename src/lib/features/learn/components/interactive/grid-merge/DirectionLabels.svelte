@@ -1,39 +1,86 @@
 <!--
   DirectionLabels - Cardinal (N/E/S/W) and Intercardinal (NE/SE/SW/NW) labels
-  - Cardinal labels: Visible in diamond-labels and merged phases
-  - Intercardinal labels: Visible in box-labels and merged phases
-  - Hidden during highlighting phases
+  Labels animate position/scale in sync with grid animations using CSS transitions
 -->
 <script lang="ts">
-	import {
-		CARDINAL_LABELS,
-		INTERCARDINAL_LABELS,
-		type Phase,
-		type HighlightPhase
-	} from './grid-merge-constants';
+	import { CARDINAL_LABELS, INTERCARDINAL_LABELS, type Phase, type HighlightPhase } from './grid-merge-constants';
 
 	let { phase, highlightPhase = 'none' } = $props<{
 		phase: Phase;
 		highlightPhase?: HighlightPhase;
 	}>();
 
+	// Track which labels have been shown (prevents re-animation on back navigation)
+	let prevPhase = $state<Phase>(phase);
+	let cardinalShown = $state(false);
+	let intercardinalShown = $state(false);
+
+	// Track if we should animate in (true briefly when first appearing)
+	let animatingCardinal = $state(false);
+	let animatingIntercardinal = $state(false);
+
+	$effect.pre(() => {
+		// Detect first appearance of cardinal labels
+		const cardinalJustAppeared = phase === 'diamond-labels' && !cardinalShown;
+		const intercardinalJustAppeared = phase === 'box-labels' && !intercardinalShown;
+
+		if (cardinalJustAppeared) {
+			animatingCardinal = true;
+			// Clear after animation completes (stagger + duration)
+			setTimeout(() => {
+				animatingCardinal = false;
+			}, 600); // 400ms max delay + 400ms animation
+		}
+
+		if (intercardinalJustAppeared) {
+			animatingIntercardinal = true;
+			setTimeout(() => {
+				animatingIntercardinal = false;
+			}, 600);
+		}
+
+		// Track shown state (after checking for first appearance)
+		if (phase === 'diamond-labels' || phase === 'box-labels' || phase === 'merged') {
+			cardinalShown = true;
+		}
+		if (phase === 'box-labels' || phase === 'merged') {
+			intercardinalShown = true;
+		}
+
+		// Reset shown state when going back to intro
+		if (phase === 'intro' || phase === 'split') {
+			cardinalShown = false;
+			intercardinalShown = false;
+		}
+
+		prevPhase = phase;
+	});
+
+	// Visibility
 	const showCardinal = $derived(
 		phase === 'diamond-labels' || phase === 'box-labels' || phase === 'merged'
 	);
 	const showIntercardinal = $derived(phase === 'box-labels' || phase === 'merged');
+
+	// Split positioning (labels follow their respective grids)
 	const isSplitCardinal = $derived(phase === 'diamond-labels' || phase === 'box-labels');
 	const isSplitIntercardinal = $derived(phase === 'box-labels');
+
 	const isHighlighting = $derived(highlightPhase !== 'none');
 </script>
 
-<g class="direction-labels" class:highlighting={isHighlighting} aria-label="Grid direction labels: North, East, South, West, Northeast, Southeast, Southwest, Northwest">
-	<!-- Cardinal labels (N, E, S, W) -->
+<g
+	class="direction-labels"
+	class:highlighting={isHighlighting}
+	aria-label="Grid direction labels: North, East, South, West, Northeast, Southeast, Southwest, Northwest"
+>
+	<!-- Cardinal labels (N, E, S, W) - follow diamond grid -->
 	{#each CARDINAL_LABELS as label, i}
 		<text
 			class="label cardinal-label"
 			class:visible={showCardinal}
 			class:split={isSplitCardinal}
-			class:animate-in={phase === 'diamond-labels'}
+			class:animate-in={animatingCardinal}
 			x={label.x}
 			y={label.y}
 			text-anchor="middle"
@@ -44,13 +91,13 @@
 		</text>
 	{/each}
 
-	<!-- Intercardinal labels (NE, SE, SW, NW) -->
+	<!-- Intercardinal labels (NE, SE, SW, NW) - follow box grid -->
 	{#each INTERCARDINAL_LABELS as label, i}
 		<text
 			class="label intercardinal-label"
 			class:visible={showIntercardinal}
 			class:split={isSplitIntercardinal}
-			class:animate-in={phase === 'box-labels'}
+			class:animate-in={animatingIntercardinal}
 			x={label.x}
 			y={label.y}
 			text-anchor="middle"
@@ -66,43 +113,40 @@
 	.label {
 		font-size: 46px;
 		font-weight: 700;
-		fill: #9ca3af;
+		fill: var(--theme-text-dim, #9ca3af);
 		font-family: system-ui, -apple-system, sans-serif;
 		opacity: 0;
-		transform: scale(0);
+		transform: translate(0, 0) scale(1);
 		transform-origin: center;
-		transition:
-			opacity var(--label-duration) ease-out,
-			transform var(--label-duration) var(--merge-easing);
+		/* Sync with grid animation - same duration and easing */
+		transition: transform var(--merge-duration) var(--merge-easing);
 	}
 
-	/* Visible state */
+	/* Visible state (merged position - centered, full scale) */
 	.label.visible {
 		opacity: 1;
-		transform: scale(1);
+		transform: translate(0, 0) scale(1);
 	}
 
-	/* Split positioning - cardinal on left/top */
+	/* Split positioning - cardinal labels follow diamond grid (left/top) */
 	.cardinal-label.split {
 		transform: translate(var(--split-offset-x-neg), var(--split-offset-y-neg)) scale(0.5);
-		font-size: 60px;
 	}
 
 	.cardinal-label.split.visible {
 		opacity: 1;
 	}
 
-	/* Split positioning - intercardinal on right/bottom */
+	/* Split positioning - intercardinal labels follow box grid (right/bottom) */
 	.intercardinal-label.split {
 		transform: translate(var(--split-offset-x), var(--split-offset-y)) scale(0.5);
-		font-size: 60px;
 	}
 
 	.intercardinal-label.split.visible {
 		opacity: 1;
 	}
 
-	/* Animate-in with stagger for cardinal labels */
+	/* Animate-in with stagger for cardinal labels (first appearance only) */
 	.cardinal-label.animate-in {
 		animation: labelPopIn var(--label-duration) var(--merge-easing) both;
 	}
@@ -119,7 +163,7 @@
 		animation-delay: 0.4s;
 	}
 
-	/* Animate-in with stagger for intercardinal labels */
+	/* Animate-in with stagger for intercardinal labels (first appearance only) */
 	.intercardinal-label.animate-in {
 		animation: labelPopInBox var(--label-duration) var(--merge-easing) both;
 	}
@@ -141,11 +185,17 @@
 		opacity: 0;
 	}
 
-	/* === KEYFRAMES === */
+	/* === KEYFRAMES for initial pop-in (polished with subtle overshoot) === */
 	@keyframes labelPopIn {
 		0% {
 			opacity: 0;
-			transform: translate(var(--split-offset-x-neg), var(--split-offset-y-neg)) scale(0.2);
+			transform: translate(var(--split-offset-x-neg), var(--split-offset-y-neg)) scale(0);
+		}
+		40% {
+			opacity: 1;
+		}
+		70% {
+			transform: translate(var(--split-offset-x-neg), var(--split-offset-y-neg)) scale(0.55);
 		}
 		100% {
 			opacity: 1;
@@ -156,7 +206,13 @@
 	@keyframes labelPopInBox {
 		0% {
 			opacity: 0;
-			transform: translate(var(--split-offset-x), var(--split-offset-y)) scale(0.2);
+			transform: translate(var(--split-offset-x), var(--split-offset-y)) scale(0);
+		}
+		40% {
+			opacity: 1;
+		}
+		70% {
+			transform: translate(var(--split-offset-x), var(--split-offset-y)) scale(0.55);
 		}
 		100% {
 			opacity: 1;
@@ -168,11 +224,6 @@
 	@media (max-width: 700px) {
 		.label {
 			font-size: 38px;
-		}
-
-		.cardinal-label.split,
-		.intercardinal-label.split {
-			font-size: 70px;
 		}
 	}
 
@@ -191,7 +242,15 @@
 
 		.label.visible {
 			opacity: 1;
-			transform: scale(1);
+			transform: translate(0, 0) scale(1);
+		}
+
+		.cardinal-label.split.visible {
+			transform: translate(var(--split-offset-x-neg), var(--split-offset-y-neg)) scale(0.5);
+		}
+
+		.intercardinal-label.split.visible {
+			transform: translate(var(--split-offset-x), var(--split-offset-y)) scale(0.5);
 		}
 	}
 </style>

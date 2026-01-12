@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PerformanceGrade } from "../QuizResultsAnalyzer";
+  import AnimatedScoreCounter from "./AnimatedScoreCounter.svelte";
 
   interface Props {
     grade: PerformanceGrade;
@@ -7,6 +8,13 @@
   }
 
   let { grade, accuracy }: Props = $props();
+
+  // Determine performance tier for styling
+  const tier = $derived(
+    accuracy >= 90 ? 'excellent' :
+    accuracy >= 70 ? 'good' :
+    'needs-work'
+  ) as 'excellent' | 'good' | 'needs-work';
 </script>
 
 <div class="performance-summary">
@@ -16,7 +24,13 @@
     </span>
   </div>
   <div class="accuracy-text">
-    <span class="accuracy-percentage">{accuracy.toFixed(1)}%</span>
+    <AnimatedScoreCounter
+      value={accuracy}
+      suffix="%"
+      duration={1200}
+      delay={300}
+      {tier}
+    />
     <span class="accuracy-label">Accuracy</span>
     <span class="performance-message">{grade.message}</span>
   </div>
@@ -51,12 +65,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
-  }
-
-  .accuracy-percentage {
-    font-size: var(--font-size-3xl);
-    font-weight: 700;
-    color: var(--text-color);
   }
 
   .accuracy-label {

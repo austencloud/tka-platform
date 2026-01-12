@@ -11,7 +11,6 @@ Navigation via bottom tabs (mobile-first UX pattern)
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { container } from "$lib/shared/di";
-  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount, untrack } from "svelte";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -27,6 +26,9 @@ Navigation via bottom tabs (mobile-first UX pattern)
     clearActiveConceptId,
   } from "./state/experience-persistence.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { setDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
+  import ConfettiBurst from "$lib/shared/delight/components/ConfettiBurst.svelte";
+  import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
 
   type LearnMode = "concepts" | "play" | "codex";
 
@@ -40,7 +42,11 @@ Navigation via bottom tabs (mobile-first UX pattern)
     onHeaderChange?: (header: string) => void;
   } = $props();
 
-  const hapticService = container.items.hapticFeedback;
+  // Services from DI
+  const delightOrchestrator = container.items.delightOrchestrator;
+
+  // Provide delight orchestrator to child components via context
+  setDelightOrchestrator(delightOrchestrator);
 
   // Active mode synced with navigation state
   let activeMode = $state<LearnMode>("concepts");
@@ -158,6 +164,10 @@ Navigation via bottom tabs (mobile-first UX pattern)
 </script>
 
 <div class="learn-tab">
+  <!-- Delight components (confetti and toasts) -->
+  <ConfettiBurst orchestrator={delightOrchestrator} />
+  <AchievementToast orchestrator={delightOrchestrator} />
+
   <!-- Content area - tab switching with slide transitions -->
   <div class="content-container">
     {#key activeMode}

@@ -8,7 +8,6 @@ Supports two view modes:
 -->
 <script lang="ts">
 	import { container } from '$lib/shared/di';
-	import type { IHapticFeedback } from '$lib/shared/application/services/contracts/IHapticFeedback';
 	import { onMount } from 'svelte';
 	import GridMergeAnimation from './grid-merge/GridMergeAnimation.svelte';
 	import ExperienceProgressIndicator from './ExperienceProgressIndicator.svelte';
@@ -99,6 +98,9 @@ Supports two view modes:
 	}
 
 	function handleComplete() {
+		// Just haptic feedback - the visual delight comes from
+		// progress updates and card state changes, not confetti
+		hapticService?.trigger('success');
 		experienceState.reset();
 		onComplete?.();
 	}

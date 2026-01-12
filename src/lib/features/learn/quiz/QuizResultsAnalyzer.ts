@@ -7,6 +7,10 @@
 
 import type { QuizResults } from "./domain/models/quiz-models";
 import { QuizMode, QuizType } from "./domain/enums/quiz-enums";
+import {
+  QUIZ_ACHIEVEMENTS,
+  type AchievementDefinition,
+} from "./domain/achievement-definitions";
 
 // ============================================================================
 // Types
@@ -35,6 +39,7 @@ export interface IQuizResultsAnalyzer {
 
   // Achievements
   getAchievements(results: QuizResults): string[];
+  getAchievementDefinitions(results: QuizResults): AchievementDefinition[];
   hasAchievement(results: QuizResults, achievementName: string): boolean;
 
   // Formatting
@@ -157,6 +162,50 @@ export class QuizResultsAnalyzer implements IQuizResultsAnalyzer {
 
   hasAchievement(results: QuizResults, achievementName: string): boolean {
     return this.getAchievements(results).includes(achievementName);
+  }
+
+  /**
+   * Get achievement definitions with tier information for animated display.
+   */
+  getAchievementDefinitions(results: QuizResults): AchievementDefinition[] {
+    const definitions: AchievementDefinition[] = [];
+
+    // Perfect score (gold)
+    if (results.accuracyPercentage === 100) {
+      definitions.push(QUIZ_ACHIEVEMENTS["perfect-score"]!);
+    }
+
+    // Perfectionist (gold) - no wrong answers
+    if (results.incorrectGuesses === 0 && results.correctAnswers > 0) {
+      definitions.push(QUIZ_ACHIEVEMENTS["perfectionist"]!);
+    }
+
+    // High achiever (silver)
+    if (results.accuracyPercentage >= 90 && results.accuracyPercentage < 100) {
+      definitions.push(QUIZ_ACHIEVEMENTS["high-achiever"]!);
+    }
+
+    // Speed demon (silver)
+    if (results.averageTimePerQuestion && results.averageTimePerQuestion < 3) {
+      definitions.push(QUIZ_ACHIEVEMENTS["speed-demon"]!);
+    }
+
+    // Hot streak (silver)
+    if (results.streakLongestCorrect && results.streakLongestCorrect >= 5) {
+      definitions.push(QUIZ_ACHIEVEMENTS["hot-streak"]!);
+    }
+
+    // Quick learner (bronze)
+    if (results.completionTimeSeconds < 60) {
+      definitions.push(QUIZ_ACHIEVEMENTS["quick-learner"]!);
+    }
+
+    // Marathon runner (bronze)
+    if (results.totalQuestions >= 10) {
+      definitions.push(QUIZ_ACHIEVEMENTS["marathon-runner"]!);
+    }
+
+    return definitions;
   }
 
   // ==========================================================================

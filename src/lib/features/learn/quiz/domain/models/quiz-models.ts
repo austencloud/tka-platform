@@ -101,6 +101,9 @@ export interface QuizSession {
   lastInteraction: Date;
   isActive: boolean;
   isCompleted: boolean;
+  // Streak tracking within this session
+  currentStreak: number; // Consecutive correct answers right now
+  longestStreak: number; // Best streak achieved in this session
 }
 
 /**

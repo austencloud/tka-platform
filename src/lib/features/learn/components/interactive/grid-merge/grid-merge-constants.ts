@@ -25,7 +25,7 @@ export const GRID = {
 
 export const TIMING = {
 	/** Main transition duration for all phase changes */
-	MERGE: 600,
+	MERGE: 700,
 	/** Point entrance pop-in duration */
 	ENTRANCE: 500,
 	/** Label fade/scale duration */
@@ -34,8 +34,10 @@ export const TIMING = {
 	STAGGER: 100,
 	/** Highlight pulse duration */
 	HIGHLIGHT: 500,
-	/** Easing for smooth settle without harsh overshoot */
-	EASING: 'cubic-bezier(0.33, 1, 0.68, 1)'
+	/** Smooth ease-out for controlled transitions */
+	EASING: 'cubic-bezier(0.33, 1, 0.68, 1)',
+	/** Smoother ease-out for secondary elements (backgrounds) */
+	EASING_SOFT: 'cubic-bezier(0.25, 1, 0.5, 1)'
 } as const;
 
 // =============================================================================

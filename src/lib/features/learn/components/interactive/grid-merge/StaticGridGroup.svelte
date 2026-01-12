@@ -70,13 +70,15 @@
 <style>
 	.static-grid {
 		transform-origin: var(--grid-center) var(--grid-center);
-		transition: transform var(--merge-duration) var(--merge-easing),
+		will-change: transform, opacity;
+		transition:
+			transform var(--merge-duration) var(--merge-easing),
 			opacity var(--merge-duration) ease-out;
 	}
 
-	/* Points base styling */
+	/* Points base styling - uses theme variables for light/dark mode */
 	.center-point {
-		fill: var(--dm-grid-color, #d0d0d0);
+		fill: var(--theme-text-dim, #9ca3af);
 		transform-box: fill-box;
 		transform-origin: center;
 		opacity: 0;
@@ -88,8 +90,8 @@
 	}
 
 	.outer-point {
-		fill: var(--dm-grid-color, #d0d0d0);
-		stroke: var(--dm-grid-color, #d0d0d0);
+		fill: var(--theme-text-dim, #9ca3af);
+		stroke: var(--theme-text-dim, #9ca3af);
 		stroke-width: 13;
 		stroke-miterlimit: 10;
 		fill-opacity: 1;
@@ -108,7 +110,7 @@
 	}
 
 	.hand-point {
-		fill: #9ca3af;
+		fill: var(--theme-text-tertiary, #6b7280);
 		transform-box: fill-box;
 		transform-origin: center;
 		opacity: 0;
@@ -172,14 +174,14 @@
 	/* Center highlighted */
 	.highlight-center .center-point {
 		opacity: 1;
-		fill: #ffffff;
+		fill: var(--theme-accent, #22d3ee);
 		animation: highlightPulse var(--highlight-duration) var(--merge-easing) forwards;
 	}
 
 	/* Hand points highlighted with stagger */
 	.highlight-hand .hand-point {
 		opacity: 1;
-		fill: #ffffff;
+		fill: var(--theme-accent, #22d3ee);
 		animation: highlightPulse var(--highlight-duration) var(--merge-easing) forwards;
 	}
 	.highlight-hand .hand-point[data-index='0'] {
@@ -198,7 +200,7 @@
 	/* Outer points highlighted with stagger (filled style for diamond) */
 	.highlight-outer .outer-point {
 		opacity: 1;
-		fill: #ffffff;
+		fill: var(--theme-accent, #22d3ee);
 		fill-opacity: 1;
 		stroke-opacity: 0;
 		animation: highlightPulse var(--highlight-duration) var(--merge-easing) forwards;

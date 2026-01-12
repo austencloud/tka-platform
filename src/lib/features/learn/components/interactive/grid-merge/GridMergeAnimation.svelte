@@ -42,6 +42,7 @@
 		--grid-center: ${GRID.CENTER}px;
 		--merge-duration: ${TIMING.MERGE}ms;
 		--merge-easing: ${TIMING.EASING};
+		--merge-easing-soft: ${TIMING.EASING_SOFT};
 		--entrance-duration: ${TIMING.ENTRANCE}ms;
 		--label-duration: ${TIMING.LABEL}ms;
 		--highlight-duration: ${TIMING.HIGHLIGHT}ms;

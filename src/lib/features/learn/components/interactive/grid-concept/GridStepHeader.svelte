@@ -59,9 +59,9 @@
 		{#if pointTypePhase === 'center'}
 			The <strong>center point</strong> is the hub of all movement.
 		{:else if pointTypePhase === 'hand'}
-			<strong>4 hand points</strong> are halfway between center and outer.
+			<strong>Hand points</strong> are halfway between center and outer.
 		{:else}
-			<strong>4 outer points</strong> define the grid's boundary.
+			<strong>Outer points</strong> define the grid's boundary.
 		{/if}
 	{/if}
 </p>

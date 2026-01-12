@@ -17,6 +17,8 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import QuizPictographCard from "./shared/QuizPictographCard.svelte";
   import QuizLetterButton from "./shared/QuizLetterButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
+  import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
+  import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
 
   let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
     onAnswerSubmit?: (isCorrect: boolean) => void;
@@ -25,6 +27,7 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   }>();
 
   let hapticService: IHapticFeedback;
+  const delightOrchestrator = getDelightOrchestrator();
 
   let questionData = $state<QuizQuestionData | null>(null);
   let selectedAnswerId = $state<string | null>(null);
@@ -33,6 +36,10 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let questionKey = $state(0);
+
+  // Streak tracking within session
+  let currentStreak = $state(0);
+  let showScorePop = $state(false);
 
   let currentPictograph = $derived(
     questionData?.questionContent as PictographData | null
@@ -72,6 +79,25 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
     selectedAnswerId = optionId;
     isAnswered = true;
     showFeedback = true;
+
+    // Update streak and show animations
+    if (isCorrect) {
+      currentStreak++;
+      showScorePop = true;
+
+      // Mini confetti for streak of 3+
+      if (currentStreak >= 3 && currentStreak % 3 === 0) {
+        delightOrchestrator?.trigger("answer-correct", {
+          confettiAmount: 15
+        });
+      }
+
+      setTimeout(() => {
+        showScorePop = false;
+      }, 800);
+    } else {
+      currentStreak = 0;
+    }
 
     setTimeout(() => {
       hapticService?.trigger(isCorrect ? "success" : "error");
@@ -132,11 +158,19 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
           {/each}
         </div>
 
+        <!-- Score pop animation -->
+        <ScorePopAnimation
+          visible={showScorePop}
+          score={1}
+          streakCount={currentStreak}
+        />
+
         {#if showFeedback}
           <QuizFeedbackBanner
             isCorrect={isCorrectAnswer}
             correctMessage={`Correct! This is "${correctAnswer}"`}
             incorrectMessage={`The correct letter is "${correctAnswer}"`}
+            streakCount={currentStreak}
           />
         {/if}
       </div>

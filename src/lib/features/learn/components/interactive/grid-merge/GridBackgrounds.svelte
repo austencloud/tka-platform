@@ -28,13 +28,14 @@
 
 <style>
 	.bg {
-		fill: var(--dm-pictograph-bg, #0a0a0f);
-		stroke: rgba(255, 255, 255, 0.15);
+		fill: var(--theme-card-bg, rgba(0, 0, 0, 0.4));
+		stroke: var(--theme-stroke, rgba(255, 255, 255, 0.15));
 		stroke-width: 2;
 		transform-origin: var(--grid-center) var(--grid-center);
+		will-change: transform, opacity;
 		transition:
-			transform var(--merge-duration) var(--merge-easing),
-			opacity var(--merge-duration) var(--merge-easing);
+			transform var(--merge-duration) var(--merge-easing-soft, var(--merge-easing)),
+			opacity calc(var(--merge-duration) * 0.6) ease-out;
 	}
 
 	/* Merged state - single centered background */
