@@ -90,6 +90,7 @@ class TestThumbnailLocalCache {
   private cache = new Map<string, CachedEntry>();
   private maxSizeBytes: number;
   private timestampCounter = 0; // Monotonic counter for deterministic ordering
+  private isPruning = false; // Concurrency guard
 
   constructor(maxSizeBytes: number = 100 * 1024 * 1024) {
     this.maxSizeBytes = maxSizeBytes;
@@ -135,24 +136,41 @@ class TestThumbnailLocalCache {
   }
 
   async prune(maxSizeBytes: number): Promise<number> {
-    const stats = await this.getStats();
-    if (stats.sizeBytes <= maxSizeBytes) return 0;
-
-    // Get entries sorted by timestamp (oldest first)
-    const entries = Array.from(this.cache.entries())
-      .sort((a, b) => a[1].timestamp - b[1].timestamp);
-
-    let currentSize = stats.sizeBytes;
-    let deletedCount = 0;
-
-    for (const [key, entry] of entries) {
-      if (currentSize <= maxSizeBytes) break;
-      this.cache.delete(key);
-      currentSize -= entry.sizeBytes;
-      deletedCount++;
+    // Concurrency guard: prevent overlapping prune operations
+    if (this.isPruning) {
+      return 0;
     }
+    this.isPruning = true;
 
-    return deletedCount;
+    try {
+      const stats = await this.getStats();
+      if (stats.sizeBytes <= maxSizeBytes) {
+        return 0;
+      }
+
+      // Get entries sorted by timestamp (oldest first)
+      const entries = Array.from(this.cache.entries())
+        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+
+      let currentSize = stats.sizeBytes;
+      let deletedCount = 0;
+
+      for (const [key, entry] of entries) {
+        if (currentSize <= maxSizeBytes) break;
+        this.cache.delete(key);
+        currentSize -= entry.sizeBytes;
+        deletedCount++;
+      }
+
+      return deletedCount;
+    } finally {
+      this.isPruning = false;
+    }
+  }
+
+  // Expose isPruning for testing
+  getIsPruning(): boolean {
+    return this.isPruning;
   }
 }
 
@@ -278,6 +296,45 @@ describe("ThumbnailLocalCache", () => {
 
       const result = await cache.get("key");
       expect(result?.size).toBe(new Blob(["updated"]).size);
+    });
+  });
+
+  describe("concurrency guard", () => {
+    it("prevents concurrent prune operations", async () => {
+      const smallCache = new TestThumbnailLocalCache(100);
+
+      // Add entries that exceed limit
+      await smallCache.set("key1", new Blob(["x".repeat(40)]));
+      await smallCache.set("key2", new Blob(["y".repeat(40)]));
+      await smallCache.set("key3", new Blob(["z".repeat(40)]));
+
+      // Manually trigger prune (auto-prune already happened, but we test the guard)
+      // Run two prunes concurrently
+      const prune1 = smallCache.prune(50);
+      const prune2 = smallCache.prune(50);
+
+      const [result1, result2] = await Promise.all([prune1, prune2]);
+
+      // One should succeed, one should return 0 (blocked by guard)
+      expect(result1 + result2).toBeGreaterThan(0);
+      // The guard should prevent both from running full operations
+      expect(result1 === 0 || result2 === 0).toBe(true);
+    });
+
+    it("resets isPruning flag after completion", async () => {
+      const smallCache = new TestThumbnailLocalCache(100);
+      await smallCache.set("key1", new Blob(["x".repeat(150)]));
+
+      await smallCache.prune(50);
+
+      expect(smallCache.getIsPruning()).toBe(false);
+    });
+
+    it("resets isPruning flag even when under limit", async () => {
+      // No need to prune when under limit
+      await cache.prune(cache["maxSizeBytes"]);
+
+      expect(cache.getIsPruning()).toBe(false);
     });
   });
 });

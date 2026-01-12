@@ -19,6 +19,14 @@ const PropType = {
 
 type PropTypeValue = typeof PropType[keyof typeof PropType];
 
+interface VisibilitySettings {
+  showTKA?: boolean;
+  showReversals?: boolean;
+  showGrid?: boolean;
+  showNonRadialPoints?: boolean;
+  handPointVisibility?: "all" | "selected" | "none";
+}
+
 interface ThumbnailRenderInput {
   sequenceName: string;
   bluePropType?: PropTypeValue;
@@ -36,6 +44,7 @@ interface ThumbnailRenderInput {
   showBirthday?: boolean;
   customNotesText?: string;
   userName?: string;
+  visibility?: VisibilitySettings;
 }
 
 interface CompositionDefaults {
@@ -111,6 +120,27 @@ function checkInputUsesDefaults(
   const userInfoEnabled = input.addUserInfo ?? defaults.addUserInfo;
   if (userInfoEnabled && input.userName !== undefined && input.userName !== "") return false;
 
+  // Visibility settings affect rendered appearance - check if any are non-default
+  if (input.visibility) {
+    const defaultVisibility = {
+      showTKA: true,
+      showReversals: true,
+      showGrid: true,
+      showNonRadialPoints: false,
+      handPointVisibility: "all" as const,
+    };
+    if (input.visibility.showTKA !== undefined && input.visibility.showTKA !== defaultVisibility.showTKA)
+      return false;
+    if (input.visibility.showReversals !== undefined && input.visibility.showReversals !== defaultVisibility.showReversals)
+      return false;
+    if (input.visibility.showGrid !== undefined && input.visibility.showGrid !== defaultVisibility.showGrid)
+      return false;
+    if (input.visibility.showNonRadialPoints !== undefined && input.visibility.showNonRadialPoints !== defaultVisibility.showNonRadialPoints)
+      return false;
+    if (input.visibility.handPointVisibility !== undefined && input.visibility.handPointVisibility !== defaultVisibility.handPointVisibility)
+      return false;
+  }
+
   return true;
 }
 
@@ -132,6 +162,10 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     showBirthday: input.showBirthday,
     customNotesText: input.customNotesText,
     userName: input.userName,
+    // Grid visibility settings - affect rendered appearance
+    showGrid: input.visibility?.showGrid,
+    handPointVisibility: input.visibility?.handPointVisibility,
+    showNonRadialPoints: input.visibility?.showNonRadialPoints,
   };
 }
 
@@ -290,6 +324,82 @@ describe("ThumbnailKeyDeriver", () => {
         redPropType: undefined,
       });
       expect(key.propKey).toBe(PropType.STAFF);
+    });
+  });
+
+  describe("visibility settings detection", () => {
+    it("uses defaults when visibility settings match defaults", () => {
+      const key = deriveKey({
+        ...baseInput,
+        visibility: {
+          showTKA: true,
+          showReversals: true,
+          showGrid: true,
+          showNonRadialPoints: false,
+          handPointVisibility: "all",
+        },
+      });
+      expect(key.usesDefaults).toBe(true);
+    });
+
+    it("uses defaults when visibility is undefined", () => {
+      const key = deriveKey({
+        ...baseInput,
+        visibility: undefined,
+      });
+      expect(key.usesDefaults).toBe(true);
+    });
+
+    it("returns false when showGrid differs from default", () => {
+      const key = deriveKey({
+        ...baseInput,
+        visibility: { showGrid: false },
+      });
+      expect(key.usesDefaults).toBe(false);
+    });
+
+    it("returns false when showReversals differs from default", () => {
+      const key = deriveKey({
+        ...baseInput,
+        visibility: { showReversals: false },
+      });
+      expect(key.usesDefaults).toBe(false);
+    });
+
+    it("returns false when showTKA differs from default", () => {
+      const key = deriveKey({
+        ...baseInput,
+        visibility: { showTKA: false },
+      });
+      expect(key.usesDefaults).toBe(false);
+    });
+
+    it("returns false when showNonRadialPoints differs from default", () => {
+      const key = deriveKey({
+        ...baseInput,
+        visibility: { showNonRadialPoints: true },
+      });
+      expect(key.usesDefaults).toBe(false);
+    });
+
+    it("returns false when handPointVisibility differs from default", () => {
+      const key = deriveKey({
+        ...baseInput,
+        visibility: { handPointVisibility: "selected" },
+      });
+      expect(key.usesDefaults).toBe(false);
+    });
+
+    it("produces different hash for different visibility settings", () => {
+      const key1 = deriveKey({
+        ...baseInput,
+        visibility: { showGrid: true },
+      });
+      const key2 = deriveKey({
+        ...baseInput,
+        visibility: { showGrid: false },
+      });
+      expect(key1.hash).not.toBe(key2.hash);
     });
   });
 });
