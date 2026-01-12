@@ -4,15 +4,18 @@
    *
    * Loads all skewed pictographs and allows filtering by category (1-4).
    * Includes pagination for manageable browsing.
+   * Responds to prop type changes (Alt+number, P key).
    */
 
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
   import { container } from "$lib/shared/di";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   // Cardinal locations (for determining grid type)
   const CARDINAL = new Set([GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST]);
@@ -39,6 +42,17 @@
   let selectedCategory = $state<1 | 2 | 3 | 4 | "all">("all");
   let currentPage = $state(0);
   const perPage = 24;
+
+  // Get user's prop types from reactive settings (responds to Alt+number, P key)
+  const bluePropType = $derived.by(() => {
+    const settings = getSettings();
+    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
+  });
+
+  const redPropType = $derived.by(() => {
+    const settings = getSettings();
+    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
+  });
 
   // Filtered and paginated data
   const filtered = $derived(
@@ -122,9 +136,13 @@
       Loading pictographs...
     </div>
   {:else if error}
-    <div class="error">
+    <div class="error" role="alert">
       <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-      {error}
+      <p>{error}</p>
+      <button class="retry-btn" onclick={() => location.reload()}>
+        <i class="fas fa-redo" aria-hidden="true"></i>
+        Retry
+      </button>
     </div>
   {:else}
     <!-- Category Filter -->
@@ -183,6 +201,7 @@
         class="page-btn"
         onclick={prevPage}
         disabled={currentPage === 0}
+        aria-label="Previous page"
       >
         <i class="fas fa-chevron-left" aria-hidden="true"></i>
       </button>
@@ -199,13 +218,20 @@
         class="page-btn"
         onclick={nextPage}
         disabled={currentPage >= totalPages - 1}
+        aria-label="Next page"
       >
         <i class="fas fa-chevron-right" aria-hidden="true"></i>
       </button>
     </div>
 
     <!-- Pictograph Grid -->
-    <div class="grid">
+    {#if paginated.length === 0}
+      <div class="empty-state">
+        <i class="fas fa-layer-group" aria-hidden="true"></i>
+        <p>No pictographs in this category</p>
+      </div>
+    {:else}
+    <div class="grid themed-scrollbar">
       {#each paginated as pictograph (pictograph.id)}
         {@const blueMotion = pictograph.motions[MotionColor.BLUE]}
         {@const redMotion = pictograph.motions[MotionColor.RED]}
@@ -214,6 +240,8 @@
             <PictographContainer
               pictographData={pictograph}
               gridMode={GridMode.SKEWED}
+              bluePropTypeOverride={bluePropType}
+              redPropTypeOverride={redPropType}
             />
           </div>
           <div class="card-info">
@@ -226,6 +254,7 @@
                   class:copied={copiedId === pictograph.id}
                   onclick={() => copyPictographInfo(pictograph)}
                   title="Copy info to clipboard"
+                  aria-label="Copy pictograph info to clipboard"
                 >
                   <i class="fas {copiedId === pictograph.id ? 'fa-check' : 'fa-copy'}" aria-hidden="true"></i>
                 </button>
@@ -263,6 +292,7 @@
         </article>
       {/each}
     </div>
+    {/if}
 
     <!-- Bottom Pagination -->
     {#if totalPages > 1}
@@ -328,7 +358,69 @@
   }
 
   .error {
+    flex-direction: column;
     color: var(--semantic-error, #ef4444);
+  }
+
+  .error p {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .retry-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    min-height: 44px;
+    border: 1px solid var(--semantic-error, #ef4444);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .retry-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .retry-btn:focus-visible {
+    outline: 2px solid var(--semantic-error, #ef4444);
+    outline-offset: 2px;
+  }
+
+  .retry-btn:active {
+    transform: scale(0.97);
+  }
+
+  @media (pointer: coarse) {
+    .retry-btn {
+      min-height: 48px;
+    }
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 2rem;
+    color: var(--theme-text-secondary, #888);
+  }
+
+  .empty-state i {
+    font-size: 2.5rem;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
   }
 
   .filter-chips {
@@ -398,6 +490,15 @@
     background: rgba(255, 255, 255, 0.1);
   }
 
+  .chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .chip:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
   .pagination {
     display: flex;
     align-items: center;
@@ -416,7 +517,8 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.625rem 1rem;
+    min-height: 44px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     background: transparent;
@@ -424,6 +526,13 @@
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  @media (pointer: coarse) {
+    .page-btn {
+      min-height: 48px;
+      padding: 0.75rem 1rem;
+    }
   }
 
   .page-btn:hover:not(:disabled) {
@@ -434,6 +543,15 @@
   .page-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  .page-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .page-btn:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   .page-info {
@@ -537,14 +655,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2rem;
+    height: 2rem;
     border: none;
     border-radius: 6px;
     background: rgba(255, 255, 255, 0.08);
     color: var(--theme-text-secondary, #888);
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  @media (pointer: coarse) {
+    .copy-btn {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
   }
 
   .copy-btn:hover {
@@ -555,6 +680,15 @@
   .copy-btn.copied {
     background: rgba(52, 211, 153, 0.2);
     color: #34d399;
+  }
+
+  .copy-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .copy-btn:active {
+    transform: scale(0.9);
   }
 
   .position-row {
@@ -585,7 +719,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .motion-label {
@@ -615,7 +749,29 @@
   }
 
   .grid-type {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     opacity: 0.6;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .chip,
+    .page-btn,
+    .copy-btn,
+    .retry-btn,
+    .card {
+      transition: none;
+    }
+
+    .chip:active:not(:disabled),
+    .page-btn:active:not(:disabled),
+    .copy-btn:active,
+    .retry-btn:active {
+      transform: none;
+    }
+
+    .loading i {
+      animation: none;
+    }
   }
 </style>

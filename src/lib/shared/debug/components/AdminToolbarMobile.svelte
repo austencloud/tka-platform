@@ -33,6 +33,7 @@
     onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
     onPreviewSidebarTour: () => void;
+    onResetHelpDiscovery: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
     onClearLocalCache: () => void;
@@ -57,6 +58,7 @@
     onResetTabIntro,
     onPreviewFirstRun,
     onPreviewSidebarTour,
+    onResetHelpDiscovery,
     onClearCloudThumbnails,
     isClearingThumbnails,
     onClearLocalCache,
@@ -206,6 +208,11 @@
       <button type="button" class="action-card" onclick={onPreviewSidebarTour}>
         <i class="fas fa-route" aria-hidden="true"></i>
         <span>Sidebar Tour</span>
+      </button>
+
+      <button type="button" class="action-card" onclick={onResetHelpDiscovery}>
+        <i class="fas fa-circle-question" aria-hidden="true"></i>
+        <span>Reset Help Discovery</span>
       </button>
 
       <button

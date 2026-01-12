@@ -7,6 +7,7 @@
 
 import { container } from "$lib/shared/di";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import { Canvas2DAnimationRenderer } from "$lib/features/compose/services/implementations/Canvas2DAnimationRenderer";
 import type {
   IAnimatorLoader,
   AnimatorServices,
@@ -49,15 +50,9 @@ export class AnimatorLoader implements IAnimatorLoader {
 
   loadAnimationRenderer(): AnimationRendererLoadResult {
     try {
-      // Note: IAnimationRenderer may not be migrated to ITI yet
-      // Check if it exists in the container
-      const renderer = (container.items as any).animationRenderer as IAnimationRenderer | undefined;
-      if (!renderer) {
-        return {
-          success: false,
-          error: "animationRenderer not found in container (may not be migrated to ITI yet)",
-        };
-      }
+      // Canvas2DAnimationRenderer is not a singleton - each canvas gets its own instance
+      // This matches behavior of VideoPreRenderer and SequenceFramePreRenderer
+      const renderer: IAnimationRenderer = new Canvas2DAnimationRenderer();
       return { success: true, renderer };
     } catch (err) {
       console.error("Failed to load animation renderer:", err);

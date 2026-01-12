@@ -250,7 +250,6 @@
       onclick={toggleGrid}
       type="button"
     >
-      <i class="fas fa-border-all" aria-hidden="true"></i>
       <span>Grid</span>
     </button>
     <button
@@ -259,7 +258,6 @@
       onclick={toggleProps}
       type="button"
     >
-      <i class="fas fa-circle" aria-hidden="true"></i>
       <span>Props</span>
     </button>
     <button
@@ -268,8 +266,7 @@
       onclick={toggleBeatNumbers}
       type="button"
     >
-      <i class="fas fa-hashtag" aria-hidden="true"></i>
-      <span>#</span>
+      <span>Beat #</span>
     </button>
     <button
       class="element-btn"
@@ -278,7 +275,6 @@
       type="button"
       title="TKA Glyph includes turn numbers"
     >
-      <i class="fas fa-font" aria-hidden="true"></i>
       <span>Glyph</span>
     </button>
   </div>

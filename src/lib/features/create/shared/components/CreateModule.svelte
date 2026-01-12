@@ -56,7 +56,6 @@
   import StandardWorkspaceLayout from "./StandardWorkspaceLayout.svelte";
   import { setCreateModuleContext } from "../context/create-module-context";
   import LOOPCoordinator from "./coordinators/LOOPCoordinator.svelte";
-  import EditCoordinator from "./coordinators/EditCoordinator.svelte";
   import StartEndCoordinator from "./coordinators/StartEndCoordinator.svelte";
   import SequenceActionsCoordinator from "./coordinators/SequenceActionsCoordinator.svelte";
   import BeatEditorCoordinator from "./coordinators/BeatEditorCoordinator.svelte";
@@ -597,9 +596,6 @@
       }}
     />
   </div>
-
-  <!-- Edit Coordinator -->
-  <EditCoordinator />
 
   <!-- Video Record Coordinator -->
   <VideoRecordCoordinator />

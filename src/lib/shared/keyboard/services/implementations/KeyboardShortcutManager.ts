@@ -17,6 +17,7 @@ import type {
 import { Shortcut } from "../../domain/models/Shortcut";
 import { NormalizedKeyboardEvent } from "../../domain/models/KeyboardEvent";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { selectedArrowState } from "$lib/features/create/shared/state/selected-arrow-state.svelte";
 
 const debug = createComponentLogger("KeyboardShortcutManager");
 
@@ -186,6 +187,14 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
    * Handle keydown events
    */
   private handleKeydown(event: KeyboardEvent): void {
+    // Skip WASD shortcuts when an arrow is selected for adjustment
+    // The ArrowAdjustmentControls component handles WASD in this case
+    const key = event.key.toLowerCase();
+    if (selectedArrowState.selectedArrow && ["w", "a", "s", "d"].includes(key)) {
+      // Arrow is selected, let ArrowAdjustmentControls handle WASD
+      return;
+    }
+
     // Normalize the event
     const normalized = new NormalizedKeyboardEvent(event);
 

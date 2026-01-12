@@ -392,6 +392,24 @@ export async function initializeAuthListener() {
             );
           });
 
+        // Initialize global arrow adjustments (non-blocking)
+        // This loads all admin-set arrow position overrides from Firestore
+        import(
+          "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton"
+        )
+          .then(async ({ initializeGlobalAdjustments }) => {
+            const { getFirestoreInstance } =
+              await import("$lib/shared/auth/firebase");
+            await getFirestoreInstance();
+            await initializeGlobalAdjustments();
+          })
+          .catch((error) => {
+            console.warn(
+              "⚠️ [authState] Global arrow adjustments initialization failed:",
+              error
+            );
+          });
+
         // Sync first-run status FROM cloud (critical - must happen before UI renders)
         // This ensures returning users on new devices don't see the wizard again
         import("$lib/shared/onboarding/state/first-run-state.svelte")

@@ -52,9 +52,22 @@
   const selectedBeatNumber = $derived.by(
     () => activeSequenceState.selectedBeatNumber
   );
-  const selectedBeatData = $derived.by(
-    () => activeSequenceState.selectedBeatData
+
+  // CRITICAL: Track selectedStartPosition explicitly to ensure reactivity
+  // when orientation changes update the start position. Without this explicit
+  // dependency, Svelte may not detect that selectedBeatData needs to re-compute.
+  const selectedStartPosition = $derived.by(
+    () => activeSequenceState.selectedStartPosition
   );
+
+  // Derive selectedBeatData with explicit dependency on selectedStartPosition
+  // This ensures the UI updates when orientation changes modify the start position
+  const selectedBeatData = $derived.by(() => {
+    // Access selectedStartPosition to create explicit dependency
+    const _ = selectedStartPosition;
+    return activeSequenceState.selectedBeatData;
+  });
+
   const sequence = $derived.by(() => activeSequenceState.currentSequence);
 
   // Animation state for deletion visualization

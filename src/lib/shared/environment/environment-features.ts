@@ -131,6 +131,7 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   write: false, // Write module (unreleased)
   mandala: false, // Mandala generator (internal tool)
   skewlab: false, // Skewlab internal tool
+  "poi-lab": false, // Poi Lab internal tool (poi physics constraints)
   "background-builder": false, // Background builder internal tool
   "infinite-worlds": false, // Infinite worlds procedural generation (admin-only)
   museum: false, // Museum navigator - walkable 3D gallery (admin-only)

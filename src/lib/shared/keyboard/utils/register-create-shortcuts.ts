@@ -353,9 +353,9 @@ export function registerCreateShortcuts(
             panelState,
           });
 
-          // Close edit panel if it's open
-          if (panelState.isEditPanelOpen) {
-            panelState.closeEditPanel();
+          // Close beat editor panel if it's open
+          if (panelState.isBeatEditorPanelOpen) {
+            panelState.closeBeatEditorPanel();
           }
         } catch (err) {
           console.error("Failed to clear sequence:", err);
@@ -500,6 +500,7 @@ export function registerCreateShortcuts(
   });
 
   // w - Rewind/Reverse sequence
+  // Note: KeyboardShortcutManager blocks WASD when an arrow is selected for adjustment
   service.register({
     id: "create.transform-rewind",
     label: "Rewind Sequence",

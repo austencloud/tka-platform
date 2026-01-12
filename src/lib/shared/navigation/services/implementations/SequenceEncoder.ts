@@ -61,6 +61,11 @@ const ORIENTATION_ENCODE: Record<Orientation, string> = {
   [Orientation.OUT]: "o",
   [Orientation.CLOCK]: "k",
   [Orientation.COUNTER]: "t",
+  // Interradial orientations (Level 6 / poi)
+  [Orientation.CLOCK_IN]: "I",
+  [Orientation.CLOCK_OUT]: "O",
+  [Orientation.COUNTER_IN]: "N",
+  [Orientation.COUNTER_OUT]: "U",
 };
 
 const ORIENTATION_DECODE: Record<string, Orientation> = Object.fromEntries(
@@ -131,7 +136,9 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.EIGHTRINGS]: "E",
   [PropType.BIGEIGHTRINGS]: "e",
   // Quiad
-  [PropType.QUIAD]: "U",
+  [PropType.QUIAD]: "I",
+  // Poi family (momentum-based)
+  [PropType.POI]: "P",
 };
 
 const PROP_TYPE_DECODE: Record<string, PropType> = Object.fromEntries(

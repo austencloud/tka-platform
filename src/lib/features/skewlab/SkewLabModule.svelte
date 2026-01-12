@@ -8,7 +8,6 @@
    * - Categories: Browse skewed pictographs by category (1-4)
    */
 
-  import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import CategoryBrowser from "./components/CategoryBrowser.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -25,15 +24,13 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { container } from "$lib/shared/di";
-  import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   // State
   let activeTab = $state<"positions" | "categories">("categories");
   let selectedGroup = $state<"all" | "zeta" | "eta">("all");
   let blueOrientation = $state<Orientation>(Orientation.IN);
   let redOrientation = $state<Orientation>(Orientation.IN);
-  let settingsService: ISettingsState | null = $state(null);
 
   // Orientation options for the switcher
   const ORIENTATIONS = [
@@ -43,27 +40,15 @@
     { value: Orientation.COUNTER, label: "CCW", icon: "fa-rotate-left" },
   ] as const;
 
-  // Get user's prop types from settings
+  // Get user's prop types from reactive settings (responds to Alt+number, P key)
   const bluePropType = $derived.by(() => {
-    if (!settingsService) return PropType.HAND;
-    return (
-      settingsService.settings.bluePropType ??
-      settingsService.settings.propType ??
-      PropType.HAND
-    ) as PropType;
+    const settings = getSettings();
+    return (settings.bluePropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
   const redPropType = $derived.by(() => {
-    if (!settingsService) return PropType.HAND;
-    return (
-      settingsService.settings.redPropType ??
-      settingsService.settings.propType ??
-      PropType.HAND
-    ) as PropType;
-  });
-
-  onMount(() => {
-    settingsService = container.items.settingsState;
+    const settings = getSettings();
+    return (settings.redPropType ?? settings.propType ?? PropType.STAFF) as PropType;
   });
 
   // Position to hand location mapping (only Zeta and Eta positions for skewed mode)
@@ -279,7 +264,7 @@
     </div>
   </div>
 
-  <div class="grid">
+  <div class="grid themed-scrollbar">
     {#each displayPositions as position (position)}
       {@const pictograph = createStaticPictograph(position)}
       {@const positionLocations = POSITION_LOCATIONS[position]}
@@ -333,7 +318,7 @@
   }
 
   .badge {
-    font-size: 0.625rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -357,7 +342,8 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    padding: 0.625rem 1rem;
+    min-height: 44px;
     border: none;
     border-radius: 8px;
     background: transparent;
@@ -368,6 +354,12 @@
     transition: all 0.15s ease;
   }
 
+  @media (pointer: coarse) {
+    .tab {
+      min-height: 48px;
+    }
+  }
+
   .tab:hover {
     color: var(--theme-text, #fff);
   }
@@ -375,6 +367,15 @@
   .tab.active {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, #fff);
+  }
+
+  .tab:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .tab:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   .tab i {
@@ -451,11 +452,28 @@
     background: rgba(255, 255, 255, 0.15);
   }
 
+  .chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .chip:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
   .orientation-controls {
     display: flex;
-    gap: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
     padding: 0 1.5rem 1rem;
     flex-shrink: 0;
+  }
+
+  @media (max-width: 480px) {
+    .orientation-controls {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
   }
 
   .orientation-group {
@@ -490,7 +508,8 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.375rem 0.625rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
     border: none;
     border-radius: 6px;
     background: transparent;
@@ -499,6 +518,13 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  @media (pointer: coarse) {
+    .ori-chip {
+      min-height: 48px;
+      padding: 0.75rem;
+    }
   }
 
   .ori-chip:hover {
@@ -519,6 +545,15 @@
   .orientation-group.red .ori-chip.active {
     background: rgba(248, 113, 113, 0.2);
     color: #f87171;
+  }
+
+  .ori-chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .ori-chip:active {
+    transform: scale(0.95);
   }
 
   .ori-chip i {
@@ -589,5 +624,21 @@
   .loc.red {
     background: rgba(248, 113, 113, 0.15);
     color: #f87171;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .tab,
+    .chip,
+    .ori-chip,
+    .card {
+      transition: none;
+    }
+
+    .tab:active:not(:disabled),
+    .chip:active:not(:disabled),
+    .ori-chip:active {
+      transform: none;
+    }
   }
 </style>

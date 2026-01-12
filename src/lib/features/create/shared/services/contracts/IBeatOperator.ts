@@ -13,6 +13,7 @@ import type {
   BatchEditChanges,
 } from "../../types/create-module-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { BeatData } from "../../domain/models/BeatData";
 
 export interface IBeatOperator {
   /**
@@ -124,5 +125,37 @@ export interface IBeatOperator {
     rotationDirection: string,
     CreateModuleState: ICreateModuleState,
     panelState: unknown
+  ): void;
+
+  /**
+   * Update arrow manual adjustment for a specific prop color in a beat
+   * Persists WASD arrow position adjustments to sequence state
+   *
+   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
+   * @param color Prop color ('blue' or 'red')
+   * @param adjustmentX X offset in pixels
+   * @param adjustmentY Y offset in pixels
+   * @param CreateModuleState Create Module State for sequence operations
+   */
+  updateArrowAdjustment(
+    beatNumber: number,
+    color: string,
+    adjustmentX: number,
+    adjustmentY: number,
+    CreateModuleState: ICreateModuleState
+  ): void;
+
+  /**
+   * Persist complete beat data with accumulated arrow adjustments
+   * Called when adjustment panel closes to save all changes at once
+   *
+   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
+   * @param updatedBeatData Complete beat data with adjusted arrow positions
+   * @param CreateModuleState Create Module State for sequence operations
+   */
+  persistBeatWithAdjustments(
+    beatNumber: number,
+    updatedBeatData: BeatData,
+    CreateModuleState: ICreateModuleState
   ): void;
 }

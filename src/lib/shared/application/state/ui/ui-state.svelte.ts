@@ -3,7 +3,7 @@ import type { TabId } from "../../../navigation/domain/types";
 import type { IDiscoverThumbnailProvider } from "../../../../features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
 
 // Spotlight display modes
-export type SpotlightDisplayMode = "image" | "beatgrid";
+export type SpotlightDisplayMode = "image" | "beatgrid" | "animation";
 
 // Centralized UI state leveraging Svelte 5 runes.
 // Uses TabId (which includes both ModuleId and LegacyTabId) for backwards compatibility
@@ -244,6 +244,18 @@ export function openSpotlightWithBeatGrid(sequence: SequenceData): void {
   uiState.spotlightImageUrl = null;
   uiState.spotlightThumbnailService = null;
   uiState.spotlightDisplayMode = "beatgrid";
+  uiState.showSpotlight = true;
+}
+
+/**
+ * Open spotlight viewer with animation playback
+ * Renders the AnimationPlayer fullscreen for immersive viewing
+ */
+export function openSpotlightWithAnimation(sequence: SequenceData): void {
+  uiState.spotlightSequence = sequence;
+  uiState.spotlightImageUrl = null;
+  uiState.spotlightThumbnailService = null;
+  uiState.spotlightDisplayMode = "animation";
   uiState.showSpotlight = true;
 }
 

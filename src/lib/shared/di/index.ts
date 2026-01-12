@@ -47,7 +47,9 @@ import { createQRContainer } from "./containers/qr-container";
 import { createAnimation3DContainer } from "./containers/animation-3d-container";
 import { deepOceanContainer } from "./containers/deep-ocean-container";
 import { createGalleryContainer } from "./containers/gallery-container";
+import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
+import { createPoiLabContainer } from "./containers/poi-lab-container";
 
 // ============================================================================
 // INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
@@ -171,6 +173,14 @@ const galleryContainer = createGalleryContainer(
   libraryContainer.items.libraryRepository
 );
 
+// Delight container needs hapticFeedback from core
+const delightContainer = createDelightContainer(
+  coreContainer.items.hapticFeedback
+);
+
+// Poi lab container - self-contained, no external dependencies
+const poiLabContainer = createPoiLabContainer();
+
 // ============================================================================
 // COMPOSE ALL CONTAINERS INTO ONE
 // ============================================================================
@@ -223,7 +233,9 @@ export const container = createContainer()
   .add(animation3DContainer.items)
   .add(deepOceanContainer.items)
   .add(galleryContainer.items)
-  .add(backgroundBuilderContainer.items);
+  .add(backgroundBuilderContainer.items)
+  .add(delightContainer.items)
+  .add(poiLabContainer.items);
 
 // Export type for the composed container
 export type AppContainer = typeof container;

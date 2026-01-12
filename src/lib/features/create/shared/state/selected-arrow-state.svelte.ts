@@ -1,10 +1,8 @@
 /**
  * Selected Arrow State
  *
- * TEMPORARY STUB for Session B development
- * Session A will replace this with the real implementation
- *
- * Manages the currently selected arrow in the pictograph adjustment editor
+ * Manages the currently selected arrow in the pictograph adjustment editor.
+ * Uses an observer pattern for reactivity across components.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -16,11 +14,16 @@ interface SelectedArrow {
   pictographData: PictographData;
 }
 
-// CRITICAL FIX: Use plain JavaScript object instead of $state
-// This state doesn't need Svelte reactivity - it's just a simple container.
-// Using $state at module-level caused issues when DevTools was open during refresh
-// because module loading timing changes and $state can't be used outside components.
+// Plain state (not $state to avoid module-level issues with DevTools)
 let _selectedArrow: SelectedArrow | null = null;
+
+// Observer pattern for reactivity
+type SelectionObserver = () => void;
+const observers = new Set<SelectionObserver>();
+
+function notifyObservers() {
+  observers.forEach((observer) => observer());
+}
 
 export const selectedArrowState = {
   get selectedArrow() {
@@ -33,10 +36,12 @@ export const selectedArrowState = {
     pictographData: PictographData
   ) {
     _selectedArrow = { motionData, color, pictographData };
+    notifyObservers();
   },
 
   clearSelection() {
     _selectedArrow = null;
+    notifyObservers();
   },
 
   isSelected(motionData: MotionData, color: string): boolean {
@@ -47,5 +52,14 @@ export const selectedArrowState = {
       _selectedArrow.motionData.startLocation === motionData.startLocation &&
       _selectedArrow.motionData.endLocation === motionData.endLocation
     );
+  },
+
+  /**
+   * Register an observer to be notified when selection changes.
+   * Returns an unsubscribe function.
+   */
+  subscribe(observer: SelectionObserver): () => void {
+    observers.add(observer);
+    return () => observers.delete(observer);
   },
 };

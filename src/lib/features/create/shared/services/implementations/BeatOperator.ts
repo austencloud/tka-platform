@@ -15,6 +15,7 @@ import type {
 } from "../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
+import type { BeatData } from "../../domain/models/BeatData";
 
 // Import handlers
 import { removeBeat } from "./beat-operations/BeatRemovalHandler";
@@ -26,6 +27,10 @@ import {
   bulkUpdatePropType,
 } from "./beat-operations/PropTypeHandler";
 import { updateRotationDirection } from "./beat-operations/RotationDirectionHandler";
+import {
+  updateArrowAdjustment,
+  persistBeatWithAdjustments,
+} from "./beat-operations/ArrowAdjustmentHandler";
 
 export class BeatOperator implements IBeatOperator {
   constructor(
@@ -97,5 +102,29 @@ export class BeatOperator implements IBeatOperator {
       this.motionQueryHandler,
       this.gridModeDeriver
     );
+  }
+
+  updateArrowAdjustment(
+    beatNumber: number,
+    color: string,
+    adjustmentX: number,
+    adjustmentY: number,
+    createModuleState: ICreateModuleState
+  ): void {
+    updateArrowAdjustment(
+      beatNumber,
+      color,
+      adjustmentX,
+      adjustmentY,
+      createModuleState
+    );
+  }
+
+  persistBeatWithAdjustments(
+    beatNumber: number,
+    updatedBeatData: BeatData,
+    createModuleState: ICreateModuleState
+  ): void {
+    persistBeatWithAdjustments(beatNumber, updatedBeatData, createModuleState);
   }
 }

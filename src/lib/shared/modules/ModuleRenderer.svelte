@@ -49,7 +49,7 @@
     // "animate" is a backwards-compat alias - deep links and old bookmarks may use it
     animate: () => import("../../features/compose/ComposeModule.svelte"),
     train: () => import("../../features/train/components/TrainModule.svelte"),
-    library: () => import("../../features/library/LibraryModule.svelte"),
+    // library module retired - functionality now in Discover > Sequences via scope toggle
     // inbox module retired - Messages/notifications accessible via Dashboard widget drawer
     // edit module retired - Edit is now a slide-out panel, not a standalone module
     word_card: () =>
@@ -62,6 +62,8 @@
       import("../../features/admin/components/AdminDashboard.svelte"),
     // Skew Lab module - experimental skewed positions (admin-only, temporary)
     skewlab: () => import("../../features/skewlab/SkewLabModule.svelte"),
+    // Poi Lab module - poi physics constraints with VTG terminology
+    "poi-lab": () => import("../../features/poi-lab/PoiLabModule.svelte"),
     // ML Training module for prop detection model training
     "ml-training": () =>
       import("../../features/train/ml-training/components/MLTrainingModule.svelte"),

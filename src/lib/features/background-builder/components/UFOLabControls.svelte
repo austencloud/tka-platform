@@ -1,5 +1,12 @@
 <script lang="ts">
   import type { UFOMood, WobbleType } from "$lib/shared/background/night-sky/services/UFOSystem";
+  import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
+  import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
+  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
+
+  type ColorPreset = "default" | "cyan" | "blue" | "lime" | "amber" | "rose" | "emerald" | "red" | "gray";
 
   type EntranceType = "fade" | "warp" | "zoom" | "descend";
   type ExitType = "fade" | "warp" | "zoom" | "shootUp";
@@ -50,34 +57,69 @@
     onTriggerComet,
   }: Props = $props();
 
-  // Collapsible section state - expand all by default since we have vertical space
-  let expandedSections = $state<Set<string>>(new Set(["mood", "reactions", "animations", "events"]));
+  // Track active trigger for visual feedback
+  let activeMoodTrigger = $state<UFOMood | null>(null);
+  let activeWobbleTrigger = $state<WobbleType | null>(null);
 
-  function toggleSection(section: string) {
-    const next = new Set(expandedSections);
-    if (next.has(section)) {
-      next.delete(section);
-    } else {
-      next.add(section);
-    }
-    expandedSections = next;
-  }
+  // Status bar configuration
+  let statusChips = $derived(() => {
+    const chips: { label: string; color: "cyan" | "blue" | "green" | "orange" | "red" | "purple" | "gray" }[] = [];
 
-  const moodOptions: { mood: UFOMood; icon: string; color: string }[] = [
-    { mood: "curious", icon: "fa-search", color: "#93c5fd" },
-    { mood: "excited", icon: "fa-bolt", color: "#fcd34d" },
-    { mood: "playful", icon: "fa-star", color: "#c4b5fd" },
-    { mood: "bored", icon: "fa-meh", color: "#9ca3af" },
-    { mood: "startled", icon: "fa-exclamation", color: "#fca5a5" },
-    { mood: "tired", icon: "fa-bed", color: "#6b7280" },
+    // State chip
+    const stateColors: Record<string, "cyan" | "blue" | "green" | "orange" | "red" | "purple" | "gray"> = {
+      wandering: "blue",
+      paused: "orange",
+      scanning_star: "green",
+      scanning_ground: "green",
+      tracking_event: "red",
+      chasing: "red",
+      entering: "purple",
+      exiting: "purple",
+      napping: "gray",
+      celebrating: "orange",
+    };
+    chips.push({
+      label: status.state ?? "inactive",
+      color: stateColors[status.state ?? ""] ?? "gray"
+    });
+
+    // Mood chip
+    const moodColors: Record<string, "cyan" | "blue" | "green" | "orange" | "red" | "purple" | "gray"> = {
+      curious: "blue",
+      excited: "orange",
+      playful: "purple",
+      bored: "gray",
+      startled: "red",
+      tired: "gray",
+    };
+    chips.push({
+      label: status.mood ?? "none",
+      color: moodColors[status.mood ?? ""] ?? "gray"
+    });
+
+    return chips;
+  });
+
+  let statusCounters = $derived([
+    { icon: "fa-brain", value: `${status.scannedStars}/10`, label: "Stars scanned" },
+  ]);
+
+
+  const moodOptions: { mood: UFOMood; icon: string; color: ColorPreset }[] = [
+    { mood: "curious", icon: "fa-search", color: "blue" },
+    { mood: "excited", icon: "fa-bolt", color: "amber" },
+    { mood: "playful", icon: "fa-star", color: "default" },
+    { mood: "bored", icon: "fa-meh", color: "gray" },
+    { mood: "startled", icon: "fa-exclamation", color: "red" },
+    { mood: "tired", icon: "fa-bed", color: "gray" },
   ];
 
-  const wobbleOptions: { type: WobbleType; label: string; icon: string }[] = [
-    { type: "curious_tilt", label: "Curious", icon: "fa-search" },
-    { type: "startled_jolt", label: "Startle", icon: "fa-bolt" },
-    { type: "disappointed_shake", label: "Disappoint", icon: "fa-frown" },
-    { type: "happy_bounce", label: "Happy", icon: "fa-smile" },
-    { type: "yawn_stretch", label: "Yawn", icon: "fa-bed" },
+  const wobbleOptions: { type: WobbleType; label: string; icon: string; color: ColorPreset }[] = [
+    { type: "curious_tilt", label: "Curious", icon: "fa-search", color: "blue" },
+    { type: "startled_jolt", label: "Startle", icon: "fa-bolt", color: "amber" },
+    { type: "disappointed_shake", label: "Disappoint", icon: "fa-frown", color: "gray" },
+    { type: "happy_bounce", label: "Happy", icon: "fa-smile", color: "emerald" },
+    { type: "yawn_stretch", label: "Yawn", icon: "fa-bed", color: "gray" },
   ];
 
   const entranceOptions: { type: EntranceType; icon: string }[] = [
@@ -93,169 +135,105 @@
     { type: "zoom", icon: "fa-expand-arrows-alt" },
     { type: "shootUp", icon: "fa-rocket" },
   ];
+
+  function triggerMood(mood: UFOMood) {
+    onSetMood(mood);
+    activeMoodTrigger = mood;
+    setTimeout(() => {
+      if (activeMoodTrigger === mood) activeMoodTrigger = null;
+    }, 300);
+  }
+
+  function triggerWobble(type: WobbleType) {
+    onTriggerWobble(type);
+    activeWobbleTrigger = type;
+    setTimeout(() => {
+      if (activeWobbleTrigger === type) activeWobbleTrigger = null;
+    }, 300);
+  }
 </script>
 
 <div class="ufo-lab">
-  <!-- Compact Status Bar -->
-  <div class="status-bar">
-    <div class="status-chip {status.state ?? 'inactive'}">
-      <span class="chip-label">{status.state ?? 'inactive'}</span>
-    </div>
-    <div class="status-chip mood {status.mood ?? 'inactive'}">
-      <span class="chip-label">{status.mood ?? 'none'}</span>
-    </div>
-    <div class="energy-mini">
-      <i class="fas fa-bolt"></i>
-      <div class="energy-track">
-        <div class="energy-fill" style="width: {(1 - (status.tiredness ?? 0)) * 100}%"></div>
-      </div>
-    </div>
-    <div class="memory-mini" title="{status.scannedStars} stars scanned">
-      <i class="fas fa-brain"></i>
-      <span>{status.scannedStars}/10</span>
-    </div>
-  </div>
+  <!-- Status Bar -->
+  <LabStatusBar
+    chips={statusChips()}
+    energy={{ value: 1 - (status.tiredness ?? 0), label: "Energy" }}
+    counters={statusCounters}
+  />
 
-  <!-- Primary Actions -->
-  <div class="primary-actions">
-    <button class="spawn-btn" onclick={onSpawn}>
-      <i class="fas fa-satellite"></i>
-      <span>Spawn UFO</span>
-    </button>
-  </div>
+  <!-- Primary Action: Spawn -->
+  <ActionButton label="Spawn UFO" icon="fa-satellite" fullWidth onclick={onSpawn} />
 
   <!-- Quick Commands -->
-  <div class="quick-commands">
-    <button class="cmd-btn" onclick={onWander}>
-      <i class="fas fa-random"></i>
-      <span>Wander</span>
-    </button>
-    <button class="cmd-btn" onclick={onDrift}>
-      <i class="fas fa-cloud"></i>
-      <span>Drift</span>
-    </button>
-    <button class="cmd-btn" onclick={onPause}>
-      <i class="fas fa-pause"></i>
-      <span>Pause</span>
-    </button>
-    <button class="cmd-btn" onclick={onScanStar}>
-      <i class="fas fa-crosshairs"></i>
-      <span>Scan</span>
-    </button>
-  </div>
+  <ChipGroup columns={4}>
+    <ChipToggle icon="fa-random" label="Wander" layout="vertical" color="default" onclick={onWander} />
+    <ChipToggle icon="fa-cloud" label="Drift" layout="vertical" color="default" onclick={onDrift} />
+    <ChipToggle icon="fa-pause" label="Pause" layout="vertical" color="default" onclick={onPause} />
+    <ChipToggle icon="fa-crosshairs" label="Scan" layout="vertical" color="default" onclick={onScanStar} />
+  </ChipGroup>
 
-  <!-- Collapsible: Mood -->
-  <div class="collapsible-section" class:expanded={expandedSections.has("mood")}>
-    <button class="section-toggle" onclick={() => toggleSection("mood")}>
-      <i class="fas fa-heart"></i>
-      <span>Mood</span>
-      <i class="fas fa-chevron-down chevron"></i>
-    </button>
-    {#if expandedSections.has("mood")}
-      <div class="section-content">
-        <div class="mood-grid">
-          {#each moodOptions as { mood, icon, color }}
-            <button
-              class="mood-btn"
-              class:active={status.mood === mood}
-              style="--mood-color: {color}"
-              onclick={() => onSetMood(mood)}
-              title={mood}
-            >
-              <i class="fas {icon}"></i>
-            </button>
-          {/each}
-        </div>
-        <div class="mood-actions">
-          <button class="secondary-btn" onclick={onResetTiredness}>
-            <i class="fas fa-battery-full"></i> Reset Energy
-          </button>
-          <button class="secondary-btn" onclick={onClearScannedStars}>
-            <i class="fas fa-eraser"></i> Clear Memory
-          </button>
-        </div>
+  <!-- Mood Control -->
+  <CollapsibleLabSection title="Mood" icon="fa-heart" defaultOpen={true} accentColor="purple">
+    <div class="trigger-grid cols-3">
+      {#each moodOptions as { mood, icon, color }}
+        <ChipToggle
+          {icon}
+          {color}
+          active={activeMoodTrigger === mood || status.mood === mood}
+          onclick={() => triggerMood(mood)}
+        />
+      {/each}
+    </div>
+    <div class="mood-actions">
+      <ChipToggle icon="fa-battery-full" label="Reset Energy" color="emerald" onclick={onResetTiredness} />
+      <ChipToggle icon="fa-eraser" label="Clear Memory" color="default" onclick={onClearScannedStars} />
+    </div>
+  </CollapsibleLabSection>
+
+  <!-- Reactions (Wobbles) -->
+  <CollapsibleLabSection title="Reactions" icon="fa-wave-square" defaultOpen={true} accentColor="purple">
+    <div class="trigger-grid cols-3">
+      {#each wobbleOptions as { type, label, icon, color }}
+        <ChipToggle
+          {icon}
+          {label}
+          {color}
+          active={activeWobbleTrigger === type}
+          onclick={() => triggerWobble(type)}
+        />
+      {/each}
+    </div>
+  </CollapsibleLabSection>
+
+  <!-- Animations (Entrance/Exit) -->
+  <CollapsibleLabSection title="Animations" icon="fa-door-open" defaultOpen={true} accentColor="purple">
+    <div class="anim-group">
+      <span class="anim-label">Enter</span>
+      <div class="anim-row">
+        {#each entranceOptions as { type, icon }}
+          <ChipToggle {icon} color="cyan" onclick={() => onEntranceType(type)} />
+        {/each}
       </div>
-    {/if}
-  </div>
-
-  <!-- Collapsible: Reactions (Wobbles) -->
-  <div class="collapsible-section" class:expanded={expandedSections.has("reactions")}>
-    <button class="section-toggle" onclick={() => toggleSection("reactions")}>
-      <i class="fas fa-wave-square"></i>
-      <span>Reactions</span>
-      <i class="fas fa-chevron-down chevron"></i>
-    </button>
-    {#if expandedSections.has("reactions")}
-      <div class="section-content">
-        <div class="reaction-grid">
-          {#each wobbleOptions as { type, label, icon }}
-            <button class="reaction-btn" onclick={() => onTriggerWobble(type)} title={label}>
-              <i class="fas {icon}"></i>
-              <span>{label}</span>
-            </button>
-          {/each}
-        </div>
+    </div>
+    <div class="anim-group">
+      <span class="anim-label">Exit</span>
+      <div class="anim-row">
+        {#each exitOptions as { type, icon }}
+          <ChipToggle {icon} color="amber" onclick={() => onExitType(type)} />
+        {/each}
       </div>
-    {/if}
-  </div>
+    </div>
+  </CollapsibleLabSection>
 
-  <!-- Collapsible: Animations (Entrance/Exit) -->
-  <div class="collapsible-section" class:expanded={expandedSections.has("animations")}>
-    <button class="section-toggle" onclick={() => toggleSection("animations")}>
-      <i class="fas fa-door-open"></i>
-      <span>Animations</span>
-      <i class="fas fa-chevron-down chevron"></i>
-    </button>
-    {#if expandedSections.has("animations")}
-      <div class="section-content">
-        <div class="anim-group">
-          <span class="anim-label">Enter</span>
-          <div class="anim-buttons">
-            {#each entranceOptions as { type, icon }}
-              <button class="anim-btn entrance" onclick={() => onEntranceType(type)} title={type}>
-                <i class="fas {icon}"></i>
-              </button>
-            {/each}
-          </div>
-        </div>
-        <div class="anim-group">
-          <span class="anim-label">Exit</span>
-          <div class="anim-buttons">
-            {#each exitOptions as { type, icon }}
-              <button class="anim-btn exit" onclick={() => onExitType(type)} title={type}>
-                <i class="fas {icon}"></i>
-              </button>
-            {/each}
-          </div>
-        </div>
-      </div>
-    {/if}
-  </div>
+  <!-- Events -->
+  <CollapsibleLabSection title="Events" icon="fa-magic" defaultOpen={true} accentColor="purple">
+    <div class="trigger-grid cols-2">
+      <ChipToggle icon="fa-meteor" label="Meteor" color="amber" onclick={onTriggerMeteor} />
+      <ChipToggle icon="fa-fire" label="Comet" color="cyan" onclick={onTriggerComet} />
+    </div>
+  </CollapsibleLabSection>
 
-  <!-- Collapsible: Events -->
-  <div class="collapsible-section" class:expanded={expandedSections.has("events")}>
-    <button class="section-toggle" onclick={() => toggleSection("events")}>
-      <i class="fas fa-magic"></i>
-      <span>Events</span>
-      <i class="fas fa-chevron-down chevron"></i>
-    </button>
-    {#if expandedSections.has("events")}
-      <div class="section-content">
-        <div class="event-grid">
-          <button class="event-btn meteor" onclick={onTriggerMeteor}>
-            <i class="fas fa-meteor"></i>
-            <span>Meteor</span>
-          </button>
-          <button class="event-btn comet" onclick={onTriggerComet}>
-            <i class="fas fa-fire"></i>
-            <span>Comet</span>
-          </button>
-        </div>
-      </div>
-    {/if}
-  </div>
-
-  <!-- Click Hint (compact) -->
+  <!-- Click Hint -->
   <div class="click-hint">
     <i class="fas fa-mouse-pointer"></i>
     <span>Click canvas to interact with UFO</span>
@@ -269,316 +247,29 @@
     gap: 12px;
   }
 
-  /* ===== Status Bar ===== */
-  .status-bar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    flex-wrap: wrap;
-  }
-
-  .status-chip {
-    padding: 3px 6px;
-    border-radius: 10px;
-    font-size: 0.6rem;
-    font-weight: 600;
-    text-transform: capitalize;
-    background: rgba(255, 255, 255, 0.05);
-    color: #6b7280;
-    white-space: nowrap;
-  }
-
-  .status-chip.wandering { background: rgba(96, 165, 250, 0.2); color: #93c5fd; }
-  .status-chip.paused { background: rgba(251, 191, 36, 0.2); color: #fcd34d; }
-  .status-chip.scanning_star,
-  .status-chip.scanning_ground { background: rgba(52, 211, 153, 0.2); color: #6ee7b7; }
-  .status-chip.tracking_event,
-  .status-chip.chasing { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
-  .status-chip.entering,
-  .status-chip.exiting { background: rgba(168, 85, 247, 0.2); color: #c4b5fd; }
-  .status-chip.napping { background: rgba(75, 85, 99, 0.3); color: #9ca3af; }
-  .status-chip.celebrating { background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(251, 191, 36, 0.2)); color: #fcd34d; }
-
-  .status-chip.mood.curious { background: rgba(96, 165, 250, 0.15); color: #93c5fd; }
-  .status-chip.mood.excited { background: rgba(251, 191, 36, 0.15); color: #fcd34d; }
-  .status-chip.mood.playful { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; }
-  .status-chip.mood.bored { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
-  .status-chip.mood.startled { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
-  .status-chip.mood.tired { background: rgba(75, 85, 99, 0.2); color: #6b7280; }
-
-  .energy-mini {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-    color: #6ee7b7;
-    font-size: 0.7rem;
-  }
-
-  .energy-mini i {
-    font-size: 0.6rem;
-    opacity: 0.7;
-  }
-
-  .energy-track {
-    width: 40px;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .energy-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #10b981, #34d399);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-  }
-
-  .memory-mini {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: #a78bfa;
-    font-size: 0.65rem;
-  }
-
-  .memory-mini i {
-    font-size: 0.6rem;
-    opacity: 0.7;
-  }
-
-  /* ===== Primary Actions ===== */
-  .primary-actions {
-    display: flex;
-  }
-
-  .spawn-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 20px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 10px;
-    color: #ffffff;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  }
-
-  .spawn-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-  }
-
-  .spawn-btn:active {
-    transform: translateY(0);
-  }
-
-  /* ===== Quick Commands ===== */
-  .quick-commands {
+  /* Trigger Grids */
+  .trigger-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
   }
 
-  .cmd-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 10px 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #d1d5db;
-    font-size: 0.65rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
+  .trigger-grid.cols-2 {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .cmd-btn i {
-    font-size: 0.9rem;
-  }
-
-  .cmd-btn:hover {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #ffffff;
-    transform: translateY(-1px);
-  }
-
-  .cmd-btn:active {
-    transform: translateY(0) scale(0.95);
-  }
-
-  /* ===== Collapsible Sections ===== */
-  .collapsible-section {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    overflow: hidden;
-    transition: border-color 0.2s ease;
-  }
-
-  .collapsible-section.expanded {
-    border-color: rgba(139, 92, 246, 0.2);
-  }
-
-  .section-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 10px 12px;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .section-toggle:hover {
-    background: rgba(255, 255, 255, 0.03);
-    color: #ffffff;
-  }
-
-  .section-toggle i:first-child {
-    font-size: 0.7rem;
-    color: #a78bfa;
-    opacity: 0.8;
-  }
-
-  .section-toggle .chevron {
-    margin-left: auto;
-    font-size: 0.6rem;
-    opacity: 0.5;
-    transition: transform 0.2s ease;
-  }
-
-  .collapsible-section.expanded .chevron {
-    transform: rotate(180deg);
-  }
-
-  .section-content {
-    padding: 0 12px 12px;
-  }
-
-  /* ===== Mood Section ===== */
-  .mood-grid {
-    display: grid;
+  .trigger-grid.cols-3 {
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 12px;
   }
 
-  .mood-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: var(--mood-color, #d1d5db);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .mood-btn:hover {
-    background: color-mix(in srgb, var(--mood-color) 20%, transparent);
-    border-color: var(--mood-color);
-    transform: translateY(-1px);
-  }
-
-  .mood-btn.active {
-    background: color-mix(in srgb, var(--mood-color) 25%, transparent);
-    border-color: var(--mood-color);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--mood-color) 40%, transparent);
-  }
-
+  /* Mood Actions Row */
   .mood-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    margin-top: 12px;
   }
 
-  .secondary-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.7rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .secondary-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
-  }
-
-  .secondary-btn i {
-    font-size: 0.7rem;
-    opacity: 0.7;
-  }
-
-  /* ===== Reactions Section ===== */
-  .reaction-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-
-  .reaction-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    color: #d1d5db;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .reaction-btn:hover {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.3);
-    color: #ffffff;
-    transform: translateY(-1px);
-  }
-
-  .reaction-btn:active {
-    transform: translateY(0) scale(0.95);
-  }
-
-  .reaction-btn i {
-    font-size: 0.85rem;
-  }
-
-  /* ===== Animations Section ===== */
+  /* Animation Groups */
   .anim-group {
     display: flex;
     align-items: center;
@@ -591,109 +282,30 @@
   }
 
   .anim-label {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.5);
-    width: 32px;
+    width: 36px;
     flex-shrink: 0;
   }
 
-  .anim-buttons {
+  .anim-row {
     display: flex;
     gap: 6px;
     flex: 1;
   }
 
-  .anim-btn {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .anim-btn.entrance {
-    background: rgba(34, 211, 238, 0.1);
-    border: 1px solid rgba(34, 211, 238, 0.2);
-    color: #67e8f9;
-  }
-
-  .anim-btn.entrance:hover {
-    background: rgba(34, 211, 238, 0.2);
-    border-color: rgba(34, 211, 238, 0.4);
-    transform: translateY(-1px);
-  }
-
-  .anim-btn.exit {
-    background: rgba(251, 146, 60, 0.1);
-    border: 1px solid rgba(251, 146, 60, 0.2);
-    color: #fdba74;
-  }
-
-  .anim-btn.exit:hover {
-    background: rgba(251, 146, 60, 0.2);
-    border-color: rgba(251, 146, 60, 0.4);
-    transform: translateY(-1px);
-  }
-
-  /* ===== Events Section ===== */
-  .event-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .event-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .event-btn.meteor {
-    background: rgba(251, 146, 60, 0.12);
-    border: 1px solid rgba(251, 146, 60, 0.25);
-    color: #fdba74;
-  }
-
-  .event-btn.meteor:hover {
-    background: rgba(251, 146, 60, 0.2);
-    transform: translateY(-1px);
-  }
-
-  .event-btn.comet {
-    background: rgba(34, 211, 238, 0.12);
-    border: 1px solid rgba(34, 211, 238, 0.25);
-    color: #67e8f9;
-  }
-
-  .event-btn.comet:hover {
-    background: rgba(34, 211, 238, 0.2);
-    transform: translateY(-1px);
-  }
-
-  /* ===== Click Hint ===== */
+  /* Click Hint */
   .click-hint {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 8px;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.35);
   }
 
   .click-hint i {
-    font-size: 0.6rem;
+    font-size: 0.65rem;
   }
 </style>

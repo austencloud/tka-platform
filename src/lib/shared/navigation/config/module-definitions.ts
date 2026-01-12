@@ -12,7 +12,6 @@ import {
   DISCOVER_TABS,
   ANIMATE_TABS,
   TRAIN_TABS,
-  LIBRARY_TABS,
   FEEDBACK_TABS,
   ML_TRAINING_TABS,
   ADMIN_TABS,
@@ -87,15 +86,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: TRAIN_TABS,
   },
-  {
-    id: "library",
-    label: "Library",
-    icon: '<i class="fas fa-book" style="color: #0891b2;" aria-hidden="true"></i>',
-    color: "#0891b2", // Cyan - personal collection
-    description: "Your sequences, collections, and compositions",
-    isMain: true,
-    sections: LIBRARY_TABS,
-  },
+  // REMOVED: Library module - functionality now integrated into Discover > Sequences via scope toggle
   // Removed: inbox module (Messages/notifications accessible via Dashboard widget drawer)
   // Removed: account module (merged into Dashboard - profile widget handles auth)
   // Removed: edit module (Edit functionality is now a slide-out panel accessible from Create and Sequence Viewer)
@@ -153,6 +144,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Experimental skewed positions development (temporary)",
     isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
     sections: SKEWLAB_TABS,
+  },
+  {
+    id: "poi-lab",
+    label: "Poi Lab",
+    icon: '<i class="fas fa-circle-notch" style="color: #22d3ee;" aria-hidden="true"></i>',
+    color: "#22d3ee", // Cyan - circular/spinning motion
+    description: "Explore poi constraints with VTG terminology",
+    isMain: true, // Visibility controlled by getModuleDefinitions() based on admin status
+    sections: [], // Tabs handled internally
   },
   {
     id: "realm",

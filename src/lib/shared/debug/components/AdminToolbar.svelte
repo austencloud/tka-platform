@@ -169,6 +169,15 @@
     }, 2000);
   }
 
+  function resetHelpButtonDiscovery() {
+    const key = "helpButtonDiscoverySeen:generator";
+    localStorage.removeItem(key);
+    introResetMessage = "Help button discovery reset";
+    setTimeout(() => {
+      introResetMessage = null;
+    }, 2000);
+  }
+
   let isClearingThumbnails = $state(false);
 
   async function clearCloudThumbnails() {
@@ -303,6 +312,7 @@
       onResetTabIntro={resetTabIntro}
       onPreviewFirstRun={previewFirstRunWizard}
       onPreviewSidebarTour={previewSidebarTour}
+      onResetHelpDiscovery={resetHelpButtonDiscovery}
       onClearCloudThumbnails={clearCloudThumbnails}
       {isClearingThumbnails}
       onClearLocalCache={clearLocalPictographCache}
@@ -328,6 +338,7 @@
       onResetTabIntro={resetTabIntro}
       onPreviewFirstRun={previewFirstRunWizard}
       onPreviewSidebarTour={previewSidebarTour}
+      onResetHelpDiscovery={resetHelpButtonDiscovery}
       onClearCloudThumbnails={clearCloudThumbnails}
       {isClearingThumbnails}
       onClearLocalCache={clearLocalPictographCache}

@@ -45,7 +45,7 @@ export function createAutoEditPanelEffect(
         CreateModuleState.sequenceState.selectedBeatNumbers;
       const selectedCount = selectedBeatNumbers.size ?? 0;
 
-      if (selectedCount > 1 && !panelState.isEditPanelOpen) {
+      if (selectedCount > 1 && !panelState.isBeatEditorPanelOpen) {
         // Map beat numbers to beat data
         const beatNumbersArray = Array.from(selectedBeatNumbers).sort(
           (a, b) => a - b

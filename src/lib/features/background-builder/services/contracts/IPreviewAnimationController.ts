@@ -3,7 +3,7 @@
  */
 
 import type { FireflyForestLayers } from "$lib/shared/background/firefly-forest/services/FireflyForestBackgroundSystem";
-import type { TreeTypeVisibility, EcologicalPattern } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
+import type { TreeTypeVisibility, EcologicalPattern, RenderedTree } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
 import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
 
 export interface PreviewStats {
@@ -113,4 +113,24 @@ export interface IPreviewAnimationController {
    * Set a random ecological pattern
    */
   setRandomEcologicalPattern(): string;
+
+  /**
+   * Get all currently rendered trees
+   */
+  getRenderedTrees(): RenderedTree[];
+
+  /**
+   * Remove a tree by its ID
+   */
+  removeTree(treeId: string): boolean;
+
+  /**
+   * Remove all trees using a specific image filename
+   */
+  removeTreesByImage(imageFilename: string): number;
+
+  /**
+   * Get tree counts by layer
+   */
+  getTreeCounts(): { total: number; byLayer: number[] };
 }

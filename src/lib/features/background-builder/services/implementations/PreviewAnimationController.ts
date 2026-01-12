@@ -9,6 +9,7 @@ import {
 import {
   type TreeTypeVisibility,
   type EcologicalPattern,
+  type RenderedTree,
   ECOLOGICAL_PATTERNS,
 } from "$lib/shared/background/firefly-forest/services/TreeSilhouetteSystem";
 import type { QualityLevel } from "$lib/shared/background/shared/domain/types/background-types";
@@ -223,6 +224,22 @@ export class PreviewAnimationController implements IPreviewAnimationController {
       return patternId;
     }
     return "random";
+  }
+
+  getRenderedTrees(): RenderedTree[] {
+    return this.system?.getRenderedTrees() ?? [];
+  }
+
+  removeTree(treeId: string): boolean {
+    return this.system?.removeTree(treeId) ?? false;
+  }
+
+  removeTreesByImage(imageFilename: string): number {
+    return this.system?.removeTreesByImage(imageFilename) ?? 0;
+  }
+
+  getTreeCounts(): { total: number; byLayer: number[] } {
+    return this.system?.getTreeCounts() ?? { total: 0, byLayer: [] };
   }
 
   private updateStats(): void {

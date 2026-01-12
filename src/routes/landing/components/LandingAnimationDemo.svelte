@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, tick } from "svelte";
   import { scale } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
@@ -220,6 +220,12 @@
       animationReady = true;
       isLoading = false;
 
+      // Wait for AnimatorCanvas to mount and initialize before starting playback
+      // This ensures the render loop is ready to receive prop state updates
+      await tick();
+
+      // Ensure continuous playback mode (user's localStorage might have "step" mode)
+      animationState.setPlaybackMode("continuous");
       animationState.setCurrentBeat(1);
       playbackController?.togglePlayback();
     } catch (err) {

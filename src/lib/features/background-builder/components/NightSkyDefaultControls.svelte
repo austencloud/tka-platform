@@ -3,6 +3,7 @@
   import type { NightSkyDensityPreset } from "../domain/lab-settings-types";
   import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+  import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
 
   interface LayerState {
     stars: boolean;
@@ -58,15 +59,9 @@
 </ChipGroup>
 
 <!-- Trigger Buttons -->
-<ChipGroup label="Trigger Events">
-  <button class="trigger-btn" onclick={onTriggerMeteor}>
-    <i class="fas fa-meteor"></i>
-    Meteor
-  </button>
-  <button class="trigger-btn" onclick={onTriggerComet}>
-    <i class="fas fa-fire"></i>
-    Comet
-  </button>
+<ChipGroup label="Trigger Events" variant="row">
+  <ChipToggle label="Meteor" icon="fa-meteor" color="amber" onclick={onTriggerMeteor} />
+  <ChipToggle label="Comet" icon="fa-fire" color="cyan" onclick={onTriggerComet} />
 </ChipGroup>
 
 <!-- Density Chips -->
@@ -78,10 +73,7 @@
 </ChipGroup>
 
 <!-- Regenerate -->
-<button class="action-btn" onclick={onRegenerate}>
-  <i class="fas fa-sparkles"></i>
-  Regenerate
-</button>
+<ActionButton label="Regenerate" icon="fa-sparkles" fullWidth onclick={onRegenerate} />
 
 <!-- Progress Pills -->
 <div class="progress-section">
@@ -100,62 +92,6 @@
 </div>
 
 <style>
-  .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    border: none;
-    border-radius: 12px;
-    color: #ffffff;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
-  }
-
-  .action-btn:active {
-    transform: translateY(0);
-  }
-
-  .trigger-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #e5e7eb;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .trigger-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
-  }
-
-  .trigger-btn:active {
-    transform: scale(0.97);
-    background: rgba(99, 102, 241, 0.3);
-  }
-
-  .trigger-btn i {
-    font-size: 0.75rem;
-    opacity: 0.8;
-  }
-
   .progress-section {
     display: flex;
     flex-direction: column;

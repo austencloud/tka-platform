@@ -6,6 +6,7 @@
    * Fixes mobile touch issues with proper @media (hover: hover) handling.
    *
    * @example
+   * // Horizontal layout (default)
    * <ChipToggle
    *   label="Stars"
    *   icon="fa-star"
@@ -13,23 +14,42 @@
    *   color="lime"
    *   onclick={() => showStars = !showStars}
    * />
+   *
+   * // Vertical layout (for quick commands)
+   * <ChipToggle
+   *   icon="fa-sync"
+   *   label="Regen"
+   *   layout="vertical"
+   *   onclick={regenerate}
+   * />
+   *
+   * // Icon-only
+   * <ChipToggle
+   *   icon="fa-bolt"
+   *   active={isActive}
+   *   color="amber"
+   *   onclick={handleClick}
+   * />
    */
 
   type ColorPreset =
     | "default" // Purple #6366f1 (app accent)
     | "cyan" // #06b6d4 (ocean theme)
+    | "blue" // #3b82f6 (curious)
     | "lime" // #84cc16 (forest theme)
-    | "amber" // #f59e0b (warning)
-    | "rose" // #f43f5e (favorites)
-    | "emerald" // #10b981 (success)
-    | "red"; // #ef4444 (error/exclude)
+    | "amber" // #f59e0b (warning/excited)
+    | "rose" // #f43f5e (favorites/social)
+    | "emerald" // #10b981 (success/playful)
+    | "red" // #ef4444 (error/alert)
+    | "gray"; // #6b7280 (neutral/tired)
 
   interface Props {
-    label: string;
+    label?: string;
     icon?: string;
     active?: boolean;
     color?: ColorPreset;
     size?: "sm" | "md";
+    layout?: "horizontal" | "vertical";
     disabled?: boolean;
     onclick?: () => void;
   }
@@ -40,23 +60,32 @@
     active = false,
     color = "default",
     size = "md",
+    layout = "horizontal",
     disabled = false,
     onclick,
   }: Props = $props();
+
+  const iconOnly = !label && icon;
 </script>
 
 <button
   class="chip-toggle {size}"
+  class:icon-only={iconOnly}
+  class:vertical={layout === "vertical"}
   data-color={color}
   data-active={active}
   aria-pressed={active}
+  aria-label={iconOnly ? icon?.replace("fa-", "") : undefined}
+  title={iconOnly ? label : undefined}
   {disabled}
   {onclick}
 >
   {#if icon}
     <i class="fas {icon}" aria-hidden="true"></i>
   {/if}
-  <span>{label}</span>
+  {#if label}
+    <span>{label}</span>
+  {/if}
 </button>
 
 <style>
@@ -87,6 +116,16 @@
     white-space: nowrap;
   }
 
+  /* Icon-only variant */
+  .chip-toggle.icon-only {
+    padding: 8px;
+    min-width: 48px;
+  }
+
+  .chip-toggle.icon-only i {
+    font-size: 0.9rem;
+  }
+
   /* Size variants */
   .chip-toggle.sm {
     padding: 6px 10px;
@@ -96,6 +135,24 @@
 
   .chip-toggle.sm i {
     font-size: 0.65rem;
+  }
+
+  .chip-toggle.sm.icon-only {
+    padding: 6px;
+    min-width: 36px;
+  }
+
+  /* Vertical layout (icon on top, label below) */
+  .chip-toggle.vertical {
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 8px;
+    border-radius: 16px;
+    font-size: 0.7rem;
+  }
+
+  .chip-toggle.vertical i {
+    font-size: 0.85rem;
   }
 
   /* Disabled state */
@@ -142,6 +199,15 @@
     --chip-focus: #06b6d4;
   }
 
+  /* Blue (Curious) */
+  .chip-toggle[data-color="blue"][data-active="true"] {
+    --chip-bg: rgba(59, 130, 246, 0.2);
+    --chip-border: rgba(59, 130, 246, 0.5);
+    --chip-text: #93c5fd;
+    --chip-glow: 0 0 12px rgba(59, 130, 246, 0.2);
+    --chip-focus: #3b82f6;
+  }
+
   /* Lime (Forest theme) */
   .chip-toggle[data-color="lime"][data-active="true"] {
     --chip-bg: rgba(132, 204, 22, 0.2);
@@ -185,6 +251,15 @@
     --chip-text: #fca5a5;
     --chip-glow: 0 0 12px rgba(239, 68, 68, 0.2);
     --chip-focus: #ef4444;
+  }
+
+  /* Gray (Neutral/Tired) */
+  .chip-toggle[data-color="gray"][data-active="true"] {
+    --chip-bg: rgba(107, 114, 128, 0.2);
+    --chip-border: rgba(107, 114, 128, 0.5);
+    --chip-text: #d1d5db;
+    --chip-glow: 0 0 12px rgba(107, 114, 128, 0.15);
+    --chip-focus: #6b7280;
   }
 
   /* Reduced motion */

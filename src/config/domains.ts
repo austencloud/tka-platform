@@ -39,6 +39,15 @@ export function detectSiteMode(origin: string): SiteMode {
   try {
     const hostname = new URL(origin).hostname;
 
+    // Dev only: Allow ?mode=landing query param for local testing
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const modeParam = urlParams.get("mode");
+      if (modeParam === "landing" || modeParam === "app") {
+        return modeParam;
+      }
+    }
+
     // Check direct mapping
     if (hostname in DOMAIN_MODE_MAP) {
       return DOMAIN_MODE_MAP[hostname] as SiteMode;

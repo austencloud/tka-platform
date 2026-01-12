@@ -103,33 +103,11 @@ export const DISCOVER_TABS: Section[] = [
   },
 ];
 
-// Library tabs configuration - Personal content management
-export const LIBRARY_TABS: Section[] = [
-  {
-    id: "sequences",
-    label: "Sequences",
-    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Your saved sequences",
-    color: "#3b82f6",
-    gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
-  },
-  {
-    id: "collections",
-    label: "Collections",
-    icon: '<i class="fas fa-folder" aria-hidden="true"></i>',
-    description: "Organize content into folders",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    id: "compositions",
-    label: "Compositions",
-    icon: '<i class="fas fa-film" aria-hidden="true"></i>',
-    description: "Your saved compositions",
-    color: "#ec4899",
-    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
-  },
-];
+/**
+ * @deprecated Library module removed - functionality now in Discover > Sequences via scope toggle.
+ * Kept for backwards compatibility only.
+ */
+export const LIBRARY_TABS: Section[] = [];
 
 // Inbox tabs configuration - Messages and notifications
 export const INBOX_TABS: Section[] = [
@@ -180,9 +158,9 @@ export const COMMUNITY_TABS: Section[] = [
 ];
 
 /**
- * @deprecated Collect module renamed to Library.
+ * @deprecated Collect and Library modules removed - functionality now in Discover > Sequences.
  */
-export const COLLECT_TABS: Section[] = LIBRARY_TABS;
+export const COLLECT_TABS: Section[] = [];
 
 // Legacy exports for backwards compatibility during migration
 export const BUILD_TABS = CREATE_TABS; // Legacy name

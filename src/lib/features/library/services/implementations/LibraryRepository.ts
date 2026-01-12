@@ -123,13 +123,16 @@ export class LibraryRepository implements ILibraryRepository {
   ): LibrarySequence {
     const data = doc;
     const forkAttr = data["forkAttribution"];
+    // Support both flat structure and nested sequenceData structure
+    const seqData = data["sequenceData"] || {};
 
     // Ensure sequenceTags exists (for backward compatibility)
     const sequenceTags = data["sequenceTags"] || [];
 
     // Derive word from beats (single source of truth)
     // Fall back to stored word/name only if beats aren't available
-    const beats = data["beats"] as Array<{ letter?: string }> | undefined;
+    // Check both top-level beats and nested sequenceData.beats
+    const beats = (data["beats"] || seqData["beats"]) as Array<{ letter?: string }> | undefined;
     let word: string | null = null;
     if (beats && beats.length > 0) {
       // Derive word by concatenating beat letters
@@ -140,8 +143,9 @@ export class LibraryRepository implements ILibraryRepository {
     }
 
     // Fallback to stored values if derivation failed
+    // Check both top-level and nested sequenceData for word/name
     if (!word) {
-      word = data["word"] || data["name"] || id;
+      word = data["word"] || seqData["word"] || data["name"] || seqData["name"] || id;
     }
 
     // Smart date fallbacks for backwards compatibility with older sequences

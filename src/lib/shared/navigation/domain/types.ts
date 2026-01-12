@@ -41,6 +41,7 @@ export type ModuleId =
   | "realm" // 3D experiences - Stage (avatar viewer) + Museum (gallery walkthrough)
   | "mandala"
   | "skewlab" // Experimental skewed positions (admin-only, temporary)
+  | "poi-lab" // Poi physics constraints with VTG terminology (admin-only)
   | "background-builder" // Design and iterate on deep ocean background elements
   | "infinite-worlds" // WebGPU + ECS + Rapier procedural world exploration
   | "museum"; // Walkable 3D gallery of user sequences

@@ -38,6 +38,7 @@
     onResetTabIntro: () => void;
     onPreviewFirstRun: () => void;
     onPreviewSidebarTour: () => void;
+    onResetHelpDiscovery: () => void;
     onClearCloudThumbnails: () => void;
     isClearingThumbnails: boolean;
     onClearLocalCache: () => void;
@@ -63,6 +64,7 @@
     onResetTabIntro,
     onPreviewFirstRun,
     onPreviewSidebarTour,
+    onResetHelpDiscovery,
     onClearCloudThumbnails,
     isClearingThumbnails,
     onClearLocalCache,
@@ -89,6 +91,11 @@
 
   function handleSidebarTour() {
     onPreviewSidebarTour();
+    isActionsOpen = false;
+  }
+
+  function handleResetHelpDiscovery() {
+    onResetHelpDiscovery();
     isActionsOpen = false;
   }
 
@@ -252,6 +259,15 @@
             >
               <i class="fas fa-route" aria-hidden="true"></i>
               <span>Preview Sidebar Tour</span>
+            </button>
+
+            <button
+              type="button"
+              class="dropdown-item"
+              onclick={handleResetHelpDiscovery}
+            >
+              <i class="fas fa-circle-question" aria-hidden="true"></i>
+              <span>Reset Help Button Discovery</span>
             </button>
 
             <div class="dropdown-divider"></div>

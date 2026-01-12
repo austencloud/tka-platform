@@ -78,13 +78,36 @@ export function updateBeatOrientation(
   const startPosition: StartPositionData | null = createModuleState.sequenceState
     .selectedStartPosition ?? null;
 
-  if (!currentSequence) {
+  // For start position (beat 0), we can update even without a sequence
+  // For regular beats, we need a sequence to update
+  if (!currentSequence && beatNumber !== START_POSITION_BEAT_NUMBER) {
     logger.warn("Cannot update beat orientation - no current sequence");
     return;
   }
 
+  // Handle start position update when no sequence exists yet
+  if (beatNumber === START_POSITION_BEAT_NUMBER && !currentSequence) {
+    const updatedStartPosition = startPosition
+      ? createStartPositionData({
+          ...startPosition,
+          motions: updatedBeatData.motions,
+        })
+      : null;
+
+    if (updatedStartPosition) {
+      createModuleState.sequenceState.setSelectedStartPosition(updatedStartPosition);
+      logger.log(
+        `Updated start position ${color} orientation to ${orientation} (no sequence yet)`
+      );
+    }
+    return;
+  }
+
+  // At this point, currentSequence is guaranteed non-null (early returns handled above)
+  const sequence = currentSequence!;
+
   // Build the updated sequence with the beat update + propagated orientations
-  let updatedSequence = currentSequence;
+  let updatedSequence: SequenceData = sequence;
   let updatedStartPosition: StartPositionData | null = startPosition;
 
   if (beatNumber === START_POSITION_BEAT_NUMBER) {
@@ -102,20 +125,25 @@ export function updateBeatOrientation(
     const propagatedBeats = calculatePropagatedBeats(
       beatNumber,
       color,
-      currentSequence,
+      sequence,
       updatedStartPosition
     );
 
     updatedSequence = {
-      ...currentSequence,
+      ...sequence,
       beats: propagatedBeats,
       // Include updated start position in the sequence so it propagates to selection state
       startPosition: updatedStartPosition ?? undefined,
       startingPositionBeat: updatedStartPosition ?? undefined,
     };
+
+    // CRITICAL: Also update selectedStartPosition so the UI reflects the change
+    if (updatedStartPosition) {
+      createModuleState.sequenceState.setSelectedStartPosition(updatedStartPosition);
+    }
   } else {
     const arrayIndex = beatNumber - 1;
-    const updatedBeats = [...currentSequence.beats];
+    const updatedBeats = [...sequence.beats];
     updatedBeats[arrayIndex] = updatedBeatData;
 
     logger.log(
@@ -125,12 +153,12 @@ export function updateBeatOrientation(
     const propagatedBeats = calculatePropagatedBeats(
       beatNumber,
       color,
-      { ...currentSequence, beats: updatedBeats },
+      { ...sequence, beats: updatedBeats },
       startPosition
     );
 
     updatedSequence = {
-      ...currentSequence,
+      ...sequence,
       beats: propagatedBeats,
     };
   }

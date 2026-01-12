@@ -277,6 +277,9 @@
 	const hasAnimation = $derived(!!sequence);
 	const hasVideo = $derived(!!sequence?.performanceVideoUrl);
 
+	// Check if sequence has full beat data loaded (needed for LayeredSequencePreview)
+	const hasFullBeatData = $derived(!!sequence?.beats?.length);
+
 	const availableMediaTypes = $derived.by(() => {
 		const types: MediaType[] = [];
 		if (hasImages) types.push("image");
@@ -368,11 +371,11 @@
 	<!-- Media Content Area -->
 	<div class="media-content">
 		{#if activeMediaType === "image"}
-			<!-- Image View - LayeredSequencePreview for interactive mode, PropAwareThumbnail for browse mode -->
+			<!-- Image View - LayeredSequencePreview for interactive mode (needs beats), PropAwareThumbnail otherwise -->
 			<div class="image-view-container">
 				<div class="image-view">
-					{#if showVisibilitySettings}
-						<!-- Interactive mode: Use layered preview for animated toggles -->
+					{#if showVisibilitySettings && hasFullBeatData}
+						<!-- Interactive mode: Use layered preview for animated toggles (requires full beat data) -->
 						<LayeredSequencePreview
 							{sequence}
 							showWord={addWord}
@@ -389,7 +392,7 @@
 							catDogModeEnabled={catDogMode}
 						/>
 					{:else}
-						<!-- Browse mode: Use cached composite images -->
+						<!-- Browse mode or no beat data: Use cached composite images -->
 						<PropAwareThumbnail
 							{sequence}
 							{bluePropType}

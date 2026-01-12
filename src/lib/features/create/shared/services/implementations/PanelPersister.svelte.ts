@@ -12,23 +12,23 @@ import type { PanelCoordinationState } from "../../state/panel-coordination-stat
 export class PanelPersister implements IPanelPersister {
   getCurrentOpenPanel(panelState: PanelCoordinationState): PanelId | null {
     if (panelState.isAnimationPanelOpen) return "animation";
-    if (panelState.isEditPanelOpen) return "edit";
     if (panelState.isVideoRecordPanelOpen) return "videoRecord";
     if (panelState.isFilterPanelOpen) return "filter";
     if (panelState.isSequenceActionsPanelOpen) return "sequenceActions";
     if (panelState.isLOOPPanelOpen) return "cap";
     if (panelState.isCustomizePanelOpen) return "customize";
+    if (panelState.isBeatEditorPanelOpen) return "beatEditor";
     return null;
   }
 
   closeAllPanels(panelState: PanelCoordinationState): void {
-    panelState.closeEditPanel();
     panelState.closeAnimationPanel();
     panelState.closeVideoRecordPanel();
     panelState.closeFilterPanel();
     panelState.closeSequenceActionsPanel();
     panelState.closeLOOPPanel();
     panelState.closeCustomizePanel();
+    panelState.closeBeatEditorPanel();
   }
 
   restoreSavedPanel(
