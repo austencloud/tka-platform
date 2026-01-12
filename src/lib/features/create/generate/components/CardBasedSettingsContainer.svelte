@@ -5,8 +5,9 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import { onMount } from "svelte";
+  import { onMount, getContext } from "svelte";
   import { flip } from "svelte/animate";
+  import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import { quintOut } from "svelte/easing";
   import { scale } from "svelte/transition";
   import type { CardDescriptor } from "../shared/services/contracts/ICardConfigurator";
@@ -31,6 +32,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   import { getCardColors } from "../shared/domain/card-colors";
   // Card components
   import LOOPCard from "./cards/LOOPCard.svelte";
+  import LOOPExpandedOverlay from "./cards/LOOPExpandedOverlay.svelte";
   import GenerationModeCard from "./cards/GenerationModeCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
@@ -62,8 +64,11 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
   }>();
 
-  // Map card IDs to help IDs (most are the same, but generate-button has no help)
-  const cardIdToHelpId: Record<string, GeneratorHelpId | null> = {
+  // Get panel coordination state from context (for LOOP expanded overlay)
+  const panelState = getContext<PanelCoordinationState>("panelState");
+
+  // Map card IDs to help IDs
+  const cardIdToHelpId: Record<string, GeneratorHelpId> = {
     "level": "level",
     "length": "length",
     "generation-mode": "generation-mode",
@@ -73,7 +78,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     "loop-type": "loop-type",
     "slice-size": "slice-size",
     "start-end": "start-end",
-    "generate-button": null, // No help for generate button
+    "generate-button": "generate",
   };
 
   function handleCardClick(cardId: string, event: MouseEvent) {
@@ -85,6 +90,11 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       event.stopPropagation();
       onHelpSelect(helpId);
     }
+  }
+
+  // Check if a card has help available
+  function hasHelp(cardId: string): boolean {
+    return cardId in cardIdToHelpId;
   }
 
   // Services - use $state to make them reactive
@@ -219,18 +229,27 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 </script>
 
 <div class="card-settings-container" class:help-mode={helpMode}>
+  <!-- LOOP Expanded Overlay - covers cards when open -->
+  {#if panelState?.isLOOPPanelOpen && panelState.loopSelectedComponents && panelState.loopOnChange}
+    <LOOPExpandedOverlay
+      currentType={panelState.loopCurrentType!}
+      selectedComponents={panelState.loopSelectedComponents}
+      onChange={panelState.loopOnChange}
+      onClose={() => panelState.closeLOOPPanel()}
+    />
+  {/if}
+
   {#each cards as card (card.id)}
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div
       class="card-wrapper"
-      class:help-clickable={helpMode && cardIdToHelpId[card.id] !== null}
-      class:help-disabled={helpMode && cardIdToHelpId[card.id] === null}
+      class:help-clickable={helpMode && hasHelp(card.id)}
       style:grid-column="span {card.gridColumnSpan}"
       animate:flip={{ duration: 300, easing: quintOut }}
       in:scale={{ start: 0.95, duration: 300, easing: quintOut }}
       out:scale={{ start: 0.95, duration: 250, easing: quintOut }}
       onclick={(e) => handleCardClick(card.id, e)}
-      role={helpMode && cardIdToHelpId[card.id] !== null ? "button" : undefined}
+      role={helpMode && hasHelp(card.id) ? "button" : undefined}
     >
       <!-- Props are dynamically typed by CardConfigurator - type assertion needed -->
       <!-- Colors are overridden based on current background for visibility -->
@@ -261,7 +280,8 @@ Supports help mode: when active, clicking cards opens help instead of normal act
 
 <style>
   .card-settings-container {
-    /* No position property - allows modals to escape and position relative to tool-panel */
+    /* Position relative for LOOP expanded overlay */
+    position: relative;
     container-type: size; /* Enable both inline and block size container queries */
     container-name: settings-grid; /* Name the container for explicit targeting */
     display: grid;
@@ -350,12 +370,6 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       border-color: rgba(59, 130, 246, 0.8);
       box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
     }
-  }
-
-  /* Dim non-helpable cards (generate button) */
-  .card-settings-container.help-mode .card-wrapper.help-disabled {
-    opacity: 0.4;
-    pointer-events: none;
   }
 
   /*

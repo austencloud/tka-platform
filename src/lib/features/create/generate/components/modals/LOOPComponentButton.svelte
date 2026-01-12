@@ -1,7 +1,7 @@
 <!--
 LOOPComponentButton.svelte - Individual LOOP component selection button
 Displays a selectable button for a single LOOP transformation type
-Container-aware and aspect-ratio responsive
+Shows description in Quick Apply mode, compact in Build Combo mode
 -->
 <script lang="ts">
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
@@ -11,17 +11,19 @@ Container-aware and aspect-ratio responsive
     componentInfo,
     isMultiSelectMode = false,
     isSelected = false,
+    showDescription = false,
     onClick,
   } = $props<{
     componentInfo: LOOPComponentInfo;
     isMultiSelectMode?: boolean;
     isSelected?: boolean;
+    showDescription?: boolean;
     onClick: () => void;
   }>();
 
   // Reactive destructure - updates when componentInfo changes
   const label = $derived(componentInfo.label);
-  const shortLabel = $derived(componentInfo.shortLabel);
+  const description = $derived(componentInfo.description);
   const icon = $derived(componentInfo.icon);
   const color = $derived(componentInfo.color);
 </script>
@@ -30,31 +32,27 @@ Container-aware and aspect-ratio responsive
   class="loop-component-button"
   class:selected={isSelected}
   class:multi-select={isMultiSelectMode}
+  class:with-description={showDescription}
   onclick={onClick}
   style="--component-color: {color};"
-  aria-label="{label} - {isSelected ? 'selected' : 'not selected'}"
+  aria-label="{label} - {description} - {isSelected ? 'selected' : 'not selected'}"
 >
-  <div class="loop-component-icon">
-    <FontAwesomeIcon {icon} size="1em" />
-  </div>
-  <div class="loop-component-label">
-    <span class="loop-label-full">{label}</span>
-    <span class="loop-label-short">{shortLabel}</span>
+  <div class="button-content">
+    <div class="loop-component-icon">
+      <FontAwesomeIcon {icon} size="1em" />
+    </div>
+    <div class="text-content">
+      <span class="loop-component-label">{label}</span>
+      {#if showDescription}
+        <span class="loop-component-description">{description}</span>
+      {/if}
+    </div>
   </div>
 
-  {#if isMultiSelectMode}
-    <!-- Multi-select mode: Show checkbox -->
-    <div class="selection-indicator checkbox" class:checked={isSelected}>
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-      >
-        <rect x="3" y="3" width="18" height="18" rx="3"></rect>
-        {#if isSelected}
-          <polyline points="6,12 10,16 18,8" stroke-width="3"></polyline>
-        {/if}
+  {#if isMultiSelectMode && isSelected}
+    <div class="check-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <polyline points="6,12 10,16 18,8"></polyline>
       </svg>
     </div>
   {/if}
@@ -64,205 +62,123 @@ Container-aware and aspect-ratio responsive
   .loop-component-button {
     position: relative;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+
+    background: color-mix(in srgb, var(--component-color) 15%, rgba(30, 30, 50, 0.9));
+    border: 2px solid color-mix(in srgb, var(--component-color) 50%, transparent);
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--theme-text, white);
+    transition: all 0.2s ease;
+    width: 100%;
+    height: 100%;
+  }
+
+  .loop-component-button:hover {
+    background: color-mix(in srgb, var(--component-color) 25%, rgba(30, 30, 50, 0.95));
+    border-color: var(--component-color);
+    transform: translateY(-1px);
+  }
+
+  .loop-component-button:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .loop-component-button.selected {
+    background: color-mix(in srgb, var(--component-color) 35%, rgba(30, 30, 50, 0.95));
+    border-color: var(--component-color);
+    border-width: 2px;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--component-color) 40%, transparent);
+  }
+
+  /* Vertical layout (Build Combo mode - no description) */
+  .button-content {
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 12px;
-
-    /* Vibrant color-tinted glass effect */
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--component-color) 20%, rgba(0, 0, 0, 0.4)) 0%,
-      var(--theme-shadow) 100%
-    );
-    border: 2px solid
-      color-mix(in srgb, var(--component-color) 40%, rgba(255, 255, 255, 0.2));
-    border-radius: 12px;
-    cursor: pointer;
-    text-align: center;
-    color: var(--theme-text, white);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-
-    /* Subtle color glow */
-    box-shadow:
-      0 4px 12px var(--theme-shadow, var(--theme-shadow)),
-      0 0 20px color-mix(in srgb, var(--component-color) 15%, transparent);
   }
 
-  /* Single-select mode: Strong hover (immediate action) */
-  .loop-component-button:not(.multi-select):hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(
-          in srgb,
-          var(--component-color) 35%,
-          color-mix(in srgb, var(--theme-text) 20%, transparent)
-        )
-        0%,
-      color-mix(
-          in srgb,
-          var(--component-color) 20%,
-          var(--theme-shadow, var(--theme-shadow))
-        )
-        100%
-    );
-    border-color: var(--component-color);
-    box-shadow:
-      0 0 24px color-mix(in srgb, var(--component-color) 50%, transparent),
-      0 6px 16px var(--theme-shadow),
-      0 0 40px color-mix(in srgb, var(--component-color) 30%, transparent);
-    transform: translateY(-3px) scale(1.05);
+  .text-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
   }
 
-  /* Single-select mode: Active state (clicking feedback) */
-  .loop-component-button:not(.multi-select):active {
-    transform: translateY(0) scale(0.98);
-    box-shadow:
-      0 0 16px color-mix(in srgb, var(--component-color) 40%, transparent),
-      0 2px 8px var(--theme-shadow, var(--theme-shadow));
+  /* Horizontal layout (Quick Apply mode - with description) */
+  .loop-component-button.with-description .button-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
   }
 
-  /* Multi-select mode: Subtle hover (state building) */
-  .loop-component-button.multi-select:hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--component-color) 25%, var(--theme-shadow)) 0%,
-      var(--theme-shadow) 100%
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--component-color) 60%,
-      var(--theme-stroke-strong)
-    );
-    box-shadow:
-      0 4px 12px var(--theme-shadow, var(--theme-shadow)),
-      0 0 24px color-mix(in srgb, var(--component-color) 25%, transparent);
-    transform: translateY(-2px) scale(1.02);
-  }
-
-  .loop-component-button.selected {
-    background: linear-gradient(
-      135deg,
-      color-mix(
-          in srgb,
-          var(--component-color) 40%,
-          color-mix(in srgb, var(--theme-text) 15%, transparent)
-        )
-        0%,
-      color-mix(
-          in srgb,
-          var(--component-color) 25%,
-          var(--theme-shadow, var(--theme-shadow))
-        )
-        100%
-    );
-    border-color: var(--component-color);
-    border-width: 3px;
-    box-shadow:
-      0 4px 16px var(--theme-shadow),
-      0 0 30px color-mix(in srgb, var(--component-color) 40%, transparent),
-      inset 0 0 20px color-mix(in srgb, var(--component-color) 10%, transparent);
-  }
-
-  .loop-component-button.selected:hover {
-    background: linear-gradient(
-      135deg,
-      color-mix(
-          in srgb,
-          var(--component-color) 50%,
-          color-mix(in srgb, var(--theme-text) 20%, transparent)
-        )
-        0%,
-      color-mix(
-          in srgb,
-          var(--component-color) 30%,
-          var(--theme-shadow, var(--theme-shadow))
-        )
-        100%
-    );
-    box-shadow:
-      0 6px 20px var(--theme-shadow),
-      0 0 40px color-mix(in srgb, var(--component-color) 60%, transparent),
-      inset 0 0 25px color-mix(in srgb, var(--component-color) 15%, transparent);
+  .loop-component-button.with-description .text-content {
+    align-items: flex-start;
+    flex: 1;
   }
 
   .loop-component-icon {
-    font-size: var(--font-size-3xl);
+    font-size: 1.5rem;
     line-height: 1;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .loop-component-button.with-description .loop-component-icon {
+    font-size: 1.75rem;
+    width: 48px;
+    height: 48px;
+    background: color-mix(in srgb, var(--component-color) 25%, transparent);
+    border-radius: 10px;
   }
 
   .loop-component-label {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: var(--theme-text, white);
+  }
+
+  .loop-component-description {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     line-height: 1.3;
-    width: 100%;
-    text-align: center;
-    white-space: nowrap;
-    overflow: visible;
-    text-overflow: ellipsis;
-    flex-shrink: 0;
   }
 
-  /* Show full label by default, hide short label */
-  .loop-label-short {
-    display: none;
-  }
-
-  .loop-label-full {
-    display: inline;
-  }
-
-  /* Switch to short label when container is narrow */
-  @container (max-width: 120px) {
-    .loop-label-short {
-      display: inline;
-    }
-
-    .loop-label-full {
-      display: none;
-    }
-  }
-
-  .selection-indicator {
+  .check-badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 28px;
-    height: 28px;
-    color: var(--theme-text, white);
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    background: var(--component-color);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-    pointer-events: none;
   }
 
-  .selection-indicator svg {
-    width: 100%;
-    height: 100%;
-    filter: drop-shadow(0 2px 4px var(--theme-shadow));
+  .check-badge svg {
+    width: 14px;
+    height: 14px;
+    color: white;
   }
 
-  /* Checkbox style (multi-select mode only) */
-  .selection-indicator.checkbox svg rect {
-    fill: color-mix(in srgb, var(--theme-text) 15%, transparent);
-  }
-
-  .selection-indicator.checkbox.checked svg rect {
-    fill: var(--theme-text, white);
-  }
-
-  .selection-indicator.checkbox.checked svg polyline {
-    stroke: var(--theme-panel-bg);
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .loop-component-button {
+      transition: none;
+    }
+    .loop-component-button:hover,
+    .loop-component-button:active {
+      transform: none;
+    }
   }
 </style>

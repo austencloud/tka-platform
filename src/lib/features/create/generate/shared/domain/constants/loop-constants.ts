@@ -19,6 +19,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     component: LOOPComponent.ROTATED,
     label: "Rotated",
     shortLabel: "Rotated",
+    description: "Rotate 180° around the grid center",
     icon: "rotate", // Font Awesome: fa-rotate
     color: "#36c3ff",
   },
@@ -26,6 +27,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     component: LOOPComponent.MIRRORED,
     label: "Mirrored",
     shortLabel: "Mirrored",
+    description: "Flip left-to-right like a mirror",
     icon: "left-right", // Font Awesome: fa-left-right (horizontal flip)
     color: "#6F2DA8",
   },
@@ -33,6 +35,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     component: LOOPComponent.SWAPPED,
     label: "Swapped",
     shortLabel: "Swapped",
+    description: "Exchange which hand does what",
     icon: "shuffle", // Font Awesome: fa-shuffle
     color: "#26e600",
   },
@@ -40,6 +43,7 @@ export const LOOP_COMPONENTS: readonly LOOPComponentInfo[] = [
     component: LOOPComponent.INVERTED,
     label: "Inverted",
     shortLabel: "Inverted",
+    description: "Transform motions to their opposites",
     icon: "yin-yang", // Font Awesome: fa-yin-yang
     color: "#eb7d00",
   },

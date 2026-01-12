@@ -1,77 +1,19 @@
 <!--
-LOOPModalHeader.svelte - Modal header with centered title for LOOP Selection Modal
-Uses grid layout for perfect centering with multi-select toggle
+LOOPModalHeader.svelte - Modal header for LOOP Selection
+Simple header with title and close button
 -->
 <script lang="ts">
-  let { title, isMultiSelectMode, onToggleMultiSelect, onClose } = $props<{
+  let { title, onClose } = $props<{
     title: string;
-    isMultiSelectMode: boolean;
-    onToggleMultiSelect: () => void;
     onClose: () => void;
   }>();
 </script>
 
 <div class="loop-modal-header">
-  <button
-    class="multi-select-toggle"
-    class:active={isMultiSelectMode}
-    onclick={onToggleMultiSelect}
-    aria-label={isMultiSelectMode
-      ? "Exit multi-select mode"
-      : "Enter multi-select mode"}
-    title={isMultiSelectMode ? "Single Select" : "Multi-Select"}
-  >
-    {#if isMultiSelectMode}
-      <!-- Multi-select mode: Multiple checkboxes (some checked) -->
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <!-- Top-left checkbox (checked) -->
-        <rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor"
-        ></rect>
-        <polyline
-          points="5,7 7,9 11,5"
-          stroke="white"
-          stroke-width="1.5"
-          fill="none"
-        ></polyline>
-
-        <!-- Top-right checkbox (checked) -->
-        <rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor"
-        ></rect>
-        <polyline
-          points="15,7 17,9 21,5"
-          stroke="white"
-          stroke-width="1.5"
-          fill="none"
-        ></polyline>
-
-        <!-- Bottom-left checkbox (unchecked) -->
-        <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
-
-        <!-- Bottom-right checkbox (unchecked) -->
-        <rect x="13" y="13" width="8" height="8" rx="1.5"></rect>
-      </svg>
-    {:else}
-      <!-- Single-select mode: One checkbox (unchecked) -->
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-      >
-        <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-      </svg>
-    {/if}
-  </button>
-
   <h2 id="loop-title">{title}</h2>
 
   <button
-    class="loop-modal-close-button"
+    class="close-button"
     onclick={onClose}
     aria-label="Close LOOP selection"
   >
@@ -84,109 +26,52 @@ Uses grid layout for perfect centering with multi-select toggle
 
 <style>
   .loop-modal-header {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 12px;
     flex-shrink: 0;
     min-height: var(--min-touch-target);
   }
 
   .loop-modal-header h2 {
     margin: 0;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     font-weight: 700;
-    text-align: center;
-    white-space: nowrap;
-    letter-spacing: 0.5px;
     color: var(--theme-text, white);
-
-    /* Clean text shadow for legibility on rainbow background */
-    text-shadow:
-      0 2px 8px color-mix(in srgb, var(--theme-shadow) 60%, transparent),
-      0 4px 16px color-mix(in srgb, var(--theme-shadow) 40%, transparent);
+    letter-spacing: 0.3px;
   }
 
-  @container loop-modal (min-width: 400px) {
-    .loop-modal-header h2 {
-      font-size: var(--font-size-xl);
-    }
-  }
-
-  .multi-select-toggle {
-    background: var(--theme-shadow);
-    border: 2px solid var(--theme-stroke-strong);
-    border-radius: 50%;
-    color: var(--theme-text, white);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    padding: 10px;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    flex-shrink: 0;
-  }
-
-  .multi-select-toggle:hover {
-    background: color-mix(in srgb, var(--theme-shadow) 50%, transparent);
-    border-color: color-mix(in srgb, var(--theme-text) 50%, transparent);
-    transform: scale(1.08);
-  }
-
-  .multi-select-toggle.active {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 40%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent-strong, var(--theme-accent-strong)) 80%,
-      transparent
-    );
-    box-shadow: 0 0 16px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent-strong)) 60%,
-        transparent
-      );
-  }
-
-  .multi-select-toggle.active:hover {
-    background: color-mix(in srgb, var(--theme-accent-strong) 50%, transparent);
-    border-color: var(--theme-accent-strong, var(--theme-accent-strong));
-  }
-
-  .multi-select-toggle svg {
-    width: 75%;
-    height: 75%;
-  }
-
-  .loop-modal-close-button {
-    background: var(--theme-shadow);
+  .close-button {
+    background: transparent;
     border: none;
-    border-radius: 50%;
-    color: var(--theme-text, white);
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    padding: 10px;
+    padding: 8px;
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     flex-shrink: 0;
   }
 
-  .loop-modal-close-button:hover {
-    background: color-mix(in srgb, var(--theme-shadow) 50%, transparent);
-    transform: scale(1.08);
+  .close-button:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, white);
   }
 
-  .loop-modal-close-button svg {
-    width: 65%;
-    height: 65%;
+  .close-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .close-button {
+      transition: none;
+    }
   }
 </style>

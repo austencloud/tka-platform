@@ -1,0 +1,308 @@
+<!--
+LOOPExpandedOverlay.svelte - Expanded LOOP selection that covers the card grid
+Animates forward in z-axis and expands to fill the container space
+-->
+<script lang="ts">
+  import { scale } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+  import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
+  import { container } from "$lib/shared/di";
+  import { onMount } from "svelte";
+  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
+  import type { LOOPType } from "../../circular/domain/models/circular-models";
+  import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
+  import LOOPModeSelector from "../modals/LOOPModeSelector.svelte";
+
+  let {
+    currentType,
+    selectedComponents,
+    onChange,
+    onClose,
+  } = $props<{
+    currentType: LOOPType;
+    selectedComponents: Set<LOOPComponent>;
+    onChange: (loopType: LOOPType) => void;
+    onClose: () => void;
+  }>();
+
+  let hapticService: IHapticFeedback | null = null;
+  let LOOPTypeResolver: ILOOPTypeResolver | null = null;
+  let isMultiSelectMode = $state(false);
+  let localSelectedComponents = $state(new Set<LOOPComponent>(selectedComponents));
+  const explanationGenerator = new LOOPExplanationTextGenerator();
+
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
+    LOOPTypeResolver = container.items.loopTypeResolver;
+  });
+
+  // Generate explanation text based on selected components
+  const explanationText = $derived(
+    explanationGenerator.generateExplanationText(localSelectedComponents)
+  );
+
+  // Check if the current combination is implemented
+  const isImplemented = $derived.by(() => {
+    if (!LOOPTypeResolver || selectionCount === 0) return true;
+    return LOOPTypeResolver.isImplemented(localSelectedComponents);
+  });
+
+  // Derive selection count
+  const selectionCount = $derived(localSelectedComponents.size);
+
+  // Button text for combo mode
+  const buttonText = $derived.by(() => {
+    if (selectionCount === 0) return "Select Components";
+    if (!isImplemented) return "Coming Soon!";
+    if (selectionCount === 1) {
+      const component = Array.from(localSelectedComponents)[0] as LOOPComponent;
+      const formatted = component.charAt(0) + component.slice(1).toLowerCase();
+      return `Apply ${formatted}`;
+    }
+    return `Apply ${selectionCount}-Component Combo`;
+  });
+
+  function handleToggle(component: LOOPComponent) {
+    hapticService?.trigger("selection");
+
+    // Single-select mode: Apply immediately
+    if (!isMultiSelectMode) {
+      localSelectedComponents = new Set([component]);
+      applyAndClose();
+      return;
+    }
+
+    // Multi-select mode: Toggle selection
+    const newSet = new Set(localSelectedComponents);
+    if (newSet.has(component)) {
+      newSet.delete(component);
+    } else {
+      newSet.add(component);
+    }
+    localSelectedComponents = newSet;
+  }
+
+  function handleModeChange(isMulti: boolean) {
+    hapticService?.trigger("selection");
+    isMultiSelectMode = isMulti;
+  }
+
+  function applyAndClose() {
+    if (!LOOPTypeResolver || selectionCount === 0) return;
+
+    const newLoopType = LOOPTypeResolver.generateLOOPType(localSelectedComponents);
+    onChange(newLoopType);
+    onClose();
+  }
+
+  function handleConfirm() {
+    if (selectionCount === 0) return;
+    hapticService?.trigger("selection");
+    applyAndClose();
+  }
+
+  function handleClose() {
+    hapticService?.trigger("selection");
+    onClose();
+  }
+</script>
+
+<div
+  class="loop-expanded-overlay"
+  transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
+>
+  <!-- Header with title and close button -->
+  <div class="overlay-header">
+    <h3 class="overlay-title">Select LOOP Type</h3>
+    <button
+      class="close-button"
+      onclick={handleClose}
+      aria-label="Close LOOP selection"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mode selector -->
+  <LOOPModeSelector
+    {isMultiSelectMode}
+    onModeChange={handleModeChange}
+  />
+
+  <!-- Component grid -->
+  <div class="grid-container">
+    <LOOPComponentGrid
+      selectedComponents={localSelectedComponents}
+      {isMultiSelectMode}
+      onToggleComponent={handleToggle}
+    />
+  </div>
+
+  <!-- Explanation panel (combo mode only) -->
+  {#if isMultiSelectMode}
+    <div class="explanation-section">
+      <p class="explanation-text">{explanationText}</p>
+      {#if !isImplemented && selectionCount > 0}
+        <div class="coming-soon-badge">
+          This combination is under development
+        </div>
+      {/if}
+    </div>
+
+    <!-- Apply button -->
+    <button
+      class="apply-button"
+      class:disabled={selectionCount === 0}
+      onclick={handleConfirm}
+      disabled={selectionCount === 0}
+    >
+      {buttonText}
+    </button>
+  {/if}
+</div>
+
+<style>
+  .loop-expanded-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+
+    /* Solid background matching the card theme */
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
+      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%
+    );
+    border-radius: 16px;
+    border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+
+    overflow: hidden;
+  }
+
+  .overlay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .overlay-title {
+    margin: 0;
+    font-size: var(--font-size-lg, 18px);
+    font-weight: 700;
+    color: var(--theme-text, white);
+    letter-spacing: 0.3px;
+  }
+
+  .close-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: var(--theme-text, white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    transition: all 0.2s ease;
+  }
+
+  .close-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .close-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .grid-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .explanation-section {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .explanation-text {
+    margin: 0;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    line-height: 1.4;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+  }
+
+  .coming-soon-badge {
+    background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--semantic-warning) 50%, transparent);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--semantic-warning);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .apply-button {
+    flex-shrink: 0;
+    width: 100%;
+    padding: 12px 20px;
+    min-height: 44px;
+
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border: 2px solid var(--theme-accent);
+    border-radius: 10px;
+    color: var(--theme-text, white);
+
+    font-size: var(--font-size-base, 16px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .apply-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .apply-button:disabled,
+  .apply-button.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .apply-button,
+    .close-button {
+      transition: none;
+    }
+  }
+</style>

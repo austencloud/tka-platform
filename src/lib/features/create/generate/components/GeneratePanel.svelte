@@ -23,6 +23,7 @@ Card-based architecture with integrated Generate button:
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
+  import HelpButtonDiscovery from "./help/HelpButtonDiscovery.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
 
   // Help mode types
@@ -120,6 +121,11 @@ Card-based architecture with integrated Generate button:
   >
     <i class="fas fa-circle-question" aria-hidden="true"></i>
   </button>
+
+  <!-- First-time discovery overlay for help button -->
+  {#if helpMode === "inactive"}
+    <HelpButtonDiscovery />
+  {/if}
 
   <div class="generate-panel-inner">
     <CardBasedSettingsContainer

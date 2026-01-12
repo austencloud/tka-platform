@@ -1,6 +1,7 @@
-﻿<!--
+<!--
 LOOPComponentGrid.svelte - Grid layout for LOOP component selection buttons
-Displays all available LOOP transformations in a responsive 2x2 grid
+Quick Apply mode: Single column with descriptions
+Build Combo mode: 2x2 grid, compact
 -->
 <script lang="ts">
   import {
@@ -18,14 +19,18 @@ Displays all available LOOP transformations in a responsive 2x2 grid
     isMultiSelectMode?: boolean;
     onToggleComponent: (component: LOOPComponent) => void;
   }>();
+
+  // Show descriptions in Quick Apply mode (single-select)
+  const showDescriptions = $derived(!isMultiSelectMode);
 </script>
 
-<div class="loop-component-grid">
+<div class="loop-component-grid" class:with-descriptions={showDescriptions}>
   {#each LOOP_COMPONENTS as componentInfo}
     <LOOPComponentButton
       {componentInfo}
       {isMultiSelectMode}
       isSelected={selectedComponents.has(componentInfo.component)}
+      showDescription={showDescriptions}
       onClick={() => onToggleComponent(componentInfo.component)}
     />
   {/each}
@@ -35,26 +40,20 @@ Displays all available LOOP transformations in a responsive 2x2 grid
   .loop-component-grid {
     display: grid;
     width: 100%;
-    max-width: 600px; /* Prevent buttons from getting too wide */
     margin: 0 auto;
     gap: 12px;
     flex-shrink: 0;
-
-    /* 2x2 grid layout with constrained button size */
-    grid-template-columns: repeat(2, minmax(120px, 180px));
-    grid-auto-rows: minmax(
-      120px,
-      160px
-    ); /* Buttons stay within reasonable size */
-    justify-content: center;
   }
 
-  /* Wider screens: Allow slightly larger buttons */
-  @container loop-modal (min-width: 500px) {
-    .loop-component-grid {
-      gap: 16px;
-      grid-template-columns: repeat(2, minmax(140px, 200px));
-      grid-auto-rows: minmax(140px, 180px);
-    }
+  /* Build Combo mode: 2x2 grid, compact buttons */
+  .loop-component-grid:not(.with-descriptions) {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 90px;
+  }
+
+  /* Quick Apply mode: single column with descriptions */
+  .loop-component-grid.with-descriptions {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
   }
 </style>

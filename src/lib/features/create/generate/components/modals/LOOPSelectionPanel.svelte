@@ -1,6 +1,6 @@
 ﻿<!--
 LOOPSelectionPanel.svelte - Bottom sheet for selecting LOOP components
-Refactored to use Drawer component for consistent behavior
+Includes curated presets, user favorites, and manual component selection
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -9,10 +9,14 @@ Refactored to use Drawer component for consistent behavior
   import { onMount } from "svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { LOOPExplanationTextGenerator } from "$lib/features/create/generate/shared/services/implementations/LOOPExplanationTextGenerator";
+  import { loopFavoritesManager } from "$lib/features/create/generate/shared/services/implementations/LOOPFavoritesManager";
   import type { ILOOPTypeResolver } from "$lib/features/create/generate/shared/services/contracts/ILOOPTypeResolver";
+  import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
   import LOOPComponentGrid from "./LOOPComponentGrid.svelte";
   import LOOPExplanationPanel from "./LOOPExplanationPanel.svelte";
   import LOOPModalHeader from "./LOOPModalHeader.svelte";
+  import LOOPModeSelector from "./LOOPModeSelector.svelte";
+  import LOOPPresetsSection from "./LOOPPresetsSection.svelte";
   import Drawer from "../../../../../shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "../../../../../shared/foundation/ui/SheetDragHandle.svelte";
 
@@ -28,11 +32,14 @@ Refactored to use Drawer component for consistent behavior
   let hapticService: IHapticFeedback | null = null;
   let LOOPTypeResolver: ILOOPTypeResolver | null = null;
   let isMultiSelectMode = $state(false);
+  let showPresets = $state(false);
+  let favorites = $state<string[]>([]);
   const explanationGenerator = new LOOPExplanationTextGenerator();
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
     LOOPTypeResolver = container.items.loopTypeResolver;
+    favorites = loopFavoritesManager.getFavorites();
   });
 
   // Generate explanation text based on selected components
@@ -49,19 +56,16 @@ Refactored to use Drawer component for consistent behavior
   // Derive selection count and adaptive button text
   const selectionCount = $derived(selectedComponents.size);
   const buttonText = $derived.by(() => {
-    if (!isMultiSelectMode) {
-      return "Click a LOOP Type";
-    }
-    if (selectionCount === 0) return "Select a LOOP Type";
+    if (selectionCount === 0) return "Select Components Above";
     if (!isImplemented) return "Coming Soon!";
     if (selectionCount === 1) {
       const component = Array.from(selectedComponents)[0] as LOOPComponent;
       const formatted = component.charAt(0) + component.slice(1).toLowerCase();
       return `Apply ${formatted}`;
     }
-    return `Apply ${selectionCount} Components`;
+    return `Apply ${selectionCount}-Component Combo`;
   });
-  const isButtonDisabled = $derived(!isMultiSelectMode || selectionCount === 0);
+  const isButtonDisabled = $derived(selectionCount === 0);
 
   function handleToggle(component: LOOPComponent) {
     hapticService?.trigger("selection");
@@ -97,9 +101,34 @@ Refactored to use Drawer component for consistent behavior
     onClose();
   }
 
-  function handleToggleMultiSelect() {
+  function handleModeChange(isMulti: boolean) {
     hapticService?.trigger("selection");
-    isMultiSelectMode = !isMultiSelectMode;
+    isMultiSelectMode = isMulti;
+  }
+
+  function handleSelectPreset(preset: LOOPPreset) {
+    hapticService?.trigger("selection");
+
+    // Clear existing selection
+    for (const existing of selectedComponents) {
+      onToggleComponent(existing);
+    }
+
+    // Select all components from the preset
+    for (const component of preset.components) {
+      if (!selectedComponents.has(component)) {
+        onToggleComponent(component);
+      }
+    }
+
+    // Apply immediately
+    onConfirm();
+  }
+
+  function handleToggleFavorite(presetId: string) {
+    hapticService?.trigger("selection");
+    loopFavoritesManager.toggleFavorite(presetId);
+    favorites = loopFavoritesManager.getFavorites();
   }
 
   const createModuleContext = tryGetCreateModuleContext();
@@ -126,22 +155,54 @@ Refactored to use Drawer component for consistent behavior
     <SheetDragHandle class={isSideBySideLayout ? "side-handle" : ""} />
     <LOOPModalHeader
       title="Select LOOP Type"
-      {isMultiSelectMode}
-      onToggleMultiSelect={handleToggleMultiSelect}
       onClose={handleClose}
     />
 
+    <!-- Mode selector - clearly shows single vs combo options -->
+    <LOOPModeSelector
+      {isMultiSelectMode}
+      onModeChange={handleModeChange}
+    />
+
+    <!-- Main Component Selection - always visible -->
     <LOOPComponentGrid
       {selectedComponents}
       {isMultiSelectMode}
       onToggleComponent={handleToggle}
     />
 
-    <div class="info-section">
-      <LOOPExplanationPanel {explanationText} />
-      {#if !isImplemented && selectionCount > 0}
-        <div class="coming-soon-badge">
-          This combination is under development
+    <!-- Explanation panel - only shown in Build Combo mode -->
+    {#if isMultiSelectMode}
+      <div class="info-section">
+        <LOOPExplanationPanel {explanationText} />
+        {#if !isImplemented && selectionCount > 0}
+          <div class="coming-soon-badge">
+            This combination is under development
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Collapsible Presets Section -->
+    <div class="presets-toggle-section">
+      <button
+        class="presets-toggle"
+        class:expanded={showPresets}
+        onclick={() => (showPresets = !showPresets)}
+      >
+        <span>Quick Presets</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      {#if showPresets}
+        <div class="presets-content">
+          <LOOPPresetsSection
+            onSelectPreset={handleSelectPreset}
+            {favorites}
+            onToggleFavorite={handleToggleFavorite}
+          />
         </div>
       {/if}
     </div>
@@ -163,19 +224,17 @@ Refactored to use Drawer component for consistent behavior
 
 <style>
   /* Custom styling for LOOP selection bottom sheet */
-  /* Pops up halfway on mobile, side panel on desktop */
   :global(.drawer-content.loop-selection-sheet) {
-    --sheet-backdrop-bg: var(--backdrop-transparent);
-    --sheet-backdrop-filter: var(--backdrop-blur-none);
-    --sheet-backdrop-pointer-events: none;
-    --sheet-bg: var(--sheet-bg-gradient);
-    --sheet-border: var(--sheet-border-medium);
-    --sheet-shadow: none;
+    --sheet-backdrop-bg: rgba(0, 0, 0, 0.6);
+    --sheet-backdrop-filter: none;
+    --sheet-bg: transparent;
+    --sheet-border: none;
+    --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
     --sheet-pointer-events: auto;
-    max-width: 1200px;
+    max-width: 600px;
     margin: 0 auto;
-    height: auto !important; /* Override default full height */
-    max-height: 60vh; /* Pop up about halfway */
+    height: auto !important;
+    max-height: 85vh;
   }
 
   /* Slide animations for drawer */
@@ -208,63 +267,54 @@ Refactored to use Drawer component for consistent behavior
   }
 
   .loop-modal-content {
-    /* Container query context for intelligent layout switching */
     container-type: inline-size;
     container-name: loop-modal;
-
     position: relative;
-    height: auto; /* Natural height based on content */
+    height: auto;
 
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 24px 20px;
-    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    gap: 12px;
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
 
-    /* Animated rainbow gradient background */
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent-strong) 0%,
-      #6b21a8 12.5%,
-      #db2777 25%,
-      #f97316 37.5%,
-      #eab308 50%,
-      var(--semantic-success) 62.5%,
-      #0891b2 75%,
-      var(--semantic-info) 87.5%,
-      var(--theme-accent, var(--theme-accent)) 100%
-    );
-    background-size: 300% 300%;
-    animation: meshGradientFlow 15s ease infinite;
+    /* Solid opaque background - no transparency */
+    background: #1a1a2e;
+    border-radius: 16px 16px 0 0;
+    border-top: 1px solid var(--theme-accent, #6366f1);
 
     overflow-y: auto;
     overflow-x: hidden;
-
-    /* Enable smooth scrolling */
     overscroll-behavior: contain;
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .loop-modal-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .loop-modal-content::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  .loop-modal-content::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .loop-modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
   }
 
   .loop-modal-content.desktop-layout {
-    height: 100vh; /* Full height on desktop side panel */
-    justify-content: center; /* Center content on desktop */
-    padding-bottom: 24px;
+    height: auto;
+    max-height: 80vh;
+    border-radius: 16px 0 0 16px;
+    padding-bottom: 20px;
   }
 
-  @keyframes meshGradientFlow {
-    0%,
-    100% {
-      background-position: 0% 50%;
-    }
-    25% {
-      background-position: 50% 100%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    75% {
-      background-position: 50% 0%;
-    }
-  }
 
   /* Position drag handle on the left for side-by-side layout */
   .loop-modal-content.desktop-layout :global(.sheet-drag-handle.side-handle) {
@@ -276,6 +326,46 @@ Refactored to use Drawer component for consistent behavior
     margin: 0;
     border-radius: 999px;
     transform: translateY(-50%);
+  }
+
+  .presets-toggle-section {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    padding-top: 12px;
+  }
+
+  .presets-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .presets-toggle:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
+  }
+
+  .presets-toggle .chevron {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+
+  .presets-toggle.expanded .chevron {
+    transform: rotate(180deg);
+  }
+
+  .presets-content {
+    margin-top: 12px;
   }
 
   .info-section {

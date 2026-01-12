@@ -65,12 +65,13 @@ export enum LOOPComponent {
 
 /**
  * Display metadata for LOOP component UI
- * Visual representation only - descriptions handled by LOOPExplanationTextGenerator service
+ * Short descriptions shown in-button, full descriptions handled by LOOPExplanationTextGenerator
  */
 export interface LOOPComponentInfo {
   component: LOOPComponent;
   label: string;
   shortLabel: string;
+  description: string; // Short description for in-button display
   icon: string;
   color: string;
 }

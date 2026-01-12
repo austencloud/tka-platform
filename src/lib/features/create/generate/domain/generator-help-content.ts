@@ -15,7 +15,8 @@ export type GeneratorHelpId =
   | "turn-intensity"
   | "loop-type"
   | "slice-size"
-  | "start-end";
+  | "start-end"
+  | "generate";
 
 export interface GeneratorHelpItem {
   id: GeneratorHelpId;
@@ -170,6 +171,23 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
       "End Position: (Freeform only) Force the sequence to end at a specific position",
     ],
     tip: "Use this to practice transitioning into or out of specific positions.",
+  },
+
+  // === GENERATE ACTION ===
+  {
+    id: "generate",
+    icon: "fa-dice",
+    name: "Generate",
+    color: "#22c55e",
+    shortDesc: "Create a new sequence",
+    fullDesc:
+      "Generates a random sequence based on all your current settings. The new sequence will replace whatever is currently in your workspace.",
+    bullets: [
+      "Creates a brand new sequence using the Level, Length, Mode, and other settings above",
+      "Replaces the current sequence in your workspace - save first if you want to keep it!",
+      "Each generation is unique - tap again for a different result",
+    ],
+    tip: "Don't like what you got? Just tap again! You can generate as many times as you want.",
   },
 ];
 

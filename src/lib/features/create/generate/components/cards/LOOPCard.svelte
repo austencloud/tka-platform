@@ -86,7 +86,7 @@ Always opens selector panel when clicked
 <style>
   /* Animated LOOP Card - Flowing Gradient Wrapper */
 
-  /* The wrapper has a beautiful animated gradient background */
+  /* The wrapper has a distinctive accent-based gradient background */
   .loop-card-wrapper {
     /* Enable container queries to detect card width AND height */
     container-type: size;
@@ -96,36 +96,32 @@ Always opens selector panel when clicked
     border-radius: 16px;
     overflow: visible; /* Allow hover effects to overflow and pop */
 
-    /* Accessible rainbow gradient - deeper tones for better white text contrast */
+    /* Theme-aware gradient with accent color */
     background: linear-gradient(
       135deg,
-      #d32f2f 0%,
-      /* Deep Red */ #e64a19 14%,
-      /* Rich Orange */ #f57c00 28%,
-      /* Amber Gold */ #388e3c 42%,
-      /* Forest Green */ #00897b 57%,
-      /* Teal */ #1976d2 71%,
-      /* Deep Blue */ #7b1fa2 85%,
-      /* Rich Purple */ #c2185b 100% /* Deep Magenta */
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 80%, var(--theme-card-bg)) 0%,
+      color-mix(in srgb, var(--theme-accent, #818cf8) 60%, var(--theme-card-bg)) 50%,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 70%, var(--theme-card-bg)) 100%
     );
-
-    /* Make gradient larger so it can flow */
     background-size: 200% 200%;
 
-    /* Animate the gradient position for flowing effect */
+    /* Subtle animated shimmer */
     animation:
-      gradientFlow 8s ease-in-out infinite,
+      accentShimmer 6s ease-in-out infinite,
       cardEnter 0.4s ease-out;
 
-    /* Subtle shadow - consistent with other cards */
+    /* Accent glow shadow */
     box-shadow:
       0 2px 4px var(--theme-shadow),
-      0 4px 8px color-mix(in srgb, var(--theme-shadow) 10%, transparent),
+      0 4px 12px color-mix(in srgb, var(--theme-accent) 20%, transparent),
       inset 0 1px 0 var(--theme-stroke-strong);
+
+    /* Accent border */
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
-  /* Flowing gradient animation */
-  @keyframes gradientFlow {
+  /* Subtle shimmer animation */
+  @keyframes accentShimmer {
     0% {
       background-position: 0% 50%;
     }
@@ -159,13 +155,12 @@ Always opens selector panel when clicked
   @media (hover: hover) {
     .loop-card-wrapper:hover {
       transform: scale(1.02);
-      filter: brightness(1.05);
       box-shadow:
-        0 2px 4px color-mix(in srgb, var(--theme-shadow) 12%, transparent),
-        0 4px 8px color-mix(in srgb, var(--theme-shadow) 10%, transparent),
-        0 8px 16px color-mix(in srgb, var(--theme-shadow) 8%, transparent),
-        0 16px 24px color-mix(in srgb, var(--theme-shadow) 6%, transparent),
+        0 2px 4px var(--theme-shadow),
+        0 6px 16px color-mix(in srgb, var(--theme-accent) 30%, transparent),
+        0 12px 24px color-mix(in srgb, var(--theme-accent) 15%, transparent),
         inset 0 1px 0 var(--theme-stroke-strong);
+      border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
