@@ -531,3 +531,53 @@ export function createStartPositionFromBeatEnd(beat: BeatData): StartPositionDat
     },
   });
 }
+
+/**
+ * Create a start position from a beat's START state.
+ * Used when a sequence doesn't have an explicit startPosition but we need to derive one
+ * from beat 1's starting configuration.
+ * Returns StartPositionData (not BeatData) - start positions are semantically distinct from beats.
+ */
+export function createStartPositionFromBeatStart(beat: BeatData): StartPositionData {
+  const blueMotion = beat.motions[MotionColor.BLUE];
+  const redMotion = beat.motions[MotionColor.RED];
+
+  // Derive the correct letter from the start position (alpha, beta, or gamma)
+  const letter = getStaticLetterFromGridPosition(beat.startPosition);
+
+  return createStartPositionData({
+    id: `start-derived-${Date.now()}`,
+    letter: letter,
+    startPosition: beat.startPosition ?? null,
+    endPosition: beat.startPosition ?? null,
+    gridPosition: beat.startPosition ?? null,
+    motions: {
+      [MotionColor.BLUE]: blueMotion
+        ? {
+            ...blueMotion,
+            motionType: MotionType.STATIC,
+            rotationDirection: RotationDirection.NO_ROTATION,
+            startLocation: blueMotion.startLocation,
+            endLocation: blueMotion.startLocation,
+            arrowLocation: blueMotion.startLocation,
+            startOrientation: blueMotion.startOrientation,
+            endOrientation: blueMotion.startOrientation,
+            turns: 0,
+          }
+        : undefined,
+      [MotionColor.RED]: redMotion
+        ? {
+            ...redMotion,
+            motionType: MotionType.STATIC,
+            rotationDirection: RotationDirection.NO_ROTATION,
+            startLocation: redMotion.startLocation,
+            endLocation: redMotion.startLocation,
+            arrowLocation: redMotion.startLocation,
+            startOrientation: redMotion.startOrientation,
+            endOrientation: redMotion.startOrientation,
+            turns: 0,
+          }
+        : undefined,
+    },
+  });
+}

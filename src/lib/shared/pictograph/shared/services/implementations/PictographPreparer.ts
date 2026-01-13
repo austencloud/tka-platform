@@ -165,6 +165,12 @@ export class PictographPreparer implements IPictographPreparer {
   }
 
   private deriveGridMode(pictograph: PictographData): GridMode {
+    // First check if the pictograph already has gridMode set (from sequence data)
+    if (pictograph.gridMode) {
+      return pictograph.gridMode;
+    }
+
+    // No pre-set gridMode, derive from motion locations
     if (!pictograph.motions?.blue || !pictograph.motions?.red) {
       return GridMode.DIAMOND;
     }

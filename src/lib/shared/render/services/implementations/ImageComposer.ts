@@ -12,6 +12,7 @@ import type { SequenceData } from "../../../foundation/domain/models/SequenceDat
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { createStartPositionFromBeatStart } from "../../../../features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
 
@@ -250,8 +251,14 @@ export class ImageComposer implements IImageComposer {
     ctx.fillRect(0, headerHeight, canvasWidth, rows * beatSize);
 
     // Calculate total items to render for progress tracking
-    const hasStartPosition =
-      options.includeStartPosition && sequence.startPosition;
+    // Derive start position from beat 1 if missing but requested
+    let derivedStartPosition: StartPositionData | null = null;
+    const firstBeat = sequence.beats[0];
+    if (options.includeStartPosition && !sequence.startPosition && firstBeat) {
+      derivedStartPosition = createStartPositionFromBeatStart(firstBeat);
+    }
+    const effectiveStartPosition = sequence.startPosition ?? derivedStartPosition;
+    const hasStartPosition = options.includeStartPosition && effectiveStartPosition;
     const totalItems = sequence.beats.length + (hasStartPosition ? 1 : 0);
     let renderedCount = 0;
 
@@ -272,17 +279,17 @@ export class ImageComposer implements IImageComposer {
 
     // Step 4: Render each pictograph directly onto the canvas (offset by header height)
     // Render start position if needed (always at column 0, row 0)
-    if (hasStartPosition && sequence.startPosition) {
+    if (hasStartPosition && effectiveStartPosition) {
       // Only pass beat number 0 if addBeatNumbers is true (shows "Start" text)
       const startBeatNumber = options.addBeatNumbers ? 0 : undefined;
       const startPositionData = hasPropOverride
         ? this.applyPropTypeOverride(
-            sequence.startPosition,
+            effectiveStartPosition,
             options.propTypeOverride,
             options.bluePropTypeOverride,
             options.redPropTypeOverride
           )
-        : sequence.startPosition;
+        : effectiveStartPosition;
       await this.renderPictographAt(
         ctx,
         startPositionData,
@@ -699,8 +706,11 @@ export class ImageComposer implements IImageComposer {
   ): Set<string> {
     const occupied = new Set<string>();
 
-    // Add start position if included
-    if (options.includeStartPosition && sequence.startPosition) {
+    // Add start position if included (either explicit or derivable from beat 1)
+    const hasStartPositionToRender =
+      options.includeStartPosition &&
+      (sequence.startPosition || sequence.beats?.length > 0);
+    if (hasStartPositionToRender) {
       occupied.add("0,0");
     }
 
