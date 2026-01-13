@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { POSITION_TYPES, LETTER_TYPES } from "../landing-content";
+  import { POSITION_TYPES } from "../landing-content";
 </script>
 
 <section class="notation" id="notation">
   <div class="container">
     <h2>Flow Arts Notation</h2>
     <p class="section-intro">
-      A notation system for poi, staff, hoop, club, and fan choreography. Every beat of movement becomes a <strong>pictograph</strong> — a visual diagram
-      showing exactly where your hands are and how they move.
+      A grid-based notation system. Every beat of movement becomes a
+      <strong>pictograph</strong> showing where your hands are and how they move.
     </p>
 
     <div class="notation-grid">
@@ -15,10 +15,9 @@
         <h3>What a Pictograph Captures</h3>
         <ul>
           <li>Hand positions on a grid (Diamond or Box mode)</li>
-          <li>Motion type (Prospin, Antispin, Float, Dash, Static)</li>
+          <li>Five motion types: Prospin, Antispin, Float, Dash, Static</li>
           <li>Direction (Clockwise or Counter-clockwise)</li>
-          <li>Number of turns (0.5, 1, 1.5, 2, etc.)</li>
-          <li>Reversals and variations</li>
+          <li>Rotation variations</li>
         </ul>
       </div>
 
@@ -35,22 +34,28 @@
         </div>
       </div>
 
-      <div class="notation-card wide">
+      <div class="notation-card">
+        <h3>Immediate Accessibility</h3>
+        <p>
+          Pictographs are readable without memorization. An arrow on a diagram
+          tells you where hands go and how they move. The letter system is
+          optional for those who want to verbalize and reference sequences by name.
+        </p>
+      </div>
+
+      <div class="notation-card">
         <h3>The Letter System</h3>
         <p>
-          Each fundamental motion has a letter. Combine letters into "words" —
-          multi-beat patterns that become your choreographic vocabulary.
+          Each motion combination has a letter. Combine letters into words,
+          which are multi-beat patterns that form a shared choreographic vocabulary.
         </p>
-        <div class="letter-types">
-          {#each LETTER_TYPES as letterType}
-            <div class="letter-type">
-              <span class="range">{letterType.range}</span>
-              <span class="label">{letterType.label}</span>
-            </div>
-          {/each}
-        </div>
       </div>
     </div>
+
+    <p class="heritage">
+      TKA builds on ideas from Vulcan Tech Gospel (VTG) and other community
+      efforts to systematize flow arts knowledge.
+    </p>
   </div>
 </section>
 
@@ -65,7 +70,7 @@
   }
 
   .container {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
   }
 
@@ -80,32 +85,35 @@
   .section-intro {
     text-align: center;
     font-size: 1.125rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
-    max-width: 700px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    max-width: 600px;
     margin: 0 auto 3rem;
   }
 
   .notation-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
   }
 
   .notation-card {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
-    padding: 28px;
-  }
-
-  .notation-card.wide {
-    grid-column: 1 / -1;
+    padding: 24px;
   }
 
   .notation-card h3 {
-    font-size: 1.125rem;
-    margin-bottom: 16px;
-    color: var(--primary-light, #818cf8);
+    font-size: 1rem;
+    margin-bottom: 12px;
+    color: var(--theme-accent-strong, #818cf8);
+  }
+
+  .notation-card p {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 0.9375rem;
+    margin: 0;
+    line-height: 1.5;
   }
 
   .notation-card ul {
@@ -115,9 +123,10 @@
   }
 
   .notation-card li {
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.1));
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    padding: 6px 0;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 0.9375rem;
   }
 
   .notation-card li:last-child {
@@ -127,61 +136,49 @@
   .position-types {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .position {
     display: grid;
-    grid-template-columns: 40px 80px 1fr;
+    grid-template-columns: 32px 70px 1fr;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
 
   .greek {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: var(--primary-light, #818cf8);
+    color: var(--theme-accent-strong, #818cf8);
   }
 
   .name {
     font-weight: 500;
+    font-size: 0.9375rem;
   }
 
   .desc {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 0.8125rem;
+  }
+
+  .heritage {
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.875rem;
+    margin-top: 2.5rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  .letter-types {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-top: 16px;
-  }
+  @media (max-width: 700px) {
+    .notation-grid {
+      grid-template-columns: 1fr;
+    }
 
-  .letter-type {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(99, 102, 241, 0.1);
-    padding: 12px 20px;
-    border-radius: 8px;
-  }
-
-  .range {
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: var(--primary-light, #818cf8);
-  }
-
-  .label {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
-    font-size: 0.875rem;
-  }
-
-  @media (max-width: 768px) {
     .position {
-      grid-template-columns: 40px 1fr;
+      grid-template-columns: 32px 1fr;
     }
 
     .desc {

@@ -8,6 +8,7 @@
   import LOOPsSection from "./landing/components/LOOPsSection.svelte";
   import PropsSection from "./landing/components/PropsSection.svelte";
   import EducatorsSection from "./landing/components/EducatorsSection.svelte";
+  import FAQSection from "./landing/components/FAQSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import MainApplication from "$lib/shared/application/components/MainApplication.svelte";
 
@@ -339,6 +340,7 @@
       <LOOPsSection />
       <PropsSection />
       <EducatorsSection />
+      <FAQSection />
     </main>
     <LandingFooter />
   </div>
