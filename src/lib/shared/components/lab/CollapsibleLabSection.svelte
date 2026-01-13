@@ -80,7 +80,6 @@
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    overflow: hidden;
     transition: all 0.2s ease;
   }
 
@@ -97,11 +96,16 @@
     padding: 12px 14px;
     background: transparent;
     border: none;
+    border-radius: 12px;
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
+  }
+
+  .collapsible-section.expanded .section-toggle {
+    border-radius: 12px 12px 0 0;
   }
 
   @media (hover: hover) {
@@ -133,7 +137,7 @@
   }
 
   .section-content {
-    padding: 0 14px 14px;
+    padding: 8px 14px 14px;
     animation: slideDown 0.2s ease-out;
   }
 

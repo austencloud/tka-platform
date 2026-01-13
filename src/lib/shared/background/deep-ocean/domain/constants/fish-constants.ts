@@ -139,6 +139,93 @@ export const BEHAVIOR_CONFIG = {
     /** Duration range [min, max] in seconds */
     duration: [10, 25] as const,
   },
+
+  /**
+   * Passing: Fast direct swimmer - no bobbing, straight line
+   * Creates variety with some fish that zoom across the screen
+   */
+  passing: {
+    /** Duration range [min, max] in seconds */
+    duration: [2, 4] as const,
+    /** Speed multiplier range [min, max] - much faster than cruising */
+    speedMultiplier: [3.0, 5.0] as const,
+    /** Body flex is reduced for streamlined appearance */
+    bodyFlexMultiplier: 0.3,
+  },
+
+  /**
+   * Ascending: Swimming upward with focus on vertical movement
+   * Fish explores toward the surface
+   */
+  ascending: {
+    /** Duration range [min, max] in seconds */
+    duration: [1.5, 3] as const,
+    /** Speed multiplier (slightly slower than cruising) */
+    speedMultiplier: 0.8,
+    /** Vertical movement range [min, max] pixels per second */
+    verticalSpeed: [30, 60] as const,
+    /** Body rotation angle range [min, max] in radians (tilted up) */
+    bodyRotation: [0.26, 0.44] as const, // ~15-25 degrees
+  },
+
+  /**
+   * Descending: Swimming downward with focus on vertical movement
+   * Fish explores toward the depths
+   */
+  descending: {
+    /** Duration range [min, max] in seconds */
+    duration: [1.5, 3] as const,
+    /** Speed multiplier (slightly slower than cruising) */
+    speedMultiplier: 0.8,
+    /** Vertical movement range [min, max] pixels per second (negative = down) */
+    verticalSpeed: [-60, -30] as const,
+    /** Body rotation angle range [min, max] in radians (tilted down) */
+    bodyRotation: [-0.44, -0.26] as const, // ~-25 to -15 degrees
+  },
+
+  /**
+   * Approaching: Swimming toward camera (z decreasing)
+   * Fish grows larger and more prominent
+   */
+  approaching: {
+    /** Duration range [min, max] in seconds - slow for smooth scaling */
+    duration: [3, 6] as const,
+    /** Z-axis change range [min, max] - how much closer the fish gets */
+    zChange: [-0.4, -0.2] as const,
+    /** Speed multiplier (normal horizontal movement) */
+    speedMultiplier: 1.0,
+  },
+
+  /**
+   * Receding: Swimming away from camera (z increasing)
+   * Fish shrinks and fades into the background
+   */
+  receding: {
+    /** Duration range [min, max] in seconds - slow for smooth scaling */
+    duration: [3, 6] as const,
+    /** Z-axis change range [min, max] - how much farther the fish gets */
+    zChange: [0.2, 0.4] as const,
+    /** Speed multiplier (normal horizontal movement) */
+    speedMultiplier: 1.0,
+  },
+};
+
+/**
+ * Depth transition configuration for 3D z-axis movement
+ */
+export const DEPTH_TRANSITION = {
+  /** Lerp speed for z-axis movement (per frame at 60fps) */
+  lerpSpeed: 0.015,
+  /** Minimum z value (closest to camera) */
+  minZ: 0,
+  /** Maximum z value (farthest from camera) */
+  maxZ: 1,
+  /** Scale factor: scale = 1 - (z * scaleReduction) */
+  scaleReduction: 0.6, // At z=1, fish is 40% original size
+  /** Opacity factor: opacity = 1 - (z * opacityReduction) */
+  opacityReduction: 0.25, // At z=1, fish is 75% opacity
+  /** Speed factor: speed = 1 - (z * speedReduction) */
+  speedReduction: 0.5, // At z=1, fish moves at 50% speed
 };
 
 /**
@@ -150,7 +237,45 @@ export const BEHAVIOR_TRANSITION_PROBABILITY = {
   turn: 0.08,
   /** Chance to dart/startle (4%) - checked after turn */
   dart: 0.04,
-  // Remaining 88% = continue cruising
+  /** Chance to start passing (fast straight swim) (3%) */
+  passing: 0.03,
+  /** Chance to start ascending (5%) */
+  ascending: 0.05,
+  /** Chance to start descending (5%) */
+  descending: 0.05,
+  /** Chance to approach (swim toward camera) (2%) */
+  approaching: 0.02,
+  /** Chance to recede (swim away from camera) (2%) */
+  receding: 0.02,
+  // Remaining ~71% = continue cruising
+};
+
+/**
+ * Species-specific behavior probability modifiers.
+ * Multipliers applied to base probabilities.
+ */
+export const SPECIES_BEHAVIOR_MODIFIERS: Record<FishSpecies, Partial<Record<keyof typeof BEHAVIOR_TRANSITION_PROBABILITY, number>>> = {
+  /** Sleek fish are more likely to pass (fast swim) */
+  sleek: {
+    passing: 1.5, // +50% chance to do fast passes
+    dart: 1.3,    // +30% chance to dart
+  },
+  /** Deep fish are more likely to change depth layers */
+  deep: {
+    approaching: 2.0, // +100% chance to approach
+    receding: 2.0,    // +100% chance to recede
+    ascending: 1.5,
+    descending: 1.5,
+  },
+  /** Tropical fish are more playful */
+  tropical: {
+    ascending: 1.3,
+    descending: 1.3,
+  },
+  /** Schooling fish stick to cruising */
+  schooling: {
+    passing: 0.3, // -70% less likely to break formation
+  },
 };
 
 /**

@@ -49,15 +49,15 @@ const CAUSTICS_CONFIG = {
   // Grid
   cellsPerRow: 6,
   cellsPerColumn: 4,
-  cellSize: { min: 30, max: 60 },
+  cellSize: { min: 50, max: 100 }, // Larger cells for visibility
 
   // Animation
-  intensity: { min: 0.02, max: 0.06 },
-  speed: { min: 0.005, max: 0.015 },
+  intensity: { min: 0.15, max: 0.35 }, // Boosted from 0.02-0.06 for visibility
+  speed: { min: 0.008, max: 0.02 },
   driftSpeed: 0.3, // Pixels per frame
 
   // Global phase
-  globalSpeed: 0.002,
+  globalSpeed: 0.003,
 };
 
 export class LightRayCalculator implements ILightRayCalculator {
@@ -241,8 +241,9 @@ export class LightRayCalculator implements ILightRayCalculator {
         const cellHeight = dimensions.height / cellsPerColumn;
 
         cells.push({
-          x: col * cellWidth + Math.random() * cellWidth * 0.5,
-          y: row * cellHeight + Math.random() * cellHeight * 0.5,
+          // Spread caustics across the full cell to avoid visible grid lines
+          x: col * cellWidth + Math.random() * cellWidth,
+          y: row * cellHeight + Math.random() * cellHeight,
           size: this.randomInRange(
             CAUSTICS_CONFIG.cellSize.min,
             CAUSTICS_CONFIG.cellSize.max

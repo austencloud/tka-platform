@@ -26,6 +26,12 @@ export interface FishDecision {
 
   /** Whether to trigger a wobble animation */
   triggerWobble?: "curious_tilt" | "startled_dart" | "playful_wiggle" | "tired_drift";
+
+  /** Target Y position for ascending/descending behaviors */
+  targetY?: number;
+
+  /** Target Z position for approaching/receding behaviors */
+  targetZ?: number;
 }
 
 /**
@@ -54,5 +60,10 @@ export interface IFishDecisionMaker {
     dart: number;
     cruise: number;
     school: number;
+    passing: number;
+    ascending: number;
+    descending: number;
+    approaching: number;
+    receding: number;
   };
 }

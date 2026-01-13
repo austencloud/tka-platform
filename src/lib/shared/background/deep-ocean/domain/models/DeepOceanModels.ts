@@ -72,7 +72,16 @@ interface MarineLifeBase {
 export type DepthLayer = "far" | "mid" | "near";
 
 /** Fish behavior state */
-export type FishBehavior = "cruising" | "turning" | "darting" | "schooling";
+export type FishBehavior =
+  | "cruising"
+  | "turning"
+  | "darting"
+  | "schooling"
+  | "passing"      // Fast direct swimmer - no bobbing, straight line
+  | "ascending"    // Swimming upward with vertical focus
+  | "descending"   // Swimming downward with vertical focus
+  | "approaching"  // Swimming toward camera (z decreasing)
+  | "receding";    // Swimming away from camera (z increasing)
 
 /** Fish species with different body shapes and characteristics */
 export type FishSpecies = "tropical" | "sleek" | "deep" | "schooling";
@@ -207,6 +216,14 @@ export interface FishMarineLife extends MarineLifeBase {
   // Depth/parallax
   depthLayer: DepthLayer;
   depthScale: number;
+
+  // 3D Depth (UFO-style continuous depth system)
+  /** Continuous depth position: 0 = close/large, 1 = far/small */
+  z: number;
+  /** Target depth for smooth transitions via lerp */
+  targetZ: number;
+  /** Target Y position for vertical movement behaviors */
+  targetY?: number;
 
   // Behavior
   behavior: FishBehavior;

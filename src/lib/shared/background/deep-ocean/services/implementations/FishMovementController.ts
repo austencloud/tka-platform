@@ -6,6 +6,7 @@ import {
   BEHAVIOR_CONFIG,
   EDGE_AWARENESS,
   SPAWN_CONFIG,
+  DEPTH_TRANSITION,
 } from "../../domain/constants/fish-constants";
 import { FishDecisionMaker } from "./FishDecisionMaker";
 
@@ -26,8 +27,11 @@ export class FishMovementController implements IFishMovementController {
     fish: FishMarineLife,
     deltaSeconds: number,
     frameMultiplier: number,
-    _dimensions: Dimensions
+    dimensions: Dimensions
   ): void {
+    // Always update depth (z-axis lerping)
+    this.updateDepth(fish, frameMultiplier);
+
     switch (fish.behavior) {
       case "cruising":
       case "schooling":
@@ -39,13 +43,46 @@ export class FishMovementController implements IFishMovementController {
       case "darting":
         this.applyDarting(fish, deltaSeconds);
         break;
+      case "passing":
+        this.applyPassing(fish, deltaSeconds);
+        break;
+      case "ascending":
+        this.applyAscending(fish, deltaSeconds, frameMultiplier, dimensions);
+        break;
+      case "descending":
+        this.applyDescending(fish, deltaSeconds, frameMultiplier, dimensions);
+        break;
+      case "approaching":
+      case "receding":
+        // These behaviors use normal horizontal movement,
+        // z-axis change is handled by updateDepth via targetZ
+        this.applyCruising(fish, deltaSeconds, frameMultiplier);
+        break;
     }
 
-    // Clamp to depth band
-    fish.baseY = Math.max(
-      fish.depthBand.min,
-      Math.min(fish.depthBand.max, fish.baseY)
-    );
+    // Clamp to depth band (relaxed for ascending/descending)
+    if (fish.behavior !== "ascending" && fish.behavior !== "descending") {
+      fish.baseY = Math.max(
+        fish.depthBand.min,
+        Math.min(fish.depthBand.max, fish.baseY)
+      );
+    } else {
+      // Wider bounds during vertical movement
+      const margin = dimensions.height * 0.1;
+      fish.baseY = Math.max(margin, Math.min(dimensions.height - margin, fish.baseY));
+    }
+  }
+
+  /**
+   * Updates the fish's z-axis position by lerping toward targetZ.
+   * Called every frame to smoothly animate depth changes.
+   */
+  updateDepth(fish: FishMarineLife, frameMultiplier: number): void {
+    const lerpSpeed = DEPTH_TRANSITION.lerpSpeed * frameMultiplier;
+    fish.z += (fish.targetZ - fish.z) * lerpSpeed;
+
+    // Clamp to valid range
+    fish.z = Math.max(DEPTH_TRANSITION.minZ, Math.min(DEPTH_TRANSITION.maxZ, fish.z));
   }
 
   transitionBehavior(
@@ -75,6 +112,39 @@ export class FishMovementController implements IFishMovementController {
       return;
     }
 
+    // Complete passing: return to cruise
+    if (current === "passing") {
+      fish.behavior = "cruising";
+      fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.cruising.duration);
+      fish.speed = fish.baseSpeed;
+      fish.rotation = 0;
+      return;
+    }
+
+    // Complete ascending/descending: return to cruise with updated baseY
+    if (current === "ascending" || current === "descending") {
+      fish.behavior = "cruising";
+      fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.cruising.duration);
+      fish.speed = fish.baseSpeed;
+      fish.rotation = 0;
+      fish.targetY = undefined;
+      // Update depth band to center around new position
+      const bandHeight = fish.depthBand.max - fish.depthBand.min;
+      fish.depthBand = {
+        min: Math.max(dimensions.height * 0.05, fish.baseY - bandHeight / 2),
+        max: Math.min(dimensions.height * 0.95, fish.baseY + bandHeight / 2),
+      };
+      return;
+    }
+
+    // Complete approaching/receding: return to cruise (z already changed via lerp)
+    if (current === "approaching" || current === "receding") {
+      fish.behavior = "cruising";
+      fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.cruising.duration);
+      fish.speed = fish.baseSpeed;
+      return;
+    }
+
     // Use personality-influenced decision making
     const decision = this.decisionMaker.decideNextBehavior({
       fish,
@@ -98,6 +168,41 @@ export class FishMovementController implements IFishMovementController {
           fish.baseSpeed *
           (decision.speedMultiplier ??
             this.randomInRange(BEHAVIOR_CONFIG.darting.speedMultiplier));
+        break;
+      case "passing":
+        fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.passing.duration);
+        fish.speed =
+          fish.baseSpeed *
+          (decision.speedMultiplier ??
+            this.randomInRange(BEHAVIOR_CONFIG.passing.speedMultiplier));
+        break;
+      case "ascending":
+        fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.ascending.duration);
+        fish.speed = fish.baseSpeed * BEHAVIOR_CONFIG.ascending.speedMultiplier;
+        fish.targetY = decision.targetY ?? fish.baseY - this.randomInRange([30, 60]);
+        fish.rotation = this.randomInRange(BEHAVIOR_CONFIG.ascending.bodyRotation);
+        break;
+      case "descending":
+        fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.descending.duration);
+        fish.speed = fish.baseSpeed * BEHAVIOR_CONFIG.descending.speedMultiplier;
+        fish.targetY = decision.targetY ?? fish.baseY + this.randomInRange([30, 60]);
+        fish.rotation = this.randomInRange(BEHAVIOR_CONFIG.descending.bodyRotation);
+        break;
+      case "approaching":
+        fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.approaching.duration);
+        fish.speed = fish.baseSpeed * BEHAVIOR_CONFIG.approaching.speedMultiplier;
+        fish.targetZ = Math.max(
+          DEPTH_TRANSITION.minZ,
+          fish.z + this.randomInRange(BEHAVIOR_CONFIG.approaching.zChange)
+        );
+        break;
+      case "receding":
+        fish.behaviorTimer = this.randomInRange(BEHAVIOR_CONFIG.receding.duration);
+        fish.speed = fish.baseSpeed * BEHAVIOR_CONFIG.receding.speedMultiplier;
+        fish.targetZ = Math.min(
+          DEPTH_TRANSITION.maxZ,
+          fish.z + this.randomInRange(BEHAVIOR_CONFIG.receding.zChange)
+        );
         break;
       case "cruising":
       case "schooling":
@@ -167,6 +272,69 @@ export class FishMovementController implements IFishMovementController {
       fish.baseSpeed * BEHAVIOR_CONFIG.darting.speedMultiplier[0];
     fish.x += fish.direction * fish.speed * deltaSeconds;
     fish.y += (Math.random() - 0.5) * 2; // Slight vertical jitter
+  }
+
+  /**
+   * Fast direct swimming - no bobbing, straight line, streamlined posture.
+   * Creates variety with fish that zoom across the screen.
+   */
+  private applyPassing(fish: FishMarineLife, deltaSeconds: number): void {
+    // No bobbing, no vertical drift - straight line
+    fish.x += fish.direction * fish.speed * deltaSeconds;
+    // Reduced body flex for streamlined appearance
+    fish.bodyFlexAmount = BEHAVIOR_CONFIG.passing.bodyFlexMultiplier;
+  }
+
+  /**
+   * Ascending - swimming upward with vertical focus.
+   * Fish explores toward the surface with angled body rotation.
+   */
+  private applyAscending(
+    fish: FishMarineLife,
+    deltaSeconds: number,
+    frameMultiplier: number,
+    dimensions: Dimensions
+  ): void {
+    // Horizontal movement at reduced speed
+    fish.animationPhase += fish.bobSpeed * frameMultiplier;
+    fish.x += fish.direction * fish.speed * deltaSeconds;
+
+    // Strong vertical movement upward
+    if (fish.targetY !== undefined) {
+      const verticalSpeed = this.randomInRange(BEHAVIOR_CONFIG.ascending.verticalSpeed);
+      const direction = fish.targetY < fish.baseY ? -1 : 1;
+      fish.baseY += direction * verticalSpeed * deltaSeconds;
+    }
+
+    // Bob around the moving baseY
+    const bob = Math.sin(fish.animationPhase) * fish.bobAmplitude * 0.5;
+    fish.y = fish.baseY + bob;
+  }
+
+  /**
+   * Descending - swimming downward with vertical focus.
+   * Fish explores toward the depths with angled body rotation.
+   */
+  private applyDescending(
+    fish: FishMarineLife,
+    deltaSeconds: number,
+    frameMultiplier: number,
+    dimensions: Dimensions
+  ): void {
+    // Horizontal movement at reduced speed
+    fish.animationPhase += fish.bobSpeed * frameMultiplier;
+    fish.x += fish.direction * fish.speed * deltaSeconds;
+
+    // Strong vertical movement downward
+    if (fish.targetY !== undefined) {
+      const verticalSpeed = Math.abs(this.randomInRange(BEHAVIOR_CONFIG.descending.verticalSpeed));
+      const direction = fish.targetY > fish.baseY ? 1 : -1;
+      fish.baseY += direction * verticalSpeed * deltaSeconds;
+    }
+
+    // Bob around the moving baseY
+    const bob = Math.sin(fish.animationPhase) * fish.bobAmplitude * 0.5;
+    fish.y = fish.baseY + bob;
   }
 
   private randomInRange(

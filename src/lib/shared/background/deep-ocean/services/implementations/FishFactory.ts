@@ -16,7 +16,18 @@ import {
   BEHAVIOR_CONFIG,
   SPAWN_CONFIG,
   SPECIES_SPEED_MULTIPLIERS,
+  DEPTH_TRANSITION,
 } from "../../domain/constants/fish-constants";
+
+/**
+ * Maps depth layer to initial z value for 3D depth simulation.
+ * z = 0 is closest to camera, z = 1 is farthest.
+ */
+const DEPTH_LAYER_TO_Z: Record<DepthLayer, number> = {
+  near: 0.2,  // Close to camera (larger, faster)
+  mid: 0.5,   // Middle distance
+  far: 0.8,   // Far from camera (smaller, slower)
+};
 import { FishPersonalityGenerator } from "./FishPersonalityGenerator";
 
 /**
@@ -355,6 +366,10 @@ export class FishFactory implements IFishFactory {
       // Depth/parallax
       depthLayer,
       depthScale,
+
+      // 3D Depth (UFO-style continuous z-axis)
+      z: DEPTH_LAYER_TO_Z[depthLayer],
+      targetZ: DEPTH_LAYER_TO_Z[depthLayer],
 
       // Behavior
       behavior: "cruising",

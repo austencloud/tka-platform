@@ -8,6 +8,7 @@ import type { IFishBodyRenderer } from "../contracts/IFishBodyRenderer";
 import { SpineChain } from "../../physics/SpineChain";
 import { BodyOutlineCalculator, type Point } from "../../physics/BodyOutlineCalculator";
 import { fishDebugConfig } from "../../domain/debug-config";
+import { DEPTH_TRANSITION } from "../../domain/constants/fish-constants";
 
 /**
  * Fish Rendering Orchestrator
@@ -31,11 +32,8 @@ export class FishRenderer implements IFishRenderer {
   ) {}
 
   drawFish(ctx: CanvasRenderingContext2D, fish: FishMarineLife[]): void {
-    // Sort by depth layer for proper z-ordering (far first, near last)
-    const sorted = [...fish].sort((a, b) => {
-      const order = { far: 0, mid: 1, near: 2 };
-      return order[a.depthLayer] - order[b.depthLayer];
-    });
+    // Sort by z value for proper z-ordering (high z = far = draw first)
+    const sorted = [...fish].sort((a, b) => b.z - a.z);
 
     for (const f of sorted) {
       // DEBUG: Allow forcing legacy rendering via toggle
@@ -46,6 +44,21 @@ export class FishRenderer implements IFishRenderer {
         this.drawSingleFish(ctx, f);
       }
     }
+  }
+
+  /**
+   * Calculate depth-based rendering modifiers from z value.
+   * Uses DEPTH_TRANSITION constants for consistency.
+   */
+  private getDepthModifiers(fish: FishMarineLife): {
+    depthScale: number;
+    depthOpacity: number;
+  } {
+    const z = fish.z ?? 0.5; // Default to mid-depth if z not set
+    return {
+      depthScale: 1 - z * DEPTH_TRANSITION.scaleReduction,
+      depthOpacity: 1 - z * DEPTH_TRANSITION.opacityReduction,
+    };
   }
 
   // ===========================================================================
@@ -61,21 +74,30 @@ export class FishRenderer implements IFishRenderer {
   ): void {
     if (!fish.spineJoints || fish.spineJoints.length === 0) return;
 
+    // Get dynamic depth modifiers from z value
+    const { depthScale, depthOpacity } = this.getDepthModifiers(fish);
+
     ctx.save();
-    ctx.globalAlpha = fish.opacity;
+    // Apply depth-based opacity on top of fish's base opacity
+    ctx.globalAlpha = fish.opacity * depthOpacity;
+
+    // Apply depth-based scale centered on fish head position
+    const headJoint = fish.spineJoints[0];
+    if (headJoint && depthScale !== 1) {
+      ctx.translate(headJoint.x, headJoint.y);
+      ctx.scale(depthScale, depthScale);
+      ctx.translate(-headJoint.x, -headJoint.y);
+    }
 
     // Apply wobble transform (subtle body expression animations)
     // DEBUG: Can be disabled via toggle to isolate spazzing
     if (fishDebugConfig.enableWobble) {
       const wobble = this.calculateWobbleOffset(fish);
-      if (wobble.hasWobble) {
-        const headJoint = fish.spineJoints[0];
-        if (headJoint) {
-          ctx.translate(headJoint.x + wobble.offsetX, headJoint.y + wobble.offsetY);
-          ctx.rotate(wobble.rotation);
-          ctx.scale(wobble.scaleX, wobble.scaleY);
-          ctx.translate(-(headJoint.x + wobble.offsetX), -(headJoint.y + wobble.offsetY));
-        }
+      if (wobble.hasWobble && headJoint) {
+        ctx.translate(headJoint.x + wobble.offsetX, headJoint.y + wobble.offsetY);
+        ctx.rotate(wobble.rotation);
+        ctx.scale(wobble.scaleX, wobble.scaleY);
+        ctx.translate(-(headJoint.x + wobble.offsetX), -(headJoint.y + wobble.offsetY));
       }
     }
 
@@ -169,9 +191,17 @@ export class FishRenderer implements IFishRenderer {
     ctx: CanvasRenderingContext2D,
     fish: FishMarineLife
   ): void {
+    // Get dynamic depth modifiers from z value
+    const { depthScale, depthOpacity } = this.getDepthModifiers(fish);
+
     ctx.save();
-    ctx.globalAlpha = fish.opacity;
+    // Apply depth-based opacity on top of fish's base opacity
+    ctx.globalAlpha = fish.opacity * depthOpacity;
     ctx.translate(fish.x, fish.y);
+
+    // Apply depth-based scale
+    ctx.scale(depthScale, depthScale);
+
     ctx.rotate(fish.rotation);
     // Flip horizontally: direction=1 means moving right, so head should point right (positive X)
     // Body is drawn with nose at -0.5, so we need to flip based on direction

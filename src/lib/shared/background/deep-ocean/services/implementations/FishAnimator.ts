@@ -8,10 +8,12 @@ import type { IFishFlockingCalculator } from "../contracts/IFishFlockingCalculat
 import type { IFishVisualUpdater } from "../contracts/IFishVisualUpdater";
 import type { IFishMoodManager } from "../contracts/IFishMoodManager";
 import type { IFishWobbleAnimator } from "../contracts/IFishWobbleAnimator";
+import type { IFishInteractionHandler } from "../contracts/IFishInteractionHandler";
 import { FISH_COUNTS, SPAWN_CONFIG } from "../../domain/constants/fish-constants";
 import type { SpineChain } from "../../physics/SpineChain";
 import { FishMoodManager } from "./FishMoodManager";
 import { FishWobbleAnimator } from "./FishWobbleAnimator";
+import { FishInteractionHandler } from "./FishInteractionHandler";
 
 /**
  * FishAnimator - Orchestrates fish animation subsystems
@@ -24,6 +26,7 @@ export class FishAnimator implements IFishAnimator {
   private pendingSpawns: number[] = [];
   private moodManager: IFishMoodManager;
   private wobbleAnimator: IFishWobbleAnimator;
+  private interactionHandler: IFishInteractionHandler;
 
   constructor(
     private readonly fishFactory: IFishFactory,
@@ -32,10 +35,12 @@ export class FishAnimator implements IFishAnimator {
     private readonly flockingCalculator: IFishFlockingCalculator,
     private readonly visualUpdater: IFishVisualUpdater,
     moodManager?: IFishMoodManager,
-    wobbleAnimator?: IFishWobbleAnimator
+    wobbleAnimator?: IFishWobbleAnimator,
+    interactionHandler?: IFishInteractionHandler
   ) {
     this.moodManager = moodManager ?? new FishMoodManager();
     this.wobbleAnimator = wobbleAnimator ?? new FishWobbleAnimator();
+    this.interactionHandler = interactionHandler ?? new FishInteractionHandler(this.wobbleAnimator);
   }
 
   async initializeFish(
@@ -84,6 +89,12 @@ export class FishAnimator implements IFishAnimator {
 
     // Apply flocking forces to schooling fish
     this.flockingCalculator.applyFlockingForces(fish, deltaSeconds);
+
+    // Process fish-to-fish micro-interactions (greetings, yielding, etc.)
+    const interactions = this.interactionHandler.processInteractions(fish, deltaSeconds);
+    for (const interaction of interactions) {
+      this.interactionHandler.applyInteraction(interaction);
+    }
 
     // Update each fish
     for (const f of fish) {
