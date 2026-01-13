@@ -359,6 +359,49 @@
     { type: "playful_wiggle", label: "Wiggle", icon: "fa-star", color: "emerald" },
     { type: "tired_drift", label: "Drift", icon: "fa-bed", color: "gray" },
   ];
+
+  // Rare behavior options for manual triggering
+  const rareBehaviorOptions: { type: string; label: string; icon: string; color: ColorPreset }[] = [
+    { type: "barrel_roll", label: "Roll", icon: "fa-sync", color: "cyan" },
+    { type: "freeze", label: "Freeze", icon: "fa-snowflake", color: "blue" },
+    { type: "double_take", label: "Look", icon: "fa-eye", color: "amber" },
+    { type: "happy_flip", label: "Flip", icon: "fa-arrow-up", color: "emerald" },
+    { type: "sync_swim", label: "Sync", icon: "fa-link", color: "rose" },
+  ];
+
+  // Track active rare behavior triggers
+  let activeRareTrigger = $state<string | null>(null);
+
+  function triggerRareBehavior(type: string) {
+    const actualFish = backgroundSystem?.getFish?.();
+    if (!actualFish || actualFish.length === 0) return;
+
+    const f = actualFish[selectedFishIndex];
+    if (!f) return;
+
+    // For sync swim, find a partner
+    let partner: FishMarineLife | undefined;
+    if (type === "sync_swim") {
+      partner = actualFish.find((other, idx) => idx !== selectedFishIndex);
+    }
+
+    // Use the wobble animator directly for simplicity
+    const wobbleType = type as FishMarineLife["wobbleType"];
+    f.wobbleType = wobbleType;
+    f.wobbleTimer = type === "barrel_roll" ? 0.8 : type === "freeze" ? 0.6 : 0.5;
+    f.wobbleIntensity = 1;
+
+    if (partner && type === "sync_swim") {
+      partner.wobbleType = "sync_pulse";
+      partner.wobbleTimer = 0.4;
+      partner.wobbleIntensity = 0.8;
+    }
+
+    activeRareTrigger = type;
+    setTimeout(() => {
+      if (activeRareTrigger === type) activeRareTrigger = null;
+    }, 300);
+  }
 </script>
 
 <div class="deep-ocean-lab">
@@ -455,6 +498,20 @@
         {/each}
       </div>
 
+      <!-- Rare Behaviors -->
+      <div class="subsection-label">Rare Behaviors</div>
+      <div class="trigger-grid cols-3">
+        {#each rareBehaviorOptions as { type, label, icon, color }}
+          <ChipToggle
+            {icon}
+            {label}
+            {color}
+            active={activeRareTrigger === type}
+            onclick={() => triggerRareBehavior(type)}
+          />
+        {/each}
+      </div>
+
       <!-- Fish Details -->
       {#if selectedFish}
         <div class="subsection-label">Details</div>
@@ -493,6 +550,7 @@
 
     <!-- Debug -->
     <CollapsibleLabSection title="Debug" icon="fa-bug" defaultOpen={false} accentColor="red">
+      <div class="subsection-label">Rendering</div>
       <ChipGroup variant="grid">
         <ChipToggle
           icon="fa-bone"
@@ -522,12 +580,55 @@
           active={fishDebugConfig.enablePropulsion}
           onclick={() => fishDebugConfig.enablePropulsion = !fishDebugConfig.enablePropulsion}
         />
+      </ChipGroup>
+
+      <div class="subsection-label">Social Behaviors</div>
+      <ChipGroup variant="grid">
         <ChipToggle
           icon="fa-users"
           label="Flocking"
-          color="red"
+          color="amber"
           active={fishDebugConfig.enableFlocking}
           onclick={() => fishDebugConfig.enableFlocking = !fishDebugConfig.enableFlocking}
+        />
+        <ChipToggle
+          icon="fa-handshake"
+          label="Interact"
+          color="amber"
+          active={fishDebugConfig.enableInteractions}
+          onclick={() => fishDebugConfig.enableInteractions = !fishDebugConfig.enableInteractions}
+        />
+        <ChipToggle
+          icon="fa-magic"
+          label="Rare"
+          color="amber"
+          active={fishDebugConfig.enableRareBehaviors}
+          onclick={() => fishDebugConfig.enableRareBehaviors = !fishDebugConfig.enableRareBehaviors}
+        />
+        <ChipToggle
+          icon="fa-home"
+          label="Zones"
+          color="amber"
+          active={fishDebugConfig.enableHomeZones}
+          onclick={() => fishDebugConfig.enableHomeZones = !fishDebugConfig.enableHomeZones}
+        />
+      </ChipGroup>
+
+      <div class="subsection-label">Visualization</div>
+      <ChipGroup variant="grid">
+        <ChipToggle
+          icon="fa-map-marker"
+          label="Show Homes"
+          color="cyan"
+          active={fishDebugConfig.showHomeZones}
+          onclick={() => fishDebugConfig.showHomeZones = !fishDebugConfig.showHomeZones}
+        />
+        <ChipToggle
+          icon="fa-bolt"
+          label="Show Interact"
+          color="cyan"
+          active={fishDebugConfig.showInteractions}
+          onclick={() => fishDebugConfig.showInteractions = !fishDebugConfig.showInteractions}
         />
       </ChipGroup>
       <p class="debug-hint">Also: window.fishDebugConfig</p>
