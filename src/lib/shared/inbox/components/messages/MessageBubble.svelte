@@ -8,6 +8,7 @@
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import { formatTime } from "../../utils/format";
   import FeedbackMessageCard from "./FeedbackMessageCard.svelte";
+  import SequenceMessageCard from "./SequenceMessageCard.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
   import MessageReactions from "./MessageReactions.svelte";
   import EditHistorySheet from "./EditHistorySheet.svelte";
@@ -37,6 +38,11 @@
   // Check for feedback attachment
   const feedbackAttachment = $derived(
     message.attachments?.find((a) => a.type === "feedback")
+  );
+
+  // Check for sequence attachment
+  const sequenceAttachment = $derived(
+    message.attachments?.find((a) => a.type === "sequence")
   );
 
   // Read receipt status for own messages
@@ -73,7 +79,7 @@
     class:own={isOwn}
     class:deleted={message.isDeleted}
     class:is-new={isNew}
-    class:has-attachment={feedbackAttachment}
+    class:has-attachment={feedbackAttachment || sequenceAttachment}
     class:has-reactions={hasReactions}
     role="article"
     aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
@@ -84,7 +90,12 @@
         <ReplyPreview reply={message.replyTo} compact />
       {/if}
 
-      {#if feedbackAttachment}
+      {#if sequenceAttachment}
+        <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
+        {#if message.content && !message.content.startsWith("Check out this sequence")}
+          <p class="content attachment-content">{message.content}</p>
+        {/if}
+      {:else if feedbackAttachment}
         <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
         {#if message.content && message.content !== "[Feedback submitted]"}
           <p class="content attachment-content">{message.content}</p>

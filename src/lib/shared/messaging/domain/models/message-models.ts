@@ -30,7 +30,13 @@ export interface MessageAttachment {
     description?: string;
     width?: number;
     height?: number;
+    // Sequence-specific fields
     sequenceId?: string;
+    sequenceWord?: string;
+    sequenceName?: string;
+    sequenceThumbnail?: string;
+    sequenceAuthor?: string;
+    sequenceBeatCount?: number;
     // Feedback-specific fields
     feedbackId?: string;
     feedbackTitle?: string;
