@@ -9,11 +9,16 @@ import type { IFishVisualUpdater } from "../contracts/IFishVisualUpdater";
 import type { IFishMoodManager } from "../contracts/IFishMoodManager";
 import type { IFishWobbleAnimator } from "../contracts/IFishWobbleAnimator";
 import type { IFishInteractionHandler } from "../contracts/IFishInteractionHandler";
+import type { IFishRareBehaviorHandler } from "../contracts/IFishRareBehaviorHandler";
+import type { IFishHomeZoneHandler } from "../contracts/IFishHomeZoneHandler";
 import { FISH_COUNTS, SPAWN_CONFIG } from "../../domain/constants/fish-constants";
+import { fishDebugConfig } from "../../domain/debug-config";
 import type { SpineChain } from "../../physics/SpineChain";
 import { FishMoodManager } from "./FishMoodManager";
 import { FishWobbleAnimator } from "./FishWobbleAnimator";
 import { FishInteractionHandler } from "./FishInteractionHandler";
+import { FishRareBehaviorHandler } from "./FishRareBehaviorHandler";
+import { FishHomeZoneHandler } from "./FishHomeZoneHandler";
 
 /**
  * FishAnimator - Orchestrates fish animation subsystems
@@ -27,6 +32,8 @@ export class FishAnimator implements IFishAnimator {
   private moodManager: IFishMoodManager;
   private wobbleAnimator: IFishWobbleAnimator;
   private interactionHandler: IFishInteractionHandler;
+  private rareBehaviorHandler: IFishRareBehaviorHandler;
+  private homeZoneHandler: IFishHomeZoneHandler;
 
   constructor(
     private readonly fishFactory: IFishFactory,
@@ -36,11 +43,15 @@ export class FishAnimator implements IFishAnimator {
     private readonly visualUpdater: IFishVisualUpdater,
     moodManager?: IFishMoodManager,
     wobbleAnimator?: IFishWobbleAnimator,
-    interactionHandler?: IFishInteractionHandler
+    interactionHandler?: IFishInteractionHandler,
+    rareBehaviorHandler?: IFishRareBehaviorHandler,
+    homeZoneHandler?: IFishHomeZoneHandler
   ) {
     this.moodManager = moodManager ?? new FishMoodManager();
     this.wobbleAnimator = wobbleAnimator ?? new FishWobbleAnimator();
     this.interactionHandler = interactionHandler ?? new FishInteractionHandler(this.wobbleAnimator);
+    this.rareBehaviorHandler = rareBehaviorHandler ?? new FishRareBehaviorHandler(this.wobbleAnimator);
+    this.homeZoneHandler = homeZoneHandler ?? new FishHomeZoneHandler();
   }
 
   async initializeFish(
@@ -51,11 +62,13 @@ export class FishAnimator implements IFishAnimator {
   ): Promise<FishMarineLife[]> {
     const fish = this.fishFactory.initializeFish(dimensions, count, useSpineChain, spawnOnScreen);
 
-    // Initialize spine chains for spine-enabled fish
+    // Initialize spine chains and home zones for all fish
     for (const f of fish) {
       if (f.useSpineChain) {
         this.spineController.initializeSpineChain(f);
       }
+      // Initialize home zone at spawn position
+      this.homeZoneHandler.initializeHomeZone(f);
     }
 
     // Form schools
@@ -70,6 +83,9 @@ export class FishAnimator implements IFishAnimator {
     if (fish.useSpineChain) {
       this.spineController.initializeSpineChain(fish);
     }
+
+    // Initialize home zone at spawn position
+    this.homeZoneHandler.initializeHomeZone(fish);
 
     return fish;
   }
@@ -91,9 +107,26 @@ export class FishAnimator implements IFishAnimator {
     this.flockingCalculator.applyFlockingForces(fish, deltaSeconds);
 
     // Process fish-to-fish micro-interactions (greetings, yielding, etc.)
-    const interactions = this.interactionHandler.processInteractions(fish, deltaSeconds);
-    for (const interaction of interactions) {
-      this.interactionHandler.applyInteraction(interaction);
+    if (fishDebugConfig.enableInteractions) {
+      const interactions = this.interactionHandler.processInteractions(fish, deltaSeconds);
+      for (const interaction of interactions) {
+        this.interactionHandler.applyInteraction(interaction);
+      }
+    }
+
+    // Process rare special behaviors (barrel rolls, freezes, etc.)
+    if (fishDebugConfig.enableRareBehaviors) {
+      const rareBehaviors = this.rareBehaviorHandler.checkRareBehaviors(fish, deltaSeconds);
+      for (const behavior of rareBehaviors) {
+        this.rareBehaviorHandler.applyRareBehavior(behavior);
+      }
+    }
+
+    // Apply home zone drift (subtle pull toward spawn area)
+    if (fishDebugConfig.enableHomeZones) {
+      for (const f of fish) {
+        this.homeZoneHandler.applyHomeZoneDrift(f, deltaSeconds);
+      }
     }
 
     // Update each fish
@@ -295,5 +328,30 @@ export class FishAnimator implements IFishAnimator {
     range: [number, number] | readonly [number, number]
   ): number {
     return range[0] + Math.random() * (range[1] - range[0]);
+  }
+
+  // ============================================================================
+  // Handler Access (for lab/testing)
+  // ============================================================================
+
+  /**
+   * Get the rare behavior handler for manual triggering in lab
+   */
+  getRareBehaviorHandler(): IFishRareBehaviorHandler {
+    return this.rareBehaviorHandler;
+  }
+
+  /**
+   * Get the home zone handler for visualization in lab
+   */
+  getHomeZoneHandler(): IFishHomeZoneHandler {
+    return this.homeZoneHandler;
+  }
+
+  /**
+   * Get the interaction handler for manual triggering in lab
+   */
+  getInteractionHandler(): IFishInteractionHandler {
+    return this.interactionHandler;
   }
 }

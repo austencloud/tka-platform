@@ -253,6 +253,9 @@ const BODY_FLEX = {
 export class FishFactory implements IFishFactory {
   private personalityGenerator: IFishPersonalityGenerator;
 
+  /** Counter for generating unique fish IDs */
+  private static nextFishId = 1;
+
   constructor(personalityGenerator?: IFishPersonalityGenerator) {
     this.personalityGenerator = personalityGenerator ?? new FishPersonalityGenerator();
   }
@@ -424,7 +427,13 @@ export class FishFactory implements IFishFactory {
       wobbleType: "none",
       wobbleTimer: 0,
       wobbleIntensity: 0,
+
+      // Social identity
+      fishId: FishFactory.nextFishId++,
+      socialMemory: new Set(),
     };
+
+    // Home zone will be initialized by FishHomeZoneHandler after spawn
 
     return fish;
   }
