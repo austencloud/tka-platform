@@ -139,3 +139,4 @@ scripts/screenshot-capture/screenshot-config.local.json
 
 # Claude Code temporary directories
 tmpclaude-*/
+tmpclaude-*
