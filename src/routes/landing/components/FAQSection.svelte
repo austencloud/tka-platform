@@ -66,8 +66,8 @@
   }
 
   .faq-item {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     margin-bottom: 12px;
     overflow: hidden;
@@ -86,7 +86,7 @@
   }
 
   .faq-item summary:hover {
-    background: var(--bg-card-hover, rgba(255, 255, 255, 0.06));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
   }
 
   .faq-item summary::-webkit-details-marker {
@@ -96,7 +96,7 @@
   .faq-item summary::after {
     content: "+";
     font-size: 1.5rem;
-    color: var(--primary-light, #818cf8);
+    color: var(--theme-accent-strong, #818cf8);
     font-weight: 300;
     transition: transform 0.2s ease;
   }
@@ -107,7 +107,7 @@
 
   .faq-item p {
     padding: 0 24px 20px;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     margin: 0;
     font-size: 0.9375rem;
     line-height: 1.6;

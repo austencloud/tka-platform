@@ -107,7 +107,7 @@
   }
 
   .small {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .final-cta p {
@@ -135,14 +135,14 @@
   }
 
   .btn-primary {
-    background: var(--primary, #6366f1);
+    background: var(--theme-accent, #6366f1);
     color: white;
   }
 
   .btn-primary:hover {
-    background: var(--primary-light, #818cf8);
+    background: var(--theme-accent-strong, #818cf8);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
   }
 
   .btn-large {
@@ -160,7 +160,7 @@
 
   .footer {
     padding: 48px 24px;
-    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .footer-content {
@@ -179,7 +179,7 @@
   }
 
   .footer-brand span {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.875rem;
   }
 
@@ -191,23 +191,23 @@
   }
 
   .footer-links a {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     text-decoration: none;
     font-size: 0.875rem;
     transition: color 0.2s ease;
   }
 
   .footer-links a:hover {
-    color: var(--text, #ffffff);
+    color: var(--theme-text, #ffffff);
   }
 
   .footer-note {
     padding-top: 24px;
-    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .footer-note p {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.875rem;
     max-width: 700px;
   }
@@ -216,12 +216,12 @@
     display: flex;
     gap: 24px;
     padding-top: 24px;
-    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     margin-top: 24px;
   }
 
   .footer-legal a {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     text-decoration: none;
     font-size: var(--font-size-compact, 0.75rem);
     padding: 8px 0;
@@ -229,7 +229,7 @@
   }
 
   .footer-legal a:hover {
-    color: var(--text, #ffffff);
+    color: var(--theme-text, #ffffff);
   }
 
   @media (max-width: 768px) {

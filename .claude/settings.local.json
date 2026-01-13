@@ -178,7 +178,11 @@
       "Bash(Select-String -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\app.css\" -Pattern \"prop-blue|prop-red|--blue|--red\")",
       "Bash(do echo \"=== $comp ===\")",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\shared\\\\pictograph\\\\arrow\\\\positioning\\\\calculation\\\\services\" -Recurse -Filter \"*.ts\")",
-      "Bash(do)"
+      "Bash(do)",
+      "WebFetch(domain:tkaflowarts.com)",
+      "WebFetch(domain:tkascribe.com)",
+      "WebFetch(domain:www.prompthub.us)",
+      "WebFetch(domain:arxiv.org)"
     ]
   }
 }
