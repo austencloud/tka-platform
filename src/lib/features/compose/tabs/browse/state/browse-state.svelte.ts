@@ -29,6 +29,7 @@ export interface AnimationFilter {
   mode?: ComposeMode;
   favorites?: boolean;
   creator?: string;
+  searchQuery?: string;
 }
 
 export type SortMethod = "date" | "name" | "popularity";
@@ -51,7 +52,17 @@ export function createBrowseState() {
   const filteredAnimations = $derived.by(() => {
     let result = [...animations];
 
-    // Apply filters
+    // Apply search filter FIRST
+    if (currentFilter.searchQuery && currentFilter.searchQuery.trim()) {
+      const query = currentFilter.searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (anim) =>
+          anim.name.toLowerCase().includes(query) ||
+          anim.creator.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply mode filter
     if (currentFilter.mode) {
       result = result.filter((anim) => anim.mode === currentFilter.mode);
     }
@@ -88,6 +99,13 @@ export function createBrowseState() {
 
     return result;
   });
+
+  // Derived - check if any filters are active
+  const hasActiveFilters = $derived(
+    !!currentFilter.mode ||
+      !!currentFilter.favorites ||
+      !!currentFilter.searchQuery?.trim()
+  );
 
   // Methods
   async function loadAnimations(): Promise<void> {
@@ -161,6 +179,10 @@ export function createBrowseState() {
     currentFilter = filter;
   }
 
+  function clearFilters(): void {
+    currentFilter = {};
+  }
+
   function setSort(method: SortMethod, direction: SortDirection): void {
     sortMethod = method;
     sortDirection = direction;
@@ -225,10 +247,14 @@ export function createBrowseState() {
     get error() {
       return error;
     },
+    get hasActiveFilters() {
+      return hasActiveFilters;
+    },
 
     // Methods
     loadAnimations,
     setFilter,
+    clearFilters,
     setSort,
     selectAnimation,
     clearSelection,

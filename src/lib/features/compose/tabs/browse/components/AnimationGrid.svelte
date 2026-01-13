@@ -20,10 +20,14 @@ Features:
   const {
     animations = [],
     isLoading = false,
+    hasActiveFilters = false,
+    onClearFilters = () => {},
     onAction = () => {},
   } = $props<{
     animations?: SavedAnimation[];
     isLoading?: boolean;
+    hasActiveFilters?: boolean;
+    onClearFilters?: () => void;
     onAction?: (action: string, animation: SavedAnimation) => void;
   }>();
 
@@ -139,11 +143,23 @@ Features:
 {:else}
   <!-- Empty state -->
   <div class="empty-state">
-    <i class="fas fa-film empty-icon" aria-hidden="true"></i>
-    <p class="empty-message">{t("empty_no_animations")}</p>
-    <p class="empty-hint">
-      Create your first animation in the Single, Mirror, Tunnel, or Grid tabs
-    </p>
+    {#if hasActiveFilters}
+      <!-- Filtered empty state -->
+      <i class="fas fa-filter-circle-xmark empty-icon" aria-hidden="true"></i>
+      <p class="empty-message">No animations match your filters</p>
+      <p class="empty-hint">Try adjusting your search or filters</p>
+      <button class="clear-filters-btn" onclick={onClearFilters}>
+        <i class="fas fa-times" aria-hidden="true"></i>
+        Clear Filters
+      </button>
+    {:else}
+      <!-- No animations at all -->
+      <i class="fas fa-film empty-icon" aria-hidden="true"></i>
+      <p class="empty-message">{t("empty_no_animations")}</p>
+      <p class="empty-hint">
+        Create your first animation in the Single, Mirror, Tunnel, or Grid tabs
+      </p>
+    {/if}
   </div>
 {/if}
 
@@ -182,7 +198,7 @@ Features:
 
   .empty-icon {
     font-size: var(--font-size-3xl);
-    color: rgba(255, 255, 255, 0.15);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.15));
     margin-bottom: var(--spacing-lg);
   }
 
@@ -200,12 +216,37 @@ Features:
     max-width: 400px;
   }
 
+  .clear-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: var(--spacing-md);
+    padding: 10px 20px;
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-radius: 8px;
+    color: var(--theme-accent);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .clear-filters-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 25%, transparent);
+  }
+
+  .clear-filters-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
   /* Loading Skeletons */
   .skeleton-card {
     border-radius: 8px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
     animation: skeleton-pulse 1.5s ease-in-out infinite;
   }
 
@@ -214,9 +255,9 @@ Features:
     aspect-ratio: 1;
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.06) 50%,
-      rgba(255, 255, 255, 0.03) 100%
+      var(--theme-card-bg, rgba(255, 255, 255, 0.03)) 0%,
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06)) 50%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.03)) 100%
     );
     background-size: 200% 100%;
     animation: skeleton-shimmer 2s ease-in-out infinite;

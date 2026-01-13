@@ -53,7 +53,7 @@ Features:
   };
 
   // Format date
-  const formattedDate = $derived(() => {
+  const formattedDate = $derived.by(() => {
     const date = animation.updatedAt;
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
@@ -128,7 +128,7 @@ Features:
       </div>
       <div class="metadata-item">
         <span class="metadata-label">Updated</span>
-        <span class="metadata-value">{formattedDate()}</span>
+        <span class="metadata-value">{formattedDate}</span>
       </div>
       <div class="metadata-item">
         <span class="metadata-label">Sequences</span>

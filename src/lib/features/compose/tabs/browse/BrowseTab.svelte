@@ -13,7 +13,7 @@ Features:
 <script lang="ts">
   import { onMount } from "svelte";
   import { getBrowseState } from "./state/browse-state.svelte";
-  import type { SavedAnimation } from "./state/browse-state.svelte";
+  import type { SavedAnimation, AnimationFilter, SortMethod, SortDirection } from "./state/browse-state.svelte";
   import { getComposeModuleState } from "$lib/features/compose/shared/state/compose-module-state.svelte";
   import AnimationFilters from "./components/AnimationFilters.svelte";
   import AnimationGrid from "./components/AnimationGrid.svelte";
@@ -31,9 +31,10 @@ Features:
   const browseState = getBrowseState();
   const composeModuleState = getComposeModuleState();
 
-  // Local state for drawer
+  // Local state for drawer and filters
   let isDetailPanelOpen = $state(false);
   let isMobile = $state(false);
+  let filtersExpanded = $state(false);
 
   // Drawer width (desktop)
   const drawerWidth = "min(600px, 90vw)";
@@ -57,12 +58,24 @@ Features:
   });
 
   // Handlers
-  function handleFilterChange(filter: any) {
+  function handleFilterChange(filter: AnimationFilter) {
     browseState.setFilter(filter);
   }
 
-  function handleSortChange(method: any, direction: any) {
+  function handleSortChange(method: SortMethod, direction: SortDirection) {
     browseState.setSort(method, direction);
+  }
+
+  function handleSearchChange(query: string) {
+    browseState.setFilter({ ...browseState.currentFilter, searchQuery: query });
+  }
+
+  function handleClearFilters() {
+    browseState.clearFilters();
+  }
+
+  function handleExpandToggle() {
+    filtersExpanded = !filtersExpanded;
   }
 
   function handleGridAction(action: string, animation: SavedAnimation) {
@@ -126,8 +139,12 @@ Features:
       currentFilter={browseState.currentFilter}
       sortMethod={browseState.sortMethod}
       sortDirection={browseState.sortDirection}
+      expanded={filtersExpanded}
+      searchQuery={browseState.currentFilter.searchQuery || ""}
       onFilterChange={handleFilterChange}
       onSortChange={handleSortChange}
+      onExpandToggle={handleExpandToggle}
+      onSearchChange={handleSearchChange}
     />
   </div>
 
@@ -147,6 +164,8 @@ Features:
       <AnimationGrid
         animations={browseState.filteredAnimations}
         isLoading={browseState.isLoading}
+        hasActiveFilters={browseState.hasActiveFilters}
+        onClearFilters={handleClearFilters}
         onAction={handleGridAction}
       />
     {/if}
@@ -188,11 +207,11 @@ Features:
     overflow: hidden;
   }
 
-  /* Filters Section */
+  /* Filters Section - Toolbar style, no card background */
   .filters-section {
     flex-shrink: 0;
     padding: var(--spacing-md);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: var(--spacing-sm);
   }
 
   /* Grid Section */
@@ -200,6 +219,7 @@ Features:
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-lg);
+    padding-top: var(--spacing-md);
     container-type: inline-size;
   }
 

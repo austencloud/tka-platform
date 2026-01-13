@@ -55,6 +55,21 @@ const stepPlaybackStepSizePersistence =
     defaultValue: 1,
   });
 
+/** Keys that can be observed for changes */
+export type AnimationStateKey =
+  | "isPlaying"
+  | "playbackMode"
+  | "stepPlaybackPauseMs"
+  | "stepPlaybackStepSize"
+  | "speed"
+  | "currentBeat";
+
+/** Observer callback type */
+export type AnimationStateObserver = (
+  key: AnimationStateKey,
+  value: unknown
+) => void;
+
 export type AnimationPanelState = {
   // Playback state
   readonly currentBeat: number;
@@ -102,6 +117,10 @@ export type AnimationPanelState = {
   reset: () => void;
   /** Cleanup function - call in onDestroy to prevent memory leaks */
   dispose: () => void;
+
+  // Observer pattern for cross-component reactivity
+  /** Subscribe to state changes. Returns unsubscribe function. */
+  subscribe: (observer: AnimationStateObserver) => () => void;
 };
 
 const DEFAULT_PROP_STATE: PropState = {
@@ -111,6 +130,13 @@ const DEFAULT_PROP_STATE: PropState = {
 };
 
 export function createAnimationPanelState(): AnimationPanelState {
+  // Observer set for notifying subscribers
+  const observers = new Set<AnimationStateObserver>();
+
+  function notify(key: AnimationStateKey, value: unknown) {
+    observers.forEach((observer) => observer(key, value));
+  }
+
   // Playback state
   let currentBeat = $state(0);
   let isPlaying = $state(false);
@@ -224,17 +250,21 @@ export function createAnimationPanelState(): AnimationPanelState {
       return sequenceData;
     },
 
-    // Setters
+    // Setters (with observer notifications for observable keys)
     setCurrentBeat: (beat: number) => {
       currentBeat = beat;
+      notify("currentBeat", beat);
     },
 
     setIsPlaying: (playing: boolean) => {
       isPlaying = playing;
+      notify("isPlaying", playing);
     },
 
     setSpeed: (newSpeed: number) => {
-      speed = Math.max(0.1, Math.min(3.0, newSpeed));
+      const clamped = Math.max(0.1, Math.min(3.0, newSpeed));
+      speed = clamped;
+      notify("speed", clamped);
     },
 
     setShouldLoop: (loop: boolean) => {
@@ -243,14 +273,19 @@ export function createAnimationPanelState(): AnimationPanelState {
 
     setPlaybackMode: (mode: PlaybackMode) => {
       playbackMode = mode;
+      notify("playbackMode", mode);
     },
 
     setStepPlaybackPauseMs: (pauseMs: number) => {
-      stepPlaybackPauseMs = Math.max(0, Math.min(2000, Math.round(pauseMs)));
+      const clamped = Math.max(0, Math.min(2000, Math.round(pauseMs)));
+      stepPlaybackPauseMs = clamped;
+      notify("stepPlaybackPauseMs", clamped);
     },
 
     setStepPlaybackStepSize: (stepSize: StepPlaybackStepSize) => {
-      stepPlaybackStepSize = stepSize === 0.5 ? 0.5 : 1;
+      const value = stepSize === 0.5 ? 0.5 : 1;
+      stepPlaybackStepSize = value;
+      notify("stepPlaybackStepSize", value);
     },
 
     setExportLoopCount: (count: number) => {
@@ -312,6 +347,12 @@ export function createAnimationPanelState(): AnimationPanelState {
 
     dispose: () => {
       cleanupEffects();
+      observers.clear();
+    },
+
+    subscribe: (observer: AnimationStateObserver) => {
+      observers.add(observer);
+      return () => observers.delete(observer);
     },
   };
 }

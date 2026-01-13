@@ -67,7 +67,7 @@ Features:
   };
 
   // Truncate title to 24 characters
-  const displayTitle = $derived(() => {
+  const displayTitle = $derived.by(() => {
     const name = animation.name || "Untitled";
     if (name.length <= 24) {
       return name;
@@ -228,7 +228,7 @@ Features:
 
   <!-- Card footer -->
   <div class="card-footer">
-    <h3 class="animation-title">{displayTitle()}</h3>
+    <h3 class="animation-title">{displayTitle}</h3>
     <div class="card-meta">
       <span class="sequence-count" title="Number of sequences">
         <i class="fas fa-file-alt" aria-hidden="true"></i>
@@ -247,12 +247,12 @@ Features:
     position: relative;
     border-radius: 8px;
     overflow: hidden;
-    background: rgba(8, 8, 12, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: var(--theme-card-bg, rgba(8, 8, 12, 0.9));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #fff);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 12px 40px var(--theme-shadow, rgba(0, 0, 0, 0.35));
     width: 100%;
     height: 100%;
     padding: 0;
@@ -266,8 +266,8 @@ Features:
 
   .animation-card:hover {
     transform: scale(1.02);
-    box-shadow: 0 14px 48px rgba(0, 0, 0, 0.38);
-    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 14px 48px var(--theme-shadow, rgba(0, 0, 0, 0.38));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.12));
   }
 
   /* Active state for mobile */
@@ -278,8 +278,8 @@ Features:
     }
   }
 
-  .animation-card:focus {
-    outline: 2px solid rgba(255, 255, 255, 0.75); /* WCAG AAA */
+  .animation-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
 
@@ -302,7 +302,7 @@ Features:
     position: relative;
     width: 100%;
     aspect-ratio: 1;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     overflow: hidden;
   }
 
@@ -388,7 +388,7 @@ Features:
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.7));
     backdrop-filter: blur(8px);
     border-radius: 6px;
     border: 1px solid var(--theme-stroke);
@@ -406,10 +406,10 @@ Features:
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(239, 68, 68, 0.2);
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
     backdrop-filter: blur(8px);
     border-radius: 6px;
-    border: 1px solid rgba(239, 68, 68, 0.4);
+    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
     font-size: var(--font-size-sm);
     color: var(--semantic-error);
   }
@@ -420,17 +420,13 @@ Features:
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: linear-gradient(
-      135deg,
-      rgba(30, 30, 40, 0.95) 0%,
-      rgba(20, 20, 30, 0.95) 100%
-    );
+    background: var(--theme-panel-bg, rgba(20, 20, 30, 0.95));
   }
 
   .animation-title {
     font-size: var(--font-size-sm);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
+    color: var(--theme-text, rgba(255, 255, 255, 0.95));
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
