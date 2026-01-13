@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "tka-scribe",
+  "compatibility_date": "2026-01-13"
+}
