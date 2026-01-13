@@ -160,7 +160,7 @@ Uses shared parameter cards from $lib/shared/components/parameter-cards
     flex-direction: column;
     gap: clamp(12px, 3cqi, 20px);
     padding: clamp(12px, 3cqi, 20px);
-    background: #1a1a24;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     container-type: inline-size;
     container-name: bento-filter;
     height: 100%;

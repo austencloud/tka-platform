@@ -15,6 +15,7 @@ import type {
 import {
   LOOP_TYPE_LABELS,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { SequenceDifficultyCalculator } from "./SequenceDifficultyCalculator";
 
 // Constants
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -25,6 +26,8 @@ const DIFFICULTY_OPTIONS = ["beginner", "intermediate", "advanced"];
 const GRID_MODE_OPTIONS = [GridMode.DIAMOND, GridMode.BOX];
 
 export class DiscoverFilter implements IDiscoverFilter {
+  private difficultyCalculator = new SequenceDifficultyCalculator();
+
   applyFilter(
     sequences: SequenceData[],
     filterType: ExploreFilterType,
@@ -177,7 +180,7 @@ export class DiscoverFilter implements IDiscoverFilter {
       return sequences;
     }
 
-    // Use the same logic as SequenceCard to determine difficulty level
+    // Map string difficulty names to numeric levels
     const difficultyToLevel: Record<string, number> = {
       beginner: 1,
       intermediate: 2,
@@ -187,13 +190,26 @@ export class DiscoverFilter implements IDiscoverFilter {
     };
 
     return sequences.filter((seq) => {
-      // First try sequence.level (numeric), then map difficultyLevel (string) to number
-      const sequenceLevel =
-        seq.level ??
-        difficultyToLevel[seq.difficultyLevel?.toLowerCase() ?? ""] ??
-        0;
+      // First try sequence.level (numeric)
+      if (seq.level !== undefined && seq.level !== null) {
+        return seq.level === targetLevel;
+      }
 
-      return sequenceLevel === targetLevel;
+      // Then try mapping difficultyLevel (string) to number
+      if (seq.difficultyLevel) {
+        const mappedLevel = difficultyToLevel[seq.difficultyLevel.toLowerCase()];
+        if (mappedLevel !== undefined) {
+          return mappedLevel === targetLevel;
+        }
+      }
+
+      // Finally, calculate from beats (library sequences often don't have level stored)
+      if (seq.beats && seq.beats.length > 0) {
+        const calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel(seq.beats);
+        return calculatedLevel === targetLevel;
+      }
+
+      return false;
     });
   }
 

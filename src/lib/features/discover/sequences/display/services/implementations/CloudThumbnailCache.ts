@@ -494,14 +494,22 @@ export class CloudThumbnailCache implements ICloudThumbnailCache {
           batch.map((item) => deleteObject(item.ref))
         );
 
-        // Count successes and log failures
+        // Count successes - treat "object-not-found" as success (already deleted)
         results.forEach((result, j) => {
           if (result.status === "fulfilled") {
             deletedCount++;
           } else {
-            const item = batch[j];
-            if (item) {
-              console.warn(`Failed to delete ${item.fullPath}:`, result.reason);
+            // Check if this is a "not found" error - that's OK, file is already gone
+            const reason = result.reason as { code?: string };
+            if (reason?.code === "storage/object-not-found") {
+              // Already deleted or never existed - count as success
+              deletedCount++;
+            } else {
+              // Only log actual failures (permission errors, network issues, etc.)
+              const item = batch[j];
+              if (item) {
+                console.warn(`Failed to delete ${item.fullPath}:`, result.reason);
+              }
             }
           }
         });

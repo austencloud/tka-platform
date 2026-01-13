@@ -30,6 +30,8 @@
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import AnimationSheetCoordinator from "../../../../shared/coordinators/AnimationSheetCoordinator.svelte";
+  import { consumePendingSequenceView } from "../../state/pending-sequence.svelte";
+  import { sequencePanelManager } from "../state/sequence-panel-state.svelte";
 
   // Note: Library tab removed - now integrated into Sequences via scope toggle (Community / My Library)
   type DiscoverModuleType = "sequences" | "collections" | "creators";
@@ -354,7 +356,25 @@
     // UI shows immediately with skeletons while data loads
     galleryState
       .loadAllSequences()
-      .then(() => {})
+      .then(() => {
+        // Check if we have a pending sequence to view (e.g., from inbox message)
+        const pendingSequenceId = consumePendingSequenceView();
+        if (pendingSequenceId) {
+          // Find the sequence in the loaded data
+          const sequence = galleryState.displayedSequences.find(
+            (s) => s.id === pendingSequenceId
+          );
+          if (sequence) {
+            // Open the detail panel with this sequence
+            sequencePanelManager.openDetail(sequence);
+          } else {
+            console.warn(
+              "[DiscoverModule] Pending sequence not found:",
+              pendingSequenceId
+            );
+          }
+        }
+      })
       .catch((err) => {
         console.error("Data loading failed:", err);
         error =

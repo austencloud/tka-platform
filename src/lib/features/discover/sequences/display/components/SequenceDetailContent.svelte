@@ -32,6 +32,8 @@ Used by both desktop side panel and mobile slide-up overlay.
   import DetailHeader from "./DetailHeader.svelte";
   import ShareOptionsRow from "./ShareOptionsRow.svelte";
   import SequenceActionButtons from "./SequenceActionButtons.svelte";
+  import SendSequenceSheet from "$lib/shared/inbox/components/messages/SendSequenceSheet.svelte";
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 
   // State imports
   import { discoverNavigationState } from "../../../shared/state/discover-navigation-state.svelte";
@@ -57,6 +59,9 @@ Used by both desktop side panel and mobile slide-up overlay.
   let isShareCopying = $state(false);
   let shareSuccess = $state(false);
 
+  // Send to user state
+  let showSendSheet = $state(false);
+
   // Current media type (tracked for maximize behavior)
   let currentMediaType = $state<MediaType>("image");
 
@@ -70,6 +75,9 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   // User name for sharing
   const userName = $derived(authState.user?.displayName ?? "");
+
+  // Is user logged in (for send option)
+  const isLoggedIn = $derived(Boolean(authState.user?.uid));
 
   const {
     sequence,
@@ -276,6 +284,19 @@ Used by both desktop side panel and mobile slide-up overlay.
       hapticService?.trigger("error");
     }
   }
+
+  function handleSendToUser() {
+    hapticService?.trigger("selection");
+    showSendSheet = true;
+  }
+
+  function handleSendSheetClose() {
+    showSendSheet = false;
+  }
+
+  function handleSendSuccess() {
+    hapticService?.trigger("success");
+  }
 </script>
 
 <div class="detail-content">
@@ -376,12 +397,34 @@ Used by both desktop side panel and mobile slide-up overlay.
       isCopying={isShareCopying}
       copySuccess={shareSuccess}
       canNativeShare={imageSharer?.canNativeShare() ?? false}
+      showSendOption={isLoggedIn}
       onCopy={handleCopyImage}
       onDownload={handleDownloadImage}
       onNativeShare={handleNativeShare}
+      onSendToUser={handleSendToUser}
     />
   {/if}
 </div>
+
+<!-- Send Sequence Sheet -->
+{#if showSendSheet}
+  <Drawer
+    bind:isOpen={showSendSheet}
+    placement="bottom"
+    class="send-sequence-drawer"
+    onclose={handleSendSheetClose}
+    ariaLabel="Send sequence to user"
+  >
+    <div class="send-sheet-wrapper">
+      <h2 class="send-sheet-title">Send Sequence</h2>
+      <SendSequenceSheet
+        {sequence}
+        onClose={handleSendSheetClose}
+        onSent={handleSendSuccess}
+      />
+    </div>
+  </Drawer>
+{/if}
 
 <!-- Videos Panel -->
 {#if showVideosPanel}
@@ -518,5 +561,31 @@ Used by both desktop side panel and mobile slide-up overlay.
     .creator-link:active {
       transform: none;
     }
+  }
+
+  /* Send sheet drawer styling */
+  :global(.send-sequence-drawer) {
+    height: 85vh;
+    height: 85dvh; /* Modern: accounts for browser chrome */
+    max-height: 85vh;
+    max-height: 85dvh;
+  }
+
+  .send-sheet-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .send-sheet-title {
+    margin: 0;
+    padding: 16px;
+    font-size: var(--font-size-lg, 18px);
+    font-weight: 600;
+    color: var(--theme-text);
+    text-align: center;
+    border-bottom: 1px solid var(--theme-stroke);
+    flex-shrink: 0;
   }
 </style>

@@ -1,7 +1,7 @@
 <!--
 ShareOptionsRow - Inline share action buttons
 
-Displays copy, download, and native share options
+Displays copy, download, share, and send options
 in a horizontal row when share is expanded.
 -->
 <script lang="ts">
@@ -9,18 +9,22 @@ in a horizontal row when share is expanded.
     isCopying?: boolean;
     copySuccess?: boolean;
     canNativeShare?: boolean;
+    showSendOption?: boolean;
     onCopy?: () => void;
     onDownload?: () => void;
     onNativeShare?: () => void;
+    onSendToUser?: () => void;
   }
 
   const {
     isCopying = false,
     copySuccess = false,
     canNativeShare = false,
+    showSendOption = false,
     onCopy = () => {},
     onDownload = () => {},
     onNativeShare = () => {},
+    onSendToUser = () => {},
   }: Props = $props();
 </script>
 
@@ -55,10 +59,21 @@ in a horizontal row when share is expanded.
     <button
       class="share-option-btn"
       onclick={onNativeShare}
-      aria-label="Share"
+      aria-label="Share externally"
     >
       <i class="fas fa-share-alt" aria-hidden="true"></i>
       <span>Share</span>
+    </button>
+  {/if}
+
+  {#if showSendOption}
+    <button
+      class="share-option-btn send-btn"
+      onclick={onSendToUser}
+      aria-label="Send to user"
+    >
+      <i class="fas fa-paper-plane" aria-hidden="true"></i>
+      <span>Send</span>
     </button>
   {/if}
 </div>
@@ -124,6 +139,15 @@ in a horizontal row when share is expanded.
     background: color-mix(in srgb, var(--semantic-success, #22c55e) 20%, transparent);
     border-color: var(--semantic-success, #22c55e);
     color: var(--semantic-success, #22c55e);
+  }
+
+  .share-option-btn.send-btn {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .share-option-btn.send-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
   }
 
   .share-option-btn i {
