@@ -233,12 +233,70 @@ node scripts/find-monoliths.cjs --release "lib/path/to/File.svelte"
 
 The goal is **AI parseability and single responsibility**, not hitting specific line counts.
 
-**Signs a file needs decomposition:**
+### The Four Perspectives Test
 
-- Multiple unrelated `$effect` blocks
-- Many private functions doing different things
-- Mixed concerns (data fetching + UI logic + state management)
-- Hard to describe what the file does in one sentence
+Before recommending decomposition, evaluate through four distinct lenses.
+Each perspective must explicitly consider why it might be wrong.
+
+**1. The Architect's Lens** (Optimizes for: abstraction boundaries)
+- Is the responsibility boundary at the right level?
+- Would extraction add indirection without improving testability or reusability?
+- Is the complexity *inherent to the domain* or *accidental from poor structure*?
+- **Devil's Advocate:** "Even if this looks complex, what if extraction just moves the complexity?"
+
+**2. The Pragmatist's Lens** (Optimizes for: maintainability)
+- Can I find a bug in this file within 5 minutes of reading?
+- Can I add a feature following the existing patterns?
+- Is there *actual* duplication, or just *superficial* similarity?
+- **Devil's Advocate:** "Even if this file is large, what if it's large because the problem is large?"
+
+**3. The Skeptic's Lens** (Optimizes for: avoiding unnecessary work)
+- Would extraction create files that need the same props/context passed through?
+- Would I be creating coupling between files that used to be self-contained?
+- Am I solving a real problem or just uncomfortable with line count?
+- **Devil's Advocate:** "What if my instinct to extract is just pattern-matching on 'big = bad'?"
+
+**4. The Svelte Component Lens** (Optimizes for: scoped composition)
+
+In Svelte, CSS is scoped to components - when you extract a component, its styles travel with it.
+High CSS percentage is NOT a reason to leave a file alone; it's a signal to look for extractable UI sections.
+
+- Are there distinct UI sections with 50+ lines of associated CSS?
+- Can those sections take their markup AND styles as self-contained units?
+- Does each section have its own local state (edit mode, loading, validation)?
+- Would extraction create conceptually distinct, potentially reusable components?
+- **Devil's Advocate:** "Even if there's a lot of CSS, what if extracting would create tight coupling or prop drilling?"
+
+**CSS-heavy file analysis checklist:**
+1. Calculate CSS percentage (lines 500-900 being CSS = 44%)
+2. Identify distinct UI sections in the markup
+3. Map which CSS selectors belong to which sections
+4. Check if sections have independent state
+5. Evaluate prop boundaries - can parent just pass value + callbacks?
+
+**Convergence Rule:**
+- If 3/4 perspectives say "extract" → proceed with extraction
+- If 3/4 perspectives say "leave it" → mark as audited
+- If 2-2 split → evaluate which extractions have clearest boundaries, or leave alone
+- The Svelte Component Lens can override Skeptic when CSS sections are clearly self-contained
+
+### Signs a file ACTUALLY needs decomposition:
+
+- **Polling/workarounds** - Comments like "polling workaround" indicate architectural debt
+- **Multiple unrelated `$effect` blocks** doing different jobs (not just reactive glue)
+- **Mixed concerns** that don't belong together (e.g., URL routing in a coordinator)
+- **Prop explosion** - Passing 30+ props suggests state ownership is unclear
+- **Can't describe in one sentence** - "It handles X and also Y and also Z"
+
+### Signs a file is fine despite high line count:
+
+- **Orchestrators** - Coordinating many services with thin delegation is their job
+- **Test utilities** - Benchmarks and test pages don't need production architecture
+- **Clear sections** - Well-commented, logically grouped code is readable at any size
+- **Logic is elsewhere** - If it just wires services together, size reflects coordination scope
+- **Atomic UI** - The CSS serves ONE indivisible UI element (e.g., a single complex button)
+
+**NOTE:** High CSS percentage (50%+) is NOT automatically "fine" - apply the Svelte Component Lens to check for extractable sections. CSS travels with components in Svelte, so CSS-heavy files often have extraction opportunities.
 
 **The workflow:**
 

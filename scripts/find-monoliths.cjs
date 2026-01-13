@@ -79,6 +79,42 @@ const AUDITED_FILES = {
     auditDate: "2026-01-11",
     reason: "False positive: Test utility page scheduled for deletion. Not production code.",
   },
+  "routes/test/thumbnail-benchmark/+page.svelte": {
+    auditDate: "2026-01-12",
+    reason: "False positive: Test utility page scheduled for deletion. Not production code.",
+  },
+  "lib/shared/sequence-viewer/components/SequenceViewer.svelte": {
+    auditDate: "2026-01-12",
+    reason: "Orchestrator: Coordinates 3 media modes (image/animation/video) with their respective settings managers. Complexity is inherent to task, not poor factoring.",
+  },
+  "lib/features/create/shared/components/sequence-actions/TurnPatternDrawer.svelte": {
+    auditDate: "2026-01-12",
+    reason: "UI-dense drawer: 55% CSS for responsive pattern browser. Logic is 133 lines, clean. Size from comprehensive styling, not tangled architecture.",
+  },
+  "lib/features/create/assemble/components/HandPathOrchestrator.svelte": {
+    auditDate: "2026-01-12",
+    reason: "Orchestrator: 5-phase wizard (welcome→blue→red→rotation→complete) with keyboard support. Complexity inherent to multi-phase flow. 3/3 perspectives say leave it.",
+  },
+  "lib/shared/pictograph/grid/components/GridSvg.svelte": {
+    auditDate: "2026-01-12",
+    reason: "SVG grid renderer: 37% CSS (must stay scoped), handles 3 grid modes, dark mode, export inlining, smooth rotation animation. Complexity inherent to domain. 3/3 perspectives say leave it.",
+  },
+  "lib/features/create/shared/components/sequence-actions/SequenceActionsPanel.svelte": {
+    auditDate: "2026-01-12",
+    reason: "Panel coordinator: Logic delegated to extensionFlowCoordinator, transferHandler, firstBeatAnalyzer. 7 transforms, 3 sub-drawers, help mode, beat grid, shift start. Complexity inherent to panel scope. 3/3 perspectives say leave it.",
+  },
+  "lib/shared/3d-animation/Viewer3DModule.svelte": {
+    auditDate: "2026-01-12",
+    reason: "Module coordinator: Top-level 3D viewer. Logic in performerManager, cameraChoreography, animation3DPersister. Scene composition + reactive glue. 30% CSS. 3/3 perspectives say leave it.",
+  },
+  "lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte": {
+    auditDate: "2026-01-12",
+    reason: "UI-dense detail view: 56% CSS for responsive drawer, badges, screenshots, dialog. Only 170 lines TS. Delegates to StatusTimeline, FeedbackEditDrawer, ImageViewerModal. 3/3 perspectives say leave it.",
+  },
+  "lib/shared/navigation/components/profile-settings/AccountSettingsSection.svelte": {
+    auditDate: "2026-01-12",
+    reason: "REFACTORED: Extracted DisplayNameEditor, UsernameEditor, PasswordChangeForm. Svelte Component Lens identified 3 independent UI sections with 45% CSS. Now 50-line orchestrator.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 
