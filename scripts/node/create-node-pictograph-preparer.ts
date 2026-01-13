@@ -136,11 +136,10 @@ export function createNodePictographPreparer() {
   );
 
   const specialPlacer = new SpecialPlacer(
-    arrowLocator,
     specialPlacementDataProvider,
-    arrowAdjustmentCalculator,
-    arrowRotationCalculator,
-    turnsTupleGenerator
+    turnsTupleGenerator,
+    specialPlacementLookup,
+    gridModeDeriver
   );
 
   const arrowPlacer = new ArrowPlacer(

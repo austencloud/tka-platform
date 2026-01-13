@@ -392,7 +392,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
         if (result) {
           console.log(
-            `[EndlessSpinner] Found "${fullSequence.word}" with beat ${beatIndex + 1} ending in ${beatGroup}`
+            `[EndlessSpinner] ✅ Seamless transition: "${fullSequence.word}" (beat ${beatIndex + 1} → ${targetEndState.position})`
           );
           return result;
         }
@@ -419,6 +419,9 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       // (beatIndex is 0-based, shiftStartPosition expects 1-based beat number)
       // The next beat (beatIndex + 2) becomes the new beat 1
       const targetBeatNumber = beatIndex + 2;
+      console.log(
+        `[EndlessSpinner] Step 1: Rotating sequence "${sequence.word}" - beat ${targetBeatNumber} becomes new beat 1`
+      );
       const rotated = this.sequenceTransformer.shiftStartPosition(sequence, targetBeatNumber);
 
       // Step 2: Position rotation - match exact variant

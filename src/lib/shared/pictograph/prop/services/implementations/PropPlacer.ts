@@ -20,6 +20,8 @@ import {
   isBuugengFamilyProp,
   isUnilateralProp,
 } from "../../domain/enums/PropClassification";
+import { getSettings } from "../../../../application/state/app-state.svelte";
+
 // Settings interface for Node.js contexts where getSettings() isn't available
 interface PropPlacerSettings {
   bluePropType?: string;
@@ -29,8 +31,8 @@ interface PropPlacerSettings {
 // Dynamic import wrapper for browser contexts
 function getSettingsOrFallback() {
   if (typeof window !== 'undefined') {
-    // Browser: will be resolved at build time by Vite
-    throw new Error('getSettings should be available in browser context');
+    // Browser: call the real getSettings()
+    return getSettings();
   }
   // Node.js: settings must be provided via constructor, return empty
   return { bluePropType: undefined, redPropType: undefined };

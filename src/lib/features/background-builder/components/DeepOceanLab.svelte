@@ -174,6 +174,13 @@
         lastStatsUpdate = currentTime;
       }
 
+      // Draw home zones (if enabled)
+      if (fishDebugConfig.showHomeZones && layers.fish) {
+        for (const f of fishList) {
+          drawHomeZone(ctx, f);
+        }
+      }
+
       // Draw fish selection overlay
       const selected = fishList[selectedFishIndex];
       if (selected && showOverlay && layers.fish) {
@@ -213,6 +220,50 @@
     ctx.textAlign = "center";
     ctx.fillStyle = getMoodColor(f.mood ?? "calm");
     ctx.fillText(`${f.behavior} · ${f.mood ?? "calm"}`, x, y);
+    ctx.restore();
+  }
+
+  function drawHomeZone(ctx: CanvasRenderingContext2D, f: FishMarineLife) {
+    const homeZone = f.homeZone;
+    if (!homeZone) return;
+
+    const radius = 150; // Base home zone radius
+    const isSelected = fishList[selectedFishIndex] === f;
+
+    ctx.save();
+
+    // Draw zone circle
+    ctx.strokeStyle = isSelected
+      ? `rgba(34, 211, 238, ${0.3 + homeZone.affinity * 0.4})`
+      : `rgba(100, 150, 200, ${0.15 + homeZone.affinity * 0.2})`;
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.setLineDash([8, 8]);
+
+    ctx.beginPath();
+    ctx.arc(homeZone.x, homeZone.y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Draw connection line from fish to home zone center
+    if (isSelected) {
+      const headJoint = f.spineJoints?.[0];
+      const fishX = headJoint?.x ?? f.x;
+      const fishY = headJoint?.y ?? f.y;
+
+      ctx.strokeStyle = "rgba(34, 211, 238, 0.2)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(fishX, fishY);
+      ctx.lineTo(homeZone.x, homeZone.y);
+      ctx.stroke();
+
+      // Draw home marker
+      ctx.fillStyle = "rgba(34, 211, 238, 0.6)";
+      ctx.beginPath();
+      ctx.arc(homeZone.x, homeZone.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.restore();
   }
 

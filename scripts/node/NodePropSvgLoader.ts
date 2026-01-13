@@ -78,11 +78,19 @@ export class NodePropSvgLoader implements IPropSvgLoader {
       const coloredSvgText = applyMotionColorToSvg(
         originalSvgText,
         color,
-        themeMode
+        { themeMode }
       );
 
       // Extract SVG content
-      const svgContent = this.extractSvgContent(coloredSvgText);
+      let svgContent = this.extractSvgContent(coloredSvgText);
+
+      // CRITICAL FIX: node-canvas doesn't support inline style attributes
+      // Convert style="fill:#color" to direct fill="#color" attributes
+      svgContent = svgContent.replace(/style\s*=\s*["']([^"']*)fill\s*:\s*([^;"']+)([^"']*)["']/gi, (match, before, color, after) => {
+        const otherStyles = (before + after).trim();
+        const fillAttr = `fill="${color.trim()}"`;
+        return otherStyles ? `style="${otherStyles}" ${fillAttr}` : fillAttr;
+      });
 
       const result: PropRenderData = {
         position: { x: propData.positionX, y: propData.positionY },

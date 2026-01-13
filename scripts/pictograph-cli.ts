@@ -62,59 +62,104 @@ interface MotionData {
   };
 }
 
-async function loadPictographData(letter: string): Promise<PictographData> {
+async function loadPictographData(letter: string, startPos?: string, endPos?: string): Promise<PictographData> {
   const csvPath = path.join(__dirname, '..', 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
   const csvData = fs.readFileSync(csvPath, 'utf-8');
-  const lines = csvData.split('\n');
-  const headers = lines[0].split(',');
+  const lines = csvData.split(/\r?\n/); // Handle both Unix and Windows line endings
+  const headers = lines[0].split(',').map(h => h.trim());
 
   let row: string[] | null = null;
   for (let i = 1; i < lines.length; i++) {
-    const r = lines[i].split(',');
+    const r = lines[i].split(',').map(v => v.trim());
+    // Match by letter and optionally by start/end positions
     if (r[0] === letter) {
-      row = r;
-      break;
+      // If positions specified, filter by them
+      if (startPos && endPos) {
+        const rowStartPos = r[headers.indexOf('startPosition')];
+        const rowEndPos = r[headers.indexOf('endPosition')];
+        if (rowStartPos === startPos && rowEndPos === endPos) {
+          row = r;
+          break;
+        }
+      } else {
+        // No position filter, take first match
+        row = r;
+        break;
+      }
     }
   }
 
   if (!row) {
-    throw new Error(`No data found for letter ${letter}`);
+    throw new Error(`No data found for letter ${letter}${startPos ? ` (${startPos}→${endPos})` : ''}`);
   }
+
+  // Helper to expand abbreviated location names from CSV
+  const expandLocation = (abbrev: string): string => {
+    const map: Record<string, string> = {
+      'n': 'north', 'ne': 'northeast', 'e': 'east', 'se': 'southeast',
+      's': 'south', 'sw': 'southwest', 'w': 'west', 'nw': 'northwest',
+      'c': 'center'
+    };
+    return map[abbrev?.toLowerCase()] || abbrev;
+  };
+
+  const blueEndLocation = expandLocation(row[headers.indexOf('blueEndLocation')]);
+  const redEndLocation = expandLocation(row[headers.indexOf('redEndLocation')]);
 
   return {
     id: `pictograph-${letter}`,
     letter: letter,
     motions: {
       blue: {
+        color: 'blue', // CRITICAL: Required for color transformation
         motionType: row[headers.indexOf('blueMotionType')],
         rotationDirection: row[headers.indexOf('blueRotationDirection')],
-        startLocation: row[headers.indexOf('blueStartLocation')],
-        endLocation: row[headers.indexOf('blueEndLocation')],
+        startLocation: expandLocation(row[headers.indexOf('blueStartLocation')]),
+        endLocation: blueEndLocation,
         startOrientation: 'in',
         endOrientation: 'in',
         turns: 1,
         propType: 'staff',
-        propPlacementData: { propType: 'staff' }
+        propPlacementData: {
+          propType: 'staff',
+          positionX: 0, // Will be calculated by PropPlacer
+          positionY: 0,
+          rotationAngle: 0
+        }
       },
       red: {
+        color: 'red', // CRITICAL: Required for color transformation
         motionType: row[headers.indexOf('redMotionType')],
         rotationDirection: row[headers.indexOf('redRotationDirection')],
-        startLocation: row[headers.indexOf('redStartLocation')],
-        endLocation: row[headers.indexOf('redEndLocation')],
+        startLocation: expandLocation(row[headers.indexOf('redStartLocation')]),
+        endLocation: redEndLocation,
         startOrientation: 'in',
         endOrientation: 'in',
         turns: 1,
         propType: 'staff',
-        propPlacementData: { propType: 'staff' }
+        propPlacementData: {
+          propType: 'staff',
+          positionX: 0, // Will be calculated by PropPlacer
+          positionY: 0,
+          rotationAngle: 0
+        }
       }
     }
   };
 }
 
-async function renderPictograph(letter: string): Promise<string> {
-  console.log(`\n🎨 Rendering pictograph ${letter}...`);
+async function renderPictograph(
+  letter: string,
+  options: {
+    startPos?: string;
+    endPos?: string;
+    themeMode?: 'light' | 'dark'
+  } = {}
+): Promise<string> {
+  const positionLabel = options.startPos ? ` (${options.startPos}→${options.endPos})` : '';
+  console.log(`\n🎨 Rendering pictograph ${letter}${positionLabel}...`);
 
-  const pictographData = await loadPictographData(letter);
+  const pictographData = await loadPictographData(letter, options.startPos, options.endPos);
   console.log(`  ✓ Loaded data`);
 
   // Import Node.js preparer factory
@@ -140,6 +185,9 @@ async function renderPictograph(letter: string): Promise<string> {
 
   // Render pictograph (grid + glyph - arrows/props coming soon)
   console.log(`  🎨 Rendering grid + glyph...`);
+  const themeMode = options.themeMode ?? 'light';
+  const isDarkMode = themeMode === 'dark';
+
   const canvas = await renderer.renderPictograph(pictographData as any, {
     size: 950,
     visibility: {
@@ -150,12 +198,13 @@ async function renderPictograph(letter: string): Promise<string> {
       showPositions: false,
       showReversals: false,
       showNonRadialPoints: false,
-      darkMode: false,
+      darkMode: isDarkMode,
       handPointVisibility: 'active',
       // Explicitly pass prop types to avoid needing global settings
       bluePropType: 'staff' as any,
       redPropType: 'staff' as any,
-    }
+    },
+    themeMode, // Pass theme mode for prop/arrow color selection
   });
 
   console.log(`  ✓ Rendered (${canvas.width}x${canvas.height})`);
@@ -198,9 +247,19 @@ async function main() {
   const startTime = Date.now();
   const results: { letter: string; success: boolean; path?: string; error?: string }[] = [];
 
+  // Check for theme mode flag
+  const themeMode: 'light' | 'dark' = args.includes('--dark') ? 'dark' : 'light';
+
   for (const letter of letters) {
     try {
-      const outputPath = await renderPictograph(letter);
+      // For letter A, use alpha1→alpha3 variation (red at east, blue at west)
+      const options: any = { themeMode };
+      if (letter === 'A') {
+        options.startPos = 'alpha1';
+        options.endPos = 'alpha3';
+      }
+
+      const outputPath = await renderPictograph(letter, options);
       results.push({ letter, success: true, path: outputPath });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

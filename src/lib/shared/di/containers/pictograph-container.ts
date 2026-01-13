@@ -137,10 +137,27 @@ const svgPreloader = new SvgPreloader();
 let rotationOverrideManager: RotationOverrideManager;
 
 // ============================================================================
-// CONTAINER DEFINITION (inside else block)
+// CONTAINER DEFINITION - Only create in browser context
 // ============================================================================
 
-const pictographContainer = createContainer()
+// In Node.js, export a stub to prevent execution
+let pictographContainer: any;
+
+if (typeof window === 'undefined') {
+  // Node.js: Create empty stub
+  pictographContainer = {
+    items: new Proxy({}, {
+      get: (_target, prop) => {
+        throw new Error(
+          `Cannot access pictographContainer.items.${String(prop)} in Node.js context. ` +
+          `Use manual dependency wiring in Node.js scripts.`
+        );
+      }
+    })
+  };
+} else {
+  // Browser: Create real container
+  pictographContainer = createContainer()
   // === Layer 1: Leaf services with no dependencies ===
   .add({
     // Grid services (leaf)
@@ -373,8 +390,9 @@ const pictographContainer = createContainer()
         deps.csvPictographParser
       ),
   }));
+} // End browser-only block
 
-// Export the container (browser path)
+// Export the container (works in both browser and Node.js)
 export { pictographContainer };
 
 // ============================================================================

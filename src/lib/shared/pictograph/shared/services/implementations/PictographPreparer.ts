@@ -27,14 +27,16 @@ import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
+import { getSettings } from "../../../../application/state/app-state.svelte";
+
 // Conditional function to avoid triggering DI in Node.js contexts
 function getSettingsOrDefault() {
   // Node.js: return empty settings (options should provide prop types via PrepareOptions)
   if (typeof window === 'undefined') {
     return { bluePropType: undefined, redPropType: undefined };
   }
-  // Browser: Will be handled at build time by Vite - shouldn't reach here in Node.js
-  throw new Error('getSettings() should not be called in Node.js - provide bluePropType/redPropType via options');
+  // Browser: call the real getSettings()
+  return getSettings();
 }
 
 export class PictographPreparer implements IPictographPreparer {
