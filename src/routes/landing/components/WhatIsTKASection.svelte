@@ -95,8 +95,8 @@
   }
 
   .comparison-card {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 32px;
     text-align: center;
@@ -113,7 +113,7 @@
   }
 
   .comparison-card p {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .benefits {
@@ -136,18 +136,18 @@
   }
 
   blockquote {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border-left: 4px solid var(--primary, #6366f1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border-left: 4px solid var(--theme-accent, #6366f1);
     padding: 24px 32px;
     border-radius: 0 12px 12px 0;
     font-style: italic;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 700px;
     margin: 0 auto;
   }
 
   blockquote strong {
-    color: var(--text, #ffffff);
+    color: var(--theme-text, #ffffff);
     font-style: normal;
   }
 </style>

@@ -45,7 +45,7 @@
   .section-intro {
     text-align: center;
     font-size: 1.125rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 700px;
     margin: 0 auto 3rem;
   }
@@ -59,8 +59,8 @@
   }
 
   .prop-tag {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     padding: 10px 20px;
     border-radius: 100px;
     font-size: var(--font-size-sm, 0.875rem);
@@ -68,12 +68,12 @@
   }
 
   .prop-tag:hover {
-    border-color: var(--primary, #6366f1);
-    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--theme-accent, #6366f1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
   }
 
   .prop-tag.more {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-style: italic;
   }
 

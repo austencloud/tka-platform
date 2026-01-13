@@ -56,13 +56,13 @@
     position: absolute;
     border-radius: 50%;
     filter: blur(100px);
-    opacity: 0.4;
+    opacity: 0.35;
   }
 
   .glow-1 {
     width: 600px;
     height: 600px;
-    background: var(--primary, #6366f1);
+    background: var(--theme-accent, #6366f1);
     top: -200px;
     right: -200px;
   }
@@ -70,7 +70,7 @@
   .glow-2 {
     width: 400px;
     height: 400px;
-    background: #ec4899;
+    background: var(--theme-accent-strong, #818cf8);
     bottom: -100px;
     left: -100px;
   }
@@ -93,14 +93,14 @@
 
   .tagline {
     font-size: clamp(1.25rem, 3vw, 1.75rem);
-    color: var(--primary-light, #818cf8);
+    color: var(--theme-accent-strong, #818cf8);
     margin-bottom: 16px;
     font-weight: 500;
   }
 
   .subtitle {
     font-size: 1.125rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 600px;
     margin: 0 auto 32px;
   }

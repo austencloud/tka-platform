@@ -44,14 +44,14 @@
   .section-intro {
     text-align: center;
     font-size: 1.125rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 700px;
     margin: 0 auto 3rem;
   }
 
   .educator-card {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 28px;
     text-align: center;
@@ -75,17 +75,17 @@
   }
 
   .educator-card p {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.875rem;
   }
 
   .educator-quote {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border-left: 4px solid var(--primary, #6366f1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border-left: 4px solid var(--theme-accent, #6366f1);
     padding: 24px 32px;
     border-radius: 0 12px 12px 0;
     font-style: italic;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 700px;
     margin: 0 auto;
     text-align: center;

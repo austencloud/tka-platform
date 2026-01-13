@@ -69,7 +69,7 @@
   .section-intro {
     text-align: center;
     font-size: 1.125rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 700px;
     margin: 0 auto 3rem;
   }
@@ -90,16 +90,16 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     padding: 16px 24px;
     border-radius: 12px;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .step-num {
     width: 32px;
     height: 32px;
-    background: var(--primary, #6366f1);
+    background: var(--theme-accent, #6366f1);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -109,7 +109,7 @@
 
   .flow-arrow {
     font-size: 1.5rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .loop-types {
@@ -128,8 +128,8 @@
   }
 
   .loop-card {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     padding: 12px 20px;
     display: flex;
@@ -139,19 +139,19 @@
 
   .loop-name {
     font-weight: 600;
-    color: var(--primary-light, #818cf8);
+    color: var(--theme-accent-strong, #818cf8);
   }
 
   .loop-desc {
     font-size: var(--font-size-compact, 0.75rem);
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .loop-cta {
     text-align: center;
     margin-top: 48px;
     font-size: 1.125rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   @media (max-width: 768px) {

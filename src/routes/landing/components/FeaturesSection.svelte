@@ -42,7 +42,7 @@
   .section-intro {
     text-align: center;
     font-size: 1.125rem;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 700px;
     margin: 0 auto 3rem;
   }
@@ -54,8 +54,8 @@
   }
 
   .feature-card {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 32px;
     transition: all 0.3s ease;
@@ -79,7 +79,7 @@
   }
 
   .feature-card p {
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-sm, 0.875rem);
   }
 
