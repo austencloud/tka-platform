@@ -6,6 +6,7 @@
   "type": "module",
   "description": "TKA Scribe - Browser-based sequence editor for flow arts",
   "scripts": {
+    "pictograph": "tsx scripts/pictograph.ts",
     "dev": "kill-port 5173 && vite --host 0.0.0.0",
     "dev:clean": "rimraf node_modules/.vite .svelte-kit && svelte-kit sync && npm run dev",
     "dev:debug": "NODE_OPTIONS='--inspect' vite --host 0.0.0.0",
@@ -118,6 +119,8 @@
     "svelte-check": "^4.3.5",
     "svelte-confetti": "^2.3.2",
     "svg-path-commander": "^2.1.11",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
     "vite-plugin-pwa": "^1.2.0",

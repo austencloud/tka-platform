@@ -1,0 +1,1 @@
+Error: Cannot find module '$lib/shared/inversify/di' imported from 'F:/_THE KINETIC ALPHABET/_TKA-SCRIBE/src/routes/api/render-pictograph/+server.ts'

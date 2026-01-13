@@ -1,0 +1,109 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { container } from '$lib/shared/inversify/di';
+  import { TYPES } from '$lib/shared/inversify/types/core.types';
+  import type { Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
+
+  let status = $state('Loading...');
+
+  onMount(async () => {
+    const letter = $page.url.searchParams.get('letter');
+
+    if (!letter) {
+      status = 'Error: No letter specified. Use ?letter=A';
+      return;
+    }
+
+    try {
+      status = `Rendering ${letter}...`;
+
+      // Get renderer
+      const renderer = container.get<Canvas2DDirectRenderer>(TYPES.IDirectRenderer);
+      await renderer.initialize();
+
+      // Load CSV
+      const csvPath = '/data/pictographs/DiamondPictographDataframe.csv';
+      const response = await fetch(csvPath);
+      const csvData = await response.text();
+      const lines = csvData.split('\n');
+      const headers = lines[0].split(',');
+
+      // Find letter
+      let row: string[] | null = null;
+      for (let i = 1; i < lines.length; i++) {
+        const r = lines[i].split(',');
+        if (r[0] === letter) {
+          row = r;
+          break;
+        }
+      }
+
+      if (!row) {
+        status = `Error: No data for letter ${letter}`;
+        return;
+      }
+
+      // Create pictograph data
+      const pictographData = {
+        id: `pictograph-${letter}`,
+        letter: letter,
+        motions: {
+          blue: {
+            motionType: row[headers.indexOf('blueMotionType')],
+            rotationDirection: row[headers.indexOf('blueRotationDirection')],
+            startLocation: row[headers.indexOf('blueStartLocation')],
+            endLocation: row[headers.indexOf('blueEndLocation')],
+            startOrientation: 'in',
+            endOrientation: 'in',
+            turns: 1,
+            propType: 'staff',
+            propPlacementData: { propType: 'staff' }
+          },
+          red: {
+            motionType: row[headers.indexOf('redMotionType')],
+            rotationDirection: row[headers.indexOf('redRotationDirection')],
+            startLocation: row[headers.indexOf('redStartLocation')],
+            endLocation: row[headers.indexOf('redEndLocation')],
+            startOrientation: 'in',
+            endOrientation: 'in',
+            turns: 1,
+            propType: 'staff',
+            propPlacementData: { propType: 'staff' }
+          }
+        }
+      };
+
+      // Render
+      const canvas = await renderer.renderPictograph(pictographData as any, {
+        size: 950,
+        showGrid: true,
+        showTKA: true,
+        showVTG: false,
+        showElemental: false,
+        showPositions: false,
+        showReversals: false,
+        showNonRadialPoints: false,
+        darkMode: false,
+        handPointVisibility: 'active',
+      });
+
+      // Add canvas to page so script can access it
+      canvas.style.maxWidth = '400px';
+      canvas.style.border = '1px solid #444';
+      document.body.appendChild(canvas);
+
+      status = `✅ Rendered pictograph-${letter}`;
+
+    } catch (error) {
+      status = `Error: ${error instanceof Error ? error.message : String(error)}`;
+      console.error(error);
+    }
+  });
+</script>
+
+<div style="padding: 40px; font-family: system-ui;">
+  <h1>Pictograph Renderer</h1>
+  <p>{status}</p>
+  <p style="color: #666; font-size: 14px;">Usage: /render?letter=A</p>
+</div>

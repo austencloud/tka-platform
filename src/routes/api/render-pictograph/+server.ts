@@ -1,0 +1,113 @@
+import type { RequestHandler } from '@sveltejs/kit';
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * Public API endpoint - renders pictograph and returns PNG
+ * No auth required
+ */
+export const GET: RequestHandler = async ({ url }) => {
+  const letter = url.searchParams.get('letter');
+
+  if (!letter) {
+    return new Response('Missing letter parameter', { status: 400 });
+  }
+
+  try {
+    // Dynamically import so Node.js canvas works server-side
+    const { createCanvas } = await import('canvas');
+    const { container } = await import('$lib/shared/inversify/di');
+    const { TYPES } = await import('$lib/shared/inversify/types/core.types');
+
+    // Load CSV data
+    const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
+    const csvData = fs.readFileSync(csvPath, 'utf-8');
+    const lines = csvData.split('\n');
+    const headers = lines[0].split(',');
+
+    // Find the letter
+    let row: string[] | null = null;
+    for (let i = 1; i < lines.length; i++) {
+      const r = lines[i].split(',');
+      if (r[0] === letter) {
+        row = r;
+        break;
+      }
+    }
+
+    if (!row) {
+      return new Response(`No data found for letter ${letter}`, { status: 404 });
+    }
+
+    // Create pictograph data
+    const pictographData = {
+      id: `pictograph-${letter}`,
+      letter: letter,
+      motions: {
+        blue: {
+          motionType: row[headers.indexOf('blueMotionType')],
+          rotationDirection: row[headers.indexOf('blueRotationDirection')],
+          startLocation: row[headers.indexOf('blueStartLocation')],
+          endLocation: row[headers.indexOf('blueEndLocation')],
+          startOrientation: 'in',
+          endOrientation: 'in',
+          turns: 1,
+          propType: 'staff',
+          propPlacementData: { propType: 'staff' }
+        },
+        red: {
+          motionType: row[headers.indexOf('redMotionType')],
+          rotationDirection: row[headers.indexOf('redRotationDirection')],
+          startLocation: row[headers.indexOf('redStartLocation')],
+          endLocation: row[headers.indexOf('redEndLocation')],
+          startOrientation: 'in',
+          endOrientation: 'in',
+          turns: 1,
+          propType: 'staff',
+          propPlacementData: { propType: 'staff' }
+        }
+      }
+    };
+
+    // Get renderer from DI container
+    const renderer = container.get(TYPES.IDirectRenderer);
+    await renderer.initialize();
+
+    // Render using real Canvas2DDirectRenderer with Node.js canvas
+    const canvas = await renderer.renderPictograph(pictographData as any, {
+      size: 950,
+      showGrid: true,
+      showTKA: true,
+      showVTG: false,
+      showElemental: false,
+      showPositions: false,
+      showReversals: false,
+      showNonRadialPoints: false,
+      darkMode: false,
+      handPointVisibility: 'active',
+    });
+
+    // Convert to PNG buffer (works with both browser and Node.js canvas)
+    const buffer = canvas.toBuffer ? canvas.toBuffer('image/png') : await new Promise<Buffer>((resolve) => {
+      canvas.toBlob((blob: Blob) => {
+        blob.arrayBuffer().then(ab => resolve(Buffer.from(ab)));
+      }, 'image/png');
+    });
+
+    return new Response(buffer, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Content-Disposition': `attachment; filename="pictograph-${letter}.png"`,
+        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+      }
+    });
+
+  } catch (error) {
+    console.error('Error rendering pictograph:', error);
+    console.error(error instanceof Error ? error.stack : '');
+    return new Response(
+      `Error: ${error instanceof Error ? error.message : String(error)}`,
+      { status: 500 }
+    );
+  }
+};
