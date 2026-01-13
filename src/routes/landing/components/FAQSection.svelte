@@ -40,11 +40,6 @@
 <style>
   .faq {
     padding: 120px 24px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(99, 102, 241, 0.03) 100%
-    );
   }
 
   .container {

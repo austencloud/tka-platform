@@ -62,11 +62,6 @@
 <style>
   .notation {
     padding: 120px 24px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(236, 72, 153, 0.05) 100%
-    );
   }
 
   .container {

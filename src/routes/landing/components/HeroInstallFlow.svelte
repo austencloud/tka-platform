@@ -220,14 +220,15 @@
   }
 
   .btn-secondary {
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    color: var(--text, #ffffff);
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #ffffff);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    backdrop-filter: blur(8px);
   }
 
   .btn-secondary:hover {
-    background: var(--bg-card-hover, rgba(255, 255, 255, 0.06));
-    border-color: var(--border-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-accent, #6366f1);
   }
 
   .arrow {

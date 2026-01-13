@@ -9,8 +9,12 @@
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
+  import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
+  import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
+  import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import {
     animationSettings,
     TrackingMode,
@@ -18,8 +22,9 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
   import DemoControlBar from "./DemoControlBar.svelte";
-  import { SHOWCASE_SEQUENCES, RANDOM_PROPS } from "../landing-content";
+  import { RANDOM_PROPS } from "../landing-content";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   /**
    * Apply prop type to all motions in sequence data.
@@ -65,21 +70,31 @@
   let playbackController: IAnimationPlaybackController | null = null;
   let discoverLoader: IDiscoverLoader | null = null;
   let startPositionDeriver: IStartPositionDeriver | null = null;
+  let gridPositionDeriver: IGridPositionDeriver | null = null;
+  let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
   let servicesReady = $state(false);
   let animationReady = $state(false);
   let animationError = $state(false);
   let isLoading = $state(false);
+  let isChainingEnabled = $state(true); // Enable endless chaining
 
-  // Current selection state
-  let currentSequenceIndex = $state(0);
+  // Dynamic sequence loading - circular LOOPs from the database
+  let currentSequence = $state<SequenceData | null>(null);
   let currentPropType = $state<PropType>(RANDOM_PROPS[0]!);
+
+  // Track beat for sequence completion detection
+  let lastBeat = $state(-1);
+
+  // Pre-loaded next sequence for seamless transition
+  let preloadedSequence = $state<SequenceData | null>(null);
+  let isPreloading = $state(false);
+
+  // Flag to indicate we're in the middle of a seamless chain
+  let isChainingNow = $state(false);
 
   // Dark mode - default ON for landing page visual impact
   let darkMode = $state(true);
   const visibilityManager = getAnimationVisibilityManager();
-
-  // Derived values
-  let currentWord = $derived(SHOWCASE_SEQUENCES[currentSequenceIndex]);
 
   // Derived start position - uses service to derive from first beat if not stored
   let derivedStartPosition = $derived.by(() => {
@@ -133,6 +148,50 @@
   let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
   let currentBeatNumber = $derived(Math.floor(animationState.currentBeat));
 
+  // Pre-load next sequence when we're partway through current one
+  $effect(() => {
+    const currentBeat = Math.floor(animationState.currentBeat);
+    const totalBeats = animationState.totalBeats;
+
+    // Start pre-loading around beat 2 (gives time to load before sequence ends)
+    const shouldPreload =
+      isChainingEnabled &&
+      servicesReady &&
+      animationReady &&
+      !isPreloading &&
+      !preloadedSequence &&
+      currentSequence &&
+      totalBeats > 2 &&
+      currentBeat >= 2 &&
+      currentBeat < totalBeats - 1;
+
+    if (shouldPreload) {
+      preloadNextSequence();
+    }
+  });
+
+  // Watch for sequence completion to chain to next sequence
+  $effect(() => {
+    const currentBeat = Math.floor(animationState.currentBeat);
+    const totalBeats = animationState.totalBeats;
+
+    // Detect when sequence loops back to beginning (completion)
+    if (
+      isChainingEnabled &&
+      servicesReady &&
+      !isChainingNow &&
+      animationReady &&
+      lastBeat >= totalBeats - 1 &&
+      currentBeat <= 1 &&
+      totalBeats > 0
+    ) {
+      // Sequence completed - chain to next
+      chainToNextSequence();
+    }
+
+    lastBeat = currentBeat;
+  });
+
   // Intersection Observer for lazy loading - only load animation engine when visible
   onMount(() => {
     if (!containerRef) return;
@@ -161,21 +220,37 @@
       // Enable dark mode on mount for visual impact
       visibilityManager.setDarkMode(darkMode);
 
-      // ITI container is ready synchronously - get services directly
+      // Get services from DI container
       discoverLoader = container.items.discoverLoader as IDiscoverLoader;
       playbackController = container.items.animationPlaybackController as IAnimationPlaybackController;
       startPositionDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
+      gridPositionDeriver = container.items.gridPositionDeriver as IGridPositionDeriver;
 
-      // CRITICAL: Populate sequence cache with bundled metadata from sequence-index.json
-      // This ensures loadFullSequenceData() uses the pre-bundled data instead of
-      // falling back to individual .meta.json fetches (which may fail or be missing beat 0)
-      await discoverLoader.loadSequenceMetadata();
+      // Create and initialize the spinner orchestrator for endless chaining
+      const generationOrchestrator = container.items.generationOrchestrator;
+      const sequenceTransformer = container.items.sequenceTransformer;
+      const orientationCalculator = container.items.orientationCalculator;
+
+      spinnerOrchestrator = new EndlessSpinnerOrchestrator(
+        discoverLoader as any,
+        generationOrchestrator as any,
+        sequenceTransformer as any,
+        startPositionDeriver,
+        orientationCalculator as any,
+        gridPositionDeriver as any
+      );
+
+      await spinnerOrchestrator.initialize();
 
       servicesReady = true;
 
-      // Prop type is passed directly to AnimatorCanvas via override props
-      // and applied to sequence data for BeatGrid - no settings modification needed
-      await loadSequence(SHOWCASE_SEQUENCES[0]!);
+      // Load initial sequence
+      const initialSequence = await spinnerOrchestrator.getInitialSequence();
+      if (initialSequence) {
+        await loadSequence(initialSequence);
+      } else {
+        animationError = true;
+      }
     } catch (err) {
       console.error("Failed to load hero animation:", err);
       animationError = true;
@@ -187,11 +262,164 @@
     animationState.dispose();
   });
 
-  async function loadSequence(word: string) {
-    if (!discoverLoader || !playbackController) return;
+  /**
+   * Extract end state from current sequence's last beat.
+   * Derives the end position from the motion's endLocation fields using GridPositionDeriver.
+   */
+  function extractEndState(sequence: SequenceData): EndState {
+    const lastBeat = sequence.beats?.[sequence.beats.length - 1];
+
+    // Get the end position - try stored value first, then derive from motion end locations
+    let position = lastBeat?.endPosition ?? null;
+
+    if (!position && gridPositionDeriver && lastBeat?.motions) {
+      const blueMotion = lastBeat.motions[MotionColor.BLUE];
+      const redMotion = lastBeat.motions[MotionColor.RED];
+
+      if (blueMotion?.endLocation && redMotion?.endLocation) {
+        try {
+          position = gridPositionDeriver.getGridPositionFromLocations(
+            blueMotion.endLocation,
+            redMotion.endLocation
+          );
+        } catch {
+          // Silently fail - position will remain null
+        }
+      }
+    }
+
+    return {
+      position,
+      blueOrientation: (lastBeat?.motions?.blue?.endOrientation as Orientation) ?? null,
+      redOrientation: (lastBeat?.motions?.red?.endOrientation as Orientation) ?? null,
+    };
+  }
+
+  /**
+   * Pre-load the next sequence in the background.
+   * Called while current sequence is playing to ensure instant swap.
+   */
+  async function preloadNextSequence() {
+    if (!spinnerOrchestrator || !currentSequence || isPreloading) return;
+
+    isPreloading = true;
+
+    try {
+      const endState = extractEndState(currentSequence);
+      const nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+      if (nextSeq) {
+        preloadedSequence = nextSeq;
+      } else {
+        // Fallback to random
+        preloadedSequence = await spinnerOrchestrator.getInitialSequence();
+      }
+    } catch (err) {
+      console.error("[LandingDemo] Failed to preload sequence:", err);
+    } finally {
+      isPreloading = false;
+    }
+  }
+
+  /**
+   * Chain to the next sequence when current one completes.
+   * Uses hot-swap to maintain seamless playback.
+   */
+  async function chainToNextSequence() {
+    if (!spinnerOrchestrator || !playbackController || isChainingNow) return;
+
+    isChainingNow = true;
+
+    try {
+      // Use pre-loaded sequence if available, otherwise load now
+      let nextSeq = preloadedSequence;
+      if (!nextSeq && currentSequence) {
+        const endState = extractEndState(currentSequence);
+        nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+        if (!nextSeq) {
+          nextSeq = await spinnerOrchestrator.getInitialSequence();
+        }
+      }
+
+      if (nextSeq) {
+        // Hot-swap: update sequence without resetting or showing loading state
+        hotSwapSequence(nextSeq);
+      }
+
+      // Clear preloaded sequence after use
+      preloadedSequence = null;
+    } catch (err) {
+      console.error("[LandingDemo] Failed to chain sequence:", err);
+    } finally {
+      isChainingNow = false;
+    }
+  }
+
+  /**
+   * Hot-swap sequence data without stopping playback.
+   * This is the key to seamless transitions - no loading state, no transition animation.
+   */
+  function hotSwapSequence(sequenceData: SequenceData) {
+    if (!playbackController) return;
+
+    // Store the current sequence for display and end state extraction
+    currentSequence = sequenceData;
+
+    // Reset beat tracking for chaining detection
+    lastBeat = -1;
+
+    // Apply current prop type to sequence data
+    const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
+
+    // Reinitialize the playback controller with new sequence
+    // This preserves the playing state and updates the animation data
+    animationState.setShouldLoop(true);
+    const success = playbackController.initialize(sequence, animationState);
+
+    if (!success) {
+      console.error("[LandingDemo] Hot-swap failed");
+      return;
+    }
+
+    // Ensure we're in continuous playback mode and start from beat 1
+    animationState.setPlaybackMode("continuous");
+    animationState.setCurrentBeat(1);
+
+    // Make sure playback is running
+    if (!animationState.isPlaying) {
+      playbackController.togglePlayback();
+    }
+  }
+
+  /**
+   * Get a new random sequence (for manual randomize button)
+   */
+  async function loadRandomSequence() {
+    if (!spinnerOrchestrator) return;
+
+    isLoading = true;
+
+    try {
+      // Get a random sequence
+      const sequence = await spinnerOrchestrator.getInitialSequence();
+      if (sequence) {
+        // Pick a random prop type
+        currentPropType = RANDOM_PROPS[Math.floor(Math.random() * RANDOM_PROPS.length)]!;
+        await loadSequence(sequence);
+      }
+    } catch (err) {
+      console.error("[LandingDemo] Failed to load random sequence:", err);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  /**
+   * Load and play a specific sequence
+   */
+  async function loadSequence(sequenceData: SequenceData) {
+    if (!playbackController) return;
 
     transitionKey++;
-    isLoading = true;
     animationReady = false;
 
     try {
@@ -200,15 +428,14 @@
       }
       animationState.reset();
 
-      // Load from gallery's sequence-index.json (not local persistence)
-      const rawSequence = await discoverLoader.loadFullSequenceData(word);
-      if (!rawSequence) {
-        throw new Error(`Failed to load sequence: ${word}`);
-      }
+      // Store the current sequence for display
+      currentSequence = sequenceData;
 
-      // Apply current prop type to sequence data for BeatGrid
-      // AnimatorCanvas uses prop type overrides passed as props
-      const sequence = applyPropTypeToSequence(rawSequence, currentPropType);
+      // Reset beat tracking for chaining detection
+      lastBeat = -1;
+
+      // Apply current prop type to sequence data
+      const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
 
       animationState.setShouldLoop(true);
       const success = playbackController.initialize(sequence, animationState);
@@ -221,10 +448,9 @@
       isLoading = false;
 
       // Wait for AnimatorCanvas to mount and initialize before starting playback
-      // This ensures the render loop is ready to receive prop state updates
       await tick();
 
-      // Ensure continuous playback mode (user's localStorage might have "step" mode)
+      // Ensure continuous playback mode
       animationState.setPlaybackMode("continuous");
       animationState.setCurrentBeat(1);
       playbackController?.togglePlayback();
@@ -236,21 +462,7 @@
   }
 
   function handleRandomize() {
-    let newSequenceIndex = currentSequenceIndex;
-    while (
-      newSequenceIndex === currentSequenceIndex &&
-      SHOWCASE_SEQUENCES.length > 1
-    ) {
-      newSequenceIndex = Math.floor(Math.random() * SHOWCASE_SEQUENCES.length);
-    }
-    currentSequenceIndex = newSequenceIndex;
-
-    // Pick a random prop type - loadSequence will apply it to sequence data
-    const newPropType =
-      RANDOM_PROPS[Math.floor(Math.random() * RANDOM_PROPS.length)]!;
-    currentPropType = newPropType;
-
-    loadSequence(SHOWCASE_SEQUENCES[newSequenceIndex]!);
+    loadRandomSequence();
   }
 
   function handleChangeProp() {
@@ -296,10 +508,6 @@
       out:scale={{ duration: 200, start: 0.98, opacity: 0, easing: cubicOut }}
     >
       <div class="demo-layout">
-        <div class="word-label-row">
-          <span class="word-text">{currentWord || "A"}</span>
-        </div>
-
         <div class="demo-content-row">
           <div class="animation-preview">
             {#if animationReady && !isLoading}
@@ -366,7 +574,7 @@
     width: 100%;
     container-type: inline-size;
     position: relative;
-    min-height: clamp(380px, 50cqw, 520px);
+    min-height: clamp(520px, 65cqw, 720px);
   }
 
   .demo-transition-wrapper {
@@ -388,22 +596,6 @@
     max-width: 900px;
   }
 
-  .word-label-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-  }
-
-  .word-label-row .word-text {
-    font-family: Georgia, serif;
-    font-size: clamp(1.5rem, 5cqw, 2.5rem);
-    font-weight: 600;
-    color: var(--text, #ffffff);
-    letter-spacing: 0.02em;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-  }
-
   .demo-content-row {
     display: flex;
     align-items: stretch;
@@ -420,19 +612,19 @@
   }
 
   .canvas-wrapper {
-    width: clamp(280px, 38cqw, 400px);
-    height: clamp(280px, 38cqw, 400px);
+    width: clamp(420px, 57cqw, 600px);
+    height: clamp(420px, 57cqw, 600px);
     background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
   }
 
   .beat-grid-panel {
     flex: 0 0 auto;
-    width: clamp(280px, 50cqw, 530px);
-    height: clamp(280px, 38cqw, 400px);
+    width: clamp(420px, 60cqw, 700px);
+    height: clamp(420px, 57cqw, 600px);
     background: transparent;
     border: 2px solid var(--border-strong, rgba(255, 255, 255, 0.2));
     border-radius: 16px;
@@ -442,17 +634,17 @@
 
   .animation-loading,
   .animation-fallback {
-    width: 280px;
-    height: 280px;
+    width: 420px;
+    height: 420px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .fallback-icon {
@@ -501,19 +693,15 @@
       display: none;
     }
 
-    .word-label-row .word-text {
-      font-size: clamp(1.25rem, 6vw, 2rem);
-    }
-
     .canvas-wrapper {
-      width: min(320px, 85vw);
-      height: min(320px, 85vw);
+      width: min(380px, 90vw);
+      height: min(380px, 90vw);
     }
 
     .animation-loading,
     .animation-fallback {
-      width: min(280px, 80vw);
-      height: min(280px, 80vw);
+      width: min(380px, 90vw);
+      height: min(380px, 90vw);
     }
   }
 

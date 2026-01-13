@@ -1,25 +1,20 @@
 <script lang="ts">
-  const benefits = [
-    "Document complex sequences precisely",
-    "Share choreography with anyone, anywhere",
-    "Learn from the global flow community",
-    "Animate sequences to see them in motion",
-    "Train with real-time scoring and feedback",
-  ];
+  // Sample letters to display as pictograph-style examples
+  const sampleLetters = ["A", "B", "C"];
 </script>
 
 <section class="what-is" id="what">
   <div class="container">
     <h2>What is TKA?</h2>
     <p class="lead">
-      <strong
-        >The Kinetic Alphabet is to flow arts what musical notation is to music.</strong
-      >
+      <strong>The Kinetic Alphabet is to flow arts what musical notation is to music.</strong>
     </p>
 
     <div class="comparison-grid">
       <div class="comparison-card">
-        <div class="icon">🎵</div>
+        <div class="icon">
+          <i class="fas fa-music" aria-hidden="true"></i>
+        </div>
         <h3>Music Has Sheet Music</h3>
         <p>
           Musicians read, write, and share compositions through standard
@@ -27,7 +22,11 @@
         </p>
       </div>
       <div class="comparison-card">
-        <div class="icon">🌀</div>
+        <div class="icon pictograph-icon">
+          {#each sampleLetters as letter}
+            <span class="letter-sample">{letter}</span>
+          {/each}
+        </div>
         <h3>Flow Arts Has TKA</h3>
         <p>
           Flow artists document, share, and learn choreography through
@@ -36,23 +35,16 @@
       </div>
     </div>
 
-    <div class="benefits">
-      {#each benefits as benefit}
-        <div class="benefit">
-          <span class="check">✓</span>
-          <span>{benefit}</span>
-        </div>
-      {/each}
+    <div class="capabilities">
+      <p>
+        Document sequences precisely. Share choreography by link or paper.
+        Learn from a global community. Animate to see movements in motion.
+      </p>
     </div>
 
     <blockquote>
-      No more trying to describe "that spinny thing where your hands cross and
-      then... you know, the thing."
-      <br />
-      <strong
-        >With TKA, every movement has a name, a symbol, and a visual
-        representation.</strong
-      >
+      Instead of relying on video or verbal descriptions, TKA lets you hand someone
+      a page or send them a link. Every movement has a name, a symbol, and a visual.
     </blockquote>
   </div>
 </section>
@@ -60,11 +52,6 @@
 <style>
   .what-is {
     padding: 120px 24px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(99, 102, 241, 0.05) 100%
-    );
   }
 
   .container {
@@ -83,7 +70,7 @@
   .lead {
     font-size: 1.5rem;
     text-align: center;
-    max-width: 700px;
+    max-width: 900px;
     margin: 0 auto 48px;
   }
 
@@ -105,6 +92,29 @@
   .comparison-card .icon {
     font-size: 3rem;
     margin-bottom: 16px;
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .comparison-card .icon.pictograph-icon {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1rem;
+  }
+
+  .letter-sample {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 2px solid var(--theme-accent, #6366f1);
+    border-radius: 8px;
+    font-family: Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
   }
 
   .comparison-card h3 {
@@ -116,23 +126,17 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  .benefits {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 16px 32px;
+  .capabilities {
+    text-align: center;
     margin-bottom: 48px;
   }
 
-  .benefit {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .check {
-    color: var(--semantic-success, #22c55e);
-    font-weight: bold;
+  .capabilities p {
+    font-size: 1.125rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.7;
   }
 
   blockquote {
@@ -140,14 +144,9 @@
     border-left: 4px solid var(--theme-accent, #6366f1);
     padding: 24px 32px;
     border-radius: 0 12px 12px 0;
-    font-style: italic;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    max-width: 700px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    max-width: 800px;
     margin: 0 auto;
-  }
-
-  blockquote strong {
-    color: var(--theme-text, #ffffff);
-    font-style: normal;
+    line-height: 1.6;
   }
 </style>

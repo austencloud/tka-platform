@@ -86,11 +86,6 @@
   .final-cta {
     padding: 120px 24px;
     text-align: center;
-    background: radial-gradient(
-      ellipse at center,
-      rgba(99, 102, 241, 0.15) 0%,
-      transparent 70%
-    );
   }
 
   .container {

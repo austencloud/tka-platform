@@ -22,11 +22,6 @@
 <style>
   .props-section {
     padding: 120px 24px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      rgba(20, 184, 166, 0.05) 100%
-    );
   }
 
   .container {

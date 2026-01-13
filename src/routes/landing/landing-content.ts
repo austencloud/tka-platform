@@ -1,21 +1,6 @@
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-// Curated sequences: 8 and 16-beat strict_rotated LOOPs
-// These showcase impressive bilateral choreography with smooth circular looping
-export const SHOWCASE_SEQUENCES = [
-  // 8-beat
-  "BJEA",
-  "DΨ",
-  "JΦ",
-  "EΔUZ",
-  "ΩZ",
-  "Ψ-H",
-  // 16-beat
-  "KIΦC",
-  "IΦAJ",
-];
-
-// Props to randomize between - popular prop types
+// Props to randomize between for the landing page demo
 export const RANDOM_PROPS = [
   PropType.STAFF,
   PropType.BUUGENG,

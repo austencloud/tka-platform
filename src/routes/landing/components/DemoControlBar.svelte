@@ -5,6 +5,8 @@
   Includes: dark mode toggle, change prop, and randomize sequence buttons.
 -->
 <script lang="ts">
+  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
+
   interface Props {
     servicesReady: boolean;
     isLoading: boolean;
@@ -27,21 +29,12 @@
 </script>
 
 <div class="demo-controls">
-  <button
-    class="light-toggle-btn"
-    class:dark-mode={darkMode}
-    onclick={onToggleDarkMode}
+  <LightsToggleButton
+    lightsOn={!darkMode}
+    onToggle={onToggleDarkMode}
     disabled={isDisabled}
-    aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-    title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-  >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path
-        d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V18h8v-3.3A7 7 0 0 0 12 2z"
-        fill={darkMode ? "none" : "currentColor"}
-      />
-    </svg>
-  </button>
+    size="medium"
+  />
 
   <button class="change-prop-btn" onclick={onChangeProp} disabled={isDisabled}>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -66,58 +59,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-  }
-
-  /* Light/Dark Mode Toggle Button */
-  .light-toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: var(--bg-card, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
-    border-radius: 50%;
-    color: var(--text-muted, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    transition: all 0.25s ease;
-  }
-
-  .light-toggle-btn svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  .light-toggle-btn:hover:not(:disabled) {
-    background: var(--bg-card-hover, rgba(255, 255, 255, 0.06));
-    border-color: var(--border-strong, rgba(255, 255, 255, 0.2));
-    color: var(--text, #ffffff);
-    transform: scale(1.05);
-  }
-
-  .light-toggle-btn:active:not(:disabled) {
-    transform: scale(0.95);
-  }
-
-  .light-toggle-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .light-toggle-btn.dark-mode {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.4);
-    color: var(--primary-light, #818cf8);
-    box-shadow:
-      0 0 20px rgba(99, 102, 241, 0.3),
-      inset 0 0 15px rgba(99, 102, 241, 0.1);
-  }
-
-  .light-toggle-btn.dark-mode:hover:not(:disabled) {
-    background: rgba(99, 102, 241, 0.25);
-    box-shadow:
-      0 0 30px rgba(99, 102, 241, 0.5),
-      inset 0 0 20px rgba(99, 102, 241, 0.15);
   }
 
   /* Change Prop Button */
@@ -206,16 +147,6 @@
       gap: 10px;
     }
 
-    .light-toggle-btn {
-      width: 44px;
-      height: 44px;
-    }
-
-    .light-toggle-btn svg {
-      width: 22px;
-      height: 22px;
-    }
-
     .randomize-btn,
     .change-prop-btn {
       padding: 12px 20px;
@@ -231,17 +162,14 @@
 
   @media (prefers-reduced-motion: reduce) {
     .randomize-btn,
-    .change-prop-btn,
-    .light-toggle-btn {
+    .change-prop-btn {
       transition: none;
     }
 
     .randomize-btn:hover:not(:disabled),
     .randomize-btn:active:not(:disabled),
     .change-prop-btn:hover:not(:disabled),
-    .change-prop-btn:active:not(:disabled),
-    .light-toggle-btn:hover:not(:disabled),
-    .light-toggle-btn:active:not(:disabled) {
+    .change-prop-btn:active:not(:disabled) {
       transform: none;
     }
   }
