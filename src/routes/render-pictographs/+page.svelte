@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { container } from '$lib/shared/inversify/di';
-  import { TYPES } from '$lib/shared/inversify/types/core.types';
+  import { container } from '$lib/shared/di';
   import type { Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
 
   let status = $state('Initializing...');
@@ -12,8 +11,8 @@
     try {
       status = 'Loading renderer...';
 
-      // Get the Canvas2DDirectRenderer from DI container
-      renderer = container.get<Canvas2DDirectRenderer>(TYPES.IDirectRenderer);
+      // Get the Canvas2DDirectRenderer from ITI container
+      renderer = container.items.canvas2DRenderer;
       await renderer.initialize();
 
       status = 'Loading pictograph data...';

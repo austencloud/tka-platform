@@ -346,6 +346,37 @@ export interface FishMarineLife extends MarineLifeBase {
   focusPoint?: { x: number; y: number };
 
   // ============================================================================
+  // HOME ZONE & SOCIAL MEMORY
+  // ============================================================================
+
+  /**
+   * Home zone - rough area where fish spawned
+   * Fish have a slight tendency to drift back toward this zone
+   */
+  homeZone?: {
+    x: number;
+    y: number;
+    /** How strongly fish is drawn back (0-1) */
+    affinity: number;
+  };
+
+  /**
+   * Social memory - IDs of fish this fish has interacted with
+   * Used for recognizing "friends" and triggering sync behaviors
+   */
+  socialMemory?: Set<number>;
+
+  /**
+   * Last interaction time - prevents interaction spam
+   */
+  lastInteractionTime?: number;
+
+  /**
+   * Unique ID for social memory tracking
+   */
+  fishId?: number;
+
+  // ============================================================================
 
   // Legacy compatibility (for existing behavior code)
   width: number;

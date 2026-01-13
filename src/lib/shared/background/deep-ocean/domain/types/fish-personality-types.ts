@@ -104,7 +104,13 @@ export type FishWobbleType =
   | "playful_wiggle" // Side-to-side shimmy - happy/playful
   | "tired_drift" // Slow sinking - exhausted
   | "feeding_lunge" // Forward acceleration pose - hunting
-  | "social_shimmer"; // Gentle pulsing - greeting other fish
+  | "social_shimmer" // Gentle pulsing - greeting other fish
+  // Rare special behaviors
+  | "barrel_roll" // Full 360° rotation - playful delight
+  | "freeze" // Complete stillness - alert reaction
+  | "double_take" // Quick look-back - curiosity
+  | "happy_flip" // Quick upward arc - joy/excitement
+  | "sync_pulse"; // Brief glow/shimmer - synchronizing with neighbor
 
 /**
  * Wobble animation state

@@ -11,6 +11,11 @@ export interface FishDebugConfig {
   enableTailOscillation: boolean; // false = no tail wave animation
   enablePropulsion: boolean;    // false = constant speed, no thrust variation
   enableFlocking: boolean;      // false = no schooling forces
+  enableInteractions: boolean;  // false = no fish-to-fish micro-interactions
+  enableRareBehaviors: boolean; // false = no barrel rolls, freezes, sync swims
+  enableHomeZones: boolean;     // false = no home zone drift preference
+  showHomeZones: boolean;       // true = draw home zone debug circles
+  showInteractions: boolean;    // true = flash when interactions occur
 }
 
 // Global mutable debug state
@@ -20,6 +25,11 @@ export const fishDebugConfig: FishDebugConfig = {
   enableTailOscillation: true,
   enablePropulsion: true,
   enableFlocking: true,
+  enableInteractions: true,
+  enableRareBehaviors: true,
+  enableHomeZones: true,
+  showHomeZones: false,
+  showInteractions: false,
 };
 
 // Expose to window for console access

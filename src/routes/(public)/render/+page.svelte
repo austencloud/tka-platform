@@ -1,9 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { container } from '$lib/shared/inversify/di';
-  import { TYPES } from '$lib/shared/inversify/types/core.types';
-  import type { Canvas2DDirectRenderer } from '$lib/shared/render/services/implementations/Canvas2DDirectRenderer';
+  import { container } from '$lib/shared/di';
 
   let status = $state('Loading...');
 
@@ -18,8 +16,8 @@
     try {
       status = `Rendering ${letter}...`;
 
-      // Get renderer
-      const renderer = container.get<Canvas2DDirectRenderer>(TYPES.IDirectRenderer);
+      // Get renderer from ITI container
+      const renderer = container.items.canvas2DRenderer;
       await renderer.initialize();
 
       // Load CSV

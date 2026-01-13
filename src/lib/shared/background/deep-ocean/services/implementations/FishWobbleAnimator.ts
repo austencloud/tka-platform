@@ -78,6 +78,57 @@ const WOBBLE_CONFIGS: Record<
     frequency: 8, // Fast shimmer
     decay: "linear",
   },
+  // Rare special behaviors
+  barrel_roll: {
+    duration: 0.8,
+    rotationAmplitude: Math.PI, // Full 180° each way = 360° total
+    scaleXAmplitude: 0.05,
+    scaleYAmplitude: 0.05,
+    offsetXAmplitude: 0,
+    offsetYAmplitude: 5, // Slight lift during roll
+    frequency: 1.25, // One full rotation
+    decay: "linear",
+  },
+  freeze: {
+    duration: 0.6,
+    rotationAmplitude: 0, // No movement
+    scaleXAmplitude: 0,
+    scaleYAmplitude: 0,
+    offsetXAmplitude: 0,
+    offsetYAmplitude: 0,
+    frequency: 0,
+    decay: "linear",
+  },
+  double_take: {
+    duration: 0.5,
+    rotationAmplitude: 0.4, // Strong head turn
+    scaleXAmplitude: 0.03,
+    scaleYAmplitude: 0,
+    offsetXAmplitude: -4, // Slight backward motion
+    offsetYAmplitude: 0,
+    frequency: 2, // Quick back-and-forth
+    decay: "exponential",
+  },
+  happy_flip: {
+    duration: 0.6,
+    rotationAmplitude: 0.5, // Upward tilt
+    scaleXAmplitude: 0.08,
+    scaleYAmplitude: 0.08,
+    offsetXAmplitude: 3,
+    offsetYAmplitude: -12, // Strong upward pop
+    frequency: 1.5,
+    decay: "exponential",
+  },
+  sync_pulse: {
+    duration: 0.4,
+    rotationAmplitude: 0.02,
+    scaleXAmplitude: 0.06, // Brief expansion
+    scaleYAmplitude: 0.06,
+    offsetXAmplitude: 0,
+    offsetYAmplitude: 0,
+    frequency: 3,
+    decay: "exponential",
+  },
 };
 
 /**
