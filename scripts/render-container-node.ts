@@ -1,8 +1,18 @@
 /**
  * Minimal Node.js Render Container
  *
- * Includes only Canvas2DDirectRenderer and its direct dependencies.
- * Avoids loading the full app container which has SvelteKit-specific imports.
+ * Includes only Canvas2DDirectRenderer without pictograph preparer.
+ * This means it will render:
+ * - Grid
+ * - TKA glyph (letter)
+ * - Direction dot, turn numbers, beat numbers
+ *
+ * But NOT:
+ * - Arrows
+ * - Props
+ *
+ * This is sufficient for basic pictograph visualization.
+ * Arrow/prop rendering can be added later with a minimal preparer.
  */
 
 import { createContainer } from "iti";
@@ -10,11 +20,11 @@ import { Canvas2DDirectRenderer } from "../src/lib/shared/render/services/implem
 
 /**
  * Create a minimal container for Node.js CLI rendering
- * Only includes services needed for Canvas2DDirectRenderer
+ * Canvas2DDirectRenderer created without preparer (no arrows/props initially)
  */
 export function createNodeRenderContainer() {
   return createContainer().add({
-    canvas2DRenderer: () => new Canvas2DDirectRenderer(),
+    canvas2DRenderer: () => new Canvas2DDirectRenderer(undefined),
   });
 }
 

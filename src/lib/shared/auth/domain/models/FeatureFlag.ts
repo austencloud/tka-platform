@@ -64,58 +64,40 @@ export interface UserFeatureOverrides {
 }
 
 /**
- * Role overrides for specific modules and tabs
- * If not specified here, defaults to "user" for modules, inherits parent module role for tabs
+ * Core modules that are always accessible to all users.
+ * These work even before auth/database loads to prevent layout shifts.
  *
- * IMPORTANT: For testers, only these modules should be visible:
- * - Dashboard, Create, Discover, Feedback
- * All other modules are admin-only until they're ready for public use.
+ * ARCHITECTURE: Default is "admin" (secure by default).
+ * - Core modules listed here = always "user" accessible
+ * - Everything else = "admin" by default
+ * - Use Admin UI (Feature Flags tab) to open modules to testers/users
+ *
+ * This keeps hardcoded config minimal - the database is the source of truth
+ * for everything beyond these essentials.
  */
-const FEATURE_ROLE_OVERRIDES: Partial<Record<FeatureId, UserRole>> = {
-  // Modules - Admin-only (hidden from testers)
-  "module:learn": "admin", // Not ready for testers yet
-  "module:compose": "admin", // Not ready for testers yet
-  "module:train": "admin", // Not ready for testers yet
-  "module:library": "admin", // Not ready for testers yet
-  "module:ml-training": "admin", // Admin-only feature
-  "module:admin": "admin",
-  "module:realm": "admin", // 3D experiences (Stage + Museum) - admin-only for now
-  "module:premium": "admin", // Premium module is admin-only for now
-  "module:choreo_card": "admin", // Choreo Card is admin-only for now
-  "module:write": "admin", // Write module is admin-only for now
-  "module:mandala": "admin", // Mandala generator is admin-only for now
-  "module:skewlab": "admin", // Skew Lab is admin-only (temporary dev module)
-  "module:background-builder": "admin", // Background Builder for deep ocean design iteration
-
-  // Modules - Tester access
-  "module:feedback": "tester", // Feedback requires sign-in (tester access)
-
-  // Create tabs
-  "tab:create:assembler": "admin", // Advanced feature - admin only
-  "tab:create:spell": "admin", // Spell tab is admin-only for now
-
-  // Learn tabs (inherit from parent module, which is now admin)
-  "tab:learn:concepts": "admin",
-  "tab:learn:play": "admin",
-  "tab:learn:codex": "admin",
-
-  // Feedback tabs
-  "tab:feedback:manage": "admin", // Manage tab is admin-only (testers can only submit/view their own)
-
-  // Admin tabs - all inherit admin role from parent module
-};
+const CORE_USER_MODULES: ModuleId[] = ["dashboard", "create", "discover"];
 
 /**
  * Get the default role for a feature
  * Used by FeatureFlagService to determine minimum role requirements
+ *
+ * Logic:
+ * 1. Core modules (dashboard, create, discover) → "user"
+ * 2. Tabs → inherit from parent module
+ * 3. Everything else → "admin" (secure by default)
+ *
+ * To open a module/tab to testers or users, configure it in Admin > Feature Flags.
  */
 export function getDefaultFeatureRole(
   featureId: FeatureId,
   parentModuleRole?: UserRole
 ): UserRole {
-  // Check for explicit override
-  if (FEATURE_ROLE_OVERRIDES[featureId]) {
-    return FEATURE_ROLE_OVERRIDES[featureId]!;
+  // Check if this is a core user module
+  if (featureId.startsWith("module:")) {
+    const moduleId = featureId.replace("module:", "") as ModuleId;
+    if (CORE_USER_MODULES.includes(moduleId)) {
+      return "user";
+    }
   }
 
   // Tabs inherit parent module role if available
@@ -123,8 +105,8 @@ export function getDefaultFeatureRole(
     return parentModuleRole;
   }
 
-  // Default to user
-  return "user";
+  // Default to admin (secure by default)
+  return "admin";
 }
 
 /**

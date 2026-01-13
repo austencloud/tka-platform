@@ -161,6 +161,12 @@ dialog.drawer-content {
   border-bottom: none;
 }
 
+/* Bottom placement with snap points - needs explicit height for transforms to work */
+.drawer-content[data-placement="bottom"].has-snap-points {
+  height: 100vh;
+  height: 100dvh; /* Modern: accounts for browser chrome */
+}
+
 .drawer-content[data-placement="bottom"][data-state="closed"] {
   transform: translate3d(0, 100%, 0);
 }

@@ -137,10 +137,10 @@ const svgPreloader = new SvgPreloader();
 let rotationOverrideManager: RotationOverrideManager;
 
 // ============================================================================
-// CONTAINER DEFINITION
+// CONTAINER DEFINITION (inside else block)
 // ============================================================================
 
-export const pictographContainer = createContainer()
+const pictographContainer = createContainer()
   // === Layer 1: Leaf services with no dependencies ===
   .add({
     // Grid services (leaf)
@@ -373,6 +373,9 @@ export const pictographContainer = createContainer()
         deps.csvPictographParser
       ),
   }));
+
+// Export the container (browser path)
+export { pictographContainer };
 
 // ============================================================================
 // TYPE EXPORTS

@@ -68,7 +68,7 @@ const hmrManager: FirebaseHMRManager = getFirebaseHMRManager();
  * In prod: default (undefined = "[DEFAULT]")
  */
 function getAppName(): string | undefined {
-  if (import.meta.env.DEV) {
+  if (import.meta.env?.DEV) {
     return `tka-app-${hmrManager.getAppId()}`;
   }
   return undefined;
@@ -81,7 +81,7 @@ function initializeFirebaseApp(): FirebaseApp {
   const appName = getAppName();
 
   // In production or first dev load, check for existing app
-  if (!import.meta.env.DEV || hmrManager.getAppId() === 0) {
+  if (!import.meta.env?.DEV || hmrManager.getAppId() === 0) {
     const existingApps = getApps();
     if (existingApps.length > 0) {
       const existing = appName
@@ -288,7 +288,7 @@ async function initializeFirestore(): Promise<Firestore> {
     await import("firebase/firestore");
 
   // DEV: Always use memory cache to avoid HMR corruption
-  if (import.meta.env.DEV) {
+  if (import.meta.env?.DEV) {
     try {
       firestoreInstance = getFirestore(app);
 

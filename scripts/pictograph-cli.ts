@@ -2,7 +2,7 @@
 /**
  * Standalone Pictograph CLI
  *
- * Renders pictographs using the real Canvas2DDirectRenderer in Node.js
+ * Renders pictographs using Canvas2DDirectRenderer in Node.js
  * No browser, no auth, no dev server required
  *
  * Usage:
@@ -11,18 +11,30 @@
  *   npm run pictograph --all
  */
 
+// CRITICAL: Load Svelte runes mock FIRST (before any .svelte.ts file imports)
+import './svelte-runes-mock';
+
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { createCanvas, Canvas as NodeCanvas } from 'canvas';
-import { pathToFileURL } from 'url';
+import { createCanvas, Canvas as NodeCanvas, Image } from 'canvas';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Provide global Canvas for Node.js context
+// Provide global Canvas and Image for Node.js context
 if (typeof global !== 'undefined') {
   (global as any).Canvas = NodeCanvas;
+  (global as any).Image = Image;
+  // Mock document for Canvas2DDirectRenderer isSupported() check
+  if (typeof (global as any).document === 'undefined') {
+    (global as any).document = {
+      createElement: (tag: string) => {
+        if (tag === 'canvas') return createCanvas(1, 1);
+        return {};
+      }
+    };
+  }
 }
 
 const OUTPUT_DIR = path.join(__dirname, '..', 'static', 'images', 'grant-feature');
@@ -102,32 +114,48 @@ async function loadPictographData(letter: string): Promise<PictographData> {
 async function renderPictograph(letter: string): Promise<string> {
   console.log(`\n🎨 Rendering pictograph ${letter}...`);
 
-  // Load pictograph data
   const pictographData = await loadPictographData(letter);
   console.log(`  ✓ Loaded data`);
 
-  // Import minimal Node.js render container (avoids SvelteKit-specific dependencies)
-  const containerPath = path.join(__dirname, 'render-container-node.ts');
-  const { nodeContainer } = await import(pathToFileURL(containerPath).href);
-  console.log(`  ✓ Loaded render container`);
+  // Import Node.js preparer factory
+  console.log(`  📦 Loading preparer...`);
+  const { createNodePictographPreparer } = await import(pathToFileURL(path.join(__dirname, 'node', 'create-node-pictograph-preparer.ts')).href);
+  console.log(`  ✓ Preparer module loaded`);
+  const { pictographPreparer, turnsTupleGenerator } = createNodePictographPreparer();
+  console.log(`  ✓ Created preparer instance`);
 
-  // Get Canvas2DDirectRenderer from container
-  const renderer = nodeContainer.items.canvas2DRenderer;
+  // Dynamically import Canvas2DDirectRenderer
+  const rendererPath = pathToFileURL(path.join(__dirname, '..', 'src', 'lib', 'shared', 'render', 'services', 'implementations', 'Canvas2DDirectRenderer.ts')).href;
+  const { Canvas2DDirectRenderer } = await import(rendererPath);
+  console.log(`  ✓ Loaded renderer`);
+
+  // Create renderer WITH preparer
+  const renderer = new Canvas2DDirectRenderer(pictographPreparer);
+
+  // Set global turn tuple generator for turn numbers
+  Canvas2DDirectRenderer.setGlobalTurnsTupleGeneratorGetter(() => turnsTupleGenerator);
+
   await renderer.initialize();
   console.log(`  ✓ Initialized renderer`);
 
-  // Render using real Canvas2DDirectRenderer
+  // Render pictograph (grid + glyph - arrows/props coming soon)
+  console.log(`  🎨 Rendering grid + glyph...`);
   const canvas = await renderer.renderPictograph(pictographData as any, {
     size: 950,
-    showGrid: true,
-    showTKA: true,
-    showVTG: false,
-    showElemental: false,
-    showPositions: false,
-    showReversals: false,
-    showNonRadialPoints: false,
-    darkMode: false,
-    handPointVisibility: 'active',
+    visibility: {
+      showGrid: true,
+      showTKA: true,
+      showVTG: false,
+      showElemental: false,
+      showPositions: false,
+      showReversals: false,
+      showNonRadialPoints: false,
+      darkMode: false,
+      handPointVisibility: 'active',
+      // Explicitly pass prop types to avoid needing global settings
+      bluePropType: 'staff' as any,
+      redPropType: 'staff' as any,
+    }
   });
 
   console.log(`  ✓ Rendered (${canvas.width}x${canvas.height})`);
@@ -177,6 +205,9 @@ async function main() {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.error(`  ❌ Failed: ${errorMsg}`);
+      if (error instanceof Error && error.stack) {
+        console.error(error.stack);
+      }
       results.push({ letter, success: false, error: errorMsg });
     }
   }
@@ -201,6 +232,11 @@ async function main() {
   console.log(`📁 Output: ${OUTPUT_DIR}\n`);
 
   process.exit(failed.length > 0 ? 1 : 0);
+}
+
+// Helper to convert path to file URL
+function pathToFileURL(filePath: string): URL {
+  return new URL(`file:///${filePath.replace(/\\/g, '/')}`);
 }
 
 main().catch((error) => {

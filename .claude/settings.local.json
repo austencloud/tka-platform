@@ -182,7 +182,11 @@
       "WebFetch(domain:tkaflowarts.com)",
       "WebFetch(domain:tkascribe.com)",
       "WebFetch(domain:www.prompthub.us)",
-      "WebFetch(domain:arxiv.org)"
+      "WebFetch(domain:arxiv.org)",
+      "Bash(bash:*)",
+      "WebFetch(domain:answers.netlify.com)",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*Orchestrator*.ts\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\create\\\\generate\" -Recurse -Filter \"*.ts\")"
     ]
   }
 }

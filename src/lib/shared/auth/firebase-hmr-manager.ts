@@ -71,7 +71,7 @@ export interface FirebaseHMRMetrics {
 // ============================================================================
 
 const DEFAULT_CONFIG: FirebaseHMRConfig = {
-  debug: import.meta.env.DEV,
+  debug: import.meta.env?.DEV ?? false,
   authTransferTimeout: 5000,
   maxListeners: 500,
 };

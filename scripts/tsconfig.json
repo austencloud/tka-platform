@@ -4,8 +4,10 @@
     "baseUrl": "..",
     "paths": {
       "$lib/*": ["src/lib/*"],
-      "$lib": ["src/lib"]
+      "$lib": ["src/lib"],
+      "$app/*": ["scripts/mocks/$app/*"],
+      "file-saver": ["scripts/mocks/file-saver"]
     }
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "mocks/**/*"]
 }
