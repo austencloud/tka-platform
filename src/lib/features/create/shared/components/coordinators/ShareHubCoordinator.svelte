@@ -41,15 +41,14 @@
   } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
-  import type {
-    ISheetRouter,
-    AnimationPanelState as URLAnimationState,
-  } from "$lib/shared/navigation/services/contracts/ISheetRouter";
+  import type { ISheetRouter } from "$lib/shared/navigation/services/contracts/ISheetRouter";
+  import { ShareHubUrlManager } from "$lib/shared/share-hub/services/implementations/ShareHubUrlManager";
   import type { IResponsiveLayoutManager } from "$lib/features/create/shared/services/contracts/IResponsiveLayoutManager";
   import {
     createAnimationPanelState,
     type PlaybackMode,
     type StepPlaybackStepSize,
+    type AnimationStateKey,
   } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { ANIMATION_AUTO_START_DELAY_MS } from "$lib/features/compose/shared/domain/constants/timing";
@@ -81,11 +80,12 @@
   let animationLoading = $state(false);
   let lastLoadedSequenceId: string | null = null;
 
-  // Local reactive state for animation (polling workaround for state factory)
+  // Local reactive state for animation (synced via observer pattern)
   let isPlayingLocal = $state(false);
   let playbackModeLocal = $state<PlaybackMode>("continuous");
   let stepPlaybackPauseMsLocal = $state(300);
   let stepPlaybackStepSizeLocal = $state<StepPlaybackStepSize>(1);
+  let cleanupAnimationStateSubscription: (() => void) | undefined;
 
   // Visibility state management
   const visibilityManager = getVisibilityStateManager();
@@ -134,6 +134,10 @@
   // Detect if we're on mobile (for share vs download behavior)
   const platform = platformService?.detectPlatform() ?? "desktop";
   const isMobile = platform === "ios" || platform === "android";
+
+  // URL state manager for deep linking and history
+  const urlManager = new ShareHubUrlManager(sheetRouterService);
+  let cleanupUrlManager: (() => void) | undefined;
 
   // State
   let isExporting = $state(false);
@@ -210,25 +214,25 @@
     return null;
   });
 
-  // Sync animation state from state factory (polling workaround)
-  $effect(() => {
-    const checkState = () => {
-      const currentPlaying = animationPanelState.isPlaying;
-      const currentMode = animationPanelState.playbackMode;
-      const currentPauseMs = animationPanelState.stepPlaybackPauseMs;
-      const currentStepSize = animationPanelState.stepPlaybackStepSize;
-
-      if (currentPlaying !== isPlayingLocal) isPlayingLocal = currentPlaying;
-      if (currentMode !== playbackModeLocal) playbackModeLocal = currentMode;
-      if (currentPauseMs !== stepPlaybackPauseMsLocal)
-        stepPlaybackPauseMsLocal = currentPauseMs;
-      if (currentStepSize !== stepPlaybackStepSizeLocal)
-        stepPlaybackStepSizeLocal = currentStepSize;
-    };
-    checkState();
-    const interval = setInterval(checkState, 50);
-    return () => clearInterval(interval);
-  });
+  // Subscribe to animation state changes (replaces polling)
+  cleanupAnimationStateSubscription = animationPanelState.subscribe(
+    (key: AnimationStateKey, value: unknown) => {
+      switch (key) {
+        case "isPlaying":
+          isPlayingLocal = value as boolean;
+          break;
+        case "playbackMode":
+          playbackModeLocal = value as PlaybackMode;
+          break;
+        case "stepPlaybackPauseMs":
+          stepPlaybackPauseMsLocal = value as number;
+          break;
+        case "stepPlaybackStepSize":
+          stepPlaybackStepSizeLocal = value as StepPlaybackStepSize;
+          break;
+      }
+    }
+  );
 
   // Sync visibility state from visibility manager
   $effect(() => {
@@ -380,144 +384,73 @@
     return sequence;
   }
 
-  // Track route listener cleanup and route change state
-  let cleanupRouteListener: (() => void) | undefined;
-  let isRespondingToRouteChange = false;
-
-  // Setup route listener for backward-compatible URL handling
+  // Initialize URL manager on mount
   onMount(() => {
-    // Listen for route changes to restore animation panel from URL
-    cleanupRouteListener = sheetRouterService?.onRouteChange((state) => {
-      isRespondingToRouteChange = true;
-
-      const sheetType = state.sheet;
-      if (sheetType === "animation") {
-        // Open Share Hub with animation format if it's not already open
+    cleanupUrlManager = urlManager.initialize({
+      onAnimationPanelOpen: () => {
         if (!panelState.isShareHubPanelOpen) {
           selectedFormat = "animation";
           panelState.openShareHubPanel("animation");
         }
+      },
+      onStateRestore: (urlState) => {
+        if (!playbackController || !animationServicesReady) return;
 
-        // Restore animation state from URL if available
-        if (
-          state.animationPanel &&
-          playbackController &&
-          animationServicesReady
-        ) {
-          restoreAnimationState(state.animationPanel);
+        // Restore speed if specified (safe to do while playing)
+        if (urlState.speed !== undefined && urlState.speed !== animationPanelState.speed) {
+          playbackController.setSpeed(urlState.speed);
         }
-      }
 
-      // Reset flag after a tick to allow effects to run
-      setTimeout(() => {
-        isRespondingToRouteChange = false;
-      }, 0);
+        // Only restore current beat on initial load (when not playing)
+        if (!animationPanelState.isPlaying && urlState.currentBeat !== undefined) {
+          animationPanelState.setCurrentBeat(urlState.currentBeat);
+        }
+      },
     });
-
-    // Check if animation panel should be open on initial load
-    const initialState = sheetRouterService?.getCurrentAnimationPanelState();
-    if (initialState) {
-      selectedFormat = "animation";
-      panelState.openShareHubPanel("animation");
-    }
   });
 
-  /**
-   * Restore animation state from URL parameters
-   * Only restores state on initial load, not during active playback
-   */
-  function restoreAnimationState(urlState: {
-    speed?: number;
-    currentBeat?: number;
-    isPlaying?: boolean;
-  }) {
-    if (!playbackController) return;
-
-    // Don't restore beat position if animation is currently playing
-    const isAnimationActive = animationPanelState.isPlaying;
-
-    // Restore speed if specified (safe to do while playing)
-    if (
-      urlState.speed !== undefined &&
-      urlState.speed !== animationPanelState.speed
-    ) {
-      playbackController.setSpeed(urlState.speed);
-    }
-
-    // Only restore current beat on initial load (when not playing)
-    if (!isAnimationActive && urlState.currentBeat !== undefined) {
-      animationPanelState.setCurrentBeat(urlState.currentBeat);
-    }
-  }
-
-  // Sync isOpen state with URL (both open and close)
+  // Sync panel open/close with URL
   let previousIsOpen = panelState.isShareHubPanelOpen;
   $effect(() => {
     const isOpen = panelState.isShareHubPanelOpen;
-    if (!isRespondingToRouteChange && selectedFormat === "animation") {
+    if (selectedFormat === "animation") {
       if (isOpen && !previousIsOpen && currentSequence) {
-        // Opening: Push new history entry with animation panel
-        sheetRouterService?.openAnimationPanel({
+        urlManager.pushAnimationPanelOpen({
           sequenceId: currentSequence.id,
           speed: animationPanelState.speed,
           isPlaying: animationPanelState.isPlaying,
           currentBeat: animationPanelState.currentBeat,
-          gridVisible: true,
         });
       } else if (!isOpen && previousIsOpen) {
-        // Closing: Clear URL parameters
-        if (typeof window !== "undefined") {
-          const url = new URL(window.location.href);
-          url.searchParams.delete("sheet");
-          url.searchParams.delete("animSeqId");
-          url.searchParams.delete("animSpeed");
-          url.searchParams.delete("animPlaying");
-          url.searchParams.delete("animBeat");
-          url.searchParams.delete("animGrid");
-          window.history.replaceState({}, "", url);
-          window.dispatchEvent(new CustomEvent("route-change", { detail: {} }));
-        }
+        urlManager.clearUrlState();
       }
     }
     previousIsOpen = isOpen;
   });
 
-  // Update URL state when animation state changes (without pushing new history)
+  // Sync animation state changes to URL (without pushing new history)
   let previousSpeed = animationPanelState.speed;
   let previousPlaying = animationPanelState.isPlaying;
-
   $effect(() => {
-    if (
-      panelState.isShareHubPanelOpen &&
-      currentSequence &&
-      !isRespondingToRouteChange &&
-      selectedFormat === "animation"
-    ) {
+    if (panelState.isShareHubPanelOpen && selectedFormat === "animation") {
       const currentSpeed = animationPanelState.speed;
       const currentPlaying = animationPanelState.isPlaying;
 
-      if (
-        currentSpeed !== previousSpeed ||
-        currentPlaying !== previousPlaying
-      ) {
-        const currentState =
-          sheetRouterService?.getCurrentAnimationPanelState();
-        if (currentState !== null) {
-          sheetRouterService?.updateAnimationPanelState({
-            speed: currentSpeed,
-            isPlaying: currentPlaying,
-          });
-
-          previousSpeed = currentSpeed;
-          previousPlaying = currentPlaying;
-        }
+      if (currentSpeed !== previousSpeed || currentPlaying !== previousPlaying) {
+        urlManager.updateAnimationState({
+          speed: currentSpeed,
+          isPlaying: currentPlaying,
+        });
+        previousSpeed = currentSpeed;
+        previousPlaying = currentPlaying;
       }
     }
   });
 
   // Cleanup on unmount
   onDestroy(() => {
-    cleanupRouteListener?.();
+    cleanupUrlManager?.();
+    cleanupAnimationStateSubscription?.();
     if (playbackController) {
       playbackController.dispose();
       setAnimationPlaybackRef(null);
