@@ -14,6 +14,7 @@ import type { PictographData } from "../../../../shared/domain/models/Pictograph
 import type { IArrowRotationCalculator } from "../../../positioning/calculation/services/contracts/IArrowRotationCalculator";
 import type { IArrowDataProcessor } from "../contracts/IArrowDataProcessor";
 import type { IArrowGridCoordinator } from "../contracts/IArrowGridCoordinator";
+import type { GridMode } from "../../../../grid/domain/enums/grid-enums";
 
 export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrator {
   constructor(
@@ -26,10 +27,12 @@ export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrat
 
   async calculateArrowPoint(
     pictographData: PictographData,
-    motionData: MotionData
+    motionData: MotionData,
+    gridMode?: GridMode
   ): Promise<[number, number, number]> {
     /**
      * Calculate arrow position asynchronously with full service coordination.
+     * @param gridMode Optional grid mode - if provided, used for positioning instead of motion.gridMode
      */
     try {
       const motion = motionData;
@@ -47,7 +50,8 @@ export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrat
       );
       const initialPosition = this.coordinateSystem.getInitialPosition(
         motion,
-        location
+        location,
+        gridMode
       );
 
       const validPosition =

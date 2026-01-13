@@ -7,7 +7,6 @@
  */
 
 import type { IFileDownloader } from "../../../foundation/services/contracts/IFileDownloader";
-import { saveAs } from "file-saver";
 import type { IImageFormatConverter } from "../contracts/IImageFormatConverter";
 
 // Define missing types locally for now
@@ -69,8 +68,13 @@ export class ImageFormatConverter implements IImageFormatConverter {
 
   /**
    * Download blob as file using file-saver
+   * Only works in browser context
    */
-  downloadBlob(blob: Blob, filename: string): void {
+  async downloadBlob(blob: Blob, filename: string): Promise<void> {
+    if (typeof window === 'undefined') {
+      throw new Error('downloadBlob is only available in browser context');
+    }
+    const { saveAs } = await import('file-saver');
     saveAs(blob, filename);
   }
 

@@ -43,6 +43,7 @@ import { LayerKeyDeriver } from "./LayerKeyDeriver";
 import { container } from "../../../di";
 import type { ITurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
 import type { Letter } from "../../../foundation/domain/models/Letter";
+import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
 
 // Constants matching Canvas2DDirectRenderer
 const VIEWBOX_SIZE = 950;
@@ -57,7 +58,9 @@ const RED_COLOR = "#ED1C24";
 
 // Grid point positions (from diamond_grid.svg, viewBox 0 0 950 950)
 // These are the TOGGLEABLE points - hand points and layer 2 points
-const GRID_POINTS = {
+
+// DIAMOND mode: hands at cardinal (N/E/S/W), layer2 at intercardinal (NE/SE/SW/NW)
+const DIAMOND_GRID_POINTS = {
   // Hand points (r=4.7) - controlled by handPointVisibility
   handPoints: {
     n: { x: 475, y: 331.9, r: 4.7 },
@@ -71,6 +74,24 @@ const GRID_POINTS = {
     se: { x: 618.1, y: 618.1, r: 8.8 },
     sw: { x: 331.9, y: 618.1, r: 8.8 },
     nw: { x: 331.9, y: 331.9, r: 8.8 },
+  },
+};
+
+// BOX mode: hands at intercardinal (NE/SE/SW/NW), layer2 at cardinal (N/E/S/W)
+const BOX_GRID_POINTS = {
+  // Hand points (r=4.7) - at intercardinal positions for box mode
+  handPoints: {
+    ne: { x: 618.1, y: 331.9, r: 4.7 },
+    se: { x: 618.1, y: 618.1, r: 4.7 },
+    sw: { x: 331.9, y: 618.1, r: 4.7 },
+    nw: { x: 331.9, y: 331.9, r: 4.7 },
+  },
+  // Layer 2 / non-radial points (r=8.8) - at cardinal positions for box mode
+  layer2Points: {
+    n: { x: 475, y: 331.9, r: 8.8 },
+    e: { x: 618.1, y: 475, r: 8.8 },
+    s: { x: 475, y: 618.1, r: 8.8 },
+    w: { x: 331.9, y: 475, r: 8.8 },
   },
 };
 
@@ -562,11 +583,15 @@ export class LayerCompositor implements ILayerCompositor {
     ctx.globalAlpha = options.darkMode ? 0.85 : 0.7;
     ctx.fillStyle = pointColor;
 
+    // Select grid points based on grid mode (box vs diamond)
+    const gridMode = pictograph._prepared?.gridMode ?? GridMode.DIAMOND;
+    const gridPoints = gridMode === GridMode.BOX ? BOX_GRID_POINTS : DIAMOND_GRID_POINTS;
+
     // Determine which hand points to show based on handPointVisibility
-    const activeLocations = this.getActiveHandLocations(pictograph, options.handPointVisibility);
+    const activeLocations = this.getActiveHandLocations(pictograph, options.handPointVisibility, gridMode);
 
     // Draw hand points
-    for (const [location, point] of Object.entries(GRID_POINTS.handPoints)) {
+    for (const [location, point] of Object.entries(gridPoints.handPoints)) {
       // If handPointVisibility is "active", only draw points where props are positioned
       if (options.handPointVisibility === "active" && !activeLocations.has(location)) {
         continue;
@@ -578,7 +603,7 @@ export class LayerCompositor implements ILayerCompositor {
 
     // Draw layer 2 / non-radial points (only if enabled)
     if (options.showNonRadialPoints) {
-      for (const point of Object.values(GRID_POINTS.layer2Points)) {
+      for (const point of Object.values(gridPoints.layer2Points)) {
         ctx.beginPath();
         ctx.arc(point.x * scale, point.y * scale, point.r * scale, 0, Math.PI * 2);
         ctx.fill();
@@ -594,10 +619,14 @@ export class LayerCompositor implements ILayerCompositor {
    */
   private getActiveHandLocations(
     pictograph: PreparedPictographData,
-    handPointVisibility: "all" | "active"
+    handPointVisibility: "all" | "active",
+    gridMode: GridMode = GridMode.DIAMOND
   ): Set<string> {
     if (handPointVisibility === "all") {
-      return new Set(["n", "e", "s", "w"]); // All locations
+      // Return all hand point locations for the current grid mode
+      return gridMode === GridMode.BOX
+        ? new Set(["ne", "se", "sw", "nw"]) // Box mode hand points
+        : new Set(["n", "e", "s", "w"]);   // Diamond mode hand points
     }
 
     const activeLocations = new Set<string>();

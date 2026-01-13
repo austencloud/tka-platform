@@ -8,14 +8,17 @@
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../shared/domain/models/MotionData";
 import type { ArrowPlacementData } from "../../placement/domain/ArrowPlacementData";
+import type { GridMode } from "../../../../grid/domain/enums/grid-enums";
 
 export interface IArrowPositioningOrchestrator {
   /**
    * Calculate complete arrow position using the positioning pipeline.
+   * @param gridMode Optional grid mode - if not provided, derived from motion locations
    */
   calculateArrowPoint(
     pictographData: PictographData,
-    motionData?: MotionData
+    motionData?: MotionData,
+    gridMode?: GridMode
   ): Promise<[number, number, number]>;
 
   /**

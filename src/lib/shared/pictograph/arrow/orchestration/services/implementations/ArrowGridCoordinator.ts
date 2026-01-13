@@ -18,12 +18,13 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
   private readonly CENTER_X = 475.0;
   private readonly CENTER_Y = 475.0;
 
-  getInitialPosition(motion: MotionData, location: GridLocation): Point {
+  getInitialPosition(motion: MotionData, location: GridLocation, overrideGridMode?: GridMode): Point {
     const motionType = motion.motionType.toLowerCase();
-    // Infer grid mode from location if not explicitly set
+    // Use override gridMode (from PictographPreparer derivation) if provided,
+    // otherwise fall back to motion.gridMode or infer from location
     // Box mode uses intercardinal (NE, SE, SW, NW), diamond uses cardinal (N, E, S, W)
     const gridMode =
-      motion.gridMode || this.inferGridModeFromLocation(location);
+      overrideGridMode || motion.gridMode || this.inferGridModeFromLocation(location);
 
     if (["pro", "anti", "float"].includes(motionType || "")) {
       // Shift arrows use layer2 points

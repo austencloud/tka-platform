@@ -20,7 +20,21 @@ import {
   isBuugengFamilyProp,
   isUnilateralProp,
 } from "../../domain/enums/PropClassification";
-import { getSettings } from "../../../../application/state/app-state.svelte";
+// Settings interface for Node.js contexts where getSettings() isn't available
+interface PropPlacerSettings {
+  bluePropType?: string;
+  redPropType?: string;
+}
+
+// Dynamic import wrapper for browser contexts
+function getSettingsOrFallback() {
+  if (typeof window !== 'undefined') {
+    // Browser: will be resolved at build time by Vite
+    throw new Error('getSettings should be available in browser context');
+  }
+  // Node.js: settings must be provided via constructor, return empty
+  return { bluePropType: undefined, redPropType: undefined };
+}
 import { createPropPlacementFromPosition } from "../../domain/factories/createPropPlacementData";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import type { IBetaDetector } from "../contracts/IBetaDetector";
@@ -32,7 +46,8 @@ import { PropRotAngleManager } from "./PropRotAngleManager";
 export class PropPlacer implements IPropPlacer {
   constructor(
     private gridModeService: IGridModeDeriver,
-    private BetaDetector: IBetaDetector
+    private BetaDetector: IBetaDetector,
+    private settings?: PropPlacerSettings
   ) {}
 
   async calculatePlacement(
@@ -123,7 +138,7 @@ export class PropPlacer implements IPropPlacer {
     // - Default: blue LEFT, red RIGHT
     const blueMotionIsHand = blueMotion.propType === "hand";
     const redMotionIsHand = redMotion.propType === "hand";
-    const settings = getSettings();
+    const settings = this.settings ?? getSettingsOrFallback();
     const actualBluePropType = blueMotionIsHand
       ? "hand"
       : (settings.bluePropType ?? blueMotion.propType);

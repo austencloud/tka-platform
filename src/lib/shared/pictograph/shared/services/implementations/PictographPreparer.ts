@@ -27,7 +27,15 @@ import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
-import { getSettings } from "../../../../application/state/app-state.svelte";
+// Conditional function to avoid triggering DI in Node.js contexts
+function getSettingsOrDefault() {
+  // Node.js: return empty settings (options should provide prop types via PrepareOptions)
+  if (typeof window === 'undefined') {
+    return { bluePropType: undefined, redPropType: undefined };
+  }
+  // Browser: Will be handled at build time by Vite - shouldn't reach here in Node.js
+  throw new Error('getSettings() should not be called in Node.js - provide bluePropType/redPropType via options');
+}
 
 export class PictographPreparer implements IPictographPreparer {
   // Cache prepared data to avoid re-calculating for identical pictographs
@@ -107,10 +115,10 @@ export class PictographPreparer implements IPictographPreparer {
     options?: PrepareOptions
   ): Promise<PreparedRenderData> {
     const gridMode = this.deriveGridMode(pictograph);
-    // Pass themeMode to arrow lifecycle for correct color selection
+    // Pass themeMode and gridMode to arrow lifecycle for correct positioning and color selection
     const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
       pictograph,
-      options?.themeMode ? { themeMode: options.themeMode } : undefined
+      { themeMode: options?.themeMode, gridMode }
     );
     const { propPositions, propAssets } = await this.calculateProps(
       pictograph,
@@ -197,7 +205,7 @@ export class PictographPreparer implements IPictographPreparer {
 
     const positions: Record<string, PropPosition> = {};
     const assets: Record<string, PropAssets> = {};
-    const settings = getSettings();
+    const settings = getSettingsOrDefault();
 
     const motions = this.getMotionsWithOverrides(pictograph, settings, options);
 
@@ -240,7 +248,7 @@ export class PictographPreparer implements IPictographPreparer {
 
   private getMotionsWithOverrides(
     pictograph: PictographData,
-    settings: ReturnType<typeof getSettings>,
+    settings: { bluePropType?: any; redPropType?: any },
     options?: PrepareOptions
   ): [string, MotionData][] {
     return Object.entries(pictograph.motions || {})

@@ -65,7 +65,6 @@ import { getSvgImageCache } from "./SvgImageCache";
 import { getSvgAssetLoader } from "./SvgAssetLoader";
 import { getLetterImagePath, isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
 import type { Letter } from "../../../foundation/domain/models/Letter";
-import { container } from "../../../di";
 import type { IPictographPreparer } from "../../../pictograph/shared/services/contracts/IPictographPreparer";
 import type { ITurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
@@ -121,6 +120,31 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   private initialized = false;
   private memoryUsage = 0;
   private turnColorInterpreter = new TurnColorInterpreter();
+  private preparer?: IPictographPreparer;
+
+  // Global preparer function that can be set at app initialization
+  private static globalPreparerGetter?: () => IPictographPreparer | undefined;
+  private static globalTurnsTupleGeneratorGetter?: () => ITurnsTupleGenerator | undefined;
+
+  /**
+   * Set a global preparer getter function
+   * Called once at app initialization to wire up DI container
+   */
+  static setGlobalPreparerGetter(getter: () => IPictographPreparer | undefined) {
+    Canvas2DDirectRenderer.globalPreparerGetter = getter;
+  }
+
+  /**
+   * Set a global turns tuple generator getter function
+   * Called once at app initialization to wire up DI container
+   */
+  static setGlobalTurnsTupleGeneratorGetter(getter: () => ITurnsTupleGenerator | undefined) {
+    Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter = getter;
+  }
+
+  constructor(preparer?: IPictographPreparer) {
+    this.preparer = preparer;
+  }
 
   getName(): string {
     return "canvas2d";
@@ -201,19 +225,24 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       return asPrepared;
     }
 
-    // Get PictographPreparer from DI container
-    try {
-      const preparer = container.items.pictographPreparer as IPictographPreparer;
-      const prepared = await preparer.prepareSingle(pictograph, {
-        themeMode: options.visibility.darkMode ? "dark" : "light",
-        bluePropType: options.visibility.bluePropType,
-        redPropType: options.visibility.redPropType,
-      });
-      return prepared;
-    } catch (error) {
-      console.warn("[Canvas2D] Failed to prepare pictograph:", error);
-      return asPrepared;
+    // Try injected preparer first, then global getter
+    const preparer = this.preparer || Canvas2DDirectRenderer.globalPreparerGetter?.();
+
+    if (preparer) {
+      try {
+        const prepared = await preparer.prepareSingle(pictograph, {
+          themeMode: options.visibility.darkMode ? "dark" : "light",
+          bluePropType: options.visibility.bluePropType,
+          redPropType: options.visibility.redPropType,
+        });
+        return prepared;
+      } catch (error) {
+        console.warn("[Canvas2D] Failed to prepare pictograph:", error);
+      }
     }
+
+    // No preparer available - return unprepared (arrows/props won't render)
+    return asPrepared;
   }
 
   /**
@@ -699,14 +728,18 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     try {
       const letterPath = getLetterImagePath(letter);
+      console.log(`[Canvas2D] Loading letter ${letter} from path: ${letterPath}`);
 
       // Load letter asset (image + dimensions) from cache
       // This fetches and parses the SVG once, then caches both
       const assetLoader = getSvgAssetLoader();
       const letterAsset = await assetLoader.getLetterAsset(letterPath);
 
+      console.log(`[Canvas2D] Letter asset loaded:`, letterAsset !== null ? 'YES' : 'NO');
+
       if (letterAsset) {
         const { image: letterImg, dimensions: letterDimensions } = letterAsset;
+        console.log(`[Canvas2D] Drawing letter at (${x}, ${y}) with dimensions ${letterDimensions.width}x${letterDimensions.height}`);
 
         // Draw at viewBox dimensions scaled to canvas (matching TKAGlyph.svelte)
         const drawWidth = letterDimensions.width * TKA_GLYPH_SCALE * scale;
@@ -771,11 +804,15 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     isDarkMode: boolean
   ): Promise<void> {
     // Generate turnsTuple using the same service as SVG
+    // If no generator available, skip turn number rendering
     let turnsTuple = "(s, 0, 0)";
     try {
-      const generator = container.items.turnsTupleGenerator as ITurnsTupleGenerator;
+      const generator = Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter?.();
       if (generator) {
         turnsTuple = generator.generateTurnsTuple(pictograph);
+      } else {
+        // No generator available - skip turn numbers
+        return;
       }
     } catch {
       // Use default
@@ -925,11 +962,15 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     isDarkMode: boolean
   ): void {
     // Generate turnsTuple to get direction
+    // If no generator available, skip direction dot
     let turnsTuple = "(s, 0, 0)";
     try {
-      const generator = container.items.turnsTupleGenerator as ITurnsTupleGenerator;
+      const generator = Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter?.();
       if (generator) {
         turnsTuple = generator.generateTurnsTuple(pictograph);
+      } else {
+        // No generator available - skip direction dot
+        return;
       }
     } catch {
       return;

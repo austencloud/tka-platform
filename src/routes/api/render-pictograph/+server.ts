@@ -16,8 +16,7 @@ export const GET: RequestHandler = async ({ url }) => {
   try {
     // Dynamically import so Node.js canvas works server-side
     const { createCanvas } = await import('canvas');
-    const { container } = await import('$lib/shared/inversify/di');
-    const { TYPES } = await import('$lib/shared/inversify/types/core.types');
+    const { container } = await import('$lib/shared/di');
 
     // Load CSV data
     const csvPath = path.join(process.cwd(), 'static', 'data', 'pictographs', 'DiamondPictographDataframe.csv');
@@ -69,8 +68,8 @@ export const GET: RequestHandler = async ({ url }) => {
       }
     };
 
-    // Get renderer from DI container
-    const renderer = container.get(TYPES.IDirectRenderer);
+    // Get renderer from DI container (ITI)
+    const renderer = container.items.canvas2DRenderer;
     await renderer.initialize();
 
     // Render using real Canvas2DDirectRenderer with Node.js canvas

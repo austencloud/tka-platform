@@ -14,6 +14,7 @@ import type {
   ArrowState,
 } from "../../domain/arrow-models";
 import type { ThemeMode } from "../../../../../utils/svg-color-utils";
+import type { GridMode } from "../../../../grid/domain/enums/grid-enums";
 
 /**
  * Options for arrow lifecycle operations
@@ -21,6 +22,8 @@ import type { ThemeMode } from "../../../../../utils/svg-color-utils";
 export interface ArrowLifecycleOptions {
   /** Theme mode for color selection ("dark" or "light"). If not provided, uses global state. */
   themeMode?: ThemeMode;
+  /** Grid mode for positioning. Derived from motion locations if not provided. */
+  gridMode?: GridMode;
 }
 
 /**

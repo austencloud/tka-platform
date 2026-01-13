@@ -174,10 +174,22 @@ export class SvgAssetLoader {
 
   private async loadLetterAsset(letterPath: string): Promise<LetterAsset | null> {
     try {
-      // Fetch SVG to get dimensions (done once and cached)
-      const response = await fetch(letterPath);
-      if (!response.ok) return null;
-      const svgText = await response.text();
+      // Get SVG content - detect environment (browser vs Node.js)
+      let svgText: string;
+      if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
+        // Browser: use fetch
+        const response = await fetch(letterPath);
+        if (!response.ok) return null;
+        svgText = await response.text();
+      } else {
+        // Node.js: read from file system
+        const fs = await import('fs');
+        const path = await import('path');
+
+        const relativePath = letterPath.startsWith('/') ? letterPath.slice(1) : letterPath;
+        const filePath = path.join(process.cwd(), 'static', relativePath);
+        svgText = fs.readFileSync(filePath, 'utf-8');
+      }
 
       // Parse viewBox to get dimensions
       const viewBoxMatch = svgText.match(
@@ -194,7 +206,8 @@ export class SvgAssetLoader {
       const asset: LetterAsset = { image, dimensions };
       this.assets.letters.set(letterPath, asset);
       return asset;
-    } catch {
+    } catch (error) {
+      console.error(`[SvgAssetLoader] Failed to load letter ${letterPath}:`, error);
       return null;
     }
   }

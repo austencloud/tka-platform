@@ -14,8 +14,9 @@ import type { Point } from "fabric";
 export interface IArrowGridCoordinator {
   /**
    * Get initial position for motion at given location
+   * @param gridMode Optional grid mode - if provided, used instead of motion.gridMode
    */
-  getInitialPosition(motion: MotionData, location: GridLocation): Point;
+  getInitialPosition(motion: MotionData, location: GridLocation, gridMode?: GridMode): Point;
 
   /**
    * Get scene center point

@@ -64,15 +64,18 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
 
   /**
    * Calculate position for a single arrow
+   * @param options Optional settings including gridMode for positioning
    */
   async calculateArrowPosition(
     motionData: MotionData,
-    pictographData: PictographData
+    pictographData: PictographData,
+    options?: ArrowLifecycleOptions
   ): Promise<ArrowPosition> {
     const [x, y, rotation] =
       await this.positioningOrchestrator.calculateArrowPoint(
         pictographData,
-        motionData
+        motionData,
+        options?.gridMode
       );
 
     // Apply manual adjustments from keyboard controls (WASD)
@@ -106,7 +109,7 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
 
   /**
    * Get complete arrow state for a single motion
-   * @param options Optional settings including themeMode for color selection
+   * @param options Optional settings including themeMode for color selection and gridMode for positioning
    */
   async getArrowState(
     motionData: MotionData,
@@ -117,7 +120,7 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
       // Load assets and calculate position in parallel
       const [assets, position] = await Promise.all([
         this.loadArrowAssets(motionData, options),
-        this.calculateArrowPosition(motionData, pictographData),
+        this.calculateArrowPosition(motionData, pictographData, options),
       ]);
 
       const shouldMirror = this.shouldMirrorArrow(motionData, pictographData);

@@ -13,6 +13,7 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
+import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 /**
  * Internal structure for motion key data
@@ -92,6 +93,13 @@ export class PictographKeyHasher implements IPictographKeyHasher {
   private extractMotionKey(motion: MotionData | undefined): MotionKeyData | null {
     if (!motion) return null;
 
+    // Derive gridMode from locations instead of using potentially stale motion.gridMode
+    // This ensures box mode pictographs get different cache keys than diamond mode
+    const derivedGridMode = this.deriveGridModeFromLocations(
+      motion.startLocation,
+      motion.endLocation
+    );
+
     return {
       motionType: motion.motionType ?? "",
       startLocation: motion.startLocation ?? "",
@@ -101,8 +109,34 @@ export class PictographKeyHasher implements IPictographKeyHasher {
       endOrientation: motion.endOrientation ?? "",
       rotationDirection: motion.rotationDirection ?? "",
       propType: motion.propType ?? "staff",
-      gridMode: motion.gridMode ?? "diamond",
+      gridMode: derivedGridMode,
     };
+  }
+
+  /**
+   * Derive grid mode from motion locations
+   * Intercardinal (NE, SE, SW, NW) = BOX, Cardinal (N, E, S, W) = DIAMOND
+   */
+  private deriveGridModeFromLocations(
+    startLocation: GridLocation | undefined,
+    endLocation: GridLocation | undefined
+  ): string {
+    const intercardinalLocations = [
+      GridLocation.NORTHEAST,
+      GridLocation.SOUTHEAST,
+      GridLocation.SOUTHWEST,
+      GridLocation.NORTHWEST,
+    ];
+
+    // If either location is intercardinal, it's box mode
+    if (
+      (startLocation && intercardinalLocations.includes(startLocation)) ||
+      (endLocation && intercardinalLocations.includes(endLocation))
+    ) {
+      return GridMode.BOX;
+    }
+
+    return GridMode.DIAMOND;
   }
 
   /**
