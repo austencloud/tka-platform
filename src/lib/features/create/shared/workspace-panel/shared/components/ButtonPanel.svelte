@@ -102,14 +102,6 @@
           <SequenceActionsButton onclick={onSequenceActionsClick} />
         </div>
       {/if}
-      <!-- TEMPORARY: Animation style A/B toggle - delete after choosing preferred style -->
-      <button
-        class="style-toggle"
-        onclick={() => practiceAnimationStyle.cycle()}
-        title="Cycle through animation styles (temporary for testing)"
-      >
-        {practiceAnimationStyle.label}
-      </button>
     </div>
 
     <!-- CENTER ZONE: Main action button (Share Hub) -->
@@ -313,26 +305,7 @@
   }
 
   /* TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style */
-  .style-toggle {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text, #fff);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-transform: capitalize;
-    white-space: nowrap;
-  }
 
-  .style-toggle:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
 
-  .style-toggle:active {
-    transform: scale(0.95);
-  }
+
 </style>
