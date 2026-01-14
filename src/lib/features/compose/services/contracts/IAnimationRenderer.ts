@@ -46,6 +46,9 @@ export interface RenderSceneParams {
   // Prop flip settings (for asymmetric props like Buugeng)
   bluePropFlipped?: boolean;
   redPropFlipped?: boolean;
+  // Prop types - used to apply prop-specific rendering rules (e.g., hands never rotate)
+  bluePropType?: string;
+  redPropType?: string;
 }
 
 export interface IAnimationRenderer {

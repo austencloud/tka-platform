@@ -2,57 +2,137 @@
   /**
    * CellRenderer - Unified renderer for composition cells
    *
-   * Handles both single and tunnel cell types.
-   * Renders the animation within a grid cell using the animation engine.
+   * Supports:
+   * - Single mode: One sequence per cell
+   * - Tunnel mode: 2 sequences overlaid (secondary textures auto-loaded by AnimationEngine)
+   * - Rotation: CSS transform for 0°, 90°, 180°, 270°
+   * - Mirroring: CSS scaleX(-1) for horizontal flip
+   * - Synchronized playback via shared currentBeat from composition state
+   *
+   * NOTE: For now, tunnel mode supports max 2 sequences. 3-4 sequence support
+   * would require layering multiple AnimatorCanvas components with z-index.
    */
 
   import { onMount, onDestroy } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import { container } from "$lib/shared/di";
   import type { CellConfig } from "../../domain/types";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { createPlaybackControllerFactory } from "$lib/shared/di/containers/animator-container";
 
   interface Props {
     cell: CellConfig;
     isPlaying: boolean;
     isPreviewing: boolean;
     bpm?: number;
+    currentBeat?: number;
   }
 
-  let { cell, isPlaying, isPreviewing, bpm = 60 }: Props = $props();
+  let { cell, isPlaying, isPreviewing, bpm = 60, currentBeat = 0 }: Props = $props();
 
   // Convert BPM to speed multiplier (60 BPM = 1.0x speed)
   const speed = $derived(bpm / 60);
 
-  // Animation state per cell
-  const animationState = createAnimationPanelState();
+  // Animation states - one per sequence (up to 2 for now)
+  // MUST be $state for reactivity when sequences are added/removed after mount
+  let animationStates = $state<ReturnType<typeof createAnimationPanelState>[]>([]);
+  let playbackControllers = $state<IAnimationPlaybackController[]>([]);
 
-  // Services - must be $state for reactive effects to track them
-  let playbackController = $state<IAnimationPlaybackController | null>(null);
   let initialized = $state(false);
   let loading = $state(false);
   let error = $state<string | null>(null);
 
-  // Get primary sequence for rendering
-  const primarySequence = $derived(cell.sequences[0] ?? null);
-  const hasSequence = $derived(cell.sequences.length > 0);
+  // Track sequence IDs to detect actual sequence changes vs prop updates
+  let lastSequenceIds: string[] = [];
+
+  // Get sequences for rendering
+  const sequences = $derived(cell.sequences);
+  const hasSequence = $derived(sequences.length > 0);
+  // Tunnel mode: 2+ sequences (auto-derived from sequence count)
+  const isTunnel = $derived(sequences.length >= 2);
+  const sequenceCount = $derived(sequences.length);
+
+  // CSS transform for rotation and mirroring
+  const transform = $derived.by(() => {
+    const parts: string[] = [];
+
+    if (cell.rotationOffset && cell.rotationOffset !== 0) {
+      parts.push(`rotate(${cell.rotationOffset}deg)`);
+    }
+
+    if (cell.isMirrored) {
+      parts.push("scaleX(-1)");
+    }
+
+    return parts.length > 0 ? parts.join(" ") : "none";
+  });
+
+  // Initialize animation states and controllers
+  function initializeStates(count: number) {
+    // Clean up existing states
+    for (const state of animationStates) {
+      state.dispose();
+    }
+    animationStates = [];
+    playbackControllers = [];
+
+    // Create new states for each sequence
+    // Use factory to get fresh controller instances (required for tunnel mode)
+    for (let i = 0; i < count; i++) {
+      const state = createAnimationPanelState();
+      // Each sequence needs its own controller with independent state
+      const controller = createPlaybackControllerFactory();
+      animationStates.push(state);
+      playbackControllers.push(controller);
+    }
+  }
+
+  // Initialize animation for a specific sequence index
+  function initializeSequence(seq: SequenceData, index: number) {
+    if (!playbackControllers[index] || !animationStates[index]) return false;
+
+    try {
+      const success = playbackControllers[index].initialize(seq, animationStates[index]);
+      if (!success) {
+        console.warn(`Failed to initialize sequence ${index} for cell ${cell.id}`);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error(`Error initializing sequence ${index}:`, err);
+      return false;
+    }
+  }
+
+  // Get current sequence IDs for change detection
+  function getSequenceIds(): string[] {
+    return sequences.map(seq => seq.id || seq.word || seq.name || "unknown");
+  }
+
+  // Check if sequences actually changed
+  function sequencesChanged(): boolean {
+    const currentIds = getSequenceIds();
+    if (currentIds.length !== lastSequenceIds.length) return true;
+    return currentIds.some((id, i) => id !== lastSequenceIds[i]);
+  }
 
   // Initialize services on mount
   onMount(() => {
     try {
       loading = true;
 
-      playbackController = container.items
-        .animationPlaybackController as IAnimationPlaybackController;
+      // Initialize states for current sequences (up to 2 for tunnel mode)
+      initializeStates(Math.min(2, Math.max(1, sequences.length)));
 
+      // Initialize each sequence
+      sequences.slice(0, 2).forEach((seq, i) => {
+        initializeSequence(seq, i);
+      });
+
+      lastSequenceIds = getSequenceIds();
       initialized = true;
       loading = false;
-
-      // Initialize with sequence if available
-      if (primarySequence) {
-        initializeAnimation();
-      }
     } catch (err) {
       console.error(`❌ CellRenderer [${cell.id}] init failed:`, err);
       error = "Failed to initialize animation";
@@ -60,104 +140,110 @@
     }
   });
 
-  // Re-initialize when sequence changes
+  // Handle sequence changes (add/remove/reorder)
   $effect(() => {
-    if (initialized && primarySequence) {
-      initializeAnimation();
+    if (!initialized) return;
+
+    // Read sequences to establish dependency
+    const seqCount = sequences.length;
+
+    // Check if sequences actually changed (not just prop type changes)
+    if (sequencesChanged()) {
+      // Reinitialize with new sequence count (up to 2 for tunnel mode)
+      initializeStates(Math.min(2, Math.max(1, seqCount)));
+
+      sequences.slice(0, 2).forEach((seq, i) => {
+        initializeSequence(seq, i);
+      });
+
+      lastSequenceIds = getSequenceIds();
     }
   });
 
-  // Sync playback state
+  // Sync currentBeat from composition state to all animation states
+  // This is the key synchronization - all cells share the same beat position
+  // CRITICAL: Also recalculate prop states via the playback controller
   $effect(() => {
-    if (!playbackController || !animationState.sequenceData) return;
-
-    if (isPlaying !== animationState.isPlaying) {
-      playbackController.togglePlayback();
+    for (let i = 0; i < animationStates.length; i++) {
+      const state = animationStates[i];
+      const controller = playbackControllers[i];
+      if (state?.sequenceData && controller) {
+        state.setCurrentBeat(currentBeat);
+        // Recalculate prop positions for this beat
+        controller.calculateStateForBeat(currentBeat);
+      }
     }
   });
 
-  // Sync speed
+  // Sync isPlaying state to animation states (for preview mode)
   $effect(() => {
-    if (playbackController && animationState.sequenceData) {
-      playbackController.setSpeed(speed);
+    const shouldPlay = isPlaying || isPreviewing;
+    for (const state of animationStates) {
+      if (state.sequenceData && state.isPlaying !== shouldPlay) {
+        state.setIsPlaying(shouldPlay);
+      }
     }
   });
 
-  async function initializeAnimation() {
-    if (!primarySequence || !playbackController) return;
-
-    try {
-      const success = playbackController.initialize(
-        primarySequence,
-        animationState
-      );
-
-      if (!success) {
-        throw new Error("Failed to initialize animation");
-      }
-
-      // Apply rotation if set
-      if (cell.rotationOffset && cell.rotationOffset !== 0) {
-        // TODO: Apply rotation to the animation canvas
-      }
-
-      // Auto-start if previewing
-      if (isPreviewing) {
-        animationState.setIsPlaying(true);
-      }
-    } catch (err) {
-      console.error(`❌ CellRenderer [${cell.id}] animation init failed:`, err);
-      error = err instanceof Error ? err.message : "Animation failed";
+  // Sync speed to all playback controllers
+  $effect(() => {
+    for (const controller of playbackControllers) {
+      controller.setSpeed(speed);
     }
-  }
+  });
 
-  // Current beat data derived from animation state
-  const currentBeatData = $derived.by(() => {
-    if (!animationState.sequenceData) return null;
+  // Get beat data for a specific sequence at current beat
+  function getBeatDataForSequence(seq: SequenceData | null, beat: number) {
+    if (!seq) return null;
 
-    const currentBeat = animationState.currentBeat;
-
-    // Handle start position case explicitly
-    if (
-      currentBeat === 0 &&
-      !animationState.isPlaying &&
-      animationState.sequenceData.startPosition
-    ) {
-      return animationState.sequenceData.startPosition;
+    // Handle start position (beat 0)
+    if (beat === 0 && seq.startPosition) {
+      return seq.startPosition;
     }
 
-    // For beats, use direct indexing with clamping
-    // currentBeat is 1-based: currentBeat 1.0-2.0 = beat 1 (uses beats[0])
-    if (
-      animationState.sequenceData.beats &&
-      animationState.sequenceData.beats.length > 0
-    ) {
-      const beatIndex = Math.max(0, Math.floor(currentBeat) - 1);
-      const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
-      );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+    // Get beat data (beat 1 = beats[0], etc.)
+    if (seq.beats && seq.beats.length > 0) {
+      const beatIndex = Math.max(0, Math.floor(beat) - 1);
+      const clampedIndex = Math.min(beatIndex, seq.beats.length - 1);
+      return seq.beats[clampedIndex] || null;
     }
 
     return null;
-  });
+  }
 
-  // Current letter derived from beat data
-  const currentLetter = $derived.by(() => {
-    return currentBeatData?.letter || null;
-  });
+  // Derived: Primary animation state (always index 0)
+  const primaryState = $derived(animationStates[0] ?? null);
+  const primaryBeatData = $derived(
+    primaryState?.sequenceData
+      ? getBeatDataForSequence(primaryState.sequenceData, currentBeat)
+      : null
+  );
+  const primaryLetter = $derived(primaryBeatData?.letter ?? null);
 
+  // Derived: Secondary animation state (index 1, for dual-sequence tunnel)
+  const secondaryState = $derived(animationStates[1] ?? null);
+
+  // Cleanup on destroy
   onDestroy(() => {
-    // Cleanup animation state effects
-    animationState.dispose();
+    for (const state of animationStates) {
+      state.dispose();
+    }
+    animationStates = [];
+    playbackControllers = [];
   });
+
+  // Layer opacity for 3-4 sequence tunnel mode
+  function getLayerOpacity(index: number, total: number): number {
+    if (total <= 2) return 1;
+    // Decrease opacity for each layer: 1.0, 0.85, 0.70, 0.55
+    return 1 - index * 0.15;
+  }
 </script>
 
 <div
   class="cell-renderer"
-  class:tunnel={cell.type === "tunnel"}
-  style:--rotation="{cell.rotationOffset ?? 0}deg"
+  class:tunnel={isTunnel}
+  class:mirrored={cell.isMirrored}
 >
   {#if loading}
     <div class="loading-state">
@@ -168,25 +254,83 @@
       <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
       <span>{error}</span>
     </div>
-  {:else if hasSequence && animationState.sequenceData}
-    <!-- Animation Canvas -->
-    <div class="canvas-container" style:transform="rotate(var(--rotation))">
-      <AnimatorCanvas
-        blueProp={animationState.bluePropState}
-        redProp={animationState.redPropState}
-        gridVisible={true}
-        gridMode={animationState.sequenceData.gridMode ?? null}
-        letter={currentLetter}
-        beatData={currentBeatData}
-        currentBeat={animationState.currentBeat}
-        sequenceData={animationState.sequenceData}
-      />
+  {:else if hasSequence && primaryState?.sequenceData}
+    <!-- Canvas container with rotation/mirroring transforms -->
+    <div class="canvas-container" style:transform={transform}>
+      {#if isTunnel && sequenceCount > 2}
+        <!-- 3-4 sequence tunnel: Layer multiple AnimatorCanvas components -->
+        {#each animationStates as state, i (i)}
+          {#if state?.sequenceData}
+            <div
+              class="tunnel-layer"
+              style:opacity={getLayerOpacity(i, sequenceCount)}
+              style:z-index={sequenceCount - i}
+            >
+              <AnimatorCanvas
+                blueProp={state.bluePropState}
+                redProp={state.redPropState}
+                gridVisible={i === 0}
+                gridMode={state.sequenceData.gridMode ?? null}
+                letter={i === 0 ? primaryLetter : null}
+                beatData={i === 0 ? primaryBeatData : getBeatDataForSequence(state.sequenceData, currentBeat)}
+                currentBeat={currentBeat}
+                sequenceData={state.sequenceData}
+              />
+            </div>
+          {/if}
+        {/each}
+      {:else if isTunnel && sequenceCount === 2 && secondaryState?.sequenceData}
+        <!-- 2-sequence tunnel: Use secondary props on single canvas (more efficient) -->
+        <!-- Hide glyph/beat overlays - combined motions don't form a TKA letter -->
+        <AnimatorCanvas
+          blueProp={primaryState.bluePropState}
+          redProp={primaryState.redPropState}
+          secondaryBlueProp={secondaryState.bluePropState}
+          secondaryRedProp={secondaryState.redPropState}
+          gridVisible={true}
+          gridMode={primaryState.sequenceData.gridMode ?? null}
+          letter={null}
+          beatData={primaryBeatData}
+          currentBeat={currentBeat}
+          sequenceData={primaryState.sequenceData}
+          hideTkaGlyph={true}
+          hideBeatNumbers={true}
+        />
+      {:else}
+        <!-- Single sequence (or tunnel with 1 sequence) -->
+        <AnimatorCanvas
+          blueProp={primaryState.bluePropState}
+          redProp={primaryState.redPropState}
+          gridVisible={true}
+          gridMode={primaryState.sequenceData.gridMode ?? null}
+          letter={primaryLetter}
+          beatData={primaryBeatData}
+          currentBeat={currentBeat}
+          sequenceData={primaryState.sequenceData}
+        />
+      {/if}
     </div>
 
-    <!-- Tunnel overlay layers (for tunnel mode) -->
-    {#if cell.type === "tunnel" && cell.sequences.length > 1}
-      <div class="tunnel-overlay-hint">
-        <span>+{cell.sequences.length - 1} layers</span>
+    <!-- Tunnel overlay info (shows sequence count) -->
+    {#if isTunnel && sequenceCount > 1}
+      <div class="tunnel-info-badge">
+        <i class="fas fa-layer-group" aria-hidden="true"></i>
+        <span>{sequenceCount} layers</span>
+      </div>
+    {/if}
+
+    <!-- Rotation indicator -->
+    {#if cell.rotationOffset && cell.rotationOffset !== 0}
+      <div class="rotation-badge">
+        <i class="fas fa-redo" aria-hidden="true"></i>
+        <span>{cell.rotationOffset}°</span>
+      </div>
+    {/if}
+
+    <!-- Mirror indicator -->
+    {#if cell.isMirrored}
+      <div class="mirror-badge">
+        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
       </div>
     {/if}
   {:else}
@@ -211,6 +355,7 @@
   }
 
   .canvas-container {
+    position: relative;
     width: 100%;
     height: 100%;
     display: flex;
@@ -220,11 +365,23 @@
   }
 
   /* Ensure AnimatorCanvas fills container properly */
-  .canvas-container :global(.canvas-wrapper) {
+  .canvas-container :global(.animation-container) {
     width: 100%;
     height: 100%;
-    max-width: 100%;
-    max-height: 100%;
+  }
+
+  /* Tunnel layer stacking */
+  .tunnel-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tunnel-layer :global(.animation-container) {
+    width: 100%;
+    height: 100%;
   }
 
   /* Loading state */
@@ -238,7 +395,7 @@
     width: clamp(16px, 15cqi, 32px);
     height: clamp(16px, 15cqi, 32px);
     border: clamp(2px, 1cqi, 4px) solid var(--theme-stroke);
-    border-top-color: rgba(236, 72, 153, 0.8);
+    border-top-color: var(--theme-accent, #ec4899);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
@@ -255,7 +412,7 @@
     flex-direction: column;
     align-items: center;
     gap: clamp(2px, 2cqi, 6px);
-    color: rgba(239, 68, 68, 0.8);
+    color: var(--semantic-error, #ef4444);
     font-size: clamp(0.55rem, 4cqi, 0.85rem);
     text-align: center;
     padding: clamp(4px, 3cqi, 12px);
@@ -270,29 +427,51 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.4); /* Improved contrast for WCAG AAA */
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: clamp(1rem, 12cqi, 2.5rem);
   }
 
-  /* Tunnel mode indicator */
-  .tunnel-overlay-hint {
+  /* Info badges - positioned in corners */
+  .tunnel-info-badge,
+  .rotation-badge,
+  .mirror-badge {
     position: absolute;
-    bottom: clamp(2px, 2cqi, 6px);
-    right: clamp(2px, 2cqi, 6px);
-    padding: clamp(1px, 1cqi, 4px) clamp(3px, 2cqi, 8px);
-    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    gap: clamp(2px, 1cqi, 4px);
+    padding: clamp(2px, 1cqi, 4px) clamp(4px, 2cqi, 8px);
+    background: rgba(0, 0, 0, 0.7);
     border-radius: clamp(2px, 1cqi, 6px);
-    font-size: clamp(0.5rem, 3cqi, 0.75rem);
-    color: var(--theme-text-dim);
+    font-size: clamp(0.5rem, 3cqi, 0.7rem);
+    color: var(--theme-text, white);
     pointer-events: none;
+    z-index: 10;
+  }
+
+  .tunnel-info-badge {
+    bottom: clamp(2px, 2cqi, 8px);
+    right: clamp(2px, 2cqi, 8px);
+    background: rgba(139, 92, 246, 0.8);
+  }
+
+  .rotation-badge {
+    top: clamp(2px, 2cqi, 8px);
+    right: clamp(2px, 2cqi, 8px);
+    background: rgba(245, 158, 11, 0.8);
+  }
+
+  .mirror-badge {
+    top: clamp(2px, 2cqi, 8px);
+    left: clamp(2px, 2cqi, 8px);
+    background: rgba(59, 130, 246, 0.8);
   }
 
   /* Tunnel mode styling */
   .cell-renderer.tunnel {
     background: linear-gradient(
       135deg,
-      rgba(60, 40, 80, 0.3) 0%,
-      rgba(40, 30, 60, 0.3) 100%
+      rgba(139, 92, 246, 0.1) 0%,
+      rgba(59, 130, 246, 0.1) 100%
     );
   }
 

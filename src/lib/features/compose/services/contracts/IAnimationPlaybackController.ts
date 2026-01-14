@@ -83,6 +83,13 @@ export interface IAnimationPlaybackController {
   getCurrentPropStates(): { blue: PropState; red: PropState };
 
   /**
+   * Calculate and update prop states for a specific beat without affecting playback.
+   * Used when an external beat source (like composition state) drives the animation.
+   * @param beat Beat number to calculate state for
+   */
+  calculateStateForBeat(beat: number): void;
+
+  /**
    * Clean up resources
    */
   dispose(): void;

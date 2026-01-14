@@ -7,20 +7,17 @@
    * - Slides from right on desktop (≥768px)
    * - Slides from bottom on mobile (<768px)
    *
-   * Panel Contents:
-   * - Sequence preview (current cell content)
-   * - Media type toggle (animation, video, beat grid, image)
-   * - Cell type (single/tunnel)
-   * - Sequence list with add/remove
-   * - Rotation controls
-   * - "Browse Sequences" button (opens stacked panel)
+   * Simplified flow:
+   * - If cell is empty, auto-opens sequence browser
+   * - Cell type is auto-derived (1 seq = single, 2+ = tunnel)
+   * - Rotation controls removed for now
    */
 
   import { onMount } from "svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
   import { getCompositionState } from "../../state/composition-state.svelte";
-  import type { CellType, MediaDisplayType } from "../../domain/types";
+  import type { MediaDisplayType } from "../../domain/types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   const compState = getCompositionState();
@@ -53,13 +50,24 @@
   // Sequence browser state (stacked on top of this panel)
   let showSequenceBrowser = $state(false);
 
-  // Cell type options
-  const cellTypes: { value: CellType; label: string; icon: string }[] = [
-    { value: "single", label: "Single", icon: "fa-square" },
-    { value: "tunnel", label: "Tunnel", icon: "fa-layer-group" },
-  ];
+  // Auto-open sequence browser when panel opens with empty cell
+  $effect(() => {
+    if (isOpen && cell && cell.sequences.length === 0) {
+      // Small delay to let the panel animate in first
+      setTimeout(() => {
+        showSequenceBrowser = true;
+      }, 100);
+    }
+  });
 
-  // Media display type options
+  // Reset sequence browser state when panel closes
+  $effect(() => {
+    if (!isOpen) {
+      showSequenceBrowser = false;
+    }
+  });
+
+  // Media display type options (simplified - just animation for now)
   const mediaTypes: { value: MediaDisplayType; label: string; icon: string }[] =
     [
       { value: "animation", label: "Animation", icon: "fa-play-circle" },
@@ -68,29 +76,14 @@
       { value: "image", label: "Image", icon: "fa-image" },
     ];
 
-  // Rotation options
-  const rotationOptions = [0, 90, 180, 270];
-
   // Handlers
   function handleClose() {
     compState.closeCellConfig();
   }
 
-  function handleTypeChange(type: CellType) {
-    if (selectedCellId) {
-      compState.setCellType(selectedCellId, type);
-    }
-  }
-
   function handleMediaTypeChange(mediaType: MediaDisplayType) {
     if (selectedCellId) {
       compState.setCellMediaType(selectedCellId, mediaType);
-    }
-  }
-
-  function handleRotationChange(rotation: number) {
-    if (selectedCellId) {
-      compState.setCellRotation(selectedCellId, rotation);
     }
   }
 
@@ -121,10 +114,13 @@
     }
   }
 
-  // Get current media type or default
-  const currentMediaType = $derived(cell?.mediaType ?? "animation");
-  const maxSequences = $derived(cell?.type === "tunnel" ? 4 : 1);
+  // Derived: cell type label and max sequences (auto-derived from count)
+  const cellTypeLabel = $derived(
+    (cell?.sequences?.length ?? 0) > 1 ? "Tunnel" : "Single"
+  );
+  const maxSequences = 4; // Always allow up to 4 for tunnel capability
   const canAddMore = $derived((cell?.sequences?.length ?? 0) < maxSequences);
+  const currentMediaType = $derived(cell?.mediaType ?? "animation");
 </script>
 
 <Drawer
@@ -150,77 +146,34 @@
         </button>
       </header>
 
-      <!-- Sequence Preview (placeholder for now) -->
-      <section class="panel-section preview-section">
-        <div class="preview-container">
-          {#if cell.sequences.length > 0}
-            <div class="preview-placeholder">
-              <i class="fas fa-film" aria-hidden="true"></i>
-              <span>{cell.sequences[0]?.name}</span>
-            </div>
-          {:else}
-            <div class="preview-empty">
-              <i class="fas fa-plus-circle" aria-hidden="true"></i>
-              <span>No sequence</span>
-            </div>
-          {/if}
-        </div>
-      </section>
-
-      <!-- Media Type Toggle -->
-      <section class="panel-section">
-        <span class="section-label">Display As</span>
-        <div class="media-type-grid">
-          {#each mediaTypes as option}
-            <button
-              class="type-chip"
-              class:selected={currentMediaType === option.value}
-              onclick={() => handleMediaTypeChange(option.value)}
-              title={option.label}
-              aria-label={option.label}
-            >
-              <i class="fas {option.icon}" aria-hidden="true"></i>
-              <span>{option.label}</span>
-            </button>
-          {/each}
-        </div>
-      </section>
-
-      <!-- Cell Type -->
-      <section class="panel-section">
-        <span class="section-label">Cell Type</span>
-        <div class="cell-type-toggle">
-          {#each cellTypes as option}
-            <button
-              class="type-btn"
-              class:selected={cell.type === option.value}
-              onclick={() => handleTypeChange(option.value)}
-              title={option.label}
-              aria-label={option.label}
-            >
-              <i class="fas {option.icon}" aria-hidden="true"></i>
-              <span>{option.label}</span>
-            </button>
-          {/each}
-        </div>
-      </section>
-
-      <!-- Sequences -->
-      <section class="panel-section">
-        <span class="section-label">
-          Sequences
+      <!-- Sequences Section - Main focus of this panel -->
+      <section class="panel-section sequences-section">
+        <div class="section-header">
+          <span class="section-label">
+            Sequences
+            {#if cell.sequences.length > 1}
+              <span class="mode-badge tunnel">
+                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                Tunnel
+              </span>
+            {/if}
+          </span>
           <span class="count">{cell.sequences.length}/{maxSequences}</span>
-        </span>
+        </div>
 
         {#if cell.sequences.length === 0}
-          <button class="add-sequence-btn" onclick={handleBrowseSequences}>
-            <i class="fas fa-plus" aria-hidden="true"></i>
-            <span>Add Sequence</span>
-          </button>
+          <div class="empty-sequences">
+            <p>No sequences yet</p>
+            <button class="add-sequence-btn" onclick={handleBrowseSequences}>
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              <span>Browse Sequences</span>
+            </button>
+          </div>
         {:else}
           <div class="sequence-list">
             {#each cell.sequences as sequence, index}
               <div class="sequence-chip">
+                <span class="chip-index">{index + 1}</span>
                 <span class="chip-name">{sequence.name}</span>
                 <button
                   class="chip-remove"
@@ -236,51 +189,22 @@
             {#if canAddMore}
               <button class="add-more-btn" onclick={handleBrowseSequences}>
                 <i class="fas fa-plus" aria-hidden="true"></i>
-                <span>Add Another</span>
+                <span>Add Layer ({cell.sequences.length + 1}/{maxSequences})</span>
               </button>
             {/if}
           </div>
         {/if}
       </section>
 
-      <!-- Rotation (single mode only) -->
-      {#if cell.type === "single"}
-        <section class="panel-section">
-          <span class="section-label">Rotation</span>
-          <div class="rotation-grid">
-            {#each rotationOptions as rotation}
-              <button
-                class="rotation-btn"
-                class:selected={cell.rotationOffset === rotation}
-                onclick={() => handleRotationChange(rotation)}
-                title="{rotation}°"
-                aria-label="Rotate {rotation} degrees"
-              >
-                <i
-                  class="fas fa-arrow-up"
-                  aria-hidden="true"
-                  style:transform="rotate({rotation}deg)"
-                ></i>
-                <span>{rotation}°</span>
-              </button>
-            {/each}
-          </div>
-        </section>
-      {/if}
-
       <!-- Actions -->
-      <div class="panel-actions">
-        {#if cell.sequences.length > 0}
+      {#if cell.sequences.length > 0}
+        <div class="panel-actions">
           <button class="action-btn clear-btn" onclick={handleClearCell}>
             <i class="fas fa-trash-alt" aria-hidden="true"></i>
-            Clear
+            Clear All
           </button>
-        {/if}
-        <button class="action-btn swap-btn" onclick={handleBrowseSequences}>
-          <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-          Swap
-        </button>
-      </div>
+        </div>
+      {/if}
     {:else}
       <div class="no-selection">
         <i class="fas fa-mouse-pointer" aria-hidden="true"></i>
@@ -300,14 +224,12 @@
 
 <style>
   /* Override drawer dimensions for this panel */
-  /* Right placement (desktop): constrain width */
   :global(.cell-config-panel[data-placement="right"]) {
     width: clamp(280px, 22vw, 360px) !important;
     max-width: 90vw !important;
     height: 100% !important;
   }
 
-  /* Bottom placement (mobile): constrain height */
   :global(.cell-config-panel[data-placement="bottom"]) {
     width: 100% !important;
     max-height: 85vh !important;
@@ -329,14 +251,14 @@
     align-items: center;
     justify-content: space-between;
     padding-bottom: clamp(8px, 2cqi, 14px);
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .panel-title {
     margin: 0;
     font-size: clamp(0.9rem, 3.5cqi, 1.1rem);
     font-weight: 600;
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
   }
 
   .close-btn {
@@ -362,176 +284,100 @@
   .panel-section {
     display: flex;
     flex-direction: column;
-    gap: clamp(6px, 2cqi, 10px);
+    gap: clamp(8px, 2cqi, 12px);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .section-label {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    font-size: clamp(0.7rem, 2.5cqi, 0.8rem);
+    gap: clamp(6px, 2cqi, 10px);
+    font-size: clamp(0.75rem, 2.5cqi, 0.85rem);
     font-weight: 600;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
+  .mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: clamp(0.65rem, 2cqi, 0.75rem);
+    font-weight: 500;
+    text-transform: none;
+  }
+
+  .mode-badge.tunnel {
+    background: rgba(139, 92, 246, 0.2);
+    color: rgba(167, 139, 250, 0.95);
+  }
+
   .count {
+    font-size: clamp(0.7rem, 2.2cqi, 0.8rem);
     font-weight: 400;
     color: rgba(255, 255, 255, 0.4);
   }
 
-  /* Preview Section */
-  .preview-section {
-    margin-bottom: clamp(4px, 1cqi, 8px);
-  }
-
-  .preview-container {
-    aspect-ratio: 1;
-    max-height: clamp(120px, 30cqi, 180px);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: clamp(6px, 2cqi, 12px);
-    overflow: hidden;
-  }
-
-  .preview-placeholder,
-  .preview-empty {
+  /* Empty State */
+  .empty-sequences {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: clamp(6px, 2cqi, 10px);
-    height: 100%;
-    color: var(--theme-text-dim);
+    gap: clamp(10px, 3cqi, 16px);
+    padding: clamp(16px, 4cqi, 24px);
     text-align: center;
-    padding: clamp(8px, 2cqi, 16px);
   }
 
-  .preview-placeholder i,
-  .preview-empty i {
-    font-size: clamp(1.5rem, 8cqi, 2.5rem);
-    opacity: 0.6;
-  }
-
-  .preview-placeholder span,
-  .preview-empty span {
-    font-size: clamp(0.75rem, 2.5cqi, 0.9rem);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
-  /* Media Type Grid */
-  .media-type-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: clamp(4px, 1.5cqi, 8px);
-  }
-
-  .type-chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(4px, 1.5cqi, 8px);
-    min-height: var(--min-touch-target);
-    padding: clamp(8px, 2cqi, 12px);
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: clamp(4px, 1.5cqi, 8px);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: clamp(0.7rem, 2.5cqi, 0.85rem);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .type-chip:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
-  }
-
-  .type-chip.selected {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 20%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 50%,
-      transparent
-    );
-    color: var(--theme-accent, var(--theme-accent));
-  }
-
-  .type-chip i {
-    font-size: 1em;
-  }
-
-  /* Cell Type Toggle */
-  .cell-type-toggle {
-    display: flex;
-    gap: clamp(4px, 1.5cqi, 8px);
-  }
-
-  .type-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(4px, 1.5cqi, 8px);
-    min-height: var(--min-touch-target);
-    padding: clamp(8px, 2cqi, 12px);
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: clamp(4px, 1.5cqi, 8px);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: clamp(0.75rem, 2.5cqi, 0.9rem);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .type-btn:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
-  }
-
-  .type-btn.selected {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 20%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 50%,
-      transparent
-    );
-    color: var(--theme-accent, var(--theme-accent));
+  .empty-sequences p {
+    margin: 0;
+    font-size: clamp(0.8rem, 2.8cqi, 0.9rem);
+    color: var(--theme-text-dim);
   }
 
   /* Sequence List */
   .sequence-list {
     display: flex;
     flex-direction: column;
-    gap: clamp(4px, 1.5cqi, 8px);
+    gap: clamp(6px, 2cqi, 10px);
   }
 
   .sequence-chip {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: clamp(8px, 2cqi, 12px);
     min-height: var(--min-touch-target);
     padding: clamp(8px, 2cqi, 12px);
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: clamp(4px, 1.5cqi, 8px);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: clamp(6px, 2cqi, 10px);
+  }
+
+  .chip-index {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(20px, 5cqi, 26px);
+    height: clamp(20px, 5cqi, 26px);
+    background: rgba(139, 92, 246, 0.2);
+    color: rgba(167, 139, 250, 0.95);
+    border-radius: 50%;
+    font-size: clamp(0.7rem, 2cqi, 0.8rem);
+    font-weight: 600;
+    flex-shrink: 0;
   }
 
   .chip-name {
+    flex: 1;
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -580,68 +426,15 @@
     border-color: rgba(16, 185, 129, 0.6);
   }
 
-  /* Rotation Grid */
-  .rotation-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: clamp(4px, 1.5cqi, 8px);
-  }
-
-  .rotation-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(2px, 1cqi, 4px);
-    min-height: var(--min-touch-target);
-    padding: clamp(6px, 2cqi, 10px);
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: clamp(4px, 1.5cqi, 8px);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .rotation-btn:hover {
-    background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
-  }
-
-  .rotation-btn.selected {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 20%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 50%,
-      transparent
-    );
-    color: var(--theme-accent, var(--theme-accent));
-  }
-
-  .rotation-btn i {
-    font-size: clamp(0.9rem, 3cqi, 1.1rem);
-    transition: transform 0.2s ease;
-  }
-
-  .rotation-btn span {
-    font-size: clamp(0.65rem, 2cqi, 0.75rem);
-  }
-
   /* Actions */
   .panel-actions {
-    display: flex;
-    gap: clamp(6px, 2cqi, 10px);
     margin-top: auto;
     padding-top: clamp(12px, 3cqi, 18px);
-    border-top: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border-top: 1px solid var(--theme-stroke);
   }
 
   .action-btn {
-    flex: 1;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -664,17 +457,6 @@
   .clear-btn:hover {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.4);
-  }
-
-  .swap-btn {
-    background: rgba(59, 130, 246, 0.2);
-    border: 1px solid rgba(59, 130, 246, 0.4);
-    color: rgba(59, 130, 246, 0.95);
-  }
-
-  .swap-btn:hover {
-    background: rgba(59, 130, 246, 0.3);
-    border-color: rgba(59, 130, 246, 0.6);
   }
 
   /* No Selection State */
@@ -702,11 +484,11 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .type-chip,
-    .type-btn,
-    .rotation-btn,
     .action-btn,
-    .add-sequence-btn {
+    .add-sequence-btn,
+    .add-more-btn,
+    .chip-remove,
+    .close-btn {
       transition: none;
     }
   }

@@ -17,6 +17,8 @@
  * - Canvas2DImageLoader: SVG→Image conversion and caching
  * - Canvas2DTrailRenderer: Trail rendering logic
  * - Canvas2DFadeManager: Glyph fade transitions
+ * - Canvas2DGridFadeManager: Grid visibility toggle transitions
+ * - Canvas2DVisibilityFadeManager: Props and trails visibility transitions
  */
 
 import type {
@@ -27,6 +29,8 @@ import { Canvas2DApplicationManager } from "./canvas2d/Canvas2DApplicationManage
 import { Canvas2DImageLoader } from "./canvas2d/Canvas2DImageLoader";
 import { Canvas2DTrailRenderer } from "./canvas2d/Canvas2DTrailRenderer";
 import { Canvas2DFadeManager } from "./canvas2d/Canvas2DFadeManager";
+import { Canvas2DGridFadeManager } from "./canvas2d/Canvas2DGridFadeManager";
+import { Canvas2DVisibilityFadeManager } from "./canvas2d/Canvas2DVisibilityFadeManager";
 
 // Constants matching AnimatorCanvas EXACTLY
 const VIEWBOX_SIZE = 950;
@@ -39,6 +43,11 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   private imageLoader: Canvas2DImageLoader;
   private trailRenderer: Canvas2DTrailRenderer;
   private fadeManager: Canvas2DFadeManager;
+  private gridFadeManager: Canvas2DGridFadeManager;
+  private propsFadeManager: Canvas2DVisibilityFadeManager;
+  private bluePropFadeManager: Canvas2DVisibilityFadeManager;
+  private redPropFadeManager: Canvas2DVisibilityFadeManager;
+  private trailsFadeManager: Canvas2DVisibilityFadeManager;
 
   // Track current grid mode for resize operations
   private currentGridMode: string = "diamond";
@@ -48,6 +57,12 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
     this.imageLoader = new Canvas2DImageLoader();
     this.trailRenderer = new Canvas2DTrailRenderer();
     this.fadeManager = new Canvas2DFadeManager();
+    this.gridFadeManager = new Canvas2DGridFadeManager();
+    this.propsFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
+    // Individual blue/red fade managers use same timing for coordinated animation
+    this.bluePropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
+    this.redPropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
+    this.trailsFadeManager = new Canvas2DVisibilityFadeManager(350, 250);
   }
 
   async initialize(
@@ -108,11 +123,18 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   }
 
   /**
-   * Check if background is currently transitioning
-   * Used by render loop to continue rendering during smooth color transitions
+   * Check if any element is currently transitioning
+   * Used by render loop to continue rendering during smooth transitions
    */
   isBackgroundTransitioning(): boolean {
-    return this.appManager.isBackgroundTransitioning();
+    return (
+      this.appManager.isBackgroundTransitioning() ||
+      this.gridFadeManager.isTransitionInProgress() ||
+      this.propsFadeManager.isTransitionInProgress() ||
+      this.bluePropFadeManager.isTransitionInProgress() ||
+      this.redPropFadeManager.isTransitionInProgress() ||
+      this.trailsFadeManager.isTransitionInProgress()
+    );
   }
 
   async loadGlyphTexture(
@@ -143,22 +165,36 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
     // 1. Clear canvas and fill background
     this.appManager.clear();
 
-    // 2. Draw grid (if visible)
+    // 2. Draw grid (with fade transition for toggle)
+    this.gridFadeManager.setVisible(params.visibility.gridVisible);
+    const gridFadeState = this.gridFadeManager.updateProgress(
+      params.currentTime
+    );
     const gridImage = this.imageLoader.getGridImage();
-    if (params.visibility.gridVisible && gridImage) {
+
+    // Draw grid if alpha > 0 (either visible, or fading out)
+    if (gridFadeState.alpha > 0 && gridImage) {
+      ctx.save();
+      ctx.globalAlpha = gridFadeState.alpha;
+
       // In Dark Mode, invert the grid colors so black points become off-white
       const isDarkMode = this.appManager.isDarkModeEnabled();
       if (isDarkMode) {
         ctx.filter = "invert(0.85)"; // Invert to off-white (not pure white)
       }
       ctx.drawImage(gridImage, 0, 0, canvasSize, canvasSize);
-      if (isDarkMode) {
-        ctx.filter = "none";
-      }
+      ctx.restore();
     }
 
-    // 3. Draw trails (if visible)
-    if (params.visibility.trailsVisible) {
+    // 3. Draw trails (with fade transition for toggle)
+    this.trailsFadeManager.setVisible(params.visibility.trailsVisible);
+    const trailsFadeState = this.trailsFadeManager.updateProgress(
+      params.currentTime
+    );
+
+    if (trailsFadeState.alpha > 0) {
+      ctx.save();
+      ctx.globalAlpha = trailsFadeState.alpha;
       this.trailRenderer.renderTrails(
         ctx,
         params.blueTrailPoints,
@@ -168,57 +204,92 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
         !!params.blueProp && params.visibility.blueMotionVisible,
         !!params.redProp && params.visibility.redMotionVisible
       );
+      ctx.restore();
     }
 
-    // 4. Draw props (if visible and not hidden by trail settings)
-    if (params.visibility.propsVisible && !params.trailSettings.hideProps) {
-      // Primary blue prop
-      if (params.blueProp && params.visibility.blueMotionVisible) {
-        this.renderProp(
-          ctx,
-          params.blueProp,
-          this.imageLoader.getBluePropImage(),
-          params.bluePropDimensions,
-          canvasSize,
-          params.bluePropFlipped ?? false
-        );
-      }
+    // 4. Draw props (with fade transitions for toggles)
+    // Overall props toggle affects all props
+    this.propsFadeManager.setVisible(
+      params.visibility.propsVisible && !params.trailSettings.hideProps
+    );
+    const propsFadeState = this.propsFadeManager.updateProgress(
+      params.currentTime
+    );
 
-      // Primary red prop
-      if (params.redProp && params.visibility.redMotionVisible) {
-        this.renderProp(
-          ctx,
-          params.redProp,
-          this.imageLoader.getRedPropImage(),
-          params.redPropDimensions,
-          canvasSize,
-          params.redPropFlipped ?? false
-        );
-      }
+    // Individual motion toggles for blue/red (combined with overall props alpha)
+    this.bluePropFadeManager.setVisible(params.visibility.blueMotionVisible);
+    this.redPropFadeManager.setVisible(params.visibility.redMotionVisible);
+    const blueFadeState = this.bluePropFadeManager.updateProgress(
+      params.currentTime
+    );
+    const redFadeState = this.redPropFadeManager.updateProgress(
+      params.currentTime
+    );
+
+    // Blue props: render if either fade has alpha > 0
+    const blueAlpha = propsFadeState.alpha * blueFadeState.alpha;
+    if (blueAlpha > 0 && params.blueProp) {
+      ctx.save();
+      ctx.globalAlpha = blueAlpha;
+
+      // Primary blue prop
+      this.renderProp(
+        ctx,
+        params.blueProp,
+        this.imageLoader.getBluePropImage(),
+        params.bluePropDimensions,
+        canvasSize,
+        params.bluePropFlipped ?? false,
+        params.bluePropType
+      );
 
       // Secondary blue prop (tunnel mode)
-      if (params.secondaryBlueProp && params.visibility.blueMotionVisible) {
+      if (params.secondaryBlueProp) {
         this.renderProp(
           ctx,
           params.secondaryBlueProp,
           this.imageLoader.getSecondaryBluePropImage(),
           params.bluePropDimensions,
           canvasSize,
-          params.bluePropFlipped ?? false
+          params.bluePropFlipped ?? false,
+          params.bluePropType
         );
       }
 
+      ctx.restore();
+    }
+
+    // Red props: render if either fade has alpha > 0
+    const redAlpha = propsFadeState.alpha * redFadeState.alpha;
+    if (redAlpha > 0 && params.redProp) {
+      ctx.save();
+      ctx.globalAlpha = redAlpha;
+
+      // Primary red prop
+      this.renderProp(
+        ctx,
+        params.redProp,
+        this.imageLoader.getRedPropImage(),
+        params.redPropDimensions,
+        canvasSize,
+        params.redPropFlipped ?? false,
+        params.redPropType
+      );
+
       // Secondary red prop (tunnel mode)
-      if (params.secondaryRedProp && params.visibility.redMotionVisible) {
+      if (params.secondaryRedProp) {
         this.renderProp(
           ctx,
           params.secondaryRedProp,
           this.imageLoader.getSecondaryRedPropImage(),
           params.redPropDimensions,
           canvasSize,
-          params.redPropFlipped ?? false
+          params.redPropFlipped ?? false,
+          params.redPropType
         );
       }
+
+      ctx.restore();
     }
 
     // 5. Draw glyph (with fade transition)
@@ -228,6 +299,7 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   /**
    * Render a prop at its calculated position with rotation
    * @param flipped - Whether to mirror the prop horizontally (for asymmetric props like Buugeng)
+   * @param propType - The type of prop being rendered (used for prop-specific rules like hands never rotating)
    */
   private renderProp(
     ctx: CanvasRenderingContext2D,
@@ -240,7 +312,8 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
     image: HTMLImageElement | null,
     dimensions: { width: number; height: number },
     canvasSize: number,
-    flipped: boolean = false
+    flipped: boolean = false,
+    propType?: string
   ): void {
     if (!image) return;
 
@@ -250,9 +323,14 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
       canvasSize
     );
 
+    // IMPORTANT: Hands should never rotate - always use default orientation (0 degrees)
+    // This matches the static pictograph behavior in PropPlacer.ts
+    const rotation =
+      propType?.toLowerCase() === "hand" ? 0 : transform.rotation;
+
     ctx.save();
     ctx.translate(transform.x, transform.y);
-    ctx.rotate(transform.rotation);
+    ctx.rotate(rotation);
 
     // Apply horizontal flip for asymmetric props (Buugeng family)
     if (flipped) {
@@ -382,6 +460,11 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
 
   destroy(): void {
     this.fadeManager.reset();
+    this.gridFadeManager.reset();
+    this.propsFadeManager.reset();
+    this.bluePropFadeManager.reset();
+    this.redPropFadeManager.reset();
+    this.trailsFadeManager.reset();
     this.imageLoader.destroy();
     this.appManager.destroy();
   }

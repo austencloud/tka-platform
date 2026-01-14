@@ -58,6 +58,10 @@ export function createCompositionState() {
   let shouldLoop = $state(true);
   let currentBeat = $state(0);
 
+  // Animation frame loop for synchronized playback
+  let animationFrameId: number | null = null;
+  let lastFrameTime: number = 0;
+
   // Workflow phase state (persisted)
   let currentPhase = $state<WorkflowPhase>(
     loadFromStorage(STORAGE_KEYS.WORKFLOW_PHASE, "canvas")
@@ -100,6 +104,72 @@ export function createCompositionState() {
   const effectiveBpm = $derived(
     audioManager.state.manualBpm ?? audioManager.state.detectedBpm ?? bpm
   );
+
+  // Max beat count across all configured cells (for loop/stop logic)
+  const maxBeatCount = $derived.by(() => {
+    let max = 0;
+    for (const cell of composition.cells) {
+      for (const seq of cell.sequences) {
+        const beatCount = seq.beats?.length ?? 0;
+        if (beatCount > max) max = beatCount;
+      }
+    }
+    return max;
+  });
+
+  // =========================================================================
+  // Playback Loop (Centralized for Cell Synchronization)
+  // =========================================================================
+
+  function startPlaybackLoop() {
+    lastFrameTime = performance.now();
+    animationFrameId = requestAnimationFrame(advanceBeat);
+  }
+
+  function stopPlaybackLoop() {
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  }
+
+  function advanceBeat(timestamp: number) {
+    if (!isPlaying) {
+      stopPlaybackLoop();
+      return;
+    }
+
+    const deltaMs = timestamp - lastFrameTime;
+    lastFrameTime = timestamp;
+
+    // Calculate beat delta based on effective BPM
+    const beatsPerSecond = effectiveBpm / 60;
+    const beatDelta = (deltaMs / 1000) * beatsPerSecond;
+
+    // Advance current beat
+    let newBeat = currentBeat + beatDelta;
+
+    // Handle end of sequence
+    // currentBeat goes from 0 to maxBeatCount+1 (0=start position, 1-N=beats, N+1=done)
+    const endBeat = maxBeatCount + 1;
+    if (newBeat >= endBeat) {
+      if (shouldLoop) {
+        // Loop back to start position
+        newBeat = 0;
+      } else {
+        // Stop at end
+        newBeat = endBeat;
+        isPlaying = false;
+        stopPlaybackLoop();
+        return;
+      }
+    }
+
+    currentBeat = newBeat;
+
+    // Continue the loop
+    animationFrameId = requestAnimationFrame(advanceBeat);
+  }
 
   // =========================================================================
   // Layout Operations
@@ -164,14 +234,17 @@ export function createCompositionState() {
   function play() {
     if (!canPlay) return;
     isPlaying = true;
+    startPlaybackLoop();
   }
 
   function pause() {
     isPlaying = false;
+    stopPlaybackLoop();
   }
 
   function stop() {
     isPlaying = false;
+    stopPlaybackLoop();
     currentBeat = 0;
   }
 
@@ -236,6 +309,7 @@ export function createCompositionState() {
   }
 
   function reset() {
+    stopPlaybackLoop();
     composition = createDefaultComposition();
     isPlaying = false;
     currentBeat = 0;
@@ -338,6 +412,9 @@ export function createCompositionState() {
     },
     get hasAudio() {
       return audioManager.hasAudio;
+    },
+    get maxBeatCount() {
+      return maxBeatCount;
     },
 
     // Layout mutations

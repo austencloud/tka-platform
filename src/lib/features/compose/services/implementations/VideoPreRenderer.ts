@@ -254,19 +254,21 @@ export class VideoPreRenderer implements IVideoPreRenderer {
         enabled: true,
       };
 
-      // Get settings for Buugeng flip
+      // Get settings for Buugeng flip and prop types
       let bluePropFlipped = false;
       let redPropFlipped = false;
+      let bluePropType = "staff";
+      let redPropType = "staff";
       try {
         const settingsState = container.items.settingsState as ISettingsState;
         const settings = settingsState.currentSettings;
         const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
-        const bluePropType = (
+        bluePropType = (
           settings?.bluePropType ||
           settings?.propType ||
           "staff"
         ).toLowerCase();
-        const redPropType = (
+        redPropType = (
           settings?.redPropType ||
           settings?.propType ||
           "staff"
@@ -346,6 +348,8 @@ export class VideoPreRenderer implements IVideoPreRenderer {
           },
           bluePropFlipped,
           redPropFlipped,
+          bluePropType,
+          redPropType,
         });
 
         // Capture this frame

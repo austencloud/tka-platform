@@ -490,19 +490,21 @@ export class SequenceFramePreRenderer {
     // Note: For pre-rendering, we don't need trails (they'd just be static snapshots)
     // We're capturing the full frame which includes everything
 
-    // Check if props should be flipped (Buugeng family only)
+    // Check if props should be flipped (Buugeng family only) and get prop types
     let bluePropFlipped = false;
     let redPropFlipped = false;
+    let bluePropType = "staff";
+    let redPropType = "staff";
     try {
       const settingsState = container.items.settingsState as ISettingsState;
       const settings = settingsState.currentSettings;
       const buugengFamily = ["buugeng", "bigbuugeng", "fractalgeng"];
-      const bluePropType = (
+      bluePropType = (
         settings?.bluePropType ||
         settings?.propType ||
         "staff"
       ).toLowerCase();
-      const redPropType = (
+      redPropType = (
         settings?.redPropType ||
         settings?.propType ||
         "staff"
@@ -539,6 +541,8 @@ export class SequenceFramePreRenderer {
       },
       bluePropFlipped,
       redPropFlipped,
+      bluePropType,
+      redPropType,
     });
 
     // Capture the rendered frame as ImageBitmap

@@ -5,6 +5,7 @@
  * - Animation engine (state calculations)
  * - Loop service (timing and frames)
  * - Panel state (UI updates)
+ * - Shared animation state (for workspace beat grid sync)
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -14,6 +15,7 @@ import type { IAnimationLoop } from "../contracts/IAnimationLoop";
 import type { IAnimationPlaybackController } from "../contracts/IAnimationPlaybackController";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
 import type { ISequenceLoopabilityChecker } from "../contracts/ISequenceLoopabilityChecker";
+import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
 
 export class AnimationPlaybackController implements IAnimationPlaybackController {
   private state: AnimationPanelState | null = null;
@@ -37,6 +39,22 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     private readonly loopabilityChecker: ISequenceLoopabilityChecker
   ) {}
 
+  /**
+   * Sync current beat to both internal state and shared state (for workspace beat grid sync)
+   */
+  private syncCurrentBeat(beat: number): void {
+    this.state?.setCurrentBeat(beat);
+    sharedAnimationState.setCurrentBeat(beat);
+  }
+
+  /**
+   * Sync playing state to both internal state and shared state (for workspace beat grid sync)
+   */
+  private syncIsPlaying(playing: boolean): void {
+    this.state?.setIsPlaying(playing);
+    sharedAnimationState.setIsPlaying(playing);
+  }
+
   initialize(sequenceData: SequenceData, state: AnimationPanelState): boolean {
     this.state = state;
     this.sequenceData = sequenceData;
@@ -59,9 +77,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Set sequence data on state (data arrives already normalized from SequenceService)
     state.setSequenceData(sequenceData);
 
-    // Reset playback state
-    state.setCurrentBeat(0);
-    state.setIsPlaying(false);
+    // Reset playback state (sync to shared state for beat grid highlighting)
+    this.syncCurrentBeat(0);
+    this.syncIsPlaying(false);
 
     // Update prop states from initial initialization
     this.updatePropStatesFromEngine();
@@ -76,13 +94,13 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       // Pause
       this.stopStepPlayback();
       this.loopService.stop();
-      this.state.setIsPlaying(false);
+      this.syncIsPlaying(false);
     } else {
       // Play
       if (this.state.playbackMode === "step") {
         this.startStepPlayback();
       } else {
-        this.state.setIsPlaying(true);
+        this.syncIsPlaying(true);
         this.loopService.start(
           (deltaTime) => this.onAnimationUpdate(deltaTime),
           this.state.speed
@@ -97,10 +115,10 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Stop animation loop
     this.stopStepPlayback();
     this.loopService.stop();
-    this.state.setIsPlaying(false);
+    this.syncIsPlaying(false);
 
     // Reset to start
-    this.state.setCurrentBeat(0);
+    this.syncCurrentBeat(0);
 
     // Re-initialize engine if we have sequence data
     if (this.sequenceData) {
@@ -117,12 +135,12 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Stop any current playback/animation
     this.stopStepPlayback();
     this.loopService.stop();
-    this.state.setIsPlaying(false);
+    this.syncIsPlaying(false);
     this.animationTarget = null;
 
     // Clamp beat to valid range
     const clampedBeat = Math.max(0, Math.min(beat, this.state.totalBeats));
-    this.state.setCurrentBeat(clampedBeat);
+    this.syncCurrentBeat(clampedBeat);
 
     // Calculate state for this beat
     this.animationEngine.calculateState(clampedBeat);
@@ -169,7 +187,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Stop any current playback/animation
     this.loopService.stop();
     if (cancelStepPlayback) {
-      this.state.setIsPlaying(false);
+      this.syncIsPlaying(false);
     }
 
     // Set up animation parameters
@@ -205,7 +223,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       this.animationStartBeat +
       (this.animationTarget - this.animationStartBeat) * interpolatedProgress;
 
-    this.state.setCurrentBeat(currentBeat);
+    this.syncCurrentBeat(currentBeat);
     this.animationEngine.calculateState(currentBeat);
     this.updatePropStatesFromEngine();
 
@@ -215,7 +233,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       this.loopService.stop();
       this.animationTarget = null;
       // Ensure we're exactly at the target
-      this.state.setCurrentBeat(finalBeat);
+      this.syncCurrentBeat(finalBeat);
       this.animationEngine.calculateState(finalBeat);
       this.updatePropStatesFromEngine();
     }
@@ -333,7 +351,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     this.stopStepPlayback();
 
-    this.state.setIsPlaying(true);
+    this.syncIsPlaying(true);
     const runId = ++this.stepPlaybackRunId;
 
     // Step immediately on start (no initial pause)
@@ -369,7 +387,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     if (nextBeat > animationEndBeat) {
       if (this.state.shouldLoop) {
         // Loop back to start without leaving "playing" state
-        this.state.setCurrentBeat(0);
+        this.syncCurrentBeat(0);
         if (this.sequenceData) {
           this.animationEngine.initializeWithDomainData(this.sequenceData);
         }
@@ -399,7 +417,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       } else {
         // Stay at the end position (after final beat's motion completed)
         // Don't reset currentBeat - let it stay where the animation left it
-        this.state.setIsPlaying(false);
+        this.syncIsPlaying(false);
         return;
       }
     } else {
@@ -449,7 +467,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         // For seamlessly loopable sequences, skip start position and loop to beat 1
         // For non-loopable sequences, show start position briefly by looping to 0
         const loopBackBeat = this.isSeamlesslyLoopable ? 1 : 0;
-        this.state.setCurrentBeat(loopBackBeat);
+        this.syncCurrentBeat(loopBackBeat);
 
         // Re-initialize engine if needed
         if (this.sequenceData) {
@@ -457,12 +475,12 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         }
       } else {
         // Stop at end
-        this.state.setCurrentBeat(this.state.totalBeats);
+        this.syncCurrentBeat(this.state.totalBeats);
         this.loopService.stop();
-        this.state.setIsPlaying(false);
+        this.syncIsPlaying(false);
       }
     } else {
-      this.state.setCurrentBeat(newBeat);
+      this.syncCurrentBeat(newBeat);
     }
 
     // Calculate state for current beat
@@ -478,5 +496,19 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     const states = this.animationEngine.getCurrentPropStates();
 
     this.state.setPropStates(states.blue, states.red);
+  }
+
+  /**
+   * Calculate and update prop states for a specific beat without affecting playback.
+   * Used when an external beat source (like composition state) drives the animation.
+   */
+  calculateStateForBeat(beat: number): void {
+    if (!this.state) return;
+
+    // Calculate state for the given beat
+    this.animationEngine.calculateState(beat);
+
+    // Update prop states on the animation panel state
+    this.updatePropStatesFromEngine();
   }
 }

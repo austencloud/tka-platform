@@ -134,6 +134,10 @@
     updateCounter;
     return visibilityManager.getVisibility("tkaGlyph");
   }
+  function getWordHeader() {
+    updateCounter;
+    return visibilityManager.getVisibility("wordHeader");
+  }
 
   // Toggle handlers
   function toggleGrid() {
@@ -177,6 +181,11 @@
   function toggleTkaGlyph() {
     const current = visibilityManager.getVisibility("tkaGlyph");
     visibilityManager.setVisibility("tkaGlyph", !current);
+    updateCounter++;
+  }
+  function toggleWordHeader() {
+    const current = visibilityManager.getVisibility("wordHeader");
+    visibilityManager.setVisibility("wordHeader", !current);
     updateCounter++;
   }
 
@@ -276,6 +285,15 @@
       title="TKA Glyph includes turn numbers"
     >
       <span>Glyph</span>
+    </button>
+    <button
+      class="element-btn"
+      class:active={getWordHeader()}
+      onclick={toggleWordHeader}
+      type="button"
+      title="Word header above animation"
+    >
+      <span>Word</span>
     </button>
   </div>
 

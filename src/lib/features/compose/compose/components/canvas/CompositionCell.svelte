@@ -27,6 +27,7 @@
 
   const compState = getCompositionState();
   const bpm = $derived(compState.bpm);
+  const currentBeat = $derived(compState.currentBeat);
 
   const isConfigured = $derived(isCellConfigured(cell));
   // Always render animation for configured cells - shows first frame when paused
@@ -63,7 +64,7 @@
     <div class="cell-content">
       {#if shouldRenderAnimation}
         <!-- Live animation rendering -->
-        <CellRenderer {cell} {isPlaying} {isPreviewing} {bpm} />
+        <CellRenderer {cell} {isPlaying} {isPreviewing} {bpm} {currentBeat} />
       {:else}
         <!-- Static preview -->
         <div class="static-preview">
