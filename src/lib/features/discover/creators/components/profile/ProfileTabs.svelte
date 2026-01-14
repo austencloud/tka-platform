@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fade, fly } from "svelte/transition";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -11,6 +11,8 @@
     UserProfile,
   } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import AvatarImage from "./AvatarImage.svelte";
+  import PropAwareThumbnail from "$lib/features/discover/sequences/display/components/PropAwareThumbnail.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   type ProfileTab = "sequences" | "followers" | "following" | "achievements";
 
@@ -40,8 +42,21 @@
 
   let hapticService: IHapticFeedback | undefined;
 
+  // Light mode tracking - reacts to "L" key toggle
+  const visibilityManager = getAnimationVisibilityManager();
+  let lightMode = $state(!visibilityManager.isDarkMode());
+
+  function handleVisibilityChange() {
+    lightMode = !visibilityManager.isDarkMode();
+  }
+
   onMount(() => {
     hapticService = container.items.hapticFeedback;
+    visibilityManager.registerObserver(handleVisibilityChange);
+  });
+
+  onDestroy(() => {
+    visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
   function handleSequenceClick(sequence: LibrarySequence) {
@@ -128,15 +143,9 @@
             onclick={() => handleSequenceClick(sequence)}
             transition:fade={{ duration: 200 }}
           >
-            {#if sequence.thumbnails && sequence.thumbnails.length > 0}
-              <div class="sequence-thumbnail">
-                <img src={sequence.thumbnails[0]} alt={sequence.name} />
-              </div>
-            {:else}
-              <div class="sequence-thumbnail-placeholder">
-                <i class="fas fa-list" aria-hidden="true"></i>
-              </div>
-            {/if}
+            <div class="sequence-thumbnail">
+              <PropAwareThumbnail sequence={sequence} {lightMode} />
+            </div>
 
             <div class="sequence-info">
               <h3 class="sequence-name">{getDisplayName(sequence)}</h3>
@@ -318,31 +327,12 @@
     box-shadow: 0 4px 12px var(--theme-shadow);
   }
 
-  .sequence-thumbnail,
-  .sequence-thumbnail-placeholder {
+  .sequence-thumbnail {
     width: 100%;
-    aspect-ratio: 16 / 9;
     border-radius: 8px;
     overflow: hidden;
-  }
-
-  .sequence-thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .sequence-thumbnail-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-  }
-
-  .sequence-thumbnail-placeholder i {
-    font-size: var(--font-size-3xl);
-    color: var(--theme-text-dim);
+    container-type: inline-size;
+    container-name: sequence-card;
   }
 
   .sequence-info {

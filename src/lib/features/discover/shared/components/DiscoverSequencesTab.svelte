@@ -63,6 +63,7 @@
           sectionsReady={galleryState.sectionsReady}
           {error}
           showSections={galleryState.showSections}
+          source={galleryState.currentSource}
           onAction={onSequenceAction}
           onScroll={onContainerScroll}
         />

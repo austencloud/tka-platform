@@ -19,6 +19,7 @@
     sectionsReady = true,
     error = null,
     showSections = false,
+    source = "community",
     onAction = () => {},
     onScroll,
   } = $props<{
@@ -28,6 +29,7 @@
     sectionsReady?: boolean;
     error?: string | null;
     showSections?: boolean;
+    source?: "community" | "my-library";
     onAction?: (action: string, sequence: SequenceData) => void;
     onScroll?: (event: CustomEvent<{ scrollTop: number }>) => void;
   }>();
@@ -36,13 +38,16 @@
   let thumbnailService: IDiscoverThumbnailProvider | null = $state(null);
 
   // ✅ DERIVED RUNES: UI state
-  // Show skeleton until loading is done AND sections are ready AND sections exist
-  // The sections.length check is defense-in-depth in case sectionsReady gets out of sync
-  const isInitializing = $derived(
-    isLoading || !sectionsReady || (showSections && sections.length === 0)
-  );
+  // Show skeleton until loading is done AND sections are ready
+  // Note: Don't check sections.length - empty library is valid state, not "still loading"
+  const isInitializing = $derived(isLoading || !sectionsReady);
   const isEmpty = $derived(!isInitializing && !error && sequences.length === 0);
   const hasSequences = $derived(!isInitializing && !error && sequences.length > 0);
+  const emptyMessage = $derived(
+    source === "my-library"
+      ? "No sequences saved yet"
+      : "No sequences found"
+  );
 
   // Handle sequence actions
   function handleSequenceAction(action: string, sequence: SequenceData) {
@@ -90,7 +95,7 @@
       </div>
     {:else if isEmpty}
       <div class="empty-state">
-        <p>No sequences found</p>
+        <p>{emptyMessage}</p>
       </div>
     {:else if hasSequences}
       <DiscoverGrid
