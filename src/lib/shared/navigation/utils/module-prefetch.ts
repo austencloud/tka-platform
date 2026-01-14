@@ -26,19 +26,17 @@ const IS_DEV =
  * Navigation patterns: most likely next modules from each module
  * Based on user behavior analysis:
  * - Dashboard → Create (start building), Discover (browse)
- * - Discover → Create (fork/modify), Library (save)
- * - Create → Compose (animate), Library (save), Discover (share)
- * - Compose → Create (edit more), Library (save)
- * - Library → Create (edit), Compose (animate), Discover (share)
+ * - Discover → Create (fork/modify)
+ * - Create → Compose (animate), Discover (share)
+ * - Compose → Create (edit more)
  * - Learn → Create (try it), Train (practice)
  * - Train → Create (compose), Learn (review)
  */
 const NAVIGATION_PATTERNS: Record<string, string[]> = {
-  dashboard: ["create", "discover", "library"],
-  create: ["compose", "library", "discover"],
-  discover: ["create", "library"],
-  compose: ["create", "library"],
-  library: ["create", "compose", "discover"],
+  dashboard: ["create", "discover"],
+  create: ["compose", "discover"],
+  discover: ["create"],
+  compose: ["create"],
   learn: ["create", "train"],
   train: ["create", "learn"],
   settings: [], // Settings is an endpoint, no prefetch needed
@@ -59,7 +57,6 @@ const MODULE_PATHS: Record<string, string> = {
   discover:
     "/src/lib/features/discover/shared/components/DiscoverModule.svelte",
   compose: "/src/lib/features/compose/ComposeModule.svelte",
-  library: "/src/lib/features/library/LibraryModule.svelte",
   learn: "/src/lib/features/learn/LearnTab.svelte",
   train: "/src/lib/features/train/components/TrainModule.svelte",
   settings: "/src/lib/features/settings/SettingsModule.svelte",

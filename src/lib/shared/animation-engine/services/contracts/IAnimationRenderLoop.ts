@@ -73,6 +73,9 @@ export interface RenderFrameParams {
   /** Prop flip settings (for asymmetric props like Buugeng) */
   bluePropFlipped?: boolean;
   redPropFlipped?: boolean;
+  /** Prop types - used for prop-specific rendering rules (e.g., hands never rotate) */
+  bluePropType?: string;
+  redPropType?: string;
 }
 
 /**

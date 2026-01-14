@@ -20,7 +20,6 @@ import {
   isBuugengFamilyProp,
   isUnilateralProp,
 } from "../../domain/enums/PropClassification";
-import { getSettings } from "../../../../application/state/app-state.svelte";
 
 // Settings interface for Node.js contexts where getSettings() isn't available
 interface PropPlacerSettings {
@@ -28,16 +27,8 @@ interface PropPlacerSettings {
   redPropType?: string;
 }
 
-// Dynamic import wrapper for browser contexts
-function getSettingsOrFallback() {
-  if (typeof window !== 'undefined') {
-    // Browser: call the real getSettings()
-    return getSettings();
-  }
-  // Node.js: settings must be provided via constructor, return empty
-  return { bluePropType: undefined, redPropType: undefined };
-}
 import { createPropPlacementFromPosition } from "../../domain/factories/createPropPlacementData";
+import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import type { IBetaDetector } from "../contracts/IBetaDetector";
 import type { IPropPlacer } from "../contracts/IPropPlacer";
@@ -56,6 +47,8 @@ export class PropPlacer implements IPropPlacer {
     pictographData: PictographData,
     motionData: MotionData
   ): Promise<PropPlacementData> {
+    // DEBUG: Log motion data
+
     // ALWAYS derive gridMode from pictograph data - don't trust stored motionData.gridMode
     // This ensures correct calculations even after rotations or when loading saved sequences
     const gridMode =
@@ -140,7 +133,12 @@ export class PropPlacer implements IPropPlacer {
     // - Default: blue LEFT, red RIGHT
     const blueMotionIsHand = blueMotion.propType === "hand";
     const redMotionIsHand = redMotion.propType === "hand";
-    const settings = this.settings ?? getSettingsOrFallback();
+    // Use constructor settings, then fall back to global settings
+    const globalSettings = this.settings ? null : getSettings();
+    const settings = this.settings ?? {
+      bluePropType: globalSettings?.bluePropType,
+      redPropType: globalSettings?.redPropType,
+    };
     const actualBluePropType = blueMotionIsHand
       ? "hand"
       : (settings.bluePropType ?? blueMotion.propType);

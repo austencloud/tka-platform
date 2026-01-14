@@ -168,7 +168,9 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
     // Process all motions in parallel for better performance
     const motionPromises = Object.entries(pictographData.motions).map(
       async ([color, motionData]) => {
-        if (!motionData) return;
+        if (!motionData) {
+          return;
+        }
 
         try {
           const arrowState = await this.getArrowState(

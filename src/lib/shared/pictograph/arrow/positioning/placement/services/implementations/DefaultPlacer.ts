@@ -7,6 +7,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
  */
 
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
+import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
 import { ArrowPlacer } from "./ArrowPlacer";
 
 /**
@@ -39,8 +40,12 @@ export interface IDefaultPlacerJson {
 export class DefaultPlacer implements IDefaultPlacerJson {
   private placementDataService: ArrowPlacer;
 
-  constructor() {
-    this.placementDataService = new ArrowPlacer();
+  /**
+   * Create DefaultPlacer with optional injectable JSON cache
+   * @param jsonCacheImpl JSON cache implementation (defaults to browser fetch-based cache)
+   */
+  constructor(jsonCacheImpl?: IJsonCache) {
+    this.placementDataService = new ArrowPlacer(jsonCacheImpl);
   }
 
   /**

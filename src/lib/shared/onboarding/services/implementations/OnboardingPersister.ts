@@ -47,9 +47,14 @@ export class OnboardingPersister implements IOnboardingPersister {
 
   /**
    * Get the Firestore document reference for onboarding status
+   * NOTE: Uses the actual authenticated user's ID (not effectiveUserId)
+   * because onboarding status should always be for the current user,
+   * not a previewed user during admin preview mode.
    */
   private async getOnboardingDocRef() {
-    const userId = authState.effectiveUserId;
+    // Use the actual user ID, not effectiveUserId, to avoid permission errors
+    // when admin is in preview mode viewing another user's data
+    const userId = authState.user?.uid;
     if (!userId) {
       return null;
     }

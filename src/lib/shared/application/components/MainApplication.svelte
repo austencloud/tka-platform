@@ -14,8 +14,6 @@
   import FirstRunWizard from "../../onboarding/components/first-run/FirstRunWizard.svelte";
   import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
 
-  
-
   import { getContext, onMount } from "svelte";
   import MainInterface from "../../MainInterface.svelte";
   import AuthSheet from "../../navigation/components/AuthSheet.svelte";
@@ -93,7 +91,8 @@
   $effect(() => {
     if (!servicesResolved) {
       try {
-        initService = container.items.applicationInitializer as IApplicationInitializer;
+        initService = container.items
+          .applicationInitializer as IApplicationInitializer;
         settingsService = container.items.settingsState as ISettingsState;
         deviceService = container.items.deviceDetector as IDeviceDetector;
         sheetRouterService = container.items.sheetRouter as ISheetRouter;
@@ -297,7 +296,7 @@
 </script>
 
 <svelte:head>
-  <title>TKA Scribe - The Flow Arts Choreography Toolbox</title>
+  <title>TKA Scribe - A flow arts choreography Toolbox</title>
   <meta
     name="description"
     content="TKA Scribe is a revolutionary flow arts choreography toolbox for staffs, fans, and other flow arts. Create, learn, and share movement sequences using The Kinetic Alphabet notation system."

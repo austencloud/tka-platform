@@ -66,6 +66,9 @@ Last audit: 2025-12-27
     // Preview-only dark mode override - when provided, bypasses global setting
     // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
     previewDarkMode = null,
+    // Tunnel mode: hide TKA glyph and beat numbers (combined motions don't form a letter)
+    hideTkaGlyph = false,
+    hideBeatNumbers = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -86,6 +89,8 @@ Last audit: 2025-12-27
     redPropType?: string | null;
     word?: string | null;
     previewDarkMode?: boolean | null;
+    hideTkaGlyph?: boolean;
+    hideBeatNumbers?: boolean;
   } = $props();
 
   // Container element
@@ -107,6 +112,10 @@ Last audit: 2025-12-27
   const darkModeEnabled = $derived(
     previewDarkMode !== null ? previewDarkMode : globalDarkMode
   );
+
+  // Effective visibility: combine global settings with hide props (for tunnel mode)
+  const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
+  const effectiveBeatNumbersVisible = $derived(beatNumbersVisible && !hideBeatNumbers);
 
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
@@ -206,7 +215,12 @@ Last audit: 2025-12-27
   <!-- Inner wrapper constrains to canvas width so header matches -->
   <div class="content-wrapper" data-dark-mode={darkModeEnabled ? "true" : "false"}>
     <!-- Word header lives ABOVE the canvas (not overlaid) -->
-    <WordHeader {word} visible={wordHeaderVisible} darkMode={darkModeEnabled} />
+    <WordHeader
+      {word}
+      visible={wordHeaderVisible}
+      darkMode={darkModeEnabled}
+      activeBeatNumber={isPlaying ? Math.floor(currentBeat) : null}
+    />
 
     <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
     <div
@@ -224,9 +238,10 @@ Last audit: 2025-12-27
         {fadingOutTurnsTuple}
         {fadingOutBeatNumber}
         {isNewLetter}
-        {tkaGlyphVisible}
-        {beatNumbersVisible}
+        tkaGlyphVisible={effectiveTkaGlyphVisible}
+        beatNumbersVisible={effectiveBeatNumbersVisible}
         darkMode={darkModeEnabled}
+        isAtStartPosition={currentBeat < 1 && sequenceData !== null}
       />
 
       <ProgressOverlay

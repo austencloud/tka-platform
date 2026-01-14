@@ -225,6 +225,13 @@ export class AnimationEngine {
   private propTypeOverrideRed: string | null = null;
   private prevDarkMode: boolean = false;
   private prevTrailsVisible: boolean = true;
+  private prevPropsVisible: boolean = true;
+  private prevBlueMotionVisible: boolean = true;
+  private prevRedMotionVisible: boolean = true;
+
+  // Secondary texture loading for tunnel mode
+  private secondaryTexturesLoaded: boolean = false;
+  private secondaryTexturesLoading: boolean = false;
 
   // Simple reference to last props for initial render (not a copy - avoids GC)
   private lastPropsRef: AnimationEngineProps | null = null;
@@ -255,6 +262,8 @@ export class AnimationEngine {
     isPlaying: false,
     bluePropFlipped: false,
     redPropFlipped: false,
+    bluePropType: undefined,
+    redPropType: undefined,
   };
 
   // ============================================================================
@@ -275,6 +284,9 @@ export class AnimationEngine {
     const visibilityManager = getAnimationVisibilityManager();
     this.prevDarkMode = visibilityManager.isDarkMode();
     this.prevTrailsVisible = visibilityManager.isTrailsVisible();
+    this.prevPropsVisible = visibilityManager.getVisibility("props");
+    this.prevBlueMotionVisible = visibilityManager.getVisibility("blueMotion");
+    this.prevRedMotionVisible = visibilityManager.getVisibility("redMotion");
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
       beatNumbers: visibilityManager.getVisibility("beatNumbers"),
@@ -319,6 +331,44 @@ export class AnimationEngine {
         // Trigger render when trails visibility changes
         if (state.trails !== this.prevTrailsVisible) {
           this.prevTrailsVisible = state.trails;
+          if (this.state.isInitialized) {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+            );
+          }
+        }
+
+        // Trigger render when props visibility changes (enables fade in/out animation)
+        if (state.props !== this.prevPropsVisible) {
+          const becameVisible = state.props && !this.prevPropsVisible;
+          this.prevPropsVisible = state.props;
+
+          // When props become visible again, clear trails so they regenerate fresh
+          // This prevents awkward trail animation from old positions
+          if (becameVisible) {
+            this.trailCapturer?.clearTrails();
+          }
+
+          if (this.state.isInitialized) {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+            );
+          }
+        }
+
+        // Trigger render when blue motion visibility changes (enables individual fade)
+        if (state.blueMotion !== this.prevBlueMotionVisible) {
+          this.prevBlueMotionVisible = state.blueMotion;
+          if (this.state.isInitialized) {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+            );
+          }
+        }
+
+        // Trigger render when red motion visibility changes (enables individual fade)
+        if (state.redMotion !== this.prevRedMotionVisible) {
+          this.prevRedMotionVisible = state.redMotion;
           if (this.state.isInitialized) {
             this.renderLoopService?.triggerRender(() =>
               this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
@@ -396,6 +446,9 @@ export class AnimationEngine {
         this.state.currentRedPropType = newRed;
         this.state.currentPropType = newBlue;
 
+        // Reset secondary textures so they reload with new prop type
+        this.secondaryTexturesLoaded = false;
+
         // Hot-swap textures
         this.loadPropTextures().then(() => {
           if (this.state.isInitialized) {
@@ -426,6 +479,9 @@ export class AnimationEngine {
             this.propTypeChangeService.state.legacyPropType;
         }
 
+        // Reset secondary textures so they reload with new prop type
+        this.secondaryTexturesLoaded = false;
+
         // Hot-swap textures without full re-initialization
         // The render loop keeps running with old textures until new ones load
         this.loadPropTextures().then(() => {
@@ -437,6 +493,46 @@ export class AnimationEngine {
           }
         });
       }
+    }
+
+    // Handle secondary prop textures for tunnel mode
+    // When secondary props are passed, we need to load different colored textures
+    const hasSecondaryProps =
+      props.secondaryBlueProp != null || props.secondaryRedProp != null;
+
+    if (
+      hasSecondaryProps &&
+      !this.secondaryTexturesLoaded &&
+      !this.secondaryTexturesLoading &&
+      this.animationRenderer
+    ) {
+      this.secondaryTexturesLoading = true;
+
+      // Use distinct colors for secondary props (purple/orange for visual distinction)
+      const secondaryBlueColor = "#6B46C1"; // Purple
+      const secondaryRedColor = "#F97316"; // Orange
+
+      this.animationRenderer
+        .loadSecondaryPropTextures(
+          this.state.currentBluePropType,
+          secondaryBlueColor,
+          secondaryRedColor
+        )
+        .then(() => {
+          this.secondaryTexturesLoaded = true;
+          this.secondaryTexturesLoading = false;
+
+          // Trigger re-render with secondary textures
+          if (this.state.isInitialized) {
+            this.renderLoopService?.triggerRender(() =>
+              this.getFrameParams(props)
+            );
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load secondary prop textures:", err);
+          this.secondaryTexturesLoading = false;
+        });
     }
 
     // Handle trail settings changes
@@ -817,6 +913,10 @@ export class AnimationEngine {
     this.state.bluePropDimensions =
       this.propTextureService.state.blueDimensions;
     this.state.redPropDimensions = this.propTextureService.state.redDimensions;
+
+    // CRITICAL: Clear animation path caches when prop types/dimensions change
+    // The path cache uses prop dimensions for endpoint calculations - stale cache = wrong trails
+    this.precomputationService?.clearCaches();
   }
 
   private initializeResizeService(): void {
@@ -1031,6 +1131,10 @@ export class AnimationEngine {
     fp.redPropFlipped = buugengFamily.includes(redPropType)
       ? (settings?.redBuugengFlipped ?? false)
       : false;
+
+    // Pass prop types for prop-specific rendering rules (e.g., hands never rotate)
+    fp.bluePropType = bluePropType;
+    fp.redPropType = redPropType;
 
     return fp;
   }

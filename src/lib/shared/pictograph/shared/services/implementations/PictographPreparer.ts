@@ -27,17 +27,7 @@ import type { PropPosition } from "../../../prop/domain/models/PropPosition";
 import type { PropAssets } from "../../../prop/domain/models/PropAssets";
 import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { PropType } from "../../../prop/domain/enums/PropType";
-import { getSettings } from "../../../../application/state/app-state.svelte";
-
-// Conditional function to avoid triggering DI in Node.js contexts
-function getSettingsOrDefault() {
-  // Node.js: return empty settings (options should provide prop types via PrepareOptions)
-  if (typeof window === 'undefined') {
-    return { bluePropType: undefined, redPropType: undefined };
-  }
-  // Browser: call the real getSettings()
-  return getSettings();
-}
+import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
 export class PictographPreparer implements IPictographPreparer {
   // Cache prepared data to avoid re-calculating for identical pictographs
@@ -140,10 +130,14 @@ export class PictographPreparer implements IPictographPreparer {
   /**
    * Generate a cache key based on the pictograph's motion data and options.
    * Two pictographs with identical motions should share prepared data.
+   * IMPORTANT: Must include current settings prop types to invalidate cache when settings change.
    */
   private deriveCacheKey(pictograph: PictographData, options?: PrepareOptions): string {
     const blue = pictograph.motions?.blue;
     const red = pictograph.motions?.red;
+
+    // Get current settings for cache key (so cache invalidates when settings change)
+    const globalSettings = getSettings();
 
     // Key components that affect arrow/prop positioning
     const parts = [
@@ -153,7 +147,8 @@ export class PictographPreparer implements IPictographPreparer {
       blue?.endLocation ?? "",
       blue?.rotationDirection ?? "",
       blue?.turns ?? 0,
-      options?.bluePropType ?? blue?.propType ?? "",
+      // Prop type: explicit option > global settings > motion's embedded type
+      options?.bluePropType ?? globalSettings.bluePropType ?? blue?.propType ?? "",
       // Blue manual adjustments (for admin arrow positioning via WASD)
       blue?.arrowPlacementData?.manualAdjustmentX ?? 0,
       blue?.arrowPlacementData?.manualAdjustmentY ?? 0,
@@ -163,7 +158,8 @@ export class PictographPreparer implements IPictographPreparer {
       red?.endLocation ?? "",
       red?.rotationDirection ?? "",
       red?.turns ?? 0,
-      options?.redPropType ?? red?.propType ?? "",
+      // Prop type: explicit option > global settings > motion's embedded type
+      options?.redPropType ?? globalSettings.redPropType ?? red?.propType ?? "",
       // Red manual adjustments (for admin arrow positioning via WASD)
       red?.arrowPlacementData?.manualAdjustmentX ?? 0,
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
@@ -207,7 +203,12 @@ export class PictographPreparer implements IPictographPreparer {
 
     const positions: Record<string, PropPosition> = {};
     const assets: Record<string, PropAssets> = {};
-    const settings = getSettingsOrDefault();
+    // Get current settings for prop type fallback when options don't specify
+    const globalSettings = getSettings();
+    const settings = {
+      bluePropType: globalSettings.bluePropType,
+      redPropType: globalSettings.redPropType,
+    };
 
     const motions = this.getMotionsWithOverrides(pictograph, settings, options);
 

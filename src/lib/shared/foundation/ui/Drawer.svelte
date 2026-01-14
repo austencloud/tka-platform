@@ -123,6 +123,7 @@
   let wasOpen = $state(false);
   let shouldRender = $state(false);
   let isAnimatedOpen = $state(false); // Controls visual state for animations
+  let closeTimeoutId: ReturnType<typeof setTimeout> | null = null; // Track close animation timeout
 
   /**
    * Detect if user prefers reduced motion (WCAG 2.2 / AAA).
@@ -349,6 +350,13 @@
 
       // When opening, add to DOM in closed state, then animate open
       if (isOpen) {
+        // CRITICAL: Cancel any pending close timeout to prevent race condition
+        // This fixes the bug where quickly closing/reopening causes the drawer to disappear
+        if (closeTimeoutId !== null) {
+          clearTimeout(closeTimeoutId);
+          closeTimeoutId = null;
+        }
+
         // LAZY INITIALIZATION: Create handlers on first open
         initializeHandlers();
 
@@ -410,7 +418,8 @@
           completeClose();
         } else {
           // Keep in DOM during closing animation (350ms), then remove
-          setTimeout(completeClose, 400); // 350ms transition + 50ms buffer
+          // Store the timeout ID so it can be cancelled if drawer reopens quickly
+          closeTimeoutId = setTimeout(completeClose, 400); // 350ms transition + 50ms buffer
         }
       }
 

@@ -46,7 +46,10 @@
  * 6. TurnsColumn (to the RIGHT of letter, NOT left/right sides of pictograph)
  * 7. DirectionDot (same/opp indicator above/below letter)
  * 8. BeatNumber (x=50, y=50)
- * 9. ReversalIndicators
+ * 9. VTG Glyph (bottom-right corner, Type1 letters only)
+ * 10. Elemental Glyph (top-right corner, Type1 letters only)
+ * 11. Position Glyph (top center, shows α→β etc)
+ * 12. ReversalIndicators (bottom-left, blue/red dots)
  *
  * Transform order for arrows/props (matching SVG):
  * translate(x, y) → rotate(angle) → scale(-1, 1) if mirror → translate(-center.x, -center.y)
@@ -60,16 +63,18 @@ import type {
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
-import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
+import { GridMode, GridPosition } from "../../../pictograph/grid/domain/enums/grid-enums";
 import { getSvgImageCache } from "./SvgImageCache";
 import { getSvgAssetLoader } from "./SvgAssetLoader";
 import { getLetterImagePath, isDashLetter } from "../../../pictograph/tka-glyph/utils/letter-image-getter";
-import type { Letter } from "../../../foundation/domain/models/Letter";
+import { Letter, getLetterType } from "../../../foundation/domain/models/Letter";
+import { LetterType } from "../../../foundation/domain/models/LetterType";
 import type { IPictographPreparer } from "../../../pictograph/shared/services/contracts/IPictographPreparer";
 import type { ITurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
 import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { TurnColorInterpreter } from "../../../pictograph/tka-glyph/services/implementations/TurnColorInterpreter";
 import { calculateTurnPositions } from "../../../pictograph/tka-glyph/utils/turn-position-calculator";
+import { calculateVTGFromPictograph } from "../../../pictograph/shared/domain/utils/vtg-calculator";
 
 // Constants matching the SVG system
 const VIEWBOX_SIZE = 950;
@@ -99,6 +104,33 @@ const TURN_NUMBER_HEIGHT = 45;
 // Colors
 const BLUE_COLOR = "#2E77AE";
 const RED_COLOR = "#ED1C24";
+
+// VTG Glyph positioning (from VTGGlyph.svelte)
+const VTG_GLYPH_WIDTH = 201.24;
+const VTG_GLYPH_HEIGHT = 133.6;
+const VTG_OFFSET_PERCENTAGE = 0.04;
+
+// Elemental Glyph positioning (from ElementalGlyph.svelte)
+// Position: top-right corner with 4% offset
+const ELEMENTAL_GLYPH_WIDTH = 95;
+const ELEMENTAL_GLYPH_HEIGHT = 125;
+
+// Position Glyph positioning (from PositionGlyph.svelte)
+const POSITION_GLYPH_Y = 50;
+const POSITION_SCALE_FACTOR = 0.75;
+const POSITION_SPACING = 25;
+const POSITION_ARROW_WIDTH = 88.9;
+const POSITION_ARROW_HEIGHT = 34.8;
+
+// Position letter dimensions (from actual SVG viewBoxes)
+const POSITION_LETTER_DIMENSIONS: Record<string, { width: number; height: number; yOffset: number }> = {
+  alpha: { width: 92.22, height: 100, yOffset: 10.0 },
+  beta: { width: 66.05, height: 100, yOffset: 0.0 },
+  gamma: { width: 79, height: 100.11, yOffset: 0.0 },
+};
+
+// Static letters that don't show position glyph
+const STATIC_LETTERS = [Letter.ALPHA, Letter.BETA, Letter.GAMMA];
 
 // Base grid points (center + outer corners only - hand points and layer 2 are separate)
 // These are rendered in the base layer and never change with visibility toggles
@@ -326,9 +358,24 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       this.drawBeatNumber(ctx, beatData.beatNumber, scale, isDarkMode);
     }
 
-    // 9. Draw reversal indicators
-    if (visibility.showReversals && this.isBeatData(preparedPictograph)) {
-      this.drawReversalIndicators(ctx, preparedPictograph as BeatData, size);
+    // 9. Draw VTG glyph (bottom-right corner)
+    if (visibility.showVTG) {
+      await this.drawVTGGlyph(ctx, preparedPictograph, gridMode, size, isDarkMode);
+    }
+
+    // 10. Draw Elemental glyph (top-right corner)
+    if (visibility.showElemental) {
+      await this.drawElementalGlyph(ctx, preparedPictograph, gridMode, size, isDarkMode);
+    }
+
+    // 11. Draw Position glyph (top center)
+    if (visibility.showPositions) {
+      await this.drawPositionGlyph(ctx, preparedPictograph, size, isDarkMode);
+    }
+
+    // 12. Draw reversal indicators
+    if (visibility.showReversals) {
+      this.drawReversalIndicators(ctx, preparedPictograph, size);
     }
 
     // Log timing breakdown for slow renders
@@ -368,9 +415,8 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       // The grid SVG is black on transparent - invert to white for dark mode
       if (isDarkMode) {
         ctx.filter = "invert(1) opacity(0.85)";
-      } else {
-        ctx.filter = "opacity(0.7)";
       }
+      // Light mode: no filter - render grid as pure black
 
       if (needsRotation) {
         // Rotate 45 degrees around center for box mode
@@ -391,9 +437,8 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         ctx.save();
         if (isDarkMode) {
           ctx.filter = "invert(1) opacity(0.85)";
-        } else {
-          ctx.filter = "opacity(0.7)";
         }
+        // Light mode: no filter - render as pure black
 
         if (needsRotation) {
           const center = size / 2;
@@ -516,9 +561,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const svgCache = getSvgImageCache();
     const scale = canvasSize / VIEWBOX_SIZE;
 
+    console.log(`[Canvas2D] drawProps called - propPositions keys: ${Object.keys(propPositions)}, propAssets keys: ${Object.keys(propAssets)}`);
+
     for (const color of ["blue", "red"]) {
       const position = propPositions[color];
       const assets = propAssets[color];
+
+      console.log(`[Canvas2D] ${color} prop - hasPosition: ${!!position}, hasAssets: ${!!assets}, hasImageSrc: ${!!assets?.imageSrc}`);
 
       if (!position || !assets?.imageSrc) continue;
 
@@ -610,6 +659,8 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
       const shouldMirror = arrowMirroring[color] ?? false;
 
       if (!position || !assets?.imageSrc) continue;
+
+      console.log(`[Canvas2D] ${color} arrow final position: x=${position.x}, y=${position.y}, rotation=${position.rotation}`);
 
       try {
         // Get dimensions from the viewBox object
@@ -1036,27 +1087,308 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 
   /**
+   * Draw VTG glyph in bottom-right corner (matching VTGGlyph.svelte)
+   * Only renders for Type1 letters (A-V)
+   */
+  private async drawVTGGlyph(
+    ctx: CanvasRenderingContext2D,
+    pictograph: PictographData,
+    gridMode: GridMode,
+    size: number,
+    isDarkMode: boolean
+  ): Promise<void> {
+    // Only render for Type1 letters
+    if (!pictograph.letter) return;
+
+    try {
+      const letterType = getLetterType(pictograph.letter as Letter);
+      if (letterType !== LetterType.TYPE1) return;
+    } catch {
+      // Unknown letter - skip VTG
+      return;
+    }
+
+    // Calculate VTG mode
+    const vtgResult = calculateVTGFromPictograph(pictograph, gridMode);
+    if (!vtgResult.vtgMode) return;
+
+    const scale = size / VIEWBOX_SIZE;
+    const svgCache = getSvgImageCache();
+
+    // Calculate position (bottom-right corner with offset)
+    const offset = VIEWBOX_SIZE * VTG_OFFSET_PERCENTAGE;
+    const x = (VIEWBOX_SIZE - VTG_GLYPH_WIDTH - offset) * scale;
+    const y = (VIEWBOX_SIZE - VTG_GLYPH_HEIGHT - offset) * scale;
+
+    try {
+      // Load VTG glyph SVG
+      const vtgPath = `/images/vtg_glyphs/${vtgResult.vtgMode}.svg`;
+      const response = await fetch(vtgPath);
+      if (!response.ok) return;
+
+      const svgText = await response.text();
+      const cacheKey = `vtg_${vtgResult.vtgMode}_${isDarkMode}`;
+      const img = await svgCache.getImage(svgText, cacheKey);
+
+      // Draw at calculated position
+      const drawWidth = VTG_GLYPH_WIDTH * scale;
+      const drawHeight = VTG_GLYPH_HEIGHT * scale;
+
+      ctx.save();
+      if (isDarkMode) {
+        ctx.filter = 'invert(1)';
+      }
+      ctx.drawImage(img, x, y, drawWidth, drawHeight);
+      ctx.restore();
+    } catch (error) {
+      console.warn(`[Canvas2D] Failed to draw VTG glyph:`, error);
+    }
+  }
+
+  /**
+   * Draw Elemental glyph in top-right corner (matching ElementalGlyph.svelte)
+   * Only renders for Type1 letters (A-V)
+   * Uses the elemental type derived from VTG mode (water, fire, earth, air, sun, moon)
+   */
+  private async drawElementalGlyph(
+    ctx: CanvasRenderingContext2D,
+    pictograph: PictographData,
+    gridMode: GridMode,
+    size: number,
+    isDarkMode: boolean
+  ): Promise<void> {
+    // Only render for Type1 letters
+    if (!pictograph.letter) return;
+
+    try {
+      const letterType = getLetterType(pictograph.letter as Letter);
+      if (letterType !== LetterType.TYPE1) return;
+    } catch {
+      // Unknown letter - skip Elemental
+      return;
+    }
+
+    // Calculate VTG mode to get elemental type
+    const vtgResult = calculateVTGFromPictograph(pictograph, gridMode);
+    if (!vtgResult.elementalType) return;
+
+    const scale = size / VIEWBOX_SIZE;
+    const svgCache = getSvgImageCache();
+
+    // Calculate position (top-right corner with 4% offset - same as VTG)
+    const offset = VIEWBOX_SIZE * VTG_OFFSET_PERCENTAGE;
+    const x = (VIEWBOX_SIZE - ELEMENTAL_GLYPH_WIDTH - offset) * scale;
+    const y = offset * scale;
+
+    try {
+      // Load Elemental glyph SVG
+      const elementalPath = `/images/elements/${vtgResult.elementalType}.svg`;
+      const response = await fetch(elementalPath);
+      if (!response.ok) return;
+
+      const svgText = await response.text();
+      const cacheKey = `elemental_${vtgResult.elementalType}_${isDarkMode}`;
+      const img = await svgCache.getImage(svgText, cacheKey);
+
+      // Draw at calculated position
+      const drawWidth = ELEMENTAL_GLYPH_WIDTH * scale;
+      const drawHeight = ELEMENTAL_GLYPH_HEIGHT * scale;
+
+      ctx.save();
+      // Elemental glyphs are colored, no filter needed
+      ctx.drawImage(img, x, y, drawWidth, drawHeight);
+      ctx.restore();
+    } catch (error) {
+      console.warn(`[Canvas2D] Failed to draw Elemental glyph:`, error);
+    }
+  }
+
+  /**
+   * Draw Position glyph at top center (matching PositionGlyph.svelte)
+   * Shows start → end position groups (α, β, γ)
+   */
+  private async drawPositionGlyph(
+    ctx: CanvasRenderingContext2D,
+    pictograph: PictographData,
+    size: number,
+    isDarkMode: boolean
+  ): Promise<void> {
+    // Don't show for static letters
+    if (pictograph.letter && STATIC_LETTERS.includes(pictograph.letter as Letter)) {
+      return;
+    }
+
+    // Need both start and end positions
+    const startPosition = pictograph.startPosition;
+    const endPosition = pictograph.endPosition;
+    if (!startPosition || !endPosition) return;
+
+    // Extract position groups (e.g., "alpha1" -> "alpha")
+    const extractGroup = (pos: GridPosition | string): string | null => {
+      const posStr = String(pos);
+      const match = posStr.match(/[a-z]+/i);
+      return match ? match[0].toLowerCase() : null;
+    };
+
+    const startGroup = extractGroup(startPosition);
+    const endGroup = extractGroup(endPosition);
+    if (!startGroup || !endGroup) return;
+
+    const scale = size / VIEWBOX_SIZE;
+    const svgCache = getSvgImageCache();
+
+    // SVG paths for position groups
+    const groupToSvg: Record<string, string> = {
+      alpha: "/images/letters_trimmed/Type6/α.svg",
+      beta: "/images/letters_trimmed/Type6/β.svg",
+      gamma: "/images/letters_trimmed/Type6/γ.svg",
+    };
+
+    const startSvgPath = groupToSvg[startGroup];
+    const endSvgPath = groupToSvg[endGroup];
+    const arrowSvgPath = "/images/arrow.svg";
+
+    if (!startSvgPath || !endSvgPath) return;
+
+    // Get dimensions for each letter (respecting their actual SVG dimensions)
+    const startDims = POSITION_LETTER_DIMENSIONS[startGroup] || POSITION_LETTER_DIMENSIONS.alpha;
+    const endDims = POSITION_LETTER_DIMENSIONS[endGroup] || POSITION_LETTER_DIMENSIONS.alpha;
+
+    // Calculate scaled dimensions for each element
+    const scaledStartWidth = startDims.width * POSITION_SCALE_FACTOR;
+    const scaledStartHeight = startDims.height * POSITION_SCALE_FACTOR;
+    const scaledEndWidth = endDims.width * POSITION_SCALE_FACTOR;
+    const scaledEndHeight = endDims.height * POSITION_SCALE_FACTOR;
+    const scaledArrowWidth = POSITION_ARROW_WIDTH * POSITION_SCALE_FACTOR;
+    const scaledArrowHeight = POSITION_ARROW_HEIGHT * POSITION_SCALE_FACTOR;
+
+    // Use max height for vertical centering
+    const maxHeight = Math.max(scaledStartHeight, scaledEndHeight);
+
+    // Calculate total width and centering
+    const totalWidth = scaledStartWidth + POSITION_SPACING * POSITION_SCALE_FACTOR + scaledArrowWidth + POSITION_SPACING * POSITION_SCALE_FACTOR + scaledEndWidth;
+    const groupX = VIEWBOX_SIZE / 2 - totalWidth / 2;
+
+    // Y positions - centered vertically around a common center line
+    const centerLine = maxHeight / 2;
+
+    try {
+      // Load all three images
+      const [startImg, arrowImg, endImg] = await Promise.all([
+        this.loadPositionImage(startSvgPath, `pos_${startGroup}_${isDarkMode}`, svgCache),
+        this.loadPositionImage(arrowSvgPath, `pos_arrow_${isDarkMode}`, svgCache),
+        this.loadPositionImage(endSvgPath, `pos_${endGroup}_${isDarkMode}`, svgCache),
+      ]);
+
+      if (!startImg || !arrowImg || !endImg) return;
+
+      ctx.save();
+
+      // Apply dark mode inversion (matching CSS filter: invert(0.9))
+      if (isDarkMode) {
+        ctx.filter = "invert(0.9)";
+      }
+
+      // Translate to group position
+      const drawX = groupX * scale;
+      const drawY = POSITION_GLYPH_Y * scale;
+
+      // X positions (calculated sequentially)
+      const startX = 0;
+      const arrowX = scaledStartWidth + POSITION_SPACING * POSITION_SCALE_FACTOR;
+      const endX = arrowX + scaledArrowWidth + POSITION_SPACING * POSITION_SCALE_FACTOR;
+
+      // Draw start letter (centered vertically with yOffset adjustment)
+      const startYOffset = startDims.yOffset * POSITION_SCALE_FACTOR;
+      ctx.drawImage(
+        startImg,
+        drawX + startX * scale,
+        drawY + (centerLine - scaledStartHeight / 2 + startYOffset) * scale,
+        scaledStartWidth * scale,
+        scaledStartHeight * scale
+      );
+
+      // Draw arrow (centered vertically)
+      ctx.drawImage(
+        arrowImg,
+        drawX + arrowX * scale,
+        drawY + (centerLine - scaledArrowHeight / 2) * scale,
+        scaledArrowWidth * scale,
+        scaledArrowHeight * scale
+      );
+
+      // Draw end letter (centered vertically with yOffset adjustment)
+      const endYOffset = endDims.yOffset * POSITION_SCALE_FACTOR;
+      ctx.drawImage(
+        endImg,
+        drawX + endX * scale,
+        drawY + (centerLine - scaledEndHeight / 2 + endYOffset) * scale,
+        scaledEndWidth * scale,
+        scaledEndHeight * scale
+      );
+
+      ctx.restore();
+    } catch (error) {
+      console.warn(`[Canvas2D] Failed to draw Position glyph:`, error);
+    }
+  }
+
+  /**
+   * Load a position glyph image (letter or arrow)
+   */
+  private async loadPositionImage(
+    svgPath: string,
+    cacheKey: string,
+    svgCache: ReturnType<typeof getSvgImageCache>
+  ): Promise<HTMLImageElement | null> {
+    try {
+      const response = await fetch(svgPath);
+      if (!response.ok) return null;
+      const svgText = await response.text();
+      return await svgCache.getImage(svgText, cacheKey);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Draw reversal indicators
+   * Works with both BeatData (has blueReversal/redReversal properties)
+   * and PictographData (check motions for reversals)
    */
   private drawReversalIndicators(
     ctx: CanvasRenderingContext2D,
-    beatData: BeatData,
+    pictograph: PictographData | BeatData,
     size: number
   ): void {
     const indicatorSize = size * 0.04;
     const margin = size * 0.02;
     const y = size - indicatorSize - margin;
 
-    if (beatData.blueReversal) {
+    // Check for reversals - handle both BeatData and PictographData
+    let blueReversal = false;
+    let redReversal = false;
+
+    if (this.isBeatData(pictograph)) {
+      // BeatData has explicit reversal flags
+      blueReversal = pictograph.blueReversal ?? false;
+      redReversal = pictograph.redReversal ?? false;
+    } else {
+      // PictographData - check motions for reversal flag
+      blueReversal = pictograph.motions?.blue?.isReversal ?? false;
+      redReversal = pictograph.motions?.red?.isReversal ?? false;
+    }
+
+    if (blueReversal) {
       ctx.fillStyle = BLUE_COLOR;
       ctx.beginPath();
       ctx.arc(margin + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    if (beatData.redReversal) {
+    if (redReversal) {
       ctx.fillStyle = RED_COLOR;
-      const x = beatData.blueReversal ? margin * 2 + indicatorSize : margin;
+      const x = blueReversal ? margin * 2 + indicatorSize : margin;
       ctx.beginPath();
       ctx.arc(x + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
       ctx.fill();

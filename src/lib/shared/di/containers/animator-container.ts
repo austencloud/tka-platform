@@ -146,3 +146,28 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
  * Type helper for extracting container items type
  */
 export type AnimatorContainerItems = ReturnType<typeof createAnimatorContainer>["items"];
+
+/**
+ * Factory function to create a NEW AnimationPlaybackController instance.
+ * Use this when you need multiple independent controllers (e.g., tunnel mode with multiple sequences).
+ * Each call returns a fresh controller with its own orchestrator and loop.
+ */
+export function createPlaybackControllerFactory() {
+  // Create fresh instances of stateful services
+  const stateManager = new AnimationStateManager();
+  const beatCalculator = new BeatCalculator();
+  const angleCalculator = new AngleCalculator();
+  const motionCalculator = new MotionCalculator();
+  const endpointCalculator = new EndpointCalculator(angleCalculator, motionCalculator);
+  const propInterpolator = new PropInterpolator(angleCalculator, endpointCalculator);
+
+  const orchestrator = new SequenceAnimationOrchestrator(
+    stateManager,
+    beatCalculator,
+    propInterpolator
+  );
+  const loop = new AnimationLoop();
+  const loopChecker = new SequenceLoopabilityChecker();
+
+  return new AnimationPlaybackController(orchestrator, loop, loopChecker);
+}

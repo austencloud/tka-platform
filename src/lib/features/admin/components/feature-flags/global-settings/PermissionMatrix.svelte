@@ -114,6 +114,8 @@
       <MatrixRow
         flag={module}
         saving={savingFlags.has(module.id)}
+        toggleLocked={module.id === "module:admin"}
+        toggleLockedReason="Cannot disable admin module while using it"
         onRoleClick={(role) => handleRoleClick(module, role)}
         onToggle={() => handleEnabledToggle(module)}
       />
@@ -124,6 +126,8 @@
           indent
           parentRole={module.minimumRole}
           saving={savingFlags.has(tab.id)}
+          toggleLocked={tab.id === "tab:admin:flags"}
+          toggleLockedReason="Cannot disable Feature Flags tab while using it"
           onRoleClick={(role) => handleRoleClick(tab, role)}
           onToggle={() => handleEnabledToggle(tab)}
         />

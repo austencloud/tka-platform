@@ -15,7 +15,6 @@ import type { BeatData } from "../../../features/create/shared/domain/models/Bea
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import PictographContainer from "../../pictograph/shared/components/PictographContainer.svelte";
 import { mount, tick, unmount } from "svelte";
-import { container } from "../../di";
 import type { IGlyphCache } from "../services/implementations/GlyphCache";
 
 /**
@@ -324,7 +323,8 @@ async function waitForImagesLoaded(domContainer: HTMLElement): Promise<void> {
     return;
   }
 
-  // Get glyph cache service
+  // Lazy-load DI container (only in browser contexts where this function runs)
+  const { container } = await import("../../di");
   const glyphCache = container.items.glyphCache;
 
   const imagePromises = Array.from(images).map(async (img) => {

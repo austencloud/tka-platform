@@ -143,6 +143,7 @@ export class ArrowLocationCalculator implements IArrowLocationCalculator {
     const calculatedLocation =
       this.shiftDirectionPairs[locationPairKey] ?? motion.startLocation;
 
+
     return calculatedLocation;
   }
 

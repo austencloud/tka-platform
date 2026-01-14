@@ -18,6 +18,7 @@ import { saveActiveTab } from "../../settings/utils/tab-persistence.svelte";
 import { adminToolbarState } from "../../debug/state/admin-toolbar-state.svelte";
 import { settingsService } from "../../settings/state/SettingsState.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
+import { getImageCompositionManager } from "../../share/state/image-composition-state.svelte";
 import {
   getSettings,
   updateSettings,
@@ -160,9 +161,13 @@ export function registerGlobalShortcuts(
       // Update AppSettings (syncs to Firebase)
       void updateSettings({ darkMode: newValue });
 
-      // Also sync to animation visibility manager for immediate visual feedback
+      // Sync to animation visibility manager for immediate visual feedback
       const visibilityManager = getAnimationVisibilityManager();
       visibilityManager.setDarkMode(newValue);
+
+      // Sync to image composition manager so previews match thumbnails
+      const imageCompositionManager = getImageCompositionManager();
+      imageCompositionManager.setDarkMode(newValue);
 
       // Show toast notification
       const message = newValue

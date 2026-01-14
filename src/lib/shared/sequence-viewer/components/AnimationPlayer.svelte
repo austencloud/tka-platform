@@ -135,7 +135,11 @@
 	// Watch sequence changes (standalone mode)
 	$effect(() => {
 		if (useContext || !controller || !motionLoader) return;
-		const seqId = sequence?.id || sequence?.word || sequence?.name;
+		// Use id + ownerId to uniquely identify sequences (different creators can have same word)
+		// Fall back to word + beats length as last resort for local sequences without ownerId
+		const seqId = sequence?.id
+			? `${sequence.id}:${sequence.ownerId ?? "local"}`
+			: `${sequence?.word ?? ""}:${sequence?.beats?.length ?? 0}`;
 		if (seqId === lastSequenceId) return;
 
 		untrack(async () => {
@@ -206,6 +210,7 @@
 						{letter}
 						{beatData}
 						{sequenceData}
+						{currentBeat}
 						{isPlaying}
 						word={sequenceData?.word ?? sequence?.word ?? null}
 						onPlaybackToggle={togglePlayback}
@@ -254,6 +259,7 @@
 					{letter}
 					{beatData}
 					{sequenceData}
+					{currentBeat}
 					{isPlaying}
 					word={sequenceData?.word ?? sequence?.word ?? null}
 					onPlaybackToggle={togglePlayback}

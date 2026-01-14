@@ -198,23 +198,15 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       visibility.redMotionVisible && props.redProp !== null;
 
     // Render scene
+    // NOTE: Props are passed regardless of visibility so the renderer can fade them out.
+    // The renderer's fade managers handle visibility transition animations for:
+    // - Overall props toggle (propsFadeManager)
+    // - Individual blue/red motion toggles (bluePropFadeManager, redPropFadeManager)
     this.renderer.renderScene({
-      blueProp:
-        effectivePropsVisible && effectiveBlueMotionVisible
-          ? props.blueProp
-          : null,
-      redProp:
-        effectivePropsVisible && effectiveRedMotionVisible
-          ? props.redProp
-          : null,
-      secondaryBlueProp:
-        effectivePropsVisible && effectiveBlueMotionVisible
-          ? props.secondaryBlueProp
-          : null,
-      secondaryRedProp:
-        effectivePropsVisible && effectiveRedMotionVisible
-          ? props.secondaryRedProp
-          : null,
+      blueProp: props.blueProp,
+      redProp: props.redProp,
+      secondaryBlueProp: props.secondaryBlueProp,
+      secondaryRedProp: props.secondaryRedProp,
       gridVisible: effectiveGridVisible,
       gridMode: gridMode?.toString() ?? null,
       letter: letter ?? null,
@@ -248,6 +240,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       },
       bluePropFlipped: params.bluePropFlipped ?? false,
       redPropFlipped: params.redPropFlipped ?? false,
+      bluePropType: params.bluePropType,
+      redPropType: params.redPropType,
     });
   }
 

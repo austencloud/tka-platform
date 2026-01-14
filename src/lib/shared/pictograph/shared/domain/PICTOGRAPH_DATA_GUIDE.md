@@ -78,7 +78,7 @@ if (result.success && result.sequence) {
 For creating new circular sequences:
 
 ```typescript
-// Use LOOP executors for Linked Offset Operation Patterns
+// Use LOOP executors for Linked Orbital Offset Patterns
 import { StrictInvertedLOOPExecutor } from "$lib/features/create/generate/circular/services/implementations/StrictInvertedLOOPExecutor";
 ```
 

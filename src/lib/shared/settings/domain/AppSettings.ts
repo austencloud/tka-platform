@@ -6,7 +6,7 @@
  */
 
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
-import type { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
+import type { GridMode, GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
 import type { BackgroundType } from "../../background/shared/domain/enums/background-enums";
 import type { BackgroundLabSettings } from "$lib/features/background-builder/domain/lab-settings-types";
 
@@ -93,6 +93,9 @@ export interface AppSettings {
 
   // Workflow Settings
   skipClearConfirmation?: boolean; // Skip confirmation when clearing sequence (undo is available)
+
+  // Generator Settings
+  blockedStartPositions?: GridPosition[]; // Custom blocked positions for sequence generation
 
   // Global Visual Effects
   darkMode?: boolean; // Dark Mode: dark background, inverted grid, white text/outlines

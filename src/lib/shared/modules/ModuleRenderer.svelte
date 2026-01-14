@@ -43,6 +43,9 @@
       import("../../features/create/shared/components/CreateModule.svelte"),
     discover: () =>
       import("../../features/discover/shared/components/DiscoverModule.svelte"),
+    // library module retired - backwards compat redirects to discover
+    library: () =>
+      import("../../features/discover/shared/components/DiscoverModule.svelte"),
     // community module retired - creators moved to discover, challenges to dashboard
     learn: () => import("../../features/learn/LearnTab.svelte"),
     premium: () => import("../../features/premium/PremiumModule.svelte"),

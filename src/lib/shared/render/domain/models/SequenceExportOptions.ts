@@ -65,6 +65,10 @@ export interface SequenceExportOptions {
     showGrid?: boolean;
     /** Hand point visibility: "all" | "active" | "none" */
     handPointVisibility?: "all" | "active" | "none";
+    /** Blue prop type override (for cache key consistency) */
+    bluePropType?: PropType;
+    /** Red prop type override (for cache key consistency) */
+    redPropType?: PropType;
   };
 
   // User information

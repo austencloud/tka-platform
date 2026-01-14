@@ -8,6 +8,7 @@
 import type { MotionType } from "../../../../../shared/domain/enums/pictograph-enums";
 import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
+import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
 import type {
   AllPlacementData,
   JsonPlacementData,
@@ -18,6 +19,7 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 const debug = createComponentLogger("ArrowPlacer");
 
 export class ArrowPlacer implements IArrowPlacer {
+  private jsonCacheImpl: IJsonCache;
   private allPlacements: AllPlacementData = {
     [GridMode.DIAMOND]: {},
     [GridMode.BOX]: {},
@@ -49,6 +51,14 @@ export class ArrowPlacer implements IArrowPlacer {
     },
     // SKEWED mode doesn't have separate files - it uses both diamond and box
   };
+
+  /**
+   * Create ArrowPlacer with optional injectable JSON cache
+   * @param jsonCacheImpl JSON cache implementation (defaults to browser fetch-based cache)
+   */
+  constructor(jsonCacheImpl?: IJsonCache) {
+    this.jsonCacheImpl = jsonCacheImpl ?? jsonCache;
+  }
 
   /**
    * Load all placement data from JSON files
@@ -157,7 +167,7 @@ export class ArrowPlacer implements IArrowPlacer {
    */
   private async loadJsonFile(path: string): Promise<JsonPlacementData> {
     try {
-      const data = await jsonCache.get(path);
+      const data = await this.jsonCacheImpl.get(path);
       return data as JsonPlacementData;
     } catch (error) {
       console.warn(`Failed to load placement data from ${path}:`, error);

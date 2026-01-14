@@ -449,8 +449,9 @@ async function fetchNotificationPreferences(
 async function fetchAuthData(userId: string): Promise<PreviewAuthData | null> {
   try {
     // Get the current user's ID token for auth
-    const { getAuth } = await import("firebase/auth");
-    const auth = getAuth();
+    // Use getAuthInstance() to ensure Firebase is properly initialized
+    const { getAuthInstance } = await import("$lib/shared/auth/firebase");
+    const auth = await getAuthInstance();
     const currentUser = auth.currentUser;
     if (!currentUser) {
       console.warn("[UserPreview] Cannot fetch auth data - not signed in");

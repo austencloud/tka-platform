@@ -5,7 +5,9 @@
  * No complex error hierarchies, just basic caching.
  */
 
-export class SimpleJsonCache {
+import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
+
+export class SimpleJsonCache implements IJsonCache {
   private cache = new Map<string, unknown>();
   private loadingPromises = new Map<string, Promise<unknown>>();
 
@@ -43,6 +45,14 @@ export class SimpleJsonCache {
    */
   has(path: string): boolean {
     return this.cache.has(path);
+  }
+
+  /**
+   * Invalidate a specific cache entry
+   */
+  invalidate(path: string): void {
+    this.cache.delete(path);
+    this.loadingPromises.delete(path);
   }
 
   /**

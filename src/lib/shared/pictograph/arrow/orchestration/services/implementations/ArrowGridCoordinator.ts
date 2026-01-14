@@ -26,16 +26,19 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
     const gridMode =
       overrideGridMode || motion.gridMode || this.inferGridModeFromLocation(location);
 
+    let coords: Point;
     if (["pro", "anti", "float"].includes(motionType || "")) {
       // Shift arrows use layer2 points
-      return this.getLayer2Coords(location, gridMode);
+      coords = this.getLayer2Coords(location, gridMode);
     } else if (["static", "dash"].includes(motionType || "")) {
       // Static/dash arrows use hand points
-      return this.getHandPointCoords(location, gridMode);
+      coords = this.getHandPointCoords(location, gridMode);
     } else {
       // Default fallback
-      return this.getSceneCenter();
+      coords = this.getSceneCenter();
     }
+
+    return coords;
   }
 
   getSceneCenter(): Point {

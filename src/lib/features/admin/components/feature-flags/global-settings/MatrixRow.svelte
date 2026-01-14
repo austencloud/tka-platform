@@ -14,6 +14,8 @@
     indent?: boolean;
     parentRole?: UserRole;
     saving?: boolean;
+    toggleLocked?: boolean;
+    toggleLockedReason?: string;
     onRoleClick: (role: UserRole) => void;
     onToggle: () => void;
   }
@@ -23,6 +25,8 @@
     indent = false,
     parentRole,
     saving = false,
+    toggleLocked = false,
+    toggleLockedReason,
     onRoleClick,
     onToggle,
   }: Props = $props();
@@ -105,13 +109,20 @@
       type="button"
       class="enable-toggle"
       class:enabled={flag.enabled}
-      disabled={saving}
+      class:locked={toggleLocked}
+      disabled={saving || toggleLocked}
       onclick={onToggle}
-      title={flag.enabled ? "Click to disable" : "Click to enable"}
-      aria-label="{flag.name} is {flag.enabled ? 'enabled' : 'disabled'}. Click to toggle."
+      title={toggleLocked
+        ? toggleLockedReason ?? "This feature cannot be disabled"
+        : flag.enabled ? "Click to disable" : "Click to enable"}
+      aria-label="{flag.name} is {flag.enabled ? 'enabled' : 'disabled'}.{toggleLocked ? ' Cannot be toggled.' : ' Click to toggle.'}"
       aria-pressed={flag.enabled}
     >
-      <i class="fas {flag.enabled ? 'fa-toggle-on' : 'fa-toggle-off'}" aria-hidden="true"></i>
+      {#if toggleLocked}
+        <i class="fas fa-lock" aria-hidden="true"></i>
+      {:else}
+        <i class="fas {flag.enabled ? 'fa-toggle-on' : 'fa-toggle-off'}" aria-hidden="true"></i>
+      {/if}
     </button>
   </div>
 
@@ -288,6 +299,11 @@
   .enable-toggle:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .enable-toggle.locked {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9ca3af;
   }
 
   .saving-indicator {

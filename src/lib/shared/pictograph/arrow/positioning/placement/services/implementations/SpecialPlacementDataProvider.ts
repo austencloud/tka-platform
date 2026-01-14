@@ -6,6 +6,7 @@
  */
 
 import { jsonCache } from "$lib/shared/pictograph/shared/services/implementations/SimpleJsonCache";
+import type { IJsonCache } from "$lib/shared/core/services/contracts/IJsonCache";
 import type { ISpecialPlacementDataProvider } from "../contracts/ISpecialPlacementDataProvider";
 
 export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvider {
@@ -26,6 +27,12 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
   private manifestLoadPromises = new Map<string, Promise<void>>();
 
   /**
+   * Create SpecialPlacementDataProvider with injectable JSON cache
+   * @param jsonCache JSON cache implementation (defaults to browser fetch-based cache)
+   */
+  constructor(private readonly jsonCacheImpl: IJsonCache = jsonCache) {}
+
+  /**
    * Load the manifest file that tells us which placement files exist
    */
   private async loadManifest(gridMode: string): Promise<void> {
@@ -42,7 +49,7 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
     const loadPromise = (async () => {
       try {
         const manifestPath = `/data/arrow_placement/${gridMode}/special/placement_manifest.json`;
-        const manifest = (await jsonCache.get(manifestPath)) as Record<
+        const manifest = (await this.jsonCacheImpl.get(manifestPath)) as Record<
           string,
           string[]
         >;
@@ -158,7 +165,7 @@ export class SpecialPlacementDataProvider implements ISpecialPlacementDataProvid
     const basePath = `/data/arrow_placement/${gridMode}/special/${oriKey}/${encodedLetter}_placements.json`;
 
     try {
-      const data = (await jsonCache.get(basePath)) as Record<string, unknown>;
+      const data = (await this.jsonCacheImpl.get(basePath)) as Record<string, unknown>;
       if (this.cache[gridMode]?.[oriKey]) {
         this.cache[gridMode][oriKey][letter] = data;
       }

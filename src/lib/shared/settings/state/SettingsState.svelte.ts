@@ -45,6 +45,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   catDogMode: false, // Default: both hands use the same prop
   bluePropType: PropType.STAFF, // Default prop type for blue
   redPropType: PropType.STAFF, // Default prop type for red
+  blockedStartPositions: [], // No positions blocked by default (allows all)
 } as AppSettings;
 
 // Initialize with loaded settings immediately (non-reactive)

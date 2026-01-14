@@ -181,6 +181,11 @@
         }
       }
 
+      // Draw hunt visualization (if enabled)
+      if (fishDebugConfig.showHunts && layers.fish) {
+        drawHunts(ctx);
+      }
+
       // Draw fish selection overlay
       const selected = fishList[selectedFishIndex];
       if (selected && showOverlay && layers.fish) {
@@ -265,6 +270,61 @@
     }
 
     ctx.restore();
+  }
+
+  function drawHunts(ctx: CanvasRenderingContext2D) {
+    const fishAnimator = backgroundSystem?.getFishAnimator?.();
+    if (!fishAnimator) return;
+
+    const huntingHandler = fishAnimator.getHuntingHandler?.();
+    if (!huntingHandler) return;
+
+    const activeHunts = huntingHandler.getActiveHunts();
+    const actualFish = backgroundSystem?.getFish?.() ?? [];
+    const fishById = new Map(actualFish.map((f) => [f.fishId ?? 0, f]));
+
+    for (const hunt of activeHunts) {
+      const predator = fishById.get(hunt.hunterId);
+      const prey = fishById.get(hunt.targetId);
+      if (!predator || !prey) continue;
+
+      const predatorHead = predator.spineJoints?.[0];
+      const predatorX = predatorHead?.x ?? predator.x;
+      const predatorY = predatorHead?.y ?? predator.y;
+
+      const preyHead = prey.spineJoints?.[0];
+      const preyX = preyHead?.x ?? prey.x;
+      const preyY = preyHead?.y ?? prey.y;
+
+      ctx.save();
+
+      // Draw line from predator to prey
+      const isChasing = hunt.state === "chasing";
+      ctx.strokeStyle = isChasing ? "rgba(239, 68, 68, 0.6)" : "rgba(249, 115, 22, 0.4)";
+      ctx.lineWidth = isChasing ? 2 : 1;
+      ctx.setLineDash(isChasing ? [] : [6, 6]);
+
+      ctx.beginPath();
+      ctx.moveTo(predatorX, predatorY);
+      ctx.lineTo(preyX, preyY);
+      ctx.stroke();
+
+      // Draw state label above predator
+      ctx.font = "10px monospace";
+      ctx.textAlign = "center";
+      ctx.fillStyle = isChasing ? "#ef4444" : "#f97316";
+      ctx.fillText(hunt.state.toUpperCase(), predatorX, predatorY - predator.bodyLength - 8);
+
+      // Draw target marker on prey
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(preyX, preyY, 12, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
   }
 
   function stopAnimation() {
@@ -423,6 +483,43 @@
   // Track active rare behavior triggers
   let activeRareTrigger = $state<string | null>(null);
 
+  // Hunt stats for display
+  let huntStats = $derived(() => {
+    const fishAnimator = backgroundSystem?.getFishAnimator?.();
+    if (!fishAnimator) return { activeHunts: 0, totalHunts: 0, successfulCatches: 0, escapes: 0 };
+    const huntingHandler = fishAnimator.getHuntingHandler?.();
+    if (!huntingHandler) return { activeHunts: 0, totalHunts: 0, successfulCatches: 0, escapes: 0 };
+    return huntingHandler.getStats();
+  });
+
+  function forceHuntOnSelected() {
+    const actualFish = backgroundSystem?.getFish?.();
+    if (!actualFish || actualFish.length < 2) return;
+
+    const fishAnimator = backgroundSystem?.getFishAnimator?.();
+    if (!fishAnimator) return;
+
+    const huntingHandler = fishAnimator.getHuntingHandler?.();
+    if (!huntingHandler) return;
+
+    const selected = actualFish[selectedFishIndex];
+    if (!selected) return;
+
+    // If selected is a predator, find prey
+    // If selected is prey, find a predator to hunt it
+    if (huntingHandler.isPredator(selected)) {
+      const prey = actualFish.find((f) => huntingHandler.isPrey(f) && f !== selected);
+      if (prey) {
+        huntingHandler.forceHunt(selected, prey, performance.now() / 1000);
+      }
+    } else if (huntingHandler.isPrey(selected)) {
+      const predator = actualFish.find((f) => huntingHandler.isPredator(f) && f !== selected);
+      if (predator) {
+        huntingHandler.forceHunt(predator, selected, performance.now() / 1000);
+      }
+    }
+  }
+
   function triggerRareBehavior(type: string) {
     const actualFish = backgroundSystem?.getFish?.();
     if (!actualFish || actualFish.length === 0) return;
@@ -563,6 +660,28 @@
         {/each}
       </div>
 
+      <!-- Hunting -->
+      <div class="subsection-label">Hunting</div>
+      <div class="trigger-grid cols-2">
+        <ChipToggle
+          icon="fa-crosshairs"
+          label="Force Hunt"
+          color="red"
+          onclick={forceHuntOnSelected}
+        />
+      </div>
+      <div class="hunt-stats">
+        <span class="hunt-stat">
+          <i class="fas fa-bullseye"></i> {huntStats().activeHunts} active
+        </span>
+        <span class="hunt-stat">
+          <i class="fas fa-check"></i> {huntStats().successfulCatches} catches
+        </span>
+        <span class="hunt-stat">
+          <i class="fas fa-running"></i> {huntStats().escapes} escapes
+        </span>
+      </div>
+
       <!-- Fish Details -->
       {#if selectedFish}
         <div class="subsection-label">Details</div>
@@ -663,6 +782,13 @@
           active={fishDebugConfig.enableHomeZones}
           onclick={() => fishDebugConfig.enableHomeZones = !fishDebugConfig.enableHomeZones}
         />
+        <ChipToggle
+          icon="fa-crosshairs"
+          label="Hunting"
+          color="red"
+          active={fishDebugConfig.enableHunting}
+          onclick={() => fishDebugConfig.enableHunting = !fishDebugConfig.enableHunting}
+        />
       </ChipGroup>
 
       <div class="subsection-label">Visualization</div>
@@ -680,6 +806,13 @@
           color="cyan"
           active={fishDebugConfig.showInteractions}
           onclick={() => fishDebugConfig.showInteractions = !fishDebugConfig.showInteractions}
+        />
+        <ChipToggle
+          icon="fa-crosshairs"
+          label="Show Hunts"
+          color="red"
+          active={fishDebugConfig.showHunts}
+          onclick={() => fishDebugConfig.showHunts = !fishDebugConfig.showHunts}
         />
       </ChipGroup>
       <p class="debug-hint">Also: window.fishDebugConfig</p>
@@ -947,6 +1080,27 @@
     font-size: 0.7rem;
     color: #6b7280;
     text-transform: uppercase;
+  }
+
+  /* Hunt Stats */
+  .hunt-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .hunt-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    color: #9ca3af;
+  }
+
+  .hunt-stat i {
+    font-size: 0.6rem;
+    color: #ef4444;
   }
 
   /* Debug Section */

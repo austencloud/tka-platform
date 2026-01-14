@@ -15,6 +15,7 @@ import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-pane
 import { createStartPositionFromBeatStart } from "../../../../features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
 import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
+import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
 import { SequenceDifficultyCalculator } from "$lib/features/discover/sequences/display/services/implementations/SequenceDifficultyCalculator";
 import type { SequenceExportOptions } from "../../domain/models/SequenceExportOptions";
@@ -103,6 +104,7 @@ export class ImageComposer implements IImageComposer {
     overrides?: SequenceExportOptions["visibilityOverrides"]
   ): Promise<PictographVisibilityOptions> {
     // If all required overrides are provided, use them directly (no async needed)
+    // Still need to include prop types from global settings for cache key derivation
     if (
       overrides?.showTKA !== undefined &&
       overrides.showVTG !== undefined &&
@@ -111,6 +113,7 @@ export class ImageComposer implements IImageComposer {
       overrides.showReversals !== undefined &&
       overrides.showNonRadialPoints !== undefined
     ) {
+      const appSettings = getSettings();
       return {
         showTKA: overrides.showTKA, // TKA Glyph includes turn numbers
         showVTG: overrides.showVTG,
@@ -121,6 +124,9 @@ export class ImageComposer implements IImageComposer {
         darkMode: overrides.darkMode,
         showGrid: overrides.showGrid,
         handPointVisibility: overrides.handPointVisibility,
+        // Include prop types for cache key derivation
+        bluePropType: overrides.bluePropType ?? appSettings.bluePropType,
+        redPropType: overrides.redPropType ?? appSettings.redPropType,
       };
     }
 
@@ -131,6 +137,9 @@ export class ImageComposer implements IImageComposer {
     // Get animation visibility for Dark Mode settings
     const animVisibilityManager = getAnimationVisibilityManager();
 
+    // Get prop types from global settings for cache key consistency
+    const appSettings = getSettings();
+
     const globalSettings: PictographVisibilityOptions = {
       showTKA: visibilityManager.getGlyphVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       showVTG: visibilityManager.getGlyphVisibility("vtgGlyph"),
@@ -140,6 +149,9 @@ export class ImageComposer implements IImageComposer {
       showNonRadialPoints: visibilityManager.getNonRadialVisibility(),
       darkMode: animVisibilityManager.isDarkMode(),
       handPointVisibility: visibilityManager.getHandPointVisibility(),
+      // Include prop types from global settings for cache key derivation
+      bluePropType: appSettings.bluePropType,
+      redPropType: appSettings.redPropType,
     };
 
     // Merge overrides with global settings (overrides take precedence)
@@ -155,6 +167,9 @@ export class ImageComposer implements IImageComposer {
         darkMode: overrides.darkMode ?? globalSettings.darkMode,
         showGrid: overrides.showGrid ?? true, // Default to showing grid
         handPointVisibility: overrides.handPointVisibility ?? globalSettings.handPointVisibility,
+        // Include prop types for cache key derivation
+        bluePropType: overrides.bluePropType ?? globalSettings.bluePropType,
+        redPropType: overrides.redPropType ?? globalSettings.redPropType,
       };
     }
 

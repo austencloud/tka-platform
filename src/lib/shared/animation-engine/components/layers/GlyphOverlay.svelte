@@ -7,8 +7,12 @@ Displays TKA glyph and beat number with fade transitions.
 Dark mode: Uses prop-based approach for preview isolation.
 When darkMode prop is provided, it overrides global state.
 CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
+
+Toggle animations: Delightful scale/pop transitions when visibility toggles.
 -->
 <script lang="ts">
+  import { fly, fade } from "svelte/transition";
+  import { backOut, cubicOut } from "svelte/easing";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
@@ -31,6 +35,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     beatNumbersVisible = true,
     // Dark mode - when provided, overrides global state (for preview isolation)
     darkMode = false,
+    // Start position indicator - shows "Start" in top-left when at start position
+    isAtStartPosition = false,
   }: {
     letter?: Letter | null;
     displayedLetter?: Letter | null;
@@ -43,6 +49,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     tkaGlyphVisible?: boolean;
     beatNumbersVisible?: boolean;
     darkMode?: boolean;
+    isAtStartPosition?: boolean;
   } = $props();
 </script>
 
@@ -84,7 +91,8 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   {/if}
 
   <!-- Current glyph (fades in when letter/beat changes) -->
-  {#if letter || displayedBeatNumber !== null}
+  <!-- Show when: there's a letter, OR beat number is set, OR at start position -->
+  {#if letter || displayedBeatNumber !== null || isAtStartPosition}
     <div class="glyph-wrapper" class:fade-in={isNewLetter}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -92,28 +100,46 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
         class="glyph-svg"
       >
         {#if letter && tkaGlyphVisible}
-          <TKAGlyph
-            {letter}
-            pictographData={null}
-            x={50}
-            y={800}
-            scale={1}
-            visible={true}
-            {darkMode}
-          />
-          <TurnsColumn
-            turnsTuple={displayedTurnsTuple}
-            {letter}
-            pictographData={null}
-            x={50}
-            y={800}
-            scale={1}
-            visible={true}
-            {darkMode}
-          />
+          <!-- Glyph is bottom-left: flies in/out toward bottom-left -->
+          <g
+            class="glyph-group"
+            in:fly={{ x: -30, y: 30, duration: 350, easing: backOut }}
+            out:fly={{ x: -30, y: 30, duration: 250, easing: cubicOut }}
+          >
+            <TKAGlyph
+              {letter}
+              pictographData={null}
+              x={50}
+              y={800}
+              scale={1}
+              visible={true}
+              {darkMode}
+            />
+            <TurnsColumn
+              turnsTuple={displayedTurnsTuple}
+              {letter}
+              pictographData={null}
+              x={50}
+              y={800}
+              scale={1}
+              visible={true}
+              {darkMode}
+            />
+          </g>
         {/if}
-        {#if beatNumbersVisible}
-          <BeatNumber beatNumber={displayedBeatNumber} {darkMode} />
+        {#if beatNumbersVisible || isAtStartPosition}
+          <!-- Beat number is top-left: flies in/out toward top-left -->
+          <!-- Always show "Start" indicator when at start position, even if beat numbers toggled off -->
+          <g
+            class="beat-number-group"
+            in:fly={{ x: -30, y: -30, duration: 300, easing: backOut }}
+            out:fly={{ x: -30, y: -30, duration: 200, easing: cubicOut }}
+          >
+            <BeatNumber
+              beatNumber={isAtStartPosition ? 0 : displayedBeatNumber}
+              {darkMode}
+            />
+          </g>
         {/if}
       </svg>
     </div>
@@ -166,6 +192,15 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     height: 100%;
   }
 
+  /* SVG group styling - transform origins for fly animations */
+  .glyph-group {
+    transform-origin: 0% 100%; /* Bottom-left corner */
+  }
+
+  .beat-number-group {
+    transform-origin: 0% 0%; /* Top-left corner */
+  }
+
   /* Dark Mode via prop (preview isolation) */
   .glyph-overlay.dark-mode :global(.tka-glyph) {
     filter: invert(0.9);
@@ -183,5 +218,13 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
 
   :global(:root.dark) .glyph-overlay:not([data-controlled]) :global(.turns-column) {
     filter: drop-shadow(0 0 1.5px white) drop-shadow(0 0 1.5px white);
+  }
+
+  /* Accessibility: reduced motion users get instant transitions */
+  @media (prefers-reduced-motion: reduce) {
+    .glyph-group,
+    .beat-number-group {
+      transition: none !important;
+    }
   }
 </style>

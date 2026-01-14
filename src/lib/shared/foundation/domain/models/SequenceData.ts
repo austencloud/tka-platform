@@ -51,7 +51,7 @@ export interface SequenceData {
   readonly isFavorite: boolean;
   readonly isCircular: boolean;
   /**
-   * LOOP type - Linked Offset Operation Pattern (TKA's algorithmic extension patterns)
+   * LOOP type - Linked Orbital Offset Pattern (TKA's algorithmic extension patterns)
    * Formerly known as LOOP type (Continuous Assembly Pattern).
    */
   readonly loopType?: LOOPType | null;
