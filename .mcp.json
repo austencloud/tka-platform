@@ -34,6 +34,14 @@
         "F:\\_THE KINETIC ALPHABET\\_TKA-STUDIO"
       ],
       "env": {}
+    },
+    "tka-pictograph": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "cd /d F:\\_THE KINETIC ALPHABET\\_TKA-SCRIBE\\mcp-server && npx -y tsx index.ts"
+      ],
+      "env": {}
     }
   }
 }

@@ -29,9 +29,9 @@ Note: This file must stay in sync with src/routes/+page.svelte
 
 <svelte:head>
   {#if siteMode === "app"}
-    <title>TKA Scribe - The Flow Arts Choreography Toolbox</title>
+    <title>TKA Scribe - A flow arts choreography Toolbox</title>
   {:else}
-    <title>The Kinetic Alphabet - Digital Sheet Music for Flow Arts</title>
+    <title>The Kinetic Alphabet - A Flow Arts Choreography Toolbox</title>
   {/if}
 </svelte:head>
 

@@ -12,6 +12,7 @@ Card-based architecture with integrated Generate button:
 -->
 <script lang="ts">
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
+  import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { container } from "$lib/shared/di";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -25,6 +26,10 @@ Card-based architecture with integrated Generate button:
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
   import HelpButtonDiscovery from "./help/HelpButtonDiscovery.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
+
+  // Get context for panel coordination (optional - may not be available in all contexts)
+  const context = tryGetCreateModuleContext();
+  const panelState = context?.panelState;
 
   // Help mode types
   type HelpMode = "inactive" | "selecting" | "viewing";
@@ -63,6 +68,14 @@ Card-based architecture with integrated Generate button:
       document.body.classList.remove("generator-help-mode-active");
     }
     return () => document.body.classList.remove("generator-help-mode-active");
+  });
+
+  // Listen to mobile help button trigger from ButtonPanel
+  $effect(() => {
+    if (panelState?.shouldEnterGeneratorHelpMode) {
+      enterHelpMode();
+      panelState.clearGeneratorHelpModeTrigger();
+    }
   });
 
   function enterHelpMode() {
@@ -162,7 +175,8 @@ Card-based architecture with integrated Generate button:
     gap: 0;
   }
 
-  /* Help button - positioned in top-right corner */
+  /* Help button - positioned in top-right corner (desktop only) */
+  /* On mobile (<1024px), help button is in ButtonPanel instead to avoid overlapping LOOP card */
   .help-btn {
     position: absolute;
     top: 12px;
@@ -180,6 +194,13 @@ Card-based architecture with integrated Generate button:
     cursor: pointer;
     transition: all 0.15s ease;
     font-size: var(--font-size-base, 16px);
+  }
+
+  /* Hide help button on mobile - ButtonPanel shows it instead */
+  @media (max-width: 1023px) {
+    .help-btn {
+      display: none;
+    }
   }
 
   .help-btn:hover {
@@ -202,11 +223,6 @@ Card-based architecture with integrated Generate button:
     z-index: 210;
   }
 
-  /* Push content down when help banner is visible so it doesn't overlap */
-  .generate-panel.help-active .generate-panel-inner {
-    padding-top: calc(48px + 1rem);
-  }
-
   .generate-panel-inner {
     flex: 1;
     display: flex;
@@ -214,8 +230,8 @@ Card-based architecture with integrated Generate button:
     align-items: center;
     justify-content: stretch; /* Default: fill space (stacked layouts) */
     min-height: 0;
-    /* Mobile: Add vertical padding so panel doesn't touch viewport edges */
-    padding-block: 1rem;
+    /* Mobile: Minimal vertical padding to maximize space for cards */
+    padding-block: 0.25rem;
     /* Smooth transition for padding changes (syncs with 450ms workspace animation) */
     transition: padding 450ms cubic-bezier(0.4, 0, 0.2, 1);
   }

@@ -25,6 +25,7 @@ import {
   GridMode,
   GridPosition,
   GridPositionGroup,
+  GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   Orientation,
@@ -36,11 +37,109 @@ import {
   PropContinuity,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   shiftStartPosition,
   createStartPositionFromBeatEnd,
 } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
+
+// Cardinal locations (for DIAMOND grid) and intercardinal (for BOX grid)
+const CARDINAL_LOCATIONS = new Set([
+  GridLocation.NORTH,
+  GridLocation.EAST,
+  GridLocation.SOUTH,
+  GridLocation.WEST,
+]);
+
+const INTERCARDINAL_LOCATIONS = new Set([
+  GridLocation.NORTHEAST,
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTHWEST,
+  GridLocation.NORTHWEST,
+]);
+
+/**
+ * Validate motion data for consistency and flag any issues.
+ * Returns an array of warning messages.
+ */
+function validateMotionData(
+  sequence: SequenceData,
+  label: string
+): string[] {
+  const warnings: string[] = [];
+  const seqGridMode = sequence.gridMode ?? GridMode.DIAMOND;
+
+  // Check start position
+  if (sequence.startPosition?.motions) {
+    const blue = sequence.startPosition.motions[MotionColor.BLUE];
+    const red = sequence.startPosition.motions[MotionColor.RED];
+
+    if (blue) {
+      if (blue.gridMode !== seqGridMode) {
+        warnings.push(`StartPos blue motion gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
+      }
+      if (seqGridMode === GridMode.DIAMOND && blue.endLocation && INTERCARDINAL_LOCATIONS.has(blue.endLocation)) {
+        warnings.push(`StartPos blue has intercardinal location ${blue.endLocation} in DIAMOND mode`);
+      }
+      if (seqGridMode === GridMode.BOX && blue.endLocation && CARDINAL_LOCATIONS.has(blue.endLocation)) {
+        warnings.push(`StartPos blue has cardinal location ${blue.endLocation} in BOX mode`);
+      }
+    }
+    if (red) {
+      if (red.gridMode !== seqGridMode) {
+        warnings.push(`StartPos red motion gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
+      }
+    }
+  }
+
+  // Check each beat
+  sequence.beats?.forEach((beat, idx) => {
+    const beatNum = idx + 1;
+    const blue = beat.motions?.[MotionColor.BLUE];
+    const red = beat.motions?.[MotionColor.RED];
+
+    if (blue) {
+      if (blue.gridMode !== seqGridMode) {
+        warnings.push(`Beat ${beatNum} blue gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
+      }
+      if (!blue.endOrientation) {
+        warnings.push(`Beat ${beatNum} blue missing endOrientation`);
+      }
+      if (!blue.endLocation) {
+        warnings.push(`Beat ${beatNum} blue missing endLocation`);
+      }
+    }
+    if (red) {
+      if (red.gridMode !== seqGridMode) {
+        warnings.push(`Beat ${beatNum} red gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
+      }
+    }
+  });
+
+  if (warnings.length > 0) {
+    console.warn(`[EndlessSpinner] ${label} validation warnings:`, warnings);
+  }
+
+  return warnings;
+}
+
+/**
+ * Get the Greek letter for a position group.
+ * Start positions use lowercase Greek letters: α (alpha), β (beta), γ (gamma)
+ */
+function getLetterForPositionGroup(group: PositionGroup | null): Letter | null {
+  switch (group) {
+    case "alpha":
+      return Letter.ALPHA; // "α"
+    case "beta":
+      return Letter.BETA; // "β"
+    case "gamma":
+      return Letter.GAMMA; // "γ"
+    default:
+      return null;
+  }
+}
 
 /**
  * A sequence that can be rotated to match a target start state.
@@ -392,7 +491,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
         if (result) {
           console.log(
-            `[EndlessSpinner] ✅ Seamless transition: "${fullSequence.word}" (beat ${beatIndex + 1} → ${targetEndState.position})`
+            `[EndlessSpinner] ✅ Seamless transition: "${fullSequence.word}" (beat ${beatIndex + 1} → ${endState.position})`
           );
           return result;
         }
@@ -440,7 +539,9 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       }
 
       // Step 3: Orientation adjustment - modify start position orientations to match target
+      let finalSequence = positionMatched;
       const startPos = positionMatched.startPosition;
+
       if (
         startPos &&
         targetEndState.blueOrientation &&
@@ -475,25 +576,118 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
             },
           };
 
-          // Cascade orientation changes through all beats
-          const orientationCorrected = recalculateAllOrientations(
-            { ...positionMatched, startPosition: adjustedStartPos },
-            this.orientationCalculator
-          );
+          finalSequence = { ...positionMatched, startPosition: adjustedStartPos };
 
           console.log(
             `[EndlessSpinner] Step 3: Adjusted orientations blue=${targetEndState.blueOrientation}, red=${targetEndState.redOrientation}`
           );
-
-          return orientationCorrected;
         }
       }
 
-      return positionMatched;
+      // Step 4: Always recalculate orientations through all beats
+      // This ensures orientation chain integrity after rotation transforms
+      const orientationCorrected = recalculateAllOrientations(
+        finalSequence,
+        this.orientationCalculator
+      );
+
+      // Step 5: Force diamond grid mode on all transformed sequences
+      const gridCorrected = this.forceGridMode(orientationCorrected, GridMode.DIAMOND);
+
+      // Step 6: Update start position letter to match new position
+      const result = this.updateStartPositionLetter(gridCorrected, targetEndState.position);
+
+      // Step 7: Validate the final result (logs warnings if issues found)
+      validateMotionData(result, `After transform "${sequence.word}"`);
+
+      return result;
     } catch (error) {
       console.error("[EndlessSpinner] Transform pipeline failed:", error);
       return null;
     }
+  }
+
+  /**
+   * Force a specific grid mode on the sequence and all its beats/motions.
+   * This ensures visual consistency when sequences from different grid modes are chained.
+   *
+   * IMPORTANT: We must update gridMode on motions too, not just beats/sequence.
+   * The PropRotAngleManager uses motion gridMode for angle calculations.
+   */
+  private forceGridMode(sequence: SequenceData, gridMode: GridMode): SequenceData {
+    // Update grid mode on the sequence itself
+    const updatedSequence = {
+      ...sequence,
+      gridMode,
+    };
+
+    // Update grid mode on all beats AND their motions
+    if (updatedSequence.beats?.length) {
+      updatedSequence.beats = updatedSequence.beats.map((beat) => ({
+        ...beat,
+        gridMode,
+        motions: {
+          ...beat.motions,
+          [MotionColor.BLUE]: beat.motions?.[MotionColor.BLUE]
+            ? { ...beat.motions[MotionColor.BLUE], gridMode }
+            : undefined,
+          [MotionColor.RED]: beat.motions?.[MotionColor.RED]
+            ? { ...beat.motions[MotionColor.RED], gridMode }
+            : undefined,
+        },
+      }));
+    }
+
+    // Update grid mode on start position and its motions if present
+    if (updatedSequence.startPosition) {
+      const sp = updatedSequence.startPosition;
+      updatedSequence.startPosition = {
+        ...sp,
+        gridMode,
+        motions: {
+          ...sp.motions,
+          [MotionColor.BLUE]: sp.motions?.[MotionColor.BLUE]
+            ? { ...sp.motions[MotionColor.BLUE], gridMode }
+            : undefined,
+          [MotionColor.RED]: sp.motions?.[MotionColor.RED]
+            ? { ...sp.motions[MotionColor.RED], gridMode }
+            : undefined,
+        },
+      };
+    }
+
+    return updatedSequence;
+  }
+
+  /**
+   * Update the start position's letter to match the target grid position.
+   * This ensures the pictograph glyph displays the correct Greek letter (α, β, γ).
+   */
+  private updateStartPositionLetter(
+    sequence: SequenceData,
+    targetPosition: GridPosition | null
+  ): SequenceData {
+    if (!sequence.startPosition || !targetPosition) {
+      return sequence;
+    }
+
+    const targetGroup = getPositionGroup(targetPosition);
+    const newLetter = getLetterForPositionGroup(targetGroup);
+
+    if (!newLetter) {
+      return sequence;
+    }
+
+    // Update the letter on the start position
+    const updatedStartPosition: StartPositionData = {
+      ...sequence.startPosition,
+      letter: newLetter,
+    };
+
+    return {
+      ...sequence,
+      startPosition: updatedStartPosition,
+    };
   }
 
   /**

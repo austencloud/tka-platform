@@ -193,7 +193,7 @@
         onBeatLongPress={handleBeatLongPress}
         {onAssemblerBack}
         selectedBeatNumber={localSelectedBeatNumber}
-        practiceBeatNumber={practiceBeatIndex}
+        practiceBeatNumber={animatingBeatNumber ?? practiceBeatIndex}
         {isSideBySideLayout}
         {shouldOrbitAroundCenter}
         activeMode={createModuleState?.activeSection ?? null}

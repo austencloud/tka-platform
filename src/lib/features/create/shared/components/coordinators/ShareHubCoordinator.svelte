@@ -365,23 +365,46 @@
   async function loadSequenceData(
     sequence: SequenceData
   ): Promise<SequenceData | null> {
-    if (!sequenceService) return sequence;
+    if (!sequenceService) return ensureWordPopulated(sequence);
 
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.beats) &&
       s.beats.length > 0 &&
       s.beats.some((beat) => beat?.motions?.blue && beat?.motions?.red);
 
-    if (hasMotionData(sequence)) return sequence;
+    if (hasMotionData(sequence)) return ensureWordPopulated(sequence);
 
     // Try to hydrate from gallery
     const galleryId = sequence.word || sequence.name;
     if (galleryId) {
       const hydrated = await sequenceService.getSequence(galleryId);
-      if (hydrated && hasMotionData(hydrated)) return hydrated;
+      if (hydrated && hasMotionData(hydrated)) return ensureWordPopulated(hydrated);
     }
 
-    return sequence;
+    return ensureWordPopulated(sequence);
+  }
+
+  /**
+   * Ensures the sequence has a word property populated.
+   * If not set, derives it from beat letters.
+   * This fixes the word header not showing in Construct tab's Sequence Viewer.
+   */
+  function ensureWordPopulated(sequence: SequenceData): SequenceData {
+    if (sequence.word) return sequence;
+
+    // Derive word from beat letters (same logic as SequenceStatsCalculator.generateSequenceWord)
+    const derivedWord = sequence.beats
+      ?.filter((beat) => !!beat.letter)
+      .map((beat) => beat.letter)
+      .join("") || "";
+
+    if (!derivedWord) return sequence;
+
+    // Return new object with word populated
+    return {
+      ...sequence,
+      word: derivedWord,
+    };
   }
 
   // Initialize URL manager on mount

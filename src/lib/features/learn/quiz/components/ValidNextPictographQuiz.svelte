@@ -135,8 +135,8 @@ The next pictograph's start position must match the initial pictograph's end pos
         {#if showFeedback}
           <QuizFeedbackBanner
             isCorrect={isCorrectAnswer}
-            correctMessage="Correct! The positions connect perfectly"
-            incorrectMessage="The highlighted pictograph has matching positions"
+            correctMessage="Correct!"
+            incorrectMessage=""
           />
         {/if}
       </div>

@@ -224,8 +224,30 @@ Provides quiz functionality for learning TKA notation:
 <!-- ============================================================================ -->
 
 <div class="learn-tab" data-testid="learn-tab">
-  <!-- Streak display header -->
+  <!-- Unified header with back button + streak -->
   <div class="quiz-header">
+    {#if currentView === "workspace"}
+      <button
+        class="header-back-btn"
+        onclick={handleReturnToSelector}
+        aria-label="Back to quiz selector"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+    {:else}
+      <div class="header-spacer"></div>
+    {/if}
     <StreakDisplay
       bind:this={streakDisplayRef}
       onStreakMilestone={handleStreakMilestone}
@@ -304,10 +326,41 @@ Provides quiz functionality for learning TKA notation:
 
   .quiz-header {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
     flex-shrink: 0;
+    min-height: 56px;
+  }
+
+  .header-spacer {
+    width: 48px;
+    height: 48px;
+  }
+
+  .header-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .header-back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--theme-text, #ffffff);
+    transform: translateX(-2px);
+  }
+
+  .header-back-btn:active {
+    transform: translateX(-1px) scale(0.98);
   }
 
   .learn-layout {

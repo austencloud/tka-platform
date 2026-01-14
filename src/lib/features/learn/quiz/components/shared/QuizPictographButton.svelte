@@ -10,11 +10,13 @@ QuizPictographButton - Answer button containing a pictograph
     state,
     disabled,
     onclick,
+    showTKA = false,
   }: {
     pictograph: PictographData;
     state: "default" | "correct" | "incorrect" | "dimmed";
     disabled: boolean;
     onclick: () => void;
+    showTKA?: boolean;
   } = $props();
 </script>
 
@@ -27,7 +29,7 @@ QuizPictographButton - Answer button containing a pictograph
   {disabled}
 >
   <div class="pictograph-wrapper">
-    <PictographContainer pictographData={pictograph} />
+    <PictographContainer pictographData={pictograph} {showTKA} />
   </div>
   {#if state === "correct"}
     <span class="result-icon correct-icon">✓</span>
@@ -43,20 +45,20 @@ QuizPictographButton - Answer button containing a pictograph
     align-items: center;
     justify-content: center;
     aspect-ratio: 1;
-    padding: 0.375rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    padding: 0;
+    /* Transparent - pictograph has its own dark background */
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     cursor: pointer;
+    overflow: hidden;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .answer-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px
-      color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--theme-accent) 25%, transparent);
   }
 
   .answer-btn:active:not(:disabled) {
@@ -69,9 +71,8 @@ QuizPictographButton - Answer button containing a pictograph
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    /* No background - pictograph fills directly */
+    background: transparent;
   }
 
   .answer-btn.correct {
@@ -155,33 +156,19 @@ QuizPictographButton - Answer button containing a pictograph
 
   @media (min-width: 600px) {
     .answer-btn {
-      padding: 0.5rem;
       border-radius: 14px;
-    }
-
-    .pictograph-wrapper {
-      border-radius: 10px;
     }
   }
 
   @media (min-width: 900px) {
     .answer-btn {
-      padding: 0.625rem;
       border-radius: 16px;
-    }
-
-    .pictograph-wrapper {
-      border-radius: 12px;
     }
   }
 
   @media (min-width: 1200px) {
     .answer-btn {
-      padding: 0.75rem;
-    }
-
-    .pictograph-wrapper {
-      border-radius: 14px;
+      border-radius: 18px;
     }
   }
 

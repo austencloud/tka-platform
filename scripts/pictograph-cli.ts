@@ -22,10 +22,11 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Provide global Canvas and Image for Node.js context
+// Provide global Canvas, Image, and DOMParser for Node.js context
 if (typeof global !== 'undefined') {
   (global as any).Canvas = NodeCanvas;
   (global as any).Image = Image;
+
   // Mock document for Canvas2DDirectRenderer isSupported() check
   if (typeof (global as any).document === 'undefined') {
     (global as any).document = {
@@ -34,6 +35,12 @@ if (typeof global !== 'undefined') {
         return {};
       }
     };
+  }
+
+  // Provide DOMParser for SVG parsing (ArrowSvgParser needs this)
+  if (typeof (global as any).DOMParser === 'undefined') {
+    const { JSDOM } = await import('jsdom');
+    (global as any).DOMParser = new JSDOM().window.DOMParser;
   }
 }
 
@@ -93,18 +100,18 @@ async function loadPictographData(letter: string, startPos?: string, endPos?: st
     throw new Error(`No data found for letter ${letter}${startPos ? ` (${startPos}→${endPos})` : ''}`);
   }
 
-  // Helper to expand abbreviated location names from CSV
-  const expandLocation = (abbrev: string): string => {
-    const map: Record<string, string> = {
-      'n': 'north', 'ne': 'northeast', 'e': 'east', 'se': 'southeast',
-      's': 'south', 'sw': 'southwest', 'w': 'west', 'nw': 'northwest',
-      'c': 'center'
-    };
-    return map[abbrev?.toLowerCase()] || abbrev;
-  };
+  // CSV already contains abbreviated locations (w, e, n, s, etc.)
+  // These match GridLocation enum values and should NOT be expanded
+  const blueEndLocation = row[headers.indexOf('blueEndLocation')];
+  const redEndLocation = row[headers.indexOf('redEndLocation')];
+  const blueStartLocation = row[headers.indexOf('blueStartLocation')];
+  const redStartLocation = row[headers.indexOf('redStartLocation')];
 
-  const blueEndLocation = expandLocation(row[headers.indexOf('blueEndLocation')]);
-  const redEndLocation = expandLocation(row[headers.indexOf('redEndLocation')]);
+  // Calculate turns based on rotation direction
+  const blueRotDir = row[headers.indexOf('blueRotationDirection')];
+  const redRotDir = row[headers.indexOf('redRotationDirection')];
+  const blueTurns = blueRotDir === 'noRotation' ? 0 : 1;
+  const redTurns = redRotDir === 'noRotation' ? 0 : 1;
 
   return {
     id: `pictograph-${letter}`,
@@ -113,35 +120,53 @@ async function loadPictographData(letter: string, startPos?: string, endPos?: st
       blue: {
         color: 'blue', // CRITICAL: Required for color transformation
         motionType: row[headers.indexOf('blueMotionType')],
-        rotationDirection: row[headers.indexOf('blueRotationDirection')],
-        startLocation: expandLocation(row[headers.indexOf('blueStartLocation')]),
+        rotationDirection: blueRotDir,
+        startLocation: blueStartLocation,
         endLocation: blueEndLocation,
         startOrientation: 'in',
         endOrientation: 'in',
-        turns: 1,
+        turns: blueTurns,
         propType: 'staff',
         propPlacementData: {
           propType: 'staff',
           positionX: 0, // Will be calculated by PropPlacer
           positionY: 0,
           rotationAngle: 0
+        },
+        // Placeholder arrow placement data (will be calculated by ArrowLifecycleManager)
+        arrowPlacementData: {
+          positionX: 0,
+          positionY: 0,
+          rotationAngle: 0,
+          coordinates: null,
+          svgCenter: null,
+          svgMirrored: false
         }
       },
       red: {
         color: 'red', // CRITICAL: Required for color transformation
         motionType: row[headers.indexOf('redMotionType')],
-        rotationDirection: row[headers.indexOf('redRotationDirection')],
-        startLocation: expandLocation(row[headers.indexOf('redStartLocation')]),
+        rotationDirection: redRotDir,
+        startLocation: redStartLocation,
         endLocation: redEndLocation,
         startOrientation: 'in',
         endOrientation: 'in',
-        turns: 1,
+        turns: redTurns,
         propType: 'staff',
         propPlacementData: {
           propType: 'staff',
           positionX: 0, // Will be calculated by PropPlacer
           positionY: 0,
           rotationAngle: 0
+        },
+        // Placeholder arrow placement data (will be calculated by ArrowLifecycleManager)
+        arrowPlacementData: {
+          positionX: 0,
+          positionY: 0,
+          rotationAngle: 0,
+          coordinates: null,
+          svgCenter: null,
+          svgMirrored: false
         }
       }
     }
@@ -183,10 +208,14 @@ async function renderPictograph(
   await renderer.initialize();
   console.log(`  ✓ Initialized renderer`);
 
-  // Render pictograph (grid + glyph - arrows/props coming soon)
-  console.log(`  🎨 Rendering grid + glyph...`);
+  // Render pictograph (grid + glyph + props + arrows)
+  console.log(`  🎨 Rendering pictograph...`);
   const themeMode = options.themeMode ?? 'light';
   const isDarkMode = themeMode === 'dark';
+
+  // DEBUG: Check if pictograph has prepared data before rendering
+  const asPrepared = pictographData as any;
+  console.log(`  [DEBUG] Has _prepared before render: ${!!asPrepared._prepared}`);
 
   const canvas = await renderer.renderPictograph(pictographData as any, {
     size: 950,
@@ -209,6 +238,17 @@ async function renderPictograph(
 
   console.log(`  ✓ Rendered (${canvas.width}x${canvas.height})`);
 
+  // DEBUG: Check if pictograph was prepared during render
+  console.log(`  [DEBUG] Has _prepared after render: ${!!asPrepared._prepared}`);
+  if (asPrepared._prepared) {
+    console.log(`  [DEBUG] Has arrowPositions: ${!!asPrepared._prepared.arrowPositions}`);
+    console.log(`  [DEBUG] Has arrowAssets: ${!!asPrepared._prepared.arrowAssets}`);
+    if (asPrepared._prepared.arrowPositions) {
+      console.log(`  [DEBUG] Blue arrow position:`, asPrepared._prepared.arrowPositions.blue);
+      console.log(`  [DEBUG] Red arrow position:`, asPrepared._prepared.arrowPositions.red);
+    }
+  }
+
   // Save to file
   const buffer = canvas.toBuffer('image/png');
 
@@ -216,7 +256,8 @@ async function renderPictograph(
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  const outputPath = path.join(OUTPUT_DIR, `pictograph-${letter}.png`);
+  const themeSuffix = themeMode === 'dark' ? '-dark' : '';
+  const outputPath = path.join(OUTPUT_DIR, `pictograph-${letter}${themeSuffix}.png`);
   fs.writeFileSync(outputPath, buffer);
 
   console.log(`  ✅ Saved: ${outputPath}`);
@@ -233,7 +274,11 @@ async function main() {
     process.exit(1);
   }
 
-  let letters = args;
+  // Check for theme mode flag
+  const themeMode: 'light' | 'dark' = args.includes('--dark') ? 'dark' : 'light';
+
+  // Filter out flags from arguments to get actual letters
+  let letters = args.filter(arg => !arg.startsWith('--'));
 
   if (args[0] === '--all') {
     letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -247,14 +292,11 @@ async function main() {
   const startTime = Date.now();
   const results: { letter: string; success: boolean; path?: string; error?: string }[] = [];
 
-  // Check for theme mode flag
-  const themeMode: 'light' | 'dark' = args.includes('--dark') ? 'dark' : 'light';
-
   for (const letter of letters) {
     try {
-      // For letter A, use alpha1→alpha3 variation (red at east, blue at west)
+      // For letters A, B, C use alpha1→alpha3 variation for grant feature
       const options: any = { themeMode };
-      if (letter === 'A') {
+      if (['A', 'B', 'C'].includes(letter)) {
         options.startPos = 'alpha1';
         options.endPos = 'alpha3';
       }

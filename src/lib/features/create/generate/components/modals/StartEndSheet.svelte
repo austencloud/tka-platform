@@ -1,20 +1,32 @@
 <!--
 StartEndSheet.svelte - Sheet for configuring start/end position options
-Follows modern 2026 Material Design patterns with 48px touch targets
+
+Start Position: Multi-select with presets (All, Classic 3, Custom)
+End Position: Single select (for freeform mode only)
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    type GridPosition,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { container } from "$lib/shared/di";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
   import { onMount } from "svelte";
   import PositionSection from "./customize/PositionSection.svelte";
-  import LetterConstraintsSection from "./customize/LetterConstraintsSection.svelte";
+  import MultiSelectPositionPicker from "$lib/shared/components/position-picker/MultiSelectPositionPicker.svelte";
+  import {
+    StartPositionPreset,
+    PRESET_LABELS,
+    PRESET_DESCRIPTIONS,
+    getBlockedPositionsForPreset,
+    detectPresetFromBlocked,
+    getAllPositions,
+  } from "../../shared/domain/start-position-presets";
 
   let {
     isOpen,
@@ -36,11 +48,15 @@ Follows modern 2026 Material Design patterns with 48px touch targets
 
   // Local pending state for editing
   let pendingOptions = $state<StartEndOptions>({
+    blockedStartPositions: [],
     startPosition: null,
     endPosition: null,
     mustContainLetters: [],
     mustNotContainLetters: [],
   });
+
+  // Track whether start position section is expanded
+  let isStartPositionExpanded = $state(false);
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -49,14 +65,57 @@ Follows modern 2026 Material Design patterns with 48px touch targets
   // Sync options when panel opens
   $effect(() => {
     if (isOpen && options) {
-      pendingOptions = { ...options };
+      pendingOptions = {
+        ...options,
+        // Ensure blockedStartPositions exists (migration from old format)
+        blockedStartPositions: options.blockedStartPositions ?? [],
+      };
     }
   });
 
-  function handleStartPositionChange(position: PictographData | null) {
+  // Detect current preset from blocked positions
+  const currentPreset = $derived(
+    detectPresetFromBlocked(pendingOptions.blockedStartPositions, gridMode)
+  );
+
+  // Count of enabled positions
+  const enabledCount = $derived(
+    getAllPositions(gridMode).length -
+      pendingOptions.blockedStartPositions.length
+  );
+
+  const totalPositions = $derived(getAllPositions(gridMode).length);
+
+  // Display text for start position summary
+  const startPositionSummary = $derived.by(() => {
+    if (pendingOptions.blockedStartPositions.length === 0) {
+      return "Any position";
+    }
+    if (enabledCount === 1) {
+      return "1 position";
+    }
+    return `${enabledCount} positions`;
+  });
+
+  function handlePresetSelect(preset: StartPositionPreset) {
     hapticService?.trigger("selection");
-    pendingOptions = { ...pendingOptions, startPosition: position };
-    // Auto-apply changes
+
+    const blockedPositions = getBlockedPositionsForPreset(preset, gridMode);
+    pendingOptions = {
+      ...pendingOptions,
+      blockedStartPositions: blockedPositions,
+      // Clear legacy single position when using presets
+      startPosition: null,
+    };
+    onChange(pendingOptions);
+  }
+
+  function handleBlockedChange(blocked: GridPosition[]) {
+    pendingOptions = {
+      ...pendingOptions,
+      blockedStartPositions: blocked,
+      startPosition: null,
+    };
     onChange(pendingOptions);
   }
 
@@ -66,25 +125,15 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     onChange(pendingOptions);
   }
 
-  function handleMustContainChange(letters: Letter[]) {
-    hapticService?.trigger("selection");
-    pendingOptions = { ...pendingOptions, mustContainLetters: letters };
-    onChange(pendingOptions);
-  }
-
-  function handleMustNotContainChange(letters: Letter[]) {
-    hapticService?.trigger("selection");
-    pendingOptions = { ...pendingOptions, mustNotContainLetters: letters };
-    onChange(pendingOptions);
-  }
-
   function handleClose() {
+    isStartPositionExpanded = false;
     onClose();
   }
 
   function handleClearAll() {
     hapticService?.trigger("selection");
     pendingOptions = {
+      blockedStartPositions: [],
       startPosition: null,
       endPosition: null,
       mustContainLetters: [],
@@ -93,11 +142,14 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     onChange(pendingOptions);
   }
 
+  function toggleStartPositionExpanded() {
+    hapticService?.trigger("selection");
+    isStartPositionExpanded = !isStartPositionExpanded;
+  }
+
   const hasAnyOptions = $derived(
-    pendingOptions.startPosition !== null ||
-      (isFreeformMode && pendingOptions.endPosition !== null) ||
-      pendingOptions.mustContainLetters.length > 0 ||
-      pendingOptions.mustNotContainLetters.length > 0
+    pendingOptions.blockedStartPositions.length > 0 ||
+      (isFreeformMode && pendingOptions.endPosition !== null)
   );
 
   const createModuleContext = tryGetCreateModuleContext();
@@ -107,6 +159,13 @@ Follows modern 2026 Material Design patterns with 48px touch targets
       : false
   );
   const drawerPlacement = $derived(isSideBySideLayout ? "right" : "bottom");
+
+  // Available presets: All, Classic 3, Custom
+  const availablePresets = [
+    StartPositionPreset.ANY,
+    StartPositionPreset.CLASSIC,
+    StartPositionPreset.CUSTOM,
+  ];
 </script>
 
 <Drawer
@@ -153,14 +212,69 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     </header>
 
     <div class="sections-container">
-      <PositionSection
-        title="Start Position"
-        description="Where the sequence begins"
-        currentPosition={pendingOptions.startPosition}
-        onPositionChange={handleStartPositionChange}
-        {gridMode}
-      />
+      <!-- Start Position Section -->
+      <section class="section">
+        <button
+          class="section-header"
+          onclick={toggleStartPositionExpanded}
+          aria-expanded={isStartPositionExpanded}
+        >
+          <div class="section-title-row">
+            <h3 class="section-title">Start Position</h3>
+            <span class="section-value">{startPositionSummary}</span>
+          </div>
+          <svg
+            class="chevron"
+            class:expanded={isStartPositionExpanded}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
 
+        {#if isStartPositionExpanded}
+          <div class="section-content">
+            <!-- Preset buttons -->
+            <div class="presets-row">
+              {#each availablePresets as preset}
+                <button
+                  class="preset-button"
+                  class:active={currentPreset === preset}
+                  onclick={() => handlePresetSelect(preset)}
+                  aria-pressed={currentPreset === preset}
+                >
+                  <span class="preset-label">{PRESET_LABELS[preset]}</span>
+                  <span class="preset-description"
+                    >{PRESET_DESCRIPTIONS[preset]}</span
+                  >
+                </button>
+              {/each}
+            </div>
+
+            <!-- Custom indicator if using custom selection -->
+            {#if currentPreset === StartPositionPreset.CUSTOM}
+              <div class="custom-indicator">
+                <span class="custom-badge">Custom</span>
+                <span class="custom-text"
+                  >{enabledCount} of {totalPositions} positions</span
+                >
+              </div>
+            {/if}
+
+            <!-- Multi-select position grid -->
+            <MultiSelectPositionPicker
+              blockedPositions={pendingOptions.blockedStartPositions}
+              onBlockedChange={handleBlockedChange}
+              {gridMode}
+            />
+          </div>
+        {/if}
+      </section>
+
+      <!-- End Position Section (freeform only) -->
       <PositionSection
         title="End Position"
         description="Where the sequence ends"
@@ -170,20 +284,12 @@ Follows modern 2026 Material Design patterns with 48px touch targets
         disabled={!isFreeformMode}
         disabledReason="In circular mode, the end position matches the start position"
       />
-
-      <!-- Letter constraints removed - too complex given generation constraints -->
-      <!-- <LetterConstraintsSection
-        mustContainLetters={pendingOptions.mustContainLetters}
-        mustNotContainLetters={pendingOptions.mustNotContainLetters}
-        onMustContainChange={handleMustContainChange}
-        onMustNotContainChange={handleMustNotContainChange}
-      /> -->
     </div>
   </div>
 </Drawer>
 
 <style>
-  /* Custom styling for customize options sheet */
+  /* Custom styling for start/end options sheet */
   :global(.drawer-content.start-end-sheet) {
     --sheet-backdrop-bg: rgba(0, 0, 0, 0.5);
     --sheet-backdrop-filter: blur(8px);
@@ -195,7 +301,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     max-width: 1200px;
     margin: 0 auto;
     height: auto !important;
-    max-height: 85vh;
+    max-height: 90vh;
   }
 
   /* Slide animations for drawer */
@@ -208,14 +314,14 @@ Follows modern 2026 Material Design patterns with 48px touch targets
   }
 
   :global(
-    .drawer-content.start-end-sheet[data-state="closed"][data-placement="bottom"]
-  ) {
+      .drawer-content.start-end-sheet[data-state="closed"][data-placement="bottom"]
+    ) {
     transform: translateY(100%);
   }
 
   :global(
-    .drawer-content.start-end-sheet[data-state="closed"][data-placement="right"]
-  ) {
+      .drawer-content.start-end-sheet[data-state="closed"][data-placement="right"]
+    ) {
     transform: translateX(100%);
   }
 
@@ -234,7 +340,7 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     gap: 0;
     padding: 0;
 
-    /* Classy slate/charcoal gradient - elegant, not overwhelming */
+    /* Classy slate/charcoal gradient */
     background: linear-gradient(
       135deg,
       #334155 0%,
@@ -369,11 +475,150 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     background: var(--theme-card-bg);
   }
 
+  /* Section styling */
+  .section {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .section-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--theme-text, white);
+    transition: background 0.2s ease;
+  }
+
+  .section-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .section-title-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .section-title {
+    font-size: var(--font-size-base, 16px);
+    font-weight: 600;
+    margin: 0;
+    color: var(--theme-text, white);
+  }
+
+  .section-value {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .chevron {
+    width: 24px;
+    height: 24px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    transition: transform 0.2s ease;
+  }
+
+  .chevron.expanded {
+    transform: rotate(180deg);
+  }
+
+  .section-content {
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Presets row */
+  .presets-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .preset-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 8px;
+    min-height: var(--min-touch-target, 48px);
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .preset-button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .preset-button.active {
+    background: rgba(100, 200, 255, 0.15);
+    border-color: rgba(100, 200, 255, 0.6);
+    box-shadow: 0 0 12px rgba(100, 200, 255, 0.2);
+  }
+
+  .preset-button:active {
+    transform: scale(0.97);
+  }
+
+  .preset-label {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .preset-description {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-align: center;
+  }
+
+  /* Custom indicator */
+  .custom-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 200, 100, 0.1);
+    border: 1px solid rgba(255, 200, 100, 0.3);
+    border-radius: 8px;
+  }
+
+  .custom-badge {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: rgba(255, 200, 100, 0.9);
+    padding: 2px 8px;
+    background: rgba(255, 200, 100, 0.15);
+    border-radius: 4px;
+  }
+
+  .custom-text {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .start-end-content {
       animation: none;
       background-position: 0% 50%;
+    }
+
+    .chevron,
+    .preset-button,
+    .section-header {
+      transition: none;
     }
   }
 
@@ -390,6 +635,22 @@ Follows modern 2026 Material Design patterns with 48px touch targets
     .clear-button {
       padding: 0 12px;
       font-size: var(--font-size-compact);
+    }
+
+    .presets-row {
+      gap: 6px;
+    }
+
+    .preset-button {
+      padding: 10px 6px;
+    }
+
+    .preset-label {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .preset-description {
+      font-size: 10px;
     }
   }
 </style>

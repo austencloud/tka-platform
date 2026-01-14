@@ -1,5 +1,5 @@
 <!--
-QuizLetterButton - Answer button displaying a letter
+QuizLetterButton - Answer button for quiz
 -->
 <script lang="ts">
   let {
@@ -23,7 +23,9 @@ QuizLetterButton - Answer button displaying a letter
   {onclick}
   {disabled}
 >
-  <span class="letter">{letter}</span>
+  <span class="letter-container">
+    <span class="letter">{letter}</span>
+  </span>
   {#if state === "correct"}
     <span class="result-icon correct-icon">✓</span>
   {:else if state === "incorrect"}
@@ -58,8 +60,15 @@ QuizLetterButton - Answer button displaying a letter
     transform: translateY(-1px) scale(0.98);
   }
 
+  .letter-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .letter {
-    font-size: 2.5rem;
+    font-size: 1.875rem;
     font-weight: 800;
     color: white;
     font-family: Georgia, serif;
@@ -151,7 +160,7 @@ QuizLetterButton - Answer button displaying a letter
     }
 
     .letter {
-      font-size: 3rem;
+      font-size: 2.25rem;
     }
   }
 
@@ -161,13 +170,13 @@ QuizLetterButton - Answer button displaying a letter
     }
 
     .letter {
-      font-size: 3.5rem;
+      font-size: 2.75rem;
     }
   }
 
   @media (min-width: 1200px) {
     .letter {
-      font-size: 4rem;
+      font-size: 3.25rem;
     }
   }
 

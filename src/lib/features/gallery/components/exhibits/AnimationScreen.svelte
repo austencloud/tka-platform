@@ -203,6 +203,8 @@
           blueMotionVisible: true,
           redMotionVisible: true,
         },
+        bluePropType,
+        redPropType,
       });
 
       // Update texture

@@ -25,7 +25,7 @@
 
 <svelte:head>
   {#if siteMode === "app"}
-    <title>TKA Scribe - The Flow Arts Choreography Toolbox</title>
+    <title>TKA Scribe - A flow arts choreography Toolbox</title>
   {:else}
     <title
       >TKA - The Kinetic Alphabet | A Flow Arts Notation System for Staff,
@@ -60,10 +60,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="TKA - The Kinetic Alphabet" />
   <meta property="og:url" content="https://tkaflowarts.com/" />
-  <meta
-    property="og:title"
-    content="TKA | A Flow Arts Notation System"
-  />
+  <meta property="og:title" content="TKA | A Flow Arts Notation System" />
   <meta
     property="og:description"
     content="A flow arts notation system for poi, staff, hoop, club, and fan choreography. Document, animate, and share sequences with flow artists worldwide."
@@ -84,10 +81,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@tkaflowarts" />
   <meta name="twitter:creator" content="@tkaflowarts" />
-  <meta
-    name="twitter:title"
-    content="TKA | A Flow Arts Notation System"
-  />
+  <meta name="twitter:title" content="TKA | A Flow Arts Notation System" />
   <meta
     name="twitter:description"
     content="A flow arts notation system for poi, staff, hoop, club, and fan choreography. Document, animate, and share sequences with flow artists worldwide."
@@ -155,7 +149,7 @@
 		"@type": "SoftwareApplication",
 		"name": "TKA Scribe",
 		"alternateName": "The Kinetic Alphabet Scribe",
-		"description": "Digital sheet music for flow arts. Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences with the first universal notation system for prop manipulation.",
+		"description": "A Flow Arts Choreography Toolbox. Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences with the first universal notation system for prop manipulation.",
 		"url": "https://tkascribe.com/",
 		"applicationCategory": ["EducationalApplication", "EntertainmentApplication", "DesignApplication"],
 		"operatingSystem": "Any (Web Browser)",

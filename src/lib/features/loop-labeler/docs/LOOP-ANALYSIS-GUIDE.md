@@ -1,6 +1,6 @@
 ﻿# LOOP Analysis Guide
 
-> **Living Document**: This guide captures insights about LOOP (Linked Offset Operation Pattern) analysis discovered during labeling sessions. Future AI agents and users should update this as new patterns are understood.
+> **Living Document**: This guide captures insights about LOOP (Linked Orbital Offset Pattern) analysis discovered during labeling sessions. Future AI agents and users should update this as new patterns are understood.
 
 ---
 

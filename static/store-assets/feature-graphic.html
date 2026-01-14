@@ -68,7 +68,7 @@
       .app-name {
         font-family:
           "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-        font-size: 58px;
+        font-size: 50px;
         font-style: italic;
         color: #ffffff;
         text-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
@@ -82,12 +82,11 @@
         text-transform: uppercase;
         margin-bottom: 28px;
       }
-
       .features {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        width: fit-content;
       }
 
       .feature-tag {
@@ -150,30 +149,33 @@
         object-position: top;
       }
 
+      /* Side phones - slightly back and smaller */
       .device-1 {
-        transform: rotate(-12deg) translateX(20px);
+        transform: scale(0.88) translateY(15px);
         z-index: 1;
-        opacity: 0.9;
+        opacity: 0.85;
       }
 
+      /* Center phone - forward and prominent */
       .device-2 {
-        transform: scale(1.1);
+        transform: scale(1.08) translateY(-10px);
         z-index: 3;
-        margin-left: -50px;
+        margin-left: -30px;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
       }
 
       .device-3 {
-        transform: rotate(12deg) translateX(-20px);
-        z-index: 2;
-        margin-left: -50px;
-        opacity: 0.9;
+        transform: scale(0.88) translateY(15px);
+        z-index: 1;
+        margin-left: -30px;
+        opacity: 0.85;
       }
     </style>
   </head>
   <body>
     <div class="branding">
-      <h1 class="app-name">TKA Scribe</h1>
-      <p class="tagline">The Flow Arts Choreography Toolbox</p>
+      <h1 class="app-name">The<br>Kinetic<br>Alphabet</h1>
+      <p class="tagline">A flow arts choreography Toolbox</p>
       <div class="features">
         <span class="feature-tag">Create Choreography</span>
         <span class="feature-tag">Visualize Patterns</span>

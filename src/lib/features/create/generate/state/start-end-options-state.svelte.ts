@@ -2,23 +2,27 @@
  * Start/End Options State Management
  *
  * Manages start/end position generation constraints:
- * - Start position
- * - End position
- * - Must-contain letters
- * - Must-not-contain letters
+ * - Blocked start positions (synced to Firebase via settings service)
+ * - Start position (session-local)
+ * - End position (session-local)
+ * - Must-contain letters (session-local)
+ * - Must-not-contain letters (session-local)
  *
- * These are advanced constraints that filter or guide the generation,
- * separate from the main UIGenerationConfig which configures the algorithm.
+ * blockedStartPositions syncs across devices for logged-in users.
+ * Other options are session-specific and stored in localStorage.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import { container } from "$lib/shared/di";
+import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 
-// ===== Persistence =====
-const STORAGE_KEY = "tka-start-end-options";
+// ===== Session-local Persistence (localStorage) =====
+const SESSION_STORAGE_KEY = "tka-start-end-session-options";
 
-interface SerializedOptions {
+interface SerializedSessionOptions {
   startPositionLetter?: string;
   endPositionLetter?: string;
   mustContainLetters: string[];
@@ -27,11 +31,12 @@ interface SerializedOptions {
 }
 
 /**
- * Save options to localStorage
+ * Save session-local options to localStorage
+ * (excludes blockedStartPositions which syncs via Firebase)
  */
-function saveOptions(options: StartEndOptions): void {
+function saveSessionOptions(options: StartEndOptions): void {
   try {
-    const serialized: SerializedOptions = {
+    const serialized: SerializedSessionOptions = {
       startPositionLetter: options.startPosition?.letter || undefined,
       endPositionLetter: options.endPosition?.letter || undefined,
       mustContainLetters: options.mustContainLetters.map((l) => l.toString()),
@@ -41,26 +46,24 @@ function saveOptions(options: StartEndOptions): void {
       timestamp: Date.now(),
     };
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized));
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(serialized));
   } catch (error) {
-    console.warn("⚠️ StartEndOptions: Failed to save options:", error);
+    console.warn("⚠️ StartEndOptions: Failed to save session options:", error);
   }
 }
 
 /**
- * Load options from localStorage
+ * Load session-local options from localStorage
  */
-function loadOptions(): StartEndOptions | null {
+function loadSessionOptions(): Partial<StartEndOptions> | null {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(SESSION_STORAGE_KEY);
     if (!stored) {
       return null;
     }
 
-    const data = JSON.parse(stored) as SerializedOptions;
+    const data = JSON.parse(stored) as SerializedSessionOptions;
 
-    // For now, we only restore the letter arrays
-    // Position restoration would require looking up the actual PictographData
     return {
       startPosition: data.startPositionLetter
         ? ({ letter: data.startPositionLetter } as PictographData)
@@ -68,28 +71,29 @@ function loadOptions(): StartEndOptions | null {
       endPosition: data.endPositionLetter
         ? ({ letter: data.endPositionLetter } as PictographData)
         : null,
-      mustContainLetters: data.mustContainLetters as Letter[],
-      mustNotContainLetters: data.mustNotContainLetters as Letter[],
+      mustContainLetters: (data.mustContainLetters || []) as Letter[],
+      mustNotContainLetters: (data.mustNotContainLetters || []) as Letter[],
     };
   } catch (error) {
-    console.warn("⚠️ StartEndOptions: Failed to load options:", error);
+    console.warn("⚠️ StartEndOptions: Failed to load session options:", error);
     return null;
   }
 }
 
 /**
- * Clear saved options from localStorage
+ * Clear session options from localStorage
  */
-function clearOptions(): void {
+function clearSessionOptions(): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
   } catch (error) {
-    console.warn("⚠️ StartEndOptions: Failed to clear options:", error);
+    console.warn("⚠️ StartEndOptions: Failed to clear session options:", error);
   }
 }
 
 // ===== Default Options =====
 const DEFAULT_OPTIONS: StartEndOptions = {
+  blockedStartPositions: [],
   startPosition: null,
   endPosition: null,
   mustContainLetters: [],
@@ -100,24 +104,40 @@ const DEFAULT_OPTIONS: StartEndOptions = {
 
 /**
  * Creates reactive state for start/end position options
- * Automatically loads saved settings from localStorage and persists changes
+ *
+ * blockedStartPositions: Loaded from and saved to Firebase settings (syncs across devices)
+ * Other options: Loaded from and saved to localStorage (session-specific)
  */
 export function createStartEndOptionsState(
   initialOptions?: Partial<StartEndOptions>
 ) {
-  // Load saved options or use defaults
-  const savedOptions = loadOptions();
+  // Get settings service for Firebase-synced blocked positions
+  let settingsState: ISettingsState | null = null;
+  try {
+    settingsState = container.items.settingsState as ISettingsState;
+  } catch {
+    console.warn("⚠️ StartEndOptions: Settings service not available");
+  }
 
-  // Initialize options with priority: initialOptions > savedOptions > DEFAULT_OPTIONS
+  // Load blocked positions from Firebase settings
+  const savedBlockedPositions =
+    (settingsState?.settings?.blockedStartPositions as GridPosition[]) ?? [];
+
+  // Load session-local options from localStorage
+  const savedSessionOptions = loadSessionOptions();
+
+  // Initialize options with priority: initialOptions > saved > defaults
   let options = $state<StartEndOptions>({
     ...DEFAULT_OPTIONS,
-    ...(savedOptions || {}),
+    blockedStartPositions: savedBlockedPositions,
+    ...(savedSessionOptions || {}),
     ...initialOptions,
   });
 
   // Derived values
   const hasAnyConstraints = $derived(
-    options.startPosition !== null ||
+    options.blockedStartPositions.length > 0 ||
+      options.startPosition !== null ||
       options.endPosition !== null ||
       options.mustContainLetters.length > 0 ||
       options.mustNotContainLetters.length > 0
@@ -145,31 +165,65 @@ export function createStartEndOptionsState(
     return parts.length > 0 ? parts.join(" · ") : "None";
   });
 
+  /**
+   * Save blockedStartPositions to Firebase settings
+   */
+  function saveBlockedPositions(blocked: GridPosition[]) {
+    if (settingsState) {
+      settingsState.updateSetting("blockedStartPositions", blocked);
+    }
+  }
+
   // Update function with persistence
   function updateOptions(updates: Partial<StartEndOptions>) {
     options = { ...options, ...updates };
-    saveOptions(options);
+
+    // If blockedStartPositions changed, save to Firebase
+    if (updates.blockedStartPositions !== undefined) {
+      saveBlockedPositions(updates.blockedStartPositions);
+    }
+
+    // Always save session options to localStorage
+    saveSessionOptions(options);
   }
 
   // Replace entire options (used by sheet onChange callback)
   function setOptions(newOptions: StartEndOptions) {
+    const blockedChanged =
+      JSON.stringify(options.blockedStartPositions) !==
+      JSON.stringify(newOptions.blockedStartPositions);
+
     options = { ...newOptions };
-    saveOptions(options);
+
+    // If blocked positions changed, save to Firebase
+    if (blockedChanged) {
+      saveBlockedPositions(newOptions.blockedStartPositions);
+    }
+
+    // Save session options to localStorage
+    saveSessionOptions(options);
   }
 
   // Clear all constraints
   function resetOptions() {
     options = { ...DEFAULT_OPTIONS };
-    clearOptions();
+    saveBlockedPositions([]);
+    clearSessionOptions();
   }
 
   // Clear only position constraints (when grid mode changes)
   // Returns true if any positions were actually cleared
   function clearPositions(): boolean {
     const hadPositions =
-      options.startPosition !== null || options.endPosition !== null;
+      options.blockedStartPositions.length > 0 ||
+      options.startPosition !== null ||
+      options.endPosition !== null;
     if (hadPositions) {
-      updateOptions({ startPosition: null, endPosition: null });
+      updateOptions({
+        blockedStartPositions: [],
+        startPosition: null,
+        endPosition: null,
+      });
     }
     return hadPositions;
   }
@@ -208,7 +262,10 @@ export function createStartEndOptionsState(
     setOptions,
     resetOptions,
     clearPositions,
-    clearSavedOptions: clearOptions,
+    clearSavedOptions: () => {
+      saveBlockedPositions([]);
+      clearSessionOptions();
+    },
 
     // Field-level setters
     setStartPosition,

@@ -1,7 +1,7 @@
 ﻿/**
  * LOOP Validator Interface
  *
- * Validates which LOOP (Linked Offset Operation Pattern) types are available
+ * Validates which LOOP (Linked Orbital Offset Pattern) types are available
  * for a given position pair. Used by sequence extension to determine valid
  * extension patterns.
  */

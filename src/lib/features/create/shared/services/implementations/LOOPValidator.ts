@@ -1,7 +1,7 @@
 ﻿/**
  * LOOP Validator Implementation
  *
- * Validates which LOOP (Linked Offset Operation Pattern) types are available
+ * Validates which LOOP (Linked Orbital Offset Pattern) types are available
  * for a given position pair based on position symmetry rules.
  */
 
@@ -32,7 +32,7 @@ import {
 
 /**
  * LOOP options with icons and descriptions for UI display.
- * LOOP = Linked Offset Operation Pattern (TKA's algorithmic extension patterns)
+ * LOOP = Linked Orbital Offset Pattern (TKA's algorithmic extension patterns)
  */
 const LOOP_OPTION_CONFIG: Record<
   LOOPType,

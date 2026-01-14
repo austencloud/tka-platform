@@ -35,11 +35,10 @@ export function createPropTypeSyncEffect(
       const newBluePropType = settings.bluePropType;
       const newRedPropType = settings.redPropType;
 
-      if (
-        newBluePropType &&
-        newBluePropType !== previousBluePropType &&
-        previousBluePropType !== undefined
-      ) {
+      // Sync on initial load AND when prop type changes
+      // Removed `previousPropType !== undefined` check - we need to sync on mount
+      // to ensure start positions (created with default STAFF) match user settings
+      if (newBluePropType && newBluePropType !== previousBluePropType) {
         BeatOperator.bulkUpdatePropType(
           "blue",
           newBluePropType,
@@ -48,11 +47,7 @@ export function createPropTypeSyncEffect(
       }
       previousBluePropType = newBluePropType;
 
-      if (
-        newRedPropType &&
-        newRedPropType !== previousRedPropType &&
-        previousRedPropType !== undefined
-      ) {
+      if (newRedPropType && newRedPropType !== previousRedPropType) {
         BeatOperator.bulkUpdatePropType(
           "red",
           newRedPropType,

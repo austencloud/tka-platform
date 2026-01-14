@@ -1,7 +1,7 @@
 ﻿<!--
   ExtendDrawer.svelte
 
-  Drawer for extending a sequence using LOOP (Linked Offset Operation Pattern).
+  Drawer for extending a sequence using LOOP (Linked Orbital Offset Pattern).
 
   Two-phase flow:
   1. If directly loopable → Show LOOPPicker immediately

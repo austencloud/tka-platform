@@ -135,7 +135,7 @@ Just like Gamma contains Alpha-like and Beta-like halves, the hybrid letters (C,
 
 ## Level 3: LOOP Transformations
 
-LOOPs (Linked Offset Operation Patterns) are ways to transform sequences. The transformation system follows the same binary synthesis pattern.
+LOOPs (Linked Orbital Offset Patterns) are ways to transform sequences. The transformation system follows the same binary synthesis pattern.
 
 ### The Four Fundamental Components
 

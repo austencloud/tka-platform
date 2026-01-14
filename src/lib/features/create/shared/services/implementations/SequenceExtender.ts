@@ -2,7 +2,7 @@
  * Sequence Extender Implementation
  *
  * Detects when a sequence is in an extendable state and generates extension beats
- * using the LOOP (Linked Offset Operation Pattern) executor infrastructure.
+ * using the LOOP (Linked Orbital Offset Pattern) executor infrastructure.
  */
 
 import type { BeatData } from "../../domain/models/BeatData";

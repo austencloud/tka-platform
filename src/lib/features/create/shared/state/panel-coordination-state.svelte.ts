@@ -24,7 +24,10 @@ import type { LOOPType } from "../../generate/circular/domain/models/circular-mo
 import type { LOOPComponent } from "../../generate/shared/domain/models/generate-models";
 import type { PictographData } from "../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { Letter } from "../../../../shared/foundation/domain/models/Letter";
-import { GridMode } from "../../../../shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridMode,
+  type GridPosition,
+} from "../../../../shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "../../../../shared/state/utils/persistent-state";
 
 /**
@@ -53,8 +56,21 @@ const shareHubPanelPersistence = createPersistenceHelper({
 
 /**
  * Start/End position options - passed to the start/end options sheet
+ *
+ * Uses a blocklist approach for start positions:
+ * - Empty blockedStartPositions = any position allowed
+ * - Positions in the array are excluded from random selection
  */
 export interface StartEndOptions {
+  /**
+   * Blocked start positions - these positions will NOT be used.
+   * Empty array means all positions are allowed ("Any").
+   */
+  blockedStartPositions: GridPosition[];
+  /**
+   * @deprecated Use blockedStartPositions instead.
+   * Single start position constraint (legacy - for exact position match).
+   */
   startPosition: PictographData | null;
   endPosition: PictographData | null;
   mustContainLetters: Letter[];
@@ -220,6 +236,11 @@ export interface PanelCoordinationState {
 
   // Derived: Any Panel Open (for UI hiding coordination)
   get isAnyPanelOpen(): boolean;
+
+  // Generator Help Mode (for mobile - triggered from ButtonPanel)
+  get shouldEnterGeneratorHelpMode(): boolean;
+  triggerGeneratorHelpMode(): void;
+  clearGeneratorHelpModeTrigger(): void;
 }
 
 export function createPanelCoordinationState(): PanelCoordinationState {
@@ -304,6 +325,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
   // Creation method panel state
   let isCreationMethodPanelOpen = $state(false);
+
+  // Generator help mode trigger (for mobile - ButtonPanel triggers, GeneratePanel listens)
+  let shouldEnterGeneratorHelpMode = $state(false);
 
   // Start/End options panel state
   let isStartEndPanelOpen = $state(false);
@@ -750,6 +774,19 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isLOOPPanelOpen ||
         isStartEndPanelOpen
       );
+    },
+
+    // Generator Help Mode (for mobile - triggered from ButtonPanel)
+    get shouldEnterGeneratorHelpMode() {
+      return shouldEnterGeneratorHelpMode;
+    },
+
+    triggerGeneratorHelpMode() {
+      shouldEnterGeneratorHelpMode = true;
+    },
+
+    clearGeneratorHelpModeTrigger() {
+      shouldEnterGeneratorHelpMode = false;
     },
   };
 }

@@ -6,7 +6,7 @@
   <div class="container">
     <h2>LOOPs: Algorithmic Composition</h2>
     <p class="section-intro">
-      <strong>LOOPs (Linked Offset Operation Patterns)</strong> are transformations
+      <strong>LOOPs (Linked Orbital Offset Patterns)</strong> are transformations
       that generate circular sequences automatically.
     </p>
 

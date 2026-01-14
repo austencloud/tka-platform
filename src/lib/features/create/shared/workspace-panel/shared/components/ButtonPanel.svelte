@@ -22,12 +22,19 @@
   import { fade } from "svelte/transition";
   import { PresenceAnimation } from "../../../../../../shared/ui-animation/animations.svelte";
   import { getCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ClearSequencePanelButton from "./buttons/ClearSequenceButton.svelte";
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
+  import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
+  // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
+  import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const { CreateModuleState, panelState } = getCreateModuleContext();
+
+  // Show help button only on generator tab (mobile only - CSS handles desktop hide)
+  const showGeneratorHelp = $derived(navigationState.activeTab === "generator");
 
   // Props interface - only event handler callbacks
   const {
@@ -88,13 +95,21 @@
 
 {#if visible}
   <div class="button-panel" transition:fade={{ duration: 200 }}>
-    <!-- LEFT ZONE: Sequence Actions button (tools/menu) -->
+    <!-- LEFT ZONE: Sequence Actions button (tools/menu) + Animation style toggle -->
     <div class="left-zone">
       {#if showSequenceActions && onSequenceActionsClick}
         <div transition:presenceTransition>
           <SequenceActionsButton onclick={onSequenceActionsClick} />
         </div>
       {/if}
+      <!-- TEMPORARY: Animation style A/B toggle - delete after choosing preferred style -->
+      <button
+        class="style-toggle"
+        onclick={() => practiceAnimationStyle.cycle()}
+        title="Cycle through animation styles (temporary for testing)"
+      >
+        {practiceAnimationStyle.label}
+      </button>
     </div>
 
     <!-- CENTER ZONE: Main action button (Share Hub) -->
@@ -116,8 +131,13 @@
       {/key}
     </div>
 
-    <!-- RIGHT ZONE: Clear Sequence button (rightmost) -->
+    <!-- RIGHT ZONE: Help button (mobile only) + Clear Sequence button (rightmost) -->
     <div class="right-zone">
+      {#if showGeneratorHelp}
+        <div class="mobile-only" transition:presenceTransition>
+          <GeneratorHelpButton onclick={() => panelState.triggerGeneratorHelpMode()} />
+        </div>
+      {/if}
       {#if canClearSequence && onClearSequence}
         <div transition:presenceTransition>
           <ClearSequencePanelButton onclick={onClearSequence} />
@@ -189,6 +209,13 @@
   .center-zone > div,
   .right-zone > div {
     display: inline-block;
+  }
+
+  /* Mobile-only elements hidden on desktop (side-by-side layout) */
+  @media (min-width: 1024px) {
+    .mobile-only {
+      display: none;
+    }
   }
 
   /* Remove mobile tap highlight (blue selection box) */
@@ -283,5 +310,29 @@
     .right-zone {
       gap: 6px;
     }
+  }
+
+  /* TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style */
+  .style-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: capitalize;
+    white-space: nowrap;
+  }
+
+  .style-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .style-toggle:active {
+    transform: scale(0.95);
   }
 </style>

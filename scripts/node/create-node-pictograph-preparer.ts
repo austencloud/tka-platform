@@ -9,6 +9,7 @@
 
 import { NodeArrowSvgLoader } from "./NodeArrowSvgLoader";
 import { NodePropSvgLoader } from "./NodePropSvgLoader";
+import { NodeJsonCache } from "./NodeJsonCache";
 
 // Import pure logic services (work in both browser and Node.js)
 import { ArrowPathResolver } from "../../src/lib/shared/pictograph/arrow/rendering/services/implementations/ArrowPathResolver";
@@ -19,7 +20,7 @@ import { GridPositionDeriver } from "../../src/lib/shared/pictograph/grid/servic
 import { BetaDetector } from "../../src/lib/shared/pictograph/prop/services/implementations/BetaDetector";
 import { OrientationCalculator } from "../../src/lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
 import { PropPlacer } from "../../src/lib/shared/pictograph/prop/services/implementations/PropPlacer";
-import { PictographPreparer } from "../../src/lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+import { NodePictographPreparer } from "./NodePictographPreparer";
 
 // Import all arrow positioning services
 import { ArrowLifecycleManager } from "../../src/lib/shared/pictograph/arrow/orchestration/services/implementations/ArrowLifecycleManager";
@@ -78,8 +79,7 @@ export function createNodePictographPreparer() {
   const turnsTupleKeyGenerator = new TurnsTupleKeyGenerator();
   const rotationAngleOverrideKeyGenerator = new RotationAngleOverrideKeyGenerator();
 
-  // Arrow calculation services (leaf)
-  const arrowAdjustmentCalculator = new ArrowAdjustmentCalculator();
+  // Arrow calculation services (need dependencies)
   const arrowRotationCalculator = new ArrowRotationCalculator();
   const handpathDirectionCalculator = new HandpathDirectionCalculator();
   const dashLocationCalculator = new DashLocationCalculator();
@@ -89,8 +89,11 @@ export function createNodePictographPreparer() {
   const arrowLocationCalculator = new ArrowLocationCalculator(SVG_CONFIG);
   const arrowLocator = new ArrowLocator(arrowLocationCalculator, SVG_CONFIG);
 
+  // ArrowQuadrantCalculator must be created BEFORE QuadrantIndexCalculator
+  const arrowQuadrantCalculator = new ArrowQuadrantCalculator();
+
   const directionalTupleCalculator = new DirectionalTupleCalculator();
-  const quadrantIndexCalculator = new QuadrantIndexCalculator();
+  const quadrantIndexCalculator = new QuadrantIndexCalculator(arrowQuadrantCalculator);
   const directionalTupleProcessor = new DirectionalTupleProcessor(
     directionalTupleCalculator,
     quadrantIndexCalculator
@@ -105,9 +108,12 @@ export function createNodePictographPreparer() {
 
   // === Layer 3: Services with Layer 2 dependencies ===
   const letterClassifier = new LetterClassifier();
-  const specialPlacementLookup = new SpecialPlacementLookup();
+  const specialPlacementLookup = new SpecialPlacementLookup(letterClassifier);
+
+  // Node.js JSON cache for loading special placement data from file system
+  const nodeJsonCache = new NodeJsonCache();
   const specialPlacementDataProvider = new SpecialPlacementDataProvider(
-    specialPlacementLookup
+    nodeJsonCache
   );
 
   const turnsTupleGenerator = new TurnsTupleGenerator(
@@ -128,12 +134,8 @@ export function createNodePictographPreparer() {
     } as any
   );
 
-  const defaultPlacer = new DefaultPlacer(
-    arrowLocator,
-    arrowAdjustmentCalculator,
-    arrowRotationCalculator,
-    directionalTupleProcessor
-  );
+  // Pass nodeJsonCache to DefaultPlacer for file system-based JSON loading
+  const defaultPlacer = new DefaultPlacer(nodeJsonCache);
 
   const specialPlacer = new SpecialPlacer(
     specialPlacementDataProvider,
@@ -149,8 +151,20 @@ export function createNodePictographPreparer() {
     rotationOverrideManager
   );
 
+  // ArrowAdjustmentCalculator needs all the services above
+  const arrowAdjustmentCalculator = new ArrowAdjustmentCalculator(
+    gridModeDeriver,
+    specialPlacer,
+    defaultPlacer,
+    specialPlacementOriKeyGenerator,
+    arrowPlacementKeyGenerator,
+    turnsTupleKeyGenerator,
+    attributeKeyGenerator,
+    directionalTupleProcessor
+  );
+
   const arrowCoordinateTransformer = new ArrowCoordinateTransformer();
-  const arrowQuadrantCalculator = new ArrowQuadrantCalculator();
+  // arrowQuadrantCalculator is created earlier (before QuadrantIndexCalculator)
   const arrowGridCoordinator = new ArrowGridCoordinator(
     gridPositionDeriver,
     orientationCalculator
@@ -168,11 +182,11 @@ export function createNodePictographPreparer() {
   );
 
   const arrowPositioningOrchestrator = new ArrowPositioningOrchestrator(
-    arrowPlacer,
-    arrowPlacementKeyGenerator,
-    arrowGridCoordinator,
-    arrowAdjustmentProcessor,
-    arrowDataProcessor
+    arrowLocationCalculator,      // IArrowLocationCalculator
+    arrowRotationCalculator,      // IArrowRotationCalculator
+    arrowAdjustmentCalculator,    // IArrowAdjustmentCalculator
+    arrowGridCoordinator,         // IArrowGridCoordinator
+    arrowDataProcessor            // IArrowDataProcessor
   );
 
   // === Layer 4: SVG loaders (Node.js specific) ===
@@ -186,8 +200,8 @@ export function createNodePictographPreparer() {
 
   // === Layer 5: Arrow lifecycle manager ===
   const arrowLifecycleManager = new ArrowLifecycleManager(
-    arrowPositioningOrchestrator,
-    arrowSvgLoader
+    arrowSvgLoader,                // First: IArrowSvgLoader
+    arrowPositioningOrchestrator   // Second: IArrowPositioningOrchestrator
   );
 
   // === Layer 6: Prop placer with default prop types ===
@@ -202,7 +216,8 @@ export function createNodePictographPreparer() {
   );
 
   // === Layer 7: PictographPreparer (final assembly) ===
-  const pictographPreparer = new PictographPreparer(
+  // Use Node-specific version that doesn't depend on Svelte state
+  const pictographPreparer = new NodePictographPreparer(
     arrowLifecycleManager,
     propSvgLoader,
     propPlacer,

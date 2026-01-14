@@ -38,7 +38,7 @@ $patterns = @(
     @{ Pattern = "'cap-type'"; Replacement = "'loop-type'"; Description = 'cap-type key to loop-type' }
 
     # Comments and documentation (case-insensitive acronym)
-    @{ Pattern = '\bLOOP \(Circular Assembly Pattern\)'; Replacement = 'LOOP (Linked Offset Operation Pattern)'; Description = 'LOOP acronym expansion' }
+    @{ Pattern = '\bLOOP \(Circular Assembly Pattern\)'; Replacement = 'LOOP (Linked Orbital Offset Pattern)'; Description = 'LOOP acronym expansion' }
     @{ Pattern = '\bLOOP type'; Replacement = 'LOOP type'; Description = 'LOOP type to LOOP type' }
     @{ Pattern = '\bLOOP Type'; Replacement = 'LOOP Type'; Description = 'LOOP Type to LOOP Type' }
 )

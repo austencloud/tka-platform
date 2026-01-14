@@ -15,7 +15,10 @@ import type {
 
 // Re-export LOOPType for convenience
 export type { LOOPType };
-import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type {
+  GridMode,
+  GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
@@ -35,10 +38,14 @@ export interface GenerationOptions {
   loopType?: LOOPType | undefined; // LOOP type for circular generation
 
   // Customize options - advanced constraints for generation
+  /** @deprecated Use blockedStartPositions for multi-select */
   startPosition?: PictographData | null; // Specific start position constraint
   endPosition?: PictographData | null; // Specific end position constraint
   mustContainLetters?: Letter[]; // Letters that must appear in the sequence
   mustNotContainLetters?: Letter[]; // Letters that must NOT appear in the sequence
+
+  // Multi-select start position constraints (blocklist approach)
+  blockedStartPositions?: GridPosition[]; // Positions that should NOT be used
 }
 
 export interface LetterDerivationResult {

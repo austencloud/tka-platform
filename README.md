@@ -1,6 +1,6 @@
 # TKA Scribe
 
-**Digital sheet music for flow arts.**
+**A Flow Arts Choreography Toolbox.**
 
 TKA Scribe is browser-based notation software that creates visual diagrams—called _pictographs_—showing movement sequences for dancers and prop artists. Think musical notation, but for physical movement instead of sound.
 

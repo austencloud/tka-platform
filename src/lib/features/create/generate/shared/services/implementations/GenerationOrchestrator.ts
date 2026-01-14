@@ -12,6 +12,7 @@ import {
   GenerationMode,
   PropContinuity,
 } from "../../domain/models/generate-models";
+import { getRandomAllowedPosition } from "../../domain/start-position-presets";
 import type { IBeatGenerationOrchestrator } from "../contracts/IBeatGenerationOrchestrator";
 import type { BeatGenerationOptions } from "../contracts/IBeatGenerationOrchestrator";
 import type { IGenerationOrchestrator } from "../contracts/IGenerationOrchestrator";
@@ -58,17 +59,26 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
   private async generateFreeformSequence(
     options: GenerationOptions
   ): Promise<SequenceData> {
-    // Step 1: Get start position (use customized if provided, otherwise random)
+    // Step 1: Get start position
+    // Priority: legacy startPosition > random from allowed positions
     let startPosition: StartPositionData;
     if (options.startPosition) {
-      // Use the customized start position - convert PictographData to StartPositionData
+      // Use the legacy exact start position - convert PictographData to StartPositionData
       startPosition = this.convertPictographToStartPosition(
         options.startPosition
       );
     } else {
-      // Fall back to random selection
-      startPosition = await this.startPositionSelector.selectStartPosition(
+      // Select random position respecting blocked positions
+      const blockedPositions = options.blockedStartPositions ?? [];
+      const randomGridPos = getRandomAllowedPosition(
+        blockedPositions,
         options.gridMode
+      );
+
+      // Use the selector to get full StartPositionData for this position
+      startPosition = await this.startPositionSelector.selectStartPosition(
+        options.gridMode,
+        randomGridPos
       );
     }
     const sequence: (BeatData | StartPositionData)[] = [startPosition];
@@ -201,7 +211,8 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     // Get slice size
     const sliceSize = options.sliceSize || SliceSize.HALVED;
 
-    // Determine start position - use customized if provided, otherwise random
+    // Determine start position
+    // Priority: legacy startPosition > random from allowed positions (respecting blocklist)
     const { GridPosition } =
       await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
     type GridPositionType = (typeof GridPosition)[keyof typeof GridPosition];
@@ -209,19 +220,12 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     let startPos: GridPositionType | undefined;
 
     if (options.startPosition?.startPosition) {
-      // Use the customized start position's grid position
+      // Use the legacy exact start position's grid position
       startPos = options.startPosition.startPosition as GridPositionType;
     } else {
-      // Fall back to random selection from basic start positions
-      const basicStartPositions =
-        options.gridMode === "diamond"
-          ? [GridPosition.ALPHA1, GridPosition.BETA5, GridPosition.GAMMA11]
-          : [GridPosition.ALPHA2, GridPosition.BETA4, GridPosition.GAMMA12];
-
-      startPos =
-        basicStartPositions[
-          Math.floor(Math.random() * basicStartPositions.length)
-        ];
+      // Select random position respecting blocked positions
+      const blockedPositions = options.blockedStartPositions ?? [];
+      startPos = getRandomAllowedPosition(blockedPositions, options.gridMode);
     }
 
     if (!startPos) {

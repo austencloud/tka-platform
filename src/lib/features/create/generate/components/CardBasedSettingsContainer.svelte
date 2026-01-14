@@ -289,9 +289,12 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     /* Fill available space UP TO max dimensions - don't expand beyond sensible size */
     flex: 1 1 auto;
     width: 100%;
-    max-width: min(550px, 95%); /* Never expand beyond this width */
+    /* Mobile: use full width; Desktop: constrain to 550px */
+    max-width: 100%;
     /* max-height applied conditionally below - not on mobile stacked layouts */
     margin: 0 auto; /* Center horizontally */
+    /* Mobile: minimal horizontal padding */
+    padding-inline: 0.25rem;
     align-self: stretch; /* Default: fill vertical space (mobile stacked) */
 
     /* Responsive gap - scales with container, respects device setting as max */
@@ -386,6 +389,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     .card-settings-container {
       max-width: min(750px, 95%);
       max-height: min(65%, 750px);
+      padding-inline: 0; /* Remove mobile padding on desktop */
       align-self: center; /* Center vertically when height is constrained */
     }
   }

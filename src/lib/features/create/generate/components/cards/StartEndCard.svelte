@@ -1,6 +1,6 @@
 <!--
 StartEndCard.svelte - Card for opening start/end position options
-Opens sheet with start/end position selection
+Opens sheet with start/end position selection (multi-select with presets)
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -10,6 +10,12 @@ Opens sheet with start/end position selection
   import { onMount, getContext } from "svelte";
   import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
   import BaseCard from "./BaseCard.svelte";
+  import {
+    detectPresetFromBlocked,
+    PRESET_LABELS,
+    getAllPositions,
+    StartPositionPreset,
+  } from "../../shared/domain/start-position-presets";
 
   let {
     currentOptions,
@@ -80,34 +86,45 @@ Opens sheet with start/end position selection
     );
   }
 
-  // Calculate display value - compact indicator only
+  // Calculate display value based on blocked positions
   const displayValue = $derived.by(() => {
-    // Count how many options are configured
-    let configuredCount = 0;
+    const blocked = currentOptions.blockedStartPositions ?? [];
+    const allPositions = getAllPositions(gridMode);
+    const enabledCount = allPositions.length - blocked.length;
 
-    if (currentOptions.startPosition) {
-      configuredCount++;
-    }
-
+    // Count additional settings
+    let additionalSettings = 0;
     if (isFreeformMode && currentOptions.endPosition) {
-      configuredCount++;
+      additionalSettings++;
     }
 
-    const letterCount =
-      currentOptions.mustContainLetters.length +
-      currentOptions.mustNotContainLetters.length;
+    // Determine start position display
+    let startDisplay: string;
 
-    if (letterCount > 0) {
-      configuredCount++;
+    if (blocked.length === 0) {
+      // No blocked = Any
+      startDisplay = "Any";
+    } else {
+      // Check if it matches a preset
+      const preset = detectPresetFromBlocked(blocked, gridMode);
+
+      if (preset === StartPositionPreset.CLASSIC) {
+        startDisplay = "Classic";
+      } else if (enabledCount === 1) {
+        // Custom with 1 position
+        startDisplay = "1 pos";
+      } else {
+        // Custom with multiple positions
+        startDisplay = `${enabledCount} pos`;
+      }
     }
 
-    // Show simple indicator
-    if (configuredCount === 0) {
-      return "None";
+    // Combine with end position if set
+    if (additionalSettings > 0) {
+      return `${startDisplay} +${additionalSettings}`;
     }
 
-    // Show count of configured options (with proper plural)
-    return configuredCount === 1 ? "1 setting" : `${configuredCount} settings`;
+    return startDisplay;
   });
 </script>
 

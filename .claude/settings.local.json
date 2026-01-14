@@ -186,7 +186,26 @@
       "Bash(bash:*)",
       "WebFetch(domain:answers.netlify.com)",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*Orchestrator*.ts\")",
-      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\create\\\\generate\" -Recurse -Filter \"*.ts\")"
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\create\\\\generate\" -Recurse -Filter \"*.ts\")",
+      "Bash(1)",
+      "WebFetch(domain:mcpcat.io)",
+      "mcp__tka-pictograph__list_available_letters",
+      "mcp__tka-pictograph__list_letter_variations",
+      "mcp__tka-pictograph__get_pictograph_data",
+      "mcp__tka-pictograph__search_pictographs",
+      "mcp__tka-pictograph__generate_pictograph_url",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\features\\\\admin\" -Recurse -Filter \"*.svelte\")",
+      "mcp__tka-pictograph__generate_pictograph",
+      "Bash(start pictograph-G.png)",
+      "Bash(start \"\" \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\.playwright-mcp\\\\pictograph-G-beta5.png\")",
+      "Bash(start \"\" \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\mcp-server\\\\test-visibility-output.png\")",
+      "Bash(start \"\" \"C:\\\\Users\\\\Austen\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\F---THE-KINETIC-ALPHABET--TKA-SCRIBE\\\\c51cb036-c430-49b2-8b2f-5d6bc1e9c065\\\\scratchpad\\\\screenshot-picker.html\")",
+      "Bash(start \"\" \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\static\\\\store-assets\\\\feature-graphic.html\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*create-module-context*\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*VTG*\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\shared\\\\pictograph\" -Recurse -Filter \"*Position*\")",
+      "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Filter \"*Elemental*\" -Recurse)",
+      "mcp__tka-pictograph__get_preferences"
     ]
   }
 }

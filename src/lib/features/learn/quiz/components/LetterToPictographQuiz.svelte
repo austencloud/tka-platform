@@ -10,18 +10,16 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
-  import QuizBackButton from "./shared/QuizBackButton.svelte";
   import QuizLoadingState from "./shared/QuizLoadingState.svelte";
   import QuizErrorState from "./shared/QuizErrorState.svelte";
   import QuizPrompt from "./shared/QuizPrompt.svelte";
-  import QuizLetterCard from "./shared/QuizLetterCard.svelte";
+  import QuizGlyphCard from "./shared/QuizGlyphCard.svelte";
   import QuizPictographButton from "./shared/QuizPictographButton.svelte";
   import QuizFeedbackBanner from "./shared/QuizFeedbackBanner.svelte";
 
-  let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
+  let { onAnswerSubmit, onNextQuestion } = $props<{
     onAnswerSubmit?: (isCorrect: boolean) => void;
     onNextQuestion?: () => void;
-    onBack?: () => void;
   }>();
 
   let hapticService: IHapticFeedback;
@@ -32,9 +30,12 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
   let showFeedback = $state(false);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
-  let questionKey = $state(0);
 
   let questionLetter = $derived(questionData?.questionContent as string);
+
+  // Fixed answer slots (4 buttons) - using indices as keys keeps components persistent
+  // so arrows/props animate smoothly when pictograph data changes
+  const answerSlots = [0, 1, 2, 3];
   let isCorrectAnswer = $derived(
     selectedAnswerId
       ? (questionData?.answerOptions.find((o) => o.id === selectedAnswerId)
@@ -54,7 +55,6 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
       questionData = await QuestionGeneratorService.generateQuestion(
         QuizType.LETTER_TO_PICTOGRAPH
       );
-      questionKey++;
     } catch (err) {
       console.error("Failed to load question:", err);
       error = err instanceof Error ? err.message : "Failed to load question";
@@ -99,33 +99,34 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
 
 {#if isLoading}
   <QuizContainer>
-    {#if onBack}<QuizBackButton onclick={onBack} />{/if}
     <QuizLoadingState />
   </QuizContainer>
 {:else if error}
   <QuizContainer>
-    {#if onBack}<QuizBackButton onclick={onBack} />{/if}
     <QuizErrorState {error} onRetry={loadQuestion} />
   </QuizContainer>
 {:else if questionData && questionLetter}
   <QuizContainer>
-    {#if onBack}<QuizBackButton onclick={onBack} />{/if}
-    <QuizPrompt text="Which pictograph represents this letter?" />
+    <QuizPrompt text="Which pictograph contains this glyph?" />
 
     <div class="quiz-content">
-      {#key questionKey}
-        <QuizLetterCard letter={questionLetter} />
-      {/key}
+      <!-- Glyph card handles its own crossfade transitions -->
+      <QuizGlyphCard letter={questionLetter} />
 
       <div class="answer-section">
         <div class="answer-grid">
-          {#each questionData.answerOptions as option (option.id)}
-            <QuizPictographButton
-              pictograph={option.content as PictographData}
-              state={getButtonState(option.id, option.isCorrect)}
-              disabled={isAnswered}
-              onclick={() => handleAnswerClick(option.id, option.isCorrect)}
-            />
+          <!-- Use fixed slot indices as keys so components persist and arrows/props animate -->
+          {#each answerSlots as slotIndex (slotIndex)}
+            {@const option = questionData.answerOptions[slotIndex]}
+            {#if option}
+              <QuizPictographButton
+                pictograph={option.content as PictographData}
+                state={getButtonState(option.id, option.isCorrect)}
+                disabled={isAnswered}
+                showTKA={isAnswered}
+                onclick={() => handleAnswerClick(option.id, option.isCorrect)}
+              />
+            {/if}
           {/each}
         </div>
 
@@ -162,9 +163,9 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
 
   .answer-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 130px);
+    justify-content: center;
     gap: 0.75rem;
-    width: 100%;
   }
 
   @media (min-width: 600px) {
@@ -174,24 +175,31 @@ Letter to Pictograph Quiz - Shows a letter, asks user to identify the correct pi
     }
 
     .answer-grid {
+      grid-template-columns: repeat(2, 150px);
       gap: 1rem;
     }
   }
 
   @media (min-width: 900px) {
     .quiz-content {
-      max-width: 480px;
+      max-width: 520px;
       gap: 2.5rem;
     }
 
     .answer-grid {
+      grid-template-columns: repeat(2, 180px);
       gap: 1.25rem;
     }
   }
 
   @media (min-width: 1200px) {
     .quiz-content {
-      max-width: 520px;
+      max-width: 600px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, 200px);
+      gap: 1.5rem;
     }
   }
 </style>

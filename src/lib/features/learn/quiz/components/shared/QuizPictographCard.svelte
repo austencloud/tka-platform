@@ -16,7 +16,7 @@ QuizPictographCard - Question pictograph display
 
 <div class="pictograph-section">
   <div class="pictograph-card question-card">
-    <PictographContainer pictographData={pictograph} />
+    <PictographContainer pictographData={pictograph} showTKA={false} />
   </div>
   {#if showArrow}
     <div class="arrow-indicator">
@@ -57,21 +57,22 @@ QuizPictographCard - Question pictograph display
   }
 
   .pictograph-card {
-    width: 120px;
-    height: 120px;
+    width: 200px;
+    height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
+    /* No background - pictograph has its own dark background */
+    background: transparent;
     border-radius: 14px;
-    box-shadow:
-      0 6px 24px rgba(0, 0, 0, 0.12),
-      0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 0 60px -20px color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    /* Subtle glow effect instead of white background */
+    box-shadow: 0 0 60px -20px color-mix(in srgb, var(--theme-accent) 25%, transparent);
+    overflow: hidden;
   }
 
   .question-card {
-    border: 2px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    /* Subtle accent border on the pictograph itself */
+    border: 1.5px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
   .arrow-indicator {
@@ -101,9 +102,9 @@ QuizPictographCard - Question pictograph display
 
   @media (min-width: 600px) {
     .pictograph-card {
-      width: 160px;
-      height: 160px;
-      border-radius: 18px;
+      width: 240px;
+      height: 240px;
+      border-radius: 16px;
     }
 
     .arrow-indicator svg {
@@ -114,13 +115,10 @@ QuizPictographCard - Question pictograph display
 
   @media (min-width: 900px) {
     .pictograph-card {
-      width: 200px;
-      height: 200px;
-      border-radius: 20px;
-      box-shadow:
-        0 10px 40px rgba(0, 0, 0, 0.12),
-        0 0 0 1px rgba(255, 255, 255, 0.06),
-        0 0 100px -30px color-mix(in srgb, var(--theme-accent) 20%, transparent);
+      width: 280px;
+      height: 280px;
+      border-radius: 18px;
+      box-shadow: 0 0 100px -30px color-mix(in srgb, var(--theme-accent) 30%, transparent);
     }
 
     .arrow-indicator svg {
@@ -131,8 +129,9 @@ QuizPictographCard - Question pictograph display
 
   @media (min-width: 1200px) {
     .pictograph-card {
-      width: 240px;
-      height: 240px;
+      width: 320px;
+      height: 320px;
+      border-radius: 20px;
     }
   }
 

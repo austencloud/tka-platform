@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "$lib/*": ["../src/lib/*"]
+    },
+    "noEmit": true
+  },
+  "include": ["index.ts", "NodePictographRenderer.ts"],
+  "exclude": ["node_modules", "dist"]
+}

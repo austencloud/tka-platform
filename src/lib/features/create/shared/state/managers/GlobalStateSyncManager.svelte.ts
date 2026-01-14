@@ -32,10 +32,12 @@ export function createGlobalStateSyncEffects(
     });
 
     // Sync animating beat number from shared animation state
+    // Only show the word label glow effect while animation is actively playing
+    // When stopped/paused, clear the highlight so it doesn't persist after closing the drawer
     $effect(() => {
-      const currentBeat = sharedAnimationState.currentBeat;
-      if (sharedAnimationState.isPlaying || currentBeat > 0) {
-        setAnimatingBeatNumber(Math.floor(currentBeat) + 1);
+      if (sharedAnimationState.isPlaying) {
+        const currentBeat = sharedAnimationState.currentBeat;
+        setAnimatingBeatNumber(Math.floor(currentBeat));
       } else {
         setAnimatingBeatNumber(null);
       }

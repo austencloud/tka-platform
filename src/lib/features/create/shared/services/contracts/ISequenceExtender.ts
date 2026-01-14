@@ -2,7 +2,7 @@
  * Sequence Extender Interface
  *
  * Detects when a sequence is in an extendable state (end position is a rotation of start)
- * and provides extension options using LOOP (Linked Offset Operation Pattern) types.
+ * and provides extension options using LOOP (Linked Orbital Offset Pattern) types.
  *
  * LOOP = TKA's algorithmic extension patterns (Mirrored, Rotated, Swapped, etc.)
  * that transform and extend sequences based on position symmetries.
@@ -29,7 +29,7 @@ export type ExtensionType =
 
 /**
  * Describes a single LOOP option available for extension
- * LOOP = Linked Offset Operation Pattern
+ * LOOP = Linked Orbital Offset Pattern
  */
 export interface LOOPOption {
   /** The LOOP type */

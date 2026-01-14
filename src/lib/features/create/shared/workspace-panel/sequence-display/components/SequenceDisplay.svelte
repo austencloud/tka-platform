@@ -138,6 +138,7 @@
             word={currentDisplayWord}
             scrollMode={false}
             {letterSources}
+            activeBeatNumber={practiceBeatNumber}
           />
         </div>
         <div class="top-right-zone">

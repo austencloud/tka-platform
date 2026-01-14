@@ -1,6 +1,29 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  // Recolor an SVG image to a solid color using offscreen canvas
+  function recolorImage(
+    img: HTMLImageElement,
+    color: string,
+    width: number,
+    height: number
+  ): HTMLCanvasElement {
+    const offscreen = document.createElement('canvas');
+    offscreen.width = width;
+    offscreen.height = height;
+    const offCtx = offscreen.getContext('2d')!;
+
+    // Draw original image
+    offCtx.drawImage(img, 0, 0, width, height);
+
+    // Use source-in to replace all visible pixels with the desired color
+    offCtx.globalCompositeOperation = 'source-in';
+    offCtx.fillStyle = color;
+    offCtx.fillRect(0, 0, width, height);
+
+    return offscreen;
+  }
+
   async function renderToCanvas() {
     return new Promise<string>((resolve, reject) => {
       const width = 1920;
@@ -18,20 +41,30 @@
 
       // Track loaded images
       let loadedImages = 0;
-      const totalImages = 10; // artist photo + 6 props + 3 sequence thumbnails
+      const totalImages = 17; // artist photo + 10 props + 3 sequence thumbnails + 3 pictographs
 
       const images: Record<string, HTMLImageElement> = {};
       const imageUrls = {
         artist: '/images/austen-fire.jpg',
+        // 10 props - base versions
         prop1: '/images/props/staff.svg',
         prop2: '/images/props/fan.svg',
         prop3: '/images/props/triad.svg',
         prop4: '/images/props/club.svg',
         prop5: '/images/props/buugeng.svg',
         prop6: '/images/props/doublestar.svg',
+        prop7: '/images/props/sword.svg',
+        prop8: '/images/props/eightrings.svg',
+        prop9: '/images/props/triquetra.svg',
+        prop10: '/images/props/quiad.svg',
+        // Sequence thumbnails
         seq1: '/thumbnails/staff/ABC_light.webp',
         seq2: '/thumbnails/staff/AABB_light.webp',
         seq3: '/thumbnails/staff/AKE_light.webp',
+        // Pre-rendered pictographs
+        pictoA: '/images/grant-feature/pictograph-A.png',
+        pictoB: '/images/grant-feature/pictograph-B.png',
+        pictoC: '/images/grant-feature/pictograph-C.png',
       };
 
       // Load all images
@@ -62,39 +95,61 @@
       });
 
       function drawCanvas() {
-        // Background gradient - BLUE on right, RED on left
-        const gradient = ctx.createRadialGradient(width * 0.75, height * 0.5, 0, width * 0.75, height * 0.5, width * 0.35);
-        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.30)'); // Blue on right
-        gradient.addColorStop(0.6, 'transparent');
+        // === BACKGROUND: Red-Purple-Blue gradient (AAA compliant for white text) ===
+        // Base: dark gradient ensuring 7:1+ contrast with white text
+        const rightHalf = width / 2;
 
-        const gradient2 = ctx.createRadialGradient(width * 0.25, height * 0.5, 0, width * 0.25, height * 0.5, width * 0.35);
-        gradient2.addColorStop(0, 'rgba(239, 68, 68, 0.30)'); // Red on left
-        gradient2.addColorStop(0.6, 'transparent');
+        // Main horizontal gradient: Red (left) -> Purple (center) -> Blue (right)
+        // Using dark, rich tones for AAA readability
+        const mainGradient = ctx.createLinearGradient(rightHalf, 0, width, 0);
+        mainGradient.addColorStop(0, '#1a0a1f');    // Dark purple-red at center
+        mainGradient.addColorStop(0.5, '#12081a');  // Deep purple in middle
+        mainGradient.addColorStop(1, '#0a1020');    // Dark blue at right edge
 
-        const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#0a0510');
-        bgGradient.addColorStop(0.5, '#0f0a1e');
-        bgGradient.addColorStop(1, '#051019');
+        // Fill right side with main gradient
+        ctx.fillStyle = mainGradient;
+        ctx.fillRect(rightHalf, 0, width / 2, height);
 
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, width, height);
+        // Red glow on left side of right panel (near props column)
+        const redGlow = ctx.createRadialGradient(
+          rightHalf + 80, height * 0.5, 0,
+          rightHalf + 80, height * 0.5, height * 0.6
+        );
+        redGlow.addColorStop(0, 'rgba(180, 30, 50, 0.35)');
+        redGlow.addColorStop(0.5, 'rgba(120, 20, 40, 0.15)');
+        redGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = redGlow;
+        ctx.fillRect(rightHalf, 0, width / 2, height);
 
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = gradient2;
-        ctx.fillRect(0, 0, width, height);
+        // Blue glow on right side of right panel (near props column)
+        const blueGlow = ctx.createRadialGradient(
+          width - 80, height * 0.5, 0,
+          width - 80, height * 0.5, height * 0.6
+        );
+        blueGlow.addColorStop(0, 'rgba(30, 60, 180, 0.35)');
+        blueGlow.addColorStop(0.5, 'rgba(20, 40, 120, 0.15)');
+        blueGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = blueGlow;
+        ctx.fillRect(rightHalf, 0, width / 2, height);
 
-        // Center divider line
-        const dividerGradient = ctx.createLinearGradient(width / 2, height * 0.1, width / 2, height * 0.9);
-        dividerGradient.addColorStop(0, 'transparent');
-        dividerGradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.4)');
-        dividerGradient.addColorStop(1, 'transparent');
-        ctx.strokeStyle = dividerGradient;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(width / 2, 0);
-        ctx.lineTo(width / 2, height);
-        ctx.stroke();
+        // Subtle purple accent in center for visual interest
+        const purpleCenter = ctx.createRadialGradient(
+          rightHalf + (width / 4), height * 0.45, 0,
+          rightHalf + (width / 4), height * 0.45, height * 0.4
+        );
+        purpleCenter.addColorStop(0, 'rgba(139, 92, 246, 0.12)');
+        purpleCenter.addColorStop(1, 'transparent');
+        ctx.fillStyle = purpleCenter;
+        ctx.fillRect(rightHalf, 0, width / 2, height);
+
+        // Vertical gradient for depth (darker at edges)
+        const verticalShade = ctx.createLinearGradient(0, 0, 0, height);
+        verticalShade.addColorStop(0, 'rgba(0, 0, 0, 0.2)');
+        verticalShade.addColorStop(0.3, 'transparent');
+        verticalShade.addColorStop(0.7, 'transparent');
+        verticalShade.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+        ctx.fillStyle = verticalShade;
+        ctx.fillRect(rightHalf, 0, width / 2, height);
 
         // Left side - Artist photo
         if (images.artist) {
@@ -128,57 +183,64 @@
         const rightStart = width / 2;
         const centerX = rightStart + (width / 2) / 2;
 
-        // Draw prop decorations - 6 unique props, alternating red and blue
+        // TKA brand colors - proper red and blue
+        const TKA_RED = '#ED1C24';
+        const TKA_BLUE = '#2E3192';
+
+        // Prop column positions
+        const leftColX = rightStart + 80;   // Left column (red props)
+        const rightColX = width - 80;       // Right column (blue props)
+
+        // Evenly distributed Y positions (5 per column)
+        const yPositions = [
+          height * 0.08,  // Top
+          height * 0.29,  // Upper
+          height * 0.50,  // Middle
+          height * 0.71,  // Lower
+          height * 0.92,  // Bottom
+        ];
+
+        // Draw prop decorations - 10 props, 5 per column, evenly spaced
         const propConfig = [
-          // Staff (red) - top left area
-          { img: 'prop1', x: rightStart + 100, y: 80, size: 100, rotate: -15, color: 'red' },
+          // LEFT COLUMN (Red)
+          { img: 'prop1', x: leftColX, y: yPositions[0], size: 85, rotate: -15, color: TKA_RED },  // Staff
+          { img: 'prop7', x: leftColX, y: yPositions[1], size: 80, rotate: 20, color: TKA_RED },   // Sword
+          { img: 'prop5', x: leftColX, y: yPositions[2], size: 85, rotate: -10, color: TKA_RED },  // Buugeng
+          { img: 'prop9', x: leftColX, y: yPositions[3], size: 80, rotate: 15, color: TKA_RED },   // Triquetra
+          { img: 'prop3', x: leftColX, y: yPositions[4], size: 85, rotate: -20, color: TKA_RED },  // Triad
 
-          // Fan (blue) - top right area
-          { img: 'prop2', x: width - 100, y: 80, size: 105, rotate: 20, color: 'blue' },
-
-          // Triad (red) - bottom left area
-          { img: 'prop3', x: rightStart + 110, y: height - 80, size: 115, rotate: 10, color: 'red' },
-
-          // Club (blue) - bottom right area
-          { img: 'prop4', x: width - 110, y: height - 80, size: 100, rotate: -12, color: 'blue' },
-
-          // Buugeng (red) - middle left
-          { img: 'prop5', x: rightStart + 85, y: height / 2, size: 95, rotate: -25, color: 'red' },
-
-          // Doublestar (blue) - middle right
-          { img: 'prop6', x: width - 85, y: height / 2, size: 95, rotate: 25, color: 'blue' },
+          // RIGHT COLUMN (Blue)
+          { img: 'prop2', x: rightColX, y: yPositions[0], size: 85, rotate: 15, color: TKA_BLUE },  // Fan
+          { img: 'prop8', x: rightColX, y: yPositions[1], size: 80, rotate: -20, color: TKA_BLUE }, // Eight Rings
+          { img: 'prop6', x: rightColX, y: yPositions[2], size: 80, rotate: 25, color: TKA_BLUE },  // Doublestar
+          { img: 'prop10', x: rightColX, y: yPositions[3], size: 80, rotate: -15, color: TKA_BLUE },// Quiad
+          { img: 'prop4', x: rightColX, y: yPositions[4], size: 85, rotate: 20, color: TKA_BLUE },  // Club
         ];
 
         propConfig.forEach(prop => {
           if (images[prop.img]) {
-            ctx.save();
-            ctx.globalAlpha = 0.65;
-            ctx.translate(prop.x, prop.y);
-            ctx.rotate((prop.rotate * Math.PI) / 180);
-
-            // Preserve aspect ratio - scale based on the longest dimension
             const img = images[prop.img];
             const aspectRatio = img.naturalWidth / img.naturalHeight;
             let drawWidth, drawHeight;
 
             if (aspectRatio > 1) {
-              // Wider than tall
               drawWidth = prop.size;
               drawHeight = prop.size / aspectRatio;
             } else {
-              // Taller than wide
               drawHeight = prop.size;
               drawWidth = prop.size * aspectRatio;
             }
 
-            // Draw the SVG first
-            ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+            // Recolor the prop to the desired color (no background artifacts)
+            const recolored = recolorImage(img, prop.color, Math.ceil(drawWidth), Math.ceil(drawHeight));
 
-            // Multiply the TKA brand color onto it
-            ctx.globalCompositeOperation = 'multiply';
-            ctx.fillStyle = prop.color === 'red' ? '#EF4444' : '#3B82F6';
-            ctx.fillRect(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-            ctx.globalCompositeOperation = 'source-over'; // Reset
+            ctx.save();
+            ctx.globalAlpha = 0.70;
+            ctx.translate(prop.x, prop.y);
+            ctx.rotate((prop.rotate * Math.PI) / 180);
+
+            // Draw the recolored prop (no fillRect, no background)
+            ctx.drawImage(recolored, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
 
             ctx.restore();
           }
@@ -253,15 +315,13 @@
           }
         });
 
-        // Pictograph cards (fanned) - using pictograph data rendered to images
+        // Pictograph cards (fanned) - A, B, C with alpha1→alpha3 variation
         const pictographConfigs = [
-          { letter: 'A', x: centerX - 60, y: 680, rotate: -10, scale: 0.92, z: 1 },
-          { letter: 'B', x: centerX, y: 670, rotate: 0, scale: 1.0, z: 2 },
-          { letter: 'C', x: centerX + 60, y: 680, rotate: 10, scale: 0.92, z: 1 },
+          { img: 'pictoA', x: centerX - 110, y: 820, rotate: -12, scale: 0.90, z: 1 },
+          { img: 'pictoB', x: centerX, y: 795, rotate: 0, scale: 1.0, z: 2 },
+          { img: 'pictoC', x: centerX + 110, y: 820, rotate: 12, scale: 0.90, z: 1 },
         ];
 
-        // For pictographs, we need to render them from the actual pictograph components
-        // This is complex, so for now let's draw placeholder cards
         pictographConfigs.forEach(card => {
           ctx.save();
           ctx.translate(card.x, card.y);
@@ -274,19 +334,25 @@
           ctx.shadowBlur = card.z === 2 ? 32 : 20;
           ctx.shadowOffsetY = card.z === 2 ? 12 : 6;
 
-          const size = 120;
+          const size = 130;
           ctx.beginPath();
           ctx.roundRect(-size / 2, -size / 2, size, size, 12);
           ctx.fill();
 
-          // Pictograph letter label
+          // Draw the pre-rendered pictograph image
           ctx.shadowBlur = 0;
           ctx.shadowOffsetY = 0;
-          ctx.fillStyle = '#000000';
-          ctx.font = 'bold 48px system-ui, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(card.letter, 0, 0);
+          if (images[card.img]) {
+            const padding = 8;
+            const imgSize = size - padding * 2;
+            ctx.drawImage(
+              images[card.img],
+              -imgSize / 2,
+              -imgSize / 2,
+              imgSize,
+              imgSize
+            );
+          }
 
           ctx.restore();
         });

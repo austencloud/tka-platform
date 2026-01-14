@@ -280,8 +280,26 @@ export function createSequenceState(services: SequenceStateServices) {
     // Update start position from sequence
     // Check both startingPositionBeat (full beat format) and startPosition (raw position data)
     // Sequences from Discover gallery may only have startPosition
-    const startPosBeat =
-      sequence?.startingPositionBeat || sequence?.startPosition;
+    let startPosBeat: StartPositionData | null =
+      sequence?.startingPositionBeat || sequence?.startPosition || null;
+
+    // If no explicit start position but sequence has beats, derive from the first beat
+    // This handles sequences loaded from Discover where start position info is stored
+    // in the first beat's startPosition field rather than on the sequence itself
+    if (!startPosBeat && sequence?.beats?.length) {
+      try {
+        const startPositionDeriver = container.items.startPositionDeriver;
+        const derived = startPositionDeriver.getOrDeriveStartPosition(sequence);
+        // getOrDeriveStartPosition returns StartPositionData when deriving from beats
+        // The BeatData return type is for legacy compatibility only
+        if (derived && "isStartPosition" in derived) {
+          startPosBeat = derived as StartPositionData;
+        }
+      } catch (error) {
+        console.warn("Failed to derive start position from first beat:", error);
+      }
+    }
+
     if (startPosBeat) {
       selectionState.setStartPosition(startPosBeat);
     } else {

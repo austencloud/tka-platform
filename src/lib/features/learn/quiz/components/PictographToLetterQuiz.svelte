@@ -10,7 +10,6 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import { QuizType } from "../domain/enums/quiz-enums";
   import type { QuizQuestionData } from "../domain/models/quiz-models";
   import QuizContainer from "./shared/QuizContainer.svelte";
-  import QuizBackButton from "./shared/QuizBackButton.svelte";
   import QuizLoadingState from "./shared/QuizLoadingState.svelte";
   import QuizErrorState from "./shared/QuizErrorState.svelte";
   import QuizPrompt from "./shared/QuizPrompt.svelte";
@@ -20,10 +19,9 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   import ScorePopAnimation from "./shared/ScorePopAnimation.svelte";
   import { getDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
 
-  let { onAnswerSubmit, onNextQuestion, onBack } = $props<{
+  let { onAnswerSubmit, onNextQuestion } = $props<{
     onAnswerSubmit?: (isCorrect: boolean) => void;
     onNextQuestion?: () => void;
-    onBack?: () => void;
   }>();
 
   let hapticService: IHapticFeedback;
@@ -35,11 +33,13 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
   let showFeedback = $state(false);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
-  let questionKey = $state(0);
 
   // Streak tracking within session
   let currentStreak = $state(0);
   let showScorePop = $state(false);
+
+  // Fixed answer slots - using indices keeps components persistent for smooth transitions
+  const answerSlots = [0, 1, 2, 3];
 
   let currentPictograph = $derived(
     questionData?.questionContent as PictographData | null
@@ -64,7 +64,6 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
       questionData = await QuestionGeneratorService.generateQuestion(
         QuizType.PICTOGRAPH_TO_LETTER
       );
-      questionKey++;
     } catch (err) {
       console.error("Failed to load question:", err);
       error = err instanceof Error ? err.message : "Failed to load question";
@@ -128,33 +127,33 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 
 {#if isLoading}
   <QuizContainer>
-    {#if onBack}<QuizBackButton onclick={onBack} />{/if}
     <QuizLoadingState />
   </QuizContainer>
 {:else if error}
   <QuizContainer>
-    {#if onBack}<QuizBackButton onclick={onBack} />{/if}
     <QuizErrorState {error} onRetry={loadQuestion} />
   </QuizContainer>
 {:else if questionData && currentPictograph}
   <QuizContainer>
-    {#if onBack}<QuizBackButton onclick={onBack} />{/if}
     <QuizPrompt text="What letter does this pictograph represent?" />
 
     <div class="quiz-content">
-      {#key questionKey}
-        <QuizPictographCard pictograph={currentPictograph} />
-      {/key}
+      <!-- Pictograph card - arrows/props animate smoothly when data changes -->
+      <QuizPictographCard pictograph={currentPictograph} />
 
       <div class="answer-section">
         <div class="answer-grid">
-          {#each questionData.answerOptions as option (option.id)}
-            <QuizLetterButton
-              letter={option.content as string}
-              state={getButtonState(option.id, option.isCorrect)}
-              disabled={isAnswered}
-              onclick={() => handleAnswerClick(option.id, option.isCorrect)}
-            />
+          <!-- Use fixed slot indices as keys so letter buttons persist -->
+          {#each answerSlots as slotIndex (slotIndex)}
+            {@const option = questionData.answerOptions[slotIndex]}
+            {#if option}
+              <QuizLetterButton
+                letter={option.content as string}
+                state={getButtonState(option.id, option.isCorrect)}
+                disabled={isAnswered}
+                onclick={() => handleAnswerClick(option.id, option.isCorrect)}
+              />
+            {/if}
           {/each}
         </div>
 
@@ -199,9 +198,9 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
 
   .answer-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    width: 100%;
+    grid-template-columns: repeat(2, minmax(60px, 80px));
+    justify-content: center;
+    gap: 0.625rem;
   }
 
   @media (min-width: 600px) {
@@ -211,7 +210,8 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
     }
 
     .answer-grid {
-      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(70px, 100px));
+      gap: 0.875rem;
     }
   }
 
@@ -222,13 +222,18 @@ Pictograph to Letter Quiz - Shows a pictograph, asks user to identify the letter
     }
 
     .answer-grid {
-      gap: 1.25rem;
+      grid-template-columns: repeat(2, minmax(90px, 120px));
+      gap: 1rem;
     }
   }
 
   @media (min-width: 1200px) {
     .quiz-content {
       max-width: 520px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, minmax(100px, 140px));
     }
   }
 </style>

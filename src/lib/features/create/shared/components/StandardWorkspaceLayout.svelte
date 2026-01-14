@@ -10,7 +10,6 @@
 
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
-  import UndoButton from "../workspace-panel/shared/components/buttons/UndoButton.svelte";
   import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
@@ -67,9 +66,6 @@
   let workspaceContainerRef: HTMLElement | null = $state(null);
   let buttonPanelHeight = $state(0);
 
-  // Delayed state for floating undo - waits for layout animation to complete
-  let floatingUndoDelayComplete = $state(false);
-
   // ============================================================================
   // DERIVED STATE - Workspace Color Coding & Visibility
   // ============================================================================
@@ -92,6 +88,14 @@
     return result;
   });
 
+  // Generator tab always shows workspace (for help button accessibility)
+  const isGeneratorTab = $derived(navigationState.activeTab === "generator");
+
+  // Workspace should be visible if:
+  // - Generator tab (always visible with empty prompt)
+  // - Other tabs only when there's content
+  const shouldShowWorkspace = $derived(isGeneratorTab || hasWorkspaceContent);
+
   // Color border based on active CREATE tab (for visual workspace distinction)
   const workspaceBorderColor = $derived.by(() => {
     const activeTab = navigationState.activeTab;
@@ -107,30 +111,6 @@
       default:
         return "rgba(255, 255, 255, 0.1)"; // Default
     }
-  });
-
-  // Show floating undo button in tool panel when workspace is empty but undo is available
-  // Only show after layout animation completes (450ms) for smoother visual transition
-  const shouldShowFloatingUndo = $derived(
-    !hasWorkspaceContent && CreateModuleState.canUndo
-  );
-  const showFloatingUndo = $derived(
-    shouldShowFloatingUndo && floatingUndoDelayComplete
-  );
-
-  // Effect to handle delayed appearance of floating undo
-  // Waits for layout animation (450ms) to complete before showing
-  $effect(() => {
-    if (shouldShowFloatingUndo) {
-      // Wait for layout animation to complete before showing
-      const timer = setTimeout(() => {
-        floatingUndoDelayComplete = true;
-      }, 500); // Slightly longer than 450ms layout animation
-      return () => clearTimeout(timer);
-    }
-    // Reset immediately when no longer needed
-    floatingUndoDelayComplete = false;
-    return undefined;
   });
 
   // Measure button panel height dynamically
@@ -158,13 +138,13 @@
 <div
   class="layout-wrapper"
   class:side-by-side={shouldUseSideBySideLayout}
-  class:workspace-visible={hasWorkspaceContent}
+  class:workspace-visible={shouldShowWorkspace}
 >
-  <!-- Workspace Panel - Always in DOM, collapses when empty -->
+  <!-- Workspace Panel - Visible based on tab and content -->
   <div
     bind:this={workspaceContainerRef}
     class="workspace-container"
-    class:workspace-collapsed={!hasWorkspaceContent}
+    class:workspace-collapsed={!shouldShowWorkspace}
     style:--workspace-border-color={workspaceBorderColor}
   >
     <!-- Workspace Content Area -->
@@ -179,11 +159,13 @@
             ? { animationStateRef: toolPanelRef.getAnimationStateRef() }
             : {}}
         />
+      {:else if isGeneratorTab}
+        <p class="empty-prompt">Tap Generate to create your sequence</p>
       {/if}
     </div>
 
-    <!-- Button Panel -->
-    {#if hasWorkspaceContent}
+    <!-- Button Panel - Shows when workspace is visible -->
+    {#if shouldShowWorkspace}
       <div class="button-panel-wrapper" bind:this={buttonPanelElement}>
         <ButtonPanel {onClearSequence} {onShareHub} {onSequenceActionsClick} />
       </div>
@@ -192,13 +174,6 @@
 
   <!-- Tool Panel -->
   <div class="tool-panel-container" bind:this={toolPanelElement}>
-    <!-- Floating undo button - shown when workspace is empty but undo is available -->
-    {#if showFloatingUndo}
-      <div class="floating-undo-wrapper">
-        <UndoButton {CreateModuleState} />
-      </div>
-    {/if}
-
     <CreationToolPanelSlot
       bind:toolPanelRef
       {onOptionSelected}
@@ -298,26 +273,17 @@
     position: relative;
   }
 
-  /* Floating undo button positioned in header area of tool panel */
-  .floating-undo-wrapper {
+  /* Simple prompt when workspace is empty */
+  .empty-prompt {
     position: absolute;
-    /* Align with picker-header padding: clamp(12px, 2.5vmin, 20px) */
-    top: clamp(12px, 2.5vmin, 20px);
-    left: clamp(16px, 3vmin, 24px);
-    z-index: 100;
-
-    /* Entry animation */
-    animation: floatIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  @keyframes floatIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8) translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 1rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-sm, 14px);
+    text-align: center;
   }
 </style>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKA Grant Feature Export - High Resolution</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 30px;
+      font-family: system-ui, sans-serif;
+    }
+    .status {
+      text-align: center;
+      color: #ffffff;
+    }
+    .status h1 {
+      font-size: 32px;
+      color: #c084fc;
+    }
+    .status p {
+      color: rgba(255,255,255,0.7);
+      margin-top: 10px;
+    }
+    .preview-container {
+      width: 100%;
+      max-width: 1600px;
+      display: flex;
+      justify-content: center;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    }
+    .preview-image {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .export-controls {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+    .resolution-info {
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+    }
+    .export-btn {
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #ef4444 0%, #a78bfa 50%, #3b82f6 100%);
+      border: none;
+      color: white;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .export-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(139, 92, 246, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="status" id="status">
+    <h1>Generating High-Res Image...</h1>
+    <p>Loading artist photo and props...</p>
+  </div>
+  <div class="preview-container" id="preview-container" style="display: none;">
+    <img id="preview-image" class="preview-image" alt="Grant feature preview">
+  </div>
+  <div class="export-controls" id="export-controls" style="display: none;">
+    <div class="resolution-info" id="resolution-info"></div>
+    <button class="export-btn" onclick="exportImage()">
+      Export High-Resolution PNG
+    </button>
+  </div>
+
+  <script>
+    // Recolor an SVG image to a solid color using offscreen canvas
+    function recolorImage(img, color, width, height) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = width;
+      offscreen.height = height;
+      const offCtx = offscreen.getContext('2d');
+      offCtx.drawImage(img, 0, 0, width, height);
+      offCtx.globalCompositeOperation = 'source-in';
+      offCtx.fillStyle = color;
+      offCtx.fillRect(0, 0, width, height);
+      return offscreen;
+    }
+
+    let previewDataUrl = "";
+    let canvasWidth = 0;
+    let canvasHeight = 0;
+
+    async function renderToCanvas() {
+      return new Promise((resolve, reject) => {
+        const images = {};
+        let loadedImages = 0;
+
+        // Load artist photo first to determine resolution
+        const imageUrls = {
+          artist: '/images/austen-fire.jpg',
+          prop1: '/images/props/staff.svg',
+          prop2: '/images/props/fan.svg',
+          prop3: '/images/props/triad.svg',
+          prop4: '/images/props/club.svg',
+          prop5: '/images/props/buugeng.svg',
+          prop6: '/images/props/doublestar.svg',
+          prop7: '/images/props/sword.svg',
+          prop8: '/images/props/eightrings.svg',
+          prop9: '/images/props/triquetra.svg',
+          prop10: '/images/props/quiad.svg',
+        };
+
+        const totalImages = Object.keys(imageUrls).length;
+
+        Object.entries(imageUrls).forEach(([key, url]) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            images[key] = img;
+            loadedImages++;
+            if (loadedImages === totalImages) {
+              drawCanvas();
+            }
+          };
+          img.onerror = () => {
+            console.error('Failed to load:', url);
+            loadedImages++;
+            if (loadedImages === totalImages) {
+              drawCanvas();
+            }
+          };
+          img.src = url;
+        });
+
+        function drawCanvas() {
+          // Use full resolution of source image
+          // Artist photo determines the left half height
+          const artistImg = images.artist;
+          if (!artistImg) {
+            reject(new Error("Artist image failed to load"));
+            return;
+          }
+
+          // Scale based on artist image - use its full resolution
+          // The artist photo will be the left half, so canvas is 2x its width
+          const artistNaturalWidth = artistImg.naturalWidth;
+          const artistNaturalHeight = artistImg.naturalHeight;
+
+          // Canvas width = 2x artist width (photo on left, gradient on right)
+          // But maintain 16:9 aspect ratio for the final image
+          // Let's use the artist image height as our constraint
+          const height = artistNaturalHeight;
+          const width = Math.round(height * (16 / 9)); // 16:9 aspect ratio
+
+          canvasWidth = width;
+          canvasHeight = height;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          if (!ctx) {
+            reject(new Error("Could not get canvas context"));
+            return;
+          }
+
+          const rightHalf = width / 2;
+
+          // === RIGHT SIDE: Red-Purple-Blue gradient ===
+          const mainGradient = ctx.createLinearGradient(rightHalf, 0, width, 0);
+          mainGradient.addColorStop(0, '#1a0a1f');
+          mainGradient.addColorStop(0.5, '#12081a');
+          mainGradient.addColorStop(1, '#0a1020');
+          ctx.fillStyle = mainGradient;
+          ctx.fillRect(rightHalf, 0, width / 2, height);
+
+          // Red glow on left side of right panel
+          const redGlow = ctx.createRadialGradient(
+            rightHalf + 80, height * 0.5, 0,
+            rightHalf + 80, height * 0.5, height * 0.6
+          );
+          redGlow.addColorStop(0, 'rgba(180, 30, 50, 0.35)');
+          redGlow.addColorStop(0.5, 'rgba(120, 20, 40, 0.15)');
+          redGlow.addColorStop(1, 'transparent');
+          ctx.fillStyle = redGlow;
+          ctx.fillRect(rightHalf, 0, width / 2, height);
+
+          // Blue glow on right side
+          const blueGlow = ctx.createRadialGradient(
+            width - 80, height * 0.5, 0,
+            width - 80, height * 0.5, height * 0.6
+          );
+          blueGlow.addColorStop(0, 'rgba(30, 60, 180, 0.35)');
+          blueGlow.addColorStop(0.5, 'rgba(20, 40, 120, 0.15)');
+          blueGlow.addColorStop(1, 'transparent');
+          ctx.fillStyle = blueGlow;
+          ctx.fillRect(rightHalf, 0, width / 2, height);
+
+          // Purple accent in center
+          const purpleCenter = ctx.createRadialGradient(
+            rightHalf + (width / 4), height * 0.45, 0,
+            rightHalf + (width / 4), height * 0.45, height * 0.4
+          );
+          purpleCenter.addColorStop(0, 'rgba(139, 92, 246, 0.12)');
+          purpleCenter.addColorStop(1, 'transparent');
+          ctx.fillStyle = purpleCenter;
+          ctx.fillRect(rightHalf, 0, width / 2, height);
+
+          // Vertical shading
+          const verticalShade = ctx.createLinearGradient(0, 0, 0, height);
+          verticalShade.addColorStop(0, 'rgba(0, 0, 0, 0.2)');
+          verticalShade.addColorStop(0.3, 'transparent');
+          verticalShade.addColorStop(0.7, 'transparent');
+          verticalShade.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+          ctx.fillStyle = verticalShade;
+          ctx.fillRect(rightHalf, 0, width / 2, height);
+
+          // === LEFT SIDE: Artist photo ===
+          // Draw artist photo to fill left half, cropping to fit
+          const leftHalfWidth = width / 2;
+          const artistAspect = artistNaturalWidth / artistNaturalHeight;
+          const targetAspect = leftHalfWidth / height;
+
+          let srcX = 0, srcY = 0, srcW = artistNaturalWidth, srcH = artistNaturalHeight;
+
+          if (artistAspect > targetAspect) {
+            // Image is wider - crop sides
+            srcW = artistNaturalHeight * targetAspect;
+            srcX = (artistNaturalWidth - srcW) / 2;
+          } else {
+            // Image is taller - crop top/bottom
+            srcH = artistNaturalWidth / targetAspect;
+            srcY = (artistNaturalHeight - srcH) / 2;
+          }
+
+          ctx.drawImage(artistImg, srcX, srcY, srcW, srcH, 0, 0, leftHalfWidth, height);
+
+          // Gradient overlay on artist photo (fade to right)
+          const overlayGradient = ctx.createLinearGradient(0, 0, leftHalfWidth, 0);
+          overlayGradient.addColorStop(0, 'rgba(10, 5, 16, 0.0)');
+          overlayGradient.addColorStop(0.7, 'rgba(10, 5, 16, 0.15)');
+          overlayGradient.addColorStop(1, 'rgba(10, 5, 16, 0.6)');
+          ctx.fillStyle = overlayGradient;
+          ctx.fillRect(0, 0, leftHalfWidth, height);
+
+          // === PROPS on right side ===
+          const TKA_RED = '#ED1C24';
+          const TKA_BLUE = '#2E3192';
+
+          // Scale prop sizes based on canvas height
+          const scaleFactor = height / 1080;
+          const leftColX = rightHalf + 80 * scaleFactor;
+          const rightColX = width - 80 * scaleFactor;
+
+          const yPositions = [
+            height * 0.08,
+            height * 0.29,
+            height * 0.50,
+            height * 0.71,
+            height * 0.92,
+          ];
+
+          const propConfig = [
+            // LEFT COLUMN (Red)
+            { img: 'prop1', x: leftColX, y: yPositions[0], size: 85 * scaleFactor, rotate: -15, color: TKA_RED },
+            { img: 'prop7', x: leftColX, y: yPositions[1], size: 80 * scaleFactor, rotate: 20, color: TKA_RED },
+            { img: 'prop5', x: leftColX, y: yPositions[2], size: 85 * scaleFactor, rotate: -10, color: TKA_RED },
+            { img: 'prop9', x: leftColX, y: yPositions[3], size: 80 * scaleFactor, rotate: 15, color: TKA_RED },
+            { img: 'prop3', x: leftColX, y: yPositions[4], size: 85 * scaleFactor, rotate: -20, color: TKA_RED },
+
+            // RIGHT COLUMN (Blue)
+            { img: 'prop2', x: rightColX, y: yPositions[0], size: 85 * scaleFactor, rotate: 15, color: TKA_BLUE },
+            { img: 'prop8', x: rightColX, y: yPositions[1], size: 80 * scaleFactor, rotate: -20, color: TKA_BLUE },
+            { img: 'prop6', x: rightColX, y: yPositions[2], size: 80 * scaleFactor, rotate: 25, color: TKA_BLUE },
+            { img: 'prop10', x: rightColX, y: yPositions[3], size: 80 * scaleFactor, rotate: -15, color: TKA_BLUE },
+            { img: 'prop4', x: rightColX, y: yPositions[4], size: 85 * scaleFactor, rotate: 20, color: TKA_BLUE },
+          ];
+
+          propConfig.forEach(prop => {
+            if (images[prop.img]) {
+              const img = images[prop.img];
+              const aspectRatio = img.naturalWidth / img.naturalHeight;
+              let drawWidth, drawHeight;
+
+              if (aspectRatio > 1) {
+                drawWidth = prop.size;
+                drawHeight = prop.size / aspectRatio;
+              } else {
+                drawHeight = prop.size;
+                drawWidth = prop.size * aspectRatio;
+              }
+
+              const recolored = recolorImage(img, prop.color, Math.ceil(drawWidth), Math.ceil(drawHeight));
+
+              ctx.save();
+              ctx.globalAlpha = 0.70;
+              ctx.translate(prop.x, prop.y);
+              ctx.rotate((prop.rotate * Math.PI) / 180);
+              ctx.drawImage(recolored, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+              ctx.restore();
+            }
+          });
+
+          const dataUrl = canvas.toDataURL('image/png');
+          resolve(dataUrl);
+        }
+      });
+    }
+
+    function exportImage() {
+      if (!previewDataUrl) return;
+      const link = document.createElement('a');
+      link.download = `tka-grant-feature-${canvasWidth}x${canvasHeight}.png`;
+      link.href = previewDataUrl;
+      link.click();
+    }
+
+    // Run on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        previewDataUrl = await renderToCanvas();
+        document.getElementById('status').style.display = 'none';
+        document.getElementById('preview-container').style.display = 'flex';
+        document.getElementById('preview-image').src = previewDataUrl;
+        document.getElementById('resolution-info').textContent = `Resolution: ${canvasWidth} x ${canvasHeight} pixels`;
+        document.getElementById('export-controls').style.display = 'flex';
+      } catch (error) {
+        console.error('Failed to generate:', error);
+        document.getElementById('status').innerHTML = '<h1>Error</h1><p>' + error.message + '</p>';
+      }
+    });
+  </script>
+</body>
+</html>

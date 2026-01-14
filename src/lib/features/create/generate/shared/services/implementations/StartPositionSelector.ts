@@ -1,13 +1,17 @@
 /**
  * Start Position Selector Implementation
  *
- * Selects random start positions for sequence generation.
+ * Selects start positions for sequence generation.
+ * Can select a specific position or random from available positions.
  * Extracted from SequenceGenerationService for single responsibility.
  *
  * MIGRATION NOTE: Now returns StartPositionData instead of BeatData with beatNumber===0
  */
 import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
-import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type {
+  GridMode,
+  GridPosition,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { IBeatConverter } from "../contracts/IBeatConverter";
@@ -23,15 +27,36 @@ export class StartPositionSelector implements IStartPositionSelector {
   ) {}
 
   /**
-   * Select a random start position
-   * Now returns proper StartPositionData with type discriminator
+   * Select a start position
+   * @param gridMode - Grid mode (diamond/box)
+   * @param specificPosition - Optional specific position to use (random if not provided)
+   * @returns StartPositionData with proper type discriminator
    */
-  async selectStartPosition(gridMode: GridMode): Promise<StartPositionData> {
+  async selectStartPosition(
+    gridMode: GridMode,
+    specificPosition?: GridPosition
+  ): Promise<StartPositionData> {
     const allOptions =
       await this.letterQueryHandler.getAllPictographVariations(gridMode);
     const startPositions =
       this.PictographFilter.filterStartPositions(allOptions);
-    const startPictograph = this.PictographFilter.selectRandom(startPositions);
+
+    // If a specific position is requested, find it; otherwise select random
+    let startPictograph;
+    if (specificPosition) {
+      startPictograph = startPositions.find(
+        (p) => p.startPosition === specificPosition
+      );
+      // Fallback to random if specific position not found
+      if (!startPictograph) {
+        console.warn(
+          `Start position ${specificPosition} not found, falling back to random`
+        );
+        startPictograph = this.PictographFilter.selectRandom(startPositions);
+      }
+    } else {
+      startPictograph = this.PictographFilter.selectRandom(startPositions);
+    }
 
     // Use the new convertToStartPosition method instead of convertToBeat(pictograph, 0, gridMode)
     let startPosition = this.BeatConverter.convertToStartPosition(

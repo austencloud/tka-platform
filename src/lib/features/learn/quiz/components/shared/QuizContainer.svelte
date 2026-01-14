@@ -21,7 +21,6 @@ QuizContainer - Shared container layout for quizzes
     width: 100%;
     height: 100%;
     padding: 1rem;
-    padding-top: 4.5rem;
     box-sizing: border-box;
     padding-bottom: 2rem;
   }

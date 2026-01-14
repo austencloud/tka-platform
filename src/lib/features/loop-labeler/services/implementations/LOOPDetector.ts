@@ -24,7 +24,7 @@ import type {
 import type { ComponentId } from "../../domain/constants/loop-components";
 
 /**
- * Service for detecting Linked Offset Operation Patterns (LOOPs) in sequences.
+ * Service for detecting Linked Orbital Offset Patterns (LOOPs) in sequences.
  * Orchestrates the detection process using specialized services.
  */
 export class LOOPDetector implements ILOOPDetector {
