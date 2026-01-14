@@ -1,6 +1,10 @@
 import type { Dimensions } from "$lib/shared/background/shared/domain/types/background-types";
 import type { FishMarineLife } from "../../domain/models/DeepOceanModels";
 import type { WobbleOffset } from "../../domain/types/fish-personality-types";
+import type { IFishRareBehaviorHandler } from "./IFishRareBehaviorHandler";
+import type { IFishHomeZoneHandler } from "./IFishHomeZoneHandler";
+import type { IFishInteractionHandler } from "./IFishInteractionHandler";
+import type { IFishHuntingHandler } from "./IFishHuntingHandler";
 
 /**
  * Contract for fish animation and behavior
@@ -56,4 +60,28 @@ export interface IFishAnimator {
    * Returns rotation, scale, and position adjustments for expressive animations
    */
   getWobbleOffset(fish: FishMarineLife): WobbleOffset;
+
+  // ============================================================================
+  // Handler Accessors (for lab/testing/external access)
+  // ============================================================================
+
+  /**
+   * Get the rare behavior handler for manual triggering in lab
+   */
+  getRareBehaviorHandler(): IFishRareBehaviorHandler;
+
+  /**
+   * Get the home zone handler for visualization in lab
+   */
+  getHomeZoneHandler(): IFishHomeZoneHandler;
+
+  /**
+   * Get the interaction handler for manual triggering in lab
+   */
+  getInteractionHandler(): IFishInteractionHandler;
+
+  /**
+   * Get the hunting handler for visualization and manual triggering in lab
+   */
+  getHuntingHandler(): IFishHuntingHandler;
 }

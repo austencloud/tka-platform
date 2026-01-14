@@ -25,8 +25,8 @@ export class JellyfishRenderer implements IJellyfishRenderer {
     ctx: CanvasRenderingContext2D,
     jellyfish: JellyfishMarineLife[]
   ): void {
-    // Sort by Y position for proper depth ordering
-    const sorted = [...jellyfish].sort((a, b) => a.y - b.y);
+    // Sort by depth for proper layering (far/large depth values drawn first)
+    const sorted = [...jellyfish].sort((a, b) => b.depth - a.depth);
 
     for (const jelly of sorted) {
       this.drawSingleJellyfish(ctx, jelly);
@@ -38,7 +38,12 @@ export class JellyfishRenderer implements IJellyfishRenderer {
     jelly: JellyfishMarineLife
   ): void {
     ctx.save();
-    ctx.globalAlpha = jelly.opacity;
+
+    // Apply depth-based opacity (far = more transparent for depth-of-field effect)
+    // depth 0 = close = full opacity, depth 1 = far = reduced opacity
+    const depthOpacityScale = 1 - jelly.depth * 0.4; // 0.6 to 1.0 range
+    ctx.globalAlpha = jelly.opacity * depthOpacityScale;
+
     ctx.translate(jelly.x, jelly.y);
 
     // Calculate pulse-affected dimensions with asymmetric deformation

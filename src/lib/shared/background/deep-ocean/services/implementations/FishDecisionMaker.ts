@@ -23,6 +23,24 @@ import {
 export class FishDecisionMaker implements IFishDecisionMaker {
   decideNextBehavior(ctx: DecisionContext): FishDecision {
     const { fish, nearbyFish, dimensions } = ctx;
+
+    // CRITICAL: Force flee behavior when being hunted
+    // This overrides ALL other decision making
+    if (fish.isBeingHunted && fish.behavior === "fleeing") {
+      return {
+        behavior: "fleeing",
+        speedMultiplier: 1.5,
+      };
+    }
+
+    // Force hunting behaviors for predators actively hunting
+    if (fish.huntState === "stalking" || fish.huntState === "chasing") {
+      return {
+        behavior: fish.huntState,
+        speedMultiplier: fish.huntState === "chasing" ? 2.0 : 0.6,
+      };
+    }
+
     const weights = this.getTransitionWeights(fish);
 
     // Check for mood-driven overrides

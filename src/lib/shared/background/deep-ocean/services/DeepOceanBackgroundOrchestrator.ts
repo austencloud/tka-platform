@@ -341,6 +341,14 @@ export class DeepOceanBackgroundOrchestrator implements IBackgroundSystem {
     return this.state.fish;
   }
 
+  /**
+   * Get the fish animator for external access (e.g., Fish Behavior Lab)
+   * Used for accessing sub-handlers like hunting, interactions, etc.
+   */
+  getFishAnimator(): IFishAnimator {
+    return this.fishAnimator;
+  }
+
   getMetrics(): PerformanceMetrics {
     return {
       fps: 60,

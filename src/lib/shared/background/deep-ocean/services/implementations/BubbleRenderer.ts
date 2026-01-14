@@ -15,8 +15,8 @@ import type { IBubbleRenderer } from "../contracts/IBubbleRenderer";
  */
 export class BubbleRenderer implements IBubbleRenderer {
   drawBubbles(ctx: CanvasRenderingContext2D, bubbles: Bubble[]): void {
-    // Sort by Y position for proper depth ordering (far first)
-    const sorted = [...bubbles].sort((a, b) => b.y - a.y);
+    // Sort by depth for proper layering (far/large depth values drawn first)
+    const sorted = [...bubbles].sort((a, b) => b.depth - a.depth);
 
     for (const bubble of sorted) {
       this.drawSingleBubble(ctx, bubble);
@@ -35,7 +35,12 @@ export class BubbleRenderer implements IBubbleRenderer {
     }
 
     ctx.save();
-    ctx.globalAlpha = bubble.opacity;
+
+    // Apply depth-based opacity (far = more transparent for depth-of-field effect)
+    // depth 0 = close = full opacity, depth 1 = far = reduced opacity
+    const depthOpacityScale = 1 - bubble.depth * 0.35; // 0.65 to 1.0 range
+    ctx.globalAlpha = bubble.opacity * depthOpacityScale;
+
     ctx.translate(bubble.x, bubble.y);
 
     // Calculate wobble deformation

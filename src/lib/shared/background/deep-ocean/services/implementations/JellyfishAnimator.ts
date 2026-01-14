@@ -20,6 +20,11 @@ const JELLYFISH_CONFIG = {
   spawnMargin: 80,
   verticalBand: { min: 0.15, max: 0.75 },
 
+  // Depth/parallax (0 = close, 1 = far)
+  depth: { min: 0.3, max: 0.9 },
+  depthSizeScale: { min: 0.6, max: 1.2 }, // Size multiplier range by depth
+  depthSpeedScale: { min: 0.5, max: 1.3 }, // Speed multiplier range by depth
+
   // Movement - slow and serene
   horizontalSpeed: 2, // Gentle sideways drift
   baseVerticalSpeed: -3, // Very slow upward drift
@@ -171,10 +176,30 @@ export class JellyfishAnimator implements IJellyfishAnimator {
     const speciesIndex = Math.floor(Math.random() * SPECIES_DEFINITIONS.length);
     const speciesDef = SPECIES_DEFINITIONS[speciesIndex] ?? SPECIES_DEFINITIONS[0]!;
 
+    // Assign depth (0 = close/large, 1 = far/small)
+    const depth = this.randomInRange(
+      JELLYFISH_CONFIG.depth.min,
+      JELLYFISH_CONFIG.depth.max
+    );
+
+    // Depth affects size: closer = larger, further = smaller
+    const depthSizeMultiplier = this.lerp(
+      JELLYFISH_CONFIG.depthSizeScale.max,
+      JELLYFISH_CONFIG.depthSizeScale.min,
+      depth
+    );
+
+    // Depth affects speed: closer = faster (parallax effect)
+    const depthSpeedMultiplier = this.lerp(
+      JELLYFISH_CONFIG.depthSpeedScale.max,
+      JELLYFISH_CONFIG.depthSpeedScale.min,
+      depth
+    );
+
     const size = this.randomInRange(
       JELLYFISH_CONFIG.size.min,
       JELLYFISH_CONFIG.size.max
-    );
+    ) * depthSizeMultiplier;
 
     // Position
     const baseY =
@@ -186,6 +211,9 @@ export class JellyfishAnimator implements IJellyfishAnimator {
     const x =
       JELLYFISH_CONFIG.spawnMargin +
       Math.random() * (dimensions.width - JELLYFISH_CONFIG.spawnMargin * 2);
+
+    // Generate animation phase early so we can use it for tentacle initialization
+    const animationPhase = Math.random() * Math.PI * 2;
 
     // Species-specific anatomy
     const tentacleCount = this.randomIntInRange(
@@ -201,7 +229,8 @@ export class JellyfishAnimator implements IJellyfishAnimator {
     const tentacles = this.generateTentacles(
       tentacleCount,
       size,
-      speciesDef.tentacleLength
+      speciesDef.tentacleLength,
+      animationPhase
     );
 
     // Generate gonads for species that have them
@@ -234,12 +263,15 @@ export class JellyfishAnimator implements IJellyfishAnimator {
         JELLYFISH_CONFIG.opacity.min,
         JELLYFISH_CONFIG.opacity.max
       ),
-      animationPhase: Math.random() * Math.PI * 2,
+      animationPhase,
 
-      // Movement
+      // Depth for parallax
+      depth,
+
+      // Movement (scaled by depth - closer = faster)
       horizontalSpeed:
-        (Math.random() - 0.5) * JELLYFISH_CONFIG.horizontalSpeed * 2,
-      verticalSpeed: JELLYFISH_CONFIG.baseVerticalSpeed,
+        (Math.random() - 0.5) * JELLYFISH_CONFIG.horizontalSpeed * 2 * depthSpeedMultiplier,
+      verticalSpeed: JELLYFISH_CONFIG.baseVerticalSpeed * depthSpeedMultiplier,
 
       // Pulse
       pulsePhase: Math.random(),
@@ -318,17 +350,19 @@ export class JellyfishAnimator implements IJellyfishAnimator {
 
   /**
    * Generate trailing tentacles with segments
+   * Pre-calculates initial angles to avoid spaz on first frame
    */
   private generateTentacles(
     count: number,
     jellySize: number,
-    lengthMultiplier: number = 1.0
+    lengthMultiplier: number = 1.0,
+    animationPhase: number = 0
   ): Tentacle[] {
     const tentacles: Tentacle[] = [];
 
     for (let i = 0; i < count; i++) {
       // Distribute across bell width (-1 to 1)
-      const originX = (i / (count - 1)) * 2 - 1;
+      const originX = count > 1 ? (i / (count - 1)) * 2 - 1 : 0;
 
       const segmentCount = this.randomIntInRange(
         JELLYFISH_CONFIG.tentacleSegments.min,
@@ -340,11 +374,22 @@ export class JellyfishAnimator implements IJellyfishAnimator {
       const baseLength = jellySize * this.randomInRange(0.08, 0.14) * lengthMultiplier;
 
       for (let j = 0; j < segmentCount; j++) {
+        const phase = Math.random() * Math.PI * 2;
+        const depthFactor = (j + 1) / segmentCount;
+
+        // Pre-calculate initial angle to match resting wave position
+        // This prevents the "spaz" on first frame where physics would
+        // suddenly push segments from 0 to their target
+        const initialAngle =
+          Math.sin(phase + animationPhase * 0.3) *
+          JELLYFISH_CONFIG.tentacleWaveAmplitude *
+          depthFactor;
+
         segments.push({
-          angle: 0, // Will be animated
+          angle: initialAngle,
           length: baseLength * (1 - j * 0.05), // Taper more towards tip
           velocity: 0,
-          phase: Math.random() * Math.PI * 2,
+          phase,
         });
       }
 
@@ -526,5 +571,9 @@ export class JellyfishAnimator implements IJellyfishAnimator {
 
   private randomIntInRange(min: number, max: number): number {
     return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  private lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
   }
 }

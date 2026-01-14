@@ -20,6 +20,9 @@ export interface Bubble {
   y: number;
   startY: number;
 
+  // Depth for parallax (0 = close, 1 = far)
+  depth: number;
+
   // Size and category
   radius: number;
   sizeCategory: BubbleSize;
@@ -81,7 +84,10 @@ export type FishBehavior =
   | "ascending"    // Swimming upward with vertical focus
   | "descending"   // Swimming downward with vertical focus
   | "approaching"  // Swimming toward camera (z decreasing)
-  | "receding";    // Swimming away from camera (z increasing)
+  | "receding"     // Swimming away from camera (z increasing)
+  | "fleeing"      // Escaping from predator - sustained burst
+  | "stalking"     // Predator slowly approaching prey
+  | "chasing";     // Predator in active pursuit
 
 /** Fish species with different body shapes and characteristics */
 export type FishSpecies = "tropical" | "sleek" | "deep" | "schooling";
@@ -331,7 +337,20 @@ export interface FishMarineLife extends MarineLifeBase {
   hunger?: number;
 
   /** Current wobble animation for expression */
-  wobbleType?: "none" | "curious_tilt" | "startled_dart" | "playful_wiggle" | "tired_drift" | "feeding_lunge" | "social_shimmer";
+  wobbleType?:
+    | "none"
+    | "curious_tilt"
+    | "startled_dart"
+    | "playful_wiggle"
+    | "tired_drift"
+    | "feeding_lunge"
+    | "social_shimmer"
+    // Rare behaviors
+    | "barrel_roll"
+    | "freeze"
+    | "double_take"
+    | "happy_flip"
+    | "sync_pulse";
 
   /** Frames remaining in current wobble */
   wobbleTimer?: number;
@@ -375,6 +394,40 @@ export interface FishMarineLife extends MarineLifeBase {
    * Unique ID for social memory tracking
    */
   fishId?: number;
+
+  // ============================================================================
+  // HUNTING SYSTEM
+  // ============================================================================
+
+  /**
+   * Hunt state for predators (sleek, deep)
+   */
+  huntState?: "idle" | "stalking" | "chasing" | "cooldown";
+
+  /**
+   * ID of fish being hunted (for predators)
+   */
+  huntingTarget?: number;
+
+  /**
+   * Time since hunt started (for chase duration limits)
+   */
+  huntStartTime?: number;
+
+  /**
+   * Cooldown end time (animation time when can hunt again)
+   */
+  huntCooldownEnd?: number;
+
+  /**
+   * Whether this fish is currently being hunted (for prey)
+   */
+  isBeingHunted?: boolean;
+
+  /**
+   * ID of predator chasing this fish (for flee direction)
+   */
+  hunterId?: number;
 
   // ============================================================================
 
@@ -453,6 +506,10 @@ export interface JellyfishMarineLife extends MarineLifeBase {
   verticalSpeed: number;
   /** Base vertical position */
   baseY: number;
+
+  // Depth/parallax (0 = close/large, 1 = far/small)
+  /** Continuous depth position for parallax effect */
+  depth: number;
 
   // Bell anatomy
   /** Current pulse phase (0-1, 0=relaxed, 0.5=contracted) */

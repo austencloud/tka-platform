@@ -51,6 +51,10 @@ const BUBBLE_CONFIG = {
     },
   },
 
+  // Depth/parallax (0 = close, 1 = far)
+  depth: { min: 0.2, max: 0.9 },
+  depthSwayScale: { min: 0.4, max: 1.4 }, // Sway multiplier by depth (close = more sway)
+
   // Physics
   maxSpeed: 2.5, // Cap on upward velocity
   swayMagnitude: { min: 0.3, max: 0.8 },
@@ -109,6 +113,19 @@ export class BubblePhysics implements IBubblePhysics {
     const baseSpeed = this.randomInRange(config.speed.min, config.speed.max);
     const baseOpacity = this.randomInRange(config.opacity.min, config.opacity.max);
 
+    // Assign depth (0 = close, 1 = far)
+    const depth = this.randomInRange(
+      BUBBLE_CONFIG.depth.min,
+      BUBBLE_CONFIG.depth.max
+    );
+
+    // Depth affects sway: closer = more horizontal movement (parallax)
+    const depthSwayMultiplier = this.lerp(
+      BUBBLE_CONFIG.depthSwayScale.max,
+      BUBBLE_CONFIG.depthSwayScale.min,
+      depth
+    );
+
     const startY = dimensions.height + 50 + Math.random() * 100;
 
     return {
@@ -116,6 +133,9 @@ export class BubblePhysics implements IBubblePhysics {
       x: Math.random() * dimensions.width,
       y: startY,
       startY,
+
+      // Depth
+      depth,
 
       // Size
       radius,
@@ -128,7 +148,7 @@ export class BubblePhysics implements IBubblePhysics {
       sway: this.randomInRange(
         BUBBLE_CONFIG.swayMagnitude.min,
         BUBBLE_CONFIG.swayMagnitude.max
-      ),
+      ) * depthSwayMultiplier,
       swayOffset: Math.random() * Math.PI * 2,
       turbulenceX: 0,
       turbulencePhase: Math.random() * Math.PI * 2,
@@ -392,5 +412,9 @@ export class BubblePhysics implements IBubblePhysics {
 
   private randomIntInRange(min: number, max: number): number {
     return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
+  private lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
   }
 }

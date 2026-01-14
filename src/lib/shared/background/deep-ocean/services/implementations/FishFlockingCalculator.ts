@@ -8,10 +8,23 @@ import {
 import { fishDebugConfig } from "../../domain/debug-config";
 
 /**
+ * Defensive schooling configuration - tighter formation under threat
+ */
+const DEFENSIVE_FLOCKING = {
+  cohesionRadius: 60, // Tighter than normal 100px
+  cohesionWeight: 1.5, // Stronger pull toward center
+  separationWeight: 0.8, // Reduced separation, pack tighter
+  alignmentWeight: 1.2, // Stronger direction alignment
+};
+
+/**
  * FishFlockingCalculator - Implements Boids algorithm for schooling behavior
  *
  * Handles school formation, calculates separation/alignment/cohesion forces,
  * and applies steering to maintain natural schooling patterns.
+ *
+ * Also implements defensive schooling - when any school member detects a
+ * predator, the school tightens formation and flees as a unit.
  */
 export class FishFlockingCalculator implements IFishFlockingCalculator {
   private nextSchoolId = 0;
@@ -39,8 +52,11 @@ export class FishFlockingCalculator implements IFishFlockingCalculator {
     for (const [, members] of schools) {
       if (members.length < 2) continue;
 
+      // Check if school is under threat (any member being hunted)
+      const isUnderThreat = members.some((m) => m.isBeingHunted || m.mood === "alert");
+
       for (const f of members) {
-        const forces = this.calculateFlockingForces(f, members);
+        const forces = this.calculateFlockingForces(f, members, isUnderThreat);
         this.applySteeringForce(f, forces, deltaSeconds);
       }
     }
@@ -92,8 +108,23 @@ export class FishFlockingCalculator implements IFishFlockingCalculator {
 
   private calculateFlockingForces(
     fish: FishMarineLife,
-    schoolmates: FishMarineLife[]
+    schoolmates: FishMarineLife[],
+    isUnderThreat: boolean = false
   ): { x: number; y: number } {
+    // Use defensive parameters when under threat
+    const separationWeight = isUnderThreat
+      ? DEFENSIVE_FLOCKING.separationWeight
+      : FLOCKING_CONFIG.separation.weight;
+    const alignmentWeight = isUnderThreat
+      ? DEFENSIVE_FLOCKING.alignmentWeight
+      : FLOCKING_CONFIG.alignment.weight;
+    const cohesionRadius = isUnderThreat
+      ? DEFENSIVE_FLOCKING.cohesionRadius
+      : FLOCKING_CONFIG.cohesion.radius;
+    const cohesionWeight = isUnderThreat
+      ? DEFENSIVE_FLOCKING.cohesionWeight
+      : FLOCKING_CONFIG.cohesion.weight;
+
     let separationX = 0,
       separationY = 0,
       separationCount = 0;
@@ -125,8 +156,8 @@ export class FishFlockingCalculator implements IFishFlockingCalculator {
         alignmentCount++;
       }
 
-      // Cohesion: steer toward center of mass
-      if (distance < FLOCKING_CONFIG.cohesion.radius) {
+      // Cohesion: steer toward center of mass (radius varies with threat)
+      if (distance < cohesionRadius) {
         cohesionX += other.x;
         cohesionY += other.y;
         cohesionCount++;
@@ -137,28 +168,22 @@ export class FishFlockingCalculator implements IFishFlockingCalculator {
       forceY = 0;
 
     if (separationCount > 0) {
-      forceX +=
-        (separationX / separationCount) * FLOCKING_CONFIG.separation.weight;
-      forceY +=
-        (separationY / separationCount) * FLOCKING_CONFIG.separation.weight;
+      forceX += (separationX / separationCount) * separationWeight;
+      forceY += (separationY / separationCount) * separationWeight;
     }
 
     if (alignmentCount > 0) {
       const avgVx = alignmentX / alignmentCount;
       const avgVy = alignmentY / alignmentCount;
-      forceX +=
-        (avgVx - fish.direction * fish.speed) *
-        FLOCKING_CONFIG.alignment.weight *
-        0.01;
-      forceY +=
-        (avgVy - fish.verticalDrift) * FLOCKING_CONFIG.alignment.weight * 0.1;
+      forceX += (avgVx - fish.direction * fish.speed) * alignmentWeight * 0.01;
+      forceY += (avgVy - fish.verticalDrift) * alignmentWeight * 0.1;
     }
 
     if (cohesionCount > 0) {
       const centerX = cohesionX / cohesionCount;
       const centerY = cohesionY / cohesionCount;
-      forceX += (centerX - fish.x) * FLOCKING_CONFIG.cohesion.weight * 0.001;
-      forceY += (centerY - fish.y) * FLOCKING_CONFIG.cohesion.weight * 0.01;
+      forceX += (centerX - fish.x) * cohesionWeight * 0.001;
+      forceY += (centerY - fish.y) * cohesionWeight * 0.01;
     }
 
     return { x: forceX, y: forceY };

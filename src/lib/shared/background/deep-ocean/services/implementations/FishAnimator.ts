@@ -11,6 +11,7 @@ import type { IFishWobbleAnimator } from "../contracts/IFishWobbleAnimator";
 import type { IFishInteractionHandler } from "../contracts/IFishInteractionHandler";
 import type { IFishRareBehaviorHandler } from "../contracts/IFishRareBehaviorHandler";
 import type { IFishHomeZoneHandler } from "../contracts/IFishHomeZoneHandler";
+import type { IFishHuntingHandler } from "../contracts/IFishHuntingHandler";
 import { FISH_COUNTS, SPAWN_CONFIG } from "../../domain/constants/fish-constants";
 import { fishDebugConfig } from "../../domain/debug-config";
 import type { SpineChain } from "../../physics/SpineChain";
@@ -19,6 +20,7 @@ import { FishWobbleAnimator } from "./FishWobbleAnimator";
 import { FishInteractionHandler } from "./FishInteractionHandler";
 import { FishRareBehaviorHandler } from "./FishRareBehaviorHandler";
 import { FishHomeZoneHandler } from "./FishHomeZoneHandler";
+import { FishHuntingHandler } from "./FishHuntingHandler";
 
 /**
  * FishAnimator - Orchestrates fish animation subsystems
@@ -34,6 +36,7 @@ export class FishAnimator implements IFishAnimator {
   private interactionHandler: IFishInteractionHandler;
   private rareBehaviorHandler: IFishRareBehaviorHandler;
   private homeZoneHandler: IFishHomeZoneHandler;
+  private huntingHandler: IFishHuntingHandler;
 
   constructor(
     private readonly fishFactory: IFishFactory,
@@ -45,13 +48,15 @@ export class FishAnimator implements IFishAnimator {
     wobbleAnimator?: IFishWobbleAnimator,
     interactionHandler?: IFishInteractionHandler,
     rareBehaviorHandler?: IFishRareBehaviorHandler,
-    homeZoneHandler?: IFishHomeZoneHandler
+    homeZoneHandler?: IFishHomeZoneHandler,
+    huntingHandler?: IFishHuntingHandler
   ) {
     this.moodManager = moodManager ?? new FishMoodManager();
     this.wobbleAnimator = wobbleAnimator ?? new FishWobbleAnimator();
     this.interactionHandler = interactionHandler ?? new FishInteractionHandler(this.wobbleAnimator);
     this.rareBehaviorHandler = rareBehaviorHandler ?? new FishRareBehaviorHandler(this.wobbleAnimator);
     this.homeZoneHandler = homeZoneHandler ?? new FishHomeZoneHandler();
+    this.huntingHandler = huntingHandler ?? new FishHuntingHandler(this.wobbleAnimator);
   }
 
   async initializeFish(
@@ -126,6 +131,18 @@ export class FishAnimator implements IFishAnimator {
     if (fishDebugConfig.enableHomeZones) {
       for (const f of fish) {
         this.homeZoneHandler.applyHomeZoneDrift(f, deltaSeconds);
+      }
+    }
+
+    // Process predator/prey hunting (chase sequences)
+    if (fishDebugConfig.enableHunting) {
+      const huntResults = this.huntingHandler.processHunting(
+        fish,
+        deltaSeconds,
+        animationTime
+      );
+      for (const result of huntResults) {
+        this.huntingHandler.applyHuntResult(result, fish);
       }
     }
 
@@ -353,5 +370,12 @@ export class FishAnimator implements IFishAnimator {
    */
   getInteractionHandler(): IFishInteractionHandler {
     return this.interactionHandler;
+  }
+
+  /**
+   * Get the hunting handler for visualization and manual triggering in lab
+   */
+  getHuntingHandler(): IFishHuntingHandler {
+    return this.huntingHandler;
   }
 }

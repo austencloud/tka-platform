@@ -14,8 +14,10 @@ export interface FishDebugConfig {
   enableInteractions: boolean;  // false = no fish-to-fish micro-interactions
   enableRareBehaviors: boolean; // false = no barrel rolls, freezes, sync swims
   enableHomeZones: boolean;     // false = no home zone drift preference
+  enableHunting: boolean;       // false = no predator/prey chase sequences
   showHomeZones: boolean;       // true = draw home zone debug circles
   showInteractions: boolean;    // true = flash when interactions occur
+  showHunts: boolean;           // true = draw hunt lines and state labels
 }
 
 // Global mutable debug state
@@ -28,8 +30,10 @@ export const fishDebugConfig: FishDebugConfig = {
   enableInteractions: true,
   enableRareBehaviors: true,
   enableHomeZones: true,
+  enableHunting: true,
   showHomeZones: false,
   showInteractions: false,
+  showHunts: false,
 };
 
 // Expose to window for console access
