@@ -20,7 +20,7 @@ import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { getStandalonePictographRenderer, type RenderVisibilityOptions } from "./StandalonePictographRenderer.js";
+import { getStandaloneRenderer, type RenderVisibilityOptions } from "./src/core/standalone-renderer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -521,7 +521,7 @@ server.tool(
       };
 
       // Render using standalone Node.js renderer
-      const renderer = getStandalonePictographRenderer();
+      const renderer = getStandaloneRenderer();
       const base64 = await renderer.renderToBase64(pictographInput, visibility);
 
       // Build description of what was rendered
