@@ -90,7 +90,7 @@
 
       <div class="header-content">
         <h1>The Story Behind TKA</h1>
-        <p class="tagline">Digital sheet music for flow arts</p>
+        <p class="tagline">A Flow Arts Choreography Toolbox</p>
       </div>
     </header>
 

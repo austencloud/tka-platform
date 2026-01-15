@@ -54,7 +54,7 @@
     <div class="footer-content">
       <div class="footer-brand">
         <strong>The Kinetic Alphabet</strong>
-        <span>Digital Sheet Music for Flow Arts</span>
+        <span>A Flow Arts Choreography Toolbox</span>
       </div>
       <div class="footer-links">
         {#each footerLinks as link}

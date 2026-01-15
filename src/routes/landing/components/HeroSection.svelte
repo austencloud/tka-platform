@@ -12,7 +12,7 @@
   <div class="hero-content">
     <div class="hero-text-panel">
       <h1>The Kinetic Alphabet</h1>
-      <p class="tagline">Digital Sheet Music for Flow Arts</p>
+      <p class="tagline">A Flow Arts Choreography Toolbox</p>
       <p class="subtitle">
         Create, animate, and share prop manipulation sequences with the first
         universal notation system for flow arts.
