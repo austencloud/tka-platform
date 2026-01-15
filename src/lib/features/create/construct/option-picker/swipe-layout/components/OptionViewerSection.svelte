@@ -54,15 +54,16 @@ Renders a section with:
     fitToViewport?: boolean;
   }>();
 
-  // Services
+  // Services - resolve synchronously to avoid first-render sizing issues
+  // gridFitCalculator must be available immediately for correct initial sizing
   let hapticService: IHapticFeedback | null = null;
   let reversalDetector: IReversalDetector | null = null;
-  let gridFitCalculator: IOptionGridFitCalculator | null = null;
+  const gridFitCalculator: IOptionGridFitCalculator | null =
+    container.items.optionGridFitCalculator ?? null;
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
     reversalDetector = container.items.reversalDetector;
-    gridFitCalculator = container.items.optionGridFitCalculator;
   });
 
   // Pictographs are already filtered when passed to this component
