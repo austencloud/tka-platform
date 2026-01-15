@@ -7,11 +7,32 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import type { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 
 /**
  * The two modes of endless spinner operation.
  */
 export type SpinnerMode = "library" | "infinite";
+
+/**
+ * Generation settings used for a sequence.
+ * Makes the generation meaningful by showing what parameters produced this unique sequence.
+ */
+export interface GenerationSettings {
+  /** LOOP type used (e.g., "Rotated", "Mirrored", "Swapped") */
+  loopType: LOOPType;
+  /** Slice size (halved = 2 parts, quartered = 4 parts) */
+  sliceSize: SliceSize;
+  /** Difficulty level */
+  difficulty: DifficultyLevel;
+  /** Turn intensity (0-3) */
+  turnIntensity: number;
+  /** Base length before LOOP multiplication */
+  baseLength: number;
+  /** Total beat count after LOOP expansion */
+  totalBeats: number;
+}
 
 /**
  * Information about a generated sequence in Infinite mode.
@@ -24,6 +45,8 @@ export interface GeneratedSequenceInfo {
   generatedAt: Date;
   /** Position in the global generation count (e.g., 47291st sequence ever) */
   globalIndex: number;
+  /** The settings used to generate this sequence */
+  settings: GenerationSettings;
 }
 
 /**
