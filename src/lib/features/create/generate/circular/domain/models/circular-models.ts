@@ -1,7 +1,7 @@
 /**
  * Circular Generation Models
  *
- * Type definitions for LOOP (Linked Offset Operation Pattern) generation.
+ * Type definitions for LOOP (Linked Orbital Offset Pattern) generation.
  * LOOPs are TKA's algorithmic extension patterns that transform sequences.
  */
 
@@ -9,7 +9,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 
 /**
  * LOOP Type Enum
- * Defines the different types of Linked Offset Operation Patterns
+ * Defines the different types of Linked Orbital Offset Patterns
  */
 export enum LOOPType {
   /** Strict rotated - rotates positions around the grid */

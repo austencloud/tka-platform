@@ -1,7 +1,7 @@
 /**
  * Rewound LOOP Executor
  *
- * Executes the Rewound LOOP (Linked Offset Operation Pattern) by:
+ * Executes the Rewound LOOP (Linked Orbital Offset Pattern) by:
  * 1. Taking an existing sequence
  * 2. Reversing the beats and swapping their start/end positions
  * 3. Appending the reversed beats to double the sequence length

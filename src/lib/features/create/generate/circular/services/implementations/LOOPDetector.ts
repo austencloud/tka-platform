@@ -1,7 +1,7 @@
 /**
  * LOOP Detection Service Implementation
  *
- * Analyzes sequences to detect their Linked Offset Operation Pattern (LOOP) type.
+ * Analyzes sequences to detect their Linked Orbital Offset Pattern (LOOP) type.
  * This is the reverse of LOOP generation - given a sequence, determine what
  * LOOP type (if any) it follows.
  *

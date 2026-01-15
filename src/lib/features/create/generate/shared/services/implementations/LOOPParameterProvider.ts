@@ -1,7 +1,7 @@
 /**
  * LOOP Parameter Provider
  *
- * Provides all parameter calculation and configuration services for LOOP (Linked Offset Operation Pattern) generation.
+ * Provides all parameter calculation and configuration services for LOOP (Linked Orbital Offset Pattern) generation.
  * Consolidates inverted letter mapping, rotation direction determination, and turn intensity allocation.
  *
  * Replaces:

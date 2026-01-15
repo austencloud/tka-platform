@@ -1,7 +1,7 @@
 /**
  * LOOP Parameter Provider Interface
  *
- * Provides all parameter calculation and configuration services for LOOP (Linked Offset Operation Pattern) generation.
+ * Provides all parameter calculation and configuration services for LOOP (Linked Orbital Offset Pattern) generation.
  */
 
 import type {

@@ -1,5 +1,5 @@
 /**
- * Circular Position Maps for LOOP (Linked Offset Operation Pattern) Generation
+ * Circular Position Maps for LOOP (Linked Orbital Offset Pattern) Generation
  *
  * These maps define the valid end positions for circular sequences based on rotation angles.
  * - Halved LOOPs: 180° rotation (position +4 or -4)

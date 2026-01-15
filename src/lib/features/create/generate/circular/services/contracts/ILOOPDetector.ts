@@ -1,7 +1,7 @@
 /**
  * LOOP Detection Service Contract
  *
- * Service for detecting and classifying Linked Offset Operation Patterns (LOOPs)
+ * Service for detecting and classifying Linked Orbital Offset Patterns (LOOPs)
  * in existing sequences. This is the reverse of LOOP generation - given a sequence,
  * determine what LOOP type (if any) it follows.
  */

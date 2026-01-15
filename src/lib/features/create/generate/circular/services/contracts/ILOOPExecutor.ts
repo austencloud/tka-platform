@@ -4,7 +4,7 @@ import type { SliceSize } from "../../domain/models/circular-models";
 /**
  * Common interface for all LOOP executors
  *
- * Provides a consistent contract for executing Linked Offset Operation Patterns
+ * Provides a consistent contract for executing Linked Orbital Offset Patterns
  * regardless of the specific transformation type (rotated, mirrored, swapped, etc.)
  *
  * NOTE: Some executors only support halved mode (mirrored, swapped, inverted)
