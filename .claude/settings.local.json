@@ -205,7 +205,8 @@
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Recurse -Filter \"*VTG*\")",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\\\\lib\\\\shared\\\\pictograph\" -Recurse -Filter \"*Position*\")",
       "Bash(Get-ChildItem -Path \"F:\\\\_THE KINETIC ALPHABET\\\\_TKA-SCRIBE\\\\src\" -Filter \"*Elemental*\" -Recurse)",
-      "mcp__tka-pictograph__get_preferences"
+      "mcp__tka-pictograph__get_preferences",
+      "Bash(yt-dlp:*)"
     ]
   }
 }
