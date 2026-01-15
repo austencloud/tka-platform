@@ -121,18 +121,46 @@ with pre-prepared data for better performance.
 
   // Visibility manager (for glyph visibility)
   const visibilityManager = getVisibilityStateManager();
-  let visibilityUpdateCount = $state(0);
-
-  function handleVisibilityChange() {
-    visibilityUpdateCount++;
-  }
 
   // Animation visibility manager (for dark mode)
   const animVisibilityManager = getAnimationVisibilityManager();
-  let darkModeUpdateCount = $state(0);
+
+  // Reactive visibility state - synced from managers via observers
+  // Using $state for each value ensures Svelte 5 properly tracks changes
+  let syncedVisibility = $state({
+    showGrid: visibilityManager.getGridVisibility(),
+    tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
+    reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
+    nonRadialPoints: visibilityManager.getNonRadialVisibility(),
+    vtgGlyph: visibilityManager.getGlyphVisibility("vtgGlyph"),
+    elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
+    positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
+    handPointVisibility: visibilityManager.getHandPointVisibility(),
+    darkMode: animVisibilityManager.isDarkMode(),
+  });
+
+  function handleVisibilityChange() {
+    // Re-read ALL visibility values to ensure we have fresh state
+    // This creates a new object reference, forcing Svelte to detect the change
+    syncedVisibility = {
+      showGrid: visibilityManager.getGridVisibility(),
+      tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
+      reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
+      nonRadialPoints: visibilityManager.getNonRadialVisibility(),
+      vtgGlyph: visibilityManager.getGlyphVisibility("vtgGlyph"),
+      elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
+      positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
+      handPointVisibility: visibilityManager.getHandPointVisibility(),
+      darkMode: syncedVisibility.darkMode, // Keep dark mode unchanged
+    };
+  }
 
   function handleDarkModeChange() {
-    darkModeUpdateCount++;
+    // Update dark mode while preserving other visibility state
+    syncedVisibility = {
+      ...syncedVisibility,
+      darkMode: animVisibilityManager.isDarkMode(),
+    };
   }
 
   onMount(() => {
@@ -144,66 +172,41 @@ with pre-prepared data for better performance.
     };
   });
 
-  // Effective dark mode: use prop if set, otherwise use global state
-  const effectiveDarkMode = $derived.by(() => {
-    darkModeUpdateCount; // Subscribe to dark mode changes
-    return darkMode !== undefined ? darkMode : animVisibilityManager.isDarkMode();
-  });
+  // Effective dark mode: use prop if set, otherwise use synced state
+  const effectiveDarkMode = $derived(
+    darkMode !== undefined ? darkMode : syncedVisibility.darkMode
+  );
 
-  // Effective visibility values
-  const effectiveShowGrid = $derived.by(() => {
-    visibilityUpdateCount;
-    return visibilityManager.getGridVisibility();
-  });
+  // Effective visibility values - use prop overrides if set, otherwise synced state
+  const effectiveShowGrid = $derived(syncedVisibility.showGrid);
 
-  const effectiveShowTKA = $derived.by(() => {
-    visibilityUpdateCount;
-    return showTKA !== undefined
-      ? showTKA
-      : visibilityManager.getGlyphVisibility("tkaGlyph");
-  });
+  const effectiveShowTKA = $derived(
+    showTKA !== undefined ? showTKA : syncedVisibility.tkaGlyph
+  );
 
-  const effectiveShowReversals = $derived.by(() => {
-    visibilityUpdateCount;
-    return showReversals !== undefined
-      ? showReversals
-      : visibilityManager.getGlyphVisibility("reversalIndicators");
-  });
+  const effectiveShowReversals = $derived(
+    showReversals !== undefined ? showReversals : syncedVisibility.reversalIndicators
+  );
 
-  const effectiveShowNonRadialPoints = $derived.by(() => {
-    visibilityUpdateCount;
-    return showNonRadialPoints !== undefined
-      ? showNonRadialPoints
-      : visibilityManager.getNonRadialVisibility();
-  });
+  const effectiveShowNonRadialPoints = $derived(
+    showNonRadialPoints !== undefined ? showNonRadialPoints : syncedVisibility.nonRadialPoints
+  );
 
   // Extended glyph visibility
-  const effectiveShowVTG = $derived.by(() => {
-    visibilityUpdateCount;
-    return showVTG !== undefined
-      ? showVTG
-      : visibilityManager.getGlyphVisibility("vtgGlyph");
-  });
+  const effectiveShowVTG = $derived(
+    showVTG !== undefined ? showVTG : syncedVisibility.vtgGlyph
+  );
 
-  const effectiveShowElemental = $derived.by(() => {
-    visibilityUpdateCount;
-    return showElemental !== undefined
-      ? showElemental
-      : visibilityManager.getGlyphVisibility("elementalGlyph");
-  });
+  const effectiveShowElemental = $derived(
+    showElemental !== undefined ? showElemental : syncedVisibility.elementalGlyph
+  );
 
-  const effectiveShowPositions = $derived.by(() => {
-    visibilityUpdateCount;
-    return showPositions !== undefined
-      ? showPositions
-      : visibilityManager.getGlyphVisibility("positionsGlyph");
-  });
+  const effectiveShowPositions = $derived(
+    showPositions !== undefined ? showPositions : syncedVisibility.positionsGlyph
+  );
 
   // Hand point visibility mode
-  const effectiveHandPointVisibility = $derived.by(() => {
-    visibilityUpdateCount;
-    return visibilityManager.getHandPointVisibility();
-  });
+  const effectiveHandPointVisibility = $derived(syncedVisibility.handPointVisibility);
 
   // Active locations (where props are positioned)
   // Extract from pictograph motion data - use endLocation for prop positioning
