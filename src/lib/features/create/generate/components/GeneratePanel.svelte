@@ -8,7 +8,7 @@ Card-based architecture with integrated Generate button:
 - Generation actions: generateActionsState.svelte.ts
 - Device state: generateDeviceState.svelte.ts
 - Responsive padding: State-driven for sync with workspace animation
-- Help mode: Info button triggers learning mode for settings
+- Help mode: Triggered from ButtonPanel for learning mode
 -->
 <script lang="ts">
   import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
@@ -24,7 +24,6 @@ Card-based architecture with integrated Generate button:
   import CardBasedSettingsContainer from "./CardBasedSettingsContainer.svelte";
   import GeneratorHelpOverlay from "./help/GeneratorHelpOverlay.svelte";
   import GeneratorHelpModal from "./help/GeneratorHelpModal.svelte";
-  import HelpButtonDiscovery from "./help/HelpButtonDiscovery.svelte";
   import type { GeneratorHelpId } from "../domain/generator-help-content";
 
   // Get context for panel coordination (optional - may not be available in all contexts)
@@ -125,21 +124,6 @@ Card-based architecture with integrated Generate button:
   data-is-desktop={isDesktop}
   style="--min-touch-target: {deviceState.minTouchTarget}px; --element-spacing: {deviceState.elementSpacing}px;"
 >
-  <!-- Help button in corner -->
-  <button
-    class="help-btn"
-    class:active={helpMode !== "inactive"}
-    onclick={enterHelpMode}
-    aria-label="Help with generator settings"
-  >
-    <i class="fas fa-circle-question" aria-hidden="true"></i>
-  </button>
-
-  <!-- First-time discovery overlay for help button -->
-  {#if helpMode === "inactive"}
-    <HelpButtonDiscovery />
-  {/if}
-
   <div class="generate-panel-inner">
     <CardBasedSettingsContainer
       config={configState.config}
@@ -173,49 +157,6 @@ Card-based architecture with integrated Generate button:
     width: 100%;
     overflow: visible;
     gap: 0;
-  }
-
-  /* Help button - positioned in top-right corner (desktop only) */
-  /* On mobile (<1024px), help button is in ButtonPanel instead to avoid overlapping LOOP card */
-  .help-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-size: var(--font-size-base, 16px);
-  }
-
-  /* Hide help button on mobile - ButtonPanel shows it instead */
-  @media (max-width: 1023px) {
-    .help-btn {
-      display: none;
-    }
-  }
-
-  .help-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--theme-text, white);
-  }
-
-  .help-btn.active {
-    /* Hide button when help mode is active - banner provides the close action */
-    display: none;
-  }
-
-  .help-btn:focus-visible {
-    outline: 3px solid rgba(255, 255, 255, 0.9);
-    outline-offset: 2px;
   }
 
   /* Boost panel z-index when help mode is active (above backdrop at 200) */
