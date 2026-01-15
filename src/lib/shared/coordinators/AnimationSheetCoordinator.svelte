@@ -492,7 +492,15 @@
           gridVisible: true,
         });
       } else if (!isOpen && previousIsOpen) {
-        // Closing: Clear URL parameters by replacing state (more reliable than history.back())
+        // Closing: Stop animation and clean up
+        if (playbackController) {
+          playbackController.dispose();
+          setAnimationPlaybackRef(null);
+        }
+        lastLoadedSequenceId = null;
+        _animatingBeatNumber = null;
+
+        // Clear URL parameters by replacing state (more reliable than history.back())
         if (typeof window !== "undefined") {
           const url = new URL(window.location.href);
           url.searchParams.delete("sheet");

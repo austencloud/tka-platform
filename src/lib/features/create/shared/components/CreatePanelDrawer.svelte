@@ -183,7 +183,8 @@
 
   // Watch for external close (e.g., via vaul-svelte gesture)
   // When isOpen transitions false, ensure onClose is called
-  let wasOpen = $state(isOpen);
+  // Use a plain variable (not $state) to avoid triggering the effect when updating
+  let wasOpen = isOpen;
   $effect(() => {
     if (wasOpen && !isOpen) {
       // Drawer was closed externally (gesture, etc.)

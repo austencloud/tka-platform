@@ -97,24 +97,14 @@
   function handleBeatSelected(beatNumber: number) {
     if (!sequenceState) return;
 
-    // Note: Animate is no longer a Create tab, it's a separate panel
-    // This check may need to be updated to check panel state instead
-    const isAnimateTabActive = false; // TODO: Update this to check animate panel state
+    // Close the animation panel if it's open - beat editing takes priority
+    panelState?.closeAnimationPanel();
 
-    if (isAnimateTabActive && animationStateRef) {
-      // In Animate tab: Jump to this beat in the animation (needs array index)
-      const arrayIndex = beatNumber - 1;
-      animationStateRef.jumpToBeat(arrayIndex);
-      // Still update local selection for visual feedback (using beatNumber)
-      localSelectedBeatNumber = beatNumber;
-      sequenceState.selectBeat(beatNumber);
-    } else {
-      // In other tabs: Just select the beat - the edit panel will open automatically
-      localSelectedBeatNumber = beatNumber;
-      sequenceState.selectBeat(beatNumber);
-      // Note: We no longer switch to edit tab! The edit slide panel will open instead.
-      // This is handled by an effect in CreateModule.svelte that watches for beat selection.
-    }
+    // Select the beat - the edit panel will open automatically
+    localSelectedBeatNumber = beatNumber;
+    sequenceState.selectBeat(beatNumber);
+    // Note: We no longer switch to edit tab! The edit slide panel will open instead.
+    // This is handled by an effect in CreateModule.svelte that watches for beat selection.
   }
 
   // Handle start position selection (beatNumber 0)
@@ -128,6 +118,9 @@
     ) {
       return;
     }
+
+    // Close the animation panel if it's open - beat editing takes priority
+    panelState?.closeAnimationPanel();
 
     // Select start position for editing (beatNumber 0)
     localSelectedBeatNumber = 0;

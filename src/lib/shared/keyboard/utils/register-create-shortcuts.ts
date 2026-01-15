@@ -21,11 +21,11 @@ export function registerCreateShortcuts(
 ) {
   // ==================== Animation Control ====================
 
-  // Space - Open Share Hub with animation OR toggle play/pause if already open
+  // Space - Toggle play/pause on animation, or open animation panel if closed
   service.register({
     id: "create.toggle-animation",
     label: "Play/Pause Animation",
-    description: "Open Share Hub animation viewer or toggle play/pause",
+    description: "Toggle animation playback or open animation panel",
     key: "Space", // Normalized key name (not " ")
     modifiers: [],
     context: ["create", "share-hub"], // Works in both contexts
@@ -45,15 +45,16 @@ export function registerCreateShortcuts(
 
       const { panelState } = ref;
 
-      if (panelState.isShareHubPanelOpen) {
-        // Share Hub is open - toggle play/pause
+      // Check if any animation panel is open (Animation Panel OR Share Hub)
+      if (panelState.isAnimationPanelOpen || panelState.isShareHubPanelOpen) {
+        // Animation is visible - toggle play/pause
         const playbackController = getAnimationPlaybackRef();
         if (playbackController) {
           playbackController.togglePlayback();
         }
       } else {
-        // Share Hub is closed - open it with animation format pre-selected
-        panelState.openShareHubPanel("animation");
+        // No animation panel open - open the Animation Panel
+        panelState.openAnimationPanel();
       }
     },
   });
