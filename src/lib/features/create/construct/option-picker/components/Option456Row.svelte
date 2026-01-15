@@ -24,6 +24,8 @@ with individual headers for each type.
     onSelect: (option: PreparedPictographData) => void;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
+    // Enable FLIP animation for filtering (desktop only)
+    enableFlip?: boolean;
   }
 
   const {
@@ -34,6 +36,7 @@ with individual headers for each type.
     isFading = false,
     onSelect,
     currentSequence = [],
+    enableFlip = false,
   }: Props = $props();
 </script>
 
@@ -51,6 +54,7 @@ with individual headers for each type.
           {isFading}
           {onSelect}
           {currentSequence}
+          {enableFlip}
         />
       </div>
     {/if}

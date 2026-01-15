@@ -20,6 +20,8 @@ Single responsibility: Combine header and grid for a letter type section.
     onSelect: (option: PreparedPictographData) => void;
     // Sequence context for reversal detection
     currentSequence?: PictographData[];
+    // Enable FLIP animation for filtering (desktop only)
+    enableFlip?: boolean;
   }
 
   const {
@@ -32,6 +34,7 @@ Single responsibility: Combine header and grid for a letter type section.
     isFading = false,
     onSelect,
     currentSequence = [],
+    enableFlip = false,
   }: Props = $props();
 </script>
 
@@ -48,6 +51,7 @@ Single responsibility: Combine header and grid for a letter type section.
     {isFading}
     {onSelect}
     {currentSequence}
+    {enableFlip}
   />
 </div>
 

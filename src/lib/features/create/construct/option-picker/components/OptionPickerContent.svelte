@@ -309,6 +309,7 @@ Uses organizer and sizer services for section grouping and sizing.
               {isFading}
               {onSelect}
               {currentSequence}
+              enableFlip={true}
             />
           {/each}
 
@@ -322,6 +323,7 @@ Uses organizer and sizer services for section grouping and sizing.
               {isFading}
               {onSelect}
               {currentSequence}
+              enableFlip={true}
             />
           {/if}
         </div>
