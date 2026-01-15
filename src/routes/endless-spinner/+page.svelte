@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, tick } from "svelte";
-  import { fly, fade } from "svelte/transition";
+  import { fly } from "svelte/transition";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
@@ -27,9 +27,22 @@
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
-  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+  // New imports for mode toggle and infinite generation
+  import type { SpinnerMode, SpinnerMetrics, GeneratedSequenceInfo } from "$lib/features/landing/domain/models/spinner-models";
+  import type { IInfiniteSequenceGenerator } from "$lib/features/landing/services/contracts/IInfiniteSequenceGenerator";
+  import { InfiniteSequenceGenerator } from "$lib/features/landing/services/implementations/InfiniteSequenceGenerator";
+  import { SpinnerMetricsRepository } from "$lib/features/landing/services/implementations/SpinnerMetricsRepository";
+  import SpinnerModeToggle from "$lib/features/landing/components/SpinnerModeToggle.svelte";
+  import LibraryModeInfo from "$lib/features/landing/components/LibraryModeInfo.svelte";
+  import InfiniteModeInfo from "$lib/features/landing/components/InfiniteModeInfo.svelte";
+  import SpinnerStatsBar from "$lib/features/landing/components/SpinnerStatsBar.svelte";
+
+  // Local extracted components
+  import SpinnerControls from "./components/SpinnerControls.svelte";
+  import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
 
   function applyPropTypeToSequence(
     sequence: SequenceData,
@@ -100,6 +113,14 @@
     bridgesGenerated: 0,
   });
 
+  // Mode state (Library vs Infinite)
+  let spinnerMode = $state<SpinnerMode>("library");
+  let infiniteGenerator = $state<IInfiniteSequenceGenerator | null>(null);
+  let metricsRepository: SpinnerMetricsRepository | null = null;
+  let globalMetrics = $state<SpinnerMetrics | null>(null);
+  let currentGeneratedInfo = $state<GeneratedSequenceInfo | null>(null);
+  let metricsUnsubscribe: (() => void) | null = null;
+
   const visibilityManager = getAnimationVisibilityManager();
 
   // Derived values
@@ -153,46 +174,11 @@
   let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
   let currentBeatNumber = $derived(Math.floor(animationState.currentBeat));
 
-  // Build the full shifted word from beat letters
-  let fullShiftedWord = $derived.by(() => {
-    if (!animationState.sequenceData?.beats?.length) return "";
-    return animationState.sequenceData.beats
-      .map((beat) => beat.letter ?? "")
-      .filter((letter) => letter !== "")
-      .join("");
-  });
-
-  // Simplify repeated patterns (e.g., "ABCDABCD" → "ABCD")
-  let simplifiedWord = $derived(simplifyRepeatedWord(fullShiftedWord));
-
-  // Parse simplified word into letter units (handles dash-letters like "Λ-")
-  let currentWordLetters = $derived.by(() => {
-    if (!simplifiedWord) return [];
-    const letters: string[] = [];
-    let i = 0;
-    while (i < simplifiedWord.length) {
-      const char = simplifiedWord[i];
-      const nextChar = simplifiedWord[i + 1];
-      if (nextChar === "-") {
-        letters.push(char + "-");
-        i += 2;
-      } else {
-        letters.push(char);
-        i += 1;
-      }
-    }
-    return letters;
-  });
-
-  // Active letter index with wrapping for circular sequences
-  let activeLetterIndex = $derived.by(() => {
-    if (currentWordLetters.length === 0 || currentBeatNumber < 1) return -1;
-    // Use modulo to wrap around the simplified word length
-    return (currentBeatNumber - 1) % currentWordLetters.length;
-  });
-
-  // Pre-load next sequence
+  // Pre-load next sequence (only in library mode)
   $effect(() => {
+    // Skip preloading in infinite mode - we generate on-demand
+    if (spinnerMode === "infinite") return;
+
     const currentBeat = Math.floor(animationState.currentBeat);
     const totalBeats = animationState.totalBeats;
 
@@ -261,6 +247,13 @@
         gridPositionDeriver
       );
 
+      // Initialize infinite mode services
+      metricsRepository = new SpinnerMetricsRepository();
+      infiniteGenerator = new InfiniteSequenceGenerator(
+        generationOrchestrator,
+        metricsRepository
+      );
+
       await spinnerOrchestrator.initialize();
       servicesReady = true;
 
@@ -279,6 +272,7 @@
   onDestroy(() => {
     playbackController?.dispose();
     animationState.dispose();
+    metricsUnsubscribe?.();
   });
 
   function extractEndState(sequence: SequenceData): EndState {
@@ -325,26 +319,42 @@
   }
 
   async function chainToNextSequence() {
-    if (!spinnerOrchestrator || !playbackController || isChainingNow) return;
+    if (!playbackController || isChainingNow) return;
 
     isChainingNow = true;
     transitionCount++;
 
     try {
-      let nextSeq = preloadedSequence;
-      if (!nextSeq && currentSequence) {
-        const endState = extractEndState(currentSequence);
-        nextSeq = await spinnerOrchestrator.getNextSequence(endState);
-        if (!nextSeq) {
-          nextSeq = await spinnerOrchestrator.getInitialSequence();
-        }
-      }
+      if (spinnerMode === "infinite" && infiniteGenerator) {
+        // Infinite mode: generate novel sequences
+        const endState = currentSequence ? extractEndState(currentSequence) : null;
+        const generated = endState
+          ? await infiniteGenerator.generateFromEndState(endState)
+          : await infiniteGenerator.generateInitial();
 
-      if (nextSeq) {
-        hotSwapSequence(nextSeq);
-        sequenceHistory = [nextSeq.word, ...sequenceHistory.slice(0, 9)];
-        const orchestratorStats = spinnerOrchestrator.getStats();
-        stats = { ...orchestratorStats };
+        if (generated) {
+          currentGeneratedInfo = generated;
+          hotSwapSequence(generated.sequence);
+          sequenceHistory = [generated.sequence.word || "Generated", ...sequenceHistory.slice(0, 9)];
+        }
+      } else if (spinnerOrchestrator) {
+        // Library mode: use curated sequences
+        let nextSeq = preloadedSequence;
+        if (!nextSeq && currentSequence) {
+          const endState = extractEndState(currentSequence);
+          nextSeq = await spinnerOrchestrator.getNextSequence(endState);
+          if (!nextSeq) {
+            nextSeq = await spinnerOrchestrator.getInitialSequence();
+          }
+        }
+
+        if (nextSeq) {
+          currentGeneratedInfo = null; // Clear any generated info
+          hotSwapSequence(nextSeq);
+          sequenceHistory = [nextSeq.word, ...sequenceHistory.slice(0, 9)];
+          const orchestratorStats = spinnerOrchestrator.getStats();
+          stats = { ...orchestratorStats };
+        }
       }
 
       preloadedSequence = null;
@@ -352,6 +362,28 @@
       console.error("Chain failed:", err);
     } finally {
       isChainingNow = false;
+    }
+  }
+
+  function handleModeChange(newMode: SpinnerMode) {
+    spinnerMode = newMode;
+
+    // Subscribe to metrics updates when switching to infinite mode
+    if (newMode === "infinite" && metricsRepository && !metricsUnsubscribe) {
+      metricsUnsubscribe = metricsRepository.subscribe((metrics) => {
+        globalMetrics = metrics;
+      });
+      // Also fetch initial metrics
+      metricsRepository.getMetrics().then((metrics) => {
+        globalMetrics = metrics;
+      });
+      // Clear any preloaded library sequence so infinite mode generates fresh
+      preloadedSequence = null;
+    }
+
+    // Reset generated info when switching to library mode
+    if (newMode === "library") {
+      currentGeneratedInfo = null;
     }
   }
 
@@ -455,9 +487,13 @@
   <div class="content">
     <!-- Header -->
     <header class="header">
-
       <h1 class="title">Infinite LOOPs</h1>
       <p class="subtitle">TKA choreography, infinitely chained</p>
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle-container">
+        <SpinnerModeToggle mode={spinnerMode} onModeChange={handleModeChange} />
+      </div>
     </header>
 
     <!-- Screen reader announcements -->
@@ -469,19 +505,14 @@
 
     <!-- Animation showcase -->
     <main class="showcase">
-      <!-- Current sequence name with active letter highlighting -->
-      {#if currentSequence}
-        <div class="sequence-name" in:fade={{ duration: 200 }}>
-          <div class="word-display">
-            {#each currentWordLetters as letter, index}
-              <span
-                class="letter"
-                class:active={activeLetterIndex === index}
-              >{letter}</span>
-            {/each}
-          </div>
-        </div>
-      {/if}
+      <!-- Mode-specific info display -->
+      <div class="mode-info">
+        {#if spinnerMode === "library"}
+          <LibraryModeInfo sequence={currentSequence} />
+        {:else}
+          <InfiniteModeInfo sequenceInfo={currentGeneratedInfo} />
+        {/if}
+      </div>
 
       <!-- Animation area -->
       <div class="animation-area" class:with-grid={showBeatGrid}>
@@ -528,67 +559,23 @@
       </div>
 
       <!-- Controls -->
-      <div class="controls" role="group" aria-label="Playback controls">
-        <button
-          class="control-btn secondary"
-          onclick={() => (showBeatGrid = !showBeatGrid)}
-          aria-label={showBeatGrid ? "Hide notation grid" : "Show notation grid"}
-          aria-pressed={showBeatGrid}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
-          </svg>
-        </button>
-
-        <button
-          class="control-btn primary"
-          onclick={handleTogglePause}
-          disabled={!animationReady}
-          aria-label={animationState.isPlaying ? "Pause animation" : "Play animation"}
-        >
-          {#if animationState.isPlaying}
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-          {:else}
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          {/if}
-        </button>
-
-        <button
-          class="control-btn secondary"
-          onclick={handleSkip}
-          disabled={!animationReady}
-          aria-label="Skip to next sequence"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M6 4v16l10-8z" />
-            <rect x="16" y="4" width="2" height="16" />
-          </svg>
-        </button>
-      </div>
+      <SpinnerControls
+        isPlaying={animationState.isPlaying}
+        {animationReady}
+        {showBeatGrid}
+        onToggleGrid={() => (showBeatGrid = !showBeatGrid)}
+        onTogglePause={handleTogglePause}
+        onSkip={handleSkip}
+      />
 
       <!-- Stats bar -->
-      <div class="stats-bar">
-        <div class="stat">
-          <span class="stat-value">{transitionCount}</span>
-          <span class="stat-label">transitions</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{stats.uniqueSequencesUsed}</span>
-          <span class="stat-label">unique</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{sequenceHistory.length}</span>
-          <span class="stat-label">in session</span>
-        </div>
-      </div>
+      <SpinnerStatsBar
+        mode={spinnerMode}
+        libraryStats={stats}
+        {transitionCount}
+        {globalMetrics}
+        sessionGeneratedCount={infiniteGenerator?.getSessionCount() ?? 0}
+      />
     </main>
 
     <!-- Debug toggle -->
@@ -601,46 +588,12 @@
 
     <!-- Debug panel -->
     {#if showDebugPanel}
-      <aside class="debug-panel" in:fly={{ y: 20, duration: 200 }}>
-        <div class="debug-section">
-          <h3>Sequence Chain</h3>
-          <div class="history-list">
-            {#each sequenceHistory as seq, i}
-              <div class="history-item" class:current={i === 0}>{seq}</div>
-            {/each}
-          </div>
-        </div>
-
-        <div class="debug-section">
-          <h3>Statistics</h3>
-          <div class="debug-stats">
-            <div class="debug-stat">
-              <span>Played:</span>
-              <span>{stats.sequencesPlayed}</span>
-            </div>
-            <div class="debug-stat">
-              <span>Direct matches:</span>
-              <span>{stats.directMatches}</span>
-            </div>
-            <div class="debug-stat">
-              <span>Rotated:</span>
-              <span>{stats.rotatedMatches}</span>
-            </div>
-            <div class="debug-stat">
-              <span>Grid mode:</span>
-              <span>{gridMode ?? "—"}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="debug-section">
-          <h3>Controls</h3>
-          <label class="toggle-row">
-            <input type="checkbox" bind:checked={isChainingEnabled} />
-            <span>Auto-chain sequences</span>
-          </label>
-        </div>
-      </aside>
+      <EndlessSpinnerDebugPanel
+        {sequenceHistory}
+        {stats}
+        {gridMode}
+        bind:isChainingEnabled
+      />
     {/if}
   </div>
 </div>
@@ -681,22 +634,6 @@
     margin-bottom: 32px;
   }
 
-  .logo {
-    display: inline-flex;
-    margin-bottom: 16px;
-  }
-
-  .logo-icon {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
   .title {
     margin: 0;
     font-size: clamp(2rem, 5vw, 3rem);
@@ -715,6 +652,10 @@
     font-weight: 400;
   }
 
+  .mode-toggle-container {
+    margin-top: 20px;
+  }
+
   /* Showcase */
   .showcase {
     flex: 1;
@@ -724,28 +665,11 @@
     gap: 24px;
   }
 
-  .sequence-name {
+  .mode-info {
+    min-height: 48px;
     display: flex;
+    align-items: center;
     justify-content: center;
-    width: 100%;
-  }
-
-  .word-display {
-    display: flex;
-    font-family: Georgia, serif;
-    font-size: clamp(1.5rem, 5vw, 2.5rem);
-    font-weight: 600;
-    letter-spacing: 0.02em;
-  }
-
-  .word-display .letter {
-    color: rgba(255, 255, 255, 0.25);
-    transition: color 0.15s ease, text-shadow 0.15s ease;
-  }
-
-  .word-display .letter.active {
-    color: #fff;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
   }
 
   /* Animation area */
@@ -819,74 +743,6 @@
     to { transform: rotate(360deg); }
   }
 
-  /* Controls */
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .control-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .control-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .control-btn.primary {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-  }
-
-  .control-btn.primary:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 6px 28px rgba(99, 102, 241, 0.5);
-  }
-
-  .control-btn.primary svg {
-    width: 28px;
-    height: 28px;
-  }
-
-  .control-btn.secondary {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .control-btn.secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-  }
-
-  .control-btn.secondary svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* Focus indicators */
-  .control-btn:focus-visible {
-    outline: 2px solid #6366f1;
-    outline-offset: 2px;
-  }
-
-  .control-btn.primary:focus-visible {
-    outline-color: #fff;
-  }
-
   /* Retry button */
   .retry-btn {
     margin-top: 8px;
@@ -925,37 +781,6 @@
     border: 0;
   }
 
-  /* Stats bar */
-  .stats-bar {
-    display: flex;
-    gap: 32px;
-    padding: 16px 32px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-  }
-
-  .stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .stat-value {
-    font-size: 1.25rem;
-    font-weight: 600;
-    font-family: monospace;
-    color: #fff;
-  }
-
-  .stat-label {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
   /* Debug toggle */
   .debug-toggle {
     position: fixed;
@@ -980,89 +805,6 @@
   .debug-toggle:focus-visible {
     outline: 2px solid #6366f1;
     outline-offset: 2px;
-  }
-
-  /* Debug panel */
-  .debug-panel {
-    position: fixed;
-    bottom: 60px;
-    right: 20px;
-    width: 300px;
-    max-height: 60vh;
-    overflow-y: auto;
-    background: rgba(10, 10, 20, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    backdrop-filter: blur(20px);
-  }
-
-  .debug-section h3 {
-    margin: 0 0 8px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 150px;
-    overflow-y: auto;
-  }
-
-  .history-item {
-    font-size: 0.75rem;
-    font-family: monospace;
-    padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.5);
-  }
-
-  .history-item.current {
-    background: rgba(80, 200, 120, 0.15);
-    color: #50c878;
-  }
-
-  .debug-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .debug-stat {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.75rem;
-  }
-
-  .debug-stat span:first-child {
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  .debug-stat span:last-child {
-    font-family: monospace;
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-  }
-
-  .toggle-row input {
-    accent-color: #6366f1;
   }
 
   /* Responsive */
@@ -1102,17 +844,6 @@
 
     .beat-grid-container {
       display: none;
-    }
-
-    .stats-bar {
-      gap: 20px;
-      padding: 12px 20px;
-    }
-
-    .debug-panel {
-      width: calc(100vw - 40px);
-      left: 20px;
-      right: 20px;
     }
   }
 
