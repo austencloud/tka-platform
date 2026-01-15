@@ -1,9 +1,14 @@
 /**
  * Infinite Sequence Generator Implementation
  *
- * Generates novel sequences for the endless spinner's "Infinite" mode.
- * Wraps the GenerationOrchestrator with spinner-specific constraints
- * and tracks generation metrics.
+ * Generates novel LOOP sequences for the endless spinner's "Infinite" mode.
+ * Cycles through different LOOP types to showcase the variety of TKA patterns.
+ *
+ * Standard generation settings:
+ * - Level 2 (Intermediate difficulty)
+ * - 16 count (4 beats × 4 slices for quartered)
+ * - Max turn 1
+ * - Cycles through LOOP types: Rotated, Mirrored, Swapped, Inverted, and combinations
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -13,94 +18,214 @@ import {
   DifficultyLevel,
   PropContinuity,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import {
+  LOOPType,
+  SliceSize,
+} from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
-import type { GeneratedSequenceInfo } from "../../domain/models/spinner-models";
+import type { GeneratedSequenceInfo, GenerationSettings } from "../../domain/models/spinner-models";
 import type { EndState } from "../contracts/IEndlessSpinnerOrchestrator";
 import type { IInfiniteSequenceGenerator } from "../contracts/IInfiniteSequenceGenerator";
 import type { ISpinnerMetricsRepository } from "../contracts/ISpinnerMetricsRepository";
 
+/**
+ * LOOP types to cycle through, ordered from simple to complex.
+ * These represent the core TKA pattern transformations.
+ */
+const LOOP_TYPE_ROTATION: LOOPType[] = [
+  // Single transformations (most common, easiest to see)
+  LOOPType.STRICT_ROTATED,
+  LOOPType.STRICT_MIRRORED,
+  LOOPType.STRICT_SWAPPED,
+  LOOPType.STRICT_INVERTED,
+
+  // Double combinations
+  LOOPType.ROTATED_SWAPPED,
+  LOOPType.MIRRORED_SWAPPED,
+  LOOPType.ROTATED_INVERTED,
+  LOOPType.MIRRORED_INVERTED,
+  LOOPType.MIRRORED_ROTATED,
+  LOOPType.SWAPPED_INVERTED,
+
+  // Triple and quadruple (rare, complex)
+  LOOPType.MIRRORED_INVERTED_ROTATED,
+];
+
+/**
+ * Slice size options with their probabilities.
+ * Quartered (4 slices) is more common as it produces 16-beat sequences.
+ */
+const SLICE_OPTIONS: { slice: SliceSize; weight: number }[] = [
+  { slice: SliceSize.QUARTERED, weight: 70 }, // 70% - 16 beats total
+  { slice: SliceSize.HALVED, weight: 30 },    // 30% - 8 beats total
+];
+
 export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
   private sessionCount = 0;
+  private loopTypeIndex = 0;
 
   constructor(
     private generationOrchestrator: IGenerationOrchestrator,
     private metricsRepository: ISpinnerMetricsRepository
-  ) {}
+  ) {
+    // Start at a random position in the rotation for variety
+    this.loopTypeIndex = Math.floor(Math.random() * LOOP_TYPE_ROTATION.length);
+  }
 
   async generateFromEndState(
     endState: EndState
   ): Promise<GeneratedSequenceInfo | null> {
-    // If end state is missing orientations, fall back to generating without constraints
-    const hasValidOrientations = endState.blueOrientation && endState.redOrientation;
-
-    if (!hasValidOrientations) {
-      console.log("[InfiniteSequenceGenerator] End state missing orientations, generating fresh");
-      return this.generateInitial();
-    }
-
-    try {
-      const startPositionData = this.createStartPositionFromEndState(endState);
-      const length = this.getRandomLength();
-
-      const sequence = await this.generationOrchestrator.generateSequence({
-        mode: GenerationMode.FREEFORM,
-        length,
-        gridMode: GridMode.DIAMOND,
-        propType: PropType.STAFF,
-        difficulty: DifficultyLevel.INTERMEDIATE,
-        propContinuity: PropContinuity.CONTINUOUS,
-        turnIntensity: 1,
-        startPosition: startPositionData,
-      });
-
-      // Increment counters
-      this.sessionCount++;
-      const globalIndex = await this.metricsRepository.incrementGeneratedCount();
-
-      return {
-        sequence,
-        generatedAt: new Date(),
-        globalIndex,
-      };
-    } catch (error) {
-      // If constrained generation fails, try generating without the constraint
-      console.warn(
-        "[InfiniteSequenceGenerator] Constrained generation failed, falling back to initial:",
-        error
-      );
-      return this.generateInitial();
-    }
+    // For LOOPs, we don't constrain by end state - each LOOP is self-contained
+    // The end position naturally returns to start for true LOOPs
+    return this.generateLOOP();
   }
 
   async generateInitial(): Promise<GeneratedSequenceInfo | null> {
-    try {
-      const length = this.getRandomLength();
+    return this.generateLOOP();
+  }
 
+  /**
+   * Generate a LOOP sequence with the current settings rotation.
+   */
+  private async generateLOOP(): Promise<GeneratedSequenceInfo | null> {
+    const settings = this.getNextSettings();
+
+    try {
       const sequence = await this.generationOrchestrator.generateSequence({
-        mode: GenerationMode.FREEFORM,
-        length,
+        mode: GenerationMode.CIRCULAR,
+        length: settings.baseLength,
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
-        difficulty: DifficultyLevel.INTERMEDIATE,
+        difficulty: settings.difficulty,
         propContinuity: PropContinuity.CONTINUOUS,
-        turnIntensity: 1,
+        turnIntensity: settings.turnIntensity,
+        loopType: settings.loopType,
+        sliceSize: settings.sliceSize,
       });
 
-      // Increment counters
+      // Update counters
       this.sessionCount++;
-      const globalIndex = await this.metricsRepository.incrementGeneratedCount();
+      const globalIndex = await this.incrementMetricsSafely();
+
+      // Update settings with actual beat count from generated sequence
+      settings.totalBeats = sequence.beats?.length ?? settings.totalBeats;
 
       return {
         sequence,
         generatedAt: new Date(),
         globalIndex,
+        settings,
       };
     } catch (error) {
-      console.error(
-        "[InfiniteSequenceGenerator] Failed to generate initial sequence:",
+      console.warn(
+        `[InfiniteSequenceGenerator] Failed to generate ${settings.loopType} LOOP, trying fallback:`,
         error
       );
+
+      // Try a simpler LOOP type on failure
+      return this.generateFallbackLOOP(settings);
+    }
+  }
+
+  /**
+   * Fallback generation with simpler settings if the primary generation fails.
+   */
+  private async generateFallbackLOOP(
+    originalSettings: GenerationSettings
+  ): Promise<GeneratedSequenceInfo | null> {
+    // Try with the simplest LOOP type: strict rotated
+    const fallbackSettings: GenerationSettings = {
+      loopType: LOOPType.STRICT_ROTATED,
+      sliceSize: SliceSize.QUARTERED,
+      difficulty: DifficultyLevel.BEGINNER,
+      turnIntensity: 0,
+      baseLength: 4,
+      totalBeats: 16,
+    };
+
+    try {
+      const sequence = await this.generationOrchestrator.generateSequence({
+        mode: GenerationMode.CIRCULAR,
+        length: fallbackSettings.baseLength,
+        gridMode: GridMode.DIAMOND,
+        propType: PropType.STAFF,
+        difficulty: fallbackSettings.difficulty,
+        propContinuity: PropContinuity.CONTINUOUS,
+        turnIntensity: fallbackSettings.turnIntensity,
+        loopType: fallbackSettings.loopType,
+        sliceSize: fallbackSettings.sliceSize,
+      });
+
+      this.sessionCount++;
+      const globalIndex = await this.incrementMetricsSafely();
+      fallbackSettings.totalBeats = sequence.beats?.length ?? fallbackSettings.totalBeats;
+
+      return {
+        sequence,
+        generatedAt: new Date(),
+        globalIndex,
+        settings: fallbackSettings,
+      };
+    } catch (error) {
+      console.error("[InfiniteSequenceGenerator] Fallback generation also failed:", error);
       return null;
+    }
+  }
+
+  /**
+   * Get the next generation settings, cycling through LOOP types.
+   */
+  private getNextSettings(): GenerationSettings {
+    // Get next LOOP type in rotation
+    const loopType = LOOP_TYPE_ROTATION[this.loopTypeIndex];
+    this.loopTypeIndex = (this.loopTypeIndex + 1) % LOOP_TYPE_ROTATION.length;
+
+    // Select slice size (weighted random)
+    const sliceSize = this.selectWeightedSlice();
+
+    // Base length depends on slice size
+    // Quartered: 4 base × 4 slices = 16 total
+    // Halved: 4 base × 2 slices = 8 total
+    const baseLength = 4;
+    const multiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+
+    return {
+      loopType,
+      sliceSize,
+      difficulty: DifficultyLevel.INTERMEDIATE,
+      turnIntensity: 1,
+      baseLength,
+      totalBeats: baseLength * multiplier,
+    };
+  }
+
+  /**
+   * Select a slice size using weighted random selection.
+   */
+  private selectWeightedSlice(): SliceSize {
+    const totalWeight = SLICE_OPTIONS.reduce((sum, opt) => sum + opt.weight, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const option of SLICE_OPTIONS) {
+      random -= option.weight;
+      if (random <= 0) {
+        return option.slice;
+      }
+    }
+
+    return SliceSize.QUARTERED; // Default fallback
+  }
+
+  /**
+   * Safely increment metrics, handling Firebase errors gracefully.
+   */
+  private async incrementMetricsSafely(): Promise<number> {
+    try {
+      return await this.metricsRepository.incrementGeneratedCount();
+    } catch (error) {
+      console.warn("[InfiniteSequenceGenerator] Failed to update metrics:", error);
+      // Return session count as fallback if Firebase fails
+      return this.sessionCount;
     }
   }
 
@@ -110,31 +235,5 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
 
   resetSessionCount(): void {
     this.sessionCount = 0;
-  }
-
-  /**
-   * Create a PictographData-like object from an end state for use as start position.
-   */
-  private createStartPositionFromEndState(endState: EndState): any {
-    return {
-      id: `infinite-start-${Date.now()}`,
-      startPosition: endState.position,
-      motions: {
-        blue: endState.blueOrientation
-          ? { startOrientation: endState.blueOrientation }
-          : undefined,
-        red: endState.redOrientation
-          ? { startOrientation: endState.redOrientation }
-          : undefined,
-      },
-    };
-  }
-
-  /**
-   * Get a random sequence length between 4 and 8 beats.
-   * Longer sequences allow for more complex patterns.
-   */
-  private getRandomLength(): number {
-    return 4 + Math.floor(Math.random() * 5); // 4-8 beats
   }
 }
