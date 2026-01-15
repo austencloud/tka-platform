@@ -20,9 +20,16 @@
     isOwn: boolean;
     isNew?: boolean;
     otherParticipantId?: string;
+    showReadReceipt?: boolean;
   }
 
-  let { message, isOwn, isNew = false, otherParticipantId }: Props = $props();
+  let {
+    message,
+    isOwn,
+    isNew = false,
+    otherParticipantId,
+    showReadReceipt = false,
+  }: Props = $props();
 
   // Edit history sheet state
   let showEditHistory = $state(false);
@@ -45,18 +52,16 @@
     message.attachments?.find((a) => a.type === "sequence")
   );
 
-  // Read receipt status for own messages
-  const readStatus = $derived.by(() => {
-    if (!isOwn) return null;
-
-    // Check if the other participant has read this message
-    if (otherParticipantId && message.readBy?.includes(otherParticipantId)) {
-      return "read";
-    }
-
-    // Message is sent (we have an ID)
-    return "sent";
+  // Get the read timestamp for the other participant
+  const readTimestamp = $derived.by(() => {
+    if (!otherParticipantId || !message.readAt) return null;
+    return message.readAt[otherParticipantId] || null;
   });
+
+  // Format the read timestamp for display
+  function formatReadTime(date: Date): string {
+    return formatTime(date);
+  }
 
   function handleToggleReaction(emoji: string) {
     messagingService
@@ -121,16 +126,11 @@
             <span class="edited">(edited)</span>
           {/if}
         {/if}
-        {#if isOwn && !message.isDeleted && readStatus}
-          <span
-            class="read-receipt"
-            class:read={readStatus === "read"}
-            aria-label={readStatus === "read" ? "Read" : "Sent"}
-          >
-            {#if readStatus === "read"}
-              <i class="fas fa-check-double" aria-hidden="true"></i>
-            {:else}
-              <i class="fas fa-check" aria-hidden="true"></i>
+        {#if showReadReceipt && !message.isDeleted}
+          <span class="read-receipt read" aria-label="Read">
+            <i class="fas fa-check-double" aria-hidden="true"></i>
+            {#if readTimestamp}
+              <span class="read-time">{formatReadTime(readTimestamp)}</span>
             {/if}
           </span>
         {/if}
@@ -308,6 +308,11 @@
 
   .own .read-receipt.read {
     color: #93c5fd;
+  }
+
+  .read-time {
+    margin-left: 4px;
+    font-size: var(--font-size-compact, 12px);
   }
 
   /* Reduced motion */

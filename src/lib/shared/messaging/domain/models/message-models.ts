@@ -84,6 +84,7 @@ export interface Message {
   createdAt: Date;
   editedAt?: Date;
   readBy: string[]; // User IDs who have read this message
+  readAt?: Record<string, Date>; // Timestamps when each user read the message
   attachments?: MessageAttachment[];
   isDeleted?: boolean; // Soft delete flag
   reactions?: MessageReaction[]; // Emoji reactions on this message

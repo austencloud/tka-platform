@@ -354,12 +354,14 @@ export class Messenger implements IMessenger {
       const snapshot = await getDocs(messagesRef);
       const batch = writeBatch(firestore);
 
+      const now = serverTimestamp();
       snapshot.docs.forEach((docSnap) => {
         const data = docSnap.data();
         const readBy = (data["readBy"] as string[]) || [];
         if (!readBy.includes(currentUserId)) {
           batch.update(docSnap.ref, {
             readBy: [...readBy, currentUserId],
+            [`readAt.${currentUserId}`]: now,
           });
         }
       });
@@ -401,6 +403,7 @@ export class Messenger implements IMessenger {
       if (!readBy.includes(currentUserId)) {
         await updateDoc(messageRef, {
           readBy: [...readBy, currentUserId],
+          [`readAt.${currentUserId}`]: serverTimestamp(),
         });
       }
     } catch (error) {
@@ -528,6 +531,17 @@ export class Messenger implements IMessenger {
       })
     );
 
+    // Map readAt timestamps
+    const rawReadAt = data["readAt"] as Record<string, Timestamp> | undefined;
+    const readAt: Record<string, Date> | undefined = rawReadAt
+      ? Object.fromEntries(
+          Object.entries(rawReadAt).map(([userId, timestamp]) => [
+            userId,
+            timestamp instanceof Timestamp ? timestamp.toDate() : timestamp,
+          ])
+        )
+      : undefined;
+
     return {
       id,
       conversationId,
@@ -538,6 +552,7 @@ export class Messenger implements IMessenger {
       createdAt: (data["createdAt"] as Timestamp)?.toDate() || new Date(),
       editedAt: (data["editedAt"] as Timestamp)?.toDate(),
       readBy: (data["readBy"] as string[]) || [],
+      readAt,
       attachments: data["attachments"] as Message["attachments"],
       isDeleted: data["isDeleted"] as boolean | undefined,
       reactions: data["reactions"] as MessageReaction[] | undefined,

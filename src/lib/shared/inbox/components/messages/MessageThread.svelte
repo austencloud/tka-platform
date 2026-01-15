@@ -104,6 +104,26 @@
 
     return groups;
   });
+
+  // Find the last own message that was read by the other participant
+  // This is the only message that should show the read receipt (Facebook-style)
+  const lastReadOwnMessageId = $derived.by(() => {
+    if (!currentUserId || !otherParticipantId) return null;
+
+    // Iterate backwards through messages to find the last own message read by other
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (!msg) continue;
+      if (
+        msg.senderId === currentUserId &&
+        !msg.isDeleted &&
+        msg.readBy?.includes(otherParticipantId)
+      ) {
+        return msg.id;
+      }
+    }
+    return null;
+  });
 </script>
 
 <div class="message-thread">
@@ -124,6 +144,7 @@
               isNew={groupIndex === messageGroups.length - 1 &&
                 messageIndex === group.messages.length - 1}
               {otherParticipantId}
+              showReadReceipt={message.id === lastReadOwnMessageId}
             />
           {/each}
         {/each}
