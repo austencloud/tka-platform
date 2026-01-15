@@ -679,6 +679,22 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // APP METRICS (Public Counters)
+    // ============================================================================
+
+    // App-wide metrics like global counters for the endless spinner
+    // Public read/write for anonymous users to participate in global counters
+    match /appMetrics/{metricId} {
+      // ANYONE can read metrics (for displaying global counters)
+      allow read: if true;
+
+      // ANYONE can write (atomic increment of totalGenerated counter)
+      // This is intentionally permissive to allow anonymous users
+      // to contribute to the "sequences ever generated" counter
+      allow write: if true;
+    }
+
+    // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
     // ============================================================================
