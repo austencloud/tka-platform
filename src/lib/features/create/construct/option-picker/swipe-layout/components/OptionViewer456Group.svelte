@@ -18,20 +18,13 @@ Matches the desktop version exactly:
   import type { IAspectLayoutPlanner } from "../../services/contracts/IAspectLayoutPlanner";
   import type { IOptionGridFitCalculator } from "../../services/contracts/IGridFitCalculator";
   import { container } from "$lib/shared/di";
-  import { onMount } from "svelte";
   import type { TypeFilter } from "../../domain/option-picker-types";
   import OptionViewerSection from "./OptionViewerSection.svelte";
 
-  // Services
-  let animationService: IAnimator;
-  let aspectLayoutPlanner: IAspectLayoutPlanner;
-  let gridFitCalculator: IOptionGridFitCalculator;
-
-  onMount(() => {
-    animationService = container.items.animator;
-    aspectLayoutPlanner = container.items.aspectLayoutPlanner;
-    gridFitCalculator = container.items.optionGridFitCalculator;
-  });
+  // Services - resolve synchronously to ensure they're available for $derived computations
+  const animationService = container.items.animator as IAnimator;
+  const aspectLayoutPlanner = container.items.aspectLayoutPlanner as IAspectLayoutPlanner;
+  const gridFitCalculator = container.items.optionGridFitCalculator as IOptionGridFitCalculator;
 
   // Animation functions following established app patterns
   const sectionFadeOut = (_node: Element) => {
