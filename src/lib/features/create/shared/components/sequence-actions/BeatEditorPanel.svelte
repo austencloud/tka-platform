@@ -14,8 +14,8 @@
   import TurnsEditMode from "./TurnsEditMode.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
-  import PictographEditorSheet from "./PictographEditorSheet.svelte";
   import BeatGrid from "../../workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
   import type { BeatData } from "../../domain/models/BeatData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
@@ -25,6 +25,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
+  import { selectedArrowState } from "../../state/selected-arrow-state.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -42,6 +43,7 @@
     onBeatSelect?: (beatNumber: number) => void;
     onDelete?: () => void;
     onOpenPropSheet?: (color: "blue" | "red") => void;
+    onBeatDataUpdate?: (updatedBeatData: BeatData) => void;
   }
 
   let {
@@ -57,7 +59,11 @@
     onBeatSelect,
     onDelete,
     onOpenPropSheet,
+    onBeatDataUpdate,
   }: Props = $props();
+
+  // Track if an arrow is selected for showing adjustment panel
+  const hasArrowSelected = $derived(selectedArrowState.selectedArrow !== null);
 
   // Get layout context for responsive behavior
   const ctx = getCreateModuleContext();
@@ -151,9 +157,9 @@
 
   // Inspect modal state (admin-only)
   let showInspectModal = $state(false);
-  let showEditorSheet = $state(false);
 
   function handleClose() {
+    selectedArrowState.clearSelection();
     onClose();
   }
 
@@ -169,12 +175,11 @@
     showInspectModal = false;
   }
 
-  function handleOpenEditor() {
-    showEditorSheet = true;
-  }
-
-  function handleCloseEditor() {
-    showEditorSheet = false;
+  function handleBeatDataUpdate(updatedBeatData: BeatData) {
+    // Forward to parent for persistence
+    onBeatDataUpdate?.(updatedBeatData);
+    // Also update the displayed beat data locally for immediate visual feedback
+    displayedBeatData = updatedBeatData;
   }
 </script>
 
@@ -198,14 +203,6 @@
       </div>
       <div class="header-actions">
         {#if isAdmin() && hasSelection && displayedBeatData}
-          <button
-            class="icon-btn editor"
-            onclick={handleOpenEditor}
-            aria-label="Edit pictograph"
-            title="Edit pictograph (admin)"
-          >
-            <i class="fa-solid fa-pen-ruler" aria-hidden="true"></i>
-          </button>
           <button
             class="icon-btn inspect"
             onclick={handleOpenInspect}
@@ -256,15 +253,23 @@
       </div>
     {/if}
 
-    <!-- Desktop layout: Pictograph Preview -->
+    <!-- Desktop layout: Pictograph Preview with clickable arrows (admin) -->
     {#if isSideBySideLayout && hasSelection && displayedBeatData}
       <div class="preview-section">
         <div class="pictograph-container">
           <PictographContainer
             pictographData={displayedBeatData}
+            arrowsClickable={isAdmin()}
             disableTransitions={true}
           />
         </div>
+        <!-- Arrow adjustment panel appears when an arrow is selected -->
+        {#if isAdmin() && hasArrowSelected}
+          <ArrowAdjustmentPanel
+            beatData={displayedBeatData}
+            onBeatDataUpdate={handleBeatDataUpdate}
+          />
+        {/if}
       </div>
     {/if}
 
@@ -305,13 +310,6 @@
   show={showInspectModal}
   beatData={displayedBeatData}
   onClose={handleCloseInspect}
-/>
-
-<!-- Editor Sheet (admin-only) -->
-<PictographEditorSheet
-  isOpen={showEditorSheet}
-  beatData={displayedBeatData}
-  onClose={handleCloseEditor}
 />
 
 <style>
@@ -386,21 +384,6 @@
     font-size: var(--font-size-base);
     transition: all 0.15s ease;
     border: 1px solid var(--theme-stroke-strong);
-  }
-
-  .icon-btn.editor {
-    background: linear-gradient(135deg, var(--semantic-warning), #d97706);
-    border-color: rgba(245, 158, 11, 0.3);
-    color: white;
-  }
-
-  .icon-btn.editor:hover {
-    background: linear-gradient(
-      135deg,
-      var(--semantic-warning),
-      var(--semantic-warning)
-    );
-    transform: scale(1.05);
   }
 
   .icon-btn.inspect {

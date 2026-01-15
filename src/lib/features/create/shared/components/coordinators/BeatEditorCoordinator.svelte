@@ -210,6 +210,31 @@
     propSheetOpen = false;
   }
 
+  function handleBeatDataUpdate(updatedBeatData: typeof selectedBeatData) {
+    if (selectedBeatNumber === null || !updatedBeatData) return;
+
+    const currentSequence = activeSequenceState.currentSequence;
+    if (!currentSequence) return;
+
+    // Handle start position (beat 0)
+    if (selectedBeatNumber === 0) {
+      activeSequenceState.setStartPosition(updatedBeatData);
+      return;
+    }
+
+    // Handle regular beats
+    const beatIndex = selectedBeatNumber - 1;
+    const updatedBeats = [...(currentSequence.beats ?? [])];
+    updatedBeats[beatIndex] = updatedBeatData;
+
+    activeSequenceState.setCurrentSequence({
+      ...currentSequence,
+      beats: updatedBeats,
+    });
+
+    logger.log(`Updated beat ${selectedBeatNumber} arrow adjustments`);
+  }
+
   // Debug effect to track panel visibility
   $effect(() => {
     logger.log(
@@ -232,6 +257,7 @@
   onBeatSelect={handleBeatSelect}
   onDelete={handleBeatDelete}
   onOpenPropSheet={handleOpenPropSheet}
+  onBeatDataUpdate={handleBeatDataUpdate}
 />
 
 <!-- Prop Selection Sheet - rendered as sibling to BeatEditorPanel -->
