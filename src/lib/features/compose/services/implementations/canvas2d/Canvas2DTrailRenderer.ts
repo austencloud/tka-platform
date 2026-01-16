@@ -19,6 +19,8 @@ import {
   TrailStyle,
   TrailEffect,
   TrackingMode,
+  FadeStyle,
+  TaperStyle,
 } from "../../../shared/domain/types/TrailTypes";
 
 // ============================================================================
@@ -253,41 +255,84 @@ export class Canvas2DTrailRenderer {
 
     if (smoothPoints.length < 2) return;
 
-    // Calculate average opacity for the entire trail
-    const avgOpacity = this.calculateOpacity(
-      Math.floor(smoothPoints.length / 2),
-      smoothPoints.length,
-      points,
-      settings,
-      currentTime
-    );
-
-    // Draw as ONE continuous path
-    ctx.save();
-    ctx.beginPath();
-
-    const firstPoint = smoothPoints[0]!;
-    ctx.moveTo(firstPoint.x, firstPoint.y);
-
-    for (let i = 1; i < smoothPoints.length; i++) {
-      const point = smoothPoints[i]!;
-
-      // Skip invalid points
-      if (isNaN(point.x) || isNaN(point.y)) {
-        continue;
-      }
-
-      ctx.lineTo(point.x, point.y);
-    }
-
-    // Apply effect based on settings
     const effect =
       settings.effect ??
       (settings.glowEnabled ? TrailEffect.GLOW : TrailEffect.NONE);
 
+    // If tapering is enabled, we must draw segments individually
+    const needsSegmentedRendering = settings.taperStyle === TaperStyle.TAPERED;
+
+    if (needsSegmentedRendering) {
+      // Segmented rendering for tapered trails
+      this.renderTaperedSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect);
+    } else {
+      // Single path rendering (faster, no tapering)
+      this.renderUniformSmoothTrail(ctx, smoothPoints, points, color, settings, currentTime, effect);
+    }
+  }
+
+  /**
+   * Render smooth trail with uniform width (single path, faster)
+   * Uses quadraticCurveTo with midpoint technique for truly smooth curves
+   */
+  private renderUniformSmoothTrail(
+    ctx: CanvasRenderingContext2D,
+    smoothPoints: Point2D[],
+    originalPoints: TrailPoint[],
+    color: string,
+    settings: TrailSettings,
+    currentTime: number,
+    effect: TrailEffect
+  ): void {
+    if (smoothPoints.length < 2) return;
+
+    // Calculate average opacity for the entire trail
+    const avgOpacity = this.calculateOpacity(
+      Math.floor(smoothPoints.length / 2),
+      smoothPoints.length,
+      originalPoints,
+      settings,
+      currentTime
+    );
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const firstPoint = smoothPoints[0]!;
+    ctx.moveTo(firstPoint.x, firstPoint.y);
+
+    // Use quadraticCurveTo with midpoint technique for smooth curves
+    // This eliminates visible vertices at connection points
+    if (smoothPoints.length === 2) {
+      // Only two points - just draw a line
+      const lastPoint = smoothPoints[1]!;
+      ctx.lineTo(lastPoint.x, lastPoint.y);
+    } else {
+      // For 3+ points, use quadratic curves with midpoint technique
+      for (let i = 1; i < smoothPoints.length - 1; i++) {
+        const point = smoothPoints[i]!;
+        const nextPoint = smoothPoints[i + 1]!;
+        if (isNaN(point.x) || isNaN(point.y)) continue;
+        if (isNaN(nextPoint.x) || isNaN(nextPoint.y)) continue;
+
+        // Midpoint between current and next becomes the endpoint
+        // Current point becomes the control point (curves toward it)
+        const midX = (point.x + nextPoint.x) / 2;
+        const midY = (point.y + nextPoint.y) / 2;
+        ctx.quadraticCurveTo(point.x, point.y, midX, midY);
+      }
+
+      // Connect to the last point
+      const lastPoint = smoothPoints[smoothPoints.length - 1]!;
+      if (!isNaN(lastPoint.x) && !isNaN(lastPoint.y)) {
+        ctx.lineTo(lastPoint.x, lastPoint.y);
+      }
+    }
+
     if (effect === TrailEffect.NEON) {
       // NEON: Multi-layer ribbon effect
-      // Layer 1: Outer glow (wide, diffuse)
       ctx.lineWidth = settings.lineWidth * 4;
       ctx.globalAlpha = avgOpacity * 0.2;
       ctx.strokeStyle = color;
@@ -295,38 +340,157 @@ export class Canvas2DTrailRenderer {
       ctx.shadowColor = color;
       ctx.stroke();
 
-      // Layer 2: Mid glow
       ctx.lineWidth = settings.lineWidth * 2;
       ctx.globalAlpha = avgOpacity * 0.4;
       ctx.shadowBlur = 12;
       ctx.stroke();
 
-      // Layer 3: Core (bright white-ish)
       ctx.lineWidth = settings.lineWidth;
       ctx.globalAlpha = avgOpacity;
       ctx.shadowBlur = 4;
-      ctx.strokeStyle = this.lightenColor(color, 0.7); // 70% toward white
+      ctx.strokeStyle = this.lightenColor(color, 0.7);
       ctx.stroke();
-
       ctx.shadowBlur = 0;
     } else if (effect === TrailEffect.GLOW) {
-      // GLOW: Simple shadowBlur effect
       const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * 4 : 8;
       ctx.shadowBlur = glowBlur;
       ctx.shadowColor = color;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
       ctx.strokeStyle = color;
       ctx.lineWidth = settings.lineWidth;
       ctx.globalAlpha = avgOpacity;
       ctx.stroke();
       ctx.shadowBlur = 0;
     } else {
-      // NONE: Standard stroke, no glow
       ctx.strokeStyle = color;
       ctx.lineWidth = settings.lineWidth;
       ctx.globalAlpha = avgOpacity;
       ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Render smooth trail with tapered width.
+   * Uses filled polygon approach for smooth width variation without visible segments.
+   */
+  private renderTaperedSmoothTrail(
+    ctx: CanvasRenderingContext2D,
+    smoothPoints: Point2D[],
+    originalPoints: TrailPoint[],
+    color: string,
+    settings: TrailSettings,
+    currentTime: number,
+    effect: TrailEffect
+  ): void {
+    if (smoothPoints.length < 3) return;
+
+    ctx.save();
+
+    // Calculate average opacity for the trail
+    const avgOpacity = this.calculateOpacity(
+      Math.floor(smoothPoints.length / 2),
+      smoothPoints.length,
+      originalPoints,
+      settings,
+      currentTime
+    );
+
+    // Build two edge curves - one on each side of the trail path
+    // Offset perpendicular to the path direction by half the line width
+    const leftEdge: Point2D[] = [];
+    const rightEdge: Point2D[] = [];
+
+    for (let i = 0; i < smoothPoints.length; i++) {
+      const curr = smoothPoints[i]!;
+      const progress = i / (smoothPoints.length - 1);
+      const halfWidth = this.calculateLineWidth(progress, settings) / 2;
+
+      // Calculate perpendicular direction from path tangent
+      let dx: number, dy: number;
+      if (i === 0) {
+        // First point: use forward direction
+        const next = smoothPoints[1]!;
+        dx = next.x - curr.x;
+        dy = next.y - curr.y;
+      } else if (i === smoothPoints.length - 1) {
+        // Last point: use backward direction
+        const prev = smoothPoints[i - 1]!;
+        dx = curr.x - prev.x;
+        dy = curr.y - prev.y;
+      } else {
+        // Middle points: average of forward and backward
+        const prev = smoothPoints[i - 1]!;
+        const next = smoothPoints[i + 1]!;
+        dx = next.x - prev.x;
+        dy = next.y - prev.y;
+      }
+
+      // Normalize and rotate 90 degrees for perpendicular
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const perpX = -dy / len;
+      const perpY = dx / len;
+
+      leftEdge.push({ x: curr.x + perpX * halfWidth, y: curr.y + perpY * halfWidth });
+      rightEdge.push({ x: curr.x - perpX * halfWidth, y: curr.y - perpY * halfWidth });
+    }
+
+    // Draw filled polygon using the two edges
+    ctx.beginPath();
+
+    // Left edge forward (using quadratic curves for smoothness)
+    ctx.moveTo(leftEdge[0]!.x, leftEdge[0]!.y);
+    for (let i = 1; i < leftEdge.length - 1; i++) {
+      const point = leftEdge[i]!;
+      const nextPoint = leftEdge[i + 1]!;
+      const midX = (point.x + nextPoint.x) / 2;
+      const midY = (point.y + nextPoint.y) / 2;
+      ctx.quadraticCurveTo(point.x, point.y, midX, midY);
+    }
+    ctx.lineTo(leftEdge[leftEdge.length - 1]!.x, leftEdge[leftEdge.length - 1]!.y);
+
+    // Right edge backward (creates closed shape)
+    for (let i = rightEdge.length - 1; i > 0; i--) {
+      const point = rightEdge[i]!;
+      const prevPoint = rightEdge[i - 1]!;
+      const midX = (point.x + prevPoint.x) / 2;
+      const midY = (point.y + prevPoint.y) / 2;
+      ctx.quadraticCurveTo(point.x, point.y, midX, midY);
+    }
+    ctx.lineTo(rightEdge[0]!.x, rightEdge[0]!.y);
+
+    ctx.closePath();
+
+    if (effect === TrailEffect.NEON) {
+      // NEON: Multiple fills with blur for glow layers
+      ctx.fillStyle = color;
+      ctx.globalAlpha = avgOpacity * 0.3;
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = color;
+      ctx.fill();
+
+      ctx.globalAlpha = avgOpacity * 0.6;
+      ctx.shadowBlur = 12;
+      ctx.fill();
+
+      ctx.fillStyle = this.lightenColor(color, 0.5);
+      ctx.globalAlpha = avgOpacity;
+      ctx.shadowBlur = 4;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (effect === TrailEffect.GLOW) {
+      const glowBlur = settings.glowBlur > 0 ? settings.glowBlur * 4 : 8;
+      ctx.shadowBlur = glowBlur;
+      ctx.shadowColor = color;
+      ctx.fillStyle = color;
+      ctx.globalAlpha = avgOpacity;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      // No effect - simple fill
+      ctx.fillStyle = color;
+      ctx.globalAlpha = avgOpacity;
+      ctx.fill();
     }
 
     ctx.restore();
@@ -359,7 +523,7 @@ export class Canvas2DTrailRenderer {
       ctx.shadowOffsetY = 0;
     }
 
-    // Draw trail segments with varying opacity
+    // Draw trail segments with varying opacity and width
     for (let i = 0; i < points.length - 1; i++) {
       const point = points[i]!;
       const nextPoint = points[i + 1]!;
@@ -374,25 +538,39 @@ export class Canvas2DTrailRenderer {
         continue;
       }
 
+      // Progress: 0 = oldest (tail), 1 = newest (head)
+      const progress = i / (points.length - 1);
+
       let opacity: number;
 
       if (settings.mode === TrailMode.FADE) {
         const age = currentTime - point.timestamp;
-        const progress = age / settings.fadeDurationMs;
+        const rawProgress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
+
+        // Apply fade curve based on fadeStyle
+        let fadeProgress: number;
+        if (settings.fadeStyle === FadeStyle.EXPONENTIAL) {
+          fadeProgress = Math.pow(rawProgress, 2.5);
+        } else {
+          fadeProgress = rawProgress;
+        }
+
         opacity =
           settings.maxOpacity -
-          progress * (settings.maxOpacity - settings.minOpacity);
+          fadeProgress * (settings.maxOpacity - settings.minOpacity);
         opacity = Math.max(
           settings.minOpacity,
           Math.min(settings.maxOpacity, opacity)
         );
       } else {
         // LOOP_CLEAR and PERSISTENT - gradient from old to new
-        const progress = i / (points.length - 1);
         opacity =
           settings.minOpacity +
           progress * (settings.maxOpacity - settings.minOpacity);
       }
+
+      // Calculate line width based on taper style
+      const lineWidth = this.calculateLineWidth(progress, settings);
 
       ctx.beginPath();
       ctx.moveTo(point.x, point.y);
@@ -401,7 +579,7 @@ export class Canvas2DTrailRenderer {
       if (effect === TrailEffect.NEON) {
         // NEON: Multi-layer per segment
         // Layer 1: Outer glow
-        ctx.lineWidth = settings.lineWidth * 4;
+        ctx.lineWidth = lineWidth * 4;
         ctx.globalAlpha = opacity * 0.2;
         ctx.strokeStyle = color;
         ctx.shadowBlur = 25;
@@ -409,13 +587,13 @@ export class Canvas2DTrailRenderer {
         ctx.stroke();
 
         // Layer 2: Mid glow
-        ctx.lineWidth = settings.lineWidth * 2;
+        ctx.lineWidth = lineWidth * 2;
         ctx.globalAlpha = opacity * 0.4;
         ctx.shadowBlur = 12;
         ctx.stroke();
 
         // Layer 3: Bright core
-        ctx.lineWidth = settings.lineWidth;
+        ctx.lineWidth = lineWidth;
         ctx.globalAlpha = opacity;
         ctx.shadowBlur = 4;
         ctx.strokeStyle = this.lightenColor(color, 0.7);
@@ -425,7 +603,7 @@ export class Canvas2DTrailRenderer {
       } else {
         // GLOW or NONE: Single stroke
         ctx.strokeStyle = color;
-        ctx.lineWidth = settings.lineWidth;
+        ctx.lineWidth = lineWidth;
         ctx.globalAlpha = opacity;
         ctx.stroke();
       }
@@ -470,10 +648,22 @@ export class Canvas2DTrailRenderer {
 
       if (originalPoint) {
         const age = currentTime - originalPoint.timestamp;
-        const progress = age / settings.fadeDurationMs;
+        const progress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
+
+        // Apply fade curve based on fadeStyle
+        let fadeProgress: number;
+        if (settings.fadeStyle === FadeStyle.EXPONENTIAL) {
+          // Exponential: holds brightness longer, then drops sharply
+          // Using a power curve - stays bright longer before dropping
+          fadeProgress = Math.pow(progress, 2.5);
+        } else {
+          // Linear: steady fade
+          fadeProgress = progress;
+        }
+
         const opacity =
           settings.maxOpacity -
-          progress * (settings.maxOpacity - settings.minOpacity);
+          fadeProgress * (settings.maxOpacity - settings.minOpacity);
         return Math.max(
           settings.minOpacity,
           Math.min(settings.maxOpacity, opacity)
@@ -489,5 +679,24 @@ export class Canvas2DTrailRenderer {
         progress * (settings.maxOpacity - settings.minOpacity)
       );
     }
+  }
+
+  /**
+   * Calculate line width based on position and taper style
+   * @param progress - 0 = oldest (tail), 1 = newest (head/prop)
+   */
+  private calculateLineWidth(
+    progress: number,
+    settings: TrailSettings
+  ): number {
+    if (settings.taperStyle === TaperStyle.TAPERED) {
+      // Tapered: thick at head (progress=1), thin at tail (progress=0)
+      // Use a minimum of 30% of the base width at the tail
+      const minWidthRatio = 0.3;
+      const widthRatio = minWidthRatio + (1 - minWidthRatio) * progress;
+      return settings.lineWidth * widthRatio;
+    }
+    // No taper: constant width
+    return settings.lineWidth;
   }
 }

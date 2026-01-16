@@ -103,29 +103,18 @@
     // Update global visibility state
     animationVisibilityManager.setTrailStyle(preset);
 
-    // Apply detailed trail appearance settings
-    switch (preset) {
-      case "off":
-        animationSettings.setTrailMode(TrailMode.OFF);
-        break;
-      case "subtle":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(1500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 2.5,
-          maxOpacity: 0.7,
-          glowEnabled: false,
-        });
-        break;
-      case "vivid":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(2500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 4,
-          maxOpacity: 0.95,
-          glowEnabled: true,
-        });
-        break;
+    // Apply trail settings - hardcoded vivid style when enabled
+    if (preset === "off") {
+      animationSettings.setTrailMode(TrailMode.OFF);
+    } else {
+      // "on" - use hardcoded vivid settings
+      animationSettings.setTrailMode(TrailMode.FADE);
+      animationSettings.setFadeDuration(2500);
+      animationSettings.setTrailAppearance({
+        lineWidth: 3.5,
+        maxOpacity: 0.95,
+        glowEnabled: true,
+      });
     }
   }
 
@@ -147,19 +136,11 @@
     </button>
     <button
       class="preset-btn"
-      class:active={currentPreset === "subtle"}
-      onclick={() => setPreset("subtle")}
+      class:active={currentPreset === "on"}
+      onclick={() => setPreset("on")}
       type="button"
     >
-      Subtle
-    </button>
-    <button
-      class="preset-btn"
-      class:active={currentPreset === "vivid"}
-      onclick={() => setPreset("vivid")}
-      type="button"
-    >
-      Vivid
+      On
     </button>
   </div>
 

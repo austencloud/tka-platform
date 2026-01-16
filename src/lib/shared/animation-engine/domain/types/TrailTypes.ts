@@ -54,6 +54,22 @@ export enum TrailEffect {
 }
 
 /**
+ * Trail fade curve style
+ */
+export enum FadeStyle {
+  LINEAR = "linear", // Constant rate of fade (original)
+  EXPONENTIAL = "exponential", // Holds brightness longer, then drops sharply
+}
+
+/**
+ * Trail line width taper style
+ */
+export enum TaperStyle {
+  NONE = "none", // Constant line width
+  TAPERED = "tapered", // Thick at head (prop), thin at tail (oldest)
+}
+
+/**
  * Trail settings configuration
  */
 export interface TrailSettings {
@@ -61,6 +77,8 @@ export interface TrailSettings {
   mode: TrailMode;
   style: TrailStyle;
   effect: TrailEffect; // Visual effect (none, glow, neon)
+  fadeStyle: FadeStyle; // Opacity fade curve (linear vs exponential)
+  taperStyle: TaperStyle; // Line width variation (none vs tapered)
   fadeDurationMs: number; // How long before trail fades (fade mode only)
   maxPoints: number; // Maximum trail points to store
   lineWidth: number;
@@ -80,22 +98,27 @@ import { getMotionColor } from "../../../utils/svg-color-utils";
 import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 
 /**
- * Default trail settings
+ * Default trail settings - Hardcoded "Vivid" style
+ *
+ * These are THE trail settings. No presets, no customization.
+ * Users can toggle trails on/off, but when ON, these exact settings are used.
  */
 export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   enabled: true, // ✅ Trails enabled by default
   mode: TrailMode.FADE, // FADE mode provides beautiful, smooth trails
   style: TrailStyle.SMOOTH_LINE,
-  effect: TrailEffect.GLOW, // Simple glow by default
-  fadeDurationMs: 2500, // 2.5 seconds (vivid preset)
+  effect: TrailEffect.GLOW, // Glow effect
+  fadeStyle: FadeStyle.EXPONENTIAL, // Holds brightness longer, then drops
+  taperStyle: TaperStyle.TAPERED, // ✅ Tapered trails (thick at head, thin at tail)
+  fadeDurationMs: 2500, // 2.5 seconds
   maxPoints: 1000, // Increased for full sequence trails
-  lineWidth: 4, // Vivid preset line width
+  lineWidth: 5, // ✅ Thick enough to compensate for tapering
   glowEnabled: true, // Legacy field
-  glowBlur: 2,
+  glowBlur: 3, // Stronger glow for visibility
   blueColor: getMotionColor(MotionColor.BLUE, "dark"),
   redColor: getMotionColor(MotionColor.RED, "dark"),
-  minOpacity: 0.15,
-  maxOpacity: 0.95, // Vivid preset opacity
+  minOpacity: 0.25, // Higher minimum so tail doesn't fade into background
+  maxOpacity: 1.0, // ✅ Full opacity at head
   trackingMode: TrackingMode.RIGHT_END, // Track right end (tip) by default
   hideProps: false, // Show props by default
   usePathCache: true, // ✅ Enable intelligent backfill for gap-free trails during device stutters

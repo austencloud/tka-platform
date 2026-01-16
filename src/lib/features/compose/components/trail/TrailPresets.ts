@@ -8,6 +8,8 @@
 
 import {
   TrailMode,
+  FadeStyle,
+  TaperStyle,
   type TrailSettings,
 } from "../../shared/domain/types/TrailTypes";
 
@@ -49,6 +51,8 @@ export const TRAIL_PRESETS: TrailPreset[] = [
     settings: {
       enabled: true,
       mode: TrailMode.FADE,
+      fadeStyle: FadeStyle.LINEAR,
+      taperStyle: TaperStyle.NONE,
       fadeDurationMs: 1500,
       lineWidth: 2.5,
       maxOpacity: 0.7,
@@ -64,10 +68,12 @@ export const TRAIL_PRESETS: TrailPreset[] = [
     settings: {
       enabled: true,
       mode: TrailMode.FADE,
+      fadeStyle: FadeStyle.EXPONENTIAL,
+      taperStyle: TaperStyle.NONE,
       fadeDurationMs: 2500,
       lineWidth: 4,
       maxOpacity: 0.95,
-      minOpacity: 0.2,
+      minOpacity: 0.1,
       glowEnabled: true,
       glowBlur: 4,
     },

@@ -26,6 +26,8 @@ import {
   TrailMode,
   TrailStyle,
   TrailEffect,
+  FadeStyle,
+  TaperStyle,
 } from "../../shared/domain/types/TrailTypes";
 import type {
   ITrailCapturer,
@@ -140,6 +142,8 @@ export class TrailCapturer implements ITrailCapturer {
       trackingMode: TrackingMode.RIGHT_END,
       style: TrailStyle.SMOOTH_LINE as TrailStyle, // Default trail style
       effect: TrailEffect.NONE, // Default to no effect
+      fadeStyle: FadeStyle.EXPONENTIAL, // Exponential fade (holds brightness longer)
+      taperStyle: TaperStyle.NONE, // Tapering disabled - causes visual artifacts
       fadeDurationMs: 3000,
       maxPoints: 1000,
       lineWidth: 2,
@@ -243,11 +247,14 @@ export class TrailCapturer implements ITrailCapturer {
     // Use current beat (fallback to 0 if undefined)
     const beat = currentBeat ?? 0;
 
-    // Check for loop and clear trails if in LOOP_CLEAR mode
-    if (
-      trailSettings.mode === TrailMode.LOOP_CLEAR &&
-      this.detectAnimationLoop(beat)
-    ) {
+    // Check for loop and clear trails if:
+    // - Mode is LOOP_CLEAR (user explicitly wants clearing on every loop)
+    // - OR sequence is not seamlessly loopable (props jump back, trails don't connect)
+    const shouldClearOnLoop =
+      trailSettings.mode === TrailMode.LOOP_CLEAR ||
+      this.config.isSeamlesslyLoopable === false;
+
+    if (shouldClearOnLoop && this.detectAnimationLoop(beat)) {
       this.clearTrails();
       // Reset animation start time
       this.animationStartTime = currentTime;
