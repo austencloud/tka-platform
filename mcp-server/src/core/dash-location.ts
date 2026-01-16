@@ -17,11 +17,40 @@ export interface DashLocationInput {
   motionEndLocation: string;
   motionTurns: number | "fl" | undefined;
   motionRotationDirection: string;
+  otherMotionType?: string;
   otherMotionStartLocation?: string;
   otherMotionEndLocation?: string;
   otherMotionTurns?: number | "fl" | undefined;
   otherMotionRotationDirection?: string;
   gridMode: GridMode;
+}
+
+/**
+ * Calculate shift arrow location (midpoint between start and end).
+ * This is where pro/anti/float arrows are positioned.
+ */
+function calculateShiftLocation(startLoc: GridLocation, endLoc: GridLocation): GridLocation | null {
+  // Create stable key (sorted) for unordered pair lookup
+  const createPairKey = (a: GridLocation, b: GridLocation): string => {
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+  };
+
+  const directionPairs: Record<string, GridLocation> = {
+    // Diamond combinations (cardinal to cardinal)
+    [createPairKey(GridLocation.NORTH, GridLocation.EAST)]: GridLocation.NORTHEAST,
+    [createPairKey(GridLocation.EAST, GridLocation.SOUTH)]: GridLocation.SOUTHEAST,
+    [createPairKey(GridLocation.SOUTH, GridLocation.WEST)]: GridLocation.SOUTHWEST,
+    [createPairKey(GridLocation.WEST, GridLocation.NORTH)]: GridLocation.NORTHWEST,
+
+    // Box combinations (diagonal to diagonal -> cardinal)
+    [createPairKey(GridLocation.NORTHEAST, GridLocation.NORTHWEST)]: GridLocation.NORTH,
+    [createPairKey(GridLocation.NORTHEAST, GridLocation.SOUTHEAST)]: GridLocation.EAST,
+    [createPairKey(GridLocation.SOUTHWEST, GridLocation.SOUTHEAST)]: GridLocation.SOUTH,
+    [createPairKey(GridLocation.NORTHWEST, GridLocation.SOUTHWEST)]: GridLocation.WEST,
+  };
+
+  const pairKey = createPairKey(startLoc, endLoc);
+  return directionPairs[pairKey] || null;
 }
 
 // Φ_DASH and Ψ_DASH special handling map
@@ -210,14 +239,21 @@ export function calculateDashLocation(input: DashLocationInput): GridLocation {
   if (turns === 0) {
     // Type 3 scenario - dash location depends on the shift arrow location
     if (TYPE3_LETTERS.includes(letter)) {
-      // For Type 3, the "shift location" is calculated from the non-dash motion
-      // The non-dash motion's arrow location determines where the dash goes
-      // For simplicity, we'll use the shift arrow's end location as approximate
-      if (otherEndLoc) {
-        const locationMap = gridMode === GridMode.BOX ? BOX_DASH_LOCATION_MAP : DIAMOND_DASH_LOCATION_MAP;
-        const key = `${startLoc},${otherEndLoc}`;
-        const location = locationMap[key];
-        if (location) return location;
+      // For Type 3, we need to calculate the SHIFT ARROW LOCATION of the other motion
+      // The shift location is the midpoint between the other motion's start and end
+      const otherMotionType = input.otherMotionType?.toLowerCase();
+      const isOtherShift = otherMotionType === "pro" || otherMotionType === "anti" || otherMotionType === "float";
+
+      if (isOtherShift && input.otherMotionStartLocation && otherEndLoc) {
+        const otherStartLoc = input.otherMotionStartLocation.toUpperCase() as GridLocation;
+        const shiftLocation = calculateShiftLocation(otherStartLoc, otherEndLoc);
+
+        if (shiftLocation) {
+          const locationMap = gridMode === GridMode.BOX ? BOX_DASH_LOCATION_MAP : DIAMOND_DASH_LOCATION_MAP;
+          const key = `${startLoc},${shiftLocation}`;
+          const location = locationMap[key];
+          if (location) return location;
+        }
       }
     }
 

@@ -510,6 +510,7 @@ ${svgParts.join("\n")}
         motionEndLocation: motion.endLocation,
         motionTurns: motion.turns,
         motionRotationDirection: motion.rotationDirection,
+        otherMotionType: otherMotion?.motionType,
         otherMotionStartLocation: otherMotion?.startLocation,
         otherMotionEndLocation: otherMotion?.endLocation,
         otherMotionTurns: otherMotion?.turns,
