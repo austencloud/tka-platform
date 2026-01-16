@@ -8,7 +8,7 @@
 
   import { getTimelineState } from "../state/timeline-state.svelte";
   import { timeToPixels, type TimeSeconds } from "../domain/timeline-types";
-  import { generateBeatTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
+  import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
 
   interface Props {
     /** Active snap point (shown when dragging) */
@@ -31,22 +31,22 @@
   let activeSnapX = $state<number | null>(null);
   let pixelsPerSecond = $state(50);
   let playheadPosition = $state(0);
-  let snapToBeats = $state(false);
+  let snapToSteps = $state(false);
 
   // Sync local state from timeline state
   $effect(() => {
     const state = getState();
     pixelsPerSecond = state.viewport.pixelsPerSecond;
     playheadPosition = state.playhead.position;
-    snapToBeats = state.project.snap.snapToBeats;
+    snapToSteps = state.project.snap.snapToSteps;
 
     // Generate beat markers from audio BPM
     if (
       state.project.audio.bpm &&
       state.project.audio.duration &&
-      state.project.snap.snapToBeats
+      state.project.snap.snapToSteps
     ) {
-      beatMarkers = generateBeatTimestamps(
+      beatMarkers = generateStepTimestamps(
         state.project.audio.bpm,
         state.project.audio.duration
       );
@@ -102,10 +102,10 @@
 </script>
 
 <div class="snap-guides" style="height: {height}px">
-  <!-- Beat marker guides (subtle, always visible when snapping to beats) -->
-  {#if snapToBeats}
+  <!-- Beat marker guides (subtle, always visible when snapping to steps) -->
+  {#if snapToSteps}
     {#each downbeats as beatTime}
-      {@const x = timeToPixels(beatTime, pixelsPerSecond)}
+      {@const x = timeToPixels(stepTime, pixelsPerSecond)}
       <div
         class="snap-guide beat"
         style="left: {x}px; height: {height}px"

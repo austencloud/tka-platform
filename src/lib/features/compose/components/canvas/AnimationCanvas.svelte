@@ -16,7 +16,7 @@
   import type { TrailSettings } from "../../shared/domain/types/TrailTypes";
   import type { VideoRenderResult } from "../../services/contracts/IVideoPreRenderer";
   import type { StartPositionData } from "../../../create/shared/domain/models/StartPositionData";
-  import type { BeatData } from "../../../create/shared/domain/models/BeatData";
+  import type { StepData } from "../../../create/shared/domain/models/StepData";
 
   let {
     blueProp = null,
@@ -24,13 +24,13 @@
     gridVisible = true,
     gridMode = null,
     letter = null,
-    beatData = null,
+    stepData = null,
     sequenceData = null,
     isPlaying = false,
     speed = 1.0,
     trailSettings = $bindable(),
     onCanvasReady = () => {},
-    onVideoBeatChange = () => {},
+    onVideoStepChange = () => {},
     onPlaybackToggle = () => {},
   }: {
     blueProp?: PropState | null;
@@ -38,13 +38,13 @@
     gridVisible?: boolean;
     gridMode?: GridMode | null | undefined;
     letter?: Letter | null;
-    beatData?: StartPositionData | BeatData | null;
+    stepData?: StartPositionData | StepData | null;
     sequenceData?: SequenceData | null;
     isPlaying?: boolean;
     speed?: number;
     trailSettings?: TrailSettings;
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
-    onVideoBeatChange?: (beat: number) => void;
+    onVideoStepChange?: (beat: number) => void;
     onPlaybackToggle?: () => void;
   } = $props();
 
@@ -69,7 +69,7 @@
       {gridVisible}
       {gridMode}
       {letter}
-      {beatData}
+      {stepData}
       {sequenceData}
       {isPlaying}
       {onCanvasReady}
@@ -86,7 +86,7 @@
     autoGenerateVideo={false}
     onVideoReady={handleVideoReady}
     onModeChange={handleModeChange}
-    onBeatChange={onVideoBeatChange}
+    onStepChange={onVideoStepChange}
   />
 </div>
 

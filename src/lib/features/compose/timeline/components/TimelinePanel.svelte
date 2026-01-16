@@ -178,7 +178,7 @@
         });
         break;
       case "recording":
-        const recordingDuration = sequence.beats?.length || 5;
+        const recordingDuration = sequence.steps?.length || 5;
         state.addClip(sequence, trackId, startTime, {
           duration: recordingDuration,
           loop: false,

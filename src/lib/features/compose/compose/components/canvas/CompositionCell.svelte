@@ -27,7 +27,7 @@
 
   const compState = getCompositionState();
   const bpm = $derived(compState.bpm);
-  const currentBeat = $derived(compState.currentBeat);
+  const currentStep = $derived(compState.currentStep);
 
   const isConfigured = $derived(isCellConfigured(cell));
   // Always render animation for configured cells - shows first frame when paused

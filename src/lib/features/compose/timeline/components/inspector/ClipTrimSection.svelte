@@ -6,7 +6,7 @@
   interface Props {
     inPoint: number;
     outPoint: number;
-    beatCount: number;
+    stepCount: number;
     onUpdateInPoint: (percent: number) => void;
     onUpdateOutPoint: (percent: number) => void;
     onResetTrim: () => void;
@@ -15,7 +15,7 @@
   let {
     inPoint,
     outPoint,
-    beatCount,
+    stepCount,
     onUpdateInPoint,
     onUpdateOutPoint,
     onResetTrim,
@@ -38,8 +38,8 @@
       style="left: {inPoint * 100}%; right: {100 - outPoint * 100}%"
     ></div>
     <div class="trim-markers">
-      {#each { length: beatCount } as _, i}
-        {@const percent = (i / (beatCount - 1 || 1)) * 100}
+      {#each { length: stepCount } as _, i}
+        {@const percent = (i / (stepCount - 1 || 1)) * 100}
         <div class="beat-marker" style="left: {percent}%"></div>
       {/each}
     </div>

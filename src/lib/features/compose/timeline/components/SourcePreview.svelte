@@ -7,7 +7,7 @@
   Features:
   - Load any sequence for preview
   - Independent playback controls (doesn't affect timeline)
-  - Scrub through beats
+  - Scrub through steps
   - Quick add to timeline button
 -->
 <script lang="ts">
@@ -21,7 +21,7 @@
   import type { PropState } from "../../shared/domain/types/PropState";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
   interface Props {
     /** Sequence to preview (from library) */
@@ -42,7 +42,7 @@
   let error = $state<string | null>(null);
 
   // Playback state (independent from timeline)
-  let currentBeat = $state(0);
+  let currentStep = $state(0);
   let isPlaying = $state(false);
   let playbackInterval: number | null = null;
 
@@ -54,17 +54,17 @@
   let redPropState = $state<PropState | null>(null);
 
   // Derived values
-  // totalBeats = number of motion beats (NOT including start position)
-  // fullBeatRange = total playback range (start position + motion beats)
+  // totalSteps = number of motion steps (NOT including start position)
+  // fullStepRange = total playback range (start position + motion steps)
   // A 4-beat sequence has range 0-5: [0-1) start, [1-2) beat 1, [2-3) beat 2, [3-4) beat 3, [4-5) beat 4
-  const totalBeats = $derived(sequence?.beats?.length || 0);
-  const fullBeatRange = $derived(totalBeats + 1); // +1 for start position
+  const totalSteps = $derived(sequence?.steps?.length || 0);
+  const fullStepRange = $derived(totalSteps + 1); // +1 for start position
   const displayName = $derived(
     sequence?.word || sequence?.name || t("empty_no_sequence_loaded")
   );
 
   // Check if we're at start position (before beat 1)
-  const isAtStartPosition = $derived(currentBeat < 1);
+  const isAtStartPosition = $derived(currentStep < 1);
 
   // Get the derived start position data (handles missing startPosition field)
   const derivedStartPosition = $derived.by(() => {
@@ -86,21 +86,21 @@
       return (derivedStartPosition as any).letter || null;
     }
 
-    // At motion beat - beat N uses beats[N-1]
-    if (sequence.beats && sequence.beats.length > 0) {
-      const beatNumber = Math.floor(currentBeat); // 1, 2, 3, etc.
-      const arrayIndex = beatNumber - 1; // beats[0] = beat 1, beats[1] = beat 2, etc.
+    // At motion beat - beat N uses steps[N-1]
+    if (sequence.steps && sequence.steps.length > 0) {
+      const stepNumber = Math.floor(currentStep); // 1, 2, 3, etc.
+      const arrayIndex = stepNumber - 1; // steps[0] = beat 1, steps[1] = beat 2, etc.
       const clampedIndex = Math.max(
         0,
-        Math.min(arrayIndex, sequence.beats.length - 1)
+        Math.min(arrayIndex, sequence.steps.length - 1)
       );
-      return sequence.beats[clampedIndex]?.letter || null;
+      return sequence.steps[clampedIndex]?.letter || null;
     }
     return null;
   });
 
-  // Get current beat data - start position is separate from beats
-  const currentBeatData = $derived.by(() => {
+  // Get current beat data - start position is separate from steps
+  const currentStepData = $derived.by(() => {
     if (!sequence) return null;
 
     // At start position - return derived start position data
@@ -108,15 +108,15 @@
       return derivedStartPosition;
     }
 
-    // At motion beat - beat N uses beats[N-1]
-    if (sequence.beats && sequence.beats.length > 0) {
-      const beatNumber = Math.floor(currentBeat); // 1, 2, 3, etc.
-      const arrayIndex = beatNumber - 1; // beats[0] = beat 1, beats[1] = beat 2, etc.
+    // At motion beat - beat N uses steps[N-1]
+    if (sequence.steps && sequence.steps.length > 0) {
+      const stepNumber = Math.floor(currentStep); // 1, 2, 3, etc.
+      const arrayIndex = stepNumber - 1; // steps[0] = beat 1, steps[1] = beat 2, etc.
       const clampedIndex = Math.max(
         0,
-        Math.min(arrayIndex, sequence.beats.length - 1)
+        Math.min(arrayIndex, sequence.steps.length - 1)
       );
-      return sequence.beats[clampedIndex] || null;
+      return sequence.steps[clampedIndex] || null;
     }
     return null;
   });
@@ -145,7 +145,7 @@
         loadedSequenceId = null;
         bluePropState = null;
         redPropState = null;
-        currentBeat = 0;
+        currentStep = 0;
         stopPlayback();
       });
       return;
@@ -156,7 +156,7 @@
 
     untrack(() => {
       loadedSequenceId = sequence.id ?? null;
-      currentBeat = 0;
+      currentStep = 0;
       stopPlayback();
       initializeAnimation(sequence);
     });
@@ -167,7 +167,7 @@
     if (!animationOrchestrator || !sequence || loadedSequenceId !== sequence.id)
       return;
 
-    const beat = currentBeat;
+    const beat = currentStep;
 
     untrack(() => {
       animationOrchestrator!.calculateState(beat);
@@ -214,12 +214,12 @@
     const msPerStep = msPerBeat / stepsPerBeat;
 
     playbackInterval = window.setInterval(() => {
-      currentBeat += 1 / stepsPerBeat;
-      // Range: 0 to fullBeatRange (start position + all motion beats)
-      // A 4-beat sequence uses range 0-5: [0-1) start, [1-5) beats 1-4
+      currentStep += 1 / stepsPerBeat;
+      // Range: 0 to fullStepRange (start position + all motion steps)
+      // A 4-beat sequence uses range 0-5: [0-1) start, [1-5) steps 1-4
       // Loop back to start position after completing last beat
-      if (currentBeat >= fullBeatRange) {
-        currentBeat = 0; // Loop back to start position
+      if (currentStep >= fullStepRange) {
+        currentStep = 0; // Loop back to start position
       }
     }, msPerStep);
   }
@@ -233,27 +233,27 @@
   }
 
   function goToStart() {
-    currentBeat = 0; // Go to start position
+    currentStep = 0; // Go to start position
   }
 
   function goToEnd() {
-    currentBeat = fullBeatRange - 0.01; // Go to end of last motion beat (just before loop point)
+    currentStep = fullStepRange - 0.01; // Go to end of last motion beat (just before loop point)
   }
 
   function stepBackward() {
-    currentBeat = Math.max(0, Math.floor(currentBeat) - 1);
+    currentStep = Math.max(0, Math.floor(currentStep) - 1);
   }
 
   function stepForward() {
-    // Range: 0 (start position) to fullBeatRange (end of last motion beat)
+    // Range: 0 (start position) to fullStepRange (end of last motion beat)
     // Step to next whole beat, but don't exceed the last beat
-    const nextBeat = Math.floor(currentBeat) + 1;
-    currentBeat = Math.min(fullBeatRange - 0.01, nextBeat);
+    const nextStep = Math.floor(currentStep) + 1;
+    currentStep = Math.min(fullStepRange - 0.01, nextStep);
   }
 
   function handleScrub(e: Event) {
     const input = e.target as HTMLInputElement;
-    currentBeat = parseFloat(input.value);
+    currentStep = parseFloat(input.value);
   }
 
   function handleAddToTimeline() {
@@ -301,8 +301,8 @@
           gridVisible={true}
           gridMode={sequence.gridMode ?? null}
           letter={currentLetter}
-          beatData={currentBeatData}
-          currentBeat={Math.floor(currentBeat)}
+          stepData={currentStepData}
+          currentStep={Math.floor(currentStep)}
           sequenceData={sequence}
           trailSettings={animationSettings.trail}
         />
@@ -313,7 +313,7 @@
         {#if isAtStartPosition}
           Start
         {:else}
-          Beat {Math.floor(currentBeat)} / {totalBeats}
+          Beat {Math.floor(currentStep)} / {totalSteps}
         {/if}
       </div>
 
@@ -339,9 +339,9 @@
       <input
         type="range"
         min="0"
-        max={sequence ? fullBeatRange : 1}
+        max={sequence ? fullStepRange : 1}
         step="0.01"
-        value={currentBeat}
+        value={currentStep}
         oninput={handleScrub}
         class="scrub-slider"
         disabled={!sequence}

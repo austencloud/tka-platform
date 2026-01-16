@@ -7,7 +7,7 @@
    * - Tunnel mode: 2 sequences overlaid (secondary textures auto-loaded by AnimationEngine)
    * - Rotation: CSS transform for 0°, 90°, 180°, 270°
    * - Mirroring: CSS scaleX(-1) for horizontal flip
-   * - Synchronized playback via shared currentBeat from composition state
+   * - Synchronized playback via shared currentStep from composition state
    *
    * NOTE: For now, tunnel mode supports max 2 sequences. 3-4 sequence support
    * would require layering multiple AnimatorCanvas components with z-index.
@@ -26,7 +26,7 @@
     isPlaying: boolean;
     isPreviewing: boolean;
     bpm?: number;
-    currentBeat?: number;
+    currentStep?: number;
   }
 
   let { cell, isPlaying, isPreviewing, bpm = 60, currentBeat = 0 }: Props = $props();
@@ -160,7 +160,7 @@
     }
   });
 
-  // Sync currentBeat from composition state to all animation states
+  // Sync currentStep from composition state to all animation states
   // This is the key synchronization - all cells share the same beat position
   // CRITICAL: Also recalculate prop states via the playback controller
   $effect(() => {
@@ -168,9 +168,9 @@
       const state = animationStates[i];
       const controller = playbackControllers[i];
       if (state?.sequenceData && controller) {
-        state.setCurrentBeat(currentBeat);
+        state.setCurrentStep(currentStep);
         // Recalculate prop positions for this beat
-        controller.calculateStateForBeat(currentBeat);
+        controller.calculateStateForBeat(currentStep);
       }
     }
   });
@@ -193,7 +193,7 @@
   });
 
   // Get beat data for a specific sequence at current beat
-  function getBeatDataForSequence(seq: SequenceData | null, beat: number) {
+  function getStepDataForSequence(seq: SequenceData | null, beat: number) {
     if (!seq) return null;
 
     // Handle start position (beat 0)
@@ -201,11 +201,11 @@
       return seq.startPosition;
     }
 
-    // Get beat data (beat 1 = beats[0], etc.)
-    if (seq.beats && seq.beats.length > 0) {
-      const beatIndex = Math.max(0, Math.floor(beat) - 1);
-      const clampedIndex = Math.min(beatIndex, seq.beats.length - 1);
-      return seq.beats[clampedIndex] || null;
+    // Get beat data (beat 1 = steps[0], etc.)
+    if (seq.steps && seq.steps.length > 0) {
+      const stepIndex = Math.max(0, Math.floor(beat) - 1);
+      const clampedIndex = Math.min(stepIndex, seq.steps.length - 1);
+      return seq.steps[clampedIndex] || null;
     }
 
     return null;
@@ -213,12 +213,12 @@
 
   // Derived: Primary animation state (always index 0)
   const primaryState = $derived(animationStates[0] ?? null);
-  const primaryBeatData = $derived(
+  const primaryStepData = $derived(
     primaryState?.sequenceData
-      ? getBeatDataForSequence(primaryState.sequenceData, currentBeat)
+      ? getStepDataForSequence(primaryState.sequenceData, currentStep)
       : null
   );
-  const primaryLetter = $derived(primaryBeatData?.letter ?? null);
+  const primaryLetter = $derived(primaryStepData?.letter ?? null);
 
   // Derived: Secondary animation state (index 1, for dual-sequence tunnel)
   const secondaryState = $derived(animationStates[1] ?? null);
@@ -272,8 +272,8 @@
                 gridVisible={i === 0}
                 gridMode={state.sequenceData.gridMode ?? null}
                 letter={i === 0 ? primaryLetter : null}
-                beatData={i === 0 ? primaryBeatData : getBeatDataForSequence(state.sequenceData, currentBeat)}
-                currentBeat={currentBeat}
+                stepData={i === 0 ? primaryStepData : getStepDataForSequence(state.sequenceData, currentStep)}
+                currentStep={currentStep}
                 sequenceData={state.sequenceData}
               />
             </div>
@@ -290,11 +290,11 @@
           gridVisible={true}
           gridMode={primaryState.sequenceData.gridMode ?? null}
           letter={null}
-          beatData={primaryBeatData}
-          currentBeat={currentBeat}
+          stepData={primaryStepData}
+          currentStep={currentStep}
           sequenceData={primaryState.sequenceData}
           hideTkaGlyph={true}
-          hideBeatNumbers={true}
+          hideStepNumbers={true}
         />
       {:else}
         <!-- Single sequence (or tunnel with 1 sequence) -->
@@ -304,8 +304,8 @@
           gridVisible={true}
           gridMode={primaryState.sequenceData.gridMode ?? null}
           letter={primaryLetter}
-          beatData={primaryBeatData}
-          currentBeat={currentBeat}
+          stepData={primaryStepData}
+          currentStep={currentStep}
           sequenceData={primaryState.sequenceData}
         />
       {/if}

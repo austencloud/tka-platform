@@ -152,7 +152,7 @@ Features:
           <div class="sequence-item">
             <span class="sequence-index">{index + 1}</span>
             <span class="sequence-name">{sequence.word || sequence.name}</span>
-            <span class="sequence-length">{sequence.sequenceLength} beats</span>
+            <span class="sequence-length">{sequence.sequenceLength} steps</span>
           </div>
         {/each}
       </div>

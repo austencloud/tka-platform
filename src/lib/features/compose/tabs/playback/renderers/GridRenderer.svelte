@@ -108,8 +108,8 @@
               <i class="fas fa-person-walking" aria-hidden="true"></i>
             </div>
             <div class="sequence-name">{sequence.word || "Untitled"}</div>
-            <div class="sequence-beats">
-              {sequence.beats?.length ?? 0} beats
+            <div class="sequence-steps">
+              {sequence.steps?.length ?? 0} steps
             </div>
           </div>
 
@@ -272,7 +272,7 @@
     text-align: center;
   }
 
-  .sequence-beats {
+  .sequence-steps {
     font-size: 0.8rem;
     opacity: 0.5;
   }

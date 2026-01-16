@@ -38,7 +38,7 @@ export interface IAnimationPlaybackController {
    * Jump to a specific beat (instant, no animation)
    * @param beat Beat number to jump to
    */
-  jumpToBeat(beat: number): void;
+  jumpToStep(beat: number): void;
 
   /**
    * Animate smoothly to a specific beat
@@ -46,7 +46,7 @@ export interface IAnimationPlaybackController {
    * @param duration Animation duration in milliseconds (default 300ms)
    * @param linear Use linear interpolation instead of easing (default false)
    */
-  animateToBeat(beat: number, duration?: number, linear?: boolean): void;
+  animateToStep(beat: number, duration?: number, linear?: boolean): void;
 
   /**
    * Step forward by half a beat (0.5) with BPM-timed animation
@@ -71,12 +71,12 @@ export interface IAnimationPlaybackController {
   /**
    * @deprecated Use stepHalfBeatForward() or stepFullBeatForward() instead
    */
-  nextBeat(): void;
+  nextStep(): void;
 
   /**
    * @deprecated Use stepHalfBeatBackward() or stepFullBeatBackward() instead
    */
-  previousBeat(): void;
+  previousStep(): void;
 
   /**
    * Update playback speed

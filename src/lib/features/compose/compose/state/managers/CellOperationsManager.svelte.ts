@@ -62,7 +62,7 @@ export function createCellOperationsManager(accessor: CompositionAccessor) {
 
   function setMediaType(
     cellId: string,
-    mediaType: "animation" | "video" | "beatGrid" | "image"
+    mediaType: "animation" | "video" | "stepGrid" | "image"
   ) {
     updateCell(cellId, { mediaType });
   }

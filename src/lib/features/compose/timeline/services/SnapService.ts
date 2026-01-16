@@ -14,7 +14,7 @@ import type {
   TimelineClip,
 } from "../domain/timeline-types";
 import { getClipEndTime } from "../domain/timeline-types";
-import { generateBeatTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
+import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
 
 // ============================================================================
 // Types
@@ -93,7 +93,7 @@ export function calculateSnapPoints(context: SnapContext): SnapPoint[] {
 
   // Beat markers
   if (settings.snapToBeats && audioBpm && audioDuration > 0) {
-    const beatTimes = generateBeatTimestamps(audioBpm, audioDuration);
+    const beatTimes = generateStepTimestamps(audioBpm, audioDuration);
     beatTimes.forEach((time, index) => {
       const isDownbeat = index % 4 === 0;
       points.push({

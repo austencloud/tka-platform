@@ -28,7 +28,7 @@
   import SettingsTogglePanel from "../controls/SettingsTogglePanel.svelte";
   import ExportActionsPanel from "./ExportActionsPanel.svelte";
   import AnimationSettingsSheet from "../controls/AnimationSettingsSheet.svelte";
-  import AnimationBeatGrid from "$lib/shared/animation-engine/components/AnimationBeatGrid.svelte";
+  import AnimationStepGrid from "$lib/shared/animation-engine/components/AnimationStepGrid.svelte";
 
   type MobileToolView = "controls" | "beat-grid";
 
@@ -53,7 +53,7 @@
     exportProgress = null,
     mobileToolView = "controls" as MobileToolView,
     sequenceData = null,
-    currentBeat = 0,
+    currentStep = 0,
     onSpeedChange = () => {},
     onPlaybackStart = () => {},
     onPlaybackToggle = () => {},
@@ -91,7 +91,7 @@
     exportProgress?: { progress: number; stage: string } | null;
     mobileToolView?: MobileToolView;
     sequenceData?: SequenceData | null;
-    currentBeat?: number;
+    currentStep?: number;
     onSpeedChange?: (newSpeed: number) => void;
     onPlaybackStart?: () => void;
     onPlaybackToggle?: () => void;
@@ -227,7 +227,7 @@
     <!-- Tool Area: Beat Grid or Quick Presets -->
     {#if mobileToolView === "beat-grid"}
       <div class="beat-grid-area">
-        <AnimationBeatGrid {sequenceData} {currentBeat} {isPlaying} />
+        <AnimationStepGrid {sequenceData} {currentStep} {isPlaying} />
       </div>
     {:else}
       <div class="control-row quick-presets-row">

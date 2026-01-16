@@ -62,7 +62,7 @@ export type AnimationStateKey =
   | "stepPlaybackPauseMs"
   | "stepPlaybackStepSize"
   | "speed"
-  | "currentBeat";
+  | "currentStep";
 
 /** Observer callback type */
 export type AnimationStateObserver = (
@@ -72,7 +72,7 @@ export type AnimationStateObserver = (
 
 export type AnimationPanelState = {
   // Playback state
-  readonly currentBeat: number;
+  readonly currentStep: number;
   readonly isPlaying: boolean;
   readonly speed: number;
   readonly shouldLoop: boolean;
@@ -84,7 +84,7 @@ export type AnimationPanelState = {
   readonly exportLoopCount: number;
 
   // Sequence metadata
-  readonly totalBeats: number;
+  readonly totalSteps: number;
   readonly sequenceWord: string;
   readonly sequenceAuthor: string;
 
@@ -98,7 +98,7 @@ export type AnimationPanelState = {
   readonly sequenceData: SequenceData | null;
 
   // State mutators
-  setCurrentBeat: (beat: number) => void;
+  setCurrentStep: (beat: number) => void;
   setIsPlaying: (playing: boolean) => void;
   setSpeed: (speed: number) => void;
   setShouldLoop: (loop: boolean) => void;
@@ -106,7 +106,7 @@ export type AnimationPanelState = {
   setStepPlaybackPauseMs: (pauseMs: number) => void;
   setStepPlaybackStepSize: (stepSize: StepPlaybackStepSize) => void;
   setExportLoopCount: (count: number) => void;
-  setTotalBeats: (beats: number) => void;
+  setTotalSteps: (steps: number) => void;
   setSequenceMetadata: (word: string, author: string) => void;
   setBluePropState: (state: PropState) => void;
   setRedPropState: (state: PropState) => void;
@@ -138,7 +138,7 @@ export function createAnimationPanelState(): AnimationPanelState {
   }
 
   // Playback state
-  let currentBeat = $state(0);
+  let currentStep = $state(0);
   let isPlaying = $state(false);
   let speed = $state(speedPersistence.load());
   let shouldLoop = $state(loopPersistence.load());
@@ -186,7 +186,7 @@ export function createAnimationPanelState(): AnimationPanelState {
   });
 
   // Sequence metadata
-  let totalBeats = $state(0);
+  let totalSteps = $state(0);
   let sequenceWord = $state("");
   let sequenceAuthor = $state("");
 
@@ -201,8 +201,8 @@ export function createAnimationPanelState(): AnimationPanelState {
 
   return {
     // Getters
-    get currentBeat() {
-      return currentBeat;
+    get currentStep() {
+      return currentStep;
     },
     get isPlaying() {
       return isPlaying;
@@ -225,8 +225,8 @@ export function createAnimationPanelState(): AnimationPanelState {
     get exportLoopCount() {
       return exportLoopCount;
     },
-    get totalBeats() {
-      return totalBeats;
+    get totalSteps() {
+      return totalSteps;
     },
     get sequenceWord() {
       return sequenceWord;
@@ -251,9 +251,9 @@ export function createAnimationPanelState(): AnimationPanelState {
     },
 
     // Setters (with observer notifications for observable keys)
-    setCurrentBeat: (beat: number) => {
-      currentBeat = beat;
-      notify("currentBeat", beat);
+    setCurrentStep: (beat: number) => {
+      currentStep = beat;
+      notify("currentStep", beat);
     },
 
     setIsPlaying: (playing: boolean) => {
@@ -292,8 +292,8 @@ export function createAnimationPanelState(): AnimationPanelState {
       exportLoopCount = Math.max(1, Math.min(10, count));
     },
 
-    setTotalBeats: (beats: number) => {
-      totalBeats = beats;
+    setTotalSteps: (steps: number) => {
+      totalSteps = steps;
     },
 
     setSequenceMetadata: (word: string, author: string) => {
@@ -327,7 +327,7 @@ export function createAnimationPanelState(): AnimationPanelState {
     },
 
     reset: () => {
-      currentBeat = 0;
+      currentStep = 0;
       isPlaying = false;
       speed = 1.0;
       shouldLoop = false;
@@ -335,7 +335,7 @@ export function createAnimationPanelState(): AnimationPanelState {
       stepPlaybackPauseMs = 300;
       stepPlaybackStepSize = 1;
       exportLoopCount = 1;
-      totalBeats = 0;
+      totalSteps = 0;
       sequenceWord = "";
       sequenceAuthor = "";
       bluePropState = { ...DEFAULT_PROP_STATE };

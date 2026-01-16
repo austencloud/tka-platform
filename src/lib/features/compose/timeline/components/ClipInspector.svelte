@@ -150,7 +150,7 @@
       <ClipTrimSection
         inPoint={clip.inPoint}
         outPoint={clip.outPoint}
-        beatCount={clip.sequence.beats.length}
+        stepCount={clip.sequence.steps.length}
         onUpdateInPoint={updateInPoint}
         onUpdateOutPoint={updateOutPoint}
         onResetTrim={resetTrim}

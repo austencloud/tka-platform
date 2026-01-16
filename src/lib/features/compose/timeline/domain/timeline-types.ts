@@ -250,7 +250,7 @@ export interface SnapSettings {
   enabled: boolean;
 
   /** Snap to beat markers */
-  snapToBeats: boolean;
+  snapToSteps: boolean;
 
   /** Snap to other clip edges */
   snapToClips: boolean;
@@ -418,10 +418,10 @@ export function createClip(
   startTime: TimeSeconds,
   options: Partial<TimelineClip> = {}
 ): TimelineClip {
-  // Calculate default duration from sequence beats
+  // Calculate default duration from sequence steps
   // Assume 1 beat = 1 second at 60 BPM as default
-  const beatCount = sequence.beats.length;
-  const defaultDuration = beatCount > 0 ? beatCount : 4;
+  const stepCount = sequence.steps.length;
+  const defaultDuration = stepCount > 0 ? stepCount : 4;
 
   return {
     id: generateClipId(),
@@ -500,7 +500,7 @@ export function createProject(name: string = "Untitled"): TimelineProject {
 export function createDefaultSnapSettings(): SnapSettings {
   return {
     enabled: true,
-    snapToBeats: true,
+    snapToSteps: true,
     snapToClips: true,
     snapToPlayhead: false,
     snapToGrid: false,
@@ -668,7 +668,7 @@ export function snapTime(
     }
   };
 
-  if (settings.snapToBeats) {
+  if (settings.snapToSteps) {
     beatMarkers.forEach(checkSnap);
   }
 

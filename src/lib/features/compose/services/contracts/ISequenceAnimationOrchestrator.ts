@@ -8,7 +8,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceMetadata } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type {
   PropState,
   PropStates,
@@ -16,7 +16,7 @@ import type {
 
 export interface ISequenceAnimationOrchestrator {
   initializeWithDomainData(sequenceData: SequenceData): boolean;
-  calculateState(currentBeat: number): void;
+  calculateState(currentStep: number): void;
   getPropStates(): PropStates;
   getBluePropState(): PropState;
   getRedPropState(): PropState;
@@ -28,17 +28,17 @@ export interface ISequenceAnimationOrchestrator {
 
   /**
    * Check if currently showing the start position (before beat 1)
-   * Start position is conceptually different from beats - it's the pose held before animation begins
+   * Start position is conceptually different from steps - it's the pose held before animation begins
    */
   isAtStartPosition(): boolean;
 
   /**
-   * Get the total number of motion beats (NOT including start position)
+   * Get the total number of motion steps (NOT including start position)
    */
   getTotalBeats(): number;
 
   /**
-   * Get the total duration of all beats (sum of individual beat durations).
+   * Get the total duration of all steps (sum of individual beat durations).
    * This is the proper "end time" for duration-aware playback.
    */
   getTotalDuration(): number;
@@ -57,13 +57,13 @@ export interface ISequenceAnimationOrchestrator {
    * Get the current beat data (the beat being animated).
    * Returns null if at start position or not initialized.
    */
-  getCurrentBeatData(): BeatData | null;
+  getCurrentBeatData(): StepData | null;
 
   /**
    * Get the current beat index (0-based array index).
    * Returns -1 if at start position.
    */
-  getCurrentBeatIndex(): number;
+  getCurrentStepIndex(): number;
 
   /**
    * Get the current progress within the beat (0.0 to 1.0).
@@ -72,7 +72,7 @@ export interface ISequenceAnimationOrchestrator {
 
   /**
    * Get the continuous musical position as a decimal.
-   * Formula: beatNumber + (progress × duration)
+   * Formula: stepNumber + (progress × duration)
    *
    * Example: Beat 2 with duration 2 at 50% progress = 2 + (0.5 × 2) = 3.0
    * Returns 0 if at start position.

@@ -12,7 +12,7 @@ export interface ActiveClipInfo {
   /** Progress through the clip (0-1) */
   progress: number;
   /** Current beat within the clip */
-  currentBeat: number;
+  currentStep: number;
   /** Whether this clip is looping */
   isLooping: boolean;
 }

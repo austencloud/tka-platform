@@ -43,10 +43,10 @@ export interface GeneratedTrailData {
   redLeft: TrailPoint[];
   /** Trail points for red prop's right end */
   redRight: TrailPoint[];
-  /** Total number of beats in the sequence */
-  totalBeats: number;
+  /** Total number of steps in the sequence */
+  totalSteps: number;
   /** Samples per beat used for generation */
-  samplesPerBeat: number;
+  samplesPerStep: number;
   /** Canvas size the points are calculated for */
   canvasSize: number;
 }
@@ -58,7 +58,7 @@ export interface TrailGenerationConfig {
   /** Canvas size in pixels (points will be in this coordinate space) */
   canvasSize: number;
   /** Number of samples per beat (higher = smoother trails, default: 120) */
-  samplesPerBeat?: number;
+  samplesPerStep?: number;
   /** Blue prop dimensions */
   bluePropDimensions: { width: number; height: number };
   /** Red prop dimensions */
@@ -83,17 +83,17 @@ export class TrailPathGenerator {
     config: TrailGenerationConfig
   ): GeneratedTrailData {
     const { canvasSize, bluePropDimensions, redPropDimensions } = config;
-    const samplesPerBeat = config.samplesPerBeat ?? 120;
+    const samplesPerStep = config.samplesPerStep ?? 120;
 
-    const totalBeats = sequence.beats.length ?? 0;
-    if (totalBeats === 0) {
+    const totalSteps = sequence.steps.length ?? 0;
+    if (totalSteps === 0) {
       return {
         blueLeft: [],
         blueRight: [],
         redLeft: [],
         redRight: [],
-        totalBeats: 0,
-        samplesPerBeat,
+        totalSteps: 0,
+        samplesPerStep,
         canvasSize,
       };
     }
@@ -107,8 +107,8 @@ export class TrailPathGenerator {
         blueRight: [],
         redLeft: [],
         redRight: [],
-        totalBeats,
-        samplesPerBeat,
+        totalSteps,
+        samplesPerStep,
         canvasSize,
       };
     }
@@ -128,11 +128,11 @@ export class TrailPathGenerator {
     const redRight: TrailPoint[] = [];
 
     // Sample through the entire sequence
-    const totalSamples = totalBeats * samplesPerBeat;
+    const totalSamples = totalSteps * samplesPerStep;
 
     for (let i = 0; i <= totalSamples; i++) {
-      const beat = i / samplesPerBeat;
-      const timestamp = beat / totalBeats; // Normalized 0-1
+      const beat = i / samplesPerStep;
+      const timestamp = beat / totalSteps; // Normalized 0-1
 
       // Get prop states at this beat position
       orchestrator.calculateState(beat);
@@ -194,8 +194,8 @@ export class TrailPathGenerator {
       blueRight,
       redLeft,
       redRight,
-      totalBeats,
-      samplesPerBeat,
+      totalSteps,
+      samplesPerStep,
       canvasSize,
     };
   }
@@ -204,12 +204,12 @@ export class TrailPathGenerator {
    * Get trail points up to a specific beat (for rendering partial trails)
    *
    * @param trailData - Pre-generated trail data
-   * @param currentBeat - Current beat position (can be fractional)
+   * @param currentStep - Current beat position (can be fractional)
    * @param maxTrailLength - Maximum number of points to return (for trail fade effect)
    */
   getTrailPointsAtBeat(
     trailData: GeneratedTrailData,
-    currentBeat: number,
+    currentStep: number,
     maxTrailLength?: number
   ): {
     blueLeft: TrailPoint[];
@@ -218,7 +218,7 @@ export class TrailPathGenerator {
     redRight: TrailPoint[];
   } {
     // Calculate the sample index for the current beat
-    const sampleIndex = Math.floor(currentBeat * trailData.samplesPerBeat);
+    const sampleIndex = Math.floor(currentStep * trailData.samplesPerStep);
 
     // Get all points up to current beat
     const endIndex = Math.min(sampleIndex + 1, trailData.blueLeft.length);

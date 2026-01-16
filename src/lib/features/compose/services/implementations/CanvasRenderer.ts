@@ -92,16 +92,16 @@ export class CanvasRenderer implements ICanvasRenderer {
 
   /**
    * Render a beat number onto the canvas at the standard position (top-left)
-   * Matches BeatNumber.svelte positioning: x=50, y=50 in 950px viewBox
+   * Matches StepNumber.svelte positioning: x=50, y=50 in 950px viewBox
    */
-  renderBeatNumberToCanvas(
+  renderStepNumberToCanvas(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
-    beatNumber: number | null,
+    stepNumber: number | null,
     opacity: number = 1,
     darkMode: boolean = false
   ): void {
-    this.drawBeatNumber(ctx, canvasSize, beatNumber, opacity, darkMode);
+    this.drawStepNumber(ctx, canvasSize, stepNumber, opacity, darkMode);
   }
 
   /**
@@ -226,40 +226,40 @@ export class CanvasRenderer implements ICanvasRenderer {
 
   /**
    * Draw beat number in the top-left area of the canvas
-   * Position matches BeatNumber.svelte: x=50, y=50 in 950px viewBox
+   * Position matches StepNumber.svelte: x=50, y=50 in 950px viewBox
    * Style matches: Georgia serif, bold, fill only (no stroke) with dark mode support
    */
-  private drawBeatNumber(
+  private drawStepNumber(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
-    beatNumber: number | null,
+    stepNumber: number | null,
     opacity: number = 1,
     darkMode: boolean = false
   ): void {
-    if (beatNumber === null) return;
+    if (stepNumber === null) return;
 
     const gridScaleFactor = canvasSize / 950;
 
-    // Position matches BeatNumber.svelte: x=50, y=50 in 950px viewBox
+    // Position matches StepNumber.svelte: x=50, y=50 in 950px viewBox
     const x = 50 * gridScaleFactor;
     const y = 50 * gridScaleFactor;
 
-    // Font size matches BeatNumber.svelte: 100 for numbers, 80 for "Start"
-    const isStart = beatNumber === 0;
+    // Font size matches StepNumber.svelte: 100 for numbers, 80 for "Start"
+    const isStart = stepNumber === 0;
     const fontSize = (isStart ? 80 : 100) * gridScaleFactor;
-    const displayText = isStart ? "Start" : beatNumber.toString();
+    const displayText = isStart ? "Start" : stepNumber.toString();
 
     ctx.save();
 
     // Apply opacity for crossfade effects
     ctx.globalAlpha = opacity;
 
-    // Set font style to match BeatNumber.svelte
+    // Set font style to match StepNumber.svelte
     ctx.font = `bold ${fontSize}px Georgia, serif`;
     ctx.textBaseline = "hanging";
     ctx.textAlign = "start";
 
-    // Fill color based on dark mode (matches BeatNumber.svelte)
+    // Fill color based on dark mode (matches StepNumber.svelte)
     // Dark mode: white (#ffffff), Light mode: dark gray (#231f20)
     ctx.fillStyle = darkMode ? "#ffffff" : "#231f20";
     ctx.fillText(displayText, x, y);

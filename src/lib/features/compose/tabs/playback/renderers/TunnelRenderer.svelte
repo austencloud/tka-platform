@@ -301,37 +301,37 @@
   });
 
   // Derived: Current beat data for primary sequence
-  let primaryBeatData = $derived.by(() => {
+  let primaryStepData = $derived.by(() => {
     if (!primaryAnimationState.sequenceData) return null;
 
-    const currentBeat = primaryAnimationState.currentBeat;
+    const currentStep = primaryAnimationState.currentStep;
 
     // Handle start position case explicitly
     if (
-      currentBeat === 0 &&
+      currentStep === 0 &&
       !primaryAnimationState.isPlaying &&
       primaryAnimationState.sequenceData.startPosition
     ) {
       return primaryAnimationState.sequenceData.startPosition;
     }
 
-    // For beats, use direct indexing with clamping
+    // For steps, use direct indexing with clamping
     if (
-      primaryAnimationState.sequenceData.beats &&
-      primaryAnimationState.sequenceData.beats.length > 0
+      primaryAnimationState.sequenceData.steps &&
+      primaryAnimationState.sequenceData.steps.length > 0
     ) {
-      // Beat indexing: beats[0] = beat 1, beats[1] = beat 2, etc.
-      // currentBeat semantics: beat N's motion spans from N.0 to (N+1).0
+      // Beat indexing: steps[0] = beat 1, steps[1] = beat 2, etc.
+      // currentStep semantics: beat N's motion spans from N.0 to (N+1).0
       //
-      // Formula: ceil(currentBeat - 1) gives the beat number whose motion is/was playing
+      // Formula: ceil(currentStep - 1) gives the beat number whose motion is/was playing
       // - At 3.0 (pause after beat 2): ceil(2.0) = 2, shows beat 2
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        primaryAnimationState.sequenceData.beats.length - 1
+        stepIndex,
+        primaryAnimationState.sequenceData.steps.length - 1
       );
-      return primaryAnimationState.sequenceData.beats[clampedIndex] || null;
+      return primaryAnimationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
@@ -339,16 +339,16 @@
 
   // Derived: Current letters for both sequences
   let primaryLetter = $derived.by(() => {
-    return primaryBeatData?.letter || null;
+    return primaryStepData?.letter || null;
   });
 
   let secondaryLetter = $derived.by(() => {
     if (!secondaryAnimationState.sequenceData) return null;
 
-    const currentBeat = secondaryAnimationState.currentBeat;
+    const currentStep = secondaryAnimationState.currentStep;
 
     if (
-      currentBeat === 0 &&
+      currentStep === 0 &&
       !secondaryAnimationState.isPlaying &&
       secondaryAnimationState.sequenceData.startPosition
     ) {
@@ -356,19 +356,19 @@
     }
 
     if (
-      secondaryAnimationState.sequenceData.beats &&
-      secondaryAnimationState.sequenceData.beats.length > 0
+      secondaryAnimationState.sequenceData.steps &&
+      secondaryAnimationState.sequenceData.steps.length > 0
     ) {
-      // Beat indexing: beats[0] = beat 1, beats[1] = beat 2, etc.
-      // Formula: ceil(currentBeat - 1) gives the beat number whose motion is/was playing
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+      // Beat indexing: steps[0] = beat 1, steps[1] = beat 2, etc.
+      // Formula: ceil(currentStep - 1) gives the beat number whose motion is/was playing
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        secondaryAnimationState.sequenceData.beats.length - 1
+        stepIndex,
+        secondaryAnimationState.sequenceData.steps.length - 1
       );
       return (
-        secondaryAnimationState.sequenceData.beats[clampedIndex]?.letter || null
+        secondaryAnimationState.sequenceData.steps[clampedIndex]?.letter || null
       );
     }
 
@@ -410,8 +410,8 @@
       gridVisible={true}
       gridMode={primaryAnimationState.sequenceData?.gridMode ?? null}
       letter={primaryLetter}
-      beatData={primaryBeatData}
-      currentBeat={primaryAnimationState.currentBeat}
+      stepData={primaryStepData}
+      currentStep={primaryAnimationState.currentStep}
       sequenceData={primaryAnimationState.sequenceData}
       word={sequenceWord}
       {trailSettings}

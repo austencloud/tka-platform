@@ -64,7 +64,7 @@ export type PlaybackState = {
   readonly isPlaying: boolean;
   readonly speed: number;
   readonly shouldLoop: boolean;
-  readonly currentBeat: number;
+  readonly currentStep: number;
   readonly playbackMode: PlaybackMode;
   readonly stepPlaybackPauseMs: number;
   readonly stepPlaybackStepSize: StepPlaybackStepSize;
@@ -88,7 +88,7 @@ export type PlaybackState = {
   stop: () => void;
   setSpeed: (speed: number) => void;
   setLoop: (loop: boolean) => void;
-  setCurrentBeat: (beat: number) => void;
+  setCurrentStep: (beat: number) => void;
   setPlaybackMode: (mode: PlaybackMode) => void;
   setStepPlaybackPauseMs: (pauseMs: number) => void;
   setStepPlaybackStepSize: (stepSize: StepPlaybackStepSize) => void;
@@ -150,7 +150,7 @@ export function createPlaybackState(): PlaybackState {
   let isPlaying = $state(false);
   let speed = $state(loadFromStorage(STORAGE_KEYS.SPEED, 1.0));
   let shouldLoop = $state(loadFromStorage(STORAGE_KEYS.SHOULD_LOOP, false));
-  let currentBeat = $state(0);
+  let currentStep = $state(0);
   let playbackMode = $state<PlaybackMode>(
     loadFromStorage(STORAGE_KEYS.PLAYBACK_MODE, "continuous")
   );
@@ -194,8 +194,8 @@ export function createPlaybackState(): PlaybackState {
     get shouldLoop() {
       return shouldLoop;
     },
-    get currentBeat() {
-      return currentBeat;
+    get currentStep() {
+      return currentStep;
     },
     get playbackMode() {
       return playbackMode;
@@ -233,7 +233,7 @@ export function createPlaybackState(): PlaybackState {
 
     stop() {
       isPlaying = false;
-      currentBeat = 0;
+      currentStep = 0;
     },
 
     setSpeed(newSpeed: number) {
@@ -247,8 +247,8 @@ export function createPlaybackState(): PlaybackState {
       saveToStorage(STORAGE_KEYS.SHOULD_LOOP, loop);
     },
 
-    setCurrentBeat(beat: number) {
-      currentBeat = beat;
+    setCurrentStep(beat: number) {
+      currentStep = beat;
     },
 
     setPlaybackMode(mode: PlaybackMode) {
@@ -371,7 +371,7 @@ export function createPlaybackState(): PlaybackState {
       isPlaying = false;
       speed = 1.0;
       shouldLoop = false;
-      currentBeat = 0;
+      currentStep = 0;
       playbackMode = "continuous";
       stepPlaybackPauseMs = 300;
       stepPlaybackStepSize = 1;

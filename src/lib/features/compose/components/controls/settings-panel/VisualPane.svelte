@@ -122,9 +122,9 @@
     updateCounter;
     return visibilityManager.getVisibility("props");
   }
-  function getBeatNumbers() {
+  function getStepNumbers() {
     updateCounter;
-    return visibilityManager.getVisibility("beatNumbers");
+    return visibilityManager.getVisibility("stepNumbers");
   }
   function getTkaGlyph() {
     updateCounter;
@@ -169,9 +169,9 @@
     visibilityManager.setVisibility("props", !current);
     updateCounter++;
   }
-  function toggleBeatNumbers() {
-    const current = visibilityManager.getVisibility("beatNumbers");
-    visibilityManager.setVisibility("beatNumbers", !current);
+  function toggleStepNumbers() {
+    const current = visibilityManager.getVisibility("stepNumbers");
+    visibilityManager.setVisibility("stepNumbers", !current);
     updateCounter++;
   }
   function toggleTkaGlyph() {
@@ -256,8 +256,8 @@
     </button>
     <button
       class="element-btn"
-      class:active={getBeatNumbers()}
-      onclick={toggleBeatNumbers}
+      class:active={getStepNumbers()}
+      onclick={toggleStepNumbers}
       type="button"
     >
       <span>Beat #</span>

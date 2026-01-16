@@ -74,11 +74,11 @@ export class VideoPreRenderer implements IVideoPreRenderer {
    */
   generateSequenceId(sequence: SequenceData): string {
     const word = sequence.word || sequence.name || "unknown";
-    const beatCount = sequence.beats.length || 0;
+    const stepCount = sequence.steps.length || 0;
     const hash = this.simpleHash(
-      JSON.stringify(sequence.beats.slice(0, 3) || [])
+      JSON.stringify(sequence.steps.slice(0, 3) || [])
     );
-    return `${word}-${beatCount}-${hash}`;
+    return `${word}-${stepCount}-${hash}`;
   }
 
   /**
@@ -134,12 +134,12 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       height = 500,
     } = options;
 
-    const totalBeats = sequence.beats.length || 0;
-    if (totalBeats === 0) {
+    const totalSteps = sequence.steps.length || 0;
+    if (totalSteps === 0) {
       this.isCurrentlyRendering = false;
       return {
         success: false,
-        error: "Sequence has no beats",
+        error: "Sequence has no steps",
         sequenceId,
       };
     }
@@ -244,7 +244,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
 
       // Use 30fps for smoother video (60fps causes timing issues)
       const videoFps = 30;
-      const totalFrames = Math.ceil(totalBeats * videoFps);
+      const totalFrames = Math.ceil(totalSteps * videoFps);
       const frameDuration = 1000 / videoFps; // ~33.3ms per frame
       const startTime = performance.now();
 
@@ -397,7 +397,7 @@ export class VideoPreRenderer implements IVideoPreRenderer {
 
       // Create blob URL
       const blobUrl = URL.createObjectURL(videoBlob);
-      const duration = totalBeats;
+      const duration = totalSteps;
 
       // Cache the video
       await this.cacheVideo(sequenceId, videoBlob, duration);

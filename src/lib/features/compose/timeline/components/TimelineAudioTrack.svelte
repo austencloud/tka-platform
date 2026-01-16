@@ -11,7 +11,7 @@
   import WaveSurfer from "wavesurfer.js";
   import { getTimelineState } from "../state/timeline-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
-  import { generateBeatTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
+  import { generateStepTimestamps } from "$lib/features/compose/compose/phases/audio/bpm-analyzer";
   import { timeToPixels } from "../domain/timeline-types";
 
   interface Props {
@@ -62,7 +62,7 @@
 
     // Generate beat markers from BPM
     if (audioBpm && audioDuration) {
-      beatMarkers = generateBeatTimestamps(audioBpm, audioDuration);
+      beatMarkers = generateStepTimestamps(audioBpm, audioDuration);
       downbeats = beatMarkers.filter((_, i) => i % 4 === 0);
     } else {
       beatMarkers = [];
@@ -306,7 +306,7 @@
         {#if audioBpm}
           <div class="beat-markers">
             {#each downbeats as beatTime, index}
-              {@const x = timeToPixels(beatTime, pixelsPerSecond)}
+              {@const x = timeToPixels(stepTime, pixelsPerSecond)}
               <div
                 class="beat-marker"
                 style="left: {x}px"

@@ -41,14 +41,14 @@ export interface ICanvasRenderer {
 
   /**
    * Render a beat number onto the canvas at the standard position (top-left)
-   * @param beatNumber - The beat number to render (0 = "Start", null = no render)
+   * @param stepNumber - The beat number to render (0 = "Start", null = no render)
    * @param opacity - Optional opacity for crossfade effects (0-1, default: 1)
    * @param darkMode - When true, uses light text for dark backgrounds
    */
-  renderBeatNumberToCanvas(
+  renderStepNumberToCanvas(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
-    beatNumber: number | null,
+    stepNumber: number | null,
     opacity?: number,
     darkMode?: boolean
   ): void;

@@ -8,8 +8,8 @@ import type { IVideoPlayer } from "../contracts/IVideoPlayer";
  */
 export class VideoPlayer implements IVideoPlayer {
   private videoElement: HTMLVideoElement | null = null;
-  private beatTrackingFrameId: number | null = null;
-  private beatChangeCallback: ((beat: number) => void) | null = null;
+  private stepTrackingFrameId: number | null = null;
+  private stepChangeCallback: ((beat: number) => void) | null = null;
 
   initialize(videoElement: HTMLVideoElement): void {
     this.videoElement = videoElement;
@@ -53,32 +53,32 @@ export class VideoPlayer implements IVideoPlayer {
     this.videoElement.currentTime = timeInSeconds;
   }
 
-  startBeatTracking(onBeatChange: (beat: number) => void): void {
+  startBeatTracking(onStepChange: (beat: number) => void): void {
     // Don't start if already tracking
-    if (this.beatTrackingFrameId !== null) {
+    if (this.stepTrackingFrameId !== null) {
       return;
     }
 
-    this.beatChangeCallback = onBeatChange;
+    this.stepChangeCallback = onStepChange;
 
     const trackBeat = () => {
-      if (this.videoElement && this.beatChangeCallback) {
+      if (this.videoElement && this.stepChangeCallback) {
         // Video is at 60 BPM base, so currentTime in seconds = currentBeat
-        const currentBeat = this.videoElement.currentTime;
-        this.beatChangeCallback(currentBeat);
+        const currentStep = this.videoElement.currentTime;
+        this.stepChangeCallback(currentStep);
       }
-      this.beatTrackingFrameId = requestAnimationFrame(trackBeat);
+      this.stepTrackingFrameId = requestAnimationFrame(trackBeat);
     };
 
-    this.beatTrackingFrameId = requestAnimationFrame(trackBeat);
+    this.stepTrackingFrameId = requestAnimationFrame(trackBeat);
   }
 
   stopBeatTracking(): void {
-    if (this.beatTrackingFrameId !== null) {
-      cancelAnimationFrame(this.beatTrackingFrameId);
-      this.beatTrackingFrameId = null;
+    if (this.stepTrackingFrameId !== null) {
+      cancelAnimationFrame(this.stepTrackingFrameId);
+      this.stepTrackingFrameId = null;
     }
-    this.beatChangeCallback = null;
+    this.stepChangeCallback = null;
   }
 
   getCurrentTime(): number {
@@ -88,7 +88,7 @@ export class VideoPlayer implements IVideoPlayer {
     return this.videoElement.currentTime;
   }
 
-  getCurrentBeat(): number {
+  getCurrentStep(): number {
     // For videos at 60 BPM base, currentTime = currentBeat
     return this.getCurrentTime();
   }
@@ -96,7 +96,7 @@ export class VideoPlayer implements IVideoPlayer {
   dispose(): void {
     this.stopBeatTracking();
     this.videoElement = null;
-    this.beatChangeCallback = null;
+    this.stepChangeCallback = null;
   }
 }
 

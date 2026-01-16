@@ -35,7 +35,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
   // Duration-aware timing: track time position separately from beat number
   // timePosition: 0 to totalDuration (accounts for variable beat durations)
-  // currentBeat in state: 1-based beat number for UI display
+  // currentStep in state: 1-based beat number for UI display
   private timePosition: number = 0;
   private totalDuration: number = 0;
 
@@ -48,9 +48,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   /**
    * Sync current beat to both internal state and shared state (for workspace beat grid sync)
    */
-  private syncCurrentBeat(beat: number): void {
-    this.state?.setCurrentBeat(beat);
-    sharedAnimationState.setCurrentBeat(beat);
+  private syncCurrentStep(beat: number): void {
+    this.state?.setCurrentStep(beat);
+    sharedAnimationState.setCurrentStep(beat);
   }
 
   /**
@@ -77,7 +77,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     // Get metadata from engine
     const metadata = this.animationEngine.getMetadata();
-    state.setTotalBeats(metadata.totalBeats);
+    state.setTotalSteps(metadata.totalSteps);
     state.setSequenceMetadata(metadata.word, metadata.author);
 
     // Store total duration for duration-aware playback
@@ -88,7 +88,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     state.setSequenceData(sequenceData);
 
     // Reset playback state (sync to shared state for beat grid highlighting)
-    this.syncCurrentBeat(0);
+    this.syncCurrentStep(0);
     this.syncIsPlaying(false);
 
     // Update prop states from initial initialization
@@ -120,7 +120,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     // Update metadata
     const metadata = this.animationEngine.getMetadata();
-    this.state.setTotalBeats(metadata.totalBeats);
+    this.state.setTotalSteps(metadata.totalSteps);
     this.state.setSequenceMetadata(metadata.word, metadata.author);
 
     // Update total duration
@@ -135,8 +135,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Restore playback state
     if (wasPlaying) {
       // Calculate current state at the clamped time position
-      const currentBeatNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
-      this.syncCurrentBeat(currentBeatNumber);
+      const currentStepNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
+      this.syncCurrentStep(currentStepNumber);
       this.updatePropStatesFromEngine();
     } else {
       // Just update prop states at current position
@@ -178,7 +178,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     // Reset to start (both time position and beat number)
     this.timePosition = 0;
-    this.syncCurrentBeat(0);
+    this.syncCurrentStep(0);
 
     // Re-initialize engine if we have sequence data
     if (this.sequenceData) {
@@ -190,7 +190,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.updatePropStatesFromEngine();
   }
 
-  jumpToBeat(beat: number): void {
+  jumpToStep(beat: number): void {
     if (!this.state) return;
 
     // Stop any current playback/animation
@@ -200,15 +200,15 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.animationTarget = null;
 
     // Clamp beat to valid range
-    const clampedBeat = Math.max(0, Math.min(beat, this.state.totalBeats));
-    this.syncCurrentBeat(clampedBeat);
+    const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps));
+    this.syncCurrentStep(clampedStep);
 
     // Calculate state for this beat
-    this.animationEngine.calculateState(clampedBeat);
+    this.animationEngine.calculateState(clampedStep);
     this.updatePropStatesFromEngine();
   }
 
-  animateToBeat(
+  animateToStep(
     beat: number,
     duration: number = 300,
     linear: boolean = false
@@ -230,17 +230,17 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     }
 
     // Clamp target beat to valid animation range
-    // Allow totalBeats + 1 to show the final beat's motion (which spans from totalBeats to totalBeats + 1)
-    const clampedBeat = Math.max(0, Math.min(beat, this.state.totalBeats + 1));
+    // Allow totalSteps + 1 to show the final beat's motion (which spans from totalSteps to totalSteps + 1)
+    const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps + 1));
 
     // If already animating to this target, don't restart
-    if (this.animationTarget === clampedBeat) {
+    if (this.animationTarget === clampedStep) {
       return;
     }
 
     // If already at target, just update state
-    if (Math.abs(this.state.currentBeat - clampedBeat) < 0.01) {
-      this.animationEngine.calculateState(clampedBeat);
+    if (Math.abs(this.state.currentStep - clampedStep) < 0.01) {
+      this.animationEngine.calculateState(clampedStep);
       this.updatePropStatesFromEngine();
       return;
     }
@@ -252,8 +252,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     }
 
     // Set up animation parameters
-    this.animationTarget = clampedBeat;
-    this.animationStartBeat = this.state.currentBeat;
+    this.animationTarget = clampedStep;
+    this.animationStartBeat = this.state.currentStep;
     this.animationStartTime = performance.now();
     this.animationDuration = duration;
     this.useLinearAnimation = linear;
@@ -280,22 +280,22 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       : 1 - Math.pow(1 - progress, 3); // Ease-out cubic
 
     // Interpolate from start to target beat
-    const currentBeat =
+    const currentStep =
       this.animationStartBeat +
       (this.animationTarget - this.animationStartBeat) * interpolatedProgress;
 
-    this.syncCurrentBeat(currentBeat);
-    this.animationEngine.calculateState(currentBeat);
+    this.syncCurrentStep(currentStep);
+    this.animationEngine.calculateState(currentStep);
     this.updatePropStatesFromEngine();
 
     // Check if animation is complete
     if (progress >= 1.0) {
-      const finalBeat = this.animationTarget;
+      const finalStep = this.animationTarget;
       this.loopService.stop();
       this.animationTarget = null;
       // Ensure we're exactly at the target
-      this.syncCurrentBeat(finalBeat);
-      this.animationEngine.calculateState(finalBeat);
+      this.syncCurrentStep(finalStep);
+      this.animationEngine.calculateState(finalStep);
       this.updatePropStatesFromEngine();
     }
   }
@@ -303,7 +303,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   /**
    * Calculate animation duration based on speed multiplier and step size
    * Speed is a multiplier where 1.0 = 60 BPM, 2.0 = 120 BPM, etc.
-   * @param stepSize Size of step in beats (0.5 or 1.0)
+   * @param stepSize Size of step in steps (0.5 or 1.0)
    */
   private getStepDuration(stepSize: number): number {
     const speedMultiplier = this.state?.speed ?? 1.0;
@@ -318,15 +318,15 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     this.stopStepPlayback();
 
-    const currentBeat = this.state.currentBeat;
+    const currentStep = this.state.currentStep;
     // Find next half-beat position (0, 0.5, 1, 1.5, 2, etc.)
     // Add small epsilon to handle exact positions (e.g., at 2.0, go to 2.5 not stay at 2.0)
-    const nextHalfBeat = Math.ceil((currentBeat + 0.001) * 2) / 2;
+    const nextHalfBeat = Math.ceil((currentStep + 0.001) * 2) / 2;
 
-    // Allow stepping to totalBeats + 1 to show final beat's motion
-    const animationEndBeat = this.state.totalBeats + 1;
-    if (nextHalfBeat <= animationEndBeat) {
-      this.animateToBeat(nextHalfBeat, this.getStepDuration(0.5), true);
+    // Allow stepping to totalSteps + 1 to show final beat's motion
+    const animationEndStep = this.state.totalSteps + 1;
+    if (nextHalfBeat <= animationEndStep) {
+      this.animateToStep(nextHalfBeat, this.getStepDuration(0.5), true);
     }
   }
 
@@ -335,13 +335,13 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     this.stopStepPlayback();
 
-    const currentBeat = this.state.currentBeat;
+    const currentStep = this.state.currentStep;
     // Find previous half-beat position (0, 0.5, 1, 1.5, 2, etc.)
     // Subtract small epsilon to handle exact positions (e.g., at 2.0, go to 1.5 not stay at 2.0)
-    const prevHalfBeat = Math.floor((currentBeat - 0.001) * 2) / 2;
+    const prevHalfBeat = Math.floor((currentStep - 0.001) * 2) / 2;
 
     if (prevHalfBeat >= 0) {
-      this.animateToBeat(prevHalfBeat, this.getStepDuration(0.5), true);
+      this.animateToStep(prevHalfBeat, this.getStepDuration(0.5), true);
     }
   }
 
@@ -350,14 +350,14 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     this.stopStepPlayback();
 
-    const currentBeat = this.state.currentBeat;
+    const currentStep = this.state.currentStep;
     // Find next full-beat position (0, 1, 2, 3, etc.)
-    const nextFullBeat = Math.ceil(currentBeat + 0.001);
+    const nextFullBeat = Math.ceil(currentStep + 0.001);
 
-    // Allow stepping to totalBeats + 1 to show final beat's motion
-    const animationEndBeat = this.state.totalBeats + 1;
-    if (nextFullBeat <= animationEndBeat) {
-      this.animateToBeat(nextFullBeat, this.getStepDuration(1.0), true);
+    // Allow stepping to totalSteps + 1 to show final beat's motion
+    const animationEndStep = this.state.totalSteps + 1;
+    if (nextFullBeat <= animationEndStep) {
+      this.animateToStep(nextFullBeat, this.getStepDuration(1.0), true);
     }
   }
 
@@ -366,22 +366,22 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     this.stopStepPlayback();
 
-    const currentBeat = this.state.currentBeat;
+    const currentStep = this.state.currentStep;
     // Find previous full-beat position (0, 1, 2, 3, etc.)
-    const prevFullBeat = Math.floor(currentBeat - 0.001);
+    const prevFullBeat = Math.floor(currentStep - 0.001);
 
     if (prevFullBeat >= 0) {
-      this.animateToBeat(prevFullBeat, this.getStepDuration(1.0), true);
+      this.animateToStep(prevFullBeat, this.getStepDuration(1.0), true);
     }
   }
 
   // Deprecated - use stepHalfBeatForward() instead
-  nextBeat(): void {
+  nextStep(): void {
     this.stepHalfBeatForward();
   }
 
   // Deprecated - use stepHalfBeatBackward() instead
-  previousBeat(): void {
+  previousStep(): void {
     this.stepHalfBeatBackward();
   }
 
@@ -445,19 +445,19 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     const stepSize = this.state.stepPlaybackStepSize;
 
-    const currentBeat = this.state.currentBeat;
-    const nextBeat =
+    const currentStep = this.state.currentStep;
+    const nextStep =
       stepSize === 0.5
-        ? Math.ceil((currentBeat + 0.001) * 2) / 2
-        : Math.ceil(currentBeat + 0.001);
+        ? Math.ceil((currentStep + 0.001) * 2) / 2
+        : Math.ceil(currentStep + 0.001);
 
-    // End reached - use totalBeats + 1 to allow final beat's motion to complete
-    // (Beat N's motion spans from currentBeat N to N+1)
-    const animationEndBeat = this.state.totalBeats + 1;
-    if (nextBeat > animationEndBeat) {
+    // End reached - use totalSteps + 1 to allow final beat's motion to complete
+    // (Beat N's motion spans from currentStep N to N+1)
+    const animationEndStep = this.state.totalSteps + 1;
+    if (nextStep > animationEndStep) {
       if (this.state.shouldLoop) {
         // Loop back to start without leaving "playing" state
-        this.syncCurrentBeat(0);
+        this.syncCurrentStep(0);
         if (this.sequenceData) {
           this.animationEngine.initializeWithDomainData(this.sequenceData);
         }
@@ -465,7 +465,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         this.updatePropStatesFromEngine();
 
         // For seamlessly loopable sequences (circular), beat 0 is identical
-        // to totalBeats, so immediately animate to the first step instead
+        // to totalSteps, so immediately animate to the first step instead
         // of pausing at beat 0. This shows beat 1's motion without the
         // redundant pause at the start position.
         if (this._isSeamlesslyLoopable) {
@@ -486,17 +486,17 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         }, nextDelay);
       } else {
         // Stay at the end position (after final beat's motion completed)
-        // Don't reset currentBeat - let it stay where the animation left it
+        // Don't reset currentStep - let it stay where the animation left it
         this.syncIsPlaying(false);
         return;
       }
     } else {
       const duration = this.getStepDuration(stepSize);
-      this.animateToBeatInternal(nextBeat, duration, true, false);
+      this.animateToBeatInternal(nextStep, duration, true, false);
 
       // If we just stepped to the animation end beat, loop immediately after animation
       // (no pause at the "past the end" position since it's not a real beat)
-      const isAtAnimationEnd = nextBeat >= animationEndBeat;
+      const isAtAnimationEnd = nextStep >= animationEndStep;
       const pauseMs = isAtAnimationEnd ? 0 : this.state.stepPlaybackPauseMs;
       const nextDelay = duration + pauseMs;
 
@@ -519,7 +519,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     // Animation timing with duration-aware playback:
     // - timePosition 0: start position
-    // - timePosition 0 to totalDuration: animating through beats
+    // - timePosition 0 to totalDuration: animating through steps
     // - Each beat takes its own duration (variable)
     //
     // For seamlessly loopable sequences (circular patterns):
@@ -553,11 +553,11 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
 
     // Calculate state using duration-aware timing
     // Returns the 1-based beat number for UI sync
-    const currentBeatNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
+    const currentStepNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
 
     // Sync the beat number (not time position) for UI highlighting
-    // The beat number is what the BeatGrid needs for highlighting
-    this.syncCurrentBeat(currentBeatNumber);
+    // The beat number is what the StepGrid needs for highlighting
+    this.syncCurrentStep(currentStepNumber);
 
     // Update prop states
     this.updatePropStatesFromEngine();

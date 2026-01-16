@@ -13,7 +13,7 @@ import type {
   ICompositeVideoRenderer,
   CompositeDimensions,
   CompositeLayoutOptions,
-  BeatGridPosition,
+  StepGridPosition,
 } from "../contracts/ICompositeVideoRenderer";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
@@ -39,12 +39,12 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
     this.options = options;
 
     // Calculate grid dimensions based on sequence length
-    const beatCount = sequence.beats.length;
-    const cellSize = options.gridBeatSize;
+    const stepCount = sequence.steps.length;
+    const cellSize = options.gridStepSize;
 
     // Calculate optimal grid layout (approximately square)
-    const cols = Math.ceil(Math.sqrt(beatCount));
-    const rows = Math.ceil(beatCount / cols);
+    const cols = Math.ceil(Math.sqrt(stepCount));
+    const rows = Math.ceil(stepCount / cols);
 
     this.gridDimensions = {
       width: cols * cellSize,
@@ -89,8 +89,8 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
     // Render grid using ImageComposer
     // TODO: Configure options for grid rendering (no background, beat numbers if enabled)
     const renderOptions = {
-      beatSize: this.options.gridBeatSize,
-      showBeatNumbers: this.options.showBeatNumbers,
+      stepSize: this.options.gridStepSize,
+      showStepNumbers: this.options.showStepNumbers,
       includeStartPosition: this.options.includeStartPosition,
       includeBackground: false,
       includeWord: false,
@@ -112,7 +112,7 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
 
   renderCompositeFrame(
     animationCanvas: HTMLCanvasElement,
-    currentBeat: number,
+    currentStep: number,
     targetCanvas: HTMLCanvasElement
   ): void {
     if (!this.cachedGridCanvas || !this.dimensions || !this.options) {
@@ -156,8 +156,8 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
       );
 
       // Draw beat highlight on grid pane
-      const beatPos = this.getBeatGridPosition(currentBeat);
-      this.drawBeatHighlight(ctx, beatPos, halfWidth, 0);
+      const stepPos = this.getBeatGridPosition(currentStep);
+      this.drawBeatHighlight(ctx, stepPos, halfWidth, 0);
     } else {
       // Vertical layout: [animation] / [grid]
       const halfHeight = this.dimensions.height / 2;
@@ -183,29 +183,29 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
       );
 
       // Draw beat highlight on grid pane
-      const beatPos = this.getBeatGridPosition(currentBeat);
-      this.drawBeatHighlight(ctx, beatPos, 0, halfHeight);
+      const stepPos = this.getBeatGridPosition(currentStep);
+      this.drawBeatHighlight(ctx, stepPos, 0, halfHeight);
     }
   }
 
-  getBeatGridPosition(beatIndex: number): BeatGridPosition {
+  getBeatGridPosition(stepIndex: number): StepGridPosition {
     if (!this.sequence || !this.options || !this.gridDimensions) {
       throw new Error("CompositeVideoRenderer not initialized");
     }
 
-    const beatCount = this.sequence.beats.length;
-    const cellSize = this.options.gridBeatSize;
+    const stepCount = this.sequence.steps.length;
+    const cellSize = this.options.gridStepSize;
 
     // Calculate grid dimensions
-    const cols = Math.ceil(Math.sqrt(beatCount));
+    const cols = Math.ceil(Math.sqrt(stepCount));
 
     // Account for start position offset if included
     const offset = this.options.includeStartPosition ? 1 : 0;
-    const adjustedBeatIndex = beatIndex + offset;
+    const adjustedStepIndex = stepIndex + offset;
 
     // Calculate column and row
-    const col = adjustedBeatIndex % cols;
-    const row = Math.floor(adjustedBeatIndex / cols);
+    const col = adjustedStepIndex % cols;
+    const row = Math.floor(adjustedStepIndex / cols);
 
     // Calculate pixel coordinates
     const x = col * cellSize;
@@ -267,7 +267,7 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
    */
   private drawBeatHighlight(
     ctx: CanvasRenderingContext2D,
-    beatPos: BeatGridPosition,
+    stepPos: StepGridPosition,
     offsetX: number,
     offsetY: number
   ): void {
@@ -295,10 +295,10 @@ export class CompositeVideoRenderer implements ICompositeVideoRenderer {
       offsetY + (paneHeight - this.gridDimensions.height * scale) / 2;
 
     // Calculate highlight position and size
-    const highlightX = gridOffsetX + beatPos.x * scale;
-    const highlightY = gridOffsetY + beatPos.y * scale;
-    const highlightWidth = beatPos.width * scale;
-    const highlightHeight = beatPos.height * scale;
+    const highlightX = gridOffsetX + stepPos.x * scale;
+    const highlightY = gridOffsetY + stepPos.y * scale;
+    const highlightWidth = stepPos.width * scale;
+    const highlightHeight = stepPos.height * scale;
 
     // Gold highlight (matching workspace style)
     const goldColor = "#FFD700"; // Gold

@@ -176,43 +176,43 @@
   });
 
   // Derived: Current beat data (for passing to AnimatorCanvas)
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
 
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
     // Handle start position case explicitly
     if (
-      currentBeat === 0 &&
+      currentStep === 0 &&
       !animationState.isPlaying &&
       animationState.sequenceData.startPosition
     ) {
       return animationState.sequenceData.startPosition;
     }
 
-    // For beats, use direct indexing with clamping
+    // For steps, use direct indexing with clamping
     if (
-      animationState.sequenceData.beats &&
-      animationState.sequenceData.beats.length > 0
+      animationState.sequenceData.steps &&
+      animationState.sequenceData.steps.length > 0
     ) {
-      // Beat indexing: beats[0] = beat 1, beats[1] = beat 2, etc.
-      // currentBeat semantics: beat N's motion spans from N.0 to (N+1).0
+      // Beat indexing: steps[0] = beat 1, steps[1] = beat 2, etc.
+      // currentStep semantics: beat N's motion spans from N.0 to (N+1).0
       //
       // In step playback:
-      // - Motion for beat 2 goes from currentBeat 2.0 to 3.0
-      // - After motion completes, pause at currentBeat 3.0
+      // - Motion for beat 2 goes from currentStep 2.0 to 3.0
+      // - After motion completes, pause at currentStep 3.0
       // - During this pause, glyph should show beat 2 (the completed beat)
       //
-      // Formula: ceil(currentBeat - 1) gives the beat number whose motion is/was playing
+      // Formula: ceil(currentStep - 1) gives the beat number whose motion is/was playing
       // - At 2.0 to 2.999: ceil(1.0 to 1.999) = 1 or 2, shows beat 1 or 2
       // - At 3.0 (pause after beat 2): ceil(2.0) = 2, shows beat 2
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
+        stepIndex,
+        animationState.sequenceData.steps.length - 1
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
@@ -220,7 +220,7 @@
 
   // Derived: Current letter
   let currentLetter = $derived.by(() => {
-    return currentBeatData?.letter || null;
+    return currentStepData?.letter || null;
   });
 
   // Derived: Word for header display
@@ -248,8 +248,8 @@
       gridVisible={true}
       gridMode={animationState.sequenceData?.gridMode ?? null}
       letter={currentLetter}
-      beatData={currentBeatData}
-      currentBeat={animationState.currentBeat}
+      stepData={currentStepData}
+      currentStep={animationState.currentStep}
       sequenceData={animationState.sequenceData}
       word={sequenceWord}
       {trailSettings}

@@ -37,7 +37,7 @@ export interface PrecomputedPropPath {
   /** Array of positions ordered by time */
   positions: PrecomputedPropPosition[];
   /** Quick lookup by beat number (rounded to nearest cache frame) */
-  beatLookup: Map<number, number>; // beat -> index in positions array
+  stepLookup: Map<number, number>; // beat -> index in positions array
 }
 
 /**
@@ -50,8 +50,8 @@ export interface AnimationPathCacheData {
   redPropPath: PrecomputedPropPath;
   /** Total duration in milliseconds */
   totalDurationMs: number;
-  /** Total number of beats in sequence */
-  totalBeats: number;
+  /** Total number of steps in sequence */
+  totalSteps: number;
   /** Cache frame rate (FPS) */
   cacheFps: number;
   /** Whether cache is valid and ready to use */
@@ -111,18 +111,18 @@ export class AnimationPathCache {
    * Pre-compute animation paths for entire sequence
    *
    * @param orchestrator - Animation orchestrator to calculate prop states
-   * @param totalBeats - Total number of beats in sequence
-   * @param beatDurationMs - Duration of each beat in milliseconds
+   * @param totalSteps - Total number of steps in sequence
+   * @param stepDurationMs - Duration of each beat in milliseconds
    */
   precomputePaths(
     calculateStateFunc: (beat: number) => {
       blueProp: PropState;
       redProp: PropState;
     },
-    totalBeats: number,
-    beatDurationMs: number
+    totalSteps: number,
+    stepDurationMs: number
   ): AnimationPathCacheData {
-    const totalDurationMs = totalBeats * beatDurationMs;
+    const totalDurationMs = totalSteps * stepDurationMs;
     const frameTimeMs = 1000 / this.config.cacheFps;
     const totalFrames = Math.ceil(totalDurationMs / frameTimeMs);
 
@@ -132,7 +132,7 @@ export class AnimationPathCache {
     // Pre-compute positions for every virtual frame
     for (let frame = 0; frame <= totalFrames; frame++) {
       const timestamp = frame * frameTimeMs;
-      const beat = timestamp / beatDurationMs; // Fractional beat number
+      const beat = timestamp / stepDurationMs; // Fractional beat number
 
       // Get prop states from orchestrator
       const { blueProp, redProp } = calculateStateFunc(beat);
@@ -179,14 +179,14 @@ export class AnimationPathCache {
     this.cacheData = {
       bluePropPath: {
         positions: bluePositions,
-        beatLookup: blueBeatLookup,
+        stepLookup: blueBeatLookup,
       },
       redPropPath: {
         positions: redPositions,
-        beatLookup: redBeatLookup,
+        stepLookup: redBeatLookup,
       },
       totalDurationMs,
-      totalBeats,
+      totalSteps,
       cacheFps: this.config.cacheFps,
       isValid: true,
     };
@@ -199,15 +199,15 @@ export class AnimationPathCache {
    *
    * @param propIndex - 0 for blue, 1 for red
    * @param endType - 0 for left end, 1 for right end (tip)
-   * @param startBeat - Start beat number (fractional, e.g., 2.5)
-   * @param endBeat - End beat number (fractional, e.g., 4.2)
+   * @param startStep - Start beat number (fractional, e.g., 2.5)
+   * @param endStep - End beat number (fractional, e.g., 4.2)
    * @returns Array of trail points with beat-relative timestamps
    */
   getTrailPoints(
     propIndex: 0 | 1,
     endType: 0 | 1,
-    startBeat: number,
-    endBeat: number
+    startStep: number,
+    endStep: number
   ): TrailPoint[] {
     if (!this.cacheData?.isValid) {
       return [];
@@ -219,12 +219,12 @@ export class AnimationPathCache {
         : this.cacheData.redPropPath;
 
     // Convert beat range to frame indices
-    const beatDurationMs =
-      this.cacheData.totalDurationMs / this.cacheData.totalBeats;
+    const stepDurationMs =
+      this.cacheData.totalDurationMs / this.cacheData.totalSteps;
     const frameTimeMs = 1000 / this.config.cacheFps;
 
-    const startTime = startBeat * beatDurationMs;
-    const endTime = endBeat * beatDurationMs;
+    const startTime = startStep * stepDurationMs;
+    const endTime = endStep * stepDurationMs;
 
     const startFrame = Math.floor(startTime / frameTimeMs);
     const endFrame = Math.ceil(endTime / frameTimeMs);
@@ -249,7 +249,7 @@ export class AnimationPathCache {
 
     // Debug logging disabled - too noisy for every frame
     // if (trailPoints.length > 0 && trailPoints.length < 10) {
-    //   console.log(`📦 CACHE RETRIEVAL (prop=${propIndex}, end=${endType}, beats ${startBeat.toFixed(2)}-${endBeat.toFixed(2)}):`);
+    //   console.log(`📦 CACHE RETRIEVAL (prop=${propIndex}, end=${endType}, steps ${startStep.toFixed(2)}-${endStep.toFixed(2)}):`);
     //   console.log(`   Frames ${startFrame}-${endFrame}, returned ${trailPoints.length} points`);
     // }
 
@@ -275,12 +275,12 @@ export class AnimationPathCache {
       return [];
     }
 
-    const beatDurationMs =
-      this.cacheData.totalDurationMs / this.cacheData.totalBeats;
-    const startBeat = startTimeMs / beatDurationMs;
-    const endBeat = endTimeMs / beatDurationMs;
+    const stepDurationMs =
+      this.cacheData.totalDurationMs / this.cacheData.totalSteps;
+    const startStep = startTimeMs / stepDurationMs;
+    const endStep = endTimeMs / stepDurationMs;
 
-    return this.getTrailPoints(propIndex, endType, startBeat, endBeat);
+    return this.getTrailPoints(propIndex, endType, startStep, endStep);
   }
 
   /**
@@ -289,21 +289,21 @@ export class AnimationPathCache {
    *
    * @param propIndex - 0 for blue, 1 for red
    * @param endType - 0 for left end, 1 for right end (tip)
-   * @param startBeat - Start beat number (fractional, e.g., 2.5)
-   * @param endBeat - End beat number (fractional, e.g., 4.2)
+   * @param startStep - Start beat number (fractional, e.g., 2.5)
+   * @param endStep - End beat number (fractional, e.g., 4.2)
    * @param canvasSize - Canvas size (unused, kept for interface compatibility)
    * @returns Array of trail points with beat-relative timestamps
    */
   getCachedPoints(
     propIndex: 0 | 1,
     endType: 0 | 1,
-    startBeat: number,
-    endBeat: number,
+    startStep: number,
+    endStep: number,
     _canvasSize: number
   ): TrailPoint[] {
     // canvasSize is ignored - cache uses standard coordinate system (950x950)
     // and points are transformed by AnimatorCanvas as needed
-    return this.getTrailPoints(propIndex, endType, startBeat, endBeat);
+    return this.getTrailPoints(propIndex, endType, startStep, endStep);
   }
 
   /**
@@ -328,7 +328,7 @@ export class AnimationPathCache {
 
     const roundedBeat =
       Math.round(beat * this.config.cacheFps) / this.config.cacheFps;
-    const index = propPath.beatLookup.get(roundedBeat);
+    const index = propPath.stepLookup.get(roundedBeat);
 
     if (
       index !== undefined &&
@@ -376,7 +376,7 @@ export class AnimationPathCache {
     }
 
     return {
-      totalBeats: this.cacheData.totalBeats,
+      totalSteps: this.cacheData.totalSteps,
       totalDurationMs: this.cacheData.totalDurationMs,
       cacheFps: this.cacheData.cacheFps,
       bluePointCount: this.cacheData.bluePropPath.positions.length,

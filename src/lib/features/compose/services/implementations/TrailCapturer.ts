@@ -190,7 +190,7 @@ export class TrailCapturer implements ITrailCapturer {
   private readonly GRID_HALFWAY_POINT_OFFSET = 150; // Matches strict grid points
   private readonly INWARD_FACTOR = 1.0; // No inward adjustment for animation mode
   private readonly INITIALIZATION_DELAY_MS = 500; // Wait for panel open and textures
-  private readonly LARGE_BEAT_GAP_THRESHOLD = 0.05; // >0.05 beats = use cache (aggressive backfill for smooth trails)
+  private readonly LARGE_BEAT_GAP_THRESHOLD = 0.05; // >0.05 steps = use cache (aggressive backfill for smooth trails)
   private readonly INITIAL_JUMP_DISTANCE_THRESHOLD = 200; // Skip trails for huge jumps
 
   initialize(config: TrailCaptureConfig): void {
@@ -232,7 +232,7 @@ export class TrailCapturer implements ITrailCapturer {
 
   captureFrame(
     props: TrailCapturePropStates,
-    currentBeat: number | undefined,
+    currentStep: number | undefined,
     currentTime: number
   ): void {
     const { trailSettings } = this.config;
@@ -251,7 +251,7 @@ export class TrailCapturer implements ITrailCapturer {
     const animRelativeTime = currentTime - this.animationStartTime;
 
     // Use current beat (fallback to 0 if undefined)
-    const beat = currentBeat ?? 0;
+    const beat = currentStep ?? 0;
 
     // Check for loop and clear trails if:
     // - Mode is LOOP_CLEAR (user explicitly wants clearing on every loop)
@@ -267,7 +267,7 @@ export class TrailCapturer implements ITrailCapturer {
     if (loopDetected) {
       console.log('[TrailCapturer] Loop detected!', {
         beat,
-        previousBeat: this.previousBeatForLoopDetection,
+        previousStep: this.previousBeatForLoopDetection,
         isSeamlesslyLoopable: this.config.isSeamlesslyLoopable,
         trailMode: trailSettings.mode,
         shouldClearOnLoop,
@@ -403,11 +403,11 @@ export class TrailCapturer implements ITrailCapturer {
   /**
    * Detect if animation has looped (for LOOP_CLEAR mode)
    */
-  private detectAnimationLoop(currentBeat: number | undefined): boolean {
-    if (currentBeat === undefined) return false;
+  private detectAnimationLoop(currentStep: number | undefined): boolean {
+    if (currentStep === undefined) return false;
     const hasLooped =
-      this.previousBeatForLoopDetection > 0.5 && currentBeat < 0.5;
-    this.previousBeatForLoopDetection = currentBeat;
+      this.previousBeatForLoopDetection > 0.5 && currentStep < 0.5;
+    this.previousBeatForLoopDetection = currentStep;
     return hasLooped;
   }
 
@@ -424,7 +424,7 @@ export class TrailCapturer implements ITrailCapturer {
     propDimensions: PropDimensions,
     propIndex: 0 | 1 | 2 | 3,
     currentTime: number,
-    currentBeat: number
+    currentStep: number
   ): void {
     const { trailSettings, bluePropType, redPropType } = this.config;
 
@@ -487,13 +487,13 @@ export class TrailCapturer implements ITrailCapturer {
         this.lastCapturedPoints.set(key, {
           x: endpoint.x,
           y: endpoint.y,
-          beat: currentBeat,
+          beat: currentStep,
           timestamp: currentTime,
         });
       } else {
         // SUBSEQUENT POINTS: Use distance-based sampling with optional cache backfill
 
-        const beatDelta = Math.abs(currentBeat - lastPoint.beat);
+        const beatDelta = Math.abs(currentStep - lastPoint.beat);
 
         // Check if we have a LARGE beat gap (seeking or major stutter)
         const hasLargeBeatGap = beatDelta > this.LARGE_BEAT_GAP_THRESHOLD;
@@ -511,7 +511,7 @@ export class TrailCapturer implements ITrailCapturer {
             cachePropIndex,
             endType,
             lastPoint.beat,
-            currentBeat,
+            currentStep,
             this.config.canvasSize
           );
 
@@ -539,7 +539,7 @@ export class TrailCapturer implements ITrailCapturer {
           this.lastCapturedPoints.set(key, {
             x: endpoint.x,
             y: endpoint.y,
-            beat: currentBeat,
+            beat: currentStep,
             timestamp: currentTime,
           });
         } else {
@@ -557,7 +557,7 @@ export class TrailCapturer implements ITrailCapturer {
             this.lastCapturedPoints.set(key, {
               x: endpoint.x,
               y: endpoint.y,
-              beat: currentBeat,
+              beat: currentStep,
               timestamp: currentTime,
             });
           } else if (distance >= minSpacing) {
@@ -578,7 +578,7 @@ export class TrailCapturer implements ITrailCapturer {
             this.lastCapturedPoints.set(key, {
               x: endpoint.x,
               y: endpoint.y,
-              beat: currentBeat,
+              beat: currentStep,
               timestamp: currentTime,
             });
           }

@@ -1,0 +1,214 @@
+/**
+ * Beat Calculation Service
+ *
+ * Focused service for beat indexing and progress calculations.
+ * Single responsibility: Beat timing and progress calculations.
+ */
+
+import type { StepData } from "../../../create/shared/domain/models/StepData";
+import type {
+  StepCalculationResult,
+  IStepCalculator,
+} from "../contracts/IStepCalculator";
+
+export class StepCalculator implements IStepCalculator {
+  /**
+   * Calculate current beat index and progress from animation time
+   * EXACT LOGIC FROM STANDALONE ANIMATOR
+   */
+  calculateBeatState(
+    currentStep: number,
+    steps: readonly StepData[],
+    totalSteps: number
+  ): StepCalculationResult {
+    // Validate inputs
+    if (steps.length === 0 || totalSteps === 0) {
+      return {
+        currentStepIndex: 0,
+        stepProgress: 0,
+        currentStepData: steps[0]!,
+        isValid: false,
+      };
+    }
+
+    // ✅ PURE DOMAIN LOGIC - Direct beat access!
+    const clampedStep = Math.max(0, Math.min(currentStep, totalSteps));
+    const currentStepIndex = Math.floor(
+      clampedStep === totalSteps ? totalSteps - 1 : clampedStep
+    );
+    const stepProgress =
+      clampedStep === totalSteps ? 1.0 : clampedStep - currentStepIndex;
+
+    const currentStepData = steps[currentStepIndex]!;
+
+    return {
+      currentStepIndex,
+      stepProgress,
+      currentStepData,
+      isValid: true,
+    };
+  }
+
+  /**
+   * Validate beat data array
+   */
+  validateBeats(steps: readonly StepData[]): boolean {
+    if (!Array.isArray(steps)) {
+      console.error("StepCalculator: steps is not an array");
+      return false;
+    }
+
+    if (steps.length === 0) {
+      console.error("StepCalculator: steps array is empty");
+      return false;
+    }
+
+    const isValid = steps.every((beat, index) => {
+      const valid =
+        beat && typeof beat.stepNumber === "number" && beat.stepNumber >= 0;
+      if (!valid) {
+        console.error(`StepCalculator: Invalid beat at index ${index}:`, {
+          beat,
+          hasStep: !!beat,
+          stepNumber: beat?.stepNumber,
+          beatNumberType: typeof beat?.stepNumber,
+        });
+      }
+      return valid;
+    });
+
+    return isValid;
+  }
+
+  /**
+   * Get beat by index with bounds checking
+   */
+  getBeatSafely(steps: readonly StepData[], index: number): StepData | null {
+    if (index < 0 || index >= steps.length) {
+      return null;
+    }
+    return steps[index] ?? null;
+  }
+
+  /**
+   * Calculate total duration of sequence
+   */
+  calculateTotalDuration(steps: readonly StepData[]): number {
+    if (steps.length === 0) {
+      return 0;
+    }
+    // Default to 1 if duration is undefined (defensive)
+    return steps.reduce((sum, beat) => sum + (beat.duration ?? 1), 0);
+  }
+
+  /**
+   * Find beat by beat number
+   */
+  findBeatByNumber(
+    steps: readonly StepData[],
+    stepNumber: number
+  ): StepData | null {
+    return steps.find((beat) => beat.stepNumber === stepNumber) ?? null;
+  }
+
+  /**
+   * Map a time position to beat index and progress within that beat.
+   * Accounts for variable beat durations.
+   *
+   * Example: steps with durations [1.0, 0.5, 0.25, 0.25] (total = 2.0)
+   * - timePosition 0.5 → beat 0, progress 0.5
+   * - timePosition 1.0 → beat 1, progress 0.0
+   * - timePosition 1.25 → beat 1, progress 0.5 (halfway through 0.5 duration)
+   * - timePosition 1.5 → beat 2, progress 0.0
+   * - timePosition 1.625 → beat 2, progress 0.5 (halfway through 0.25 duration)
+   */
+  mapTimePositionToBeat(
+    timePosition: number,
+    steps: readonly StepData[]
+  ): { stepIndex: number; stepProgress: number } {
+    if (steps.length === 0) {
+      return { stepIndex: 0, stepProgress: 0 };
+    }
+
+    // Clamp to valid range - note: don't recalculate total (use cached if possible)
+    let totalDuration = 0;
+    for (const beat of steps) {
+      totalDuration += beat.duration ?? 1;
+    }
+    const clampedTime = Math.max(0, Math.min(timePosition, totalDuration));
+
+    // Find which beat we're in by accumulating durations
+    let accumulatedTime = 0;
+    for (let i = 0; i < steps.length; i++) {
+      const stepDuration = steps[i].duration ?? 1;
+      const beatEndTime = accumulatedTime + stepDuration;
+
+      if (clampedTime < beatEndTime || i === steps.length - 1) {
+        // We're in this beat
+        const timeInBeat = clampedTime - accumulatedTime;
+        const stepProgress = stepDuration > 0 ? timeInBeat / stepDuration : 0;
+        return {
+          stepIndex: i,
+          stepProgress: Math.min(stepProgress, 1.0),
+        };
+      }
+
+      accumulatedTime = beatEndTime;
+    }
+
+    // Fallback (shouldn't reach here)
+    return { stepIndex: steps.length - 1, stepProgress: 1.0 };
+  }
+
+  /**
+   * Calculate the time position where a specific beat starts.
+   * @param stepIndex - The 0-based beat index
+   * @param steps - Array of beat data
+   * @returns The cumulative time position where this beat begins
+   */
+  getBeatStartTime(stepIndex: number, steps: readonly StepData[]): number {
+    if (stepIndex <= 0 || steps.length === 0) {
+      return 0;
+    }
+
+    let accumulatedTime = 0;
+    const clampedIndex = Math.min(stepIndex, steps.length);
+
+    for (let i = 0; i < clampedIndex; i++) {
+      accumulatedTime += steps[i].duration ?? 1;
+    }
+
+    return accumulatedTime;
+  }
+
+  /**
+   * Calculate beat state using duration-aware timing.
+   * Uses actual beat durations to determine current beat and progress.
+   */
+  calculateBeatStateDurationAware(
+    timePosition: number,
+    steps: readonly StepData[]
+  ): StepCalculationResult {
+    if (steps.length === 0) {
+      return {
+        currentStepIndex: 0,
+        stepProgress: 0,
+        currentStepData: steps[0]!,
+        isValid: false,
+      };
+    }
+
+    const { stepIndex, stepProgress } = this.mapTimePositionToBeat(
+      timePosition,
+      steps
+    );
+    const currentStepData = steps[stepIndex]!;
+
+    return {
+      currentStepIndex: stepIndex,
+      stepProgress,
+      currentStepData,
+      isValid: true,
+    };
+  }
+}

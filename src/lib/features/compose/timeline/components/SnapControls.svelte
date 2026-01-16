@@ -16,7 +16,7 @@
 
   // Derived state from timeline - these will automatically update when timeline state changes
   const snapEnabled = $derived(timelineState.project.snap.enabled);
-  const snapToBeats = $derived(timelineState.project.snap.snapToBeats);
+  const snapToSteps = $derived(timelineState.project.snap.snapToSteps);
   const snapToClips = $derived(timelineState.project.snap.snapToClips);
   const snapToGrid = $derived(timelineState.project.snap.snapToGrid);
   const snapToPlayhead = $derived(timelineState.project.snap.snapToPlayhead);
@@ -49,10 +49,10 @@
   // Snap type definitions - must be $derived for reactivity in {#each}
   const snapTypes = $derived([
     {
-      key: "snapToBeats",
-      label: "Beats",
+      key: "snapToSteps",
+      label: "Steps",
       icon: "fa-drum",
-      active: snapToBeats,
+      active: snapToSteps,
     },
     {
       key: "snapToClips",
@@ -80,8 +80,8 @@
 
   function toggleSnapType(key: string) {
     const currentValue =
-      key === "snapToBeats"
-        ? snapToBeats
+      key === "snapToSteps"
+        ? snapToSteps
         : key === "snapToClips"
           ? snapToClips
           : key === "snapToGrid"

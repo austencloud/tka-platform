@@ -178,7 +178,7 @@
                   >{sequence.name || sequence.word}</span
                 >
                 <span class="sequence-meta">
-                  {sequence.beats.length} beats
+                  {sequence.steps.length} steps
                   {#if sequence.author}
                     • by {sequence.author}
                   {/if}

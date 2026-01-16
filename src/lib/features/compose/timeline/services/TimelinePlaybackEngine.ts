@@ -50,7 +50,7 @@ export interface ActiveClipInfo {
   /** Progress through the clip (0-1) */
   progress: number;
   /** Current beat within the clip */
-  currentBeat: number;
+  currentStep: number;
   /** Whether this clip is looping */
   isLooping: boolean;
 }
@@ -233,13 +233,13 @@ export class TimelinePlaybackEngine {
         const sourceProgress = clip.inPoint + progress * sourceRange;
 
         // Calculate current beat
-        const beatCount = clip.sequence.beats.length;
-        const currentBeat = Math.floor(sourceProgress * beatCount);
+        const stepCount = clip.sequence.steps.length;
+        const currentStep = Math.floor(sourceProgress * stepCount);
 
         activeClips.push({
           clip,
           progress: sourceProgress,
-          currentBeat,
+          currentStep,
           isLooping,
         });
       }

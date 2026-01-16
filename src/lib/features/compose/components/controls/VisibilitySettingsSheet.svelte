@@ -86,9 +86,9 @@
     return visibilityManager.getVisibility("props");
   }
 
-  function getBeatNumbers() {
+  function getStepNumbers() {
     updateCounter;
-    return visibilityManager.getVisibility("beatNumbers");
+    return visibilityManager.getVisibility("stepNumbers");
   }
 
   function getTkaGlyph() {
@@ -127,9 +127,9 @@
     updateCounter++;
   }
 
-  function toggleBeatNumbers() {
-    const current = visibilityManager.getVisibility("beatNumbers");
-    visibilityManager.setVisibility("beatNumbers", !current);
+  function toggleStepNumbers() {
+    const current = visibilityManager.getVisibility("stepNumbers");
+    visibilityManager.setVisibility("stepNumbers", !current);
     updateCounter++;
   }
 
@@ -255,8 +255,8 @@
           </button>
           <button
             class="chip-btn beat-btn"
-            class:active={getBeatNumbers()}
-            onclick={toggleBeatNumbers}
+            class:active={getStepNumbers()}
+            onclick={toggleStepNumbers}
             type="button"
           >
             Beat #

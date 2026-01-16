@@ -2,7 +2,7 @@
  * BPM Analyzer Utility
  *
  * Wraps realtime-bpm-analyzer for detecting BPM from audio files.
- * Uses section-based analysis to handle songs with intros/outros that lack beats.
+ * Uses section-based analysis to handle songs with intros/outros that lack steps.
  */
 
 import { analyzeFullBuffer } from "realtime-bpm-analyzer";
@@ -25,7 +25,7 @@ interface SectionResult {
 
 /**
  * Analyze an audio file to detect its BPM using section-based analysis.
- * Splits the audio into sections and finds the one with clearest beats.
+ * Splits the audio into sections and finds the one with clearest steps.
  * This handles songs with intros/outros that don't have clear rhythm.
  *
  * @param audioUrl - URL or blob URL of the audio file
@@ -237,7 +237,7 @@ async function analyzeSection(
  * @param offset - Optional offset for first beat in seconds
  * @returns Array of beat timestamps in seconds
  */
-export function generateBeatTimestamps(
+export function generateStepTimestamps(
   bpm: number,
   duration: number,
   offset: number = 0
@@ -248,7 +248,7 @@ export function generateBeatTimestamps(
   let time = offset;
   while (time <= duration) {
     timestamps.push(time);
-    time += beatInterval;
+    time += stepInterval;
   }
 
   return timestamps;

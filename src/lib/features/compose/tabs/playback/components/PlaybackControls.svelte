@@ -125,7 +125,7 @@
           class:active={stepPlaybackStepSize === 1}
           onclick={() => onStepPlaybackStepSizeChange(1)}
           disabled={playbackMode !== "step" || isPlaying}
-          aria-label="Step by full beats"
+          aria-label="Step by full steps"
         >
           Beat
         </button>
@@ -134,7 +134,7 @@
           class:active={stepPlaybackStepSize === 0.5}
           onclick={() => onStepPlaybackStepSizeChange(0.5)}
           disabled={playbackMode !== "step" || isPlaying}
-          aria-label="Step by half beats"
+          aria-label="Step by half steps"
         >
           Half
         </button>

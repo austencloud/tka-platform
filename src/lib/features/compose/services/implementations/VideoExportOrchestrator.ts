@@ -96,7 +96,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
     const captureState = {
       wasPlaying: panelState.isPlaying,
-      beat: panelState.currentBeat,
+      beat: panelState.currentStep,
     };
 
     try {
@@ -105,14 +105,14 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       if (captureState.wasPlaying) {
         playbackController.togglePlayback();
       }
-      playbackController.jumpToBeat(0);
+      playbackController.jumpToStep(0);
       await this.delay(VIDEO_INITIAL_CAPTURE_DELAY_MS);
 
       // Calculate effective duration at user's BPM/speed
       // At speed=1.0 (60 BPM): 1 second per beat
       // At speed=2.0 (120 BPM): 0.5 seconds per beat
       const secondsPerBeat = 1.0 / panelState.speed;
-      const singleLoopDurationSeconds = panelState.totalBeats * secondsPerBeat;
+      const singleLoopDurationSeconds = panelState.totalSteps * secondsPerBeat;
 
       // Use fixed high frame rate for smooth playback at any BPM
       // This ensures visual quality is consistent regardless of tempo
@@ -124,8 +124,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const totalFrames = framesPerLoop * loopCount;
 
       // Calculate beat progression per frame to match timing
-      // beatsPerFrame = totalBeats / framesPerLoop (for single loop)
-      const beatsPerFrame = panelState.totalBeats / framesPerLoop;
+      // beatsPerFrame = totalSteps / framesPerLoop (for single loop)
+      const beatsPerFrame = panelState.totalSteps / framesPerLoop;
 
       // Check if composite mode is enabled
       const isCompositeMode =
@@ -138,9 +138,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         }
         await this.compositeRenderer.initialize(panelState.sequenceData, {
           orientation: options.compositeMode as "horizontal" | "vertical",
-          gridBeatSize: options.gridBeatSize ?? 120,
+          gridStepSize: options.gridStepSize ?? 120,
           includeStartPosition: options.includeStartPosition ?? false,
-          showBeatNumbers: options.showBeatNumbers ?? true,
+          showStepNumbers: options.showStepNumbers ?? true,
         });
         await this.compositeRenderer.cacheStaticGrid();
       }
@@ -152,7 +152,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
       // Get additional visibility settings (showWordHeader already checked above)
       const showTkaGlyph = visibilityManager.getVisibility("tkaGlyph");
-      const showBeatNumbers = visibilityManager.getVisibility("beatNumbers");
+      const showStepNumbers = visibilityManager.getVisibility("stepNumbers");
       const isDarkMode = visibilityManager.isDarkMode();
 
       // Create offscreen canvas for compositing (so we don't touch the visible canvas)
@@ -178,11 +178,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Track the current letter to avoid reloading the same glyph for consecutive frames
       let currentLetter: Letter | null = null;
       let currentGlyph: LetterOverlayAssets | null = null;
-      let currentBeatNumber: number | null = null;
+      let currentStepNumber: number | null = null;
 
       // Track previous frame's glyph and beat number for crossfade
       let previousGlyph: LetterOverlayAssets | null = null;
-      let previousBeatNumber: number | null = null;
+      let previousStepNumber: number | null = null;
 
       // Crossfade configuration (matches GlyphOverlay.svelte)
       const CROSSFADE_DURATION_MS = 200;
@@ -200,7 +200,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         // Uses modulo to loop through the sequence for multiple loops
         const frameInLoop = i % framesPerLoop;
         const beat = frameInLoop * beatsPerFrame;
-        playbackController.jumpToBeat(beat);
+        playbackController.jumpToStep(beat);
 
         // Wait for the UI + canvas to render the new beat
         await this.waitForAnimationFrame();
@@ -209,10 +209,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         // Render frame based on mode
         if (isCompositeMode) {
           // Composite mode: render animation + grid + beat highlight
-          const beatIndex = Math.floor(beat);
+          const stepIndex = Math.floor(beat);
           this.compositeRenderer.renderCompositeFrame(
             canvas,
-            beatIndex,
+            stepIndex,
             offscreenCanvas
           );
         } else {
@@ -238,21 +238,21 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         const beatLetter = this.getLetterForBeat(beat, panelState);
 
         // Calculate beat number for display (matches AnimatorCanvas logic)
-        const beatNumber = this.getBeatNumberForFrame(beat, panelState);
+        const stepNumber = this.getStepNumberForFrame(beat, panelState);
 
         // Detect transitions (letter or beat number changed)
         const letterChanged = beatLetter !== currentLetter;
-        const beatNumberChanged = beatNumber !== currentBeatNumber;
+        const beatNumberChanged = stepNumber !== currentStepNumber;
         const transitionDetected = letterChanged || beatNumberChanged;
 
         if (transitionDetected) {
           // Store previous state for crossfade
           previousGlyph = currentGlyph;
-          previousBeatNumber = currentBeatNumber;
+          previousStepNumber = currentStepNumber;
 
           // Update current state
           currentLetter = beatLetter;
-          currentBeatNumber = beatNumber;
+          currentStepNumber = stepNumber;
 
           // Load new glyph if letter changed
           if (letterChanged) {
@@ -315,25 +315,25 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         }
 
         // Render beat numbers if enabled
-        if (showBeatNumbers) {
+        if (showStepNumbers) {
           // Render fading-out beat number (if in crossfade and previous exists)
-          if (inCrossfade && previousBeatNumber !== null && fadeOutOpacity > 0) {
-            this.canvasRenderer.renderBeatNumberToCanvas(
+          if (inCrossfade && previousStepNumber !== null && fadeOutOpacity > 0) {
+            this.canvasRenderer.renderStepNumberToCanvas(
               offscreenCtx,
               actualCanvasSize,
-              previousBeatNumber,
+              previousStepNumber,
               fadeOutOpacity,
               isDarkMode
             );
           }
 
           // Render fading-in beat number (current beat number)
-          if (currentBeatNumber !== null) {
+          if (currentStepNumber !== null) {
             const opacity = inCrossfade ? fadeInOpacity : 1;
-            this.canvasRenderer.renderBeatNumberToCanvas(
+            this.canvasRenderer.renderStepNumberToCanvas(
               offscreenCtx,
               actualCanvasSize,
-              currentBeatNumber,
+              currentStepNumber,
               opacity,
               isDarkMode
             );
@@ -416,7 +416,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     playbackController: IAnimationPlaybackController,
     snapshot: { wasPlaying: boolean; beat: number }
   ): void {
-    playbackController.jumpToBeat(snapshot.beat);
+    playbackController.jumpToStep(snapshot.beat);
     if (snapshot.wasPlaying) {
       playbackController.togglePlayback();
     }
@@ -458,20 +458,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
     // During animation: show beat letters using floor(beat) as index
     // This matches the live canvas behavior where:
-    // - beat 0.0-0.99 shows beats[0] (first beat)
-    // - beat 1.0-1.99 shows beats[1] (second beat)
+    // - beat 0.0-0.99 shows steps[0] (first beat)
+    // - beat 1.0-1.99 shows steps[1] (second beat)
     // - etc.
     if (
-      panelState.sequenceData.beats &&
-      panelState.sequenceData.beats.length > 0
+      panelState.sequenceData.steps &&
+      panelState.sequenceData.steps.length > 0
     ) {
-      const beatIndex = Math.floor(beat);
+      const stepIndex = Math.floor(beat);
       const clampedIndex = Math.max(
         0,
-        Math.min(beatIndex, panelState.sequenceData.beats.length - 1)
+        Math.min(stepIndex, panelState.sequenceData.steps.length - 1)
       );
-      const beatData = panelState.sequenceData.beats[clampedIndex];
-      return beatData?.letter ? (beatData.letter as Letter) : null;
+      const stepData = panelState.sequenceData.steps[clampedIndex];
+      return stepData?.letter ? (stepData.letter as Letter) : null;
     }
 
     return null;
@@ -479,22 +479,22 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
   /**
    * Get the beat number for a specific frame
-   * Matches the logic in AnimatorCanvas.svelte's beatNumber derived
-   * Beat numbers are 1-indexed (beats[0] = beat 1, beats[1] = beat 2, etc.)
+   * Matches the logic in AnimatorCanvas.svelte's stepNumber derived
+   * Beat numbers are 1-indexed (steps[0] = beat 1, steps[1] = beat 2, etc.)
    */
-  private getBeatNumberForFrame(
+  private getStepNumberForFrame(
     beat: number,
     panelState: AnimationPanelState
   ): number | null {
-    if (!panelState.sequenceData?.beats) {
+    if (!panelState.sequenceData?.steps) {
       return null;
     }
 
     // Calculate which beat index we're showing
-    const beatIndex = Math.floor(beat);
+    const stepIndex = Math.floor(beat);
     const clampedIndex = Math.max(
       0,
-      Math.min(beatIndex, panelState.sequenceData.beats.length - 1)
+      Math.min(stepIndex, panelState.sequenceData.steps.length - 1)
     );
 
     // Beat numbers are 1-indexed

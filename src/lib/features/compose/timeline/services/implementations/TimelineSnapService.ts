@@ -2,7 +2,7 @@
  * TimelineSnapService
  *
  * Service for managing timeline snapping during clip operations.
- * Provides snap calculations for beats, clip edges, grid, and playhead.
+ * Provides snap calculations for steps, clip edges, grid, and playhead.
  */
 
 import type {

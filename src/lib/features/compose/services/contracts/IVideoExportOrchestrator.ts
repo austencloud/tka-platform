@@ -28,9 +28,9 @@ export interface VideoExportOrchestratorOptions {
   /** Composite mode: renders animation + grid side-by-side with beat highlighting */
   compositeMode?: "none" | "horizontal" | "vertical";
   /** Size of each beat cell in composite grid (default: 120) */
-  gridBeatSize?: number;
+  gridStepSize?: number;
   /** Show beat numbers in composite grid (default: true) */
-  showBeatNumbers?: boolean;
+  showStepNumbers?: boolean;
   /** Include start position in composite grid (default: false) */
   includeStartPosition?: boolean;
 }

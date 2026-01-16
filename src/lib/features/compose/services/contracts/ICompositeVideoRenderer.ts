@@ -21,12 +21,12 @@ export interface CompositeDimensions {
 
 export interface CompositeLayoutOptions {
   orientation: "horizontal" | "vertical";
-  gridBeatSize: number; // Size of each beat cell in pixels
+  gridStepSize: number; // Size of each beat cell in pixels
   includeStartPosition: boolean;
-  showBeatNumbers: boolean;
+  showStepNumbers: boolean;
 }
 
-export interface BeatGridPosition {
+export interface StepGridPosition {
   col: number; // Column index (0-based)
   row: number; // Row index (0-based)
   x: number; // Pixel X coordinate
@@ -62,12 +62,12 @@ export interface ICompositeVideoRenderer {
    * Should be called for each video frame during export.
    *
    * @param animationCanvas The canvas containing the current animation frame
-   * @param currentBeat The current beat index for highlighting (0-based)
+   * @param currentStep The current beat index for highlighting (0-based)
    * @param targetCanvas The target canvas to render the composite frame to
    */
   renderCompositeFrame(
     animationCanvas: HTMLCanvasElement,
-    currentBeat: number,
+    currentStep: number,
     targetCanvas: HTMLCanvasElement
   ): void;
 
@@ -75,10 +75,10 @@ export interface ICompositeVideoRenderer {
    * Calculate the grid position for a specific beat index.
    * Used for highlighting the current beat in the grid.
    *
-   * @param beatIndex The beat index (0-based)
+   * @param stepIndex The beat index (0-based)
    * @returns Grid position with column, row, and pixel coordinates
    */
-  getBeatGridPosition(beatIndex: number): BeatGridPosition;
+  getBeatGridPosition(stepIndex: number): StepGridPosition;
 
   /**
    * Get the composite canvas dimensions based on orientation.

@@ -5,19 +5,19 @@
  * Handles angle calculations and motion data extraction.
  */
 
-import type { BeatData } from "../../../create/shared/domain/models/BeatData";
+import type { StepData } from "../../../create/shared/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
 import type { InterpolationResult } from "./IAnimationStateManager";
 
 export interface IPropInterpolator {
   interpolatePropAngles(
-    currentBeatData: BeatData,
-    beatProgress: number
+    currentStepData: StepData,
+    stepProgress: number
   ): InterpolationResult;
-  calculateInitialAngles(firstBeat: BeatData): InterpolationResult;
-  getMotionData(beatData: BeatData): { blue: MotionData; red: MotionData };
-  getEndpoints(beatData: BeatData): {
+  calculateInitialAngles(firstStep: StepData): InterpolationResult;
+  getMotionData(stepData: StepData): { blue: MotionData; red: MotionData };
+  getEndpoints(stepData: StepData): {
     blue: MotionEndpoints;
     red: MotionEndpoints;
   };

@@ -72,7 +72,7 @@
     [
       { value: "animation", label: "Animation", icon: "fa-play-circle" },
       { value: "video", label: "Video", icon: "fa-video" },
-      { value: "beatGrid", label: "Beat Grid", icon: "fa-th" },
+      { value: "stepGrid", label: "Beat Grid", icon: "fa-th" },
       { value: "image", label: "Image", icon: "fa-image" },
     ];
 

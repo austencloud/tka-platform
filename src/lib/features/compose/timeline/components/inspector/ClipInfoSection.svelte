@@ -34,7 +34,7 @@
 
   <div class="info-row">
     <span class="info-label">{t("clip_beats")}</span>
-    <span class="info-value">{clip.sequence.beats.length}</span>
+    <span class="info-value">{clip.sequence.steps.length}</span>
   </div>
 
   <div class="info-row">

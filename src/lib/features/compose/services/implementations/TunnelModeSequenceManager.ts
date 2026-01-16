@@ -56,9 +56,9 @@ export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
     if (!sequence) return null;
 
     const hasMotionData = (s: SequenceData) =>
-      Array.isArray(s.beats) &&
-      s.beats.length > 0 &&
-      s.beats.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      Array.isArray(s.steps) &&
+      s.steps.length > 0 &&
+      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
 
     // Check if identifier looks like a UUID (user-created sequence)
     // UUIDs: 8-4-4-4-12 hex pattern, gallery words are letters like "DKIIEJII"
@@ -81,8 +81,8 @@ export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
     if (hasMotionData(sequence)) {
       fullSequence = sequence;
     }
-    // Load from database/gallery if needed (empty beats)
-    else if (sequence.id && (!sequence.beats || sequence.beats.length === 0)) {
+    // Load from database/gallery if needed (empty steps)
+    else if (sequence.id && (!sequence.steps || sequence.steps.length === 0)) {
       const galleryId = getGalleryIdentifier(sequence);
       if (galleryId) {
         const loaded = await this.sequenceService.getSequence(galleryId);
@@ -106,13 +106,13 @@ export class TunnelModeSequenceManager implements ITunnelModeSequenceManager {
 
     // Normalize startPosition
     const withStarting = fullSequence as unknown as {
-      startingPositionBeat?: unknown;
+      startingPosition?: unknown;
     };
-    if (!fullSequence.startPosition && withStarting.startingPositionBeat) {
+    if (!fullSequence.startPosition && withStarting.startingPosition) {
       fullSequence = {
         ...fullSequence,
         startPosition:
-          withStarting.startingPositionBeat as SequenceData["startPosition"],
+          withStarting.startingPosition as SequenceData["startPosition"],
       };
     }
 

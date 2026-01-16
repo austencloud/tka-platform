@@ -13,7 +13,7 @@
   import PlaybackHeader from "./components/PlaybackHeader.svelte";
   import PlaybackControls from "./components/PlaybackControls.svelte";
   import MobilePlaybackToolbar from "./components/MobilePlaybackToolbar.svelte";
-  import MobilePlaybackBeatGrid from "./components/MobilePlaybackBeatGrid.svelte";
+  import MobilePlaybackStepGrid from "./components/MobilePlaybackStepGrid.svelte";
   import TrailSettingsSheet from "./components/TrailSettingsSheet.svelte";
   import SingleRenderer from "./renderers/SingleRenderer.svelte";
   import TunnelRenderer from "./renderers/TunnelRenderer.svelte";
@@ -228,9 +228,9 @@
   {#if isMobile}
     <div class="mobile-tool-area">
       {#if playbackState.mobileToolView === "beat-grid"}
-        <MobilePlaybackBeatGrid
+        <MobilePlaybackStepGrid
           sequence={singleSequence()}
-          currentBeat={playbackState.currentBeat}
+          currentStep={playbackState.currentStep}
           isPlaying={playbackState.isPlaying}
         />
       {:else}

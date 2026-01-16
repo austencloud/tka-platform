@@ -5,7 +5,7 @@
   Allows users to tap along with audio/video to mark beat positions.
 
   Features:
-  - Tap button to mark beats at current time
+  - Tap button to mark steps at current time
   - Keyboard shortcut (B key) for tapping
   - Calculates average BPM from taps
   - Shows tap history with timestamps
@@ -43,7 +43,7 @@
     // Sort markers by time
     const sorted = [...beatMarkers].sort((a, b) => a.time - b.time);
 
-    // Calculate intervals between consecutive beats
+    // Calculate intervals between consecutive steps
     const intervals: number[] = [];
     for (let i = 1; i < sorted.length; i++) {
       const interval = (sorted[i]?.time ?? 0) - (sorted[i - 1]?.time ?? 0);
@@ -226,7 +226,7 @@
     </div>
   {:else}
     <div class="inactive-message">
-      <p>Enable tap mode to manually mark beats while listening.</p>
+      <p>Enable tap mode to manually mark steps while listening.</p>
       <p class="hint">Useful for recordings with variable or unclear timing.</p>
     </div>
   {/if}

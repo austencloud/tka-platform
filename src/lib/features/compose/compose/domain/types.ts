@@ -56,7 +56,7 @@ export type CellType = "single" | "tunnel";
  * Media display type for a cell
  * Controls how the sequence content is rendered
  */
-export type MediaDisplayType = "animation" | "video" | "beatGrid" | "image";
+export type MediaDisplayType = "animation" | "video" | "stepGrid" | "image";
 
 /**
  * Individual cell configuration
@@ -174,7 +174,7 @@ export interface CompositionBuilderState {
   shouldLoop: boolean;
 
   /** Current beat position (for synchronized cells) */
-  currentBeat: number;
+  currentStep: number;
 
   // UI state
   /** Currently selected cell for configuration (null = none) */

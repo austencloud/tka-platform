@@ -5,7 +5,7 @@
  * Single responsibility: Motion interpolation between keyframes.
  */
 
-import type { BeatData } from "../../../create/shared/domain/models/BeatData";
+import type { StepData } from "../../../create/shared/domain/models/StepData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionEndpoints } from "$lib/shared/pictograph/shared/domain/models/MotionEndpoints";
@@ -26,16 +26,16 @@ export class PropInterpolator implements IPropInterpolator {
    * Uses angular interpolation for all other motions
    */
   interpolatePropAngles(
-    currentBeatData: BeatData,
-    beatProgress: number
+    currentStepData: StepData,
+    stepProgress: number
   ): InterpolationResult {
     // Get motion data directly from domain beat (PURE DOMAIN!)
-    const blueMotion = currentBeatData.motions?.blue;
-    const redMotion = currentBeatData.motions?.red;
+    const blueMotion = currentStepData.motions?.blue;
+    const redMotion = currentStepData.motions?.red;
 
     if (!blueMotion || !redMotion) {
       console.warn("PropInterpolator: Missing motion data", {
-        beatNumber: currentBeatData?.beatNumber,
+        stepNumber: currentStepData?.stepNumber,
         hasBlue: !!blueMotion,
         hasRed: !!redMotion,
       });
@@ -58,36 +58,36 @@ export class PropInterpolator implements IPropInterpolator {
 
     // Interpolate blue prop
     const blueAngles = blueDash
-      ? this.interpolateDashMotion(blueEndpoints, beatProgress)
+      ? this.interpolateDashMotion(blueEndpoints, stepProgress)
       : {
           // Grid location: ALWAYS shortest path (W → N always goes W → NW → N)
           centerPathAngle: this.angleCalculator.lerpAngle(
             blueEndpoints.startCenterAngle,
             blueEndpoints.targetCenterAngle,
-            beatProgress
+            stepProgress
           ),
           // Staff rotation: Use total rotation delta to respect turns
           staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
             blueEndpoints.startStaffAngle +
-              blueEndpoints.staffRotationDelta * beatProgress
+              blueEndpoints.staffRotationDelta * stepProgress
           ),
           // Don't set x,y for non-dash motions - let CanvasRenderer calculate from angle
         };
 
     // Interpolate red prop
     const redAngles = redDash
-      ? this.interpolateDashMotion(redEndpoints, beatProgress)
+      ? this.interpolateDashMotion(redEndpoints, stepProgress)
       : {
           // Grid location: ALWAYS shortest path
           centerPathAngle: this.angleCalculator.lerpAngle(
             redEndpoints.startCenterAngle,
             redEndpoints.targetCenterAngle,
-            beatProgress
+            stepProgress
           ),
           // Staff rotation: Use total rotation delta to respect turns
           staffRotationAngle: this.angleCalculator.normalizeAnglePositive(
             redEndpoints.startStaffAngle +
-              redEndpoints.staffRotationDelta * beatProgress
+              redEndpoints.staffRotationDelta * stepProgress
           ),
           // Don't set x,y for non-dash motions - let CanvasRenderer calculate from angle
         };
@@ -139,14 +139,14 @@ export class PropInterpolator implements IPropInterpolator {
   /**
    * Calculate initial prop angles from first beat
    */
-  calculateInitialAngles(firstBeat: BeatData): InterpolationResult {
+  calculateInitialAngles(firstStep: StepData): InterpolationResult {
     // Get motion data directly from domain beat (PURE DOMAIN!)
-    const blueStartMotion = firstBeat.motions?.blue;
-    const redStartMotion = firstBeat.motions?.red;
+    const blueStartMotion = firstStep.motions?.blue;
+    const redStartMotion = firstStep.motions?.red;
 
     if (!blueStartMotion || !redStartMotion) {
       console.warn("PropInterpolator: Missing motion data on first beat", {
-        beatNumber: firstBeat?.beatNumber,
+        stepNumber: firstStep?.stepNumber,
         hasBlue: !!blueStartMotion,
         hasRed: !!redStartMotion,
       });
@@ -178,9 +178,9 @@ export class PropInterpolator implements IPropInterpolator {
   /**
    * Get motion data for debugging
    */
-  getMotionData(beatData: BeatData): { blue: MotionData; red: MotionData } {
-    const blueMotion = beatData.motions.blue;
-    const redMotion = beatData.motions.red;
+  getMotionData(stepData: StepData): { blue: MotionData; red: MotionData } {
+    const blueMotion = stepData.motions.blue;
+    const redMotion = stepData.motions.red;
 
     if (!blueMotion) {
       throw new Error("Blue motion data is missing for current beat.");
@@ -199,11 +199,11 @@ export class PropInterpolator implements IPropInterpolator {
   /**
    * Calculate endpoints for debugging
    */
-  getEndpoints(beatData: BeatData): {
+  getEndpoints(stepData: StepData): {
     blue: MotionEndpoints;
     red: MotionEndpoints;
   } {
-    const motionData = this.getMotionData(beatData);
+    const motionData = this.getMotionData(stepData);
     return {
       blue: this.endpointCalculator.calculateMotionEndpoints(motionData.blue),
       red: this.endpointCalculator.calculateMotionEndpoints(motionData.red),

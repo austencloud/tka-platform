@@ -382,13 +382,13 @@ export class TimelinePlayer implements ITimelinePlayer {
         const sourceProgress = clip.inPoint + progress * sourceRange;
 
         // Calculate current beat
-        const beatCount = clip.sequence.beats.length;
-        const currentBeat = Math.floor(sourceProgress * beatCount);
+        const stepCount = clip.sequence.steps.length;
+        const currentStep = Math.floor(sourceProgress * stepCount);
 
         activeClipInfos.push({
           clip,
           progress: sourceProgress,
-          currentBeat,
+          currentStep,
           isLooping,
         });
       }

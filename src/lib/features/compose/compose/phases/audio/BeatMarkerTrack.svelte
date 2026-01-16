@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import type { BeatMarker } from "../../state/composition-state.svelte";
-  import { generateBeatTimestamps } from "./bpm-analyzer";
+  import { generateStepTimestamps } from "./bpm-analyzer";
 
   let {
     duration,
@@ -25,17 +25,17 @@
   } = $props();
 
   // Toggle to show all beats vs just downbeats
-  let showAllBeats = $state(false);
+  let showAllSteps = $state(false);
 
   // Generate beat positions based on BPM
-  const generatedBeats = $derived(
-    bpm && duration > 0 ? generateBeatTimestamps(bpm, duration) : []
+  const generatedSteps = $derived(
+    bpm && duration > 0 ? generateStepTimestamps(bpm, duration) : []
   );
 
   // Filter to only downbeats (every 4th beat) unless showing all
-  const visibleBeats = $derived(() => {
-    if (showAllBeats) return generatedBeats;
-    return generatedBeats.filter((_, index) => index % 4 === 0);
+  const visibleSteps = $derived(() => {
+    if (showAllSteps) return generatedSteps;
+    return generatedSteps.filter((_, index) => index % 4 === 0);
   });
 
   // Get position percentage for a timestamp
@@ -47,7 +47,7 @@
   const currentMeasure = $derived(() => {
     if (!bpm || duration <= 0) return -1;
     const beatInterval = 60 / bpm;
-    return Math.floor(currentTime / beatInterval / 4);
+    return Math.floor(currentTime / stepInterval / 4);
   });
 
   // Add a custom marker at current playhead position
@@ -56,7 +56,7 @@
 
     const newMarker: BeatMarker = {
       id: `marker-${Date.now()}`,
-      beat: Math.floor((currentTime / duration) * (generatedBeats.length || 1)),
+      beat: Math.floor((currentTime / duration) * (generatedSteps.length || 1)),
       time: currentTime,
     };
 
@@ -78,10 +78,10 @@
       <label class="toggle-label">
         <input
           type="checkbox"
-          bind:checked={showAllBeats}
+          bind:checked={showAllSteps}
           aria-label="Show all beats instead of just downbeats"
         />
-        <span>Show all beats</span>
+        <span>Show all steps</span>
       </label>
       <button
         class="add-marker-btn"
@@ -97,22 +97,22 @@
 
   <!-- Beat visualization track -->
   <div class="track-body">
-    {#if generatedBeats.length > 0}
-      <div class="beats-container">
-        {#each visibleBeats() as beatTime, index}
-          {@const position = getPositionPercent(beatTime)}
-          {@const measureNum = showAllBeats
+    {#if generatedSteps.length > 0}
+      <div class="steps-container">
+        {#each visibleSteps() as stepTime, index}
+          {@const position = getPositionPercent(stepTime)}
+          {@const measureNum = showAllSteps
             ? Math.floor(index / 4) + 1
             : index + 1}
           {@const isCurrentMeasure =
-            currentMeasure() === (showAllBeats ? Math.floor(index / 4) : index)}
+            currentMeasure() === (showAllSteps ? Math.floor(index / 4) : index)}
           {@const isDownbeat = !showAllBeats || index % 4 === 0}
           <div
             class="beat-marker"
             class:current={isCurrentMeasure && isDownbeat}
             class:downbeat={isDownbeat}
             style="left: {position}%"
-            title="Measure {measureNum} at {beatTime.toFixed(1)}s"
+            title="Measure {measureNum} at {stepTime.toFixed(1)}s"
           >
             {#if isDownbeat}
               <span class="measure-number">{measureNum}</span>
@@ -121,7 +121,7 @@
         {/each}
       </div>
     {:else}
-      <div class="no-beats">
+      <div class="no-steps">
         <i class="fas fa-music" aria-hidden="true"></i>
         <span>Set BPM to see beat markers</span>
       </div>
@@ -261,7 +261,7 @@
     background: rgba(0, 0, 0, 0.2);
   }
 
-  .beats-container {
+  .steps-container {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -297,7 +297,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
-  .no-beats {
+  .no-steps {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -307,7 +307,7 @@
     font-size: var(--font-size-min);
   }
 
-  .no-beats i {
+  .no-steps i {
     font-size: 1rem;
     opacity: 0.6;
   }

@@ -56,7 +56,7 @@ export function createCompositionState() {
   let isPreviewing = $state(loadFromStorage(STORAGE_KEYS.PREVIEW_MODE, false));
   let bpm = $state<number>(loadFromStorage(STORAGE_KEYS.PLAYBACK_BPM, 60));
   let shouldLoop = $state(true);
-  let currentBeat = $state(0);
+  let currentStep = $state(0);
 
   // Animation frame loop for synchronized playback
   let animationFrameId: number | null = null;
@@ -106,12 +106,12 @@ export function createCompositionState() {
   );
 
   // Max beat count across all configured cells (for loop/stop logic)
-  const maxBeatCount = $derived.by(() => {
+  const maxStepCount = $derived.by(() => {
     let max = 0;
     for (const cell of composition.cells) {
       for (const seq of cell.sequences) {
-        const beatCount = seq.beats?.length ?? 0;
-        if (beatCount > max) max = beatCount;
+        const stepCount = seq.steps?.length ?? 0;
+        if (stepCount > max) max = stepCount;
       }
     }
     return max;
@@ -147,25 +147,25 @@ export function createCompositionState() {
     const beatDelta = (deltaMs / 1000) * beatsPerSecond;
 
     // Advance current beat
-    let newBeat = currentBeat + beatDelta;
+    let newStep = currentStep + beatDelta;
 
     // Handle end of sequence
-    // currentBeat goes from 0 to maxBeatCount+1 (0=start position, 1-N=beats, N+1=done)
-    const endBeat = maxBeatCount + 1;
-    if (newBeat >= endBeat) {
+    // currentStep goes from 0 to maxStepCount+1 (0=start position, 1-N=steps, N+1=done)
+    const endStep = maxStepCount + 1;
+    if (newStep >= endStep) {
       if (shouldLoop) {
         // Loop back to start position
-        newBeat = 0;
+        newStep = 0;
       } else {
         // Stop at end
-        newBeat = endBeat;
+        newStep = endStep;
         isPlaying = false;
         stopPlaybackLoop();
         return;
       }
     }
 
-    currentBeat = newBeat;
+    currentStep = newStep;
 
     // Continue the loop
     animationFrameId = requestAnimationFrame(advanceBeat);
@@ -245,7 +245,7 @@ export function createCompositionState() {
   function stop() {
     isPlaying = false;
     stopPlaybackLoop();
-    currentBeat = 0;
+    currentStep = 0;
   }
 
   function togglePlayPause() {
@@ -267,8 +267,8 @@ export function createCompositionState() {
     shouldLoop = loop;
   }
 
-  function setBeat(beat: number) {
-    currentBeat = beat;
+  function setStep(beat: number) {
+    currentStep = beat;
   }
 
   // =========================================================================
@@ -312,7 +312,7 @@ export function createCompositionState() {
     stopPlaybackLoop();
     composition = createDefaultComposition();
     isPlaying = false;
-    currentBeat = 0;
+    currentStep = 0;
     currentPhase = "canvas";
     audioManager.reset();
     tempoManager.clear();
@@ -323,7 +323,7 @@ export function createCompositionState() {
   function loadComposition(comp: Composition) {
     composition = comp;
     isPlaying = false;
-    currentBeat = 0;
+    currentStep = 0;
     uiManager.reset();
   }
 
@@ -362,8 +362,8 @@ export function createCompositionState() {
     get shouldLoop() {
       return shouldLoop;
     },
-    get currentBeat() {
-      return currentBeat;
+    get currentStep() {
+      return currentStep;
     },
     get currentPhase() {
       return currentPhase;
@@ -413,8 +413,8 @@ export function createCompositionState() {
     get hasAudio() {
       return audioManager.hasAudio;
     },
-    get maxBeatCount() {
-      return maxBeatCount;
+    get maxStepCount() {
+      return maxStepCount;
     },
 
     // Layout mutations
@@ -426,7 +426,7 @@ export function createCompositionState() {
       cellOps.setType(cellId, type),
     setCellMediaType: (
       cellId: string,
-      mediaType: "animation" | "video" | "beatGrid" | "image"
+      mediaType: "animation" | "video" | "stepGrid" | "image"
     ) => cellOps.setMediaType(cellId, mediaType),
     setCellSequences: (cellId: string, sequences: SequenceData[]) =>
       cellOps.setSequences(cellId, sequences),
@@ -448,7 +448,7 @@ export function createCompositionState() {
     togglePreview,
     setBpm,
     setLoop,
-    setBeat,
+    setStep,
 
     // UI mutations (delegated)
     selectCell: uiManager.selectCell,

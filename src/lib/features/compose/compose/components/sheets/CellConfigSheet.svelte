@@ -166,8 +166,8 @@
               <div class="sequence-item">
                 <div class="sequence-info">
                   <span class="sequence-name">{sequence.name}</span>
-                  <span class="sequence-beats"
-                    >{sequence.beats?.length ?? 0} beats</span
+                  <span class="sequence-steps"
+                    >{sequence.steps?.length ?? 0} steps</span
                   >
                 </div>
                 <button
@@ -450,7 +450,7 @@
     font-size: clamp(0.85rem, 2.8cqi, 1rem);
   }
 
-  .sequence-beats {
+  .sequence-steps {
     font-size: clamp(0.7rem, 2.2cqi, 0.8rem);
     color: var(--theme-text-dim);
   }

@@ -92,7 +92,7 @@
 
   // Check if sequence has specific media types
   function hasAnimation(seq: SequenceData | null): boolean {
-    return !!seq && !!seq.beats && seq.beats.length > 0;
+    return !!seq && !!seq.steps && seq.steps.length > 0;
   }
 
   function hasImage(seq: SequenceData | null): boolean {
@@ -243,7 +243,7 @@
             <h3>
               {selectedSequence.word || selectedSequence.name || "Unnamed"}
             </h3>
-            <p>{selectedSequence.beats?.length || 0} beats</p>
+            <p>{selectedSequence.steps?.length || 0} steps</p>
             {#if selectedSequence.author}
               <p class="author">by {selectedSequence.author}</p>
             {/if}
@@ -278,7 +278,7 @@
               <span class="option-label">Animation</span>
               <span class="option-desc">
                 {#if hasAnimation(selectedSequence)}
-                  Animated pictographs from sequence beats
+                  Animated pictographs from sequence steps
                 {:else}
                   No animation data available
                 {/if}

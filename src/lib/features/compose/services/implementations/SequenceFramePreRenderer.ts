@@ -43,8 +43,8 @@ export interface PreRenderedSequence {
   frames: PreRenderedFrame[];
   /** Total duration in ms */
   totalDurationMs: number;
-  /** Total beats */
-  totalBeats: number;
+  /** Total steps */
+  totalSteps: number;
   /** Frames per second */
   fps: number;
   /** Canvas size used for rendering */
@@ -247,9 +247,9 @@ export class SequenceFramePreRenderer {
       }
 
       const metadata = this.orchestrator.getMetadata();
-      const totalBeats = metadata.totalBeats;
-      const beatDurationMs = 1000; // Assuming 1 second per beat (adjust as needed)
-      const totalDurationMs = totalBeats * beatDurationMs;
+      const totalSteps = metadata.totalSteps;
+      const stepDurationMs = 1000; // Assuming 1 second per beat (adjust as needed)
+      const totalDurationMs = totalSteps * stepDurationMs;
       const frameTimeMs = 1000 / fullConfig.fps;
       const totalFrames = Math.ceil(totalDurationMs / frameTimeMs);
 
@@ -272,8 +272,8 @@ export class SequenceFramePreRenderer {
         await this.renderFramesNonBlocking(
           frames,
           totalFrames,
-          totalBeats,
-          beatDurationMs,
+          totalSteps,
+          stepDurationMs,
           frameTimeMs,
           offscreenCanvas,
           ctx,
@@ -286,8 +286,8 @@ export class SequenceFramePreRenderer {
         await this.renderFramesBlocking(
           frames,
           totalFrames,
-          totalBeats,
-          beatDurationMs,
+          totalSteps,
+          stepDurationMs,
           frameTimeMs,
           offscreenCanvas,
           ctx,
@@ -301,7 +301,7 @@ export class SequenceFramePreRenderer {
         sequenceId: sequenceData.id,
         frames,
         totalDurationMs,
-        totalBeats,
+        totalSteps,
         fps: fullConfig.fps,
         canvasSize: fullConfig.canvasSize,
         isComplete: true,
@@ -319,8 +319,8 @@ export class SequenceFramePreRenderer {
   private async renderFramesNonBlocking(
     frames: PreRenderedFrame[],
     totalFrames: number,
-    totalBeats: number,
-    beatDurationMs: number,
+    totalSteps: number,
+    stepDurationMs: number,
     frameTimeMs: number,
     offscreenCanvas: OffscreenCanvas,
     ctx: OffscreenCanvasRenderingContext2D,
@@ -341,8 +341,8 @@ export class SequenceFramePreRenderer {
         await this.renderSingleFrame(
           frame,
           frames,
-          totalBeats,
-          beatDurationMs,
+          totalSteps,
+          stepDurationMs,
           frameTimeMs,
           offscreenCanvas,
           ctx,
@@ -382,8 +382,8 @@ export class SequenceFramePreRenderer {
   private async renderFramesBlocking(
     frames: PreRenderedFrame[],
     totalFrames: number,
-    totalBeats: number,
-    beatDurationMs: number,
+    totalSteps: number,
+    stepDurationMs: number,
     frameTimeMs: number,
     offscreenCanvas: OffscreenCanvas,
     ctx: OffscreenCanvasRenderingContext2D,
@@ -399,8 +399,8 @@ export class SequenceFramePreRenderer {
       await this.renderSingleFrame(
         frame,
         frames,
-        totalBeats,
-        beatDurationMs,
+        totalSteps,
+        stepDurationMs,
         frameTimeMs,
         offscreenCanvas,
         ctx,
@@ -430,15 +430,15 @@ export class SequenceFramePreRenderer {
   private async renderSingleFrame(
     frameNumber: number,
     frames: PreRenderedFrame[],
-    totalBeats: number,
-    beatDurationMs: number,
+    totalSteps: number,
+    stepDurationMs: number,
     frameTimeMs: number,
     offscreenCanvas: OffscreenCanvas,
     ctx: OffscreenCanvasRenderingContext2D,
     config: PreRenderConfig
   ): Promise<void> {
     const timestamp = frameNumber * frameTimeMs;
-    const beat = (timestamp / beatDurationMs) % totalBeats;
+    const beat = (timestamp / stepDurationMs) % totalSteps;
 
     // Create offscreen renderer on first frame
     if (!this.offscreenRenderer) {
@@ -584,9 +584,9 @@ export class SequenceFramePreRenderer {
       return null;
     }
 
-    const beatDurationMs =
-      this.currentRender.totalDurationMs / this.currentRender.totalBeats;
-    const timestamp = beat * beatDurationMs;
+    const stepDurationMs =
+      this.currentRender.totalDurationMs / this.currentRender.totalSteps;
+    const timestamp = beat * stepDurationMs;
 
     return this.getFrameAtTimestamp(timestamp);
   }

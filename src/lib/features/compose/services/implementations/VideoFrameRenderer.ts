@@ -106,7 +106,7 @@ export class VideoFrameRenderer {
       sequence,
       {
         canvasSize: this.config.canvasSize,
-        samplesPerBeat: 120, // High resolution for smooth trails
+        samplesPerStep: 120, // High resolution for smooth trails
         bluePropDimensions: this.config.bluePropDimensions,
         redPropDimensions: this.config.redPropDimensions,
       }
@@ -170,8 +170,8 @@ export class VideoFrameRenderer {
     sequence: SequenceData,
     onProgress?: (progress: RenderProgress) => void
   ): Promise<ImageData[]> {
-    const totalBeats = sequence.beats.length ?? 0;
-    if (totalBeats === 0) {
+    const totalSteps = sequence.steps.length ?? 0;
+    if (totalSteps === 0) {
       return [];
     }
 
@@ -187,7 +187,7 @@ export class VideoFrameRenderer {
 
     // Calculate total frames
     const { fps } = this.config;
-    const durationSeconds = totalBeats; // 1 beat = 1 second at speed 1
+    const durationSeconds = totalSteps; // 1 beat = 1 second at speed 1
     const totalFrames = Math.ceil(durationSeconds * fps);
     const frames: ImageData[] = [];
 

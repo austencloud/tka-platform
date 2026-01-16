@@ -66,12 +66,12 @@ export interface ITrailCapturer {
   /**
    * Capture trail points for current frame
    * @param props - Current prop states
-   * @param currentBeat - Current beat number (for loop detection and cache queries)
+   * @param currentStep - Current beat number (for loop detection and cache queries)
    * @param currentTime - Current timestamp from performance.now()
    */
   captureFrame(
     props: TrailCapturePropStates,
-    currentBeat: number | undefined,
+    currentStep: number | undefined,
     currentTime: number
   ): void;
 
@@ -132,8 +132,8 @@ export interface IAnimationCacheService {
   getCachedPoints(
     propIndex: 0 | 1,
     endType: 0 | 1,
-    startBeat: number,
-    endBeat: number,
+    startStep: number,
+    endStep: number,
     canvasSize: number
   ): TrailPoint[];
   isValid(): boolean;

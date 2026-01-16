@@ -24,7 +24,7 @@
 
   const hasVideo = $derived(!!sequence?.performanceVideoUrl);
   const displayName = $derived(sequence.word || sequence.name || "Unnamed");
-  const beatCount = $derived(sequence.beats?.length);
+  const stepCount = $derived(sequence.steps?.length);
 </script>
 
 <button
@@ -56,8 +56,8 @@
     {/if}
   </div>
   <span class="item-name">{displayName}</span>
-  {#if beatCount}
-    <span class="item-meta">{beatCount} beats</span>
+  {#if stepCount}
+    <span class="item-meta">{stepCount} steps</span>
   {/if}
 </button>
 

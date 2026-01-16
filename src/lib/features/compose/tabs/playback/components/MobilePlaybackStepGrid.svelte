@@ -1,8 +1,8 @@
 <!--
-  MobilePlaybackBeatGrid.svelte
+  MobilePlaybackStepGrid.svelte
 
   Lightweight beat grid for mobile playback panel.
-  Shows sequence beats with playback sync highlighting (golden glow on current beat).
+  Shows sequence steps with playback sync highlighting (golden glow on current beat).
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -11,24 +11,24 @@
 
   let {
     sequence = null,
-    currentBeat = 0,
+    currentStep = 0,
     isPlaying = false,
   }: {
     sequence: SequenceData | null;
-    currentBeat: number;
+    currentStep: number;
     isPlaying: boolean;
   } = $props();
 
-  // Get beats from sequence (excluding metadata beat at index 0)
-  const beats = $derived(() => {
-    if (!sequence?.beats) return [];
+  // Get steps from sequence (excluding metadata beat at index 0)
+  const steps = $derived(() => {
+    if (!sequence?.steps) return [];
     // Skip first beat (metadata) if present
-    return sequence.beats.slice(1);
+    return sequence.steps.slice(1);
   });
 
   // Calculate grid columns based on beat count
   const gridColumns = $derived(() => {
-    const count = beats().length;
+    const count = steps().length;
     if (count <= 4) return count || 1;
     if (count <= 8) return 4;
     if (count <= 12) return 4;
@@ -37,25 +37,25 @@
 </script>
 
 <div class="mobile-beat-grid">
-  {#if beats().length === 0}
+  {#if steps().length === 0}
     <div class="empty-state">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
       <span>{t("empty_no_sequence_loaded")}</span>
     </div>
   {:else}
     <div class="beat-grid" style:--grid-cols={gridColumns()}>
-      {#each beats() as beat, index}
-        {@const beatNumber = index + 1}
-        {@const isCurrentBeat = isPlaying && currentBeat === beatNumber}
+      {#each steps() as beat, index}
+        {@const stepNumber = index + 1}
+        {@const isCurrentBeat = isPlaying && currentStep === stepNumber}
         <div
           class="beat-cell"
           class:current={isCurrentBeat}
-          class:played={isPlaying && currentBeat > beatNumber}
+          class:played={isPlaying && currentStep > stepNumber}
         >
           <div class="beat-content">
             <TKAGlyph pictographData={beat} letter={beat?.letter} />
           </div>
-          <span class="beat-number">{beatNumber}</span>
+          <span class="beat-number">{stepNumber}</span>
         </div>
       {/each}
     </div>

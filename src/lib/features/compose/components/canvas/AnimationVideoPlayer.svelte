@@ -34,7 +34,7 @@
     autoGenerateVideo = false,
     onVideoReady = () => {},
     onModeChange = () => {},
-    onBeatChange = () => {},
+    onStepChange = () => {},
   }: {
     sequenceData?: SequenceData | null;
     isPlaying?: boolean;
@@ -42,7 +42,7 @@
     autoGenerateVideo?: boolean;
     onVideoReady?: (result: VideoRenderResult) => void;
     onModeChange?: (mode: "live" | "video") => void;
-    onBeatChange?: (beat: number) => void;
+    onStepChange?: (beat: number) => void;
   } = $props();
 
   // State
@@ -107,7 +107,7 @@
     if (playbackMode === "video" && videoElement) {
       if (isPlaying) {
         playbackService.play();
-        playbackService.startBeatTracking(onBeatChange);
+        playbackService.startBeatTracking(onStepChange);
       } else {
         playbackService.pause();
         playbackService.stopBeatTracking();

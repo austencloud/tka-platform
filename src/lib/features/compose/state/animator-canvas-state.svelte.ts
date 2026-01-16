@@ -67,7 +67,7 @@ export type AnimatorCanvasState = {
 
   // Visibility state (synced from AnimationVisibilityStateManager)
   readonly gridVisible: boolean;
-  readonly beatNumbersVisible: boolean;
+  readonly stepNumbersVisible: boolean;
   readonly propsVisible: boolean;
   readonly trailsVisible: boolean;
   readonly tkaGlyphVisible: boolean; // TKA Glyph includes turn numbers
@@ -113,7 +113,7 @@ export type AnimatorCanvasState = {
 
 export type AnimationVisibilitySettings = {
   grid: boolean;
-  beatNumbers: boolean;
+  stepNumbers: boolean;
   props: boolean;
   trails: boolean;
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
@@ -169,8 +169,8 @@ export function createAnimatorCanvasState(
 
   // Visibility state (initialized from manager if provided, otherwise defaults)
   let gridVisible = $state(visibilityManager?.isGridVisible() ?? true);
-  let beatNumbersVisible = $state(
-    visibilityManager?.getVisibility("beatNumbers") ?? true
+  let stepNumbersVisible = $state(
+    visibilityManager?.getVisibility("stepNumbers") ?? true
   );
   let propsVisible = $state(visibilityManager?.getVisibility("props") ?? true);
   let trailsVisible = $state(visibilityManager?.isTrailsVisible() ?? true);
@@ -249,8 +249,8 @@ export function createAnimatorCanvasState(
     get gridVisible() {
       return gridVisible;
     },
-    get beatNumbersVisible() {
-      return beatNumbersVisible;
+    get stepNumbersVisible() {
+      return stepNumbersVisible;
     },
     get propsVisible() {
       return propsVisible;
@@ -369,8 +369,8 @@ export function createAnimatorCanvasState(
 
     updateVisibility(key: string, visible: boolean | string) {
       // Handle boolean visibility settings
-      if (key === "beatNumbers" && typeof visible === "boolean")
-        beatNumbersVisible = visible;
+      if (key === "stepNumbers" && typeof visible === "boolean")
+        stepNumbersVisible = visible;
       if (key === "props" && typeof visible === "boolean")
         propsVisible = visible;
       if (key === "tkaGlyph" && typeof visible === "boolean")
@@ -390,7 +390,7 @@ export function createAnimatorCanvasState(
 
     syncVisibilityFromManager(manager: AnimationVisibilityStateManager) {
       gridVisible = manager.isGridVisible();
-      beatNumbersVisible = manager.getVisibility("beatNumbers");
+      stepNumbersVisible = manager.getVisibility("stepNumbers");
       propsVisible = manager.getVisibility("props");
       trailsVisible = manager.isTrailsVisible();
       tkaGlyphVisible = manager.getVisibility("tkaGlyph");
@@ -423,7 +423,7 @@ export function createAnimatorCanvasState(
       pixiLoading = false;
       pixiError = null;
       gridVisible = true;
-      beatNumbersVisible = true;
+      stepNumbersVisible = true;
       propsVisible = true;
       trailsVisible = true;
       tkaGlyphVisible = true;

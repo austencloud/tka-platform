@@ -85,8 +85,8 @@
   });
 
   // Calculate beat position within the active clip (fractional for smooth animation)
-  // A 4-beat sequence has range 0-5: [0-1) start position, [1-5) beats 1-4
-  const clipBeatPosition = $derived.by(() => {
+  // A 4-beat sequence has range 0-5: [0-1) start position, [1-5) steps 1-4
+  const clipStepPosition = $derived.by(() => {
     if (!activeClip) return 0;
 
     // Time elapsed within the clip
@@ -107,22 +107,22 @@
       sourceStartFraction + progressInClip * sourceDurationFraction;
 
     // Convert to beat number (fractional for interpolation)
-    // fullBeatRange = totalBeats + 1 to account for start position
-    // Start position occupies beat range [0-1), then motion beats follow
-    const totalBeats = activeClip.sequence.beats?.length || 1;
-    const fullBeatRange = totalBeats + 1; // +1 for start position
-    const beat = sourcePosition * fullBeatRange;
+    // fullStepRange = totalSteps + 1 to account for start position
+    // Start position occupies beat range [0-1), then motion steps follow
+    const totalSteps = activeClip.sequence.steps?.length || 1;
+    const fullStepRange = totalSteps + 1; // +1 for start position
+    const beat = sourcePosition * fullStepRange;
 
     // Handle looping
     if (activeClip.loop) {
-      return beat % fullBeatRange;
+      return beat % fullStepRange;
     }
 
-    return Math.min(beat, fullBeatRange - 0.001);
+    return Math.min(beat, fullStepRange - 0.001);
   });
 
   // Check if we're at start position (before beat 1)
-  const isAtStartPosition = $derived(clipBeatPosition < 1);
+  const isAtStartPosition = $derived(clipStepPosition < 1);
 
   // Derive start position using the StartPositionDeriver service
   // This handles sequences that don't have an explicit startPosition field
@@ -137,7 +137,7 @@
   });
 
   // Current letter derived from beat position
-  // Start position has its own letter (e.g., "α"), beats have their own
+  // Start position has its own letter (e.g., "α"), steps have their own
   const currentLetter = $derived.by(() => {
     if (!activeClip?.sequence) return null;
 
@@ -148,22 +148,22 @@
       return (derivedStartPosition as any).letter || null;
     }
 
-    // At motion beat - beat N uses beats[N-1]
-    if (seq.beats && seq.beats.length > 0) {
-      const beatNumber = Math.floor(clipBeatPosition); // 1, 2, 3, etc.
-      const arrayIndex = beatNumber - 1; // beats[0] = beat 1, beats[1] = beat 2, etc.
+    // At motion beat - beat N uses steps[N-1]
+    if (seq.steps && seq.steps.length > 0) {
+      const stepNumber = Math.floor(clipStepPosition); // 1, 2, 3, etc.
+      const arrayIndex = stepNumber - 1; // steps[0] = beat 1, steps[1] = beat 2, etc.
       const clampedIndex = Math.max(
         0,
-        Math.min(arrayIndex, seq.beats.length - 1)
+        Math.min(arrayIndex, seq.steps.length - 1)
       );
-      return seq.beats[clampedIndex]?.letter || null;
+      return seq.steps[clampedIndex]?.letter || null;
     }
 
     return null;
   });
 
-  // Current beat data - start position is separate from beats
-  const currentBeatData = $derived.by(() => {
+  // Current beat data - start position is separate from steps
+  const currentStepData = $derived.by(() => {
     if (!activeClip?.sequence) return null;
 
     const seq = activeClip.sequence;
@@ -173,15 +173,15 @@
       return derivedStartPosition as any;
     }
 
-    // At motion beat - beat N uses beats[N-1]
-    if (seq.beats && seq.beats.length > 0) {
-      const beatNumber = Math.floor(clipBeatPosition); // 1, 2, 3, etc.
-      const arrayIndex = beatNumber - 1; // beats[0] = beat 1, beats[1] = beat 2, etc.
+    // At motion beat - beat N uses steps[N-1]
+    if (seq.steps && seq.steps.length > 0) {
+      const stepNumber = Math.floor(clipStepPosition); // 1, 2, 3, etc.
+      const arrayIndex = stepNumber - 1; // steps[0] = beat 1, steps[1] = beat 2, etc.
       const clampedIndex = Math.max(
         0,
-        Math.min(arrayIndex, seq.beats.length - 1)
+        Math.min(arrayIndex, seq.steps.length - 1)
       );
-      return seq.beats[clampedIndex] || null;
+      return seq.steps[clampedIndex] || null;
     }
 
     return null;
@@ -235,7 +235,7 @@
   $effect(() => {
     if (!animationOrchestrator || !currentSequence || !activeClip) return;
 
-    const beat = clipBeatPosition;
+    const beat = clipStepPosition;
 
     untrack(() => {
       // Calculate interpolated state for this fractional beat position
@@ -325,8 +325,8 @@
           gridVisible={true}
           gridMode={currentSequence.gridMode ?? null}
           letter={currentLetter}
-          beatData={currentBeatData}
-          currentBeat={Math.floor(clipBeatPosition)}
+          stepData={currentStepData}
+          currentStep={Math.floor(clipStepPosition)}
           sequenceData={currentSequence}
           trailSettings={animationSettings.trail}
         />
@@ -337,7 +337,7 @@
         {#if isAtStartPosition}
           Start
         {:else}
-          Beat {Math.floor(clipBeatPosition)} / {activeClip.sequence.beats
+          Beat {Math.floor(clipStepPosition)} / {activeClip.sequence.steps
             ?.length || 1}
         {/if}
       </div>
