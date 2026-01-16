@@ -41,10 +41,15 @@ const MESSAGES_SUBCOLLECTION = "messages";
 // Typing indicator timeout (3 seconds of inactivity = not typing)
 const TYPING_TIMEOUT_MS = 3000;
 
+// Message constraints
+const MAX_MESSAGE_LENGTH = 2000;
+const MIN_MESSAGE_INTERVAL_MS = 500;
+
 export class Messenger implements IMessenger {
   private messageSubscriptions = new Map<string, () => void>();
   private typingSubscriptions = new Map<string, () => void>();
   private typingTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  private lastMessageTime = 0;
 
   /**
    * Get the current user ID or throw if not authenticated.
@@ -103,10 +108,22 @@ export class Messenger implements IMessenger {
    */
   async sendMessage(input: CreateMessageInput): Promise<Message> {
     try {
+      const { conversationId, content, attachments, replyTo } = input;
+
+      // Rate limiting - prevent spam
+      const now = Date.now();
+      if (now - this.lastMessageTime < MIN_MESSAGE_INTERVAL_MS) {
+        throw new Error("Please wait before sending another message");
+      }
+      this.lastMessageTime = now;
+
+      // Content validation
+      if (content.length > MAX_MESSAGE_LENGTH) {
+        throw new Error(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+      }
+
       const firestore = await getFirestoreInstance();
       const effectiveUser = this.getEffectiveUserInfo();
-
-      const { conversationId, content, attachments, replyTo } = input;
 
       // Validate conversation exists and user is a participant
       const conversationRef = doc(
@@ -151,8 +168,8 @@ export class Messenger implements IMessenger {
 
       const docRef = await addDoc(messagesRef, messageData);
 
-      // Update conversation with last message and increment unread count for other participant
-      const otherUserId = participants.find((p) => p !== effectiveUser.uid);
+      // Update conversation with last message and increment unread count for ALL other participants
+      const otherUserIds = participants.filter((p) => p !== effectiveUser.uid);
       const lastMessage: MessagePreview = {
         content: content.substring(0, 100),
         senderId: effectiveUser.uid,
@@ -163,15 +180,19 @@ export class Messenger implements IMessenger {
 
       const batch = writeBatch(firestore);
 
+      // Build update object with incremented unread counts for all other participants
+      const currentUnreadCounts =
+        (conversationData["unreadCount"] as Record<string, number>) || {};
+      const unreadUpdates: Record<string, number> = {};
+      for (const userId of otherUserIds) {
+        unreadUpdates[`unreadCount.${userId}`] =
+          (currentUnreadCounts[userId] || 0) + 1;
+      }
+
       batch.update(conversationRef, {
         lastMessage,
         updatedAt: serverTimestamp(),
-        ...(otherUserId && {
-          [`unreadCount.${otherUserId}`]:
-            ((conversationData["unreadCount"] as Record<string, number>)?.[
-              otherUserId
-            ] || 0) + 1,
-        }),
+        ...unreadUpdates,
       });
 
       await batch.commit();

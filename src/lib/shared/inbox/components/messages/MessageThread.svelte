@@ -4,10 +4,14 @@
    *
    * Full conversation message view with composer
    * Uses preview mode state for View As feature support
+   * Supports both direct (1:1) and group conversations
    */
 
   import { onMount } from "svelte";
-  import type { Conversation } from "$lib/shared/messaging/domain/models/conversation-models";
+  import type {
+    Conversation,
+    ConversationType,
+  } from "$lib/shared/messaging/domain/models/conversation-models";
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
@@ -27,6 +31,12 @@
   }
 
   let { conversation, messages, isLoading }: Props = $props();
+
+  // Determine conversation type (defaults to "direct" for backward compatibility)
+  const conversationType = $derived<ConversationType>(
+    conversation.type || "direct"
+  );
+  const isGroup = $derived(conversationType === "group");
 
   let messagesContainer: HTMLDivElement | undefined = $state();
 
@@ -132,7 +142,12 @@
     {#if isLoading}
       <MessageSkeleton count={6} />
     {:else if messages.length === 0}
-      <EmptyMessages recipientName={otherParticipant?.displayName} />
+      <EmptyMessages
+        recipientName={isGroup
+          ? conversation.groupMetadata?.name
+          : otherParticipant?.displayName}
+        {isGroup}
+      />
     {:else}
       <div class="messages">
         {#each messageGroups as group, groupIndex}
@@ -144,7 +159,11 @@
               isNew={groupIndex === messageGroups.length - 1 &&
                 messageIndex === group.messages.length - 1}
               {otherParticipantId}
-              showReadReceipt={message.id === lastReadOwnMessageId}
+              showReadReceipt={!isGroup && message.id === lastReadOwnMessageId}
+              {isGroup}
+              senderInfo={isGroup
+                ? conversation.participantInfo[message.senderId]
+                : undefined}
             />
           {/each}
         {/each}

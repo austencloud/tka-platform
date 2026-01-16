@@ -239,6 +239,7 @@
       onkeydown={handleKeydown}
       placeholder={isEditing ? "Edit your message..." : "Type a message..."}
       rows="1"
+      maxlength={2000}
       disabled={isSending}
       aria-label={isEditing ? "Edit message" : "Message input"}
     ></textarea>

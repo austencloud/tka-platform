@@ -18,6 +18,8 @@
   import ConversationList from "./messages/ConversationList.svelte";
   import MessageThread from "./messages/MessageThread.svelte";
   import NewMessageSheet from "./messages/NewMessageSheet.svelte";
+  import NewGroupSheet from "./messages/NewGroupSheet.svelte";
+  import GroupSettingsSheet from "./messages/GroupSettingsSheet.svelte";
   import NotificationList from "./notifications/NotificationList.svelte";
   import { conversationService } from "../../messaging/services/implementations/ConversationManager";
   import { messagingService } from "../../messaging/services/implementations/Messenger";
@@ -206,6 +208,36 @@
     inboxState.cancelCompose();
   }
 
+  function handleNewGroup() {
+    hapticService?.trigger("selection");
+    inboxState.startNewGroup();
+  }
+
+  function handleCancelNewGroup() {
+    hapticService?.trigger("selection");
+    inboxState.cancelNewGroup();
+  }
+
+  function handleGroupCreated(conversationId: string) {
+    hapticService?.trigger("success");
+    handleConversationSelect(conversationId);
+  }
+
+  function handleOpenGroupSettings() {
+    hapticService?.trigger("selection");
+    inboxState.openGroupSettings();
+  }
+
+  function handleCloseGroupSettings() {
+    hapticService?.trigger("selection");
+    inboxState.closeGroupSettings();
+  }
+
+  function handleGroupLeft() {
+    hapticService?.trigger("success");
+    inboxState.backToList();
+  }
+
   // Custom escape handler - navigate back within drawer before closing
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape" && inboxState.isOpen) {
@@ -216,21 +248,39 @@
         handleBack();
       } else if (inboxState.currentView === "compose") {
         inboxState.cancelCompose();
+      } else if (inboxState.currentView === "new-group") {
+        inboxState.cancelNewGroup();
+      } else if (inboxState.currentView === "group-settings") {
+        inboxState.closeGroupSettings();
       } else {
         handleClose();
       }
     }
   }
 
-  // Get other participant name for thread header
-  const threadParticipantName = $derived(() => {
+  // Get thread header title - group name or participant name
+  const threadTitle = $derived(() => {
     if (!inboxState.selectedConversation) return "Conversation";
+
+    // Group conversation - use group name
+    if (inboxState.selectedConversation.type === "group") {
+      return (
+        inboxState.selectedConversation.groupMetadata?.name || "Group Chat"
+      );
+    }
+
+    // Direct conversation - use other participant's name
     const participantInfo = inboxState.selectedConversation.participantInfo;
     const otherKey = Object.keys(participantInfo || {}).find(
       (k) => k !== currentUserId
     );
     return otherKey ? participantInfo[otherKey]?.displayName : "Conversation";
   });
+
+  // Check if current conversation is a group
+  const isGroupConversation = $derived(
+    inboxState.selectedConversation?.type === "group"
+  );
 
   // Navigation sections for bottom nav
   const sections = $derived(moduleSections());
@@ -299,7 +349,16 @@
         >
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
         </button>
-        <h2 id="inbox-title">{threadParticipantName()}</h2>
+        <h2 id="inbox-title">{threadTitle()}</h2>
+        {#if isGroupConversation}
+          <button
+            class="settings-button"
+            onclick={handleOpenGroupSettings}
+            aria-label="Group settings"
+          >
+            <i class="fas fa-cog" aria-hidden="true"></i>
+          </button>
+        {/if}
         <button
           class="close-button"
           onclick={handleClose}
@@ -317,6 +376,26 @@
         </button>
         <h2 id="inbox-title">New Message</h2>
         <div class="spacer"></div>
+      {:else if inboxState.currentView === "new-group"}
+        <button
+          class="back-button"
+          onclick={handleCancelNewGroup}
+          aria-label="Cancel new group"
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        </button>
+        <h2 id="inbox-title">New Group</h2>
+        <div class="spacer"></div>
+      {:else if inboxState.currentView === "group-settings"}
+        <!-- GroupSettingsSheet has its own header, just show close -->
+        <div class="spacer"></div>
+        <button
+          class="close-button"
+          onclick={handleClose}
+          aria-label="Close inbox"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
       {/if}
     </header>
 
@@ -338,6 +417,7 @@
             isLoading={inboxState.isLoadingConversations}
             onSelect={handleConversationSelect}
             onNewMessage={handleNewMessage}
+            onNewGroup={handleNewGroup}
           />
         {:else}
           <NotificationList
@@ -366,6 +446,19 @@
           onConversationCreated={handleConversationSelect}
           onCancel={handleCancelCompose}
         />
+      {:else if inboxState.currentView === "new-group"}
+        <NewGroupSheet
+          onGroupCreated={handleGroupCreated}
+          onCancel={handleCancelNewGroup}
+        />
+      {:else if inboxState.currentView === "group-settings"}
+        {#if inboxState.selectedConversation}
+          <GroupSettingsSheet
+            conversation={inboxState.selectedConversation}
+            onClose={handleCloseGroupSettings}
+            onGroupLeft={handleGroupLeft}
+          />
+        {/if}
       {/if}
     </section>
   </div>
@@ -399,7 +492,8 @@
   }
 
   .back-button,
-  .close-button {
+  .close-button,
+  .settings-button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -418,18 +512,21 @@
   }
 
   .back-button:hover,
-  .close-button:hover {
+  .close-button:hover,
+  .settings-button:hover {
     background: var(--theme-card-bg);
     color: var(--theme-text);
   }
 
   .back-button:active,
-  .close-button:active {
+  .close-button:active,
+  .settings-button:active {
     transform: scale(0.95);
   }
 
   .back-button:focus-visible,
-  .close-button:focus-visible {
+  .close-button:focus-visible,
+  .settings-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--theme-accent) 50%, transparent);
@@ -489,7 +586,8 @@
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .back-button,
-    .close-button {
+    .close-button,
+    .settings-button {
       transition: none !important;
     }
   }

@@ -99,22 +99,36 @@
       <!-- Messages list -->
       <div class="item-list">
         {#each conversations as conversation}
+          {@const isGroup = conversation.type === "group"}
+          {@const displayName = isGroup
+            ? conversation.groupName || "Group"
+            : conversation.otherParticipant?.displayName || "Unknown"}
+          {@const avatarSrc = isGroup
+            ? conversation.groupAvatar
+            : conversation.otherParticipant?.avatar}
           <button
             class="list-item"
             class:unread={conversation.unreadCount > 0}
             onclick={openDrawerToMessages}
           >
             <RobustAvatar
-              src={conversation.otherParticipant.avatar}
-              name={conversation.otherParticipant.displayName}
+              src={avatarSrc}
+              name={displayName}
               size="sm"
-              alt={conversation.otherParticipant.displayName}
+              alt={displayName}
             />
             <div class="item-content">
               <div class="item-header">
-                <span class="item-name"
-                  >{conversation.otherParticipant.displayName}</span
-                >
+                <span class="item-name">
+                  {#if isGroup}
+                    <i
+                      class="fas fa-users"
+                      style="font-size: 10px; margin-right: 4px;"
+                      aria-hidden="true"
+                    ></i>
+                  {/if}
+                  {displayName}
+                </span>
                 <span class="item-time"
                   >{formatTimeAgo(conversation.updatedAt)}</span
                 >

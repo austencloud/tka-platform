@@ -2,6 +2,7 @@
  * ConversationManager
  *
  * Manages conversations between users with real-time Firestore subscriptions.
+ * Supports both direct (1:1) and group conversations.
  */
 
 import type { Timestamp } from "firebase/firestore";
@@ -18,6 +19,8 @@ import {
   updateDoc,
   onSnapshot,
   serverTimestamp,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -29,25 +32,32 @@ import type {
   ConversationFetchOptions,
   GetOrCreateConversationResult,
   ParticipantInfo,
+  CreateGroupInput,
+  CreateGroupResult,
+  GroupMetadata,
+  ConversationType,
 } from "../../domain/models/conversation-models";
 import type { IConversationManager } from "../contracts/IConversationManager";
 
 const CONVERSATIONS_COLLECTION = "conversations";
+const MAX_GROUP_PARTICIPANTS = 50;
 
 export class ConversationManager implements IConversationManager {
   private conversationsUnsubscribe: (() => void) | null = null;
   private unreadCountUnsubscribe: (() => void) | null = null;
+
+  // ============================================================================
+  // PRIVATE HELPERS
+  // ============================================================================
 
   /**
    * Get the current user ID or throw if not authenticated.
    * Supports both preview mode (View As) and legacy impersonation.
    */
   private getCurrentUserId(): string {
-    // Check preview mode first (View As feature)
     if (userPreviewState.isActive && userPreviewState.data.profile) {
       return userPreviewState.data.profile.uid;
     }
-    // Fall back to authState (handles legacy impersonation too)
     const userId = authState.user?.uid;
     if (!userId) {
       console.error("[ConversationManager] No authenticated user found", {
@@ -60,15 +70,13 @@ export class ConversationManager implements IConversationManager {
   }
 
   /**
-   * Get effective user info (supports preview mode and legacy impersonation).
-   * Returns preview user info when in View As mode, otherwise actual user.
+   * Get effective user info (supports preview mode).
    */
   private getEffectiveUserInfo(): {
     uid: string;
     displayName: string;
     photoURL: string | null;
   } {
-    // Check preview mode first (View As feature)
     if (userPreviewState.isActive && userPreviewState.data.profile) {
       const profile = userPreviewState.data.profile;
       return {
@@ -77,7 +85,6 @@ export class ConversationManager implements IConversationManager {
         photoURL: profile.photoURL || null,
       };
     }
-    // Fall back to actual auth user
     const user = authState.user;
     if (!user) {
       throw new Error("User must be authenticated");
@@ -114,15 +121,45 @@ export class ConversationManager implements IConversationManager {
   }
 
   /**
-   * Generate a deterministic conversation ID from two user IDs
+   * Generate a deterministic conversation ID for 1:1 conversations
    */
-  private generateConversationId(userId1: string, userId2: string): string {
+  private generateDirectConversationId(
+    userId1: string,
+    userId2: string
+  ): string {
     const sorted = [userId1, userId2].sort();
     return `${sorted[0]}_${sorted[1]}`;
   }
 
   /**
-   * Get or create a conversation between current user and another user
+   * Generate a random ID for group conversations
+   */
+  private generateGroupId(): string {
+    return crypto.randomUUID();
+  }
+
+  /**
+   * Check if a user is an admin in a group conversation
+   */
+  private isGroupAdmin(conversation: Conversation, userId: string): boolean {
+    return conversation.groupMetadata?.adminIds.includes(userId) ?? false;
+  }
+
+  /**
+   * Get the conversation type, defaulting to "direct" for backward compatibility
+   */
+  private getConversationType(
+    data: Record<string, unknown>
+  ): ConversationType {
+    return (data["type"] as ConversationType) || "direct";
+  }
+
+  // ============================================================================
+  // DIRECT CONVERSATIONS (1:1)
+  // ============================================================================
+
+  /**
+   * Get or create a direct conversation between current user and another user
    */
   async getOrCreateConversation(
     otherUserId: string
@@ -130,7 +167,7 @@ export class ConversationManager implements IConversationManager {
     try {
       const firestore = await getFirestoreInstance();
       const currentUserId = this.getCurrentUserId();
-      const conversationId = this.generateConversationId(
+      const conversationId = this.generateDirectConversationId(
         currentUserId,
         otherUserId
       );
@@ -152,7 +189,7 @@ export class ConversationManager implements IConversationManager {
         };
       }
 
-      // Create new conversation
+      // Create new direct conversation
       const effectiveUser = this.getEffectiveUserInfo();
       const otherUserInfo = await this.fetchUserInfo(otherUserId);
       const now = new Date();
@@ -174,6 +211,7 @@ export class ConversationManager implements IConversationManager {
       };
 
       const newConversation: Omit<Conversation, "id"> = {
+        type: "direct",
         participants,
         participantInfo,
         unreadCount: { [currentUserId]: 0, [otherUserId]: 0 },
@@ -200,6 +238,426 @@ export class ConversationManager implements IConversationManager {
       throw error;
     }
   }
+
+  /**
+   * Check if a direct conversation exists between current user and another user
+   */
+  async conversationExists(otherUserId: string): Promise<string | null> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+      const conversationId = this.generateDirectConversationId(
+        currentUserId,
+        otherUserId
+      );
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+      const snapshot = await getDoc(conversationRef);
+      return snapshot.exists() ? conversationId : null;
+    } catch (error) {
+      console.error(
+        "[ConversationManager] Failed to check conversation exists:",
+        error
+      );
+      return null;
+    }
+  }
+
+  // ============================================================================
+  // GROUP CONVERSATIONS
+  // ============================================================================
+
+  /**
+   * Create a new group conversation
+   */
+  async createGroup(input: CreateGroupInput): Promise<CreateGroupResult> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+      const effectiveUser = this.getEffectiveUserInfo();
+      const conversationId = this.generateGroupId();
+      const now = new Date();
+
+      // Validate participant count
+      const allParticipantIds = [
+        currentUserId,
+        ...input.participantIds.filter((id) => id !== currentUserId),
+      ];
+      if (allParticipantIds.length > MAX_GROUP_PARTICIPANTS) {
+        throw new Error(`Groups cannot exceed ${MAX_GROUP_PARTICIPANTS} members`);
+      }
+      if (allParticipantIds.length < 2) {
+        throw new Error("Groups require at least 2 participants");
+      }
+
+      // Fetch participant info for all users
+      const participantInfo: Record<string, ParticipantInfo> = {
+        [currentUserId]: {
+          userId: currentUserId,
+          displayName: effectiveUser.displayName,
+          ...(effectiveUser.photoURL && { avatar: effectiveUser.photoURL }),
+          joinedAt: now,
+        },
+      };
+
+      const failedInvites: string[] = [];
+      for (const userId of input.participantIds) {
+        if (userId === currentUserId) continue;
+        try {
+          const userInfo = await this.fetchUserInfo(userId);
+          if (userInfo.displayName === "Unknown User") {
+            failedInvites.push(userId);
+            continue;
+          }
+          participantInfo[userId] = {
+            userId,
+            displayName: userInfo.displayName,
+            ...(userInfo.photoURL && { avatar: userInfo.photoURL }),
+            joinedAt: now,
+          };
+        } catch {
+          failedInvites.push(userId);
+        }
+      }
+
+      // Filter out failed invites from participants
+      const validParticipants = allParticipantIds.filter(
+        (id) => !failedInvites.includes(id)
+      );
+
+      if (validParticipants.length < 2) {
+        throw new Error("Not enough valid participants to create group");
+      }
+
+      // Initialize unread count for all participants
+      const unreadCount: Record<string, number> = {};
+      for (const userId of validParticipants) {
+        unreadCount[userId] = 0;
+      }
+
+      const groupMetadata: GroupMetadata = {
+        name: input.name,
+        description: input.description,
+        adminIds: [currentUserId],
+        createdBy: currentUserId,
+      };
+
+      const newConversation: Omit<Conversation, "id"> = {
+        type: "group",
+        participants: validParticipants.sort(),
+        participantInfo,
+        unreadCount,
+        createdAt: now,
+        updatedAt: now,
+        groupMetadata,
+      };
+
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+
+      await setDoc(conversationRef, {
+        ...newConversation,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      return {
+        conversation: { id: conversationId, ...newConversation },
+        failedInvites: failedInvites.length > 0 ? failedInvites : undefined,
+      };
+    } catch (error) {
+      console.error("[ConversationManager] Failed to create group:", error);
+      toast.error("Failed to create group.");
+      throw error;
+    }
+  }
+
+  /**
+   * Add a member to a group (admin only)
+   */
+  async addGroupMember(conversationId: string, userId: string): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+      const conversation = await this.getConversation(conversationId);
+
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+      if (conversation.type !== "group") {
+        throw new Error("Cannot add members to a direct conversation");
+      }
+      if (!this.isGroupAdmin(conversation, currentUserId)) {
+        throw new Error("Only admins can add members");
+      }
+      if (conversation.participants.includes(userId)) {
+        throw new Error("User is already a member");
+      }
+      if (conversation.participants.length >= MAX_GROUP_PARTICIPANTS) {
+        throw new Error(`Group is at maximum capacity (${MAX_GROUP_PARTICIPANTS})`);
+      }
+
+      const userInfo = await this.fetchUserInfo(userId);
+      const now = new Date();
+
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+
+      await updateDoc(conversationRef, {
+        participants: arrayUnion(userId),
+        [`participantInfo.${userId}`]: {
+          userId,
+          displayName: userInfo.displayName,
+          ...(userInfo.photoURL && { avatar: userInfo.photoURL }),
+          joinedAt: now,
+        },
+        [`unreadCount.${userId}`]: 0,
+        updatedAt: serverTimestamp(),
+      });
+
+      toast.success(`Added ${userInfo.displayName} to the group`);
+    } catch (error) {
+      console.error("[ConversationManager] Failed to add group member:", error);
+      toast.error("Failed to add member to group.");
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a member from a group (admin only)
+   */
+  async removeGroupMember(
+    conversationId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+      const conversation = await this.getConversation(conversationId);
+
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+      if (conversation.type !== "group") {
+        throw new Error("Cannot remove members from a direct conversation");
+      }
+      if (!this.isGroupAdmin(conversation, currentUserId)) {
+        throw new Error("Only admins can remove members");
+      }
+      if (!conversation.participants.includes(userId)) {
+        throw new Error("User is not a member");
+      }
+      if (conversation.groupMetadata?.createdBy === userId) {
+        throw new Error("Cannot remove the group creator");
+      }
+
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+
+      // Also remove from adminIds if they're an admin
+      const updates: Record<string, unknown> = {
+        participants: arrayRemove(userId),
+        updatedAt: serverTimestamp(),
+      };
+
+      if (conversation.groupMetadata?.adminIds.includes(userId)) {
+        updates["groupMetadata.adminIds"] = arrayRemove(userId);
+      }
+
+      await updateDoc(conversationRef, updates);
+      toast.success("Removed member from group");
+    } catch (error) {
+      console.error(
+        "[ConversationManager] Failed to remove group member:",
+        error
+      );
+      toast.error("Failed to remove member from group.");
+      throw error;
+    }
+  }
+
+  /**
+   * Leave a group conversation
+   */
+  async leaveGroup(conversationId: string): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+      const conversation = await this.getConversation(conversationId);
+
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+      if (conversation.type !== "group") {
+        throw new Error("Cannot leave a direct conversation");
+      }
+      if (!conversation.participants.includes(currentUserId)) {
+        throw new Error("You are not a member of this group");
+      }
+
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+
+      const updates: Record<string, unknown> = {
+        participants: arrayRemove(currentUserId),
+        updatedAt: serverTimestamp(),
+      };
+
+      // Handle admin transfer if leaving user is an admin
+      if (conversation.groupMetadata?.adminIds.includes(currentUserId)) {
+        updates["groupMetadata.adminIds"] = arrayRemove(currentUserId);
+
+        // If last admin, promote oldest remaining member
+        const remainingAdmins = conversation.groupMetadata.adminIds.filter(
+          (id) => id !== currentUserId
+        );
+        if (remainingAdmins.length === 0) {
+          const remainingMembers = conversation.participants.filter(
+            (id) => id !== currentUserId
+          );
+          if (remainingMembers.length > 0) {
+            // Promote first remaining member (sorted, so oldest join time effectively)
+            updates["groupMetadata.adminIds"] = arrayUnion(remainingMembers[0]);
+          }
+        }
+      }
+
+      await updateDoc(conversationRef, updates);
+      toast.success("You left the group");
+    } catch (error) {
+      console.error("[ConversationManager] Failed to leave group:", error);
+      toast.error("Failed to leave group.");
+      throw error;
+    }
+  }
+
+  /**
+   * Update group metadata (admin only)
+   */
+  async updateGroupMetadata(
+    conversationId: string,
+    updates: Partial<Pick<GroupMetadata, "name" | "description" | "avatarUrl">>
+  ): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+      const conversation = await this.getConversation(conversationId);
+
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+      if (conversation.type !== "group") {
+        throw new Error("Cannot update metadata for a direct conversation");
+      }
+      if (!this.isGroupAdmin(conversation, currentUserId)) {
+        throw new Error("Only admins can update group metadata");
+      }
+
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+
+      const firestoreUpdates: Record<string, unknown> = {
+        updatedAt: serverTimestamp(),
+      };
+
+      if (updates.name !== undefined) {
+        firestoreUpdates["groupMetadata.name"] = updates.name;
+      }
+      if (updates.description !== undefined) {
+        firestoreUpdates["groupMetadata.description"] = updates.description;
+      }
+      if (updates.avatarUrl !== undefined) {
+        firestoreUpdates["groupMetadata.avatarUrl"] = updates.avatarUrl;
+      }
+
+      await updateDoc(conversationRef, firestoreUpdates);
+      toast.success("Group updated");
+    } catch (error) {
+      console.error(
+        "[ConversationManager] Failed to update group metadata:",
+        error
+      );
+      toast.error("Failed to update group.");
+      throw error;
+    }
+  }
+
+  /**
+   * Promote or demote admin status (admin only)
+   */
+  async setAdminStatus(
+    conversationId: string,
+    userId: string,
+    isAdmin: boolean
+  ): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+      const conversation = await this.getConversation(conversationId);
+
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+      if (conversation.type !== "group") {
+        throw new Error("Cannot set admin status for a direct conversation");
+      }
+      if (!this.isGroupAdmin(conversation, currentUserId)) {
+        throw new Error("Only admins can change admin status");
+      }
+      if (!conversation.participants.includes(userId)) {
+        throw new Error("User is not a member of this group");
+      }
+
+      const conversationRef = doc(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId
+      );
+
+      await updateDoc(conversationRef, {
+        "groupMetadata.adminIds": isAdmin
+          ? arrayUnion(userId)
+          : arrayRemove(userId),
+        updatedAt: serverTimestamp(),
+      });
+
+      const userInfo = conversation.participantInfo[userId];
+      toast.success(
+        isAdmin
+          ? `${userInfo?.displayName || "User"} is now an admin`
+          : `${userInfo?.displayName || "User"} is no longer an admin`
+      );
+    } catch (error) {
+      console.error(
+        "[ConversationManager] Failed to set admin status:",
+        error
+      );
+      toast.error("Failed to update admin status.");
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // COMMON OPERATIONS
+  // ============================================================================
 
   /**
    * Get a specific conversation by ID
@@ -267,14 +725,12 @@ export class ConversationManager implements IConversationManager {
   subscribeToConversations(
     callback: (conversations: ConversationPreview[]) => void
   ): () => void {
-    // Clean up previous subscription
     if (this.conversationsUnsubscribe) {
       this.conversationsUnsubscribe();
     }
 
     const currentUserId = this.getCurrentUserId();
 
-    // Use async IIFE to get firestore instance
     (async () => {
       try {
         const firestore = await getFirestoreInstance();
@@ -363,14 +819,12 @@ export class ConversationManager implements IConversationManager {
    * Subscribe to total unread count changes
    */
   subscribeToUnreadCount(callback: (count: number) => void): () => void {
-    // Clean up previous subscription
     if (this.unreadCountUnsubscribe) {
       this.unreadCountUnsubscribe();
     }
 
     const currentUserId = this.getCurrentUserId();
 
-    // Use async IIFE to get firestore instance
     (async () => {
       try {
         const firestore = await getFirestoreInstance();
@@ -422,34 +876,7 @@ export class ConversationManager implements IConversationManager {
   }
 
   /**
-   * Check if a conversation exists between current user and another user
-   */
-  async conversationExists(otherUserId: string): Promise<string | null> {
-    try {
-      const firestore = await getFirestoreInstance();
-      const currentUserId = this.getCurrentUserId();
-      const conversationId = this.generateConversationId(
-        currentUserId,
-        otherUserId
-      );
-      const conversationRef = doc(
-        firestore,
-        CONVERSATIONS_COLLECTION,
-        conversationId
-      );
-      const snapshot = await getDoc(conversationRef);
-      return snapshot.exists() ? conversationId : null;
-    } catch (error) {
-      console.error(
-        "[ConversationManager] Failed to check conversation exists:",
-        error
-      );
-      return null;
-    }
-  }
-
-  /**
-   * Archive a conversation (future implementation)
+   * Archive a conversation
    */
   async archiveConversation(conversationId: string): Promise<void> {
     try {
@@ -474,7 +901,7 @@ export class ConversationManager implements IConversationManager {
   }
 
   /**
-   * Unarchive a conversation (future implementation)
+   * Unarchive a conversation
    */
   async unarchiveConversation(conversationId: string): Promise<void> {
     try {
@@ -534,13 +961,30 @@ export class ConversationManager implements IConversationManager {
   }
 
   /**
+   * Clean up all subscriptions
+   */
+  cleanup(): void {
+    if (this.conversationsUnsubscribe) {
+      this.conversationsUnsubscribe();
+      this.conversationsUnsubscribe = null;
+    }
+    if (this.unreadCountUnsubscribe) {
+      this.unreadCountUnsubscribe();
+      this.unreadCountUnsubscribe = null;
+    }
+  }
+
+  // ============================================================================
+  // PRIVATE MAPPERS
+  // ============================================================================
+
+  /**
    * Map Firestore document to Conversation
    */
   private mapDocToConversation(
     id: string,
     data: Record<string, unknown>
   ): Conversation {
-    // Convert lastMessage.createdAt from Timestamp to Date
     const rawLastMessage = data["lastMessage"] as
       | Record<string, unknown>
       | undefined;
@@ -555,8 +999,22 @@ export class ConversationManager implements IConversationManager {
         }
       : undefined;
 
+    const rawGroupMetadata = data["groupMetadata"] as
+      | Record<string, unknown>
+      | undefined;
+    const groupMetadata = rawGroupMetadata
+      ? {
+          name: rawGroupMetadata["name"] as string,
+          description: rawGroupMetadata["description"] as string | undefined,
+          avatarUrl: rawGroupMetadata["avatarUrl"] as string | undefined,
+          adminIds: rawGroupMetadata["adminIds"] as string[],
+          createdBy: rawGroupMetadata["createdBy"] as string,
+        }
+      : undefined;
+
     return {
       id,
+      type: this.getConversationType(data),
       participants: data["participants"] as string[],
       participantInfo: data["participantInfo"] as Record<
         string,
@@ -566,26 +1024,74 @@ export class ConversationManager implements IConversationManager {
       unreadCount: (data["unreadCount"] as Record<string, number>) || {},
       createdAt: (data["createdAt"] as Timestamp)?.toDate() || new Date(),
       updatedAt: (data["updatedAt"] as Timestamp)?.toDate() || new Date(),
+      groupMetadata,
     };
   }
 
   /**
    * Map Firestore document to ConversationPreview
+   * Handles both direct and group conversations
    */
   private mapDocToPreview(
     id: string,
     data: Record<string, unknown>,
     currentUserId: string
   ): ConversationPreview | null {
+    const type = this.getConversationType(data);
     const participants = data["participants"] as string[];
-    const otherUserId = participants.find((p) => p !== currentUserId) || "";
     const participantInfo = data["participantInfo"] as Record<
       string,
       ParticipantInfo
     >;
     const unreadCount = (data["unreadCount"] as Record<string, number>) || {};
 
-    // Filter out self-conversations (user messaging themselves)
+    // Convert lastMessage
+    const rawLastMessage = data["lastMessage"] as
+      | Record<string, unknown>
+      | undefined;
+    const lastMessage = rawLastMessage
+      ? {
+          content: rawLastMessage["content"] as string,
+          senderId: rawLastMessage["senderId"] as string,
+          senderName: rawLastMessage["senderName"] as string,
+          createdAt:
+            (rawLastMessage["createdAt"] as Timestamp)?.toDate() || new Date(),
+          hasAttachment: rawLastMessage["hasAttachment"] as boolean | undefined,
+        }
+      : undefined;
+
+    if (type === "group") {
+      // Group conversation preview
+      const rawGroupMetadata = data["groupMetadata"] as
+        | Record<string, unknown>
+        | undefined;
+
+      // Get first few participants for avatar stack (exclude current user)
+      const otherParticipantIds = participants.filter(
+        (p) => p !== currentUserId
+      );
+      const participantPreviews = otherParticipantIds
+        .slice(0, 4)
+        .map((id) => participantInfo[id])
+        .filter((p): p is ParticipantInfo => p !== undefined);
+
+      return {
+        id,
+        type: "group",
+        groupName: rawGroupMetadata?.["name"] as string,
+        groupAvatar: rawGroupMetadata?.["avatarUrl"] as string | undefined,
+        participantCount: participants.length,
+        participantPreviews,
+        lastMessage,
+        unreadCount: unreadCount[currentUserId] || 0,
+        updatedAt: (data["updatedAt"] as Timestamp)?.toDate() || new Date(),
+      };
+    }
+
+    // Direct (1:1) conversation preview
+    const otherUserId = participants.find((p) => p !== currentUserId) || "";
+
+    // Filter out self-conversations
     if (!otherUserId || otherUserId === currentUserId) {
       return null;
     }
@@ -596,28 +1102,14 @@ export class ConversationManager implements IConversationManager {
       joinedAt: new Date(),
     };
 
-    // If displayName is "Loading...", trigger a background update
+    // Trigger background update for stale participant info
     if (otherParticipant.displayName === "Loading...") {
       this.refreshParticipantInfo(id, otherUserId);
     }
 
-    // Convert lastMessage.createdAt from Timestamp to Date
-    const rawLastMessage = data["lastMessage"] as
-      | Record<string, unknown>
-      | undefined;
-    const lastMessage = rawLastMessage
-      ? {
-          content: rawLastMessage["content"] as string,
-          senderId: rawLastMessage["senderId"] as string,
-          senderName: rawLastMessage["senderName"] as string,
-          createdAt:
-            (rawLastMessage["createdAt"] as Timestamp)?.toDate() || new Date(),
-          hasAttachment: rawLastMessage["hasAttachment"] as boolean | undefined,
-        }
-      : undefined;
-
     return {
       id,
+      type: "direct",
       otherParticipant,
       lastMessage,
       unreadCount: unreadCount[currentUserId] || 0,
@@ -651,20 +1143,6 @@ export class ConversationManager implements IConversationManager {
         "[ConversationManager] Failed to refresh participant info:",
         error
       );
-    }
-  }
-
-  /**
-   * Clean up all subscriptions
-   */
-  cleanup(): void {
-    if (this.conversationsUnsubscribe) {
-      this.conversationsUnsubscribe();
-      this.conversationsUnsubscribe = null;
-    }
-    if (this.unreadCountUnsubscribe) {
-      this.unreadCountUnsubscribe();
-      this.unreadCountUnsubscribe = null;
     }
   }
 }

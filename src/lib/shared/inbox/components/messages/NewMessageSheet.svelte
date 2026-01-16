@@ -75,13 +75,15 @@
         followedUsers = following;
       }
 
-      // Get recent conversation participants
-      const conversations = inboxState.conversations.slice(0, 5);
+      // Get recent conversation participants (direct conversations only)
+      const conversations = inboxState.conversations
+        .filter((c) => c.type === "direct" && c.otherParticipant)
+        .slice(0, 5);
       recentUsers = conversations
         .map((conv) => ({
-          id: conv.otherParticipant.userId,
-          displayName: conv.otherParticipant.displayName,
-          avatar: conv.otherParticipant.avatar,
+          id: conv.otherParticipant!.userId,
+          displayName: conv.otherParticipant!.displayName,
+          avatar: conv.otherParticipant!.avatar,
         }))
         .filter((user) => user.id !== currentUserId);
     } catch (error) {

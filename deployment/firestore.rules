@@ -445,6 +445,7 @@ service cloud.firestore {
     }
 
     // Conversations - only participants can read/write
+    // Supports both direct (1:1) and group conversations
     // Admins can read any conversation for impersonation/preview mode
     match /conversations/{conversationId} {
       // Participants can read their conversations, admins can read any (for preview mode)
@@ -452,13 +453,43 @@ service cloud.firestore {
         && (request.auth.uid in resource.data.participants || isAdmin());
 
       // Creating a conversation - user must be in participants list
+      // Direct (1:1): exactly 2 participants, type must be "direct" or missing
+      // Groups: 2-50 participants, type must be "group", creator must be admin
       allow create: if isAuthenticated()
         && request.auth.uid in request.resource.data.participants
-        && request.resource.data.participants.size() == 2;
+        && (
+          // Direct conversations (existing behavior, backward compatible)
+          ((!('type' in request.resource.data) || request.resource.data.type == 'direct')
+            && request.resource.data.participants.size() == 2)
+          ||
+          // Group conversations (new)
+          (request.resource.data.type == 'group'
+            && request.resource.data.participants.size() >= 2
+            && request.resource.data.participants.size() <= 50
+            && request.auth.uid in request.resource.data.groupMetadata.adminIds
+            && request.auth.uid == request.resource.data.groupMetadata.createdBy)
+        );
 
-      // Updating - only participants can update (for unread counts, lastMessage, etc.)
+      // Updating - participants can update their conversations
+      // Direct: cannot change participant list
+      // Groups: standard updates by participants, membership changes by admins only
       allow update: if isAuthenticated()
-        && request.auth.uid in resource.data.participants;
+        && request.auth.uid in resource.data.participants
+        && (
+          // Direct conversations: participant list must stay size 2
+          ((!('type' in resource.data) || resource.data.type == 'direct')
+            && request.resource.data.participants.size() == 2)
+          ||
+          // Group conversations: standard updates or admin membership changes
+          (resource.data.type == 'group' && (
+            // Standard updates (unread, lastMessage, typing, updatedAt)
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['unreadCount', 'lastMessage', 'updatedAt', 'typing'])
+            ||
+            // Admin-only updates (participants, groupMetadata)
+            request.auth.uid in resource.data.groupMetadata.adminIds
+          ))
+        );
 
       // No deleting conversations (soft delete via flag if needed)
       allow delete: if false;
@@ -692,6 +723,22 @@ service cloud.firestore {
       // This is intentionally permissive to allow anonymous users
       // to contribute to the "sequences ever generated" counter
       allow write: if true;
+    }
+
+    // ============================================================================
+    // LIVE BROADCAST (Synchronized Endless Spinner)
+    // ============================================================================
+
+    // Live broadcast state - everyone watches the same synchronized stream
+    // Cloud Functions write via Admin SDK, clients only read
+    match /liveBroadcast/{document=**} {
+      // ANYONE can read the broadcast (no authentication required)
+      // This enables the synchronized experience for all visitors
+      allow read: if true;
+
+      // No client writes - only Cloud Functions can update via Admin SDK
+      // This ensures a single authoritative source for the broadcast
+      allow write: if false;
     }
 
     // ============================================================================

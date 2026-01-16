@@ -15,7 +15,12 @@ import type { UserNotification } from "$lib/features/feedback/domain/models/noti
 export type InboxTab = "messages" | "notifications";
 
 // Inbox view state
-export type InboxView = "list" | "thread" | "compose";
+export type InboxView =
+  | "list"
+  | "thread"
+  | "compose"
+  | "new-group"
+  | "group-settings";
 
 /**
  * Reactive inbox state using Svelte 5 runes
@@ -173,6 +178,24 @@ class InboxState {
     this.composeRecipientId = null;
     this.composeRecipientName = null;
     this.currentView = "list";
+  }
+
+  startNewGroup() {
+    this.currentView = "new-group";
+  }
+
+  cancelNewGroup() {
+    this.currentView = "list";
+  }
+
+  openGroupSettings() {
+    if (this.selectedConversation?.type === "group") {
+      this.currentView = "group-settings";
+    }
+  }
+
+  closeGroupSettings() {
+    this.currentView = "thread";
   }
 
   // Update methods for subscriptions

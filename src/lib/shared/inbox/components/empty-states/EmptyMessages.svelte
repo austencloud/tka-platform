@@ -3,13 +3,24 @@
    * EmptyMessages
    *
    * Illustrated empty state for message thread
+   * Supports both direct and group conversations
    */
 
   interface Props {
     recipientName?: string;
+    isGroup?: boolean;
   }
 
-  let { recipientName = "this user" }: Props = $props();
+  let { recipientName = "this user", isGroup = false }: Props = $props();
+
+  const heading = $derived(
+    isGroup ? "Start the group chat" : "Start the conversation"
+  );
+  const description = $derived(
+    isGroup
+      ? `Be the first to message ${recipientName || "this group"}`
+      : `Send a message to ${recipientName}`
+  );
 </script>
 
 <div class="empty-state" role="status" aria-label="No messages in conversation">
@@ -28,8 +39,8 @@
       <circle cx="6" cy="66" r="1" class="trail trail-3" />
     </svg>
   </div>
-  <h3>Start the conversation</h3>
-  <p>Send a message to {recipientName}</p>
+  <h3>{heading}</h3>
+  <p>{description}</p>
 </div>
 
 <style>

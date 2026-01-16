@@ -3,9 +3,11 @@
    * MessageBubble
    *
    * Single message bubble with read receipts, animations, reactions, and rich attachments
+   * Supports both direct (1:1) and group conversations with sender display
    */
 
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
+  import type { ParticipantInfo } from "$lib/shared/messaging/domain/models/conversation-models";
   import { formatTime } from "../../utils/format";
   import FeedbackMessageCard from "./FeedbackMessageCard.svelte";
   import SequenceMessageCard from "./SequenceMessageCard.svelte";
@@ -21,6 +23,8 @@
     isNew?: boolean;
     otherParticipantId?: string;
     showReadReceipt?: boolean;
+    isGroup?: boolean;
+    senderInfo?: ParticipantInfo;
   }
 
   let {
@@ -29,7 +33,12 @@
     isNew = false,
     otherParticipantId,
     showReadReceipt = false,
+    isGroup = false,
+    senderInfo,
   }: Props = $props();
+
+  // Show sender info for non-own messages in groups
+  const showSender = $derived(isGroup && !isOwn && senderInfo);
 
   // Edit history sheet state
   let showEditHistory = $state(false);
@@ -86,9 +95,26 @@
     class:is-new={isNew}
     class:has-attachment={feedbackAttachment || sequenceAttachment}
     class:has-reactions={hasReactions}
+    class:has-sender={showSender}
     role="article"
     aria-label="{isOwn ? 'You' : message.senderName} said: {message.content}"
   >
+    <!-- Group message sender info -->
+    {#if showSender && senderInfo}
+      <div class="sender-row">
+        <div class="sender-avatar">
+          {#if senderInfo.avatar}
+            <img src={senderInfo.avatar} alt="" />
+          {:else}
+            <span class="sender-initials">
+              {(senderInfo.displayName || "?").charAt(0).toUpperCase()}
+            </span>
+          {/if}
+        </div>
+        <span class="sender-name">{senderInfo.displayName}</span>
+      </div>
+    {/if}
+
     <div class="bubble">
       <!-- Reply preview -->
       {#if message.replyTo}
@@ -226,6 +252,54 @@
 
   .message-bubble:not(.own) .bubble {
     border-bottom-left-radius: 6px;
+  }
+
+  /* Group message sender info */
+  .sender-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    padding-left: 2px;
+  }
+
+  .sender-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(
+      135deg,
+      var(--semantic-info) 0%,
+      var(--theme-accent-strong, var(--semantic-info)) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sender-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sender-initials {
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+  }
+
+  .sender-name {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim);
+  }
+
+  .message-bubble.has-sender {
+    margin-top: 8px;
   }
 
   .deleted .bubble {

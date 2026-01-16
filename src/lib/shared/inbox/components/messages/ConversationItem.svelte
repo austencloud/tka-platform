@@ -2,12 +2,14 @@
   /**
    * ConversationItem
    *
-   * Single conversation row in the list with enhanced visual polish
+   * Single conversation row in the list with enhanced visual polish.
+   * Supports both direct (1:1) and group conversations.
    */
 
   import { onMount } from "svelte";
   import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import GroupAvatarStack from "./GroupAvatarStack.svelte";
   import { formatRelativeTime, truncateText } from "../../utils/format";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -30,16 +32,26 @@
     hapticService?.trigger("selection");
     onclick();
   }
+
+  // Derived display values based on conversation type
+  const isGroup = $derived(conversation.type === "group");
+  const displayName = $derived(
+    isGroup
+      ? conversation.groupName || "Unnamed Group"
+      : conversation.otherParticipant?.displayName || "Unknown"
+  );
+  const ariaLabel = $derived(
+    isGroup
+      ? `Group: ${displayName}, ${conversation.participantCount} members${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
+      : `Conversation with ${displayName}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
+  );
 </script>
 
 <button
   class="conversation-item"
   class:unread={conversation.unreadCount > 0}
   onclick={handleClick}
-  aria-label="Conversation with {conversation.otherParticipant
-    .displayName}{conversation.unreadCount > 0
-    ? `, ${conversation.unreadCount} unread`
-    : ''}"
+  aria-label={ariaLabel}
 >
   <!-- Unread accent bar -->
   {#if conversation.unreadCount > 0}
@@ -48,12 +60,21 @@
 
   <!-- Avatar -->
   <div class="avatar-wrapper">
-    <RobustAvatar
-      src={conversation.otherParticipant.avatar}
-      name={conversation.otherParticipant.displayName}
-      alt="Avatar for {conversation.otherParticipant.displayName}"
-      customSize={44}
-    />
+    {#if isGroup}
+      <GroupAvatarStack
+        participants={conversation.participantPreviews || []}
+        customAvatar={conversation.groupAvatar}
+        size={44}
+        maxVisible={3}
+      />
+    {:else if conversation.otherParticipant}
+      <RobustAvatar
+        src={conversation.otherParticipant.avatar}
+        name={conversation.otherParticipant.displayName}
+        alt="Avatar for {conversation.otherParticipant.displayName}"
+        customSize={44}
+      />
+    {/if}
     {#if conversation.unreadCount > 0}
       <span class="online-dot" aria-hidden="true"></span>
     {/if}
@@ -62,12 +83,20 @@
   <!-- Content -->
   <div class="content">
     <div class="header">
-      <span class="name">{conversation.otherParticipant.displayName}</span>
+      <span class="name">
+        {#if isGroup}
+          <i class="fas fa-users group-icon" aria-hidden="true"></i>
+        {/if}
+        {displayName}
+      </span>
       <span class="time">{formatRelativeTime(conversation.updatedAt)}</span>
     </div>
     {#if conversation.lastMessage}
       <p class="preview">
-        {truncateText(conversation.lastMessage.content, 60)}
+        {#if isGroup && conversation.lastMessage.senderName}
+          <span class="sender">{conversation.lastMessage.senderName}:</span>
+        {/if}
+        {truncateText(conversation.lastMessage.content, isGroup ? 45 : 60)}
       </p>
     {:else}
       <p class="preview empty">No messages yet</p>
@@ -164,7 +193,7 @@
     background: var(--theme-accent, var(--semantic-info));
     border: 2px solid var(--theme-panel-bg);
     border-radius: 50%;
-    z-index: 1;
+    z-index: 10;
   }
 
   /* Content */
@@ -182,12 +211,21 @@
   }
 
   .name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--theme-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .group-icon {
+    font-size: var(--font-size-compact);
+    color: var(--theme-accent, var(--semantic-info));
+    flex-shrink: 0;
   }
 
   .unread .name {
@@ -212,6 +250,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .preview .sender {
+    font-weight: 500;
+    color: var(--theme-text);
+    margin-right: 4px;
   }
 
   .preview.empty {
