@@ -1,9 +1,10 @@
 /**
  * Spinner Mode Types
  *
- * Defines the two operational modes for the endless spinner:
+ * Defines the three operational modes for the endless spinner:
  * - library: Plays curated sequences from the public library
- * - infinite: Generates novel sequences algorithmically
+ * - infinite: Generates novel sequences algorithmically (local)
+ * - live: Synchronized broadcast - everyone sees the same sequence at the same time
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -11,9 +12,9 @@ import type { LOOPType, SliceSize } from "$lib/features/create/generate/circular
 import type { DifficultyLevel } from "$lib/features/create/generate/shared/domain/models/generate-models";
 
 /**
- * The two modes of endless spinner operation.
+ * The three modes of endless spinner operation.
  */
-export type SpinnerMode = "library" | "infinite";
+export type SpinnerMode = "library" | "infinite" | "live";
 
 /**
  * Generation settings used for a sequence.

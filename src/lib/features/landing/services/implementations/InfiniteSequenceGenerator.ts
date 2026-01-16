@@ -93,7 +93,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
     try {
       const sequence = await this.generationOrchestrator.generateSequence({
         mode: GenerationMode.CIRCULAR,
-        length: settings.baseLength,
+        length: settings.totalBeats, // Pass total (16), generator divides by slice count
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
         difficulty: settings.difficulty,
@@ -133,7 +133,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
   private async generateFallbackLOOP(
     originalSettings: GenerationSettings
   ): Promise<GeneratedSequenceInfo | null> {
-    // Try with the simplest LOOP type: strict rotated
+    // Try with the simplest LOOP type: strict rotated, 16 beats
     const fallbackSettings: GenerationSettings = {
       loopType: LOOPType.STRICT_ROTATED,
       sliceSize: SliceSize.QUARTERED,
@@ -146,7 +146,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
     try {
       const sequence = await this.generationOrchestrator.generateSequence({
         mode: GenerationMode.CIRCULAR,
-        length: fallbackSettings.baseLength,
+        length: fallbackSettings.totalBeats, // Pass total (16)
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
         difficulty: fallbackSettings.difficulty,
@@ -176,18 +176,20 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
    * Get the next generation settings, cycling through LOOP types.
    */
   private getNextSettings(): GenerationSettings {
-    // Get next LOOP type in rotation
-    const loopType = LOOP_TYPE_ROTATION[this.loopTypeIndex];
+    // Get next LOOP type in rotation (guaranteed to exist via modulo)
+    const loopType = LOOP_TYPE_ROTATION[this.loopTypeIndex] ?? LOOPType.STRICT_ROTATED;
     this.loopTypeIndex = (this.loopTypeIndex + 1) % LOOP_TYPE_ROTATION.length;
 
     // Select slice size (weighted random)
     const sliceSize = this.selectWeightedSlice();
 
-    // Base length depends on slice size
-    // Quartered: 4 base × 4 slices = 16 total
-    // Halved: 4 base × 2 slices = 8 total
-    const baseLength = 4;
+    // Total length is 16 beats (standard)
+    // The generator divides by slice count internally:
+    // - Quartered: 16 / 4 = 4 base beats × 4 slices = 16 total
+    // - Halved: 16 / 2 = 8 base beats × 2 slices = 16 total
+    const totalBeats = 16;
     const multiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+    const baseLength = totalBeats / multiplier;
 
     return {
       loopType,
@@ -195,7 +197,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
       difficulty: DifficultyLevel.INTERMEDIATE,
       turnIntensity: 1,
       baseLength,
-      totalBeats: baseLength * multiplier,
+      totalBeats,
     };
   }
 

@@ -1,12 +1,17 @@
 <!--
   InfiniteModeInfo.svelte
 
-  Displays information about generated sequences in Infinite mode.
-  Shows birth timestamp and a "First rendering" badge that fades out.
+  Displays information about generated LOOP sequences in Infinite mode.
+  Shows the LOOP type, timestamp, and a "First rendering" badge that fades out.
 -->
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import type { GeneratedSequenceInfo } from "../domain/models/spinner-models";
+  import {
+    LOOPType,
+    SliceSize,
+    LOOP_TYPE_LABELS,
+  } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
   let {
     sequenceInfo,
@@ -16,12 +21,11 @@
     showBadge?: boolean;
   } = $props();
 
-  // Format timestamp as "Jan 14, 2026 · 4:12 PM"
+  // Format timestamp as "Jan 14 · 4:12 PM"
   function formatTimestamp(date: Date): string {
     const dateStr = date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
     });
     const timeStr = date.toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -31,7 +35,35 @@
     return `${dateStr} · ${timeStr}`;
   }
 
-  // Track badge visibility with auto-hide after 2 seconds
+  // Get human-readable LOOP type label
+  function getLoopLabel(loopType: LOOPType): string {
+    return LOOP_TYPE_LABELS[loopType] || loopType;
+  }
+
+  // Get slice description
+  function getSliceLabel(sliceSize: SliceSize): string {
+    return sliceSize === SliceSize.QUARTERED ? "Quartered" : "Halved";
+  }
+
+  // Get a color for the LOOP type badge
+  function getLoopColor(loopType: LOOPType): string {
+    const colors: Partial<Record<LOOPType, string>> = {
+      [LOOPType.STRICT_ROTATED]: "#6366f1",     // Indigo
+      [LOOPType.STRICT_MIRRORED]: "#8b5cf6",    // Purple
+      [LOOPType.STRICT_SWAPPED]: "#ec4899",     // Pink
+      [LOOPType.STRICT_INVERTED]: "#f59e0b",    // Amber
+      [LOOPType.ROTATED_SWAPPED]: "#10b981",    // Emerald
+      [LOOPType.MIRRORED_SWAPPED]: "#06b6d4",   // Cyan
+      [LOOPType.ROTATED_INVERTED]: "#f97316",   // Orange
+      [LOOPType.MIRRORED_INVERTED]: "#a855f7",  // Violet
+      [LOOPType.MIRRORED_ROTATED]: "#14b8a6",   // Teal
+      [LOOPType.SWAPPED_INVERTED]: "#ef4444",   // Red
+      [LOOPType.MIRRORED_INVERTED_ROTATED]: "#84cc16", // Lime
+    };
+    return colors[loopType] || "#6366f1";
+  }
+
+  // Track badge visibility with auto-hide after 3 seconds
   let badgeVisible = $state(false);
   let badgeTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -46,7 +78,7 @@
 
       badgeTimeout = setTimeout(() => {
         badgeVisible = false;
-      }, 2500);
+      }, 3000);
     }
 
     return () => {
@@ -55,15 +87,40 @@
       }
     };
   });
+
+  // Derived values for display
+  let loopLabel = $derived(sequenceInfo?.settings ? getLoopLabel(sequenceInfo.settings.loopType) : "");
+  let sliceLabel = $derived(sequenceInfo?.settings ? getSliceLabel(sequenceInfo.settings.sliceSize) : "");
+  let loopColor = $derived(sequenceInfo?.settings ? getLoopColor(sequenceInfo.settings.loopType) : "#6366f1");
+  let totalBeats = $derived(sequenceInfo?.settings?.totalBeats ?? 0);
 </script>
 
 {#if sequenceInfo}
   <div class="infinite-info" in:fade={{ duration: 200 }}>
+    <!-- LOOP Type Badge -->
+    <div class="loop-info">
+      {#key sequenceInfo.generatedAt.getTime()}
+        <span
+          class="loop-badge"
+          style="--loop-color: {loopColor}"
+          in:fly={{ y: -10, duration: 300 }}
+        >
+          {loopLabel}
+        </span>
+      {/key}
+      <span class="loop-details">
+        {sliceLabel} · {totalBeats} beats
+      </span>
+    </div>
+
+    <!-- First Rendering Badge -->
     {#if badgeVisible}
       <span class="first-rendering-badge" in:fade out:fade={{ delay: 200 }}>
-        First rendering
+        First rendering ever
       </span>
     {/if}
+
+    <!-- Timestamp -->
     <span class="timestamp">
       Generated {formatTimestamp(sequenceInfo.generatedAt)}
     </span>
@@ -75,8 +132,33 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    min-height: 48px;
+    gap: 8px;
+    min-height: 72px;
+  }
+
+  .loop-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .loop-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    background: color-mix(in srgb, var(--loop-color) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--loop-color) 40%, transparent);
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--loop-color);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .loop-details {
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.5);
   }
 
   .first-rendering-badge {
@@ -94,13 +176,28 @@
   }
 
   .timestamp {
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.4);
   }
 
   @media (max-width: 600px) {
     .infinite-info {
-      min-height: 40px;
+      min-height: 64px;
+      gap: 6px;
+    }
+
+    .loop-info {
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .loop-badge {
+      font-size: 0.8125rem;
+      padding: 5px 12px;
+    }
+
+    .loop-details {
+      font-size: 0.75rem;
     }
 
     .first-rendering-badge {
@@ -109,7 +206,7 @@
     }
 
     .timestamp {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
     }
   }
 </style>

@@ -4,7 +4,6 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
-  import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -38,46 +37,22 @@
   import SpinnerModeToggle from "$lib/features/landing/components/SpinnerModeToggle.svelte";
   import LibraryModeInfo from "$lib/features/landing/components/LibraryModeInfo.svelte";
   import InfiniteModeInfo from "$lib/features/landing/components/InfiniteModeInfo.svelte";
+  import LiveModeInfo from "$lib/features/landing/components/LiveModeInfo.svelte";
   import SpinnerStatsBar from "$lib/features/landing/components/SpinnerStatsBar.svelte";
+
+  // Broadcast imports
+  import type { BroadcastStateClient } from "$lib/features/landing/domain/models/broadcast-models";
+  import { BroadcastRepository } from "$lib/features/landing/services/implementations/BroadcastRepository";
+  import { BroadcastSequenceConverter } from "$lib/features/landing/services/implementations/BroadcastSequenceConverter";
+  import { PropTypeApplier } from "$lib/features/landing/services/implementations/PropTypeApplier";
 
   // Local extracted components
   import SpinnerControls from "./components/SpinnerControls.svelte";
   import EndlessSpinnerDebugPanel from "./components/EndlessSpinnerDebugPanel.svelte";
 
-  function applyPropTypeToSequence(
-    sequence: SequenceData,
-    propType: PropType
-  ): SequenceData {
-    function applyToBeat(beat: BeatData): BeatData {
-      if (!beat.motions) return beat;
-      return {
-        ...beat,
-        motions: {
-          blue: beat.motions.blue ? { ...beat.motions.blue, propType } : undefined,
-          red: beat.motions.red ? { ...beat.motions.red, propType } : undefined,
-        },
-      };
-    }
-
-    function applyToStartPosition(startPos: StartPositionData): StartPositionData {
-      if (!startPos.motions) return startPos;
-      return {
-        ...startPos,
-        motions: {
-          blue: startPos.motions.blue ? { ...startPos.motions.blue, propType } : undefined,
-          red: startPos.motions.red ? { ...startPos.motions.red, propType } : undefined,
-        },
-      };
-    }
-
-    return {
-      ...sequence,
-      startPosition: sequence.startPosition
-        ? applyToStartPosition(sequence.startPosition)
-        : undefined,
-      beats: sequence.beats?.map(applyToBeat) ?? [],
-    };
-  }
+  // Data transformation services (instantiated once)
+  const broadcastSequenceConverter = new BroadcastSequenceConverter();
+  const propTypeApplier = new PropTypeApplier();
 
   // Animation state
   const animationState = createAnimationPanelState();
@@ -113,13 +88,20 @@
     bridgesGenerated: 0,
   });
 
-  // Mode state (Library vs Infinite)
+  // Mode state (Library vs Infinite vs Live)
   let spinnerMode = $state<SpinnerMode>("library");
   let infiniteGenerator = $state<IInfiniteSequenceGenerator | null>(null);
   let metricsRepository: SpinnerMetricsRepository | null = null;
   let globalMetrics = $state<SpinnerMetrics | null>(null);
   let currentGeneratedInfo = $state<GeneratedSequenceInfo | null>(null);
   let metricsUnsubscribe: (() => void) | null = null;
+
+  // Broadcast (Live) mode state
+  let broadcastRepository: BroadcastRepository | null = null;
+  let broadcastState = $state<BroadcastStateClient | null>(null);
+  let serverTimeOffset = $state(0);
+  let broadcastUnsubscribe: (() => void) | null = null;
+  let beatSyncInterval: ReturnType<typeof setInterval> | null = null;
 
   const visibilityManager = getAnimationVisibilityManager();
 
@@ -176,8 +158,8 @@
 
   // Pre-load next sequence (only in library mode)
   $effect(() => {
-    // Skip preloading in infinite mode - we generate on-demand
-    if (spinnerMode === "infinite") return;
+    // Skip preloading in infinite or live mode
+    if (spinnerMode === "infinite" || spinnerMode === "live") return;
 
     const currentBeat = Math.floor(animationState.currentBeat);
     const totalBeats = animationState.totalBeats;
@@ -198,8 +180,11 @@
     }
   });
 
-  // Watch for sequence completion
+  // Watch for sequence completion (skip in live mode - broadcast controls transitions)
   $effect(() => {
+    // In live mode, the broadcast subscription handles sequence transitions
+    if (spinnerMode === "live") return;
+
     const currentBeat = Math.floor(animationState.currentBeat);
     const totalBeats = animationState.totalBeats;
 
@@ -254,6 +239,9 @@
         metricsRepository
       );
 
+      // Initialize broadcast repository for live mode
+      broadcastRepository = new BroadcastRepository();
+
       await spinnerOrchestrator.initialize();
       servicesReady = true;
 
@@ -273,6 +261,10 @@
     playbackController?.dispose();
     animationState.dispose();
     metricsUnsubscribe?.();
+    broadcastUnsubscribe?.();
+    if (beatSyncInterval) {
+      clearInterval(beatSyncInterval);
+    }
   });
 
   function extractEndState(sequence: SequenceData): EndState {
@@ -365,8 +357,20 @@
     }
   }
 
-  function handleModeChange(newMode: SpinnerMode) {
+  async function handleModeChange(newMode: SpinnerMode) {
+    const previousMode = spinnerMode;
     spinnerMode = newMode;
+
+    // Clean up previous mode subscriptions
+    if (previousMode === "live") {
+      broadcastUnsubscribe?.();
+      broadcastUnsubscribe = null;
+      broadcastState = null;
+      if (beatSyncInterval) {
+        clearInterval(beatSyncInterval);
+        beatSyncInterval = null;
+      }
+    }
 
     // Subscribe to metrics updates when switching to infinite mode
     if (newMode === "infinite" && metricsRepository && !metricsUnsubscribe) {
@@ -385,6 +389,95 @@
     if (newMode === "library") {
       currentGeneratedInfo = null;
     }
+
+    // Subscribe to broadcast when switching to live mode
+    if (newMode === "live" && broadcastRepository) {
+      // Calculate server time offset first
+      serverTimeOffset = await broadcastRepository.calculateServerTimeOffset();
+
+      // Subscribe to broadcast state
+      broadcastUnsubscribe = broadcastRepository.subscribeToBroadcast((state) => {
+        if (state) {
+          const previousSequenceNumber = broadcastState?.sequenceNumber;
+          broadcastState = state;
+
+          // If sequence changed, load the new one
+          if (state.sequenceNumber !== previousSequenceNumber) {
+            const sequenceData = broadcastSequenceConverter.convertSequence(state.currentSequence);
+            loadBroadcastSequence(sequenceData, state);
+          }
+        } else {
+          broadcastState = null;
+        }
+      });
+
+      // Start beat synchronization interval
+      startBeatSync();
+    }
+  }
+
+  /**
+   * Start beat synchronization for live mode.
+   * Adjusts current beat based on server time.
+   */
+  function startBeatSync() {
+    if (beatSyncInterval) {
+      clearInterval(beatSyncInterval);
+    }
+
+    beatSyncInterval = setInterval(() => {
+      if (spinnerMode !== "live" || !broadcastState || !broadcastRepository) {
+        return;
+      }
+
+      const targetBeat = broadcastRepository.getCurrentBeatPosition(
+        broadcastState.startedAtMs,
+        broadcastState.durationMs,
+        broadcastState.currentSequence.totalBeats,
+        broadcastState.beatsPerMinute
+      );
+
+      // If drift is more than 0.5 beats, resync
+      const currentBeat = animationState.currentBeat;
+      if (Math.abs(currentBeat - targetBeat) > 0.5) {
+        animationState.setCurrentBeat(targetBeat);
+      }
+    }, 100); // Check every 100ms
+  }
+
+  /**
+   * Load a broadcast sequence with synchronized beat position.
+   */
+  function loadBroadcastSequence(sequenceData: SequenceData, state: BroadcastStateClient) {
+    if (!playbackController || !broadcastRepository) return;
+
+    currentSequence = sequenceData;
+    lastBeat = -1;
+    currentGeneratedInfo = null;
+
+    const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
+
+    animationState.setShouldLoop(true);
+    const success = playbackController.initialize(sequence, animationState);
+
+    if (!success) return;
+
+    animationState.setPlaybackMode("continuous");
+
+    // Set initial beat position based on server time
+    const currentBeat = broadcastRepository.getCurrentBeatPosition(
+      state.startedAtMs,
+      state.durationMs,
+      state.currentSequence.totalBeats,
+      state.beatsPerMinute
+    );
+    animationState.setCurrentBeat(currentBeat);
+
+    if (!animationState.isPlaying) {
+      playbackController.togglePlayback();
+    }
+
+    animationReady = true;
   }
 
   function hotSwapSequence(sequenceData: SequenceData) {
@@ -393,7 +486,7 @@
     currentSequence = sequenceData;
     lastBeat = -1;
 
-    const sequence = applyPropTypeToSequence(sequenceData, PropType.STAFF);
+    const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
 
     animationState.setShouldLoop(true);
     const success = playbackController.initialize(sequence, animationState);
@@ -423,7 +516,7 @@
       lastBeat = -1;
       sequenceHistory = [sequenceData.word, ...sequenceHistory.slice(0, 9)];
 
-      const sequence = applyPropTypeToSequence(sequenceData, PropType.STAFF);
+      const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
 
       animationState.setShouldLoop(true);
       const success = playbackController.initialize(sequence, animationState);
@@ -509,8 +602,10 @@
       <div class="mode-info">
         {#if spinnerMode === "library"}
           <LibraryModeInfo sequence={currentSequence} />
-        {:else}
+        {:else if spinnerMode === "infinite"}
           <InfiniteModeInfo sequenceInfo={currentGeneratedInfo} />
+        {:else if spinnerMode === "live"}
+          <LiveModeInfo {broadcastState} {serverTimeOffset} />
         {/if}
       </div>
 

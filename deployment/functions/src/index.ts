@@ -4,5 +4,9 @@
  * Exports all Cloud Functions for the TKA Scribe application.
  */
 
-// YouTube audio extraction
-export { extractAudio as youtubeExtractAudio } from "./youtube/extract-audio";
+// Live Broadcast System
+export {
+  conductorTick as broadcastConductor,
+  forceGenerate as broadcastForceGenerate,
+  getServerTime as broadcastGetServerTime,
+} from "./broadcast/conductor";
