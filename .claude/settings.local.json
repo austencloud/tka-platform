@@ -231,7 +231,9 @@
       "Bash(start \"\" \"C:\\\\Users\\\\Austen\\\\Desktop\\\\debug-mcp-flow.svg\")",
       "mcp__tka-pictograph__get_alphabet_info",
       "WebFetch(domain:www.hannonscampamerica.com)",
-      "WebFetch(domain:propertysearch.bcohio.gov)"
+      "WebFetch(domain:propertysearch.bcohio.gov)",
+      "mcp__tka-pictograph__get_letter_explanation",
+      "mcp__tka-pictograph__list_letters_by_type"
     ]
   }
 }

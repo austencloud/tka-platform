@@ -115,6 +115,14 @@ const AUDITED_FILES = {
     auditDate: "2026-01-12",
     reason: "REFACTORED: Extracted DisplayNameEditor, UsernameEditor, PasswordChangeForm. Svelte Component Lens identified 3 independent UI sections with 45% CSS. Now 50-line orchestrator.",
   },
+  "lib/features/background-builder/components/DeepOceanLab.svelte": {
+    auditDate: "2026-01-15",
+    reason: "Dev lab/playground: 4/4 perspectives say leave it. Orchestrates DeepOceanBackgroundOrchestrator for debugging. ~250 lines CSS, ~200 lines config data. PersonalityBars already extracted. Previous decomposition attempt (2026-01-15) reverted - services added ceremony without benefit.",
+  },
+  "routes/endless-spinner/+page.svelte": {
+    auditDate: "2026-01-15",
+    reason: "Page orchestrator: 4/4 perspectives say leave it. Coordinates 3 playback modes (library/infinite/live). Logic in EndlessSpinnerOrchestrator, InfiniteSequenceGenerator, BroadcastRepository. 7 child components already extracted. 27% CSS. Complexity inherent to multi-mode feature.",
+  },
   // SequencesView.svelte deleted - Library module retired (2026-01-11)
 };
 
