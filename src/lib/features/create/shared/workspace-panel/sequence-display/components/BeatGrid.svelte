@@ -19,6 +19,11 @@
     calculateGridLayout,
   } from "../utils/grid-calculations";
   import BeatCell from "./BeatCell.svelte";
+  import {
+    calculateSubdivisionIndex,
+    formatPosition,
+  } from "../../../services/implementations/MusicalPositionCalculator";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   // Services
   const hapticService = container.items.hapticFeedback;
@@ -358,6 +363,16 @@
   // Composite key guard to avoid Svelte each_key_duplicate when legacy beats reuse ids
   const getBeatKey = (beat: BeatData, index: number) =>
     `${beat.id ?? "no-id"}-${beat.beatNumber ?? index}-${index}`;
+
+  // Musical position display settings
+  const settings = $derived(getSettings());
+  const musicianMode = $derived(settings.musicianMode ?? false);
+
+  // Calculate musical position for a beat at a given index
+  function getMusicalPosition(beatIndex: number): string {
+    const subdivisionIndex = calculateSubdivisionIndex(beatIndex, beats);
+    return formatPosition(subdivisionIndex, musicianMode);
+  }
 </script>
 
 <div
@@ -449,6 +464,7 @@
             isPracticeBeat={practiceBeatNumber === beat.beatNumber}
             {activeMode}
             highlightStyle={highlightedBeats?.get(beat.beatNumber) ?? null}
+            musicalPosition={getMusicalPosition(index)}
           />
         </div>
       {/each}
@@ -536,6 +552,7 @@
               isPracticeBeat={practiceBeatNumber === beat.beatNumber}
               {activeMode}
               highlightStyle={highlightedBeats?.get(beat.beatNumber) ?? null}
+              musicalPosition={getMusicalPosition(index)}
             />
           </div>
         {/each}

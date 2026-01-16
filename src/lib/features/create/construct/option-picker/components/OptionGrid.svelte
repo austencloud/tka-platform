@@ -62,7 +62,7 @@ Computes reversal indicators for options based on current sequence.
   class="option-grid"
   class:flip-enabled={enableFlip}
   style:gap
-  style:opacity={isFading && !enableFlip ? 0 : 1}
+  style:opacity={isFading ? 0 : 1}
   style:grid-template-columns="repeat({effectiveColumns}, {cardSize}px)"
 >
   {#if enableFlip}
@@ -106,11 +106,6 @@ Computes reversal indicators for options based on current sequence.
     width: fit-content;
     margin: 0 auto;
     transition: opacity 250ms ease-out;
-  }
-
-  /* When FLIP is enabled, don't use grid-level opacity transition */
-  .option-grid.flip-enabled {
-    transition: none;
   }
 
   /* Wrapper for FLIP animation - thin wrapper that doesn't affect layout */

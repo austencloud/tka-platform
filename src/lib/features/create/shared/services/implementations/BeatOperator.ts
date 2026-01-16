@@ -31,6 +31,7 @@ import {
   updateArrowAdjustment,
   persistBeatWithAdjustments,
 } from "./beat-operations/ArrowAdjustmentHandler";
+import { updateBeatDuration } from "./beat-operations/DurationHandler";
 
 export class BeatOperator implements IBeatOperator {
   constructor(
@@ -126,5 +127,13 @@ export class BeatOperator implements IBeatOperator {
     createModuleState: ICreateModuleState
   ): void {
     persistBeatWithAdjustments(beatNumber, updatedBeatData, createModuleState);
+  }
+
+  updateBeatDuration(
+    beatNumber: number,
+    newDuration: number,
+    createModuleState: ICreateModuleState
+  ): void {
+    updateBeatDuration(beatNumber, newDuration, createModuleState);
   }
 }

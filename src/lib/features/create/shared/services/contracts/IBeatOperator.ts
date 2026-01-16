@@ -158,4 +158,19 @@ export interface IBeatOperator {
     updatedBeatData: BeatData,
     CreateModuleState: ICreateModuleState
   ): void;
+
+  /**
+   * Update duration for a beat (musical subdivision system)
+   * Duration determines how long a beat plays relative to the base tempo.
+   * Does not apply to start position (beat 0).
+   *
+   * @param beatNumber Beat number (1+ = sequence beats, 0 = start position is invalid)
+   * @param newDuration New duration value (0.25 to 4.0, in quarter-beat increments)
+   * @param CreateModuleState Create Module State for sequence operations
+   */
+  updateBeatDuration(
+    beatNumber: number,
+    newDuration: number,
+    CreateModuleState: ICreateModuleState
+  ): void;
 }

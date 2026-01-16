@@ -19,6 +19,8 @@
     activeMode = null,
     // Custom highlight style (for multi-select, section highlighting, etc.)
     highlightStyle = null,
+    // Musical position string (e.g., "1", "1.5", "2e") for beat number display
+    musicalPosition = undefined,
   } = $props<{
     beat: BeatData;
     index?: number;
@@ -32,6 +34,8 @@
     activeMode?: BuildModeId | null;
     // Custom highlight style
     highlightStyle?: { bg: string; border: string } | null;
+    // Musical position string (e.g., "1", "1.5", "2e") for beat number display
+    musicalPosition?: string;
   }>();
 
   // Services
@@ -314,6 +318,7 @@
   <PictographContainer
     pictographData={beatDataWithSelection}
     disableTransitions={!enableTransitionsForNewData}
+    {musicalPosition}
   />
 </div>
 

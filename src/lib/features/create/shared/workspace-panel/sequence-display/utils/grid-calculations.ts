@@ -57,6 +57,31 @@ export function calculateGridLayout(
   );
   const sizing = { ...DEFAULT_SIZING, ...filteredConfig };
 
+  // Handle edge case: no beats (just start position)
+  // This prevents division by zero and ensures proper single-cell sizing
+  if (beatCount === 0) {
+    // Single cell for start position only
+    let cellSize = sizing.maxCellSize;
+
+    if (containerWidth > 0 && containerHeight > 0) {
+      // For a single cell, use the smaller dimension to fit within both width AND height
+      const availableWidth = containerWidth * sizing.widthPaddingRatio;
+      const availableHeight = containerHeight * sizing.heightPaddingRatio;
+      cellSize = Math.max(
+        sizing.minCellSize,
+        Math.min(sizing.maxCellSize, Math.floor(Math.min(availableWidth, availableHeight)))
+      );
+    }
+
+    return {
+      rows: 1,
+      columns: 1,
+      totalColumns: 1, // Just the start position column
+      cellSize,
+      maxColumns: 1,
+    };
+  }
+
   // Determine columns: use manual override if provided, otherwise calculate automatically
   let maxColumns: number;
   let columns: number;

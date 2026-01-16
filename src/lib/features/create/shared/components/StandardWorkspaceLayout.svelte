@@ -9,6 +9,7 @@
    */
 
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+  import { openSpotlightWithBeatGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
@@ -133,6 +134,14 @@
 
     return () => resizeObserver.disconnect();
   });
+
+  // Handler for spotlight button - opens fullscreen beat grid
+  function handleSpotlight() {
+    const sequence = CreateModuleState.sequenceState.currentSequence;
+    if (sequence) {
+      openSpotlightWithBeatGrid(sequence);
+    }
+  }
 </script>
 
 <div
@@ -167,7 +176,12 @@
     <!-- Button Panel - Shows when workspace is visible -->
     {#if shouldShowWorkspace}
       <div class="button-panel-wrapper" bind:this={buttonPanelElement}>
-        <ButtonPanel {onClearSequence} {onShareHub} {onSequenceActionsClick} />
+        <ButtonPanel
+          {onClearSequence}
+          {onShareHub}
+          {onSequenceActionsClick}
+          onSpotlight={handleSpotlight}
+        />
       </div>
     {/if}
   </div>

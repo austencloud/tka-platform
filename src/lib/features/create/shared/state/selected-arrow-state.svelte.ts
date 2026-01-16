@@ -2,7 +2,7 @@
  * Selected Arrow State
  *
  * Manages the currently selected arrow in the pictograph adjustment editor.
- * Uses an observer pattern for reactivity across components.
+ * Uses Svelte 5 runes for reactivity across components.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -14,10 +14,10 @@ interface SelectedArrow {
   pictographData: PictographData;
 }
 
-// Plain state (not $state to avoid module-level issues with DevTools)
-let _selectedArrow: SelectedArrow | null = null;
+// Use $state for Svelte 5 reactivity
+let _selectedArrow = $state<SelectedArrow | null>(null);
 
-// Observer pattern for reactivity
+// Keep observer pattern for non-Svelte code (like KeyboardShortcutManager)
 type SelectionObserver = () => void;
 const observers = new Set<SelectionObserver>();
 

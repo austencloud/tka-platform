@@ -210,12 +210,29 @@
     propSheetOpen = false;
   }
 
-  function handleBeatDataUpdate(updatedBeatData: typeof selectedBeatData) {
-    console.log("[BeatEditorCoordinator] handleBeatDataUpdate called", {
-      beatNumber: selectedBeatNumber,
-      hasUpdatedData: !!updatedBeatData,
-    });
+  function handlePushUndoSnapshot() {
+    CreateModuleState.pushUndoSnapshot(
+      UndoOperationType.MODIFY_BEAT_PROPERTIES
+    );
+  }
 
+  function handleDurationChange(newDuration: number) {
+    if (selectedBeatNumber === null || selectedBeatNumber === 0 || !BeatOperator) return;
+    hapticService?.trigger("selection");
+
+    // Push undo snapshot BEFORE modifying
+    CreateModuleState.pushUndoSnapshot(
+      UndoOperationType.MODIFY_BEAT_PROPERTIES
+    );
+
+    BeatOperator.updateBeatDuration(
+      selectedBeatNumber,
+      newDuration,
+      CreateModuleState
+    );
+  }
+
+  function handleBeatDataUpdate(updatedBeatData: typeof selectedBeatData) {
     if (selectedBeatNumber === null || !updatedBeatData) return;
 
     const currentSequence = activeSequenceState.currentSequence;
@@ -264,6 +281,8 @@
   onDelete={handleBeatDelete}
   onOpenPropSheet={handleOpenPropSheet}
   onBeatDataUpdate={handleBeatDataUpdate}
+  onPushUndoSnapshot={handlePushUndoSnapshot}
+  onDurationChange={handleDurationChange}
 />
 
 <!-- Prop Selection Sheet - rendered as sibling to BeatEditorPanel -->

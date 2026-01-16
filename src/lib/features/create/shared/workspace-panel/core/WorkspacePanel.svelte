@@ -7,7 +7,6 @@
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { openSpotlightWithBeatGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
   import { onMount } from "svelte";
   import Toast from "../components/Toast.svelte";
   import SequenceDisplay from "../sequence-display/components/SequenceDisplay.svelte";
@@ -162,12 +161,6 @@
     }
   }
 
-  // Handle long-press on beat to open fullscreen preview
-  function handleBeatLongPress() {
-    if (!sequenceState?.currentSequence) return;
-    openSpotlightWithBeatGrid(sequenceState.currentSequence);
-  }
-
   // Initialize services on mount
   onMount(() => {
     BeatOperator = container.items.beatOperator;
@@ -183,7 +176,6 @@
         onBeatSelected={handleBeatSelected}
         onStartPositionSelected={handleStartPositionSelected}
         onBeatDelete={handleBeatDelete}
-        onBeatLongPress={handleBeatLongPress}
         {onAssemblerBack}
         selectedBeatNumber={localSelectedBeatNumber}
         practiceBeatNumber={animatingBeatNumber ?? practiceBeatIndex}

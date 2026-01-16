@@ -4,6 +4,17 @@
  * Handles manual arrow position adjustments via WASD keyboard controls.
  * Applies adjustments to beat data and triggers pictograph updates.
  *
+ * Manual adjustments are stored and applied in SCREEN-SPACE:
+ * - W = up on screen (0, -increment)
+ * - A = left on screen (-increment, 0)
+ * - S = down on screen (0, +increment)
+ * - D = right on screen (+increment, 0)
+ *
+ * The adjustments are NOT transformed because the user expects screen-space
+ * movement to match their input directly. The global adjustment system uses
+ * a composite key (motion type, rotation, location, etc.) to apply the same
+ * adjustment to all arrows with matching characteristics.
+ *
  * Mirrors legacy desktop app functionality from:
  * legacy\src\main_window\main_widget\sequence_workbench\graph_editor\hotkey_graph_adjuster\arrow_movement_manager.py
  */
@@ -17,6 +28,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/createArrowPlacementData";
 import type { IKeyboardArrowAdjuster } from "../contracts/IKeyboardArrowAdjuster";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
 export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
   private logger = createComponentLogger("KeyboardArrowAdjustment");
@@ -48,9 +60,14 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
    * 3. Reload all pictographs with that letter
    *
    * Modern flow (web app):
-   * 1. Calculate adjustment based on key + increment
-   * 2. Update the motion's arrowPlacementData with manual adjustment
+   * 1. Calculate screen-space adjustment based on key + increment
+   * 2. Store screen-space value directly (no transformation)
    * 3. Return updated beat data to trigger re-render
+   *
+   * Adjustments are stored in screen-space because:
+   * - User expects W to always move UP on their screen
+   * - The global adjustment key includes motion characteristics (type, rotation, location)
+   * - Same adjustments apply to arrows with matching characteristics
    */
   handleWASDMovement(
     key: "w" | "a" | "s" | "d",
@@ -58,11 +75,18 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     selectedArrow: {
       motionData: MotionData;
       color: string;
-      pictographData: unknown;
+      pictographData: PictographData;
     },
     beatData: BeatData
   ): BeatData {
+    // Calculate screen-space adjustment (W = up on screen, etc.)
     const adjustment = this.calculateAdjustment(key, increment);
+
+    // DEBUG: Log everything to trace data corruption
+    console.log(`%c[WASD DEBUG] ========== KEY: ${key.toUpperCase()} ==========`, 'background: #ff0; color: #000; font-weight: bold');
+    console.log(`[WASD DEBUG] Calculated adjustment: x=${adjustment.x}, y=${adjustment.y}`);
+    console.log(`[WASD DEBUG] Selected arrow color: "${selectedArrow.color}"`);
+    console.log(`[WASD DEBUG] beatData.motions keys:`, Object.keys(beatData.motions));
 
     this.logger.log(
       `🎯 WASD adjustment: ${key} → (${adjustment.x}, ${adjustment.y})px for ${selectedArrow.color} arrow`
@@ -72,6 +96,7 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     const currentMotion = beatData.motions[selectedArrow.color as MotionColor];
     if (!currentMotion) {
       this.logger.warn(`No motion data found for ${selectedArrow.color} arrow`);
+      console.log(`%c[WASD DEBUG] ERROR: No motion for color "${selectedArrow.color}"`, 'color: red');
       return beatData;
     }
 
@@ -81,10 +106,14 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     const currentAdjustY =
       currentMotion.arrowPlacementData.manualAdjustmentY ?? 0;
 
+    console.log(`[WASD DEBUG] Current values from beatData: x=${currentAdjustX}, y=${currentAdjustY}`);
+
     // Add the new adjustment to the existing manual adjustments
-    // This matches legacy behavior (lines 81-83 in special_placement_data_updater.py)
+    // Store in screen-space - user expects W = up, D = right, etc.
     const newAdjustX = currentAdjustX + adjustment.x;
     const newAdjustY = currentAdjustY + adjustment.y;
+
+    console.log(`[WASD DEBUG] New values (current + adjustment): x=${newAdjustX}, y=${newAdjustY}`);
 
     this.logger.log(
       `  Previous adjustment: (${currentAdjustX}, ${currentAdjustY})`

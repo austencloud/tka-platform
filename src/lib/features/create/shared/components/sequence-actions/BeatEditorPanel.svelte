@@ -13,6 +13,7 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import TurnsEditMode from "./TurnsEditMode.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
+  import DurationControl from "./DurationControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
   import BeatEditorHelpModal from "./BeatEditorHelpModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
@@ -46,6 +47,8 @@
     onDelete?: () => void;
     onOpenPropSheet?: (color: "blue" | "red") => void;
     onBeatDataUpdate?: (updatedBeatData: BeatData) => void;
+    onPushUndoSnapshot?: () => void;
+    onDurationChange?: (newDuration: number) => void;
   }
 
   let {
@@ -62,6 +65,8 @@
     onDelete,
     onOpenPropSheet,
     onBeatDataUpdate,
+    onPushUndoSnapshot,
+    onDurationChange,
   }: Props = $props();
 
   // Track if an arrow is selected for showing adjustment panel
@@ -181,10 +186,6 @@
   }
 
   function handleBeatDataUpdate(updatedBeatData: BeatData) {
-    console.log("[BeatEditorPanel] handleBeatDataUpdate called", {
-      hasCallback: !!onBeatDataUpdate,
-      hasData: !!updatedBeatData,
-    });
     // Forward to parent for persistence
     onBeatDataUpdate?.(updatedBeatData);
     // Also update the displayed beat data locally for immediate visual feedback
@@ -210,6 +211,16 @@
         <h2>Beat Editor</h2>
         <span class="subtitle">{beatLabel}</span>
       </div>
+
+      <!-- Arrow adjustment panel in header when arrow is selected -->
+      {#if isAdmin() && hasArrowSelected && displayedBeatData}
+        <ArrowAdjustmentPanel
+          beatData={displayedBeatData}
+          onBeatDataUpdate={handleBeatDataUpdate}
+          {onPushUndoSnapshot}
+        />
+      {/if}
+
       <div class="header-actions">
         <!-- Help button -->
         <HelpButton
@@ -278,13 +289,6 @@
             disableTransitions={true}
           />
         </div>
-        <!-- Arrow adjustment panel appears when an arrow is selected -->
-        {#if isAdmin() && hasArrowSelected}
-          <ArrowAdjustmentPanel
-            beatData={displayedBeatData}
-            onBeatDataUpdate={handleBeatDataUpdate}
-          />
-        {/if}
       </div>
     {/if}
 
@@ -315,6 +319,12 @@
           {onRotationChange}
           {onOpenPropSheet}
         />
+        {#if onDurationChange}
+          <DurationControl
+            duration={displayedBeatData?.duration ?? 1}
+            onDurationChange={onDurationChange}
+          />
+        {/if}
       {/if}
     </div>
   </div>

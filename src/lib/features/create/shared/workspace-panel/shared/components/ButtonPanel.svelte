@@ -27,6 +27,7 @@
   import SequenceActionsButton from "./buttons/SequenceActionsButton.svelte";
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
+  import SpotlightButton from "./buttons/SpotlightButton.svelte";
   // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
@@ -46,11 +47,13 @@
     onClearSequence,
     onSequenceActionsClick,
     onShareHub,
+    onSpotlight,
     visible = true,
   }: {
     onClearSequence?: () => void;
     onSequenceActionsClick?: () => void;
     onShareHub?: () => void;
+    onSpotlight?: () => void;
     visible?: boolean;
   } = $props();
 
@@ -61,6 +64,15 @@
   );
   const canClearSequence = $derived(CreateModuleState.canClearSequence());
   const isShareHubOpen = $derived(panelState.isShareHubPanelOpen);
+
+  // Check if sequence has content (for spotlight button visibility)
+  const activeSequenceState = $derived(
+    CreateModuleState.getActiveTabSequenceState()
+  );
+  const hasSequenceContent = $derived(
+    activeSequenceState.hasStartPosition ||
+    (activeSequenceState.currentSequence?.beats?.length ?? 0) > 0
+  );
 
   // Count center-zone buttons to key the container (for smooth cross-fade on layout changes)
   // Note: SequenceActions is now in left zone, not center
@@ -100,11 +112,16 @@
 
 {#if visible}
   <div class="button-panel" transition:fade={{ duration: 200 }}>
-    <!-- LEFT ZONE: Sequence Actions button (tools/menu) + Animation style toggle -->
+    <!-- LEFT ZONE: Sequence Actions button (tools/menu) + Spotlight button -->
     <div class="left-zone">
       {#if showSequenceActions && onSequenceActionsClick}
         <div transition:presenceTransition>
           <SequenceActionsButton onclick={onSequenceActionsClick} />
+        </div>
+      {/if}
+      {#if onSpotlight && hasSequenceContent}
+        <div transition:presenceTransition>
+          <SpotlightButton onclick={onSpotlight} />
         </div>
       {/if}
     </div>
