@@ -363,6 +363,153 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   }
 
   /**
+   * Get the total duration of all beats (sum of individual beat durations).
+   * This is the proper "end time" for duration-aware playback.
+   */
+  getTotalDuration(): number {
+    return this.beatCalculationService.calculateTotalDuration(this.beats);
+  }
+
+  /**
+   * Calculate animation state using duration-aware timing.
+   * Maps a time position to the correct beat and progress within that beat,
+   * accounting for variable beat durations.
+   *
+   * @param timePosition - Position in sequence time (0 to totalDuration)
+   * @returns The beat number (1-based) currently being animated, for UI sync
+   */
+  calculateStateDurationAware(timePosition: number): number {
+    if (this.beats.length === 0) {
+      return 0;
+    }
+
+    // Time position 0 to ~1 (first beat's duration) = start position / first beat
+    // We use a small threshold to determine if we're at the start position
+    const totalDuration = this.getTotalDuration();
+    const firstBeatDuration = this.beats[0]?.duration ?? 1;
+
+    // At start position if timePosition < first beat duration threshold
+    // (using 0.01 as threshold to handle floating point)
+    if (timePosition < 0.01) {
+      this.calculateStartPositionState();
+      return 0;
+    }
+
+    // Use duration-aware beat calculation
+    const beatState = this.beatCalculationService.calculateBeatStateDurationAware(
+      timePosition,
+      this.beats
+    );
+
+    if (!beatState.isValid) {
+      console.error("SequenceAnimationOrchestrator: Invalid beat state from duration-aware calculation");
+      return 0;
+    }
+
+    // Store current beat index and progress
+    this.currentBeatIndex = beatState.currentBeatIndex;
+    this.currentBeatProgress = beatState.beatProgress;
+    this.atStartPosition = false;
+
+    // Skip beats without motion data
+    const beatMotions = beatState.currentBeatData?.motions;
+    const hasBeatMotions = beatMotions?.blue && beatMotions?.red;
+    if (!hasBeatMotions) {
+      const key = beatState.currentBeatData?.beatNumber ?? beatState.currentBeatIndex;
+      if (!this.missingMotionLogged.has(key)) {
+        this.missingMotionLogged.add(key);
+        console.warn(
+          "SequenceAnimationOrchestrator: Skipping beat without motion data",
+          { beatNumber: beatState.currentBeatData?.beatNumber, beatIndex: beatState.currentBeatIndex }
+        );
+      }
+      return beatState.currentBeatIndex + 1; // Return 1-based beat number
+    }
+
+    // Use focused service for interpolation
+    const interpolationResult = this.propInterpolationService.interpolatePropAngles(
+      beatState.currentBeatData,
+      beatState.beatProgress
+    );
+
+    if (interpolationResult.isValid) {
+      this.animationStateService.updatePropStates(interpolationResult);
+    }
+
+    // Return 1-based beat number for UI sync
+    return beatState.currentBeatIndex + 1;
+  }
+
+  /**
+   * Helper to calculate start position state
+   */
+  private calculateStartPositionState(): void {
+    this.atStartPosition = true;
+    this.currentBeatIndex = 0;
+    this.currentBeatProgress = 0;
+
+    const firstBeat = this.beats[0];
+    if (firstBeat?.motions?.blue && firstBeat?.motions?.red) {
+      const initialAngles = this.propInterpolationService.calculateInitialAngles(firstBeat);
+      if (initialAngles.isValid) {
+        this.animationStateService.setPropStates(
+          {
+            centerPathAngle: initialAngles.blueAngles.centerPathAngle,
+            staffRotationAngle: initialAngles.blueAngles.staffRotationAngle,
+          },
+          {
+            centerPathAngle: initialAngles.redAngles.centerPathAngle,
+            staffRotationAngle: initialAngles.redAngles.staffRotationAngle,
+          }
+        );
+      }
+    }
+  }
+
+  /**
+   * Get the current beat data (the beat being animated).
+   * Returns null if at start position or not initialized.
+   */
+  getCurrentBeatData(): BeatData | null {
+    if (!this.initialized || this.atStartPosition) {
+      return null;
+    }
+    const index = Math.max(0, Math.min(this.currentBeatIndex, this.beats.length - 1));
+    return this.beats[index] ?? null;
+  }
+
+  /**
+   * Get the current beat index (0-based array index).
+   * Returns -1 if at start position.
+   */
+  getCurrentBeatIndex(): number {
+    if (!this.initialized || this.atStartPosition) {
+      return -1;
+    }
+    return this.currentBeatIndex;
+  }
+
+  /**
+   * Get the continuous musical position as a decimal.
+   * Formula: beatNumber + (progress × duration)
+   *
+   * Example: Beat 2 with duration 2 at 50% progress = 2 + (0.5 × 2) = 3.0
+   * Returns 0 if at start position.
+   */
+  getContinuousMusicalPosition(): number {
+    if (!this.initialized || this.atStartPosition) {
+      return 0;
+    }
+
+    const beatNumber = this.currentBeatIndex + 1; // Convert 0-based to 1-based
+    const beatData = this.beats[this.currentBeatIndex];
+    const duration = beatData?.duration ?? 1;
+
+    // Musical position = beatNumber + (progress × duration)
+    return beatNumber + this.currentBeatProgress * duration;
+  }
+
+  /**
    * Dispose of resources and reset state
    */
   dispose(): void {

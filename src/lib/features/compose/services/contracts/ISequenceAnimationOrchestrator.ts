@@ -8,6 +8,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { SequenceMetadata } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
 import type {
   PropState,
   PropStates,
@@ -35,4 +36,46 @@ export interface ISequenceAnimationOrchestrator {
    * Get the total number of motion beats (NOT including start position)
    */
   getTotalBeats(): number;
+
+  /**
+   * Get the total duration of all beats (sum of individual beat durations).
+   * This is the proper "end time" for duration-aware playback.
+   */
+  getTotalDuration(): number;
+
+  /**
+   * Calculate animation state using duration-aware timing.
+   * Maps a time position to the correct beat and progress within that beat,
+   * accounting for variable beat durations.
+   *
+   * @param timePosition - Position in sequence time (0 to totalDuration)
+   * @returns The beat number (1-based) currently being animated, for UI sync
+   */
+  calculateStateDurationAware(timePosition: number): number;
+
+  /**
+   * Get the current beat data (the beat being animated).
+   * Returns null if at start position or not initialized.
+   */
+  getCurrentBeatData(): BeatData | null;
+
+  /**
+   * Get the current beat index (0-based array index).
+   * Returns -1 if at start position.
+   */
+  getCurrentBeatIndex(): number;
+
+  /**
+   * Get the current progress within the beat (0.0 to 1.0).
+   */
+  getBeatProgress(): number;
+
+  /**
+   * Get the continuous musical position as a decimal.
+   * Formula: beatNumber + (progress × duration)
+   *
+   * Example: Beat 2 with duration 2 at 50% progress = 2 + (0.5 × 2) = 3.0
+   * Returns 0 if at start position.
+   */
+  getContinuousMusicalPosition(): number;
 }

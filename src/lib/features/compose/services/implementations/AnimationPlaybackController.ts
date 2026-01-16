@@ -33,6 +33,12 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   private animationDuration: number = 300; // ms
   private useLinearAnimation: boolean = false;
 
+  // Duration-aware timing: track time position separately from beat number
+  // timePosition: 0 to totalDuration (accounts for variable beat durations)
+  // currentBeat in state: 1-based beat number for UI display
+  private timePosition: number = 0;
+  private totalDuration: number = 0;
+
   constructor(
     private readonly animationEngine: ISequenceAnimationOrchestrator,
     private readonly loopService: IAnimationLoop,
@@ -74,6 +80,10 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     state.setTotalBeats(metadata.totalBeats);
     state.setSequenceMetadata(metadata.word, metadata.author);
 
+    // Store total duration for duration-aware playback
+    this.totalDuration = this.animationEngine.getTotalDuration();
+    this.timePosition = 0;
+
     // Set sequence data on state (data arrives already normalized from SequenceService)
     state.setSequenceData(sequenceData);
 
@@ -85,6 +95,55 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.updatePropStatesFromEngine();
 
     return true;
+  }
+
+  updateSequenceData(sequenceData: SequenceData): void {
+    if (!this.state) return;
+
+    // Store current playback state
+    const wasPlaying = this.state.isPlaying;
+    const currentTimePos = this.timePosition;
+
+    // Update stored sequence data
+    this.sequenceData = sequenceData;
+
+    // Check if sequence is seamlessly loopable
+    this._isSeamlesslyLoopable =
+      this.loopabilityChecker.isSeamlesslyLoopable(sequenceData);
+
+    // Re-initialize animation engine with updated data
+    const success = this.animationEngine.initializeWithDomainData(sequenceData);
+    if (!success) {
+      console.warn("AnimationPlaybackController: Failed to update sequence data");
+      return;
+    }
+
+    // Update metadata
+    const metadata = this.animationEngine.getMetadata();
+    this.state.setTotalBeats(metadata.totalBeats);
+    this.state.setSequenceMetadata(metadata.word, metadata.author);
+
+    // Update total duration
+    this.totalDuration = this.animationEngine.getTotalDuration();
+
+    // Clamp time position to new duration range
+    this.timePosition = Math.min(currentTimePos, this.totalDuration);
+
+    // Update sequence data on state
+    this.state.setSequenceData(sequenceData);
+
+    // Restore playback state
+    if (wasPlaying) {
+      // Calculate current state at the clamped time position
+      const currentBeatNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
+      this.syncCurrentBeat(currentBeatNumber);
+      this.updatePropStatesFromEngine();
+    } else {
+      // Just update prop states at current position
+      this.updatePropStatesFromEngine();
+    }
+
+    console.log(`[AnimationPlaybackController] Updated sequence data, new totalDuration: ${this.totalDuration}`);
   }
 
   togglePlayback(): void {
@@ -117,12 +176,14 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.loopService.stop();
     this.syncIsPlaying(false);
 
-    // Reset to start
+    // Reset to start (both time position and beat number)
+    this.timePosition = 0;
     this.syncCurrentBeat(0);
 
     // Re-initialize engine if we have sequence data
     if (this.sequenceData) {
       this.animationEngine.initializeWithDomainData(this.sequenceData);
+      this.totalDuration = this.animationEngine.getTotalDuration();
     }
 
     // Update prop states
@@ -344,6 +405,8 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.loopService.stop();
     this.state = null;
     this.sequenceData = null;
+    this.timePosition = 0;
+    this.totalDuration = 0;
   }
 
   /**
@@ -446,52 +509,55 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   private onAnimationUpdate(deltaTime: number): void {
     if (!this.state) return;
 
-    // Calculate beat delta based on deltaTime (milliseconds)
-    // NOTE: deltaTime is already adjusted by speed in AnimationLoopService
-    // Assuming 60 BPM as default (1 beat per second)
-    const DEFAULT_BPM = 60;
-    const beatsPerSecond = DEFAULT_BPM / 60; // = 1.0
-    const beatDelta = (deltaTime / 1000) * beatsPerSecond;
-    const newBeat = this.state.currentBeat + beatDelta;
+    // Duration-aware timing:
+    // - deltaTime is adjusted by speed in AnimationLoopService
+    // - We advance timePosition uniformly (in "duration units")
+    // - At speed 1.0, 1 duration unit = 1 second
+    // - The animation engine maps timePosition to the correct beat and progress
+    const timeDelta = deltaTime / 1000; // Convert ms to seconds (= duration units at speed 1.0)
+    const newTimePosition = this.timePosition + timeDelta;
 
-    // Animation timing explained:
-    // - Start position is at currentBeat < 1 (before beat 1)
-    // - Beat N's motion spans from currentBeat N to N+1
-    // - For a 4-beat sequence, totalBeats = 4
-    // - To complete beat 4's motion, we need currentBeat to reach 5 (totalBeats + 1)
+    // Animation timing with duration-aware playback:
+    // - timePosition 0: start position
+    // - timePosition 0 to totalDuration: animating through beats
+    // - Each beat takes its own duration (variable)
     //
     // For seamlessly loopable sequences (circular patterns):
     // - Skip showing start position entirely in continuous playback
-    // - Loop from end of last beat (totalBeats + 1) back to beat 1
+    // - Loop from end back to first beat's start time
     //
     // For non-loopable sequences:
     // - Show start position at the end before looping
-    // - Loop from totalBeats + 1 back to beat 0 (start position)
-    const animationEndBeat = this.state.totalBeats + 1;
+    // - Loop back to 0 (start position)
 
-    if (newBeat > animationEndBeat) {
+    if (newTimePosition > this.totalDuration) {
       if (this.state.shouldLoop) {
-        // For seamlessly loopable sequences, skip start position and loop to beat 1
-        // For non-loopable sequences, show start position briefly by looping to 0
-        const loopBackBeat = this._isSeamlesslyLoopable ? 1 : 0;
-        this.syncCurrentBeat(loopBackBeat);
+        // For seamlessly loopable sequences, skip start position
+        // For non-loopable, show start position briefly
+        this.timePosition = this._isSeamlesslyLoopable ? 0.01 : 0; // Small offset to skip exact start
 
         // Re-initialize engine if needed
         if (this.sequenceData) {
           this.animationEngine.initializeWithDomainData(this.sequenceData);
+          this.totalDuration = this.animationEngine.getTotalDuration();
         }
       } else {
         // Stop at end
-        this.syncCurrentBeat(this.state.totalBeats);
+        this.timePosition = this.totalDuration;
         this.loopService.stop();
         this.syncIsPlaying(false);
       }
     } else {
-      this.syncCurrentBeat(newBeat);
+      this.timePosition = newTimePosition;
     }
 
-    // Calculate state for current beat
-    this.animationEngine.calculateState(this.state.currentBeat);
+    // Calculate state using duration-aware timing
+    // Returns the 1-based beat number for UI sync
+    const currentBeatNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
+
+    // Sync the beat number (not time position) for UI highlighting
+    // The beat number is what the BeatGrid needs for highlighting
+    this.syncCurrentBeat(currentBeatNumber);
 
     // Update prop states
     this.updatePropStatesFromEngine();

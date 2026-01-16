@@ -19,6 +19,7 @@ Features:
   import AnimationGrid from "./components/AnimationGrid.svelte";
   import AnimationDetailPanel from "./components/AnimationDetailPanel.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -35,6 +36,10 @@ Features:
   let isDetailPanelOpen = $state(false);
   let isMobile = $state(false);
   let filtersExpanded = $state(false);
+
+  // Delete confirmation dialog state
+  let isDeleteDialogOpen = $state(false);
+  let animationToDelete = $state<SavedAnimation | null>(null);
 
   // Drawer width (desktop)
   const drawerWidth = "min(600px, 90vw)";
@@ -116,11 +121,8 @@ Features:
         break;
 
       case "delete":
-        // TODO: Show confirmation dialog, then delete
-        if (confirm(`Delete "${animation.name}"?`)) {
-          browseState.deleteAnimation(animation.id);
-          isDetailPanelOpen = false;
-        }
+        animationToDelete = animation;
+        isDeleteDialogOpen = true;
         break;
     }
   }
@@ -129,6 +131,18 @@ Features:
     hapticService?.trigger("selection");
     isDetailPanelOpen = false;
     browseState.clearSelection();
+  }
+
+  function handleDeleteConfirm() {
+    if (animationToDelete) {
+      browseState.deleteAnimation(animationToDelete.id);
+      isDetailPanelOpen = false;
+      animationToDelete = null;
+    }
+  }
+
+  function handleDeleteCancel() {
+    animationToDelete = null;
   }
 </script>
 
@@ -197,6 +211,20 @@ Features:
       {/if}
     </Drawer>
   </div>
+
+  <!-- Delete Confirmation Dialog -->
+  <ConfirmDialog
+    bind:isOpen={isDeleteDialogOpen}
+    title="Delete Animation"
+    message={animationToDelete
+      ? `Are you sure you want to delete "${animationToDelete.name}"? This action cannot be undone.`
+      : ""}
+    confirmText="Delete"
+    cancelText="Cancel"
+    variant="danger"
+    onConfirm={handleDeleteConfirm}
+    onCancel={handleDeleteCancel}
+  />
 </div>
 
 <style>

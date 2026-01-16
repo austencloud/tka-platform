@@ -18,6 +18,13 @@ export interface IAnimationPlaybackController {
   initialize(sequenceData: SequenceData, state: AnimationPanelState): boolean;
 
   /**
+   * Update sequence data without interrupting playback.
+   * Re-initializes the animation engine with new data while preserving playback state.
+   * @param sequenceData The updated sequence to use
+   */
+  updateSequenceData(sequenceData: SequenceData): void;
+
+  /**
    * Start or pause playback
    */
   togglePlayback(): void;
