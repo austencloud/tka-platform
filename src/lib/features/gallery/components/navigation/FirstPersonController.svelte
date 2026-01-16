@@ -56,9 +56,13 @@
     enabled?: boolean;
     /** Initial yaw angle (radians). Default faces down +Z axis (into hallway) */
     initialYaw?: number;
+    /** Field of view in degrees */
+    fov?: number;
+    /** Mouse sensitivity multiplier */
+    mouseSensitivity?: number;
   }
 
-  let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI }: Props = $props();
+  let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI, fov = 75, mouseSensitivity = 1.0 }: Props = $props();
 
   // Camera reference
   let camera = $state<PerspectiveCamera | undefined>(undefined);
@@ -348,8 +352,9 @@
   function handleMouseMove(e: MouseEvent) {
     if (!isPointerLocked || !enabled) return;
 
-    yaw -= e.movementX * MOUSE_SENSITIVITY;
-    pitch -= e.movementY * MOUSE_SENSITIVITY;
+    const sensitivity = MOUSE_SENSITIVITY * mouseSensitivity;
+    yaw -= e.movementX * sensitivity;
+    pitch -= e.movementY * sensitivity;
 
     // Clamp pitch to prevent flipping
     pitch = Math.max(-LOOK_ANGLE_LIMIT, Math.min(LOOK_ANGLE_LIMIT, pitch));
@@ -364,12 +369,17 @@
     }
   }
 
-  // Click to request pointer lock
+  // Click to request pointer lock (desktop only - touch devices use drag-to-look)
   function handleCanvasClick(e: MouseEvent) {
-    if (!enabled || isPointerLocked) return;
+    console.log('[FirstPersonController] Click - enabled:', enabled, 'isPointerLocked:', isPointerLocked, 'isTouchDevice:', isTouchDevice);
+    if (!enabled || isPointerLocked || isTouchDevice) {
+      console.log('[FirstPersonController] Pointer lock BLOCKED');
+      return;
+    }
 
     const canvas = e.target as HTMLCanvasElement;
     if (canvas?.tagName === "CANVAS") {
+      console.log('[FirstPersonController] Requesting pointer lock');
       canvas.requestPointerLock();
     }
   }
@@ -550,6 +560,7 @@
   onMount(() => {
     // Detect touch device
     isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    console.log('[FirstPersonController] onMount - isTouchDevice:', isTouchDevice, 'maxTouchPoints:', navigator.maxTouchPoints);
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -584,7 +595,7 @@
   bind:ref={camera}
   makeDefault
   position={[position.x, position.y, position.z]}
-  fov={75}
+  {fov}
   near={1}
   far={5000}
 />

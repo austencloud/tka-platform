@@ -18,6 +18,8 @@
     TrailStyle,
     TrailEffect,
     TrackingMode,
+    FadeStyle,
+    TaperStyle,
   } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
   import {
@@ -181,6 +183,8 @@
           mode: TrailMode.OFF,
           style: TrailStyle.SMOOTH_LINE,
           effect: TrailEffect.NONE,
+          fadeStyle: FadeStyle.LINEAR,
+          taperStyle: TaperStyle.NONE,
           fadeDurationMs: 0,
           maxPoints: 0,
           lineWidth: 2,

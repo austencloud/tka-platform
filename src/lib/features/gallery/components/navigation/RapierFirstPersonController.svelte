@@ -63,9 +63,13 @@
     enabled?: boolean;
     /** Initial yaw angle (radians) */
     initialYaw?: number;
+    /** Field of view in degrees */
+    fov?: number;
+    /** Mouse sensitivity multiplier */
+    mouseSensitivity?: number;
   }
 
-  let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI }: Props = $props();
+  let { layout, position, currentRoomId, onPositionChange, onRoomChange, onRotationChange, onLocomotionChange, enabled = true, initialYaw = Math.PI, fov = 75, mouseSensitivity = 1.0 }: Props = $props();
 
   // Camera reference
   let camera = $state<PerspectiveCamera | undefined>(undefined);
@@ -382,8 +386,9 @@
   function handleMouseMove(e: MouseEvent) {
     if (!isPointerLocked || !enabled) return;
 
-    yaw -= e.movementX * MOUSE_SENSITIVITY;
-    pitch -= e.movementY * MOUSE_SENSITIVITY;
+    const sensitivity = MOUSE_SENSITIVITY * mouseSensitivity;
+    yaw -= e.movementX * sensitivity;
+    pitch -= e.movementY * sensitivity;
     pitch = Math.max(-LOOK_ANGLE_LIMIT, Math.min(LOOK_ANGLE_LIMIT, pitch));
   }
 
@@ -395,11 +400,17 @@
     }
   }
 
+  // Click to request pointer lock (desktop only - touch devices use drag-to-look)
   function handleCanvasClick(e: MouseEvent) {
-    if (!enabled || isPointerLocked) return;
+    console.log('[RapierFirstPersonController] Click - enabled:', enabled, 'isPointerLocked:', isPointerLocked, 'isTouchDevice:', isTouchDevice);
+    if (!enabled || isPointerLocked || isTouchDevice) {
+      console.log('[RapierFirstPersonController] Pointer lock BLOCKED');
+      return;
+    }
 
     const canvas = e.target as HTMLCanvasElement;
     if (canvas?.tagName === "CANVAS") {
+      console.log('[RapierFirstPersonController] Requesting pointer lock');
       canvas.requestPointerLock();
     }
   }
@@ -552,7 +563,7 @@
   bind:ref={camera}
   makeDefault
   position={[position.x, position.y, position.z]}
-  fov={75}
+  {fov}
   near={1}
   far={5000}
 />

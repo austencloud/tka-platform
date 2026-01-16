@@ -18,6 +18,10 @@
   import SessionJoinDrawer from "../multiplayer/components/SessionJoinDrawer.svelte";
   import SessionChat from "../multiplayer/components/SessionChat.svelte";
 
+  // UI primitives
+  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
+  import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
+
   interface Props {
     /** Gallery state - named galleryState to avoid Svelte compiler treating 'state' as a store */
     galleryState: GalleryState;
@@ -184,75 +188,105 @@
     <div class="settings-panel">
       <h3>Gallery Settings</h3>
 
-      <div class="setting-group">
-        <label for="physics-mode">Physics Mode</label>
-        <select
-          id="physics-mode"
-          value={gallerySettings.physicsMode}
-          onchange={(e) => {
-            const target = e.target as HTMLSelectElement;
-            gallerySettings.setPhysicsMode(target.value as "raycasting" | "rapier");
-            window.location.reload(); // Reload to apply physics change
-          }}
-        >
-          <option value="raycasting">Raycasting (Lighter)</option>
-          <option value="rapier">Rapier (Realistic)</option>
-        </select>
-        <p class="setting-hint">
-          Raycasting is lighter and faster. Rapier provides realistic physics with slopes and auto-step.
-        </p>
-      </div>
-
-      <div class="setting-group">
-        <label for="rendering-backend">Rendering Backend</label>
-        <select
-          id="rendering-backend"
-          value={gallerySettings.renderingBackend}
-          onchange={(e) => {
-            const target = e.target as HTMLSelectElement;
-            gallerySettings.setRenderingBackend(target.value as "webgl" | "webgpu-auto");
-            window.location.reload(); // Reload to apply rendering change
-          }}
-        >
-          <option value="webgl">WebGL (Compatible)</option>
-          <option value="webgpu-auto">WebGPU (Auto-fallback)</option>
-        </select>
-        <p class="setting-hint">
-          WebGL works everywhere. WebGPU is faster but automatically falls back to WebGL if unavailable.
-        </p>
-      </div>
-
-      <div class="setting-group">
-        <label for="fov">Field of View: {gallerySettings.fov}°</label>
-        <input
-          id="fov"
-          type="range"
-          min="50"
-          max="120"
-          step="5"
-          value={gallerySettings.fov}
-          oninput={(e) => {
-            const target = e.target as HTMLInputElement;
-            gallerySettings.setFov(parseInt(target.value));
+      <ChipGroup label="Physics">
+        <ChipToggle
+          label="Raycasting"
+          icon="fa-feather"
+          active={gallerySettings.physicsMode === "raycasting"}
+          color="cyan"
+          onclick={() => {
+            gallerySettings.setPhysicsMode("raycasting");
+            window.location.reload();
           }}
         />
-      </div>
-
-      <div class="setting-group">
-        <label for="mouse-sensitivity">Mouse Sensitivity: {gallerySettings.mouseSensitivity.toFixed(1)}x</label>
-        <input
-          id="mouse-sensitivity"
-          type="range"
-          min="0.1"
-          max="3.0"
-          step="0.1"
-          value={gallerySettings.mouseSensitivity}
-          oninput={(e) => {
-            const target = e.target as HTMLInputElement;
-            gallerySettings.setMouseSensitivity(parseFloat(target.value));
+        <ChipToggle
+          label="Rapier"
+          icon="fa-cube"
+          active={gallerySettings.physicsMode === "rapier"}
+          color="cyan"
+          onclick={() => {
+            gallerySettings.setPhysicsMode("rapier");
+            window.location.reload();
           }}
         />
-      </div>
+      </ChipGroup>
+
+      <ChipGroup label="Renderer">
+        <ChipToggle
+          label="WebGL"
+          icon="fa-globe"
+          active={gallerySettings.renderingBackend === "webgl"}
+          color="emerald"
+          onclick={() => {
+            gallerySettings.setRenderingBackend("webgl");
+            window.location.reload();
+          }}
+        />
+        <ChipToggle
+          label="WebGPU"
+          icon="fa-bolt"
+          active={gallerySettings.renderingBackend === "webgpu-auto"}
+          color="emerald"
+          onclick={() => {
+            gallerySettings.setRenderingBackend("webgpu-auto");
+            window.location.reload();
+          }}
+        />
+      </ChipGroup>
+
+      <ChipGroup label="Field of View">
+        <ChipToggle
+          label="60°"
+          active={gallerySettings.fov === 60}
+          color="amber"
+          onclick={() => gallerySettings.setFov(60)}
+        />
+        <ChipToggle
+          label="75°"
+          active={gallerySettings.fov === 75}
+          color="amber"
+          onclick={() => gallerySettings.setFov(75)}
+        />
+        <ChipToggle
+          label="90°"
+          active={gallerySettings.fov === 90}
+          color="amber"
+          onclick={() => gallerySettings.setFov(90)}
+        />
+        <ChipToggle
+          label="110°"
+          active={gallerySettings.fov === 110}
+          color="amber"
+          onclick={() => gallerySettings.setFov(110)}
+        />
+      </ChipGroup>
+
+      <ChipGroup label="Mouse Sensitivity">
+        <ChipToggle
+          label="0.5x"
+          active={gallerySettings.mouseSensitivity === 0.5}
+          color="rose"
+          onclick={() => gallerySettings.setMouseSensitivity(0.5)}
+        />
+        <ChipToggle
+          label="1x"
+          active={gallerySettings.mouseSensitivity === 1.0}
+          color="rose"
+          onclick={() => gallerySettings.setMouseSensitivity(1.0)}
+        />
+        <ChipToggle
+          label="1.5x"
+          active={gallerySettings.mouseSensitivity === 1.5}
+          color="rose"
+          onclick={() => gallerySettings.setMouseSensitivity(1.5)}
+        />
+        <ChipToggle
+          label="2x"
+          active={gallerySettings.mouseSensitivity === 2.0}
+          color="rose"
+          onclick={() => gallerySettings.setMouseSensitivity(2.0)}
+        />
+      </ChipGroup>
 
       <button class="reset-button" onclick={() => {
         gallerySettings.reset();
@@ -628,78 +662,43 @@
     position: absolute;
     top: 70px;
     right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     background: rgba(0, 0, 0, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 20px;
-    min-width: 300px;
-    max-width: 400px;
+    min-width: 280px;
+    max-width: 320px;
     z-index: 100;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   }
 
   .settings-panel h3 {
-    margin: 0 0 16px 0;
-    font-size: 18px;
+    margin: 0;
+    font-size: 16px;
     font-weight: 600;
     color: #ffffff;
   }
 
-  .setting-group {
-    margin-bottom: 20px;
-  }
-
-  .setting-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .setting-group select,
-  .setting-group input[type="range"] {
-    width: 100%;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    color: #ffffff;
-    font-size: 14px;
-  }
-
-  .setting-group select {
-    cursor: pointer;
-  }
-
-  .setting-group select:focus {
-    outline: none;
-    border-color: rgba(96, 165, 250, 0.5);
-  }
-
-  .setting-hint {
-    margin: 8px 0 0 0;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    line-height: 1.4;
-  }
-
   .reset-button {
-    width: 100%;
     padding: 10px;
-    background: rgba(239, 68, 68, 0.2);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    border-radius: 6px;
-    color: #ef4444;
-    font-size: 14px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    color: #fca5a5;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
   }
 
-  .reset-button:hover {
-    background: rgba(239, 68, 68, 0.3);
-    border-color: rgba(239, 68, 68, 0.6);
+  @media (hover: hover) {
+    .reset-button:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
   }
 
   /* Mobile adjustments */

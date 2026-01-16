@@ -25,7 +25,7 @@ const STORAGE_KEY = "tka-gallery-settings";
 
 const DEFAULT_SETTINGS: GallerySettings = {
   physicsMode: "raycasting", // Default to lighter raycasting mode
-  renderingBackend: "webgl", // Default to WebGL for compatibility
+  renderingBackend: "webgpu-auto", // WebGPU when available, auto-fallback to WebGL
   fov: 75,
   mouseSensitivity: 1.0,
   moveSpeedMultiplier: 1.0,

@@ -6,6 +6,7 @@
    * - Virtual joystick (bottom-left) for movement
    * - Drag anywhere else to look around
    * - 48px minimum touch targets
+   * - Also supports mouse drag as fallback (for DevTools mobile simulation)
    */
 
   import { onMount, onDestroy } from "svelte";
@@ -29,9 +30,13 @@
   let joystickCenter = { x: 0, y: 0 };
   let joystickOffset = $state({ x: 0, y: 0 });
 
-  // Look state
+  // Look state (touch)
   let lookTouchId = $state<number | null>(null);
   let lastLookPos = { x: 0, y: 0 };
+
+  // Mouse drag state (fallback for DevTools mobile simulation)
+  let isMouseDragging = $state(false);
+  let lastMousePos = { x: 0, y: 0 };
 
   // Tap detection state
   let tapStartTime = 0;
@@ -172,11 +177,43 @@
     }
   }
 
+  // Mouse event handlers (fallback for DevTools mobile simulation)
+  // When touch device is detected but user is using mouse (no pointer lock)
+  function handleMouseDown(e: MouseEvent) {
+    console.log('[TouchControls] Mouse down - enabled:', enabled, 'inJoystickZone:', isInJoystickZone(e.clientX, e.clientY));
+    if (!enabled) return;
+    // Don't interfere with joystick clicks
+    if (isInJoystickZone(e.clientX, e.clientY)) return;
+
+    isMouseDragging = true;
+    lastMousePos = { x: e.clientX, y: e.clientY };
+    console.log('[TouchControls] Mouse drag started');
+    e.preventDefault();
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    if (!enabled || !isMouseDragging) return;
+
+    const deltaX = e.clientX - lastMousePos.x;
+    const deltaY = e.clientY - lastMousePos.y;
+    lastMousePos = { x: e.clientX, y: e.clientY };
+
+    onLook(deltaX, deltaY);
+  }
+
+  function handleMouseUp() {
+    if (isMouseDragging) {
+      console.log('[TouchControls] Mouse drag ended');
+    }
+    isMouseDragging = false;
+  }
+
   // Detect touch device
   let isTouchDevice = $state(false);
 
   onMount(() => {
     isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    console.log('[TouchControls] onMount - isTouchDevice:', isTouchDevice, 'maxTouchPoints:', navigator.maxTouchPoints);
 
     if (!isTouchDevice) {
       return;
@@ -190,6 +227,12 @@
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd);
     window.addEventListener("touchcancel", handleTouchEnd);
+
+    // Add mouse listeners as fallback (for DevTools mobile simulation where
+    // touch device is detected but user is actually using mouse)
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
 
     // Update position on resize
     const handleResize = () => {
@@ -208,6 +251,9 @@
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
       window.removeEventListener("touchcancel", handleTouchEnd);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     }
   });
 </script>

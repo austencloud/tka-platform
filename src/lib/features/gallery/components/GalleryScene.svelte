@@ -7,7 +7,8 @@
    * Includes multiplayer support for rendering remote players.
    */
 
-  import { Canvas, T } from "@threlte/core";
+  import { T } from "@threlte/core";
+  import GalleryCanvas from "./GalleryCanvas.svelte";
   import type { GalleryState } from "../state/gallery-state.svelte";
   import type { GallerySettingsInstance } from "../state/gallery-settings.svelte";
   import type { MultiplayerStateInstance } from "../multiplayer/state/multiplayer-state.svelte";
@@ -96,7 +97,8 @@
 </script>
 
 <div class="scene-container">
-  <Canvas
+  <GalleryCanvas
+    renderingBackend={gallerySettings.renderingBackend}
     autoRender={true}
     toneMapping={undefined}
   >
@@ -128,6 +130,8 @@
           {onRotationChange}
           {onLocomotionChange}
           enabled={true}
+          fov={gallerySettings.fov}
+          mouseSensitivity={gallerySettings.mouseSensitivity}
         />
       {:else}
         <FirstPersonController
@@ -139,6 +143,8 @@
           {onRotationChange}
           {onLocomotionChange}
           enabled={true}
+          fov={gallerySettings.fov}
+          mouseSensitivity={gallerySettings.mouseSensitivity}
         />
       {/if}
 
@@ -197,7 +203,7 @@
         />
       {/if}
     {/if}
-  </Canvas>
+  </GalleryCanvas>
 </div>
 
 <style>

@@ -334,6 +334,7 @@
 		inset: 0;
 		background: rgba(0, 0, 0, 0.5);
 		z-index: 100;
+		pointer-events: auto;
 	}
 
 	.drawer {
@@ -347,6 +348,7 @@
 		display: flex;
 		flex-direction: column;
 		box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+		pointer-events: auto;
 	}
 
 	.drawer-header {
