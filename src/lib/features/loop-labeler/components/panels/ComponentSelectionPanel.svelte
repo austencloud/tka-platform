@@ -8,8 +8,8 @@
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {
-    labelingMode: "whole" | "section" | "beatpair";
-    onLabelingModeChange: (mode: "whole" | "section" | "beatpair") => void;
+    labelingMode: "whole" | "section" | "steppair";
+    onLabelingModeChange: (mode: "whole" | "section" | "steppair") => void;
   }
 
   let { labelingMode, onLabelingModeChange }: Props = $props();
@@ -35,8 +35,8 @@
     </button>
     <button
       class="mode-toggle-btn"
-      class:active={labelingMode === "beatpair"}
-      onclick={() => onLabelingModeChange("beatpair")}
+      class:active={labelingMode === "steppair"}
+      onclick={() => onLabelingModeChange("steppair")}
     >
       <FontAwesomeIcon icon="link" size="1em" />
       Beat Pair

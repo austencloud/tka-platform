@@ -1,7 +1,7 @@
 import type {
   ColorData,
   TransformationCheckResult,
-} from "../../domain/models/internal-beat-models";
+} from "../../domain/models/internal-step-models";
 
 /**
  * Service for detecting pure swap and invert transformations between beat pairs.
@@ -9,7 +9,7 @@ import type {
  */
 export interface ISwapInvertComparer {
   /**
-   * Check for swap and invert transformations between two beats.
+   * Check for swap and invert transformations between two steps.
    * @param b1Blue Beat 1 blue prop data
    * @param b1Red Beat 1 red prop data
    * @param b2Blue Beat 2 blue prop data
@@ -24,7 +24,7 @@ export interface ISwapInvertComparer {
   ): TransformationCheckResult;
 
   /**
-   * Check if two beats are identical (repeated).
+   * Check if two steps are identical (repeated).
    */
   checkRepeated(
     b1Blue: ColorData,

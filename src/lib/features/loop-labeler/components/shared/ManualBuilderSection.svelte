@@ -7,19 +7,19 @@
 <script lang="ts">
   import type { LabelingMode } from "../../state/loop-labeler-state.svelte";
   import type { createSectionModeState } from "../../state/section-mode-state.svelte";
-  import type { createBeatPairModeState } from "../../state/beatpair-mode-state.svelte";
+  import type { createBeatPairModeState } from "../../state/steppair-mode-state.svelte";
   import type { createWholeModeState } from "../../state/whole-mode-state.svelte";
 
   import ComponentSelectionPanel from "../panels/ComponentSelectionPanel.svelte";
   import SectionModePanel from "../panels/SectionModePanel.svelte";
-  import BeatPairModePanel from "../panels/BeatPairModePanel.svelte";
+  import StepPairModePanel from "../panels/StepPairModePanel.svelte";
   import WholeModePanel from "../panels/WholeModePanel.svelte";
 
   interface Props {
     showManualBuilder: boolean;
     labelingMode: LabelingMode;
     sectionState: ReturnType<typeof createSectionModeState> | undefined;
-    beatPairState: ReturnType<typeof createBeatPairModeState> | undefined;
+    stepPairState: ReturnType<typeof createBeatPairModeState> | undefined;
     wholeState: ReturnType<typeof createWholeModeState> | undefined;
     derivedLoopType: string | null;
     notes: string;
@@ -36,7 +36,7 @@
     showManualBuilder,
     labelingMode,
     sectionState,
-    beatPairState,
+    stepPairState,
     wholeState,
     derivedLoopType,
     notes,
@@ -63,7 +63,7 @@
     <!-- Mode-specific builder panels -->
     {#if labelingMode === "section" && sectionState}
       <SectionModePanel
-        selectedBeats={sectionState.selectedBeats}
+        selectedSteps={sectionState.selectedSteps}
         selectedComponents={sectionState.selectedComponents}
         savedSections={sectionState.savedSections}
         selectedBaseWord={sectionState.selectedBaseWord}
@@ -72,20 +72,20 @@
         {onRemoveSection}
         {onMarkUnknown}
         {onNext}
-        canProceed={sectionState.selectedBeats.size === 0 &&
+        canProceed={sectionState.selectedSteps.size === 0 &&
           sectionState.selectedComponents.size === 0}
       />
-    {:else if labelingMode === "beatpair" && beatPairState}
-      <BeatPairModePanel
-        firstBeat={beatPairState.firstBeat}
-        secondBeat={beatPairState.secondBeat}
-        selectedComponents={beatPairState.selectedComponents}
-        transformationIntervals={beatPairState.transformationIntervals}
-        onClearSelection={() => beatPairState!.actions.clearSelection()}
-        onToggleComponent={(c) => beatPairState!.actions.toggleComponent(c)}
+    {:else if labelingMode === "steppair" && stepPairState}
+      <StepPairModePanel
+        firstStep={stepPairState.firstStep}
+        secondStep={stepPairState.secondStep}
+        selectedComponents={stepPairState.selectedComponents}
+        transformationIntervals={stepPairState.transformationIntervals}
+        onClearSelection={() => stepPairState!.actions.clearSelection()}
+        onToggleComponent={(c) => stepPairState!.actions.toggleComponent(c)}
         onSetInterval={(key, val) =>
-          beatPairState!.actions.setTransformationInterval(key, val)}
-        onAddBeatPair={() => beatPairState!.actions.addBeatPair()}
+          stepPairState!.actions.setTransformationInterval(key, val)}
+        onAddBeatPair={() => stepPairState!.actions.addBeatPair()}
       />
     {:else if labelingMode === "whole" && wholeState}
       <WholeModePanel

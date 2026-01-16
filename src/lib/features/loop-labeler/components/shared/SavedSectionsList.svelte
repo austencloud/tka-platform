@@ -8,7 +8,7 @@
   import type { SectionDesignation } from "../../domain/models/section-models";
   import { SECTION_COLORS } from "../../domain/constants/section-colors";
   import {
-    formatSectionBeats,
+    formatSectionSteps,
     formatDesignation,
   } from "../../utils/formatting";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
@@ -31,7 +31,7 @@
           ?.border}"
       >
         <div class="section-info">
-          <span class="section-beats">{formatSectionBeats(section.beats)}</span>
+          <span class="section-steps">{formatSectionSteps(section.steps)}</span>
           <span class="section-components">{formatDesignation(section)}</span>
         </div>
         <button
@@ -84,7 +84,7 @@
     min-width: 0;
   }
 
-  .section-beats {
+  .section-steps {
     font-weight: 600;
     font-size: var(--font-size-sm);
     color: var(--foreground);

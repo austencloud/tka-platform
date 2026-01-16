@@ -1,5 +1,5 @@
-import type { InternalBeatPair } from "../../domain/models/internal-beat-models";
-import type { BeatPairGroups } from "../../domain/models/label-models";
+import type { InternalStepPair } from "../../domain/models/internal-step-models";
+import type { StepPairGroups } from "../../domain/models/label-models";
 
 /**
  * Result from axis-alternating pattern detection.
@@ -39,7 +39,7 @@ export interface ColumnBehavior {
   /** Is this column swapped relative to base? */
   isSwapped: boolean;
   /** Beat numbers in this column */
-  beats: number[];
+  steps: number[];
   /** All transformations detected for this column */
   transformations: string[];
 }
@@ -69,7 +69,7 @@ export interface ITransformationAnalyzer {
   /**
    * Find all common transformations shared by ALL beat pairs.
    */
-  findAllCommonTransformations(beatPairs: InternalBeatPair[]): string[];
+  findAllCommonTransformations(stepPairs: InternalStepPair[]): string[];
 
   /**
    * Group beat pairs by their primary transformation pattern.
@@ -80,14 +80,14 @@ export interface ITransformationAnalyzer {
    * Re-prioritize beat pairs based on common transformations.
    * Mutates the beat pairs in place.
    */
-  reprioritizeBeatPairs(beatPairs: InternalBeatPair[]): void;
+  reprioritizeBeatPairs(stepPairs: InternalStepPair[]): void;
 
   /**
    * Detect if a sequence follows an axis-alternating pattern.
    */
   detectAxisAlternatingPattern(
-    beatPairs: InternalBeatPair[],
-    beatPairGroups: BeatPairGroups
+    stepPairs: InternalStepPair[],
+    stepPairGroups: StepPairGroups
   ): AxisAlternatingResult | null;
 
   /**
@@ -95,7 +95,7 @@ export interface ITransformationAnalyzer {
    * A modular pattern has different column behaviors within each cycle.
    */
   detectModularPattern(
-    beatPairs: InternalBeatPair[],
+    stepPairs: InternalStepPair[],
     cycleLength: number
   ): ModularAnalysisResult | null;
 

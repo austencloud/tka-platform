@@ -2,9 +2,9 @@
  * Polyrhythmic LOOP Detection Service
  *
  * Detects "traditional" LOOP patterns based on polyrhythmic periodicity
- * (e.g., 3:4 = 12 beats where period-3 controls motion type and period-4 controls spatial position)
+ * (e.g., 3:4 = 12 steps where period-3 controls motion type and period-4 controls spatial position)
  *
- * This runs alongside the beat-pair detection, providing a complementary analysis.
+ * This runs alongside the step-pair detection, providing a complementary analysis.
  */
 
 import {
@@ -17,7 +17,7 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 // TYPES
 // ============================================================================
 
-export interface BeatProperties {
+export interface StepProperties {
   beat: number;
   blueMotionType: string;
   redMotionType: string;
@@ -42,7 +42,7 @@ export interface PropertyConsistency {
 export interface PeriodAnalysis {
   period: number;
   numGroups: number; // sequence length / period
-  positionGroups: number[][]; // beats at each position, e.g., [[1,4,7,10], [2,5,8,11], [3,6,9,12]]
+  positionGroups: number[][]; // steps at each position, e.g., [[1,4,7,10], [2,5,8,11], [3,6,9,12]]
   consistentProperties: PropertyConsistency[];
   consistencyScore: number;
   dominantPropertyType: "motion" | "spatial" | "both" | "other" | "none";
@@ -102,13 +102,13 @@ function allSame(values: string[]): boolean {
  * Extract properties from a raw beat object
  */
 function extractBeatProperties(
-  rawBeat: Record<string, unknown>
-): BeatProperties {
-  const blue = (rawBeat.blueAttributes as Record<string, unknown>) || {};
-  const red = (rawBeat.redAttributes as Record<string, unknown>) || {};
+  rawStep: Record<string, unknown>
+): StepProperties {
+  const blue = (rawStep.blueAttributes as Record<string, unknown>) || {};
+  const red = (rawStep.redAttributes as Record<string, unknown>) || {};
 
   return {
-    beat: (rawBeat.beat as number) || 0,
+    beat: (rawStep.beat as number) || 0,
     blueMotionType: (blue.motionType as string) || "unknown",
     redMotionType: (red.motionType as string) || "unknown",
     blueRotDir: (blue.propRotDir as string) || "unknown",
@@ -117,16 +117,16 @@ function extractBeatProperties(
     redStartLoc: (red.startLoc as string) || "unknown",
     blueEndLoc: (blue.endLoc as string) || "unknown",
     redEndLoc: (red.endLoc as string) || "unknown",
-    timing: (rawBeat.timing as string) || "none",
-    letterType: (rawBeat.letterType as string) || "unknown",
-    letter: (rawBeat.letter as string) || "",
+    timing: (rawStep.timing as string) || "none",
+    letterType: (rawStep.letterType as string) || "unknown",
+    letter: (rawStep.letter as string) || "",
   };
 }
 
 /**
  * Get a specific property value from beat properties
  */
-function getPropertyValue(props: BeatProperties, property: string): string {
+function getPropertyValue(props: StepProperties, property: string): string {
   return (props as unknown as Record<string, string>)[property] || "unknown";
 }
 
@@ -161,22 +161,22 @@ export class PolyrhythmicDetector {
   detectPolyrhythmic(
     rawSequence: Record<string, unknown>[]
   ): PolyrhythmicLOOPResult {
-    // Filter to actual beats (exclude metadata at index 0)
-    const beatRecords = rawSequence.filter(
+    // Filter to actual steps (exclude metadata at index 0)
+    const stepRecords = rawSequence.filter(
       (item) => typeof item.beat === "number" && item.beat > 0
     );
-    const beats = beatRecords.map(extractBeatProperties);
+    const steps = stepRecords.map(extractBeatProperties);
 
     // Extract end positions for zone coverage analysis
     // The field is 'endPos' (string like "alpha1", "gamma12") which matches GridPosition enum values
-    const endPositions = beatRecords.map((item) => {
+    const endPositions = stepRecords.map((item) => {
       const endPos = item.endPos as string | undefined;
       if (!endPos) return null;
       // The JSON strings match GridPosition enum values directly
       return endPos as GridPosition;
     });
 
-    const length = beats.length;
+    const length = steps.length;
 
     if (length < 4) {
       return this.noPolyrhythmResult(
@@ -197,7 +197,7 @@ export class PolyrhythmicDetector {
     const analyses: PeriodAnalysis[] = [];
 
     for (const period of factors) {
-      const analysis = this.analyzePeriod(beats, period);
+      const analysis = this.analyzePeriod(steps, period);
       if (analysis.consistencyScore > 0) {
         analyses.push(analysis);
       }
@@ -216,7 +216,7 @@ export class PolyrhythmicDetector {
     }> = [];
 
     // IMPORTANT: Standard LOOP intervals (halved/quartered) should NOT be considered
-    // for polyrhythmic detection - those are handled by beat-pair analysis
+    // for polyrhythmic detection - those are handled by step-pair analysis
     const halvedPeriod = length / 2; // period that would indicate halved LOOP
     const quarteredPeriod = length / 4; // period that would indicate quartered LOOP
     const isStandardLOOPInterval = (period: number): boolean => {
@@ -240,7 +240,7 @@ export class PolyrhythmicDetector {
           }
 
           // Also skip if EITHER period is halved or quartered - these are standard LOOP intervals
-          // A repeated word (like 5-letter word repeated 4 times = 20 beats) is NOT polyrhythmic
+          // A repeated word (like 5-letter word repeated 4 times = 20 steps) is NOT polyrhythmic
           if (
             p1.period === halvedPeriod ||
             p2.period === halvedPeriod ||
@@ -380,13 +380,13 @@ export class PolyrhythmicDetector {
    * Analyze a specific period
    */
   private analyzePeriod(
-    beats: BeatProperties[],
+    steps: StepProperties[],
     period: number
   ): PeriodAnalysis {
-    const length = beats.length;
+    const length = steps.length;
     const numGroups = length / period;
 
-    // Group beats by position within period
+    // Group steps by position within period
     const positionGroups: number[][] = [];
     for (let pos = 0; pos < period; pos++) {
       const group: number[] = [];
@@ -417,7 +417,7 @@ export class PolyrhythmicDetector {
 
     for (const property of propertiesToCheck) {
       const result = this.checkPropertyConsistency(
-        beats,
+        steps,
         positionGroups,
         property
       );
@@ -456,20 +456,20 @@ export class PolyrhythmicDetector {
    * Check if a property is consistent within each position group
    */
   private checkPropertyConsistency(
-    beats: BeatProperties[],
+    steps: StepProperties[],
     positionGroups: number[][],
     property: string
   ): PropertyConsistency | null {
     const valuesPerPosition: string[] = [];
 
     for (const group of positionGroups) {
-      // Get property values for all beats in this position
-      const values = group.map((beatNum) => {
-        const beat = beats.find((b) => b.beat === beatNum);
+      // Get property values for all steps in this position
+      const values = group.map((stepNum) => {
+        const beat = steps.find((b) => b.beat === stepNum);
         return beat ? getPropertyValue(beat, property) : "unknown";
       });
 
-      // Check if all beats at this position have the same value
+      // Check if all steps at this position have the same value
       if (!allSame(values)) {
         return null; // Not consistent within this position
       }
@@ -551,7 +551,7 @@ export class PolyrhythmicDetector {
       `Polyrhythmic ${motionPeriod.period}:${spatialPeriod.period} pattern. ` +
       `Period-${motionPeriod.period} controls motion (${motionProps || "pattern"}). ` +
       `Period-${spatialPeriod.period} controls spatial position (${spatialProps || "pattern"}). ` +
-      `LCM(${motionPeriod.period},${spatialPeriod.period}) = ${length} beats.`
+      `LCM(${motionPeriod.period},${spatialPeriod.period}) = ${length} steps.`
     );
   }
 

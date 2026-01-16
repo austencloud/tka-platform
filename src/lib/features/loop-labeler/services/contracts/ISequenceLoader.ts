@@ -1,4 +1,4 @@
-import type { SequenceEntry } from "./IBeatDataConverter";
+import type { SequenceEntry } from "./IStepDataConverter";
 import type { LabeledSequence } from "./ILOOPLabelsFirebaseRepository";
 
 /**

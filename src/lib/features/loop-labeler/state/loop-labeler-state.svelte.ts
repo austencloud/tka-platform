@@ -14,7 +14,7 @@ import type { LOOPDetectionResult } from "../services/contracts/ILOOPDetector";
 import { LOOPLabelerServiceLocator } from "./LOOPLabelerServiceLocator";
 import { LOOPLabelerController } from "./LOOPLabelerController";
 
-export type LabelingMode = "whole" | "section" | "beatpair";
+export type LabelingMode = "whole" | "section" | "steppair";
 export type SyncStatus = "idle" | "syncing" | "synced" | "error";
 
 interface LOOPLabelerStateData {

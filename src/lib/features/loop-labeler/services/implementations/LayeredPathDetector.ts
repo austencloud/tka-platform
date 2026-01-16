@@ -91,12 +91,12 @@ export class LayeredPathDetector implements ILayeredPathDetector {
    * Detect layered path patterns in a sequence
    */
   detectLayeredPath(rawSequence: Record<string, unknown>[]): LayeredPathResult {
-    // Filter to actual beats (exclude metadata at index 0)
-    const beatRecords = rawSequence.filter(
+    // Filter to actual steps (exclude metadata at index 0)
+    const stepRecords = rawSequence.filter(
       (item) => typeof item.beat === "number" && item.beat > 0
     );
 
-    const length = beatRecords.length;
+    const length = stepRecords.length;
 
     if (length < 4) {
       return this.noLayeredPathResult(
@@ -165,16 +165,16 @@ export class LayeredPathDetector implements ILayeredPathDetector {
     rawSequence: Record<string, unknown>[],
     hand: "blue" | "red"
   ): HandPathCycle | null {
-    const beatRecords = rawSequence.filter(
+    const stepRecords = rawSequence.filter(
       (item) => typeof item.beat === "number" && item.beat > 0
     );
 
-    if (beatRecords.length < 4) return null;
+    if (stepRecords.length < 4) return null;
 
     const attrKey = hand === "blue" ? "blueAttributes" : "redAttributes";
 
     // Extract path data for this hand
-    const pathData = beatRecords.map((beat) => {
+    const pathData = stepRecords.map((beat) => {
       const attrs = (beat[attrKey] as Record<string, unknown>) || {};
       return {
         startLoc: (attrs.startLoc as string) || "unknown",
@@ -258,11 +258,11 @@ export class LayeredPathDetector implements ILayeredPathDetector {
   analyzeZoneCoverage(
     rawSequence: Record<string, unknown>[]
   ): ZoneCoverageAnalysis {
-    const beatRecords = rawSequence.filter(
+    const stepRecords = rawSequence.filter(
       (item) => typeof item.beat === "number" && item.beat > 0
     );
 
-    const length = beatRecords.length;
+    const length = stepRecords.length;
     const halfLength = Math.floor(length / 2);
 
     const firstHalf: Record<PositionalCategory, number> = {
@@ -278,7 +278,7 @@ export class LayeredPathDetector implements ILayeredPathDetector {
       gamma2: 0,
     };
 
-    beatRecords.forEach((beat, index) => {
+    stepRecords.forEach((beat, index) => {
       const endPos = beat.endPos as string;
       const category = categorizePosition(endPos);
 

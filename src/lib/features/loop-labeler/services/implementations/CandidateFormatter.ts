@@ -2,7 +2,7 @@ import type {
   ICandidateFormatter,
   FormattedTransformations,
 } from "../contracts/ICandidateFormatter";
-import type { BeatPairRelationship } from "../contracts/IBeatPairAnalyzer";
+import type { StepPairRelationship } from "../contracts/IStepPairAnalyzer";
 import type { ComponentId } from "../../domain/constants/loop-components";
 import type {
   CandidateDesignation,
@@ -10,8 +10,8 @@ import type {
 } from "../../domain/models/label-models";
 import type {
   CandidateInfo,
-  InternalBeatPair,
-} from "../../domain/models/internal-beat-models";
+  InternalStepPair,
+} from "../../domain/models/internal-step-models";
 import { TRANSFORMATION_PRIORITY } from "../../domain/constants/transformation-priority";
 
 /**
@@ -341,10 +341,10 @@ export class CandidateFormatter implements ICandidateFormatter {
     };
   }
 
-  toPublicBeatPairs(internal: InternalBeatPair[]): BeatPairRelationship[] {
+  toPublicStepPairs(internal: InternalStepPair[]): StepPairRelationship[] {
     return internal.map((p) => ({
-      keyBeat: p.keyBeat,
-      correspondingBeat: p.correspondingBeat,
+      keyStep: p.keyStep,
+      correspondingStep: p.correspondingStep,
       detectedTransformations: p.detectedTransformations,
       allValidTransformations: p.allValidTransformations,
     }));

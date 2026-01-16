@@ -23,10 +23,10 @@ export interface LOOPDesignation {
 }
 
 /**
- * Section designation for a subset of beats
+ * Section designation for a subset of steps
  */
 export interface SectionDesignation {
-  beats: number[]; // Beat numbers in this section
+  steps: number[]; // Beat numbers in this section
   components: ComponentId[];
   loopType: string | null;
   sliceSize?: SliceSize | null; // Only relevant when "rotated" component is selected
@@ -42,9 +42,9 @@ export interface ILOOPDesignator {
   formatDesignation(designation: LOOPDesignation | SectionDesignation): string;
 
   /**
-   * Format section beats for display (e.g., "1-4" or "1,3,5")
+   * Format section steps for display (e.g., "1-4" or "1,3,5")
    */
-  formatSectionBeats(beats: number[]): string;
+  formatSectionSteps(steps: number[]): string;
 
   /**
    * Check if a designation is a duplicate of existing designations

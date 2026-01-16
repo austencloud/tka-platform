@@ -1,4 +1,4 @@
-import type { BeatPairRelationship } from "./IBeatPairAnalyzer";
+import type { StepPairRelationship } from "./IStepPairAnalyzer";
 import type { LOOPDesignation, SectionDesignation } from "./ILOOPDesignator";
 
 /**
@@ -8,7 +8,7 @@ export interface LabeledSequence {
   word: string;
   designations: LOOPDesignation[]; // Multiple valid designations (whole sequence)
   sections?: SectionDesignation[]; // Section-based designations
-  beatPairs?: BeatPairRelationship[]; // Beat-pair relationships
+  stepPairs?: StepPairRelationship[]; // Beat-pair relationships
   isFreeform: boolean; // Circular but no recognizable pattern
   isUnknown?: boolean; // Needs further analysis/review
   needsVerification?: boolean; // Auto-labeled, needs human verification

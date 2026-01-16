@@ -6,8 +6,8 @@ import type {
   SwapRhythmPattern,
 } from "../contracts/ITransformationAnalyzer";
 import type { ICandidateFormatter } from "../contracts/ICandidateFormatter";
-import type { InternalBeatPair } from "../../domain/models/internal-beat-models";
-import type { BeatPairGroups } from "../../domain/models/label-models";
+import type { InternalStepPair } from "../../domain/models/internal-step-models";
+import type { StepPairGroups } from "../../domain/models/label-models";
 import { TRANSFORMATION_PRIORITY } from "../../domain/constants/transformation-priority";
 import {
   TRANSFORMATION_FAMILIES,
@@ -32,10 +32,10 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
       .replace(/\+/g, "_");
   }
 
-  findAllCommonTransformations(beatPairs: InternalBeatPair[]): string[] {
-    if (beatPairs.length === 0) return [];
+  findAllCommonTransformations(stepPairs: InternalStepPair[]): string[] {
+    if (stepPairs.length === 0) return [];
 
-    const allTransformations = beatPairs.map(
+    const allTransformations = stepPairs.map(
       (pair) => new Set(pair.rawTransformations || [])
     );
     const firstSet = allTransformations[0];
@@ -99,35 +99,35 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
   }
 
   groupBeatPairsByPattern(beatPairs: InternalBeatPair[]): BeatPairGroups {
-    const groups: BeatPairGroups = {};
+    const groups: StepPairGroups = {};
 
-    for (const pair of beatPairs) {
+    for (const pair of stepPairs) {
       const primaryPattern = pair.detectedTransformations[0] || "UNKNOWN";
       if (!groups[primaryPattern]) {
         groups[primaryPattern] = [];
       }
-      groups[primaryPattern].push(pair.keyBeat);
+      groups[primaryPattern].push(pair.keyStep);
     }
 
     return groups;
   }
 
-  reprioritizeBeatPairs(beatPairs: InternalBeatPair[]): void {
-    if (beatPairs.length === 0) return;
+  reprioritizeBeatPairs(stepPairs: InternalStepPair[]): void {
+    if (stepPairs.length === 0) return;
 
-    const commonRaw = this.findAllCommonTransformations(beatPairs);
+    const commonRaw = this.findAllCommonTransformations(stepPairs);
 
     if (commonRaw.length > 0) {
       // Global harmonization - all pairs share a common transformation
-      this.harmonizeAllPairs(beatPairs, commonRaw[0]!);
+      this.harmonizeAllPairs(stepPairs, commonRaw[0]!);
     } else {
       // No global common transformation - harmonize subgroups by family
-      this.harmonizeSubgroups(beatPairs);
+      this.harmonizeSubgroups(stepPairs);
     }
   }
 
   private harmonizeAllPairs(
-    beatPairs: InternalBeatPair[],
+    stepPairs: InternalStepPair[],
     primaryCommon: string
   ): void {
     // Find the family for this common transformation
@@ -138,7 +138,7 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     // Find the DEFINITIVE member from pairs that have rotation data
     let definitiveVariant: string | null = null;
     if (family) {
-      for (const pair of beatPairs) {
+      for (const pair of stepPairs) {
         const matchingMembers = family.members.filter((member) =>
           pair.rawTransformations.includes(member)
         );
@@ -150,7 +150,7 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     }
 
     // Update each pair
-    for (const pair of beatPairs) {
+    for (const pair of stepPairs) {
       if (family) {
         if (
           definitiveVariant &&
@@ -183,11 +183,11 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     }
   }
 
-  private harmonizeSubgroups(beatPairs: InternalBeatPair[]): void {
+  private harmonizeSubgroups(stepPairs: InternalStepPair[]): void {
     // Group beat pairs by their transformation family
-    const familyGroups: Map<string, InternalBeatPair[]> = new Map();
+    const familyGroups: Map<string, InternalStepPair[]> = new Map();
 
-    for (const pair of beatPairs) {
+    for (const pair of stepPairs) {
       // Find which family this pair belongs to
       let matchedFamily: { base: string; members: string[] } | null = null;
       for (const family of TRANSFORMATION_FAMILIES) {
@@ -258,13 +258,13 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
   }
 
   detectAxisAlternatingPattern(
-    beatPairs: InternalBeatPair[],
-    _beatPairGroups: BeatPairGroups
+    stepPairs: InternalStepPair[],
+    _beatPairGroups: StepPairGroups
   ): AxisAlternatingResult | null {
-    if (beatPairs.length < 2) return null;
+    if (stepPairs.length < 2) return null;
 
     // Get the primary transformation for each beat pair (in order)
-    const patternSequence = beatPairs.map((pair) => {
+    const patternSequence = stepPairs.map((pair) => {
       const primary = pair.detectedTransformations[0] || "unknown";
       return this.normalizeToBase(primary);
     });
@@ -386,19 +386,19 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
   }
 
   detectModularPattern(
-    beatPairs: InternalBeatPair[],
+    stepPairs: InternalStepPair[],
     cycleLength: number
   ): ModularAnalysisResult | null {
-    if (beatPairs.length < cycleLength || cycleLength < 2) return null;
+    if (stepPairs.length < cycleLength || cycleLength < 2) return null;
 
     // Group beat pairs by their position within the cycle
-    const columnMap: Map<number, InternalBeatPair[]> = new Map();
-    for (let i = 0; i < beatPairs.length; i++) {
+    const columnMap: Map<number, InternalStepPair[]> = new Map();
+    for (let i = 0; i < stepPairs.length; i++) {
       const columnPos = (i % cycleLength) + 1; // 1-based
       if (!columnMap.has(columnPos)) {
         columnMap.set(columnPos, []);
       }
-      columnMap.get(columnPos)!.push(beatPairs[i]!);
+      columnMap.get(columnPos)!.push(stepPairs[i]!);
     }
 
     // Analyze each column for consistent behavior
@@ -424,7 +424,7 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
         position: pos,
         baseTransformation,
         isSwapped,
-        beats: columnPairs.map((p) => p.keyBeat),
+        steps: columnPairs.map((p) => p.keyStep),
         transformations: uniqueTransformations.map((t) =>
           this.formattingService.formatSingleTransformation(t)
         ),
@@ -472,7 +472,7 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     };
   }
 
-  private isColumnSwapped(pairs: InternalBeatPair[]): boolean {
+  private isColumnSwapped(pairs: InternalStepPair[]): boolean {
     // Check if this column has swap behavior
     // Strategy: Look for definitive SWAPPED (not just SWAPPED+INVERTED ambiguous)
     // If ANY pair in the column has a clean SWAPPED transformation, consider it swapped
@@ -500,7 +500,7 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     return false;
   }
 
-  private getColumnBaseTransformation(pairs: InternalBeatPair[]): string {
+  private getColumnBaseTransformation(pairs: InternalStepPair[]): string {
     // Find the most common base transformation (without swap/invert)
     const baseCounts: Map<string, number> = new Map();
 

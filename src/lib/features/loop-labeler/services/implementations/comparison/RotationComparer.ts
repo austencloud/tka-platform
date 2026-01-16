@@ -2,7 +2,7 @@ import type { IRotationComparer } from "../../contracts/IRotationComparer";
 import type {
   ColorData,
   TransformationCheckResult,
-} from "../../../domain/models/internal-beat-models";
+} from "../../../domain/models/internal-step-models";
 import {
   ROTATE_180,
   ROTATE_90_CCW,

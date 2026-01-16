@@ -1,4 +1,4 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type {
   GridLocation,
@@ -14,7 +14,7 @@ import type {
 /**
  * Raw beat data from sequence-index.json (camelCase format)
  */
-export interface RawBeatData {
+export interface RawStepData {
   beat?: number;
   letter?: string;
   startPos?: string;
@@ -53,14 +53,14 @@ export interface SequenceEntry {
   sequenceLength: number;
   gridMode: string;
   fullMetadata?: {
-    sequence?: RawBeatData[];
+    sequence?: RawStepData[];
   };
 }
 
 /**
- * Service for converting raw sequence data to BeatData for rendering
+ * Service for converting raw sequence data to StepData for rendering
  */
-export interface IBeatDataConverter {
+export interface IStepDataConverter {
   /**
    * Parse motion type from string
    */
@@ -92,16 +92,16 @@ export interface IBeatDataConverter {
   parseTurns(raw: string | number | undefined): number | "fl";
 
   /**
-   * Convert raw sequence data to BeatData array and start position
+   * Convert raw sequence data to StepData array and start position
    */
   convertRawToBeats(
     sequenceName: string,
-    rawSequence: RawBeatData[],
+    rawSequence: RawStepData[],
     gridMode: GridMode
   ): {
-    beats: BeatData[];
+    steps: StepData[];
     startPosition:
-      | (StartPositionData & { beatNumber: number; isBlank: boolean })
+      | (StartPositionData & { stepNumber: number; isBlank: boolean })
       | null;
   };
 

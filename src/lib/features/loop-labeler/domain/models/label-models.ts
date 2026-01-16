@@ -5,12 +5,12 @@
 import type { ComponentId } from "../constants/loop-components";
 import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import type { SectionDesignation } from "./section-models";
-import type { BeatPairRelationship } from "./beatpair-models";
+import type { StepPairRelationship } from "./steppair-models";
 
 /**
  * Transformation interval - when does a transformation apply?
  *
- * For a sequence divided into sections (e.g., 4 quarters for 16 beats):
+ * For a sequence divided into sections (e.g., 4 quarters for 16 steps):
  * - "halved": transformation applies at midpoint (sections 1-2 same, 3-4 transformed)
  * - "quartered": transformation applies every quarter
  * - "none": transformation doesn't apply
@@ -84,7 +84,7 @@ export interface CandidateDesignation extends LOOPDesignation {
  * Maps pattern name to array of key beat numbers
  * Example: { "FLIPPED": [1, 2], "ROTATED_180 + INVERTED": [3, 4, 5, 6] }
  */
-export type BeatPairGroups = Record<string, number[]>;
+export type StepPairGroups = Record<string, number[]>;
 
 export interface LabeledSequence {
   word: string;
@@ -92,8 +92,8 @@ export interface LabeledSequence {
   candidateDesignations?: CandidateDesignation[]; // Auto-detected candidates to confirm/deny
   hasMultipleCandidates?: boolean; // Convenience flag for multiple valid patterns
   sections?: SectionDesignation[]; // Section-based designations
-  beatPairs?: BeatPairRelationship[]; // Beat-pair relationships
-  beatPairGroups?: BeatPairGroups; // Grouped by transformation pattern
+  stepPairs?: StepPairRelationship[]; // Beat-pair relationships
+  stepPairGroups?: StepPairGroups; // Grouped by transformation pattern
   isFreeform: boolean; // Circular but no recognizable pattern
   isModular?: boolean; // Multiple different but recognizable transformation patterns
   isUnknown?: boolean; // Needs further analysis/review

@@ -2,13 +2,13 @@
   import type { SequenceEntry } from "../../domain/models/sequence-models";
   import type { LabeledSequence } from "../../domain/models/label-models";
   import type { LOOPDetectionResult } from "../../services/contracts/ILOOPDetector";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import {
     createMotionData,
     type MotionData,
   } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     MotionColor,
@@ -20,7 +20,7 @@
 
   interface Props {
     sequence: SequenceEntry | null;
-    parsedBeats: BeatData[];
+    parsedSteps: StepData[];
     startPosition: StartPositionData | null;
     currentLabel: LabeledSequence | null;
     computedDetection?: LOOPDetectionResult | null;
@@ -28,11 +28,11 @@
     manualColumnCount: number | null;
     onShowStartPositionChange: (value: boolean) => void;
     onColumnCountChange: (value: number | null) => void;
-    onBeatClick?: (beatNumber: number) => void;
-    selectedBeats?: Set<number>;
-    labelingMode: "whole" | "section" | "beatpair";
-    highlightedBeats?: Map<number, { bg: string; border: string }>;
-    selectedBeatNumber?: number | null;
+    onStepClick?: (stepNumber: number) => void;
+    selectedSteps?: Set<number>;
+    labelingMode: "whole" | "section" | "steppair";
+    highlightedSteps?: Map<number, { bg: string; border: string }>;
+    selectedStepNumber?: number | null;
     onCopyJson?: () => void;
     copiedToast?: boolean;
     onDeleteLabel?: () => void;
@@ -40,7 +40,7 @@
 
   let {
     sequence,
-    parsedBeats,
+    parsedSteps,
     startPosition,
     currentLabel,
     computedDetection,
@@ -48,11 +48,11 @@
     manualColumnCount,
     onShowStartPositionChange,
     onColumnCountChange,
-    onBeatClick,
-    selectedBeats,
+    onStepClick,
+    selectedSteps,
     labelingMode,
-    highlightedBeats,
-    selectedBeatNumber,
+    highlightedSteps,
+    selectedStepNumber,
     onCopyJson,
     copiedToast = false,
     onDeleteLabel,
@@ -171,7 +171,7 @@
   }
 
   /**
-   * Create a zero-turns version of beats with proper orientation propagation.
+   * Create a zero-turns version of steps with proper orientation propagation.
    * Uses the existing OrientationCalculator service which correctly handles:
    * - PRO/STATIC with 0 turns: orientation unchanged
    * - ANTI/DASH with 0 turns: orientation FLIPS
@@ -180,10 +180,10 @@
    * This is VIEW-ONLY for analyzing LOOP patterns without turn confusion.
    */
   function createZeroTurnsBeats(
-    beats: BeatData[],
+    steps: StepData[],
     startPos: StartPositionData | null
-  ): BeatData[] {
-    if (!startPos) return beats;
+  ): StepData[] {
+    if (!startPos) return steps;
 
     const calculator = getOrientationCalculator();
 
@@ -193,7 +193,7 @@
     let redOrientation =
       startPos.motions[MotionColor.RED]?.endOrientation ?? Orientation.IN;
 
-    return beats.map((beat) => {
+    return steps.map((beat) => {
       const newMotions: Record<MotionColor, MotionData> = {} as Record<
         MotionColor,
         MotionData
@@ -256,11 +256,11 @@
     });
   }
 
-  // The beats to display (either original or zero-turns version)
+  // The steps to display (either original or zero-turns version)
   const displayBeats = $derived(
     showZeroTurns && startPosition
-      ? createZeroTurnsBeats(parsedBeats, startPosition)
-      : parsedBeats
+      ? createZeroTurnsBeats(parsedSteps, startPosition)
+      : parsedSteps
   );
 </script>
 
@@ -298,7 +298,7 @@
   <!-- Metadata row -->
   {#if sequence}
     <div class="meta-row">
-      <span class="meta-item">{sequence.sequenceLength} beats</span>
+      <span class="meta-item">{sequence.sequenceLength} steps</span>
       <span
         class="meta-item grid-mode"
         class:box={authoritativeGridMode === GridMode.BOX}
@@ -317,7 +317,7 @@
   {/if}
 
   <!-- Beat Grid -->
-  {#if parsedBeats.length > 0}
+  {#if parsedSteps.length > 0}
     <div class="beat-grid-section">
       <!-- Grid controls -->
       <div class="grid-controls">
@@ -364,15 +364,15 @@
         class="beat-grid-wrapper"
         class:interactive={labelingMode !== "whole"}
       >
-        <BeatGrid
-          beats={displayBeats}
+        <StepGrid
+          steps={displayBeats}
           startPosition={showStartPosition ? startPosition : null}
-          {onBeatClick}
-          selectedBeatNumber={labelingMode === "whole"
-            ? selectedBeatNumber
+          {onStepClick}
+          selectedStepNumber={labelingMode === "whole"
+            ? selectedStepNumber
             : null}
           manualColumnCount={effectiveColumnCount}
-          {highlightedBeats}
+          {highlightedSteps}
           heightSizingRowThreshold={20}
         />
       </div>

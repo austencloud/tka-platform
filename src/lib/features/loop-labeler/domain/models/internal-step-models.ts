@@ -4,8 +4,8 @@ import type { TransformationIntervals } from "./label-models";
 /**
  * Extracted beat data normalized for comparison.
  */
-export interface ExtractedBeat {
-  beatNumber: number;
+export interface ExtractedStep {
+  stepNumber: number;
   letter: string;
   startPos: string;
   endPos: string;
@@ -26,9 +26,9 @@ export interface ExtractedBeat {
 /**
  * Internal representation of a beat pair relationship.
  */
-export interface InternalBeatPair {
-  keyBeat: number;
-  correspondingBeat: number;
+export interface InternalStepPair {
+  keyStep: number;
+  correspondingStep: number;
   rawTransformations: string[];
   detectedTransformations: string[];
   allValidTransformations: string[]; // All formatted transformations before priority filtering

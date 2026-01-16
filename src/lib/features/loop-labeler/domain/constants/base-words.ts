@@ -7,26 +7,26 @@ export interface BaseWord {
   id: string;
   name: string;
   pattern: string; // e.g., "AAAA", "EKEK"
-  beatCount: 4;
+  stepCount: 4;
 }
 
 export const BASE_WORDS: BaseWord[] = [
-  { id: "aaaa", name: "AAAA", pattern: "AAAA", beatCount: 4 },
-  { id: "bbbb", name: "BBBB", pattern: "BBBB", beatCount: 4 },
-  { id: "cccc", name: "CCCC", pattern: "CCCC", beatCount: 4 },
-  { id: "djdj", name: "DJDJ", pattern: "DJDJ", beatCount: 4 },
-  { id: "ekek", name: "EKEK", pattern: "EKEK", beatCount: 4 },
-  { id: "flfl", name: "FLFL", pattern: "FLFL", beatCount: 4 },
-  { id: "gggg", name: "GGGG", pattern: "GGGG", beatCount: 4 },
-  { id: "hhhh", name: "HHHH", pattern: "HHHH", beatCount: 4 },
-  { id: "iiii", name: "IIII", pattern: "IIII", beatCount: 4 },
-  { id: "mpmp", name: "MPMP", pattern: "MPMP", beatCount: 4 },
-  { id: "nqnq", name: "NQNQ", pattern: "NQNQ", beatCount: 4 },
-  { id: "oror", name: "OROR", pattern: "OROR", beatCount: 4 },
-  { id: "ssss", name: "SSSS", pattern: "SSSS", beatCount: 4 },
-  { id: "tttt", name: "TTTT", pattern: "TTTT", beatCount: 4 },
-  { id: "uuuu", name: "UUUU", pattern: "UUUU", beatCount: 4 },
-  { id: "vvvv", name: "VVVV", pattern: "VVVV", beatCount: 4 },
+  { id: "aaaa", name: "AAAA", pattern: "AAAA", stepCount: 4 },
+  { id: "bbbb", name: "BBBB", pattern: "BBBB", stepCount: 4 },
+  { id: "cccc", name: "CCCC", pattern: "CCCC", stepCount: 4 },
+  { id: "djdj", name: "DJDJ", pattern: "DJDJ", stepCount: 4 },
+  { id: "ekek", name: "EKEK", pattern: "EKEK", stepCount: 4 },
+  { id: "flfl", name: "FLFL", pattern: "FLFL", stepCount: 4 },
+  { id: "gggg", name: "GGGG", pattern: "GGGG", stepCount: 4 },
+  { id: "hhhh", name: "HHHH", pattern: "HHHH", stepCount: 4 },
+  { id: "iiii", name: "IIII", pattern: "IIII", stepCount: 4 },
+  { id: "mpmp", name: "MPMP", pattern: "MPMP", stepCount: 4 },
+  { id: "nqnq", name: "NQNQ", pattern: "NQNQ", stepCount: 4 },
+  { id: "oror", name: "OROR", pattern: "OROR", stepCount: 4 },
+  { id: "ssss", name: "SSSS", pattern: "SSSS", stepCount: 4 },
+  { id: "tttt", name: "TTTT", pattern: "TTTT", stepCount: 4 },
+  { id: "uuuu", name: "UUUU", pattern: "UUUU", stepCount: 4 },
+  { id: "vvvv", name: "VVVV", pattern: "VVVV", stepCount: 4 },
 ];
 
 export const BASE_WORD_MAP = new Map(BASE_WORDS.map((bw) => [bw.id, bw]));

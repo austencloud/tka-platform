@@ -152,7 +152,7 @@
               <div class="sequence-designation">{designation}</div>
             {/if}
             <div class="sequence-meta">
-              {seq.sequenceLength} beats · {seq.gridMode?.toUpperCase() ||
+              {seq.sequenceLength} steps · {seq.gridMode?.toUpperCase() ||
                 "DIAMOND"}
             </div>
           </div>

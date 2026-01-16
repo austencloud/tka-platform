@@ -6,7 +6,7 @@ import type { ComponentId } from "../constants/loop-components";
 import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 export interface SectionDesignation {
-  beats: number[]; // Beat numbers in this section
+  steps: number[]; // Beat numbers in this section
   components: ComponentId[];
   loopType: string | null;
   sliceSize?: SliceSize | null; // Only relevant when "rotated" component is selected

@@ -1,37 +1,37 @@
 import type {
-  ExtractedBeat,
-  InternalBeatPair,
-} from "../../domain/models/internal-beat-models";
+  ExtractedStep,
+  InternalStepPair,
+} from "../../domain/models/internal-step-models";
 import type { SequenceEntry } from "../../domain/models/sequence-models";
 
 /**
  * Orchestrator service that combines results from individual comparison services
  * and manages beat pair generation.
  */
-export interface IBeatComparisonOrchestrator {
+export interface IStepComparisonOrchestrator {
   /**
    * Extract normalized beat data from a sequence.
    */
-  extractBeats(sequence: SequenceEntry): ExtractedBeat[];
+  extractBeats(sequence: SequenceEntry): ExtractedStep[];
 
   /**
-   * Compare two beats and identify ALL transformations between them.
+   * Compare two steps and identify ALL transformations between them.
    */
-  compareBeatPair(beat1: ExtractedBeat, beat2: ExtractedBeat): string[];
+  compareBeatPair(step1: ExtractedStep, step2: ExtractedStep): string[];
 
   /**
-   * Generate beat-pair relationships for halved sequences (180° apart).
+   * Generate step-pair relationships for halved sequences (180° apart).
    */
-  generateHalvedBeatPairs(beats: ExtractedBeat[]): InternalBeatPair[];
+  generateHalvedBeatPairs(steps: ExtractedStep[]): InternalStepPair[];
 
   /**
-   * Generate beat-pair relationships for quartered sequences (90° apart).
+   * Generate step-pair relationships for quartered sequences (90° apart).
    * Includes wrap-around comparison.
    */
-  generateQuarteredBeatPairs(beats: ExtractedBeat[]): InternalBeatPair[];
+  generateQuarteredBeatPairs(steps: ExtractedStep[]): InternalStepPair[];
 
   /**
    * Detect rotation direction for quartered sequences.
    */
-  detectRotationDirection(beats: ExtractedBeat[]): "cw" | "ccw" | null;
+  detectRotationDirection(steps: ExtractedStep[]): "cw" | "ccw" | null;
 }

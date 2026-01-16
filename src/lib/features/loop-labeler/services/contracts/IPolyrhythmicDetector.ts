@@ -1,13 +1,13 @@
 /**
  * Polyrhythmic LOOP Detection Service Contract
  *
- * Detects traditional polyrhythmic LOOP patterns (e.g., 3:4 = 12 beats)
+ * Detects traditional polyrhythmic LOOP patterns (e.g., 3:4 = 12 steps)
  * where different periods control different aspects of the motion.
  */
 
 import type { ZoneCoverageAnalysis } from "$lib/features/create/generate/circular/domain/constants/circular-position-maps";
 
-export interface BeatProperties {
+export interface StepProperties {
   beat: number;
   blueMotionType: string;
   redMotionType: string;

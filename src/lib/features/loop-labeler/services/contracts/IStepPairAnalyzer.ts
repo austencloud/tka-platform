@@ -1,4 +1,4 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 /**
  * Letter relationship types detected between beat pairs
@@ -17,11 +17,11 @@ export interface LetterRelationshipInfo {
 }
 
 /**
- * Relationship between two beats in a sequence
+ * Relationship between two steps in a sequence
  */
-export interface BeatPairRelationship {
-  keyBeat: number;
-  correspondingBeat: number;
+export interface StepPairRelationship {
+  keyStep: number;
+  correspondingStep: number;
   /** Primary transformation (contextual, after priority filtering) */
   detectedTransformations: string[]; // e.g., ["ROTATED 180+SWAPPED"]
   /** All valid transformations this pair satisfies (before filtering) */
@@ -34,9 +34,9 @@ export interface BeatPairRelationship {
 /**
  * Service for analyzing relationships between beat pairs
  */
-export interface IBeatPairAnalyzer {
+export interface IStepPairAnalyzer {
   /**
-   * Analyze a pair of beats and detect LOOP transformations
+   * Analyze a pair of steps and detect LOOP transformations
    */
-  analyzeBeatPair(beat1: BeatData, beat2: BeatData): BeatPairRelationship;
+  analyzeBeatPair(step1: StepData, step2: StepData): StepPairRelationship;
 }

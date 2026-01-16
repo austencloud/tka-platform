@@ -8,28 +8,28 @@
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {
-    firstBeat: number | null;
-    secondBeat: number | null;
+    firstStep: number | null;
+    secondStep: number | null;
     onClear: () => void;
   }
 
-  let { firstBeat, secondBeat, onClear }: Props = $props();
+  let { firstStep, secondStep, onClear }: Props = $props();
 </script>
 
-{#if firstBeat !== null || secondBeat !== null}
-  <div class="beatpair-selection-status">
-    <div class="beatpair-selection-info">
-      {#if firstBeat !== null}
-        <span class="beatpair-key">
-          <span class="beatpair-indicator key"></span>
-          Key Beat: {firstBeat}
+{#if firstStep !== null || secondStep !== null}
+  <div class="steppair-selection-status">
+    <div class="steppair-selection-info">
+      {#if firstStep !== null}
+        <span class="steppair-key">
+          <span class="steppair-indicator key"></span>
+          Key Beat: {firstStep}
         </span>
       {/if}
-      {#if secondBeat !== null}
-        <span class="beatpair-arrow">→</span>
-        <span class="beatpair-corresponding">
-          <span class="beatpair-indicator corresponding"></span>
-          Corresponding: {secondBeat}
+      {#if secondStep !== null}
+        <span class="steppair-arrow">→</span>
+        <span class="steppair-corresponding">
+          <span class="steppair-indicator corresponding"></span>
+          Corresponding: {secondStep}
         </span>
       {/if}
     </div>
@@ -45,7 +45,7 @@
 {/if}
 
 <style>
-  .beatpair-selection-status {
+  .steppair-selection-status {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -56,7 +56,7 @@
     border-radius: 8px;
   }
 
-  .beatpair-selection-info {
+  .steppair-selection-info {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
@@ -64,8 +64,8 @@
     flex-wrap: wrap;
   }
 
-  .beatpair-key,
-  .beatpair-corresponding {
+  .steppair-key,
+  .steppair-corresponding {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -74,23 +74,23 @@
     color: var(--foreground);
   }
 
-  .beatpair-indicator {
+  .steppair-indicator {
     width: 16px;
     height: 16px;
     border-radius: 4px;
   }
 
-  .beatpair-indicator.key {
+  .steppair-indicator.key {
     background: rgba(34, 197, 94, 0.35);
     border: 2px solid rgba(34, 197, 94, 0.9);
   }
 
-  .beatpair-indicator.corresponding {
+  .steppair-indicator.corresponding {
     background: rgba(168, 85, 247, 0.35);
     border: 2px solid rgba(168, 85, 247, 0.9);
   }
 
-  .beatpair-arrow {
+  .steppair-arrow {
     color: var(--muted);
     font-size: var(--font-size-sm);
   }

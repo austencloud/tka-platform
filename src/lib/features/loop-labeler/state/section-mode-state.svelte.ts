@@ -14,8 +14,8 @@ import type { SliceSize } from "$lib/features/create/generate/circular/domain/mo
 
 export interface SectionModeState {
   // Beat selection
-  selectedBeats: Set<number>;
-  lastClickedBeat: number | null;
+  selectedSteps: Set<number>;
+  lastClickedStep: number | null;
   isShiftHeld: boolean;
 
   // Component selection
@@ -30,7 +30,7 @@ export interface SectionModeState {
 
   // Actions
   actions: {
-    selectBeat(beatNumber: number, isShiftKey: boolean): void;
+    selectStep(stepNumber: number, isShiftKey: boolean): void;
     clearBeatSelection(): void;
     setShiftHeld(held: boolean): void;
     toggleComponent(component: ComponentId): void;
@@ -56,8 +56,8 @@ export interface SectionModeState {
  */
 export function createSectionModeState(): SectionModeState {
   // State
-  let selectedBeats = $state(new Set<number>());
-  let lastClickedBeat = $state<number | null>(null);
+  let selectedSteps = $state(new Set<number>());
+  let lastClickedStep = $state<number | null>(null);
   let isShiftHeld = $state(false);
   let selectedComponents = $state(new Set<ComponentId>());
   let selectedSliceSize = $state<SliceSize | null>(null);
@@ -70,42 +70,42 @@ export function createSectionModeState(): SectionModeState {
 
   // Actions
   const actions = {
-    selectBeat(beatNumber: number, isShiftKey: boolean) {
+    selectStep(stepNumber: number, isShiftKey: boolean) {
       // Two-click range selection:
-      // - If 0 beats or more than 1 beat selected: start fresh with clicked beat
+      // - If 0 steps or more than 1 beat selected: start fresh with clicked beat
       // - If exactly 1 beat selected: create range from that beat to clicked beat
-      // - Shift+click still works as override for explicit range from lastClickedBeat
+      // - Shift+click still works as override for explicit range from lastClickedStep
 
-      if (isShiftKey && lastClickedBeat !== null) {
+      if (isShiftKey && lastClickedStep !== null) {
         // Explicit shift+click range selection (legacy behavior)
-        const start = Math.min(lastClickedBeat, beatNumber);
-        const end = Math.max(lastClickedBeat, beatNumber);
+        const start = Math.min(lastClickedStep, stepNumber);
+        const end = Math.max(lastClickedStep, stepNumber);
         const newSelection = new Set<number>();
         for (let i = start; i <= end; i++) {
           newSelection.add(i);
         }
-        selectedBeats = newSelection;
-      } else if (selectedBeats.size === 1) {
+        selectedSteps = newSelection;
+      } else if (selectedSteps.size === 1) {
         // Second click: create range from first beat to this beat
-        const firstBeat = Array.from(selectedBeats)[0]!;
-        const start = Math.min(firstBeat, beatNumber);
-        const end = Math.max(firstBeat, beatNumber);
+        const firstStep = Array.from(selectedSteps)[0]!;
+        const start = Math.min(firstStep, stepNumber);
+        const end = Math.max(firstStep, stepNumber);
         const newSelection = new Set<number>();
         for (let i = start; i <= end; i++) {
           newSelection.add(i);
         }
-        selectedBeats = newSelection;
-        lastClickedBeat = beatNumber;
+        selectedSteps = newSelection;
+        lastClickedStep = stepNumber;
       } else {
         // First click (or starting over): select just this beat
-        selectedBeats = new Set([beatNumber]);
-        lastClickedBeat = beatNumber;
+        selectedSteps = new Set([stepNumber]);
+        lastClickedStep = stepNumber;
       }
     },
 
     clearBeatSelection() {
-      selectedBeats = new Set();
-      lastClickedBeat = null;
+      selectedSteps = new Set();
+      lastClickedStep = null;
     },
 
     setShiftHeld(held: boolean) {
@@ -135,10 +135,10 @@ export function createSectionModeState(): SectionModeState {
       notes: string,
       derivedLoopType: string | null
     ) {
-      // Can add section if: beats selected AND (components selected OR base word selected)
-      if (selectedBeats.size === 0) {
+      // Can add section if: steps selected AND (components selected OR base word selected)
+      if (selectedSteps.size === 0) {
         console.warn(
-          "[SectionModeState] Cannot add section: no beats selected"
+          "[SectionModeState] Cannot add section: no steps selected"
         );
         return;
       }
@@ -155,7 +155,7 @@ export function createSectionModeState(): SectionModeState {
       }
 
       const section: SectionDesignation = {
-        beats: Array.from(selectedBeats).sort((a, b) => a - b),
+        steps: Array.from(selectedSteps).sort((a, b) => a - b),
         components: Array.from(selectedComponents),
         loopType: derivedLoopType,
         sliceSize: selectedComponents.has("rotated") ? selectedSliceSize : null,
@@ -221,8 +221,8 @@ export function createSectionModeState(): SectionModeState {
 
     clearSelection() {
       selectedComponents = new Set();
-      selectedBeats = new Set();
-      lastClickedBeat = null;
+      selectedSteps = new Set();
+      lastClickedStep = null;
       selectedSliceSize = null;
       selectedBaseWord = null;
     },
@@ -233,11 +233,11 @@ export function createSectionModeState(): SectionModeState {
   };
 
   return {
-    get selectedBeats() {
-      return selectedBeats;
+    get selectedSteps() {
+      return selectedSteps;
     },
-    get lastClickedBeat() {
-      return lastClickedBeat;
+    get lastClickedStep() {
+      return lastClickedStep;
     },
     get isShiftHeld() {
       return isShiftHeld;

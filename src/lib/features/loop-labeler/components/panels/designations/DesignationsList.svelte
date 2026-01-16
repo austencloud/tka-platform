@@ -7,55 +7,55 @@
    */
   import type { LOOPDesignation } from "../../../domain/models/label-models";
   import type { SectionDesignation } from "../../../domain/models/section-models";
-  import type { BeatPairRelationship } from "../../../domain/models/beatpair-models";
+  import type { StepPairRelationship } from "../../../domain/models/steppair-models";
   import type { AxisAlternatingPattern } from "../../../services/contracts/ILOOPDetector";
   import {
     formatDesignation,
-    formatSectionBeats,
+    formatSectionSteps,
   } from "../../../utils/formatting";
   import DesignationItem from "./DesignationItem.svelte";
 
   interface Props {
     wholeDesignations: LOOPDesignation[];
     sectionDesignations: SectionDesignation[];
-    beatPairDesignations: BeatPairRelationship[];
+    stepPairDesignations: StepPairRelationship[];
     isFreeform: boolean;
     isModular: boolean;
     isAxisAlternating: boolean;
     axisAlternatingPattern: AxisAlternatingPattern | null;
     onRemoveWholeDesignation: (index: number) => void;
     onRemoveSectionDesignation: (index: number) => void;
-    onRemoveBeatPairDesignation: (index: number) => void;
+    onRemoveStepPairDesignation: (index: number) => void;
   }
 
   let {
     wholeDesignations,
     sectionDesignations,
-    beatPairDesignations,
+    stepPairDesignations,
     isFreeform,
     isModular,
     isAxisAlternating,
     axisAlternatingPattern,
     onRemoveWholeDesignation,
     onRemoveSectionDesignation,
-    onRemoveBeatPairDesignation,
+    onRemoveStepPairDesignation,
   }: Props = $props();
 
   const totalCount = $derived(
     wholeDesignations.length +
       sectionDesignations.length +
-      beatPairDesignations.length
+      stepPairDesignations.length
   );
 
-  function formatBeatPair(bp: BeatPairRelationship): string {
+  function formatBeatPair(bp: StepPairRelationship): string {
     const transformation = bp.confirmedTransformation || "Unknown";
-    return `Beat ${bp.keyBeat} ↔ ${bp.correspondingBeat}: ${transformation}`;
+    return `Beat ${bp.keyStep} ↔ ${bp.correspondingStep}: ${transformation}`;
   }
 
   function formatSection(s: SectionDesignation): string {
-    const beats = formatSectionBeats(s.beats);
+    const steps = formatSectionSteps(s.steps);
     const label = formatDesignation(s);
-    return `${beats}: ${label}`;
+    return `${steps}: ${label}`;
   }
 </script>
 
@@ -89,12 +89,12 @@
     {/each}
 
     <!-- Beat pair designations -->
-    {#each beatPairDesignations as bp, i}
+    {#each stepPairDesignations as bp, i}
       <DesignationItem
-        type="beatpair"
+        type="steppair"
         badge="P"
         label={formatBeatPair(bp)}
-        onRemove={() => onRemoveBeatPairDesignation(i)}
+        onRemove={() => onRemoveStepPairDesignation(i)}
       />
     {/each}
 

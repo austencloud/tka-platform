@@ -24,7 +24,7 @@ export function invertRotDir(dir: string): string {
 
 /**
  * Check if a beat pair has rotation data that can be used to determine inversion.
- * Returns true if at least one color in both beats has meaningful rotation direction.
+ * Returns true if at least one color in both steps has meaningful rotation direction.
  * Static motions are excluded - their rotation direction shouldn't determine inversion.
  */
 export function hasRotationData(
@@ -61,7 +61,7 @@ export function hasRotationData(
     b2RedMotionType !== "static"
   );
 
-  // Has rotation data if at least one color has rotation in BOTH beats
+  // Has rotation data if at least one color has rotation in BOTH steps
   return (b1BlueHasRot && b2BlueHasRot) || (b1RedHasRot && b2RedHasRot);
 }
 

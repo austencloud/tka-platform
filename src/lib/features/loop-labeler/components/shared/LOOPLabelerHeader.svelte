@@ -140,7 +140,7 @@
               onmousedown={() => handleSelectSuggestion(seq)}
             >
               <span class="suggestion-word">{seq.word}</span>
-              <span class="suggestion-length">{seq.sequenceLength} beats</span>
+              <span class="suggestion-length">{seq.sequenceLength} steps</span>
             </button>
           {/each}
         </div>

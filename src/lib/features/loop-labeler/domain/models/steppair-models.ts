@@ -1,5 +1,5 @@
 /**
- * Domain models for beat-pair relationship analysis
+ * Domain models for step-pair relationship analysis
  */
 
 /**
@@ -18,9 +18,9 @@ export interface LetterRelationshipInfo {
   summary: string;
 }
 
-export interface BeatPairRelationship {
-  keyBeat: number;
-  correspondingBeat: number;
+export interface StepPairRelationship {
+  keyStep: number;
+  correspondingStep: number;
   detectedTransformations: string[]; // e.g., ["FLIPPED", "ROTATED_180 + SWAPPED"]
   allValidTransformations?: string[]; // All valid transformations before filtering
   confirmedTransformation?: string; // User-selected interpretation

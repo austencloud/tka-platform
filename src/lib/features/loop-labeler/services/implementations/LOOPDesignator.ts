@@ -37,12 +37,12 @@ export class LOOPDesignator implements ILOOPDesignator {
     return label;
   }
 
-  formatSectionBeats(beats: number[]): string {
-    if (beats.length === 0) return "";
-    if (beats.length === 1) return `Beat ${beats[0]}`;
+  formatSectionSteps(steps: number[]): string {
+    if (steps.length === 0) return "";
+    if (steps.length === 1) return `Beat ${steps[0]}`;
 
     // Check if consecutive
-    const sorted = [...beats].sort((a, b) => a - b);
+    const sorted = [...steps].sort((a, b) => a - b);
     let isConsecutive = true;
     for (let i = 1; i < sorted.length; i++) {
       if (sorted[i]! !== sorted[i - 1]! + 1) {
@@ -52,9 +52,9 @@ export class LOOPDesignator implements ILOOPDesignator {
     }
 
     if (isConsecutive) {
-      return `Beats ${sorted[0]}-${sorted[sorted.length - 1]}`;
+      return `Steps ${sorted[0]}-${sorted[sorted.length - 1]}`;
     } else {
-      return `Beats ${sorted.join(", ")}`;
+      return `Steps ${sorted.join(", ")}`;
     }
   }
 

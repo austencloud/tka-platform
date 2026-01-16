@@ -2,9 +2,9 @@ import type { ComponentId } from "../../domain/constants/loop-components";
 import type { CandidateDesignation } from "../../domain/models/label-models";
 import type {
   CandidateInfo,
-  InternalBeatPair,
-} from "../../domain/models/internal-beat-models";
-import type { BeatPairRelationship } from "./IBeatPairAnalyzer";
+  InternalStepPair,
+} from "../../domain/models/internal-step-models";
+import type { StepPairRelationship } from "./IStepPairAnalyzer";
 
 /**
  * Result from formatting beat pair transformations.
@@ -66,5 +66,5 @@ export interface ICandidateFormatter {
   /**
    * Convert internal beat pairs to public interface.
    */
-  toPublicBeatPairs(internal: InternalBeatPair[]): BeatPairRelationship[];
+  toPublicStepPairs(internal: InternalStepPair[]): StepPairRelationship[];
 }

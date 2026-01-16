@@ -1,10 +1,10 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type {
-  IBeatPairAnalyzer,
-  BeatPairRelationship,
+  IStepPairAnalyzer,
+  StepPairRelationship,
   LetterRelationshipInfo,
-} from "../contracts/IBeatPairAnalyzer";
+} from "../contracts/IStepPairAnalyzer";
 import {
   INVERTED_LETTER_MAP,
   COMPOUND_LETTER_MAP,
@@ -14,64 +14,64 @@ import {
 /**
  * Service for analyzing relationships between beat pairs
  */
-export class BeatPairAnalyzer implements IBeatPairAnalyzer {
-  analyzeBeatPair(beat1: BeatData, beat2: BeatData): BeatPairRelationship {
+export class StepPairAnalyzer implements IStepPairAnalyzer {
+  analyzeBeatPair(step1: StepData, step2: StepData): StepPairRelationship {
     const transformations: string[] = [];
 
     // Check IDENTICAL first (no transformation)
-    if (this.isIdentical(beat1, beat2)) {
+    if (this.isIdentical(step1, step2)) {
       transformations.push("SAME");
     }
 
     // Check ROTATED (180° or 90°)
-    if (this.isRotated(beat1, beat2)) {
+    if (this.isRotated(step1, step2)) {
       transformations.push("ROTATED");
     }
 
     // Check SWAPPED (blue/red swap)
-    if (this.isSwapped(beat1, beat2)) {
+    if (this.isSwapped(step1, step2)) {
       transformations.push("SWAPPED");
     }
 
     // Check MIRRORED (vertical flip n↔s)
-    if (this.isMirrored(beat1, beat2)) {
+    if (this.isMirrored(step1, step2)) {
       transformations.push("MIRRORED");
     }
 
     // Check FLIPPED (horizontal flip e↔w)
-    if (this.isFlipped(beat1, beat2)) {
+    if (this.isFlipped(step1, step2)) {
       transformations.push("FLIPPED");
     }
 
     // Check INVERTED (pro↔anti)
-    if (this.isInverted(beat1, beat2)) {
+    if (this.isInverted(step1, step2)) {
       transformations.push("INVERTED");
     }
 
     // Check actual combined transformations (apply in sequence, verify result)
-    // Only add combination if applying both transformations in sequence matches beat2
-    if (this.isRotatedThenSwapped(beat1, beat2)) {
+    // Only add combination if applying both transformations in sequence matches step2
+    if (this.isRotatedThenSwapped(step1, step2)) {
       transformations.push("ROTATED + SWAPPED");
     }
-    if (this.isRotatedThenInverted(beat1, beat2)) {
+    if (this.isRotatedThenInverted(step1, step2)) {
       transformations.push("ROTATED + INVERTED");
     }
-    if (this.isMirroredThenFlipped(beat1, beat2)) {
+    if (this.isMirroredThenFlipped(step1, step2)) {
       transformations.push("MIRRORED + FLIPPED");
     }
-    if (this.isMirroredThenSwapped(beat1, beat2)) {
+    if (this.isMirroredThenSwapped(step1, step2)) {
       transformations.push("MIRRORED + SWAPPED");
     }
-    if (this.isFlippedThenSwapped(beat1, beat2)) {
+    if (this.isFlippedThenSwapped(step1, step2)) {
       transformations.push("FLIPPED + SWAPPED");
     }
 
     // Analyze letter relationship
-    const letterRelationship = this.analyzeLetterRelationship(beat1, beat2);
+    const letterRelationship = this.analyzeLetterRelationship(step1, step2);
 
     return {
-      keyBeat: beat1.beatNumber,
-      correspondingBeat: beat2.beatNumber,
+      keyStep: step1.stepNumber,
+      correspondingStep: step2.stepNumber,
       detectedTransformations:
         transformations.length > 0 ? transformations : ["UNKNOWN/COMPLEX"],
       letterRelationship,
@@ -79,14 +79,14 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
   }
 
   /**
-   * Analyze the letter-based relationship between two beats
+   * Analyze the letter-based relationship between two steps
    */
   private analyzeLetterRelationship(
-    beat1: BeatData,
-    beat2: BeatData
+    step1: StepData,
+    step2: StepData
   ): LetterRelationshipInfo | undefined {
-    const letter1 = beat1.letter;
-    const letter2 = beat2.letter;
+    const letter1 = step1.letter;
+    const letter2 = step2.letter;
 
     if (!letter1 || !letter2) {
       return undefined;
@@ -121,11 +121,11 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     };
   }
 
-  private isIdentical(beat1: BeatData, beat2: BeatData): boolean {
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+  private isIdentical(step1: StepData, step2: StepData): boolean {
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -141,7 +141,7 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isRotated(beat1: BeatData, beat2: BeatData): boolean {
+  private isRotated(step1: StepData, step2: StepData): boolean {
     // Simplified check: locations should be rotated 180°
     const rotate180 = (loc: string) => {
       const map: Record<string, string> = {
@@ -157,10 +157,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return map[loc.toLowerCase()] || loc;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -174,11 +174,11 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isSwapped(beat1: BeatData, beat2: BeatData): boolean {
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+  private isSwapped(step1: StepData, step2: StepData): boolean {
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -195,7 +195,7 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isMirrored(beat1: BeatData, beat2: BeatData): boolean {
+  private isMirrored(step1: StepData, step2: StepData): boolean {
     // Mirror vertically (left↔right) = reflect across vertical axis = e↔w swap
     const mirrorVertical = (loc: string) => {
       const map: Record<string, string> = {
@@ -211,10 +211,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return map[loc.toLowerCase()] || loc;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -229,7 +229,7 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isFlipped(beat1: BeatData, beat2: BeatData): boolean {
+  private isFlipped(step1: StepData, step2: StepData): boolean {
     // Flip horizontally (top↔bottom) = reflect across horizontal axis = n↔s swap
     const flipHorizontal = (loc: string) => {
       const map: Record<string, string> = {
@@ -245,10 +245,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return map[loc.toLowerCase()] || loc;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -263,7 +263,7 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isInverted(beat1: BeatData, beat2: BeatData): boolean {
+  private isInverted(step1: StepData, step2: StepData): boolean {
     // INVERTED means: same positions, but motion types swapped (pro↔anti)
     // Positions must be identical for strict inversion
     const invert = (type: MotionType) => {
@@ -272,10 +272,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return type;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -294,8 +294,8 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
 
   // Combined transformation checks - apply transformations in sequence
 
-  private isRotatedThenSwapped(beat1: BeatData, beat2: BeatData): boolean {
-    // Apply rotation to beat1, then swap colors, check if matches beat2
+  private isRotatedThenSwapped(step1: StepData, step2: StepData): boolean {
+    // Apply rotation to step1, then swap colors, check if matches step2
     const rotate180 = (loc: string) => {
       const map: Record<string, string> = {
         n: "s",
@@ -310,10 +310,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return map[loc.toLowerCase()] || loc;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -332,8 +332,8 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isRotatedThenInverted(beat1: BeatData, beat2: BeatData): boolean {
-    // Apply rotation to beat1, then invert motion types, check if matches beat2
+  private isRotatedThenInverted(step1: StepData, step2: StepData): boolean {
+    // Apply rotation to step1, then invert motion types, check if matches step2
     const rotate180 = (loc: string) => {
       const map: Record<string, string> = {
         n: "s",
@@ -354,10 +354,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return type;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -373,7 +373,7 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isMirroredThenFlipped(beat1: BeatData, beat2: BeatData): boolean {
+  private isMirroredThenFlipped(step1: StepData, step2: StepData): boolean {
     // Mirror (e↔w) then flip (n↔s) = 180° rotation
     // This is equivalent to rotation, so check if it matches but rotation alone doesn't
     const mirrorThenFlip = (loc: string) => {
@@ -402,10 +402,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return flipMap[mirrored] || mirrored;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -420,8 +420,8 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isMirroredThenSwapped(beat1: BeatData, beat2: BeatData): boolean {
-    // Apply mirror (e↔w) to beat1, then swap colors, check if matches beat2
+  private isMirroredThenSwapped(step1: StepData, step2: StepData): boolean {
+    // Apply mirror (e↔w) to step1, then swap colors, check if matches step2
     const mirrorVertical = (loc: string) => {
       const map: Record<string, string> = {
         n: "n",
@@ -436,10 +436,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return map[loc.toLowerCase()] || loc;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;
@@ -460,8 +460,8 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
     );
   }
 
-  private isFlippedThenSwapped(beat1: BeatData, beat2: BeatData): boolean {
-    // Apply flip (n↔s) to beat1, then swap colors, check if matches beat2
+  private isFlippedThenSwapped(step1: StepData, step2: StepData): boolean {
+    // Apply flip (n↔s) to step1, then swap colors, check if matches step2
     const flipHorizontal = (loc: string) => {
       const map: Record<string, string> = {
         n: "s",
@@ -476,10 +476,10 @@ export class BeatPairAnalyzer implements IBeatPairAnalyzer {
       return map[loc.toLowerCase()] || loc;
     };
 
-    const blue1 = beat1.motions.blue;
-    const blue2 = beat2.motions.blue;
-    const red1 = beat1.motions.red;
-    const red2 = beat2.motions.red;
+    const blue1 = step1.motions.blue;
+    const blue2 = step2.motions.blue;
+    const red1 = step1.motions.red;
+    const red2 = step2.motions.red;
 
     if (!blue1 || !blue2 || !red1 || !red2) {
       return false;

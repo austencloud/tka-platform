@@ -5,7 +5,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type {
   ISequenceAnalyzer,
   StrictLoopType,
@@ -33,12 +33,12 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
    * Extract all analyzable features from a sequence
    */
   extractFeatures(sequence: SequenceData): SequenceFeatures {
-    if (!sequence.beats || sequence.beats.length === 0) {
+    if (!sequence.steps || sequence.steps.length === 0) {
       return createDefaultSequenceFeatures();
     }
 
-    const validBeats = this.getValidBeats(sequence);
-    if (validBeats.length === 0) {
+    const validSteps = this.getValidBeats(sequence);
+    if (validSteps.length === 0) {
       return createDefaultSequenceFeatures();
     }
 
@@ -50,17 +50,17 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     const detectedCapTypes = this.getDetectedCapTypes(sequence);
 
     // Analyze turns (pro/anti spin)
-    const turnAnalysis = this.analyzeTurns(validBeats);
+    const turnAnalysis = this.analyzeTurns(validSteps);
 
     // Collect which motion types are present
-    const motionTypes = this.collectMotionTypes(validBeats);
+    const motionTypes = this.collectMotionTypes(validSteps);
 
     // Analyze positions
     const positionDominance = this.calculatePositionDominance(sequence);
-    const positionPresence = this.analyzePositionPresence(validBeats);
+    const positionPresence = this.analyzePositionPresence(validSteps);
 
     return {
-      beatCount: validBeats.length,
+      stepCount: validSteps.length,
       // propType removed - prop type is viewer preference, not sequence data
       gridMode: sequence.gridMode ?? null,
       circularity,
@@ -71,7 +71,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
       hasBetaPositions: positionPresence.hasBeta,
       hasGammaPositions: positionPresence.hasGamma,
       hasTurns: turnAnalysis.hasTurns,
-      turnBeatCount: turnAnalysis.turnBeatCount,
+      turnStepCount: turnAnalysis.turnStepCount,
       hasProMotion: motionTypes.has(MotionType.PRO),
       hasAntiMotion: motionTypes.has(MotionType.ANTI),
       hasFloatMotion: motionTypes.has(MotionType.FLOAT),
@@ -154,29 +154,29 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
    * Analyze reversals in a sequence
    */
   analyzeReversals(sequence: SequenceData): ReversalAnalysis {
-    const validBeats = this.getValidBeats(sequence);
+    const validSteps = this.getValidBeats(sequence);
 
-    const blueReversalBeats: number[] = [];
-    const redReversalBeats: number[] = [];
+    const blueReversalSteps: number[] = [];
+    const redReversalSteps: number[] = [];
 
-    for (const beat of validBeats) {
+    for (const beat of validSteps) {
       if (beat.blueReversal) {
-        blueReversalBeats.push(beat.beatNumber);
+        blueReversalSteps.push(beat.stepNumber);
       }
       if (beat.redReversal) {
-        redReversalBeats.push(beat.beatNumber);
+        redReversalSteps.push(beat.stepNumber);
       }
     }
 
-    const blueReversalCount = blueReversalBeats.length;
-    const redReversalCount = redReversalBeats.length;
+    const blueReversalCount = blueReversalSteps.length;
+    const redReversalCount = redReversalSteps.length;
     const totalReversals = blueReversalCount + redReversalCount;
 
-    // Check if reversals are synchronized (occur at same beats)
+    // Check if reversals are synchronized (occur at same steps)
     const synchronizedReversals =
       blueReversalCount > 0 &&
       blueReversalCount === redReversalCount &&
-      blueReversalBeats.every((beat) => redReversalBeats.includes(beat));
+      blueReversalSteps.every((beat) => redReversalSteps.includes(beat));
 
     return {
       blueReversalCount,
@@ -184,8 +184,8 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
       totalReversals,
       hasReversals: totalReversals > 0,
       synchronizedReversals,
-      blueReversalBeats,
-      redReversalBeats,
+      blueReversalSteps,
+      redReversalSteps,
     };
   }
 
@@ -193,9 +193,9 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
    * Calculate position group dominance
    */
   calculatePositionDominance(sequence: SequenceData): PositionDominance {
-    const validBeats = this.getValidBeats(sequence);
+    const validSteps = this.getValidBeats(sequence);
 
-    if (validBeats.length === 0) {
+    if (validSteps.length === 0) {
       return {
         primaryGroup: null,
         alphaPercent: 0,
@@ -213,7 +213,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     let gammaCount = 0;
     let totalPositions = 0;
 
-    for (const beat of validBeats) {
+    for (const beat of validSteps) {
       // Count start positions
       if (beat.startPosition) {
         const group = this.getPositionGroup(beat.startPosition);
@@ -293,7 +293,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
   /**
    * Analyze which position groups are present in the sequence
    */
-  analyzePositionPresence(beats: BeatData[]): {
+  analyzePositionPresence(steps: StepData[]): {
     hasAlpha: boolean;
     hasBeta: boolean;
     hasGamma: boolean;
@@ -302,7 +302,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     let hasBeta = false;
     let hasGamma = false;
 
-    for (const beat of beats) {
+    for (const beat of steps) {
       if (beat.startPosition) {
         const group = this.getPositionGroup(beat.startPosition);
         if (group === GridPositionGroup.ALPHA) hasAlpha = true;
@@ -329,13 +329,13 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
    * Turns are PRO or ANTI motion types where the prop actually rotates.
    * FLOAT, DASH, and STATIC don't count as turns.
    */
-  analyzeTurns(beats: BeatData[]): {
+  analyzeTurns(steps: StepData[]): {
     hasTurns: boolean;
-    turnBeatCount: number;
+    turnStepCount: number;
   } {
-    let turnBeatCount = 0;
+    let turnStepCount = 0;
 
-    for (const beat of beats) {
+    for (const beat of steps) {
       if (beat.motions) {
         const blueMotion = beat.motions[MotionColor.BLUE];
         const redMotion = beat.motions[MotionColor.RED];
@@ -349,24 +349,24 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
           redMotion?.motionType === MotionType.ANTI;
 
         if (blueHasTurn || redHasTurn) {
-          turnBeatCount++;
+          turnStepCount++;
         }
       }
     }
 
     return {
-      hasTurns: turnBeatCount > 0,
-      turnBeatCount,
+      hasTurns: turnStepCount > 0,
+      turnStepCount,
     };
   }
 
   // === Private Helpers ===
 
-  private getValidBeats(sequence: SequenceData): BeatData[] {
-    if (!sequence.beats) {
+  private getValidBeats(sequence: SequenceData): StepData[] {
+    if (!sequence.steps) {
       return [];
     }
-    return sequence.beats.filter((beat) => !beat.isBlank);
+    return sequence.steps.filter((beat) => !beat.isBlank);
   }
 
   private getPositionGroup(position: GridPosition): GridPositionGroup | null {
@@ -404,10 +404,10 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     }
   }
 
-  private collectMotionTypes(beats: BeatData[]): Set<MotionType> {
+  private collectMotionTypes(steps: StepData[]): Set<MotionType> {
     const types = new Set<MotionType>();
 
-    for (const beat of beats) {
+    for (const beat of steps) {
       if (beat.motions) {
         const blueMotion = beat.motions[MotionColor.BLUE];
         const redMotion = beat.motions[MotionColor.RED];

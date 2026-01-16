@@ -2,26 +2,26 @@
   /**
    * Beat-Pair Analysis Display
    *
-   * Shows detected beat-pair relationships and their groupings.
+   * Shows detected step-pair relationships and their groupings.
    * Simplified view for single-pattern sequences, detailed view for modular.
    * Shows axis-alternating pattern info when detected.
    */
-  import type { BeatPairRelationship } from "../../domain/models/beatpair-models";
-  import type { BeatPairGroups } from "../../domain/models/label-models";
+  import type { StepPairRelationship } from "../../domain/models/steppair-models";
+  import type { StepPairGroups } from "../../domain/models/label-models";
   import type { AxisAlternatingPattern } from "../../services/contracts/ILOOPDetector";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {
-    beatPairs: BeatPairRelationship[];
-    beatPairGroups?: BeatPairGroups;
+    stepPairs: StepPairRelationship[];
+    stepPairGroups?: StepPairGroups;
     collapsed?: boolean;
     isAxisAlternating?: boolean;
     axisAlternatingPattern?: AxisAlternatingPattern | null;
   }
 
   let {
-    beatPairs,
-    beatPairGroups,
+    stepPairs,
+    stepPairGroups,
     collapsed = false,
     isAxisAlternating = false,
     axisAlternatingPattern = null,
@@ -74,7 +74,7 @@
    * Get the primary letter relationship type for color coding
    */
   function getLetterRelationshipColor(
-    rel: BeatPairRelationship["letterRelationship"]
+    rel: StepPairRelationship["letterRelationship"]
   ): string {
     const defaultColor = "#6b7280";
     if (!rel) return defaultColor;
@@ -91,7 +91,7 @@
    * Format letter relationship as a concise display string
    */
   function formatLetterRelationship(
-    rel: BeatPairRelationship["letterRelationship"]
+    rel: StepPairRelationship["letterRelationship"]
   ): string | null {
     if (!rel) return null;
     const types: string[] = [];
@@ -102,19 +102,19 @@
     return `${rel.letter1}↔${rel.letter2}`;
   }
 
-  const groupCount = $derived(Object.keys(beatPairGroups || {}).length);
+  const groupCount = $derived(Object.keys(stepPairGroups || {}).length);
   const isModular = $derived(groupCount > 1);
 
   // For single-pattern sequences, get the unified pattern
   const unifiedPattern = $derived.by(() => {
     if (isModular || groupCount === 0) return null;
-    const patterns = Object.keys(beatPairGroups || {});
+    const patterns = Object.keys(stepPairGroups || {});
     return patterns[0] || null;
   });
 
   // Find pairs that have alternative interpretations worth showing
   const pairsWithAlternatives = $derived.by(() => {
-    return beatPairs.filter((pair) => {
+    return stepPairs.filter((pair) => {
       const primary = pair.detectedTransformations[0] || "UNKNOWN";
       const alternatives = (pair.allValidTransformations || []).filter(
         (t) => t !== primary
@@ -125,7 +125,7 @@
 
   // Check if any beat pairs have letter relationships worth showing
   const hasLetterRelationships = $derived(
-    beatPairs.some(
+    stepPairs.some(
       (p) =>
         p.letterRelationship &&
         (p.letterRelationship.relationships.isCompound ||
@@ -135,8 +135,8 @@
   );
 </script>
 
-{#if beatPairs.length > 0}
-  <div class="beat-pair-analysis">
+{#if stepPairs.length > 0}
+  <div class="step-pair-analysis">
     <button
       class="header"
       class:expanded={isExpanded}
@@ -156,7 +156,7 @@
           <span class="modular-badge">Modular ({groupCount} patterns)</span>
         {/if}
       </div>
-      <span class="pair-count">{beatPairs.length} pairs</span>
+      <span class="pair-count">{stepPairs.length} pairs</span>
     </button>
 
     {#if isExpanded}
@@ -165,14 +165,14 @@
         <div class="groups-section">
           <h4 class="section-title">Transformation Groups</h4>
           <div class="groups-grid">
-            {#each Object.entries(beatPairGroups || {}) as [pattern, beats]}
+            {#each Object.entries(stepPairGroups || {}) as [pattern, steps]}
               <div
                 class="group-card"
                 style="--group-color: {getColorForPattern(pattern)}"
               >
                 <div class="group-pattern">{pattern}</div>
-                <div class="group-beats">
-                  Beats: {beats.join(", ")}
+                <div class="group-steps">
+                  Steps: {steps.join(", ")}
                 </div>
               </div>
             {/each}
@@ -183,17 +183,17 @@
         <div class="pairs-section">
           <h4 class="section-title">Detailed Pairs</h4>
           <div class="pairs-list">
-            {#each beatPairs as pair}
+            {#each stepPairs as pair}
               {@const primaryTransform =
                 pair.detectedTransformations[0] || "UNKNOWN"}
               {@const alternatives = (
                 pair.allValidTransformations || []
               ).filter((t) => t !== primaryTransform)}
               <div class="pair-row">
-                <div class="pair-beats">
-                  <span class="beat-num">{pair.keyBeat}</span>
+                <div class="pair-steps">
+                  <span class="beat-num">{pair.keyStep}</span>
                   <span class="arrow">↔</span>
-                  <span class="beat-num">{pair.correspondingBeat}</span>
+                  <span class="beat-num">{pair.correspondingStep}</span>
                 </div>
                 <div class="pair-info">
                   <div class="pair-transforms">
@@ -242,7 +242,7 @@
         <!-- SINGLE PATTERN: Simplified view -->
         <div class="unified-section">
           <div class="unified-summary">
-            <span class="unified-label">All {beatPairs.length} pairs:</span>
+            <span class="unified-label">All {stepPairs.length} pairs:</span>
             <span
               class="transform-tag primary"
               style="--tag-color: {getColorForPattern(unifiedPattern)}"
@@ -256,7 +256,7 @@
             <div class="letter-relationships">
               <span class="letter-label">Letter relationships:</span>
               <div class="letter-pairs-list">
-                {#each beatPairs as pair}
+                {#each stepPairs as pair}
                   {#if pair.letterRelationship}
                     {@const letterDisplay = formatLetterRelationship(
                       pair.letterRelationship
@@ -296,7 +296,7 @@
                   ).filter((t) => t !== primary)}
                   <div class="alt-pair-row">
                     <span class="alt-pair-nums"
-                      >{pair.keyBeat}↔{pair.correspondingBeat}:</span
+                      >{pair.keyStep}↔{pair.correspondingStep}:</span
                     >
                     {#each alternatives as alt}
                       <span
@@ -318,7 +318,7 @@
 {/if}
 
 <style>
-  .beat-pair-analysis {
+  .step-pair-analysis {
     background: var(--surface-dark, rgba(0, 0, 0, 0.3));
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 12px;
@@ -421,7 +421,7 @@
     margin-bottom: 4px;
   }
 
-  .group-beats {
+  .group-steps {
     font-size: var(--font-size-xs);
     color: var(--muted-foreground);
   }
@@ -492,7 +492,7 @@
     border-radius: 6px;
   }
 
-  .pair-beats {
+  .pair-steps {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);

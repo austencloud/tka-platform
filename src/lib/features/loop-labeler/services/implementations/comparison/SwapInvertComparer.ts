@@ -2,7 +2,7 @@ import type { ISwapInvertComparer } from "../../contracts/ISwapInvertComparer";
 import type {
   ColorData,
   TransformationCheckResult,
-} from "../../../domain/models/internal-beat-models";
+} from "../../../domain/models/internal-step-models";
 import {
   hasRotationData,
   areRotDirsInvertedForRotation,

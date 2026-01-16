@@ -16,7 +16,7 @@ export interface HandPathCycle {
   /** Which hand this cycle describes */
   hand: "blue" | "red";
 
-  /** Number of beats in one complete cycle */
+  /** Number of steps in one complete cycle */
   cycleLength: number;
 
   /** How many times the cycle repeats in the full sequence */

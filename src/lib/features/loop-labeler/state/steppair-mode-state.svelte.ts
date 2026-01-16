@@ -1,11 +1,11 @@
 /**
- * BeatPair Mode State
+ * StepPair Mode State
  *
- * Reactive state for beat-pair relationship labeling.
+ * Reactive state for step-pair relationship labeling.
  * Handles beat pair selection, component selection, and saved relationships.
  */
 
-import type { BeatPairRelationship } from "../domain/models/beatpair-models";
+import type { StepPairRelationship } from "../domain/models/steppair-models";
 import type {
   LabeledSequence,
   TransformationInterval,
@@ -14,10 +14,10 @@ import type {
 import type { ComponentId } from "../domain/constants/loop-components";
 import { BASE_COMPONENTS } from "../domain/constants/loop-components";
 
-export interface BeatPairModeState {
+export interface StepPairModeState {
   // Beat pair selection
-  firstBeat: number | null;
-  secondBeat: number | null;
+  firstStep: number | null;
+  secondStep: number | null;
 
   // Component selection (same as whole mode)
   selectedComponents: Set<ComponentId>;
@@ -26,11 +26,11 @@ export interface BeatPairModeState {
   transformationIntervals: TransformationIntervals;
 
   // Saved beat pairs
-  savedBeatPairs: BeatPairRelationship[];
+  savedStepPairs: StepPairRelationship[];
 
   // Actions
   actions: {
-    selectBeat(beatNumber: number): void;
+    selectStep(stepNumber: number): void;
     toggleComponent(component: ComponentId): void;
     setTransformationInterval(
       key: keyof TransformationIntervals,
@@ -44,15 +44,15 @@ export interface BeatPairModeState {
 }
 
 /**
- * Create beat-pair mode state for a LOOP labeler instance
+ * Create step-pair mode state for a LOOP labeler instance
  */
-export function createBeatPairModeState(): BeatPairModeState {
+export function createBeatPairModeState(): StepPairModeState {
   // State
-  let firstBeat = $state<number | null>(null);
-  let secondBeat = $state<number | null>(null);
+  let firstStep = $state<number | null>(null);
+  let secondStep = $state<number | null>(null);
   let selectedComponents = $state(new Set<ComponentId>());
   let transformationIntervals = $state<TransformationIntervals>({});
-  let savedBeatPairs = $state<BeatPairRelationship[]>([]);
+  let savedStepPairs = $state<StepPairRelationship[]>([]);
 
   // Map component IDs to interval keys
   const COMPONENT_TO_INTERVAL_KEY: Record<
@@ -68,27 +68,27 @@ export function createBeatPairModeState(): BeatPairModeState {
 
   // Actions
   const actions = {
-    selectBeat(beatNumber: number) {
-      if (firstBeat === null) {
+    selectStep(stepNumber: number) {
+      if (firstStep === null) {
         // Select first beat
-        firstBeat = beatNumber;
-        secondBeat = null;
+        firstStep = stepNumber;
+        secondStep = null;
         selectedComponents = new Set();
         transformationIntervals = {};
-      } else if (firstBeat === beatNumber) {
+      } else if (firstStep === stepNumber) {
         // Deselect first beat
-        firstBeat = null;
-        secondBeat = null;
+        firstStep = null;
+        secondStep = null;
         selectedComponents = new Set();
         transformationIntervals = {};
-      } else if (secondBeat === beatNumber) {
+      } else if (secondStep === stepNumber) {
         // Deselect second beat
-        secondBeat = null;
+        secondStep = null;
         selectedComponents = new Set();
         transformationIntervals = {};
       } else {
         // Select second beat
-        secondBeat = beatNumber;
+        secondStep = stepNumber;
       }
     },
 
@@ -125,13 +125,13 @@ export function createBeatPairModeState(): BeatPairModeState {
     },
 
     addBeatPair() {
-      if (firstBeat === null || secondBeat === null) {
-        console.warn("[BeatPairModeState] Cannot add: beats not selected");
+      if (firstStep === null || secondStep === null) {
+        console.warn("[StepPairModeState] Cannot add: steps not selected");
         return;
       }
 
       if (selectedComponents.size === 0) {
-        console.warn("[BeatPairModeState] Cannot add: no components selected");
+        console.warn("[StepPairModeState] Cannot add: no components selected");
         return;
       }
 
@@ -148,27 +148,27 @@ export function createBeatPairModeState(): BeatPairModeState {
         return label;
       });
 
-      const beatPair: BeatPairRelationship = {
-        keyBeat: firstBeat,
-        correspondingBeat: secondBeat,
+      const stepPair: StepPairRelationship = {
+        keyStep: firstStep,
+        correspondingStep: secondStep,
         detectedTransformations: [], // No auto-detection, manual selection
         confirmedTransformation: transformationParts.join(" + "),
       };
 
       // Add to saved beat pairs
-      savedBeatPairs = [...savedBeatPairs, beatPair];
+      savedStepPairs = [...savedStepPairs, stepPair];
 
       // Clear selection for next beat pair
       this.clearSelection();
     },
 
     removeBeatPair(index: number) {
-      savedBeatPairs = savedBeatPairs.filter((_, i) => i !== index);
+      savedStepPairs = savedStepPairs.filter((_, i) => i !== index);
     },
 
     clearSelection() {
-      firstBeat = null;
-      secondBeat = null;
+      firstStep = null;
+      secondStep = null;
       selectedComponents = new Set();
       transformationIntervals = {};
     },
@@ -176,18 +176,18 @@ export function createBeatPairModeState(): BeatPairModeState {
     loadSavedBeatPairs(label: LabeledSequence | null) {
       // Only load beat pairs that have been explicitly confirmed by the user
       // Auto-detected beat pairs (those without confirmedTransformation) are
-      // displayed separately in the BeatPairAnalysisDisplay component
-      const allBeatPairs = label?.beatPairs ?? [];
-      savedBeatPairs = allBeatPairs.filter((bp) => bp.confirmedTransformation);
+      // displayed separately in the StepPairAnalysisDisplay component
+      const allBeatPairs = label?.stepPairs ?? [];
+      savedStepPairs = allBeatPairs.filter((bp) => bp.confirmedTransformation);
     },
   };
 
   return {
-    get firstBeat() {
-      return firstBeat;
+    get firstStep() {
+      return firstStep;
     },
-    get secondBeat() {
-      return secondBeat;
+    get secondStep() {
+      return secondStep;
     },
     get selectedComponents() {
       return selectedComponents;
@@ -195,8 +195,8 @@ export function createBeatPairModeState(): BeatPairModeState {
     get transformationIntervals() {
       return transformationIntervals;
     },
-    get savedBeatPairs() {
-      return savedBeatPairs;
+    get savedStepPairs() {
+      return savedStepPairs;
     },
     actions,
   };

@@ -5,26 +5,26 @@
    * Displays saved beat pair relationships with transformation info.
    * Uses shared design tokens from app.css.
    */
-  import type { BeatPairRelationship } from "../../domain/models/beatpair-models";
+  import type { StepPairRelationship } from "../../domain/models/steppair-models";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {
-    beatPairs: BeatPairRelationship[];
+    stepPairs: StepPairRelationship[];
     onRemove: (index: number) => void;
   }
 
-  let { beatPairs, onRemove }: Props = $props();
+  let { stepPairs, onRemove }: Props = $props();
 </script>
 
-{#if beatPairs.length > 0}
+{#if stepPairs.length > 0}
   <div class="saved-beatpairs">
     <span class="saved-label">Saved beat pairs</span>
-    {#each beatPairs as pair, i}
-      <div class="saved-beatpair-tag">
-        <span class="beatpair-beats"
-          >{pair.keyBeat} ↔ {pair.correspondingBeat}</span
+    {#each stepPairs as pair, i}
+      <div class="saved-steppair-tag">
+        <span class="steppair-steps"
+          >{pair.keyStep} ↔ {pair.correspondingStep}</span
         >
-        <span class="beatpair-transformation">
+        <span class="steppair-transformation">
           {pair.confirmedTransformation || pair.detectedTransformations[0]}
         </span>
         <button
@@ -59,7 +59,7 @@
     margin-bottom: var(--spacing-xs);
   }
 
-  .saved-beatpair-tag {
+  .saved-steppair-tag {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -69,14 +69,14 @@
     border-left: 4px solid rgba(168, 85, 247, 0.8);
   }
 
-  .beatpair-beats {
+  .steppair-steps {
     font-weight: 600;
     font-size: var(--font-size-sm);
     color: var(--foreground);
     min-width: 70px;
   }
 
-  .beatpair-transformation {
+  .steppair-transformation {
     flex: 1;
     font-size: var(--font-size-xs);
     color: var(--muted-foreground);

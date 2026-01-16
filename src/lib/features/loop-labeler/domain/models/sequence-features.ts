@@ -24,7 +24,7 @@ export interface PositionDominance {
   /** Primary position group used (most frequent) */
   readonly primaryGroup: GridPositionGroup | null;
 
-  /** Percentage of beats in each group (0-100) */
+  /** Percentage of steps in each group (0-100) */
   readonly alphaPercent: number;
   readonly betaPercent: number;
   readonly gammaPercent: number;
@@ -56,14 +56,14 @@ export interface ReversalAnalysis {
   /** Whether sequence has any reversals */
   readonly hasReversals: boolean;
 
-  /** Whether reversals are synchronized (blue and red reverse at same beats) */
+  /** Whether reversals are synchronized (blue and red reverse at same steps) */
   readonly synchronizedReversals: boolean;
 
   /** Beat numbers where blue reversals occur */
-  readonly blueReversalBeats: readonly number[];
+  readonly blueReversalSteps: readonly number[];
 
   /** Beat numbers where red reversals occur */
-  readonly redReversalBeats: readonly number[];
+  readonly redReversalSteps: readonly number[];
 }
 
 /**
@@ -73,8 +73,8 @@ export interface ReversalAnalysis {
  */
 export interface SequenceFeatures {
   // === Basic Metadata ===
-  /** Number of beats in the sequence */
-  readonly beatCount: number;
+  /** Number of steps in the sequence */
+  readonly stepCount: number;
 
   // NOTE: propType removed - prop type is a viewer preference, not sequence data
   // Tags should not include prop type since any sequence can be viewed with any prop
@@ -105,8 +105,8 @@ export interface SequenceFeatures {
   /** True if sequence has any turns (pro or anti spin) */
   readonly hasTurns: boolean;
 
-  /** Number of beats with turns (pro or anti motion) */
-  readonly turnBeatCount: number;
+  /** Number of steps with turns (pro or anti motion) */
+  readonly turnStepCount: number;
 
   // === Motion Types Present ===
   /** Which motion types appear in the sequence */
@@ -122,7 +122,7 @@ export interface SequenceFeatures {
  */
 export function createDefaultSequenceFeatures(): SequenceFeatures {
   return {
-    beatCount: 0,
+    stepCount: 0,
     gridMode: null,
     circularity: {
       isCircular: false,
@@ -141,8 +141,8 @@ export function createDefaultSequenceFeatures(): SequenceFeatures {
       totalReversals: 0,
       hasReversals: false,
       synchronizedReversals: false,
-      blueReversalBeats: [],
-      redReversalBeats: [],
+      blueReversalSteps: [],
+      redReversalSteps: [],
     },
     positionDominance: {
       primaryGroup: null,
@@ -158,7 +158,7 @@ export function createDefaultSequenceFeatures(): SequenceFeatures {
     hasBetaPositions: false,
     hasGammaPositions: false,
     hasTurns: false,
-    turnBeatCount: 0,
+    turnStepCount: 0,
     hasProMotion: false,
     hasAntiMotion: false,
     hasFloatMotion: false,

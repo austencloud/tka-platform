@@ -14,7 +14,7 @@
   import { BASE_WORDS } from "../../domain/constants/base-words";
 
   interface Props {
-    selectedBeats: Set<number>;
+    selectedSteps: Set<number>;
     selectedComponents: Set<ComponentId>;
     savedSections: SectionDesignation[];
     selectedBaseWord: string | null;
@@ -27,7 +27,7 @@
   }
 
   let {
-    selectedBeats,
+    selectedSteps,
     selectedComponents,
     savedSections,
     selectedBaseWord,
@@ -54,9 +54,9 @@
   </div>
 
   <!-- Current selection status -->
-  {#if selectedBeats.size > 0}
+  {#if selectedSteps.size > 0}
     <div class="selection-status">
-      <span class="beat-count">{selectedBeats.size} beats selected</span>
+      <span class="beat-count">{selectedSteps.size} steps selected</span>
       {#if selectedComponents.size > 0}
         <span class="arrow">→</span>
         <span class="components">{selectionLabel()}</span>
@@ -94,7 +94,7 @@
   <button
     class="btn-add"
     onclick={onAddSection}
-    disabled={selectedBeats.size === 0 ||
+    disabled={selectedSteps.size === 0 ||
       (selectedComponents.size === 0 && !selectedBaseWord)}
   >
     <FontAwesomeIcon icon="plus" size="1em" />

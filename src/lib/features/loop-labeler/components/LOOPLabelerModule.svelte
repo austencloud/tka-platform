@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { IBeatDataConverter } from "../services/contracts/IBeatDataConverter";
+  import type { IStepDataConverter } from "../services/contracts/IStepDataConverter";
   import type {
     ILOOPDetector,
     LOOPDetectionResult,
@@ -18,9 +18,9 @@
     loopLabelerController,
   } from "../state/loop-labeler-state.svelte";
   import { createSectionModeState } from "../state/section-mode-state.svelte";
-  import { createBeatPairModeState } from "../state/beatpair-mode-state.svelte";
+  import { createBeatPairModeState } from "../state/steppair-mode-state.svelte";
   import { createWholeModeState } from "../state/whole-mode-state.svelte";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { FilterMode } from "../domain/models/label-models";
 
@@ -47,11 +47,11 @@
 
   // Store service references after loading (to avoid resolving in $derived)
   let detectionService = $state<ILOOPDetector | null>(null);
-  let conversionService = $state<IBeatDataConverter | null>(null);
+  let conversionService = $state<IStepDataConverter | null>(null);
 
   // Create mode-specific state managers (after module loads)
   let sectionState = $state<ReturnType<typeof createSectionModeState>>();
-  let beatPairState = $state<ReturnType<typeof createBeatPairModeState>>();
+  let stepPairState = $state<ReturnType<typeof createBeatPairModeState>>();
   let wholeState = $state<ReturnType<typeof createWholeModeState>>();
 
   onMount(() => {
@@ -81,14 +81,14 @@
 
       // Also cache the conversion service for beat parsing
       conversionService =
-        container.items.beatDataConverter as IBeatDataConverter | null;
+        container.items.stepDataConverter as IStepDataConverter | null;
 
       // Pre-cache all services to ensure they're available for subsequent operations
       loopLabelerController.cacheServices();
 
       // Create mode states AFTER services are registered
       sectionState = createSectionModeState();
-      beatPairState = createBeatPairModeState();
+      stepPairState = createBeatPairModeState();
       wholeState = createWholeModeState();
 
       // Only run full initialization if we don't have existing data
@@ -177,18 +177,18 @@
     }
   });
 
-  // Parse beats for current sequence (uses cached conversionService)
+  // Parse steps for current sequence (uses cached conversionService)
   const parsedData = $derived.by(() => {
     if (!currentSequence?.fullMetadata?.sequence) {
-      return { beats: [], startPosition: null };
+      return { steps: [], startPosition: null };
     }
 
     // Use the cached conversion service instead of resolving each time
     if (!conversionService) {
       console.warn(
-        "[LOOPLabelerModule] BeatDataConverter not available (not cached)"
+        "[LOOPLabelerModule] StepDataConverter not available (not cached)"
       );
-      return { beats: [], startPosition: null };
+      return { steps: [], startPosition: null };
     }
 
     const gridMode =
@@ -200,31 +200,31 @@
     );
   });
 
-  const parsedBeats = $derived(parsedData.beats);
+  const parsedSteps = $derived(parsedData.steps);
   const startPosition = $derived(parsedData.startPosition);
 
   // Load saved sections/beatpairs when sequence changes AND clear current selection
   $effect(() => {
-    if (!sectionState || !beatPairState || !wholeState) return;
+    if (!sectionState || !stepPairState || !wholeState) return;
 
     // Clear all mode selections when sequence changes
     sectionState.actions.clearSelection();
-    beatPairState.actions.clearSelection();
+    stepPairState.actions.clearSelection();
     wholeState.actions.clearSelection();
 
     // Load saved data for this sequence
     if (currentLabel) {
       sectionState.actions.loadSavedSections(currentLabel);
-      beatPairState.actions.loadSavedBeatPairs(currentLabel);
+      stepPairState.actions.loadSavedBeatPairs(currentLabel);
     } else {
       sectionState.actions.loadSavedSections(null);
-      beatPairState.actions.loadSavedBeatPairs(null);
+      stepPairState.actions.loadSavedBeatPairs(null);
     }
   });
 
-  // Highlighted beats for BeatGrid visualization (section + beatpair modes)
-  const highlightedBeats = $derived.by(() => {
-    if (!sectionState || !beatPairState) return undefined;
+  // Highlighted steps for StepGrid visualization (section + steppair modes)
+  const highlightedSteps = $derived.by(() => {
+    if (!sectionState || !stepPairState) return undefined;
 
     const map = new Map<number, { bg: string; border: string }>();
 
@@ -241,32 +241,32 @@
 
       sectionState.savedSections.forEach((section, idx) => {
         const color = SECTION_COLORS[idx % SECTION_COLORS.length]!;
-        section.beats.forEach((beatNum) => {
-          map.set(beatNum, { bg: color.bg, border: color.border });
+        section.steps.forEach((stepNum) => {
+          map.set(stepNum, { bg: color.bg, border: color.border });
         });
       });
 
-      // Currently selected beats (bright yellow/gold)
+      // Currently selected steps (bright yellow/gold)
       const selectionColor = {
         bg: "rgba(251, 191, 36, 0.35)",
         border: "rgba(251, 191, 36, 0.9)",
       };
-      sectionState.selectedBeats.forEach((beatNum) => {
-        map.set(beatNum, selectionColor);
+      sectionState.selectedSteps.forEach((stepNum) => {
+        map.set(stepNum, selectionColor);
       });
     }
 
-    if (labelingMode === "beatpair") {
+    if (labelingMode === "steppair") {
       // First beat (green)
-      if (beatPairState.firstBeat !== null) {
-        map.set(beatPairState.firstBeat, {
+      if (stepPairState.firstStep !== null) {
+        map.set(stepPairState.firstStep, {
           bg: "rgba(34, 197, 94, 0.35)",
           border: "rgba(34, 197, 94, 0.9)",
         });
       }
       // Second beat (purple)
-      if (beatPairState.secondBeat !== null) {
-        map.set(beatPairState.secondBeat, {
+      if (stepPairState.secondStep !== null) {
+        map.set(stepPairState.secondStep, {
           bg: "rgba(168, 85, 247, 0.35)",
           border: "rgba(168, 85, 247, 0.9)",
         });
@@ -320,11 +320,11 @@
     loopLabelerController.setFilterMode(mode);
   }
 
-  function handleBeatClick(beatNumber: number) {
+  function handleStepClick(stepNumber: number) {
     if (labelingMode === "section" && sectionState) {
-      sectionState.actions.selectBeat(beatNumber, sectionState.isShiftHeld);
-    } else if (labelingMode === "beatpair" && beatPairState) {
-      beatPairState.actions.selectBeat(beatNumber);
+      sectionState.actions.selectStep(stepNumber, sectionState.isShiftHeld);
+    } else if (labelingMode === "steppair" && stepPairState) {
+      stepPairState.actions.selectStep(stepNumber);
     }
   }
 
@@ -347,8 +347,8 @@
   }
 
   function handleRemoveBeatPair(index: number) {
-    if (!beatPairState) return;
-    beatPairState.actions.removeBeatPair(index);
+    if (!stepPairState) return;
+    stepPairState.actions.removeBeatPair(index);
   }
 
   async function handleAddDesignation() {
@@ -375,8 +375,8 @@
         labeledAt: new Date().toISOString(),
         notes: notes || "",
         sections: currentLabel?.sections || [],
-        beatPairs: currentLabel?.beatPairs || [],
-        beatPairGroups: currentComputedDetection.beatPairGroups,
+        stepPairs: currentLabel?.stepPairs || [],
+        stepPairGroups: currentComputedDetection.stepPairGroups,
       };
       await loopLabelerController.saveLabel(updatedLabel);
       loopLabelerController.nextSequence();
@@ -407,7 +407,7 @@
       labeledAt: new Date().toISOString(),
       notes: notes || "Marked as unknown - needs further investigation",
       sections: currentLabel?.sections || [],
-      beatPairs: currentLabel?.beatPairs || [],
+      stepPairs: currentLabel?.stepPairs || [],
     };
 
     await loopLabelerController.saveLabel(updatedLabel);
@@ -428,8 +428,8 @@
             isModular: currentComputedDetection.isModular,
             candidateDesignations:
               currentComputedDetection.candidateDesignations,
-            beatPairs: currentComputedDetection.beatPairs,
-            beatPairGroups: currentComputedDetection.beatPairGroups,
+            stepPairs: currentComputedDetection.stepPairs,
+            stepPairGroups: currentComputedDetection.stepPairGroups,
           }
         : null,
     };
@@ -476,9 +476,9 @@
       needsVerification: false, // Mark as verified
       labeledAt: new Date().toISOString(),
       notes: currentLabel?.notes || "",
-      // Preserve any manual section/beatpair annotations
+      // Preserve any manual section/steppair annotations
       sections: currentLabel?.sections || [],
-      beatPairs: currentLabel?.beatPairs || [],
+      stepPairs: currentLabel?.stepPairs || [],
     };
 
     await loopLabelerController.saveLabel(updatedLabel);
@@ -534,7 +534,7 @@
       labeledAt: new Date().toISOString(),
       notes: notes || "",
       sections: currentLabel?.sections || [],
-      beatPairs: currentLabel?.beatPairs || [],
+      stepPairs: currentLabel?.stepPairs || [],
     };
 
     await loopLabelerController.saveLabel(updatedLabel);
@@ -605,7 +605,7 @@
           <!-- Left panel: Sequence preview and beat grid -->
           <SequencePreviewPanel
             sequence={currentSequence}
-            {parsedBeats}
+            {parsedSteps}
             {startPosition}
             {currentLabel}
             computedDetection={currentComputedDetection}
@@ -615,8 +615,8 @@
               loopLabelerController.setShowStartPosition(val)}
             onColumnCountChange={(val) =>
               loopLabelerController.setManualColumnCount(val)}
-            onBeatClick={handleBeatClick}
-            {highlightedBeats}
+            onStepClick={handleStepClick}
+            {highlightedSteps}
             {labelingMode}
             onCopyJson={handleCopyJson}
             {copiedToast}
@@ -629,7 +629,7 @@
             <DesignationsPanel
               wholeDesignations={wholeState?.pendingDesignations ?? []}
               sectionDesignations={sectionState?.savedSections ?? []}
-              beatPairDesignations={beatPairState?.savedBeatPairs ?? []}
+              stepPairDesignations={stepPairState?.savedStepPairs ?? []}
               isFreeform={// Freeform should be false if polyrhythmic is detected - polyrhythmic IS a pattern
               (currentComputedDetection?.isPolyrhythmic ?? false)
                 ? false
@@ -647,12 +647,12 @@
               autoDetectedDesignations={[]}
               candidateDesignations={currentComputedDetection?.candidateDesignations ??
                 []}
-              autoDetectedBeatPairs={currentComputedDetection?.beatPairs ?? []}
-              autoDetectedBeatPairGroups={currentComputedDetection?.beatPairGroups ??
+              autoDetectedBeatPairs={currentComputedDetection?.stepPairs ?? []}
+              autoDetectedBeatPairGroups={currentComputedDetection?.stepPairGroups ??
                 {}}
               onRemoveWholeDesignation={handleRemoveDesignation}
               onRemoveSectionDesignation={handleRemoveSection}
-              onRemoveBeatPairDesignation={handleRemoveBeatPair}
+              onRemoveStepPairDesignation={handleRemoveBeatPair}
               onSetFreeform={handleSetFreeform}
               onMarkUnknown={handleMarkUnknown}
               onSaveAndNext={handleSaveAndNext}
@@ -663,7 +663,7 @@
               onDeleteSequence={handleDeleteSequence}
               canSave={(wholeState?.pendingDesignations.length ?? 0) > 0 ||
                 (sectionState?.savedSections.length ?? 0) > 0 ||
-                (beatPairState?.savedBeatPairs.length ?? 0) > 0 ||
+                (stepPairState?.savedStepPairs.length ?? 0) > 0 ||
                 (wholeState?.isFreeform ?? false) ||
                 (currentComputedDetection?.isModular ?? false) ||
                 (currentComputedDetection?.isPolyrhythmic ?? false)}
@@ -676,7 +676,7 @@
                 {showManualBuilder}
                 {labelingMode}
                 {sectionState}
-                {beatPairState}
+                {stepPairState}
                 {wholeState}
                 {derivedLoopType}
                 {notes}

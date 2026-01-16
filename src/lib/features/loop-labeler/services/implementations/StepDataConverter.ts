@@ -1,4 +1,4 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
@@ -15,15 +15,15 @@ import {
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type {
-  IBeatDataConverter,
-  RawBeatData,
+  IStepDataConverter,
+  RawStepData,
   SequenceEntry,
-} from "../contracts/IBeatDataConverter";
+} from "../contracts/IStepDataConverter";
 
 /**
- * Service for converting raw sequence data to BeatData for rendering
+ * Service for converting raw sequence data to StepData for rendering
  */
-export class BeatDataConverter implements IBeatDataConverter {
+export class StepDataConverter implements IStepDataConverter {
   parseMotionType(value: string | undefined): MotionType {
     const str = String(value || "").toLowerCase();
     switch (str) {
@@ -123,22 +123,22 @@ export class BeatDataConverter implements IBeatDataConverter {
 
   convertRawToBeats(
     sequenceName: string,
-    rawSequence: RawBeatData[],
+    rawSequence: RawStepData[],
     gridMode: GridMode
   ): {
-    beats: BeatData[];
+    steps: StepData[];
     startPosition:
-      | (StartPositionData & { beatNumber: number; isBlank: boolean })
+      | (StartPositionData & { stepNumber: number; isBlank: boolean })
       | null;
   } {
     if (!rawSequence || rawSequence.length === 0) {
-      return { beats: [], startPosition: null };
+      return { steps: [], startPosition: null };
     }
 
     // JSON structure:
     // - Element 0: Metadata (word, author, level, etc.) - no sequenceStartPosition, no blue/red attributes
     // - Element 1: Start position with beat=0, sequenceStartPosition, blue/red attributes
-    // - Element 2+: Actual beats with beat>=1
+    // - Element 2+: Actual steps with beat>=1
 
     // Find the start position element (has sequenceStartPosition AND beat === 0)
     const startPosElement = rawSequence.find(
@@ -146,12 +146,12 @@ export class BeatDataConverter implements IBeatDataConverter {
     );
 
     // Parse start position if found
-    // NOTE: We add beatNumber: 0 and isBlank: false so BeatGrid/BeatCell
+    // NOTE: We add stepNumber: 0 and isBlank: false so StepGrid/StepCell
     // properly recognize and render this as the start position with "Start" label
     // Using type assertion because StartPositionData doesn't include these runtime fields
     let startPosition:
       | (StartPositionData & {
-          beatNumber: number;
+          stepNumber: number;
           isBlank: boolean;
         })
       | null = null;
@@ -166,8 +166,8 @@ export class BeatDataConverter implements IBeatDataConverter {
       startPosition = {
         id: `start-${sequenceName}`,
         isStartPosition: true as const,
-        beatNumber: 0, // Required for BeatCell to identify as start position
-        isBlank: false, // Required for BeatGrid to show start position
+        stepNumber: 0, // Required for StepCell to identify as start position
+        isBlank: false, // Required for StepGrid to show start position
         letter: (startPosElement.letter as Letter | null) ?? null,
         gridPosition,
         startPosition: gridPosition,
@@ -215,16 +215,16 @@ export class BeatDataConverter implements IBeatDataConverter {
       };
     }
 
-    // Filter to only actual beats: must have blue/red attributes AND beat >= 1
+    // Filter to only actual steps: must have blue/red attributes AND beat >= 1
     // This excludes: metadata elements (no attributes) AND start position (beat === 0)
-    const actualBeats = rawSequence.filter(
+    const actualSteps = rawSequence.filter(
       (el) =>
         (el.blueAttributes || el.redAttributes) &&
         el.beat !== undefined &&
         el.beat >= 1
     );
 
-    const beats: BeatData[] = actualBeats.map((step, index) => {
+    const steps: StepData[] = actualSteps.map((step, index) => {
       const blueAttrs = step.blueAttributes;
       const redAttrs = step.redAttributes;
 
@@ -276,15 +276,15 @@ export class BeatDataConverter implements IBeatDataConverter {
             : undefined,
         },
         // Use step.beat directly (it's guaranteed >= 1 from filter)
-        beatNumber: step.beat!,
+        stepNumber: step.beat!,
         duration: 1.0,
         blueReversal: false,
         redReversal: false,
         isBlank: false,
-      } as BeatData;
+      } as StepData;
     });
 
-    return { beats, startPosition };
+    return { steps, startPosition };
   }
 
   getAuthoritativeGridMode(seq: SequenceEntry): GridMode {

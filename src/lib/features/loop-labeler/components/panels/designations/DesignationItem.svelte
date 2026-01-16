@@ -9,7 +9,7 @@
   type DesignationType =
     | "whole"
     | "section"
-    | "beatpair"
+    | "steppair"
     | "freeform"
     | "modular"
     | "axis-alternating";
@@ -63,7 +63,7 @@
     border-color: rgba(59, 130, 246, 0.25);
   }
 
-  .designation-item.beatpair {
+  .designation-item.steppair {
     background: linear-gradient(
       135deg,
       rgba(168, 85, 247, 0.12) 0%,
@@ -121,7 +121,7 @@
     color: #93c5fd;
   }
 
-  .beatpair .designation-badge {
+  .steppair .designation-badge {
     background: rgba(168, 85, 247, 0.3);
     color: #c4b5fd;
   }

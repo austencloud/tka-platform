@@ -1,12 +1,12 @@
-import type { IBeatComparisonOrchestrator } from "../../contracts/IBeatComparisonOrchestrator";
+import type { IStepComparisonOrchestrator } from "../../contracts/IStepComparisonOrchestrator";
 import type { IRotationComparer } from "../../contracts/IRotationComparer";
 import type { IReflectionComparer } from "../../contracts/IReflectionComparer";
 import type { ISwapInvertComparer } from "../../contracts/ISwapInvertComparer";
 import type { ICandidateFormatter } from "../../contracts/ICandidateFormatter";
 import type {
-  ExtractedBeat,
-  InternalBeatPair,
-} from "../../../domain/models/internal-beat-models";
+  ExtractedStep,
+  InternalStepPair,
+} from "../../../domain/models/internal-step-models";
 import type { SequenceEntry } from "../../../domain/models/sequence-models";
 import {
   ROTATE_90_CCW,
@@ -16,7 +16,7 @@ import {
 /**
  * Orchestrator that combines comparison services and manages beat pair generation.
  */
-export class BeatComparisonOrchestrator implements IBeatComparisonOrchestrator {
+export class StepComparisonOrchestrator implements IStepComparisonOrchestrator {
   constructor(
     private rotationService: IRotationComparer,
     private reflectionService: IReflectionComparer,
@@ -24,7 +24,7 @@ export class BeatComparisonOrchestrator implements IBeatComparisonOrchestrator {
     private formattingService: ICandidateFormatter
   ) {}
 
-  extractBeats(sequence: SequenceEntry): ExtractedBeat[] {
+  extractBeats(sequence: SequenceEntry): ExtractedStep[] {
     const raw = sequence.fullMetadata?.sequence;
     if (!raw) return [];
 
@@ -34,7 +34,7 @@ export class BeatComparisonOrchestrator implements IBeatComparisonOrchestrator {
           typeof b.beat === "number" && b.beat >= 1
       )
       .map((b) => ({
-        beatNumber: b.beat,
+        stepNumber: b.beat,
         letter: b.letter || "",
         startPos: b.startPos || "",
         endPos: b.endPos || "",
@@ -53,11 +53,11 @@ export class BeatComparisonOrchestrator implements IBeatComparisonOrchestrator {
       }));
   }
 
-  compareBeatPair(beat1: ExtractedBeat, beat2: ExtractedBeat): string[] {
-    const b1Blue = beat1.blue;
-    const b1Red = beat1.red;
-    const b2Blue = beat2.blue;
-    const b2Red = beat2.red;
+  compareBeatPair(step1: ExtractedStep, step2: ExtractedStep): string[] {
+    const b1Blue = step1.blue;
+    const b1Red = step1.red;
+    const b2Blue = step2.blue;
+    const b2Red = step2.red;
 
     if (
       !b1Blue?.startLoc ||
@@ -109,69 +109,69 @@ export class BeatComparisonOrchestrator implements IBeatComparisonOrchestrator {
     return allTransformations;
   }
 
-  generateHalvedBeatPairs(beats: ExtractedBeat[]): InternalBeatPair[] {
-    if (beats.length < 2 || beats.length % 2 !== 0) return [];
+  generateHalvedBeatPairs(steps: ExtractedStep[]): InternalStepPair[] {
+    if (steps.length < 2 || steps.length % 2 !== 0) return [];
 
-    const halfLength = beats.length / 2;
-    const beatPairs: InternalBeatPair[] = [];
+    const halfLength = steps.length / 2;
+    const stepPairs: InternalStepPair[] = [];
 
     for (let i = 0; i < halfLength; i++) {
-      const beat1 = beats[i]!;
-      const beat2 = beats[halfLength + i]!;
-      const rawTransformations = this.compareBeatPair(beat1, beat2);
+      const step1 = steps[i]!;
+      const step2 = steps[halfLength + i]!;
+      const rawTransformations = this.compareBeatPair(step1, step2);
       const { primary, all } =
         this.formattingService.formatBeatPairTransformations(
           rawTransformations
         );
 
-      beatPairs.push({
-        keyBeat: beat1.beatNumber,
-        correspondingBeat: beat2.beatNumber,
+      stepPairs.push({
+        keyStep: step1.stepNumber,
+        correspondingStep: step2.stepNumber,
         rawTransformations,
         detectedTransformations: primary.length > 0 ? primary : ["UNKNOWN"],
         allValidTransformations: all.length > 0 ? all : ["UNKNOWN"],
       });
     }
 
-    return beatPairs;
+    return stepPairs;
   }
 
-  generateQuarteredBeatPairs(beats: ExtractedBeat[]): InternalBeatPair[] {
-    if (beats.length < 4 || beats.length % 4 !== 0) return [];
+  generateQuarteredBeatPairs(steps: ExtractedStep[]): InternalStepPair[] {
+    if (steps.length < 4 || steps.length % 4 !== 0) return [];
 
-    const quarterLength = beats.length / 4;
-    const beatPairs: InternalBeatPair[] = [];
+    const quarterLength = steps.length / 4;
+    const stepPairs: InternalStepPair[] = [];
 
-    // Loop through ALL beats to include wrap-around
-    for (let i = 0; i < beats.length; i++) {
-      const beat1 = beats[i]!;
-      const beat2 = beats[(i + quarterLength) % beats.length]!;
-      const rawTransformations = this.compareBeatPair(beat1, beat2);
+    // Loop through ALL steps to include wrap-around
+    for (let i = 0; i < steps.length; i++) {
+      const step1 = steps[i]!;
+      const step2 = steps[(i + quarterLength) % steps.length]!;
+      const rawTransformations = this.compareBeatPair(step1, step2);
       const { primary, all } =
         this.formattingService.formatBeatPairTransformations(
           rawTransformations
         );
 
-      beatPairs.push({
-        keyBeat: beat1.beatNumber,
-        correspondingBeat: beat2.beatNumber,
+      stepPairs.push({
+        keyStep: step1.stepNumber,
+        correspondingStep: step2.stepNumber,
         rawTransformations,
         detectedTransformations: primary.length > 0 ? primary : ["UNKNOWN"],
         allValidTransformations: all.length > 0 ? all : ["UNKNOWN"],
       });
     }
 
-    return beatPairs;
+    return stepPairs;
   }
 
-  detectRotationDirection(beats: ExtractedBeat[]): "cw" | "ccw" | null {
-    if (beats.length < 4 || beats.length % 4 !== 0) return null;
+  detectRotationDirection(steps: ExtractedStep[]): "cw" | "ccw" | null {
+    if (steps.length < 4 || steps.length % 4 !== 0) return null;
 
-    const quarterLength = beats.length / 4;
-    const b0 = beats[0];
-    const b1 = beats[quarterLength];
-    const b2 = beats[quarterLength * 2];
-    const b3 = beats[quarterLength * 3];
+    const quarterLength = steps.length / 4;
+    const b0 = steps[0];
+    const b1 = steps[quarterLength];
+    const b2 = steps[quarterLength * 2];
+    const b3 = steps[quarterLength * 3];
 
     if (!b0 || !b1 || !b2 || !b3) return null;
 

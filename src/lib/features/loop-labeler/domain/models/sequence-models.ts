@@ -11,12 +11,12 @@ export interface SequenceEntry {
   sequenceLength: number;
   gridMode: string;
   fullMetadata?: {
-    sequence?: RawBeatData[];
+    sequence?: RawStepData[];
   };
 }
 
 // Raw beat data from sequence-index.json (camelCase format)
-export interface RawBeatData {
+export interface RawStepData {
   beat?: number;
   letter?: string;
   startPos?: string;

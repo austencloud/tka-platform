@@ -2,7 +2,7 @@ import type { IReflectionComparer } from "../../contracts/IReflectionComparer";
 import type {
   ColorData,
   TransformationCheckResult,
-} from "../../../domain/models/internal-beat-models";
+} from "../../../domain/models/internal-step-models";
 import {
   MIRROR_VERTICAL,
   FLIP_HORIZONTAL,

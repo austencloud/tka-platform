@@ -1,10 +1,10 @@
 import type { SequenceEntry } from "../../domain/models/sequence-models";
 import type {
   CandidateDesignation,
-  BeatPairGroups,
+  StepPairGroups,
   TransformationIntervals,
 } from "../../domain/models/label-models";
-import type { BeatPairRelationship } from "./IBeatPairAnalyzer";
+import type { StepPairRelationship } from "./IStepPairAnalyzer";
 import type { ComponentId } from "../../domain/constants/loop-components";
 import type { PolyrhythmicLOOPResult } from "./IPolyrhythmicDetector";
 import type { LayeredPathResult } from "./ILayeredPathDetector";
@@ -92,10 +92,10 @@ export interface LOOPDetectionResult {
   candidateDesignations: CandidateDesignation[];
 
   /** Beat-pair relationships for display */
-  beatPairs: BeatPairRelationship[];
+  stepPairs: StepPairRelationship[];
 
   /** Beat pairs grouped by transformation pattern */
-  beatPairGroups: BeatPairGroups;
+  stepPairGroups: StepPairGroups;
 
   /** Is this a circular sequence? */
   isCircular: boolean;

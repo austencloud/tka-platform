@@ -2,7 +2,7 @@
   /**
    * Beat Pair Mode Builder Panel
    *
-   * Select two beats and specify their transformation relationship.
+   * Select two steps and specify their transformation relationship.
    * Uses shared design tokens from app.css.
    */
   import type { ComponentId } from "../../domain/constants/loop-components";
@@ -14,8 +14,8 @@
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
 
   interface Props {
-    firstBeat: number | null;
-    secondBeat: number | null;
+    firstStep: number | null;
+    secondStep: number | null;
     selectedComponents: Set<ComponentId>;
     transformationIntervals: TransformationIntervals;
     onClearSelection: () => void;
@@ -28,8 +28,8 @@
   }
 
   let {
-    firstBeat,
-    secondBeat,
+    firstStep,
+    secondStep,
     selectedComponents,
     transformationIntervals,
     onClearSelection,
@@ -71,28 +71,28 @@
   }
 
   const canAdd = $derived(
-    firstBeat !== null && secondBeat !== null && selectedComponents.size > 0
+    firstStep !== null && secondStep !== null && selectedComponents.size > 0
   );
 
   const selectionStatus = $derived.by(() => {
-    if (firstBeat === null) return "Click first beat (key beat)";
-    if (secondBeat === null)
-      return `Beat ${firstBeat} selected → Click second beat`;
-    return `Beat ${firstBeat} ↔ Beat ${secondBeat}`;
+    if (firstStep === null) return "Click first beat (key beat)";
+    if (secondStep === null)
+      return `Beat ${firstStep} selected → Click second beat`;
+    return `Beat ${firstStep} ↔ Beat ${secondStep}`;
   });
 
-  const hasBothBeats = $derived(firstBeat !== null && secondBeat !== null);
+  const hasBothBeats = $derived(firstStep !== null && secondStep !== null);
 </script>
 
 <div class="builder-panel">
   <p class="builder-hint">
-    Select two beats, then choose the transformation that relates them
+    Select two steps, then choose the transformation that relates them
   </p>
 
   <!-- Beat Selection Status -->
   <div class="beat-selection" class:complete={hasBothBeats}>
     <span class="selection-text">{selectionStatus}</span>
-    {#if firstBeat !== null}
+    {#if firstStep !== null}
       <button
         class="clear-btn"
         onclick={onClearSelection}
@@ -103,7 +103,7 @@
     {/if}
   </div>
 
-  <!-- Component Grid (shown when both beats selected) -->
+  <!-- Component Grid (shown when both steps selected) -->
   {#if hasBothBeats}
     <div class="component-grid">
       {#each BASE_COMPONENTS as component}

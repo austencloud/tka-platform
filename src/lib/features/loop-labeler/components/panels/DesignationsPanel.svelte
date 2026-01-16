@@ -9,17 +9,17 @@
   import type {
     LOOPDesignation,
     CandidateDesignation,
-    BeatPairGroups,
+    StepPairGroups,
   } from "../../domain/models/label-models";
   import type { SectionDesignation } from "../../domain/models/section-models";
-  import type { BeatPairRelationship } from "../../domain/models/beatpair-models";
+  import type { StepPairRelationship } from "../../domain/models/steppair-models";
   import type { PolyrhythmicLOOPResult } from "../../services/contracts/IPolyrhythmicDetector";
   import type {
     CompoundPattern,
     AxisAlternatingPattern,
   } from "../../services/contracts/ILOOPDetector";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
-  import BeatPairAnalysisDisplay from "../shared/BeatPairAnalysisDisplay.svelte";
+  import StepPairAnalysisDisplay from "../shared/StepPairAnalysisDisplay.svelte";
   import CandidatesSection from "./designations/CandidatesSection.svelte";
   import PolyrhythmicDisplay from "./designations/PolyrhythmicDisplay.svelte";
   import CompoundPatternDisplay from "./designations/CompoundPatternDisplay.svelte";
@@ -30,7 +30,7 @@
   interface Props {
     wholeDesignations: LOOPDesignation[];
     sectionDesignations: SectionDesignation[];
-    beatPairDesignations: BeatPairRelationship[];
+    stepPairDesignations: StepPairRelationship[];
     isFreeform: boolean;
     isModular?: boolean;
     isPolyrhythmic?: boolean;
@@ -41,11 +41,11 @@
     needsVerification?: boolean;
     autoDetectedDesignations?: LOOPDesignation[];
     candidateDesignations?: CandidateDesignation[];
-    autoDetectedBeatPairs?: BeatPairRelationship[];
-    autoDetectedBeatPairGroups?: BeatPairGroups;
+    autoDetectedBeatPairs?: StepPairRelationship[];
+    autoDetectedBeatPairGroups?: StepPairGroups;
     onRemoveWholeDesignation: (index: number) => void;
     onRemoveSectionDesignation: (index: number) => void;
-    onRemoveBeatPairDesignation: (index: number) => void;
+    onRemoveStepPairDesignation: (index: number) => void;
     onSetFreeform: () => void;
     onMarkUnknown: () => void;
     onSaveAndNext: () => void;
@@ -61,7 +61,7 @@
   let {
     wholeDesignations,
     sectionDesignations,
-    beatPairDesignations,
+    stepPairDesignations,
     isFreeform,
     isModular = false,
     isPolyrhythmic = false,
@@ -76,7 +76,7 @@
     autoDetectedBeatPairGroups = {},
     onRemoveWholeDesignation,
     onRemoveSectionDesignation,
-    onRemoveBeatPairDesignation,
+    onRemoveStepPairDesignation,
     onSetFreeform,
     onMarkUnknown,
     onSaveAndNext,
@@ -96,8 +96,8 @@
     const detectionInfo = {
       candidateDesignations,
       autoDetectedDesignations,
-      beatPairs: autoDetectedBeatPairs,
-      beatPairGroups: autoDetectedBeatPairGroups,
+      stepPairs: autoDetectedBeatPairs,
+      stepPairGroups: autoDetectedBeatPairGroups,
       isFreeform,
       isModular,
       isPolyrhythmic,
@@ -105,7 +105,7 @@
       compoundPattern,
       wholeDesignations,
       sectionDesignations,
-      beatPairDesignations,
+      stepPairDesignations,
     };
 
     try {
@@ -156,11 +156,11 @@
     {onConfirmAllCandidates}
   />
 
-  <!-- Auto-detected beat-pair analysis (hide for polyrhythmic - spatial transforms don't apply) -->
+  <!-- Auto-detected step-pair analysis (hide for polyrhythmic - spatial transforms don't apply) -->
   {#if autoDetectedBeatPairs.length > 0 && !isPolyrhythmic}
-    <BeatPairAnalysisDisplay
-      beatPairs={autoDetectedBeatPairs}
-      beatPairGroups={autoDetectedBeatPairGroups}
+    <StepPairAnalysisDisplay
+      stepPairs={autoDetectedBeatPairs}
+      stepPairGroups={autoDetectedBeatPairGroups}
       collapsed={false}
       {isAxisAlternating}
       {axisAlternatingPattern}
@@ -181,14 +181,14 @@
   <DesignationsList
     {wholeDesignations}
     {sectionDesignations}
-    {beatPairDesignations}
+    {stepPairDesignations}
     {isFreeform}
     {isModular}
     {isAxisAlternating}
     {axisAlternatingPattern}
     {onRemoveWholeDesignation}
     {onRemoveSectionDesignation}
-    {onRemoveBeatPairDesignation}
+    {onRemoveStepPairDesignation}
   />
 
   <!-- Action buttons -->

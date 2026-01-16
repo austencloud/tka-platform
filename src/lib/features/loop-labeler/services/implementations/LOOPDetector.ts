@@ -6,7 +6,7 @@ import type {
   ModularPattern,
 } from "../contracts/ILOOPDetector";
 import type { TransformationIntervals } from "../../domain/models/label-models";
-import type { IBeatComparisonOrchestrator } from "../contracts/IBeatComparisonOrchestrator";
+import type { IStepComparisonOrchestrator } from "../contracts/IStepComparisonOrchestrator";
 import type { ITransformationAnalyzer } from "../contracts/ITransformationAnalyzer";
 import type { ICandidateFormatter } from "../contracts/ICandidateFormatter";
 import type {
@@ -18,9 +18,9 @@ import type {
   LayeredPathResult,
 } from "../contracts/ILayeredPathDetector";
 import type {
-  InternalBeatPair,
+  InternalStepPair,
   CandidateInfo,
-} from "../../domain/models/internal-beat-models";
+} from "../../domain/models/internal-step-models";
 import type { ComponentId } from "../../domain/constants/loop-components";
 
 /**
@@ -29,7 +29,7 @@ import type { ComponentId } from "../../domain/constants/loop-components";
  */
 export class LOOPDetector implements ILOOPDetector {
   constructor(
-    private comparisonOrchestrator: IBeatComparisonOrchestrator,
+    private comparisonOrchestrator: IStepComparisonOrchestrator,
     private analysisService: ITransformationAnalyzer,
     private formattingService: ICandidateFormatter,
     private polyrhythmicService?: IPolyrhythmicDetector,
@@ -37,26 +37,26 @@ export class LOOPDetector implements ILOOPDetector {
   ) {}
 
   isCircular(sequence: SequenceEntry): boolean {
-    const beats = sequence.fullMetadata?.sequence?.filter(
+    const steps = sequence.fullMetadata?.sequence?.filter(
       (b) => typeof b.beat === "number" && b.beat >= 1
     );
-    if (!beats || beats.length < 2) return false;
+    if (!steps || steps.length < 2) return false;
 
     const startPosition = sequence.fullMetadata?.sequence?.find(
       (b) => b.beat === 0
     );
-    const lastBeat = beats[beats.length - 1];
-    if (!startPosition || !lastBeat) return false;
+    const lastStep = steps[steps.length - 1];
+    if (!startPosition || !lastStep) return false;
 
     const startPos =
       startPosition.endPos || startPosition.sequenceStartPosition;
-    const endPos = lastBeat.endPos;
+    const endPos = lastStep.endPos;
     return startPos === endPos;
   }
 
   detectLOOP(sequence: SequenceEntry): LOOPDetectionResult {
     const circular = this.isCircular(sequence);
-    const beats = this.comparisonOrchestrator.extractBeats(sequence);
+    const steps = this.comparisonOrchestrator.extractBeats(sequence);
 
     // Run polyrhythmic detection (legacy)
     const rawSequence = (sequence.fullMetadata?.sequence || []) as Record<
@@ -88,34 +88,34 @@ export class LOOPDetector implements ILOOPDetector {
       };
 
     // Non-circular or too short
-    if (!circular || beats.length < 2) {
+    if (!circular || steps.length < 2) {
       return this.buildEmptyResult(circular, polyrhythmic, layeredPath);
     }
 
-    // Must have even number of beats
-    if (beats.length % 2 !== 0) {
+    // Must have even number of steps
+    if (steps.length % 2 !== 0) {
       return this.buildFreeformResult(polyrhythmic, layeredPath);
     }
 
     // Generate halved beat pairs (always needed)
-    const halvedBeatPairs =
-      this.comparisonOrchestrator.generateHalvedBeatPairs(beats);
-    this.analysisService.reprioritizeBeatPairs(halvedBeatPairs);
-    const halvedBeatPairGroups =
+    const halvedStepPairs =
+      this.comparisonOrchestrator.generateHalvedBeatPairs(steps);
+    this.analysisService.reprioritizeBeatPairs(halvedStepPairs);
+    const halvedStepPairGroups =
       this.analysisService.groupBeatPairsByPattern(halvedBeatPairs);
 
     // Detect rotation direction for quartered sequences
     let rotationDirection: "cw" | "ccw" | null = null;
-    if (beats.length >= 4 && beats.length % 4 === 0) {
+    if (steps.length >= 4 && steps.length % 4 === 0) {
       rotationDirection =
-        this.comparisonOrchestrator.detectRotationDirection(beats);
+        this.comparisonOrchestrator.detectRotationDirection(steps);
     }
 
     // Try quartered detection first (90° rotations)
-    if (beats.length >= 4 && beats.length % 4 === 0) {
+    if (steps.length >= 4 && steps.length % 4 === 0) {
       const quarteredResult = this.detectQuarteredPattern(
-        beats,
-        halvedBeatPairs,
+        steps,
+        halvedStepPairs,
         rotationDirection,
         polyrhythmic,
         layeredPath
@@ -127,8 +127,8 @@ export class LOOPDetector implements ILOOPDetector {
 
     // Try halved detection (180° transformations)
     const halvedResult = this.detectHalvedPattern(
-      halvedBeatPairs,
-      halvedBeatPairGroups,
+      halvedStepPairs,
+      halvedStepPairGroups,
       rotationDirection,
       polyrhythmic,
       layeredPath
@@ -139,25 +139,25 @@ export class LOOPDetector implements ILOOPDetector {
 
     // Fallback: modular or freeform
     return this.buildFallbackResult(
-      halvedBeatPairs,
-      halvedBeatPairGroups,
+      halvedStepPairs,
+      halvedStepPairGroups,
       polyrhythmic,
       layeredPath
     );
   }
 
   private detectQuarteredPattern(
-    beats: ReturnType<IBeatComparisonOrchestrator["extractBeats"]>,
-    halvedBeatPairs: InternalBeatPair[],
+    steps: ReturnType<IStepComparisonOrchestrator["extractBeats"]>,
+    halvedStepPairs: InternalStepPair[],
     rotationDirection: "cw" | "ccw" | null,
     polyrhythmic: PolyrhythmicLOOPResult,
     layeredPath: LayeredPathResult
   ): LOOPDetectionResult | null {
-    const quarteredBeatPairs =
-      this.comparisonOrchestrator.generateQuarteredBeatPairs(beats);
-    this.analysisService.reprioritizeBeatPairs(quarteredBeatPairs);
+    const quarteredStepPairs =
+      this.comparisonOrchestrator.generateQuarteredBeatPairs(steps);
+    this.analysisService.reprioritizeBeatPairs(quarteredStepPairs);
     const allQuarteredCommon =
-      this.analysisService.findAllCommonTransformations(quarteredBeatPairs);
+      this.analysisService.findAllCommonTransformations(quarteredStepPairs);
 
     // Filter to only 90° rotation patterns
     let rotation90Patterns = allQuarteredCommon.filter(
@@ -171,8 +171,8 @@ export class LOOPDetector implements ILOOPDetector {
 
     if (rotation90Patterns.length === 0) {
       const compoundResult = this.detectCompoundPattern(
-        quarteredBeatPairs,
-        halvedBeatPairs,
+        quarteredStepPairs,
+        halvedStepPairs,
         rotationDirection
       );
       if (compoundResult) {
@@ -187,7 +187,7 @@ export class LOOPDetector implements ILOOPDetector {
     // Try modular detection if no uniform pattern found
     if (rotation90Patterns.length === 0) {
       const modularResult = this.detectModularQuarteredPattern(
-        quarteredBeatPairs,
+        quarteredStepPairs,
         rotationDirection,
         polyrhythmic,
         layeredPath
@@ -247,15 +247,15 @@ export class LOOPDetector implements ILOOPDetector {
     // Combine beat pairs for compound patterns
     const combinedBeatPairs = compoundPattern
       ? [
-          ...this.formattingService.toPublicBeatPairs(quarteredBeatPairs),
-          ...this.formattingService.toPublicBeatPairs(halvedBeatPairs),
+          ...this.formattingService.toPublicStepPairs(quarteredStepPairs),
+          ...this.formattingService.toPublicStepPairs(halvedStepPairs),
         ]
-      : this.formattingService.toPublicBeatPairs(quarteredBeatPairs);
+      : this.formattingService.toPublicStepPairs(quarteredStepPairs);
 
     const combinedGroups = compoundPattern
       ? {
           ...this.analysisService.groupBeatPairsByPattern(quarteredBeatPairs),
-          "HALVED (180°)": halvedBeatPairs.map((p) => p.keyBeat),
+          "HALVED (180°)": halvedStepPairs.map((p) => p.keyStep),
         }
       : this.analysisService.groupBeatPairsByPattern(quarteredBeatPairs);
 
@@ -267,8 +267,8 @@ export class LOOPDetector implements ILOOPDetector {
       candidateDesignations: allCandidates.map((c) =>
         this.formattingService.toCandidateDesignation(c)
       ),
-      beatPairs: combinedBeatPairs,
-      beatPairGroups: combinedGroups,
+      stepPairs: combinedBeatPairs,
+      stepPairGroups: combinedGroups,
       isCircular: true,
       isFreeform: false,
       isModular: false,
@@ -282,8 +282,8 @@ export class LOOPDetector implements ILOOPDetector {
   }
 
   private detectCompoundPattern(
-    quarteredBeatPairs: InternalBeatPair[],
-    halvedBeatPairs: InternalBeatPair[],
+    quarteredStepPairs: InternalStepPair[],
+    halvedStepPairs: InternalStepPair[],
     rotationDirection: "cw" | "ccw" | null
   ): {
     rotation90Patterns: string[];
@@ -291,7 +291,7 @@ export class LOOPDetector implements ILOOPDetector {
     halvedOnlyTransformations: string[];
   } | null {
     // Check if ALL quartered pairs have some form of 90° rotation
-    const pairsWithRotation = quarteredBeatPairs.filter((pair) =>
+    const pairsWithRotation = quarteredStepPairs.filter((pair) =>
       pair.rawTransformations.some(
         (t) =>
           t.includes("rotated_90") ||
@@ -300,14 +300,14 @@ export class LOOPDetector implements ILOOPDetector {
       )
     );
 
-    if (pairsWithRotation.length !== quarteredBeatPairs.length) {
+    if (pairsWithRotation.length !== quarteredStepPairs.length) {
       return null;
     }
 
     // CRITICAL: Check if ALL pairs have the SAME primary transformation
     // If different pairs have different patterns (e.g., some swapped, some not),
     // this is NOT a compound pattern - it's a MODULAR pattern
-    const primaryPatterns = quarteredBeatPairs.map(
+    const primaryPatterns = quarteredStepPairs.map(
       (pair) => pair.detectedTransformations[0] || ""
     );
     const uniquePrimaries = [...new Set(primaryPatterns)];
@@ -335,8 +335,8 @@ export class LOOPDetector implements ILOOPDetector {
 
     // Check if halved pairs have swap
     const halvedHasSwap =
-      halvedBeatPairs.length > 0 &&
-      halvedBeatPairs.every((pair) =>
+      halvedStepPairs.length > 0 &&
+      halvedStepPairs.every((pair) =>
         pair.rawTransformations.some((t) => t.includes("swapped"))
       );
 
@@ -345,7 +345,7 @@ export class LOOPDetector implements ILOOPDetector {
     }
 
     // Extract rotation patterns
-    const anyPair = quarteredBeatPairs[0];
+    const anyPair = quarteredStepPairs[0];
     if (!anyPair) return null;
 
     const rotationTransforms = anyPair.rawTransformations.filter(
@@ -380,14 +380,14 @@ export class LOOPDetector implements ILOOPDetector {
   }
 
   private detectHalvedPattern(
-    halvedBeatPairs: InternalBeatPair[],
-    halvedBeatPairGroups: Record<string, number[]>,
+    halvedStepPairs: InternalStepPair[],
+    halvedStepPairGroups: Record<string, number[]>,
     rotationDirection: "cw" | "ccw" | null,
     polyrhythmic: PolyrhythmicLOOPResult,
     layeredPath: LayeredPathResult
   ): LOOPDetectionResult | null {
     const allHalvedCommon =
-      this.analysisService.findAllCommonTransformations(halvedBeatPairs);
+      this.analysisService.findAllCommonTransformations(halvedStepPairs);
 
     if (allHalvedCommon.length === 0) {
       return null;
@@ -424,8 +424,8 @@ export class LOOPDetector implements ILOOPDetector {
       candidateDesignations: candidateInfos.map((c) =>
         this.formattingService.toCandidateDesignation(c)
       ),
-      beatPairs: this.formattingService.toPublicBeatPairs(halvedBeatPairs),
-      beatPairGroups: halvedBeatPairGroups,
+      stepPairs: this.formattingService.toPublicStepPairs(halvedStepPairs),
+      stepPairGroups: halvedStepPairGroups,
       isCircular: true,
       isFreeform: false,
       isModular: false,
@@ -438,12 +438,12 @@ export class LOOPDetector implements ILOOPDetector {
   }
 
   private buildFallbackResult(
-    halvedBeatPairs: InternalBeatPair[],
-    halvedBeatPairGroups: Record<string, number[]>,
+    halvedStepPairs: InternalStepPair[],
+    halvedStepPairGroups: Record<string, number[]>,
     polyrhythmic: PolyrhythmicLOOPResult,
     layeredPath: LayeredPathResult
   ): LOOPDetectionResult {
-    const patternGroups = Object.keys(halvedBeatPairGroups);
+    const patternGroups = Object.keys(halvedStepPairGroups);
     const hasUnknown = patternGroups.some((p) => p === "UNKNOWN");
     const recognizedPatterns = patternGroups.filter((p) => p !== "UNKNOWN");
 
@@ -453,8 +453,8 @@ export class LOOPDetector implements ILOOPDetector {
     // Check for axis-alternating pattern when modular
     const axisAlternating = isModular
       ? this.analysisService.detectAxisAlternatingPattern(
-          halvedBeatPairs,
-          halvedBeatPairGroups
+          halvedStepPairs,
+          halvedStepPairGroups
         )
       : null;
 
@@ -464,8 +464,8 @@ export class LOOPDetector implements ILOOPDetector {
       transformationIntervals: {},
       rotationDirection: null,
       candidateDesignations: [],
-      beatPairs: this.formattingService.toPublicBeatPairs(halvedBeatPairs),
-      beatPairGroups: halvedBeatPairGroups,
+      stepPairs: this.formattingService.toPublicStepPairs(halvedStepPairs),
+      stepPairGroups: halvedStepPairGroups,
       isCircular: true,
       isFreeform,
       isModular,
@@ -497,8 +497,8 @@ export class LOOPDetector implements ILOOPDetector {
       transformationIntervals: {},
       rotationDirection: null,
       candidateDesignations: [],
-      beatPairs: [],
-      beatPairGroups: {},
+      stepPairs: [],
+      stepPairGroups: {},
       isCircular,
       isFreeform: false,
       isModular: false,
@@ -520,8 +520,8 @@ export class LOOPDetector implements ILOOPDetector {
       transformationIntervals: {},
       rotationDirection: null,
       candidateDesignations: [],
-      beatPairs: [],
-      beatPairGroups: {},
+      stepPairs: [],
+      stepPairGroups: {},
       isCircular: true,
       isFreeform: true,
       isModular: false,
@@ -606,18 +606,18 @@ export class LOOPDetector implements ILOOPDetector {
   }
 
   private detectModularQuarteredPattern(
-    quarteredBeatPairs: InternalBeatPair[],
+    quarteredStepPairs: InternalStepPair[],
     rotationDirection: "cw" | "ccw" | null,
     polyrhythmic: PolyrhythmicLOOPResult,
     layeredPath: LayeredPathResult
   ): LOOPDetectionResult | null {
     // Check for high UNKNOWN rate - if too many beat pairs are unknown, this isn't modular
-    const unknownCount = quarteredBeatPairs.filter((pair) => {
+    const unknownCount = quarteredStepPairs.filter((pair) => {
       const primary = pair.detectedTransformations[0]?.toUpperCase() || "";
       return primary === "UNKNOWN" || primary === "";
     }).length;
 
-    const unknownRate = unknownCount / quarteredBeatPairs.length;
+    const unknownRate = unknownCount / quarteredStepPairs.length;
     if (unknownRate >= 0.5) {
       // 50% or more UNKNOWN = not a modular pattern, let fallback handle as freeform
       return null;
@@ -625,7 +625,7 @@ export class LOOPDetector implements ILOOPDetector {
 
     // Check if all beat pairs have the SAME detected transformation
     // If so, this is UNIFORM, not modular - let halved detection handle it
-    const detectedPrimaries = quarteredBeatPairs.map(
+    const detectedPrimaries = quarteredStepPairs.map(
       (pair) => pair.detectedTransformations[0]?.toUpperCase() || "UNKNOWN"
     );
     const uniqueDetected = new Set(detectedPrimaries);
@@ -636,7 +636,7 @@ export class LOOPDetector implements ILOOPDetector {
 
     // Use 4 columns for quartered patterns (positions 1,2,3,4 within each quarter)
     const modularAnalysis = this.analysisService.detectModularPattern(
-      quarteredBeatPairs,
+      quarteredStepPairs,
       4
     );
 
@@ -718,8 +718,8 @@ export class LOOPDetector implements ILOOPDetector {
           denied: false,
         },
       ],
-      beatPairs: this.formattingService.toPublicBeatPairs(quarteredBeatPairs),
-      beatPairGroups: quarteredGroups,
+      stepPairs: this.formattingService.toPublicStepPairs(quarteredStepPairs),
+      stepPairGroups: quarteredGroups,
       isCircular: true,
       isFreeform: false,
       isModular: true,
