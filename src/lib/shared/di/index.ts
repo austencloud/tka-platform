@@ -42,7 +42,6 @@ import { createGamificationContainer } from "./containers/gamification-container
 import { createLearnContainer } from "./containers/learn-container";
 import { createPromoContainer } from "./containers/promo-container";
 import { createLibraryContainer } from "./containers/library-container";
-import { createMuseumContainer } from "./containers/museum-container";
 import { createQRContainer } from "./containers/qr-container";
 import { createAnimation3DContainer } from "./containers/animation-3d-container";
 import { deepOceanContainer } from "./containers/deep-ocean-container";
@@ -162,11 +161,6 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
   },
 }) : null as any;
 
-// Museum container needs libraryRepository
-const museumContainer = typeof window !== 'undefined' ? createMuseumContainer(
-  libraryContainer.items.libraryRepository
-) : null as any;
-
 // QR container needs discoverLoader for loading full sequence data
 const qrContainer = typeof window !== 'undefined' ? createQRContainer(discoverContainer.items.discoverLoader) : null as any;
 
@@ -237,7 +231,6 @@ export const container = typeof window !== 'undefined' ? createContainer()
   .add(communityContainer.items)
   .add(writeContainer.items)
   .add(mandalaContainer.items)
-  .add(museumContainer.items)
   .add(qrContainer.items)
   .add(animation3DContainer.items)
   .add(deepOceanContainer.items)
