@@ -64,7 +64,7 @@
   });
 
   // Pan the view by a percentage of the current view size
-  function panView(direction: "n" | "s" | "e" | "w", amount = 0.5) {
+  function panView(direction: "n" | "s" | "e" | "w", amount = 0.2) {
     const latShift = viewSize.lat * amount;
     const lngShift = viewSize.lng * amount;
 
@@ -273,7 +273,7 @@
             <div class="pan-grid">
               <button
                 class="pan-btn zoom"
-                onclick={() => zoomView(0.7)}
+                onclick={() => { zoomView(0.7); loadRealTerrain(); }}
                 title="Zoom in (smaller area)"
                 disabled={isLoading}
               >
@@ -281,7 +281,7 @@
               </button>
               <button
                 class="pan-btn"
-                onclick={() => panView("n")}
+                onclick={() => { panView("n"); loadRealTerrain(); }}
                 title="Pan North"
                 disabled={isLoading}
               >
@@ -289,7 +289,7 @@
               </button>
               <button
                 class="pan-btn zoom"
-                onclick={() => zoomView(1.4)}
+                onclick={() => { zoomView(1.4); loadRealTerrain(); }}
                 title="Zoom out (larger area)"
                 disabled={isLoading}
               >
@@ -297,7 +297,7 @@
               </button>
               <button
                 class="pan-btn"
-                onclick={() => panView("w")}
+                onclick={() => { panView("w"); loadRealTerrain(); }}
                 title="Pan West"
                 disabled={isLoading}
               >
@@ -313,7 +313,7 @@
               </button>
               <button
                 class="pan-btn"
-                onclick={() => panView("e")}
+                onclick={() => { panView("e"); loadRealTerrain(); }}
                 title="Pan East"
                 disabled={isLoading}
               >
@@ -329,7 +329,7 @@
               </button>
               <button
                 class="pan-btn"
-                onclick={() => panView("s")}
+                onclick={() => { panView("s"); loadRealTerrain(); }}
                 title="Pan South"
                 disabled={isLoading}
               >

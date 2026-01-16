@@ -181,4 +181,18 @@
     box-shadow: 0 0 12px
       color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
+
+  .letter-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .letter-overlay,
+    .letter-sheet,
+    .letter-btn {
+      animation: none;
+      transition: none;
+    }
+  }
 </style>
