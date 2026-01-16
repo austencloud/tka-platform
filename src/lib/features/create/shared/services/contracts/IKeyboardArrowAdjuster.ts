@@ -5,7 +5,7 @@
  * Applies adjustments to beat data and updates the pictograph.
  */
 
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
@@ -15,7 +15,7 @@ export interface IKeyboardArrowAdjuster {
    * @param key - The WASD key pressed
    * @param increment - The pixel increment to move (5, 20, or 200)
    * @param selectedArrow - The currently selected arrow data
-   * @param beatData - The beat data to update
+   * @param stepData - The beat data to update
    * @returns Updated beat data with arrow adjustment applied
    */
   handleWASDMovement(
@@ -26,8 +26,8 @@ export interface IKeyboardArrowAdjuster {
       color: string;
       pictographData: PictographData;
     },
-    beatData: BeatData
-  ): BeatData;
+    stepData: StepData
+  ): StepData;
 
   /**
    * Calculate adjustment vector based on key direction

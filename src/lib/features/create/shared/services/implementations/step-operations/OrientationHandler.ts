@@ -4,7 +4,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
@@ -17,30 +17,30 @@ import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pic
 import { container } from "$lib/shared/di";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
-  getBeatDataFromState,
+  getStepDataFromState,
   START_POSITION_BEAT_NUMBER,
-} from "./beat-data-helpers";
+} from "./step-data-helpers";
 
 const logger = createComponentLogger("OrientationHandler");
 
 /**
  * Update orientation for a specific prop color in a beat
  */
-export function updateBeatOrientation(
-  beatNumber: number,
+export function updateStepOrientation(
+  stepNumber: number,
   color: string,
   orientation: string,
   createModuleState: ICreateModuleState
 ): void {
-  const beatData = getBeatDataFromState(beatNumber, createModuleState);
+  const stepData = getStepDataFromState(stepNumber, createModuleState);
 
-  if (!beatData?.motions) {
+  if (!stepData?.motions) {
     logger.warn("Cannot update orientation - no beat data available");
     return;
   }
 
   const colorKey = color as MotionColor;
-  const currentMotion: MotionData | undefined = beatData.motions[colorKey];
+  const currentMotion: MotionData | undefined = stepData.motions[colorKey];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
     return;
@@ -60,10 +60,10 @@ export function updateBeatOrientation(
   );
 
   // Create updated beat data with new startOrientation and recalculated endOrientation
-  const updatedBeatData: BeatData = {
-    ...beatData,
+  const updatedStepData: StepData = {
+    ...stepData,
     motions: {
-      ...beatData.motions,
+      ...stepData.motions,
       [colorKey]: {
         ...currentMotion,
         startOrientation: orientation as MotionData["startOrientation"],
@@ -79,18 +79,18 @@ export function updateBeatOrientation(
     .selectedStartPosition ?? null;
 
   // For start position (beat 0), we can update even without a sequence
-  // For regular beats, we need a sequence to update
-  if (!currentSequence && beatNumber !== START_POSITION_BEAT_NUMBER) {
+  // For regular steps, we need a sequence to update
+  if (!currentSequence && stepNumber !== START_POSITION_BEAT_NUMBER) {
     logger.warn("Cannot update beat orientation - no current sequence");
     return;
   }
 
   // Handle start position update when no sequence exists yet
-  if (beatNumber === START_POSITION_BEAT_NUMBER && !currentSequence) {
+  if (stepNumber === START_POSITION_BEAT_NUMBER && !currentSequence) {
     const updatedStartPosition = startPosition
       ? createStartPositionData({
           ...startPosition,
-          motions: updatedBeatData.motions,
+          motions: updatedStepData.motions,
         })
       : null;
 
@@ -110,20 +110,20 @@ export function updateBeatOrientation(
   let updatedSequence: SequenceData = sequence;
   let updatedStartPosition: StartPositionData | null = startPosition;
 
-  if (beatNumber === START_POSITION_BEAT_NUMBER) {
+  if (stepNumber === START_POSITION_BEAT_NUMBER) {
     // Create updated start position data with new orientation
     updatedStartPosition = startPosition
       ? createStartPositionData({
           ...startPosition,
-          motions: updatedBeatData.motions,
+          motions: updatedStepData.motions,
         })
       : null;
     logger.log(
       `Updated start position ${color} orientation to ${orientation}, endOrientation to ${newEndOrientation}`
     );
 
-    const propagatedBeats = calculatePropagatedBeats(
-      beatNumber,
+    const propagatedSteps = calculatePropagatedSteps(
+      stepNumber,
       color,
       sequence,
       updatedStartPosition
@@ -131,10 +131,10 @@ export function updateBeatOrientation(
 
     updatedSequence = {
       ...sequence,
-      beats: propagatedBeats,
+      steps: propagatedSteps,
       // Include updated start position in the sequence so it propagates to selection state
       startPosition: updatedStartPosition ?? undefined,
-      startingPositionBeat: updatedStartPosition ?? undefined,
+      startingPosition: updatedStartPosition ?? undefined,
     };
 
     // CRITICAL: Also update selectedStartPosition so the UI reflects the change
@@ -142,24 +142,24 @@ export function updateBeatOrientation(
       createModuleState.sequenceState.setSelectedStartPosition(updatedStartPosition);
     }
   } else {
-    const arrayIndex = beatNumber - 1;
-    const updatedBeats = [...sequence.beats];
-    updatedBeats[arrayIndex] = updatedBeatData;
+    const arrayIndex = stepNumber - 1;
+    const updatedSteps = [...sequence.steps];
+    updatedSteps[arrayIndex] = updatedStepData;
 
     logger.log(
-      `Updated beat ${beatNumber} ${color} orientation to ${orientation}, endOrientation to ${newEndOrientation}`
+      `Updated beat ${stepNumber} ${color} orientation to ${orientation}, endOrientation to ${newEndOrientation}`
     );
 
-    const propagatedBeats = calculatePropagatedBeats(
-      beatNumber,
+    const propagatedSteps = calculatePropagatedSteps(
+      stepNumber,
       color,
-      { ...sequence, beats: updatedBeats },
+      { ...sequence, steps: updatedSteps },
       startPosition
     );
 
     updatedSequence = {
       ...sequence,
-      beats: propagatedBeats,
+      steps: propagatedSteps,
     };
   }
 
@@ -167,19 +167,19 @@ export function updateBeatOrientation(
 }
 
 /**
- * Calculate propagated beats without calling setCurrentSequence
- * Returns the updated beats array with all propagations applied
+ * Calculate propagated steps without calling setCurrentSequence
+ * Returns the updated steps array with all propagations applied
  * DOES NOT mutate state - caller must call setCurrentSequence
  */
-export function calculatePropagatedBeats(
-  startingBeatNumber: number,
+export function calculatePropagatedSteps(
+  startingStepNumber: number,
   color: string,
   currentSequence: SequenceData,
   startPosition: StartPositionData | null
-): BeatData[] {
-  if (!currentSequence?.beats || currentSequence.beats.length === 0) {
-    logger.log("No sequence beats to propagate through");
-    return [...currentSequence.beats];
+): StepData[] {
+  if (!currentSequence?.steps || currentSequence.steps.length === 0) {
+    logger.log("No sequence steps to propagate through");
+    return [...currentSequence.steps];
   }
 
   const orientationCalculator = container.items.orientationCalculator as IOrientationCalculator;
@@ -187,7 +187,7 @@ export function calculatePropagatedBeats(
   // Get the starting beat's endOrientation
   let previousEndOrientation: MotionData["endOrientation"] | undefined;
 
-  if (startingBeatNumber === START_POSITION_BEAT_NUMBER) {
+  if (startingStepNumber === START_POSITION_BEAT_NUMBER) {
     if (startPosition?.motions) {
       const motion: MotionData | undefined =
         startPosition.motions[color as MotionColor];
@@ -196,9 +196,9 @@ export function calculatePropagatedBeats(
       }
     }
   } else {
-    const arrayIndex = startingBeatNumber - 1;
-    const startingBeat: BeatData | undefined =
-      currentSequence.beats[arrayIndex];
+    const arrayIndex = startingStepNumber - 1;
+    const startingBeat: StepData | undefined =
+      currentSequence.steps[arrayIndex];
     if (startingBeat?.motions) {
       const motion: MotionData | undefined =
         startingBeat.motions[color as MotionColor];
@@ -210,22 +210,22 @@ export function calculatePropagatedBeats(
 
   if (!previousEndOrientation) {
     logger.warn(
-      `Cannot propagate - no endOrientation found for beat ${startingBeatNumber} ${color}`
+      `Cannot propagate - no endOrientation found for beat ${startingStepNumber} ${color}`
     );
-    return [...currentSequence.beats];
+    return [...currentSequence.steps];
   }
 
-  // Propagate through subsequent beats
-  const updatedBeats: BeatData[] = [...currentSequence.beats];
+  // Propagate through subsequent steps
+  const updatedSteps: StepData[] = [...currentSequence.steps];
   const propagationStartIndex =
-    startingBeatNumber === START_POSITION_BEAT_NUMBER ? 0 : startingBeatNumber;
+    startingStepNumber === START_POSITION_BEAT_NUMBER ? 0 : startingStepNumber;
 
   logger.log(
-    `🔄 Propagating ${color} orientations starting from beat ${startingBeatNumber} (endOrientation: ${previousEndOrientation})`
+    `🔄 Propagating ${color} orientations starting from beat ${startingStepNumber} (endOrientation: ${previousEndOrientation})`
   );
 
-  for (let i = propagationStartIndex; i < updatedBeats.length; i++) {
-    const beat = updatedBeats[i];
+  for (let i = propagationStartIndex; i < updatedSteps.length; i++) {
+    const beat = updatedSteps[i];
     if (!beat) continue;
 
     // Runtime safety check - motions should always exist but validate to be safe
@@ -262,7 +262,7 @@ export function calculatePropagatedBeats(
       endOrientation: newEndOrientation,
     };
 
-    updatedBeats[i] = {
+    updatedSteps[i] = {
       ...beat,
       motions: {
         ...beat.motions,
@@ -278,8 +278,8 @@ export function calculatePropagatedBeats(
   }
 
   logger.success(
-    `✅ Calculated propagation for ${color} orientations through ${updatedBeats.length - propagationStartIndex} beats`
+    `✅ Calculated propagation for ${color} orientations through ${updatedSteps.length - propagationStartIndex} steps`
   );
 
-  return updatedBeats;
+  return updatedSteps;
 }

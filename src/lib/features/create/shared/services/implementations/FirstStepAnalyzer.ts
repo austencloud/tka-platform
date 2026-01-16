@@ -1,60 +1,60 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
-  IFirstBeatAnalyzer,
+  IFirstStepAnalyzer,
   FirstBeatAnalysisResult,
   FirstBeatResult,
-} from "../contracts/IFirstBeatAnalyzer";
+} from "../contracts/IFirstStepAnalyzer";
 
 /**
- * FirstBeatAnalyzer
+ * FirstStepAnalyzer
  *
  * Pure logic for analyzing "First Beat" operations.
  * When user clicks a beat to become the new first beat,
  * this determines if confirmation is needed and calculates results.
  */
-export class FirstBeatAnalyzer implements IFirstBeatAnalyzer {
+export class FirstStepAnalyzer implements IFirstStepAnalyzer {
   analyzeSelection(
     sequence: SequenceData,
-    beatNumber: number
+    stepNumber: number
   ): FirstBeatAnalysisResult {
     // No-op if selecting beat 1
-    if (beatNumber === 1) {
+    if (stepNumber === 1) {
       return { action: "no-op", reason: "That's already Beat 1" };
     }
 
     // Invalid beat number
-    if (beatNumber < 1) {
+    if (stepNumber < 1) {
       return { action: "no-op", reason: "Invalid beat number" };
     }
 
-    // For circular sequences, reorder immediately (no beats removed)
+    // For circular sequences, reorder immediately (no steps removed)
     if (sequence.isCircular) {
-      return { action: "immediate", beatNumber };
+      return { action: "immediate", stepNumber };
     }
 
-    // For non-circular, beats before the selected one will be removed
-    const beatsToRemove = beatNumber - 1;
-    return { action: "confirm-needed", beatNumber, beatsToRemove };
+    // For non-circular, steps before the selected one will be removed
+    const stepsToRemove = stepNumber - 1;
+    return { action: "confirm-needed", stepNumber, stepsToRemove };
   }
 
   getResultMessage(
     sequence: SequenceData,
-    beatNumber: number
+    stepNumber: number
   ): FirstBeatResult {
-    const beatsRemoved = sequence.isCircular ? 0 : beatNumber - 1;
+    const stepsRemoved = sequence.isCircular ? 0 : stepNumber - 1;
 
-    if (beatsRemoved > 0) {
+    if (stepsRemoved > 0) {
       return {
         success: true,
-        beatsRemoved,
-        message: `Beat ${beatNumber} is now first. Removed ${beatsRemoved} beat${beatsRemoved > 1 ? "s" : ""}.`,
+        stepsRemoved,
+        message: `Beat ${stepNumber} is now first. Removed ${stepsRemoved} beat${stepsRemoved > 1 ? "s" : ""}.`,
       };
     }
 
     return {
       success: true,
-      beatsRemoved: 0,
-      message: `Beat ${beatNumber} is now beat 1`,
+      stepsRemoved: 0,
+      message: `Beat ${stepNumber} is now beat 1`,
     };
   }
 }

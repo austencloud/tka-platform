@@ -8,7 +8,10 @@
  * Domain: Create module - Sequence Loading
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import {
+  createSequenceData,
+  type SequenceData,
+} from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   DeepLinkLoadResult,
   IDeepLinkSequenceHandler,
@@ -93,7 +96,8 @@ export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
         return { loaded: false };
       }
 
-      const sequence = JSON.parse(pendingData) as SequenceData;
+      const rawData = JSON.parse(pendingData);
+      const sequence = createSequenceData(rawData);
       setSequence(sequence);
 
       // Enrich sequence with derived positions/letters in background
@@ -185,13 +189,13 @@ export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
   ): SequenceData {
     return {
       ...sequenceWithLetters,
-      beats: sequenceWithLetters.beats.map((beat, index) => ({
+      steps: sequenceWithLetters.steps.map((beat, index) => ({
         ...beat,
         startPosition:
           beat.startPosition ??
-          sequenceWithPositions.beats[index]?.startPosition,
+          sequenceWithPositions.steps[index]?.startPosition,
         endPosition:
-          beat.endPosition ?? sequenceWithPositions.beats[index]?.endPosition,
+          beat.endPosition ?? sequenceWithPositions.steps[index]?.endPosition,
       })),
       startPosition: sequenceWithLetters.startPosition
         ? {
@@ -204,17 +208,17 @@ export class DeepLinkSequenceHandler implements IDeepLinkSequenceHandler {
               sequenceWithPositions.startPosition?.endPosition,
           }
         : sequenceWithPositions.startPosition,
-      startingPositionBeat: sequenceWithLetters.startingPositionBeat
+      startingPosition: sequenceWithLetters.startingPosition
         ? {
-            ...sequenceWithLetters.startingPositionBeat,
+            ...sequenceWithLetters.startingPosition,
             startPosition:
-              sequenceWithLetters.startingPositionBeat.startPosition ??
-              sequenceWithPositions.startingPositionBeat?.startPosition,
+              sequenceWithLetters.startingPosition.startPosition ??
+              sequenceWithPositions.startingPosition?.startPosition,
             endPosition:
-              sequenceWithLetters.startingPositionBeat.endPosition ??
-              sequenceWithPositions.startingPositionBeat?.endPosition,
+              sequenceWithLetters.startingPosition.endPosition ??
+              sequenceWithPositions.startingPosition?.endPosition,
           }
-        : sequenceWithPositions.startingPositionBeat,
+        : sequenceWithPositions.startingPosition,
       // Add timestamp to ensure reactivity
       metadata: {
         ...sequenceWithLetters.metadata,

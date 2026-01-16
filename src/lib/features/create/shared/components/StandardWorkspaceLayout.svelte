@@ -13,6 +13,7 @@
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
+  import HelpButtonDiscovery from "$lib/features/create/generate/components/help/HelpButtonDiscovery.svelte";
   import type { createCreateModuleState as CreateModuleStateType } from "../state/create-module-state.svelte";
   import type { PanelCoordinationState } from "../state/panel-coordination-state.svelte";
   import type { IToolPanelMethods } from "../types/create-module-types";
@@ -31,7 +32,7 @@
     currentDisplayWord,
     currentLetterSources = null,
     // Bindable props
-    animatingBeatNumber = $bindable(null),
+    animatingStepNumber = $bindable(null),
     toolPanelRef = $bindable(null),
     buttonPanelElement = $bindable(),
     toolPanelElement = $bindable(),
@@ -49,7 +50,7 @@
     currentDisplayWord: string;
     /** Letter sources for spell tab - enables original vs bridge letter styling */
     currentLetterSources?: LetterSource[] | null;
-    animatingBeatNumber?: number | null;
+    animatingStepNumber?: number | null;
     toolPanelRef?: IToolPanelMethods | null;
     buttonPanelElement?: HTMLElement | null;
     toolPanelElement?: HTMLElement | null;
@@ -81,10 +82,10 @@
       return false;
     }
 
-    const hasBeat = sequence.beats && sequence.beats.length > 0;
+    const hasStep = sequence.steps && sequence.steps.length > 0;
     const hasStartPosition =
-      sequence.startingPositionBeat || sequence.startPosition;
-    const result = hasBeat || hasStartPosition;
+      sequence.startingPosition || sequence.startPosition;
+    const result = hasStep || hasStartPosition;
 
     return result;
   });
@@ -160,7 +161,7 @@
     <div class="workspace-content">
       {#if hasWorkspaceContent}
         <CreationWorkspaceArea
-          {animatingBeatNumber}
+          {animatingStepNumber}
           {currentDisplayWord}
           {buttonPanelHeight}
           letterSources={currentLetterSources}
@@ -184,6 +185,15 @@
         />
       </div>
     {/if}
+
+    <!-- Help button discovery overlay - only on generator tab -->
+    {#if isGeneratorTab}
+      <HelpButtonDiscovery
+        buttonBottom={20}
+        buttonRight={20}
+        buttonSize={48}
+      />
+    {/if}
   </div>
 
   <!-- Tool Panel -->
@@ -191,8 +201,8 @@
     <CreationToolPanelSlot
       bind:toolPanelRef
       {onOptionSelected}
-      onPracticeBeatIndexChange={(index) => {
-        panelState.setPracticeBeatIndex(index);
+      onPracticeStepIndexChange={(index) => {
+        panelState.setPracticeStepIndex(index);
       }}
       {onOpenFilters}
       {onCloseFilters}

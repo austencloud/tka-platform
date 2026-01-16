@@ -4,17 +4,17 @@
  * Unified beat data structure that combines pictograph data with beat context.
  * Used across build and animator modules for all beat-related operations.
  *
- * NOTE: BeatData represents actual beats in a sequence (beatNumber >= 1).
+ * NOTE: StepData represents actual steps in a sequence (stepNumber >= 1).
  * For start positions, use StartPositionData instead.
  */
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
-export interface BeatData extends PictographData {
+export interface StepData extends PictographData {
   // Type discriminator for TypeScript type guards (optional during migration)
-  readonly isBeat?: true;
+  readonly isStep?: true;
 
   // Beat context properties
-  readonly beatNumber: number; // Should be >= 1 (beat 0 is deprecated, use StartPositionData)
+  readonly stepNumber: number; // Should be >= 1 (beat 0 is deprecated, use StartPositionData)
   readonly duration: number;
   readonly blueReversal: boolean;
   readonly redReversal: boolean;

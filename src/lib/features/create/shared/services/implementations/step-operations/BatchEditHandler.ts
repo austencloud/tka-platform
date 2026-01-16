@@ -1,6 +1,6 @@
 /**
  * Batch Edit Handler
- * Handles applying changes to multiple selected beats at once.
+ * Handles applying changes to multiple selected steps at once.
  */
 
 import type {
@@ -13,30 +13,30 @@ import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 const logger = createComponentLogger("BatchEdit");
 
 /**
- * Apply batch changes to all selected beats
+ * Apply batch changes to all selected steps
  */
 export function applyBatchChanges(
   changes: BatchEditChanges,
   createModuleState: ICreateModuleState
 ): void {
-  const selectedBeatNumbers =
-    createModuleState.sequenceState.selectedBeatNumbers;
+  const selectedStepNumbers =
+    createModuleState.sequenceState.selectedStepNumbers;
 
-  if (selectedBeatNumbers.size === 0) {
-    logger.warn("No beats selected for batch edit");
+  if (selectedStepNumbers.size === 0) {
+    logger.warn("No steps selected for batch edit");
     return;
   }
 
   logger.log(
-    `Applying batch changes to ${selectedBeatNumbers.size} beats`,
+    `Applying batch changes to ${selectedStepNumbers.size} steps`,
     changes
   );
 
   // Push undo snapshot before batch edit
   createModuleState.pushUndoSnapshot(UndoOperationType.BATCH_EDIT, {
-    beatNumbers: Array.from(selectedBeatNumbers),
+    stepNumbers: Array.from(selectedStepNumbers),
     changes,
-    description: `Batch edit ${selectedBeatNumbers.size} beats`,
+    description: `Batch edit ${selectedStepNumbers.size} steps`,
   });
 
   const currentSequence = createModuleState.sequenceState.currentSequence;
@@ -45,8 +45,8 @@ export function applyBatchChanges(
     return;
   }
 
-  const updatedBeats = currentSequence.beats.map((beat) => {
-    if (!selectedBeatNumbers.has(beat.beatNumber)) return beat;
+  const updatedSteps = currentSequence.steps.map((beat) => {
+    if (!selectedStepNumbers.has(beat.stepNumber)) return beat;
 
     const nextMotions =
       changes.motions && beat.motions
@@ -62,8 +62,8 @@ export function applyBatchChanges(
 
   createModuleState.sequenceState.setCurrentSequence({
     ...currentSequence,
-    beats: updatedBeats,
+    steps: updatedSteps,
   });
 
-  logger.success(`Applied batch changes to ${selectedBeatNumbers.size} beats`);
+  logger.success(`Applied batch changes to ${selectedStepNumbers.size} steps`);
 }

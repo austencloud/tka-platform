@@ -8,39 +8,39 @@
  */
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { IBeatOperator } from "../contracts/IBeatOperator";
+import type { IStepOperator } from "../contracts/IStepOperator";
 import type {
   ICreateModuleState,
   BatchEditChanges,
 } from "../../types/create-module-types";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 
 // Import handlers
-import { removeBeat } from "./beat-operations/BeatRemovalHandler";
-import { applyBatchChanges } from "./beat-operations/BatchEditHandler";
-import { updateBeatOrientation } from "./beat-operations/OrientationHandler";
-import { updateBeatTurns } from "./beat-operations/TurnsHandler";
+import { removeStep } from "./step-operations/StepRemovalHandler";
+import { applyBatchChanges } from "./step-operations/BatchEditHandler";
+import { updateStepOrientation } from "./step-operations/OrientationHandler";
+import { updateStepTurns } from "./step-operations/TurnsHandler";
 import {
   updateBeatPropType,
   bulkUpdatePropType,
-} from "./beat-operations/PropTypeHandler";
-import { updateRotationDirection } from "./beat-operations/RotationDirectionHandler";
+} from "./step-operations/PropTypeHandler";
+import { updateRotationDirection } from "./step-operations/RotationDirectionHandler";
 import {
   updateArrowAdjustment,
   persistBeatWithAdjustments,
-} from "./beat-operations/ArrowAdjustmentHandler";
-import { updateBeatDuration } from "./beat-operations/DurationHandler";
+} from "./step-operations/ArrowAdjustmentHandler";
+import { updateStepDuration } from "./step-operations/DurationHandler";
 
-export class BeatOperator implements IBeatOperator {
+export class StepOperator implements IStepOperator {
   constructor(
     private motionQueryHandler: IMotionQueryHandler | null,
     private gridModeDeriver: IGridModeDeriver | null
   ) {}
 
-  removeBeat(beatIndex: number, createModuleState: ICreateModuleState): void {
-    removeBeat(beatIndex, createModuleState);
+  removeStep(stepIndex: number, createModuleState: ICreateModuleState): void {
+    removeStep(stepIndex, createModuleState);
   }
 
   applyBatchChanges(
@@ -50,34 +50,34 @@ export class BeatOperator implements IBeatOperator {
     applyBatchChanges(changes, createModuleState);
   }
 
-  updateBeatOrientation(
-    beatNumber: number,
+  updateStepOrientation(
+    stepNumber: number,
     color: string,
     orientation: string,
     createModuleState: ICreateModuleState,
     _panelState: unknown
   ): void {
-    updateBeatOrientation(beatNumber, color, orientation, createModuleState);
+    updateStepOrientation(stepNumber, color, orientation, createModuleState);
   }
 
-  updateBeatTurns(
-    beatNumber: number,
+  updateStepTurns(
+    stepNumber: number,
     color: string,
     turnAmount: number | "fl",
     createModuleState: ICreateModuleState,
     _panelState: unknown
   ): void {
-    updateBeatTurns(beatNumber, color, turnAmount, createModuleState);
+    updateStepTurns(stepNumber, color, turnAmount, createModuleState);
   }
 
   updateBeatPropType(
-    beatNumber: number,
+    stepNumber: number,
     color: string,
     propType: PropType,
     createModuleState: ICreateModuleState,
     _panelState: unknown
   ): void {
-    updateBeatPropType(beatNumber, color, propType, createModuleState);
+    updateBeatPropType(stepNumber, color, propType, createModuleState);
   }
 
   bulkUpdatePropType(
@@ -89,14 +89,14 @@ export class BeatOperator implements IBeatOperator {
   }
 
   updateRotationDirection(
-    beatNumber: number,
+    stepNumber: number,
     color: string,
     rotationDirection: string,
     createModuleState: ICreateModuleState,
     _panelState: unknown
   ): void {
     updateRotationDirection(
-      beatNumber,
+      stepNumber,
       color,
       rotationDirection,
       createModuleState,
@@ -106,14 +106,14 @@ export class BeatOperator implements IBeatOperator {
   }
 
   updateArrowAdjustment(
-    beatNumber: number,
+    stepNumber: number,
     color: string,
     adjustmentX: number,
     adjustmentY: number,
     createModuleState: ICreateModuleState
   ): void {
     updateArrowAdjustment(
-      beatNumber,
+      stepNumber,
       color,
       adjustmentX,
       adjustmentY,
@@ -122,18 +122,18 @@ export class BeatOperator implements IBeatOperator {
   }
 
   persistBeatWithAdjustments(
-    beatNumber: number,
-    updatedBeatData: BeatData,
+    stepNumber: number,
+    updatedStepData: StepData,
     createModuleState: ICreateModuleState
   ): void {
-    persistBeatWithAdjustments(beatNumber, updatedBeatData, createModuleState);
+    persistBeatWithAdjustments(stepNumber, updatedStepData, createModuleState);
   }
 
-  updateBeatDuration(
-    beatNumber: number,
+  updateStepDuration(
+    stepNumber: number,
     newDuration: number,
     createModuleState: ICreateModuleState
   ): void {
-    updateBeatDuration(beatNumber, newDuration, createModuleState);
+    updateStepDuration(stepNumber, newDuration, createModuleState);
   }
 }

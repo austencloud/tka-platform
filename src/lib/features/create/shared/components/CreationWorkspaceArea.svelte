@@ -25,13 +25,13 @@
 
   // Props (only presentation-specific props)
   let {
-    animatingBeatNumber = null,
+    animatingStepNumber = null,
     animationStateRef,
     currentDisplayWord,
     buttonPanelHeight = 0,
     letterSources = null,
   }: {
-    animatingBeatNumber?: number | null;
+    animatingStepNumber?: number | null;
     animationStateRef?: ReturnType<IToolPanelMethods["getAnimationStateRef"]>;
     currentDisplayWord: string;
     buttonPanelHeight?: number;
@@ -40,7 +40,7 @@
   } = $props();
 
   // Derive values from context
-  const practiceBeatIndex = $derived(panelState.practiceBeatIndex);
+  const practiceStepIndex = $derived(panelState.practiceStepIndex);
   const shouldOrbitAroundCenter = $derived(panelState.shouldOrbitAroundCenter);
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
   const isMobilePortrait = $derived(layout.isMobilePortrait());
@@ -80,16 +80,16 @@
   in:fade={{ duration: 400, delay: 200 }}
   out:fade={{ duration: 300 }}
 >
-  <!-- CRITICAL: {#key} block ensures fresh BeatGrid instances per tab
-       This prevents animation state pollution (beat-grid-display-state.svelte)
+  <!-- CRITICAL: {#key} block ensures fresh StepGrid instances per tab
+       This prevents animation state pollution (step-grid-display-state.svelte)
        But we DON'T key the parent layout to avoid workspace visibility timing issues -->
   {#key navigationState.activeTab}
     <WorkspacePanel
       sequenceState={activeSequenceState}
       createModuleState={CreateModuleState}
       {panelState}
-      {practiceBeatIndex}
-      {animatingBeatNumber}
+      {practiceStepIndex}
+      {animatingStepNumber}
       {isSideBySideLayout}
       {shouldOrbitAroundCenter}
       {animationStateRef}

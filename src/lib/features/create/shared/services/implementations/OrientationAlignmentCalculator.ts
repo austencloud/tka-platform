@@ -19,7 +19,7 @@ export class OrientationAlignmentCalculator implements IOrientationAlignmentCalc
     sequence: SequenceData
   ): { blueOri: string; redOri: string } | null {
     const startPosData =
-      sequence.startPosition || sequence.startingPositionBeat;
+      sequence.startPosition || sequence.startingPosition;
     if (!startPosData) return null;
 
     // Extract orientations from motion data

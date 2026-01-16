@@ -1,26 +1,26 @@
 /**
  * Type Guards for Pictograph Data
  *
- * Utilities to distinguish between BeatData and StartPositionData at runtime.
+ * Utilities to distinguish between StepData and StartPositionData at runtime.
  * These enable TypeScript to narrow union types and enforce type safety.
  */
 
-import type { BeatData } from "../models/BeatData";
+import type { StepData } from "../models/StepData";
 import type { StartPositionData } from "../models/StartPositionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
 /**
  * Union type for all pictograph-based data structures
  */
-export type BeatOrStartPosition = BeatData | StartPositionData;
+export type BeatOrStartPosition = StepData | StartPositionData;
 
 /**
  * Type guard: Check if data is StartPositionData
  *
- * Checks for the presence of isStartPosition discriminator OR beatNumber === 0 (legacy)
+ * Checks for the presence of isStartPosition discriminator OR stepNumber === 0 (legacy)
  */
 export function isStartPosition(
-  data: PictographData | BeatData | StartPositionData | unknown
+  data: PictographData | StepData | StartPositionData | unknown
 ): data is StartPositionData {
   if (!data || typeof data !== "object") {
     return false;
@@ -33,9 +33,9 @@ export function isStartPosition(
     return true;
   }
 
-  // Fallback check: Legacy beatNumber === 0 pattern
+  // Fallback check: Legacy stepNumber === 0 pattern
   // This supports old data before migration is complete
-  if ("beatNumber" in obj && obj.beatNumber === 0) {
+  if ("stepNumber" in obj && obj.stepNumber === 0) {
     return true;
   }
 
@@ -43,13 +43,13 @@ export function isStartPosition(
 }
 
 /**
- * Type guard: Check if data is BeatData
+ * Type guard: Check if data is StepData
  *
- * Checks for the presence of isBeat discriminator OR beatNumber >= 1 (legacy)
+ * Checks for the presence of isStep discriminator OR stepNumber >= 1 (legacy)
  */
-export function isBeat(
-  data: PictographData | BeatData | StartPositionData | unknown
-): data is BeatData {
+export function isStep(
+  data: PictographData | StepData | StartPositionData | unknown
+): data is StepData {
   if (!data || typeof data !== "object") {
     return false;
   }
@@ -57,16 +57,16 @@ export function isBeat(
   const obj = data as Record<string, unknown>;
 
   // Primary check: Type discriminator field
-  if (obj.isBeat === true) {
+  if (obj.isStep === true) {
     return true;
   }
 
-  // Fallback check: Legacy beatNumber >= 1 pattern
+  // Fallback check: Legacy stepNumber >= 1 pattern
   // This supports old data before migration is complete
   if (
-    "beatNumber" in obj &&
-    typeof obj.beatNumber === "number" &&
-    obj.beatNumber >= 1
+    "stepNumber" in obj &&
+    typeof obj.stepNumber === "number" &&
+    obj.stepNumber >= 1
   ) {
     return true;
   }
@@ -82,7 +82,7 @@ export function isBeat(
 export function isBeatOrStartPosition(
   data: unknown
 ): data is BeatOrStartPosition {
-  return isStartPosition(data) || isBeat(data);
+  return isStartPosition(data) || isStep(data);
 }
 
 /**
@@ -99,12 +99,12 @@ export function assertIsStartPosition(
 }
 
 /**
- * Assertion: Throw if data is not BeatData
+ * Assertion: Throw if data is not StepData
  */
-export function assertIsBeat(data: unknown): asserts data is BeatData {
-  if (!isBeat(data)) {
+export function assertIsBeat(data: unknown): asserts data is StepData {
+  if (!isStep(data)) {
     throw new Error(
-      `Expected BeatData but got ${typeof data}. Data: ${JSON.stringify(data)}`
+      `Expected StepData but got ${typeof data}. Data: ${JSON.stringify(data)}`
     );
   }
 }

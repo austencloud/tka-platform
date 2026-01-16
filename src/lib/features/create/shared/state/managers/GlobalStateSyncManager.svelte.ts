@@ -15,13 +15,13 @@ import type { PanelCoordinationState } from "../panel-coordination-state.svelte"
 export interface GlobalStateSyncConfig {
   panelState: PanelCoordinationState;
   getShouldUseSideBySideLayout: () => boolean;
-  setAnimatingBeatNumber: (beat: number | null) => void;
+  setAnimatingStepNumber: (beat: number | null) => void;
 }
 
 export function createGlobalStateSyncEffects(
   config: GlobalStateSyncConfig
 ): () => void {
-  const { panelState, getShouldUseSideBySideLayout, setAnimatingBeatNumber } =
+  const { panelState, getShouldUseSideBySideLayout, setAnimatingStepNumber } =
     config;
 
   const cleanup = $effect.root(() => {
@@ -36,10 +36,10 @@ export function createGlobalStateSyncEffects(
     // When stopped/paused, clear the highlight so it doesn't persist after closing the drawer
     $effect(() => {
       if (sharedAnimationState.isPlaying) {
-        const currentBeat = sharedAnimationState.currentBeat;
-        setAnimatingBeatNumber(Math.floor(currentBeat));
+        const currentStep = sharedAnimationState.currentStep;
+        setAnimatingStepNumber(Math.floor(currentStep));
       } else {
-        setAnimatingBeatNumber(null);
+        setAnimatingStepNumber(null);
       }
     });
   });

@@ -121,8 +121,8 @@ export class SessionManager {
   /**
    * Update beat count in session
    */
-  async updateBeatCount(beatCount: number): Promise<void> {
-    await this.updateSession({ beatCount });
+  async updateStepCount(stepCount: number): Promise<void> {
+    await this.updateSession({ stepCount });
   }
 
   /**

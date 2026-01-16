@@ -1,11 +1,11 @@
 /**
  * Sequence Extender Implementation
  *
- * Detects when a sequence is in an extendable state and generates extension beats
+ * Detects when a sequence is in an extendable state and generates extension steps
  * using the LOOP (Linked Orbital Offset Pattern) executor infrastructure.
  */
 
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type {
@@ -18,7 +18,7 @@ import type {
 import type { ILOOPExecutorSelector } from "$lib/features/create/generate/circular/services/contracts/ILOOPExecutorSelector";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IBeatConverter } from "$lib/features/create/generate/shared/services/contracts/IBeatConverter";
+import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ILOOPValidator } from "../contracts/ILOOPValidator";
 import type { ISequenceAnalyzer } from "../contracts/ISequenceAnalyzer";
@@ -40,7 +40,7 @@ export class SequenceExtender implements ISequenceExtender {
     private loopExecutorSelector: ILOOPExecutorSelector,
     private reversalDetector: IReversalDetector,
     private letterQueryHandler: ILetterQueryHandler,
-    private beatConverter: IBeatConverter,
+    private stepConverter: IStepConverter,
     private orientationCalculator: IOrientationCalculator,
     private loopValidator: ILOOPValidator,
     private sequenceAnalyzer: ISequenceAnalyzer,
@@ -76,7 +76,7 @@ export class SequenceExtender implements ISequenceExtender {
         currentEndPosition: null,
         availableLOOPOptions: [],
         unavailableLOOPOptions: [],
-        description: "No beats in sequence",
+        description: "No steps in sequence",
       };
     }
 
@@ -143,12 +143,12 @@ export class SequenceExtender implements ISequenceExtender {
   }
 
   /**
-   * Generate beats to extend a sequence back to its starting position
+   * Generate steps to extend a sequence back to its starting position
    */
   async generateExtensionBeats(
     sequence: SequenceData,
     options: ExtensionOptions
-  ): Promise<BeatData[]> {
+  ): Promise<StepData[]> {
     const analysis = this.analyzeSequence(sequence);
 
     if (!analysis.canExtend) {
@@ -164,28 +164,28 @@ export class SequenceExtender implements ISequenceExtender {
     // Get the executor for the selected LOOP type
     const executor = this.loopExecutorSelector.getExecutor(loopType);
 
-    // Convert sequence to BeatData array for the executor
-    const sequenceBeats =
+    // Convert sequence to StepData array for the executor
+    const sequenceSteps =
       this.sequenceAnalyzer.convertSequenceToBeats(sequence);
 
-    if (sequenceBeats.length === 0) {
-      throw new Error("No beats in sequence to extend");
+    if (sequenceSteps.length === 0) {
+      throw new Error("No steps in sequence to extend");
     }
 
     // IMPORTANT: Save original length BEFORE executing, since executor modifies array in place
-    const originalLength = sequenceBeats.length;
+    const originalLength = sequenceSteps.length;
 
-    // Execute the LOOP transformation (modifies sequenceBeats in place)
-    const completedBeats = executor.executeLOOP(sequenceBeats, sliceSize);
+    // Execute the LOOP transformation (modifies sequenceSteps in place)
+    const completedSteps = executor.executeLOOP(sequenceSteps, sliceSize);
 
-    // Return only the new beats (after the original sequence)
-    const newBeats = completedBeats.slice(originalLength);
+    // Return only the new steps (after the original sequence)
+    const newSteps = completedSteps.slice(originalLength);
 
-    return newBeats;
+    return newSteps;
   }
 
   /**
-   * Extend a sequence by appending the generated extension beats
+   * Extend a sequence by appending the generated extension steps
    */
   async extendSequence(
     sequence: SequenceData,
@@ -197,25 +197,25 @@ export class SequenceExtender implements ISequenceExtender {
       return sequence;
     }
 
-    // Renumber the extension beats to continue from the existing sequence
-    const existingBeatCount = sequence.beats?.length || 0;
-    const renumberedBeats = extensionBeats.map((beat, index) => ({
+    // Renumber the extension steps to continue from the existing sequence
+    const existingStepCount = sequence.steps?.length || 0;
+    const renumberedSteps = extensionBeats.map((beat, index) => ({
       ...beat,
-      beatNumber: existingBeatCount + index + 1,
+      stepNumber: existingStepCount + index + 1,
     }));
 
-    // Combine existing beats with extension beats
-    const newBeats = [...(sequence.beats || []), ...renumberedBeats];
+    // Combine existing steps with extension steps
+    const newSteps = [...(sequence.steps || []), ...renumberedSteps];
 
     const extendedSequence: SequenceData = {
       ...sequence,
-      beats: newBeats,
+      steps: newSteps,
       isCircular: true,
       loopType: options.loopType,
     };
 
     // Process reversals for the extended sequence
-    // This detects rotation direction changes between consecutive beats
+    // This detects rotation direction changes between consecutive steps
     return this.reversalDetector.processReversals(extendedSequence);
   }
 
@@ -299,16 +299,16 @@ export class SequenceExtender implements ISequenceExtender {
     }
 
     // Convert to beat and append
-    const bridgeBeat = this.beatConverter.convertToBeat(
+    const bridgeBeat = this.stepConverter.convertToStep(
       bridgeVariation,
-      (sequence.beats?.length || 0) + 1,
+      (sequence.steps?.length || 0) + 1,
       gridMode
     );
 
     // Create sequence with bridge letter
     let extendedSequence: SequenceData = {
       ...sequence,
-      beats: [...(sequence.beats || []), bridgeBeat],
+      steps: [...(sequence.steps || []), bridgeBeat],
     };
 
     // Recalculate orientations

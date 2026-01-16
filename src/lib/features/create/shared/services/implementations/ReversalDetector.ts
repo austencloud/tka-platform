@@ -1,15 +1,15 @@
 /**
  * Reversal Detection Service Implementation
  *
- * Detects reversals between beats in sequences based on prop rotation direction changes.
+ * Detects reversals between steps in sequences based on prop rotation direction changes.
  * Ported from desktop app's ReversalDetector logic.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createBeatData } from "../../domain/factories/createBeatData";
+import { createStepData } from "../../domain/factories/createStepData";
 import type {
   IReversalDetector,
   PictographWithReversals,
@@ -21,18 +21,18 @@ export class ReversalDetector implements IReversalDetector {
    * Process reversals for an entire sequence
    */
   processReversals(sequence: SequenceData): SequenceData {
-    const processedBeats: BeatData[] = [];
+    const processedBeats: StepData[] = [];
 
-    for (let i = 0; i < sequence.beats.length; i++) {
-      const currentBeat = sequence.beats[i]!;
-      const previousBeats = sequence.beats.slice(0, i);
+    for (let i = 0; i < sequence.steps.length; i++) {
+      const currentStep = sequence.steps[i]!;
+      const previousSteps = sequence.steps.slice(0, i);
 
       // Detect reversals for this beat
-      const reversalInfo = this.detectReversal(previousBeats, currentBeat);
+      const reversalInfo = this.detectReversal(previousSteps, currentStep);
 
       // Apply reversal symbols to the beat
       const processedBeat = this.applyReversalSymbols(
-        currentBeat,
+        currentStep,
         reversalInfo
       );
 
@@ -41,32 +41,32 @@ export class ReversalDetector implements IReversalDetector {
 
     return {
       ...sequence,
-      beats: processedBeats,
+      steps: processedBeats,
     };
   }
 
   /**
-   * Detect reversal for a single beat based on previous beats
+   * Detect reversal for a single beat based on previous steps
    */
   detectReversal(
-    previousBeats: BeatData[],
-    currentBeat: BeatData
+    previousSteps: StepData[],
+    currentStep: StepData
   ): ReversalInfo {
     const reversalInfo: ReversalInfo = {
       blueReversal: false,
       redReversal: false,
     };
 
-    if (currentBeat.isBlank) {
+    if (currentStep.isBlank) {
       return reversalInfo;
     }
 
     // Check blue motion reversal
     const lastBluePropRotDir = this._getLastValidPropRotDir(
-      previousBeats,
+      previousSteps,
       "blue"
     );
-    const currentBluePropRotDir = this._getPropRotDir(currentBeat, "blue");
+    const currentBluePropRotDir = this._getPropRotDir(currentStep, "blue");
 
     if (this._isReversal(lastBluePropRotDir, currentBluePropRotDir)) {
       reversalInfo.blueReversal = true;
@@ -74,10 +74,10 @@ export class ReversalDetector implements IReversalDetector {
 
     // Check red motion reversal
     const lastRedPropRotDir = this._getLastValidPropRotDir(
-      previousBeats,
+      previousSteps,
       "red"
     );
-    const currentRedPropRotDir = this._getPropRotDir(currentBeat, "red");
+    const currentRedPropRotDir = this._getPropRotDir(currentStep, "red");
 
     if (this._isReversal(lastRedPropRotDir, currentRedPropRotDir)) {
       reversalInfo.redReversal = true;
@@ -90,11 +90,11 @@ export class ReversalDetector implements IReversalDetector {
    * Apply reversal symbols to a beat
    */
   applyReversalSymbols(
-    beatData: BeatData,
+    stepData: StepData,
     reversalInfo: ReversalInfo
-  ): BeatData {
-    return createBeatData({
-      ...beatData,
+  ): StepData {
+    return createStepData({
+      ...stepData,
       blueReversal: reversalInfo.blueReversal,
       redReversal: reversalInfo.redReversal,
     });
@@ -105,7 +105,7 @@ export class ReversalDetector implements IReversalDetector {
    * This is used to show reversal indicators on options before they're selected
    */
   detectReversalForOption(
-    currentSequence: BeatData[],
+    currentSequence: StepData[],
     optionPictographData: PictographData
   ): ReversalInfo {
     const reversalInfo: ReversalInfo = {
@@ -155,14 +155,14 @@ export class ReversalDetector implements IReversalDetector {
   }
 
   /**
-   * Get the last valid prop rotation direction for a color from previous beats
+   * Get the last valid prop rotation direction for a color from previous steps
    */
   private _getLastValidPropRotDir(
-    beats: BeatData[],
+    steps: StepData[],
     color: "blue" | "red"
   ): string | null {
-    for (let i = beats.length - 1; i >= 0; i--) {
-      const beat = beats[i]!;
+    for (let i = steps.length - 1; i >= 0; i--) {
+      const beat = steps[i]!;
       const propRotDir = this._getPropRotDir(beat, color);
 
       if (propRotDir && propRotDir !== "noRotation") {
@@ -175,7 +175,7 @@ export class ReversalDetector implements IReversalDetector {
   /**
    * Get prop rotation direction for a specific color from a beat
    */
-  private _getPropRotDir(beat: BeatData, color: "blue" | "red"): string | null {
+  private _getPropRotDir(beat: StepData, color: "blue" | "red"): string | null {
     if (!beat || beat.isBlank) {
       return null;
     }
@@ -216,15 +216,15 @@ export class ReversalDetector implements IReversalDetector {
   }
 
   /**
-   * Get the last valid prop rotation direction from a sequence of beats
+   * Get the last valid prop rotation direction from a sequence of steps
    */
   private _getLastValidPropRotDirFromSequence(
-    beats: BeatData[],
+    steps: StepData[],
     color: "blue" | "red"
   ): string | null {
-    // Iterate backwards through the beats to find the last valid rotation direction
-    for (let i = beats.length - 1; i >= 0; i--) {
-      const beat = beats[i];
+    // Iterate backwards through the steps to find the last valid rotation direction
+    for (let i = steps.length - 1; i >= 0; i--) {
+      const beat = steps[i];
       if (beat && !beat.isBlank) {
         const propRotDir = this._getPropRotDir(beat, color);
         if (propRotDir && propRotDir !== "noRotation") {

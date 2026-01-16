@@ -3,20 +3,20 @@
  *
  * Svelte 5 runes-based state management for beat grid display animations.
  * Handles entrance/exit animations, sequential reveals, and animation coordination.
- * This is for DISPLAY animations (how beats appear in grid), NOT playback animations.
+ * This is for DISPLAY animations (how steps appear in grid), NOT playback animations.
  */
 
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type {
   AnimationMode,
   AnimationTiming,
   BeatLetterAnimatedEvent,
-} from "../domain/models/beat-grid-display-models";
-import { DEFAULT_ANIMATION_TIMING } from "../domain/models/beat-grid-display-models";
+} from "../domain/models/step-grid-display-models";
+import { DEFAULT_ANIMATION_TIMING } from "../domain/models/step-grid-display-models";
 
 /**
  * Global flag to indicate a generation is pending.
- * This is set when the prepare-sequence-animation event fires, BEFORE the BeatGrid
+ * This is set when the prepare-sequence-animation event fires, BEFORE the StepGrid
  * component might be mounted (since the workspace transitions from empty to visible).
  * Used to distinguish between:
  * - First generation: flag is true, should animate
@@ -35,13 +35,13 @@ export function isPendingGenerationAnimation(): boolean {
 /**
  * Create beat grid display animation state
  */
-export function createBeatGridDisplayState() {
+export function createStepGridDisplayState() {
   // Animation state
-  let newlyAddedBeatIndex = $state<number | null>(null);
-  let shouldAnimateAllBeats = $state<boolean>(false);
+  let newlyAddedStepIndex = $state<number | null>(null);
+  let shouldAnimateAllSteps = $state<boolean>(false);
   let shouldAnimateStartPosition = $state<boolean>(false);
   let isSequentialMode = $state<boolean>(true); // Default to sequential
-  let beatsToAnimate = $state<Set<number>>(new Set());
+  let stepsToAnimate = $state<Set<number>>(new Set());
   let isPreparingFullAnimation = $state<boolean>(false);
   let isWaitingForSequentialAnimation = $state<boolean>(false);
   let isClearingForGeneration = $state<boolean>(false);
@@ -63,20 +63,20 @@ export function createBeatGridDisplayState() {
    * Called BEFORE new sequence is set
    */
   function prepareSequenceAnimation(_beatCount: number, mode: AnimationMode) {
-    // Set animation state IMMEDIATELY so beats render invisible
+    // Set animation state IMMEDIATELY so steps render invisible
     isPreparingFullAnimation = true;
     shouldAnimateStartPosition = true;
-    newlyAddedBeatIndex = null;
+    newlyAddedStepIndex = null;
 
     if (mode === "sequential") {
-      // Sequential mode: Start with empty beatsToAnimate
-      shouldAnimateAllBeats = false;
-      beatsToAnimate.clear();
+      // Sequential mode: Start with empty stepsToAnimate
+      shouldAnimateAllSteps = false;
+      stepsToAnimate.clear();
       isWaitingForSequentialAnimation = true;
     } else {
-      // All at once mode: All beats animate immediately
-      shouldAnimateAllBeats = true;
-      beatsToAnimate.clear();
+      // All at once mode: All steps animate immediately
+      shouldAnimateAllSteps = true;
+      stepsToAnimate.clear();
       isWaitingForSequentialAnimation = false;
     }
   }
@@ -85,32 +85,32 @@ export function createBeatGridDisplayState() {
    * Trigger sequential animation with progressive reveal
    */
   async function triggerSequentialAnimation(
-    beats: readonly BeatData[],
+    steps: readonly StepData[],
     dispatchEvent: (event: CustomEvent) => void
   ): Promise<void> {
-    const beatCount = beats.length;
+    const stepCount = steps.length;
 
     // Small delay to ensure DOM has updated
     await new Promise((resolve) =>
       setTimeout(resolve, animationTiming.sequentialDelay / 6)
     );
 
-    // Trigger beats sequentially
-    for (let i = 0; i < beatCount; i++) {
-      // Add this beat to beatsToAnimate to trigger its animation
-      beatsToAnimate.add(i);
-      beatsToAnimate = new Set(beatsToAnimate); // Trigger reactivity
+    // Trigger steps sequentially
+    for (let i = 0; i < stepCount; i++) {
+      // Add this beat to stepsToAnimate to trigger its animation
+      stepsToAnimate.add(i);
+      stepsToAnimate = new Set(stepsToAnimate); // Trigger reactivity
 
       // Dispatch event with the letter from this beat
-      const beat = beats[i];
+      const beat = steps[i];
       if (beat?.letter) {
         const event = new CustomEvent<BeatLetterAnimatedEvent>(
           "beat-letter-animated",
           {
             detail: {
-              beatIndex: i,
+              stepIndex: i,
               letter: beat.letter,
-              totalBeats: beatCount,
+              totalSteps: stepCount,
             },
             bubbles: true,
           }
@@ -126,12 +126,12 @@ export function createBeatGridDisplayState() {
 
     // Dispatch completion event
     const completeEvent = new CustomEvent("sequential-animation-complete", {
-      detail: { totalBeats: beatCount },
+      detail: { totalSteps: stepCount },
       bubbles: true,
     });
     dispatchEvent(completeEvent);
 
-    // Clear animation state after all beats have animated
+    // Clear animation state after all steps have animated
     setTimeout(() => {
       cleanupAnimation();
     }, animationTiming.cleanupDelay);
@@ -141,7 +141,7 @@ export function createBeatGridDisplayState() {
    * Trigger all-at-once animation
    */
   function triggerAllAtOnceAnimation() {
-    // All beats already set to animate via shouldAnimateAllBeats
+    // All steps already set to animate via shouldAnimateAllSteps
     // Just clean up after animation duration
     setTimeout(() => {
       cleanupAnimation();
@@ -151,16 +151,16 @@ export function createBeatGridDisplayState() {
   /**
    * Handle single beat addition (Construct mode)
    */
-  function handleSingleBeatAddition(beatIndex: number) {
+  function handleSingleBeatAddition(stepIndex: number) {
     isPreparingFullAnimation = false;
-    newlyAddedBeatIndex = beatIndex;
-    shouldAnimateAllBeats = false;
+    newlyAddedStepIndex = stepIndex;
+    shouldAnimateAllSteps = false;
     shouldAnimateStartPosition = false;
-    beatsToAnimate.clear();
+    stepsToAnimate.clear();
 
     // Clear after animation completes
     setTimeout(() => {
-      newlyAddedBeatIndex = null;
+      newlyAddedStepIndex = null;
     }, animationTiming.entranceDuration);
   }
 
@@ -183,26 +183,26 @@ export function createBeatGridDisplayState() {
     isPreparingFullAnimation = false;
     isWaitingForSequentialAnimation = false;
     shouldAnimateStartPosition = false;
-    shouldAnimateAllBeats = false;
-    beatsToAnimate.clear();
+    shouldAnimateAllSteps = false;
+    stepsToAnimate.clear();
   }
 
   /**
    * Check if a beat should animate
    */
-  function shouldBeatAnimate(beatIndex: number): boolean {
+  function shouldBeatAnimate(stepIndex: number): boolean {
     return (
-      shouldAnimateAllBeats ||
-      beatIndex === newlyAddedBeatIndex ||
-      beatsToAnimate.has(beatIndex)
+      shouldAnimateAllSteps ||
+      stepIndex === newlyAddedStepIndex ||
+      stepsToAnimate.has(stepIndex)
     );
   }
 
   /**
    * Check if a beat should be hidden (sequential mode waiting)
    */
-  function shouldBeatBeHidden(beatIndex: number): boolean {
-    return isWaitingForSequentialAnimation && !beatsToAnimate.has(beatIndex);
+  function shouldBeatBeHidden(stepIndex: number): boolean {
+    return isWaitingForSequentialAnimation && !stepsToAnimate.has(stepIndex);
   }
 
   /**
@@ -214,11 +214,11 @@ export function createBeatGridDisplayState() {
 
   return {
     // Getters for reactive state
-    get newlyAddedBeatIndex() {
-      return newlyAddedBeatIndex;
+    get newlyAddedStepIndex() {
+      return newlyAddedStepIndex;
     },
-    get shouldAnimateAllBeats() {
-      return shouldAnimateAllBeats;
+    get shouldAnimateAllSteps() {
+      return shouldAnimateAllSteps;
     },
     get shouldAnimateStartPosition() {
       return shouldAnimateStartPosition;
@@ -226,8 +226,8 @@ export function createBeatGridDisplayState() {
     get isSequentialMode() {
       return isSequentialMode;
     },
-    get beatsToAnimate() {
-      return beatsToAnimate;
+    get stepsToAnimate() {
+      return stepsToAnimate;
     },
     get isPreparingFullAnimation() {
       return isPreparingFullAnimation;
@@ -256,6 +256,6 @@ export function createBeatGridDisplayState() {
   };
 }
 
-export type BeatGridDisplayState = ReturnType<
-  typeof createBeatGridDisplayState
+export type StepGridDisplayState = ReturnType<
+  typeof createStepGridDisplayState
 >;

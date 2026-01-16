@@ -14,7 +14,7 @@
 
 <div class="uniform-section">
   <h3>Uniform</h3>
-  <p class="section-desc">Apply same direction to all beats</p>
+  <p class="section-desc">Apply same direction to all steps</p>
   <div class="uniform-buttons">
     <button
       class="uniform-btn cw"

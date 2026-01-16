@@ -58,8 +58,8 @@ export enum UndoOperationType {
  * Metadata for undo history entries
  */
 export interface UndoMetadata {
-  beatIndex?: number;
-  beatsRemoved?: number;
+  stepIndex?: number;
+  stepsRemoved?: number;
   description?: string;
   [key: string]: unknown; // Allow additional metadata
 }
@@ -69,7 +69,7 @@ export interface UndoMetadata {
  */
 export interface CreateModuleStateSnapshot {
   sequence: SequenceData | null;
-  selectedBeatNumber: number | null; // 0=start, 1=first beat, 2=second beat
+  selectedStepNumber: number | null; // 0=start, 1=first beat, 2=second beat
   activeSection: ActiveCreateModule | null;
   shouldShowStartPositionPicker?: boolean;
   timestamp: number;

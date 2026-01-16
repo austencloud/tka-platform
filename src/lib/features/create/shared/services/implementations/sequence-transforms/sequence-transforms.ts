@@ -10,14 +10,14 @@
  * - "both": Transform both motions (default, original behavior)
  */
 
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import {
   updateSequenceData,
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createBeatData } from "../../../domain/factories/createBeatData";
+import { createStepData } from "../../../domain/factories/createStepData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
@@ -38,7 +38,7 @@ import {
   colorSwapBeat,
   invertBeat,
   rewindBeat,
-} from "./beat-transforms";
+} from "./step-transforms";
 import {
   mirrorStartPosition,
   flipStartPosition,
@@ -51,10 +51,10 @@ import { getToggledGridMode } from "./rotation-helpers";
 import type { TargetHand } from "../../../state/panel-coordination-state.svelte";
 
 /**
- * Clear all beats in a sequence (make them blank).
+ * Clear all steps in a sequence (make them blank).
  */
 export function clearSequence(sequence: SequenceData): SequenceData {
-  const clearedBeats = sequence.beats.map((beat) => ({
+  const clearedBeats = sequence.steps.map((beat) => ({
     ...beat,
     isBlank: true,
     pictographData: null,
@@ -62,7 +62,7 @@ export function clearSequence(sequence: SequenceData): SequenceData {
     redReversal: false,
   }));
 
-  return updateSequenceData(sequence, { beats: clearedBeats });
+  return updateSequenceData(sequence, { steps: clearedBeats });
 }
 
 /**
@@ -76,7 +76,7 @@ export function duplicateSequence(
     ...sequence,
     id: crypto.randomUUID(),
     name: newName || `${sequence.name} (Copy)`,
-    beats: sequence.beats.map((beat) => ({
+    steps: sequence.steps.map((beat) => ({
       ...beat,
       id: crypto.randomUUID(),
     })),
@@ -97,25 +97,25 @@ export async function mirrorSequence(
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
   const mirroredBeats = await Promise.all(
-    sequence.beats.map((beat) =>
+    sequence.steps.map((beat) =>
       mirrorBeat(beat, gridMode, positionDeriver, motionQueryHandler, targetHand)
     )
   );
 
-  // Transform start positions (always StartPositionData, never BeatData)
+  // Transform start positions (always StartPositionData, never StepData)
   const mirroredStartPosition = sequence.startPosition
     ? mirrorStartPosition(sequence.startPosition, targetHand, positionDeriver)
     : undefined;
 
-  const mirroredStartingPositionBeat = sequence.startingPositionBeat
-    ? mirrorStartPosition(sequence.startingPositionBeat, targetHand, positionDeriver)
+  const mirroredStartingPositionBeat = sequence.startingPosition
+    ? mirrorStartPosition(sequence.startingPosition, targetHand, positionDeriver)
     : undefined;
 
   return updateSequenceData(sequence, {
-    beats: mirroredBeats,
+    steps: mirroredBeats,
     ...(mirroredStartPosition && { startPosition: mirroredStartPosition }),
     ...(mirroredStartingPositionBeat && {
-      startingPositionBeat: mirroredStartingPositionBeat,
+      startingPosition: mirroredStartingPositionBeat,
     }),
   });
 }
@@ -134,25 +134,25 @@ export async function flipSequence(
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
   const flippedBeats = await Promise.all(
-    sequence.beats.map((beat) =>
+    sequence.steps.map((beat) =>
       flipBeat(beat, gridMode, positionDeriver, motionQueryHandler, targetHand)
     )
   );
 
-  // Transform start positions (always StartPositionData, never BeatData)
+  // Transform start positions (always StartPositionData, never StepData)
   const flippedStartPosition = sequence.startPosition
     ? flipStartPosition(sequence.startPosition, targetHand, positionDeriver)
     : undefined;
 
-  const flippedStartingPositionBeat = sequence.startingPositionBeat
-    ? flipStartPosition(sequence.startingPositionBeat, targetHand, positionDeriver)
+  const flippedStartingPositionBeat = sequence.startingPosition
+    ? flipStartPosition(sequence.startingPosition, targetHand, positionDeriver)
     : undefined;
 
   return updateSequenceData(sequence, {
-    beats: flippedBeats,
+    steps: flippedBeats,
     ...(flippedStartPosition && { startPosition: flippedStartPosition }),
     ...(flippedStartingPositionBeat && {
-      startingPositionBeat: flippedStartingPositionBeat,
+      startingPosition: flippedStartingPositionBeat,
     }),
   });
 }
@@ -172,7 +172,7 @@ export async function rotateSequence(
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
   const rotatedBeats = await Promise.all(
-    sequence.beats.map((beat) =>
+    sequence.steps.map((beat) =>
       rotateBeat(
         beat,
         rotationAmount,
@@ -184,13 +184,13 @@ export async function rotateSequence(
     )
   );
 
-  // Transform start positions (always StartPositionData, never BeatData)
+  // Transform start positions (always StartPositionData, never StepData)
   const rotatedStartPosition = sequence.startPosition
     ? rotateStartPosition(sequence.startPosition, rotationAmount, positionDeriver, targetHand)
     : undefined;
 
-  const rotatedStartingPositionBeat = sequence.startingPositionBeat
-    ? rotateStartPosition(sequence.startingPositionBeat, rotationAmount, positionDeriver, targetHand)
+  const rotatedStartingPositionBeat = sequence.startingPosition
+    ? rotateStartPosition(sequence.startingPosition, rotationAmount, positionDeriver, targetHand)
     : undefined;
 
   // Only toggle grid mode when both hands are rotated
@@ -200,10 +200,10 @@ export async function rotateSequence(
       : gridMode;
 
   return updateSequenceData(sequence, {
-    beats: rotatedBeats,
+    steps: rotatedBeats,
     ...(rotatedStartPosition && { startPosition: rotatedStartPosition }),
     ...(rotatedStartingPositionBeat && {
-      startingPositionBeat: rotatedStartingPositionBeat,
+      startingPosition: rotatedStartingPositionBeat,
     }),
     gridMode: newGridMode,
   });
@@ -213,22 +213,22 @@ export async function rotateSequence(
  * Swap colors in sequence (blue ↔ red).
  */
 export function colorSwapSequence(sequence: SequenceData): SequenceData {
-  const swappedBeats = sequence.beats.map(colorSwapBeat);
+  const swappedBeats = sequence.steps.map(colorSwapBeat);
 
-  // Transform start positions (always StartPositionData, never BeatData)
+  // Transform start positions (always StartPositionData, never StepData)
   const swappedStartPosition = sequence.startPosition
     ? colorSwapStartPosition(sequence.startPosition)
     : undefined;
 
-  const swappedStartingPositionBeat = sequence.startingPositionBeat
-    ? colorSwapStartPosition(sequence.startingPositionBeat)
+  const swappedStartingPositionBeat = sequence.startingPosition
+    ? colorSwapStartPosition(sequence.startingPosition)
     : undefined;
 
   return updateSequenceData(sequence, {
-    beats: swappedBeats,
+    steps: swappedBeats,
     ...(swappedStartPosition && { startPosition: swappedStartPosition }),
     ...(swappedStartingPositionBeat && {
-      startingPositionBeat: swappedStartingPositionBeat,
+      startingPosition: swappedStartingPositionBeat,
     }),
   });
 }
@@ -243,12 +243,12 @@ export async function invertSequence(
   orientationCalculator: IOrientationCalculator,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
-  if (sequence.beats.length === 0) return sequence;
+  if (sequence.steps.length === 0) return sequence;
 
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
-  const invertedBeats: BeatData[] = [];
+  const invertedBeats: StepData[] = [];
 
-  for (const beat of sequence.beats) {
+  for (const beat of sequence.steps) {
     const invertedBeat = await invertBeat(
       beat,
       gridMode,
@@ -258,20 +258,20 @@ export async function invertSequence(
     invertedBeats.push(invertedBeat);
   }
 
-  // Transform start positions (always StartPositionData, never BeatData)
+  // Transform start positions (always StartPositionData, never StepData)
   const invertedStartPosition = sequence.startPosition
     ? invertStartPosition(sequence.startPosition, orientationCalculator, targetHand)
     : undefined;
 
-  const invertedStartingPositionBeat = sequence.startingPositionBeat
-    ? invertStartPosition(sequence.startingPositionBeat, orientationCalculator, targetHand)
+  const invertedStartingPositionBeat = sequence.startingPosition
+    ? invertStartPosition(sequence.startingPosition, orientationCalculator, targetHand)
     : undefined;
 
   const invertedSequence = updateSequenceData(sequence, {
-    beats: invertedBeats,
+    steps: invertedBeats,
     ...(invertedStartPosition && { startPosition: invertedStartPosition }),
     ...(invertedStartingPositionBeat && {
-      startingPositionBeat: invertedStartingPositionBeat,
+      startingPosition: invertedStartingPositionBeat,
     }),
   });
 
@@ -280,7 +280,7 @@ export async function invertSequence(
 
 /**
  * Rewind sequence (play backwards).
- * Creates new start position from final beat, reverses and transforms beats.
+ * Creates new start position from final beat, reverses and transforms steps.
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
  * Note: Beat reordering only happens when both hands are selected.
  */
@@ -289,7 +289,7 @@ export async function rewindSequence(
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
 ): Promise<SequenceData> {
-  if (sequence.beats.length === 0) return sequence;
+  if (sequence.steps.length === 0) return sequence;
 
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
@@ -297,22 +297,22 @@ export async function rewindSequence(
   const shouldReverseOrder = targetHand === "both";
 
   // Create new start position from final beat's end state (only for both hands)
-  const finalBeat = sequence.beats[sequence.beats.length - 1]!;
+  const finalStep = sequence.steps[sequence.steps.length - 1]!;
   const newStartPosition = shouldReverseOrder
-    ? createStartPositionFromBeatEnd(finalBeat)
+    ? createStartPositionFromStepEnd(finalStep)
     : sequence.startPosition;
 
   // Rewind and transform each beat
-  const rewindBeats: BeatData[] = [];
+  const rewindBeats: StepData[] = [];
   const beatsToProcess = shouldReverseOrder
-    ? [...sequence.beats].reverse()
-    : sequence.beats;
+    ? [...sequence.steps].reverse()
+    : sequence.steps;
 
   for (let index = 0; index < beatsToProcess.length; index++) {
     const beat = beatsToProcess[index]!;
     const rewoundBeat = await rewindBeat(
       beat,
-      shouldReverseOrder ? index + 1 : beat.beatNumber,
+      shouldReverseOrder ? index + 1 : beat.stepNumber,
       gridMode,
       motionQueryHandler,
       targetHand
@@ -321,11 +321,11 @@ export async function rewindSequence(
   }
 
   return updateSequenceData(sequence, {
-    beats: rewindBeats,
+    steps: rewindBeats,
     ...(shouldReverseOrder && newStartPosition
       ? {
           startPosition: newStartPosition,
-          startingPositionBeat: newStartPosition,
+          startingPosition: newStartPosition,
           name: `${sequence.name} (Rewound)`,
         }
       : {}),
@@ -334,86 +334,86 @@ export async function rewindSequence(
 
 /**
  * Shift the start position of a sequence.
- * For circular: rotates beats so target beat's end becomes new start.
- * For non-circular: truncates beats before target.
+ * For circular: rotates steps so target beat's end becomes new start.
+ * For non-circular: truncates steps before target.
  */
 export function shiftStartPosition(
   sequence: SequenceData,
-  targetBeatNumber: number
+  targetStepNumber: number
 ): SequenceData {
-  if (targetBeatNumber < 1 || targetBeatNumber > sequence.beats.length) {
+  if (targetStepNumber < 1 || targetStepNumber > sequence.steps.length) {
     return sequence;
   }
 
   // No-op if targeting beat 1
-  if (targetBeatNumber === 1) {
+  if (targetStepNumber === 1) {
     return sequence;
   }
 
   if (sequence.isCircular) {
-    return shiftCircularSequence(sequence, targetBeatNumber);
+    return shiftCircularSequence(sequence, targetStepNumber);
   } else {
-    return truncateToNewStart(sequence, targetBeatNumber);
+    return truncateToNewStart(sequence, targetStepNumber);
   }
 }
 
 /**
- * Shift a circular sequence by rotating beats.
+ * Shift a circular sequence by rotating steps.
  * Target beat becomes the new beat 1.
  * The beat BEFORE target's end position becomes the new start.
  */
 function shiftCircularSequence(
   sequence: SequenceData,
-  targetBeatNumber: number
+  targetStepNumber: number
 ): SequenceData {
   // New start position is the beat BEFORE target's end position
   // (which is the same as target beat's start position)
-  const beatBeforeTarget = sequence.beats[targetBeatNumber - 2];
+  const beatBeforeTarget = sequence.steps[targetStepNumber - 2];
   const newStartPosition = beatBeforeTarget
-    ? createStartPositionFromBeatEnd(beatBeforeTarget)
-    : sequence.startPosition || sequence.startingPositionBeat;
+    ? createStartPositionFromStepEnd(beatBeforeTarget)
+    : sequence.startPosition || sequence.startingPosition;
 
-  // Rotate beats: target and after come first, then everything before target
-  const fromTarget = sequence.beats.slice(targetBeatNumber - 1);
-  const beforeTarget = sequence.beats.slice(0, targetBeatNumber - 1);
+  // Rotate steps: target and after come first, then everything before target
+  const fromTarget = sequence.steps.slice(targetStepNumber - 1);
+  const beforeTarget = sequence.steps.slice(0, targetStepNumber - 1);
   const rotatedBeats = [...fromTarget, ...beforeTarget];
 
-  // Renumber beats
-  const renumberedBeats = rotatedBeats.map((beat, index) =>
-    createBeatData({ ...beat, beatNumber: index + 1 })
+  // Renumber steps
+  const renumberedSteps = rotatedBeats.map((beat, index) =>
+    createStepData({ ...beat, stepNumber: index + 1 })
   );
 
   return updateSequenceData(sequence, {
-    beats: renumberedBeats,
+    steps: renumberedSteps,
     startPosition: newStartPosition,
-    startingPositionBeat: newStartPosition,
+    startingPosition: newStartPosition,
   });
 }
 
 /**
  * Truncate a non-circular sequence to a new start point.
- * Removes beats before the target beat.
+ * Removes steps before the target beat.
  */
 function truncateToNewStart(
   sequence: SequenceData,
-  targetBeatNumber: number
+  targetStepNumber: number
 ): SequenceData {
   // New start position from beat BEFORE target
-  const beatBeforeTarget = sequence.beats[targetBeatNumber - 2]!;
-  const newStartPosition = createStartPositionFromBeatEnd(beatBeforeTarget);
+  const beatBeforeTarget = sequence.steps[targetStepNumber - 2]!;
+  const newStartPosition = createStartPositionFromStepEnd(beatBeforeTarget);
 
-  // Keep only beats from target onwards
-  const keptBeats = sequence.beats.slice(targetBeatNumber - 1);
+  // Keep only steps from target onwards
+  const keptBeats = sequence.steps.slice(targetStepNumber - 1);
 
   // Renumber
-  const renumberedBeats = keptBeats.map((beat, index) =>
-    createBeatData({ ...beat, beatNumber: index + 1 })
+  const renumberedSteps = keptBeats.map((beat, index) =>
+    createStepData({ ...beat, stepNumber: index + 1 })
   );
 
   return updateSequenceData(sequence, {
-    beats: renumberedBeats,
+    steps: renumberedSteps,
     startPosition: newStartPosition,
-    startingPositionBeat: newStartPosition,
+    startingPosition: newStartPosition,
     isCircular: false, // No longer circular after truncation
   });
 }
@@ -436,7 +436,7 @@ function getStaticLetterFromGridPosition(
 }
 
 /**
- * Derive correct letters for all beats in a sequence.
+ * Derive correct letters for all steps in a sequence.
  * Used as Phase 2 after synchronous transforms to update letters asynchronously.
  * This allows smooth CSS animations while still getting correct letter values.
  */
@@ -446,9 +446,9 @@ export async function deriveSequenceLetters(
 ): Promise<SequenceData> {
   const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
 
-  // Derive letters for all beats in parallel
-  const beatsWithLetters = await Promise.all(
-    sequence.beats.map(async (beat) => {
+  // Derive letters for all steps in parallel
+  const stepsWithLetters = await Promise.all(
+    sequence.steps.map(async (beat) => {
       if (beat.isBlank) return beat;
 
       const blueMotion = beat.motions[MotionColor.BLUE];
@@ -464,14 +464,14 @@ export async function deriveSequenceLetters(
             gridMode
           );
         if (foundLetter) {
-          return createBeatData({
+          return createStepData({
             ...beat,
             letter: foundLetter as Letter,
           });
         }
       } catch (error) {
         console.warn(
-          `Failed to derive letter for beat ${beat.beatNumber}:`,
+          `Failed to derive letter for beat ${beat.stepNumber}:`,
           error
         );
       }
@@ -480,15 +480,15 @@ export async function deriveSequenceLetters(
   );
 
   return updateSequenceData(sequence, {
-    beats: beatsWithLetters,
+    steps: stepsWithLetters,
   });
 }
 
 /**
  * Create a start position from a beat's end state.
- * Returns StartPositionData (not BeatData) - start positions are semantically distinct from beats.
+ * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromBeatEnd(beat: BeatData): StartPositionData {
+export function createStartPositionFromStepEnd(beat: StepData): StartPositionData {
   const blueMotion = beat.motions[MotionColor.BLUE];
   const redMotion = beat.motions[MotionColor.RED];
 
@@ -536,9 +536,9 @@ export function createStartPositionFromBeatEnd(beat: BeatData): StartPositionDat
  * Create a start position from a beat's START state.
  * Used when a sequence doesn't have an explicit startPosition but we need to derive one
  * from beat 1's starting configuration.
- * Returns StartPositionData (not BeatData) - start positions are semantically distinct from beats.
+ * Returns StartPositionData (not StepData) - start positions are semantically distinct from steps.
  */
-export function createStartPositionFromBeatStart(beat: BeatData): StartPositionData {
+export function createStartPositionFromBeatStart(beat: StepData): StartPositionData {
   const blueMotion = beat.motions[MotionColor.BLUE];
   const redMotion = beat.motions[MotionColor.RED];
 

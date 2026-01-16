@@ -16,7 +16,7 @@ import type { TargetHand } from "../../state/panel-coordination-state.svelte";
 
 export interface ISequenceTransformer {
   /**
-   * Clear all beats in a sequence (make them blank)
+   * Clear all steps in a sequence (make them blank)
    */
   clearSequence(sequence: SequenceData): SequenceData;
 
@@ -96,16 +96,16 @@ export interface ISequenceTransformer {
 
   /**
    * Shift the start position of a sequence
-   * - For circular: rotates beats so target beat's end becomes new start
-   * - For non-circular: truncates beats before target
+   * - For circular: rotates steps so target beat's end becomes new start
+   * - For non-circular: truncates steps before target
    */
   shiftStartPosition(
     sequence: SequenceData,
-    targetBeatNumber: number
+    targetStepNumber: number
   ): SequenceData;
 
   /**
-   * Derive correct letters for all beats in a sequence.
+   * Derive correct letters for all steps in a sequence.
    * Used as Phase 2 after synchronous transforms to update letters asynchronously.
    * This allows smooth CSS animations while still getting correct letter values.
    */

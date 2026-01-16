@@ -26,13 +26,13 @@
 </script>
 
 <div class="save-section">
-  {#if !sequence || sequence.beats.length === 0}
+  {#if !sequence || sequence.steps.length === 0}
     <p class="empty-message">No sequence to save pattern from</p>
   {:else}
     <div class="pattern-preview">
-      <h3>Current Pattern ({sequence.beats.length} beats)</h3>
+      <h3>Current Pattern ({sequence.steps.length} steps)</h3>
       <div class="preview-grid">
-        {#each sequence.beats as beat, i}
+        {#each sequence.steps as beat, i}
           {@const blueRotation = formatRotationValue(
             beat.motions?.blue?.rotationDirection === "cw"
               ? "cw"

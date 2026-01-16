@@ -1,9 +1,9 @@
 /**
  * Prop Type Handler
- * Handles prop type updates for individual beats and bulk operations.
+ * Handles prop type updates for individual steps and bulk operations.
  */
 
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ICreateModuleState } from "../../../types/create-module-types";
@@ -11,9 +11,9 @@ import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/Mot
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
-  getBeatDataFromState,
+  getStepDataFromState,
   START_POSITION_BEAT_NUMBER,
-} from "./beat-data-helpers";
+} from "./step-data-helpers";
 
 const logger = createComponentLogger("PropTypeHandler");
 
@@ -21,20 +21,20 @@ const logger = createComponentLogger("PropTypeHandler");
  * Update prop type for a specific color in a single beat
  */
 export function updateBeatPropType(
-  beatNumber: number,
+  stepNumber: number,
   color: string,
   propType: PropType,
   createModuleState: ICreateModuleState
 ): void {
-  const beatData = getBeatDataFromState(beatNumber, createModuleState);
+  const stepData = getStepDataFromState(stepNumber, createModuleState);
 
-  if (!beatData?.motions) {
+  if (!stepData?.motions) {
     logger.warn("Cannot update prop type - no beat data available");
     return;
   }
 
   const currentMotion: MotionData | undefined =
-    beatData.motions[color as MotionColor];
+    stepData.motions[color as MotionColor];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
     return;
@@ -45,35 +45,35 @@ export function updateBeatPropType(
     propType: propType,
   };
 
-  const updatedBeatData = {
-    ...beatData,
+  const updatedStepData = {
+    ...stepData,
     motions: {
-      ...beatData.motions,
+      ...stepData.motions,
       [color]: updatedMotion,
     },
   };
 
-  if (beatNumber === START_POSITION_BEAT_NUMBER) {
+  if (stepNumber === START_POSITION_BEAT_NUMBER) {
     // Convert to proper StartPositionData when updating start position
     const updatedStartPosition = createStartPositionData({
-      ...beatData,
+      ...stepData,
       motions: {
-        ...beatData.motions,
+        ...stepData.motions,
         [color]: updatedMotion,
       },
     });
     createModuleState.sequenceState.setStartPosition(updatedStartPosition);
     logger.log(`Updated start position ${color} prop type to ${propType}`);
   } else {
-    const arrayIndex = beatNumber - 1;
-    createModuleState.sequenceState.updateBeat(arrayIndex, updatedBeatData);
-    logger.log(`Updated beat ${beatNumber} ${color} prop type to ${propType}`);
+    const arrayIndex = stepNumber - 1;
+    createModuleState.sequenceState.updateStep(arrayIndex, updatedStepData);
+    logger.log(`Updated beat ${stepNumber} ${color} prop type to ${propType}`);
   }
 }
 
 /**
  * Bulk update prop type for all motions of a specific color in the sequence
- * Updates both the start position and all beats
+ * Updates both the start position and all steps
  */
 export function bulkUpdatePropType(
   color: string,
@@ -101,10 +101,10 @@ export function bulkUpdatePropType(
     }
   }
 
-  // Update all beats in the sequence
+  // Update all steps in the sequence
   const sequence = createModuleState.sequenceState.currentSequence;
-  if (sequence?.beats) {
-    const updatedBeats = sequence.beats.map((beat: BeatData) => {
+  if (sequence?.steps) {
+    const updatedSteps = sequence.steps.map((beat: StepData) => {
       if (!beat.motions) return beat;
 
       const currentMotion = beat.motions[color as MotionColor];
@@ -126,12 +126,12 @@ export function bulkUpdatePropType(
 
     const updatedSequence = {
       ...sequence,
-      beats: updatedBeats,
+      steps: updatedSteps,
     };
 
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.log(
-      `Updated ${updatedBeats.length} beats: ${color} prop type to ${propType}`
+      `Updated ${updatedSteps.length} steps: ${color} prop type to ${propType}`
     );
   }
 }

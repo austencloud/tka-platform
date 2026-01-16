@@ -17,8 +17,8 @@ export type TurnValue = number | "fl";
  * Single entry in a turn pattern - captures turns for one beat
  */
 export interface TurnPatternEntry {
-  /** 0-based index into the sequence beats array */
-  readonly beatIndex: number;
+  /** 0-based index into the sequence steps array */
+  readonly stepIndex: number;
   /** Blue motion turn value, or null if no blue motion on this beat */
   readonly blue: TurnValue | null;
   /** Red motion turn value, or null if no red motion on this beat */
@@ -37,8 +37,8 @@ export interface TurnPattern {
   readonly userId: string;
   /** When the pattern was created */
   readonly createdAt: Timestamp;
-  /** Number of beats in this pattern (must match target sequence) */
-  readonly beatCount: number;
+  /** Number of steps in this pattern (must match target sequence) */
+  readonly stepCount: number;
   /** Turn values for each beat */
   readonly entries: readonly TurnPatternEntry[];
 }
@@ -49,7 +49,7 @@ export interface TurnPattern {
 export interface TurnPatternCreateData {
   readonly name: string;
   readonly userId: string;
-  readonly beatCount: number;
+  readonly stepCount: number;
   readonly entries: readonly TurnPatternEntry[];
 }
 
@@ -67,7 +67,7 @@ export function isTurnPatternEntry(obj: unknown): obj is TurnPatternEntry {
   if (typeof obj !== "object" || obj === null) return false;
   const entry = obj as Record<string, unknown>;
   return (
-    typeof entry.beatIndex === "number" &&
+    typeof entry.stepIndex === "number" &&
     (entry.blue === null || isTurnValue(entry.blue)) &&
     (entry.red === null || isTurnValue(entry.red))
   );
@@ -83,7 +83,7 @@ export function isTurnPattern(obj: unknown): obj is TurnPattern {
     typeof pattern.id === "string" &&
     typeof pattern.name === "string" &&
     typeof pattern.userId === "string" &&
-    typeof pattern.beatCount === "number" &&
+    typeof pattern.stepCount === "number" &&
     Array.isArray(pattern.entries) &&
     pattern.entries.every(isTurnPatternEntry)
   );
@@ -94,12 +94,12 @@ export function isTurnPattern(obj: unknown): obj is TurnPattern {
  */
 export function validatePatternForSequence(
   pattern: TurnPattern,
-  sequenceBeatCount: number
+  sequenceStepCount: number
 ): { valid: boolean; error?: string } {
-  if (pattern.beatCount !== sequenceBeatCount) {
+  if (pattern.stepCount !== sequenceStepCount) {
     return {
       valid: false,
-      error: `Pattern has ${pattern.beatCount} beats but sequence has ${sequenceBeatCount} beats`,
+      error: `Pattern has ${pattern.stepCount} steps but sequence has ${sequenceStepCount} steps`,
     };
   }
   return { valid: true };

@@ -1,5 +1,5 @@
 <!--
-  BeatEditorHelpModal.svelte
+  StepEditorHelpModal.svelte
 
   Help modal explaining beat editor controls.
   Shows when user taps the help button in the beat editor panel.
@@ -37,7 +37,7 @@
   {#snippet header()}
     <ModalHeader
       title="Beat Editor"
-      subtitle="Edit individual beats in your sequence"
+      subtitle="Edit individual steps in your sequence"
       icon="fa-sliders-h"
       iconColor={accentColor}
       onClose={handleClose}

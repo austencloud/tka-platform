@@ -10,7 +10,7 @@
   import { onMount } from "svelte";
   import Toast from "../components/Toast.svelte";
   import SequenceDisplay from "../sequence-display/components/SequenceDisplay.svelte";
-  import type { IBeatOperator } from "../../services/contracts/IBeatOperator";
+  import type { IStepOperator } from "../../services/contracts/IStepOperator";
   import type { SequenceState } from "../../state/SequenceStateOrchestrator.svelte";
   import type { CreateModuleState } from "../../state/create-module-state.svelte";
   import type { IAnimationStateRef } from "../../types/create-module-types";
@@ -18,15 +18,15 @@
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
 
   // Services
-  let BeatOperator: IBeatOperator | null = null;
+  let StepOperator: IStepOperator | null = null;
 
   // Props
   let {
     sequenceState,
     createModuleState,
     panelState = null,
-    practiceBeatIndex = null,
-    animatingBeatNumber = null,
+    practiceStepIndex = null,
+    animatingStepNumber = null,
     shouldOrbitAroundCenter = false,
 
     // Animation state ref (for animate tab)
@@ -47,8 +47,8 @@
     sequenceState?: SequenceState;
     createModuleState?: CreateModuleState;
     panelState?: PanelCoordinationState | null;
-    practiceBeatIndex?: number | null;
-    animatingBeatNumber?: number | null;
+    practiceStepIndex?: number | null;
+    animatingStepNumber?: number | null;
     shouldOrbitAroundCenter?: boolean;
 
     // Animation state ref
@@ -67,13 +67,13 @@
     onAssemblerBack?: (() => void) | null;
   } = $props();
 
-  // Local beat selection state (beatNumber: 0=start, 1=first beat, etc.)
-  let localSelectedBeatNumber = $state<number | null>(null);
+  // Local beat selection state (stepNumber: 0=start, 1=first beat, etc.)
+  let localSelectedStepNumber = $state<number | null>(null);
 
   // Effect: Update local selection when animation is playing
   $effect(() => {
-    if (animatingBeatNumber !== null) {
-      localSelectedBeatNumber = animatingBeatNumber;
+    if (animatingStepNumber !== null) {
+      localSelectedStepNumber = animatingStepNumber;
     }
   });
 
@@ -82,31 +82,31 @@
   $effect(() => {
     if (!sequenceState) return;
 
-    const globalSelection = sequenceState.selectedBeatNumber;
+    const globalSelection = sequenceState.selectedStepNumber;
     // Only sync if animation isn't playing (animation takes precedence)
-    if (animatingBeatNumber === null) {
-      localSelectedBeatNumber = globalSelection;
+    if (animatingStepNumber === null) {
+      localSelectedStepNumber = globalSelection;
     }
   });
 
   // Toast message for validation errors
   let toastMessage = $state<string | null>(null);
 
-  // Handle beat selection (receives beatNumber: 1, 2, 3...)
-  function handleBeatSelected(beatNumber: number) {
+  // Handle beat selection (receives stepNumber: 1, 2, 3...)
+  function handleBeatSelected(stepNumber: number) {
     if (!sequenceState) return;
 
     // Close the animation panel if it's open - beat editing takes priority
     panelState?.closeAnimationPanel();
 
     // Select the beat - the edit panel will open automatically
-    localSelectedBeatNumber = beatNumber;
-    sequenceState.selectBeat(beatNumber);
+    localSelectedStepNumber = stepNumber;
+    sequenceState.selectStep(stepNumber);
     // Note: We no longer switch to edit tab! The edit slide panel will open instead.
     // This is handled by an effect in CreateModule.svelte that watches for beat selection.
   }
 
-  // Handle start position selection (beatNumber 0)
+  // Handle start position selection (stepNumber 0)
   function handleStartPositionSelected() {
     if (!sequenceState) return;
 
@@ -121,8 +121,8 @@
     // Close the animation panel if it's open - beat editing takes priority
     panelState?.closeAnimationPanel();
 
-    // Select start position for editing (beatNumber 0)
-    localSelectedBeatNumber = 0;
+    // Select start position for editing (stepNumber 0)
+    localSelectedStepNumber = 0;
     sequenceState.selectStartPositionForEditing();
 
     // Note: We no longer switch to edit tab! The edit slide panel will open instead.
@@ -130,30 +130,30 @@
   }
 
   // Handle beat deletion via keyboard
-  function handleBeatDelete(beatNumber: number) {
+  function handleStepDelete(stepNumber: number) {
     if (!createModuleState) {
       console.warn("Cannot delete beat - createModuleState not initialized");
       return;
     }
 
     try {
-      // Special case: Start position (beatNumber 0) - clear it instead of removing
-      if (beatNumber === 0) {
+      // Special case: Start position (stepNumber 0) - clear it instead of removing
+      if (stepNumber === 0) {
         sequenceState?.setStartPosition(null);
         sequenceState?.clearSelection();
         // Close beat editor panel since workspace is now empty
-        panelState?.closeBeatEditorPanel();
+        panelState?.closeStepEditorPanel();
         return;
       }
 
-      if (!BeatOperator) {
-        console.warn("Cannot delete beat - BeatOperator not initialized");
+      if (!StepOperator) {
+        console.warn("Cannot delete beat - StepOperator not initialized");
         return;
       }
 
-      // Convert beatNumber (1, 2, 3...) to beatIndex (0, 1, 2...)
-      const beatIndex = beatNumber - 1;
-      BeatOperator.removeBeat(beatIndex, createModuleState);
+      // Convert stepNumber (1, 2, 3...) to stepIndex (0, 1, 2...)
+      const stepIndex = stepNumber - 1;
+      StepOperator.removeStep(stepIndex, createModuleState);
     } catch (err) {
       console.error("Failed to remove beat", err);
       toastMessage = "Failed to remove beat";
@@ -163,7 +163,7 @@
 
   // Initialize services on mount
   onMount(() => {
-    BeatOperator = container.items.beatOperator;
+    StepOperator = container.items.stepOperator;
   });
 </script>
 
@@ -175,10 +175,10 @@
         {sequenceState}
         onBeatSelected={handleBeatSelected}
         onStartPositionSelected={handleStartPositionSelected}
-        onBeatDelete={handleBeatDelete}
+        onStepDelete={handleStepDelete}
         {onAssemblerBack}
-        selectedBeatNumber={localSelectedBeatNumber}
-        practiceBeatNumber={animatingBeatNumber ?? practiceBeatIndex}
+        selectedStepNumber={localSelectedStepNumber}
+        practiceStepNumber={animatingStepNumber ?? practiceStepIndex}
         {isSideBySideLayout}
         {shouldOrbitAroundCenter}
         activeMode={createModuleState?.activeSection ?? null}

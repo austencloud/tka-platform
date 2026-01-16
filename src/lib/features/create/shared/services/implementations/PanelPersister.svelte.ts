@@ -24,7 +24,7 @@ const PANEL_TAB_SUPPORT: Record<PanelId, Set<string>> = {
   sequenceActions: new Set(["constructor", "assembler", "generator"]),
   cap: new Set(["constructor", "assembler", "generator"]),
   customize: new Set(["constructor", "generator"]),
-  beatEditor: new Set(["constructor", "assembler", "generator"]),
+  stepEditor: new Set(["constructor", "assembler", "generator"]),
 };
 
 /**
@@ -43,7 +43,7 @@ export class PanelPersister implements IPanelPersister {
     if (panelState.isSequenceActionsPanelOpen) return "sequenceActions";
     if (panelState.isLOOPPanelOpen) return "cap";
     if (panelState.isCustomizePanelOpen) return "customize";
-    if (panelState.isBeatEditorPanelOpen) return "beatEditor";
+    if (panelState.isStepEditorPanelOpen) return "stepEditor";
     return null;
   }
 
@@ -54,7 +54,7 @@ export class PanelPersister implements IPanelPersister {
     panelState.closeSequenceActionsPanel();
     panelState.closeLOOPPanel();
     panelState.closeCustomizePanel();
-    panelState.closeBeatEditorPanel();
+    panelState.closeStepEditorPanel();
   }
 
   restoreSavedPanel(

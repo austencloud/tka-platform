@@ -136,7 +136,7 @@ export function createSequencePersistenceCoordinator(
                 currentSequence.id,
                 {
                   sequenceWord: currentSequence.word,
-                  sequenceLength: currentSequence.beats.length,
+                  sequenceLength: currentSequence.steps.length,
                 }
               );
             }

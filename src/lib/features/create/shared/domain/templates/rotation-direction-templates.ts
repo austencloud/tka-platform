@@ -5,7 +5,7 @@
  * Templates are dynamically generated based on sequence beat count.
  *
  * Categories:
- * - uniform: Same direction for all beats
+ * - uniform: Same direction for all steps
  * - alternating: Direction alternates each beat
  * - split-hand: Different direction per hand (blue vs red)
  * - split-half: First/second half of sequence have different directions
@@ -35,10 +35,10 @@ export interface RotationDirectionTemplateDefinition {
   readonly name: string;
   readonly description: string;
   readonly category: TemplateCategory;
-  /** Minimum beats required for this template to be applicable */
-  readonly minBeats: number;
+  /** Minimum steps required for this template to be applicable */
+  readonly minSteps: number;
   /** Generator function to create entries for a given beat count */
-  readonly generator: (beatCount: number) => RotationDirectionPatternEntry[];
+  readonly generator: (stepCount: number) => RotationDirectionPatternEntry[];
 }
 
 /**
@@ -58,7 +58,7 @@ export function getCategoryInfo(category: TemplateCategory): CategoryInfo {
     case "uniform":
       return {
         label: "Uniform",
-        description: "Same direction for all beats",
+        description: "Same direction for all steps",
         color: "#14b8a6", // teal
       };
     case "alternating":
@@ -90,18 +90,18 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
   {
     id: "all-cw",
     name: "All CW",
-    description: "Clockwise for all beats",
+    description: "Clockwise for all steps",
     category: "uniform",
-    minBeats: 1,
-    generator: (beatCount) => generateUniformPattern(beatCount, "cw", "cw"),
+    minSteps: 1,
+    generator: (stepCount) => generateUniformPattern(stepCount, "cw", "cw"),
   },
   {
     id: "all-ccw",
     name: "All CCW",
-    description: "Counter-clockwise for all beats",
+    description: "Counter-clockwise for all steps",
     category: "uniform",
-    minBeats: 1,
-    generator: (beatCount) => generateUniformPattern(beatCount, "ccw", "ccw"),
+    minSteps: 1,
+    generator: (stepCount) => generateUniformPattern(stepCount, "ccw", "ccw"),
   },
 
   // ===== ALTERNATING =====
@@ -110,16 +110,16 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
     name: "Alternating (CW first)",
     description: "CW, CCW, CW, CCW...",
     category: "alternating",
-    minBeats: 2,
-    generator: (beatCount) => generateAlternatingPattern(beatCount, "cw"),
+    minSteps: 2,
+    generator: (stepCount) => generateAlternatingPattern(stepCount, "cw"),
   },
   {
     id: "alternating-ccw-first",
     name: "Alternating (CCW first)",
     description: "CCW, CW, CCW, CW...",
     category: "alternating",
-    minBeats: 2,
-    generator: (beatCount) => generateAlternatingPattern(beatCount, "ccw"),
+    minSteps: 2,
+    generator: (stepCount) => generateAlternatingPattern(stepCount, "ccw"),
   },
 
   // ===== SPLIT BY HAND =====
@@ -128,16 +128,16 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
     name: "Blue CW / Red CCW",
     description: "Blue hand clockwise, red counter-clockwise",
     category: "split-hand",
-    minBeats: 1,
-    generator: (beatCount) => generateUniformPattern(beatCount, "cw", "ccw"),
+    minSteps: 1,
+    generator: (stepCount) => generateUniformPattern(stepCount, "cw", "ccw"),
   },
   {
     id: "blue-ccw-red-cw",
     name: "Blue CCW / Red CW",
     description: "Blue hand counter-clockwise, red clockwise",
     category: "split-hand",
-    minBeats: 1,
-    generator: (beatCount) => generateUniformPattern(beatCount, "ccw", "cw"),
+    minSteps: 1,
+    generator: (stepCount) => generateUniformPattern(stepCount, "ccw", "cw"),
   },
 
   // ===== SPLIT BY HALF =====
@@ -146,31 +146,31 @@ const TEMPLATE_DEFINITIONS: readonly RotationDirectionTemplateDefinition[] = [
     name: "First Half CW",
     description: "First half CW, second half CCW",
     category: "split-half",
-    minBeats: 4,
-    generator: (beatCount) => generateSplitHalfPattern(beatCount, "cw"),
+    minSteps: 4,
+    generator: (stepCount) => generateSplitHalfPattern(stepCount, "cw"),
   },
   {
     id: "first-half-ccw",
     name: "First Half CCW",
     description: "First half CCW, second half CW",
     category: "split-half",
-    minBeats: 4,
-    generator: (beatCount) => generateSplitHalfPattern(beatCount, "ccw"),
+    minSteps: 4,
+    generator: (stepCount) => generateSplitHalfPattern(stepCount, "ccw"),
   },
 ];
 
 /**
- * Generate uniform pattern (same direction for all beats)
+ * Generate uniform pattern (same direction for all steps)
  */
 function generateUniformPattern(
-  beatCount: number,
+  stepCount: number,
   blueDir: RotationDirectionValue,
   redDir: RotationDirectionValue
 ): RotationDirectionPatternEntry[] {
   const entries: RotationDirectionPatternEntry[] = [];
-  for (let i = 0; i < beatCount; i++) {
+  for (let i = 0; i < stepCount; i++) {
     entries.push({
-      beatIndex: i,
+      stepIndex: i,
       blue: blueDir,
       red: redDir,
     });
@@ -182,16 +182,16 @@ function generateUniformPattern(
  * Generate alternating pattern (direction alternates each beat)
  */
 function generateAlternatingPattern(
-  beatCount: number,
+  stepCount: number,
   startDir: RotationDirectionValue
 ): RotationDirectionPatternEntry[] {
   const entries: RotationDirectionPatternEntry[] = [];
   const otherDir: RotationDirectionValue = startDir === "cw" ? "ccw" : "cw";
 
-  for (let i = 0; i < beatCount; i++) {
+  for (let i = 0; i < stepCount; i++) {
     const dir = i % 2 === 0 ? startDir : otherDir;
     entries.push({
-      beatIndex: i,
+      stepIndex: i,
       blue: dir,
       red: dir,
     });
@@ -203,18 +203,18 @@ function generateAlternatingPattern(
  * Generate split-half pattern (first half one direction, second half other)
  */
 function generateSplitHalfPattern(
-  beatCount: number,
+  stepCount: number,
   firstHalfDir: RotationDirectionValue
 ): RotationDirectionPatternEntry[] {
   const entries: RotationDirectionPatternEntry[] = [];
   const secondHalfDir: RotationDirectionValue =
     firstHalfDir === "cw" ? "ccw" : "cw";
-  const halfPoint = Math.floor(beatCount / 2);
+  const halfPoint = Math.floor(stepCount / 2);
 
-  for (let i = 0; i < beatCount; i++) {
+  for (let i = 0; i < stepCount; i++) {
     const dir = i < halfPoint ? firstHalfDir : secondHalfDir;
     entries.push({
-      beatIndex: i,
+      stepIndex: i,
       blue: dir,
       red: dir,
     });
@@ -225,20 +225,20 @@ function generateSplitHalfPattern(
 /**
  * Get all templates applicable for a given beat count
  */
-export function getTemplatesForBeatCount(
-  beatCount: number
+export function getTemplatesForStepCount(
+  stepCount: number
 ): RotationDirectionTemplateDefinition[] {
-  return TEMPLATE_DEFINITIONS.filter((t) => beatCount >= t.minBeats);
+  return TEMPLATE_DEFINITIONS.filter((t) => stepCount >= t.minSteps);
 }
 
 /**
  * Get templates filtered by category
  */
 export function getTemplatesByCategory(
-  beatCount: number,
+  stepCount: number,
   category: TemplateCategory | "all"
 ): RotationDirectionTemplateDefinition[] {
-  const templates = getTemplatesForBeatCount(beatCount);
+  const templates = getTemplatesForStepCount(stepCount);
   if (category === "all") return templates;
   return templates.filter((t) => t.category === category);
 }
@@ -249,14 +249,14 @@ export function getTemplatesByCategory(
 export function templateToPattern(
   template: RotationDirectionTemplateDefinition,
   userId: string,
-  beatCount: number
+  stepCount: number
 ): RotationDirectionPattern {
   return {
     id: template.id,
     name: template.name,
     userId,
-    beatCount,
-    entries: template.generator(beatCount),
+    stepCount,
+    entries: template.generator(stepCount),
     createdAt: null as unknown as Timestamp, // Not stored in Firebase
   };
 }
@@ -264,8 +264,8 @@ export function templateToPattern(
 /**
  * Get all unique categories from available templates
  */
-export function getAvailableCategories(beatCount: number): TemplateCategory[] {
-  const templates = getTemplatesForBeatCount(beatCount);
+export function getAvailableCategories(stepCount: number): TemplateCategory[] {
+  const templates = getTemplatesForStepCount(stepCount);
   const categories = new Set(templates.map((t) => t.category));
   return Array.from(categories);
 }
@@ -274,7 +274,7 @@ export function getAvailableCategories(beatCount: number): TemplateCategory[] {
  * Create a uniform pattern directly (for quick apply buttons)
  */
 export function createUniformPattern(
-  beatCount: number,
+  stepCount: number,
   direction: "cw" | "ccw",
   userId: string
 ): RotationDirectionPattern {
@@ -283,5 +283,5 @@ export function createUniformPattern(
       ? TEMPLATE_DEFINITIONS.find((t) => t.id === "all-cw")!
       : TEMPLATE_DEFINITIONS.find((t) => t.id === "all-ccw")!;
 
-  return templateToPattern(template, userId, beatCount);
+  return templateToPattern(template, userId, stepCount);
 }

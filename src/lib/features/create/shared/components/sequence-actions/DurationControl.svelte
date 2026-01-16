@@ -14,7 +14,7 @@
     MAX_DURATION,
     DURATION_STEP_FINE,
     DURATION_STEP_COARSE,
-  } from "../../services/implementations/beat-operations/DurationHandler";
+  } from "../../services/implementations/step-operations/DurationHandler";
 
   interface Props {
     duration: number;

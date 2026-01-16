@@ -14,7 +14,7 @@ import type { PanelCoordinationState } from "../../state/panel-coordination-stat
 import type { IResponsiveLayoutManager } from "./IResponsiveLayoutManager";
 import type { INavigationSyncer } from "./INavigationSyncer";
 import type { IDeepLinkSequenceHandler } from "./IDeepLinkSequenceHandler";
-import type { IBeatOperator } from "./IBeatOperator";
+import type { IStepOperator } from "./IStepOperator";
 import type { Autosaver } from "../../services/Autosaver";
 import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
 
@@ -32,7 +32,7 @@ export interface CreateModuleEffectConfig {
   layoutService: IResponsiveLayoutManager;
   NavigationSyncer: INavigationSyncer;
   getDeepLinker: () => IDeepLinkSequenceHandler | null;
-  getBeatOperator: () => IBeatOperator | null;
+  getStepOperator: () => IStepOperator | null;
   getAutosaver: () => Autosaver | null;
 
   // State flags
@@ -41,7 +41,7 @@ export interface CreateModuleEffectConfig {
   // Layout callbacks
   onLayoutChange: (shouldUseSideBySideLayout: boolean) => void;
   getShouldUseSideBySideLayout: () => boolean;
-  setAnimatingBeatNumber: (beat: number | null) => void;
+  setAnimatingStepNumber: (beat: number | null) => void;
 
   // Optional callbacks
   onCurrentWordChange?: (word: string) => void;

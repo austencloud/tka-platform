@@ -1,5 +1,5 @@
 ﻿import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 /**
@@ -173,7 +173,7 @@ export interface ISequenceAnalyzer {
    * @param sequence - The sequence to analyze
    * @returns The first beat with pictograph data, or null
    */
-  getStartBeat(sequence: SequenceData): BeatData | null;
+  getStartBeat(sequence: SequenceData): StepData | null;
 
   /**
    * Get the last beat with valid pictograph data (end beat)
@@ -181,7 +181,7 @@ export interface ISequenceAnalyzer {
    * @param sequence - The sequence to analyze
    * @returns The last beat with pictograph data, or null
    */
-  getEndBeat(sequence: SequenceData): BeatData | null;
+  getEndBeat(sequence: SequenceData): StepData | null;
 
   /**
    * Get a human-readable description of the circular relationship
@@ -202,7 +202,7 @@ export interface ISequenceAnalyzer {
    * of completed LOOP pattern the sequence represents.
    *
    * Logic:
-   * 1. Static LOOP: All beats at the same position
+   * 1. Static LOOP: All steps at the same position
    * 2. Rotated LOOP: Each consecutive pair shows 90° rotation
    * 3. Mirrored LOOP: Each consecutive pair shows mirroring relationship
    *
@@ -225,7 +225,7 @@ export interface ISequenceAnalyzer {
 
   /**
    * Get the starting position from a sequence.
-   * Checks multiple possible locations: startPosition object, startingPositionBeat, beat 0.
+   * Checks multiple possible locations: startPosition object, startingPosition, beat 0.
    *
    * @param sequence - The sequence to extract start position from
    * @returns The start position or null if not found
@@ -242,11 +242,11 @@ export interface ISequenceAnalyzer {
   getCurrentEndPosition(sequence: SequenceData): GridPosition | null;
 
   /**
-   * Convert a SequenceData to BeatData array for LOOP executor.
+   * Convert a SequenceData to StepData array for LOOP executor.
    * The LOOP executor expects: [startPosition (beat 0), beat 1, beat 2, ...]
    *
    * @param sequence - The sequence to convert
-   * @returns Array of beats including synthesized beat 0 if needed
+   * @returns Array of steps including synthesized beat 0 if needed
    */
-  convertSequenceToBeats(sequence: SequenceData): BeatData[];
+  convertSequenceToBeats(sequence: SequenceData): StepData[];
 }

@@ -20,7 +20,7 @@
   // Type descriptions for all operation types
   const typeDescriptions: Record<UndoOperationType, string> = {
     [UndoOperationType.ADD_BEAT]: "Add Beat",
-    [UndoOperationType.REMOVE_BEATS]: "Remove Beats",
+    [UndoOperationType.REMOVE_BEATS]: "Remove Steps",
     [UndoOperationType.CLEAR_SEQUENCE]: "Clear Sequence",
     [UndoOperationType.SELECT_START_POSITION]: "Select Start Position",
     [UndoOperationType.UPDATE_BEAT]: "Update Beat",

@@ -62,7 +62,7 @@ export class SequenceTransferHandler implements ISequenceTransferHandler {
 
     // Sync start position
     const startPos: StartPositionData | undefined =
-      sequenceCopy.startPosition || sequenceCopy.startingPositionBeat;
+      sequenceCopy.startPosition || sequenceCopy.startingPosition;
     if (startPos) {
       constructTabState.sequenceState.setStartPosition(startPos);
       constructTabState.setSelectedStartPosition(startPos);

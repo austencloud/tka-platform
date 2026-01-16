@@ -2,16 +2,20 @@
   ArrowAdjustmentPanel.svelte
 
   Compact inline panel for adjusting arrow positions using WASD keys.
-  Designed to fit in the BeatEditorPanel header.
+  Designed to fit in the StepEditorPanel header.
 
   Features:
   - WASD keyboard controls for arrow movement (5/20/200px increments)
   - Z key to reset arrow to default position
   - Compact display of current adjustment values
   - "Save Global" button to persist adjustment to Firestore (applies to all matching pictographs)
+  - 3-layer prop-specific adjustment system:
+    - Layer 1 (Base): Staff adjustments, fallback for all props
+    - Layer 2 (Prop-Specific): Adjustments for specific prop types (fan, club, etc.)
+    - Layer 3 (Combination Override): Edge cases where blue+red prop combo needs special handling
 -->
 <script lang="ts">
-  import type { BeatData } from "../../domain/models/BeatData";
+  import type { StepData } from "../../domain/models/StepData";
   import type { IKeyboardArrowAdjuster } from "$lib/features/create/shared/services/contracts/IKeyboardArrowAdjuster";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
@@ -23,19 +27,22 @@
   import { GlobalAdjustmentKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/global/services/implementations/GlobalAdjustmentKeyGenerator";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
-  import type { GlobalArrowAdjustmentInput } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
+  import {
+    getKeyLayer,
+    type GlobalArrowAdjustmentInput,
+  } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
 
   const logger = createComponentLogger("ArrowAdjustmentPanel");
 
   interface Props {
-    beatData: BeatData;
-    onBeatDataUpdate: (updatedBeatData: BeatData) => void;
+    stepData: StepData;
+    onStepDataUpdate: (updatedStepData: StepData) => void;
     onPushUndoSnapshot?: () => void;
   }
 
-  let { beatData, onBeatDataUpdate, onPushUndoSnapshot }: Props = $props();
+  let { stepData, onStepDataUpdate, onPushUndoSnapshot }: Props = $props();
 
   // Services
   let hapticService: IHapticFeedback | null = null;
@@ -50,53 +57,64 @@
 
   // Local working copy of beat data - updated synchronously to avoid race conditions
   // between rapid keystrokes and Svelte's reactive prop updates
-  let workingBeatData = $state<BeatData | null>(null);
+  let workingStepData = $state<StepData | null>(null);
 
   // Sync working state with prop when prop changes from external sources
   $effect(() => {
-    if (beatData !== null) {
-      workingBeatData = beatData;
+    if (stepData !== null) {
+      workingStepData = stepData;
     }
   });
 
   // Derived
   const selectedArrow = $derived(selectedArrowState.selectedArrow);
 
-  // Calculate current adjustment values from GLOBAL REPO (single source of truth)
+  // Get prop types from selected arrow's motion data
+  const thisPropType = $derived(
+    selectedArrow?.motionData?.propType?.toLowerCase() || "staff"
+  );
+  const otherPropType = $derived.by(() => {
+    if (!selectedArrow) return "staff";
+    const otherColor = selectedArrow.color === "blue" ? "red" : "blue";
+    const otherMotion = selectedArrow.pictographData?.motions?.[otherColor];
+    return otherMotion?.propType?.toLowerCase() || "staff";
+  });
+
+  // Determine the default layer for saving based on prop types
+  // - Both staff: Layer 1 (base)
+  // - Same non-staff props: Layer 2 (prop-specific)
+  // - Different props: Layer 2 (prop-specific - each hand saves to its own layer 2)
+  const defaultSaveLayer = $derived.by((): 1 | 2 | 3 => {
+    if (thisPropType === "staff" && otherPropType === "staff") {
+      return 1; // Base layer for staff
+    }
+    return 2; // Prop-specific layer for non-staff
+  });
+
+  // Calculate current adjustment values from GLOBAL REPO using cascading lookup
   // This depends on globalAdjustmentVersion to ensure reactivity when adjustments change
-  const currentAdjustmentX = $derived.by(() => {
+  const cascadingResult = $derived.by(() => {
     // Depend on version to trigger re-calculation when adjustments change
     const _ = globalAdjustmentVersion.version;
 
-    if (!selectedArrow || !keyGenerator) return 0;
+    if (!selectedArrow || !keyGenerator) return null;
     const repo = getGlobalAdjustmentRepository();
-    if (!repo) return 0;
+    if (!repo) return null;
 
-    const globalKey = keyGenerator.generateKey(
+    // Generate BASE key (layer 1) for cascading lookup
+    const baseKey = keyGenerator.generateKey(
       selectedArrow.motionData,
       selectedArrow.pictographData,
       selectedArrow.color
     );
-    const adjustment = repo.getAdjustment(globalKey);
-    return adjustment?.x ?? 0;
+
+    // Use cascading lookup to find adjustment at any layer
+    return repo.getAdjustmentCascading(baseKey, thisPropType, otherPropType);
   });
 
-  const currentAdjustmentY = $derived.by(() => {
-    // Depend on version to trigger re-calculation when adjustments change
-    const _ = globalAdjustmentVersion.version;
-
-    if (!selectedArrow || !keyGenerator) return 0;
-    const repo = getGlobalAdjustmentRepository();
-    if (!repo) return 0;
-
-    const globalKey = keyGenerator.generateKey(
-      selectedArrow.motionData,
-      selectedArrow.pictographData,
-      selectedArrow.color
-    );
-    const adjustment = repo.getAdjustment(globalKey);
-    return adjustment?.y ?? 0;
-  });
+  const currentAdjustmentX = $derived(cascadingResult?.adjustment?.x ?? 0);
+  const currentAdjustmentY = $derived(cascadingResult?.adjustment?.y ?? 0);
+  const currentAdjustmentLayer = $derived(cascadingResult?.layer ?? null);
 
   // Check if there's an adjustment to reset
   const hasAdjustment = $derived(currentAdjustmentX !== 0 || currentAdjustmentY !== 0);
@@ -141,7 +159,7 @@
   }
 
   async function handleWASDMovement(key: "w" | "a" | "s" | "d") {
-    if (!selectedArrowState.selectedArrow || !workingBeatData || !keyboardAdjustmentService || !keyGenerator) {
+    if (!selectedArrowState.selectedArrow || !workingStepData || !keyboardAdjustmentService || !keyGenerator) {
       return;
     }
 
@@ -159,25 +177,32 @@
     // Calculate WASD direction
     const adjustment = keyboardAdjustmentService.calculateAdjustment(key, currentIncrement);
 
-    // Get current total from GLOBAL REPO (not from beat's manualAdjustmentX/Y)
-    // This ensures all pictographs share the same source of truth
-    const globalKey = keyGenerator.generateKey(motionData, pictographData, arrowColor);
-    const currentGlobalAdjustment = repo?.getAdjustment(globalKey);
-    const currentX = currentGlobalAdjustment?.x ?? 0;
-    const currentY = currentGlobalAdjustment?.y ?? 0;
+    // Build key with prop types for the target save layer
+    // - Layer 1 (staff): no propType
+    // - Layer 2 (prop-specific): include propType
+    const keyOptions = defaultSaveLayer === 1
+      ? undefined // Layer 1: no prop types
+      : { propType: thisPropType }; // Layer 2: include this prop's type
+
+    const targetKey = keyGenerator.generateKey(motionData, pictographData, arrowColor, keyOptions);
+
+    // Get current value at the TARGET layer (not cascading - we want to read/write the specific layer)
+    const currentAdjustmentAtLayer = repo?.getAdjustment(targetKey);
+    const currentX = currentAdjustmentAtLayer?.x ?? 0;
+    const currentY = currentAdjustmentAtLayer?.y ?? 0;
 
     // Calculate new total
     const newX = currentX + adjustment.x;
     const newY = currentY + adjustment.y;
 
-    logger.log(`WASD ${key}: (${currentX}, ${currentY}) + (${adjustment.x}, ${adjustment.y}) = (${newX}, ${newY})`);
+    logger.log(`WASD ${key}: Layer ${defaultSaveLayer} (${thisPropType}) (${currentX}, ${currentY}) + (${adjustment.x}, ${adjustment.y}) = (${newX}, ${newY})`);
 
     // Save to global repo locally (NOT to Firestore) - this is the single source of truth
-    // All pictographs will read from here, including the selected beat
+    // All pictographs will read from here via cascading lookup
     if (repo) {
       try {
         const input: GlobalArrowAdjustmentInput = {
-          ...globalKey,
+          ...targetKey,
           adjustmentX: newX,
           adjustmentY: newY,
         };
@@ -223,6 +248,7 @@
   /**
    * Delete adjustment from the global repository's in-memory cache.
    * This does NOT persist to Firestore - it's for live preview only.
+   * Deletes from the layer the current adjustment was found at.
    */
   function deleteFromGlobalLocally() {
     const repo = getGlobalAdjustmentRepository();
@@ -235,8 +261,16 @@
     const arrowColor = selectedArrowState.selectedArrow.color;
 
     try {
-      // Generate the composite key for this arrow
-      const key = keyGenerator.generateKey(motionData, pictographData, arrowColor);
+      // Delete from the layer where we found the current adjustment
+      // If no adjustment exists, delete from the default save layer
+      const layerToDelete = currentAdjustmentLayer ?? defaultSaveLayer;
+      const keyOptions = layerToDelete === 1
+        ? undefined // Layer 1: no prop types
+        : { propType: thisPropType }; // Layer 2: include this prop's type
+
+      const key = keyGenerator.generateKey(motionData, pictographData, arrowColor, keyOptions);
+
+      logger.log(`Deleting from Layer ${layerToDelete} (${thisPropType})`);
 
       // Delete from local cache only (not Firestore)
       repo.deleteAdjustmentLocal(key);
@@ -254,6 +288,7 @@
   /**
    * Save current adjustment to global Firestore.
    * This persists the adjustment so it survives HMR/page refresh.
+   * Saves to the appropriate layer based on prop types.
    */
   async function handleSaveToGlobal() {
     if (!selectedArrowState.selectedArrow || !keyGenerator) {
@@ -270,10 +305,14 @@
     const motionData = selectedArrowState.selectedArrow.motionData;
     const arrowColor = selectedArrowState.selectedArrow.color;
 
-    // Generate the composite key for this arrow
-    const key = keyGenerator.generateKey(motionData, pictographData, arrowColor);
+    // Use the default save layer with prop types
+    const keyOptions = defaultSaveLayer === 1
+      ? undefined // Layer 1: no prop types
+      : { propType: thisPropType }; // Layer 2: include this prop's type
 
-    // Get current adjustment from global repo (single source of truth)
+    const key = keyGenerator.generateKey(motionData, pictographData, arrowColor, keyOptions);
+
+    // Get current adjustment at this layer
     const currentAdjustment = repo.getAdjustment(key);
     const adjustmentX = currentAdjustment?.x ?? 0;
     const adjustmentY = currentAdjustment?.y ?? 0;
@@ -292,7 +331,7 @@
         adjustmentY,
       };
 
-      logger.log(`Saving to Firestore: (${adjustmentX}, ${adjustmentY})`);
+      logger.log(`Saving to Firestore Layer ${defaultSaveLayer} (${thisPropType}): (${adjustmentX}, ${adjustmentY})`);
       await repo.saveAdjustment(input);
       logger.success("Saved to Firestore - adjustment will persist across page reloads");
 
@@ -318,10 +357,15 @@
     try {
       isSaving = true;
 
-      // Generate the composite key for this arrow
-      const key = keyGenerator.generateKey(motionData, pictographData, arrowColor);
+      // Delete from the layer where we found the current adjustment
+      const layerToDelete = currentAdjustmentLayer ?? defaultSaveLayer;
+      const keyOptions = layerToDelete === 1
+        ? undefined // Layer 1: no prop types
+        : { propType: thisPropType }; // Layer 2: include this prop's type
 
-      logger.log("Deleting adjustment from global");
+      const key = keyGenerator.generateKey(motionData, pictographData, arrowColor, keyOptions);
+
+      logger.log(`Deleting from Firestore Layer ${layerToDelete} (${thisPropType})`);
       await repo.deleteAdjustment(key);
       logger.success("Deleted from global Firestore");
 
@@ -380,6 +424,18 @@
       <span class="value">{currentAdjustmentY}</span>
     </span>
   </div>
+
+  <!-- Layer and prop indicator -->
+  <span
+    class="layer-badge"
+    class:layer-1={defaultSaveLayer === 1}
+    class:layer-2={defaultSaveLayer === 2}
+    title={defaultSaveLayer === 1
+      ? "Base layer (staff) - applies to all props"
+      : `Prop-specific layer for ${thisPropType}`}
+  >
+    L{defaultSaveLayer}·{thisPropType}
+  </span>
 
   <!-- Increment indicator -->
   <span class="increment-badge">{currentIncrement}px</span>
@@ -478,6 +534,26 @@
     color: white;
     min-width: 32px;
     text-align: right;
+  }
+
+  .layer-badge {
+    font-size: 0.6rem;
+    font-weight: 500;
+    padding: 2px 5px;
+    border-radius: 3px;
+    text-transform: lowercase;
+  }
+
+  .layer-badge.layer-1 {
+    /* Base layer (staff) - muted gray */
+    color: #a3a3a3;
+    background: rgba(163, 163, 163, 0.2);
+  }
+
+  .layer-badge.layer-2 {
+    /* Prop-specific layer - cyan/teal */
+    color: #22d3d8;
+    background: rgba(34, 211, 216, 0.2);
   }
 
   .increment-badge {

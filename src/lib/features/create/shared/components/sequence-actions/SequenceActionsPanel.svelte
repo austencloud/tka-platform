@@ -2,7 +2,7 @@
   SequenceActionsPanel.svelte
 
   Panel for sequence-wide operations: transforms, patterns, extend.
-  Individual beat editing (turns, rotation) is handled by BeatEditorPanel.
+  Individual beat editing (turns, rotation) is handled by StepEditorPanel.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -19,7 +19,7 @@
     SubDrawerType,
   } from "../../services/contracts/ISubDrawerStatePersister";
   import type { ISequenceTransferHandler } from "../../services/contracts/ISequenceTransferHandler";
-  import type { IFirstBeatAnalyzer } from "../../services/contracts/IFirstBeatAnalyzer";
+  import type { IFirstStepAnalyzer } from "../../services/contracts/IFirstStepAnalyzer";
   import type { ISequenceJsonExporter } from "../../services/contracts/ISequenceJsonExporter";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { UndoOperationType } from "../../services/contracts/IUndoManager";
@@ -41,8 +41,8 @@
   type HelpMode = "inactive" | "selecting" | "viewing";
   import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
   import ExtendDrawer from "./ExtendDrawer.svelte";
-  import BeatGridSection from "./BeatGridSection.svelte";
-  import FirstBeatConfirmDialog from "./FirstBeatConfirmDialog.svelte";
+  import StepGridSection from "./StepGridSection.svelte";
+  import FirstStepConfirmDialog from "./FirstStepConfirmDialog.svelte";
   import HandSelector from "./HandSelector.svelte";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
 
@@ -99,7 +99,7 @@
   const extensionFlowCoordinator = container.items.extensionFlowCoordinator;
   const subDrawerPersister = container.items.subDrawerStatePersister;
   const transferHandler = container.items.sequenceTransferHandler;
-  const firstBeatAnalyzer = container.items.firstBeatAnalyzer;
+  const firstStepAnalyzer = container.items.firstStepAnalyzer;
   const jsonExporter = container.items.sequenceJsonExporter;
 
   // Local state - $effect below handles initial and prop changes
@@ -119,7 +119,7 @@
   let directUnavailableReason = $state<string | null>(null);
   let isExtending = $state(false);
   let showShiftConfirmDialog = $state(false);
-  let pendingShiftBeatNumber = $state<number | null>(null);
+  let pendingShiftStepNumber = $state<number | null>(null);
 
   // Track if we've completed initial restoration (prevents auto-save from clearing on mount)
   let restorationComplete = $state(false);
@@ -152,10 +152,10 @@
   });
 
   // Beat selection state (for displaying in beat grid)
-  const selectedBeatNumber = $derived.by(
-    () => activeSequenceState.selectedBeatNumber
+  const selectedStepNumber = $derived.by(
+    () => activeSequenceState.selectedStepNumber
   );
-  const hasSelection = $derived(selectedBeatNumber !== null);
+  const hasSelection = $derived(selectedStepNumber !== null);
 
   // Extension availability - check if sequence can be extended
   const canExtend = $derived.by(() => {
@@ -163,9 +163,9 @@
     return extensionFlowCoordinator.canExtend(sequence);
   });
 
-  // Shift start availability - need at least 2 beats
+  // Shift start availability - need at least 2 steps
   const canShiftStart = $derived(
-    !!(sequence && sequence.beats && sequence.beats.length >= 2)
+    !!(sequence && sequence.steps && sequence.steps.length >= 2)
   );
 
   // Note: Services are resolved at module scope from ITI container
@@ -434,15 +434,15 @@
     onClose?.();
   }
 
-  function handleBeatSelect(beatNumber: number) {
+  function handleStepSelect(stepNumber: number) {
     hapticService?.trigger("selection");
-    activeSequenceState.selectBeat(beatNumber);
+    activeSequenceState.selectStep(stepNumber);
     // Opening Beat Editor is handled by the auto-open effect
   }
 
   function handleOpenBeatEditor() {
     hapticService?.trigger("selection");
-    panelState.openBeatEditorPanel();
+    panelState.openStepEditorPanel();
   }
 
   function handleShiftStart() {
@@ -452,11 +452,11 @@
     toast.info("Tap the beat you want to play first — it will become Beat 1");
   }
 
-  function handleShiftStartBeatSelect(beatNumber: number) {
-    if (!sequence || !firstBeatAnalyzer) return;
+  function handleShiftStartBeatSelect(stepNumber: number) {
+    if (!sequence || !firstStepAnalyzer) return;
     hapticService?.trigger("selection");
 
-    const result = firstBeatAnalyzer.analyzeSelection(sequence, beatNumber);
+    const result = firstStepAnalyzer.analyzeSelection(sequence, stepNumber);
 
     switch (result.action) {
       case "no-op":
@@ -464,25 +464,25 @@
         panelState.exitShiftStartMode();
         break;
       case "immediate":
-        executeShiftStart(result.beatNumber);
+        executeShiftStart(result.stepNumber);
         break;
       case "confirm-needed":
-        pendingShiftBeatNumber = result.beatNumber;
+        pendingShiftStepNumber = result.stepNumber;
         showShiftConfirmDialog = true;
         break;
     }
   }
 
-  async function executeShiftStart(beatNumber: number) {
-    if (!sequence || !firstBeatAnalyzer || isTransforming) return;
+  async function executeShiftStart(stepNumber: number) {
+    if (!sequence || !firstStepAnalyzer || isTransforming) return;
     isTransforming = true;
 
     // Push undo snapshot BEFORE shifting
     CreateModuleState.pushUndoSnapshot(UndoOperationType.SHIFT_START);
 
     try {
-      await activeSequenceState.shiftStartPosition(beatNumber);
-      const result = firstBeatAnalyzer.getResultMessage(sequence, beatNumber);
+      await activeSequenceState.shiftStartPosition(stepNumber);
+      const result = firstStepAnalyzer.getResultMessage(sequence, stepNumber);
       toast.success(result.message);
       hapticService?.trigger("success");
     } catch (error) {
@@ -492,14 +492,14 @@
     } finally {
       isTransforming = false;
       panelState.exitShiftStartMode();
-      pendingShiftBeatNumber = null;
+      pendingShiftStepNumber = null;
       showShiftConfirmDialog = false;
     }
   }
 
   function cancelShiftStart() {
     panelState.exitShiftStartMode();
-    pendingShiftBeatNumber = null;
+    pendingShiftStepNumber = null;
     showShiftConfirmDialog = false;
   }
 
@@ -603,18 +603,18 @@
     <!-- Beat grid display: shows on mobile at 50% height -->
     {#if hasSequence && isSideBySideLayout === false && sequence}
       <div class:dimmed={helpMode === "selecting"}>
-        <BeatGridSection
-          beats={sequence.beats}
+        <StepGridSection
+          steps={sequence.steps}
           startPosition={sequence.startPosition ||
-            sequence.startingPositionBeat ||
+            sequence.startingPosition ||
             null}
-          {selectedBeatNumber}
+          {selectedStepNumber}
           isShiftMode={isShiftStartMode}
-          onBeatClick={isShiftStartMode
+          onStepClick={isShiftStartMode
             ? handleShiftStartBeatSelect
-            : handleBeatSelect}
-          onStartClick={() => (isShiftStartMode ? null : handleBeatSelect(0))}
-          onBeatLongPress={handlePreview}
+            : handleStepSelect}
+          onStartClick={() => (isShiftStartMode ? null : handleStepSelect(0))}
+          onStepLongPress={handlePreview}
           onCancelShiftMode={cancelShiftStart}
         />
       </div>
@@ -713,10 +713,10 @@
 />
 
 <!-- First Beat Confirmation Dialog (non-circular sequences) -->
-<FirstBeatConfirmDialog
-  show={showShiftConfirmDialog && pendingShiftBeatNumber !== null}
-  beatNumber={pendingShiftBeatNumber ?? 1}
-  onConfirm={() => executeShiftStart(pendingShiftBeatNumber!)}
+<FirstStepConfirmDialog
+  show={showShiftConfirmDialog && pendingShiftStepNumber !== null}
+  stepNumber={pendingShiftStepNumber ?? 1}
+  onConfirm={() => executeShiftStart(pendingShiftStepNumber!)}
   onCancel={cancelShiftStart}
 />
 

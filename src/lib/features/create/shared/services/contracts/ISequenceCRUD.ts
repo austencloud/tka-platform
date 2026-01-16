@@ -2,7 +2,7 @@
  * Interface for sequence CRUD operations (Create, Read, Update, Delete)
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 
 export interface ISequenceCRUD {
@@ -24,21 +24,21 @@ export interface ISequenceCRUD {
   /**
    * Update a specific beat in a sequence
    */
-  updateBeat(
+  updateStep(
     sequenceId: string,
-    beatIndex: number,
-    beat: BeatData
+    stepIndex: number,
+    beat: StepData
   ): Promise<void>;
 
   /**
    * Add a beat to a sequence
    */
-  addBeat(sequenceId: string, beat: BeatData): Promise<void>;
+  addStep(sequenceId: string, beat: StepData): Promise<void>;
 
   /**
    * Remove a beat from a sequence
    */
-  removeBeat(sequenceId: string, beatIndex: number): Promise<void>;
+  removeStep(sequenceId: string, stepIndex: number): Promise<void>;
 
   /**
    * Load all sequences

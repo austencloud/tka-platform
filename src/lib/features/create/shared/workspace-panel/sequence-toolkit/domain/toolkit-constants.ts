@@ -83,7 +83,7 @@ export const TOOL_OPERATIONS: Record<ToolOperationType, ToolOperationMetadata> =
     [ToolOperationType.CLEAR]: {
       type: ToolOperationType.CLEAR,
       name: "Clear",
-      description: "Clear all beats in the sequence",
+      description: "Clear all steps in the sequence",
       icon: "🧹",
       isDestructive: true,
       requiresConfirmation: true,
@@ -118,8 +118,8 @@ export const TOOL_OPERATIONS: Record<ToolOperationType, ToolOperationMetadata> =
     },
     [ToolOperationType.DELETE_BEATS]: {
       type: ToolOperationType.DELETE_BEATS,
-      name: "Delete Beats",
-      description: "Delete multiple beats",
+      name: "Delete Steps",
+      description: "Delete multiple steps",
       icon: "❌",
       isDestructive: true,
       requiresConfirmation: true,
@@ -128,7 +128,7 @@ export const TOOL_OPERATIONS: Record<ToolOperationType, ToolOperationMetadata> =
     [ToolOperationType.DELETE_BEAT_AND_FOLLOWING]: {
       type: ToolOperationType.DELETE_BEAT_AND_FOLLOWING,
       name: "Delete Beat and Following",
-      description: "Delete beat and all following beats",
+      description: "Delete beat and all following steps",
       icon: "❌",
       isDestructive: true,
       requiresConfirmation: true,
@@ -136,8 +136,8 @@ export const TOOL_OPERATIONS: Record<ToolOperationType, ToolOperationMetadata> =
     },
     [ToolOperationType.CLEAR_BEATS]: {
       type: ToolOperationType.CLEAR_BEATS,
-      name: "Clear Beats",
-      description: "Clear all beats but keep sequence structure",
+      name: "Clear Steps",
+      description: "Clear all steps but keep sequence structure",
       icon: "🧹",
       isDestructive: true,
       requiresConfirmation: true,

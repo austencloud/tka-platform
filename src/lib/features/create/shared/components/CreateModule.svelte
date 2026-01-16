@@ -58,7 +58,7 @@
   import LOOPCoordinator from "./coordinators/LOOPCoordinator.svelte";
   import StartEndCoordinator from "./coordinators/StartEndCoordinator.svelte";
   import SequenceActionsCoordinator from "./coordinators/SequenceActionsCoordinator.svelte";
-  import BeatEditorCoordinator from "./coordinators/BeatEditorCoordinator.svelte";
+  import StepEditorCoordinator from "./coordinators/StepEditorCoordinator.svelte";
   import VideoRecordCoordinator from "./coordinators/VideoRecordCoordinator.svelte";
   import ShareHubCoordinator from "./coordinators/ShareHubCoordinator.svelte";
   import SaveToLibraryPanel from "./SaveToLibraryPanel.svelte";
@@ -111,7 +111,7 @@
   // COMPONENT STATE
   // ============================================================================
   let panelState = createPanelCoordinationState();
-  let animatingBeatNumber = $state<number | null>(null);
+  let animatingStepNumber = $state<number | null>(null);
   let shouldUseSideBySideLayout = $state<boolean>(false);
   let error = $state<string | null>(null);
   let servicesInitialized = $state<boolean>(false);
@@ -204,7 +204,7 @@
       layoutService: services.layoutService,
       NavigationSyncer: services.NavigationSyncer,
       getDeepLinker: () => deepLinkService,
-      getBeatOperator: () => services?.BeatOperator ?? null,
+      getStepOperator: () => services?.StepOperator ?? null,
       getAutosaver: () => autosaver,
       isServicesInitialized: () => servicesInitialized,
       onLayoutChange: (layout) => {
@@ -212,8 +212,8 @@
         setSideBySideLayout(layout);
       },
       getShouldUseSideBySideLayout: () => shouldUseSideBySideLayout,
-      setAnimatingBeatNumber: (beat) => {
-        animatingBeatNumber = beat;
+      setAnimatingStepNumber: (beat) => {
+        animatingStepNumber = beat;
       },
       onCurrentWordChange: (word: string) => {
         currentDisplayWord = word;
@@ -253,7 +253,7 @@
           CreateModuleOrchestrator: result.CreateModuleOrchestrator,
           layoutService: result.layoutService,
           NavigationSyncer: result.NavigationSyncer,
-          BeatOperator: result.BeatOperator,
+          StepOperator: result.StepOperator,
           shareService: result.shareService,
         };
 
@@ -513,8 +513,8 @@
       // Save the sequence to Constructor's localStorage key
       await services.SequencePersister.saveCurrentState({
         currentSequence: sequence,
-        selectedStartPosition: sequence.beats[0] || null,
-        hasStartPosition: sequence.beats.length > 0,
+        selectedStartPosition: sequence.steps[0] || null,
+        hasStartPosition: sequence.steps.length > 0,
         activeBuildSection: "constructor",
       });
 
@@ -589,7 +589,7 @@
       {panelState}
       {currentDisplayWord}
       {currentLetterSources}
-      bind:animatingBeatNumber
+      bind:animatingStepNumber
       bind:toolPanelRef
       bind:buttonPanelElement
       bind:toolPanelElement
@@ -614,7 +614,7 @@
   <SequenceActionsCoordinator />
 
   <!-- Beat Editor Coordinator - Opens when clicking a pictograph -->
-  <BeatEditorCoordinator />
+  <StepEditorCoordinator />
 
   <!-- LOOP Coordinator -->
   <LOOPCoordinator />
@@ -641,7 +641,7 @@
   <ConfirmDialog
     bind:isOpen={showClearSequenceConfirm}
     title="Clear Sequence?"
-    message="This will remove all beats and the start position. Use undo to restore if needed."
+    message="This will remove all steps and the start position. Use undo to restore if needed."
     confirmText="Clear All"
     cancelText="Keep"
     variant="danger"

@@ -8,7 +8,7 @@
  * that transform and extend sequences based on position symmetries.
  */
 
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
@@ -63,7 +63,7 @@ export interface ExtensionAnalysis {
 }
 
 /**
- * Options for generating extension beats
+ * Options for generating extension steps
  */
 export interface ExtensionOptions {
   /** The LOOP type to use for extension */
@@ -127,7 +127,7 @@ export interface CircularizationOption {
   rotationRelation?: RotationRelation;
   /** Orientation alignment info (only for exact position matches) */
   orientationAlignment?: OrientationAlignment;
-  /** Current sequence length (number of beats before extension) */
+  /** Current sequence length (number of steps before extension) */
   currentLength?: number;
   /** Resulting sequence length after applying LOOP with this bridge */
   resultingLength?: number;
@@ -142,22 +142,22 @@ export interface ISequenceExtender {
   analyzeSequence(sequence: SequenceData): ExtensionAnalysis;
 
   /**
-   * Generate beats to extend a sequence back to its starting position
+   * Generate steps to extend a sequence back to its starting position
    * @param sequence The sequence to extend
    * @param options Optional generation options
-   * @returns The extension beats (excluding the existing sequence)
+   * @returns The extension steps (excluding the existing sequence)
    * @throws Error if sequence cannot be extended
    */
   generateExtensionBeats(
     sequence: SequenceData,
     options?: ExtensionOptions
-  ): Promise<BeatData[]>;
+  ): Promise<StepData[]>;
 
   /**
-   * Extend a sequence by appending the generated extension beats
+   * Extend a sequence by appending the generated extension steps
    * @param sequence The sequence to extend
    * @param options Optional generation options
-   * @returns A new sequence with extension beats appended
+   * @returns A new sequence with extension steps appended
    * @throws Error if sequence cannot be extended
    */
   extendSequence(

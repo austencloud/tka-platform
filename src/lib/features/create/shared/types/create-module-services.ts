@@ -9,7 +9,7 @@
 
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IStartPositionManager } from "../../construct/start-position-picker/services/contracts/IStartPositionManager";
-import type { IBeatOperator } from "../services/contracts/IBeatOperator";
+import type { IStepOperator } from "../services/contracts/IStepOperator";
 import type { ICreateModuleOrchestrator } from "../services/contracts/ICreateModuleOrchestrator";
 import type { INavigationSyncer } from "../services/contracts/INavigationSyncer";
 import type { IResponsiveLayoutManager } from "../services/contracts/IResponsiveLayoutManager";
@@ -26,6 +26,6 @@ export interface CreateModuleOrchestrators {
   CreateModuleOrchestrator: ICreateModuleOrchestrator;
   layoutService: IResponsiveLayoutManager;
   NavigationSyncer: INavigationSyncer;
-  BeatOperator: IBeatOperator;
+  StepOperator: IStepOperator;
   shareService: ISharer;
 }

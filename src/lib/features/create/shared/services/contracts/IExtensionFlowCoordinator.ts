@@ -55,8 +55,8 @@ export interface ExtensionApplyResult {
   success: boolean;
   /** The extended sequence (if successful) */
   sequence: SequenceData | null;
-  /** Number of beats added */
-  beatsAdded: number;
+  /** Number of steps added */
+  stepsAdded: number;
   /** Message to display to user */
   message: string;
 }

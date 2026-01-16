@@ -112,16 +112,16 @@ export class SequenceTransformer implements ISequenceTransformer {
     );
 
     // Then recalculate reversals based on the new beat order
-    // This is critical because reversals depend on comparing consecutive beats
+    // This is critical because reversals depend on comparing consecutive steps
     // and beat 1 should never have reversals (nothing before it to compare)
     return this.reversalDetector.processReversals(rewoundSequence);
   }
 
   shiftStartPosition(
     sequence: SequenceData,
-    targetBeatNumber: number
+    targetStepNumber: number
   ): SequenceData {
-    return shiftStartPosition(sequence, targetBeatNumber);
+    return shiftStartPosition(sequence, targetStepNumber);
   }
 
   async deriveSequenceLetters(sequence: SequenceData): Promise<SequenceData> {

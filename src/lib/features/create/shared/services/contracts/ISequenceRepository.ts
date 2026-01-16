@@ -5,7 +5,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 
 export interface ISequenceRepository {
@@ -19,14 +19,14 @@ export interface ISequenceRepository {
   /**
    * Update a beat in a sequence
    * @param sequenceId - Sequence identifier
-   * @param beatIndex - Beat index to update
-   * @param beatData - New beat data
+   * @param stepIndex - Beat index to update
+   * @param stepData - New beat data
    * @returns Promise that resolves when update is complete
    */
-  updateBeat(
+  updateStep(
     sequenceId: string,
-    beatIndex: number,
-    beatData: BeatData
+    stepIndex: number,
+    stepData: StepData
   ): Promise<void>;
 
   /**

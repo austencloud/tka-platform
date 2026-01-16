@@ -1,18 +1,18 @@
 <!--
-  RemoveBeatButton.svelte
+  RemoveStepButton.svelte
 
   Remove beat button for ButtonPanel.
-  Removes the selected beat and all following beats.
+  Removes the selected beat and all following steps.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
 
   // Props
   const {
-    beatNumber,
+    stepNumber,
     onclick,
   }: {
-    beatNumber: number;
+    stepNumber: number;
     onclick?: () => void;
   } = $props();
 
@@ -28,8 +28,8 @@
 <button
   class="panel-button remove-beat-button"
   onclick={handleClick}
-  aria-label="Remove Beat {beatNumber} and all following beats"
-  title="Remove Beat {beatNumber} and all following beats"
+  aria-label="Remove Beat {stepNumber} and all following steps"
+  title="Remove Beat {stepNumber} and all following steps"
 >
   <i class="fa-solid fa-trash" aria-hidden="true"></i>
 </button>

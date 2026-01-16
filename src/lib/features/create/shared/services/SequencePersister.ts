@@ -48,7 +48,7 @@ export interface SavedSequence {
   metadata: SaveSequenceMetadata;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  beatCount: number;
+  stepCount: number;
   thumbnailUrl?: string;
 }
 
@@ -81,7 +81,7 @@ export class SequencePersister {
       name: metadata.name,
       displayName: metadata.displayName, // User's custom display name
       word: sequenceData.word,
-      beats: sequenceData.beats,
+      steps: sequenceData.steps,
       visibility: metadata.visibility,
       description: metadata.description,
       tags: metadata.tags || [],
@@ -155,7 +155,7 @@ export class SequencePersister {
 
     if (sequenceData) {
       updates.word = sequenceData.word;
-      updates.beats = sequenceData.beats;
+      updates.steps = sequenceData.steps;
     }
 
     try {

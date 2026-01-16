@@ -22,10 +22,10 @@ import type { IReversalDetector } from "../../../services/contracts/IReversalDet
 import { container } from "$lib/shared/di";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
-  getBeatDataFromState,
+  getStepDataFromState,
   START_POSITION_BEAT_NUMBER,
-} from "./beat-data-helpers";
-import { calculatePropagatedBeats } from "./OrientationHandler";
+} from "./step-data-helpers";
+import { calculatePropagatedSteps } from "./OrientationHandler";
 
 const logger = createComponentLogger("TurnsHandler");
 
@@ -33,21 +33,21 @@ const logger = createComponentLogger("TurnsHandler");
  * Update turns for a specific prop color in a beat
  * Handles float conversion and auto-rotation direction assignment
  */
-export function updateBeatTurns(
-  beatNumber: number,
+export function updateStepTurns(
+  stepNumber: number,
   color: string,
   turnAmount: number | "fl",
   createModuleState: ICreateModuleState
 ): void {
-  const beatData = getBeatDataFromState(beatNumber, createModuleState);
+  const stepData = getStepDataFromState(stepNumber, createModuleState);
 
-  if (!beatData?.motions) {
+  if (!stepData?.motions) {
     logger.warn("Cannot update turns - no beat data available");
     return;
   }
 
   const currentMotion: MotionData | undefined =
-    beatData.motions[color as MotionColor];
+    stepData.motions[color as MotionColor];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
     return;
@@ -122,10 +122,10 @@ export function updateBeatTurns(
   );
 
   // Create updated beat data
-  const updatedBeatData = {
-    ...beatData,
+  const updatedStepData = {
+    ...stepData,
     motions: {
-      ...beatData.motions,
+      ...stepData.motions,
       [color]: {
         ...currentMotion,
         turns: turnAmount,
@@ -153,20 +153,20 @@ export function updateBeatTurns(
   let updatedSequence = currentSequence;
   let updatedStartPosition: StartPositionData | null = startPosition;
 
-  if (beatNumber === START_POSITION_BEAT_NUMBER) {
+  if (stepNumber === START_POSITION_BEAT_NUMBER) {
     // Create updated start position with new motions
     updatedStartPosition = startPosition
       ? createStartPositionData({
           ...startPosition,
-          motions: updatedBeatData.motions,
+          motions: updatedStepData.motions,
         })
       : null;
     logger.log(
       `Updated start position ${color} turns to ${turnAmount} (rotationDirection: ${updatedRotationDirection}, endOrientation: ${newEndOrientation})`
     );
 
-    const propagatedBeats = calculatePropagatedBeats(
-      beatNumber,
+    const propagatedSteps = calculatePropagatedSteps(
+      stepNumber,
       color,
       currentSequence,
       updatedStartPosition
@@ -174,27 +174,27 @@ export function updateBeatTurns(
 
     updatedSequence = {
       ...currentSequence,
-      beats: propagatedBeats,
+      steps: propagatedSteps,
     };
   } else {
-    const arrayIndex = beatNumber - 1;
-    const updatedBeats = [...currentSequence.beats];
-    updatedBeats[arrayIndex] = updatedBeatData;
+    const arrayIndex = stepNumber - 1;
+    const updatedSteps = [...currentSequence.steps];
+    updatedSteps[arrayIndex] = updatedStepData;
 
     logger.log(
-      `Updated beat ${beatNumber} ${color} turns to ${turnAmount} (rotationDirection: ${updatedRotationDirection}, endOrientation: ${newEndOrientation})`
+      `Updated beat ${stepNumber} ${color} turns to ${turnAmount} (rotationDirection: ${updatedRotationDirection}, endOrientation: ${newEndOrientation})`
     );
 
-    const propagatedBeats = calculatePropagatedBeats(
-      beatNumber,
+    const propagatedSteps = calculatePropagatedSteps(
+      stepNumber,
       color,
-      { ...currentSequence, beats: updatedBeats },
+      { ...currentSequence, steps: updatedSteps },
       startPosition
     );
 
     updatedSequence = {
       ...currentSequence,
-      beats: propagatedBeats,
+      steps: propagatedSteps,
     };
   }
 

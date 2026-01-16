@@ -1,13 +1,13 @@
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 
 /**
  * Input sequence data structure with required fields for export
  */
 export interface ExportableSequenceData {
   word: string;
-  startingPositionBeat?: BeatData;
-  startPosition?: BeatData;
-  beats?: readonly BeatData[];
+  startingPosition?: StepData;
+  startPosition?: StepData;
+  steps?: readonly StepData[];
 }
 
 /**
@@ -34,7 +34,7 @@ export interface ISequenceExporter {
 export interface CondensedSequenceData {
   word: string;
   startPosition?: CondensedStartPosition;
-  beats: CondensedBeatData[];
+  steps: CondensedStepData[];
 }
 
 /**
@@ -60,9 +60,9 @@ export interface CondensedStartMotion {
 /**
  * Condensed beat data
  */
-export interface CondensedBeatData {
+export interface CondensedStepData {
   letter: string;
-  beatNumber: number;
+  stepNumber: number;
   gridPosition?: string;
   duration: number;
   blueReversal: boolean;

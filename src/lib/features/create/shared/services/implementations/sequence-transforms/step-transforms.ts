@@ -1,7 +1,7 @@
 /**
  * Beat Transforms
  *
- * Pure functions that transform BeatData objects.
+ * Pure functions that transform StepData objects.
  * Composes motion transforms with position updates.
  *
  * Supports targetHand parameter to transform only specific hand(s):
@@ -14,8 +14,8 @@
  * instant synchronous transforms for smooth CSS animations.
  */
 
-import type { BeatData } from "../../../domain/models/BeatData";
-import { createBeatData } from "../../../domain/factories/createBeatData";
+import type { StepData } from "../../../domain/models/StepData";
+import { createStepData } from "../../../domain/factories/createStepData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -56,12 +56,12 @@ function shouldTransformHand(
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
  */
 export async function mirrorBeat(
-  beat: BeatData,
+  beat: StepData,
   gridMode: GridMode,
   positionDeriver: IGridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
-): Promise<BeatData> {
+): Promise<StepData> {
   if (beat.isBlank || !beat) return beat;
 
   const mirroredMotions = { ...beat.motions };
@@ -81,7 +81,7 @@ export async function mirrorBeat(
 
   // For "both" mode, use fast path with position maps (no lookup needed)
   if (targetHand === "both") {
-    return createBeatData({
+    return createStepData({
       ...beat,
       startPosition: beat.startPosition
         ? VERTICAL_MIRROR_POSITION_MAP[beat.startPosition]
@@ -95,7 +95,7 @@ export async function mirrorBeat(
 
   // For single-hand mode, keep existing positions and letter for instant animation
   // Positions are derived from both hands, so they stay valid when only one changes
-  return createBeatData({
+  return createStepData({
     ...beat,
     motions: mirroredMotions,
   });
@@ -107,12 +107,12 @@ export async function mirrorBeat(
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
  */
 export async function flipBeat(
-  beat: BeatData,
+  beat: StepData,
   gridMode: GridMode,
   positionDeriver: IGridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
-): Promise<BeatData> {
+): Promise<StepData> {
   if (beat.isBlank || !beat) return beat;
 
   const flippedMotions = { ...beat.motions };
@@ -133,7 +133,7 @@ export async function flipBeat(
 
   // For "both" mode, use fast path with position maps (no lookup needed)
   if (targetHand === "both") {
-    return createBeatData({
+    return createStepData({
       ...beat,
       startPosition: beat.startPosition
         ? HORIZONTAL_MIRROR_POSITION_MAP[beat.startPosition]
@@ -147,7 +147,7 @@ export async function flipBeat(
 
   // For single-hand mode, keep existing positions and letter for instant animation
   // Positions are derived from both hands, so they stay valid when only one changes
-  return createBeatData({
+  return createStepData({
     ...beat,
     motions: flippedMotions,
   });
@@ -160,13 +160,13 @@ export async function flipBeat(
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
  */
 export async function rotateBeat(
-  beat: BeatData,
+  beat: StepData,
   rotationAmount: number,
   gridMode: GridMode,
   positionDeriver: IGridPositionDeriver,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
-): Promise<BeatData> {
+): Promise<StepData> {
   if (beat.isBlank || !beat) return beat;
 
   const currentGridMode =
@@ -213,7 +213,7 @@ export async function rotateBeat(
       );
     }
 
-    return createBeatData({
+    return createStepData({
       ...beat,
       startPosition: rotatedStartPosition,
       endPosition: rotatedEndPosition,
@@ -223,7 +223,7 @@ export async function rotateBeat(
 
   // For single-hand mode, keep existing positions and letter for instant animation
   // Positions are derived from both hands, so they stay valid when only one changes
-  return createBeatData({
+  return createStepData({
     ...beat,
     motions: rotatedMotions,
   });
@@ -232,7 +232,7 @@ export async function rotateBeat(
 /**
  * Swap colors in a beat (blue ↔ red).
  */
-export function colorSwapBeat(beat: BeatData): BeatData {
+export function colorSwapBeat(beat: StepData): StepData {
   if (beat.isBlank || !beat) return beat;
 
   const swappedMotions = {
@@ -244,7 +244,7 @@ export function colorSwapBeat(beat: BeatData): BeatData {
       : undefined,
   };
 
-  return createBeatData({
+  return createStepData({
     ...beat,
     startPosition: beat.startPosition
       ? SWAPPED_POSITION_MAP[beat.startPosition]
@@ -265,11 +265,11 @@ export function colorSwapBeat(beat: BeatData): BeatData {
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
  */
 export async function invertBeat(
-  beat: BeatData,
+  beat: StepData,
   gridMode: GridMode,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
-): Promise<BeatData> {
+): Promise<StepData> {
   if (beat.isBlank || !beat) return beat;
 
   const invertedMotions = { ...beat.motions };
@@ -292,7 +292,7 @@ export async function invertBeat(
 
   // For single-hand mode, keep existing letter for instant animation
   if (targetHand !== "both") {
-    return createBeatData({
+    return createStepData({
       ...beat,
       motions: invertedMotions,
     });
@@ -313,13 +313,13 @@ export async function invertBeat(
       }
     } catch (error) {
       console.warn(
-        `Failed to find letter for inverted beat ${beat.beatNumber}:`,
+        `Failed to find letter for inverted beat ${beat.stepNumber}:`,
         error
       );
     }
   }
 
-  return createBeatData({
+  return createStepData({
     ...beat,
     letter: correctLetter,
     motions: invertedMotions,
@@ -333,14 +333,14 @@ export async function invertBeat(
  * @param targetHand - Which hand(s) to transform. Defaults to "both".
  */
 export async function rewindBeat(
-  beat: BeatData,
-  newBeatNumber: number,
+  beat: StepData,
+  newStepNumber: number,
   gridMode: GridMode,
   motionQueryHandler: IMotionQueryHandler,
   targetHand: TargetHand = "both"
-): Promise<BeatData> {
+): Promise<StepData> {
   if (beat.isBlank || !beat) {
-    return { ...beat, beatNumber: newBeatNumber };
+    return { ...beat, stepNumber: newStepNumber };
   }
 
   const rewindMotions = { ...beat.motions };
@@ -363,9 +363,9 @@ export async function rewindBeat(
 
   // For single-hand mode, keep existing positions and letter for instant animation
   if (targetHand !== "both") {
-    return createBeatData({
+    return createStepData({
       ...beat,
-      beatNumber: newBeatNumber,
+      stepNumber: newStepNumber,
       motions: rewindMotions,
       // Clear reversal flags - they must be recalculated based on the new sequence order
       blueReversal: false,
@@ -391,9 +391,9 @@ export async function rewindBeat(
     }
   }
 
-  return createBeatData({
+  return createStepData({
     ...beat,
-    beatNumber: newBeatNumber,
+    stepNumber: newStepNumber,
     startPosition: beat.endPosition ?? null,
     endPosition: beat.startPosition ?? null,
     motions: rewindMotions,

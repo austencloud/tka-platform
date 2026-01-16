@@ -13,24 +13,24 @@ import type {
   BatchEditChanges,
 } from "../../types/create-module-types";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 
-export interface IBeatOperator {
+export interface IStepOperator {
   /**
-   * Remove a beat and all subsequent beats from the sequence
+   * Remove a beat and all subsequent steps from the sequence
    * Handles special case of removing start position (clears entire sequence)
    * Creates undo snapshot and manages beat selection after removal
    *
-   * @param beatIndex Index of beat to remove (0 = start position)
+   * @param stepIndex Index of beat to remove (0 = start position)
    * @param CreateModuleState Create Module State for sequence and undo operations
    */
-  removeBeat(beatIndex: number, CreateModuleState: ICreateModuleState): void;
+  removeStep(stepIndex: number, CreateModuleState: ICreateModuleState): void;
 
   /**
-   * Apply batch changes to multiple selected beats
+   * Apply batch changes to multiple selected steps
    * Creates undo snapshot before applying changes
    *
-   * @param changes Partial beat data to apply to all selected beats
+   * @param changes Partial beat data to apply to all selected steps
    * @param CreateModuleState Create Module State for sequence operations
    */
   applyBatchChanges(
@@ -40,16 +40,16 @@ export interface IBeatOperator {
 
   /**
    * Update orientation for a specific prop color in a beat
-   * Handles both start position (beat 0) and sequence beats
+   * Handles both start position (beat 0) and sequence steps
    *
-   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
+   * @param stepNumber Beat number (0 = start position, 1+ = sequence steps)
    * @param color Prop color ('blue' or 'red')
    * @param orientation New orientation value
    * @param CreateModuleState Create Module State for sequence operations
    * @param panelState Panel state for current beat data
    */
-  updateBeatOrientation(
-    beatNumber: number,
+  updateStepOrientation(
+    stepNumber: number,
     color: string,
     orientation: string,
     CreateModuleState: ICreateModuleState,
@@ -58,16 +58,16 @@ export interface IBeatOperator {
 
   /**
    * Update turn amount for a specific prop color in a beat
-   * Handles both start position (beat 0) and sequence beats
+   * Handles both start position (beat 0) and sequence steps
    *
-   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
+   * @param stepNumber Beat number (0 = start position, 1+ = sequence steps)
    * @param color Prop color ('blue' or 'red')
    * @param turnAmount New turn amount value (number or "fl" for float)
    * @param CreateModuleState Create Module State for sequence operations
    * @param panelState Panel state for current beat data
    */
-  updateBeatTurns(
-    beatNumber: number,
+  updateStepTurns(
+    stepNumber: number,
     color: string,
     turnAmount: number | "fl",
     CreateModuleState: ICreateModuleState,
@@ -76,17 +76,17 @@ export interface IBeatOperator {
 
   /**
    * Update prop type for a specific prop color in a beat
-   * Handles both start position (beat 0) and sequence beats
+   * Handles both start position (beat 0) and sequence steps
    * Enables per-motion prop type selection (e.g., red hand + blue staff)
    *
-   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
+   * @param stepNumber Beat number (0 = start position, 1+ = sequence steps)
    * @param color Prop color ('blue' or 'red')
    * @param propType New prop type value (from PropType enum)
    * @param CreateModuleState Create Module State for sequence operations
    * @param panelState Panel state for current beat data
    */
   updateBeatPropType(
-    beatNumber: number,
+    stepNumber: number,
     color: string,
     propType: PropType,
     CreateModuleState: ICreateModuleState,
@@ -95,7 +95,7 @@ export interface IBeatOperator {
 
   /**
    * Bulk update prop type for all motions of a specific color
-   * Updates start position and all beats in the current sequence
+   * Updates start position and all steps in the current sequence
    * Called when user changes prop type in settings
    *
    * @param color Prop color ('blue' or 'red')
@@ -111,16 +111,16 @@ export interface IBeatOperator {
   /**
    * Update rotation direction for a specific prop color in a beat
    * Toggles between CLOCKWISE and COUNTER_CLOCKWISE for turn motions
-   * Handles both start position (beat 0) and sequence beats
+   * Handles both start position (beat 0) and sequence steps
    *
-   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
+   * @param stepNumber Beat number (0 = start position, 1+ = sequence steps)
    * @param color Prop color ('blue' or 'red')
    * @param rotationDirection New rotation direction ('cw' or 'ccw')
    * @param CreateModuleState Create Module State for sequence operations
    * @param panelState Panel state for current beat data
    */
   updateRotationDirection(
-    beatNumber: number,
+    stepNumber: number,
     color: string,
     rotationDirection: string,
     CreateModuleState: ICreateModuleState,
@@ -131,14 +131,14 @@ export interface IBeatOperator {
    * Update arrow manual adjustment for a specific prop color in a beat
    * Persists WASD arrow position adjustments to sequence state
    *
-   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
+   * @param stepNumber Beat number (0 = start position, 1+ = sequence steps)
    * @param color Prop color ('blue' or 'red')
    * @param adjustmentX X offset in pixels
    * @param adjustmentY Y offset in pixels
    * @param CreateModuleState Create Module State for sequence operations
    */
   updateArrowAdjustment(
-    beatNumber: number,
+    stepNumber: number,
     color: string,
     adjustmentX: number,
     adjustmentY: number,
@@ -149,13 +149,13 @@ export interface IBeatOperator {
    * Persist complete beat data with accumulated arrow adjustments
    * Called when adjustment panel closes to save all changes at once
    *
-   * @param beatNumber Beat number (0 = start position, 1+ = sequence beats)
-   * @param updatedBeatData Complete beat data with adjusted arrow positions
+   * @param stepNumber Beat number (0 = start position, 1+ = sequence steps)
+   * @param updatedStepData Complete beat data with adjusted arrow positions
    * @param CreateModuleState Create Module State for sequence operations
    */
   persistBeatWithAdjustments(
-    beatNumber: number,
-    updatedBeatData: BeatData,
+    stepNumber: number,
+    updatedStepData: StepData,
     CreateModuleState: ICreateModuleState
   ): void;
 
@@ -164,12 +164,12 @@ export interface IBeatOperator {
    * Duration determines how long a beat plays relative to the base tempo.
    * Does not apply to start position (beat 0).
    *
-   * @param beatNumber Beat number (1+ = sequence beats, 0 = start position is invalid)
+   * @param stepNumber Beat number (1+ = sequence steps, 0 = start position is invalid)
    * @param newDuration New duration value (0.25 to 4.0, in quarter-beat increments)
    * @param CreateModuleState Create Module State for sequence operations
    */
-  updateBeatDuration(
-    beatNumber: number,
+  updateStepDuration(
+    stepNumber: number,
     newDuration: number,
     CreateModuleState: ICreateModuleState
   ): void;

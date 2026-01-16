@@ -117,22 +117,22 @@ export class ExtensionFlowCoordinator implements IExtensionFlowCoordinator {
     loopType: LOOPType
   ): Promise<ExtensionApplyResult> {
     try {
-      const originalLength = sequence.beats?.length || 0;
+      const originalLength = sequence.steps?.length || 0;
 
       const extendedSequence = await this.sequenceExtender.extendSequence(
         sequence,
         { loopType }
       );
 
-      const newLength = extendedSequence.beats?.length || 0;
-      const beatsAdded = newLength - originalLength;
+      const newLength = extendedSequence.steps?.length || 0;
+      const stepsAdded = newLength - originalLength;
 
-      if (beatsAdded === 0) {
+      if (stepsAdded === 0) {
         return {
           success: false,
           sequence: null,
-          beatsAdded: 0,
-          message: "No extension beats generated",
+          stepsAdded: 0,
+          message: "No extension steps generated",
         };
       }
 
@@ -140,15 +140,15 @@ export class ExtensionFlowCoordinator implements IExtensionFlowCoordinator {
       return {
         success: true,
         sequence: extendedSequence,
-        beatsAdded,
-        message: `Extended with ${loopName}! Added ${beatsAdded} beats`,
+        stepsAdded,
+        message: `Extended with ${loopName}! Added ${stepsAdded} steps`,
       };
     } catch (error) {
       console.error("[ExtensionFlowCoordinator] applyLoop failed:", error);
       return {
         success: false,
         sequence: null,
-        beatsAdded: 0,
+        stepsAdded: 0,
         message: "Could not extend sequence",
       };
     }

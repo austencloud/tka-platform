@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BeatData } from "../../../domain/models/BeatData";
+  import type { StepData } from "../../../domain/models/StepData";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -14,7 +14,7 @@
     onLongPress,
     shouldAnimate = false,
     isSelected = false,
-    isPracticeBeat = false,
+    isPracticeStep = false,
     // Active mode for context-aware messaging
     activeMode = null,
     // Custom highlight style (for multi-select, section highlighting, etc.)
@@ -22,14 +22,14 @@
     // Musical position string (e.g., "1", "1.5", "2e") for beat number display
     musicalPosition = undefined,
   } = $props<{
-    beat: BeatData;
+    beat: StepData;
     index?: number;
     onClick?: () => void;
     onDelete?: () => void;
     onLongPress?: () => void;
     shouldAnimate?: boolean;
     isSelected?: boolean;
-    isPracticeBeat?: boolean;
+    isPracticeStep?: boolean;
     // Active mode
     activeMode?: BuildModeId | null;
     // Custom highlight style
@@ -42,11 +42,11 @@
   const hapticService = container.items.hapticFeedback;
 
   const isStartPosition = $derived.by(() => {
-    return beat.beatNumber === 0;
+    return beat.stepNumber === 0;
   });
 
   const displayBeatNumber = $derived.by(() => {
-    return beat.beatNumber || index + 1;
+    return beat.stepNumber || index + 1;
   });
 
   const ariaLabel = $derived.by(() => {
@@ -57,7 +57,7 @@
   });
 
   // Create beat data with selection state for the Pictograph component
-  const beatDataWithSelection = $derived.by(() => {
+  const stepDataWithSelection = $derived.by(() => {
     return {
       ...beat,
       isSelected,
@@ -83,22 +83,22 @@
 
   // Create a pictograph signature that represents the fundamental structure
   // independent of transformations (which only change arrow locations/rotations)
-  function getPictographSignature(beatData: BeatData): string {
-    if (beatData.isBlank) return "blank";
+  function getPictographSignature(stepData: StepData): string {
+    if (stepData.isBlank) return "blank";
 
     // Core structure: letter + which motion colors are present
-    const hasBlue = !!beatData.motions?.blue;
-    const hasRed = !!beatData.motions?.red;
+    const hasBlue = !!stepData.motions?.blue;
+    const hasRed = !!stepData.motions?.red;
     const motionStructure = `${hasBlue ? "B" : ""}${hasRed ? "R" : ""}`;
 
-    return `${beatData.letter || "null"}-${motionStructure}`;
+    return `${stepData.letter || "null"}-${motionStructure}`;
   }
 
   // Track previous signature for change detection
   let previousSignature = "";
 
   // Reset hasAnimated ONLY when the beat data itself changes (different beat loaded)
-  // This prevents re-animating all beats when only one beat should animate
+  // This prevents re-animating all steps when only one beat should animate
   $effect(() => {
     if (beat.id !== previousBeatId) {
       hasAnimated = false;
@@ -134,10 +134,10 @@
     return shouldAnimate && !hasAnimated && !beat.isBlank;
   });
 
-  // Beats should be invisible ONLY if they're waiting to animate
+  // Steps should be invisible ONLY if they're waiting to animate
   const isVisible = $derived.by(() => {
     // If it should animate but hasn't yet, hide it (will become visible via animation)
-    // This applies to ALL beats, including start position during generation
+    // This applies to ALL steps, including start position during generation
     if (shouldAnimate && !hasAnimated) return false;
 
     // Special case: Start position tile (index -1) should be visible even when blank
@@ -175,7 +175,7 @@
   });
 
   // Auto-focus when this cell becomes selected (e.g., after deleting another beat)
-  // This enables continuous Delete key presses to delete beats one by one
+  // This enables continuous Delete key presses to delete steps one by one
   // Use null as sentinel to detect first run and initialize to isSelected's value
   let wasSelected: boolean | null = null;
   let hasMounted = false;
@@ -287,12 +287,12 @@
   class:invisible={!isVisible}
   class:animate={shouldAnimateIn}
   class:selected={isSelected}
-  class:practice-beat={isPracticeBeat}
-  class:practice-intense={isPracticeBeat && practiceAnimationStyle.current === 'intense'}
-  class:practice-subtle={isPracticeBeat && practiceAnimationStyle.current === 'subtle'}
-  class:practice-glow-only={isPracticeBeat && practiceAnimationStyle.current === 'glow-only'}
-  class:practice-minimal={isPracticeBeat && practiceAnimationStyle.current === 'minimal'}
-  class:practice-wave={isPracticeBeat && practiceAnimationStyle.current === 'wave'}
+  class:practice-beat={isPracticeStep}
+  class:practice-intense={isPracticeStep && practiceAnimationStyle.current === 'intense'}
+  class:practice-subtle={isPracticeStep && practiceAnimationStyle.current === 'subtle'}
+  class:practice-glow-only={isPracticeStep && practiceAnimationStyle.current === 'glow-only'}
+  class:practice-minimal={isPracticeStep && practiceAnimationStyle.current === 'minimal'}
+  class:practice-wave={isPracticeStep && practiceAnimationStyle.current === 'wave'}
   class:highlighted={!!highlightStyle}
   class:long-pressing={isLongPressing}
   class:anim-gentleBloom={currentAnimationName === "gentleBloom"}
@@ -316,7 +316,7 @@
 >
   <!-- Normal pictograph (will show empty grid when beat.isBlank) -->
   <PictographContainer
-    pictographData={beatDataWithSelection}
+    pictographData={stepDataWithSelection}
     disableTransitions={!enableTransitionsForNewData}
     {musicalPosition}
   />
@@ -411,7 +411,7 @@
 
   /* Elevated Luxury - 2025/2026 Selection State */
   .beat-cell.selected {
-    /* Ensure it appears above other beats */
+    /* Ensure it appears above other steps */
     z-index: 10;
     position: relative;
 
@@ -500,7 +500,7 @@
   }
 
   /* =========================================================================
-     PRACTICE BEAT ANIMATION STYLES (TEMPORARY - for A/B testing)
+     PRACTICE STEP ANIMATION STYLES (TEMPORARY - for A/B testing)
      Toggle between styles using the button in ButtonPanel
      ========================================================================= */
 

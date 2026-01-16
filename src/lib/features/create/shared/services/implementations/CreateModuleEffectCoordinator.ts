@@ -35,12 +35,12 @@ export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordin
       layoutService,
       NavigationSyncer,
       getDeepLinker,
-      getBeatOperator,
+      getStepOperator,
       getAutosaver,
       isServicesInitialized,
       onLayoutChange,
       getShouldUseSideBySideLayout,
-      setAnimatingBeatNumber,
+      setAnimatingStepNumber,
       onCurrentWordChange,
       onLetterSourcesChange,
       onTabAccessibilityChange,
@@ -53,7 +53,7 @@ export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordin
       createGlobalStateSyncEffects({
         panelState,
         getShouldUseSideBySideLayout,
-        setAnimatingBeatNumber,
+        setAnimatingStepNumber,
       })
     );
 
@@ -78,7 +78,7 @@ export class CreateModuleEffectCoordinator implements ICreateModuleEffectCoordin
     // Prop type sync (bulk update when settings change)
     cleanups.push(
       createPropTypeSyncEffect({
-        getBeatOperator,
+        getStepOperator,
         getCreateModuleState,
         isServicesInitialized,
       })

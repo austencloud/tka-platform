@@ -5,7 +5,7 @@
  * and desktop.modern.domain.models for actual validation and business rules.
  */
 
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type {
   ValidationErrorInfo,
   ValidationResult,
@@ -50,18 +50,18 @@ export class SequenceDomainManager implements ISequenceDomainManager {
    * Implements ISequenceDomainManager interface
    */
   calculateStatistics(sequence: SequenceData): {
-    totalBeats: number;
-    filledBeats: number;
-    emptyBeats: number;
+    totalSteps: number;
+    filledSteps: number;
+    emptySteps: number;
     duration: number;
   } {
-    const beats = sequence.beats || [];
-    const totalBeats = beats.length;
-    const filledBeats = beats.filter(b => !b?.isBlank && b?.letter).length;
-    const emptyBeats = totalBeats - filledBeats;
-    const duration = beats.reduce((sum, b) => sum + (b?.duration || 1), 0);
+    const steps = sequence.steps || [];
+    const totalSteps = steps.length;
+    const filledSteps = steps.filter(b => !b?.isBlank && b?.letter).length;
+    const emptySteps = totalSteps - filledSteps;
+    const duration = steps.reduce((sum, b) => sum + (b?.duration || 1), 0);
 
-    return { totalBeats, filledBeats, emptyBeats, duration };
+    return { totalSteps, filledSteps, emptySteps, duration };
   }
 
   /**
@@ -76,7 +76,7 @@ export class SequenceDomainManager implements ISequenceDomainManager {
    * Check if a beat is valid for the sequence
    * Implements ISequenceDomainManager interface
    */
-  isValidBeat(_sequence: SequenceData, beat: BeatData): boolean {
+  isValidBeat(_sequence: SequenceData, beat: StepData): boolean {
     if (!beat) return false;
     if (beat.duration !== undefined && beat.duration < 0) return false;
     return true;
@@ -166,11 +166,11 @@ export class SequenceDomainManager implements ISequenceDomainManager {
 
     const typedRequest = request;
 
-    // Create beats with proper numbering (desktop logic)
-    const beats: BeatData[] = [];
+    // Create steps with proper numbering (desktop logic)
+    const steps: StepData[] = [];
     const length = typedRequest.length || 0;
     for (let i = 1; i <= length; i++) {
-      beats.push(this.createEmptyBeat(i));
+      steps.push(this.createEmptyBeat(i));
     }
 
     // Create sequence following desktop SequenceData structure
@@ -178,7 +178,7 @@ export class SequenceDomainManager implements ISequenceDomainManager {
       id: this.generateId(),
       name: typedRequest.name.trim(),
       word: "",
-      beats,
+      steps,
       thumbnails: [],
       isFavorite: false,
       isCircular: false,
@@ -192,48 +192,48 @@ export class SequenceDomainManager implements ISequenceDomainManager {
   /**
    * Update beat with proper validation - from desktop BeatSequenceService
    */
-  updateBeat(
+  updateStep(
     sequence: SequenceData,
-    beatIndex: number,
-    beatData: BeatData
+    stepIndex: number,
+    stepData: StepData
   ): SequenceData {
     // Validation from desktop BeatSequenceService
-    if (beatIndex < 0 || beatIndex >= sequence.beats.length) {
-      throw new Error(`Invalid beat index: ${beatIndex}`);
+    if (stepIndex < 0 || stepIndex >= sequence.steps.length) {
+      throw new Error(`Invalid beat index: ${stepIndex}`);
     }
 
     // Validate beat data
-    if (beatData.duration && beatData.duration < 0) {
+    if (stepData.duration && stepData.duration < 0) {
       throw new Error("Beat duration must be positive");
     }
 
-    // Legacy field guard (beatNumber) for migrated data
+    // Legacy field guard (stepNumber) for migrated data
     if (
-      typeof (beatData as unknown as { beatNumber?: number }).beatNumber ===
+      typeof (stepData as unknown as { stepNumber?: number }).stepNumber ===
       "number"
     ) {
-      if ((beatData as unknown as { beatNumber: number }).beatNumber < 0) {
+      if ((stepData as unknown as { stepNumber: number }).stepNumber < 0) {
         throw new Error("Beat number must be non-negative");
       }
     }
 
-    // Create new beats array with updated beat
-    const newBeats = [...sequence.beats];
-    newBeats[beatIndex] = { ...beatData };
+    // Create new steps array with updated beat
+    const newSteps = [...sequence.steps];
+    newSteps[stepIndex] = { ...stepData };
 
-    return { ...sequence, beats: newBeats } as SequenceData;
+    return { ...sequence, steps: newSteps } as SequenceData;
   }
 
   /**
    * Calculate sequence word - from desktop SequenceWordCalculator
    */
   calculateSequenceWord(sequence: SequenceData): string {
-    if (!sequence.beats || sequence.beats.length === 0) {
+    if (!sequence.steps || sequence.steps.length === 0) {
       return "";
     }
 
-    // Extract letters from beats (desktop logic)
-    const word = sequence.beats.map((beat) => beat?.letter).join("");
+    // Extract letters from steps (desktop logic)
+    const word = sequence.steps.map((beat) => beat?.letter).join("");
 
     // Apply word simplification for circular sequences (desktop logic)
     return this.simplifyRepeatedWord(word);
@@ -269,17 +269,17 @@ export class SequenceDomainManager implements ISequenceDomainManager {
   }
 
   /**
-   * Create empty beat - from desktop BeatData structure
+   * Create empty beat - from desktop StepData structure
    */
-  private createEmptyBeat(beatNumber: number): BeatData {
+  private createEmptyBeat(stepNumber: number): StepData {
     return {
       id: crypto.randomUUID(),
-      beatNumber: beatNumber,
+      stepNumber: stepNumber,
       duration: 1.0,
       blueReversal: false,
       redReversal: false,
       isBlank: true,
-      // PictographData properties (since BeatData extends PictographData)
+      // PictographData properties (since StepData extends PictographData)
       letter: null,
       startPosition: null,
       endPosition: null,

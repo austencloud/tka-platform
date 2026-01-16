@@ -19,8 +19,8 @@ export interface RotationDirectionPatternApplyResult {
   readonly sequence?: SequenceData;
   /** Error message if not successful */
   readonly error?: string;
-  /** Number of beats that were modified */
-  readonly modifiedBeats?: number;
+  /** Number of steps that were modified */
+  readonly modifiedSteps?: number;
   /** Warnings about edge cases encountered (e.g., skipped motions) */
   readonly warnings?: readonly string[];
 }

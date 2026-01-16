@@ -3,17 +3,17 @@
  *
  * Manages selection state for:
  * - Single-select mode: One beat at a time (default)
- * - Multi-select mode: Multiple beats for batch editing
+ * - Multi-select mode: Multiple steps for batch editing
  * - Selected beat NUMBER (0 = start position, 1 = first beat, 2 = second beat, etc.)
  * - Selected start position
  * - Start position editing mode
  *
  * RESPONSIBILITY: Pure selection tracking, no business logic
  *
- * NOTE: Uses beatNumber instead of array index
- * - beatNumber 0 = start position
- * - beatNumber 1 = beats[0] (first beat in array)
- * - beatNumber 2 = beats[1] (second beat in array)
+ * NOTE: Uses stepNumber instead of array index
+ * - stepNumber 0 = start position
+ * - stepNumber 1 = steps[0] (first beat in array)
+ * - stepNumber 2 = steps[1] (second beat in array)
  */
 
 import type { StartPositionData } from "../../domain/models/StartPositionData";
@@ -25,10 +25,10 @@ export interface SequenceSelectionStateData {
   mode: SelectionMode; // 'single' (default) or 'multi' (batch editing)
 
   // Single-select (backward compatible)
-  selectedBeatNumber: number | null; // 0 = start, 1 = first beat, 2 = second beat, etc.
+  selectedStepNumber: number | null; // 0 = start, 1 = first beat, 2 = second beat, etc.
 
   // Multi-select (batch editing)
-  selectedBeatNumbers: Set<number>; // Multiple beat numbers for batch operations
+  selectedStepNumbers: Set<number>; // Multiple beat numbers for batch operations
 
   // Start position
   selectedStartPosition: StartPositionData | null;
@@ -38,25 +38,25 @@ export interface SequenceSelectionStateData {
 export function createSequenceSelectionState() {
   const state = $state<SequenceSelectionStateData>({
     mode: "single",
-    selectedBeatNumber: null,
-    selectedBeatNumbers: new Set<number>(),
+    selectedStepNumber: null,
+    selectedStepNumbers: new Set<number>(),
     selectedStartPosition: null,
     hasStartPosition: false,
   });
 
   return {
     // Getters
-    get selectedBeatNumber() {
-      return state.selectedBeatNumber;
+    get selectedStepNumber() {
+      return state.selectedStepNumber;
     },
 
     // Legacy getter for backwards compatibility (can be removed after full refactor)
-    get selectedBeatIndex() {
-      // Convert beatNumber to array index: beatNumber 1 -> index 0, beatNumber 2 -> index 1, etc.
-      if (state.selectedBeatNumber === null || state.selectedBeatNumber === 0) {
+    get selectedStepIndex() {
+      // Convert stepNumber to array index: stepNumber 1 -> index 0, stepNumber 2 -> index 1, etc.
+      if (state.selectedStepNumber === null || state.selectedStepNumber === 0) {
         return null;
       }
-      return state.selectedBeatNumber - 1;
+      return state.selectedStepNumber - 1;
     },
 
     get selectedStartPosition() {
@@ -66,7 +66,7 @@ export function createSequenceSelectionState() {
       return state.hasStartPosition;
     },
     get isStartPositionSelected() {
-      return state.selectedBeatNumber === 0;
+      return state.selectedStepNumber === 0;
     },
 
     // Mode getters
@@ -81,61 +81,61 @@ export function createSequenceSelectionState() {
     },
 
     // Multi-select getters
-    get selectedBeatNumbers() {
-      return state.selectedBeatNumbers;
+    get selectedStepNumbers() {
+      return state.selectedStepNumbers;
     },
     get selectionCount(): number {
       if (state.mode === "single") {
-        return state.selectedBeatNumber !== null ? 1 : 0;
+        return state.selectedStepNumber !== null ? 1 : 0;
       }
-      return state.selectedBeatNumbers.size;
+      return state.selectedStepNumbers.size;
     },
     get hasMultipleSelection(): boolean {
-      return state.mode === "multi" && state.selectedBeatNumbers.size > 1;
+      return state.mode === "multi" && state.selectedStepNumbers.size > 1;
     },
 
     // Computed
     get hasSelection() {
       if (state.mode === "single") {
-        return state.selectedBeatNumber !== null;
+        return state.selectedStepNumber !== null;
       }
-      return state.selectedBeatNumbers.size > 0;
+      return state.selectedStepNumbers.size > 0;
     },
 
     // Selection operations
-    selectBeat(beatNumber: number | null) {
-      state.selectedBeatNumber = beatNumber;
+    selectStep(stepNumber: number | null) {
+      state.selectedStepNumber = stepNumber;
     },
 
     selectStartPosition() {
-      state.selectedBeatNumber = 0;
+      state.selectedStepNumber = 0;
     },
 
     clearSelection() {
-      state.selectedBeatNumber = null;
+      state.selectedStepNumber = null;
     },
 
-    isBeatSelected(beatNumber: number): boolean {
+    isBeatSelected(stepNumber: number): boolean {
       if (state.mode === "single") {
-        return state.selectedBeatNumber === beatNumber;
+        return state.selectedStepNumber === stepNumber;
       }
-      return state.selectedBeatNumbers.has(beatNumber);
+      return state.selectedStepNumbers.has(stepNumber);
     },
 
     // Multi-select operations
-    enterMultiSelectMode(initialBeatNumber: number) {
+    enterMultiSelectMode(initialStepNumber: number) {
       state.mode = "multi";
-      state.selectedBeatNumbers = new Set([initialBeatNumber]);
-      state.selectedBeatNumber = null; // Clear single-select
+      state.selectedStepNumbers = new Set([initialStepNumber]);
+      state.selectedStepNumber = null; // Clear single-select
     },
 
     exitMultiSelectMode() {
       state.mode = "single";
-      state.selectedBeatNumbers = new Set<number>(); // Create new Set to trigger reactivity
-      state.selectedBeatNumber = null;
+      state.selectedStepNumbers = new Set<number>(); // Create new Set to trigger reactivity
+      state.selectedStepNumber = null;
     },
 
-    toggleBeatInMultiSelect(beatNumber: number): {
+    toggleStepInMultiSelect(stepNumber: number): {
       success: boolean;
       error?: string;
     } {
@@ -143,18 +143,18 @@ export function createSequenceSelectionState() {
         return { success: false, error: "Not in multi-select mode" };
       }
 
-      // Validate: Cannot mix start position (0) with regular beats (>0)
-      const hasStartPosition = state.selectedBeatNumbers.has(0);
-      const hasRegularBeats = Array.from(state.selectedBeatNumbers).some(
+      // Validate: Cannot mix start position (0) with regular steps (>0)
+      const hasStartPosition = state.selectedStepNumbers.has(0);
+      const hasRegularBeats = Array.from(state.selectedStepNumbers).some(
         (n) => n > 0
       );
-      const isStartPosition = beatNumber === 0;
+      const isStartPosition = stepNumber === 0;
 
       if (isStartPosition && hasRegularBeats) {
         return {
           success: false,
           error:
-            "Cannot select start position with beats. They have different properties.",
+            "Cannot select start position with steps. They have different properties.",
         };
       }
 
@@ -162,41 +162,41 @@ export function createSequenceSelectionState() {
         return {
           success: false,
           error:
-            "Cannot select beats with start position. They have different properties.",
+            "Cannot select steps with start position. They have different properties.",
         };
       }
 
       // Toggle selection - Create new Set to trigger Svelte 5 reactivity
-      const newSet = new Set(state.selectedBeatNumbers);
-      if (newSet.has(beatNumber)) {
-        newSet.delete(beatNumber);
+      const newSet = new Set(state.selectedStepNumbers);
+      if (newSet.has(stepNumber)) {
+        newSet.delete(stepNumber);
       } else {
-        newSet.add(beatNumber);
+        newSet.add(stepNumber);
       }
-      state.selectedBeatNumbers = newSet;
+      state.selectedStepNumbers = newSet;
 
       return { success: true };
     },
 
-    selectAllBeats(beatNumbers: number[]) {
+    selectAllBeats(stepNumbers: number[]) {
       if (state.mode !== "multi") {
         state.mode = "multi";
       }
 
-      // Filter out start position if regular beats are included, and vice versa
-      const hasStartPosition = beatNumbers.includes(0);
-      const regularBeats = beatNumbers.filter((n) => n > 0);
+      // Filter out start position if regular steps are included, and vice versa
+      const hasStartPosition = stepNumbers.includes(0);
+      const regularBeats = stepNumbers.filter((n) => n > 0);
 
       if (hasStartPosition && regularBeats.length > 0) {
-        // If both types, prefer regular beats (more common use case)
-        state.selectedBeatNumbers = new Set(regularBeats);
+        // If both types, prefer regular steps (more common use case)
+        state.selectedStepNumbers = new Set(regularBeats);
       } else {
-        state.selectedBeatNumbers = new Set(beatNumbers);
+        state.selectedStepNumbers = new Set(stepNumbers);
       }
     },
 
     clearMultiSelection() {
-      state.selectedBeatNumbers.clear();
+      state.selectedStepNumbers.clear();
     },
 
     // Start position management
@@ -206,30 +206,30 @@ export function createSequenceSelectionState() {
     },
 
     // Helpers for beat removal adjustments
-    adjustSelectionForRemovedBeat(removedBeatNumber: number) {
-      if (state.selectedBeatNumber === removedBeatNumber) {
-        state.selectedBeatNumber = null;
+    adjustSelectionForRemovedStep(removedStepNumber: number) {
+      if (state.selectedStepNumber === removedStepNumber) {
+        state.selectedStepNumber = null;
       } else if (
-        state.selectedBeatNumber !== null &&
-        state.selectedBeatNumber > removedBeatNumber
+        state.selectedStepNumber !== null &&
+        state.selectedStepNumber > removedStepNumber
       ) {
-        state.selectedBeatNumber = state.selectedBeatNumber - 1;
+        state.selectedStepNumber = state.selectedStepNumber - 1;
       }
     },
 
-    adjustSelectionForInsertedBeat(insertedBeatNumber: number) {
+    adjustSelectionForInsertedStep(insertedStepNumber: number) {
       if (
-        state.selectedBeatNumber !== null &&
-        state.selectedBeatNumber >= insertedBeatNumber
+        state.selectedStepNumber !== null &&
+        state.selectedStepNumber >= insertedStepNumber
       ) {
-        state.selectedBeatNumber = state.selectedBeatNumber + 1;
+        state.selectedStepNumber = state.selectedStepNumber + 1;
       }
     },
 
     reset() {
       state.mode = "single";
-      state.selectedBeatNumber = null;
-      state.selectedBeatNumbers.clear();
+      state.selectedStepNumber = null;
+      state.selectedStepNumbers.clear();
       state.selectedStartPosition = null;
       state.hasStartPosition = false;
     },

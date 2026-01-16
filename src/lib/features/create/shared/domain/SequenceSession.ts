@@ -37,8 +37,8 @@ export interface SequenceSession {
   /** Sequence ID if saved (null for drafts) */
   sequenceId: string | null;
 
-  /** Number of beats in the sequence */
-  beatCount: number;
+  /** Number of steps in the sequence */
+  stepCount: number;
 
   /** Session status */
   status: "active" | "completed" | "abandoned";
@@ -63,7 +63,7 @@ export function createSequenceSession(
     deviceId,
     isSaved: false,
     sequenceId: null,
-    beatCount: 0,
+    stepCount: 0,
     status: "active",
   };
 }

@@ -13,7 +13,7 @@ import type { PanelCoordinationState } from "../../state/panel-coordination-stat
 
 export type PanelId =
   | "animation"
-  | "beatEditor"
+  | "stepEditor"
   | "videoRecord"
   | "filter"
   | "sequenceActions"

@@ -2,7 +2,7 @@
 SelectionToolbar.svelte - Bottom toolbar for multi-select mode
 
 Shows:
-- Selection counter (e.g., "5 beats selected")
+- Selection counter (e.g., "5 steps selected")
 - Edit button (opens batch edit panel)
 - Cancel button (exits multi-select mode)
 - Select All button (optional)
@@ -17,20 +17,20 @@ Shows:
     onEdit,
     onCancel,
     onSelectAll,
-    totalBeats = 0,
+    totalSteps = 0,
   } = $props<{
     selectionCount: number;
     onEdit: () => void;
     onCancel: () => void;
     onSelectAll?: () => void;
-    totalBeats?: number;
+    totalSteps?: number;
   }>();
 
   const canEdit = $derived(selectionCount > 0);
   const selectionText = $derived(
     selectionCount === 1
       ? "1 beat selected"
-      : `${selectionCount} beats selected`
+      : `${selectionCount} steps selected`
   );
 </script>
 
@@ -57,7 +57,7 @@ Shows:
 
   <!-- Actions -->
   <div class="toolbar-actions">
-    {#if onSelectAll && selectionCount < totalBeats}
+    {#if onSelectAll && selectionCount < totalSteps}
       <button
         class="toolbar-button secondary-button"
         onclick={onSelectAll}

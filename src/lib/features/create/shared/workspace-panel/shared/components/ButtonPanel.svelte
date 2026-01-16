@@ -39,7 +39,7 @@
 
   // Hide help button when beat editor or share hub is open (not relevant in those contexts)
   const shouldHideHelpButton = $derived(
-    panelState.isBeatEditorPanelOpen || panelState.isShareHubPanelOpen
+    panelState.isStepEditorPanelOpen || panelState.isShareHubPanelOpen
   );
 
   // Props interface - only event handler callbacks
@@ -71,7 +71,7 @@
   );
   const hasSequenceContent = $derived(
     activeSequenceState.hasStartPosition ||
-    (activeSequenceState.currentSequence?.beats?.length ?? 0) > 0
+    (activeSequenceState.currentSequence?.steps?.length ?? 0) > 0
   );
 
   // Count center-zone buttons to key the container (for smooth cross-fade on layout changes)

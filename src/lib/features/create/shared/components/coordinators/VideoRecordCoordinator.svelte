@@ -99,7 +99,7 @@
 
     try {
       logger.info("Saving sequence to library...", {
-        beatCount: currentSequence.beats.length,
+        stepCount: currentSequence.steps.length,
         sequenceName: metadata.name,
       });
 
@@ -179,8 +179,8 @@
         metadata: {
           sequenceName:
             CreateModuleState.sequenceState.currentSequence?.name || "",
-          beatCount:
-            CreateModuleState.sequenceState.currentSequence?.beats.length || 0,
+          stepCount:
+            CreateModuleState.sequenceState.currentSequence?.steps.length || 0,
         },
       });
 

@@ -1,7 +1,7 @@
 /**
  * Musical Position Calculator
  *
- * Calculates the musical position of beats based on their durations.
+ * Calculates the musical position of steps based on their durations.
  * Supports two display modes:
  * - Decimal mode: "1", "1.25", "1.5", "2", etc.
  * - Musician mode: "1", "1e", "1&", "1a", "2", etc.
@@ -11,7 +11,7 @@
  * - Compound meters (6/8): 3 subdivisions per beat
  */
 
-import type { BeatData } from '../../domain/models/BeatData';
+import type { StepData } from '../../domain/models/StepData';
 import {
 	TIME_SIGNATURES,
 	getSubdivisionsPerBeat,
@@ -36,20 +36,20 @@ export function getSubdivisions(timeSignature?: TimeSignatureKey): number {
 
 /**
  * Calculate the cumulative subdivision index for a beat
- * @param beatIndex - 0-based index in the beats array
- * @param beats - Array of beat data
+ * @param stepIndex - 0-based index in the steps array
+ * @param steps - Array of beat data
  * @param timeSignature - Time signature key (e.g., "4/4", "6/8")
  * @returns The subdivision index where this beat starts (0-based)
  */
 export function calculateSubdivisionIndex(
-	beatIndex: number,
-	beats: readonly BeatData[],
+	stepIndex: number,
+	steps: readonly StepData[],
 	timeSignature?: TimeSignatureKey
 ): number {
 	const subdivisions = getSubdivisions(timeSignature);
 	let total = 0;
-	for (let i = 0; i < beatIndex && i < beats.length; i++) {
-		const duration = beats[i].duration ?? 1;
+	for (let i = 0; i < stepIndex && i < steps.length; i++) {
+		const duration = steps[i].duration ?? 1;
 		total += duration * subdivisions;
 	}
 	return Math.round(total); // Round to handle floating point imprecision
@@ -122,18 +122,18 @@ export function formatPosition(
 
 /**
  * Calculate all beat positions for a sequence
- * @param beats - Array of beat data
+ * @param steps - Array of beat data
  * @param musicianMode - Whether to use musician notation
  * @param timeSignature - Time signature key (e.g., "4/4", "6/8")
  * @returns Array of formatted position strings, one per beat
  */
 export function calculateAllPositions(
-	beats: readonly BeatData[],
+	steps: readonly StepData[],
 	musicianMode: boolean,
 	timeSignature?: TimeSignatureKey
 ): string[] {
-	return beats.map((_, index) => {
-		const subdivisionIndex = calculateSubdivisionIndex(index, beats, timeSignature);
+	return steps.map((_, index) => {
+		const subdivisionIndex = calculateSubdivisionIndex(index, steps, timeSignature);
 		return formatPosition(subdivisionIndex, musicianMode, timeSignature);
 	});
 }

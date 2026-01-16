@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import { container } from "$lib/shared/di";
 import type { IWorkbench } from "../services/contracts/IWorkbench";
 
@@ -18,12 +18,12 @@ export function createWorkbenchState() {
   const Workbench = container.items.workbench as IWorkbench;
 
   // Simple reactive state - just what we need
-  let selectedBeatIndex = $state<number | null>(null);
+  let selectedStepIndex = $state<number | null>(null);
   let error = $state<string | null>(null);
 
   // Computed values
   const hasSelection = $derived(
-    selectedBeatIndex !== null && selectedBeatIndex >= 0
+    selectedStepIndex !== null && selectedStepIndex >= 0
   );
 
   // ============================================================================
@@ -31,14 +31,14 @@ export function createWorkbenchState() {
   // ============================================================================
 
   // Handle beat click
-  function handleBeatClick(
-    beatIndex: number,
+  function handleStepClick(
+    stepIndex: number,
     sequence: SequenceData | null
   ): boolean {
     try {
-      const shouldSelect = Workbench.handleBeatClick(beatIndex, sequence);
+      const shouldSelect = Workbench.handleStepClick(stepIndex, sequence);
       if (shouldSelect) {
-        selectedBeatIndex = beatIndex;
+        selectedStepIndex = stepIndex;
       }
       return shouldSelect;
     } catch (err) {
@@ -51,13 +51,13 @@ export function createWorkbenchState() {
 
   // Edit a beat
   function editBeat(
-    beatIndex: number,
+    stepIndex: number,
     sequence: SequenceData
-  ): BeatData | null {
+  ): StepData | null {
     try {
-      const updatedBeat = Workbench.editBeat(beatIndex, sequence);
+      const updatedStep = Workbench.editBeat(stepIndex, sequence);
       error = null;
-      return updatedBeat;
+      return updatedStep;
     } catch (err) {
       console.error("Error editing beat:", err);
       error = err instanceof Error ? err.message : "Failed to edit beat";
@@ -67,13 +67,13 @@ export function createWorkbenchState() {
 
   // Clear a beat
   function clearBeat(
-    beatIndex: number,
+    stepIndex: number,
     sequence: SequenceData
-  ): BeatData | null {
+  ): StepData | null {
     try {
-      const updatedBeat = Workbench.clearBeat(beatIndex, sequence);
+      const updatedStep = Workbench.clearBeat(stepIndex, sequence);
       error = null;
-      return updatedBeat;
+      return updatedStep;
     } catch (err) {
       console.error("Error clearing beat:", err);
       error = err instanceof Error ? err.message : "Failed to clear beat";
@@ -92,8 +92,8 @@ export function createWorkbenchState() {
 
   return {
     // State getters
-    get selectedBeatIndex() {
-      return selectedBeatIndex;
+    get selectedStepIndex() {
+      return selectedStepIndex;
     },
     get error() {
       return error;
@@ -103,7 +103,7 @@ export function createWorkbenchState() {
     },
 
     // Actions
-    handleBeatClick,
+    handleStepClick,
     editBeat,
     clearBeat,
     clearError,

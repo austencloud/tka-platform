@@ -13,8 +13,8 @@ import type { IBuildConstructSectionCoordinator } from "../contracts/IConstructC
 import type { PictographData } from "../../../../../shared/pictograph/shared/domain/models/PictographData";
 import type { IOrientationCalculator } from "../../../../../shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IReversalDetector } from "../contracts/IReversalDetector";
-import type { BeatData } from "../../domain/models/BeatData";
-import { createBeatData } from "../../domain/factories/createBeatData";
+import type { StepData } from "../../domain/models/StepData";
+import { createStepData } from "../../domain/factories/createStepData";
 
 export class CreateModuleEventHandler implements ICreateModuleEventHandler {
   private constructCoordinator: IBuildConstructSectionCoordinator | null = null;
@@ -29,7 +29,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
 
   // Callback to add option to history
   private addOptionToHistoryCallback:
-    | ((beatIndex: number, beatData: BeatData) => void)
+    | ((stepIndex: number, stepData: StepData) => void)
     | null = null;
 
   // Callback to push undo snapshot
@@ -90,7 +90,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
    * Set callback to add option to history
    */
   setAddOptionToHistoryCallback(
-    addOptionToHistory: (beatIndex: number, beatData: BeatData) => void
+    addOptionToHistory: (stepIndex: number, stepData: StepData) => void
   ): void {
     this.addOptionToHistoryCallback = addOptionToHistory;
   }
@@ -128,25 +128,25 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       performance.mark("initialization-complete");
 
       // Calculate correct beat number based on current sequence length
-      const nextBeatNumber = currentSequence.beats.length + 1;
+      const nextStepNumber = currentSequence.steps.length + 1;
 
       // 📸 PUSH UNDO SNAPSHOT: Save state BEFORE adding beat (now deferred via queueMicrotask)
       this.pushUndoSnapshotCallback?.("ADD_BEAT", {
-        beatNumber: nextBeatNumber,
-        description: `Add beat ${nextBeatNumber}`,
+        stepNumber: nextStepNumber,
+        description: `Add beat ${nextStepNumber}`,
       });
 
       // 🔄 REVERSAL DETECTION: Calculate reversals for the new beat based on current sequence
       let reversalInfo = { blueReversal: false, redReversal: false };
-      if (this.ReversalDetector && currentSequence.beats.length > 0) {
+      if (this.ReversalDetector && currentSequence.steps.length > 0) {
         try {
           reversalInfo = this.ReversalDetector.detectReversalForOption(
-            [...currentSequence.beats], // Spread to mutable array for interface compatibility
+            [...currentSequence.steps], // Spread to mutable array for interface compatibility
             option
           );
         } catch (reversalError) {
           console.warn(
-            `⚠️ CreateModuleEventHandler: Failed to detect reversals for beat ${nextBeatNumber}:`,
+            `⚠️ CreateModuleEventHandler: Failed to detect reversals for beat ${nextStepNumber}:`,
             reversalError
           );
           // Continue without reversal data rather than failing
@@ -154,9 +154,9 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       }
 
       // Create initial beat data from option with correct beat number and reversals
-      let beatData = createBeatData({
-        ...option, // Spread PictographData properties since BeatData extends PictographData
-        beatNumber: nextBeatNumber,
+      let stepData = createStepData({
+        ...option, // Spread PictographData properties since StepData extends PictographData
+        stepNumber: nextStepNumber,
         isBlank: false, // This is a real beat with pictograph data
         blueReversal: reversalInfo.blueReversal,
         redReversal: reversalInfo.redReversal,
@@ -165,27 +165,27 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       performance.mark("beat-data-created");
 
       // 🔄 OPTIMIZATION: Calculate orientations BEFORE UI update to batch into single update
-      if (currentSequence.beats.length > 0 && this.OrientationCalculator) {
-        const lastBeat =
-          currentSequence.beats[currentSequence.beats.length - 1];
+      if (currentSequence.steps.length > 0 && this.OrientationCalculator) {
+        const lastStep =
+          currentSequence.steps[currentSequence.steps.length - 1];
 
-        // Only apply orientation calculations if both beats have motion data
-        if (lastBeat && !lastBeat.isBlank && !beatData.isBlank) {
+        // Only apply orientation calculations if both steps have motion data
+        if (lastStep && !lastStep.isBlank && !stepData.isBlank) {
           try {
             // Update start orientations from the last beat's end orientations
-            beatData = this.OrientationCalculator.updateStartOrientations(
-              beatData,
-              lastBeat
+            stepData = this.OrientationCalculator.updateStartOrientations(
+              stepData,
+              lastStep
             );
             performance.mark("start-orientations-complete");
 
             // Update end orientations based on the motion calculations
-            beatData =
-              this.OrientationCalculator.updateEndOrientations(beatData);
+            stepData =
+              this.OrientationCalculator.updateEndOrientations(stepData);
             performance.mark("end-orientations-complete");
           } catch (orientationError) {
             console.warn(
-              `⚠️ CreateModuleEventHandler: Failed to calculate orientations for beat ${nextBeatNumber}:`,
+              `⚠️ CreateModuleEventHandler: Failed to calculate orientations for beat ${nextStepNumber}:`,
               orientationError
             );
             // Continue without orientation updates rather than failing completely
@@ -197,7 +197,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       // 🚀 SINGLE UI UPDATE: Add beat with orientations already calculated
       const finalSequence = {
         ...currentSequence,
-        beats: [...currentSequence.beats, beatData],
+        steps: [...currentSequence.steps, stepData],
       };
       performance.mark("sequence-updated");
 
@@ -205,13 +205,13 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
       performance.mark("ui-callback-complete");
 
       // 📝 ADD TO HISTORY: Track this option addition for undo functionality
-      this.addOptionToHistoryCallback?.(nextBeatNumber - 1, beatData); // beatIndex is 0-based
+      this.addOptionToHistoryCallback?.(nextStepNumber - 1, stepData); // stepIndex is 0-based
       performance.mark("history-updated");
 
       // 📡 COORDINATION: Notify other components (async, non-blocking)
       performance.mark("coordination-start");
       if (this.constructCoordinator) {
-        this.constructCoordinator.handleBeatAdded(beatData).catch((error) => {
+        this.constructCoordinator.handleBeatAdded(stepData).catch((error) => {
           console.warn(
             "⚠️ CreateModuleEventHandler: Coordination service error:",
             error
@@ -228,8 +228,8 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
   /**
    * Handle beat modification from the Graph Editor
    */
-  handleBeatModified(_beatIndex: number, _beatData: BeatData): void {
-    // beatIndex and beatData parameters are not used but kept for interface compatibility
+  handleBeatModified(_beatIndex: number, _beatData: StepData): void {
+    // stepIndex and stepData parameters are not used but kept for interface compatibility
     // Handle beat modifications from graph editor
     // Note: The coordination service doesn't have handleBeatModified,
     // so we'll handle this locally or extend the interface if needed
@@ -278,7 +278,7 @@ export class CreateModuleEventHandler implements ICreateModuleEventHandler {
     if (type === "current") {
       // TODO: Implement actual export service call
       alert(
-        `Exporting sequence "${config.sequence?.name || "Untitled"}" with ${config.sequence?.beats?.length || 0} beats`
+        `Exporting sequence "${config.sequence?.name || "Untitled"}" with ${config.sequence?.steps?.length || 0} steps`
       );
     } else if (type === "all") {
       // TODO: Implement actual export all service call

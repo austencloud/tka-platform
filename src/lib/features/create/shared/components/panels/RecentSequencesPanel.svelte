@@ -137,7 +137,7 @@
                       {draft.name || "Untitled Sequence"}
                     </div>
                     <div class="item-meta">
-                      {draft.beatCount} beats · {formatDate(draft.updatedAt)}
+                      {draft.stepCount} steps · {formatDate(draft.updatedAt)}
                     </div>
                   </div>
                   <div class="item-actions">
@@ -182,7 +182,7 @@
                       {sequence.metadata.name}
                     </div>
                     <div class="item-meta">
-                      {sequence.beatCount} beats · {formatDate(
+                      {sequence.stepCount} steps · {formatDate(
                         sequence.updatedAt
                       )}
                     </div>

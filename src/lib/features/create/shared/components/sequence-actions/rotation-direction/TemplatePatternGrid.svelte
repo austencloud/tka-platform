@@ -6,25 +6,25 @@
 -->
 <script lang="ts">
   import {
-    getTemplatesForBeatCount,
+    getTemplatesForStepCount,
     getCategoryInfo,
     type TemplateCategory,
     type RotationDirectionTemplateDefinition,
   } from "../../../domain/templates/rotation-direction-templates";
 
   interface Props {
-    beatCount: number;
+    stepCount: number;
     isMobile: boolean;
     onApplyTemplate: (template: RotationDirectionTemplateDefinition) => void;
   }
 
-  let { beatCount, isMobile, onApplyTemplate }: Props = $props();
+  let { stepCount, isMobile, onApplyTemplate }: Props = $props();
 
   // Initialize with default - $effect below will sync with isMobile immediately
   let categoryFilter = $state<TemplateCategory | "all">("all");
 
   // Get all templates for the beat count, excluding uniform (handled separately)
-  const allTemplates = $derived(getTemplatesForBeatCount(beatCount));
+  const allTemplates = $derived(getTemplatesForStepCount(stepCount));
   const nonUniformTemplates = $derived(
     allTemplates.filter((t) => t.category !== "uniform")
   );

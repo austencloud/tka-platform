@@ -14,7 +14,7 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
    * Generate word from beat letters
    */
   generateSequenceWord(sequence: SequenceData): string {
-    const letters = sequence.beats
+    const letters = sequence.steps
       .filter((beat) => !!beat.letter)
       .map((beat) => beat.letter)
       .filter((letter): letter is Letter => letter !== undefined)
@@ -27,43 +27,43 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
    * Calculate total duration of sequence
    */
   calculateSequenceDuration(sequence: SequenceData): number {
-    return sequence.beats.reduce((total, beat) => total + beat.duration, 0);
+    return sequence.steps.reduce((total, beat) => total + beat.duration, 0);
   }
 
   /**
    * Get comprehensive sequence statistics
    */
   getSequenceStatistics(sequence: SequenceData): {
-    totalBeats: number;
-    filledBeats: number;
-    emptyBeats: number;
+    totalSteps: number;
+    filledSteps: number;
+    emptySteps: number;
     duration: number;
   } {
-    const totalBeats = sequence.beats.length;
-    const blankBeats = sequence.beats.filter((beat) => beat.isBlank).length;
-    const filledBeats = totalBeats - blankBeats;
+    const totalSteps = sequence.steps.length;
+    const blankBeats = sequence.steps.filter((beat) => beat.isBlank).length;
+    const filledSteps = totalSteps - blankBeats;
     const totalDuration = this.calculateSequenceDuration(sequence);
 
     return {
-      totalBeats,
-      filledBeats,
-      emptyBeats: blankBeats,
+      totalSteps,
+      filledSteps,
+      emptySteps: blankBeats,
       duration: totalDuration,
     };
   }
 
   /**
-   * Count beats with reversals
+   * Count steps with reversals
    */
   countReversals(sequence: SequenceData): {
     blueReversals: number;
     redReversals: number;
     totalReversals: number;
   } {
-    const blueReversals = sequence.beats.filter(
+    const blueReversals = sequence.steps.filter(
       (beat) => beat.blueReversal
     ).length;
-    const redReversals = sequence.beats.filter(
+    const redReversals = sequence.steps.filter(
       (beat) => beat.redReversal
     ).length;
 
@@ -78,7 +78,7 @@ export class SequenceStatsCalculator implements ISequenceStatsCalculator {
    * Get average beat duration
    */
   getAverageBeatDuration(sequence: SequenceData): number {
-    if (sequence.beats.length === 0) return 0;
-    return this.calculateSequenceDuration(sequence) / sequence.beats.length;
+    if (sequence.steps.length === 0) return 0;
+    return this.calculateSequenceDuration(sequence) / sequence.steps.length;
   }
 }

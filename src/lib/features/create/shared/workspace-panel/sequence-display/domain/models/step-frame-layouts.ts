@@ -8,7 +8,7 @@
  * These layouts are optimized for visual balance and readability.
  */
 
-export interface BeatFrameLayout {
+export interface StepFrameLayout {
   rows: number;
   columns: number;
 }
@@ -22,10 +22,10 @@ export interface BeatFrameLayout {
  * Key patterns:
  * - Small counts (1-4): Single row, expanding columns
  * - Medium counts (5-20): Multiple columns, typically 2-4 columns
- * - 12 beats: Special case - 4 columns x 3 rows for optimal viewing
+ * - 12 steps: Special case - 4 columns x 3 rows for optimal viewing
  * - Large counts (21+): 4 columns, expanding rows
  */
-export const BEAT_FRAME_LAYOUTS: Record<number, BeatFrameLayout> = {
+export const STEP_FRAME_LAYOUTS: Record<number, StepFrameLayout> = {
   0: { rows: 0, columns: 1 }, // Desktop: (0, 1)
   1: { rows: 1, columns: 1 }, // Desktop: (1, 1)
   2: { rows: 1, columns: 2 }, // Desktop: (2, 1) -> 1 row, 2 columns
@@ -38,7 +38,7 @@ export const BEAT_FRAME_LAYOUTS: Record<number, BeatFrameLayout> = {
   9: { rows: 3, columns: 4 }, // Desktop: (3, 3) -> 3 rows, 3 columns
   10: { rows: 2, columns: 4 }, // Desktop: (5, 2) -> 2 rows, 5 columns
   11: { rows: 4, columns: 4 }, // Desktop: (3, 4) -> 4 rows, 3 columns
-  12: { rows: 4, columns: 4 }, // Desktop: (3, 4) -> 4 rows, 3 columns - KEY: 12 beats = 3 cols!
+  12: { rows: 4, columns: 4 }, // Desktop: (3, 4) -> 4 rows, 3 columns - KEY: 12 steps = 3 cols!
   13: { rows: 4, columns: 4 }, // Desktop: (4, 4) -> 4 rows, 4 columns
   14: { rows: 4, columns: 4 }, // Desktop: (4, 4)
   15: { rows: 4, columns: 4 }, // Desktop: (4, 4)
@@ -98,10 +98,10 @@ export const BEAT_FRAME_LAYOUTS: Record<number, BeatFrameLayout> = {
  * Used for: Wide portrait layout (≥ 652px in stacked mode)
  * Takes advantage of horizontal space with up to 8 columns
  *
- * Strategy: Use more columns to spread beats horizontally, fewer rows
+ * Strategy: Use more columns to spread steps horizontally, fewer rows
  * This matches OptionPicker behavior in wide portrait mode
  */
-export const BEAT_FRAME_LAYOUTS_WIDE: Record<number, BeatFrameLayout> = {
+export const BEAT_FRAME_LAYOUTS_WIDE: Record<number, StepFrameLayout> = {
   0: { rows: 0, columns: 1 }, // Desktop: (0, 1)
   1: { rows: 1, columns: 1 }, // Desktop: (1, 1)
   2: { rows: 1, columns: 2 }, // Desktop: (2, 1) -> 1 row, 2 columns
@@ -111,34 +111,34 @@ export const BEAT_FRAME_LAYOUTS_WIDE: Record<number, BeatFrameLayout> = {
   6: { rows: 2, columns: 4 }, // Desktop: (3, 2)
   7: { rows: 2, columns: 4 }, // Desktop: (4, 2) -> 2 rows, 4 columns
   8: { rows: 2, columns: 4 }, // Full width: 1 row x 8 columns
-  9: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (9 beats: 5+4)
+  9: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (9 steps: 5+4)
   10: { rows: 2, columns: 8 }, // Even split: 2 rows x 8 columns
-  11: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (11 beats: 6+5)
+  11: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (11 steps: 6+5)
   12: { rows: 2, columns: 8 }, // Even split: 2 rows x 8 columns
-  13: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (13 beats: 7+6)
+  13: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (13 steps: 7+6)
   14: { rows: 2, columns: 8 }, // Even split: 2 rows x 8 columns
-  15: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (15 beats: 8+7)
+  15: { rows: 2, columns: 8 }, // Wide spread: 2 rows x 8 columns (15 steps: 8+7)
   16: { rows: 2, columns: 8 }, // Full width: 2 rows x 8 columns
-  17: { rows: 3, columns: 8 }, // 3 rows x 8 columns (17 beats: 6+6+5)
+  17: { rows: 3, columns: 8 }, // 3 rows x 8 columns (17 steps: 6+6+5)
   18: { rows: 3, columns: 8 }, // Even spread: 3 rows x 8 columns
-  19: { rows: 3, columns: 8 }, // 3 rows x 8 columns (19 beats: 8+6+5)
-  20: { rows: 3, columns: 8 }, // 3 rows x 8 columns (20 beats: 8+7+5)
+  19: { rows: 3, columns: 8 }, // 3 rows x 8 columns (19 steps: 8+6+5)
+  20: { rows: 3, columns: 8 }, // 3 rows x 8 columns (20 steps: 8+7+5)
   21: { rows: 3, columns: 8 }, // 3 rows x 8 columns
-  22: { rows: 3, columns: 8 }, // 3 rows x 8 columns (22 beats: 8+7+7)
-  23: { rows: 3, columns: 8 }, // 3 rows x 8 columns (23 beats: 8+8+7)
+  22: { rows: 3, columns: 8 }, // 3 rows x 8 columns (22 steps: 8+7+7)
+  23: { rows: 3, columns: 8 }, // 3 rows x 8 columns (23 steps: 8+8+7)
   24: { rows: 3, columns: 8 }, // Full width: 3 rows x 8 columns
-  25: { rows: 4, columns: 8 }, // 4 rows x 8 columns (25 beats: 8+6+6+5)
-  26: { rows: 4, columns: 8 }, // 4 rows x 8 columns (26 beats: 8+7+6+5)
-  27: { rows: 4, columns: 8 }, // 4 rows x 8 columns (27 beats: 8+7+6+6)
+  25: { rows: 4, columns: 8 }, // 4 rows x 8 columns (25 steps: 8+6+6+5)
+  26: { rows: 4, columns: 8 }, // 4 rows x 8 columns (26 steps: 8+7+6+5)
+  27: { rows: 4, columns: 8 }, // 4 rows x 8 columns (27 steps: 8+7+6+6)
   28: { rows: 4, columns: 8 }, // Even spread: 4 rows x 8 columns
-  29: { rows: 4, columns: 8 }, // 4 rows x 8 columns (29 beats: 8+7+7+7)
-  30: { rows: 4, columns: 8 }, // 4 rows x 8 columns (30 beats: 8+8+7+7)
-  31: { rows: 4, columns: 8 }, // 4 rows x 8 columns (31 beats: 8+8+8+7)
+  29: { rows: 4, columns: 8 }, // 4 rows x 8 columns (29 steps: 8+7+7+7)
+  30: { rows: 4, columns: 8 }, // 4 rows x 8 columns (30 steps: 8+8+7+7)
+  31: { rows: 4, columns: 8 }, // 4 rows x 8 columns (31 steps: 8+8+8+7)
   32: { rows: 4, columns: 8 }, // Full width: 4 rows x 8 columns
   33: { rows: 5, columns: 8 }, // 5 rows x 8 columns
   34: { rows: 5, columns: 8 }, // 5 rows x 8 columns
   35: { rows: 5, columns: 8 }, // 5 rows x 8 columns
-  36: { rows: 5, columns: 8 }, // 5 rows x 8 columns (36 beats: 8+8+7+7+6)
+  36: { rows: 5, columns: 8 }, // 5 rows x 8 columns (36 steps: 8+8+7+7+6)
   37: { rows: 5, columns: 8 }, // 5 rows x 8 columns
   38: { rows: 5, columns: 8 }, // 5 rows x 8 columns
   39: { rows: 5, columns: 8 }, // 5 rows x 8 columns
@@ -173,33 +173,33 @@ export const BEAT_FRAME_LAYOUTS_WIDE: Record<number, BeatFrameLayout> = {
  * Get the optimal layout for a given beat count
  * Falls back to calculated layout for counts not in the table
  *
- * @param beatCount - Number of beats in the sequence
+ * @param stepCount - Number of steps in the sequence
  * @param useWideLayout - Whether to use wide layout (≥652px in portrait mode)
  */
 export function getBeatFrameLayout(
-  beatCount: number,
+  stepCount: number,
   useWideLayout: boolean = false
-): BeatFrameLayout {
+): StepFrameLayout {
   // Select the appropriate layout table
   const layoutTable = useWideLayout
     ? BEAT_FRAME_LAYOUTS_WIDE
-    : BEAT_FRAME_LAYOUTS;
+    : STEP_FRAME_LAYOUTS;
 
   // Use predefined layout if available
-  if (beatCount in layoutTable) {
-    return layoutTable[beatCount]!;
+  if (stepCount in layoutTable) {
+    return layoutTable[stepCount]!;
   }
 
   // Fallback: Calculate layout for counts beyond table
   // Pattern for large counts: expanding columns based on layout mode
   if (useWideLayout) {
     // Wide layout: up to 8 columns, expanding rows
-    const columns = Math.min(8, Math.ceil(beatCount / 8));
-    const rows = Math.ceil(beatCount / columns);
+    const columns = Math.min(8, Math.ceil(stepCount / 8));
+    const rows = Math.ceil(stepCount / columns);
     return { rows, columns };
   } else {
     // Narrow layout: 4 columns, expanding rows
-    const columns = Math.ceil(beatCount / 4);
+    const columns = Math.ceil(stepCount / 4);
     return { rows: 4, columns };
   }
 }
@@ -208,14 +208,14 @@ export function getBeatFrameLayout(
  * Check if a beat count should use a narrow layout (fewer columns than default)
  * Useful for responsive adjustments
  *
- * @param beatCount - Number of beats in the sequence
+ * @param stepCount - Number of steps in the sequence
  * @param useWideLayout - Whether to use wide layout
  */
 export function shouldUseNarrowLayout(
-  beatCount: number,
+  stepCount: number,
   useWideLayout: boolean = false
 ): boolean {
-  const layout = getBeatFrameLayout(beatCount, useWideLayout);
+  const layout = getBeatFrameLayout(stepCount, useWideLayout);
   return layout.columns <= 3;
 }
 
@@ -224,12 +224,12 @@ export function shouldUseNarrowLayout(
  * Returns the column count that should be used for the given beat count,
  * respecting both the optimal layout and layout mode constraints
  *
- * @param beatCount - Number of beats in the sequence
+ * @param stepCount - Number of steps in the sequence
  * @param isSideBySideLayout - Whether using side-by-side (horizontal) layout
  * @param containerWidth - Width of the container in pixels
  */
 export function getMaxColumnsForBeatCount(
-  beatCount: number,
+  stepCount: number,
   isSideBySideLayout: boolean,
   containerWidth: number = 0
 ): number {
@@ -237,12 +237,12 @@ export function getMaxColumnsForBeatCount(
   // In top-and-bottom layout: Use container width to determine 4 vs 8 columns
   if (isSideBySideLayout) {
     // Side-by-side layout: Always use narrow layout table and cap at 4
-    const optimalLayout = getBeatFrameLayout(beatCount, false);
+    const optimalLayout = getBeatFrameLayout(stepCount, false);
     return Math.min(optimalLayout.columns, 4);
   } else {
     // Top-and-bottom layout: Use width-based logic
     const useWideLayout = containerWidth >= 650;
-    const optimalLayout = getBeatFrameLayout(beatCount, useWideLayout);
+    const optimalLayout = getBeatFrameLayout(stepCount, useWideLayout);
     const maxCap = useWideLayout ? 8 : 4;
     return Math.min(optimalLayout.columns, maxCap);
   }

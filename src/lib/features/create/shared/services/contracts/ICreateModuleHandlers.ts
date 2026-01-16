@@ -50,7 +50,7 @@ export interface ICreateModuleHandlers {
    * @throws Error if operation fails
    */
   handleRemoveBeat(
-    beatIndex: number,
+    stepIndex: number,
     CreateModuleState: CreateModuleState | null
   ): void;
 

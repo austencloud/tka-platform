@@ -5,7 +5,7 @@
  * Used to determine if a sequence has been modified since last save.
  *
  * INCLUDES (content that affects the sequence):
- * - Beats and their motions
+ * - Steps and their motions
  * - Start position
  * - Grid mode
  * - Prop type
@@ -19,7 +19,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../domain/models/BeatData";
+import type { StepData } from "../domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
@@ -62,9 +62,9 @@ function hashableMotion(motion: MotionData | undefined): object | null {
 /**
  * Extract hashable beat data
  */
-function hashableBeat(beat: BeatData): object {
+function hashableBeat(beat: StepData): object {
   return {
-    bn: beat.beatNumber,
+    bn: beat.stepNumber,
     br: beat.blueReversal,
     rr: beat.redReversal,
     bl: beat.isBlank,
@@ -81,12 +81,12 @@ function hashableBeat(beat: BeatData): object {
  * Extract hashable start position data
  */
 function hashableStartPosition(
-  startPos: PictographData | BeatData | undefined | null
+  startPos: PictographData | StepData | undefined | null
 ): object | null {
   if (!startPos) return null;
 
-  // Check if it's BeatData (has beatNumber) or PictographData
-  const isBeatData = "beatNumber" in startPos;
+  // Check if it's StepData (has stepNumber) or PictographData
+  const isStepData = "stepNumber" in startPos;
 
   return {
     sp: startPos.startPosition,
@@ -94,10 +94,10 @@ function hashableStartPosition(
     lt: startPos.letter,
     bm: hashableMotion(startPos.motions?.blue),
     rm: hashableMotion(startPos.motions?.red),
-    // Include beat-specific fields if it's BeatData
-    ...(isBeatData && {
-      br: (startPos as BeatData).blueReversal,
-      rr: (startPos as BeatData).redReversal,
+    // Include beat-specific fields if it's StepData
+    ...(isStepData && {
+      br: (startPos as StepData).blueReversal,
+      rr: (startPos as StepData).redReversal,
     }),
   };
 }
@@ -111,9 +111,9 @@ function hashableStartPosition(
  */
 export function generateSequenceHash(sequence: SequenceData | null): string {
   if (!sequence) return "";
-  if (!sequence.beats || sequence.beats.length === 0) {
-    // If no beats but has start position, hash that
-    const startPos = sequence.startPosition || sequence.startingPositionBeat;
+  if (!sequence.steps || sequence.steps.length === 0) {
+    // If no steps but has start position, hash that
+    const startPos = sequence.startPosition || sequence.startingPosition;
     if (startPos) {
       const hashable = {
         sp: hashableStartPosition(startPos),
@@ -128,9 +128,9 @@ export function generateSequenceHash(sequence: SequenceData | null): string {
   // Build hashable structure
   // NOTE: propType excluded - prop type is viewer preference, not sequence identity
   const hashable = {
-    b: sequence.beats.map(hashableBeat),
+    b: sequence.steps.map(hashableBeat),
     sp: hashableStartPosition(
-      sequence.startPosition || sequence.startingPositionBeat
+      sequence.startPosition || sequence.startingPosition
     ),
     gm: sequence.gridMode,
   };

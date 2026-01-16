@@ -116,7 +116,7 @@ export class Autosaver {
       if (!this.isDirty) return;
 
       const sequenceData = onSave();
-      if (!sequenceData || sequenceData.beats.length === 0) return;
+      if (!sequenceData || sequenceData.steps.length === 0) return;
 
       try {
         await this.saveDraft(sessionId, sequenceData);

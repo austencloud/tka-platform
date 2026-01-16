@@ -5,13 +5,13 @@
   for blue and red props. Uses PropControlPair for consistent layout.
 -->
 <script lang="ts">
-  import type { BeatData } from "../../domain/models/BeatData";
+  import type { StepData } from "../../domain/models/StepData";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import PropControlPair from "./PropControlPair.svelte";
   import PropOrientationControl from "./PropOrientationControl.svelte";
 
   interface Props {
-    startPositionData: BeatData | null;
+    startPositionData: StepData | null;
     stacked?: boolean;
     onOrientationChange: (color: MotionColor, orientation: string) => void;
   }

@@ -1,24 +1,24 @@
-<!-- BeatGrid.svelte - Responsive beat grid with display animations -->
+<!-- StepGrid.svelte - Responsive beat grid with display animations -->
 <script lang="ts">
-  import type { BeatData } from "../../../domain/models/BeatData";
+  import type { StepData } from "../../../domain/models/StepData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
-  import { createBeatData } from "../../../domain/factories/createBeatData";
+  import { createStepData } from "../../../domain/factories/createStepData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import {
-    createBeatGridDisplayState,
+    createStepGridDisplayState,
     isPendingGenerationAnimation,
     setPendingGenerationAnimation,
-  } from "$lib/features/create/shared/workspace-panel/sequence-display/state/beat-grid-display-state.svelte";
+  } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import {
     calculateBeatPosition,
     calculateGridLayout,
   } from "../utils/grid-calculations";
-  import BeatCell from "./BeatCell.svelte";
+  import StepCell from "./StepCell.svelte";
   import {
     calculateSubdivisionIndex,
     formatPosition,
@@ -31,17 +31,17 @@
   const deviceDetector = container.items.deviceDetector;
 
   let {
-    beats,
+    steps,
     startPosition = null,
-    onBeatClick,
+    onStepClick,
     onStartClick,
-    onBeatDelete,
-    onBeatLongPress,
-    selectedBeatNumber = null, // 0=start, 1=first beat, 2=second beat, etc.
-    removingBeatIndex = null,
-    removingBeatIndices = new Set<number>(),
+    onStepDelete,
+    onStepLongPress,
+    selectedStepNumber = null, // 0=start, 1=first beat, 2=second beat, etc.
+    removingStepIndex = null,
+    removingStepIndices = new Set<number>(),
     isClearing = false,
-    practiceBeatNumber = null, // 0=start, 1=first beat, 2=second beat, etc.
+    practiceStepNumber = null, // 0=start, 1=first beat, 2=second beat, etc.
     isSideBySideLayout = false,
     shouldOrbitAroundCenter = false,
     activeMode = null,
@@ -49,30 +49,30 @@
     isSpotlightMode = false,
     // Manual column override (null = auto)
     manualColumnCount = null,
-    // Highlighted beats for multi-select/section highlighting
-    highlightedBeats = null,
+    // Highlighted steps for multi-select/section highlighting
+    highlightedSteps = null,
     // Height sizing threshold: grids with this many rows or fewer will consider height when sizing
     // Default 4 (workspace mode), use higher values (e.g., 20) for fixed-height containers
     heightSizingRowThreshold = undefined,
     // Multi-select support
-    selectedBeatNumbers = new Set<number>(),
+    selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
     timeSignature = undefined,
   } = $props<{
-    beats: ReadonlyArray<BeatData> | BeatData[];
-    startPosition?: StartPositionData | BeatData | null;
+    steps: ReadonlyArray<StepData> | StepData[];
+    startPosition?: StartPositionData | StepData | null;
     /** Time signature for this sequence (overrides global default) */
     timeSignature?: TimeSignatureKey;
-    onBeatClick?: (beatNumber: number) => void;
+    onStepClick?: (stepNumber: number) => void;
     onStartClick?: () => void;
-    onBeatDelete?: (beatNumber: number) => void;
-    onBeatLongPress?: (beatNumber: number) => void;
-    selectedBeatNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
-    removingBeatIndex?: number | null;
-    removingBeatIndices?: Set<number>;
+    onStepDelete?: (stepNumber: number) => void;
+    onStepLongPress?: (stepNumber: number) => void;
+    selectedStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
+    removingStepIndex?: number | null;
+    removingStepIndices?: Set<number>;
     isClearing?: boolean;
-    practiceBeatNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
+    practiceStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     isSideBySideLayout?: boolean;
     shouldOrbitAroundCenter?: boolean;
     activeMode?: BuildModeId | null;
@@ -80,24 +80,24 @@
     isSpotlightMode?: boolean;
     // Manual column override (null = auto)
     manualColumnCount?: number | null;
-    // Highlighted beats for multi-select/section highlighting (beatNumber -> style)
-    highlightedBeats?: Map<number, { bg: string; border: string }> | null;
+    // Highlighted steps for multi-select/section highlighting (stepNumber -> style)
+    highlightedSteps?: Map<number, { bg: string; border: string }> | null;
     // Height sizing threshold: grids with this many rows or fewer will consider height when sizing
     // Default 4 (workspace mode), use higher values (e.g., 20) for fixed-height containers
     heightSizingRowThreshold?: number;
     // Multi-select support
-    selectedBeatNumbers?: Set<number>;
+    selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
   }>();
 
-  const placeholderBeat = createBeatData({
-    beatNumber: 0,
+  const placeholderStep = createStepData({
+    stepNumber: 0,
     isBlank: true,
   });
 
   // State management - isolated concerns
-  const displayState = createBeatGridDisplayState();
+  const displayState = createStepGridDisplayState();
   const scrollState = createScrollState();
 
   // Container dimensions for responsive sizing (component-local reactive state)
@@ -111,7 +111,7 @@
   // Pass layout mode awareness for column calculation
   const gridLayout = $derived(() => {
     return calculateGridLayout(
-      beats.length,
+      steps.length,
       containerWidth,
       containerHeight,
       deviceDetector,
@@ -132,10 +132,10 @@
   });
 
   // Track previous beat state for change detection
-  // IMPORTANT: Initialize to 0/empty to detect first mount WITH beats (from Generate)
-  // This ensures we trigger animation when component is mounted with pre-populated beats
-  let previousBeatCount = 0;
-  let previousBeatsRef: ReadonlyArray<BeatData> | BeatData[] = [];
+  // IMPORTANT: Initialize to 0/empty to detect first mount WITH steps (from Generate)
+  // This ensures we trigger animation when component is mounted with pre-populated steps
+  let previousStepCount = 0;
+  let previousStepsRef: ReadonlyArray<StepData> | StepData[] = [];
   let isFirstRender = true;
 
   // Helper to trigger animations
@@ -154,7 +154,7 @@
     const mode = displayState.isSequentialMode ? "sequential" : "all-at-once";
 
     if (mode === "sequential") {
-      await displayState.triggerSequentialAnimation(beats, dispatchEvent);
+      await displayState.triggerSequentialAnimation(steps, dispatchEvent);
     } else {
       displayState.triggerAllAtOnceAnimation();
     }
@@ -162,15 +162,15 @@
 
   // Handle beat changes and trigger appropriate animations
   $effect(() => {
-    const currentBeatCount = beats.length;
-    const beatsArrayChanged = beats !== previousBeatsRef;
+    const currentStepCount = steps.length;
+    const beatsArrayChanged = steps !== previousStepsRef;
 
-    // Handle first render with pre-populated beats (component mounted after Generate clicked)
+    // Handle first render with pre-populated steps (component mounted after Generate clicked)
     // In this case, the prepare event was fired before component existed, so we need to
     // manually prepare and trigger the animation.
     // IMPORTANT: Only animate if pendingGenerationAnimation flag is true (set by Generate flow).
     // This prevents animation when loading saved sequences on app startup.
-    if (isFirstRender && currentBeatCount > 0) {
+    if (isFirstRender && currentStepCount > 0) {
       isFirstRender = false;
 
       // Only animate if this is from a Generate action, not a loaded sequence
@@ -179,7 +179,7 @@
         setPendingGenerationAnimation(false);
 
         // Manually prepare for animation since we missed the event
-        displayState.prepareSequenceAnimation(currentBeatCount, "sequential");
+        displayState.prepareSequenceAnimation(currentStepCount, "sequential");
 
         // Small delay to let state settle, then trigger animation
         setTimeout(() => {
@@ -187,30 +187,30 @@
         }, 10);
       }
 
-      previousBeatCount = currentBeatCount;
-      previousBeatsRef = beats;
+      previousStepCount = currentStepCount;
+      previousStepsRef = steps;
       return;
     }
 
     isFirstRender = false;
 
-    if (beatsArrayChanged && currentBeatCount > 0) {
-      const beatCountDiff = currentBeatCount - previousBeatCount;
+    if (beatsArrayChanged && currentStepCount > 0) {
+      const beatCountDiff = currentStepCount - previousStepCount;
 
       if (beatCountDiff === 1) {
-        // Single beat added - handles both first beat (previousBeatCount = 0) and subsequent beats
-        if (previousBeatCount === 0) {
+        // Single beat added - handles both first beat (previousStepCount = 0) and subsequent steps
+        if (previousStepCount === 0) {
           // First beat added (e.g., Assembly mode starting fresh)
-          displayState.handleSingleBeatAddition(currentBeatCount - 1);
+          displayState.handleSingleBeatAddition(currentStepCount - 1);
         } else if (activeMode === "assembler") {
           // Assembly mode: always animate new beat
-          // Assembly regenerates all beats with new IDs on each update, so ID comparison won't work
-          displayState.handleSingleBeatAddition(currentBeatCount - 1);
+          // Assembly regenerates all steps with new IDs on each update, so ID comparison won't work
+          displayState.handleSingleBeatAddition(currentStepCount - 1);
         } else {
-          // 🚀 PERFORMANCE: Check only the last beat ID instead of iterating through all beats
+          // 🚀 PERFORMANCE: Check only the last beat ID instead of iterating through all steps
           // This is O(1) instead of O(n), eliminating the 60-70ms setTimeout violations
-          const lastPreviousBeat = previousBeatsRef[previousBeatCount - 1];
-          const lastCurrentBeat = beats[previousBeatCount - 1];
+          const lastPreviousBeat = previousStepsRef[previousStepCount - 1];
+          const lastCurrentBeat = steps[previousStepCount - 1];
           const previousBeatsUnchanged =
             lastPreviousBeat &&
             lastCurrentBeat &&
@@ -218,24 +218,24 @@
 
           if (previousBeatsUnchanged) {
             // Single beat added (Construct mode)
-            displayState.handleSingleBeatAddition(currentBeatCount - 1);
+            displayState.handleSingleBeatAddition(currentStepCount - 1);
           } else {
-            // Beats replaced - trigger full animation
+            // Steps replaced - trigger full animation
             triggerFullAnimation();
           }
         }
       } else if (beatCountDiff === 0) {
-        // Same number of beats - check if IDs are preserved
+        // Same number of steps - check if IDs are preserved
         // This happens during sequence transformations (mirror, rotate, color swap)
         // 🚀 PERFORMANCE: Quick check - compare first and last beat IDs
-        const firstBeatIdMatch = previousBeatsRef[0]?.id === beats[0]?.id;
+        const firstBeatIdMatch = previousStepsRef[0]?.id === steps[0]?.id;
         const lastBeatIdMatch =
-          previousBeatsRef[currentBeatCount - 1]?.id ===
-          beats[currentBeatCount - 1]?.id;
+          previousStepsRef[currentStepCount - 1]?.id ===
+          steps[currentStepCount - 1]?.id;
 
-        if (firstBeatIdMatch && lastBeatIdMatch && currentBeatCount > 0) {
+        if (firstBeatIdMatch && lastBeatIdMatch && currentStepCount > 0) {
           // Beat IDs preserved - this is a data update (transform), not a replacement
-          // NO animation needed - beats will update in place
+          // NO animation needed - steps will update in place
         } else {
           // Beat IDs changed - full sequence replacement (Generate mode)
           triggerFullAnimation();
@@ -244,21 +244,21 @@
         // Full sequence replacement (Generate mode)
         triggerFullAnimation();
       }
-    } else if (currentBeatCount > previousBeatCount) {
-      const beatsAdded = currentBeatCount - previousBeatCount;
-      if (beatsAdded === 1) {
+    } else if (currentStepCount > previousStepCount) {
+      const stepsAdded = currentStepCount - previousStepCount;
+      if (stepsAdded === 1) {
         // Single beat added
-        displayState.handleSingleBeatAddition(currentBeatCount - 1);
+        displayState.handleSingleBeatAddition(currentStepCount - 1);
       }
     }
 
-    // Auto-scroll to bottom when beats added
-    if (currentBeatCount > previousBeatCount) {
+    // Auto-scroll to bottom when steps added
+    if (currentStepCount > previousStepCount) {
       scrollState.scrollToBottom();
     }
 
-    previousBeatCount = currentBeatCount;
-    previousBeatsRef = beats;
+    previousStepCount = currentStepCount;
+    previousStepsRef = steps;
   });
 
   // Event handlers for animation events (defined at module level for cleanup)
@@ -276,7 +276,7 @@
   const handlePrepareSequenceAnimation = (event: Event) => {
     const customEvent = event as CustomEvent;
     displayState.prepareSequenceAnimation(
-      customEvent.detail.beatCount,
+      customEvent.detail.stepCount,
       customEvent.detail.isSequential ? "sequential" : "all-at-once"
     );
   };
@@ -354,9 +354,9 @@
     };
   });
 
-  function handleBeatClick(beatNumber: number) {
+  function handleStepClick(stepNumber: number) {
     hapticService?.trigger("selection");
-    onBeatClick?.(beatNumber);
+    onStepClick?.(stepNumber);
   }
 
   function handleStartClick() {
@@ -364,9 +364,9 @@
     onStartClick?.();
   }
 
-  // Composite key guard to avoid Svelte each_key_duplicate when legacy beats reuse ids
-  const getBeatKey = (beat: BeatData, index: number) =>
-    `${beat.id ?? "no-id"}-${beat.beatNumber ?? index}-${index}`;
+  // Composite key guard to avoid Svelte each_key_duplicate when legacy steps reuse ids
+  const getBeatKey = (beat: StepData, index: number) =>
+    `${beat.id ?? "no-id"}-${beat.stepNumber ?? index}-${index}`;
 
   // Musical position display settings
   const settings = $derived(getSettings());
@@ -377,8 +377,8 @@
   );
 
   // Calculate musical position for a beat at a given index
-  function getMusicalPosition(beatIndex: number): string {
-    const subdivisionIndex = calculateSubdivisionIndex(beatIndex, beats, effectiveTimeSignature);
+  function getMusicalPosition(stepIndex: number): string {
+    const subdivisionIndex = calculateSubdivisionIndex(stepIndex, steps, effectiveTimeSignature);
     return formatPosition(subdivisionIndex, musicianMode, effectiveTimeSignature);
   }
 </script>
@@ -388,7 +388,7 @@
   class:spotlight-mode={isSpotlightMode}
   bind:this={containerRef}
 >
-  {#if beats.length === 0 && (!startPosition || startPosition.isBlank)}
+  {#if steps.length === 0 && (!startPosition || startPosition.isBlank)}
     <!-- Empty grid state -->
     <div class="empty-grid-message">
       <span class="empty-icon">📋</span>
@@ -425,29 +425,29 @@
           }}
           aria-label="Start Position"
         >
-          <BeatCell
+          <StepCell
             beat={startPosition}
             index={-1}
             shouldAnimate={displayState.shouldAnimateStartPosition}
-            isSelected={selectedBeatNumber === 0}
-            isPracticeBeat={practiceBeatNumber === 0}
+            isSelected={selectedStepNumber === 0}
+            isPracticeStep={practiceStepNumber === 0}
             {activeMode}
-            onLongPress={onBeatLongPress}
-            onDelete={() => onBeatDelete?.(0)}
+            onLongPress={onStepLongPress}
+            onDelete={() => onStepDelete?.(0)}
           />
         </div>
       {/if}
 
       <!-- Beat Grid -->
-      {#each beats as beat, index (getBeatKey(beat, index))}
+      {#each steps as beat, index (getBeatKey(beat, index))}
         {@const position = calculateBeatPosition(index, gridLayout().columns)}
         {@const gridRow = position.row}
         {@const gridCol = position.column}
-        {@const isDeleting = removingBeatIndices.has(index)}
+        {@const isDeleting = removingStepIndices.has(index)}
         {@const shouldSlide =
-          removingBeatIndex !== null &&
+          removingStepIndex !== null &&
           !isDeleting &&
-          index > removingBeatIndex}
+          index > removingStepIndex}
         {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
         {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
         <div
@@ -458,20 +458,20 @@
           style:grid-row={gridRow}
           style:grid-column={gridCol}
           style:animation-delay={shouldSlide
-            ? `${Math.min(index - removingBeatIndex - 1, 5) * 50}ms`
+            ? `${Math.min(index - removingStepIndex - 1, 5) * 50}ms`
             : "0ms"}
         >
-          <BeatCell
+          <StepCell
             {beat}
             {index}
-            onClick={() => handleBeatClick(beat.beatNumber)}
-            onDelete={() => onBeatDelete?.(beat.beatNumber)}
-            onLongPress={onBeatLongPress}
+            onClick={() => handleStepClick(beat.stepNumber)}
+            onDelete={() => onStepDelete?.(beat.stepNumber)}
+            onLongPress={onStepLongPress}
             shouldAnimate={shouldAnimateBeat}
-            isSelected={selectedBeatNumber === beat.beatNumber}
-            isPracticeBeat={practiceBeatNumber === beat.beatNumber}
+            isSelected={selectedStepNumber === beat.stepNumber}
+            isPracticeStep={practiceStepNumber === beat.stepNumber}
             {activeMode}
-            highlightStyle={highlightedBeats?.get(beat.beatNumber) ?? null}
+            highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
             musicalPosition={getMusicalPosition(index)}
           />
         </div>
@@ -513,29 +513,29 @@
             }}
             aria-label="Start Position"
           >
-            <BeatCell
+            <StepCell
               beat={startPosition}
               index={-1}
               shouldAnimate={displayState.shouldAnimateStartPosition}
-              isSelected={selectedBeatNumber === 0}
-              isPracticeBeat={practiceBeatNumber === 0}
+              isSelected={selectedStepNumber === 0}
+              isPracticeStep={practiceStepNumber === 0}
               {activeMode}
-              onLongPress={onBeatLongPress}
-              onDelete={() => onBeatDelete?.(0)}
+              onLongPress={onStepLongPress}
+              onDelete={() => onStepDelete?.(0)}
             />
           </div>
         {/if}
 
         <!-- Beat Grid -->
-        {#each beats as beat, index (getBeatKey(beat, index))}
+        {#each steps as beat, index (getBeatKey(beat, index))}
           {@const position = calculateBeatPosition(index, gridLayout().columns)}
           {@const gridRow = position.row}
           {@const gridCol = position.column}
-          {@const isDeleting = removingBeatIndices.has(index)}
+          {@const isDeleting = removingStepIndices.has(index)}
           {@const shouldSlide =
-            removingBeatIndex !== null &&
+            removingStepIndex !== null &&
             !isDeleting &&
-            index > removingBeatIndex}
+            index > removingStepIndex}
           {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
           {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
           <div
@@ -546,20 +546,20 @@
             style:grid-row={gridRow}
             style:grid-column={gridCol}
             style:animation-delay={shouldSlide
-              ? `${Math.min(index - removingBeatIndex - 1, 5) * 50}ms`
+              ? `${Math.min(index - removingStepIndex - 1, 5) * 50}ms`
               : "0ms"}
           >
-            <BeatCell
+            <StepCell
               {beat}
               {index}
-              onClick={() => handleBeatClick(beat.beatNumber)}
-              onDelete={() => onBeatDelete?.(beat.beatNumber)}
-              onLongPress={onBeatLongPress}
+              onClick={() => handleStepClick(beat.stepNumber)}
+              onDelete={() => onStepDelete?.(beat.stepNumber)}
+              onLongPress={onStepLongPress}
               shouldAnimate={shouldAnimateBeat}
-              isSelected={selectedBeatNumber === beat.beatNumber}
-              isPracticeBeat={practiceBeatNumber === beat.beatNumber}
+              isSelected={selectedStepNumber === beat.stepNumber}
+              isPracticeStep={practiceStepNumber === beat.stepNumber}
               {activeMode}
-              highlightStyle={highlightedBeats?.get(beat.beatNumber) ?? null}
+              highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
               musicalPosition={getMusicalPosition(index)}
             />
           </div>
@@ -729,7 +729,7 @@
       forwards;
   }
 
-  /* Hide beats waiting for sequential animation */
+  /* Hide steps waiting for sequential animation */
   .beat-container.hidden-for-sequential {
     opacity: 0;
     pointer-events: none;

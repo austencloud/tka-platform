@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { IBuildConstructSectionCoordinator as IConstructCoordinator } from "../contracts/IConstructCoordinator";
 
 // Note: This service will need to be updated to use the new DI pattern
@@ -73,7 +73,7 @@ export class ConstructCoordinator implements IConstructCoordinator {
     }
   }
 
-  handleStartPositionSet(_startPosition: BeatData): void {
+  handleStartPositionSet(_startPosition: StepData): void {
     try {
       return;
     } catch (error) {
@@ -82,11 +82,11 @@ export class ConstructCoordinator implements IConstructCoordinator {
     }
   }
 
-  async handleBeatAdded(beatData: BeatData): Promise<void> {
+  async handleBeatAdded(stepData: StepData): Promise<void> {
     try {
       // Beat addition is handled by workbench components directly
       // This coordinator just notifies other components of the change
-      this.notifyComponents("beat_added", { beatData });
+      this.notifyComponents("beat_added", { stepData });
     } catch (error) {
       console.error("❌ Error handling beat added:", error);
     }
@@ -139,7 +139,7 @@ export class ConstructCoordinator implements IConstructCoordinator {
         }) as (event: CustomEvent) => void,
 
         optionSelected: ((event: CustomEvent) => {
-          void this.handleBeatAdded(event.detail.beatData);
+          void this.handleBeatAdded(event.detail.stepData);
         }) as (event: CustomEvent) => void,
 
         sequenceModified: ((event: CustomEvent) => {
@@ -188,8 +188,8 @@ export class ConstructCoordinator implements IConstructCoordinator {
   private async updateUIBasedOnSequence(sequence: SequenceData): Promise<void> {
     try {
       // Determine which panel to show based on sequence state
-      const hasStartPosition = sequence.startingPositionBeat != null;
-      const hasBeats = sequence.beats.length > 0;
+      const hasStartPosition = sequence.startingPosition != null;
+      const hasBeats = sequence.steps.length > 0;
 
       let targetPanel: string;
 

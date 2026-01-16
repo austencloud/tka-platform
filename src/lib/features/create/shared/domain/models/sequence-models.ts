@@ -36,7 +36,7 @@ export interface DeleteResult {
 export interface DeleteConfirmationData {
   sequenceId: string;
   sequenceName: string;
-  beatCount: number;
+  stepCount: number;
   sequence?: SequenceData;
   hasVariations?: boolean;
   relatedSequences?: SequenceData[];

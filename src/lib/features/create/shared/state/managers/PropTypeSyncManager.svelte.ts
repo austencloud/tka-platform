@@ -5,11 +5,11 @@
  */
 
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import type { IBeatOperator } from "../../services/contracts/IBeatOperator";
+import type { IStepOperator } from "../../services/contracts/IStepOperator";
 import type { CreateModuleState } from "../create-module-state.svelte";
 
 export interface PropTypeSyncConfig {
-  getBeatOperator: () => IBeatOperator | null;
+  getStepOperator: () => IStepOperator | null;
   getCreateModuleState: () => CreateModuleState | null;
   isServicesInitialized: () => boolean;
 }
@@ -17,7 +17,7 @@ export interface PropTypeSyncConfig {
 export function createPropTypeSyncEffect(
   config: PropTypeSyncConfig
 ): () => void {
-  const { getBeatOperator, getCreateModuleState, isServicesInitialized } =
+  const { getStepOperator, getCreateModuleState, isServicesInitialized } =
     config;
 
   let previousBluePropType: string | undefined = undefined;
@@ -27,9 +27,9 @@ export function createPropTypeSyncEffect(
     $effect(() => {
       if (!isServicesInitialized()) return;
 
-      const BeatOperator = getBeatOperator();
+      const StepOperator = getStepOperator();
       const createModuleState = getCreateModuleState();
-      if (!BeatOperator || !createModuleState) return;
+      if (!StepOperator || !createModuleState) return;
 
       const settings = getSettings();
       const newBluePropType = settings.bluePropType;
@@ -39,7 +39,7 @@ export function createPropTypeSyncEffect(
       // Removed `previousPropType !== undefined` check - we need to sync on mount
       // to ensure start positions (created with default STAFF) match user settings
       if (newBluePropType && newBluePropType !== previousBluePropType) {
-        BeatOperator.bulkUpdatePropType(
+        StepOperator.bulkUpdatePropType(
           "blue",
           newBluePropType,
           createModuleState
@@ -48,7 +48,7 @@ export function createPropTypeSyncEffect(
       previousBluePropType = newBluePropType;
 
       if (newRedPropType && newRedPropType !== previousRedPropType) {
-        BeatOperator.bulkUpdatePropType(
+        StepOperator.bulkUpdatePropType(
           "red",
           newRedPropType,
           createModuleState

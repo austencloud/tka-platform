@@ -21,14 +21,14 @@ export interface ISequenceStatsCalculator {
    * Get comprehensive sequence statistics
    */
   getSequenceStatistics(sequence: SequenceData): {
-    totalBeats: number;
-    filledBeats: number;
-    emptyBeats: number;
+    totalSteps: number;
+    filledSteps: number;
+    emptySteps: number;
     duration: number;
   };
 
   /**
-   * Count beats with reversals
+   * Count steps with reversals
    */
   countReversals(sequence: SequenceData): {
     blueReversals: number;

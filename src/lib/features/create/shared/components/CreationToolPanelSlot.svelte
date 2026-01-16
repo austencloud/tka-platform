@@ -11,7 +11,7 @@
 
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { createBeatData } from "../domain/factories/createBeatData";
+  import { createStepData } from "../domain/factories/createStepData";
   import { createStartPositionData } from "../domain/factories/createStartPositionData";
   import type { IToolPanelMethods } from "../types/create-module-types";
   import { getCreateModuleContext } from "../context/create-module-context";
@@ -71,18 +71,18 @@
   );
 
   // Convert SequenceData to PictographData[] for OptionViewer
-  // Include startingPositionBeat as the first element if it exists
+  // Include startingPosition as the first element if it exists
   // IMPORTANT: Use getActiveTabSequenceState() to get tab-specific data
   const currentSequenceData = $derived.by(() => {
     const activeSequenceState = createModuleState.getActiveTabSequenceState();
     const seq = activeSequenceState.currentSequence;
     if (!seq) return [];
 
-    const startBeat = seq.startingPositionBeat || seq.startPosition;
-    if (!startBeat) return [...seq.beats];
+    const startStep = seq.startingPosition || seq.startPosition;
+    if (!startStep) return [...seq.steps];
 
-    // Include start position beat as first element, followed by regular beats
-    return [startBeat, ...seq.beats];
+    // Include start position beat as first element, followed by regular steps
+    return [startStep, ...seq.steps];
   });
 
   // Get grid mode from the sequence (source of truth after transforms)
@@ -130,13 +130,13 @@
   let {
     toolPanelRef = $bindable(),
     onOptionSelected,
-    onPracticeBeatIndexChange,
+    onPracticeStepIndexChange,
     onOpenFilters,
     onCloseFilters,
   }: {
     toolPanelRef?: IToolPanelMethods | null;
     onOptionSelected: (option: PictographData) => Promise<void>;
-    onPracticeBeatIndexChange: (index: number | null) => void;
+    onPracticeStepIndexChange: (index: number | null) => void;
     onOpenFilters: () => void;
     onCloseFilters: () => void;
   } = $props();
@@ -160,22 +160,22 @@
             {@const assemblerSeq =
               assemblerTabState?.sequenceState?.currentSequence}
             {@const existingStartBeat =
-              assemblerSeq?.startingPositionBeat ||
+              assemblerSeq?.startingPosition ||
               assemblerSeq?.startPosition ||
               null}
-            {@const existingBeatsArray = [...(assemblerSeq?.beats || [])]}
+            {@const existingBeatsArray = [...(assemblerSeq?.steps || [])]}
             {@const hasExistingAssemblerData = !!(
               existingStartBeat || existingBeatsArray.length > 0
             )}
             <AssemblerTab
               initialGridMode={assemblerTabState?.sequenceState?.gridMode}
               hasExistingSequence={hasExistingAssemblerData}
-              existingStartPositionBeat={existingStartBeat}
-              existingBeats={existingBeatsArray}
+              existingStartPositionStep={existingStartBeat}
+              existingSteps={existingBeatsArray}
               bind:undoRef={assemblyUndoRef}
               bind:backRef={assemblyBackRef}
               onClearSequence={() => {
-                // Fully clear the assembler's sequence (beats + start position)
+                // Fully clear the assembler's sequence (steps + start position)
                 const assemblerSequenceState =
                   createModuleState.assemblerTabState?.sequenceState;
                 if (assemblerSequenceState) {
@@ -203,14 +203,14 @@
                     id: crypto.randomUUID(),
                     name: "Hand Path Sequence",
                     word: "",
-                    beats: [],
+                    steps: [],
                     gridMode,
                     thumbnails: [],
                     isFavorite: false,
                     isCircular: false,
                     metadata: {},
                     tags: [],
-                    startingPositionBeat: createStartPositionData({
+                    startingPosition: createStartPositionData({
                       ...startPosition,
                     }),
                   };
@@ -219,7 +219,7 @@
                   // Update existing sequence with start position
                   assemblerSequenceState.updateSequence({
                     ...currentSeq,
-                    startingPositionBeat: createStartPositionData({
+                    startingPosition: createStartPositionData({
                       ...startPosition,
                     }),
                   });
@@ -245,7 +245,7 @@
                     id: crypto.randomUUID(),
                     name: "Hand Path Sequence",
                     word: "",
-                    beats: [],
+                    steps: [],
                     gridMode,
                     thumbnails: [],
                     isFavorite: false,
@@ -256,12 +256,12 @@
                   assemblerSequenceState.setCurrentSequence(currentSeq);
                 }
 
-                const beats = pictographs.map((p, i) =>
-                  createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
+                const steps = pictographs.map((p, i) =>
+                  createStepData({ ...p, stepNumber: i + 1, duration: 1 })
                 );
                 assemblerSequenceState.updateSequence({
                   ...currentSeq,
-                  beats,
+                  steps,
                 });
               }}
               onSequenceComplete={(pictographs) => {
@@ -284,12 +284,12 @@
                   return;
                 }
 
-                const beats = pictographs.map((p, i) =>
-                  createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
+                const steps = pictographs.map((p, i) =>
+                  createStepData({ ...p, stepNumber: i + 1, duration: 1 })
                 );
                 assemblerSequenceState.updateSequence({
                   ...currentSeq,
-                  beats,
+                  steps,
                 });
               }}
               onHeaderTextChange={(text) => {

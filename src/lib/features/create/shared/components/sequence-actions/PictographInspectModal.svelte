@@ -5,7 +5,7 @@
   Designed for widescreen desktop use with easy copy-paste for AI agents.
 -->
 <script lang="ts">
-  import type { BeatData } from "../../domain/models/BeatData";
+  import type { StepData } from "../../domain/models/StepData";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
@@ -23,14 +23,14 @@
 
   interface Props {
     show: boolean;
-    beatData: BeatData | null;
+    stepData: StepData | null;
     onClose: () => void;
   }
 
-  let { show, beatData, onClose }: Props = $props();
+  let { show, stepData, onClose }: Props = $props();
 
   // Calculated data with arrow positions populated
-  let calculatedData = $state<BeatData | null>(null);
+  let calculatedData = $state<StepData | null>(null);
   let pictographDataState = $state<PictographData | null>(null);
   let isCalculating = $state(false);
 
@@ -52,7 +52,7 @@
 
   // Calculate arrow positions when modal opens
   $effect(() => {
-    if (show && beatData) {
+    if (show && stepData) {
       calculateArrowPositions();
     } else if (!show) {
       calculatedData = null;
@@ -64,18 +64,18 @@
   });
 
   async function calculateArrowPositions() {
-    if (!beatData) return;
+    if (!stepData) return;
 
     isCalculating = true;
     try {
       const arrowOrchestrator = container.items.arrowPositioningOrchestrator;
 
       const pictographData: PictographData = {
-        id: beatData.id,
-        letter: beatData.letter,
-        startPosition: beatData.startPosition,
-        endPosition: beatData.endPosition,
-        motions: beatData.motions,
+        id: stepData.id,
+        letter: stepData.letter,
+        startPosition: stepData.startPosition,
+        endPosition: stepData.endPosition,
+        motions: stepData.motions,
       };
 
       // Store for use in formatAllForAI
@@ -85,7 +85,7 @@
         await arrowOrchestrator.calculateAllArrowPoints(pictographData);
 
       calculatedData = {
-        ...beatData,
+        ...stepData,
         motions: calculated.motions,
       };
 
@@ -93,7 +93,7 @@
       calculateLookupKeys(pictographData);
     } catch (err) {
       console.error("Failed to calculate arrow positions:", err);
-      calculatedData = beatData;
+      calculatedData = stepData;
     } finally {
       isCalculating = false;
     }
@@ -213,7 +213,7 @@
   }
 
   // Derived display values
-  const displayData = $derived(calculatedData ?? beatData);
+  const displayData = $derived(calculatedData ?? stepData);
   const blueMotion = $derived(displayData?.motions?.[MotionColor.BLUE]);
   const redMotion = $derived(displayData?.motions?.[MotionColor.RED]);
 
@@ -240,7 +240,7 @@
   }
 
   function handleCopyJson() {
-    copyToClipboard(JSON.stringify(displayData ?? beatData, null, 2), "json");
+    copyToClipboard(JSON.stringify(displayData ?? stepData, null, 2), "json");
   }
 
   function handleBackdropClick(e: MouseEvent) {
@@ -258,7 +258,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if show && beatData}
+{#if show && stepData}
   <div
     class="modal-backdrop"
     onclick={handleBackdropClick}
@@ -271,7 +271,7 @@
     <div class="modal-content">
       <InspectModalHeader
         {displayData}
-        {beatData}
+        {stepData}
         {isCalculating}
         {copiedSection}
         onCopyAll={handleCopyAll}

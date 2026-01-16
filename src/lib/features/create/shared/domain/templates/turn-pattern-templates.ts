@@ -30,7 +30,7 @@ export type PatternComplexity = "simple" | "medium" | "complex";
  */
 export interface TurnPatternTemplate {
   readonly name: string;
-  readonly beatCount: number;
+  readonly stepCount: number;
   readonly entries: readonly TurnPatternEntry[];
   readonly description: string;
   readonly complexity: PatternComplexity;
@@ -106,7 +106,7 @@ export function getPatternComplexity(
 }
 
 // =============================================================================
-// 8-BEAT TEMPLATES
+// 8-STEP TEMPLATES
 // =============================================================================
 
 /**
@@ -118,22 +118,22 @@ export const EIGHT_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================
   {
     name: "Zeros",
-    beatCount: 8,
+    stepCount: 8,
     description: "No rotation - focus on positions",
     complexity: "simple",
     entries: Array.from({ length: 8 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: 0,
       red: 0,
     })),
   },
   {
     name: "Alternating",
-    beatCount: 8,
+    stepCount: 8,
     description: "0-1 symmetric alternation",
     complexity: "simple",
     entries: Array.from({ length: 8 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: i % 2,
       red: i % 2,
     })),
@@ -144,66 +144,66 @@ export const EIGHT_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================
   {
     name: "Alternating Opposition",
-    beatCount: 8,
+    stepCount: 8,
     description: "Blue and red swap each beat",
     complexity: "medium",
     entries: [
-      { beatIndex: 0, blue: 0, red: 1 },
-      { beatIndex: 1, blue: 1, red: 0 },
-      { beatIndex: 2, blue: 0, red: 1 },
-      { beatIndex: 3, blue: 1, red: 0 },
-      { beatIndex: 4, blue: 0, red: 1 },
-      { beatIndex: 5, blue: 1, red: 0 },
-      { beatIndex: 6, blue: 0, red: 1 },
-      { beatIndex: 7, blue: 1, red: 0 },
+      { stepIndex: 0, blue: 0, red: 1 },
+      { stepIndex: 1, blue: 1, red: 0 },
+      { stepIndex: 2, blue: 0, red: 1 },
+      { stepIndex: 3, blue: 1, red: 0 },
+      { stepIndex: 4, blue: 0, red: 1 },
+      { stepIndex: 5, blue: 1, red: 0 },
+      { stepIndex: 6, blue: 0, red: 1 },
+      { stepIndex: 7, blue: 1, red: 0 },
     ],
   },
   {
     name: "Alternating Opposition (Inverted)",
-    beatCount: 8,
+    stepCount: 8,
     description: "Inverted blue/red swap",
     complexity: "medium",
     entries: [
-      { beatIndex: 0, blue: 1, red: 0 },
-      { beatIndex: 1, blue: 0, red: 1 },
-      { beatIndex: 2, blue: 1, red: 0 },
-      { beatIndex: 3, blue: 0, red: 1 },
-      { beatIndex: 4, blue: 1, red: 0 },
-      { beatIndex: 5, blue: 0, red: 1 },
-      { beatIndex: 6, blue: 1, red: 0 },
-      { beatIndex: 7, blue: 0, red: 1 },
+      { stepIndex: 0, blue: 1, red: 0 },
+      { stepIndex: 1, blue: 0, red: 1 },
+      { stepIndex: 2, blue: 1, red: 0 },
+      { stepIndex: 3, blue: 0, red: 1 },
+      { stepIndex: 4, blue: 1, red: 0 },
+      { stepIndex: 5, blue: 0, red: 1 },
+      { stepIndex: 6, blue: 1, red: 0 },
+      { stepIndex: 7, blue: 0, red: 1 },
     ],
   },
   {
     name: "Blue Leads",
-    beatCount: 8,
+    stepCount: 8,
     description: "Blue rotates more than red",
     complexity: "medium",
     entries: [
-      { beatIndex: 0, blue: 1, red: 0 },
-      { beatIndex: 1, blue: 1, red: 0 },
-      { beatIndex: 2, blue: 1, red: 1 },
-      { beatIndex: 3, blue: 1, red: 0 },
-      { beatIndex: 4, blue: 1, red: 0 },
-      { beatIndex: 5, blue: 1, red: 1 },
-      { beatIndex: 6, blue: 1, red: 0 },
-      { beatIndex: 7, blue: 1, red: 0 },
+      { stepIndex: 0, blue: 1, red: 0 },
+      { stepIndex: 1, blue: 1, red: 0 },
+      { stepIndex: 2, blue: 1, red: 1 },
+      { stepIndex: 3, blue: 1, red: 0 },
+      { stepIndex: 4, blue: 1, red: 0 },
+      { stepIndex: 5, blue: 1, red: 1 },
+      { stepIndex: 6, blue: 1, red: 0 },
+      { stepIndex: 7, blue: 1, red: 0 },
     ],
   },
   {
     name: "Red Leads",
-    beatCount: 8,
+    stepCount: 8,
     description: "Red rotates more than blue",
     complexity: "medium",
     entries: [
-      { beatIndex: 0, blue: 0, red: 1 },
-      { beatIndex: 1, blue: 0, red: 1 },
-      { beatIndex: 2, blue: 1, red: 1 },
-      { beatIndex: 3, blue: 0, red: 1 },
-      { beatIndex: 4, blue: 0, red: 1 },
-      { beatIndex: 5, blue: 1, red: 1 },
-      { beatIndex: 6, blue: 0, red: 1 },
-      { beatIndex: 7, blue: 0, red: 1 },
+      { stepIndex: 0, blue: 0, red: 1 },
+      { stepIndex: 1, blue: 0, red: 1 },
+      { stepIndex: 2, blue: 1, red: 1 },
+      { stepIndex: 3, blue: 0, red: 1 },
+      { stepIndex: 4, blue: 0, red: 1 },
+      { stepIndex: 5, blue: 1, red: 1 },
+      { stepIndex: 6, blue: 0, red: 1 },
+      { stepIndex: 7, blue: 0, red: 1 },
     ],
   },
 
@@ -212,72 +212,72 @@ export const EIGHT_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================
   {
     name: "Pyramid",
-    beatCount: 8,
+    stepCount: 8,
     description: "Build up then back down",
     complexity: "complex",
     entries: [
-      { beatIndex: 0, blue: 0, red: 0 },
-      { beatIndex: 1, blue: 1, red: 1 },
-      { beatIndex: 2, blue: 2, red: 2 },
-      { beatIndex: 3, blue: 2, red: 2 },
-      { beatIndex: 4, blue: 2, red: 2 },
-      { beatIndex: 5, blue: 2, red: 2 },
-      { beatIndex: 6, blue: 1, red: 1 },
-      { beatIndex: 7, blue: 0, red: 0 },
+      { stepIndex: 0, blue: 0, red: 0 },
+      { stepIndex: 1, blue: 1, red: 1 },
+      { stepIndex: 2, blue: 2, red: 2 },
+      { stepIndex: 3, blue: 2, red: 2 },
+      { stepIndex: 4, blue: 2, red: 2 },
+      { stepIndex: 5, blue: 2, red: 2 },
+      { stepIndex: 6, blue: 1, red: 1 },
+      { stepIndex: 7, blue: 0, red: 0 },
     ],
   },
   {
     name: "Half Steps",
-    beatCount: 8,
+    stepCount: 8,
     description: "Smooth half-turn progression",
     complexity: "complex",
     entries: [
-      { beatIndex: 0, blue: 0, red: 0 },
-      { beatIndex: 1, blue: 0.5, red: 0.5 },
-      { beatIndex: 2, blue: 1, red: 1 },
-      { beatIndex: 3, blue: 1.5, red: 1.5 },
-      { beatIndex: 4, blue: 1.5, red: 1.5 },
-      { beatIndex: 5, blue: 1, red: 1 },
-      { beatIndex: 6, blue: 0.5, red: 0.5 },
-      { beatIndex: 7, blue: 0, red: 0 },
+      { stepIndex: 0, blue: 0, red: 0 },
+      { stepIndex: 1, blue: 0.5, red: 0.5 },
+      { stepIndex: 2, blue: 1, red: 1 },
+      { stepIndex: 3, blue: 1.5, red: 1.5 },
+      { stepIndex: 4, blue: 1.5, red: 1.5 },
+      { stepIndex: 5, blue: 1, red: 1 },
+      { stepIndex: 6, blue: 0.5, red: 0.5 },
+      { stepIndex: 7, blue: 0, red: 0 },
     ],
   },
   {
     name: "Float Wave",
-    beatCount: 8,
+    stepCount: 8,
     description: "Floats in the middle",
     complexity: "complex",
     entries: [
-      { beatIndex: 0, blue: 0, red: 0 },
-      { beatIndex: 1, blue: 1, red: 1 },
-      { beatIndex: 2, blue: "fl", red: "fl" },
-      { beatIndex: 3, blue: "fl", red: "fl" },
-      { beatIndex: 4, blue: "fl", red: "fl" },
-      { beatIndex: 5, blue: "fl", red: "fl" },
-      { beatIndex: 6, blue: 1, red: 1 },
-      { beatIndex: 7, blue: 0, red: 0 },
+      { stepIndex: 0, blue: 0, red: 0 },
+      { stepIndex: 1, blue: 1, red: 1 },
+      { stepIndex: 2, blue: "fl", red: "fl" },
+      { stepIndex: 3, blue: "fl", red: "fl" },
+      { stepIndex: 4, blue: "fl", red: "fl" },
+      { stepIndex: 5, blue: "fl", red: "fl" },
+      { stepIndex: 6, blue: 1, red: 1 },
+      { stepIndex: 7, blue: 0, red: 0 },
     ],
   },
   {
     name: "Contrast",
-    beatCount: 8,
+    stepCount: 8,
     description: "Opposing high and low turns",
     complexity: "complex",
     entries: [
-      { beatIndex: 0, blue: 0, red: 2 },
-      { beatIndex: 1, blue: 2, red: 0 },
-      { beatIndex: 2, blue: 0, red: 2 },
-      { beatIndex: 3, blue: 2, red: 0 },
-      { beatIndex: 4, blue: 0, red: 2 },
-      { beatIndex: 5, blue: 2, red: 0 },
-      { beatIndex: 6, blue: 0, red: 2 },
-      { beatIndex: 7, blue: 2, red: 0 },
+      { stepIndex: 0, blue: 0, red: 2 },
+      { stepIndex: 1, blue: 2, red: 0 },
+      { stepIndex: 2, blue: 0, red: 2 },
+      { stepIndex: 3, blue: 2, red: 0 },
+      { stepIndex: 4, blue: 0, red: 2 },
+      { stepIndex: 5, blue: 2, red: 0 },
+      { stepIndex: 6, blue: 0, red: 2 },
+      { stepIndex: 7, blue: 2, red: 0 },
     ],
   },
 ];
 
 // =============================================================================
-// 16-BEAT TEMPLATES
+// 16-STEP TEMPLATES
 // =============================================================================
 
 /**
@@ -289,22 +289,22 @@ export const SIXTEEN_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================
   {
     name: "Zeros",
-    beatCount: 16,
+    stepCount: 16,
     description: "No rotation - focus on positions",
     complexity: "simple",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: 0,
       red: 0,
     })),
   },
   {
     name: "Alternating",
-    beatCount: 16,
+    stepCount: 16,
     description: "0-1 symmetric alternation",
     complexity: "simple",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: i % 2,
       red: i % 2,
     })),
@@ -315,57 +315,57 @@ export const SIXTEEN_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================
   {
     name: "Alternating Opposition",
-    beatCount: 16,
+    stepCount: 16,
     description: "Blue and red swap each beat",
     complexity: "medium",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: i % 2,
       red: (i + 1) % 2,
     })),
   },
   {
     name: "Alternating Opposition (Inverted)",
-    beatCount: 16,
+    stepCount: 16,
     description: "Inverted blue/red swap",
     complexity: "medium",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: (i + 1) % 2,
       red: i % 2,
     })),
   },
   {
     name: "Blue Leads",
-    beatCount: 16,
+    stepCount: 16,
     description: "Blue consistently rotates more",
     complexity: "medium",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: 1,
       red: i % 3 === 0 ? 1 : 0,
     })),
   },
   {
     name: "Red Leads",
-    beatCount: 16,
+    stepCount: 16,
     description: "Red consistently rotates more",
     complexity: "medium",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: i % 3 === 0 ? 1 : 0,
       red: 1,
     })),
   },
   {
     name: "Quarters",
-    beatCount: 16,
+    stepCount: 16,
     description: "Different intensity each quarter",
     complexity: "medium",
     entries: Array.from({ length: 16 }, (_, i) => {
       const quarter = Math.floor(i / 4);
       return {
-        beatIndex: i,
+        stepIndex: i,
         blue: quarter === 0 || quarter === 2 ? 0 : 1,
         red: quarter === 0 || quarter === 2 ? 0 : 1,
       };
@@ -377,96 +377,96 @@ export const SIXTEEN_BEAT_TEMPLATES: TurnPatternTemplate[] = [
   // ========================
   {
     name: "Pyramid",
-    beatCount: 16,
+    stepCount: 16,
     description: "Build to peak, then descend",
     complexity: "complex",
     entries: [
-      { beatIndex: 0, blue: 0, red: 0 },
-      { beatIndex: 1, blue: 0, red: 0 },
-      { beatIndex: 2, blue: 1, red: 1 },
-      { beatIndex: 3, blue: 1, red: 1 },
-      { beatIndex: 4, blue: 2, red: 2 },
-      { beatIndex: 5, blue: 2, red: 2 },
-      { beatIndex: 6, blue: 2, red: 2 },
-      { beatIndex: 7, blue: 2, red: 2 },
-      { beatIndex: 8, blue: 2, red: 2 },
-      { beatIndex: 9, blue: 2, red: 2 },
-      { beatIndex: 10, blue: 2, red: 2 },
-      { beatIndex: 11, blue: 2, red: 2 },
-      { beatIndex: 12, blue: 1, red: 1 },
-      { beatIndex: 13, blue: 1, red: 1 },
-      { beatIndex: 14, blue: 0, red: 0 },
-      { beatIndex: 15, blue: 0, red: 0 },
+      { stepIndex: 0, blue: 0, red: 0 },
+      { stepIndex: 1, blue: 0, red: 0 },
+      { stepIndex: 2, blue: 1, red: 1 },
+      { stepIndex: 3, blue: 1, red: 1 },
+      { stepIndex: 4, blue: 2, red: 2 },
+      { stepIndex: 5, blue: 2, red: 2 },
+      { stepIndex: 6, blue: 2, red: 2 },
+      { stepIndex: 7, blue: 2, red: 2 },
+      { stepIndex: 8, blue: 2, red: 2 },
+      { stepIndex: 9, blue: 2, red: 2 },
+      { stepIndex: 10, blue: 2, red: 2 },
+      { stepIndex: 11, blue: 2, red: 2 },
+      { stepIndex: 12, blue: 1, red: 1 },
+      { stepIndex: 13, blue: 1, red: 1 },
+      { stepIndex: 14, blue: 0, red: 0 },
+      { stepIndex: 15, blue: 0, red: 0 },
     ],
   },
   {
     name: "Half Steps",
-    beatCount: 16,
+    stepCount: 16,
     description: "Smooth half-turn progression",
     complexity: "complex",
     entries: [
-      { beatIndex: 0, blue: 0, red: 0 },
-      { beatIndex: 1, blue: 0.5, red: 0.5 },
-      { beatIndex: 2, blue: 0.5, red: 0.5 },
-      { beatIndex: 3, blue: 1, red: 1 },
-      { beatIndex: 4, blue: 1, red: 1 },
-      { beatIndex: 5, blue: 1.5, red: 1.5 },
-      { beatIndex: 6, blue: 1.5, red: 1.5 },
-      { beatIndex: 7, blue: 2, red: 2 },
-      { beatIndex: 8, blue: 2, red: 2 },
-      { beatIndex: 9, blue: 1.5, red: 1.5 },
-      { beatIndex: 10, blue: 1.5, red: 1.5 },
-      { beatIndex: 11, blue: 1, red: 1 },
-      { beatIndex: 12, blue: 1, red: 1 },
-      { beatIndex: 13, blue: 0.5, red: 0.5 },
-      { beatIndex: 14, blue: 0.5, red: 0.5 },
-      { beatIndex: 15, blue: 0, red: 0 },
+      { stepIndex: 0, blue: 0, red: 0 },
+      { stepIndex: 1, blue: 0.5, red: 0.5 },
+      { stepIndex: 2, blue: 0.5, red: 0.5 },
+      { stepIndex: 3, blue: 1, red: 1 },
+      { stepIndex: 4, blue: 1, red: 1 },
+      { stepIndex: 5, blue: 1.5, red: 1.5 },
+      { stepIndex: 6, blue: 1.5, red: 1.5 },
+      { stepIndex: 7, blue: 2, red: 2 },
+      { stepIndex: 8, blue: 2, red: 2 },
+      { stepIndex: 9, blue: 1.5, red: 1.5 },
+      { stepIndex: 10, blue: 1.5, red: 1.5 },
+      { stepIndex: 11, blue: 1, red: 1 },
+      { stepIndex: 12, blue: 1, red: 1 },
+      { stepIndex: 13, blue: 0.5, red: 0.5 },
+      { stepIndex: 14, blue: 0.5, red: 0.5 },
+      { stepIndex: 15, blue: 0, red: 0 },
     ],
   },
   {
     name: "Float Wave",
-    beatCount: 16,
+    stepCount: 16,
     description: "Float sections with turn breaks",
     complexity: "complex",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: i >= 4 && i <= 7 ? "fl" : i >= 12 && i <= 15 ? "fl" : 1,
       red: i >= 4 && i <= 7 ? "fl" : i >= 12 && i <= 15 ? "fl" : 1,
     })),
   },
   {
     name: "Contrast",
-    beatCount: 16,
+    stepCount: 16,
     description: "Opposing high and low turns",
     complexity: "complex",
     entries: Array.from({ length: 16 }, (_, i) => ({
-      beatIndex: i,
+      stepIndex: i,
       blue: i % 2 === 0 ? 0 : 2,
       red: i % 2 === 0 ? 2 : 0,
     })),
   },
   {
     name: "Diverge",
-    beatCount: 16,
+    stepCount: 16,
     description: "Blue and red diverge then converge",
     complexity: "complex",
     entries: [
-      { beatIndex: 0, blue: 1, red: 1 },
-      { beatIndex: 1, blue: 0, red: 2 },
-      { beatIndex: 2, blue: 0, red: 2 },
-      { beatIndex: 3, blue: 0, red: 2 },
-      { beatIndex: 4, blue: 1, red: 1 },
-      { beatIndex: 5, blue: 2, red: 0 },
-      { beatIndex: 6, blue: 2, red: 0 },
-      { beatIndex: 7, blue: 2, red: 0 },
-      { beatIndex: 8, blue: 1, red: 1 },
-      { beatIndex: 9, blue: 0, red: 2 },
-      { beatIndex: 10, blue: 0, red: 2 },
-      { beatIndex: 11, blue: 0, red: 2 },
-      { beatIndex: 12, blue: 1, red: 1 },
-      { beatIndex: 13, blue: 2, red: 0 },
-      { beatIndex: 14, blue: 2, red: 0 },
-      { beatIndex: 15, blue: 1, red: 1 },
+      { stepIndex: 0, blue: 1, red: 1 },
+      { stepIndex: 1, blue: 0, red: 2 },
+      { stepIndex: 2, blue: 0, red: 2 },
+      { stepIndex: 3, blue: 0, red: 2 },
+      { stepIndex: 4, blue: 1, red: 1 },
+      { stepIndex: 5, blue: 2, red: 0 },
+      { stepIndex: 6, blue: 2, red: 0 },
+      { stepIndex: 7, blue: 2, red: 0 },
+      { stepIndex: 8, blue: 1, red: 1 },
+      { stepIndex: 9, blue: 0, red: 2 },
+      { stepIndex: 10, blue: 0, red: 2 },
+      { stepIndex: 11, blue: 0, red: 2 },
+      { stepIndex: 12, blue: 1, red: 1 },
+      { stepIndex: 13, blue: 2, red: 0 },
+      { stepIndex: 14, blue: 2, red: 0 },
+      { stepIndex: 15, blue: 1, red: 1 },
     ],
   },
 ];
@@ -476,11 +476,11 @@ export const SIXTEEN_BEAT_TEMPLATES: TurnPatternTemplate[] = [
 // =============================================================================
 
 /**
- * Create a uniform pattern (same turn value for all beats)
+ * Create a uniform pattern (same turn value for all steps)
  * This replaces individual "All Ones", "All Twos", "All Threes" templates
  */
 export function createUniformPattern(
-  beatCount: number,
+  stepCount: number,
   turnValue: TurnValue
 ): TurnPatternTemplate {
   const complexity: PatternComplexity =
@@ -496,11 +496,11 @@ export function createUniformPattern(
 
   return {
     name: `Uniform ${label}`,
-    beatCount,
-    description: `All beats set to ${label}`,
+    stepCount,
+    description: `All steps set to ${label}`,
     complexity,
-    entries: Array.from({ length: beatCount }, (_, i) => ({
-      beatIndex: i,
+    entries: Array.from({ length: stepCount }, (_, i) => ({
+      stepIndex: i,
       blue: turnValue,
       red: turnValue,
     })),
@@ -510,11 +510,11 @@ export function createUniformPattern(
 /**
  * Get all templates for a given beat count
  */
-export function getTemplatesForBeatCount(
-  beatCount: number
+export function getTemplatesForStepCount(
+  stepCount: number
 ): TurnPatternTemplate[] {
-  if (beatCount === 8) return EIGHT_BEAT_TEMPLATES;
-  if (beatCount === 16) return SIXTEEN_BEAT_TEMPLATES;
+  if (stepCount === 8) return EIGHT_BEAT_TEMPLATES;
+  if (stepCount === 16) return SIXTEEN_BEAT_TEMPLATES;
   return [];
 }
 
@@ -522,10 +522,10 @@ export function getTemplatesForBeatCount(
  * Get templates filtered by complexity
  */
 export function getTemplatesByComplexity(
-  beatCount: number,
+  stepCount: number,
   complexity: PatternComplexity
 ): TurnPatternTemplate[] {
-  return getTemplatesForBeatCount(beatCount).filter(
+  return getTemplatesForStepCount(stepCount).filter(
     (t) => t.complexity === complexity
   );
 }
@@ -560,7 +560,7 @@ export function templateToPattern(
     name: template.name,
     userId,
     createdAt: null as unknown as Timestamp, // Not stored in Firebase
-    beatCount: template.beatCount,
+    stepCount: template.stepCount,
     entries: template.entries,
   };
 }

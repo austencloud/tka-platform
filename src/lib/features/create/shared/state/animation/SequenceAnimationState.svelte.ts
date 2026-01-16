@@ -10,25 +10,25 @@
  */
 
 export interface SequenceAnimationStateData {
-  removingBeatIndex: number | null;
-  removingBeatIndices: Set<number>;
+  removingStepIndex: number | null;
+  removingStepIndices: Set<number>;
   isClearing: boolean;
 }
 
 export function createSequenceAnimationState() {
   const state = $state<SequenceAnimationStateData>({
-    removingBeatIndex: null,
-    removingBeatIndices: new Set<number>(),
+    removingStepIndex: null,
+    removingStepIndices: new Set<number>(),
     isClearing: false,
   });
 
   return {
     // Getters
-    get removingBeatIndex() {
-      return state.removingBeatIndex;
+    get removingStepIndex() {
+      return state.removingStepIndex;
     },
-    get removingBeatIndices() {
-      return state.removingBeatIndices;
+    get removingStepIndices() {
+      return state.removingStepIndices;
     },
     get isClearing() {
       return state.isClearing;
@@ -37,42 +37,42 @@ export function createSequenceAnimationState() {
     // Computed
     get isAnimating() {
       return (
-        state.removingBeatIndex !== null ||
-        state.removingBeatIndices.size > 0 ||
+        state.removingStepIndex !== null ||
+        state.removingStepIndices.size > 0 ||
         state.isClearing
       );
     },
 
     // Single beat removal animation
     startRemovingBeat(index: number) {
-      state.removingBeatIndex = index;
+      state.removingStepIndex = index;
     },
 
     endRemovingBeat() {
-      state.removingBeatIndex = null;
+      state.removingStepIndex = null;
     },
 
     // Multi-beat removal animation
     startRemovingBeats(indices: number[]) {
-      state.removingBeatIndices = new Set(indices);
+      state.removingStepIndices = new Set(indices);
     },
 
     addRemovingBeat(index: number) {
       // Create new Set to trigger Svelte reactivity
-      state.removingBeatIndices = new Set([
-        ...state.removingBeatIndices,
+      state.removingStepIndices = new Set([
+        ...state.removingStepIndices,
         index,
       ]);
     },
 
     endRemovingBeats() {
-      state.removingBeatIndices = new Set();
+      state.removingStepIndices = new Set();
     },
 
     isBeatRemoving(index: number): boolean {
       return (
-        state.removingBeatIndex === index ||
-        state.removingBeatIndices.has(index)
+        state.removingStepIndex === index ||
+        state.removingStepIndices.has(index)
       );
     },
 
@@ -86,8 +86,8 @@ export function createSequenceAnimationState() {
     },
 
     reset() {
-      state.removingBeatIndex = null;
-      state.removingBeatIndices = new Set();
+      state.removingStepIndex = null;
+      state.removingStepIndices = new Set();
       state.isClearing = false;
     },
   };

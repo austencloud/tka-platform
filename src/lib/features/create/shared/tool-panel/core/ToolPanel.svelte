@@ -20,7 +20,7 @@
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
-  import { createBeatData } from "../../domain/factories/createBeatData";
+  import { createStepData } from "../../domain/factories/createStepData";
   import { createStartPositionData } from "../../domain/factories/createStartPositionData";
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
@@ -82,17 +82,17 @@
   // Animation state ref - shared with AnimationPanel and AnimateControls
   let animationStateRef = $state<IAnimationStateRef>({
     isPlaying: false,
-    currentBeat: 0,
-    totalBeats: 0,
+    currentStep: 0,
+    totalSteps: 0,
     speed: 1.0,
     shouldLoop: false,
     play: () => {},
     stop: () => {},
-    jumpToBeat: () => {},
+    jumpToStep: () => {},
     setSpeed: () => {},
     setShouldLoop: () => {},
-    nextBeat: () => {},
-    previousBeat: () => {},
+    nextStep: () => {},
+    previousStep: () => {},
   });
 
   // Transition state for undo animations
@@ -294,14 +294,14 @@
                     id: crypto.randomUUID(),
                     name: "Hand Path Sequence",
                     word: "",
-                    beats: [],
+                    steps: [],
                     gridMode,
                     thumbnails: [],
                     isFavorite: false,
                     isCircular: false,
                     metadata: {},
                     tags: [],
-                    startingPositionBeat: createStartPositionData({
+                    startingPosition: createStartPositionData({
                       ...startPosition,
                     }),
                   };
@@ -309,42 +309,42 @@
                     currentSeq
                   );
                 } else {
-                  // IMPORTANT: Clear existing beats when setting new start position in assembly mode
+                  // IMPORTANT: Clear existing steps when setting new start position in assembly mode
                   // This prevents old beat data from persisting after clear
                   createModuleState.sequenceState.updateSequence({
                     ...currentSeq,
-                    beats: [], // Clear beats when setting new start position
-                    startingPositionBeat: createStartPositionData({
+                    steps: [], // Clear steps when setting new start position
+                    startingPosition: createStartPositionData({
                       ...startPosition,
                     }),
                   });
                 }
               }}
               onSequenceUpdate={(pictographs) => {
-                // Preview mode - update current sequence beats
+                // Preview mode - update current sequence steps
                 const currentSeq =
                   createModuleState.sequenceState.currentSequence;
                 if (currentSeq) {
-                  const beats = pictographs.map((p, i) =>
-                    createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
+                  const steps = pictographs.map((p, i) =>
+                    createStepData({ ...p, stepNumber: i + 1, duration: 1 })
                   );
                   createModuleState.sequenceState.updateSequence({
                     ...currentSeq,
-                    beats,
+                    steps,
                   });
                 }
               }}
               onSequenceComplete={(pictographs) => {
-                // Complete - update current sequence beats and set level to 1
+                // Complete - update current sequence steps and set level to 1
                 const currentSeq =
                   createModuleState.sequenceState.currentSequence;
                 if (currentSeq) {
-                  const beats = pictographs.map((p, i) =>
-                    createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
+                  const steps = pictographs.map((p, i) =>
+                    createStepData({ ...p, stepNumber: i + 1, duration: 1 })
                   );
                   createModuleState.sequenceState.updateSequence({
                     ...currentSeq,
-                    beats,
+                    steps,
                     level: 1, // Assembly sequences are always level 1
                   });
                 }

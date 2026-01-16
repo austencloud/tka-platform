@@ -1,7 +1,7 @@
 <!--
-  BeatEditorPanel.svelte
+  StepEditorPanel.svelte
 
-  Panel for editing individual beats (turns, rotation, orientation).
+  Panel for editing individual steps (turns, rotation, orientation).
   Opens directly when clicking a pictograph, or via "Edit Turns" in Sequence Actions.
   Non-modal - allows clicking through to other pictographs while open.
 
@@ -15,11 +15,11 @@
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
-  import BeatEditorHelpModal from "./BeatEditorHelpModal.svelte";
+  import StepEditorHelpModal from "./StepEditorHelpModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
-  import BeatGrid from "../../workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "../../workspace-panel/sequence-display/components/StepGrid.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
-  import type { BeatData } from "../../domain/models/BeatData";
+  import type { StepData } from "../../domain/models/StepData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import {
     MotionColor,
@@ -32,10 +32,10 @@
 
   interface Props {
     isOpen: boolean;
-    selectedBeatNumber: number | null;
-    selectedBeatData: BeatData | null;
+    selectedStepNumber: number | null;
+    selectedStepData: StepData | null;
     sequence?: SequenceData | null;
-    removingBeatIndices?: Set<number>;
+    removingStepIndices?: Set<number>;
     onClose: () => void;
     onTurnsChange: (color: MotionColor, delta: number) => void;
     onRotationChange: (
@@ -43,28 +43,28 @@
       direction: RotationDirection
     ) => void;
     onOrientationChange: (color: MotionColor, orientation: string) => void;
-    onBeatSelect?: (beatNumber: number) => void;
+    onStepSelect?: (stepNumber: number) => void;
     onDelete?: () => void;
     onOpenPropSheet?: (color: "blue" | "red") => void;
-    onBeatDataUpdate?: (updatedBeatData: BeatData) => void;
+    onStepDataUpdate?: (updatedStepData: StepData) => void;
     onPushUndoSnapshot?: () => void;
     onDurationChange?: (newDuration: number) => void;
   }
 
   let {
     isOpen = $bindable(),
-    selectedBeatNumber,
-    selectedBeatData,
+    selectedStepNumber,
+    selectedStepData,
     sequence = null,
-    removingBeatIndices = new Set<number>(),
+    removingStepIndices = new Set<number>(),
     onClose,
     onTurnsChange,
     onRotationChange,
     onOrientationChange,
-    onBeatSelect,
+    onStepSelect,
     onDelete,
     onOpenPropSheet,
-    onBeatDataUpdate,
+    onStepDataUpdate,
     onPushUndoSnapshot,
     onDurationChange,
   }: Props = $props();
@@ -78,37 +78,37 @@
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
 
   // Hold onto previous beat data during transitions
-  // This prevents layout flicker when deleting beats - the controls stay visible
+  // This prevents layout flicker when deleting steps - the controls stay visible
   // with the old data until the new beat is selected, then CSS transitions
   // smoothly animate the pictograph elements to their new positions
-  let displayedBeatData = $state<BeatData | null>(null);
-  let displayedBeatNumber = $state<number | null>(null);
+  let displayedStepData = $state<StepData | null>(null);
+  let displayedStepNumber = $state<number | null>(null);
 
   $effect(() => {
     // Only update displayed data when we have actual new data
-    // When selectedBeatData becomes null (during deletion), keep showing previous
-    if (selectedBeatData !== null) {
-      displayedBeatData = selectedBeatData;
+    // When selectedStepData becomes null (during deletion), keep showing previous
+    if (selectedStepData !== null) {
+      displayedStepData = selectedStepData;
     }
-    if (selectedBeatNumber !== null) {
-      displayedBeatNumber = selectedBeatNumber;
+    if (selectedStepNumber !== null) {
+      displayedStepNumber = selectedStepNumber;
     }
   });
 
   // Reset displayed data when panel closes to avoid stale data on next open
   $effect(() => {
     if (!isOpen) {
-      displayedBeatData = null;
-      displayedBeatNumber = null;
+      displayedStepData = null;
+      displayedStepNumber = null;
     }
   });
 
   // Derived state - use displayed values for rendering to prevent flicker
-  const hasSelection = $derived(displayedBeatNumber !== null);
-  const isStartPositionSelected = $derived(displayedBeatNumber === 0);
+  const hasSelection = $derived(displayedStepNumber !== null);
+  const isStartPositionSelected = $derived(displayedStepNumber === 0);
 
-  const blueMotion = $derived(displayedBeatData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(displayedBeatData?.motions?.[MotionColor.RED]);
+  const blueMotion = $derived(displayedStepData?.motions?.[MotionColor.BLUE]);
+  const redMotion = $derived(displayedStepData?.motions?.[MotionColor.RED]);
 
   const normalizeTurns = (turns: number | string | undefined): number =>
     turns === "fl" ? -0.5 : Number(turns) || 0;
@@ -156,10 +156,10 @@
   );
 
   const beatLabel = $derived.by(() => {
-    if (displayedBeatNumber === null) return "";
-    return displayedBeatNumber === 0
+    if (displayedStepNumber === null) return "";
+    return displayedStepNumber === 0
       ? "Start Position"
-      : `Beat ${displayedBeatNumber}`;
+      : `Beat ${displayedStepNumber}`;
   });
 
   // Inspect modal state (admin-only)
@@ -173,8 +173,8 @@
     onClose();
   }
 
-  function handleBeatClick(beatNumber: number) {
-    onBeatSelect?.(beatNumber);
+  function handleStepClick(stepNumber: number) {
+    onStepSelect?.(stepNumber);
   }
 
   function handleOpenInspect() {
@@ -185,11 +185,11 @@
     showInspectModal = false;
   }
 
-  function handleBeatDataUpdate(updatedBeatData: BeatData) {
+  function handleBeatDataUpdate(updatedStepData: StepData) {
     // Forward to parent for persistence
-    onBeatDataUpdate?.(updatedBeatData);
+    onStepDataUpdate?.(updatedStepData);
     // Also update the displayed beat data locally for immediate visual feedback
-    displayedBeatData = updatedBeatData;
+    displayedStepData = updatedStepData;
   }
 </script>
 
@@ -213,10 +213,10 @@
       </div>
 
       <!-- Arrow adjustment panel in header when arrow is selected -->
-      {#if isAdmin() && hasArrowSelected && displayedBeatData}
+      {#if isAdmin() && hasArrowSelected && displayedStepData}
         <ArrowAdjustmentPanel
-          beatData={displayedBeatData}
-          onBeatDataUpdate={handleBeatDataUpdate}
+          stepData={displayedStepData}
+          onStepDataUpdate={handleBeatDataUpdate}
           {onPushUndoSnapshot}
         />
       {/if}
@@ -228,7 +228,7 @@
           ariaLabel="Help with beat editor"
           size="compact"
         />
-        {#if isAdmin() && hasSelection && displayedBeatData}
+        {#if isAdmin() && hasSelection && displayedStepData}
           <button
             class="icon-btn inspect"
             onclick={handleOpenInspect}
@@ -265,26 +265,26 @@
     <!-- Mobile layout: Beat grid at top -->
     {#if !isSideBySideLayout && sequence}
       <div class="beat-grid-section">
-        <BeatGrid
-          beats={sequence.beats ?? []}
+        <StepGrid
+          steps={sequence.steps ?? []}
           startPosition={sequence.startPosition ||
-            sequence.startingPositionBeat ||
+            sequence.startingPosition ||
             null}
-          {selectedBeatNumber}
-          {removingBeatIndices}
-          onBeatClick={handleBeatClick}
-          onStartClick={() => handleBeatClick(0)}
-          onBeatDelete={() => onDelete?.()}
+          {selectedStepNumber}
+          {removingStepIndices}
+          onStepClick={handleStepClick}
+          onStartClick={() => handleStepClick(0)}
+          onStepDelete={() => onDelete?.()}
         />
       </div>
     {/if}
 
     <!-- Desktop layout: Pictograph Preview with clickable arrows (admin) -->
-    {#if isSideBySideLayout && hasSelection && displayedBeatData}
+    {#if isSideBySideLayout && hasSelection && displayedStepData}
       <div class="preview-section">
         <div class="pictograph-container">
           <PictographContainer
-            pictographData={displayedBeatData}
+            pictographData={displayedStepData}
             arrowsClickable={isAdmin()}
             disableTransitions={true}
           />
@@ -301,7 +301,7 @@
         </div>
       {:else if isStartPositionSelected}
         <StartPositionEditMode
-          startPositionData={displayedBeatData}
+          startPositionData={displayedStepData}
           stacked={!isSideBySideLayout}
           {onOrientationChange}
         />
@@ -321,7 +321,7 @@
         />
         {#if onDurationChange}
           <DurationControl
-            duration={displayedBeatData?.duration ?? 1}
+            duration={displayedStepData?.duration ?? 1}
             onDurationChange={onDurationChange}
           />
         {/if}
@@ -333,12 +333,12 @@
 <!-- Inspect Modal (admin-only) -->
 <PictographInspectModal
   show={showInspectModal}
-  beatData={displayedBeatData}
+  stepData={displayedStepData}
   onClose={handleCloseInspect}
 />
 
 <!-- Help Modal -->
-<BeatEditorHelpModal
+<StepEditorHelpModal
   bind:show={showHelpModal}
   onClose={() => (showHelpModal = false)}
 />
@@ -465,7 +465,7 @@
   }
 
   /* ============================================================================
-     BEAT GRID SECTION - Mobile only, flexible height
+     STEP GRID SECTION - Mobile only, flexible height
      Takes ALL available space - controls sit at bottom with natural size
      ============================================================================ */
 

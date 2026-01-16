@@ -115,9 +115,9 @@ export function createLibrarySaveState() {
 
       // Need content to save
       const hasContent =
-        currentSequence.beats.length > 0 ||
+        currentSequence.steps.length > 0 ||
         currentSequence.startPosition ||
-        currentSequence.startingPositionBeat;
+        currentSequence.startingPosition;
 
       if (!hasContent) return false;
 

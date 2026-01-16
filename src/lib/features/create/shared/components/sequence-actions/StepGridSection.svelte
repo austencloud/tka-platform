@@ -1,33 +1,33 @@
 <!--
-  BeatGridSection.svelte
+  StepGridSection.svelte
 
   Beat grid display section for SequenceActionsPanel.
   Includes shift-mode banner when in shift start mode.
 -->
 <script lang="ts">
-  import BeatGrid from "../../workspace-panel/sequence-display/components/BeatGrid.svelte";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import StepGrid from "../../workspace-panel/sequence-display/components/StepGrid.svelte";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 
   interface Props {
-    beats: readonly BeatData[];
-    startPosition: BeatData | StartPositionData | null;
-    selectedBeatNumber: number | null;
+    steps: readonly StepData[];
+    startPosition: StepData | StartPositionData | null;
+    selectedStepNumber: number | null;
     isShiftMode: boolean;
-    onBeatClick: (beatNumber: number) => void;
+    onStepClick: (stepNumber: number) => void;
     onStartClick: () => void;
-    onBeatLongPress?: (beatNumber: number) => void;
+    onStepLongPress?: (stepNumber: number) => void;
     onCancelShiftMode: () => void;
   }
 
   const {
-    beats,
+    steps,
     startPosition,
-    selectedBeatNumber,
+    selectedStepNumber,
     isShiftMode,
-    onBeatClick,
+    onStepClick,
     onStartClick,
-    onBeatLongPress,
+    onStepLongPress,
     onCancelShiftMode,
   }: Props = $props();
 </script>
@@ -39,13 +39,13 @@
       <button class="cancel-btn" onclick={onCancelShiftMode}>Cancel</button>
     </div>
   {/if}
-  <BeatGrid
-    {beats}
+  <StepGrid
+    {steps}
     {startPosition}
-    {selectedBeatNumber}
-    {onBeatClick}
+    {selectedStepNumber}
+    {onStepClick}
     {onStartClick}
-    onBeatLongPress={isShiftMode ? undefined : onBeatLongPress}
+    onStepLongPress={isShiftMode ? undefined : onStepLongPress}
   />
 </div>
 

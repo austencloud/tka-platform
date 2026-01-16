@@ -2,7 +2,7 @@
   SpotlightButton.svelte
 
   Triggers spotlight mode to enlarge the selected beat for detailed viewing.
-  Replaces the long-press gesture on BeatCell for better discoverability.
+  Replaces the long-press gesture on StepCell for better discoverability.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";

@@ -15,7 +15,7 @@
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
-import type { IBeatOperator } from "./IBeatOperator";
+import type { IStepOperator } from "./IStepOperator";
 import type { ICreateModuleEffectCoordinator } from "./ICreateModuleEffectCoordinator";
 import type { ICreateModuleHandlers } from "./ICreateModuleHandlers";
 import type { IDeepLinkSequenceHandler } from "./IDeepLinkSequenceHandler";
@@ -51,7 +51,7 @@ export interface CreateModuleInitializationResult {
   CreateModuleOrchestrator: ICreateModuleOrchestrator;
   layoutService: IResponsiveLayoutManager;
   NavigationSyncer: INavigationSyncer;
-  BeatOperator: IBeatOperator;
+  StepOperator: IStepOperator;
 
   // UI coordination services
   handlers: ICreateModuleHandlers;

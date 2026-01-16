@@ -14,7 +14,7 @@
   import type { TurnPattern } from "../../domain/models/TurnPatternData";
   import { formatTurnValue } from "../../domain/models/TurnPatternData";
   import {
-    getTemplatesForBeatCount,
+    getTemplatesForStepCount,
     getComplexityInfo,
     templateToPattern,
     createUniformPattern,
@@ -195,13 +195,13 @@
       {#if mode === "save"}
         <!-- Save mode -->
         <div class="save-section">
-          {#if !sequence || sequence.beats.length === 0}
+          {#if !sequence || sequence.steps.length === 0}
             <p class="empty-message">No sequence to save pattern from</p>
           {:else}
             <div class="pattern-preview">
-              <h3>Current Pattern ({sequence.beats.length} beats)</h3>
+              <h3>Current Pattern ({sequence.steps.length} steps)</h3>
               <div class="preview-grid">
-                {#each sequence.beats as beat, i}
+                {#each sequence.steps as beat, i}
                   <div class="preview-beat">
                     <span class="beat-num">{i + 1}</span>
                     <div class="turn-pair">
@@ -250,14 +250,14 @@
             </div>
           {:else}
             <!-- Uniform Pattern Section -->
-            {#if sequence && sequence.beats.length > 0}
+            {#if sequence && sequence.steps.length > 0}
               <div class="uniform-section">
                 <h3>Uniform</h3>
-                <p class="section-desc">Apply same turn value to all beats</p>
+                <p class="section-desc">Apply same turn value to all steps</p>
                 <div class="uniform-buttons">
                   {#each [0, 1, 2, 3] as turnValue}
                     {@const uniformTemplate = createUniformPattern(
-                      sequence.beats.length,
+                      sequence.steps.length,
                       turnValue
                     )}
                     {@const uniformPattern = authState.user
@@ -282,7 +282,7 @@
 
             <!-- Templates section -->
             {@const allTemplates = sequence
-              ? getTemplatesForBeatCount(sequence.beats.length)
+              ? getTemplatesForStepCount(sequence.steps.length)
               : []}
             {@const filteredTemplates =
               complexityFilter === "all"
@@ -438,7 +438,7 @@
                     {@const isDisabled =
                       applyingPattern ||
                       !sequence ||
-                      sequence.beats.length !== pattern.beatCount}
+                      sequence.steps.length !== pattern.stepCount}
                     <div
                       class="pattern-item"
                       class:disabled={isDisabled}
@@ -455,14 +455,14 @@
                         }
                       }}
                       title={sequence &&
-                      sequence.beats.length !== pattern.beatCount
-                        ? `Requires ${pattern.beatCount} beats`
+                      sequence.steps.length !== pattern.stepCount
+                        ? `Requires ${pattern.stepCount} steps`
                         : "Apply pattern"}
                     >
                       <div class="pattern-info">
                         <span class="pattern-name">{pattern.name}</span>
-                        <span class="pattern-beats"
-                          >{pattern.beatCount} beats</span
+                        <span class="pattern-steps"
+                          >{pattern.stepCount} steps</span
                         >
                       </div>
                       <div class="pattern-actions">
@@ -809,7 +809,7 @@
     line-height: 1.3;
   }
 
-  .pattern-beats,
+  .pattern-steps,
   .pattern-desc {
     font-size: 0.75rem;
     color: var(--theme-text-muted, var(--theme-text-dim));

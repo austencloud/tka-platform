@@ -252,7 +252,7 @@ export class BridgeFinder implements IBridgeFinder {
           bridge.endPosition as GridPosition
         );
 
-        const currentLength = sequence.beats?.length || 0;
+        const currentLength = sequence.steps?.length || 0;
 
         let orientationAlignment: OrientationAlignment | undefined;
         let repetitionsNeeded: 1 | 2 | 4 = 1;

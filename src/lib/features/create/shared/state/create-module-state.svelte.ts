@@ -16,7 +16,7 @@ import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceSt
 import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-import type { BeatData } from "../domain/models/BeatData";
+import type { StepData } from "../domain/models/StepData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { AssemblerTabState } from "./assembler-tab-state.svelte";
 import type { GeneratorTabState } from "./generator-tab-state.svelte";
@@ -147,8 +147,8 @@ export function createCreateModuleState(
   /**
    * Add option to history
    */
-  function addOptionToHistory(beatIndex: number, beatData: BeatData) {
-    optionHistoryManager.add(beatIndex, beatData);
+  function addOptionToHistory(stepIndex: number, stepData: StepData) {
+    optionHistoryManager.add(stepIndex, stepData);
   }
 
   /**
@@ -157,7 +157,7 @@ export function createCreateModuleState(
   let guidedModeHeaderText = $state<string | null>(null);
 
   /**
-   * Check if workspace is empty (no beats and no start position)
+   * Check if workspace is empty (no steps and no start position)
    */
   function isWorkspaceEmpty(): boolean {
     const activeSequenceState = getActiveTabSequenceState();
@@ -165,10 +165,10 @@ export function createCreateModuleState(
     if (!sequence) {
       return true;
     }
-    const hasBeat = sequence.beats && sequence.beats.length > 0;
+    const hasStep = sequence.steps && sequence.steps.length > 0;
     const hasStartPosition =
-      sequence.startingPositionBeat || sequence.startPosition;
-    return !hasBeat && !hasStartPosition;
+      sequence.startingPosition || sequence.startPosition;
+    return !hasStep && !hasStartPosition;
   }
 
   /**
@@ -176,11 +176,11 @@ export function createCreateModuleState(
    */
   function getCurrentBeatCount(): number {
     const activeSequenceState = getActiveTabSequenceState();
-    return activeSequenceState.beatCount();
+    return activeSequenceState.stepCount();
   }
 
   /**
-   * Check if sequence has content (beats)
+   * Check if sequence has content (steps)
    */
   function hasSequence(): boolean {
     const activeSequenceState = getActiveTabSequenceState();
@@ -200,24 +200,24 @@ export function createCreateModuleState(
    */
   function canShowActionButtons(): boolean {
     const activeSequenceState = getActiveTabSequenceState();
-    const beatCount = activeSequenceState.beatCount();
-    return beatCount > 0;
+    const stepCount = activeSequenceState.stepCount();
+    return stepCount > 0;
   }
 
   /**
    * Check if sequence actions button can be shown
-   * Shows when there's a start position OR beats (not just beats)
+   * Shows when there's a start position OR steps (not just steps)
    */
   function canShowSequenceActionsButton(): boolean {
     const activeSequenceState = getActiveTabSequenceState();
     const sequence = activeSequenceState.currentSequence;
     if (!sequence) return false;
 
-    const hasBeat = sequence.beats && sequence.beats.length > 0;
+    const hasStep = sequence.steps && sequence.steps.length > 0;
     const hasStartPosition = !!(
-      sequence.startingPositionBeat || sequence.startPosition
+      sequence.startingPosition || sequence.startPosition
     );
-    return hasBeat || hasStartPosition;
+    return hasStep || hasStartPosition;
   }
 
   /**
@@ -375,7 +375,7 @@ export function createCreateModuleState(
     canShowSequenceActionsButton,
     get canAccessEditTab() {
       const activeSequenceState = getActiveTabSequenceState();
-      return activeSequenceState.beatCount() > 0;
+      return activeSequenceState.stepCount() > 0;
     },
 
     // Guided mode

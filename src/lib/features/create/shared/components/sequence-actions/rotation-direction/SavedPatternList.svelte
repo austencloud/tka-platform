@@ -8,13 +8,13 @@
 
   interface Props {
     patterns: RotationDirectionPattern[];
-    currentBeatCount: number;
+    currentStepCount: number;
     applying: boolean;
     onApply: (pattern: RotationDirectionPattern) => void;
     onDelete: (pattern: RotationDirectionPattern) => void;
   }
 
-  let { patterns, currentBeatCount, applying, onApply, onDelete }: Props =
+  let { patterns, currentStepCount, applying, onApply, onDelete }: Props =
     $props();
 </script>
 
@@ -28,7 +28,7 @@
     <h3>Your Patterns</h3>
     <div class="patterns-list">
       {#each patterns as pattern}
-        {@const isDisabled = applying || currentBeatCount !== pattern.beatCount}
+        {@const isDisabled = applying || currentStepCount !== pattern.stepCount}
         <div
           class="pattern-item"
           class:disabled={isDisabled}
@@ -41,13 +41,13 @@
               onApply(pattern);
             }
           }}
-          title={currentBeatCount !== pattern.beatCount
-            ? `Requires ${pattern.beatCount} beats`
+          title={currentStepCount !== pattern.stepCount
+            ? `Requires ${pattern.stepCount} steps`
             : "Apply pattern"}
         >
           <div class="pattern-info">
             <span class="pattern-name">{pattern.name}</span>
-            <span class="pattern-beats">{pattern.beatCount} beats</span>
+            <span class="pattern-steps">{pattern.stepCount} steps</span>
           </div>
           <div class="pattern-actions">
             <button
@@ -145,7 +145,7 @@
     line-height: 1.3;
   }
 
-  .pattern-beats {
+  .pattern-steps {
     font-size: 0.75rem;
     color: var(--theme-text-muted, var(--theme-text-dim));
     line-height: 1.4;

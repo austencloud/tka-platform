@@ -6,7 +6,7 @@
  */
 
 import { PngMetadataExtractor } from "$lib/shared/pictograph/shared/utils/png-metadata-extractor";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -63,21 +63,21 @@ export class SequenceImporter implements ISequenceImporter {
     );
 
     // Filter out start position entries (marked with sequence_start_position)
-    const actualBeats = validatedSteps.filter(
+    const actualSteps = validatedSteps.filter(
       (step) => !step.sequence_start_position
     );
 
-    // Convert validated steps to beats (no more type assertions needed!)
-    const beats: BeatData[] = actualBeats.map((step, index) => {
+    // Convert validated steps to steps (no more type assertions needed!)
+    const steps: StepData[] = actualSteps.map((step, index) => {
       // Derive beat number from array index if not present in metadata
-      const beatNumber = step.beat ?? index + 1;
+      const stepNumber = step.beat ?? index + 1;
       // Extract attributes with proper typing
       const blueAttrs = step.blue_attributes;
       const redAttrs = step.red_attributes;
 
       // Create the pictograph data first
       const pictographData = createPictographData({
-        id: `pictograph-${beatNumber}`,
+        id: `pictograph-${stepNumber}`,
         motions: {
           blue: createMotionData({
             color: MotionColor.BLUE,
@@ -133,11 +133,11 @@ export class SequenceImporter implements ISequenceImporter {
         letter: step.letter as Letter, // Guaranteed valid string
       });
 
-      // Return BeatData that extends PictographData
+      // Return StepData that extends PictographData
       return {
         ...pictographData, // Spread PictographData properties
-        id: `${beatNumber}-${step.letter}`,
-        beatNumber, // Derived from array index or metadata
+        id: `${stepNumber}-${step.letter}`,
+        stepNumber, // Derived from array index or metadata
         duration: 1,
         blueReversal: false,
         redReversal: false,
@@ -151,9 +151,9 @@ export class SequenceImporter implements ISequenceImporter {
       id: crypto.randomUUID(), // Generate proper UUID for validation
       name: id, // Keep original case to preserve Greek letters (Θ, etc.)
       word: id, // Ensure word is always a string
-      beats,
+      steps,
       thumbnails: [], // Empty array as default - schema requires URLs
-      sequenceLength: beats.length,
+      sequenceLength: steps.length,
       author: "PNG Import",
       level: 1,
       dateAdded: new Date(),
@@ -175,7 +175,7 @@ export class SequenceImporter implements ISequenceImporter {
       id: sequenceData.id,
       name: sequenceData.name,
       word: id, // Use id directly to ensure it's always a string
-      beats: sequenceData.beats,
+      steps: sequenceData.steps,
       thumbnails: sequenceData.thumbnails,
       isFavorite: sequenceData.isFavorite,
       isCircular: sequenceData.isCircular,
@@ -195,7 +195,7 @@ export class SequenceImporter implements ISequenceImporter {
       id: validSequenceData.id ?? crypto.randomUUID(),
       name: validSequenceData.name ?? id, // Keep original case to preserve Greek letters
       word: id, // Guarantee word is a string
-      beats: validSequenceData.beats ?? [],
+      steps: validSequenceData.steps ?? [],
       thumbnails: validSequenceData.thumbnails ?? [],
       isFavorite: validSequenceData.isFavorite ?? false,
       isCircular: validSequenceData.isCircular ?? false,
@@ -209,7 +209,7 @@ export class SequenceImporter implements ISequenceImporter {
       author: validSequenceData.author ?? "PNG Import",
       level: validSequenceData.level ?? 1,
       dateAdded: validSequenceData.dateAdded ?? new Date(),
-      sequenceLength: validSequenceData.sequenceLength ?? beats.length,
+      sequenceLength: validSequenceData.sequenceLength ?? steps.length,
     });
 
     // The createSequenceData function already ensures proper typing, so return directly

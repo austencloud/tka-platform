@@ -1,11 +1,11 @@
 /**
  * Sequence Validation Service Interface
  *
- * Pure validation logic for sequences and beats.
+ * Pure validation logic for sequences and steps.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { ValidationResult } from "../../../../../shared/validation/ValidationResult";
 
 export interface ISequenceValidator {
@@ -17,12 +17,12 @@ export interface ISequenceValidator {
   /**
    * Validate a single beat
    */
-  validateBeat(beat: BeatData, expectedBeatNumber: number): string[];
+  validateStep(beat: StepData, expectedStepNumber: number): string[];
 
   /**
    * Validate beat index is within bounds
    */
-  isValidBeatIndex(sequence: SequenceData | null, beatIndex: number): boolean;
+  isValidStepIndex(sequence: SequenceData | null, stepIndex: number): boolean;
 
   /**
    * Validate sequence name

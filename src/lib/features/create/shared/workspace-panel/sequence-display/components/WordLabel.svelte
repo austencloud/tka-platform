@@ -8,14 +8,14 @@
     word = "",
     scrollMode = false,
     letterSources = null,
-    activeBeatNumber = null,
+    activeStepNumber = null,
   } = $props<{
     word?: string;
     scrollMode?: boolean;
     /** Optional: When provided, renders letters with different styles for original vs bridge */
     letterSources?: LetterSource[] | null;
     /** Optional: Current beat number during animation playback (1-indexed) for letter highlighting */
-    activeBeatNumber?: number | null;
+    activeStepNumber?: number | null;
   }>();
 
   // Computed: Whether we have letter source data to render styled letters
@@ -25,7 +25,7 @@
 
   // Computed: Whether animation highlighting is active
   const hasActiveHighlighting = $derived(
-    activeBeatNumber !== null && activeBeatNumber >= 1
+    activeStepNumber !== null && activeStepNumber >= 1
   );
 
   // State
@@ -79,8 +79,8 @@
    */
   const activeLetterIndex = $derived.by(() => {
     if (!hasActiveHighlighting || parsedLetters.length === 0) return -1;
-    // activeBeatNumber is 1-indexed, modulo to wrap around
-    return (activeBeatNumber! - 1) % parsedLetters.length;
+    // activeStepNumber is 1-indexed, modulo to wrap around
+    return (activeStepNumber! - 1) % parsedLetters.length;
   });
 
   // Only show word label if there's an actual word (not empty, not default sequence names)

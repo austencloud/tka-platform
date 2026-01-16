@@ -1,14 +1,14 @@
 /**
  * Auto Edit Panel Manager
  *
- * Handles automatic opening of edit panel when multiple beats are selected.
+ * Handles automatic opening of edit panel when multiple steps are selected.
  * Consolidates multi-select edit panel logic from CreateModule.svelte.
  *
  * Domain: Create module - Edit Panel Automation
  */
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { PanelCoordinationState } from "../panel-coordination-state.svelte";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 
@@ -41,36 +41,36 @@ export function createAutoEditPanelEffect(
 
   return $effect.root(() => {
     $effect(() => {
-      const selectedBeatNumbers =
-        CreateModuleState.sequenceState.selectedBeatNumbers;
-      const selectedCount = selectedBeatNumbers.size ?? 0;
+      const selectedStepNumbers =
+        CreateModuleState.sequenceState.selectedStepNumbers;
+      const selectedCount = selectedStepNumbers.size ?? 0;
 
-      if (selectedCount > 1 && !panelState.isBeatEditorPanelOpen) {
+      if (selectedCount > 1 && !panelState.isStepEditorPanelOpen) {
         // Map beat numbers to beat data
-        const beatNumbersArray = Array.from(selectedBeatNumbers).sort(
+        const beatNumbersArray = Array.from(selectedStepNumbers).sort(
           (a, b) => a - b
         );
-        const beatsData = beatNumbersArray
-          .map((beatNumber) => {
-            if (beatNumber === START_POSITION_BEAT_NUMBER) {
+        const stepsData = beatNumbersArray
+          .map((stepNumber) => {
+            if (stepNumber === START_POSITION_BEAT_NUMBER) {
               // Beat 0 is the start position
               return CreateModuleState.sequenceState.selectedStartPosition;
             } else {
-              // Beats are numbered 1, 2, 3... but stored in array at indices 0, 1, 2...
-              const beatIndex = beatNumber - 1;
-              return CreateModuleState.sequenceState.currentSequence?.beats[
-                beatIndex
+              // Steps are numbered 1, 2, 3... but stored in array at indices 0, 1, 2...
+              const stepIndex = stepNumber - 1;
+              return CreateModuleState.sequenceState.currentSequence?.steps[
+                stepIndex
               ];
             }
           })
           .filter(
-            (beat): beat is BeatData => beat !== null && beat !== undefined
+            (beat): beat is StepData => beat !== null && beat !== undefined
           ); // Remove any null/undefined values
 
         getLogger().log(
-          `Auto-opening batch edit panel: ${selectedCount} beats selected`
+          `Auto-opening batch edit panel: ${selectedCount} steps selected`
         );
-        panelState.openBatchEditPanel(beatsData);
+        panelState.openBatchEditPanel(stepsData);
       }
     });
   });
@@ -98,22 +98,22 @@ export function createAutoBeatEditorEffect(
 
   return $effect.root(() => {
     $effect(() => {
-      const selectedBeatNumber =
-        CreateModuleState.sequenceState.selectedBeatNumber;
+      const selectedStepNumber =
+        CreateModuleState.sequenceState.selectedStepNumber;
 
       // Only act when selection CHANGES (prevents fight with manual close)
-      if (selectedBeatNumber !== lastSelectedBeat) {
-        if (selectedBeatNumber !== null) {
+      if (selectedStepNumber !== lastSelectedBeat) {
+        if (selectedStepNumber !== null) {
           // New beat selected → auto-open Beat Editor panel
-          panelState.openBeatEditorPanel();
+          panelState.openStepEditorPanel();
           getLogger().log(
-            `Auto-opening Beat Editor panel for beat ${selectedBeatNumber}`
+            `Auto-opening Beat Editor panel for beat ${selectedStepNumber}`
           );
         }
         // NOTE: We deliberately do NOT auto-close the panel when selection becomes null.
         // This prevents panel flickering during beat operations that temporarily clear selection.
         // The panel will be closed when the user explicitly closes it.
-        lastSelectedBeat = selectedBeatNumber;
+        lastSelectedBeat = selectedStepNumber;
       }
     });
   });

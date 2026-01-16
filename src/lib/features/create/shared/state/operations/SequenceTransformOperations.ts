@@ -64,7 +64,7 @@ export function createSequenceTransformOperations(
             coreState.currentSequence,
             {
               startPosition: undefined,
-              startingPositionBeat: undefined,
+              startingPosition: undefined,
             }
           );
           coreState.setCurrentSequence(updatedSequence);
@@ -75,7 +75,7 @@ export function createSequenceTransformOperations(
             coreState.currentSequence,
             {
               startPosition: startPosition,
-              startingPositionBeat: startPosition, // CRITICAL: Set both fields for compatibility
+              startingPosition: startPosition, // CRITICAL: Set both fields for compatibility
             }
           );
           coreState.setCurrentSequence(updatedSequence);
@@ -249,13 +249,13 @@ export function createSequenceTransformOperations(
       }
     },
 
-    async shiftStartPosition(targetBeatNumber: number) {
+    async shiftStartPosition(targetStepNumber: number) {
       if (!coreState.currentSequence || !SequenceTransformer) return;
 
       try {
         const shiftedSequence = SequenceTransformer.shiftStartPosition(
           coreState.currentSequence,
-          targetBeatNumber
+          targetStepNumber
         );
         coreState.setCurrentSequence(shiftedSequence);
 

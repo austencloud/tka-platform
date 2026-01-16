@@ -1,5 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type {
@@ -10,7 +10,7 @@ import type {
 } from "../contracts/ISequenceJsonExporter";
 
 /** Union type for beat-like objects that can be exported */
-type BeatLike = BeatData | StartPositionData | null | undefined;
+type BeatLike = StepData | StartPositionData | null | undefined;
 
 /**
  * SequenceJsonExporter
@@ -27,9 +27,9 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
       gridMode: sequence.gridMode || "",
       // propType removed - prop type is a viewer preference, not sequence data
       startPosition: this.minimalBeat(
-        sequence.startPosition || sequence.startingPositionBeat
+        sequence.startPosition || sequence.startingPosition
       ),
-      beats: (sequence.beats || []).map((beat) => this.minimalBeat(beat)),
+      steps: (sequence.steps || []).map((beat) => this.minimalBeat(beat)),
     };
   }
 
@@ -64,10 +64,10 @@ export class SequenceJsonExporter implements ISequenceJsonExporter {
 
   private minimalBeat(beat: BeatLike): MinimalBeat | null {
     if (!beat) return null;
-    // Handle both BeatData (has beatNumber) and StartPositionData (no beatNumber)
-    const beatNumber = "beatNumber" in beat ? beat.beatNumber : 0;
+    // Handle both StepData (has stepNumber) and StartPositionData (no stepNumber)
+    const stepNumber = "stepNumber" in beat ? beat.stepNumber : 0;
     return {
-      beat: beatNumber ?? 0,
+      beat: stepNumber ?? 0,
       letter: beat.letter || "",
       start: beat.startPosition || "",
       end: beat.endPosition || "",

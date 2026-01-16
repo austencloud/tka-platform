@@ -7,19 +7,19 @@ import type { ICreateModuleState } from "../../../types/create-module-types";
 import { UndoOperationType } from "../../../services/contracts/IUndoManager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
-const logger = createComponentLogger("BeatRemoval");
+const logger = createComponentLogger("StepRemoval");
 
 /**
- * Remove a beat and all subsequent beats from the sequence
+ * Remove a beat and all subsequent steps from the sequence
  */
-export function removeBeat(
-  beatIndex: number,
+export function removeStep(
+  stepIndex: number,
   createModuleState: ICreateModuleState
 ): void {
-  const selectedBeat = createModuleState.sequenceState.selectedBeatData;
+  const selectedStep = createModuleState.sequenceState.selectedStepData;
 
-  // Special case: Removing start position (beatNumber === 0) clears entire sequence
-  if (selectedBeat?.beatNumber === 0) {
+  // Special case: Removing start position (stepNumber === 0) clears entire sequence
+  if (selectedStep?.stepNumber === 0) {
     logger.log("Removing start position - clearing entire sequence");
 
     createModuleState.pushUndoSnapshot(UndoOperationType.CLEAR_SEQUENCE, {
@@ -31,31 +31,31 @@ export function removeBeat(
     return;
   }
 
-  // Calculate how many beats will be removed (beat at index + all subsequent)
+  // Calculate how many steps will be removed (beat at index + all subsequent)
   const currentSequence = createModuleState.sequenceState.currentSequence;
-  const beatsToRemove = currentSequence
-    ? currentSequence.beats.length - beatIndex
+  const stepsToRemove = currentSequence
+    ? currentSequence.steps.length - stepIndex
     : 0;
 
   logger.log(
-    `Removing beat ${beatIndex} and ${beatsToRemove - 1} subsequent beats`
+    `Removing beat ${stepIndex} and ${stepsToRemove - 1} subsequent steps`
   );
 
   // Push undo snapshot before removal
   createModuleState.pushUndoSnapshot(UndoOperationType.REMOVE_BEATS, {
-    beatIndex,
-    beatsRemoved: beatsToRemove,
-    description: `Remove beat ${beatIndex} and ${beatsToRemove - 1} subsequent beats`,
+    stepIndex,
+    stepsRemoved: stepsToRemove,
+    description: `Remove beat ${stepIndex} and ${stepsToRemove - 1} subsequent steps`,
   });
 
-  // Remove the beat and all subsequent beats with staggered animation
+  // Remove the beat and all subsequent steps with staggered animation
   createModuleState.sequenceState.removeBeatAndSubsequentWithAnimation(
-    beatIndex,
+    stepIndex,
     () => {
       // After animation completes, select appropriate beat
-      if (beatIndex > 0) {
-        // Select the previous beat (array index beatIndex-1 has beatNumber beatIndex)
-        createModuleState.sequenceState.selectBeat(beatIndex);
+      if (stepIndex > 0) {
+        // Select the previous beat (array index stepIndex-1 has stepNumber stepIndex)
+        createModuleState.sequenceState.selectStep(stepIndex);
       } else {
         // If removing beat 0 (first beat after start), select start position
         createModuleState.sequenceState.selectStartPositionForEditing();

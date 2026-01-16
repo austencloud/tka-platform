@@ -3,7 +3,7 @@
  */
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 
 export interface ISequenceSelector {
   /**
@@ -22,7 +22,7 @@ export interface ISequenceSelector {
   /**
    * Check if a beat index is valid for the given sequence
    */
-  isValidBeatIndex(sequenceData: SequenceData | null, index: number): boolean;
+  isValidStepIndex(sequenceData: SequenceData | null, index: number): boolean;
 
   /**
    * Select the start position for editing
@@ -37,15 +37,15 @@ export interface ISequenceSelector {
   /**
    * Get beat data by index, handling selection logic
    */
-  getSelectedBeatData(
+  getSelectedStepData(
     sequenceData: SequenceData | null,
-    selectedBeatIndex: number | null,
+    selectedStepIndex: number | null,
     selectedStartPosition: PictographData | null,
     isStartPositionSelected: boolean
-  ): BeatData | null;
+  ): StepData | null;
 
   /**
    * Get beat at specific index
    */
-  getBeat(sequenceData: SequenceData | null, index: number): BeatData | null;
+  getStep(sequenceData: SequenceData | null, index: number): StepData | null;
 }

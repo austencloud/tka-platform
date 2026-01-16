@@ -2,7 +2,7 @@
  * Sequence Beat Operations
  *
  * Handles beat-level operations with animation support:
- * - Adding/removing beats
+ * - Adding/removing steps
  * - Updating beat data
  * - Beat insertion
  * - Animated beat removal
@@ -11,7 +11,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceAnimationState } from "../animation/SequenceAnimationState.svelte";
 import type { SequenceCoreState } from "../core/SequenceCoreState.svelte";
 import type { SequenceSelectionState } from "../selection/SequenceSelectionState.svelte";
@@ -37,99 +37,99 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
   } = config;
 
   // Helper functions for in-memory sequence manipulation
-  function addBeatToSequence(
+  function addStepToSequence(
     sequence: SequenceData,
-    beatData?: Partial<BeatData>
+    stepData?: Partial<StepData>
   ): SequenceData {
-    const newBeat: BeatData = {
-      id: beatData?.id ?? crypto.randomUUID(),
-      beatNumber: sequence.beats.length + 1,
-      isBlank: beatData?.isBlank ?? true,
-      duration: beatData?.duration ?? 1,
-      blueReversal: beatData?.blueReversal ?? false,
-      redReversal: beatData?.redReversal ?? false,
-      letter: beatData?.letter ?? null,
-      startPosition: beatData?.startPosition ?? null,
-      endPosition: beatData?.endPosition ?? null,
-      motions: beatData?.motions ?? {},
-      ...(beatData ?? {}),
+    const newStep: StepData = {
+      id: stepData?.id ?? crypto.randomUUID(),
+      stepNumber: sequence.steps.length + 1,
+      isBlank: stepData?.isBlank ?? true,
+      duration: stepData?.duration ?? 1,
+      blueReversal: stepData?.blueReversal ?? false,
+      redReversal: stepData?.redReversal ?? false,
+      letter: stepData?.letter ?? null,
+      startPosition: stepData?.startPosition ?? null,
+      endPosition: stepData?.endPosition ?? null,
+      motions: stepData?.motions ?? {},
+      ...(stepData ?? {}),
     };
-    return { ...sequence, beats: [...sequence.beats, newBeat] };
+    return { ...sequence, steps: [...sequence.steps, newStep] };
   }
 
-  function removeBeatFromSequence(
+  function removeStepFromSequence(
     sequence: SequenceData,
-    beatIndex: number
+    stepIndex: number
   ): SequenceData {
-    if (beatIndex < 0 || beatIndex >= sequence.beats.length) {
+    if (stepIndex < 0 || stepIndex >= sequence.steps.length) {
       return sequence;
     }
-    const newBeats = sequence.beats.filter((_, index) => index !== beatIndex);
-    return { ...sequence, beats: newBeats };
+    const newSteps = sequence.steps.filter((_, index) => index !== stepIndex);
+    return { ...sequence, steps: newSteps };
   }
 
   function removeBeatAndSubsequentFromSequence(
     sequence: SequenceData,
-    beatIndex: number
+    stepIndex: number
   ): SequenceData {
-    if (beatIndex < 0 || beatIndex >= sequence.beats.length) {
+    if (stepIndex < 0 || stepIndex >= sequence.steps.length) {
       return sequence;
     }
-    const newBeats = sequence.beats.slice(0, beatIndex);
-    return { ...sequence, beats: newBeats };
+    const newSteps = sequence.steps.slice(0, stepIndex);
+    return { ...sequence, steps: newSteps };
   }
 
-  function updateBeatInSequence(
+  function updateStepInSequence(
     sequence: SequenceData,
-    beatIndex: number,
-    beatData: Partial<BeatData>
+    stepIndex: number,
+    stepData: Partial<StepData>
   ): SequenceData {
-    if (beatIndex < 0 || beatIndex >= sequence.beats.length) {
+    if (stepIndex < 0 || stepIndex >= sequence.steps.length) {
       return sequence;
     }
-    const newBeats = [...sequence.beats];
-    newBeats[beatIndex] = { ...newBeats[beatIndex], ...beatData } as BeatData;
-    return { ...sequence, beats: newBeats };
+    const newSteps = [...sequence.steps];
+    newSteps[stepIndex] = { ...newSteps[stepIndex], ...stepData } as StepData;
+    return { ...sequence, steps: newSteps };
   }
 
   function insertBeatInSequence(
     sequence: SequenceData,
-    beatIndex: number,
-    beatData: Partial<BeatData>
+    stepIndex: number,
+    stepData: Partial<StepData>
   ): SequenceData {
-    const newBeat: BeatData = {
-      id: beatData.id ?? crypto.randomUUID(),
-      beatNumber: beatIndex + 1,
-      isBlank: beatData.isBlank ?? true,
-      duration: beatData.duration ?? 1,
-      blueReversal: beatData.blueReversal ?? false,
-      redReversal: beatData.redReversal ?? false,
-      letter: beatData.letter ?? null,
-      startPosition: beatData.startPosition ?? null,
-      endPosition: beatData.endPosition ?? null,
-      motions: beatData.motions ?? {},
-      ...beatData,
+    const newStep: StepData = {
+      id: stepData.id ?? crypto.randomUUID(),
+      stepNumber: stepIndex + 1,
+      isBlank: stepData.isBlank ?? true,
+      duration: stepData.duration ?? 1,
+      blueReversal: stepData.blueReversal ?? false,
+      redReversal: stepData.redReversal ?? false,
+      letter: stepData.letter ?? null,
+      startPosition: stepData.startPosition ?? null,
+      endPosition: stepData.endPosition ?? null,
+      motions: stepData.motions ?? {},
+      ...stepData,
     };
-    const newBeats = [
-      ...sequence.beats.slice(0, beatIndex),
-      newBeat,
-      ...sequence.beats.slice(beatIndex),
+    const newSteps = [
+      ...sequence.steps.slice(0, stepIndex),
+      newStep,
+      ...sequence.steps.slice(stepIndex),
     ];
-    return { ...sequence, beats: newBeats };
+    return { ...sequence, steps: newSteps };
   }
 
   function clearSequenceBeats(sequence: SequenceData): SequenceData {
-    return { ...sequence, beats: [] };
+    return { ...sequence, steps: [] };
   }
 
   function getSelectedBeat(
     sequence: SequenceData,
     index: number
-  ): BeatData | null {
-    if (index < 0 || index >= sequence.beats.length) {
+  ): StepData | null {
+    if (index < 0 || index >= sequence.steps.length) {
       return null;
     }
-    return sequence.beats[index] ?? null;
+    return sequence.steps[index] ?? null;
   }
 
   function handleError(message: string, error?: unknown) {
@@ -140,13 +140,13 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
   }
 
   return {
-    addBeat(beatData?: Partial<BeatData>) {
+    addStep(stepData?: Partial<StepData>) {
       if (!coreState.currentSequence) return;
 
       try {
-        let updatedSequence = addBeatToSequence(
+        let updatedSequence = addStepToSequence(
           coreState.currentSequence,
-          beatData
+          stepData
         );
         // Process reversals to ensure correct reversal indicators
         if (ReversalDetector) {
@@ -159,20 +159,20 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }
     },
 
-    removeBeat(beatIndex: number) {
+    removeStep(stepIndex: number) {
       if (!coreState.currentSequence) return;
 
       try {
-        let updatedSequence = removeBeatFromSequence(
+        let updatedSequence = removeStepFromSequence(
           coreState.currentSequence,
-          beatIndex
+          stepIndex
         );
         // Process reversals to ensure correct reversal indicators
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
         coreState.setCurrentSequence(updatedSequence);
-        selectionState.adjustSelectionForRemovedBeat(beatIndex);
+        selectionState.adjustSelectionForRemovedStep(stepIndex);
         coreState.clearError();
         onSave?.().catch((err) =>
           console.error("Failed to auto-save after beat removal:", err)
@@ -182,19 +182,19 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }
     },
 
-    removeBeatWithAnimation(beatIndex: number, onComplete?: () => void) {
+    removeBeatWithAnimation(stepIndex: number, onComplete?: () => void) {
       if (!coreState.currentSequence) return;
 
-      animationState.startRemovingBeat(beatIndex);
+      animationState.startRemovingBeat(stepIndex);
 
       // Wait for fade animation (updated to match new faster animation: 250ms)
       setTimeout(() => {
         try {
           if (!coreState.currentSequence) return;
 
-          let updatedSequence = removeBeatFromSequence(
+          let updatedSequence = removeStepFromSequence(
             coreState.currentSequence,
-            beatIndex
+            stepIndex
           );
           // Process reversals to ensure correct reversal indicators
           if (ReversalDetector) {
@@ -202,7 +202,7 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
               ReversalDetector.processReversals(updatedSequence);
           }
           coreState.setCurrentSequence(updatedSequence);
-          selectionState.adjustSelectionForRemovedBeat(beatIndex);
+          selectionState.adjustSelectionForRemovedStep(stepIndex);
           coreState.clearError();
           onSave?.().catch((err) =>
             console.error("Failed to auto-save after beat removal:", err)
@@ -220,13 +220,13 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }, 250);
     },
 
-    removeBeatAndSubsequent(beatIndex: number) {
+    removeBeatAndSubsequent(stepIndex: number) {
       if (!coreState.currentSequence) return;
 
       try {
         let updatedSequence = removeBeatAndSubsequentFromSequence(
           coreState.currentSequence,
-          beatIndex
+          stepIndex
         );
         // Process reversals to ensure correct reversal indicators
         if (ReversalDetector) {
@@ -239,35 +239,35 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
           console.error("Failed to auto-save after beat removal:", err)
         );
       } catch (error) {
-        handleError("Failed to remove beat and subsequent beats", error);
+        handleError("Failed to remove beat and subsequent steps", error);
       }
     },
 
     removeBeatAndSubsequentWithAnimation(
-      beatIndex: number,
+      stepIndex: number,
       onComplete?: () => void
     ) {
       if (!coreState.currentSequence) return;
 
-      const beatsToRemove = coreState.currentSequence.beats.length - beatIndex;
+      const stepsToRemove = coreState.currentSequence.steps.length - stepIndex;
       const removingIndices: number[] = [];
-      for (let i = beatIndex; i < coreState.currentSequence.beats.length; i++) {
+      for (let i = stepIndex; i < coreState.currentSequence.steps.length; i++) {
         removingIndices.push(i);
       }
 
       const fadeAnimationDuration = 250;
 
-      // Add ALL beats to removing set at once - they all fade simultaneously
+      // Add ALL steps to removing set at once - they all fade simultaneously
       animationState.startRemovingBeats(removingIndices);
 
-      // Remove beats after fade animation completes
+      // Remove steps after fade animation completes
       setTimeout(() => {
         try {
           if (!coreState.currentSequence) return;
 
           let updatedSequence = removeBeatAndSubsequentFromSequence(
             coreState.currentSequence,
-            beatIndex
+            stepIndex
           );
           // Process reversals to ensure correct reversal indicators
           if (ReversalDetector) {
@@ -288,20 +288,20 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
             onComplete?.();
           }, 50);
         } catch (error) {
-          handleError("Failed to remove beat and subsequent beats", error);
+          handleError("Failed to remove beat and subsequent steps", error);
           animationState.endRemovingBeats();
         }
       }, fadeAnimationDuration);
     },
 
-    updateBeat(beatIndex: number, beatData: Partial<BeatData>) {
+    updateStep(stepIndex: number, stepData: Partial<StepData>) {
       if (!coreState.currentSequence) return;
 
       try {
-        let updatedSequence = updateBeatInSequence(
+        let updatedSequence = updateStepInSequence(
           coreState.currentSequence,
-          beatIndex,
-          beatData
+          stepIndex,
+          stepData
         );
         // Process reversals to ensure correct reversal indicators
         if (ReversalDetector) {
@@ -314,21 +314,21 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }
     },
 
-    insertBeat(beatIndex: number, beatData?: Partial<BeatData>) {
+    insertStep(stepIndex: number, stepData?: Partial<StepData>) {
       if (!coreState.currentSequence) return;
 
       try {
         let updatedSequence = insertBeatInSequence(
           coreState.currentSequence,
-          beatIndex,
-          beatData ?? {}
+          stepIndex,
+          stepData ?? {}
         );
         // Process reversals to ensure correct reversal indicators
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
         coreState.setCurrentSequence(updatedSequence);
-        selectionState.adjustSelectionForInsertedBeat(beatIndex);
+        selectionState.adjustSelectionForInsertedStep(stepIndex);
         coreState.clearError();
       } catch (error) {
         handleError("Failed to insert beat", error);
@@ -348,21 +348,21 @@ export function createSequenceBeatOperations(config: BeatOperationsConfig) {
       }
     },
 
-    getBeat(index: number): BeatData | null {
+    getStep(index: number): StepData | null {
       if (!coreState.currentSequence) return null;
       return getSelectedBeat(coreState.currentSequence, index);
     },
 
-    getBeatCount(): number {
-      return coreState.currentSequence?.beats.length ?? 0;
+    getStepCount(): number {
+      return coreState.currentSequence?.steps?.length ?? 0;
     },
 
     hasContent(): boolean {
-      return coreState.currentSequence?.beats.some((b) => !b.isBlank) ?? false;
+      return coreState.currentSequence?.steps?.some((b) => !b.isBlank) ?? false;
     },
   };
 }
 
-export type SequenceBeatOperations = ReturnType<
+export type SequenceStepOperations = ReturnType<
   typeof createSequenceBeatOperations
 >;

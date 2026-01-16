@@ -138,7 +138,7 @@
     if (!sequence || !authState.user?.uid) return;
 
     const pattern = createUniformPattern(
-      sequence.beats.length,
+      sequence.steps.length,
       direction,
       authState.user.uid
     );
@@ -151,7 +151,7 @@
     const pattern = templateToPattern(
       template,
       authState.user.uid,
-      sequence.beats.length
+      sequence.steps.length
     );
     handleApplyPattern(pattern);
   }
@@ -241,14 +241,14 @@
               Loading patterns...
             </div>
           {:else}
-            {#if sequence && sequence.beats.length > 0}
+            {#if sequence && sequence.steps.length > 0}
               <UniformPatternButtons
                 disabled={applyingPattern}
                 onApplyUniform={handleApplyUniform}
               />
 
               <TemplatePatternGrid
-                beatCount={sequence.beats.length}
+                stepCount={sequence.steps.length}
                 {isMobile}
                 onApplyTemplate={handleApplyTemplate}
               />
@@ -256,7 +256,7 @@
 
             <SavedPatternList
               patterns={rotationDirectionPatternState.patterns}
-              currentBeatCount={sequence?.beats.length ?? 0}
+              currentStepCount={sequence?.steps.length ?? 0}
               applying={applyingPattern}
               onApply={handleApplyPattern}
               onDelete={handleDeletePattern}

@@ -50,8 +50,8 @@ export interface TransformOperationParams {
 export interface DeleteOperationParams {
   sequenceId: string;
   operation: ToolOperationType;
-  beatIndex?: number; // For single beat deletion
-  beatIndices?: number[]; // For multiple beat deletion
+  stepIndex?: number; // For single beat deletion
+  stepIndices?: number[]; // For multiple beat deletion
   startIndex?: number; // For delete beat and following
 }
 

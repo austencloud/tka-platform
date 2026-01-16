@@ -23,7 +23,7 @@ import { createAssemblerTabState } from "$lib/features/create/shared/state/assem
 import { createGeneratorTabState } from "$lib/features/create/shared/state/generator-tab-state.svelte";
 import { createSpellTabState } from "$lib/features/create/spell/state/spell-tab-state.svelte";
 import type { PanelCoordinationState } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
-import type { IBeatOperator } from "../contracts/IBeatOperator";
+import type { IStepOperator } from "../contracts/IStepOperator";
 import type { ICreateModuleEffectCoordinator } from "../contracts/ICreateModuleEffectCoordinator";
 import type { ICreateModuleHandlers } from "../contracts/ICreateModuleHandlers";
 import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrchestrator";
@@ -45,7 +45,7 @@ import type { IDeepLinker } from "$lib/shared/navigation/services/contracts/IDee
 import type { ICreateModuleState } from "../../types/create-module-types";
 import type { ISharer } from "$lib/shared/share/services/contracts/ISharer";
 import type { IPanelPersister } from "../contracts/IPanelPersister";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type {
   UndoOperationType} from "../contracts/IUndoManager";
 import {
@@ -61,7 +61,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     private readonly CreateModuleOrchestrator: ICreateModuleOrchestrator,
     private readonly layoutService: IResponsiveLayoutManager,
     private readonly NavigationSyncer: INavigationSyncer,
-    private readonly BeatOperator: IBeatOperator,
+    private readonly StepOperator: IStepOperator,
     private readonly deepLinkService: IDeepLinkSequenceHandler,
     private readonly navigationDeepLinker: IDeepLinker,
 
@@ -162,7 +162,7 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
       CreateModuleOrchestrator: this.CreateModuleOrchestrator,
       layoutService: this.layoutService,
       NavigationSyncer: this.NavigationSyncer,
-      BeatOperator: this.BeatOperator,
+      StepOperator: this.StepOperator,
 
       // UI coordination services
       handlers: this.handlers,
@@ -232,8 +232,8 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
 
     // Set up option history callback
     CreateModuleEventHandler.setAddOptionToHistoryCallback(
-      (beatIndex, beatData) =>
-        CreateModuleState.addOptionToHistory(beatIndex, beatData)
+      (stepIndex, stepData) =>
+        CreateModuleState.addOptionToHistory(stepIndex, stepData)
     );
 
     // Set up undo snapshot callback
@@ -247,9 +247,9 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     // Configure panel state callbacks on sequenceState
     type SequenceStateWithCallbacks = typeof CreateModuleState.sequenceState & {
       onEditPanelOpen?: (
-        beatIndex: number,
-        beatData: unknown,
-        beatsData: unknown[]
+        stepIndex: number,
+        stepData: unknown,
+        stepsData: unknown[]
       ) => void;
       onEditPanelClose?: () => void;
       onAnimationStart?: () => void;
@@ -258,13 +258,13 @@ export class CreateModuleInitializer implements ICreateModuleInitializer {
     const seqState = CreateModuleState.sequenceState as SequenceStateWithCallbacks;
 
     seqState.onEditPanelOpen = (
-      beatIndex: number,
-      beatData: unknown,
-      beatsData: unknown[]
+      stepIndex: number,
+      stepData: unknown,
+      stepsData: unknown[]
     ) => {
-      if (beatsData && beatsData.length > 0) {
+      if (stepsData && stepsData.length > 0) {
         // Multi-select: open batch edit panel
-        panelState.openBatchEditPanel(beatsData as BeatData[]);
+        panelState.openBatchEditPanel(stepsData as StepData[]);
       } else {
         // Single beat: open Sequence Actions panel (auto-open effect will handle it based on selection)
         panelState.openSequenceActionsPanel();

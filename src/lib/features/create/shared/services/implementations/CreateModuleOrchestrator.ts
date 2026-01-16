@@ -25,8 +25,8 @@ export class CreateModuleOrchestrator implements ICreateModuleOrchestrator {
    */
   selectStartPosition(_position: PictographData): void {
     try {
-      // Business logic: Convert PictographData to BeatData for the service
-      // await this.StartPositionManager.setStartPosition(beatData);
+      // Business logic: Convert PictographData to StepData for the service
+      // await this.StartPositionManager.setStartPosition(stepData);
     } catch (error) {
       console.error(
         "❌ CreateModuleOrchestrator: Error selecting start position:",

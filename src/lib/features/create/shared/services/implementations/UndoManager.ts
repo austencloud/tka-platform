@@ -37,7 +37,7 @@ const REDO_HISTORY_STORAGE_KEY = "tka_build_redo_history";
 const OPERATION_DESCRIPTIONS: Record<UndoOperationType, string> = {
   SELECT_START_POSITION: "Select Start Position",
   ADD_BEAT: "Add Beat",
-  REMOVE_BEATS: "Remove Beats",
+  REMOVE_BEATS: "Remove Steps",
   CLEAR_SEQUENCE: "Clear Sequence",
   UPDATE_BEAT: "Update Beat",
   INSERT_BEAT: "Insert Beat",

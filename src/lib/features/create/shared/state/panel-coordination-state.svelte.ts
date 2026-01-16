@@ -19,7 +19,7 @@
  * Extracted from CreateModule.svelte monolith to follow runes state management pattern.
  */
 
-import type { BeatData } from "../domain/models/BeatData";
+import type { StepData } from "../domain/models/StepData";
 import type { LOOPType } from "../../generate/circular/domain/models/circular-models";
 import type { LOOPComponent } from "../../generate/shared/domain/models/generate-models";
 import type { PictographData } from "../../../../shared/pictograph/shared/domain/models/PictographData";
@@ -83,19 +83,19 @@ export type CustomizeOptions = StartEndOptions;
 export interface PanelCoordinationState {
   // Shift Start Mode State
   get isShiftStartMode(): boolean;
-  get shiftStartHandler(): ((beatNumber: number) => void) | null;
+  get shiftStartHandler(): ((stepNumber: number) => void) | null;
 
-  enterShiftStartMode(handler: (beatNumber: number) => void): void;
+  enterShiftStartMode(handler: (stepNumber: number) => void): void;
   exitShiftStartMode(): void;
 
   // Edit Panel State
   get isEditPanelOpen(): boolean;
-  get editPanelBeatIndex(): number | null;
-  get editPanelBeatData(): BeatData | null;
-  get editPanelBeatsData(): BeatData[];
+  get editPanelStepIndex(): number | null;
+  get editPanelStepData(): StepData | null;
+  get editPanelStepsData(): StepData[];
 
-  openEditPanel(beatIndex: number, beatData: BeatData): void;
-  openBatchEditPanel(beatsData: BeatData[]): void;
+  openEditPanel(stepIndex: number, stepData: StepData): void;
+  openBatchEditPanel(stepsData: StepData[]): void;
   closeEditPanel(): void;
 
   // Animation Panel State
@@ -150,10 +150,10 @@ export interface PanelCoordinationState {
   setTargetHand(hand: TargetHand): void;
 
   // Beat Editor Panel State (non-modal - allows click-through to pictographs)
-  get isBeatEditorPanelOpen(): boolean;
+  get isStepEditorPanelOpen(): boolean;
 
-  openBeatEditorPanel(): void;
-  closeBeatEditorPanel(): void;
+  openStepEditorPanel(): void;
+  closeStepEditorPanel(): void;
 
   // Tool Panel Dimensions (for sizing other panels)
   get toolPanelHeight(): number;
@@ -174,8 +174,8 @@ export interface PanelCoordinationState {
   get combinedPanelHeight(): number;
 
   // Practice Mode
-  get practiceBeatIndex(): number | null;
-  setPracticeBeatIndex(index: number | null): void;
+  get practiceStepIndex(): number | null;
+  setPracticeStepIndex(index: number | null): void;
 
   // LOOP Panel State
   get isLOOPPanelOpen(): boolean;
@@ -246,13 +246,13 @@ export interface PanelCoordinationState {
 export function createPanelCoordinationState(): PanelCoordinationState {
   // Shift start mode state
   let isShiftStartMode = $state(false);
-  let shiftStartHandler = $state<((beatNumber: number) => void) | null>(null);
+  let shiftStartHandler = $state<((stepNumber: number) => void) | null>(null);
 
   // Edit panel state
   let isEditPanelOpen = $state(false);
-  let editPanelBeatIndex = $state<number | null>(null);
-  let editPanelBeatData = $state<BeatData | null>(null);
-  let editPanelBeatsData = $state<BeatData[]>([]);
+  let editPanelStepIndex = $state<number | null>(null);
+  let editPanelStepData = $state<StepData | null>(null);
+  let editPanelStepsData = $state<StepData[]>([]);
 
   // Animation panel state
   let isAnimationPanelOpen = $state(false);
@@ -284,7 +284,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let targetHand = $state<TargetHand>("both");
 
   // Beat Editor panel state (non-modal - doesn't participate in closeAllPanels)
-  let isBeatEditorPanelOpen = $state(false);
+  let isStepEditorPanelOpen = $state(false);
 
   // Auto-save panel open states
   $effect.root(() => {
@@ -315,7 +315,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let navigationBarHeight = $state(64);
 
   // Practice mode
-  let practiceBeatIndex = $state<number | null>(null);
+  let practiceStepIndex = $state<number | null>(null);
 
   // LOOP panel state
   let isLOOPPanelOpen = $state(false);
@@ -349,9 +349,9 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     // Close all modal/slide panels
     isEditPanelOpen = false;
-    editPanelBeatIndex = null;
-    editPanelBeatData = null;
-    editPanelBeatsData = [];
+    editPanelStepIndex = null;
+    editPanelStepData = null;
+    editPanelStepsData = [];
 
     isAnimationPanelOpen = false;
     isAnimating = false;
@@ -362,7 +362,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isVideoRecordPanelOpen = false;
     isFilterPanelOpen = false;
     isSequenceActionsPanelOpen = false;
-    isBeatEditorPanelOpen = false;
+    isStepEditorPanelOpen = false;
 
     isLOOPPanelOpen = false;
     loopSelectedComponents = null;
@@ -387,7 +387,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       return shiftStartHandler;
     },
 
-    enterShiftStartMode(handler: (beatNumber: number) => void) {
+    enterShiftStartMode(handler: (stepNumber: number) => void) {
       isShiftStartMode = true;
       shiftStartHandler = handler;
     },
@@ -401,37 +401,37 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     get isEditPanelOpen() {
       return isEditPanelOpen;
     },
-    get editPanelBeatIndex() {
-      return editPanelBeatIndex;
+    get editPanelStepIndex() {
+      return editPanelStepIndex;
     },
-    get editPanelBeatData() {
-      return editPanelBeatData;
+    get editPanelStepData() {
+      return editPanelStepData;
     },
-    get editPanelBeatsData() {
-      return editPanelBeatsData;
+    get editPanelStepsData() {
+      return editPanelStepsData;
     },
 
-    openEditPanel(beatIndex: number, beatData: BeatData) {
+    openEditPanel(stepIndex: number, stepData: StepData) {
       closeAllPanels();
-      editPanelBeatIndex = beatIndex;
-      editPanelBeatData = beatData;
-      editPanelBeatsData = [];
+      editPanelStepIndex = stepIndex;
+      editPanelStepData = stepData;
+      editPanelStepsData = [];
       isEditPanelOpen = true;
     },
 
-    openBatchEditPanel(beatsData: BeatData[]) {
+    openBatchEditPanel(stepsData: StepData[]) {
       closeAllPanels();
-      editPanelBeatsData = beatsData;
-      editPanelBeatIndex = null;
-      editPanelBeatData = null;
+      editPanelStepsData = stepsData;
+      editPanelStepIndex = null;
+      editPanelStepData = null;
       isEditPanelOpen = true;
     },
 
     closeEditPanel() {
       isEditPanelOpen = false;
-      editPanelBeatIndex = null;
-      editPanelBeatData = null;
-      editPanelBeatsData = [];
+      editPanelStepIndex = null;
+      editPanelStepData = null;
+      editPanelStepsData = [];
     },
 
     // Animation Panel Getters
@@ -579,18 +579,18 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     },
 
     // Beat Editor Panel Getters (non-modal)
-    get isBeatEditorPanelOpen() {
-      return isBeatEditorPanelOpen;
+    get isStepEditorPanelOpen() {
+      return isStepEditorPanelOpen;
     },
 
-    openBeatEditorPanel() {
+    openStepEditorPanel() {
       // Beat Editor is non-modal - it does NOT close other panels
       // This allows the user to click on pictographs while the panel is open
-      isBeatEditorPanelOpen = true;
+      isStepEditorPanelOpen = true;
     },
 
-    closeBeatEditorPanel() {
-      isBeatEditorPanelOpen = false;
+    closeStepEditorPanel() {
+      isStepEditorPanelOpen = false;
     },
 
     // Tool Panel Dimensions
@@ -635,12 +635,12 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     },
 
     // Practice Mode
-    get practiceBeatIndex() {
-      return practiceBeatIndex;
+    get practiceStepIndex() {
+      return practiceStepIndex;
     },
 
-    setPracticeBeatIndex(index: number | null) {
-      practiceBeatIndex = index;
+    setPracticeStepIndex(index: number | null) {
+      practiceStepIndex = index;
     },
 
     // LOOP Panel Getters

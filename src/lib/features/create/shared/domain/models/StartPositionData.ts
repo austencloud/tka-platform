@@ -3,7 +3,7 @@
  *
  * Represents the initial prop configuration before a sequence begins.
  *
- * Start positions are NOT beats - they don't have:
+ * Start positions are NOT steps - they don't have:
  * - Duration (user holds position indefinitely until starting sequence)
  * - Beat numbers (not part of the sequence progression)
  * - Reversals (no motion means no reversal)

@@ -56,7 +56,7 @@ export function createUndoController({
     }
 
     const currentSequenceRef = sequenceState.currentSequence;
-    const selectedBeatNumberRef = sequenceState.selectedBeatNumber;
+    const selectedStepNumberRef = sequenceState.selectedStepNumber;
     const activeSectionRef = getActiveSection();
     const timestampRef = Date.now();
 
@@ -64,7 +64,7 @@ export function createUndoController({
       const sequenceCopy: SequenceData | null = currentSequenceRef
         ? {
             ...currentSequenceRef,
-            beats: currentSequenceRef.beats.map((beat) =>
+            steps: currentSequenceRef.steps.map((beat) =>
               beat ? { ...beat } : beat
             ),
           }
@@ -72,7 +72,7 @@ export function createUndoController({
 
       const beforeState = {
         sequence: sequenceCopy,
-        selectedBeatNumber: selectedBeatNumberRef,
+        selectedStepNumber: selectedStepNumberRef,
         activeSection: activeSectionRef,
         shouldShowStartPositionPicker:
           type === UndoOperationType.SELECT_START_POSITION,
@@ -109,16 +109,16 @@ export function createUndoController({
     const restoredSequence = lastEntry.beforeState.sequence;
 
     if (currentSequence && restoredSequence) {
-      const currentBeatCount = currentSequence.beats.length;
-      const restoredBeatCount = restoredSequence.beats.length;
+      const currentStepCount = currentSequence.steps.length;
+      const restoredStepCount = restoredSequence.steps.length;
 
-      if (currentBeatCount > restoredBeatCount) {
-        const beatsToRemove: number[] = [];
-        for (let i = restoredBeatCount; i < currentBeatCount; i++) {
-          beatsToRemove.push(i);
+      if (currentStepCount > restoredStepCount) {
+        const stepsToRemove: number[] = [];
+        for (let i = restoredStepCount; i < currentStepCount; i++) {
+          stepsToRemove.push(i);
         }
 
-        sequenceState.animationState.startRemovingBeats(beatsToRemove);
+        sequenceState.animationState.startRemovingBeats(stepsToRemove);
         if (onUndoingOptionCallback) {
           onUndoingOptionCallback(true);
         }
@@ -132,7 +132,7 @@ export function createUndoController({
             onUndoingOptionCallback(false);
           }
 
-          restoreSelection(lastEntry.beforeState.selectedBeatNumber);
+          restoreSelection(lastEntry.beforeState.selectedStepNumber);
           if (lastEntry.beforeState.activeSection) {
             void setActiveSectionInternal(
               lastEntry.beforeState.activeSection,
@@ -150,7 +150,7 @@ export function createUndoController({
     }
 
     sequenceState.setCurrentSequence(restoredSequence);
-    restoreSelection(lastEntry.beforeState.selectedBeatNumber);
+    restoreSelection(lastEntry.beforeState.selectedStepNumber);
     if (lastEntry.beforeState.activeSection) {
       void setActiveSectionInternal(lastEntry.beforeState.activeSection, false);
     }
@@ -162,9 +162,9 @@ export function createUndoController({
     return true;
   }
 
-  function restoreSelection(selectedBeatNumber: number | null) {
-    if (selectedBeatNumber !== null) {
-      sequenceState.selectBeat(selectedBeatNumber);
+  function restoreSelection(selectedStepNumber: number | null) {
+    if (selectedStepNumber !== null) {
+      sequenceState.selectStep(selectedStepNumber);
     } else {
       sequenceState.clearSelection();
     }
@@ -186,7 +186,7 @@ export function createUndoController({
 
     // Restore the sequence from the after state
     sequenceState.setCurrentSequence(afterState.sequence);
-    restoreSelection(afterState.selectedBeatNumber);
+    restoreSelection(afterState.selectedStepNumber);
 
     return true;
   }
@@ -229,7 +229,7 @@ export function createUndoController({
       }
     } else {
       sequenceState.setCurrentSequence(entry.beforeState.sequence);
-      restoreSelection(entry.beforeState.selectedBeatNumber);
+      restoreSelection(entry.beforeState.selectedStepNumber);
       if (entry.beforeState.activeSection) {
         void setActiveSectionInternal(entry.beforeState.activeSection, false);
       }

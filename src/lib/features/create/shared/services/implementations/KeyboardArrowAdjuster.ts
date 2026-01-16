@@ -19,7 +19,7 @@
  * legacy\src\main_window\main_widget\sequence_workbench\graph_editor\hotkey_graph_adjuster\arrow_movement_manager.py
  */
 
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
@@ -77,8 +77,8 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
       color: string;
       pictographData: PictographData;
     },
-    beatData: BeatData
-  ): BeatData {
+    stepData: StepData
+  ): StepData {
     // Calculate screen-space adjustment (W = up on screen, etc.)
     const adjustment = this.calculateAdjustment(key, increment);
 
@@ -87,10 +87,10 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     );
 
     // Get the current motion data for the selected arrow
-    const currentMotion = beatData.motions[selectedArrow.color as MotionColor];
+    const currentMotion = stepData.motions[selectedArrow.color as MotionColor];
     if (!currentMotion) {
       this.logger.warn(`No motion data found for ${selectedArrow.color} arrow`);
-      return beatData;
+      return stepData;
     }
 
     // Get current manual adjustments (or default to 0)
@@ -123,10 +123,10 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     });
 
     // Create updated beat data with the modified motion
-    const updatedBeatData: BeatData = {
-      ...beatData,
+    const updatedStepData: StepData = {
+      ...stepData,
       motions: {
-        ...beatData.motions,
+        ...stepData.motions,
         [selectedArrow.color]: updatedMotion,
       },
     };
@@ -135,6 +135,6 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
       `✅ Applied manual adjustment to ${selectedArrow.color} arrow`
     );
 
-    return updatedBeatData;
+    return updatedStepData;
   }
 }

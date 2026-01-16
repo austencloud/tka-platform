@@ -5,7 +5,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 
 export interface ISequenceDomainManager {
@@ -26,9 +26,9 @@ export interface ISequenceDomainManager {
    * @returns Statistics object
    */
   calculateStatistics(sequence: SequenceData): {
-    totalBeats: number;
-    filledBeats: number;
-    emptyBeats: number;
+    totalSteps: number;
+    filledSteps: number;
+    emptySteps: number;
     duration: number;
   };
 
@@ -45,7 +45,7 @@ export interface ISequenceDomainManager {
    * @param beat - Beat to validate
    * @returns True if beat is valid
    */
-  isValidBeat(sequence: SequenceData, beat: BeatData): boolean;
+  isValidBeat(sequence: SequenceData, beat: StepData): boolean;
 
   /**
    * Create a new sequence from request
@@ -57,13 +57,13 @@ export interface ISequenceDomainManager {
   /**
    * Update a beat in the sequence
    * @param sequence - Target sequence
-   * @param beatIndex - Index of beat to update
-   * @param beatData - New beat data
+   * @param stepIndex - Index of beat to update
+   * @param stepData - New beat data
    * @returns Updated sequence
    */
-  updateBeat(
+  updateStep(
     sequence: SequenceData,
-    beatIndex: number,
-    beatData: BeatData
+    stepIndex: number,
+    stepData: StepData
   ): SequenceData;
 }

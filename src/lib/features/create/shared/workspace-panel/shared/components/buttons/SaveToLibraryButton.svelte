@@ -27,9 +27,9 @@
   const hasContent = $derived.by(() => {
     if (!sequence) return false;
     return (
-      sequence.beats.length > 0 ||
+      (sequence.steps?.length ?? 0) > 0 ||
       !!sequence.startPosition ||
-      !!sequence.startingPositionBeat
+      !!sequence.startingPosition
     );
   });
 

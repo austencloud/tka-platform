@@ -9,8 +9,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/createPictographData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import { createBeatData } from "../../../../domain/factories/createBeatData";
-import type { BeatData } from "../../../../domain/models/BeatData";
+import { createStepData } from "../../../../domain/factories/createStepData";
+import type { StepData } from "../../../../domain/models/StepData";
 import type { StartPositionData } from "../../../../domain/models/StartPositionData";
 import type { IPersistenceService } from "../../../../services/contracts/IPersister";
 import type { ISequenceRepository } from "../../../../services/contracts/ISequenceRepository";
@@ -29,9 +29,9 @@ export class Workbench implements IWorkbench {
   /**
    * Handle beat click interaction
    */
-  handleBeatClick(beatIndex: number, sequence: SequenceData | null): boolean {
+  handleStepClick(stepIndex: number, sequence: SequenceData | null): boolean {
     // Simple logic: always allow selection if sequence exists and index is valid
-    if (!sequence || beatIndex < 0 || beatIndex >= sequence.beats.length) {
+    if (!sequence || stepIndex < 0 || stepIndex >= sequence.steps.length) {
       return false;
     }
     return true;
@@ -40,17 +40,17 @@ export class Workbench implements IWorkbench {
   /**
    * Edit a beat with default pictograph data
    */
-  editBeat(beatIndex: number, sequence: SequenceData): BeatData {
-    if (beatIndex < 0 || beatIndex >= sequence.beats.length) {
-      throw new Error(`Invalid beat index: ${beatIndex}`);
+  editBeat(stepIndex: number, sequence: SequenceData): StepData {
+    if (stepIndex < 0 || stepIndex >= sequence.steps.length) {
+      throw new Error(`Invalid beat index: ${stepIndex}`);
     }
 
-    const originalBeat = sequence.beats[beatIndex];
+    const originalStep = sequence.steps[stepIndex];
     const defaultPictographData = createPictographData({ letter: Letter.A });
 
-    return createBeatData({
-      ...originalBeat,
-      ...defaultPictographData, // Spread PictographData properties since BeatData extends PictographData
+    return createStepData({
+      ...originalStep,
+      ...defaultPictographData, // Spread PictographData properties since StepData extends PictographData
       isBlank: false,
     });
   }
@@ -58,15 +58,15 @@ export class Workbench implements IWorkbench {
   /**
    * Clear a beat (make it blank)
    */
-  clearBeat(beatIndex: number, sequence: SequenceData): BeatData {
-    if (beatIndex < 0 || beatIndex >= sequence.beats.length) {
-      throw new Error(`Invalid beat index: ${beatIndex}`);
+  clearBeat(stepIndex: number, sequence: SequenceData): StepData {
+    if (stepIndex < 0 || stepIndex >= sequence.steps.length) {
+      throw new Error(`Invalid beat index: ${stepIndex}`);
     }
 
-    const originalBeat = sequence.beats[beatIndex];
+    const originalStep = sequence.steps[stepIndex];
 
-    return createBeatData({
-      ...originalBeat,
+    return createStepData({
+      ...originalStep,
       isBlank: true,
       // Reset pictograph properties to blank state
       letter: null,
@@ -79,9 +79,9 @@ export class Workbench implements IWorkbench {
   /**
    * Add a beat to a sequence
    */
-  async addBeat(
+  async addStep(
     sequenceId: string,
-    beatData?: Partial<BeatData>
+    stepData?: Partial<StepData>
   ): Promise<SequenceData> {
     try {
       const sequence = await this.sequenceService.getSequence(sequenceId);
@@ -89,13 +89,13 @@ export class Workbench implements IWorkbench {
         throw new Error(`Sequence ${sequenceId} not found`);
       }
 
-      const newBeat = createBeatData({
+      const newStep = createStepData({
         isBlank: true,
-        ...beatData, // Spread any provided beat data (which may include PictographData properties)
+        ...stepData, // Spread any provided beat data (which may include PictographData properties)
       });
 
       const updatedSequence = updateSequenceData(sequence, {
-        beats: [...sequence.beats, newBeat],
+        steps: [...sequence.steps, newStep],
       });
 
       await this.persistenceService.saveSequence(updatedSequence);
@@ -123,7 +123,7 @@ export class Workbench implements IWorkbench {
 
       const updatedSequence = updateSequenceData(sequence, {
         startPosition: startPosition,
-        startingPositionBeat: startPosition, // CRITICAL: Set both fields for compatibility
+        startingPosition: startPosition, // CRITICAL: Set both fields for compatibility
       });
 
       await this.persistenceService.saveSequence(updatedSequence);
@@ -143,8 +143,8 @@ export class Workbench implements IWorkbench {
   /**
    * Validate beat operations
    */
-  canEditBeat(beatIndex: number, sequence: SequenceData | null): boolean {
-    if (!sequence || beatIndex < 0 || beatIndex >= sequence.beats.length) {
+  canEditBeat(stepIndex: number, sequence: SequenceData | null): boolean {
+    if (!sequence || stepIndex < 0 || stepIndex >= sequence.steps.length) {
       return false;
     }
     return true;

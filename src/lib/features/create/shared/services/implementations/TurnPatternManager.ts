@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type {
   TurnPattern,
   TurnPatternCreateData,
@@ -53,15 +53,15 @@ export class TurnPatternManager implements ITurnPatternManager {
   extractPattern(sequence: SequenceData, name: string): TurnPatternCreateData {
     const entries: TurnPatternEntry[] = [];
 
-    for (let i = 0; i < sequence.beats.length; i++) {
-      const beat = sequence.beats[i];
+    for (let i = 0; i < sequence.steps.length; i++) {
+      const beat = sequence.steps[i];
       if (!beat) continue;
 
       const blueMotion = beat.motions?.blue;
       const redMotion = beat.motions?.red;
 
       entries.push({
-        beatIndex: i,
+        stepIndex: i,
         blue: blueMotion?.turns ?? null,
         red: redMotion?.turns ?? null,
       });
@@ -70,7 +70,7 @@ export class TurnPatternManager implements ITurnPatternManager {
     return {
       name,
       userId: "", // Will be set when saving
-      beatCount: sequence.beats.length,
+      stepCount: sequence.steps.length,
       entries,
     };
   }
@@ -90,14 +90,14 @@ export class TurnPatternManager implements ITurnPatternManager {
     }
 
     const warnings: string[] = [];
-    let modifiedBeats = 0;
+    let modifiedSteps = 0;
 
     // Step 1: Apply all turn changes
-    const updatedBeats: BeatData[] = sequence.beats.map((beat, beatIndex) => {
-      const entry = pattern.entries.find((e) => e.beatIndex === beatIndex);
+    const updatedSteps: StepData[] = sequence.steps.map((beat, stepIndex) => {
+      const entry = pattern.entries.find((e) => e.stepIndex === stepIndex);
       if (!entry) return beat;
 
-      let beatModified = false;
+      let stepModified = false;
       const updatedMotions = { ...beat.motions };
 
       // Apply blue turns (if targeting blue or both)
@@ -110,15 +110,15 @@ export class TurnPatternManager implements ITurnPatternManager {
           entry.blue,
           beat.motions.blue,
           MotionColor.BLUE,
-          sequence.beats,
-          beatIndex
+          sequence.steps,
+          stepIndex
         );
         if (result.motion) {
           updatedMotions.blue = result.motion;
-          beatModified = true;
+          stepModified = true;
         }
         if (result.warning) {
-          warnings.push(`Beat ${beatIndex + 1} blue: ${result.warning}`);
+          warnings.push(`Beat ${stepIndex + 1} blue: ${result.warning}`);
         }
       }
 
@@ -132,20 +132,20 @@ export class TurnPatternManager implements ITurnPatternManager {
           entry.red,
           beat.motions.red,
           MotionColor.RED,
-          sequence.beats,
-          beatIndex
+          sequence.steps,
+          stepIndex
         );
         if (result.motion) {
           updatedMotions.red = result.motion;
-          beatModified = true;
+          stepModified = true;
         }
         if (result.warning) {
-          warnings.push(`Beat ${beatIndex + 1} red: ${result.warning}`);
+          warnings.push(`Beat ${stepIndex + 1} red: ${result.warning}`);
         }
       }
 
-      if (beatModified) {
-        modifiedBeats++;
+      if (stepModified) {
+        modifiedSteps++;
         return { ...beat, motions: updatedMotions };
       }
       return beat;
@@ -153,27 +153,27 @@ export class TurnPatternManager implements ITurnPatternManager {
 
     // Step 2: Propagate orientations forward through the sequence
     // This ensures each beat's startOrientation matches the previous beat's endOrientation
-    for (let i = 0; i < updatedBeats.length - 1; i++) {
-      const currentBeat = updatedBeats[i];
-      const nextBeat = updatedBeats[i + 1];
-      if (!currentBeat || !nextBeat) continue;
+    for (let i = 0; i < updatedSteps.length - 1; i++) {
+      const currentStep = updatedSteps[i];
+      const nextStep = updatedSteps[i + 1];
+      if (!currentStep || !nextStep) continue;
 
       // Propagate blue motion orientation
-      if (currentBeat.motions?.blue && nextBeat.motions?.blue) {
-        const currentEndOrientation = currentBeat.motions.blue.endOrientation;
-        const nextStartOrientation = nextBeat.motions.blue.startOrientation;
+      if (currentStep.motions?.blue && nextStep.motions?.blue) {
+        const currentEndOrientation = currentStep.motions.blue.endOrientation;
+        const nextStartOrientation = nextStep.motions.blue.startOrientation;
 
         if (currentEndOrientation !== nextStartOrientation) {
           const updatedNextMotion = this.updateMotionStartOrientation(
-            nextBeat.motions.blue,
+            nextStep.motions.blue,
             currentEndOrientation,
             MotionColor.BLUE
           );
 
-          updatedBeats[i + 1] = {
-            ...nextBeat,
+          updatedSteps[i + 1] = {
+            ...nextStep,
             motions: {
-              ...nextBeat.motions,
+              ...nextStep.motions,
               blue: updatedNextMotion,
             },
           };
@@ -181,24 +181,24 @@ export class TurnPatternManager implements ITurnPatternManager {
       }
 
       // Propagate red motion orientation
-      if (currentBeat.motions?.red && nextBeat.motions?.red) {
-        const currentEndOrientation = currentBeat.motions.red.endOrientation;
-        const nextStartOrientation = nextBeat.motions.red.startOrientation;
+      if (currentStep.motions?.red && nextStep.motions?.red) {
+        const currentEndOrientation = currentStep.motions.red.endOrientation;
+        const nextStartOrientation = nextStep.motions.red.startOrientation;
 
         if (currentEndOrientation !== nextStartOrientation) {
           const updatedNextMotion = this.updateMotionStartOrientation(
-            nextBeat.motions.red,
+            nextStep.motions.red,
             currentEndOrientation,
             MotionColor.RED
           );
 
           // Get latest beat data (might have been updated for blue already)
-          const latestNextBeat = updatedBeats[i + 1];
-          if (!latestNextBeat) continue;
-          updatedBeats[i + 1] = {
-            ...latestNextBeat,
+          const latestNextStep = updatedSteps[i + 1];
+          if (!latestNextStep) continue;
+          updatedSteps[i + 1] = {
+            ...latestNextStep,
             motions: {
-              ...latestNextBeat.motions,
+              ...latestNextStep.motions,
               red: updatedNextMotion,
             },
           };
@@ -209,17 +209,17 @@ export class TurnPatternManager implements ITurnPatternManager {
     // Create updated sequence
     const updatedSequence: SequenceData = {
       ...sequence,
-      beats: updatedBeats,
+      steps: updatedSteps,
     };
 
     logger.log(
-      `Applied pattern "${pattern.name}" - modified ${modifiedBeats} beats with propagation`
+      `Applied pattern "${pattern.name}" - modified ${modifiedSteps} steps with propagation`
     );
 
     return {
       success: true,
       sequence: updatedSequence,
-      modifiedBeats,
+      modifiedSteps,
       warnings: warnings.length > 0 ? warnings : undefined,
     };
   }
@@ -258,8 +258,8 @@ export class TurnPatternManager implements ITurnPatternManager {
     turnValue: TurnValue,
     currentMotion: MotionData,
     color: MotionColor,
-    allBeats: readonly BeatData[],
-    beatIndex: number
+    allSteps: readonly StepData[],
+    stepIndex: number
   ): { motion: MotionData | null; warning?: string } {
     const motionType = currentMotion.motionType;
 
@@ -283,11 +283,11 @@ export class TurnPatternManager implements ITurnPatternManager {
       turnValue > 0 &&
       rotationDirection === RotationDirection.NO_ROTATION
     ) {
-      // Look back through previous beats for rotation context
-      rotationDirection = this.findRotationContext(allBeats, beatIndex, color);
+      // Look back through previous steps for rotation context
+      rotationDirection = this.findRotationContext(allSteps, stepIndex, color);
       if (rotationDirection !== currentMotion.rotationDirection) {
         logger.log(
-          `Applied context rotation ${rotationDirection} to beat ${beatIndex + 1} ${color}`
+          `Applied context rotation ${rotationDirection} to beat ${stepIndex + 1} ${color}`
         );
       }
     }
@@ -308,13 +308,13 @@ export class TurnPatternManager implements ITurnPatternManager {
    * Only defaults to CLOCKWISE if no rotation direction is found in either direction.
    */
   private findRotationContext(
-    beats: readonly BeatData[],
-    currentBeatIndex: number,
+    steps: readonly StepData[],
+    currentStepIndex: number,
     color: MotionColor
   ): RotationDirection {
     // Step 1: Search backwards from the beat before current
-    for (let i = currentBeatIndex - 1; i >= 0; i--) {
-      const beat = beats[i];
+    for (let i = currentStepIndex - 1; i >= 0; i--) {
+      const beat = steps[i];
       if (!beat) continue;
 
       const motion = beat.motions?.[color];
@@ -330,8 +330,8 @@ export class TurnPatternManager implements ITurnPatternManager {
     }
 
     // Step 2: Search forwards from the beat after current
-    for (let i = currentBeatIndex + 1; i < beats.length; i++) {
-      const beat = beats[i];
+    for (let i = currentStepIndex + 1; i < steps.length; i++) {
+      const beat = steps[i];
       if (!beat) continue;
 
       const motion = beat.motions?.[color];
@@ -443,7 +443,7 @@ export class TurnPatternManager implements ITurnPatternManager {
     const docData = {
       name: data.name,
       userId,
-      beatCount: data.beatCount,
+      stepCount: data.stepCount,
       entries: data.entries,
       createdAt: serverTimestamp(),
     };
@@ -456,7 +456,7 @@ export class TurnPatternManager implements ITurnPatternManager {
       id: docRef.id,
       name: data.name,
       userId,
-      beatCount: data.beatCount,
+      stepCount: data.stepCount,
       entries: data.entries,
       createdAt: null as unknown as Timestamp, // Will be populated by Firestore
     };
@@ -479,7 +479,7 @@ export class TurnPatternManager implements ITurnPatternManager {
         id: doc.id,
         name: data.name,
         userId: data.userId,
-        beatCount: data.beatCount,
+        stepCount: data.stepCount,
         entries: data.entries,
         createdAt: data.createdAt,
       });
@@ -512,10 +512,10 @@ export class TurnPatternManager implements ITurnPatternManager {
     pattern: TurnPattern,
     sequence: SequenceData
   ): { valid: boolean; error?: string } {
-    if (pattern.beatCount !== sequence.beats.length) {
+    if (pattern.stepCount !== sequence.steps.length) {
       return {
         valid: false,
-        error: `Pattern has ${pattern.beatCount} beats but sequence has ${sequence.beats.length} beats`,
+        error: `Pattern has ${pattern.stepCount} steps but sequence has ${sequence.steps.length} steps`,
       };
     }
     return { valid: true };

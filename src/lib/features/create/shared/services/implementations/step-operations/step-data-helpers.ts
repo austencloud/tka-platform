@@ -4,29 +4,29 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 
-/** Beat 0 = start position, beats 1+ are in the sequence */
+/** Beat 0 = start position, steps 1+ are in the sequence */
 export const START_POSITION_BEAT_NUMBER = 0;
 
 /**
  * Get beat data from the live sequence state
  * @returns Beat data or null/undefined if not found
  */
-export function getBeatDataFromState(
-  beatNumber: number,
+export function getStepDataFromState(
+  stepNumber: number,
   createModuleState: ICreateModuleState
-): BeatData | null | undefined {
-  if (beatNumber === START_POSITION_BEAT_NUMBER) {
+): StepData | null | undefined {
+  if (stepNumber === START_POSITION_BEAT_NUMBER) {
     return createModuleState.sequenceState
-      .selectedStartPosition as unknown as BeatData | null;
+      .selectedStartPosition as unknown as StepData | null;
   }
 
-  const arrayIndex = beatNumber - 1;
+  const arrayIndex = stepNumber - 1;
   const sequence: SequenceData | null =
     createModuleState.sequenceState.currentSequence;
-  return sequence?.beats[arrayIndex];
+  return sequence?.steps[arrayIndex];
 }
 
 /**
@@ -36,9 +36,9 @@ export function updateSequenceWord(
   createModuleState: ICreateModuleState
 ): void {
   const sequence = createModuleState.sequenceState.currentSequence;
-  if (!sequence?.beats) return;
+  if (!sequence?.steps) return;
 
-  const word = sequence.beats
+  const word = sequence.steps
     .map((beat) => beat.letter ?? "")
     .join("")
     .toUpperCase();

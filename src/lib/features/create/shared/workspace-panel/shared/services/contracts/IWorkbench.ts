@@ -6,43 +6,43 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../../domain/models/BeatData";
+import type { StepData } from "../../../../domain/models/StepData";
 import type { StartPositionData } from "../../../../domain/models/StartPositionData";
 
 export interface IWorkbench {
   /**
    * Handle beat click interaction
-   * @param beatIndex - Index of clicked beat
+   * @param stepIndex - Index of clicked beat
    * @param sequence - Current sequence
    * @returns True if beat should be selected
    */
-  handleBeatClick(beatIndex: number, sequence: SequenceData | null): boolean;
+  handleStepClick(stepIndex: number, sequence: SequenceData | null): boolean;
 
   /**
    * Edit a beat with default pictograph data
-   * @param beatIndex - Index of beat to edit
+   * @param stepIndex - Index of beat to edit
    * @param sequence - Current sequence
    * @returns Updated beat data
    */
-  editBeat(beatIndex: number, sequence: SequenceData): BeatData;
+  editBeat(stepIndex: number, sequence: SequenceData): StepData;
 
   /**
    * Clear a beat (make it blank)
-   * @param beatIndex - Index of beat to clear
+   * @param stepIndex - Index of beat to clear
    * @param sequence - Current sequence
    * @returns Updated beat data
    */
-  clearBeat(beatIndex: number, sequence: SequenceData): BeatData;
+  clearBeat(stepIndex: number, sequence: SequenceData): StepData;
 
   /**
    * Add a beat to a sequence
    * @param sequenceId - Sequence identifier
-   * @param beatData - Optional beat data
+   * @param stepData - Optional beat data
    * @returns Promise resolving to updated sequence
    */
-  addBeat(
+  addStep(
     sequenceId: string,
-    beatData?: Partial<BeatData>
+    stepData?: Partial<StepData>
   ): Promise<SequenceData>;
 
   /**
@@ -58,9 +58,9 @@ export interface IWorkbench {
 
   /**
    * Validate beat operations
-   * @param beatIndex - Beat index
+   * @param stepIndex - Beat index
    * @param sequence - Current sequence
    * @returns True if operation is valid
    */
-  canEditBeat(beatIndex: number, sequence: SequenceData | null): boolean;
+  canEditBeat(stepIndex: number, sequence: SequenceData | null): boolean;
 }

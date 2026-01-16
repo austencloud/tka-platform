@@ -5,7 +5,7 @@
   import { getCreateModuleContext } from "../../../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
-  import BeatGrid from "./BeatGrid.svelte";
+  import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
   import UndoButton from "../../shared/components/buttons/UndoButton.svelte";
   import SaveToLibraryButton from "../../shared/components/buttons/SaveToLibraryButton.svelte";
@@ -15,11 +15,11 @@
     sequenceState,
     onBeatSelected,
     onStartPositionSelected,
-    onBeatDelete,
-    onBeatLongPress,
+    onStepDelete,
+    onStepLongPress,
     onAssemblerBack,
-    selectedBeatNumber = null,
-    practiceBeatNumber = null,
+    selectedStepNumber = null,
+    practiceStepNumber = null,
     isSideBySideLayout = false,
     shouldOrbitAroundCenter = false,
     activeMode = null,
@@ -27,13 +27,13 @@
     letterSources = null,
   } = $props<{
     sequenceState: SequenceState;
-    onBeatSelected?: (beatNumber: number) => void;
+    onBeatSelected?: (stepNumber: number) => void;
     onStartPositionSelected?: () => void;
-    onBeatDelete?: (beatNumber: number) => void;
-    onBeatLongPress?: () => void;
+    onStepDelete?: (stepNumber: number) => void;
+    onStepLongPress?: () => void;
     onAssemblerBack?: () => void;
-    selectedBeatNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
-    practiceBeatNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
+    selectedStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
+    practiceStepNumber?: number | null; // 0=start, 1=first beat, 2=second beat, etc.
     isSideBySideLayout?: boolean;
     shouldOrbitAroundCenter?: boolean;
     activeMode?: BuildModeId | null;
@@ -65,23 +65,23 @@
   const selectedStartPosition = $derived.by(
     () => sequenceState.selectedStartPosition
   );
-  const removingBeatIndex = $derived.by(() =>
-    sequenceState.getRemovingBeatIndex()
+  const removingStepIndex = $derived.by(() =>
+    sequenceState.getRemovingStepIndex()
   );
-  const removingBeatIndices = $derived.by(() =>
+  const removingStepIndices = $derived.by(() =>
     sequenceState.getRemovingBeatIndices()
   );
   const isClearing = $derived.by(() => sequenceState.getIsClearing());
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
 
-  // Convert selectedStartPosition (PictographData) to BeatData format for BeatGrid
-  const startPositionBeat = $derived(() => {
+  // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
+  const startPositionStep = $derived(() => {
     if (!selectedStartPosition) return null;
 
-    // Create BeatData that extends the PictographData
+    // Create StepData that extends the PictographData
     return {
       ...selectedStartPosition,
-      beatNumber: 0,
+      stepNumber: 0,
       duration: 1,
       blueReversal: false,
       redReversal: false,
@@ -89,16 +89,16 @@
     };
   });
 
-  function handleBeatClick(beatNumber: number) {
+  function handleStepClick(stepNumber: number) {
     hapticService?.trigger("selection");
 
     // If in shift start mode, use the shift handler instead of normal selection
     if (panelState.isShiftStartMode && panelState.shiftStartHandler) {
-      panelState.shiftStartHandler(beatNumber);
+      panelState.shiftStartHandler(stepNumber);
       return;
     }
 
-    onBeatSelected?.(beatNumber);
+    onBeatSelected?.(stepNumber);
   }
 
   function handleStartPositionClick() {
@@ -138,7 +138,7 @@
             word={currentDisplayWord}
             scrollMode={false}
             {letterSources}
-            activeBeatNumber={practiceBeatNumber}
+            activeStepNumber={practiceStepNumber}
           />
         </div>
         <div class="top-right-zone">
@@ -150,19 +150,19 @@
       </div>
 
       <div class="beat-grid-wrapper" class:shift-mode={isShiftStartMode}>
-        <BeatGrid
-          beats={currentSequence?.beats ?? []}
-          startPosition={startPositionBeat() ?? undefined}
-          onBeatClick={handleBeatClick}
+        <StepGrid
+          steps={currentSequence?.steps ?? []}
+          startPosition={startPositionStep() ?? undefined}
+          onStepClick={handleStepClick}
           onStartClick={handleStartPositionClick}
-          {onBeatDelete}
-          {onBeatLongPress}
-          {selectedBeatNumber}
-          {removingBeatIndex}
-          {removingBeatIndices}
+          {onStepDelete}
+          {onStepLongPress}
+          {selectedStepNumber}
+          {removingStepIndex}
+          {removingStepIndices}
           {isClearing}
           {shouldOrbitAroundCenter}
-          {practiceBeatNumber}
+          {practiceStepNumber}
           {isSideBySideLayout}
           {activeMode}
         />

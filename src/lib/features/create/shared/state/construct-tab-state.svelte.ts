@@ -227,7 +227,7 @@ export function createConstructTabState(
     // Don't return any state until initialization is complete
     if (!isInitialized) return null;
 
-    // SAFEGUARD: If Constructor has NO sequence data (no beats and no start position),
+    // SAFEGUARD: If Constructor has NO sequence data (no steps and no start position),
     // ALWAYS show the Start Position Picker, regardless of what showStartPositionPicker says.
     // This prevents the bug where Option Viewer shows "No options available" when
     // there's nothing to show options for.
@@ -235,12 +235,12 @@ export function createConstructTabState(
       const currentSeqData = sequenceState.getCurrentSequenceData();
       const hasStartPos = sequenceState.hasStartPosition;
 
-      // Also check currentSequence.beats directly as a backup
+      // Also check currentSequence.steps directly as a backup
       // getCurrentSequenceData() can return empty in some edge cases
       const currentSeq = sequenceState.currentSequence;
-      const directBeatsLength = currentSeq?.beats?.length ?? 0;
+      const directBeatsLength = currentSeq?.steps?.length ?? 0;
 
-      // Has data if we have start position OR beats (from either source)
+      // Has data if we have start position OR steps (from either source)
       const hasNoData =
         !hasStartPos && currentSeqData.length === 0 && directBeatsLength === 0;
 

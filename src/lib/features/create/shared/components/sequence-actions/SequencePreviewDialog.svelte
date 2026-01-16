@@ -10,7 +10,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import BeatGrid from "../../workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "../../workspace-panel/sequence-display/components/StepGrid.svelte";
 
   let {
     isOpen = $bindable(false),
@@ -38,27 +38,27 @@
     if (!seq) return "Unknown";
     if (seq.word) return seq.word;
     if (seq.name) return seq.name;
-    const count = seq.beats?.length ?? 0;
+    const count = seq.steps?.length ?? 0;
     return count > 0 ? `${count}-beat sequence` : "Empty";
   }
 
   // Derive display info
   const currentName = $derived(getSequenceName(currentSequence));
-  const currentBeatCount = $derived(currentSequence?.beats?.length ?? 0);
+  const currentStepCount = $derived(currentSequence?.steps?.length ?? 0);
   const incomingName = $derived(getSequenceName(incomingSequence));
-  const incomingBeatCount = $derived(incomingSequence?.beats?.length ?? 0);
+  const incomingStepCount = $derived(incomingSequence?.steps?.length ?? 0);
 
   // Calculate dynamic preview height based on sequence size
-  function calcPreviewHeight(beatCount: number): number {
-    if (beatCount === 0) return 120;
-    const columns = Math.min(beatCount, 4);
-    const rows = Math.ceil(beatCount / columns);
+  function calcPreviewHeight(stepCount: number): number {
+    if (stepCount === 0) return 120;
+    const columns = Math.min(stepCount, 4);
+    const rows = Math.ceil(stepCount / columns);
     // Smaller per-row height since we're showing two grids
     return Math.max(120, Math.min(250, rows * 55 + 20));
   }
 
-  const currentPreviewHeight = $derived(calcPreviewHeight(currentBeatCount));
-  const incomingPreviewHeight = $derived(calcPreviewHeight(incomingBeatCount));
+  const currentPreviewHeight = $derived(calcPreviewHeight(currentStepCount));
+  const incomingPreviewHeight = $derived(calcPreviewHeight(incomingStepCount));
 
   // Handle confirm button
   function handleConfirm() {
@@ -105,22 +105,22 @@
           <div class="panel-header">
             <span class="panel-label">Will be replaced</span>
             <span class="beat-count" data-testid="current-beat-count"
-              >{currentBeatCount} beats</span
+              >{currentStepCount} steps</span
             >
           </div>
           <div class="sequence-name" data-testid="current-sequence-name">
             {currentName}
           </div>
-          {#if currentSequence && (currentSequence.beats?.length > 0 || currentSequence.startPosition)}
+          {#if currentSequence && (currentSequence.steps?.length > 0 || currentSequence.startPosition)}
             <div
               class="beat-grid-preview"
               style:height="{currentPreviewHeight}px"
               data-testid="current-beat-grid"
             >
-              <BeatGrid
-                beats={currentSequence.beats ?? []}
+              <StepGrid
+                steps={currentSequence.steps ?? []}
                 startPosition={currentSequence.startPosition ??
-                  currentSequence.startingPositionBeat ??
+                  currentSequence.startingPosition ??
                   null}
               />
             </div>
@@ -137,22 +137,22 @@
           <div class="panel-header">
             <span class="panel-label">New sequence</span>
             <span class="beat-count" data-testid="incoming-beat-count"
-              >{incomingBeatCount} beats</span
+              >{incomingStepCount} steps</span
             >
           </div>
           <div class="sequence-name" data-testid="incoming-sequence-name">
             {incomingName}
           </div>
-          {#if incomingSequence && (incomingSequence.beats?.length > 0 || incomingSequence.startPosition)}
+          {#if incomingSequence && (incomingSequence.steps?.length > 0 || incomingSequence.startPosition)}
             <div
               class="beat-grid-preview"
               style:height="{incomingPreviewHeight}px"
               data-testid="incoming-beat-grid"
             >
-              <BeatGrid
-                beats={incomingSequence.beats ?? []}
+              <StepGrid
+                steps={incomingSequence.steps ?? []}
                 startPosition={incomingSequence.startPosition ??
-                  incomingSequence.startingPositionBeat ??
+                  incomingSequence.startingPosition ??
                   null}
               />
             </div>

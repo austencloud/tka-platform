@@ -19,8 +19,8 @@ export interface TurnPatternApplyResult {
   readonly sequence?: SequenceData;
   /** Error message if not successful */
   readonly error?: string;
-  /** Number of beats that were modified */
-  readonly modifiedBeats?: number;
+  /** Number of steps that were modified */
+  readonly modifiedSteps?: number;
   /** Warnings about edge cases encountered */
   readonly warnings?: readonly string[];
 }
@@ -47,7 +47,7 @@ export interface ITurnPatternManager {
    *
    * @example
    * const patternData = service.extractPattern(sequence, "My Pattern");
-   * // { name: "My Pattern", beatCount: 4, entries: [...] }
+   * // { name: "My Pattern", stepCount: 4, entries: [...] }
    */
   extractPattern(sequence: SequenceData, name: string): TurnPatternCreateData;
 

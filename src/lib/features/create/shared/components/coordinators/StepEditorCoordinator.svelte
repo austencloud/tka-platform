@@ -1,5 +1,5 @@
 <!--
-  BeatEditorCoordinator.svelte
+  StepEditorCoordinator.svelte
 
   Manages the Beat Editor panel that opens when clicking a pictograph.
   Handles single-beat editing: turns, rotation, orientation, delete.
@@ -15,11 +15,11 @@
   import { container } from "$lib/shared/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import BeatEditorPanel from "../sequence-actions/BeatEditorPanel.svelte";
+  import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { IBeatOperator } from "../../services/contracts/IBeatOperator";
+  import type { IStepOperator } from "../../services/contracts/IStepOperator";
   import {
     MotionColor,
     RotationDirection,
@@ -31,7 +31,7 @@
   } from "$lib/shared/application/state/app-state.svelte";
   import { UndoOperationType } from "../../services/contracts/IUndoManager";
 
-  const logger = createComponentLogger("BeatEditorCoordinator");
+  const logger = createComponentLogger("StepEditorCoordinator");
 
   // Tabs that support the Beat Editor Panel
   // Only tabs with beat sequences support individual beat editing
@@ -44,12 +44,12 @@
 
   // Services
   const hapticService: IHapticFeedback = container.items.hapticFeedback;
-  const BeatOperator: IBeatOperator = container.items.beatOperator;
+  const StepOperator: IStepOperator = container.items.stepOperator;
 
   // Only show panel if the current tab supports it AND panel state says it's open
   const currentTab = $derived(navigationState.activeTab);
   const isTabSupported = $derived(SUPPORTED_TABS.has(currentTab));
-  const isOpen = $derived(panelState.isBeatEditorPanelOpen && isTabSupported);
+  const isOpen = $derived(panelState.isStepEditorPanelOpen && isTabSupported);
 
   // Get active sequence state and selected beat data
   // Use $derived.by() to ensure reactive property tracking through function calls
@@ -57,29 +57,29 @@
   const activeSequenceState = $derived.by(() =>
     CreateModuleState.getActiveTabSequenceState()
   );
-  const selectedBeatNumber = $derived.by(
-    () => activeSequenceState.selectedBeatNumber
+  const selectedStepNumber = $derived.by(
+    () => activeSequenceState.selectedStepNumber
   );
 
   // CRITICAL: Track selectedStartPosition explicitly to ensure reactivity
   // when orientation changes update the start position. Without this explicit
-  // dependency, Svelte may not detect that selectedBeatData needs to re-compute.
+  // dependency, Svelte may not detect that selectedStepData needs to re-compute.
   const selectedStartPosition = $derived.by(
     () => activeSequenceState.selectedStartPosition
   );
 
-  // Derive selectedBeatData with explicit dependency on selectedStartPosition
+  // Derive selectedStepData with explicit dependency on selectedStartPosition
   // This ensures the UI updates when orientation changes modify the start position
-  const selectedBeatData = $derived.by(() => {
+  const selectedStepData = $derived.by(() => {
     // Access selectedStartPosition to create explicit dependency
     const _ = selectedStartPosition;
-    return activeSequenceState.selectedBeatData;
+    return activeSequenceState.selectedStepData;
   });
 
   const sequence = $derived.by(() => activeSequenceState.currentSequence);
 
   // Animation state for deletion visualization
-  const removingBeatIndices = $derived.by(() =>
+  const removingStepIndices = $derived.by(() =>
     activeSequenceState.getRemovingBeatIndices()
   );
 
@@ -93,8 +93,8 @@
   const redPropType = $derived(settings.redPropType ?? PropType.STAFF);
 
   // Derived state for turns calculations
-  const blueMotion = $derived(selectedBeatData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(selectedBeatData?.motions?.[MotionColor.RED]);
+  const blueMotion = $derived(selectedStepData?.motions?.[MotionColor.BLUE]);
+  const redMotion = $derived(selectedStepData?.motions?.[MotionColor.RED]);
 
   const normalizeTurns = (turns: number | string | undefined): number =>
     turns === "fl" ? -0.5 : Number(turns) || 0;
@@ -104,14 +104,14 @@
 
   // Event handlers
   function handleClose() {
-    logger.log("BeatEditorCoordinator closing beat editor panel");
-    panelState.closeBeatEditorPanel();
+    logger.log("StepEditorCoordinator closing beat editor panel");
+    panelState.closeStepEditorPanel();
     // Clear beat selection when closing the Beat Editor
     activeSequenceState.clearSelection();
   }
 
   function handleTurnsChange(color: MotionColor, delta: number) {
-    if (selectedBeatNumber === null || !BeatOperator) return;
+    if (selectedStepNumber === null || !StepOperator) return;
     hapticService?.trigger("selection");
 
     // Push undo snapshot BEFORE modifying
@@ -125,8 +125,8 @@
     const newTurns: number | "fl" =
       newNumericTurns === -0.5 ? "fl" : newNumericTurns;
 
-    BeatOperator.updateBeatTurns(
-      selectedBeatNumber,
+    StepOperator.updateStepTurns(
+      selectedStepNumber,
       color,
       newTurns,
       CreateModuleState,
@@ -138,7 +138,7 @@
     color: MotionColor,
     direction: RotationDirection
   ) {
-    if (selectedBeatNumber === null || !BeatOperator) return;
+    if (selectedStepNumber === null || !StepOperator) return;
     hapticService?.trigger("selection");
 
     // Push undo snapshot BEFORE modifying
@@ -148,8 +148,8 @@
 
     const directionString =
       direction === RotationDirection.CLOCKWISE ? "cw" : "ccw";
-    BeatOperator.updateRotationDirection(
-      selectedBeatNumber,
+    StepOperator.updateRotationDirection(
+      selectedStepNumber,
       color,
       directionString,
       CreateModuleState,
@@ -158,7 +158,7 @@
   }
 
   function handleOrientationChange(color: MotionColor, orientation: string) {
-    if (selectedBeatNumber === null || !BeatOperator) return;
+    if (selectedStepNumber === null || !StepOperator) return;
     hapticService?.trigger("selection");
 
     // Push undo snapshot BEFORE modifying
@@ -166,8 +166,8 @@
       UndoOperationType.MODIFY_BEAT_PROPERTIES
     );
 
-    BeatOperator.updateBeatOrientation(
-      selectedBeatNumber,
+    StepOperator.updateStepOrientation(
+      selectedStepNumber,
       color,
       orientation,
       CreateModuleState,
@@ -175,8 +175,8 @@
     );
   }
 
-  function handleBeatDelete() {
-    if (selectedBeatNumber === null || !BeatOperator) {
+  function handleStepDelete() {
+    if (selectedStepNumber === null || !StepOperator) {
       return;
     }
     hapticService?.trigger("warning");
@@ -185,23 +185,23 @@
     CreateModuleState.pushUndoSnapshot(UndoOperationType.REMOVE_BEATS);
 
     // For start position (0), clear the start position
-    if (selectedBeatNumber === 0) {
+    if (selectedStepNumber === 0) {
       activeSequenceState.setStartPosition(null);
       activeSequenceState.clearSelection();
       return;
     }
 
-    // For regular beats, remove the beat with animation
-    // NOTE: Don't clear selection here - the animation callback in BeatRemovalHandler
+    // For regular steps, remove the beat with animation
+    // NOTE: Don't clear selection here - the animation callback in StepRemovalHandler
     // will select the appropriate next beat after the animation completes.
     // This prevents the mobile Beat Editor controls from disappearing during deletion.
-    const beatIndex = selectedBeatNumber - 1;
-    BeatOperator.removeBeat(beatIndex, CreateModuleState);
+    const stepIndex = selectedStepNumber - 1;
+    StepOperator.removeStep(stepIndex, CreateModuleState);
   }
 
-  function handleBeatSelect(beatNumber: number) {
+  function handleStepSelect(stepNumber: number) {
     hapticService?.trigger("selection");
-    activeSequenceState.selectBeat(beatNumber);
+    activeSequenceState.selectStep(stepNumber);
   }
 
   function handleOpenPropSheet(color: "blue" | "red") {
@@ -225,7 +225,7 @@
   }
 
   function handleDurationChange(newDuration: number) {
-    if (selectedBeatNumber === null || selectedBeatNumber === 0 || !BeatOperator) return;
+    if (selectedStepNumber === null || selectedStepNumber === 0 || !StepOperator) return;
     hapticService?.trigger("selection");
 
     // Push undo snapshot BEFORE modifying
@@ -233,67 +233,67 @@
       UndoOperationType.MODIFY_BEAT_PROPERTIES
     );
 
-    BeatOperator.updateBeatDuration(
-      selectedBeatNumber,
+    StepOperator.updateStepDuration(
+      selectedStepNumber,
       newDuration,
       CreateModuleState
     );
   }
 
-  function handleBeatDataUpdate(updatedBeatData: typeof selectedBeatData) {
-    if (selectedBeatNumber === null || !updatedBeatData) return;
+  function handleBeatDataUpdate(updatedStepData: typeof selectedStepData) {
+    if (selectedStepNumber === null || !updatedStepData) return;
 
     const currentSequence = activeSequenceState.currentSequence;
     if (!currentSequence) return;
 
     // Handle start position (beat 0)
-    if (selectedBeatNumber === 0) {
-      activeSequenceState.setStartPosition(updatedBeatData);
+    if (selectedStepNumber === 0) {
+      activeSequenceState.setStartPosition(updatedStepData);
       return;
     }
 
-    // Handle regular beats
-    const beatIndex = selectedBeatNumber - 1;
-    const updatedBeats = [...(currentSequence.beats ?? [])];
-    updatedBeats[beatIndex] = updatedBeatData;
+    // Handle regular steps
+    const stepIndex = selectedStepNumber - 1;
+    const updatedSteps = [...(currentSequence.steps ?? [])];
+    updatedSteps[stepIndex] = updatedStepData;
 
-    console.log("[BeatEditorCoordinator] Updating sequence with new beat data");
+    console.log("[StepEditorCoordinator] Updating sequence with new beat data");
     activeSequenceState.setCurrentSequence({
       ...currentSequence,
-      beats: updatedBeats,
+      steps: updatedSteps,
     });
 
-    logger.log(`Updated beat ${selectedBeatNumber} arrow adjustments`);
+    logger.log(`Updated beat ${selectedStepNumber} arrow adjustments`);
   }
 
   // Debug effect to track panel visibility
   $effect(() => {
     logger.log(
-      "BeatEditorCoordinator panel state changed:",
-      panelState.isBeatEditorPanelOpen
+      "StepEditorCoordinator panel state changed:",
+      panelState.isStepEditorPanelOpen
     );
   });
 </script>
 
-<BeatEditorPanel
+<StepEditorPanel
   {isOpen}
-  {selectedBeatNumber}
-  {selectedBeatData}
+  {selectedStepNumber}
+  {selectedStepData}
   {sequence}
-  {removingBeatIndices}
+  {removingStepIndices}
   onClose={handleClose}
   onTurnsChange={handleTurnsChange}
   onRotationChange={handleRotationChange}
   onOrientationChange={handleOrientationChange}
-  onBeatSelect={handleBeatSelect}
-  onDelete={handleBeatDelete}
+  onStepSelect={handleStepSelect}
+  onDelete={handleStepDelete}
   onOpenPropSheet={handleOpenPropSheet}
-  onBeatDataUpdate={handleBeatDataUpdate}
+  onStepDataUpdate={handleBeatDataUpdate}
   onPushUndoSnapshot={handlePushUndoSnapshot}
   onDurationChange={handleDurationChange}
 />
 
-<!-- Prop Selection Sheet - rendered as sibling to BeatEditorPanel -->
+<!-- Prop Selection Sheet - rendered as sibling to StepEditorPanel -->
 <PropSelectionSheet
   bind:isOpen={propSheetOpen}
   selectedPropType={propSheetColor === "blue" ? bluePropType : redPropType}

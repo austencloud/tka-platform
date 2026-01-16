@@ -106,8 +106,8 @@
     if (sequence?.word) return sequence.word;
 
     // If no word available, derive from beat letters
-    if (sequence?.beats && sequence.beats.length > 0) {
-      const letters = sequence.beats
+    if (sequence?.steps && sequence.steps.length > 0) {
+      const letters = sequence.steps
         .map((beat) => beat?.letter || "")
         .filter(Boolean)
         .join("");
@@ -178,7 +178,7 @@
 
     try {
       logger.info("Saving sequence to library...", {
-        beatCount: sequence.beats.length,
+        stepCount: sequence.steps.length,
         tkaName,
         customDisplayName: customDisplayName.trim() || "(none)",
       });

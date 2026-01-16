@@ -6,9 +6,9 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { ArrowPosition } from "$lib/shared/pictograph/arrow/orchestration/domain/arrow-models";
 
 export interface SequenceStatistics {
-  totalBeats: number;
+  totalSteps: number;
   blankBeats: number;
-  filledBeats: number;
+  filledSteps: number;
   duration: number;
   hasTurns: boolean;
   hasReversals: boolean;
@@ -33,10 +33,10 @@ export interface ISequenceCoordinator {
   /**
    * Get beat count for sequence
    */
-  getBeatCount(sequence: SequenceData | null): number;
+  getStepCount(sequence: SequenceData | null): number;
 
   /**
-   * Check if sequence has beats
+   * Check if sequence has steps
    */
   hasBeats(sequence: SequenceData | null): boolean;
 

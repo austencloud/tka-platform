@@ -29,8 +29,8 @@ export interface DraftSequence {
   /** Last update timestamp */
   updatedAt: Timestamp;
 
-  /** Number of beats */
-  beatCount: number;
+  /** Number of steps */
+  stepCount: number;
 
   /** Draft name (if provided) */
   name?: string;
@@ -51,7 +51,7 @@ export function createDraftSequence(
     sessionId,
     userId,
     sequenceData,
-    beatCount: sequenceData.beats.length,
+    stepCount: sequenceData.steps.length,
     name: sequenceData.name,
   };
 }

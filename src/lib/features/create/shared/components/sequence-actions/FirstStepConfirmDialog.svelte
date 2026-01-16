@@ -1,21 +1,21 @@
 <!--
-  FirstBeatConfirmDialog.svelte
+  FirstStepConfirmDialog.svelte
 
   Confirmation dialog for setting a new first beat on non-circular sequences.
-  Warns user that beats before the new first beat will be permanently removed.
+  Warns user that steps before the new first beat will be permanently removed.
 -->
 <script lang="ts">
   interface Props {
     show: boolean;
-    beatNumber: number;
+    stepNumber: number;
     onConfirm: () => void;
     onCancel: () => void;
   }
 
-  const { show, beatNumber, onConfirm, onCancel }: Props = $props();
+  const { show, stepNumber, onConfirm, onCancel }: Props = $props();
 
-  const beatsToRemove = $derived(beatNumber - 1);
-  const isPlural = $derived(beatsToRemove > 1);
+  const stepsToRemove = $derived(stepNumber - 1);
+  const isPlural = $derived(stepsToRemove > 1);
 </script>
 
 {#if show}
@@ -24,7 +24,7 @@
       <h3>Set New First Beat</h3>
       <p>
         This will permanently remove beat{isPlural ? "s" : ""} 1{isPlural
-          ? `-${beatsToRemove}`
+          ? `-${stepsToRemove}`
           : ""}.
       </p>
       <div class="dialog-actions">

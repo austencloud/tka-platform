@@ -3,13 +3,13 @@
  * Persists manual arrow position adjustments to the sequence state.
  */
 
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-import { getBeatDataFromState, START_POSITION_BEAT_NUMBER } from "./beat-data-helpers";
+import { getStepDataFromState, START_POSITION_BEAT_NUMBER } from "./step-data-helpers";
 import { UndoOperationType } from "../../../services/contracts/IUndoManager";
 
 const logger = createComponentLogger("ArrowAdjustmentHandler");
@@ -19,31 +19,31 @@ const logger = createComponentLogger("ArrowAdjustmentHandler");
  * Updates the manualAdjustmentX/Y values on the motion's arrowPlacementData
  */
 export function updateArrowAdjustment(
-  beatNumber: number,
+  stepNumber: number,
   color: string,
   adjustmentX: number,
   adjustmentY: number,
   createModuleState: ICreateModuleState
 ): void {
-  const beatData = getBeatDataFromState(beatNumber, createModuleState);
+  const stepData = getStepDataFromState(stepNumber, createModuleState);
 
-  if (!beatData?.motions) {
+  if (!stepData?.motions) {
     logger.warn("Cannot update arrow adjustment - no beat data available");
     return;
   }
 
   const colorKey = color as MotionColor;
-  const currentMotion = beatData.motions[colorKey];
+  const currentMotion = stepData.motions[colorKey];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
     return;
   }
 
   // Create updated beat data with new manual adjustments
-  const updatedBeatData: BeatData = {
-    ...beatData,
+  const updatedStepData: StepData = {
+    ...stepData,
     motions: {
-      ...beatData.motions,
+      ...stepData.motions,
       [colorKey]: {
         ...currentMotion,
         arrowPlacementData: {
@@ -63,20 +63,20 @@ export function updateArrowAdjustment(
     return;
   }
 
-  if (beatNumber === START_POSITION_BEAT_NUMBER) {
+  if (stepNumber === START_POSITION_BEAT_NUMBER) {
     // Update start position
     const startPosition = createModuleState.sequenceState.selectedStartPosition;
     const updatedStartPosition = startPosition
       ? createStartPositionData({
           ...startPosition,
-          motions: updatedBeatData.motions,
+          motions: updatedStepData.motions,
         })
       : null;
 
     const updatedSequence = {
       ...currentSequence,
       startPosition: updatedStartPosition ?? undefined,
-      startingPositionBeat: updatedStartPosition ?? undefined,
+      startingPosition: updatedStartPosition ?? undefined,
     };
 
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
@@ -85,18 +85,18 @@ export function updateArrowAdjustment(
     );
   } else {
     // Update beat in sequence
-    const arrayIndex = beatNumber - 1;
-    const updatedBeats = [...currentSequence.beats];
-    updatedBeats[arrayIndex] = updatedBeatData;
+    const arrayIndex = stepNumber - 1;
+    const updatedSteps = [...currentSequence.steps];
+    updatedSteps[arrayIndex] = updatedStepData;
 
     const updatedSequence = {
       ...currentSequence,
-      beats: updatedBeats,
+      steps: updatedSteps,
     };
 
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.success(
-      `Updated beat ${beatNumber} ${color} arrow adjustment to (${adjustmentX}, ${adjustmentY})`
+      `Updated beat ${stepNumber} ${color} arrow adjustment to (${adjustmentX}, ${adjustmentY})`
     );
   }
 }
@@ -106,8 +106,8 @@ export function updateArrowAdjustment(
  * Used when the adjustment panel closes to save all accumulated changes
  */
 export function persistBeatWithAdjustments(
-  beatNumber: number,
-  updatedBeatData: BeatData,
+  stepNumber: number,
+  updatedStepData: StepData,
   createModuleState: ICreateModuleState
 ): void {
   const currentSequence = createModuleState.sequenceState.currentSequence;
@@ -119,11 +119,11 @@ export function persistBeatWithAdjustments(
 
   // Push undo snapshot before applying changes
   createModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES, {
-    beatIndex: beatNumber,
-    description: `Adjust arrow positions for beat ${beatNumber === START_POSITION_BEAT_NUMBER ? "start position" : beatNumber}`,
+    stepIndex: stepNumber,
+    description: `Adjust arrow positions for beat ${stepNumber === START_POSITION_BEAT_NUMBER ? "start position" : stepNumber}`,
   });
 
-  if (beatNumber === START_POSITION_BEAT_NUMBER) {
+  if (stepNumber === START_POSITION_BEAT_NUMBER) {
     // Update start position - get the existing start position data to preserve its properties
     const existingStartPosition = createModuleState.sequenceState.selectedStartPosition;
     if (!existingStartPosition) {
@@ -133,29 +133,29 @@ export function persistBeatWithAdjustments(
 
     const updatedStartPosition = createStartPositionData({
       ...existingStartPosition,
-      motions: updatedBeatData.motions,
+      motions: updatedStepData.motions,
     });
 
     const updatedSequence = {
       ...currentSequence,
       startPosition: updatedStartPosition,
-      startingPositionBeat: updatedStartPosition,
+      startingPosition: updatedStartPosition,
     };
 
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.success(`Persisted start position arrow adjustments`);
   } else {
     // Update beat in sequence
-    const arrayIndex = beatNumber - 1;
-    const updatedBeats = [...currentSequence.beats];
-    updatedBeats[arrayIndex] = updatedBeatData;
+    const arrayIndex = stepNumber - 1;
+    const updatedSteps = [...currentSequence.steps];
+    updatedSteps[arrayIndex] = updatedStepData;
 
     const updatedSequence = {
       ...currentSequence,
-      beats: updatedBeats,
+      steps: updatedSteps,
     };
 
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
-    logger.success(`Persisted beat ${beatNumber} arrow adjustments`);
+    logger.success(`Persisted beat ${stepNumber} arrow adjustments`);
   }
 }

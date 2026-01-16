@@ -3,7 +3,7 @@
  *
  * Pure functions for formatting pictograph data as text.
  */
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import DefaultPropPositioner from "$lib/shared/pictograph/prop/services/implementations/DefaultPropPositioner";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -130,7 +130,7 @@ export async function formatMotionText(
 }
 
 export function formatBasicInfo(
-  displayData: BeatData | null,
+  displayData: StepData | null,
   blueMotion: MotionData | undefined,
   redMotion: MotionData | undefined
 ): string {
@@ -139,8 +139,8 @@ export function formatBasicInfo(
   const gridMode = blueMotion?.gridMode ?? redMotion?.gridMode ?? "unknown";
   const propType = blueMotion?.propType ?? redMotion?.propType ?? "unknown";
 
-  return `BEAT INFO:
-  Beat Number: ${displayData.beatNumber}
+  return `STEP INFO:
+  Beat Number: ${displayData.stepNumber}
   Letter: ${displayData.letter ?? "None"}
   Grid Mode: ${gridMode}
   Prop Type: ${propType}
@@ -152,7 +152,7 @@ export function formatBasicInfo(
 }
 
 export async function formatAllForAI(
-  displayData: BeatData | null,
+  displayData: StepData | null,
   blueMotion: MotionData | undefined,
   redMotion: MotionData | undefined,
   blueRotationOverride: { hasOverride: boolean } | null,

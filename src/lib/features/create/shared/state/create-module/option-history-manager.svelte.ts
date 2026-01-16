@@ -6,11 +6,11 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 
 export type OptionSelectionHistoryEntry = {
-  beatIndex: number;
-  beatData: BeatData;
+  stepIndex: number;
+  stepData: StepData;
   timestamp: number;
 };
 
@@ -26,10 +26,10 @@ export function createOptionHistoryManager({
   const history = $state<OptionSelectionHistoryEntry[]>([]);
   const hasHistory = $derived(history.length > 0);
 
-  function add(beatIndex: number, beatData: BeatData) {
+  function add(stepIndex: number, stepData: StepData) {
     history.push({
-      beatIndex,
-      beatData,
+      stepIndex,
+      stepData,
       timestamp: Date.now(),
     });
 
@@ -56,15 +56,15 @@ export function createOptionHistoryManager({
     }
 
     // Skip index 0 because it represents the start position
-    const beats = sequence.beats ?? [];
-    for (let i = 1; i < beats.length; i++) {
-      const beat = beats[i];
+    const steps = sequence.steps ?? [];
+    for (let i = 1; i < steps.length; i++) {
+      const beat = steps[i];
       if (!beat) continue;
 
       history.push({
-        beatIndex: i,
-        beatData: beat,
-        timestamp: Date.now() - (beats.length - i) * 1000,
+        stepIndex: i,
+        stepData: beat,
+        timestamp: Date.now() - (steps.length - i) * 1000,
       });
     }
   }

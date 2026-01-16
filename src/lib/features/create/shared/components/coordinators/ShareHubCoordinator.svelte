@@ -177,39 +177,39 @@
   // Current letter for glyph display
   const currentLetter = $derived.by(() => {
     if (!animationPanelState.sequenceData) return null;
-    const currentBeat = animationPanelState.currentBeat;
-    if (currentBeat < 1 && animationPanelState.sequenceData.startPosition) {
+    const currentStep = animationPanelState.currentStep;
+    if (currentStep < 1 && animationPanelState.sequenceData.startPosition) {
       return animationPanelState.sequenceData.startPosition.letter || null;
     }
-    if (animationPanelState.sequenceData.beats?.length > 0) {
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+    if (animationPanelState.sequenceData.steps?.length > 0) {
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationPanelState.sequenceData.beats.length - 1
+        stepIndex,
+        animationPanelState.sequenceData.steps.length - 1
       );
       return (
-        animationPanelState.sequenceData.beats[clampedIndex]?.letter || null
+        animationPanelState.sequenceData.steps[clampedIndex]?.letter || null
       );
     }
     return null;
   });
 
   // Current beat data for AnimatorCanvas
-  const currentBeatData = $derived.by(() => {
+  const currentStepData = $derived.by(() => {
     if (!animationPanelState.sequenceData) return null;
-    const currentBeat = animationPanelState.currentBeat;
-    if (currentBeat < 1 && animationPanelState.sequenceData.startPosition) {
+    const currentStep = animationPanelState.currentStep;
+    if (currentStep < 1 && animationPanelState.sequenceData.startPosition) {
       return animationPanelState.sequenceData.startPosition;
     }
-    if (animationPanelState.sequenceData.beats?.length > 0) {
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+    if (animationPanelState.sequenceData.steps?.length > 0) {
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationPanelState.sequenceData.beats.length - 1
+        stepIndex,
+        animationPanelState.sequenceData.steps.length - 1
       );
-      return animationPanelState.sequenceData.beats[clampedIndex] || null;
+      return animationPanelState.sequenceData.steps[clampedIndex] || null;
     }
     return null;
   });
@@ -331,8 +331,8 @@
   function getSequenceHash(seq: SequenceData | null): string | null {
     if (!seq) return null;
     // Create a simple hash from beat durations to detect relevant changes
-    const beatDurations = seq.beats?.map(b => b.duration ?? 1).join(',') || '';
-    return `${seq.id || seq.word || 'unknown'}-${seq.beats?.length || 0}-${beatDurations}`;
+    const beatDurations = seq.steps?.map(b => b.duration ?? 1).join(',') || '';
+    return `${seq.id || seq.word || 'unknown'}-${seq.steps?.length || 0}-${beatDurations}`;
   }
 
   $effect(() => {
@@ -399,9 +399,9 @@
     if (!sequenceService) return ensureWordPopulated(sequence);
 
     const hasMotionData = (s: SequenceData) =>
-      Array.isArray(s.beats) &&
-      s.beats.length > 0 &&
-      s.beats.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      Array.isArray(s.steps) &&
+      s.steps.length > 0 &&
+      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
 
     if (hasMotionData(sequence)) return ensureWordPopulated(sequence);
 
@@ -424,7 +424,7 @@
     if (sequence.word) return sequence;
 
     // Derive word from beat letters (same logic as SequenceStatsCalculator.generateSequenceWord)
-    const derivedWord = sequence.beats
+    const derivedWord = sequence.steps
       ?.filter((beat) => !!beat.letter)
       .map((beat) => beat.letter)
       .join("") || "";
@@ -456,8 +456,8 @@
         }
 
         // Only restore current beat on initial load (when not playing)
-        if (!animationPanelState.isPlaying && urlState.currentBeat !== undefined) {
-          animationPanelState.setCurrentBeat(urlState.currentBeat);
+        if (!animationPanelState.isPlaying && urlState.currentStep !== undefined) {
+          animationPanelState.setCurrentStep(urlState.currentStep);
         }
       },
     });
@@ -473,7 +473,7 @@
           sequenceId: currentSequence.id,
           speed: animationPanelState.speed,
           isPlaying: animationPanelState.isPlaying,
-          currentBeat: animationPanelState.currentBeat,
+          currentStep: animationPanelState.currentStep,
         });
       } else if (!isOpen && previousIsOpen) {
         urlManager.clearUrlState();
@@ -702,7 +702,7 @@
   onExport={handleExport}
   animationSequenceData={animationPanelState.sequenceData}
   isAnimationPlaying={isPlayingLocal}
-  animationCurrentBeat={animationPanelState.currentBeat}
+  animationCurrentBeat={animationPanelState.currentStep}
   animationSpeed={animationPanelState.speed}
   animationBluePropState={animationPanelState.bluePropState}
   animationRedPropState={animationPanelState.redPropState}

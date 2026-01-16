@@ -10,7 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type { StartPositionData } from "../../../domain/models/StartPositionData";
 import { createStartPositionData } from "../../../domain/factories/createStartPositionData";
 import type { ICreateModuleState } from "../../../types/create-module-types";
@@ -31,11 +31,11 @@ import {
 import { container } from "$lib/shared/di";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import {
-  getBeatDataFromState,
+  getStepDataFromState,
   START_POSITION_BEAT_NUMBER,
   updateSequenceWord,
-} from "./beat-data-helpers";
-import { calculatePropagatedBeats } from "./OrientationHandler";
+} from "./step-data-helpers";
+import { calculatePropagatedSteps } from "./OrientationHandler";
 
 const logger = createComponentLogger("RotationDirectionHandler");
 
@@ -43,22 +43,22 @@ const logger = createComponentLogger("RotationDirectionHandler");
  * Update rotation direction for a specific prop color in a beat
  */
 export function updateRotationDirection(
-  beatNumber: number,
+  stepNumber: number,
   color: string,
   rotationDirection: string,
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler | null,
   gridModeDeriver: IGridModeDeriver | null
 ): void {
-  const beatData = getBeatDataFromState(beatNumber, createModuleState);
+  const stepData = getStepDataFromState(stepNumber, createModuleState);
 
-  if (!beatData?.motions) {
+  if (!stepData?.motions) {
     logger.warn("Cannot update rotation direction - no beat data available");
     return;
   }
 
   const colorKey = color as MotionColor;
-  const currentMotion: MotionData | undefined = beatData.motions[colorKey];
+  const currentMotion: MotionData | undefined = stepData.motions[colorKey];
   if (!currentMotion) {
     logger.warn(`No motion data for ${color}`);
     return;
@@ -110,10 +110,10 @@ export function updateRotationDirection(
   );
 
   // Create updated beat data
-  const updatedBeatData = {
-    ...beatData,
+  const updatedStepData = {
+    ...stepData,
     motions: {
-      ...beatData.motions,
+      ...stepData.motions,
       [color]: {
         ...currentMotion,
         rotationDirection: newRotationDirection,
@@ -138,20 +138,20 @@ export function updateRotationDirection(
   let updatedSequence = currentSequence;
   let updatedStartPosition: StartPositionData | null = startPosition;
 
-  if (beatNumber === START_POSITION_BEAT_NUMBER) {
+  if (stepNumber === START_POSITION_BEAT_NUMBER) {
     // Create updated start position with new motions
     updatedStartPosition = startPosition
       ? createStartPositionData({
           ...startPosition,
-          motions: updatedBeatData.motions,
+          motions: updatedStepData.motions,
         })
       : null;
     logger.log(
       `Updated start position ${color}: rotation=${newRotationDirection}, motionType=${newMotionType}, endOri=${newEndOrientation}`
     );
 
-    const propagatedBeats = calculatePropagatedBeats(
-      beatNumber,
+    const propagatedSteps = calculatePropagatedSteps(
+      stepNumber,
       color,
       currentSequence,
       updatedStartPosition
@@ -159,45 +159,45 @@ export function updateRotationDirection(
 
     updatedSequence = {
       ...currentSequence,
-      beats: propagatedBeats,
+      steps: propagatedSteps,
     };
 
     // Update start position first
     createModuleState.sequenceState.setStartPosition(updatedStartPosition);
   } else {
-    const arrayIndex = beatNumber - 1;
-    const updatedBeats = [...currentSequence.beats];
-    updatedBeats[arrayIndex] = updatedBeatData;
+    const arrayIndex = stepNumber - 1;
+    const updatedSteps = [...currentSequence.steps];
+    updatedSteps[arrayIndex] = updatedStepData;
 
     logger.log(
-      `Updated beat ${beatNumber} ${color}: rotation=${newRotationDirection}, motionType=${newMotionType}, endOri=${newEndOrientation}`
+      `Updated beat ${stepNumber} ${color}: rotation=${newRotationDirection}, motionType=${newMotionType}, endOri=${newEndOrientation}`
     );
 
-    const propagatedBeats = calculatePropagatedBeats(
-      beatNumber,
+    const propagatedSteps = calculatePropagatedSteps(
+      stepNumber,
       color,
-      { ...currentSequence, beats: updatedBeats },
+      { ...currentSequence, steps: updatedSteps },
       startPosition
     );
 
     updatedSequence = {
       ...currentSequence,
-      beats: propagatedBeats,
+      steps: propagatedSteps,
     };
   }
 
   // CRITICAL: Derive the new letter BEFORE setting the sequence
   // The PRO ↔ ANTI flip may change the pictograph's letter
   if (motionQueryHandler && gridModeDeriver) {
-    const beatToCheck =
-      beatNumber === START_POSITION_BEAT_NUMBER
+    const stepToCheck =
+      stepNumber === START_POSITION_BEAT_NUMBER
         ? updatedStartPosition
-        : updatedSequence.beats[beatNumber - 1];
+        : updatedSequence.steps[stepNumber - 1];
 
-    if (beatToCheck) {
+    if (stepToCheck) {
       recalculateLetterAsync(
-        beatNumber,
-        beatToCheck,
+        stepNumber,
+        stepToCheck,
         createModuleState,
         motionQueryHandler,
         gridModeDeriver
@@ -221,14 +221,14 @@ export function updateRotationDirection(
  * Asynchronously recalculate letter for a beat after motion changes
  */
 async function recalculateLetterAsync(
-  beatNumber: number,
-  beatToCheck: BeatData | StartPositionData,
+  stepNumber: number,
+  stepToCheck: StepData | StartPositionData,
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler,
   gridModeDeriver: IGridModeDeriver
 ): Promise<void> {
-  const blueMotion = beatToCheck.motions?.[MotionColor.BLUE];
-  const redMotion = beatToCheck.motions?.[MotionColor.RED];
+  const blueMotion = stepToCheck.motions?.[MotionColor.BLUE];
+  const redMotion = stepToCheck.motions?.[MotionColor.RED];
 
   if (!blueMotion || !redMotion) return;
 
@@ -240,45 +240,45 @@ async function recalculateLetterAsync(
       gridMode
     );
 
-    if (newLetter && newLetter !== beatToCheck.letter) {
+    if (newLetter && newLetter !== stepToCheck.letter) {
       logger.log(
-        `📝 Letter changed: "${beatToCheck.letter}" → "${newLetter}" for beat ${beatNumber}`
+        `📝 Letter changed: "${stepToCheck.letter}" → "${newLetter}" for beat ${stepNumber}`
       );
 
       // Update the beat with the new letter
-      if (beatNumber === START_POSITION_BEAT_NUMBER) {
+      if (stepNumber === START_POSITION_BEAT_NUMBER) {
         const updatedStart = createStartPositionData({
-          ...beatToCheck,
+          ...stepToCheck,
           letter: newLetter as Letter,
         });
         createModuleState.sequenceState.setStartPosition(updatedStart);
       } else {
-        const arrayIndex = beatNumber - 1;
+        const arrayIndex = stepNumber - 1;
         const currentSeq = createModuleState.sequenceState.currentSequence;
         if (currentSeq) {
-          const beatsWithLetter = [...currentSeq.beats];
-          const existingBeat = beatsWithLetter[arrayIndex];
-          beatsWithLetter[arrayIndex] = {
+          const stepsWithLetter = [...currentSeq.steps];
+          const existingBeat = stepsWithLetter[arrayIndex];
+          stepsWithLetter[arrayIndex] = {
             ...existingBeat,
             letter: newLetter as Letter,
-          } as BeatData;
+          } as StepData;
 
           // Update word and sequence together
-          const word = beatsWithLetter
+          const word = stepsWithLetter
             .map((beat) => beat.letter ?? "")
             .join("")
             .toUpperCase();
 
           createModuleState.sequenceState.setCurrentSequence({
             ...currentSeq,
-            beats: beatsWithLetter,
+            steps: stepsWithLetter,
             word,
           });
         }
       }
     }
   } catch (error) {
-    logger.error(`Failed to derive letter for beat ${beatNumber}:`, error);
+    logger.error(`Failed to derive letter for beat ${stepNumber}:`, error);
   }
 }
 
@@ -287,7 +287,7 @@ async function recalculateLetterAsync(
  * This is called after changes that may affect the letter (e.g., rotation direction change)
  */
 export async function recalculateLetterForBeat(
-  beatNumber: number,
+  stepNumber: number,
   createModuleState: ICreateModuleState,
   motionQueryHandler: IMotionQueryHandler | null,
   gridModeDeriver: IGridModeDeriver | null
@@ -296,14 +296,14 @@ export async function recalculateLetterForBeat(
     return;
   }
 
-  const beatData = getBeatDataFromState(beatNumber, createModuleState);
+  const stepData = getStepDataFromState(stepNumber, createModuleState);
 
-  if (!beatData) {
+  if (!stepData) {
     return;
   }
 
-  const blueMotion = beatData.motions?.[MotionColor.BLUE];
-  const redMotion = beatData.motions?.[MotionColor.RED];
+  const blueMotion = stepData.motions?.[MotionColor.BLUE];
+  const redMotion = stepData.motions?.[MotionColor.RED];
 
   if (!blueMotion || !redMotion) {
     return;
@@ -319,44 +319,44 @@ export async function recalculateLetterForBeat(
     )) as Letter | null;
 
     if (newLetter) {
-      if (newLetter !== beatData.letter) {
+      if (newLetter !== stepData.letter) {
         logger.log(
-          `Letter changed: "${beatData.letter}" → "${newLetter}" for beat ${beatNumber}`
+          `Letter changed: "${stepData.letter}" → "${newLetter}" for beat ${stepNumber}`
         );
 
-        if (beatNumber === START_POSITION_BEAT_NUMBER) {
+        if (stepNumber === START_POSITION_BEAT_NUMBER) {
           // Use createStartPositionData for start positions
           const updatedStartPosition = createStartPositionData({
-            ...beatData,
+            ...stepData,
             letter: newLetter,
           });
           createModuleState.sequenceState.setStartPosition(updatedStartPosition);
         } else {
-          // Use BeatData for regular beats
-          const updatedBeatData: BeatData = {
-            ...beatData,
+          // Use StepData for regular steps
+          const updatedStepData: StepData = {
+            ...stepData,
             letter: newLetter,
-            beatNumber: beatData.beatNumber ?? beatNumber,
-          } as BeatData;
-          const arrayIndex = beatNumber - 1;
-          createModuleState.sequenceState.updateBeat(
+            stepNumber: stepData.stepNumber ?? stepNumber,
+          } as StepData;
+          const arrayIndex = stepNumber - 1;
+          createModuleState.sequenceState.updateStep(
             arrayIndex,
-            updatedBeatData
+            updatedStepData
           );
         }
 
         updateSequenceWord(createModuleState);
       } else {
         logger.log(
-          `Letter unchanged: "${beatData.letter}" for beat ${beatNumber}`
+          `Letter unchanged: "${stepData.letter}" for beat ${stepNumber}`
         );
       }
     } else {
       logger.warn(
-        `Could not find letter for beat ${beatNumber} motion configuration (gridMode: ${gridMode})`
+        `Could not find letter for beat ${stepNumber} motion configuration (gridMode: ${gridMode})`
       );
     }
   } catch (error) {
-    logger.error(`Failed to recalculate letter for beat ${beatNumber}:`, error);
+    logger.error(`Failed to recalculate letter for beat ${stepNumber}:`, error);
   }
 }

@@ -33,7 +33,7 @@ export interface MinimalSequence {
   gridMode: string;
   // propType removed - prop type is viewer preference, not sequence data
   startPosition: MinimalBeat | null;
-  beats: (MinimalBeat | null)[];
+  steps: (MinimalBeat | null)[];
 }
 
 export interface ISequenceJsonExporter {

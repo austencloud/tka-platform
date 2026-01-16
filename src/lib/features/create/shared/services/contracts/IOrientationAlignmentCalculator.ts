@@ -48,7 +48,7 @@ export interface IOrientationAlignmentCalculator {
   /**
    * Calculate the resulting sequence length after applying a LOOP.
    *
-   * @param currentLength - Current sequence length (number of beats)
+   * @param currentLength - Current sequence length (number of steps)
    * @param rotationRelation - The rotation relation (exact, half, quarter)
    * @param repetitionsNeeded - For exact position, how many repetitions needed
    * @returns The final sequence length

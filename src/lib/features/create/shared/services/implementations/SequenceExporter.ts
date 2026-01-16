@@ -3,11 +3,11 @@ import type {
   ExportableSequenceData,
   CondensedSequenceData,
   CondensedStartPosition,
-  CondensedBeatData,
+  CondensedStepData,
   CondensedMotionData,
   CondensedStartMotion,
 } from "../contracts/ISequenceExporter";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
 /**
@@ -25,22 +25,22 @@ export class SequenceExporter implements ISequenceExporter {
   ): CondensedSequenceData {
     const condensed: CondensedSequenceData = {
       word: sequenceData.word,
-      beats: [],
+      steps: [],
     };
 
     // Include start position FIRST if it exists
-    if (sequenceData.startingPositionBeat ?? sequenceData.startPosition) {
+    if (sequenceData.startingPosition ?? sequenceData.startPosition) {
       const startPos =
-        sequenceData.startingPositionBeat ?? sequenceData.startPosition;
+        sequenceData.startingPosition ?? sequenceData.startPosition;
       if (startPos) {
         condensed.startPosition = this.extractStartPosition(startPos);
       }
     }
 
     // Process each beat AFTER start position
-    if (sequenceData.beats) {
-      condensed.beats = sequenceData.beats.map((beat) =>
-        this.extractBeatData(beat)
+    if (sequenceData.steps) {
+      condensed.steps = sequenceData.steps.map((beat) =>
+        this.extractStepData(beat)
       );
     }
 
@@ -50,7 +50,7 @@ export class SequenceExporter implements ISequenceExporter {
   /**
    * Extract condensed start position data
    */
-  private extractStartPosition(startPos: BeatData): CondensedStartPosition {
+  private extractStartPosition(startPos: StepData): CondensedStartPosition {
     const letter = startPos.letter ?? "";
     const gridPosition = startPos.startPosition ?? undefined;
     const blueMotion = startPos.motions.blue;
@@ -88,7 +88,7 @@ export class SequenceExporter implements ISequenceExporter {
   /**
    * Extract condensed beat data
    */
-  private extractBeatData(beat: BeatData): CondensedBeatData {
+  private extractStepData(beat: StepData): CondensedStepData {
     const letter = beat.letter ?? "";
     const gridPosition = beat.startPosition ?? undefined;
     const blueMotion = beat.motions.blue;
@@ -96,7 +96,7 @@ export class SequenceExporter implements ISequenceExporter {
 
     return {
       letter,
-      beatNumber: beat.beatNumber,
+      stepNumber: beat.stepNumber,
       gridPosition,
       duration: beat.duration,
       blueReversal: beat.blueReversal,

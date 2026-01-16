@@ -6,12 +6,12 @@
  */
 
 import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
-import { getBeatFrameLayout } from "../domain/models/beat-frame-layouts";
+import { getBeatFrameLayout } from "../domain/models/step-frame-layouts";
 import type {
   GridLayout,
   GridSizingConstraints,
-} from "../domain/models/beat-grid-display-models";
-import { DEFAULT_GRID_SIZING } from "../domain/models/beat-grid-display-models";
+} from "../domain/models/step-grid-display-models";
+import { DEFAULT_GRID_SIZING } from "../domain/models/step-grid-display-models";
 
 /**
  * Create grid layout state with responsive calculations
@@ -70,14 +70,14 @@ export function createGridLayoutState(
    * Calculate layout for specific beat count
    * Uses beat frame layout configurations that adapt to screen width
    */
-  function calculateLayoutForBeats(beatCount: number): GridLayout {
+  function calculateLayoutForBeats(stepCount: number): GridLayout {
     // Determine if we should use wide layout
     // Side-by-side layout: Always use narrow layout (ignore width)
     // Top-and-bottom layout: Use width to determine narrow vs wide (652px threshold)
     const useWideLayout = !isSideBySideLayout() && containerWidth >= 650;
 
     // Get the optimal layout from configuration
-    const optimalLayout = getBeatFrameLayout(beatCount, useWideLayout);
+    const optimalLayout = getBeatFrameLayout(stepCount, useWideLayout);
 
     // Use the configured layout
     const columns = optimalLayout.columns;
@@ -128,11 +128,11 @@ export function createGridLayoutState(
    * Calculate grid position (row, column) for beat index
    */
   function calculateBeatPosition(
-    beatIndex: number,
+    stepIndex: number,
     layout: GridLayout
   ): { row: number; column: number } {
-    const row = Math.floor(beatIndex / layout.columns) + 1;
-    const column = (beatIndex % layout.columns) + 2; // +2 because start position is column 1
+    const row = Math.floor(stepIndex / layout.columns) + 1;
+    const column = (stepIndex % layout.columns) + 2; // +2 because start position is column 1
     return { row, column };
   }
 

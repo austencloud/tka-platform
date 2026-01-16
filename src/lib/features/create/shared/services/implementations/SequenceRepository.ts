@@ -10,7 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceCreateRequest } from "../../domain/models/sequence-models";
 import type { IPersistenceService } from "../contracts/IPersister";
 import type { ISequenceImporter } from "../contracts/ISequenceImporter";
@@ -48,10 +48,10 @@ export class SequenceRepository implements ISequenceRepository {
   /**
    * Update a beat in a sequence
    */
-  async updateBeat(
+  async updateStep(
     sequenceId: string,
-    beatIndex: number,
-    beatData: BeatData
+    stepIndex: number,
+    stepData: StepData
   ): Promise<void> {
     try {
       // Load the current sequence
@@ -62,10 +62,10 @@ export class SequenceRepository implements ISequenceRepository {
       }
 
       // Use domain service to update the beat
-      const updatedSequence = this.sequenceDomainManager.updateBeat(
+      const updatedSequence = this.sequenceDomainManager.updateStep(
         currentSequence,
-        beatIndex,
-        beatData
+        stepIndex,
+        stepData
       );
 
       await this.persistenceService.saveSequence(updatedSequence);
@@ -102,13 +102,13 @@ export class SequenceRepository implements ISequenceRepository {
       if (sequence) {
         sequence = this.reversalDetector.processReversals(sequence);
 
-        // Normalize sequence data to ensure start position is separated from beats
-        // This handles legacy data formats where beat 0 or startingPositionBeat was mixed into beats array
+        // Normalize sequence data to ensure start position is separated from steps
+        // This handles legacy data formats where beat 0 or startingPosition was mixed into steps array
         const normalized =
-          this.normalizationService.separateBeatsFromStartPosition(sequence);
+          this.normalizationService.separateStepsFromStartPosition(sequence);
         sequence = {
           ...sequence,
-          beats: normalized.beats,
+          steps: normalized.steps,
           startPosition: normalized.startPosition ?? undefined,
         };
       }
@@ -132,12 +132,12 @@ export class SequenceRepository implements ISequenceRepository {
         // Apply reversal detection
         const processed = this.reversalDetector.processReversals(sequence);
 
-        // Normalize to separate start position from beats
+        // Normalize to separate start position from steps
         const normalized =
-          this.normalizationService.separateBeatsFromStartPosition(processed);
+          this.normalizationService.separateStepsFromStartPosition(processed);
         return {
           ...processed,
-          beats: normalized.beats,
+          steps: normalized.steps,
           startPosition: normalized.startPosition ?? undefined,
         };
       });

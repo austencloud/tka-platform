@@ -5,7 +5,7 @@
  * Ensures orientation chain integrity after transforms.
  */
 
-import type { BeatData } from "../../../domain/models/BeatData";
+import type { StepData } from "../../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -17,20 +17,20 @@ import {
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 
 /**
- * Propagate orientations for a single color through all beats.
+ * Propagate orientations for a single color through all steps.
  * Each beat's start orientation = previous beat's end orientation.
  */
 export function propagateOrientationsForColor(
-  beats: BeatData[],
+  steps: StepData[],
   color: MotionColor,
   initialOrientation: Orientation,
   orientationCalculator: IOrientationCalculator
-): BeatData[] {
-  const updatedBeats = [...beats];
+): StepData[] {
+  const updatedSteps = [...steps];
   let previousEndOrientation: Orientation = initialOrientation;
 
-  for (let i = 0; i < updatedBeats.length; i++) {
-    const beat = updatedBeats[i];
+  for (let i = 0; i < updatedSteps.length; i++) {
+    const beat = updatedSteps[i];
     if (!beat?.motions) continue;
 
     const motion = beat.motions[color];
@@ -48,7 +48,7 @@ export function propagateOrientationsForColor(
     );
 
     // Update this beat with correct orientations
-    updatedBeats[i] = {
+    updatedSteps[i] = {
       ...beat,
       motions: {
         ...beat.motions,
@@ -63,7 +63,7 @@ export function propagateOrientationsForColor(
     previousEndOrientation = newEndOrientation;
   }
 
-  return updatedBeats;
+  return updatedSteps;
 }
 
 /**
@@ -74,19 +74,19 @@ export function recalculateAllOrientations(
   sequence: SequenceData,
   orientationCalculator: IOrientationCalculator
 ): SequenceData {
-  if (sequence.beats.length === 0 || !sequence.startPosition) {
+  if (sequence.steps.length === 0 || !sequence.startPosition) {
     return sequence;
   }
 
   const startPosition = sequence.startPosition;
-  let updatedBeats = [...sequence.beats];
+  let updatedSteps = [...sequence.steps];
 
   // Recalculate orientations for blue prop
   if (startPosition.motions[MotionColor.BLUE]) {
     const blueStartOrientation =
       startPosition.motions[MotionColor.BLUE].endOrientation;
-    updatedBeats = propagateOrientationsForColor(
-      updatedBeats,
+    updatedSteps = propagateOrientationsForColor(
+      updatedSteps,
       MotionColor.BLUE,
       blueStartOrientation,
       orientationCalculator
@@ -97,13 +97,13 @@ export function recalculateAllOrientations(
   if (startPosition.motions[MotionColor.RED]) {
     const redStartOrientation =
       startPosition.motions[MotionColor.RED].endOrientation;
-    updatedBeats = propagateOrientationsForColor(
-      updatedBeats,
+    updatedSteps = propagateOrientationsForColor(
+      updatedSteps,
       MotionColor.RED,
       redStartOrientation,
       orientationCalculator
     );
   }
 
-  return updateSequenceData(sequence, { beats: updatedBeats });
+  return updateSequenceData(sequence, { steps: updatedSteps });
 }

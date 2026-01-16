@@ -1,12 +1,12 @@
 /**
  * Sequence Validation Service
  *
- * Pure validation logic for sequences and beats.
+ * Pure validation logic for sequences and steps.
  * All functions are pure - return validation results without side effects.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { ValidationResult } from "../../../../../shared/validation/ValidationResult";
 import type { ISequenceValidator } from "../contracts/ISequenceValidator";
 
@@ -24,17 +24,17 @@ export class SequenceValidator implements ISequenceValidator {
     }
 
     // Length validation
-    if (sequence.beats.length === 0) {
-      warnings.push("Sequence has no beats");
+    if (sequence.steps.length === 0) {
+      warnings.push("Sequence has no steps");
     }
 
-    if (sequence.beats.length > 64) {
-      errors.push("Sequence cannot have more than 64 beats");
+    if (sequence.steps.length > 64) {
+      errors.push("Sequence cannot have more than 64 steps");
     }
 
     // Beat validation
-    sequence.beats.forEach((beat, index) => {
-      const beatErrors = this.validateBeat(beat, index);
+    sequence.steps.forEach((beat, index) => {
+      const beatErrors = this.validateStep(beat, index);
       errors.push(...beatErrors);
     });
 
@@ -55,18 +55,18 @@ export class SequenceValidator implements ISequenceValidator {
   /**
    * Validate a single beat
    */
-  validateBeat(beat: BeatData, expectedBeatNumber: number): string[] {
+  validateStep(beat: StepData, expectedStepNumber: number): string[] {
     const errors: string[] = [];
 
-    if (beat.beatNumber !== expectedBeatNumber + 1) {
+    if (beat.stepNumber !== expectedStepNumber + 1) {
       errors.push(
-        `Beat ${expectedBeatNumber + 1} has incorrect beat number: ${beat.beatNumber}`
+        `Beat ${expectedStepNumber + 1} has incorrect beat number: ${beat.stepNumber}`
       );
     }
 
     if (beat.duration <= 0) {
       errors.push(
-        `Beat ${expectedBeatNumber + 1} has invalid duration: ${beat.duration}`
+        `Beat ${expectedStepNumber + 1} has invalid duration: ${beat.duration}`
       );
     }
 
@@ -76,9 +76,9 @@ export class SequenceValidator implements ISequenceValidator {
   /**
    * Validate beat index is within bounds
    */
-  isValidBeatIndex(sequence: SequenceData | null, beatIndex: number): boolean {
+  isValidStepIndex(sequence: SequenceData | null, stepIndex: number): boolean {
     if (!sequence) return false;
-    return beatIndex >= 0 && beatIndex < sequence.beats.length;
+    return stepIndex >= 0 && stepIndex < sequence.steps.length;
   }
 
   /**
@@ -98,7 +98,7 @@ export class SequenceValidator implements ISequenceValidator {
     if (length < 1 || length > 64) {
       return {
         isValid: false,
-        error: "Sequence length must be between 1 and 64 beats",
+        error: "Sequence length must be between 1 and 64 steps",
       };
     }
     return { isValid: true };

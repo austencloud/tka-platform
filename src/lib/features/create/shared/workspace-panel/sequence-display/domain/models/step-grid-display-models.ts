@@ -2,7 +2,7 @@
  * Beat Grid Display Models
  *
  * Domain models for beat grid display animations and transitions.
- * These handle how beats appear/disappear in the Create module grid,
+ * These handle how steps appear/disappear in the Create module grid,
  * NOT playback animations in the Animator tab.
  */
 
@@ -12,7 +12,7 @@
 export interface GridLayout {
   /** Number of rows in the grid */
   rows: number;
-  /** Number of columns for beats (excludes start position column) */
+  /** Number of columns for steps (excludes start position column) */
   columns: number;
   /** Total columns including start position */
   totalColumns: number;
@@ -32,18 +32,18 @@ export type AnimationMode = "sequential" | "all-at-once";
  */
 export interface DisplayAnimationState {
   /** Index of newly added beat (for single beat animation) */
-  newlyAddedBeatIndex: number | null;
-  /** Whether all beats should animate simultaneously */
-  shouldAnimateAllBeats: boolean;
+  newlyAddedStepIndex: number | null;
+  /** Whether all steps should animate simultaneously */
+  shouldAnimateAllSteps: boolean;
   /** Whether start position should animate */
   shouldAnimateStartPosition: boolean;
   /** Current animation mode */
   isSequentialMode: boolean;
   /** Set of beat indices that should currently animate */
-  beatsToAnimate: Set<number>;
-  /** Flag indicating animation preparation (beats rendered invisible) */
+  stepsToAnimate: Set<number>;
+  /** Flag indicating animation preparation (steps rendered invisible) */
   isPreparingFullAnimation: boolean;
-  /** Flag for sequential mode waiting state (beats hidden until their turn) */
+  /** Flag for sequential mode waiting state (steps hidden until their turn) */
   isWaitingForSequentialAnimation: boolean;
   /** Flag for fade-out animation before sequence generation */
   isClearingForGeneration: boolean;
@@ -53,9 +53,9 @@ export interface DisplayAnimationState {
  * Event detail for beat letter animation
  */
 export interface BeatLetterAnimatedEvent {
-  beatIndex: number;
+  stepIndex: number;
   letter: string;
-  totalBeats: number;
+  totalSteps: number;
 }
 
 /**
@@ -63,14 +63,14 @@ export interface BeatLetterAnimatedEvent {
  */
 export interface PrepareSequenceAnimationEvent {
   isSequential: boolean;
-  beatCount: number;
+  stepCount: number;
 }
 
 /**
  * Event detail for sequential animation completion
  */
 export interface SequentialAnimationCompleteEvent {
-  totalBeats: number;
+  totalSteps: number;
 }
 
 /**

@@ -18,7 +18,7 @@
 
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { ArrowPosition } from "$lib/shared/pictograph/arrow/orchestration/domain/arrow-models";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ValidationResult } from "$lib/shared/validation/ValidationResult";
@@ -36,11 +36,11 @@ import type { ISequenceValidator } from "../services/contracts/ISequenceValidato
 import { createSequenceAnimationState } from "./animation/SequenceAnimationState.svelte";
 import { createSequenceArrowState } from "./arrow/SequenceArrowState.svelte";
 import { createSequenceCoreState } from "./core/SequenceCoreState.svelte";
-import { createSequenceBeatOperations } from "./operations/SequenceBeatOperations";
+import { createSequenceBeatOperations } from "./operations/SequenceStepOperations";
 import { createSequenceTransformOperations } from "./operations/SequenceTransformOperations";
 import { createSequencePersistenceCoordinator } from "./persistence/SequencePersistenceCoordinator.svelte";
 import { createSequenceSelectionState } from "./selection/SequenceSelectionState.svelte";
-import { isBeat } from "$lib/features/create/shared/domain/type-guards/pictograph-type-guards";
+import { isStep } from "$lib/features/create/shared/domain/type-guards/pictograph-type-guards";
 
 /**
  * Clean service configuration - no more type gymnastics!
@@ -90,7 +90,7 @@ export function createSequenceState(services: SequenceStateServices) {
   const SAVE_DEBOUNCE_MS = 500; // Wait 500ms after last change before saving
 
   // Create operation facades
-  const beatOperations = createSequenceBeatOperations({
+  const stepOperations = createSequenceBeatOperations({
     coreState,
     selectionState,
     animationState,
@@ -209,7 +209,7 @@ export function createSequenceState(services: SequenceStateServices) {
         if (activityService) {
           void activityService.logSequenceAction("create", sequence.id, {
             sequenceWord: sequence.word,
-            sequenceLength: sequence.beats.length,
+            sequenceLength: sequence.steps.length,
           });
         }
       } catch {
@@ -232,24 +232,24 @@ export function createSequenceState(services: SequenceStateServices) {
 
   async function updateSequenceBeats(
     sequenceId: string,
-    beatIndex: number,
-    beatData: BeatData
+    stepIndex: number,
+    stepData: StepData
   ): Promise<void> {
     if (!sequenceService) return;
 
     try {
-      await sequenceService.updateBeat(sequenceId, beatIndex, beatData);
+      await sequenceService.updateStep(sequenceId, stepIndex, stepData);
       // Update local state
       if (
         coreState.currentSequence &&
-        beatIndex >= 0 &&
-        beatIndex < coreState.currentSequence.beats.length
+        stepIndex >= 0 &&
+        stepIndex < coreState.currentSequence.steps.length
       ) {
-        const newBeats = [...coreState.currentSequence.beats];
-        newBeats[beatIndex] = beatData;
+        const newSteps = [...coreState.currentSequence.steps];
+        newSteps[stepIndex] = stepData;
         coreState.setCurrentSequence({
           ...coreState.currentSequence,
-          beats: newBeats,
+          steps: newSteps,
         });
       }
     } catch (error) {
@@ -278,20 +278,20 @@ export function createSequenceState(services: SequenceStateServices) {
     }
 
     // Update start position from sequence
-    // Check both startingPositionBeat (full beat format) and startPosition (raw position data)
+    // Check both startingPosition (full beat format) and startPosition (raw position data)
     // Sequences from Discover gallery may only have startPosition
     let startPosBeat: StartPositionData | null =
-      sequence?.startingPositionBeat || sequence?.startPosition || null;
+      sequence?.startingPosition || sequence?.startPosition || null;
 
-    // If no explicit start position but sequence has beats, derive from the first beat
+    // If no explicit start position but sequence has steps, derive from the first beat
     // This handles sequences loaded from Discover where start position info is stored
     // in the first beat's startPosition field rather than on the sequence itself
-    if (!startPosBeat && sequence?.beats?.length) {
+    if (!startPosBeat && sequence?.steps?.length) {
       try {
         const startPositionDeriver = container.items.startPositionDeriver;
         const derived = startPositionDeriver.getOrDeriveStartPosition(sequence);
-        // getOrDeriveStartPosition returns StartPositionData when deriving from beats
-        // The BeatData return type is for legacy compatibility only
+        // getOrDeriveStartPosition returns StartPositionData when deriving from steps
+        // The StepData return type is for legacy compatibility only
         if (derived && "isStartPosition" in derived) {
           startPosBeat = derived as StartPositionData;
         }
@@ -367,23 +367,23 @@ export function createSequenceState(services: SequenceStateServices) {
     }
   }
 
-  function getCurrentSequenceData(): BeatData[] {
+  function getCurrentSequenceData(): StepData[] {
     const sequence = coreState.currentSequence;
     if (sequence) {
-      const beats = sequence.beats || [];
+      const steps = sequence.steps || [];
       const startPosition =
-        sequence.startingPositionBeat || sequence.startPosition;
+        sequence.startingPosition || sequence.startPosition;
 
-      if (beats.length > 0) {
-        return beats.map((beat: BeatData) => beat).filter(Boolean);
+      if (steps.length > 0) {
+        return steps.map((beat: StepData) => beat).filter(Boolean);
       } else if (startPosition) {
-        // MIGRATION: Only include start position if it's actually BeatData (legacy data)
-        // Modern StartPositionData should not be included in beats array
-        if (isBeat(startPosition) && !startPosition.isBlank) {
+        // MIGRATION: Only include start position if it's actually StepData (legacy data)
+        // Modern StartPositionData should not be included in steps array
+        if (isStep(startPosition) && !startPosition.isBlank) {
           return [startPosition];
         }
-        // If it's a StartPositionData, don't include it in the beats array
-        // (Start positions are not beats)
+        // If it's a StartPositionData, don't include it in the steps array
+        // (Start positions are not steps)
          
         return [];
       }
@@ -396,15 +396,15 @@ export function createSequenceState(services: SequenceStateServices) {
     return [];
   }
 
-  function getSelectedBeatData(): BeatData | null {
-    // If start position is selected, return it as BeatData
+  function getSelectedStepData(): StepData | null {
+    // If start position is selected, return it as StepData
     if (
       selectionState.isStartPositionSelected &&
       selectionState.selectedStartPosition
     ) {
       return {
         ...selectionState.selectedStartPosition,
-        beatNumber: 0,
+        stepNumber: 0,
         duration: 1,
         blueReversal: false,
         redReversal: false,
@@ -414,38 +414,38 @@ export function createSequenceState(services: SequenceStateServices) {
 
     // Otherwise return selected beat
     if (
-      selectionState.selectedBeatIndex === null ||
+      selectionState.selectedStepIndex === null ||
       !coreState.currentSequence
     ) {
       return null;
     }
 
     return (
-      coreState.currentSequence.beats[selectionState.selectedBeatIndex] ?? null
+      coreState.currentSequence.steps[selectionState.selectedStepIndex] ?? null
     );
   }
 
-  function selectBeat(beatNumber: number | null): void {
-    if (beatNumber === null) {
+  function selectStep(stepNumber: number | null): void {
+    if (stepNumber === null) {
       selectionState.clearSelection();
       return;
     }
 
-    // Validate beatNumber is within valid range
-    // beatNumber 0 = start position (always valid if we have a start position)
-    // beatNumber 1 to N = beats in the sequence
+    // Validate stepNumber is within valid range
+    // stepNumber 0 = start position (always valid if we have a start position)
+    // stepNumber 1 to N = steps in the sequence
     const currentSequence = coreState.currentSequence;
 
-    if (beatNumber === 0) {
+    if (stepNumber === 0) {
       // Start position - always allow selection
-      selectionState.selectBeat(beatNumber);
+      selectionState.selectStep(stepNumber);
     } else if (
       currentSequence &&
-      beatNumber >= 1 &&
-      beatNumber <= currentSequence.beats.length
+      stepNumber >= 1 &&
+      stepNumber <= currentSequence.steps.length
     ) {
       // Regular beat - validate it exists
-      selectionState.selectBeat(beatNumber);
+      selectionState.selectStep(stepNumber);
     } else {
       selectionState.clearSelection();
     }
@@ -476,16 +476,16 @@ export function createSequenceState(services: SequenceStateServices) {
     get error() {
       return coreState.error;
     },
-    get selectedBeatIndex() {
-      return selectionState.selectedBeatIndex;
+    get selectedStepIndex() {
+      return selectionState.selectedStepIndex;
     },
-    get selectedBeatNumber() {
-      return selectionState.selectedBeatNumber;
+    get selectedStepNumber() {
+      return selectionState.selectedStepNumber;
     },
     get selectedSequenceId() {
       return coreState.selectedSequenceId;
     },
-    get showBeatNumbers() {
+    get showStepNumbers() {
       return true;
     },
     get gridMode() {
@@ -509,8 +509,8 @@ export function createSequenceState(services: SequenceStateServices) {
     get isInitialized() {
       return persistenceCoordinator.isInitialized;
     },
-    get selectedBeatData() {
-      return getSelectedBeatData();
+    get selectedStepData() {
+      return getSelectedStepData();
     },
 
     // Computed getters
@@ -519,22 +519,22 @@ export function createSequenceState(services: SequenceStateServices) {
     getSequences: () => coreState.sequences,
     getIsLoading: () => coreState.isLoading,
     getError: () => coreState.error,
-    getSelectedBeatIndex: () => selectionState.selectedBeatIndex,
-    getSelectedBeatNumber: () => selectionState.selectedBeatNumber,
+    getSelectedStepIndex: () => selectionState.selectedStepIndex,
+    getSelectedStepNumber: () => selectionState.selectedStepNumber,
     getSelectedSequenceId: () => coreState.selectedSequenceId,
-    getRemovingBeatIndex: () => animationState.removingBeatIndex,
-    getRemovingBeatIndices: () => animationState.removingBeatIndices,
+    getRemovingStepIndex: () => animationState.removingStepIndex,
+    getRemovingBeatIndices: () => animationState.removingStepIndices,
     getIsClearing: () => animationState.isClearing,
-    getShowBeatNumbers: () => true,
+    getShowStepNumbers: () => true,
     getGridMode: () => coreState.gridMode,
     getArrowPositions: () => arrowState.arrowPositions,
     getArrowPositioningInProgress: () => arrowState.arrowPositioningInProgress,
     getArrowPositioningError: () => arrowState.arrowPositioningError,
     getCurrentBeats: () =>
-      coreState.currentSequence ? [...coreState.currentSequence.beats] : [],
-    getSelectedBeatData,
+      coreState.currentSequence ? [...coreState.currentSequence.steps] : [],
+    getSelectedStepData,
     getSelectedBeat: () =>
-      beatOperations.getBeat(selectionState.selectedBeatIndex ?? 0),
+      stepOperations.getStep(selectionState.selectedStepIndex ?? 0),
     getHasCurrentSequence: () => coreState.hasSequence,
     getSequenceCount: () => coreState.sequenceCount,
     getHasUnsavedChanges: () =>
@@ -542,7 +542,7 @@ export function createSequenceState(services: SequenceStateServices) {
     getHasArrowPositions: () => arrowState.hasArrowPositions,
     getArrowPositioningComplete: () => arrowState.arrowPositioningComplete,
     hasSequence: () => coreState.hasSequence,
-    beatCount: () => beatOperations.getBeatCount(),
+    stepCount: () => stepOperations.getStepCount(),
     sequenceStatistics: () => transformOperations.getSequenceStatistics(),
     sequenceWord: () => transformOperations.generateSequenceWord(),
     sequenceDuration: () => transformOperations.calculateSequenceDuration(),
@@ -562,32 +562,32 @@ export function createSequenceState(services: SequenceStateServices) {
     setLoading: (loading: boolean) => coreState.setLoading(loading),
     setError: (error: string | null) => coreState.setError(error),
     clearError: () => coreState.clearError(),
-    updateCurrentBeat: (beatIndex: number, beatData: BeatData) => {
+    updateCurrentBeat: (stepIndex: number, stepData: StepData) => {
       if (
         coreState.currentSequence &&
-        beatIndex >= 0 &&
-        beatIndex < coreState.currentSequence.beats.length
+        stepIndex >= 0 &&
+        stepIndex < coreState.currentSequence.steps.length
       ) {
-        const newBeats = [...coreState.currentSequence.beats];
-        newBeats[beatIndex] = beatData;
+        const newSteps = [...coreState.currentSequence.steps];
+        newSteps[stepIndex] = stepData;
         coreState.setCurrentSequence({
           ...coreState.currentSequence,
-          beats: newBeats,
+          steps: newSteps,
         });
       }
     },
 
     // Selection actions
-    selectBeat,
+    selectStep,
     clearSelection: () => selectionState.clearSelection(),
     selectStartPositionForEditing: () => selectionState.selectStartPosition(),
-    isBeatSelected: (beatNumber: number) =>
-      selectionState.isBeatSelected(beatNumber),
+    isBeatSelected: (stepNumber: number) =>
+      selectionState.isBeatSelected(stepNumber),
     setSelectedStartPosition,
 
     // Grid mode
     setGridMode: (mode: GridMode) => coreState.setGridMode(mode),
-    setShowBeatNumbers: () => {}, // No-op, always shown
+    setShowStepNumbers: () => {}, // No-op, always shown
 
     // Arrow state
     setArrowPositions: (positions: Map<string, ArrowPosition>) =>
@@ -606,28 +606,28 @@ export function createSequenceState(services: SequenceStateServices) {
     resetSequenceState,
 
     // Beat operations - delegate to facade
-    addBeat: (beatData?: Partial<BeatData>) => beatOperations.addBeat(beatData),
-    removeBeat: (beatIndex: number) => beatOperations.removeBeat(beatIndex),
-    removeBeatWithAnimation: (beatIndex: number, onComplete?: () => void) =>
-      beatOperations.removeBeatWithAnimation(beatIndex, onComplete),
-    removeBeatAndSubsequent: (beatIndex: number) =>
-      beatOperations.removeBeatAndSubsequent(beatIndex),
+    addStep: (stepData?: Partial<StepData>) => stepOperations.addStep(stepData),
+    removeStep: (stepIndex: number) => stepOperations.removeStep(stepIndex),
+    removeBeatWithAnimation: (stepIndex: number, onComplete?: () => void) =>
+      stepOperations.removeBeatWithAnimation(stepIndex, onComplete),
+    removeBeatAndSubsequent: (stepIndex: number) =>
+      stepOperations.removeBeatAndSubsequent(stepIndex),
     removeBeatAndSubsequentWithAnimation: (
-      beatIndex: number,
+      stepIndex: number,
       onComplete?: () => void
     ) =>
-      beatOperations.removeBeatAndSubsequentWithAnimation(
-        beatIndex,
+      stepOperations.removeBeatAndSubsequentWithAnimation(
+        stepIndex,
         onComplete
       ),
-    updateBeat: (beatIndex: number, beatData: Partial<BeatData>) =>
-      beatOperations.updateBeat(beatIndex, beatData),
-    insertBeat: (beatIndex: number, beatData?: Partial<BeatData>) =>
-      beatOperations.insertBeat(beatIndex, beatData),
-    clearSequence: () => beatOperations.clearSequence(),
+    updateStep: (stepIndex: number, stepData: Partial<StepData>) =>
+      stepOperations.updateStep(stepIndex, stepData),
+    insertStep: (stepIndex: number, stepData?: Partial<StepData>) =>
+      stepOperations.insertStep(stepIndex, stepData),
+    clearSequence: () => stepOperations.clearSequence(),
     clearSequenceCompletely,
-    getBeat: (index: number) => beatOperations.getBeat(index),
-    hasContent: () => beatOperations.hasContent(),
+    getStep: (index: number) => stepOperations.getStep(index),
+    hasContent: () => stepOperations.hasContent(),
 
     // Transform operations - delegate to facade (with targetHand support)
     setStartPosition: (startPosition: StartPositionData | null) =>
@@ -645,8 +645,8 @@ export function createSequenceState(services: SequenceStateServices) {
     ) => transformOperations.rotateSequence(direction, targetHand),
     rewindSequence: (targetHand: TargetHand = "both") =>
       transformOperations.rewindSequence(targetHand),
-    shiftStartPosition: (targetBeatNumber: number) =>
-      transformOperations.shiftStartPosition(targetBeatNumber),
+    shiftStartPosition: (targetStepNumber: number) =>
+      transformOperations.shiftStartPosition(targetStepNumber),
     duplicateSequence: (newName?: string) =>
       transformOperations.duplicateSequence(newName),
     validateCurrentSequence: (): ValidationResult | null =>
@@ -674,8 +674,8 @@ export function createSequenceState(services: SequenceStateServices) {
     updateSequenceBeats,
 
     // Multi-select operations
-    get selectedBeatNumbers() {
-      return selectionState.selectedBeatNumbers;
+    get selectedStepNumbers() {
+      return selectionState.selectedStepNumbers;
     },
     get isMultiSelectMode() {
       return selectionState.isMultiSelectMode;
@@ -683,11 +683,11 @@ export function createSequenceState(services: SequenceStateServices) {
     get selectionCount() {
       return selectionState.selectionCount;
     },
-    enterMultiSelectMode: (beatNumber: number) =>
-      selectionState.enterMultiSelectMode(beatNumber),
+    enterMultiSelectMode: (stepNumber: number) =>
+      selectionState.enterMultiSelectMode(stepNumber),
     exitMultiSelectMode: () => selectionState.exitMultiSelectMode(),
-    toggleBeatInMultiSelect: (beatNumber: number) =>
-      selectionState.toggleBeatInMultiSelect(beatNumber),
+    toggleStepInMultiSelect: (stepNumber: number) =>
+      selectionState.toggleStepInMultiSelect(stepNumber),
   };
 }
 

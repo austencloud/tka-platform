@@ -1,15 +1,15 @@
 /**
- * Factory function for creating BeatData
+ * Factory function for creating StepData
  *
  * Creates a beat with proper type discriminator.
- * Beats represent actual motions in a sequence (beatNumber >= 1).
+ * Steps represent actual motions in a sequence (stepNumber >= 1).
  */
-import type { BeatData } from "../models/BeatData";
+import type { StepData } from "../models/StepData";
 
-export function createBeatData(data: Partial<BeatData> = {}): BeatData {
+export function createStepData(data: Partial<StepData> = {}): StepData {
   return {
     // Type discriminator
-    isBeat: true as const,
+    isStep: true as const,
 
     // PictographData properties
     id: data.id ?? crypto.randomUUID(),
@@ -19,7 +19,7 @@ export function createBeatData(data: Partial<BeatData> = {}): BeatData {
     motions: data.motions ?? {},
 
     // Beat context properties
-    beatNumber: data.beatNumber ?? 1, // Should always be >= 1
+    stepNumber: data.stepNumber ?? 1, // Should always be >= 1
     duration: data.duration ?? 1.0,
     blueReversal: data.blueReversal ?? false,
     redReversal: data.redReversal ?? false,

@@ -29,7 +29,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type {
   RotationDirectionPattern,
   RotationDirectionPatternCreateData,
@@ -55,7 +55,7 @@ import { container } from "$lib/shared/di";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IMotionQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import { createBeatData } from "../../domain/factories/createBeatData";
+import { createStepData } from "../../domain/factories/createStepData";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("RotationDirectionPatternManager");
@@ -76,15 +76,15 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
   ): RotationDirectionPatternCreateData {
     const entries: RotationDirectionPatternEntry[] = [];
 
-    for (let i = 0; i < sequence.beats.length; i++) {
-      const beat = sequence.beats[i];
+    for (let i = 0; i < sequence.steps.length; i++) {
+      const beat = sequence.steps[i];
       if (!beat) continue;
 
       const blueMotion = beat.motions?.blue;
       const redMotion = beat.motions?.red;
 
       entries.push({
-        beatIndex: i,
+        stepIndex: i,
         blue: blueMotion ? this.extractRotationDirection(blueMotion) : null,
         red: redMotion ? this.extractRotationDirection(redMotion) : null,
       });
@@ -93,7 +93,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     return {
       name,
       userId: "", // Will be set when saving
-      beatCount: sequence.beats.length,
+      stepCount: sequence.steps.length,
       entries,
     };
   }
@@ -150,15 +150,15 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     }
 
     const warnings: string[] = [];
-    let modifiedBeats = 0;
+    let modifiedSteps = 0;
     const modifiedBeatIndices: number[] = [];
 
     // Step 1: Apply all rotation direction changes
-    const updatedBeats: BeatData[] = sequence.beats.map((beat, beatIndex) => {
-      const entry = pattern.entries.find((e) => e.beatIndex === beatIndex);
+    const updatedSteps: StepData[] = sequence.steps.map((beat, stepIndex) => {
+      const entry = pattern.entries.find((e) => e.stepIndex === stepIndex);
       if (!entry) return beat;
 
-      let beatModified = false;
+      let stepModified = false;
       const updatedMotions = { ...beat.motions };
 
       // Apply blue rotation direction (if targeting blue or both)
@@ -171,14 +171,14 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
           entry.blue,
           beat.motions.blue,
           MotionColor.BLUE,
-          beatIndex
+          stepIndex
         );
         if (result.motion) {
           updatedMotions.blue = result.motion;
-          beatModified = true;
+          stepModified = true;
         }
         if (result.warning) {
-          warnings.push(`Beat ${beatIndex + 1} blue: ${result.warning}`);
+          warnings.push(`Beat ${stepIndex + 1} blue: ${result.warning}`);
         }
       }
 
@@ -192,32 +192,32 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
           entry.red,
           beat.motions.red,
           MotionColor.RED,
-          beatIndex
+          stepIndex
         );
         if (result.motion) {
           updatedMotions.red = result.motion;
-          beatModified = true;
+          stepModified = true;
         }
         if (result.warning) {
-          warnings.push(`Beat ${beatIndex + 1} red: ${result.warning}`);
+          warnings.push(`Beat ${stepIndex + 1} red: ${result.warning}`);
         }
       }
 
-      if (beatModified) {
-        modifiedBeats++;
-        modifiedBeatIndices.push(beatIndex);
+      if (stepModified) {
+        modifiedSteps++;
+        modifiedBeatIndices.push(stepIndex);
         return { ...beat, motions: updatedMotions };
       }
       return beat;
     });
 
     // Step 2: Propagate orientations forward through the sequence
-    this.propagateOrientations(updatedBeats);
+    this.propagateOrientations(updatedSteps);
 
-    // Step 3: Look up correct letters for all modified beats
+    // Step 3: Look up correct letters for all modified steps
     const gridMode = sequence.gridMode ?? GridMode.DIAMOND;
     await this.recalculateLettersForBeats(
-      updatedBeats,
+      updatedSteps,
       modifiedBeatIndices,
       gridMode
     );
@@ -225,26 +225,26 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     // Create updated sequence
     const updatedSequence: SequenceData = {
       ...sequence,
-      beats: updatedBeats,
+      steps: updatedSteps,
     };
 
     logger.log(
-      `Applied rotation pattern "${pattern.name}" - modified ${modifiedBeats} beats`
+      `Applied rotation pattern "${pattern.name}" - modified ${modifiedSteps} steps`
     );
 
     return {
       success: true,
       sequence: updatedSequence,
-      modifiedBeats,
+      modifiedSteps,
       warnings: warnings.length > 0 ? warnings : undefined,
     };
   }
 
   /**
-   * Recalculate letters for modified beats using the pictograph dataset
+   * Recalculate letters for modified steps using the pictograph dataset
    */
   private async recalculateLettersForBeats(
-    beats: BeatData[],
+    steps: StepData[],
     modifiedBeatIndices: number[],
     gridMode: GridMode
   ): Promise<void> {
@@ -258,8 +258,8 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       return;
     }
 
-    for (const beatIndex of modifiedBeatIndices) {
-      const beat = beats[beatIndex];
+    for (const stepIndex of modifiedBeatIndices) {
+      const beat = steps[stepIndex];
       if (!beat) continue;
 
       const blueMotion = beat.motions?.blue;
@@ -279,20 +279,20 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
           const newLetter = foundLetter as Letter;
           if (newLetter !== beat.letter) {
             logger.log(
-              `Beat ${beatIndex + 1}: Updated letter "${beat.letter}" → "${newLetter}"`
+              `Beat ${stepIndex + 1}: Updated letter "${beat.letter}" → "${newLetter}"`
             );
-            beats[beatIndex] = createBeatData({
+            steps[stepIndex] = createStepData({
               ...beat,
               letter: newLetter,
             });
           }
         } else {
           logger.warn(
-            `Beat ${beatIndex + 1}: Could not find letter for modified motion configuration`
+            `Beat ${stepIndex + 1}: Could not find letter for modified motion configuration`
           );
         }
       } catch (error) {
-        logger.warn(`Beat ${beatIndex + 1}: Error looking up letter:`, error);
+        logger.warn(`Beat ${stepIndex + 1}: Error looking up letter:`, error);
       }
     }
   }
@@ -315,7 +315,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     patternValue: RotationDirectionValue,
     currentMotion: MotionData,
     color: MotionColor,
-    beatIndex: number
+    stepIndex: number
   ): { motion: MotionData | null; warning?: string } {
     const { motionType, turns, rotationDirection } = currentMotion;
 
@@ -354,10 +354,10 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     let newMotionType = motionType;
     if (motionType === MotionType.PRO) {
       newMotionType = MotionType.ANTI;
-      logger.log(`Beat ${beatIndex + 1} ${color}: Flipping PRO → ANTI`);
+      logger.log(`Beat ${stepIndex + 1} ${color}: Flipping PRO → ANTI`);
     } else if (motionType === MotionType.ANTI) {
       newMotionType = MotionType.PRO;
-      logger.log(`Beat ${beatIndex + 1} ${color}: Flipping ANTI → PRO`);
+      logger.log(`Beat ${stepIndex + 1} ${color}: Flipping ANTI → PRO`);
     }
     // Note: DASH, STATIC don't flip
 
@@ -387,28 +387,28 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
    * Propagate orientations forward through the sequence
    * Ensures each beat's startOrientation matches the previous beat's endOrientation
    */
-  private propagateOrientations(beats: BeatData[]): void {
-    for (let i = 0; i < beats.length - 1; i++) {
-      const currentBeat = beats[i];
-      const nextBeat = beats[i + 1];
-      if (!currentBeat || !nextBeat) continue;
+  private propagateOrientations(steps: StepData[]): void {
+    for (let i = 0; i < steps.length - 1; i++) {
+      const currentStep = steps[i];
+      const nextStep = steps[i + 1];
+      if (!currentStep || !nextStep) continue;
 
       // Propagate blue motion orientation
-      if (currentBeat.motions?.blue && nextBeat.motions?.blue) {
-        const currentEndOrientation = currentBeat.motions.blue.endOrientation;
-        const nextStartOrientation = nextBeat.motions.blue.startOrientation;
+      if (currentStep.motions?.blue && nextStep.motions?.blue) {
+        const currentEndOrientation = currentStep.motions.blue.endOrientation;
+        const nextStartOrientation = nextStep.motions.blue.startOrientation;
 
         if (currentEndOrientation !== nextStartOrientation) {
           const updatedNextMotion = this.updateMotionStartOrientation(
-            nextBeat.motions.blue,
+            nextStep.motions.blue,
             currentEndOrientation,
             MotionColor.BLUE
           );
 
-          beats[i + 1] = {
-            ...nextBeat,
+          steps[i + 1] = {
+            ...nextStep,
             motions: {
-              ...nextBeat.motions,
+              ...nextStep.motions,
               blue: updatedNextMotion,
             },
           };
@@ -416,24 +416,24 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       }
 
       // Propagate red motion orientation
-      if (currentBeat.motions?.red && nextBeat.motions?.red) {
-        const currentEndOrientation = currentBeat.motions.red.endOrientation;
-        const nextStartOrientation = nextBeat.motions.red.startOrientation;
+      if (currentStep.motions?.red && nextStep.motions?.red) {
+        const currentEndOrientation = currentStep.motions.red.endOrientation;
+        const nextStartOrientation = nextStep.motions.red.startOrientation;
 
         if (currentEndOrientation !== nextStartOrientation) {
           const updatedNextMotion = this.updateMotionStartOrientation(
-            nextBeat.motions.red,
+            nextStep.motions.red,
             currentEndOrientation,
             MotionColor.RED
           );
 
           // Get latest beat data (might have been updated for blue already)
-          const latestNextBeat = beats[i + 1];
-          if (!latestNextBeat) continue;
-          beats[i + 1] = {
-            ...latestNextBeat,
+          const latestNextStep = steps[i + 1];
+          if (!latestNextStep) continue;
+          steps[i + 1] = {
+            ...latestNextStep,
             motions: {
-              ...latestNextBeat.motions,
+              ...latestNextStep.motions,
               red: updatedNextMotion,
             },
           };
@@ -487,7 +487,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     const docData = {
       name: data.name,
       userId,
-      beatCount: data.beatCount,
+      stepCount: data.stepCount,
       entries: data.entries,
       createdAt: serverTimestamp(),
     };
@@ -500,7 +500,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       id: docRef.id,
       name: data.name,
       userId,
-      beatCount: data.beatCount,
+      stepCount: data.stepCount,
       entries: data.entries,
       createdAt: null as Timestamp | null, // Will be populated by Firestore
     };
@@ -528,7 +528,7 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
         id: doc.id,
         name: data.name,
         userId: data.userId,
-        beatCount: data.beatCount,
+        stepCount: data.stepCount,
         entries: data.entries,
         createdAt: data.createdAt,
       });
@@ -563,10 +563,10 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
     pattern: RotationDirectionPattern,
     sequence: SequenceData
   ): { valid: boolean; error?: string } {
-    if (pattern.beatCount !== sequence.beats.length) {
+    if (pattern.stepCount !== sequence.steps.length) {
       return {
         valid: false,
-        error: `Pattern has ${pattern.beatCount} beats but sequence has ${sequence.beats.length} beats`,
+        error: `Pattern has ${pattern.stepCount} steps but sequence has ${sequence.steps.length} steps`,
       };
     }
     return { valid: true };

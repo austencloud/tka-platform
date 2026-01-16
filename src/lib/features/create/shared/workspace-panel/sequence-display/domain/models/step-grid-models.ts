@@ -8,9 +8,9 @@
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 export interface BeatGridConfig {
-  /** Number of columns allocated for BEATS (excludes the Start tile column) */
+  /** Number of columns allocated for STEPS (excludes the Start tile column) */
   columns: number;
-  beatSize: number;
+  stepSize: number;
   gap: number;
   gridMode: GridMode;
   cellSize: number;

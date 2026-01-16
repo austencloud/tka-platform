@@ -25,8 +25,8 @@ export type RotationDirectionValue = "cw" | "ccw" | "none";
  * Single entry in a rotation direction pattern - captures direction for one beat
  */
 export interface RotationDirectionPatternEntry {
-  /** 0-based index into the sequence beats array */
-  readonly beatIndex: number;
+  /** 0-based index into the sequence steps array */
+  readonly stepIndex: number;
   /** Blue motion rotation direction, or null if no blue motion on this beat */
   readonly blue: RotationDirectionValue | null;
   /** Red motion rotation direction, or null if no red motion on this beat */
@@ -45,8 +45,8 @@ export interface RotationDirectionPattern {
   readonly userId: string;
   /** When the pattern was created (null until Firestore assigns server timestamp) */
   readonly createdAt: Timestamp | null;
-  /** Number of beats in this pattern (must match target sequence) */
-  readonly beatCount: number;
+  /** Number of steps in this pattern (must match target sequence) */
+  readonly stepCount: number;
   /** Rotation direction values for each beat */
   readonly entries: readonly RotationDirectionPatternEntry[];
 }
@@ -57,7 +57,7 @@ export interface RotationDirectionPattern {
 export interface RotationDirectionPatternCreateData {
   readonly name: string;
   readonly userId: string;
-  readonly beatCount: number;
+  readonly stepCount: number;
   readonly entries: readonly RotationDirectionPatternEntry[];
 }
 
@@ -79,7 +79,7 @@ export function isRotationDirectionPatternEntry(
   if (typeof obj !== "object" || obj === null) return false;
   const entry = obj as Record<string, unknown>;
   return (
-    typeof entry.beatIndex === "number" &&
+    typeof entry.stepIndex === "number" &&
     (entry.blue === null || isRotationDirectionValue(entry.blue)) &&
     (entry.red === null || isRotationDirectionValue(entry.red))
   );
@@ -97,7 +97,7 @@ export function isRotationDirectionPattern(
     typeof pattern.id === "string" &&
     typeof pattern.name === "string" &&
     typeof pattern.userId === "string" &&
-    typeof pattern.beatCount === "number" &&
+    typeof pattern.stepCount === "number" &&
     Array.isArray(pattern.entries) &&
     pattern.entries.every(isRotationDirectionPatternEntry)
   );
@@ -108,12 +108,12 @@ export function isRotationDirectionPattern(
  */
 export function validatePatternForSequence(
   pattern: RotationDirectionPattern,
-  sequenceBeatCount: number
+  sequenceStepCount: number
 ): { valid: boolean; error?: string } {
-  if (pattern.beatCount !== sequenceBeatCount) {
+  if (pattern.stepCount !== sequenceStepCount) {
     return {
       valid: false,
-      error: `Pattern has ${pattern.beatCount} beats but sequence has ${sequenceBeatCount} beats`,
+      error: `Pattern has ${pattern.stepCount} steps but sequence has ${sequenceStepCount} steps`,
     };
   }
   return { valid: true };

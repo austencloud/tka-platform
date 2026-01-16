@@ -4,7 +4,7 @@
    *
    * Displays basic beat information and lookup keys for debugging.
    */
-  import type { BeatData } from "../../../domain/models/BeatData";
+  import type { StepData } from "../../../domain/models/StepData";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { formatBasicInfo } from "./formatters";
 
@@ -17,7 +17,7 @@
   }
 
   interface Props {
-    displayData: BeatData | null;
+    displayData: StepData | null;
     blueMotion: MotionData | undefined;
     redMotion: MotionData | undefined;
     lookupKeys: LookupKeys | null;
@@ -58,7 +58,7 @@
   <div class="data-block">
     <div class="data-row">
       <span class="key">Beat #</span>
-      <span class="val">{displayData?.beatNumber ?? "—"}</span>
+      <span class="val">{displayData?.stepNumber ?? "—"}</span>
     </div>
     <div class="data-row">
       <span class="key">Letter</span>

@@ -6,7 +6,7 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../domain/models/BeatData";
+import type { StepData } from "../domain/models/StepData";
 import type { StartPositionData } from "../domain/models/StartPositionData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
 import type { SimplifiedStartPositionState } from "../../construct/start-position-picker/state/start-position-state.svelte";
@@ -103,17 +103,17 @@ export interface IAnimationPanelState {
  */
 export interface IAnimationStateRef {
   isPlaying: boolean;
-  currentBeat: number;
-  totalBeats: number;
+  currentStep: number;
+  totalSteps: number;
   speed: number;
   shouldLoop: boolean;
   play: () => void;
   stop: () => void;
-  jumpToBeat: (beat: number) => void;
+  jumpToStep: (beat: number) => void;
   setSpeed: (speed: number) => void;
   setShouldLoop: (loop: boolean) => void;
-  nextBeat: () => void;
-  previousBeat: () => void;
+  nextStep: () => void;
+  previousStep: () => void;
 }
 
 /**
@@ -125,7 +125,7 @@ export interface IToolPanelProps {
   createModuleState: ICreateModuleState;
   constructTabState: IConstructTabState;
   onOptionSelected: (option: PictographData) => Promise<void>;
-  onPracticeBeatIndexChange?: (index: number | null) => void;
+  onPracticeStepIndexChange?: (index: number | null) => void;
   isSideBySideLayout?: () => boolean;
   activeTab?: BuildModeId | null;
   onTabChange?: (tab: BuildModeId) => void;
@@ -146,6 +146,6 @@ export interface IToolPanelMethods {
 /**
  * Batch Edit Changes Interface
  *
- * Partial beat data changes that can be applied to multiple beats at once.
+ * Partial beat data changes that can be applied to multiple steps at once.
  */
-export type BatchEditChanges = Partial<BeatData>;
+export type BatchEditChanges = Partial<StepData>;

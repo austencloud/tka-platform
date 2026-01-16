@@ -1,5 +1,5 @@
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { BeatData } from "../../domain/models/BeatData";
+import type { StepData } from "../../domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IBetaDetector } from "$lib/shared/pictograph/prop/services/contracts/IBetaDetector";
 import type {
@@ -35,9 +35,9 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
    * Analyze a sequence for circular properties
    */
   analyzeCircularity(sequence: SequenceData): CircularityAnalysis {
-    // Get start and end beats
-    const startBeat = this.getStartBeat(sequence);
-    const endBeat = this.getEndBeat(sequence);
+    // Get start and end steps
+    const startStep = this.getStartBeat(sequence);
+    const endStep = this.getEndBeat(sequence);
 
     // Default non-circular result
     const defaultResult: CircularityAnalysis = {
@@ -51,14 +51,14 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
       description: "Not circular",
     };
 
-    // Check if we have valid start and end beats
-    if (!startBeat || !endBeat) {
+    // Check if we have valid start and end steps
+    if (!startStep || !endStep) {
       return defaultResult;
     }
 
     // Get start and end positions
-    const startPosition = startBeat.startPosition;
-    const endPosition = endBeat.endPosition;
+    const startPosition = startStep.startPosition;
+    const endPosition = endStep.endPosition;
 
     if (!startPosition || !endPosition) {
       return defaultResult;
@@ -198,13 +198,13 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
   /**
    * Get the first beat with valid pictograph data (start beat)
    */
-  getStartBeat(sequence: SequenceData): BeatData | null {
-    if (!sequence.beats || sequence.beats.length === 0) {
+  getStartBeat(sequence: SequenceData): StepData | null {
+    if (!sequence.steps || sequence.steps.length === 0) {
       return null;
     }
 
     // Find first beat with a start position
-    for (const beat of sequence.beats) {
+    for (const beat of sequence.steps) {
       if (beat.startPosition && !beat.isBlank) {
         return beat;
       }
@@ -216,14 +216,14 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
   /**
    * Get the last beat with valid pictograph data (end beat)
    */
-  getEndBeat(sequence: SequenceData): BeatData | null {
-    if (!sequence.beats || sequence.beats.length === 0) {
+  getEndBeat(sequence: SequenceData): StepData | null {
+    if (!sequence.steps || sequence.steps.length === 0) {
       return null;
     }
 
     // Find last beat with an end position (iterate backwards)
-    for (let i = sequence.beats.length - 1; i >= 0; i--) {
-      const beat = sequence.beats[i];
+    for (let i = sequence.steps.length - 1; i >= 0; i--) {
+      const beat = sequence.steps[i];
       if (beat?.endPosition && !beat.isBlank) {
         return beat;
       }
@@ -246,24 +246,24 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
    * of completed LOOP pattern the sequence represents.
    */
   detectCompletedLoopTypes(sequence: SequenceData): readonly StrictLoopType[] {
-    if (!sequence.beats || sequence.beats.length === 0) {
+    if (!sequence.steps || sequence.steps.length === 0) {
       return [];
     }
 
-    // Filter out blank beats
-    const validBeats = sequence.beats.filter(
+    // Filter out blank steps
+    const validSteps = sequence.steps.filter(
       (beat) => !beat.isBlank && beat.endPosition
     );
 
-    if (validBeats.length === 0) {
+    if (validSteps.length === 0) {
       return [];
     }
 
-    // Check 1: Static LOOP - all beats at the same position
-    const allSamePosition = validBeats.every(
+    // Check 1: Static LOOP - all steps at the same position
+    const allSamePosition = validSteps.every(
       (beat) =>
-        beat.startPosition === validBeats[0]!.startPosition &&
-        beat.endPosition === validBeats[0]!.endPosition
+        beat.startPosition === validSteps[0]!.startPosition &&
+        beat.endPosition === validSteps[0]!.endPosition
     );
 
     if (allSamePosition) {
@@ -274,19 +274,19 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
     const consecutivePairs: Array<{ from: GridPosition; to: GridPosition }> =
       [];
 
-    for (let i = 0; i < validBeats.length; i++) {
-      const currentBeat = validBeats[i];
-      const nextBeat = validBeats[(i + 1) % validBeats.length]; // Wrap around to first beat
+    for (let i = 0; i < validSteps.length; i++) {
+      const currentStep = validSteps[i];
+      const nextStep = validSteps[(i + 1) % validSteps.length]; // Wrap around to first beat
 
       if (
-        currentBeat &&
-        nextBeat &&
-        currentBeat.endPosition &&
-        nextBeat.startPosition
+        currentStep &&
+        nextStep &&
+        currentStep.endPosition &&
+        nextStep.startPosition
       ) {
         consecutivePairs.push({
-          from: currentBeat.endPosition,
-          to: nextBeat.startPosition,
+          from: currentStep.endPosition,
+          to: nextStep.startPosition,
         });
       }
     }
@@ -440,33 +440,33 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
       }
     }
 
-    // Check for startingPositionBeat (legacy field)
-    const startBeat = sequence.startingPositionBeat as
+    // Check for startingPosition (legacy field)
+    const startStep = sequence.startingPosition as
       | Record<string, unknown>
       | undefined;
-    if (startBeat) {
-      if ("startPosition" in startBeat && startBeat.startPosition) {
-        return startBeat.startPosition as GridPosition;
+    if (startStep) {
+      if ("startPosition" in startStep && startStep.startPosition) {
+        return startStep.startPosition as GridPosition;
       }
-      if ("start" in startBeat && startBeat.start) {
-        return startBeat.start as GridPosition;
+      if ("start" in startStep && startStep.start) {
+        return startStep.start as GridPosition;
       }
     }
 
     // Check first beat (beat 0) if it's the start position
-    const beats = sequence.beats || [];
-    const firstBeat = beats.find(
+    const steps = sequence.steps || [];
+    const firstStep = steps.find(
       (b) =>
-        b.beatNumber === 0 ||
+        b.stepNumber === 0 ||
         (b as unknown as Record<string, unknown>).beat === 0
     );
-    if (firstBeat) {
-      const beatData = firstBeat as unknown as Record<string, unknown>;
-      if (beatData.startPosition) {
-        return beatData.startPosition as GridPosition;
+    if (firstStep) {
+      const stepData = firstStep as unknown as Record<string, unknown>;
+      if (stepData.startPosition) {
+        return stepData.startPosition as GridPosition;
       }
-      if (beatData.start) {
-        return beatData.start as GridPosition;
+      if (stepData.start) {
+        return stepData.start as GridPosition;
       }
     }
 
@@ -477,12 +477,12 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
    * Get the current end position from the last beat in a sequence.
    */
   getCurrentEndPosition(sequence: SequenceData): GridPosition | null {
-    const beats = sequence.beats || [];
-    if (beats.length === 0) return null;
+    const steps = sequence.steps || [];
+    if (steps.length === 0) return null;
 
     // Helper to get beat number from either format
-    const getBeatNumber = (beat: Record<string, unknown>): number => {
-      if (typeof beat.beatNumber === "number") return beat.beatNumber;
+    const getStepNumber = (beat: Record<string, unknown>): number => {
+      if (typeof beat.stepNumber === "number") return beat.stepNumber;
       if (typeof beat.beat === "number") return beat.beat;
       return 0;
     };
@@ -495,15 +495,15 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
     };
 
     // Find the last actual beat (not the start position beat 0)
-    const beatsAsRecords = beats as unknown as Record<string, unknown>[];
-    const sortedBeats = [...beatsAsRecords].sort(
-      (a, b) => getBeatNumber(b) - getBeatNumber(a)
+    const beatsAsRecords = steps as unknown as Record<string, unknown>[];
+    const sortedSteps = [...beatsAsRecords].sort(
+      (a, b) => getStepNumber(b) - getStepNumber(a)
     );
-    const lastBeat =
-      sortedBeats.find((b) => getBeatNumber(b) > 0) || sortedBeats[0];
+    const lastStep =
+      sortedSteps.find((b) => getStepNumber(b) > 0) || sortedSteps[0];
 
-    if (lastBeat) {
-      const endPos = getEndPosition(lastBeat);
+    if (lastStep) {
+      const endPos = getEndPosition(lastStep);
       if (endPos) {
         return endPos as GridPosition;
       }
@@ -513,33 +513,33 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
   }
 
   /**
-   * Convert a SequenceData to BeatData array for LOOP executor.
+   * Convert a SequenceData to StepData array for LOOP executor.
    * The LOOP executor expects: [startPosition (beat 0), beat 1, beat 2, ...]
    */
-  convertSequenceToBeats(sequence: SequenceData): BeatData[] {
-    const beats = sequence.beats || [];
-    const result: BeatData[] = [];
+  convertSequenceToBeats(sequence: SequenceData): StepData[] {
+    const steps = sequence.steps || [];
+    const result: StepData[] = [];
 
-    // Check if beat 0 (start position) is already in beats array
-    const beat0 = beats.find((b) => b.beatNumber === 0);
+    // Check if beat 0 (start position) is already in steps array
+    const step0 = steps.find((b) => b.stepNumber === 0);
 
-    if (beat0) {
+    if (step0) {
       // Beat 0 exists in the array, just sort and return
-      return [...beats]
-        .filter((b) => b.beatNumber >= 0)
-        .sort((a, b) => a.beatNumber - b.beatNumber);
+      return [...steps]
+        .filter((b) => b.stepNumber >= 0)
+        .sort((a, b) => a.stepNumber - b.stepNumber);
     }
 
-    // Beat 0 not in array - need to create it from startPosition/startingPositionBeat
+    // Beat 0 not in array - need to create it from startPosition/startingPosition
     const startPosData =
-      sequence.startPosition || sequence.startingPositionBeat;
+      sequence.startPosition || sequence.startingPosition;
 
     if (startPosData) {
       const startPos = this.getStartPosition(sequence);
       // Create a beat 0 entry from the start position data
-      const startBeat: BeatData = {
+      const startStep: StepData = {
         id: "start-position",
-        beatNumber: 0,
+        stepNumber: 0,
         startPosition: startPos,
         endPosition: startPos, // Start position ends where it starts
         letter: null,
@@ -551,15 +551,15 @@ export class SequenceAnalyzer implements ISequenceAnalyzer {
         redReversal: false,
         isBlank: false,
       };
-      result.push(startBeat);
+      result.push(startStep);
     }
 
-    // Add all actual beats (beat 1+)
-    const actualBeats = beats
-      .filter((b) => b.beatNumber > 0)
-      .sort((a, b) => a.beatNumber - b.beatNumber);
+    // Add all actual steps (beat 1+)
+    const actualSteps = steps
+      .filter((b) => b.stepNumber > 0)
+      .sort((a, b) => a.stepNumber - b.stepNumber);
 
-    result.push(...actualBeats);
+    result.push(...actualSteps);
 
     return result;
   }

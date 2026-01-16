@@ -60,7 +60,7 @@ export async function executeClearSequenceWorkflow(
     }
 
     // 2. Wait for fade and layout transition to complete (300ms)
-    // Everything fades together - beats, workspace, button panel, layout
+    // Everything fades together - steps, workspace, button panel, layout
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     // 3. After animations complete, clear the active tab's data and reset UI

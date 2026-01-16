@@ -4,11 +4,11 @@
    *
    * Header with title, badges, and copy buttons for the pictograph inspector.
    */
-  import type { BeatData } from "../../../domain/models/BeatData";
+  import type { StepData } from "../../../domain/models/StepData";
 
   interface Props {
-    displayData: BeatData | null;
-    beatData: BeatData;
+    displayData: StepData | null;
+    stepData: StepData;
     isCalculating: boolean;
     copiedSection: string | null;
     onCopyAll: () => void;
@@ -18,7 +18,7 @@
 
   let {
     displayData,
-    beatData,
+    stepData,
     isCalculating,
     copiedSection,
     onCopyAll,
@@ -32,10 +32,10 @@
     <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
     <h2>Pictograph Inspector</h2>
     <span class="beat-badge"
-      >Beat {displayData?.beatNumber ?? beatData.beatNumber}</span
+      >Beat {displayData?.stepNumber ?? stepData.stepNumber}</span
     >
-    {#if displayData?.letter ?? beatData.letter}
-      <span class="letter-badge">{displayData?.letter ?? beatData.letter}</span>
+    {#if displayData?.letter ?? stepData.letter}
+      <span class="letter-badge">{displayData?.letter ?? stepData.letter}</span>
     {/if}
     {#if isCalculating}
       <span class="calculating-badge">

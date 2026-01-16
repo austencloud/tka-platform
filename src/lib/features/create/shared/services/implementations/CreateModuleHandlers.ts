@@ -13,13 +13,13 @@ import type {
   ClearSequenceParams,
 } from "../contracts/ICreateModuleHandlers";
 import type { ICreateModuleOrchestrator } from "../contracts/ICreateModuleOrchestrator";
-import type { IBeatOperator } from "../contracts/IBeatOperator";
+import type { IStepOperator } from "../contracts/IStepOperator";
 import { executeClearSequenceWorkflow } from "../../utils/clearSequenceWorkflow";
 
 export class CreateModuleHandlers implements ICreateModuleHandlers {
   constructor(
     private CreateModuleOrchestrator: ICreateModuleOrchestrator,
-    private BeatOperator: IBeatOperator
+    private StepOperator: IStepOperator
   ) {}
 
   /**
@@ -74,7 +74,7 @@ export class CreateModuleHandlers implements ICreateModuleHandlers {
    * Handle remove beat button click
    */
   handleRemoveBeat(
-    beatIndex: number,
+    stepIndex: number,
     CreateModuleState: CreateModuleState | null
   ): void {
     if (!CreateModuleState) {
@@ -85,7 +85,7 @@ export class CreateModuleHandlers implements ICreateModuleHandlers {
     }
 
     try {
-      this.BeatOperator.removeBeat(beatIndex, CreateModuleState);
+      this.StepOperator.removeStep(stepIndex, CreateModuleState);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to remove beat";
