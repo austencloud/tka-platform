@@ -85,6 +85,16 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     }
     return beatNumber?.toString() || "";
   });
+
+  // Dynamic font size: smaller for decimal values to fit the extra characters
+  const fontSize = $derived.by(() => {
+    // Decimal musical positions (e.g., "2.5") need smaller font
+    if (musicalPosition !== undefined && musicalPosition.includes(".")) {
+      return "70";
+    }
+    // Default size for simple numbers
+    return "100";
+  });
 </script>
 
 {#if shouldRender}
@@ -94,7 +104,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     y="50"
     dominant-baseline="hanging"
     text-anchor="start"
-    font-size="100"
+    font-size={fontSize}
     font-family="Georgia, serif"
     font-weight="bold"
     fill={fillColor}

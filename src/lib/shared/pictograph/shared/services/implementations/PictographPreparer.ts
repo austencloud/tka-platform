@@ -286,4 +286,17 @@ export class PictographPreparer implements IPictographPreparer {
         return [color, motion] as [string, MotionData];
       });
   }
+
+  /**
+   * Clear the preparation cache.
+   * Call this when global adjustments change to force re-calculation of all pictographs.
+   */
+  clearCache(): void {
+    const size = this.prepareCache.size;
+    this.prepareCache.clear();
+    this.pendingPrepares.clear();
+    if (size > 0) {
+      console.log(`[Preparer] Cache cleared (${size} entries)`);
+    }
+  }
 }

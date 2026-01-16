@@ -40,7 +40,17 @@ export interface IGlobalArrowAdjustmentRepository {
   hasAdjustment(key: GlobalAdjustmentKey): boolean;
 
   /**
-   * Save an adjustment (admin only)
+   * Save an adjustment to local cache only (admin only).
+   * Use this for live preview during WASD adjustment - other pictographs
+   * will immediately reflect the change without persisting to Firestore.
+   * Call persistAdjustment() or saveAdjustment() to persist to Firestore.
+   * @throws Error if user is not admin
+   */
+  saveAdjustmentLocal(input: GlobalArrowAdjustmentInput): void;
+
+  /**
+   * Save an adjustment to Firestore (admin only).
+   * Persists to Firestore - use saveAdjustmentLocal() for live preview.
    * @throws Error if user is not admin
    */
   saveAdjustment(input: GlobalArrowAdjustmentInput): Promise<void>;
@@ -50,6 +60,13 @@ export interface IGlobalArrowAdjustmentRepository {
    * @throws Error if user is not admin
    */
   deleteAdjustment(key: GlobalAdjustmentKey): Promise<void>;
+
+  /**
+   * Delete an adjustment from local cache only (admin only).
+   * Use this for live preview during reset - other pictographs will
+   * immediately reflect the removal without persisting to Firestore.
+   */
+  deleteAdjustmentLocal(key: GlobalAdjustmentKey): void;
 
   /**
    * Check if the current user is an admin

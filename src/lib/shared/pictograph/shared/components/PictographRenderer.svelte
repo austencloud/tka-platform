@@ -333,6 +333,7 @@ Usage:
       {isStartPosition}
       {hasValidData}
       {darkMode}
+      {musicalPosition}
     />
 
     <!-- Reversal indicators -->

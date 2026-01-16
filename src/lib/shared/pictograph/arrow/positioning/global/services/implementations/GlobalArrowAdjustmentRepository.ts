@@ -136,6 +136,54 @@ export class GlobalArrowAdjustmentRepository
   }
 
   /**
+   * Save an adjustment to local cache only (admin only).
+   * Use this for live preview during WASD adjustment.
+   */
+  saveAdjustmentLocal(input: GlobalArrowAdjustmentInput): void {
+    // Validate admin
+    if (!this.isAdmin()) {
+      throw new Error("Only admin can save global arrow adjustments");
+    }
+
+    const keyString = generateAdjustmentKeyString({
+      gridMode: input.gridMode,
+      oriKey: input.oriKey,
+      letter: input.letter,
+      turnsTuple: input.turnsTuple,
+      arrowKey: input.arrowKey,
+    });
+
+    logger.info(
+      `Saving LOCAL adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
+    );
+
+    // Create a full adjustment object for the state
+    // Use a fake Timestamp-like object for local-only adjustments
+    const fakeTimestamp = {
+      seconds: Math.floor(Date.now() / 1000),
+      nanoseconds: 0,
+      toDate: () => new Date(),
+      toMillis: () => Date.now(),
+      isEqual: () => false,
+    } as any;
+
+    const adjustment: GlobalArrowAdjustment = {
+      gridMode: input.gridMode,
+      oriKey: input.oriKey,
+      letter: input.letter,
+      turnsTuple: input.turnsTuple,
+      arrowKey: input.arrowKey,
+      adjustmentX: input.adjustmentX,
+      adjustmentY: input.adjustmentY,
+      updatedAt: fakeTimestamp,
+      updatedBy: authState.user?.email ?? "unknown",
+    };
+
+    // Save to local state only (no Firestore)
+    this.state.setAdjustment(adjustment);
+  }
+
+  /**
    * Save an adjustment (admin only)
    * @throws Error if user is not admin
    */
@@ -159,7 +207,7 @@ export class GlobalArrowAdjustmentRepository
     });
 
     logger.info(
-      `Saving adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
+      `Saving adjustment to Firestore: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
     );
 
     // Save to Firestore (real-time subscription will update local state)
@@ -177,10 +225,27 @@ export class GlobalArrowAdjustmentRepository
     }
 
     const keyString = generateAdjustmentKeyString(key);
-    logger.info(`Deleting adjustment: ${keyString}`);
+    logger.info(`Deleting adjustment from Firestore: ${keyString}`);
 
     // Delete from Firestore (real-time subscription will update local state)
     await this.persister.delete(keyString);
+  }
+
+  /**
+   * Delete an adjustment from local cache only (admin only).
+   * Use this for live preview during reset.
+   */
+  deleteAdjustmentLocal(key: GlobalAdjustmentKey): void {
+    // Validate admin
+    if (!this.isAdmin()) {
+      throw new Error("Only admin can delete global arrow adjustments");
+    }
+
+    const keyString = generateAdjustmentKeyString(key);
+    logger.info(`Deleting LOCAL adjustment: ${keyString}`);
+
+    // Remove from local state only (no Firestore)
+    this.state.removeAdjustment(key);
   }
 
   /**

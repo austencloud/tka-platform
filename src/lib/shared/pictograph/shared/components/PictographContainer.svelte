@@ -39,6 +39,7 @@ with pre-prepared data for better performance.
   import type { PropType } from "../../prop/domain/enums/PropType";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
+  import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";
 
   // Props - accepts either BeatData (with beat context) or PictographData
   let {
@@ -287,6 +288,9 @@ with pre-prepared data for better performance.
       // Include explicit override flags so we re-prepare if they change
       hasExplicitBlueProp: bluePropTypeOverride !== undefined,
       hasExplicitRedProp: redPropTypeOverride !== undefined,
+      // Include global adjustment version so ALL pictographs re-prepare when adjustments are saved
+      // This ensures beats 6, 10, 14, etc. (same letter rotated) update when beat 2 is adjusted globally
+      globalAdjustmentVersion: globalAdjustmentVersion.version,
     });
   });
 

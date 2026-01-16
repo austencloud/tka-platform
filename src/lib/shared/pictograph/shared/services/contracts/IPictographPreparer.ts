@@ -51,4 +51,10 @@ export interface IPictographPreparer {
     pictograph: PictographData,
     options?: PrepareOptions
   ): Promise<PreparedPictographData>;
+
+  /**
+   * Clear the preparation cache.
+   * Call this when global adjustments change to force re-calculation.
+   */
+  clearCache(): void;
 }

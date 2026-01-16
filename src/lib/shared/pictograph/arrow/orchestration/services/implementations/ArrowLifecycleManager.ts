@@ -92,16 +92,6 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
     const finalX = x + manualAdjustX;
     const finalY = y + manualAdjustY;
 
-    console.log(`%c[ArrowLifecycle] ${motionData.color} position:`, 'color: #00ff00', {
-      baseX: x,
-      baseY: y,
-      manualX: manualAdjustX,
-      manualY: manualAdjustY,
-      finalX,
-      finalY,
-      rotation
-    });
-
     return createArrowPosition({
       x: finalX,
       y: finalY,

@@ -53,6 +53,14 @@ export class LetterQueryHandler implements ILetterQueryHandler {
   ) {}
 
   /**
+   * Set the letter mapping repository after construction.
+   * Needed when the repo is created in a different container (learn module).
+   */
+  setLetterMappingRepo(repo: ICodexLetterMappingRepo): void {
+    this.letterMappingRepo = repo;
+  }
+
+  /**
    * Initialize CSV data and letter mapping repository if not already loaded
    */
   private async ensureInitialized(): Promise<void> {
