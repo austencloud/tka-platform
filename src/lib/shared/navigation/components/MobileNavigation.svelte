@@ -5,9 +5,7 @@
   import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "../../device/domain/models/device-models";
   import { onMount } from "svelte";
-  import type { Section, ModuleId } from "../domain/types";
-  import { navigationState } from "../state/navigation-state.svelte";
-  import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
+  import type { Section } from "../domain/types";
   import BottomNavigation from "./layouts/BottomNavigation.svelte";
   import SideNavigation from "./layouts/SideNavigation.svelte";
 
@@ -19,7 +17,6 @@
     onLayoutChange,
     onHeightChange,
     showModuleSwitcher = true,
-    showSettings = true,
     isUIVisible = true,
     onRevealNav = () => {},
     isDashboard = false,
@@ -31,7 +28,6 @@
     onLayoutChange?: (isLandscape: boolean) => void;
     onHeightChange?: (height: number) => void;
     showModuleSwitcher?: boolean;
-    showSettings?: boolean;
     isUIVisible?: boolean;
     onRevealNav?: () => void;
     isDashboard?: boolean;
@@ -45,19 +41,6 @@
 
   // Layout state - use DeviceDetector instead of duplicating logic
   let isLandscape = $derived(responsiveSettings?.isLandscapeMobile ?? false);
-
-  // Settings module active state
-  let isSettingsActive = $derived(navigationState.currentModule === "settings");
-
-  async function handleSettingsTap() {
-    // Toggle behavior: if in settings, go back to previous module
-    if (navigationState.currentModule === "settings") {
-      const previousModule = navigationState.previousModule || "dashboard";
-      await handleModuleChange(previousModule as ModuleId);
-    } else {
-      await handleModuleChange("settings" as ModuleId);
-    }
-  }
 
   // Notify parent when layout changes (reactive to isLandscape derived value)
   $effect(() => {
@@ -96,10 +79,7 @@
     {currentSection}
     {onSectionChange}
     {onModuleSwitcherTap}
-    onSettingsTap={handleSettingsTap}
     {showModuleSwitcher}
-    {showSettings}
-    {isSettingsActive}
     {isUIVisible}
   />
 {:else}
@@ -108,11 +88,8 @@
     {currentSection}
     {onSectionChange}
     {onModuleSwitcherTap}
-    onSettingsTap={handleSettingsTap}
     {onHeightChange}
     {showModuleSwitcher}
-    {showSettings}
-    {isSettingsActive}
     {isUIVisible}
     {onRevealNav}
     {isDashboard}

@@ -6,7 +6,7 @@
   import type { Section } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
-  import SettingsButton from "$lib/shared/navigation/components/buttons/SettingsButton.svelte";
+  import InboxNavButton from "$lib/shared/navigation/components/buttons/InboxNavButton.svelte";
   import TabOverflowSelector from "$lib/shared/navigation/components/TabOverflowSelector.svelte";
   import { shouldHideUIForPanels } from "../../../application/state/animation-visibility-state.svelte";
   import {
@@ -25,11 +25,8 @@
     currentSection = "",
     onSectionChange = () => {},
     onModuleSwitcherTap = () => {},
-    onSettingsTap = () => {},
     onHeightChange = () => {},
     showModuleSwitcher = true,
-    showSettings = true,
-    isSettingsActive = false,
     isUIVisible = true,
     onRevealNav = () => {},
     isDashboard = false,
@@ -38,11 +35,8 @@
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
     onModuleSwitcherTap?: () => void;
-    onSettingsTap?: () => void;
     onHeightChange?: (height: number) => void;
     showModuleSwitcher?: boolean;
-    showSettings?: boolean;
-    isSettingsActive?: boolean;
     isUIVisible?: boolean;
     onRevealNav?: () => void;
     isDashboard?: boolean;
@@ -51,24 +45,22 @@
   let navElement = $state<HTMLElement | null>(null);
   let peekHasAnimated = $state(false);
   let availableWidth = $state(0);
-  let backButtonLongPressTimer: ReturnType<typeof setTimeout> | null = null;
-  let backButtonSuppressClick = $state(false);
   let hapticService: IHapticFeedback | undefined;
 
   // Calculate required width for all tabs
-  // Layout: [ModuleSwitcher] [Tab1] [Tab2] [Tab3] [Tab4] [Settings/Back]
+  // Layout: [ModuleSwitcher] [Tab1] [Tab2] [Tab3] [Tab4] [Inbox]
   // Each element: 48px minimum touch target
   // Gaps: 8px between each element
   //
   // Fixed buttons on sides:
   // - Left: Module switcher (48px)
-  // - Right: Settings OR Back button (48px)
+  // - Right: Inbox button (48px)
   // - Gaps: 8px on each side of center area (16px total)
   // Total fixed: 48 + 48 + 16 = 112px
   //
   // Each tab needs: 48px min + 8px gap = 56px effective width
   const BUTTON_WIDTH = 56; // 48px touch target + 8px gap
-  const FIXED_BUTTONS_WIDTH = 112; // Module switcher + settings/back + gaps
+  const FIXED_BUTTONS_WIDTH = 112; // Module switcher + inbox + gaps
 
   // Calculate required width - directly access sections.length for proper reactivity
   let requiredWidth = $derived(
@@ -103,7 +95,8 @@
     }
   }
 
-  function handleSettingsLongPress() {
+  // Long press on inbox opens quick feedback
+  function handleInboxLongPress() {
     quickFeedbackState.open();
   }
 
@@ -114,31 +107,6 @@
     if (isAdmin) {
       adminToolbarState.toggle();
     }
-  }
-
-  function startBackButtonLongPress(event: PointerEvent) {
-    if (event.pointerType === "mouse") return;
-    clearBackButtonLongPress();
-    backButtonLongPressTimer = setTimeout(() => {
-      backButtonSuppressClick = true;
-      handleSettingsLongPress();
-    }, 500);
-  }
-
-  function clearBackButtonLongPress() {
-    if (backButtonLongPressTimer) {
-      clearTimeout(backButtonLongPressTimer);
-      backButtonLongPressTimer = null;
-    }
-  }
-
-  function handleBackButtonClick(event: MouseEvent | TouchEvent) {
-    if (backButtonSuppressClick) {
-      backButtonSuppressClick = false;
-      return;
-    }
-    hapticService?.trigger("selection");
-    onSettingsTap();
   }
 
   onMount(() => {
@@ -235,30 +203,9 @@
     </div>
   {/if}
 
-  <!-- Right side buttons -->
+  <!-- Right side button - Inbox -->
   <div class="right-buttons">
-    {#if isSettingsActive}
-      <!-- Back Button - shown when in settings to return to previous module -->
-      <button
-        class="nav-back-button"
-        onclick={handleBackButtonClick}
-        onpointerdown={startBackButtonLongPress}
-        onpointerup={clearBackButtonLongPress}
-        onpointerleave={clearBackButtonLongPress}
-        onpointercancel={clearBackButtonLongPress}
-        aria-label="Go back"
-      >
-        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-      </button>
-    {:else if showSettings}
-      <!-- Settings Button - shown when not in settings -->
-      <SettingsButton
-        active={isSettingsActive}
-        onClick={onSettingsTap}
-        onLongPress={handleSettingsLongPress}
-        longPressMs={500}
-      />
-    {/if}
+    <InboxNavButton onLongPress={handleInboxLongPress} longPressMs={500} />
   </div>
 </nav>
 
@@ -415,7 +362,7 @@
   }
 
   /* ============================================================================
-     RIGHT BUTTONS CONTAINER (Settings)
+     RIGHT BUTTONS CONTAINER (Inbox)
      ============================================================================ */
   .right-buttons {
     display: flex;
@@ -423,54 +370,6 @@
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
-  }
-
-  /* ============================================================================
-     BACK BUTTON - Shown when in Settings module
-     ============================================================================ */
-  .nav-back-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-    padding: 0;
-    background: transparent;
-    border: 1px solid var(--theme-accent, var(--theme-accent));
-    border-radius: 50%;
-    color: var(--theme-accent, var(--theme-accent));
-    cursor: pointer;
-    box-shadow: 0 2px 8px hsl(0 0% 0% / 0.3);
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    transition:
-      opacity 0.15s ease,
-      transform 0.1s ease,
-      background 0.15s ease;
-  }
-
-  .nav-back-button:hover {
-    opacity: 0.85;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 15%,
-      transparent
-    );
-  }
-
-  .nav-back-button:active {
-    transform: scale(0.95);
-  }
-
-  .nav-back-button:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .nav-back-button i {
-    font-size: var(--font-size-lg);
   }
 
   /* ============================================================================

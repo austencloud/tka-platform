@@ -333,7 +333,7 @@ const TAB_ORDERS: Record<string, string[]> = {
   discover: ["sequences", "collections", "creators", "library"],
   learn: ["concepts", "play", "codex"],
   compose: ["arrange", "browse"],
-  realm: ["stage", "museum"],
+  realm: ["stage", "gallery", "worlds"],
   train: ["drills", "challenges", "progress"],
   collect: ["achievements", "badges", "stats"],
   feedback: ["submit", "manage"],
@@ -432,11 +432,6 @@ export function getModuleDefinitions() {
   const _effectiveRole = featureFlagService.effectiveRole;
 
   return MODULE_DEFINITIONS.filter((module) => {
-    // Settings module is accessed via sidebar footer gear icon, not main module list
-    if (module.id === "settings") {
-      return false;
-    }
-
     // Library module is now integrated into Gallery via Community/My Library toggle
     if (module.id === "library") {
       return false;

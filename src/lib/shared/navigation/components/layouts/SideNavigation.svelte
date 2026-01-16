@@ -3,7 +3,8 @@
   import type { Section } from "$lib/shared/navigation/domain/types";
   import NavButton from "$lib/shared/navigation/components/buttons/NavButton.svelte";
   import ModuleSwitcherButton from "$lib/shared/navigation/components/buttons/ModuleSwitcherButton.svelte";
-  import SettingsButton from "$lib/shared/navigation/components/buttons/SettingsButton.svelte";
+  import InboxNavButton from "$lib/shared/navigation/components/buttons/InboxNavButton.svelte";
+  import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
   import { shouldHideUIForPanels } from "../../../application/state/animation-visibility-state.svelte";
   import {
     navigationState,
@@ -24,20 +25,14 @@
     currentSection = "",
     onSectionChange = () => {},
     onModuleSwitcherTap = () => {},
-    onSettingsTap = () => {},
     showModuleSwitcher = true,
-    showSettings = true,
-    isSettingsActive = false,
     isUIVisible = true,
   } = $props<{
     sections: Section[];
     currentSection: string;
     onSectionChange?: (sectionId: string) => void;
     onModuleSwitcherTap?: () => void;
-    onSettingsTap?: () => void;
     showModuleSwitcher?: boolean;
-    showSettings?: boolean;
-    isSettingsActive?: boolean;
     isUIVisible?: boolean;
   }>();
 
@@ -48,6 +43,11 @@
     if (!section.disabled) {
       onSectionChange(section.id);
     }
+  }
+
+  // Long press on inbox opens quick feedback
+  function handleInboxLongPress() {
+    quickFeedbackState.open();
   }
 </script>
 
@@ -80,10 +80,8 @@
     {/each}
   </div>
 
-  <!-- Settings Button (Bottom) -->
-  {#if showSettings}
-    <SettingsButton active={isSettingsActive} onClick={onSettingsTap} />
-  {/if}
+  <!-- Inbox Button (Bottom) -->
+  <InboxNavButton onLongPress={handleInboxLongPress} longPressMs={500} />
 </nav>
 
 <style>

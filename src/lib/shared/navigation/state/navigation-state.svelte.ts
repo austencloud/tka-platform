@@ -244,7 +244,7 @@ export function createNavigationState() {
 
     // ─────────────────────────────────────────────────────────────────────────────
     // URL Path Parsing - URL takes priority over localStorage for deep linking
-    // Parses paths like /realm/museum → module: "realm", tab: "museum"
+    // Parses paths like /realm/gallery → module: "realm", tab: "gallery"
     // ─────────────────────────────────────────────────────────────────────────────
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
