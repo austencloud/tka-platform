@@ -1,4 +1,4 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 export interface ITurnController {
   getTurnValues(): number[];
@@ -15,7 +15,7 @@ export interface ITurnController {
   getTurnValue(turns: number | "fl" | undefined): string;
   getTurnDescription(turns: number | "fl" | undefined): string;
   getCurrentTurnValue(
-    beatData: BeatData | null,
+    stepData: StepData | null,
     color: "blue" | "red"
   ): number | "fl";
   formatTurnDisplay(turnAmount: number | "fl"): string;
@@ -106,14 +106,14 @@ export class TurnController implements ITurnController {
   }
 
   getCurrentTurnValue(
-    beatData: BeatData | null,
+    stepData: StepData | null,
     color: "blue" | "red"
   ): number | "fl" {
-    if (!beatData) return 0;
+    if (!stepData) return 0;
     const turnValue =
       color === "blue"
-        ? beatData.motions.blue?.turns
-        : beatData.motions.red?.turns;
+        ? stepData.motions.blue?.turns
+        : stepData.motions.red?.turns;
     if (turnValue === "fl") return "fl";
     return typeof turnValue === "number" ? turnValue : 0;
   }

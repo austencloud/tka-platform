@@ -8,11 +8,11 @@ import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IBeatConverter } from "$lib/features/create/generate/shared/services/contracts/IBeatConverter";
+import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { ISequenceExtender } from "$lib/features/create/shared/services/contracts/ISequenceExtender";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IWordSequenceGenerator } from "../contracts/IWordSequenceGenerator";
 import type { ILetterTransitionGraph } from "../contracts/ILetterTransitionGraph";
@@ -34,7 +34,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
   constructor(
     private transitionGraph: ILetterTransitionGraph,
     private letterQueryHandler: ILetterQueryHandler,
-    private beatConverter: IBeatConverter,
+    private stepConverter: IStepConverter,
     private orientationCalculator: IOrientationCalculator,
     private sequenceExtender: ISequenceExtender
   ) {}
@@ -92,17 +92,17 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
         );
       }
 
-      // Generate beats for each letter
-      const beats = await this.generateBeats(
+      // Generate steps for each letter
+      const steps = await this.generateBeats(
         expandedLetters,
         startPosition,
         gridMode
       );
 
-      if (beats.length === 0) {
+      if (steps.length === 0) {
         return this.createErrorResult(
           options.word,
-          "Failed to generate beats for sequence"
+          "Failed to generate steps for sequence"
         );
       }
 
@@ -110,7 +110,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       let sequence = this.buildSequenceData(
         options.word,
         startPosition,
-        beats,
+        steps,
         gridMode,
         false // Initially not circular - LOOP is applied after
       );
@@ -136,7 +136,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
           letterSources.push({
             letter: options.forceBridgeLetter,
             isOriginal: false,
-            beatIndex: expandedLetters.length,
+            stepIndex: expandedLetters.length,
           });
         } else {
           return this.createErrorResult(
@@ -209,9 +209,9 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
         const startPosGroup = this.positionToGroup(
           startPosition.startPosition || startPosition.endPosition || ""
         );
-        const endBeat = beats[beats.length - 1];
-        const endPosGroup = endBeat
-          ? this.positionToGroup(endBeat.endPosition || "")
+        const endStep = steps[steps.length - 1];
+        const endPosGroup = endStep
+          ? this.positionToGroup(endStep.endPosition || "")
           : null;
 
         // Check if position groups don't match - this means position-dependent LOOPs
@@ -223,7 +223,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
           circularizationOptions = await this.computeCircularizationOptions(
             sequence,
             startPosition,
-            endBeat,
+            endStep,
             gridMode
           );
         }
@@ -357,7 +357,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
         letterSources.push({
           letter,
           isOriginal: true,
-          beatIndex: expandedLetters.length,
+          stepIndex: expandedLetters.length,
         });
       } else {
         // Check if we need bridge letters
@@ -376,7 +376,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
           letterSources.push({
             letter: bridge,
             isOriginal: false,
-            beatIndex: expandedLetters.length,
+            stepIndex: expandedLetters.length,
           });
         }
 
@@ -385,7 +385,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
         letterSources.push({
           letter,
           isOriginal: true,
-          beatIndex: expandedLetters.length,
+          stepIndex: expandedLetters.length,
         });
       }
     }
@@ -431,15 +431,15 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
   }
 
   /**
-   * Generate beats for the expanded letter sequence.
+   * Generate steps for the expanded letter sequence.
    * Throws an error if a valid pictograph cannot be found for any letter.
    */
   private async generateBeats(
     letters: Letter[],
     startPosition: PictographData,
     gridMode: GridMode
-  ): Promise<BeatData[]> {
-    const beats: BeatData[] = [];
+  ): Promise<StepData[]> {
+    const steps: StepData[] = [];
     let lastPictograph = startPosition;
 
     for (let i = 0; i < letters.length; i++) {
@@ -464,16 +464,16 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       }
 
       // Convert to beat
-      const beat = this.beatConverter.convertToBeat(
+      const beat = this.stepConverter.convertToStep(
         pictograph,
         i + 1,
         gridMode
       );
-      beats.push(beat);
+      steps.push(beat);
       lastPictograph = pictograph;
     }
 
-    return beats;
+    return steps;
   }
 
   /**
@@ -525,11 +525,11 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
   private buildSequenceData(
     name: string,
     startPosition: PictographData,
-    beats: BeatData[],
+    steps: StepData[],
     gridMode: GridMode,
     isCircular: boolean = false
   ): SequenceData {
-    const startPositionData = this.beatConverter.convertToStartPosition(
+    const startPositionData = this.stepConverter.convertToStartPosition(
       startPosition,
       gridMode
     );
@@ -537,10 +537,10 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     return {
       id: crypto.randomUUID(),
       name,
-      word: beats.map((b) => b.letter || "").join(""),
-      beats,
+      word: steps.map((b) => b.letter || "").join(""),
+      steps,
       startPosition: startPositionData, // Primary field for orientation propagation
-      startingPositionBeat: startPositionData, // Legacy field for backward compatibility
+      startingPosition: startPositionData, // Legacy field for backward compatibility
       gridMode,
       // propType removed - prop type is viewer preference, not sequence data
       difficultyLevel: DifficultyLevel.INTERMEDIATE,
@@ -593,13 +593,13 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
   private async computeCircularizationOptions(
     sequence: SequenceData,
     startPosition: PictographData,
-    endBeat: BeatData | undefined,
+    endStep: StepData | undefined,
     gridMode: GridMode
   ): Promise<CircularizationOption[]> {
-    if (!endBeat) return [];
+    if (!endStep) return [];
 
     const startPos = startPosition.startPosition || startPosition.endPosition;
-    const endPos = endBeat.endPosition;
+    const endPos = endStep.endPosition;
     if (!startPos || !endPos) return [];
 
     const startGroup = this.positionToGroup(startPos);
@@ -638,10 +638,10 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       const bridgeEndPos = variation.endPosition || "";
 
       // Create a temporary beat for the bridge letter
-      const bridgeBeat: BeatData = {
+      const bridgeBeat: StepData = {
         ...variation,
-        isBeat: true,
-        beatNumber: sequence.beats.length + 1,
+        isStep: true,
+        stepNumber: sequence.steps.length + 1,
         duration: 1,
         blueReversal: false,
         redReversal: false,
@@ -651,7 +651,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
       // Create a temporary sequence with the bridge letter to analyze
       const tempSequence: SequenceData = {
         ...sequence,
-        beats: [...sequence.beats, bridgeBeat],
+        steps: [...sequence.steps, bridgeBeat],
       };
 
       // Analyze what LOOPs are available for this extended sequence
@@ -697,9 +697,9 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     bridgeLetter: Letter,
     gridMode: GridMode
   ): Promise<{ success: boolean; sequence: SequenceData; error?: string }> {
-    const lastBeat = sequence.beats[sequence.beats.length - 1];
-    if (!lastBeat) {
-      return { success: false, sequence, error: "No beats in sequence" };
+    const lastStep = sequence.steps[sequence.steps.length - 1];
+    if (!lastStep) {
+      return { success: false, sequence, error: "No steps in sequence" };
     }
 
     // Get all pictographs for the bridge letter
@@ -709,14 +709,14 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     // Find a pictograph variation that starts at the last beat's end position
     const bridgeVariations = allPictographs.filter(
       (p) =>
-        p.letter === bridgeLetter && p.startPosition === lastBeat.endPosition
+        p.letter === bridgeLetter && p.startPosition === lastStep.endPosition
     );
 
     if (bridgeVariations.length === 0) {
       return {
         success: false,
         sequence,
-        error: `No variation of "${bridgeLetter}" starts at position "${lastBeat.endPosition}"`,
+        error: `No variation of "${bridgeLetter}" starts at position "${lastStep.endPosition}"`,
       };
     }
 
@@ -732,15 +732,15 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
     }
 
     // Convert to beat and append
-    const bridgeBeat = this.beatConverter.convertToBeat(
+    const bridgeBeat = this.stepConverter.convertToStep(
       bridgeVariation,
-      sequence.beats.length + 1,
+      sequence.steps.length + 1,
       gridMode
     );
 
     const newSequence: SequenceData = {
       ...sequence,
-      beats: [...sequence.beats, bridgeBeat],
+      steps: [...sequence.steps, bridgeBeat],
     };
 
     // Recalculate orientations for the new sequence

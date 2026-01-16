@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SpellPreferences } from "../../domain/models/spell-models";
 import type {
   IVariationScorer,
@@ -75,7 +75,7 @@ export class VariationScorer implements IVariationScorer {
   private countReversals(sequence: SequenceData): number {
     let count = 0;
 
-    for (const beat of sequence.beats) {
+    for (const beat of sequence.steps) {
       if (beat.blueReversal) count++;
       if (beat.redReversal) count++;
     }
@@ -89,13 +89,13 @@ export class VariationScorer implements IVariationScorer {
    * Returns the total continuity points earned.
    */
   private calculateContinuityScore(sequence: SequenceData): number {
-    if (sequence.beats.length === 0) return 0;
+    if (sequence.steps.length === 0) return 0;
 
     let score = 0;
     let currentStreak = 1;
     let lastDirection: RotationDirection | null = null;
 
-    for (const beat of sequence.beats) {
+    for (const beat of sequence.steps) {
       const direction = this.getDominantRotationDirection(beat);
 
       if (direction === null) {
@@ -129,7 +129,7 @@ export class VariationScorer implements IVariationScorer {
    * If they differ, return the non-NO_ROTATION one (or null if both are NO_ROTATION).
    */
   private getDominantRotationDirection(
-    beat: BeatData
+    beat: StepData
   ): RotationDirection | null {
     const blueDir = beat.motions?.[MotionColor.BLUE]?.rotationDirection;
     const redDir = beat.motions?.[MotionColor.RED]?.rotationDirection;
@@ -160,7 +160,7 @@ export class VariationScorer implements IVariationScorer {
 
     let matchingMotionCount = 0;
 
-    for (const beat of sequence.beats) {
+    for (const beat of sequence.steps) {
       const blueType = beat.motions?.[MotionColor.BLUE]?.motionType;
       const redType = beat.motions?.[MotionColor.RED]?.motionType;
 

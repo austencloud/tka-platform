@@ -3,7 +3,7 @@ import type {
   GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
@@ -165,7 +165,7 @@ export class StartPositionManager implements IStartPositionManager {
     }
   }
 
-  setStartPosition(startPosition: BeatData): void {
+  setStartPosition(startPosition: StepData): void {
     try {
       // Store the start position for the sequence
       localStorage.setItem(

@@ -15,10 +15,10 @@ Combines video feed with playback controls for practicing sequences.
   // Props
   const {
     sequence,
-    onBeatIndexChange,
+    onStepIndexChange,
   }: {
     sequence: SequenceData | null;
-    onBeatIndexChange?: (beatIndex: number) => void;
+    onStepIndexChange?: (stepIndex: number) => void;
   } = $props();
 
   // State - initialized with null, $effect below syncs sequence prop
@@ -42,8 +42,8 @@ Combines video feed with playback controls for practicing sequences.
 
   // Notify parent of beat index changes
   $effect(() => {
-    if (onBeatIndexChange) {
-      onBeatIndexChange(recordState.currentBeatIndex);
+    if (onStepIndexChange) {
+      onStepIndexChange(recordState.currentStepIndex);
     }
   });
 
@@ -65,10 +65,10 @@ Combines video feed with playback controls for practicing sequences.
 
     // Start visual beat progression
     playbackIntervalId = window.setInterval(() => {
-      recordState.nextBeat();
+      recordState.nextStep();
 
       // Stop if we've reached the end and looped back
-      if (recordState.currentBeatIndex === 0 && !recordState.isPlaying) {
+      if (recordState.currentStepIndex === 0 && !recordState.isPlaying) {
         stopPlayback();
       }
     }, millisecondsPerBeat);
@@ -161,14 +161,14 @@ Combines video feed with playback controls for practicing sequences.
         <div class="progress-bar">
           <div
             class="progress-fill"
-            style="width: {recordState.totalBeats > 0
-              ? ((recordState.currentBeatIndex + 1) / recordState.totalBeats) *
+            style="width: {recordState.totalSteps > 0
+              ? ((recordState.currentStepIndex + 1) / recordState.totalSteps) *
                 100
               : 0}%"
           ></div>
         </div>
         <div class="progress-text">
-          Beat {recordState.currentBeatIndex + 1} of {recordState.totalBeats}
+          Beat {recordState.currentStepIndex + 1} of {recordState.totalSteps}
         </div>
       </div>
     </div>

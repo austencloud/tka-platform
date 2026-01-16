@@ -59,7 +59,7 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
   // PropType is always HAND in hand path assembly mode (forced in converter)
 
   // Derived state
-  const currentBeatNumber = $derived(
+  const currentStepNumber = $derived(
     currentPhase === "blue" ? blueHandPath.length : redHandPath.length
   );
 
@@ -180,8 +180,8 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
 
   /**
    * Get preview of current hand as pictographs
-   * IMPORTANT: When in red phase, shows ALL blue beats with red overlaid progressively.
-   * This ensures blue beats don't disappear while building the red hand.
+   * IMPORTANT: When in red phase, shows ALL blue steps with red overlaid progressively.
+   * This ensures blue steps don't disappear while building the red hand.
    */
   function getCurrentHandPreview(): PictographData[] {
     if (currentPhase === "blue" && blueHandPath.length >= 2) {
@@ -193,7 +193,7 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
         gridMode
       );
     } else if (currentPhase === "red" && blueHandPath.length >= 2) {
-      // Show ALL blue beats, with red overlaid where available
+      // Show ALL blue steps, with red overlaid where available
       const allBlueBeats = converter.convertHandPathToPictographs(
         blueHandPath,
         MotionColor.BLUE,
@@ -223,12 +223,12 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
               },
             } as PictographData;
           }
-          // Return blue-only for beats not yet constructed with red
+          // Return blue-only for steps not yet constructed with red
           return bluePictograph;
         });
       }
 
-      // Show all blue beats while red hand is being started
+      // Show all blue steps while red hand is being started
       return allBlueBeats;
     }
 
@@ -309,8 +309,8 @@ export function createHandPathAssembleState(config: HandPathAssembleConfig) {
     },
 
     // Derived state
-    get currentBeatNumber() {
-      return currentBeatNumber;
+    get currentStepNumber() {
+      return currentStepNumber;
     },
     get hasBlueHand() {
       return hasBlueHand;

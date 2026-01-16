@@ -20,8 +20,8 @@ Handles real-time workspace updates and sequence completion.
     onClearSequence,
     initialGridMode,
     hasExistingSequence = false,
-    existingStartPositionBeat = null,
-    existingBeats = [],
+    existingStartPositionStep = null,
+    existingSteps = [],
     // Bindable undo ref for workspace integration
     undoRef = $bindable(),
     // Bindable back ref for workspace back button
@@ -34,8 +34,8 @@ Handles real-time workspace updates and sequence completion.
     onClearSequence?: () => void;
     initialGridMode?: GridMode;
     hasExistingSequence?: boolean;
-    existingStartPositionBeat?: PictographData | null;
-    existingBeats?: PictographData[];
+    existingStartPositionStep?: PictographData | null;
+    existingSteps?: PictographData[];
     // Bindable undo ref for workspace integration
     undoRef?: AssemblyUndoRef | null;
     // Bindable back ref for workspace back button
@@ -62,8 +62,8 @@ Handles real-time workspace updates and sequence completion.
   <HandPathOrchestrator
     {initialGridMode}
     {hasExistingSequence}
-    {existingStartPositionBeat}
-    {existingBeats}
+    {existingStartPositionStep}
+    {existingSteps}
     onSequenceUpdate={handleSequenceUpdate}
     onSequenceComplete={handleSequenceComplete}
     onStartPositionSet={handleStartPositionSet}

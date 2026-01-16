@@ -18,7 +18,7 @@ Undo is handled by the workspace-level undo button, not here.
   const phaseInfo = $derived.by(() => {
     switch (phase) {
       case "blue": {
-        // First position is the start position, subsequent are beats
+        // First position is the start position, subsequent are steps
         const title =
           bluePathLength === 0
             ? t("assembly_select_starting_position")

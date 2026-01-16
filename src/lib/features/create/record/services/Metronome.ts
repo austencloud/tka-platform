@@ -63,7 +63,7 @@ export class Metronome {
   /**
    * Start the metronome
    * @param bpm - Beats per minute
-   * @param onBeat - Callback called on each beat with beat index
+   * @param onStep - Callback called on each beat with beat index
    */
   start(bpm: number, onBeat?: (beatIndex: number) => void): void {
     this.initializeAudioContext();
@@ -77,7 +77,7 @@ export class Metronome {
     const secondsPerBeat = 1 / beatsPerSecond;
 
     this.nextClickTime = this.audioContext.currentTime;
-    let beatIndex = 0;
+    let stepIndex = 0;
 
     const scheduler = () => {
       if (!this.audioContext) return;
@@ -89,19 +89,19 @@ export class Metronome {
       ) {
         if (this.isEnabled) {
           // Accent every 4th beat (typical measure)
-          const isAccent = beatIndex % 4 === 0;
+          const isAccent = stepIndex % 4 === 0;
           this.createClick(this.nextClickTime, isAccent);
         }
 
-        if (onBeat) {
+        if (onStep) {
           // Schedule callback at the same time as the click
           const callbackDelay =
             (this.nextClickTime - this.audioContext.currentTime) * 1000;
-          setTimeout(() => onBeat(beatIndex), Math.max(0, callbackDelay));
+          setTimeout(() => onStep(stepIndex), Math.max(0, callbackDelay));
         }
 
         this.nextClickTime += secondsPerBeat;
-        beatIndex++;
+        stepIndex++;
       }
 
       this.timerID = window.setTimeout(scheduler, 25);

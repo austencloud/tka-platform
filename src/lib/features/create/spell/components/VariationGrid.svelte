@@ -221,9 +221,9 @@ Features:
           {#if visibleItems.has(variation.id)}
             <!-- Render first beat as thumbnail -->
             <div class="thumbnail">
-              {#if variation.sequence.beats[0]}
+              {#if variation.sequence.steps[0]}
                 <PictographContainer
-                  pictographData={variation.sequence.beats[0]}
+                  pictographData={variation.sequence.steps[0]}
                   disableTransitions={true}
                 />
               {/if}

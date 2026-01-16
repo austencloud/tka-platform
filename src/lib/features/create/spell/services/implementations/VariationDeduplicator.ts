@@ -37,7 +37,7 @@ export class VariationDeduplicator implements IVariationDeduplicator {
    * Sequences with the same canonical hash are rotationally equivalent.
    */
   async getCanonicalHash(sequence: SequenceData): Promise<string> {
-    if (!sequence?.beats || sequence.beats.length === 0) {
+    if (!sequence?.steps || sequence.steps.length === 0) {
       return "";
     }
 

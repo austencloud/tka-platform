@@ -9,10 +9,10 @@ import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { IBeatConverter } from "$lib/features/create/generate/shared/services/contracts/IBeatConverter";
+import type { IStepConverter } from "$lib/features/create/generate/shared/services/contracts/IStepConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type {
   IVariationExplorer,
@@ -30,7 +30,7 @@ export class VariationExplorer implements IVariationExplorer {
   constructor(
     private transitionGraph: ILetterTransitionGraph,
     private letterQueryHandler: ILetterQueryHandler,
-    private beatConverter: IBeatConverter,
+    private stepConverter: IStepConverter,
     private orientationCalculator: IOrientationCalculator
   ) {}
 
@@ -192,7 +192,7 @@ export class VariationExplorer implements IVariationExplorer {
     letters: Letter[],
     letterIndex: number,
     lastPictograph: PictographData,
-    beats: BeatData[],
+    steps: StepData[],
     allPictographs: PictographData[],
     gridMode: GridMode,
     branchPath: number[],
@@ -205,7 +205,7 @@ export class VariationExplorer implements IVariationExplorer {
     if (letterIndex >= letters.length) {
       const sequence = this.buildSequenceData(
         lastPictograph, // The original start position is the first in the chain
-        beats,
+        steps,
         gridMode
       );
 
@@ -234,7 +234,7 @@ export class VariationExplorer implements IVariationExplorer {
       if (signal?.aborted) return;
 
       const option = options[optIdx]!;
-      const beat = this.beatConverter.convertToBeat(
+      const beat = this.stepConverter.convertToStep(
         option,
         letterIndex + 1,
         gridMode
@@ -245,7 +245,7 @@ export class VariationExplorer implements IVariationExplorer {
         letters,
         letterIndex + 1,
         option,
-        [...beats, beat],
+        [...steps, beat],
         allPictographs,
         gridMode,
         [...branchPath, optIdx],
@@ -287,27 +287,27 @@ export class VariationExplorer implements IVariationExplorer {
   }
 
   /**
-   * Build the final SequenceData object from beats.
+   * Build the final SequenceData object from steps.
    */
   private buildSequenceData(
     startPosition: PictographData,
-    beats: BeatData[],
+    steps: StepData[],
     gridMode: GridMode
   ): SequenceData {
-    const startPositionData = this.beatConverter.convertToStartPosition(
+    const startPositionData = this.stepConverter.convertToStartPosition(
       startPosition,
       gridMode
     );
 
-    const word = beats.map((b) => b.letter || "").join("");
+    const word = steps.map((b) => b.letter || "").join("");
 
     let sequence: SequenceData = {
       id: crypto.randomUUID(),
       name: word,
       word,
-      beats,
+      steps,
       startPosition: startPositionData,
-      startingPositionBeat: startPositionData, // Legacy field
+      startingPosition: startPositionData, // Legacy field
       gridMode,
       // propType removed - prop type is viewer preference, not sequence data
       difficultyLevel: DifficultyLevel.INTERMEDIATE,

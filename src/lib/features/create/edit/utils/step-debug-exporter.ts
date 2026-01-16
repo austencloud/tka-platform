@@ -9,7 +9,7 @@
  * - Beat Pictographs - Actual motions with arrows and props
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { IArrowRotationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowRotationCalculator";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -55,12 +55,12 @@ export interface PropStateDebugData {
 
 /**
  * Debug data for an actual beat pictograph
- * Beats show motions with arrows and props moving
+ * Steps show motions with arrows and props moving
  */
-export interface BeatDebugData {
+export interface StepDebugData {
   // Identification
   type: "beat";
-  beatNumber: number;
+  stepNumber: number;
   duration: number;
   id: string;
 
@@ -126,21 +126,21 @@ export interface MotionDebugData {
 /**
  * Union type for all debug data
  */
-export type PictographDebugData = StartPositionDebugData | BeatDebugData;
+export type PictographDebugData = StartPositionDebugData | StepDebugData;
 
 /**
  * Export comprehensive pictograph data
  * Automatically detects if it's a start position or beat and exports appropriate structure
  */
 export async function exportBeatDebugData(
-  data: BeatData | StartPositionData | PictographData,
+  data: StepData | StartPositionData | PictographData,
   pictographData?: PictographData
 ): Promise<PictographDebugData> {
   // Use type guard to detect if this is a start position
   if (isStartPosition(data)) {
     return exportStartPositionDebugData(data);
   } else {
-    return exportActualBeatDebugData(data as BeatData, pictographData);
+    return exportActualBeatDebugData(data as StepData, pictographData);
   }
 }
 
@@ -215,40 +215,40 @@ async function exportPropStateDebugData(
  * Export actual beat data (with motions, arrows, etc.)
  */
 async function exportActualBeatDebugData(
-  beatData: BeatData,
+  stepData: StepData,
   pictographData?: PictographData
-): Promise<BeatDebugData> {
+): Promise<StepDebugData> {
   const rotationCalculator = container.items.arrowRotationCalculator;
 
-  const debugData: BeatDebugData = {
+  const debugData: StepDebugData = {
     type: "beat",
-    beatNumber: beatData.beatNumber,
-    duration: beatData.duration,
-    id: beatData.id,
-    letter: beatData.letter || null,
-    startPosition: beatData.startPosition || null,
-    endPosition: beatData.endPosition || null,
-    blueReversal: beatData.blueReversal,
-    redReversal: beatData.redReversal,
-    isBlank: beatData.isBlank,
+    stepNumber: stepData.stepNumber,
+    duration: stepData.duration,
+    id: stepData.id,
+    letter: stepData.letter || null,
+    startPosition: stepData.startPosition || null,
+    endPosition: stepData.endPosition || null,
+    blueReversal: stepData.blueReversal,
+    redReversal: stepData.redReversal,
+    isBlank: stepData.isBlank,
     motions: {},
   };
 
   // Process blue motion if it exists
-  if (beatData.motions.blue) {
+  if (stepData.motions.blue) {
     debugData.motions.blue = await exportMotionDebugData(
-      beatData.motions.blue,
+      stepData.motions.blue,
       rotationCalculator,
-      pictographData || beatData
+      pictographData || stepData
     );
   }
 
   // Process red motion if it exists
-  if (beatData.motions.red) {
+  if (stepData.motions.red) {
     debugData.motions.red = await exportMotionDebugData(
-      beatData.motions.red,
+      stepData.motions.red,
       rotationCalculator,
-      pictographData || beatData
+      pictographData || stepData
     );
   }
 
@@ -349,7 +349,7 @@ function getRotationCalculationMethod(motion: MotionData): string {
  * Copy pictograph debug data to clipboard as formatted JSON
  */
 export async function copyBeatDebugDataToClipboard(
-  data: BeatData | StartPositionData | PictographData,
+  data: StepData | StartPositionData | PictographData,
   pictographData?: PictographData
 ): Promise<void> {
   const debugData = await exportBeatDebugData(data, pictographData);

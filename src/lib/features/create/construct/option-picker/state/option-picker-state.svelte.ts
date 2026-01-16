@@ -45,7 +45,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
   /**
    * Creates a sequence ID that captures position and orientation changes.
    * This ensures the option picker refreshes when:
-   * - Beats are added/removed (length changes)
+   * - Steps are added/removed (length changes)
    * - Sequence is rotated (endPosition changes)
    * - Sequence is mirrored/flipped (endPosition and orientations change)
    * - Grid mode changes
@@ -58,12 +58,12 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
       return `empty-${gridMode}`;
     }
 
-    const lastBeat = sequence[sequence.length - 1];
-    const endPos = lastBeat?.endPosition ?? "none";
-    const blueEndOri = lastBeat?.motions?.blue?.endOrientation ?? "none";
-    const redEndOri = lastBeat?.motions?.red?.endOrientation ?? "none";
+    const lastStep = sequence[sequence.length - 1];
+    const endPos = lastStep?.endPosition ?? "none";
+    const blueEndOri = lastStep?.motions?.blue?.endOrientation ?? "none";
+    const redEndOri = lastStep?.motions?.red?.endOrientation ?? "none";
 
-    return `${sequence.length}-${lastBeat?.id || "empty"}-${endPos}-${blueEndOri}-${redEndOri}-${gridMode}`;
+    return `${sequence.length}-${lastStep?.id || "empty"}-${endPos}-${blueEndOri}-${redEndOri}-${gridMode}`;
   }
 
   // Simplified filter state - just continuous vs all
@@ -82,7 +82,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     let filteredResults = [...options];
 
     // Apply continuity filter if enabled
-    // Only apply when we have at least 2 beats (start position + 1 actual beat)
+    // Only apply when we have at least 2 steps (start position + 1 actual beat)
     // With just a start position, there's no rotation context to compare against
     if (isContinuousOnly && currentSequence.length >= 2) {
       const continuousFilter = {
@@ -117,7 +117,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
 
     if (lastSequenceId === sequenceId) {
       // Even if skipped, update currentSequence in case it changed
-      // This can happen when beats are added but sequenceId happens to match
+      // This can happen when steps are added but sequenceId happens to match
       if (sequence.length !== currentSequence.length) {
         currentSequence = sequence;
       }
@@ -158,7 +158,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
 
     let filteredResults = [...options];
 
-    // Apply continuity filter if enabled (requires at least 2 beats for rotation context)
+    // Apply continuity filter if enabled (requires at least 2 steps for rotation context)
     if (isContinuousOnly && currentSequence.length >= 2) {
       const continuousFilter = {
         continuous: true,
@@ -236,11 +236,11 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     });
 
     // Get last beat's motion data separately for quick diagnosis
-    const lastBeat =
+    const lastStep =
       currentSequence.length > 0
         ? currentSequence[currentSequence.length - 1]
         : null;
-    const lastBeatMotionData = lastBeat ? getMotionDebugData(lastBeat) : null;
+    const lastBeatMotionData = lastStep ? getMotionDebugData(lastStep) : null;
 
     return {
       timestamp: new Date().toISOString(),

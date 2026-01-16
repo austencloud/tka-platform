@@ -16,13 +16,13 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
   // ============================================================================
 
   let isPlaying = $state(false);
-  let currentBeatIndex = $state(0);
+  let currentStepIndex = $state(0);
   let bpm = $state(60);
   let isMetronomeEnabled = $state(true);
   let sequence = $state<SequenceData | null>(sequenceData);
-  const totalBeats = $derived(sequence?.beats.length || 0);
-  const hasSequence = $derived(sequence !== null && totalBeats > 0);
-  const isAtEnd = $derived(currentBeatIndex >= totalBeats - 1);
+  const totalSteps = $derived(sequence?.steps.length || 0);
+  const hasSequence = $derived(sequence !== null && totalSteps > 0);
+  const isAtEnd = $derived(currentStepIndex >= totalSteps - 1);
 
   // ============================================================================
   // STATE MUTATIONS
@@ -49,16 +49,16 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
   }
 
   function reset() {
-    currentBeatIndex = 0;
+    currentStepIndex = 0;
     isPlaying = false;
   }
 
-  function nextBeat() {
-    if (currentBeatIndex < totalBeats - 1) {
-      currentBeatIndex++;
+  function nextStep() {
+    if (currentStepIndex < totalSteps - 1) {
+      currentStepIndex++;
     } else {
       // Loop back to start or stop
-      currentBeatIndex = 0;
+      currentStepIndex = 0;
       isPlaying = false; // Stop at end for now
     }
   }
@@ -76,9 +76,9 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
     reset(); // Reset playback when sequence changes
   }
 
-  function setCurrentBeatIndex(index: number) {
-    if (index >= 0 && index < totalBeats) {
-      currentBeatIndex = index;
+  function setCurrentStepIndex(index: number) {
+    if (index >= 0 && index < totalSteps) {
+      currentStepIndex = index;
     }
   }
 
@@ -91,8 +91,8 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
     get isPlaying() {
       return isPlaying;
     },
-    get currentBeatIndex() {
-      return currentBeatIndex;
+    get currentStepIndex() {
+      return currentStepIndex;
     },
     get bpm() {
       return bpm;
@@ -103,8 +103,8 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
     get sequence() {
       return sequence;
     },
-    get totalBeats() {
-      return totalBeats;
+    get totalSteps() {
+      return totalSteps;
     },
     get hasSequence() {
       return hasSequence;
@@ -118,10 +118,10 @@ export function createRecordTabState(sequenceData: SequenceData | null = null) {
     pause,
     togglePlayPause,
     reset,
-    nextBeat,
+    nextStep,
     setBpm,
     setMetronomeEnabled,
     setSequence,
-    setCurrentBeatIndex,
+    setCurrentStepIndex,
   };
 }

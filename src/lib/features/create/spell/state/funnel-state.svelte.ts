@@ -16,7 +16,7 @@ export type WizardPhase = "setup" | "generating" | "wizard" | "browsing";
 
 export interface FunnelFilters {
   /** Beat count filter - null means "Any" */
-  beatCount: number | null;
+  stepCount: number | null;
   /** Motion style preference */
   motionStyle: "dash" | "no-dash" | null;
   /** Maximum reversals allowed - null means "Any", 0 means "None" */
@@ -46,7 +46,7 @@ export interface FunnelStepDefinition {
 const FUNNEL_PREFS_KEY = "spell-funnel-preferences";
 
 export const DEFAULT_FUNNEL_FILTERS: FunnelFilters = {
-  beatCount: null,
+  stepCount: null,
   motionStyle: null,
   maxReversals: null,
   highContinuity: false,
@@ -56,8 +56,8 @@ export const FUNNEL_STEPS: FunnelStepDefinition[] = [
   {
     id: "length",
     title: "Length",
-    question: "How many beats?",
-    filterKey: "beatCount",
+    question: "How many steps?",
+    filterKey: "stepCount",
   },
   {
     id: "motion",
@@ -150,10 +150,10 @@ export function createFunnelState() {
     filterKey: keyof FunnelFilters
   ): ScoredVariation[] {
     switch (filterKey) {
-      case "beatCount":
-        if (filters.beatCount === null) return variations;
+      case "stepCount":
+        if (filters.stepCount === null) return variations;
         return variations.filter(
-          (v) => v.sequence.beats.length === filters.beatCount
+          (v) => v.sequence.steps.length === filters.stepCount
         );
 
       case "motionStyle":
@@ -219,10 +219,10 @@ export function createFunnelState() {
     filterValues: FunnelFilters
   ): ScoredVariation[] {
     switch (filterKey) {
-      case "beatCount":
-        if (filterValues.beatCount === null) return variations;
+      case "stepCount":
+        if (filterValues.stepCount === null) return variations;
         return variations.filter(
-          (v) => v.sequence.beats.length === filterValues.beatCount
+          (v) => v.sequence.steps.length === filterValues.stepCount
         );
 
       case "motionStyle":
@@ -263,20 +263,20 @@ export function createFunnelState() {
   function getBeatCountOptions(): FunnelOption[] {
     // Find unique beat counts in the data
     const beatCounts = new Set<number>();
-    allVariations.forEach((v) => beatCounts.add(v.sequence.beats.length));
+    allVariations.forEach((v) => beatCounts.add(v.sequence.steps.length));
     const sortedCounts = Array.from(beatCounts).sort((a, b) => a - b);
 
     const options: FunnelOption[] = sortedCounts.map((count) => ({
-      label: `${count} beats`,
+      label: `${count} steps`,
       value: count,
-      count: countForFilterValue("beatCount", count),
+      count: countForFilterValue("stepCount", count),
     }));
 
     // Add "Any" option
     options.push({
       label: "Any",
       value: null,
-      count: countForFilterValue("beatCount", null),
+      count: countForFilterValue("stepCount", null),
     });
 
     return options;
@@ -354,7 +354,7 @@ export function createFunnelState() {
     if (!step) return [];
 
     switch (step.filterKey) {
-      case "beatCount":
+      case "stepCount":
         return getBeatCountOptions();
       case "motionStyle":
         return getMotionStyleOptions();

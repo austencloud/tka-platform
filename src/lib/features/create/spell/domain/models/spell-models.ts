@@ -23,7 +23,7 @@ export interface LetterSource {
   /** True if user typed this letter, false if it was interpolated as a bridge */
   isOriginal: boolean;
   /** The beat index in the final sequence (1-indexed, after start position) */
-  beatIndex: number;
+  stepIndex: number;
 }
 
 /**

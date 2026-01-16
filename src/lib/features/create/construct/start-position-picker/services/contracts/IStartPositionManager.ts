@@ -5,7 +5,7 @@
  */
 
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
 export interface IStartPositionManager {
@@ -16,5 +16,5 @@ export interface IStartPositionManager {
   selectStartPosition(position: PictographData): void;
 
   // System method for setting start position in sequence
-  setStartPosition(startPosition: BeatData): void;
+  setStartPosition(startPosition: StepData): void;
 }

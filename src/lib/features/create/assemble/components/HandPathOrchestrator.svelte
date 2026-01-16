@@ -58,8 +58,8 @@ Integrates all Assembly components and manages state transitions.
   let {
     initialGridMode = GridMode.DIAMOND,
     hasExistingSequence = false,
-    existingStartPositionBeat = null,
-    existingBeats = [],
+    existingStartPositionStep = null,
+    existingSteps = [],
     // Sequence callbacks
     onSequenceComplete,
     onSequenceUpdate,
@@ -73,8 +73,8 @@ Integrates all Assembly components and manages state transitions.
   } = $props<{
     initialGridMode?: GridMode;
     hasExistingSequence?: boolean;
-    existingStartPositionBeat?: PictographData | null;
-    existingBeats?: PictographData[];
+    existingStartPositionStep?: PictographData | null;
+    existingSteps?: PictographData[];
     // Sequence callbacks
     onSequenceComplete?: (sequence: PictographData[]) => void;
     onSequenceUpdate?: (sequence: PictographData[]) => void;
@@ -126,15 +126,15 @@ Integrates all Assembly components and manages state transitions.
   function reconstructBlueHandPath(): GridLocation[] {
     const path: GridLocation[] = [];
 
-    // Get start position from startingPositionBeat
-    const startLoc = extractBlueLocation(existingStartPositionBeat, false);
+    // Get start position from startingPosition
+    const startLoc = extractBlueLocation(existingStartPositionStep, false);
     if (startLoc) {
       path.push(startLoc);
     }
 
-    // Get subsequent positions from beats (each beat's endLocation)
-    if (existingBeats && existingBeats.length > 0) {
-      for (const beat of existingBeats) {
+    // Get subsequent positions from steps (each beat's endLocation)
+    if (existingSteps && existingSteps.length > 0) {
+      for (const beat of existingSteps) {
         const endLoc = extractBlueLocation(beat, true);
         if (endLoc) {
           path.push(endLoc);

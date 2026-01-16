@@ -60,7 +60,7 @@ Uses organizer and sizer services for section grouping and sizing.
     return shouldUseWideLayout ? 8 : 4;
   });
 
-  // Only show filter toggle when we have at least 2 beats (start position + 1 actual beat)
+  // Only show filter toggle when we have at least 2 steps (start position + 1 actual beat)
   // Without a previous beat, there's no rotation context to filter against
   const shouldShowFilterToggle = $derived(() => {
     return options.length > 0 && currentSequence.length >= 2;

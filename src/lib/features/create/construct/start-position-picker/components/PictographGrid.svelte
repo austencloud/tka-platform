@@ -176,7 +176,7 @@
     transform: scale(1) translateY(0);
   }
 
-  /* Entrance animation similar to BeatCell */
+  /* Entrance animation similar to StepCell */
   .pictograph-container.animate {
     animation: scaleInStaggered 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     animation-delay: var(--animation-delay, 0ms);

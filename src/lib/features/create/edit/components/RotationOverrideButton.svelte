@@ -3,7 +3,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import type { IRotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { onMount } from "svelte";
 
   let hapticService: IHapticFeedback;
@@ -11,11 +11,11 @@
 
   // Props
   const {
-    beatData,
+    stepData,
     arrowColor = "blue",
     disabled = false,
   } = $props<{
-    beatData: BeatData | null;
+    stepData: StepData | null;
     arrowColor?: "red" | "blue";
     disabled?: boolean;
   }>();
@@ -27,16 +27,16 @@
 
   // Check if override is allowed and active when beat data changes
   $effect(() => {
-    if (beatData) {
+    if (stepData) {
       updateOverrideStatus();
     }
   });
 
   async function updateOverrideStatus() {
-    if (!beatData || !rotationOverrideManager) return;
+    if (!stepData || !rotationOverrideManager) return;
 
     const motion =
-      arrowColor === "blue" ? beatData.motions?.blue : beatData.motions?.red;
+      arrowColor === "blue" ? stepData.motions?.blue : stepData.motions?.red;
     if (!motion) {
       canOverride = false;
       isOverrideActive = false;
@@ -51,7 +51,7 @@
       try {
         isOverrideActive = await rotationOverrideManager.hasRotationOverride(
           motion,
-          beatData
+          stepData
         );
       } catch (error) {
         console.error("Failed to check rotation override status:", error);
@@ -63,10 +63,10 @@
   }
 
   async function handleToggleOverride() {
-    if (!beatData || !canOverride || isProcessing || disabled) return;
+    if (!stepData || !canOverride || isProcessing || disabled) return;
 
     const motion =
-      arrowColor === "blue" ? beatData.motions?.blue : beatData.motions?.red;
+      arrowColor === "blue" ? stepData.motions?.blue : stepData.motions?.red;
     if (!motion) return;
 
     isProcessing = true;
@@ -75,14 +75,14 @@
     try {
       const newState = await rotationOverrideManager.toggleRotationOverride(
         motion,
-        beatData
+        stepData
       );
       isOverrideActive = newState;
 
       // Force pictograph refresh by triggering a custom event
       window.dispatchEvent(
         new CustomEvent("rotation-override-changed", {
-          detail: { beatData, arrowColor, isActive: newState },
+          detail: { stepData, arrowColor, isActive: newState },
         })
       );
     } catch (error) {

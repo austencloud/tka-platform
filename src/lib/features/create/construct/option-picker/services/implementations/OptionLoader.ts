@@ -31,8 +31,8 @@ export class OptionLoader implements IOptionLoader {
       return [];
     }
 
-    const lastBeat = sequence[sequence.length - 1]!;
-    const endPosition = this.positionAnalyzer.getEndPosition(lastBeat);
+    const lastStep = sequence[sequence.length - 1]!;
+    const endPosition = this.positionAnalyzer.getEndPosition(lastStep);
 
     if (!endPosition || typeof endPosition !== "string") {
       return [];
