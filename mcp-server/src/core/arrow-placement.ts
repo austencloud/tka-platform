@@ -116,6 +116,10 @@ export const staticNonRadialCounterClockwiseMap: Record<GridLocation, number> = 
 
 /**
  * DASH rotation maps
+ *
+ * IMPORTANT: Both CW and CCW maps are IDENTICAL for dash arrows!
+ * The rotation angle is based purely on the arrow's location (pointing outward).
+ * The CW/CCW only affects mirroring, not the rotation angle itself.
  */
 export const dashClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.NORTH]: 0,
@@ -128,32 +132,34 @@ export const dashClockwiseMap: Record<GridLocation, number> = {
   [GridLocation.NORTHWEST]: 315,
 };
 
+// CCW map is identical to CW - rotation angle is location-based, not direction-based
 export const dashCounterClockwiseMap: Record<GridLocation, number> = {
-  [GridLocation.NORTH]: 180,
-  [GridLocation.EAST]: 270,
-  [GridLocation.SOUTH]: 0,
-  [GridLocation.WEST]: 90,
-  [GridLocation.NORTHEAST]: 225,
-  [GridLocation.SOUTHEAST]: 315,
-  [GridLocation.SOUTHWEST]: 45,
-  [GridLocation.NORTHWEST]: 135,
+  [GridLocation.NORTH]: 0,
+  [GridLocation.EAST]: 90,
+  [GridLocation.SOUTH]: 180,
+  [GridLocation.WEST]: 270,
+  [GridLocation.NORTHEAST]: 45,
+  [GridLocation.SOUTHEAST]: 135,
+  [GridLocation.SOUTHWEST]: 225,
+  [GridLocation.NORTHWEST]: 315,
 };
 
 /**
  * DASH no-rotation map (special case for straight dashes)
+ * Key format: "startLocation,endLocation" (lowercase)
  */
 export const dashNoRotationMap: Record<string, number> = {
   // Vertical dashes
   "n,s": 90,
   "s,n": 270,
   // Horizontal dashes
-  "e,w": 0,
-  "w,e": 180,
+  "e,w": 180,
+  "w,e": 0,
   // Diagonal dashes
-  "ne,sw": 45,
-  "sw,ne": 225,
-  "nw,se": 135,
-  "se,nw": 315,
+  "se,nw": 225,
+  "sw,ne": 315,
+  "nw,se": 45,
+  "ne,sw": 135,
 };
 
 /**

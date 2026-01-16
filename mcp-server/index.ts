@@ -20,10 +20,59 @@ import { z } from "zod";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { exec } from "child_process";
+import { tmpdir } from "os";
 import { getStandaloneRenderer, type RenderVisibilityOptions } from "./src/core/standalone-renderer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ============================================================================
+// IMAGE AUTO-OPEN UTILITY
+// ============================================================================
+
+/**
+ * Open an image file with the system's default image viewer.
+ * Works cross-platform: Windows (start), macOS (open), Linux (xdg-open)
+ */
+function openImageFile(filePath: string): void {
+  const platform = process.platform;
+  let command: string;
+
+  if (platform === "win32") {
+    // Windows: use 'start' command
+    command = `start "" "${filePath}"`;
+  } else if (platform === "darwin") {
+    // macOS: use 'open' command
+    command = `open "${filePath}"`;
+  } else {
+    // Linux/other: use 'xdg-open'
+    command = `xdg-open "${filePath}"`;
+  }
+
+  exec(command, (error) => {
+    if (error) {
+      console.error(`[MCP] Failed to open image: ${error.message}`);
+    }
+  });
+}
+
+/**
+ * Save PNG buffer to a temp file and open it immediately.
+ * Returns the temp file path.
+ */
+function saveAndOpenImage(pngBuffer: Buffer, letter: string): string {
+  // Create temp file with descriptive name
+  const tempDir = tmpdir();
+  const timestamp = Date.now();
+  const fileName = `tka-${letter}-${timestamp}.png`;
+  const filePath = path.join(tempDir, fileName);
+
+  fs.writeFileSync(filePath, pngBuffer);
+  openImageFile(filePath);
+
+  return filePath;
+}
 
 // ============================================================================
 // PREFERENCES SYSTEM
@@ -522,7 +571,13 @@ server.tool(
 
       // Render using standalone Node.js renderer
       const renderer = getStandaloneRenderer();
-      const base64 = await renderer.renderToBase64(pictographInput, visibility);
+      const pngBuffer = await renderer.renderToPng(pictographInput, visibility);
+
+      // AUTO-OPEN: Save to temp and open immediately with system viewer
+      const tempPath = saveAndOpenImage(pngBuffer, letter);
+
+      // Also convert to base64 for clients that support inline images
+      const base64 = pngBuffer.toString("base64");
 
       // Build description of what was rendered
       const enabledFeatures = [];
@@ -536,9 +591,7 @@ server.tool(
         content: [
           {
             type: "text" as const,
-            text: `Generated pictograph ${letter} (variation ${variation})\n` +
-                  `Size: ${prefs.size}x${prefs.size}px, ${prefs.darkMode ? "dark" : "light"} mode\n` +
-                  `Showing: ${enabledFeatures.join(", ") || "base only"}`,
+            text: `${letter}`,
           },
           {
             type: "image" as const,
