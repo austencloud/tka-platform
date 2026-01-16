@@ -17,18 +17,18 @@ export class VideoPlayer implements IVideoPlayer {
 
   play(): void {
     if (!this.videoElement) {
-      console.warn("VideoPlaybackService: No video element initialized");
+      console.warn("VideoPlayer: No video element initialized");
       return;
     }
 
     this.videoElement.play().catch((error) => {
-      console.error("VideoPlaybackService: Play failed", error);
+      console.error("VideoPlayer: Play failed", error);
     });
   }
 
   pause(): void {
     if (!this.videoElement) {
-      console.warn("VideoPlaybackService: No video element initialized");
+      console.warn("VideoPlayer: No video element initialized");
       return;
     }
 
@@ -37,7 +37,7 @@ export class VideoPlayer implements IVideoPlayer {
 
   setPlaybackRate(rate: number): void {
     if (!this.videoElement) {
-      console.warn("VideoPlaybackService: No video element initialized");
+      console.warn("VideoPlayer: No video element initialized");
       return;
     }
 
@@ -46,7 +46,7 @@ export class VideoPlayer implements IVideoPlayer {
 
   seek(timeInSeconds: number): void {
     if (!this.videoElement) {
-      console.warn("VideoPlaybackService: No video element initialized");
+      console.warn("VideoPlayer: No video element initialized");
       return;
     }
 

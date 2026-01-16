@@ -20,6 +20,7 @@
   import MirrorRenderer from "./renderers/MirrorRenderer.svelte";
   import GridRenderer from "./renderers/GridRenderer.svelte";
   import type { TrailSettings } from "../../shared/domain/types/TrailTypes";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -61,7 +62,7 @@
   };
 
   // Grid state (placeholder - should come from grid tab state)
-  const gridSequences = $state<any[]>([]);
+  const gridSequences = $state<(SequenceData | null)[]>([]);
   const gridRotationOffsets = $state<number[]>([0, 90, 180, 270]);
 
   // Handlers

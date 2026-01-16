@@ -19,7 +19,7 @@
     VideoRenderProgress,
     VideoRenderResult,
   } from "../../services/contracts/IVideoPreRenderer";
-  import { getVideoPlayer } from "../../services/implementations/VideoPlaybackService";
+  import { getVideoPlayer } from "../../services/implementations/VideoPlayer";
   import { getVideoGenerationCoordinator } from "../../services/implementations/VideoGenerationCoordinator";
   import VideoGenerationStatus from "../video-player/VideoGenerationStatus.svelte";
   import VideoReadyNotification from "../video-player/VideoReadyNotification.svelte";

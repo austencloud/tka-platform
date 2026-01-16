@@ -199,6 +199,12 @@ export class TrailCapturer implements ITrailCapturer {
   }
 
   updateConfig(config: Partial<TrailCaptureConfig>): void {
+    // DEBUG: Log when isSeamlesslyLoopable changes
+    if (config.isSeamlesslyLoopable !== undefined &&
+        config.isSeamlesslyLoopable !== this.config.isSeamlesslyLoopable) {
+      console.log('[TrailCapturer] isSeamlesslyLoopable updated:', config.isSeamlesslyLoopable);
+    }
+
     this.config = { ...this.config, ...config };
 
     // If settings changed, update trail settings
@@ -250,11 +256,26 @@ export class TrailCapturer implements ITrailCapturer {
     // Check for loop and clear trails if:
     // - Mode is LOOP_CLEAR (user explicitly wants clearing on every loop)
     // - OR sequence is not seamlessly loopable (props jump back, trails don't connect)
+    // Note: undefined is treated as "not loopable" (clear on loop) for safety
     const shouldClearOnLoop =
       trailSettings.mode === TrailMode.LOOP_CLEAR ||
-      this.config.isSeamlesslyLoopable === false;
+      this.config.isSeamlesslyLoopable !== true;
 
-    if (shouldClearOnLoop && this.detectAnimationLoop(beat)) {
+    const loopDetected = this.detectAnimationLoop(beat);
+
+    // DEBUG: Log loop detection and clearing logic
+    if (loopDetected) {
+      console.log('[TrailCapturer] Loop detected!', {
+        beat,
+        previousBeat: this.previousBeatForLoopDetection,
+        isSeamlesslyLoopable: this.config.isSeamlesslyLoopable,
+        trailMode: trailSettings.mode,
+        shouldClearOnLoop,
+      });
+    }
+
+    if (shouldClearOnLoop && loopDetected) {
+      console.log('[TrailCapturer] CLEARING TRAILS on loop');
       this.clearTrails();
       // Reset animation start time
       this.animationStartTime = currentTime;
