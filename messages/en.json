@@ -503,6 +503,8 @@
   "settings_prop_type": "Prop Type",
   "settings_prop_subtitle": "Choose your flow props",
   "settings_quick_presets": "Quick Presets",
+  "settings_preset_hint_empty": "Tap empty slot to save current props",
+  "settings_preset_hint_filled": "Tap preset to apply. Hold to clear.",
   "settings_different_props": "Different props per hand",
   "settings_same_props": "Same prop both hands",
   "settings_left_hand": "Left",

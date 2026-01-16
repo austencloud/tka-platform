@@ -71,7 +71,11 @@
     "arrows:sync": "node scripts/arrows-sync.js",
     "arrows:export": "node scripts/arrows-sync.js --once",
     "arrows:template": "node scripts/generate-arrow-template.js",
-    "arrows:create": "node scripts/create-arrow-document.js"
+    "arrows:create": "node scripts/create-arrow-document.js",
+    "tika:evaluate": "npx tsx scripts/tika/evaluate.ts",
+    "tika:evaluate:dry": "npx tsx scripts/tika/evaluate.ts --dry-run",
+    "tika:opus": "npx tsx scripts/tika/opus-reviewer.ts",
+    "tika:opus:demo": "npx tsx scripts/tika/opus-reviewer.ts --demo"
   },
   "overrides": {
     "cookie": "^0.7.2",

@@ -175,3 +175,29 @@ export function calculateBeatPosition(
   const column = (stepIndex % columns) + 2; // +2 because start position is column 1
   return { row, column };
 }
+
+/**
+ * Generate CSS grid-template-columns for timeline mode.
+ * Each cell width is proportional to its duration using fr units.
+ *
+ * @param steps - Array of step data with optional duration (defaults to 1)
+ * @param hasStartPosition - Whether to include a 1fr column for start position
+ * @returns CSS grid-template-columns value (e.g., "1fr 2fr 0.5fr 1fr")
+ */
+export function calculateTimelineGridColumns(
+  steps: readonly { duration?: number }[],
+  hasStartPosition: boolean
+): string {
+  // Start position gets 1fr (standard width)
+  const startCol = hasStartPosition ? "1fr " : "";
+
+  // Each step gets width proportional to its duration
+  const stepCols = steps
+    .map((step) => {
+      const fraction = step.duration ?? 1;
+      return `${fraction}fr`;
+    })
+    .join(" ");
+
+  return startCol + stepCols;
+}
