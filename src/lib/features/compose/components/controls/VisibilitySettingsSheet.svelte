@@ -146,9 +146,9 @@
     // When enabling Dark Mode, auto-enable neon trail effect
     if (!current) {
       animationSettings.setTrailEffect(TrailEffect.NEON);
-      // Also set trails to vivid if currently off
+      // Also enable trails if currently off
       if (currentTrailStyle === "off") {
-        setTrailStyle("vivid");
+        setTrailStyle("on");
       }
     } else {
       // When disabling, go back to standard glow
@@ -158,32 +158,21 @@
     updateCounter++;
   }
 
-  // Trail preset handlers
+  // Trail on/off handler with hardcoded vivid settings when enabled
   function setTrailStyle(style: TrailStyle) {
     visibilityManager.setTrailStyle(style);
 
-    switch (style) {
-      case "off":
-        animationSettings.setTrailMode(TrailMode.OFF);
-        break;
-      case "subtle":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(1500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 2.5,
-          maxOpacity: 0.7,
-          glowEnabled: false,
-        });
-        break;
-      case "vivid":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(2500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 4,
-          maxOpacity: 0.95,
-          glowEnabled: true,
-        });
-        break;
+    if (style === "off") {
+      animationSettings.setTrailMode(TrailMode.OFF);
+    } else {
+      // "on" - use hardcoded vivid settings
+      animationSettings.setTrailMode(TrailMode.FADE);
+      animationSettings.setFadeDuration(2500);
+      animationSettings.setTrailAppearance({
+        lineWidth: 3.5,
+        maxOpacity: 0.95,
+        glowEnabled: true,
+      });
     }
     updateCounter++;
   }
@@ -307,20 +296,12 @@
             Off
           </button>
           <button
-            class="chip-btn trail-subtle"
-            class:active={currentTrailStyle === "subtle"}
-            onclick={() => setTrailStyle("subtle")}
+            class="chip-btn trail-on"
+            class:active={currentTrailStyle === "on"}
+            onclick={() => setTrailStyle("on")}
             type="button"
           >
-            Subtle
-          </button>
-          <button
-            class="chip-btn trail-vivid"
-            class:active={currentTrailStyle === "vivid"}
-            onclick={() => setTrailStyle("vivid")}
-            type="button"
-          >
-            Vivid
+            On
           </button>
         </div>
 
@@ -541,15 +522,8 @@
     color: rgba(209, 213, 219, 1);
   }
 
-  /* Trail Subtle - sky blue accent */
-  .chip-btn.trail-subtle.active {
-    background: rgba(56, 189, 248, 0.2);
-    border-color: rgba(56, 189, 248, 0.5);
-    color: rgba(186, 230, 253, 1);
-  }
-
-  /* Trail Vivid - amber/fire accent */
-  .chip-btn.trail-vivid.active {
+  /* Trail On - amber/fire accent */
+  .chip-btn.trail-on.active {
     background: rgba(245, 158, 11, 0.2);
     border-color: rgba(245, 158, 11, 0.5);
     color: rgba(253, 230, 138, 1);

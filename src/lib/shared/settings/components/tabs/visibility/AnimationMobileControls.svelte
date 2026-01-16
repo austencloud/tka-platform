@@ -127,21 +127,12 @@
     </button>
     <button
       class="compact-btn trail"
-      class:active={trailStyle === "subtle"}
-      aria-pressed={trailStyle === "subtle"}
-      onclick={() => onTrailPreset("subtle")}
+      class:active={trailStyle === "on"}
+      aria-pressed={trailStyle === "on"}
+      onclick={() => onTrailPreset("on")}
       type="button"
     >
-      Subtle
-    </button>
-    <button
-      class="compact-btn trail"
-      class:active={trailStyle === "vivid"}
-      aria-pressed={trailStyle === "vivid"}
-      onclick={() => onTrailPreset("vivid")}
-      type="button"
-    >
-      Vivid
+      On
     </button>
     {#if showBilateralToggle}
       <button

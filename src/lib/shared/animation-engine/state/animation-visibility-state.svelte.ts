@@ -17,8 +17,8 @@ export interface MotionColorsCache {
   grid: string;
 }
 
-// 3-state enums for multi-option settings
-export type TrailStyle = "off" | "subtle" | "vivid";
+// Trail toggle - simplified from off/subtle/vivid to just on/off
+export type TrailStyle = "off" | "on";
 export type GridMode = "none" | "diamond" | "box";
 export type PlaybackMode = "continuous" | "step";
 
@@ -84,7 +84,7 @@ export class AnimationVisibilityStateManager {
       gridMode: "diamond", // Default to diamond grid
       beatNumbers: true,
       props: true,
-      trailStyle: "subtle", // Default to subtle trails
+      trailStyle: "on", // Trails enabled by default (hardcoded vivid style)
       playbackMode: "continuous", // Default to continuous playback
       speed: 1.0, // Default to 60 BPM
       wordHeader: true, // Show word/sequence name by default
@@ -114,8 +114,14 @@ export class AnimationVisibilityStateManager {
         // Clean up old propGlow setting if present
         if (parsed.propGlow !== undefined) {
           delete parsed.propGlow;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
         }
+
+        // Migrate trailStyle from off/subtle/vivid to off/on
+        if (parsed.trailStyle === "subtle" || parsed.trailStyle === "vivid") {
+          parsed.trailStyle = "on";
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
 
         // Ensure new properties exist with defaults if missing
         const defaults = this.getDefaultSettings();

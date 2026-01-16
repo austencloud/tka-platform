@@ -12,6 +12,9 @@ import {
   TRAIL_SETTINGS_STORAGE_KEY,
   TrackingMode,
   TrailMode,
+  TrailEffect,
+  FadeStyle,
+  TaperStyle,
 } from "../shared/domain/types/TrailTypes";
 
 const COLLAPSE_STATE_KEY = "tka_animation_collapse_states";
@@ -22,6 +25,7 @@ const COLLAPSE_STATE_KEY = "tka_animation_collapse_states";
 
 /**
  * Load trail settings from localStorage
+ * Forces the "vivid" trail preset - tapered, exponential fade, glow
  */
 export function loadTrailSettings(): TrailSettings {
   if (!browser) return { ...DEFAULT_TRAIL_SETTINGS };
@@ -38,22 +42,30 @@ export function loadTrailSettings(): TrailSettings {
       delete parsed.trackBothEnds;
     }
 
-    // Migration: Auto-enable trails if path caching is enabled
-    // Path caching was added for trail rendering, so trails should be enabled
-    if (parsed.usePathCache && !parsed.enabled) {
-      parsed.enabled = true;
-      // Also ensure mode is not OFF
-      if (parsed.mode === TrailMode.OFF) {
-        parsed.mode = TrailMode.FADE;
-      }
-    }
-
     // Migration: Add previewMode if not present (defaults to false = normal trail mode)
     if (!("previewMode" in parsed)) {
       parsed.previewMode = false;
     }
 
-    return { ...DEFAULT_TRAIL_SETTINGS, ...parsed };
+    // Merge with defaults, then FORCE the vivid settings
+    // Old persisted settings may have taperStyle: "none" which we don't want
+    const result = { ...DEFAULT_TRAIL_SETTINGS, ...parsed };
+
+    // ALWAYS force these vivid settings - they make trails beautiful
+    result.enabled = true;
+    result.mode = TrailMode.FADE;
+    result.effect = TrailEffect.GLOW;
+    result.fadeStyle = FadeStyle.EXPONENTIAL;
+    result.taperStyle = TaperStyle.TAPERED;
+    // Thicker line width to compensate for tapering (tapered trails thin at tail)
+    result.lineWidth = 5;
+    result.maxOpacity = 1.0; // Full opacity at head
+    result.minOpacity = 0.25; // Higher minimum so tail doesn't fade too much
+    result.glowEnabled = true;
+    result.glowBlur = 3; // Stronger glow for more visibility
+    result.fadeDurationMs = 2500;
+
+    return result;
   } catch (error) {
     console.error("❌ Failed to load trail settings:", error);
     return { ...DEFAULT_TRAIL_SETTINGS };

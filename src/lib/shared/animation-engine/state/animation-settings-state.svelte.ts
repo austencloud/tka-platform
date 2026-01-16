@@ -21,6 +21,8 @@ import {
   TrackingMode,
   TrailStyle,
   TrailEffect,
+  FadeStyle,
+  TaperStyle,
   type TrailSettings,
   type TrailPoint,
   DEFAULT_TRAIL_SETTINGS as MODULE_DEFAULT_TRAIL_SETTINGS,
@@ -95,23 +97,28 @@ const settingsPersistence = createPersistenceHelper({
 
 /**
  * Load animation settings with migration logic
- * Applies vivid trail preset if trails were previously disabled
+ * Forces vivid trail preset for all users
  */
 function loadSettings(): AnimationSettings {
   const settings = settingsPersistence.load();
 
-  // Migration: Re-enable trails with vivid preset if they were disabled
-  // (Trails were temporarily broken, now restored - default to vivid preset)
+  // MIGRATION: Force the vivid trail preset for everyone
+  // Old settings may have taperStyle: "none", fadeStyle: "linear", etc.
+  // The new defaults are what makes trails beautiful - exponential fade, glow
   if (settings.trail) {
-    if (settings.trail.mode === TrailMode.OFF || !settings.trail.enabled) {
-      // Apply vivid preset: enabled with fade mode
-      settings.trail.enabled = true;
-      settings.trail.mode = TrailMode.FADE;
-      settings.trail.lineWidth = 4;
-      settings.trail.maxOpacity = 0.95;
-      settings.trail.glowEnabled = true;
-      settings.trail.fadeDurationMs = 2500;
-    }
+    // Always force these "vivid" settings - they're what makes trails look good
+    settings.trail.enabled = true;
+    settings.trail.mode = TrailMode.FADE;
+    settings.trail.effect = TrailEffect.GLOW;
+    settings.trail.fadeStyle = FadeStyle.EXPONENTIAL;
+    settings.trail.taperStyle = TaperStyle.TAPERED;
+    // Thicker line width to compensate for tapering (tapered trails thin at tail)
+    settings.trail.lineWidth = 5;
+    settings.trail.maxOpacity = 1.0; // Full opacity at head
+    settings.trail.minOpacity = 0.25; // Higher minimum so tail doesn't fade too much
+    settings.trail.glowEnabled = true;
+    settings.trail.glowBlur = 3; // Stronger glow for more visibility
+    settings.trail.fadeDurationMs = 2500;
   }
 
   return settings;
@@ -162,6 +169,8 @@ export function createAnimationSettingsState(): AnimationSettingsState {
       void settings.trail.enabled;
       void settings.trail.mode;
       void settings.trail.effect;
+      void settings.trail.fadeStyle;
+      void settings.trail.taperStyle;
       void settings.trail.trackingMode;
       void settings.trail.lineWidth;
       void settings.trail.maxOpacity;

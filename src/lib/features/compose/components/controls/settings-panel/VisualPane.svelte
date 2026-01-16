@@ -4,7 +4,7 @@
   Visual settings:
   - Motion visibility (Blue/Red)
   - Element toggles (Grid, Props, Beat #, Glyph)
-  - Trail presets (Off/Subtle/Vivid)
+  - Trail toggle (Off/On - hardcoded vivid style when on)
   - Ends selector (One End/Both Ends) - for bilateral props
 -->
 <script lang="ts">
@@ -50,11 +50,7 @@
   function getTrailStyleFromSettings(): TrailStyle {
     const trail = animationSettings.trail;
     if (!trail.enabled || trail.mode === TrailMode.OFF) return "off";
-    // Distinguish subtle vs vivid by line width and fade duration
-    if ((trail.fadeDurationMs ?? 2000) <= 1800 && (trail.lineWidth ?? 3) < 3.5) {
-      return "subtle";
-    }
-    return "vivid";
+    return "on";
   }
 
   onMount(() => {
@@ -189,31 +185,20 @@
     updateCounter++;
   }
 
-  // Trail style handlers
+  // Trail on/off handler with hardcoded vivid settings when enabled
   function setTrailStyle(style: TrailStyle) {
     visibilityManager.setTrailStyle(style);
-    switch (style) {
-      case "off":
-        animationSettings.setTrailMode(TrailMode.OFF);
-        break;
-      case "subtle":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(1500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 2.5,
-          maxOpacity: 0.7,
-          glowEnabled: false,
-        });
-        break;
-      case "vivid":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(2500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 4,
-          maxOpacity: 0.95,
-          glowEnabled: true,
-        });
-        break;
+    if (style === "off") {
+      animationSettings.setTrailMode(TrailMode.OFF);
+    } else {
+      // "on" - use hardcoded vivid settings
+      animationSettings.setTrailMode(TrailMode.FADE);
+      animationSettings.setFadeDuration(2500);
+      animationSettings.setTrailAppearance({
+        lineWidth: 3.5,
+        maxOpacity: 0.95,
+        glowEnabled: true,
+      });
     }
     updateCounter++;
   }
@@ -297,7 +282,7 @@
     </button>
   </div>
 
-  <!-- Trail Presets -->
+  <!-- Trail Toggle -->
   <div class="trail-presets">
     <button
       class="trail-btn"
@@ -309,19 +294,11 @@
     </button>
     <button
       class="trail-btn"
-      class:active={currentTrailStyle === "subtle"}
-      onclick={() => setTrailStyle("subtle")}
+      class:active={currentTrailStyle === "on"}
+      onclick={() => setTrailStyle("on")}
       type="button"
     >
-      Subtle
-    </button>
-    <button
-      class="trail-btn"
-      class:active={currentTrailStyle === "vivid"}
-      onclick={() => setTrailStyle("vivid")}
-      type="button"
-    >
-      Vivid
+      On
     </button>
   </div>
 

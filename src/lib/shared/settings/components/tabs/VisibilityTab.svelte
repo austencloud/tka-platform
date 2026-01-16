@@ -52,7 +52,7 @@
   let beatNumbersVisible = $state(true);
 
   // Animation visibility state
-  let animTrailStyle = $state<TrailStyle>("subtle");
+  let animTrailStyle = $state<TrailStyle>("on");
   let animPlaybackMode = $state<PlaybackMode>("continuous");
   let animBpm = $state(60);
   let animTkaGlyphVisible = $state(true);

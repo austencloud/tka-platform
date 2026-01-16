@@ -483,6 +483,14 @@ export function applyThemeFromColors(
   root.style.setProperty("--prop-red-border", "rgba(237, 28, 36, 0.4)");
   root.style.setProperty("--prop-red-text", "#f87171");
 
+  // Feature accent colors (constant) - for branding different app areas
+  root.style.setProperty("--feature-edit", "#8b5cf6"); // Purple - editing contexts
+  root.style.setProperty("--feature-edit-dim", "rgba(139, 92, 246, 0.15)");
+  root.style.setProperty("--feature-view", "#06b6d4"); // Teal - viewing/export contexts
+  root.style.setProperty("--feature-view-dim", "rgba(6, 182, 212, 0.15)");
+  root.style.setProperty("--feature-generate", "#f97316"); // Orange - generation contexts
+  root.style.setProperty("--feature-generate-dim", "rgba(249, 115, 22, 0.15)");
+
   // ═══════════════════════════════════════════════════════════════════════════
   // SCROLLBAR THEME VARIABLES
   // Adapt based on background luminance for consistent scrollbar styling.

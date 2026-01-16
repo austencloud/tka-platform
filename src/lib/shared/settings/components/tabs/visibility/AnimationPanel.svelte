@@ -60,33 +60,22 @@
   const showBilateralToggle = $derived(trailStyle !== "off");
 
   /**
-   * Set trail preset with detailed settings
+   * Set trail on/off with hardcoded vivid settings when enabled
    */
   function setTrailPreset(preset: TrailStyle) {
     onTrailStyleChange(preset);
 
-    switch (preset) {
-      case "off":
-        animationSettings.setTrailMode(TrailMode.OFF);
-        break;
-      case "subtle":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(1500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 2.5,
-          maxOpacity: 0.7,
-          glowEnabled: false,
-        });
-        break;
-      case "vivid":
-        animationSettings.setTrailMode(TrailMode.FADE);
-        animationSettings.setFadeDuration(2500);
-        animationSettings.setTrailAppearance({
-          lineWidth: 4,
-          maxOpacity: 0.95,
-          glowEnabled: true,
-        });
-        break;
+    if (preset === "off") {
+      animationSettings.setTrailMode(TrailMode.OFF);
+    } else {
+      // "on" - use hardcoded vivid settings
+      animationSettings.setTrailMode(TrailMode.FADE);
+      animationSettings.setFadeDuration(2500);
+      animationSettings.setTrailAppearance({
+        lineWidth: 3.5,
+        maxOpacity: 0.95,
+        glowEnabled: true,
+      });
     }
   }
 
