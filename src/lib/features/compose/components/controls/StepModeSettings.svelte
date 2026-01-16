@@ -102,6 +102,17 @@
     transform: scale(0.95);
   }
 
+  .step-chip:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step-chip {
+      transition: none;
+    }
+  }
+
   /* Responsive */
   @media (max-width: 480px) {
     .step-settings-row {

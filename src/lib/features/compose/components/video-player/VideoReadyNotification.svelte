@@ -62,4 +62,15 @@
   .switch-btn:hover {
     background: rgba(255, 255, 255, 0.4);
   }
+
+  .switch-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .video-ready-notification {
+      animation: none;
+    }
+  }
 </style>

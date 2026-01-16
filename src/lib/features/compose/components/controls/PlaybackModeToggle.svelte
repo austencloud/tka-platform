@@ -118,4 +118,15 @@
   .mode-btn:active {
     transform: scale(0.98);
   }
+
+  .mode-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mode-btn {
+      transition: none;
+    }
+  }
 </style>

@@ -39,7 +39,10 @@
   .toggle-switch {
     display: inline-flex;
     align-items: center;
-    padding: 0;
+    justify-content: center;
+    min-height: var(--min-touch-target, 48px);
+    min-width: var(--min-touch-target, 48px);
+    padding: 12px 2px;
     background: none;
     border: none;
     cursor: pointer;

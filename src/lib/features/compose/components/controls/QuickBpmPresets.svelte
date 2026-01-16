@@ -88,4 +88,15 @@
       0 2px 8px rgba(139, 92, 246, 0.2),
       inset 0 1px 0 var(--theme-stroke);
   }
+
+  .quick-preset-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quick-preset-btn {
+      transition: none;
+    }
+  }
 </style>

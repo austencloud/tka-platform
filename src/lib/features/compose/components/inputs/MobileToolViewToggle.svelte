@@ -86,4 +86,15 @@
   .tool-view-toggle:active {
     transform: scale(0.95);
   }
+
+  .tool-view-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tool-view-toggle {
+      transition: none;
+    }
+  }
 </style>

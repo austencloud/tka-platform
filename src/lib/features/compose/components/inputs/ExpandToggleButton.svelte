@@ -58,4 +58,15 @@
     border-color: rgba(139, 92, 246, 0.4);
     color: rgba(167, 139, 250, 1);
   }
+
+  .expand-toggle-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .expand-toggle-btn {
+      transition: none;
+    }
+  }
 </style>
