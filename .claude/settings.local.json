@@ -226,7 +226,12 @@
       "Bash(start \"\" \"C:/Users/Austen/Desktop/A-1-turn.png\")",
       "Bash(start \"\" \"C:/Users/Austen/Desktop/A-alpha5-1-3.png\")",
       "Bash(start \"\" \"C:/Users/Austen/Desktop/W-custom.png\")",
-      "WebFetch(domain:developer.chrome.com)"
+      "WebFetch(domain:developer.chrome.com)",
+      "Bash(start \"\" \"C:\\\\Users\\\\Austen\\\\Desktop\\\\debug-w-dash.svg\")",
+      "Bash(start \"\" \"C:\\\\Users\\\\Austen\\\\Desktop\\\\debug-mcp-flow.svg\")",
+      "mcp__tka-pictograph__get_alphabet_info",
+      "WebFetch(domain:www.hannonscampamerica.com)",
+      "WebFetch(domain:propertysearch.bcohio.gov)"
     ]
   }
 }
