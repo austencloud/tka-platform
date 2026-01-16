@@ -27,6 +27,7 @@
   --modal-width-md: 480px;
   --modal-width-lg: 640px;
   --modal-width-full: min(95vw, 900px);
+  --modal-width-fit: 480px;
 
   /* ===== Spacing ===== */
   --modal-padding: 24px;
@@ -115,6 +116,13 @@ dialog.base-modal[data-size="lg"] {
 dialog.base-modal[data-size="full"] {
   width: var(--modal-width-full);
   max-height: 90vh;
+}
+
+/* Fit - content-driven height, ideal for help modals */
+dialog.base-modal[data-size="fit"] {
+  width: var(--modal-width-fit);
+  max-height: 90vh;
+  height: fit-content;
 }
 
 /* ===== Position Variants ===== */
@@ -241,7 +249,8 @@ dialog.base-modal[data-entered="true"] [data-animate-icon] {
   }
 
   dialog.base-modal[data-size="sm"],
-  dialog.base-modal[data-size="md"] {
+  dialog.base-modal[data-size="md"],
+  dialog.base-modal[data-size="fit"] {
     /* Smaller modals can stay as cards on mobile */
     width: calc(100% - 32px);
     max-width: var(--modal-width-md);

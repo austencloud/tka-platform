@@ -27,7 +27,7 @@
 
   // ===== Types =====
   type CloseReason = "backdrop" | "escape" | "programmatic" | "button";
-  type ModalSize = "sm" | "md" | "lg" | "full";
+  type ModalSize = "sm" | "md" | "lg" | "full" | "fit";
   type ModalPosition = "center" | "top";
   type ModalAnimation = "pop" | "slide" | "none";
 
@@ -242,13 +242,26 @@
 {/if}
 
 <style>
-  /* Content wrapper fills the dialog and stops backdrop click propagation */
+  /* Content wrapper - adapts to size variant */
   .modal-content-wrapper {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 100%;
     min-height: 0;
+  }
+
+  /* Fixed-size modals: fill the dialog height */
+  :global(dialog[data-size="sm"]) .modal-content-wrapper,
+  :global(dialog[data-size="md"]) .modal-content-wrapper,
+  :global(dialog[data-size="lg"]) .modal-content-wrapper,
+  :global(dialog[data-size="full"]) .modal-content-wrapper {
+    height: 100%;
+  }
+
+  /* Fit-size modals: content-driven height */
+  :global(dialog[data-size="fit"]) .modal-content-wrapper {
+    height: fit-content;
+    flex: 0 0 auto;
   }
 
   /* Header slot */
@@ -258,7 +271,6 @@
 
   /* Body - scrollable content area */
   .modal-body {
-    flex: 1;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -266,6 +278,19 @@
     /* Custom scrollbar */
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  /* Fixed-size modals: body expands to fill space */
+  :global(dialog[data-size="sm"]) .modal-body,
+  :global(dialog[data-size="md"]) .modal-body,
+  :global(dialog[data-size="lg"]) .modal-body,
+  :global(dialog[data-size="full"]) .modal-body {
+    flex: 1;
+  }
+
+  /* Fit-size modals: body sizes to content */
+  :global(dialog[data-size="fit"]) .modal-body {
+    flex: 0 0 auto;
   }
 
   .modal-body::-webkit-scrollbar {
