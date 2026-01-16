@@ -1,10 +1,11 @@
 <!--
 Learn Tab - Master learning interface
 
-Three learning destinations:
+Four learning destinations:
 - Concepts: Progressive concept mastery path
 - Play: Fun games to test your pictograph skills
 - Codex: Browse all letters and pictographs
+- TIKA: AI-powered TKA tutor
 
 Navigation via bottom tabs (mobile-first UX pattern)
 -->
@@ -18,6 +19,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import ConceptDetailView from "./components/ConceptDetailView.svelte";
   import CodexTab from "./codex/components/CodexTab.svelte";
   import QuizTab from "./quiz/components/QuizTab.svelte";
+  import TIKATab from "./tika/components/TIKATab.svelte";
   import type { LearnConcept } from "./domain/types";
   import { getConceptById } from "./domain/concepts";
   import {
@@ -29,11 +31,12 @@ Navigation via bottom tabs (mobile-first UX pattern)
   import { setDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
   import ConfettiBurst from "$lib/shared/delight/components/ConfettiBurst.svelte";
   import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
+  import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
 
-  type LearnMode = "concepts" | "play" | "codex";
+  type LearnMode = "concepts" | "play" | "codex" | "tika";
 
   // Tab order for determining slide direction
-  const TAB_ORDER: LearnMode[] = ["concepts", "play", "codex"];
+  const TAB_ORDER: LearnMode[] = ["concepts", "play", "codex", "tika"];
 
   // Props
   let {
@@ -44,6 +47,7 @@ Navigation via bottom tabs (mobile-first UX pattern)
 
   // Services from DI
   const delightOrchestrator = container.items.delightOrchestrator;
+  const conceptProgressTracker = container.items.conceptProgressTracker;
 
   // Provide delight orchestrator to child components via context
   setDelightOrchestrator(delightOrchestrator);
@@ -79,6 +83,8 @@ Navigation via bottom tabs (mobile-first UX pattern)
       newMode = "play";
     } else if (navMode === "codex") {
       newMode = "codex";
+    } else if (navMode === "tika") {
+      newMode = "tika";
     }
 
     // Calculate slide direction based on tab order
@@ -120,6 +126,8 @@ Navigation via bottom tabs (mobile-first UX pattern)
       header = t("learn_play");
     } else if (activeMode === "codex") {
       header = t("learn_letters");
+    } else if (activeMode === "tika") {
+      header = "TIKA";
     }
 
     onHeaderChange(header);
@@ -200,6 +208,8 @@ Navigation via bottom tabs (mobile-first UX pattern)
           <QuizTab />
         {:else if isModeActive("codex")}
           <CodexTab />
+        {:else if isModeActive("tika")}
+          <TIKATab />
         {/if}
       </div>
     {/key}

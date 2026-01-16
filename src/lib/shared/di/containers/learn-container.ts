@@ -24,10 +24,19 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contra
  * @param letterQueryHandler - The letter query handler for pictograph lookups
  */
 export function createLearnContainer(letterQueryHandler: ILetterQueryHandler) {
+  // Create the repo first so we can inject it into the letter query handler
+  const codexLetterMappingRepo = new CodexLetterMappingRepo();
+
+  // Inject the repo into the letter query handler if the method exists
+  // This enables Codex-specific methods like getAllCodexPictographs
+  if (letterQueryHandler.setLetterMappingRepo) {
+    letterQueryHandler.setLetterMappingRepo(codexLetterMappingRepo);
+  }
+
   return createContainer()
     // === Tier 1: Services with no internal dependencies ===
     .add({
-      codexLetterMappingRepo: () => new CodexLetterMappingRepo(),
+      codexLetterMappingRepo: () => codexLetterMappingRepo,
       codexPictographUpdater: () => new CodexPictographUpdater(),
       quizSessionManager: () => new QuizSessionManager(),
       quizResultsAnalyzer: () => new QuizResultsAnalyzer(),

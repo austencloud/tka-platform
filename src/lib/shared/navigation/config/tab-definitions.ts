@@ -72,6 +72,14 @@ export const LEARN_TABS: Section[] = [
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
+  {
+    id: "tika",
+    label: "TIKA",
+    icon: '<i class="fas fa-robot" aria-hidden="true"></i>',
+    description: "AI tutor for TKA knowledge",
+    color: "#6366f1",
+    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
+  },
 ];
 
 // Discover tabs configuration (public discovery)

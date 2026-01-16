@@ -10,7 +10,18 @@
 	 * - Feedback buttons for A/B testing
 	 */
 
-	import { askTika, type AssistantResponse } from '../ai/assistant-service'
+	// Response type from the server API
+	interface AssistantResponse {
+		explanation: string
+		showPictograph: boolean
+		pictographLetter?: string
+		pictographVariation?: number
+		source: 'template' | 'api'
+		provider?: 'deepseek' | 'haiku'
+		latencyMs: number
+		recognized: boolean
+		questionType: string
+	}
 
 	// Props
 	interface Props {
@@ -23,6 +34,27 @@
 	}
 
 	let { userId, completedConcepts, language = 'en' }: Props = $props()
+
+	// Ask Tika via server API (keeps API keys secure)
+	async function askTika(question: string): Promise<AssistantResponse> {
+		const response = await fetch('/api/tika/ask', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				question,
+				userId,
+				completedConcepts,
+				language
+			})
+		})
+
+		if (!response.ok) {
+			const error = await response.json()
+			throw new Error(error.error || 'Failed to get response')
+		}
+
+		return response.json()
+	}
 
 	// State
 	let isOpen = $state(false)
@@ -95,12 +127,7 @@
 		error = null
 
 		try {
-			const result = await askTika({
-				question: question.trim(),
-				userId,
-				completedConcepts,
-				language
-			})
+			const result = await askTika(question.trim())
 
 			// Fetch pictograph if needed
 			let pictographImage: string | undefined
@@ -132,10 +159,14 @@
 
 	// Handle feedback
 	function handleFeedback(type: 'positive' | 'negative' | 'inaccurate') {
-		if (!response?.interaction) return
+		if (!response) return
 
-		// TODO: Save feedback to Firebase
-		console.log('Feedback:', type, response.interaction.id)
+		// TODO: Save feedback to Firebase with provider info for A/B analysis
+		console.log('Feedback:', type, {
+			provider: response.provider,
+			source: response.source,
+			questionType: response.questionType
+		})
 
 		// Visual feedback
 		if (type === 'positive') {
@@ -153,6 +184,37 @@
 	// Close panel
 	function closePanel() {
 		isOpen = false
+	}
+
+	// Copy conversation to clipboard
+	let copySuccess = $state(false)
+	async function copyConversation() {
+		if (conversationHistory.length === 0) return
+
+		const formatted = conversationHistory.map((item, i) => {
+			let text = `--- Exchange ${i + 1} ---\n`
+			text += `USER: ${item.question}\n\n`
+			text += `TIKA (${item.response.source}${item.response.provider ? '/' + item.response.provider : ''}, ${item.response.latencyMs}ms):\n`
+			text += item.response.explanation
+			if (item.response.pictographLetter) {
+				text += `\n[Pictograph shown: ${item.response.pictographLetter}]`
+			}
+			return text
+		}).join('\n\n')
+
+		const header = `=== Tika Conversation Export ===
+User ID: ${userId}
+Completed Concepts: ${completedConcepts.length > 0 ? completedConcepts.join(', ') : 'none'}
+Timestamp: ${new Date().toISOString()}
+\n`
+
+		try {
+			await navigator.clipboard.writeText(header + formatted)
+			copySuccess = true
+			setTimeout(() => copySuccess = false, 2000)
+		} catch (err) {
+			console.error('Failed to copy:', err)
+		}
 	}
 </script>
 
@@ -179,9 +241,25 @@
 				<i class="fas fa-robot"></i>
 				<span>Tika</span>
 			</div>
-			<button class="close-btn" onclick={closePanel} aria-label="Close">
-				<i class="fas fa-times"></i>
-			</button>
+			<div class="header-actions">
+				<button
+					class="header-btn copy-btn"
+					class:success={copySuccess}
+					onclick={copyConversation}
+					disabled={conversationHistory.length === 0}
+					aria-label="Copy conversation"
+					title="Copy conversation to clipboard"
+				>
+					{#if copySuccess}
+						<i class="fas fa-check"></i>
+					{:else}
+						<i class="fas fa-copy"></i>
+					{/if}
+				</button>
+				<button class="header-btn close-btn" onclick={closePanel} aria-label="Close">
+					<i class="fas fa-times"></i>
+				</button>
+			</div>
 		</header>
 
 		<!-- Conversation Area -->
@@ -391,18 +469,35 @@
 		color: var(--theme-accent, #6366f1);
 	}
 
-	.close-btn {
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-xs, 4px);
+	}
+
+	.header-btn {
 		background: transparent;
 		border: none;
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		cursor: pointer;
-		padding: var(--spacing-xs, 4px);
+		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
 		border-radius: var(--radius-sm, 4px);
-		transition: color 0.2s;
+		transition: color 0.2s, background 0.2s;
+		font-size: var(--font-size-sm, 14px);
 	}
 
-	.close-btn:hover {
+	.header-btn:hover:not(:disabled) {
 		color: var(--theme-text, #ffffff);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+	}
+
+	.header-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.copy-btn.success {
+		color: var(--semantic-success, #22c55e);
 	}
 
 	/* Conversation Area */
