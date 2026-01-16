@@ -12,7 +12,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../../shared/domain/models/BeatData";
+import type { StepData } from "../../../../shared/domain/models/StepData";
 import type { LOOPType } from "../../domain/models/circular-models";
 import { SliceSize } from "../../domain/models/circular-models";
 import { LOOPComponent } from "../../../shared/domain/models/generate-models";
@@ -60,10 +60,10 @@ export class LOOPDetector implements ILOOPDetector {
       };
     }
 
-    const beats = sequence.beats;
+    const steps = sequence.steps;
 
     // Too short to be a LOOP
-    if (!beats || beats.length < 2) {
+    if (!steps || steps.length < 2) {
       return {
         isCircular: true,
         loopType: null,
@@ -73,12 +73,12 @@ export class LOOPDetector implements ILOOPDetector {
     }
 
     // Step 2: Detect transformations at BOTH intervals independently
-    const quarteredTransformations = this.detectAtQuartered(beats);
-    const halvedTransformations = this.detectAtHalved(beats);
+    const quarteredTransformations = this.detectAtQuartered(steps);
+    const halvedTransformations = this.detectAtHalved(steps);
 
     // Step 3: Check for compound pattern (transformations at different intervals)
     const compoundPattern = this.detectCompoundPattern(
-      beats,
+      steps,
       quarteredTransformations,
       halvedTransformations
     );
@@ -99,18 +99,18 @@ export class LOOPDetector implements ILOOPDetector {
       );
     } else {
       // Simple pattern: use traditional detection
-      sliceSize = this.determineSliceSize(beats);
+      sliceSize = this.determineSliceSize(steps);
 
-      if (this.detectsRotation(beats, sliceSize)) {
+      if (this.detectsRotation(steps, sliceSize)) {
         detectedComponents.add(LOOPComponent.ROTATED);
       }
-      if (this.detectsMirroring(beats)) {
+      if (this.detectsMirroring(steps)) {
         detectedComponents.add(LOOPComponent.MIRRORED);
       }
-      if (this.detectsSwapping(beats)) {
+      if (this.detectsSwapping(steps)) {
         detectedComponents.add(LOOPComponent.SWAPPED);
       }
-      if (this.detectsInversion(beats)) {
+      if (this.detectsInversion(steps)) {
         detectedComponents.add(LOOPComponent.INVERTED);
       }
     }
@@ -174,12 +174,12 @@ export class LOOPDetector implements ILOOPDetector {
    * Key insight: For quartered rotation, compare START positions of first beat
    * of each quarter. If q1->q2->q3->q4 follows 90 degree rotation, it's quartered.
    */
-  private determineSliceSize(beats: readonly BeatData[]): SliceSize {
-    const length = beats.length;
+  private determineSliceSize(steps: readonly StepData[]): SliceSize {
+    const length = steps.length;
 
     // Check quartered FIRST (more specific)
     if (length >= 4 && length % 4 === 0) {
-      if (this.detectsQuarteredRotation(beats)) {
+      if (this.detectsQuarteredRotation(steps)) {
         return SliceSize.QUARTERED;
       }
     }
@@ -191,17 +191,17 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect quartered (90 degree) rotation by comparing START positions of each quarter
    */
-  private detectsQuarteredRotation(beats: readonly BeatData[]): boolean {
-    const length = beats.length;
+  private detectsQuarteredRotation(steps: readonly StepData[]): boolean {
+    const length = steps.length;
     if (length < 4 || length % 4 !== 0) return false;
 
     const quarterLength = length / 4;
 
     // Get start positions of first beat of each quarter
-    const q1Start = beats[0]?.startPosition;
-    const q2Start = beats[quarterLength]?.startPosition;
-    const q3Start = beats[quarterLength * 2]?.startPosition;
-    const q4Start = beats[quarterLength * 3]?.startPosition;
+    const q1Start = steps[0]?.startPosition;
+    const q2Start = steps[quarterLength]?.startPosition;
+    const q3Start = steps[quarterLength * 2]?.startPosition;
+    const q4Start = steps[quarterLength * 3]?.startPosition;
 
     if (!q1Start || !q2Start || !q3Start || !q4Start) return false;
 
@@ -227,21 +227,21 @@ export class LOOPDetector implements ILOOPDetector {
    * For quartered: Already detected in determineSliceSize via detectsQuarteredRotation
    */
   private detectsRotation(
-    beats: readonly BeatData[],
+    steps: readonly StepData[],
     sliceSize: SliceSize
   ): boolean {
-    const length = beats.length;
+    const length = steps.length;
 
     // Quartered rotation is detected via slice size determination
     if (sliceSize === SliceSize.QUARTERED) {
-      return this.detectsQuarteredRotation(beats);
+      return this.detectsQuarteredRotation(steps);
     }
 
     // Halved rotation: compare START positions of first beat of each half
     if (sliceSize === SliceSize.HALVED && length >= 2 && length % 2 === 0) {
       const halfLength = length / 2;
-      const h1Start = beats[0]?.startPosition;
-      const h2Start = beats[halfLength]?.startPosition;
+      const h1Start = steps[0]?.startPosition;
+      const h2Start = steps[halfLength]?.startPosition;
 
       if (!h1Start || !h2Start) return false;
 
@@ -255,23 +255,23 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect if sequence follows mirroring transformation
    */
-  private detectsMirroring(beats: readonly BeatData[]): boolean {
-    const length = beats.length;
+  private detectsMirroring(steps: readonly StepData[]): boolean {
+    const length = steps.length;
     if (length < 2 || length % 2 !== 0) return false;
 
     const halfLength = length / 2;
 
     // Check if position pattern matches vertical mirror
     for (let i = 0; i < halfLength; i++) {
-      const firstBeat = beats[i];
-      const secondBeat = beats[halfLength + i];
+      const firstStep = steps[i];
+      const secondStep = steps[halfLength + i];
 
-      if (!firstBeat?.endPosition || !secondBeat?.endPosition) continue;
+      if (!firstStep?.endPosition || !secondStep?.endPosition) continue;
 
       const expectedPosition =
-        VERTICAL_MIRROR_POSITION_MAP[firstBeat.endPosition as GridPosition];
+        VERTICAL_MIRROR_POSITION_MAP[firstStep.endPosition as GridPosition];
 
-      if (secondBeat.endPosition !== expectedPosition) {
+      if (secondStep.endPosition !== expectedPosition) {
         return false;
       }
     }
@@ -286,8 +286,8 @@ export class LOOPDetector implements ILOOPDetector {
    * If both hands have the same motion type, swapping is meaningless
    * and would cause false positives.
    */
-  private detectsSwapping(beats: readonly BeatData[]): boolean {
-    const length = beats.length;
+  private detectsSwapping(steps: readonly StepData[]): boolean {
+    const length = steps.length;
     if (length < 2 || length % 2 !== 0) return false;
 
     const halfLength = length / 2;
@@ -296,13 +296,13 @@ export class LOOPDetector implements ILOOPDetector {
     let hasDifferentMotionTypes = false;
 
     for (let i = 0; i < Math.min(halfLength, 4); i++) {
-      const firstBeat = beats[i];
-      const secondBeat = beats[halfLength + i];
+      const firstStep = steps[i];
+      const secondStep = steps[halfLength + i];
 
-      const firstBlue = firstBeat?.motions?.[MotionColor.BLUE];
-      const firstRed = firstBeat?.motions?.[MotionColor.RED];
-      const secondBlue = secondBeat?.motions?.[MotionColor.BLUE];
-      const secondRed = secondBeat?.motions?.[MotionColor.RED];
+      const firstBlue = firstStep?.motions?.[MotionColor.BLUE];
+      const firstRed = firstStep?.motions?.[MotionColor.RED];
+      const secondBlue = secondStep?.motions?.[MotionColor.BLUE];
+      const secondRed = secondStep?.motions?.[MotionColor.RED];
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
         checkCount++;
@@ -323,7 +323,7 @@ export class LOOPDetector implements ILOOPDetector {
     }
 
     // Only report swap if:
-    // 1. Majority of beats show swap pattern
+    // 1. Majority of steps show swap pattern
     // 2. Hands have different motion types (swap is meaningful)
     return (
       checkCount > 0 &&
@@ -335,31 +335,31 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect if sequence follows inversion transformation (complementary motion types)
    */
-  private detectsInversion(beats: readonly BeatData[]): boolean {
-    const length = beats.length;
+  private detectsInversion(steps: readonly StepData[]): boolean {
+    const length = steps.length;
     if (length < 2 || length % 2 !== 0) return false;
 
     const halfLength = length / 2;
 
     for (let i = 0; i < halfLength; i++) {
-      const firstBeat = beats[i];
-      const secondBeat = beats[halfLength + i];
+      const firstStep = steps[i];
+      const secondStep = steps[halfLength + i];
 
-      if (!firstBeat || !secondBeat) continue;
+      if (!firstStep || !secondStep) continue;
 
       // Check letter inversion if both have letters
-      if (firstBeat.letter && secondBeat.letter) {
-        const expectedLetter = INVERTED_LETTER_MAP[firstBeat.letter];
-        if (expectedLetter && secondBeat.letter !== expectedLetter) {
+      if (firstStep.letter && secondStep.letter) {
+        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter];
+        if (expectedLetter && secondStep.letter !== expectedLetter) {
           return false;
         }
       }
 
       // Check motion type inversion (PRO <-> ANTI)
-      const firstBlue = firstBeat.motions?.[MotionColor.BLUE];
-      const secondBlue = secondBeat.motions?.[MotionColor.BLUE];
-      const firstRed = firstBeat.motions?.[MotionColor.RED];
-      const secondRed = secondBeat.motions?.[MotionColor.RED];
+      const firstBlue = firstStep.motions?.[MotionColor.BLUE];
+      const secondBlue = secondStep.motions?.[MotionColor.BLUE];
+      const firstRed = firstStep.motions?.[MotionColor.RED];
+      const secondRed = secondStep.motions?.[MotionColor.RED];
 
       if (firstBlue && secondBlue) {
         if (
@@ -407,24 +407,24 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect transformations at quartered interval (90 degree rotation period)
    */
-  private detectAtQuartered(beats: readonly BeatData[]): LOOPComponent[] {
+  private detectAtQuartered(steps: readonly StepData[]): LOOPComponent[] {
     const components: LOOPComponent[] = [];
-    const length = beats.length;
+    const length = steps.length;
 
     if (length < 4 || length % 4 !== 0) return components;
 
     // Check for 90 degree rotation at quartered interval
-    if (this.detectsQuarteredRotation(beats)) {
+    if (this.detectsQuarteredRotation(steps)) {
       components.push(LOOPComponent.ROTATED);
     }
 
     // Check for swap at quartered interval (every quarter)
-    if (this.detectsSwappingAtInterval(beats, length / 4)) {
+    if (this.detectsSwappingAtInterval(steps, length / 4)) {
       components.push(LOOPComponent.SWAPPED);
     }
 
     // Check for inversion at quartered interval
-    if (this.detectsInversionAtInterval(beats, length / 4)) {
+    if (this.detectsInversionAtInterval(steps, length / 4)) {
       components.push(LOOPComponent.INVERTED);
     }
 
@@ -434,17 +434,17 @@ export class LOOPDetector implements ILOOPDetector {
   /**
    * Detect transformations at halved interval (180 degree rotation period)
    */
-  private detectAtHalved(beats: readonly BeatData[]): LOOPComponent[] {
+  private detectAtHalved(steps: readonly StepData[]): LOOPComponent[] {
     const components: LOOPComponent[] = [];
-    const length = beats.length;
+    const length = steps.length;
 
     if (length < 2 || length % 2 !== 0) return components;
 
     const halfLength = length / 2;
 
     // Check for 180 degree rotation at halved interval
-    const h1Start = beats[0]?.startPosition;
-    const h2Start = beats[halfLength]?.startPosition;
+    const h1Start = steps[0]?.startPosition;
+    const h2Start = steps[halfLength]?.startPosition;
     if (h1Start && h2Start) {
       if (HALF_POSITION_MAP[h1Start as GridPosition] === h2Start) {
         components.push(LOOPComponent.ROTATED);
@@ -452,17 +452,17 @@ export class LOOPDetector implements ILOOPDetector {
     }
 
     // Check for swap at halved interval
-    if (this.detectsSwappingAtInterval(beats, halfLength)) {
+    if (this.detectsSwappingAtInterval(steps, halfLength)) {
       components.push(LOOPComponent.SWAPPED);
     }
 
     // Check for inversion at halved interval
-    if (this.detectsInversionAtInterval(beats, halfLength)) {
+    if (this.detectsInversionAtInterval(steps, halfLength)) {
       components.push(LOOPComponent.INVERTED);
     }
 
     // Check for mirroring at halved interval
-    if (this.detectsMirroring(beats)) {
+    if (this.detectsMirroring(steps)) {
       components.push(LOOPComponent.MIRRORED);
     }
 
@@ -471,13 +471,13 @@ export class LOOPDetector implements ILOOPDetector {
 
   /**
    * Detect swap at a specific interval
-   * @param interval The number of beats between comparisons
+   * @param interval The number of steps between comparisons
    */
   private detectsSwappingAtInterval(
-    beats: readonly BeatData[],
+    steps: readonly StepData[],
     interval: number
   ): boolean {
-    const length = beats.length;
+    const length = steps.length;
     if (interval <= 0 || interval >= length) return false;
 
     let swapCount = 0;
@@ -488,13 +488,13 @@ export class LOOPDetector implements ILOOPDetector {
     const pairsToCheck = Math.min(4, length - interval);
 
     for (let i = 0; i < pairsToCheck; i++) {
-      const firstBeat = beats[i];
-      const secondBeat = beats[i + interval];
+      const firstStep = steps[i];
+      const secondStep = steps[i + interval];
 
-      const firstBlue = firstBeat?.motions?.[MotionColor.BLUE];
-      const firstRed = firstBeat?.motions?.[MotionColor.RED];
-      const secondBlue = secondBeat?.motions?.[MotionColor.BLUE];
-      const secondRed = secondBeat?.motions?.[MotionColor.RED];
+      const firstBlue = firstStep?.motions?.[MotionColor.BLUE];
+      const firstRed = firstStep?.motions?.[MotionColor.RED];
+      const secondBlue = secondStep?.motions?.[MotionColor.BLUE];
+      const secondRed = secondStep?.motions?.[MotionColor.RED];
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
         checkCount++;
@@ -523,33 +523,33 @@ export class LOOPDetector implements ILOOPDetector {
    * Detect inversion at a specific interval
    */
   private detectsInversionAtInterval(
-    beats: readonly BeatData[],
+    steps: readonly StepData[],
     interval: number
   ): boolean {
-    const length = beats.length;
+    const length = steps.length;
     if (interval <= 0 || interval >= length) return false;
 
     const pairsToCheck = Math.min(4, length - interval);
 
     for (let i = 0; i < pairsToCheck; i++) {
-      const firstBeat = beats[i];
-      const secondBeat = beats[i + interval];
+      const firstStep = steps[i];
+      const secondStep = steps[i + interval];
 
-      if (!firstBeat || !secondBeat) continue;
+      if (!firstStep || !secondStep) continue;
 
       // Check letter inversion
-      if (firstBeat.letter && secondBeat.letter) {
-        const expectedLetter = INVERTED_LETTER_MAP[firstBeat.letter];
-        if (expectedLetter && secondBeat.letter !== expectedLetter) {
+      if (firstStep.letter && secondStep.letter) {
+        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter];
+        if (expectedLetter && secondStep.letter !== expectedLetter) {
           return false;
         }
       }
 
       // Check motion type inversion
-      const firstBlue = firstBeat.motions?.[MotionColor.BLUE];
-      const secondBlue = secondBeat.motions?.[MotionColor.BLUE];
-      const firstRed = firstBeat.motions?.[MotionColor.RED];
-      const secondRed = secondBeat.motions?.[MotionColor.RED];
+      const firstBlue = firstStep.motions?.[MotionColor.BLUE];
+      const secondBlue = secondStep.motions?.[MotionColor.BLUE];
+      const firstRed = firstStep.motions?.[MotionColor.RED];
+      const secondRed = secondStep.motions?.[MotionColor.RED];
 
       if (firstBlue && secondBlue) {
         if (
@@ -579,13 +579,13 @@ export class LOOPDetector implements ILOOPDetector {
    * e.g., 90 degree rotation (quartered) + swap (halved)
    */
   private detectCompoundPattern(
-    beats: readonly BeatData[],
+    steps: readonly StepData[],
     quarteredComponents: LOOPComponent[],
     halvedComponents: LOOPComponent[]
   ): CompoundPattern | null {
-    const length = beats.length;
+    const length = steps.length;
 
-    // Need at least 8 beats for compound patterns (quartered needs 4, halved needs 2, LCM = 8 minimum for both)
+    // Need at least 8 steps for compound patterns (quartered needs 4, halved needs 2, LCM = 8 minimum for both)
     if (length < 8 || length % 4 !== 0) return null;
 
     // Check if we have rotation at quartered but NOT swap at quartered
@@ -604,7 +604,7 @@ export class LOOPDetector implements ILOOPDetector {
 
     // Compound pattern: rotation at quartered + swap ONLY at halved (not at quartered)
     if (hasQuarteredRotation && !hasQuarteredSwap && hasHalvedSwap) {
-      const rotationDirection = this.getQuarteredRotationDirection(beats);
+      const rotationDirection = this.getQuarteredRotationDirection(steps);
       const rotationDesc =
         rotationDirection === "ccw"
           ? "90 deg CCW Rotated"
@@ -624,7 +624,7 @@ export class LOOPDetector implements ILOOPDetector {
         LOOPComponent.INVERTED
       );
       if (!hasQuarteredInversion) {
-        const rotationDirection = this.getQuarteredRotationDirection(beats);
+        const rotationDirection = this.getQuarteredRotationDirection(steps);
         const rotationDesc =
           rotationDirection === "ccw"
             ? "90 deg CCW Rotated"
@@ -646,7 +646,7 @@ export class LOOPDetector implements ILOOPDetector {
       hasHalvedSwap &&
       hasHalvedInversion
     ) {
-      const rotationDirection = this.getQuarteredRotationDirection(beats);
+      const rotationDirection = this.getQuarteredRotationDirection(steps);
       const rotationDesc =
         rotationDirection === "ccw"
           ? "90 deg CCW Rotated"
@@ -667,15 +667,15 @@ export class LOOPDetector implements ILOOPDetector {
    * Get the rotation direction for quartered rotation
    */
   private getQuarteredRotationDirection(
-    beats: readonly BeatData[]
+    steps: readonly StepData[]
   ): "cw" | "ccw" | null {
-    const length = beats.length;
+    const length = steps.length;
     if (length < 4 || length % 4 !== 0) return null;
 
     const quarterLength = length / 4;
 
-    const q1Start = beats[0]?.startPosition;
-    const q2Start = beats[quarterLength]?.startPosition;
+    const q1Start = steps[0]?.startPosition;
+    const q2Start = steps[quarterLength]?.startPosition;
 
     if (!q1Start || !q2Start) return null;
 

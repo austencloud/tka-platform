@@ -5,7 +5,7 @@
  * Can select a specific position or random from available positions.
  * Extracted from SequenceGenerationService for single responsibility.
  *
- * MIGRATION NOTE: Now returns StartPositionData instead of BeatData with beatNumber===0
+ * MIGRATION NOTE: Now returns StartPositionData instead of StepData with stepNumber===0
  */
 import type { IArrowPositioningOrchestrator } from "$lib/shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 import type {
@@ -14,7 +14,7 @@ import type {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { IBeatConverter } from "../contracts/IBeatConverter";
+import type { IStepConverter } from "../contracts/IStepConverter";
 import type { IPictographFilter } from "../contracts/IPictographFilter";
 import type { IStartPositionSelector } from "../contracts/IStartPositionSelector";
 
@@ -22,7 +22,7 @@ export class StartPositionSelector implements IStartPositionSelector {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
     private PictographFilter: IPictographFilter,
-    private BeatConverter: IBeatConverter,
+    private StepConverter: IStepConverter,
     private arrowPositioningOrchestrator: IArrowPositioningOrchestrator
   ) {}
 
@@ -58,8 +58,8 @@ export class StartPositionSelector implements IStartPositionSelector {
       startPictograph = this.PictographFilter.selectRandom(startPositions);
     }
 
-    // Use the new convertToStartPosition method instead of convertToBeat(pictograph, 0, gridMode)
-    let startPosition = this.BeatConverter.convertToStartPosition(
+    // Use the new convertToStartPosition method instead of convertToStep(pictograph, 0, gridMode)
+    let startPosition = this.StepConverter.convertToStartPosition(
       startPictograph,
       gridMode
     );

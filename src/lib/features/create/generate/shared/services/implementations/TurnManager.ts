@@ -5,7 +5,7 @@
  * Single Responsibility: Manage turn values and rotation directions for dash/static motions.
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import {
   MotionType,
   RotationDirection,
@@ -32,7 +32,7 @@ export interface ITurnManager {
    * Set turns on a beat - handles both numeric turns and float conversions
    */
   setTurns(
-    beat: BeatData,
+    beat: StepData,
     turnBlue: number | "fl",
     turnRed: number | "fl"
   ): void;
@@ -41,7 +41,7 @@ export interface ITurnManager {
    * Update rotation directions for dash/static motions based on prop continuity
    */
   updateDashStaticRotationDirections(
-    beat: BeatData,
+    beat: StepData,
     propContinuity: PropContinuity,
     blueRotationDirection: string,
     redRotationDirection: string
@@ -58,7 +58,7 @@ export class TurnManager implements ITurnManager {
    * Set turns - exact port from legacy set_turns()
    */
   setTurns(
-    beat: BeatData,
+    beat: StepData,
     turnBlue: number | "fl",
     turnRed: number | "fl"
   ): void {
@@ -75,7 +75,7 @@ export class TurnManager implements ITurnManager {
    * Helper to set turn for a specific color (reduces duplication)
    */
   private _setTurnForColor(
-    beat: BeatData,
+    beat: StepData,
     color: "blue" | "red",
     turn: number | "fl"
   ): void {
@@ -115,7 +115,7 @@ export class TurnManager implements ITurnManager {
    * Update dash/static prop rotation directions - exact port from legacy
    */
   updateDashStaticRotationDirections(
-    beat: BeatData,
+    beat: StepData,
     propContinuity: PropContinuity,
     blueRotationDirection: string,
     redRotationDirection: string
@@ -143,7 +143,7 @@ export class TurnManager implements ITurnManager {
    * Helper to update rotation direction for a specific color
    */
   private _updateRotationForColor(
-    beat: BeatData,
+    beat: StepData,
     color: "blue" | "red",
     propContinuity: PropContinuity,
     rotationDirection: string

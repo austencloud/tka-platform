@@ -24,7 +24,7 @@
 
 import { SliceSize } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
-import type { BeatData } from "../../../../shared/domain/models/BeatData";
+import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
   constructor(
@@ -37,12 +37,12 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
    * @param sliceSize - The slice size for rotation (halved or quartered)
-   * @returns The complete circular sequence with all beats
+   * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: BeatData[], sliceSize: SliceSize): BeatData[] {
+  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
     // Step 1: Apply STRICT_ROTATED with user-selected slice size
-    // HALVED: doubles the sequence (e.g., 4 beats → 8 beats)
-    // QUARTERED: quadruples the sequence (e.g., 2 beats → 8 beats)
+    // HALVED: doubles the sequence (e.g., 4 steps → 8 steps)
+    // QUARTERED: quadruples the sequence (e.g., 2 steps → 8 steps)
     // Returns to home position in both cases
     const rotatedSequence = this.strictRotatedExecutor.executeLOOP(
       sequence,
@@ -51,7 +51,7 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
 
     // Step 2: Apply STRICT_MIRRORED to the rotated sequence
     // This always doubles the sequence using vertical mirroring
-    // For example: 8 beats → 16 beats final
+    // For example: 8 steps → 16 steps final
     const finalSequence = this.strictMirroredExecutor.executeLOOP(
       rotatedSequence,
       SliceSize.HALVED // Not actually used by mirrored executor, but passed for consistency

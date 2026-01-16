@@ -1,8 +1,8 @@
 ﻿import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-import { createStartPositionFromBeatEnd } from "../../../../shared/services/implementations/sequence-transforms/sequence-transforms";
+import { createStartPositionFromStepEnd } from "../../../../shared/services/implementations/sequence-transforms/sequence-transforms";
 import type { ILOOPEndPositionSelector } from "../../../circular/services/contracts/ILOOPEndPositionSelector";
 import type { ILOOPExecutorSelector } from "../../../circular/services/contracts/ILOOPExecutorSelector";
 import type { IPartialSequenceGenerator } from "../../../circular/services/contracts/IPartialSequenceGenerator";
@@ -13,8 +13,8 @@ import {
   PropContinuity,
 } from "../../domain/models/generate-models";
 import { getRandomAllowedPosition } from "../../domain/start-position-presets";
-import type { IBeatGenerationOrchestrator } from "../contracts/IBeatGenerationOrchestrator";
-import type { BeatGenerationOptions } from "../contracts/IBeatGenerationOrchestrator";
+import type { IStepGenerationOrchestrator } from "../contracts/IStepGenerationOrchestrator";
+import type { StepGenerationOptions } from "../contracts/IStepGenerationOrchestrator";
 import type { IGenerationOrchestrator } from "../contracts/IGenerationOrchestrator";
 import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataManager";
 import type { IStartPositionSelector } from "../contracts/IStartPositionSelector";
@@ -32,7 +32,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     private readonly startPositionSelector: IStartPositionSelector,
     private readonly loopParams: ILOOPParameterProvider,
     private readonly turnAllocationCalculator: ITurnAllocator,
-    private readonly beatGenerationOrchestrator: IBeatGenerationOrchestrator,
+    private readonly stepGenerationOrchestrator: IStepGenerationOrchestrator,
     private readonly metadataService: ISequenceMetadataManager,
     private readonly ReversalDetector: IReversalDetector,
     private readonly partialSequenceGenerator: IPartialSequenceGenerator,
@@ -81,7 +81,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
         randomGridPos
       );
     }
-    const sequence: (BeatData | StartPositionData)[] = [startPosition];
+    const sequence: (StepData | StartPositionData)[] = [startPosition];
 
     // Step 2: Determine rotation directions
     const rotationDirections = this.loopParams.determineRotationDirections(
@@ -97,8 +97,8 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       turnIntensity
     );
 
-    // Step 4: Generate beats
-    const beatGenOptions: BeatGenerationOptions = {
+    // Step 4: Generate steps
+    const beatGenOptions: StepGenerationOptions = {
       level,
       turnAllocation,
       propContinuity: options.propContinuity || PropContinuity.CONTINUOUS,
@@ -108,27 +108,27 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       propType: options.propType,
     };
 
-    let generatedBeats: BeatData[];
+    let generatedSteps: StepData[];
 
     // If end position is specified, we need to handle the last beat specially
     const hasEndPositionConstraint = options.endPosition?.startPosition;
 
     if (hasEndPositionConstraint && options.length > 0) {
-      // Generate all beats except the last one
+      // Generate all steps except the last one
       if (options.length > 1) {
         const allButLastBeats =
-          await this.beatGenerationOrchestrator.generateBeats(
+          await this.stepGenerationOrchestrator.generateBeats(
             sequence,
             options.length - 1,
             beatGenOptions
           );
-        generatedBeats = allButLastBeats;
+        generatedSteps = allButLastBeats;
       } else {
-        generatedBeats = [];
+        generatedSteps = [];
       }
 
       // Generate the last beat with the end position constraint
-      const lastBeatOptions: BeatGenerationOptions = {
+      const lastBeatOptions: StepGenerationOptions = {
         ...beatGenOptions,
         requiredEndPosition: options.endPosition!.startPosition!,
         // Create a turn allocation for just this beat
@@ -138,18 +138,18 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
         },
       };
 
-      const lastBeat = await this.beatGenerationOrchestrator.generateNextBeat(
+      const lastStep = await this.stepGenerationOrchestrator.generateNextBeat(
         sequence,
         lastBeatOptions,
         turnAllocation.blue[options.length - 1]!,
         turnAllocation.red[options.length - 1]!
       );
 
-      sequence.push(lastBeat);
-      generatedBeats.push(lastBeat);
+      sequence.push(lastStep);
+      generatedSteps.push(lastStep);
     } else {
-      // No end position constraint - generate all beats normally
-      generatedBeats = await this.beatGenerationOrchestrator.generateBeats(
+      // No end position constraint - generate all steps normally
+      generatedSteps = await this.stepGenerationOrchestrator.generateBeats(
         sequence,
         options.length,
         beatGenOptions
@@ -157,9 +157,9 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     }
 
     // Step 5: Build sequence data structure
-    const word = this.metadataService.calculateWordFromBeats(generatedBeats);
+    const word = this.metadataService.calculateWordFromBeats(generatedSteps);
     const metadata = this.metadataService.createGenerationMetadata({
-      beatsGenerated: generatedBeats.length,
+      stepsGenerated: generatedSteps.length,
       propContinuity: options.propContinuity || PropContinuity.CONTINUOUS,
       blueRotationDirection: rotationDirections.blueRotationDirection,
       redRotationDirection: rotationDirections.redRotationDirection,
@@ -174,8 +174,8 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     const sequenceData = createSequenceData({
       name: word || `Sequence ${Date.now()}`,
       word,
-      beats: generatedBeats,
-      startingPositionBeat: startPosition,
+      steps: generatedSteps,
+      startingPosition: startPosition,
       startPosition,
       gridMode: options.gridMode,
       // propType removed - prop type is viewer preference, not sequence data
@@ -255,7 +255,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
       circularBeats.slice(1)
     ); // Exclude start position
     const metadata = this.metadataService.createGenerationMetadata({
-      beatsGenerated: circularBeats.length - 1,
+      stepsGenerated: circularBeats.length - 1,
       propContinuity: options.propContinuity || PropContinuity.CONTINUOUS,
       blueRotationDirection: "",
       redRotationDirection: "",
@@ -266,17 +266,17 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     const { createSequenceData } =
       await import("$lib/shared/foundation/domain/models/SequenceData");
 
-    // Convert first beat (start position stored as BeatData) to proper StartPositionData
-    const startPositionBeat = circularBeats[0]
-      ? createStartPositionFromBeatEnd(circularBeats[0])
+    // Convert first beat (start position stored as StepData) to proper StartPositionData
+    const startPositionStep = circularBeats[0]
+      ? createStartPositionFromStepEnd(circularBeats[0])
       : undefined;
 
     const sequence = createSequenceData({
       name: `Circular ${word}`,
       word,
-      beats: circularBeats.slice(1), // Exclude start position beat
-      ...(startPositionBeat && { startingPositionBeat: startPositionBeat }),
-      ...(startPositionBeat && { startPosition: startPositionBeat }),
+      steps: circularBeats.slice(1), // Exclude start position beat
+      ...(startPositionStep && { startingPosition: startPositionStep }),
+      ...(startPositionStep && { startPosition: startPositionStep }),
       gridMode: options.gridMode,
       // propType removed - prop type is viewer preference, not sequence data
       difficultyLevel: options.difficulty,

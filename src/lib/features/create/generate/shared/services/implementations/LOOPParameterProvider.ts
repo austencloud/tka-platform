@@ -132,7 +132,7 @@ export class LOOPParameterProvider implements ILOOPParameterProvider {
    * Allocate turns for blue and red props during sequence generation
    * Direct port from legacy TurnIntensityManager.allocate_turns_for_blue_and_red()
    *
-   * @param wordLength - Number of beats in the sequence
+   * @param wordLength - Number of steps in the sequence
    * @param level - Difficulty level (1-3)
    * @param maxTurnIntensity - Maximum turn intensity allowed
    * @returns Turn allocations for blue and red props

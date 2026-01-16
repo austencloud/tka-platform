@@ -18,7 +18,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "../../../../shared/domain/models/BeatData";
+import type { StepData } from "../../../../shared/domain/models/StepData";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartPositionData } from "../../../../shared/domain/models/StartPositionData";
 
@@ -36,9 +36,9 @@ export class OrientationCycleDetector {
    * Detect how many repetitions are needed to return to starting orientation
    */
   detectOrientationCycle(sequence: SequenceData): OrientationCycleResult {
-    const beats = sequence.beats;
+    const steps = sequence.steps;
 
-    if (!beats || beats.length === 0) {
+    if (!steps || steps.length === 0) {
       // Empty sequence - trivially returns in 1 cycle
       return {
         cycleCount: 1,
@@ -60,7 +60,7 @@ export class OrientationCycleDetector {
     // Simulate up to 4 repetitions
     for (let rep = 1; rep <= 4; rep++) {
       // Step through each beat in this repetition
-      for (const beat of beats) {
+      for (const beat of steps) {
         const blueMotion = beat.motions.blue;
         const redMotion = beat.motions.red;
 
@@ -108,7 +108,7 @@ export class OrientationCycleDetector {
     red: Orientation;
   } {
     // Try start position first
-    const startPos = sequence.startPosition || sequence.startingPositionBeat;
+    const startPos = sequence.startPosition || sequence.startingPosition;
 
     if (startPos && this.isStartPositionData(startPos)) {
       const blueMotion = startPos.motions?.blue;
@@ -121,10 +121,10 @@ export class OrientationCycleDetector {
     }
 
     // Fall back to first beat if no start position
-    const firstBeat = sequence.beats[0];
-    if (firstBeat) {
-      const blueMotion = firstBeat.motions?.blue;
-      const redMotion = firstBeat.motions?.red;
+    const firstStep = sequence.steps[0];
+    if (firstStep) {
+      const blueMotion = firstStep.motions?.blue;
+      const redMotion = firstStep.motions?.red;
 
       return {
         blue: blueMotion?.startOrientation ?? Orientation.IN,
@@ -143,7 +143,7 @@ export class OrientationCycleDetector {
    * Type guard for StartPositionData
    */
   private isStartPositionData(
-    data: StartPositionData | BeatData
+    data: StartPositionData | StepData
   ): data is StartPositionData {
     return "isStartPosition" in data && data.isStartPosition === true;
   }

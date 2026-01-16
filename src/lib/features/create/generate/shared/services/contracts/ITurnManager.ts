@@ -1,13 +1,13 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 export interface ITurnManager {
   setTurns(
-    beat: BeatData,
+    beat: StepData,
     turnBlue: number | "fl",
     turnRed: number | "fl"
   ): void;
   updateDashStaticRotationDirections(
-    beat: BeatData,
+    beat: StepData,
     propContinuity: string,
     blueRotationDirection: string,
     redRotationDirection: string

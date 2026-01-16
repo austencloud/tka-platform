@@ -50,7 +50,7 @@ Displays a single preset with icon, name, summary, and action buttons
     const mode = config.mode.charAt(0).toUpperCase() + config.mode.slice(1);
 
     const parts = [
-      `${config.length} beats`,
+      `${config.length} steps`,
       gridMode,
       mode,
       LOOP_TYPE_LABELS[config.loopType as LOOPType] || config.loopType,
@@ -75,7 +75,7 @@ Displays a single preset with icon, name, summary, and action buttons
     const loopLabel =
       LOOP_TYPE_LABELS[config.loopType as LOOPType] || config.loopType;
 
-    const parts = [`${config.length} beats`, gridMode, mode, loopLabel];
+    const parts = [`${config.length} steps`, gridMode, mode, loopLabel];
 
     if (config.turnIntensity > 0) {
       parts.push(

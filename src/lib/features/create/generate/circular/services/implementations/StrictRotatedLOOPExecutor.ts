@@ -4,13 +4,13 @@
  * Executes the strict rotated LOOP (Linked Orbital Offset Pattern) by:
  * 1. Taking a partial sequence (first half or quarter)
  * 2. Applying rotational transformations to each beat
- * 3. Generating the remaining beats to complete the circular pattern
+ * 3. Generating the remaining steps to complete the circular pattern
  *
  * The rotation works by:
  * - Taking each pictograph from the first section
  * - Rotating its hand locations based on the hand's rotation direction
  * - Maintaining the same motion types, turns, and letter patterns
- * - Creating new beats that fit the rotated positions
+ * - Creating new steps that fit the rotated positions
  */
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -26,7 +26,7 @@ import {
   getLocationMapForHandRotation,
 } from "../../domain/constants/circular-position-maps";
 import { SliceSize } from "../../domain/models/circular-models";
-import type { BeatData } from "../../../../shared/domain/models/BeatData";
+import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class StrictRotatedLOOPExecutor {
   constructor(
@@ -39,9 +39,9 @@ export class StrictRotatedLOOPExecutor {
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
    * @param sliceSize - Whether to use halved (180°) or quartered (90°) rotation
-   * @returns The complete circular sequence with all beats
+   * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: BeatData[], sliceSize: SliceSize): BeatData[] {
+  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
     // Validate the sequence
     this._validateSequence(sequence, sliceSize);
 
@@ -51,29 +51,29 @@ export class StrictRotatedLOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    // Calculate how many beats to generate
+    // Calculate how many steps to generate
     const sequenceLength = sequence.length;
     const entriesToAdd = this._calculateEntriesToAdd(sequenceLength, sliceSize);
 
-    // Generate the new beats
-    const generatedBeats: BeatData[] = [];
-    let lastBeat = sequence[sequence.length - 1]!;
-    let nextBeatNumber = lastBeat.beatNumber + 1;
+    // Generate the new steps
+    const generatedSteps: StepData[] = [];
+    let lastStep = sequence[sequence.length - 1]!;
+    let nextStepNumber = lastStep.stepNumber + 1;
 
     for (let i = 0; i < entriesToAdd; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
-      const nextBeat = this._createNewLOOPEntry(
+      const nextStep = this._createNewLOOPEntry(
         sequence,
-        lastBeat,
-        nextBeatNumber,
+        lastStep,
+        nextStepNumber,
         finalIntendedLength,
         sliceSize
       );
 
-      generatedBeats.push(nextBeat);
-      sequence.push(nextBeat);
-      lastBeat = nextBeat;
-      nextBeatNumber++;
+      generatedSteps.push(nextStep);
+      sequence.push(nextStep);
+      lastStep = nextStep;
+      nextStepNumber++;
     }
 
     // Re-insert start position at the beginning
@@ -85,10 +85,10 @@ export class StrictRotatedLOOPExecutor {
   /**
    * Validate that the sequence can perform the requested LOOP
    */
-  private _validateSequence(sequence: BeatData[], sliceSize: SliceSize): void {
+  private _validateSequence(sequence: StepData[], sliceSize: SliceSize): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 beats (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 beat)"
       );
     }
 
@@ -96,7 +96,7 @@ export class StrictRotatedLOOPExecutor {
     const endPos = sequence[sequence.length - 1]!.endPosition;
 
     if (!startPos || !endPos) {
-      throw new Error("Sequence beats must have valid start and end positions");
+      throw new Error("Sequence steps must have valid start and end positions");
     }
 
     // Check if the (start, end) pair is valid for the slice size
@@ -113,7 +113,7 @@ export class StrictRotatedLOOPExecutor {
   }
 
   /**
-   * Calculate how many beats need to be added based on slice size
+   * Calculate how many steps need to be added based on slice size
    */
   private _calculateEntriesToAdd(
     sequenceLength: number,
@@ -130,80 +130,80 @@ export class StrictRotatedLOOPExecutor {
    * Create a new LOOP entry by transforming a previous beat
    */
   private _createNewLOOPEntry(
-    sequence: BeatData[],
-    previousBeat: BeatData,
-    beatNumber: number,
+    sequence: StepData[],
+    previousStep: StepData,
+    stepNumber: number,
     finalIntendedLength: number,
     sliceSize: SliceSize
-  ): BeatData {
+  ): StepData {
     // Get the corresponding beat from the first section using index mapping
-    const previousMatchingBeat = this._getPreviousMatchingBeat(
+    const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
-      beatNumber,
+      stepNumber,
       finalIntendedLength,
       sliceSize
     );
 
     // Calculate new end position
     const newEndPosition = this._calculateNewEndPosition(
-      previousMatchingBeat,
-      previousBeat
+      previousMatchingStep,
+      previousStep
     );
 
     // Create the new beat with transformed attributes
-    const newBeat: BeatData = {
-      ...previousMatchingBeat,
-      id: `beat-${beatNumber}`,
-      beatNumber,
-      startPosition: previousBeat.endPosition ?? null,
+    const newStep: StepData = {
+      ...previousMatchingStep,
+      id: `beat-${stepNumber}`,
+      stepNumber,
+      startPosition: previousStep.endPosition ?? null,
       endPosition: newEndPosition,
       motions: {
         [MotionColor.BLUE]: this._createTransformedMotion(
           MotionColor.BLUE,
-          previousBeat,
-          previousMatchingBeat
+          previousStep,
+          previousMatchingStep
         ),
         [MotionColor.RED]: this._createTransformedMotion(
           MotionColor.RED,
-          previousBeat,
-          previousMatchingBeat
+          previousStep,
+          previousMatchingStep
         ),
       },
     };
 
     // Update orientations
-    const beatWithStartOri = this.OrientationCalculator.updateStartOrientations(
-      newBeat,
-      previousBeat
+    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+      newStep,
+      previousStep
     );
-    const finalBeat =
-      this.OrientationCalculator.updateEndOrientations(beatWithStartOri);
+    const finalStep =
+      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
 
-    return finalBeat;
+    return finalStep;
   }
 
   /**
    * Get the previous matching beat using index mapping
    */
   private _getPreviousMatchingBeat(
-    sequence: BeatData[],
-    beatNumber: number,
+    sequence: StepData[],
+    stepNumber: number,
     finalLength: number,
     sliceSize: SliceSize
-  ): BeatData {
+  ): StepData {
     const indexMap = this._getIndexMap(sliceSize, finalLength);
-    const matchingBeatNumber = indexMap[beatNumber];
+    const matchingStepNumber = indexMap[stepNumber];
 
-    if (matchingBeatNumber === undefined) {
-      throw new Error(`No index mapping found for beatNumber ${beatNumber}`);
+    if (matchingStepNumber === undefined) {
+      throw new Error(`No index mapping found for stepNumber ${stepNumber}`);
     }
 
-    // Convert 1-based beatNumber to 0-based array index
-    const arrayIndex = matchingBeatNumber - 1;
+    // Convert 1-based stepNumber to 0-based array index
+    const arrayIndex = matchingStepNumber - 1;
 
     if (arrayIndex < 0 || arrayIndex >= sequence.length) {
       throw new Error(
-        `Invalid index mapping: beatNumber ${beatNumber} → matchingBeatNumber ${matchingBeatNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
+        `Invalid index mapping: stepNumber ${stepNumber} → matchingStepNumber ${matchingStepNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
       );
     }
 
@@ -211,7 +211,7 @@ export class StrictRotatedLOOPExecutor {
   }
 
   /**
-   * Generate index mapping for retrieving corresponding beats
+   * Generate index mapping for retrieving corresponding steps
    */
   private _getIndexMap(
     sliceSize: SliceSize,
@@ -257,11 +257,11 @@ export class StrictRotatedLOOPExecutor {
    * Calculate the new end position by rotating locations
    */
   private _calculateNewEndPosition(
-    previousMatchingBeat: BeatData,
-    previousBeat: BeatData
+    previousMatchingStep: StepData,
+    previousStep: StepData
   ): GridPosition | null {
-    const blueMotion = previousMatchingBeat.motions[MotionColor.BLUE];
-    const redMotion = previousMatchingBeat.motions[MotionColor.RED];
+    const blueMotion = previousMatchingStep.motions[MotionColor.BLUE];
+    const redMotion = previousMatchingStep.motions[MotionColor.RED];
 
     if (!blueMotion || !redMotion) {
       throw new Error(
@@ -285,9 +285,9 @@ export class StrictRotatedLOOPExecutor {
 
     // Calculate new end locations
     const previousBlueEndLoc =
-      previousBeat.motions[MotionColor.BLUE]!.endLocation;
+      previousStep.motions[MotionColor.BLUE]!.endLocation;
     const previousRedEndLoc =
-      previousBeat.motions[MotionColor.RED]!.endLocation;
+      previousStep.motions[MotionColor.RED]!.endLocation;
 
     const newBlueEndLoc = blueLocationMap[previousBlueEndLoc as GridLocation];
     const newRedEndLoc = redLocationMap[previousRedEndLoc as GridLocation];
@@ -306,11 +306,11 @@ export class StrictRotatedLOOPExecutor {
    */
   private _createTransformedMotion(
     color: MotionColor,
-    previousBeat: BeatData,
-    previousMatchingBeat: BeatData
+    previousStep: StepData,
+    previousMatchingStep: StepData
   ): MotionData {
-    const previousMotion = previousBeat.motions[color];
-    const matchingMotion = previousMatchingBeat.motions[color];
+    const previousMotion = previousStep.motions[color];
+    const matchingMotion = previousMatchingStep.motions[color];
 
     if (!previousMotion || !matchingMotion) {
       throw new Error(`Missing motion data for ${color}`);

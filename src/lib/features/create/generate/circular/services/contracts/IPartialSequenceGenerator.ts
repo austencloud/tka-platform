@@ -3,7 +3,7 @@
  *
  * Generates partial sequences for circular mode (LOOP preparation).
  */
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { GenerationOptions } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { SliceSize } from "../../domain/models/circular-models";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -16,12 +16,12 @@ export interface IPartialSequenceGenerator {
    * @param endPos - Required end grid position
    * @param sliceSize - Halved or quartered
    * @param options - Generation options
-   * @returns Promise resolving to partial sequence (start position + intermediate beats + final beat)
+   * @returns Promise resolving to partial sequence (start position + intermediate steps + final beat)
    */
   generatePartialSequence(
     startPos: GridPosition,
     endPos: GridPosition,
     sliceSize: SliceSize,
     options: GenerationOptions
-  ): Promise<BeatData[]>;
+  ): Promise<StepData[]>;
 }

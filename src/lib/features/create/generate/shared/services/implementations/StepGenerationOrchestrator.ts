@@ -6,64 +6,64 @@
  */
 
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/contracts/data/data-contracts";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import { PropContinuity } from "../../domain/models/generate-models";
-import type { IBeatConverter } from "../contracts/IBeatConverter";
+import type { IStepConverter } from "../contracts/IStepConverter";
 import type { IOrientationCalculator } from "$lib/shared/pictograph/prop/services/contracts/IOrientationCalculator";
 import type { IPictographFilter } from "../contracts/IPictographFilter";
 import type { ITurnManager } from "../contracts/ITurnManager";
 
 import type {
-  BeatGenerationOptions,
-  IBeatGenerationOrchestrator,
-} from "../contracts/IBeatGenerationOrchestrator";
+  StepGenerationOptions,
+  IStepGenerationOrchestrator,
+} from "../contracts/IStepGenerationOrchestrator";
 import type { IArrowPositioningOrchestrator } from "../../../../../../shared/pictograph/arrow/positioning/services/contracts/IArrowPositioningOrchestrator";
 
-export class BeatGenerationOrchestrator implements IBeatGenerationOrchestrator {
+export class StepGenerationOrchestrator implements IStepGenerationOrchestrator {
   constructor(
     private letterQueryHandler: ILetterQueryHandler,
     private PictographFilter: IPictographFilter,
-    private BeatConverter: IBeatConverter,
+    private StepConverter: IStepConverter,
     private TurnManager: ITurnManager,
     private OrientationCalculator: IOrientationCalculator,
     private arrowPositioningOrchestrator: IArrowPositioningOrchestrator
   ) {}
 
   /**
-   * Generate multiple beats for a sequence
+   * Generate multiple steps for a sequence
    */
   async generateBeats(
-    sequence: (BeatData | StartPositionData)[],
+    sequence: (StepData | StartPositionData)[],
     count: number,
-    options: BeatGenerationOptions
-  ): Promise<BeatData[]> {
-    const generatedBeats: BeatData[] = [];
+    options: StepGenerationOptions
+  ): Promise<StepData[]> {
+    const generatedSteps: StepData[] = [];
 
     for (let i = 0; i < count; i++) {
-      const nextBeat = await this.generateNextBeat(
+      const nextStep = await this.generateNextBeat(
         sequence,
         options,
         options.turnAllocation.blue[i]!,
         options.turnAllocation.red[i]!
       );
 
-      sequence.push(nextBeat);
-      generatedBeats.push(nextBeat);
+      sequence.push(nextStep);
+      generatedSteps.push(nextStep);
     }
 
-    return generatedBeats;
+    return generatedSteps;
   }
 
   /**
    * Generate next beat - orchestrates filtering and conversion
    */
   async generateNextBeat(
-    sequence: (BeatData | StartPositionData)[],
-    options: BeatGenerationOptions,
+    sequence: (StepData | StartPositionData)[],
+    options: StepGenerationOptions,
     turnBlue: number | "fl",
     turnRed: number | "fl"
-  ): Promise<BeatData> {
+  ): Promise<StepData> {
     // Get all options
     let allOptions = await this.letterQueryHandler.getAllPictographVariations(
       options.gridMode
@@ -77,11 +77,11 @@ export class BeatGenerationOrchestrator implements IBeatGenerationOrchestrator {
 
     // Apply filters
     let filteredOptions = allOptions;
-    const lastBeat = sequence.length > 0 ? sequence[sequence.length - 1] : null;
+    const lastStep = sequence.length > 0 ? sequence[sequence.length - 1] : null;
 
     filteredOptions = this.PictographFilter.filterByContinuity(
       filteredOptions,
-      lastBeat ?? null
+      lastStep ?? null
     );
 
     // Filter out static Type 6 pictographs based on level
@@ -115,7 +115,7 @@ export class BeatGenerationOrchestrator implements IBeatGenerationOrchestrator {
     const selectedOption = this.PictographFilter.selectRandom(filteredOptions);
 
     // Convert to beat
-    let nextBeat = this.BeatConverter.convertToBeat(
+    let nextStep = this.StepConverter.convertToStep(
       selectedOption,
       sequence.length,
       options.gridMode
@@ -123,32 +123,32 @@ export class BeatGenerationOrchestrator implements IBeatGenerationOrchestrator {
 
     // Set turns if level 2 or 3
     if (options.level === 2 || options.level === 3) {
-      this.TurnManager.setTurns(nextBeat, turnBlue, turnRed);
+      this.TurnManager.setTurns(nextStep, turnBlue, turnRed);
     }
 
     // Update orientations
     if (sequence.length > 0) {
-      nextBeat = this.OrientationCalculator.updateStartOrientations(
-        nextBeat,
+      nextStep = this.OrientationCalculator.updateStartOrientations(
+        nextStep,
         sequence[sequence.length - 1]!
       );
     }
 
     this.TurnManager.updateDashStaticRotationDirections(
-      nextBeat,
+      nextStep,
       options.propContinuity,
       options.blueRotationDirection,
       options.redRotationDirection
     );
 
-    nextBeat = this.OrientationCalculator.updateEndOrientations(nextBeat);
+    nextStep = this.OrientationCalculator.updateEndOrientations(nextStep);
 
     // 🎯 CRITICAL FIX: Calculate arrow placements BEFORE returning the beat
     // This ensures arrows have correct positions instead of default (0, 0)
     const updatedPictographData =
-      await this.arrowPositioningOrchestrator.calculateAllArrowPoints(nextBeat);
-    nextBeat = { ...nextBeat, ...updatedPictographData };
+      await this.arrowPositioningOrchestrator.calculateAllArrowPoints(nextStep);
+    nextStep = { ...nextStep, ...updatedPictographData };
 
-    return nextBeat;
+    return nextStep;
   }
 }

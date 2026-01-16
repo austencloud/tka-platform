@@ -1,4 +1,4 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type {
   GenerationOptions,
   DifficultyLevel,
@@ -6,10 +6,10 @@ import type {
 
 export interface ISequenceMetadataManager {
   generateSequenceName(options: GenerationOptions): string;
-  calculateWordFromBeats(beats: BeatData[]): string;
+  calculateWordFromBeats(steps: StepData[]): string;
   mapDifficultyToLevel(difficulty: DifficultyLevel): number;
   createGenerationMetadata(options: {
-    beatsGenerated: number;
+    stepsGenerated: number;
     propContinuity: string;
     blueRotationDirection: string;
     redRotationDirection: string;

@@ -1,4 +1,4 @@
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -6,7 +6,7 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType
 export interface IPictographFilter {
   filterByContinuity(
     options: PictographData[],
-    lastBeat: BeatData | StartPositionData | null
+    lastStep: StepData | StartPositionData | null
   ): PictographData[];
   filterByRotation(
     options: PictographData[],

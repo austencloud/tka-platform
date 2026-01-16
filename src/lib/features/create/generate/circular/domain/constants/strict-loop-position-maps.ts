@@ -565,7 +565,7 @@ export function getRelatedLetters(
  * Analyze beat pair letters and return their transformation relationships
  * Useful for polyrhythmic LOOP analysis
  */
-export function analyzeBeatPairTransformation(
+export function analyzeStepPairTransformation(
   letter1: string,
   letter2: string
 ): {

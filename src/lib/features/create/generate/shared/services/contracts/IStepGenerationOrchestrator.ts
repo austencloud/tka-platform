@@ -1,16 +1,16 @@
 /**
  * Beat Generation Orchestrator Interface
  *
- * Orchestrates the generation of multiple beats for a sequence.
+ * Orchestrates the generation of multiple steps for a sequence.
  */
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { PropContinuity } from "../../domain/models/generate-models";
 import type { TurnAllocation } from "./ITurnAllocator";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
-export interface BeatGenerationOptions {
+export interface StepGenerationOptions {
   level: number;
   turnAllocation: TurnAllocation;
   propContinuity: PropContinuity;
@@ -22,19 +22,19 @@ export interface BeatGenerationOptions {
   requiredEndPosition?: string;
 }
 
-export interface IBeatGenerationOrchestrator {
+export interface IStepGenerationOrchestrator {
   /**
-   * Generate multiple beats for a sequence
-   * @param sequence - Current sequence (start position + any existing beats)
-   * @param count - Number of beats to generate
+   * Generate multiple steps for a sequence
+   * @param sequence - Current sequence (start position + any existing steps)
+   * @param count - Number of steps to generate
    * @param options - Generation options
-   * @returns Promise resolving to array of generated beats
+   * @returns Promise resolving to array of generated steps
    */
   generateBeats(
-    sequence: (BeatData | StartPositionData)[],
+    sequence: (StepData | StartPositionData)[],
     count: number,
-    options: BeatGenerationOptions
-  ): Promise<BeatData[]>;
+    options: StepGenerationOptions
+  ): Promise<StepData[]>;
 
   /**
    * Generate a single next beat
@@ -45,9 +45,9 @@ export interface IBeatGenerationOrchestrator {
    * @returns Promise resolving to the next beat
    */
   generateNextBeat(
-    sequence: (BeatData | StartPositionData)[],
-    options: BeatGenerationOptions,
+    sequence: (StepData | StartPositionData)[],
+    options: StepGenerationOptions,
     turnBlue: number | "fl",
     turnRed: number | "fl"
-  ): Promise<BeatData>;
+  ): Promise<StepData>;
 }

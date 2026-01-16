@@ -34,7 +34,7 @@ import {
   MIRRORED_SWAPPED_VALIDATION_SET,
 } from "../../domain/constants/strict-loop-position-maps";
 import type { SliceSize } from "../../domain/models/circular-models";
-import type { BeatData } from "../../../../shared/domain/models/BeatData";
+import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class MirroredSwappedLOOPExecutor {
   constructor(private OrientationCalculator: IOrientationCalculator) {}
@@ -44,9 +44,9 @@ export class MirroredSwappedLOOPExecutor {
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
    * @param sliceSize - Ignored (mirrored-swapped LOOP always uses halved)
-   * @returns The complete circular sequence with all beats
+   * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: BeatData[], _sliceSize: SliceSize): BeatData[] {
+  executeLOOP(sequence: StepData[], _sliceSize: SliceSize): StepData[] {
     // Validate the sequence
     this._validateSequence(sequence);
 
@@ -56,28 +56,28 @@ export class MirroredSwappedLOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    // Calculate how many beats to generate (always doubles for halved)
+    // Calculate how many steps to generate (always doubles for halved)
     const sequenceLength = sequence.length;
     const entriesToAdd = sequenceLength;
 
-    // Generate the new beats
-    const generatedBeats: BeatData[] = [];
-    let lastBeat = sequence[sequence.length - 1]!;
-    const nextBeatNumber = lastBeat.beatNumber + 1;
+    // Generate the new steps
+    const generatedSteps: StepData[] = [];
+    let lastStep = sequence[sequence.length - 1]!;
+    const nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two beats in the loop (start from beat 2)
+    // Skip first two steps in the loop (start from beat 2)
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
-      const nextBeat = this._createNewLOOPEntry(
+      const nextStep = this._createNewLOOPEntry(
         sequence,
-        lastBeat,
-        nextBeatNumber + i - 2,
+        lastStep,
+        nextStepNumber + i - 2,
         finalIntendedLength
       );
 
-      generatedBeats.push(nextBeat);
-      sequence.push(nextBeat);
-      lastBeat = nextBeat;
+      generatedSteps.push(nextStep);
+      sequence.push(nextStep);
+      lastStep = nextStep;
     }
 
     // Re-insert start position at the beginning
@@ -90,10 +90,10 @@ export class MirroredSwappedLOOPExecutor {
    * Validate that the sequence can perform a mirrored-swapped LOOP
    * Requirement: end_position must be vertical mirror of start_position
    */
-  private _validateSequence(sequence: BeatData[]): void {
+  private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 beats (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 beat)"
       );
     }
 
@@ -101,7 +101,7 @@ export class MirroredSwappedLOOPExecutor {
     const endPos = sequence[sequence.length - 1]!.endPosition;
 
     if (!startPos || !endPos) {
-      throw new Error("Sequence beats must have valid start and end positions");
+      throw new Error("Sequence steps must have valid start and end positions");
     }
 
     // Check if the (start, end) pair is valid for mirrored-swapped
@@ -119,84 +119,84 @@ export class MirroredSwappedLOOPExecutor {
    * Create a new LOOP entry by transforming a previous beat with SWAP + MIRROR
    */
   private _createNewLOOPEntry(
-    sequence: BeatData[],
-    previousBeat: BeatData,
-    beatNumber: number,
+    sequence: StepData[],
+    previousStep: StepData,
+    stepNumber: number,
     finalIntendedLength: number
-  ): BeatData {
+  ): StepData {
     // Get the corresponding beat from the first section using index mapping
-    const previousMatchingBeat = this._getPreviousMatchingBeat(
+    const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
-      beatNumber,
+      stepNumber,
       finalIntendedLength
     );
 
     // Get the mirrored AND swapped end position
     // For mirrored+swapped LOOP, we need to apply both transformations to the grid position
     const mirroredSwappedEndPosition =
-      this._getMirroredSwappedPosition(previousMatchingBeat);
+      this._getMirroredSwappedPosition(previousMatchingStep);
 
     // Create the new beat with swapped and mirrored attributes
     // KEY: Continuity is NORMAL (same color continues from where it was)
     //      But motion PATTERNS are swapped (blue does red's pattern, red does blue's)
     //      Then patterns are mirrored (cw↔ccw, e↔w)
-    const newBeat: BeatData = {
-      ...previousMatchingBeat,
-      id: `beat-${beatNumber}`,
-      beatNumber,
-      letter: previousMatchingBeat.letter ?? null, // Same letter
-      startPosition: previousBeat.endPosition ?? null, // NORMAL continuity (not swapped)
+    const newStep: StepData = {
+      ...previousMatchingStep,
+      id: `beat-${stepNumber}`,
+      stepNumber,
+      letter: previousMatchingStep.letter ?? null, // Same letter
+      startPosition: previousStep.endPosition ?? null, // NORMAL continuity (not swapped)
       endPosition: mirroredSwappedEndPosition,
       motions: {
         // SWAP: Blue does what Red did, but with mirrored transformation
         [MotionColor.BLUE]: this._createMirroredSwappedMotion(
           MotionColor.BLUE,
-          previousBeat,
-          previousMatchingBeat,
+          previousStep,
+          previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
         ),
         // SWAP: Red does what Blue did, but with mirrored transformation
         [MotionColor.RED]: this._createMirroredSwappedMotion(
           MotionColor.RED,
-          previousBeat,
-          previousMatchingBeat,
+          previousStep,
+          previousMatchingStep,
           true // isSwapped = true (use opposite color's data)
         ),
       },
     };
 
     // Update orientations
-    const beatWithStartOri = this.OrientationCalculator.updateStartOrientations(
-      newBeat,
-      previousBeat
+    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+      newStep,
+      previousStep
     );
-    const finalBeat =
-      this.OrientationCalculator.updateEndOrientations(beatWithStartOri);
+    const finalStep =
+      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
 
-    return finalBeat;
+    return finalStep;
   }
 
   /**
    * Get the previous matching beat using index mapping (halved pattern)
    */
   private _getPreviousMatchingBeat(
-    sequence: BeatData[],
-    beatNumber: number,
+    sequence: StepData[],
+    stepNumber: number,
     finalLength: number
-  ): BeatData {
+  ): StepData {
     const indexMap = this._getIndexMap(finalLength);
-    const matchingBeatNumber = indexMap[beatNumber];
+    const matchingStepNumber = indexMap[stepNumber];
 
-    if (matchingBeatNumber === undefined) {
-      throw new Error(`No index mapping found for beatNumber ${beatNumber}`);
+    if (matchingStepNumber === undefined) {
+      throw new Error(`No index mapping found for stepNumber ${stepNumber}`);
     }
 
-    // Convert 1-based beatNumber to 0-based array index
-    const arrayIndex = matchingBeatNumber - 1;
+    // Convert 1-based stepNumber to 0-based array index
+    const arrayIndex = matchingStepNumber - 1;
 
     if (arrayIndex < 0 || arrayIndex >= sequence.length) {
       throw new Error(
-        `Invalid index mapping: beatNumber ${beatNumber} → matchingBeatNumber ${matchingBeatNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
+        `Invalid index mapping: stepNumber ${stepNumber} → matchingStepNumber ${matchingStepNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
       );
     }
 
@@ -204,14 +204,14 @@ export class MirroredSwappedLOOPExecutor {
   }
 
   /**
-   * Generate index mapping for retrieving corresponding beats (halved pattern only)
-   * Maps second half beats to first half beats
+   * Generate index mapping for retrieving corresponding steps (halved pattern only)
+   * Maps second half steps to first half steps
    */
   private _getIndexMap(length: number): Record<number, number> {
     const map: Record<number, number> = {};
     const halfLength = Math.floor(length / 2);
 
-    // Map beats in second half to their corresponding beats in first half
+    // Map steps in second half to their corresponding steps in first half
     for (let i = halfLength + 1; i <= length; i++) {
       map[i] = i - halfLength;
     }
@@ -226,9 +226,9 @@ export class MirroredSwappedLOOPExecutor {
    * 2. Then swap the colors (blue↔red positions)
    */
   private _getMirroredSwappedPosition(
-    previousMatchingBeat: BeatData
+    previousMatchingStep: StepData
   ): GridPosition | null {
-    const endPos = previousMatchingBeat.endPosition;
+    const endPos = previousMatchingStep.endPosition;
 
     if (!endPos) {
       throw new Error("Previous matching beat must have an end position");
@@ -253,8 +253,8 @@ export class MirroredSwappedLOOPExecutor {
    */
   private _createMirroredSwappedMotion(
     color: MotionColor,
-    previousBeat: BeatData,
-    previousMatchingBeat: BeatData,
+    previousStep: StepData,
+    previousMatchingStep: StepData,
     _isSwapped: boolean // Kept for interface compatibility, always true for this executor
   ): MotionData {
     // Get the opposite color for pattern swapping
@@ -263,11 +263,11 @@ export class MirroredSwappedLOOPExecutor {
 
     // NORMAL CONTINUITY: Same color continues from where it was
     // (Blue continues from Blue's previous end, Red continues from Red's previous end)
-    const previousMotion = previousBeat.motions[color];
+    const previousMotion = previousStep.motions[color];
 
     // SWAPPED PATTERN: Get the pattern from the opposite color's matching beat
     // (Blue follows Red's pattern from beat 1, Red follows Blue's pattern from beat 1)
-    const matchingMotion = previousMatchingBeat.motions[oppositeColor];
+    const matchingMotion = previousMatchingStep.motions[oppositeColor];
 
     if (!previousMotion || !matchingMotion) {
       throw new Error(`Missing motion data for ${color}`);

@@ -5,7 +5,7 @@
  * Single Responsibility: Generate sequence names, metadata, and word calculation.
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import {
   DifficultyLevel,
   type GenerationOptions,
@@ -20,7 +20,7 @@ export interface ISequenceMetadataManager {
   /**
    * Calculate word from beat letters
    */
-  calculateWordFromBeats(beats: BeatData[]): string;
+  calculateWordFromBeats(steps: StepData[]): string;
 
   /**
    * Map difficulty level to numeric level (1-3)
@@ -31,7 +31,7 @@ export interface ISequenceMetadataManager {
    * Create metadata object for generated sequence
    */
   createGenerationMetadata(options: {
-    beatsGenerated: number;
+    stepsGenerated: number;
     propContinuity: string;
     blueRotationDirection: string;
     redRotationDirection: string;
@@ -60,8 +60,8 @@ export class SequenceMetadataManager implements ISequenceMetadataManager {
   /**
    * Calculate word from beat letters
    */
-  calculateWordFromBeats(beats: BeatData[]): string {
-    return beats
+  calculateWordFromBeats(steps: StepData[]): string {
+    return steps
       .filter((beat) => beat.letter)
       .map((beat) => beat.letter)
       .join("");
@@ -87,7 +87,7 @@ export class SequenceMetadataManager implements ISequenceMetadataManager {
    * Create metadata object for generated sequence
    */
   createGenerationMetadata(options: {
-    beatsGenerated: number;
+    stepsGenerated: number;
     propContinuity: string;
     blueRotationDirection: string;
     redRotationDirection: string;
@@ -98,7 +98,7 @@ export class SequenceMetadataManager implements ISequenceMetadataManager {
       generated: true,
       generatedAt: new Date().toISOString(),
       algorithm: "freeform",
-      beatsGenerated: options.beatsGenerated,
+      stepsGenerated: options.stepsGenerated,
       propContinuity: options.propContinuity,
       blueRotationDirection: options.blueRotationDirection,
       redRotationDirection: options.redRotationDirection,

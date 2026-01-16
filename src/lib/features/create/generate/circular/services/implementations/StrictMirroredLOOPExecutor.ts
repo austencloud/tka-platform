@@ -4,7 +4,7 @@
  * Executes the strict mirrored LOOP (Linked Orbital Offset Pattern) by:
  * 1. Taking a partial sequence (always first half - no quartering)
  * 2. Applying vertical mirroring transformations to each beat
- * 3. Generating the remaining beats to complete the circular pattern
+ * 3. Generating the remaining steps to complete the circular pattern
  *
  * The mirroring works by:
  * - Flipping positions vertically across the center horizontal axis
@@ -31,7 +31,7 @@ import {
   MIRRORED_LOOP_VALIDATION_SET,
 } from "../../domain/constants/strict-loop-position-maps";
 import type { SliceSize } from "../../domain/models/circular-models";
-import type { BeatData } from "../../../../shared/domain/models/BeatData";
+import type { StepData } from "../../../../shared/domain/models/StepData";
 
 export class StrictMirroredLOOPExecutor {
   constructor(private OrientationCalculator: IOrientationCalculator) {}
@@ -41,9 +41,9 @@ export class StrictMirroredLOOPExecutor {
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
    * @param sliceSize - Ignored (mirrored LOOP always uses halved)
-   * @returns The complete circular sequence with all beats
+   * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: BeatData[], _sliceSize: SliceSize): BeatData[] {
+  executeLOOP(sequence: StepData[], _sliceSize: SliceSize): StepData[] {
     // Validate the sequence
     this._validateSequence(sequence);
 
@@ -53,28 +53,28 @@ export class StrictMirroredLOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    // Calculate how many beats to generate (always doubles for mirrored)
+    // Calculate how many steps to generate (always doubles for mirrored)
     const sequenceLength = sequence.length;
     const entriesToAdd = sequenceLength; // Always halved = doubles the sequence
 
-    // Generate the new beats
-    const generatedBeats: BeatData[] = [];
-    let lastBeat = sequence[sequence.length - 1]!;
-    const nextBeatNumber = lastBeat.beatNumber + 1;
+    // Generate the new steps
+    const generatedSteps: StepData[] = [];
+    let lastStep = sequence[sequence.length - 1]!;
+    const nextStepNumber = lastStep.stepNumber + 1;
 
-    // Skip first two beats in the loop (start from beat 2)
+    // Skip first two steps in the loop (start from beat 2)
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
-      const nextBeat = this._createNewLOOPEntry(
+      const nextStep = this._createNewLOOPEntry(
         sequence,
-        lastBeat,
-        nextBeatNumber + i - 2,
+        lastStep,
+        nextStepNumber + i - 2,
         finalIntendedLength
       );
 
-      generatedBeats.push(nextBeat);
-      sequence.push(nextBeat);
-      lastBeat = nextBeat;
+      generatedSteps.push(nextStep);
+      sequence.push(nextStep);
+      lastStep = nextStep;
     }
 
     // Re-insert start position at the beginning
@@ -87,10 +87,10 @@ export class StrictMirroredLOOPExecutor {
    * Validate that the sequence can perform a mirrored LOOP
    * Requirement: vertical_mirror(start_position) === end_position
    */
-  private _validateSequence(sequence: BeatData[]): void {
+  private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 beats (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 beat)"
       );
     }
 
@@ -98,7 +98,7 @@ export class StrictMirroredLOOPExecutor {
     const endPos = sequence[sequence.length - 1]!.endPosition;
 
     if (!startPos || !endPos) {
-      throw new Error("Sequence beats must have valid start and end positions");
+      throw new Error("Sequence steps must have valid start and end positions");
     }
 
     // Check if the (start, end) pair is valid for mirroring
@@ -118,74 +118,74 @@ export class StrictMirroredLOOPExecutor {
    * Create a new LOOP entry by transforming a previous beat
    */
   private _createNewLOOPEntry(
-    sequence: BeatData[],
-    previousBeat: BeatData,
-    beatNumber: number,
+    sequence: StepData[],
+    previousStep: StepData,
+    stepNumber: number,
     finalIntendedLength: number
-  ): BeatData {
+  ): StepData {
     // Get the corresponding beat from the first section using index mapping
-    const previousMatchingBeat = this._getPreviousMatchingBeat(
+    const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
-      beatNumber,
+      stepNumber,
       finalIntendedLength
     );
 
     // Calculate new end position (vertical mirror)
-    const newEndPosition = this._getMirroredPosition(previousMatchingBeat);
+    const newEndPosition = this._getMirroredPosition(previousMatchingStep);
 
     // Create the new beat with mirrored attributes
-    const newBeat: BeatData = {
-      ...previousMatchingBeat,
-      id: `beat-${beatNumber}`,
-      beatNumber,
-      startPosition: previousBeat.endPosition ?? null,
+    const newStep: StepData = {
+      ...previousMatchingStep,
+      id: `beat-${stepNumber}`,
+      stepNumber,
+      startPosition: previousStep.endPosition ?? null,
       endPosition: newEndPosition,
       motions: {
         [MotionColor.BLUE]: this._createMirroredMotion(
           MotionColor.BLUE,
-          previousBeat,
-          previousMatchingBeat
+          previousStep,
+          previousMatchingStep
         ),
         [MotionColor.RED]: this._createMirroredMotion(
           MotionColor.RED,
-          previousBeat,
-          previousMatchingBeat
+          previousStep,
+          previousMatchingStep
         ),
       },
     };
 
     // Update orientations
-    const beatWithStartOri = this.OrientationCalculator.updateStartOrientations(
-      newBeat,
-      previousBeat
+    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+      newStep,
+      previousStep
     );
-    const finalBeat =
-      this.OrientationCalculator.updateEndOrientations(beatWithStartOri);
+    const finalStep =
+      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
 
-    return finalBeat;
+    return finalStep;
   }
 
   /**
    * Get the previous matching beat using index mapping (halved pattern)
    */
   private _getPreviousMatchingBeat(
-    sequence: BeatData[],
-    beatNumber: number,
+    sequence: StepData[],
+    stepNumber: number,
     finalLength: number
-  ): BeatData {
+  ): StepData {
     const indexMap = this._getIndexMap(finalLength);
-    const matchingBeatNumber = indexMap[beatNumber];
+    const matchingStepNumber = indexMap[stepNumber];
 
-    if (matchingBeatNumber === undefined) {
-      throw new Error(`No index mapping found for beatNumber ${beatNumber}`);
+    if (matchingStepNumber === undefined) {
+      throw new Error(`No index mapping found for stepNumber ${stepNumber}`);
     }
 
-    // Convert 1-based beatNumber to 0-based array index
-    const arrayIndex = matchingBeatNumber - 1;
+    // Convert 1-based stepNumber to 0-based array index
+    const arrayIndex = matchingStepNumber - 1;
 
     if (arrayIndex < 0 || arrayIndex >= sequence.length) {
       throw new Error(
-        `Invalid index mapping: beatNumber ${beatNumber} → matchingBeatNumber ${matchingBeatNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
+        `Invalid index mapping: stepNumber ${stepNumber} → matchingStepNumber ${matchingStepNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
       );
     }
 
@@ -193,14 +193,14 @@ export class StrictMirroredLOOPExecutor {
   }
 
   /**
-   * Generate index mapping for retrieving corresponding beats (halved pattern only)
-   * Maps second half beats to first half beats
+   * Generate index mapping for retrieving corresponding steps (halved pattern only)
+   * Maps second half steps to first half steps
    */
   private _getIndexMap(length: number): Record<number, number> {
     const map: Record<number, number> = {};
     const halfLength = Math.floor(length / 2);
 
-    // Map beats in second half to their corresponding beats in first half
+    // Map steps in second half to their corresponding steps in first half
     for (let i = halfLength + 1; i <= length; i++) {
       map[i] = i - halfLength;
     }
@@ -212,9 +212,9 @@ export class StrictMirroredLOOPExecutor {
    * Get the vertical mirrored position
    */
   private _getMirroredPosition(
-    previousMatchingBeat: BeatData
+    previousMatchingStep: StepData
   ): GridPosition | null {
-    const endPos = previousMatchingBeat.endPosition;
+    const endPos = previousMatchingStep.endPosition;
 
     if (!endPos) {
       throw new Error("Previous matching beat must have an end position");
@@ -232,11 +232,11 @@ export class StrictMirroredLOOPExecutor {
    */
   private _createMirroredMotion(
     color: MotionColor,
-    previousBeat: BeatData,
-    previousMatchingBeat: BeatData
+    previousStep: StepData,
+    previousMatchingStep: StepData
   ): MotionData {
-    const previousMotion = previousBeat.motions[color];
-    const matchingMotion = previousMatchingBeat.motions[color];
+    const previousMotion = previousStep.motions[color];
+    const matchingMotion = previousMatchingStep.motions[color];
 
     if (!previousMotion || !matchingMotion) {
       throw new Error(`Missing motion data for ${color}`);

@@ -6,7 +6,7 @@
  */
 
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
-import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/beat-grid-display-state.svelte";
+import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
@@ -83,22 +83,22 @@ export function createGenerationActionsState(
 
       const isSequential = getIsSequential?.() ?? false;
 
-      // Set global flag BEFORE dispatching event - this flag persists even if BeatGrid
+      // Set global flag BEFORE dispatching event - this flag persists even if StepGrid
       // isn't mounted yet (e.g., workspace is transitioning from empty to visible)
       setPendingGenerationAnimation(true);
 
-      // Dispatch BEFORE updating sequence to prepare BeatGrid for animation
+      // Dispatch BEFORE updating sequence to prepare StepGrid for animation
       window.dispatchEvent(
         new CustomEvent("prepare-sequence-animation", {
           detail: {
             isSequential,
-            beatCount: sequence.beats.length,
+            stepCount: sequence.steps.length,
           },
         })
       );
 
       // Small delay to ensure the prepare event is processed before updating sequence
-      // This allows the BeatGrid to set up animation state before receiving new beats
+      // This allows the StepGrid to set up animation state before receiving new steps
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       sequenceState.setCurrentSequence(sequence);
@@ -118,7 +118,7 @@ export function createGenerationActionsState(
       isGenerating,
       hasLastGenerated: lastGeneratedSequence !== null,
       lastGeneratedName: lastGeneratedSequence?.name || null,
-      lastGeneratedBeats: lastGeneratedSequence?.beats.length || 0,
+      lastGeneratedBeats: lastGeneratedSequence?.steps.length || 0,
       hasError: generationError !== null,
       errorMessage: generationError,
     };

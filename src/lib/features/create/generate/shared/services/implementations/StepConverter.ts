@@ -1,16 +1,16 @@
 /**
  * Beat Converter Service
  *
- * Handles conversion of PictographData to BeatData and StartPositionData.
+ * Handles conversion of PictographData to StepData and StartPositionData.
  * Single Responsibility: Transform pictograph data into proper domain objects.
  *
- * MIGRATION NOTE: Now properly distinguishes between beats and start positions.
+ * MIGRATION NOTE: Now properly distinguishes between steps and start positions.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -19,18 +19,18 @@ import {
   RotationDirection,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createBeatData } from "$lib/features/create/shared/domain/factories/createBeatData";
+import { createStepData } from "$lib/features/create/shared/domain/factories/createStepData";
 import { createStartPositionData } from "$lib/features/create/shared/domain/factories/createStartPositionData";
 
-export interface IBeatConverter {
+export interface IStepConverter {
   /**
-   * Convert PictographData to BeatData - creates proper domain object for beats
+   * Convert PictographData to StepData - creates proper domain object for steps
    */
-  convertToBeat(
+  convertToStep(
     pictograph: PictographData,
-    beatNumber: number,
+    stepNumber: number,
     gridMode: GridMode
-  ): BeatData;
+  ): StepData;
 
   /**
    * Convert PictographData to StartPositionData - creates proper domain object for start positions
@@ -41,30 +41,30 @@ export interface IBeatConverter {
   ): StartPositionData;
 }
 
-export class BeatConverter implements IBeatConverter {
+export class StepConverter implements IStepConverter {
   /**
-   * Convert PictographData to BeatData - creates proper domain object for beats
+   * Convert PictographData to StepData - creates proper domain object for steps
    *
    * @param pictograph - Source pictograph data
-   * @param beatNumber - Beat number (should be >= 1, use convertToStartPosition for start position)
+   * @param stepNumber - Beat number (should be >= 1, use convertToStartPosition for start position)
    * @param gridMode - Grid mode for the beat
    */
-  convertToBeat(
+  convertToStep(
     pictograph: PictographData,
-    beatNumber: number,
+    stepNumber: number,
     gridMode: GridMode
-  ): BeatData {
-    // MIGRATION NOTE: If beatNumber === 0, should use convertToStartPosition instead
+  ): StepData {
+    // MIGRATION NOTE: If stepNumber === 0, should use convertToStartPosition instead
     // But keep backward compatibility for now
-    if (beatNumber === 0) {
-      // Silently handle beatNumber 0 for backward compatibility
+    if (stepNumber === 0) {
+      // Silently handle stepNumber 0 for backward compatibility
     }
 
     const motions = this.ensureMotionsWithGridMode(pictograph, gridMode);
 
-    return createBeatData({
+    return createStepData({
       ...pictograph, // Spread PictographData properties
-      beatNumber: beatNumber,
+      stepNumber: stepNumber,
       duration: 1.0,
       blueReversal: false,
       redReversal: false,

@@ -17,15 +17,15 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
-    /** Position of the help button (top-right corner) */
-    buttonTop?: number;
+    /** Position of the help button from bottom-right corner */
+    buttonBottom?: number;
     buttonRight?: number;
     buttonSize?: number;
     onDismiss?: () => void;
   }
 
   const {
-    buttonTop = 12,
+    buttonBottom = 12,
     buttonRight = 12,
     buttonSize = 44,
     onDismiss,
@@ -37,8 +37,8 @@
   let hasCheckedStorage = $state(false);
   let hapticService: IHapticFeedback | null = $state(null);
 
-  // Derived position for the speech bubble
-  const bubbleTop = $derived(buttonTop + buttonSize + 16);
+  // Derived position for the speech bubble (ABOVE the button)
+  const bubbleBottom = $derived(buttonBottom + buttonSize + 16);
   const bubbleRight = $derived(buttonRight);
 
   onMount(() => {
@@ -49,17 +49,42 @@
     }
 
     // Check if user has seen this before
+    checkAndShowIfNeeded();
+    hasCheckedStorage = true;
+
+    // Listen for storage changes (e.g., admin reset from another component)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue === null) {
+        // Key was removed, show again
+        checkAndShowIfNeeded();
+      }
+    };
+
+    // Also listen for custom event from admin toolbar (same-tab reset)
+    const handleReset = () => {
+      checkAndShowIfNeeded();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("helpDiscoveryReset", handleReset);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("helpDiscoveryReset", handleReset);
+    };
+  });
+
+  function checkAndShowIfNeeded() {
     if (typeof localStorage !== "undefined") {
       const hasSeen = localStorage.getItem(STORAGE_KEY) === "true";
-      if (!hasSeen) {
+      if (!hasSeen && !isVisible) {
         // Small delay for smoother entrance after panel renders
         setTimeout(() => {
           isVisible = true;
         }, 400);
       }
     }
-    hasCheckedStorage = true;
-  });
+  }
 
   function dismiss() {
     hapticService?.trigger("selection");
@@ -90,10 +115,10 @@
     aria-label="Dismiss help button hint"
     transition:fade={{ duration: 200 }}
   >
-    <!-- Pulsing ring effect positioned around the button -->
+    <!-- Pulsing ring effect positioned around the button (bottom-right) -->
     <div
       class="pulse-container"
-      style="top: {buttonTop}px; right: {buttonRight}px; width: {buttonSize}px; height: {buttonSize}px;"
+      style="bottom: {buttonBottom}px; right: {buttonRight}px; width: {buttonSize}px; height: {buttonSize}px;"
     >
       <div class="pulse-ring pulse-ring-1"></div>
       <div class="pulse-ring pulse-ring-2"></div>
@@ -101,11 +126,11 @@
       <div class="glow-dot"></div>
     </div>
 
-    <!-- Speech bubble -->
+    <!-- Speech bubble (positioned ABOVE the button) -->
     <div
       class="speech-bubble"
-      style="top: {bubbleTop}px; right: {bubbleRight}px;"
-      transition:fly={{ y: -10, duration: 400, delay: 200, easing: elasticOut }}
+      style="bottom: {bubbleBottom}px; right: {bubbleRight}px;"
+      transition:fly={{ y: 10, duration: 400, delay: 200, easing: elasticOut }}
     >
       <div class="bubble-pointer"></div>
       <div class="bubble-content">
@@ -220,13 +245,13 @@
 
   .bubble-pointer {
     position: absolute;
-    top: -8px;
+    bottom: -8px;
     right: 16px;
     width: 16px;
     height: 16px;
     background: rgba(30, 30, 50, 0.98);
-    border-left: 1px solid rgba(99, 102, 241, 0.4);
-    border-top: 1px solid rgba(99, 102, 241, 0.4);
+    border-right: 1px solid rgba(99, 102, 241, 0.4);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.4);
     transform: rotate(45deg);
   }
 
@@ -316,7 +341,7 @@
     }
 
     .bubble-pointer {
-      right: 20px;
+      right: 14px;
     }
   }
 </style>

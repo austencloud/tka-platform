@@ -16,7 +16,7 @@
  * IMPORTANT: End position is calculated from rotated locations
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
@@ -51,9 +51,9 @@ export class RotatedInvertedLOOPExecutor {
    *
    * @param sequence - The partial sequence to complete (must include start position at index 0)
    * @param sliceSize - Slice size for the LOOP (quartered or halved)
-   * @returns The complete circular sequence with all beats
+   * @returns The complete circular sequence with all steps
    */
-  executeLOOP(sequence: BeatData[], sliceSize: SliceSize): BeatData[] {
+  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
     // Validate the sequence
     this._validateSequence(sequence, sliceSize);
 
@@ -63,7 +63,7 @@ export class RotatedInvertedLOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    // Calculate how many beats to generate based on slice size
+    // Calculate how many steps to generate based on slice size
     const sequenceLength = sequence.length;
     let entriesToAdd: number;
 
@@ -75,26 +75,26 @@ export class RotatedInvertedLOOPExecutor {
       entriesToAdd = sequenceLength;
     }
 
-    // Generate the new beats
-    const generatedBeats: BeatData[] = [];
-    let lastBeat = sequence[sequence.length - 1]!;
-    let nextBeatNumber = lastBeat.beatNumber + 1;
+    // Generate the new steps
+    const generatedSteps: StepData[] = [];
+    let lastStep = sequence[sequence.length - 1]!;
+    let nextStepNumber = lastStep.stepNumber + 1;
 
-    // Generate LOOP beats
+    // Generate LOOP steps
     const finalIntendedLength = sequenceLength + entriesToAdd;
     for (let i = 0; i < entriesToAdd; i++) {
-      const nextBeat = this._createNewLOOPEntry(
+      const nextStep = this._createNewLOOPEntry(
         sequence,
-        lastBeat,
-        nextBeatNumber,
+        lastStep,
+        nextStepNumber,
         finalIntendedLength,
         sliceSize
       );
 
-      generatedBeats.push(nextBeat);
-      sequence.push(nextBeat);
-      lastBeat = nextBeat;
-      nextBeatNumber++;
+      generatedSteps.push(nextStep);
+      sequence.push(nextStep);
+      lastStep = nextStep;
+      nextStepNumber++;
     }
 
     // Re-insert start position at the beginning
@@ -106,10 +106,10 @@ export class RotatedInvertedLOOPExecutor {
   /**
    * Validate that the sequence can perform a rotated-inverted LOOP
    */
-  private _validateSequence(sequence: BeatData[], sliceSize: SliceSize): void {
+  private _validateSequence(sequence: StepData[], sliceSize: SliceSize): void {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 beats (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 beat)"
       );
     }
 
@@ -117,7 +117,7 @@ export class RotatedInvertedLOOPExecutor {
     const endPos = sequence[sequence.length - 1]!.endPosition;
 
     if (!startPos || !endPos) {
-      throw new Error("Sequence beats must have valid start and end positions");
+      throw new Error("Sequence steps must have valid start and end positions");
     }
 
     // Check if the (start, end) pair is valid for the requested slice size
@@ -137,32 +137,32 @@ export class RotatedInvertedLOOPExecutor {
    * Create a new LOOP entry by transforming a previous beat with ROTATION + INVERTED
    */
   private _createNewLOOPEntry(
-    sequence: BeatData[],
-    previousBeat: BeatData,
-    beatNumber: number,
+    sequence: StepData[],
+    previousStep: StepData,
+    stepNumber: number,
     finalIntendedLength: number,
     sliceSize: SliceSize
-  ): BeatData {
+  ): StepData {
     // Get the corresponding beat from the first section using index mapping
-    const previousMatchingBeat = this._getPreviousMatchingBeat(
+    const previousMatchingStep = this._getPreviousMatchingBeat(
       sequence,
-      beatNumber,
+      stepNumber,
       finalIntendedLength,
       sliceSize
     );
 
     // Get the inverted letter (INVERTED effect)
-    if (!previousMatchingBeat.letter) {
+    if (!previousMatchingStep.letter) {
       throw new Error("Previous matching beat must have a letter");
     }
     const invertedLetter = this.loopParams.getInvertedLetter(
-      previousMatchingBeat.letter as string
+      previousMatchingStep.letter as string
     ) as Letter;
 
     // Calculate the rotated end position
     const rotatedEndPosition = this._getRotatedEndPosition(
-      previousBeat,
-      previousMatchingBeat
+      previousStep,
+      previousMatchingStep
     );
 
     // Create the new beat with rotated and inverted attributes
@@ -170,60 +170,60 @@ export class RotatedInvertedLOOPExecutor {
     //      Motion types are flipped (PRO ↔ ANTI)
     //      Prop rotations are flipped (CW ↔ CCW)
     //      Locations are rotated based on handpath direction
-    const newBeat: BeatData = {
-      ...previousMatchingBeat,
-      id: `beat-${beatNumber}`,
-      beatNumber,
+    const newStep: StepData = {
+      ...previousMatchingStep,
+      id: `beat-${stepNumber}`,
+      stepNumber,
       letter: invertedLetter, // INVERTED: Flip letter
-      startPosition: previousBeat.endPosition ?? null,
+      startPosition: previousStep.endPosition ?? null,
       endPosition: rotatedEndPosition,
       motions: {
         [MotionColor.BLUE]: this._createRotatedInvertedMotion(
           MotionColor.BLUE,
-          previousBeat,
-          previousMatchingBeat
+          previousStep,
+          previousMatchingStep
         ),
         [MotionColor.RED]: this._createRotatedInvertedMotion(
           MotionColor.RED,
-          previousBeat,
-          previousMatchingBeat
+          previousStep,
+          previousMatchingStep
         ),
       },
     };
 
     // Update orientations
-    const beatWithStartOri = this.OrientationCalculator.updateStartOrientations(
-      newBeat,
-      previousBeat
+    const stepWithStartOri = this.OrientationCalculator.updateStartOrientations(
+      newStep,
+      previousStep
     );
-    const finalBeat =
-      this.OrientationCalculator.updateEndOrientations(beatWithStartOri);
+    const finalStep =
+      this.OrientationCalculator.updateEndOrientations(stepWithStartOri);
 
-    return finalBeat;
+    return finalStep;
   }
 
   /**
    * Get the previous matching beat using index mapping
    */
   private _getPreviousMatchingBeat(
-    sequence: BeatData[],
-    beatNumber: number,
+    sequence: StepData[],
+    stepNumber: number,
     finalLength: number,
     sliceSize: SliceSize
-  ): BeatData {
+  ): StepData {
     const indexMap = this._getIndexMap(finalLength, sliceSize);
-    const matchingBeatNumber = indexMap[beatNumber];
+    const matchingStepNumber = indexMap[stepNumber];
 
-    if (matchingBeatNumber === undefined) {
-      throw new Error(`No index mapping found for beatNumber ${beatNumber}`);
+    if (matchingStepNumber === undefined) {
+      throw new Error(`No index mapping found for stepNumber ${stepNumber}`);
     }
 
-    // Convert 1-based beatNumber to 0-based array index
-    const arrayIndex = matchingBeatNumber - 1;
+    // Convert 1-based stepNumber to 0-based array index
+    const arrayIndex = matchingStepNumber - 1;
 
     if (arrayIndex < 0 || arrayIndex >= sequence.length) {
       throw new Error(
-        `Invalid index mapping: beatNumber ${beatNumber} → matchingBeatNumber ${matchingBeatNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
+        `Invalid index mapping: stepNumber ${stepNumber} → matchingStepNumber ${matchingStepNumber} → arrayIndex ${arrayIndex} (sequence length: ${sequence.length})`
       );
     }
 
@@ -231,7 +231,7 @@ export class RotatedInvertedLOOPExecutor {
   }
 
   /**
-   * Generate index mapping for retrieving corresponding beats
+   * Generate index mapping for retrieving corresponding steps
    * Works for both quartered and halved patterns
    */
   private _getIndexMap(
@@ -276,20 +276,20 @@ export class RotatedInvertedLOOPExecutor {
    * Get the rotated end position by rotating both colors' locations
    */
   private _getRotatedEndPosition(
-    previousBeat: BeatData,
-    previousMatchingBeat: BeatData
+    previousStep: StepData,
+    previousMatchingStep: StepData
   ): GridPosition | null {
     // Get hand rotation directions from the matching beat (same color)
     const blueHandRotDir = getHandRotationDirection(
-      previousMatchingBeat.motions[MotionColor.BLUE]!
+      previousMatchingStep.motions[MotionColor.BLUE]!
         .startLocation as GridLocation,
-      previousMatchingBeat.motions[MotionColor.BLUE]!
+      previousMatchingStep.motions[MotionColor.BLUE]!
         .endLocation as GridLocation
     );
     const redHandRotDir = getHandRotationDirection(
-      previousMatchingBeat.motions[MotionColor.RED]!
+      previousMatchingStep.motions[MotionColor.RED]!
         .startLocation as GridLocation,
-      previousMatchingBeat.motions[MotionColor.RED]!.endLocation as GridLocation
+      previousMatchingStep.motions[MotionColor.RED]!.endLocation as GridLocation
     );
 
     // Get the location maps for rotation
@@ -299,11 +299,11 @@ export class RotatedInvertedLOOPExecutor {
     // Rotate the locations from the previous beat
     const newBlueEndLoc =
       blueLocationMap[
-        previousBeat.motions[MotionColor.BLUE]!.endLocation as GridLocation
+        previousStep.motions[MotionColor.BLUE]!.endLocation as GridLocation
       ];
     const newRedEndLoc =
       redLocationMap[
-        previousBeat.motions[MotionColor.RED]!.endLocation as GridLocation
+        previousStep.motions[MotionColor.RED]!.endLocation as GridLocation
       ];
 
     // Derive position from both locations
@@ -322,11 +322,11 @@ export class RotatedInvertedLOOPExecutor {
    */
   private _createRotatedInvertedMotion(
     color: MotionColor,
-    previousBeat: BeatData,
-    previousMatchingBeat: BeatData
+    previousStep: StepData,
+    previousMatchingStep: StepData
   ): MotionData {
-    const previousMotion = previousBeat.motions[color];
-    const matchingMotion = previousMatchingBeat.motions[color]; // Same color (no swap)
+    const previousMotion = previousStep.motions[color];
+    const matchingMotion = previousMatchingStep.motions[color]; // Same color (no swap)
 
     if (!previousMotion || !matchingMotion) {
       throw new Error(`Missing motion data for ${color}`);

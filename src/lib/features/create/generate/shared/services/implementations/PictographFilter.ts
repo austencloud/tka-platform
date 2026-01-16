@@ -7,7 +7,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { FilteringError } from "../../domain/errors/generation-errors";
 import { getLetterType } from "$lib/shared/foundation/domain/models/Letter";
@@ -26,7 +26,7 @@ export interface IPictographFilter {
    */
   filterByContinuity(
     options: PictographData[],
-    lastBeat: BeatData | StartPositionData | null
+    lastStep: StepData | StartPositionData | null
   ): PictographData[];
 
   /**
@@ -80,13 +80,13 @@ export class PictographFilter implements IPictographFilter {
    */
   filterByContinuity(
     options: PictographData[],
-    lastBeat: BeatData | StartPositionData | null
+    lastStep: StepData | StartPositionData | null
   ): PictographData[] {
-    if (!lastBeat?.endPosition) {
+    if (!lastStep?.endPosition) {
       return options; // No filtering needed for first beat or if no end position
     }
 
-    const lastEndPosition = lastBeat.endPosition.toLowerCase();
+    const lastEndPosition = lastStep.endPosition.toLowerCase();
 
     const filtered = options.filter((option: PictographData) => {
       if (!option.startPosition) return false;

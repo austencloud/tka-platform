@@ -1,7 +1,7 @@
 /**
  * Turn Allocation Calculator Implementation
  *
- * Calculates turn distribution across beats.
+ * Calculates turn distribution across steps.
  * Extracted from SequenceGenerationService for single responsibility.
  */
 import type {
@@ -17,10 +17,10 @@ export class TurnAllocator implements ITurnAllocator {
    * Allocate turns for the sequence
    */
   async allocateTurns(
-    beatsToGenerate: number,
+    stepsToGenerate: number,
     level: number,
     turnIntensity: number
   ): Promise<TurnAllocation> {
-    return this.loopParams.allocateTurns(beatsToGenerate, level, turnIntensity);
+    return this.loopParams.allocateTurns(stepsToGenerate, level, turnIntensity);
   }
 }

@@ -1,17 +1,17 @@
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 
-export interface IBeatConverter {
+export interface IStepConverter {
   /**
-   * Convert PictographData to BeatData - creates proper domain object for beats
+   * Convert PictographData to StepData - creates proper domain object for steps
    */
-  convertToBeat(
+  convertToStep(
     pictograph: PictographData,
-    beatNumber: number,
+    stepNumber: number,
     gridMode: GridMode
-  ): BeatData;
+  ): StepData;
 
   /**
    * Convert PictographData to StartPositionData - creates proper domain object for start positions

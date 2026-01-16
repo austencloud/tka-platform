@@ -3,8 +3,8 @@
  *
  * Executes the Rewound LOOP (Linked Orbital Offset Pattern) by:
  * 1. Taking an existing sequence
- * 2. Reversing the beats and swapping their start/end positions
- * 3. Appending the reversed beats to double the sequence length
+ * 2. Reversing the steps and swapping their start/end positions
+ * 3. Appending the reversed steps to double the sequence length
  *
  * Unlike traditional LOOPs which use geometric transformations (rotate, mirror, swap),
  * Rewound is a temporal transformation that plays the sequence backwards.
@@ -16,7 +16,7 @@
  * No position validation is needed (unlike rotation-based LOOPs).
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import {
   MotionColor,
@@ -31,12 +31,12 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
    *
    * @param sequence - The partial sequence to extend (must include start position at index 0)
    * @param _sliceSize - Ignored (Rewound always doubles the sequence)
-   * @returns The complete sequence with reversed beats appended
+   * @returns The complete sequence with reversed steps appended
    */
-  executeLOOP(sequence: BeatData[], _sliceSize: SliceSize): BeatData[] {
+  executeLOOP(sequence: StepData[], _sliceSize: SliceSize): StepData[] {
     if (sequence.length < 2) {
       throw new Error(
-        "Sequence must have at least 2 beats (start position + 1 beat)"
+        "Sequence must have at least 2 steps (start position + 1 beat)"
       );
     }
 
@@ -46,40 +46,40 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    // Get the actual beats (without start position)
-    const originalBeats = [...sequence];
-    const originalLength = originalBeats.length;
+    // Get the actual steps (without start position)
+    const originalSteps = [...sequence];
+    const originalLength = originalSteps.length;
 
-    // Create reversed beats
-    const reversedBeats: BeatData[] = [];
-    const beatsToReverse = [...originalBeats].reverse();
+    // Create reversed steps
+    const reversedSteps: StepData[] = [];
+    const beatsToReverse = [...originalSteps].reverse();
 
     for (let i = 0; i < beatsToReverse.length; i++) {
-      const sourceBeat = beatsToReverse[i]!;
-      const newBeatNumber = originalLength + i + 1;
+      const sourceStep = beatsToReverse[i]!;
+      const newStepNumber = originalLength + i + 1;
 
       // Get the previous beat's end position for continuity
-      const previousBeat =
+      const previousStep =
         i === 0
-          ? originalBeats[originalBeats.length - 1]!
-          : reversedBeats[i - 1]!;
+          ? originalSteps[originalSteps.length - 1]!
+          : reversedSteps[i - 1]!;
 
       const rewoundBeat = this.createRewoundBeat(
-        sourceBeat,
-        previousBeat,
-        newBeatNumber
+        sourceStep,
+        previousStep,
+        newStepNumber
       );
 
-      reversedBeats.push(rewoundBeat);
+      reversedSteps.push(rewoundBeat);
     }
 
-    // Combine: original beats + reversed beats
-    const allBeats = [...originalBeats, ...reversedBeats];
+    // Combine: original steps + reversed steps
+    const allSteps = [...originalSteps, ...reversedSteps];
 
     // Re-insert start position at the beginning
-    allBeats.unshift(startPosition);
+    allSteps.unshift(startPosition);
 
-    return allBeats;
+    return allSteps;
   }
 
   /**
@@ -87,31 +87,31 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
    * Swaps start/end positions and reverses motion directions
    */
   private createRewoundBeat(
-    sourceBeat: BeatData,
-    previousBeat: BeatData,
-    newBeatNumber: number
-  ): BeatData {
+    sourceStep: StepData,
+    previousStep: StepData,
+    newStepNumber: number
+  ): StepData {
     return {
-      ...sourceBeat,
-      id: `beat-${newBeatNumber}`,
-      beatNumber: newBeatNumber,
+      ...sourceStep,
+      id: `beat-${newStepNumber}`,
+      stepNumber: newStepNumber,
       // Swap positions: new start = previous end, new end = source's start
-      startPosition: previousBeat.endPosition ?? null,
-      endPosition: sourceBeat.startPosition ?? null,
+      startPosition: previousStep.endPosition ?? null,
+      endPosition: sourceStep.startPosition ?? null,
       // Reverse motions
       motions: {
         [MotionColor.BLUE]: this.createRewoundMotion(
-          sourceBeat.motions[MotionColor.BLUE],
-          previousBeat.motions[MotionColor.BLUE]
+          sourceStep.motions[MotionColor.BLUE],
+          previousStep.motions[MotionColor.BLUE]
         ),
         [MotionColor.RED]: this.createRewoundMotion(
-          sourceBeat.motions[MotionColor.RED],
-          previousBeat.motions[MotionColor.RED]
+          sourceStep.motions[MotionColor.RED],
+          previousStep.motions[MotionColor.RED]
         ),
       },
       // Swap reversals
-      blueReversal: sourceBeat.redReversal ?? false,
-      redReversal: sourceBeat.blueReversal ?? false,
+      blueReversal: sourceStep.redReversal ?? false,
+      redReversal: sourceStep.blueReversal ?? false,
     };
   }
 
