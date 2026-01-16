@@ -418,7 +418,7 @@
   .form-header h2 {
     font-size: var(--font-size-3xl);
     font-weight: 700;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     margin: 0;
     letter-spacing: -0.5px;
   }
@@ -429,11 +429,8 @@
     justify-content: center;
     min-width: var(--min-touch-target);
     min-height: var(--min-touch-target);
-    background: var(
-      --theme-card-bg,
-      linear-gradient(135deg, #2d2d3a 0%, #1f1f28 100%)
-    );
-    border: 2px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 12px;
     color: var(--theme-text);
     cursor: pointer;
@@ -441,10 +438,7 @@
   }
 
   .close-button:hover {
-    background: var(
-      --theme-card-hover-bg,
-      linear-gradient(135deg, #3d3d4a 0%, #2f2f38 100%)
-    );
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text);
     transform: scale(1.05);
     border-color: var(--theme-stroke-strong);
@@ -458,10 +452,10 @@
     align-items: center;
     gap: 12px;
     padding: 16px 20px;
-    background: linear-gradient(135deg, var(--semantic-error) 0%, #b91c1c 100%);
+    background: var(--semantic-error);
     border: 2px solid var(--semantic-error);
     border-radius: 12px;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: var(--font-size-sm);
     font-weight: 600;
     margin-bottom: 24px;
@@ -479,7 +473,7 @@
     display: block;
     font-size: var(--font-size-sm);
     font-weight: 600;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     margin-bottom: 12px;
     letter-spacing: -0.2px;
   }
@@ -494,15 +488,15 @@
     width: 100%;
     padding: 16px 20px;
     min-height: var(--min-touch-target);
-    background: linear-gradient(135deg, #1a1a24 0%, #16161e 100%);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 2px solid
       color-mix(
         in srgb,
-        var(--theme-accent, var(--theme-accent)) 30%,
+        var(--theme-accent) 30%,
         transparent
       );
     border-radius: 12px;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-size: var(--font-size-sm);
     font-family: inherit;
     transition: all 0.2s ease;
@@ -515,12 +509,12 @@
 
   .text-input:focus {
     outline: none;
-    border-color: var(--theme-accent, var(--theme-accent));
-    background: linear-gradient(135deg, #20202e 0%, #1c1c28 100%);
+    border-color: var(--theme-accent);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     box-shadow: 0 0 0 4px
       color-mix(
         in srgb,
-        var(--theme-accent, var(--theme-accent)) 15%,
+        var(--theme-accent) 15%,
         transparent
       );
   }
@@ -561,11 +555,8 @@
     gap: 10px;
     padding: 14px 20px;
     min-height: var(--min-touch-target);
-    background: var(
-      --theme-card-bg,
-      linear-gradient(135deg, #2d2d3a 0%, #25252f 100%)
-    );
-    border: 2px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     border-radius: 12px;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
@@ -585,10 +576,7 @@
 
   .selection-chip:hover,
   .toggle-chip:hover {
-    background: var(
-      --theme-card-hover-bg,
-      linear-gradient(135deg, #3d3d4a 0%, #35353f 100%)
-    );
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
     transform: translateY(-2px);
@@ -596,13 +584,9 @@
   }
 
   .selection-chip.active {
-    background: linear-gradient(
-      135deg,
-      var(--chip-color, var(--theme-accent)) 0%,
-      color-mix(in srgb, var(--chip-color, var(--theme-accent)) 80%, black) 100%
-    );
+    background: var(--chip-color, var(--theme-accent));
     border-color: var(--chip-color, var(--theme-accent));
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     box-shadow:
       0 0 24px
         color-mix(
@@ -614,25 +598,11 @@
   }
 
   .toggle-chip.active {
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent, var(--theme-accent)) 0%,
-      color-mix(in srgb, var(--theme-accent, var(--theme-accent)) 90%, black)
-        100%
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, var(--theme-accent)) 120%,
-      white
-    );
-    color: #ffffff;
+    background: var(--theme-accent);
+    border-color: var(--theme-accent);
+    color: var(--theme-text, #ffffff);
     box-shadow:
-      0 0 24px
-        color-mix(
-          in srgb,
-          var(--theme-accent, var(--theme-accent)) 40%,
-          transparent
-        ),
+      0 0 24px color-mix(in srgb, var(--theme-accent) 40%, transparent),
       0 4px 16px rgba(0, 0, 0, 0.4);
   }
 
@@ -690,20 +660,14 @@
   }
 
   .cancel-button {
-    background: var(
-      --theme-card-bg,
-      linear-gradient(135deg, #2d2d3a 0%, #25252f 100%)
-    );
-    border: 2px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
-    color: var(--theme-text, var(--theme-text));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text);
     box-shadow: 0 2px 8px var(--theme-shadow);
   }
 
   .cancel-button:hover {
-    background: var(
-      --theme-card-hover-bg,
-      linear-gradient(135deg, #3d3d4a 0%, #35353f 100%)
-    );
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
     transform: translateY(-2px);
@@ -711,41 +675,19 @@
   }
 
   .save-button {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent, var(--theme-accent)) 120%, white)
-        0%,
-      var(--theme-accent, var(--theme-accent)) 100%
-    );
-    border: 2px solid
-      color-mix(in srgb, var(--theme-accent, var(--theme-accent)) 140%, white);
-    color: #ffffff;
+    background: var(--theme-accent);
+    border: 2px solid var(--theme-accent);
+    color: var(--theme-text, #ffffff);
     box-shadow:
-      0 0 20px
-        color-mix(
-          in srgb,
-          var(--theme-accent, var(--theme-accent)) 30%,
-          transparent
-        ),
+      0 0 20px color-mix(in srgb, var(--theme-accent) 30%, transparent),
       0 4px 16px rgba(0, 0, 0, 0.4);
   }
 
   .save-button:hover:not(:disabled) {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent, var(--theme-accent)) 130%, white)
-        0%,
-      color-mix(in srgb, var(--theme-accent, var(--theme-accent)) 110%, white)
-        100%
-    );
+    background: color-mix(in srgb, var(--theme-accent) 120%, white);
     transform: translateY(-2px);
     box-shadow:
-      0 0 30px
-        color-mix(
-          in srgb,
-          var(--theme-accent, var(--theme-accent)) 50%,
-          transparent
-        ),
+      0 0 30px color-mix(in srgb, var(--theme-accent) 50%, transparent),
       0 6px 20px rgba(0, 0, 0, 0.5);
   }
 

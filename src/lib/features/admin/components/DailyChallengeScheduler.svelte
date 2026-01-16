@@ -14,6 +14,9 @@
   import SchedulerCalendarView from "./challenge-scheduler/SchedulerCalendarView.svelte";
   import SchedulerTimelineView from "./challenge-scheduler/SchedulerTimelineView.svelte";
   import ChallengeFormPanel from "./challenge-scheduler/ChallengeFormPanel.svelte";
+  import AdminModal from "$lib/shared/admin/components/AdminModal.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
     adminChallengeService: IAdminChallengeManager;
@@ -28,6 +31,10 @@
   let showCreationPanel = $state(false);
   let currentMonth = $state(new Date());
   let viewMode = $state<"calendar" | "timeline">("calendar");
+
+  // Delete confirmation modal state
+  let showDeleteModal = $state(false);
+  let pendingDeleteId = $state<string | null>(null);
 
   // Derived
   const stats = $derived.by(() => {
@@ -194,24 +201,39 @@
       };
 
       await adminChallengeService.createChallenge(formData);
+      toast.success(t("admin_challenge_scheduled"));
       await loadData();
       handleClosePanel();
     } catch (error) {
       console.error("Failed to schedule challenge:", error);
-      alert("Failed to schedule challenge. Please try again.");
+      toast.error(t("admin_schedule_failed"));
     }
   }
 
-  async function handleDeleteChallenge(challengeId: string) {
-    if (!confirm("Are you sure you want to delete this challenge?")) return;
+  function handleDeleteChallenge(challengeId: string) {
+    pendingDeleteId = challengeId;
+    showDeleteModal = true;
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
 
     try {
-      await adminChallengeService.deleteChallenge(challengeId);
+      await adminChallengeService.deleteChallenge(pendingDeleteId);
+      toast.success(t("admin_challenge_deleted"));
       await loadData();
     } catch (error) {
       console.error("Failed to delete challenge:", error);
-      alert("Failed to delete challenge. Please try again.");
+      toast.error(t("admin_delete_failed"));
+    } finally {
+      showDeleteModal = false;
+      pendingDeleteId = null;
     }
+  }
+
+  function cancelDelete() {
+    showDeleteModal = false;
+    pendingDeleteId = null;
   }
 </script>
 
@@ -219,7 +241,7 @@
   {#if isLoading}
     <div class="loading-state">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <p>Loading challenge data...</p>
+      <p>{t("admin_loading_challenge_data")}</p>
     </div>
   {:else}
     <SchedulerStatsGrid {stats} />
@@ -227,22 +249,24 @@
     <div class="main-content">
       <div class="calendar-panel">
         <div class="panel-header">
-          <div class="view-toggle">
+          <div class="view-toggle" role="group" aria-label={t("visibility_animation")}>
             <button
               class="toggle-btn"
               class:active={viewMode === "calendar"}
               onclick={() => (viewMode = "calendar")}
+              aria-pressed={viewMode === "calendar"}
             >
               <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-              Calendar
+              {t("admin_calendar")}
             </button>
             <button
               class="toggle-btn"
               class:active={viewMode === "timeline"}
               onclick={() => (viewMode = "timeline")}
+              aria-pressed={viewMode === "timeline"}
             >
               <i class="fas fa-list" aria-hidden="true"></i>
-              Timeline
+              {t("admin_timeline")}
             </button>
           </div>
         </div>
@@ -274,6 +298,18 @@
     </div>
   {/if}
 </div>
+
+{#if showDeleteModal}
+  <AdminModal
+    title={t("admin_delete_challenge")}
+    message={t("admin_confirm_delete_challenge")}
+    variant="danger"
+    confirmLabel={t("action_delete")}
+    cancelLabel={t("action_cancel")}
+    onConfirm={confirmDelete}
+    onCancel={cancelDelete}
+  />
+{/if}
 
 <style>
   .scheduler {

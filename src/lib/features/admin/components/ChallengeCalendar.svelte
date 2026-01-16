@@ -39,11 +39,8 @@
 
   function handleDelete(event: MouseEvent, challengeId: string) {
     event.stopPropagation();
-    if (onDeleteChallenge) {
-      if (confirm("Are you sure you want to delete this challenge?")) {
-        onDeleteChallenge(challengeId);
-      }
-    }
+    // Confirmation is handled at the parent level (DailyChallengeScheduler)
+    onDeleteChallenge?.(challengeId);
   }
 </script>
 

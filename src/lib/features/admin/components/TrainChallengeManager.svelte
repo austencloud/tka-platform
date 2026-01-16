@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
   import type { ITrainChallengeManager } from "$lib/features/train/services/contracts/ITrainChallengeManager";
-  import type { TrainChallenge } from "$lib/features/train/domain/models/TrainChallengeModels";
+  import type { TrainChallenge, TrainChallengeRequirementType } from "$lib/features/train/domain/models/TrainChallengeModels";
   import type { ChallengeDifficulty } from "$lib/shared/gamification/domain/models/achievement-models";
   import { PracticeMode } from "$lib/features/train/domain/enums/TrainEnums";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
@@ -15,6 +15,8 @@
   import { getTrainChallengesPath } from "$lib/shared/gamification/data/firestore-collections";
   import { SEED_CHALLENGES } from "$lib/features/train/data/seed-challenges";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import AdminModal from "$lib/shared/admin/components/AdminModal.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Services (resolved lazily to avoid module initialization errors)
   let challengeService: ITrainChallengeManager | null = null;
@@ -25,6 +27,7 @@
   let showCreateForm = $state(false);
   let creating = $state(false);
   let seeding = $state(false);
+  let showSeedModal = $state(false);
 
   // Form state
   let formData = $state({
@@ -34,7 +37,7 @@
     xpReward: 100,
     bonusXP: 0,
     bonusCondition: "",
-    requirementType: "complete_sequence",
+    requirementType: "complete_sequence" as TrainChallengeRequirementType,
     target: 1,
     mode: null as PracticeMode | null,
     isActive: true,
@@ -61,7 +64,7 @@
 
   async function handleCreate() {
     if (!formData.title || !formData.description) {
-      alert("Please fill in all required fields");
+      toast.error(t("admin_fill_required_fields"));
       return;
     }
 
@@ -78,7 +81,7 @@
         bonusXP: formData.bonusXP || undefined,
         bonusCondition: formData.bonusCondition || undefined,
         requirement: {
-          type: formData.requirementType as any,
+          type: formData.requirementType,
           target: formData.target,
           metadata: formData.mode ? { mode: formData.mode } : undefined,
         },
@@ -92,12 +95,13 @@
         createdAt: serverTimestamp(),
       });
 
+      toast.success(t("admin_challenge_scheduled"));
       resetForm();
       showCreateForm = false;
       await loadChallenges();
     } catch (error) {
       console.error("❌ Failed to create challenge:", error);
-      alert("Failed to create challenge. Check console for details.");
+      toast.error(t("admin_create_challenge_failed"));
     } finally {
       creating = false;
     }
@@ -107,11 +111,11 @@
     formData = {
       title: "",
       description: "",
-      difficulty: "easy",
+      difficulty: "easy" as ChallengeDifficulty,
       xpReward: 100,
       bonusXP: 0,
       bonusCondition: "",
-      requirementType: "complete_sequence",
+      requirementType: "complete_sequence" as TrainChallengeRequirementType,
       target: 1,
       mode: null,
       isActive: true,
@@ -125,15 +129,12 @@
     showCreateForm = true;
   }
 
-  async function handleSeedChallenges() {
-    if (
-      !confirm(
-        `This will add ${SEED_CHALLENGES.length} sample challenges to Firestore. Continue?`
-      )
-    ) {
-      return;
-    }
+  function handleSeedChallenges() {
+    showSeedModal = true;
+  }
 
+  async function confirmSeed() {
+    showSeedModal = false;
     seeding = true;
 
     try {
@@ -151,14 +152,18 @@
         count++;
       }
 
-      alert(`Successfully added ${count} training challenges!`);
+      toast.success(t("admin_challenges_seeded", { count: count.toString() }));
       await loadChallenges();
     } catch (error) {
       console.error("❌ Failed to seed challenges:", error);
-      alert("Failed to seed challenges. Check console for details.");
+      toast.error(t("admin_seed_failed"));
     } finally {
       seeding = false;
     }
+  }
+
+  function cancelSeed() {
+    showSeedModal = false;
   }
 </script>
 
@@ -166,8 +171,8 @@
   <!-- Header -->
   <div class="manager-header">
     <div class="header-text">
-      <h2>Train Challenge Manager</h2>
-      <p>Create and manage training challenges</p>
+      <h2>{t("admin_train_challenges")}</h2>
+      <p>{t("admin_train_challenges_desc")}</p>
     </div>
     <div class="header-actions">
       <button
@@ -393,6 +398,18 @@
     {/if}
   </div>
 </div>
+
+{#if showSeedModal}
+  <AdminModal
+    title={t("admin_seed_challenges")}
+    message={t("admin_confirm_seed_challenges", { count: SEED_CHALLENGES.length.toString() })}
+    variant="warning"
+    confirmLabel={t("action_confirm")}
+    cancelLabel={t("action_cancel")}
+    onConfirm={confirmSeed}
+    onCancel={cancelSeed}
+  />
+{/if}
 
 <style>
   .challenge-manager {
