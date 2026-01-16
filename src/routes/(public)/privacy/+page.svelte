@@ -42,6 +42,10 @@
             <strong>Device Information:</strong> Browser type, device type, and operating
             system for optimization purposes
           </li>
+          <li>
+            <strong>Messages:</strong> Content of messages you send to other users
+            through our in-app messaging feature
+          </li>
         </ul>
       </section>
 
@@ -68,7 +72,18 @@
       </section>
 
       <section>
-        <h2>4. Data Sharing</h2>
+        <h2>4. Messages and Communications</h2>
+        <p>
+          When you use our messaging feature to communicate with other users,
+          we store your messages to deliver them and maintain your conversation
+          history. Messages may be reviewed by our team to provide support,
+          investigate abuse reports, or improve the service. We do not sell
+          or share your private messages with third parties.
+        </p>
+      </section>
+
+      <section>
+        <h2>5. Data Sharing</h2>
         <p>
           We do not sell your personal information. We may share data only in
           the following circumstances:
@@ -83,7 +98,7 @@
       </section>
 
       <section>
-        <h2>5. Your Rights</h2>
+        <h2>6. Your Rights</h2>
         <p>You have the right to:</p>
         <ul>
           <li>Access the personal information we hold about you</li>
@@ -94,7 +109,7 @@
       </section>
 
       <section>
-        <h2>6. Cookies and Local Storage</h2>
+        <h2>7. Cookies and Local Storage</h2>
         <p>
           TKA Scribe uses local storage and cookies to maintain your session,
           remember your preferences, and provide a seamless experience. These
@@ -103,7 +118,7 @@
       </section>
 
       <section>
-        <h2>7. Third-Party Services</h2>
+        <h2>8. Third-Party Services</h2>
         <p>We use the following third-party services:</p>
         <ul>
           <li><strong>Firebase:</strong> Authentication and data storage</li>
@@ -118,7 +133,7 @@
       </section>
 
       <section>
-        <h2>8. Children's Privacy</h2>
+        <h2>9. Children's Privacy</h2>
         <p>
           TKA Scribe is not intended for children under 13 years of age. We do
           not knowingly collect personal information from children under 13.
@@ -126,7 +141,7 @@
       </section>
 
       <section>
-        <h2>9. Changes to This Policy</h2>
+        <h2>10. Changes to This Policy</h2>
         <p>
           We may update this Privacy Policy from time to time. We will notify
           you of any changes by posting the new Privacy Policy on this page and
@@ -135,7 +150,7 @@
       </section>
 
       <section>
-        <h2>10. Contact Us</h2>
+        <h2>11. Contact Us</h2>
         <p>
           If you have questions about this Privacy Policy or your data, please
           contact us through the application's support channels.

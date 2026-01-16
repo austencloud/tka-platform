@@ -243,7 +243,8 @@ Used by both desktop side panel and mobile slide-up overlay.
     isShareCopying = true;
     shareSuccess = false;
 
-    const result = await imageSharer.copyToClipboard(sequence, userName);
+    const seq = fullSequence ?? sequence;
+    const result = await imageSharer.copyToClipboard(seq, userName);
     isShareCopying = false;
 
     if (result.success) {
@@ -258,7 +259,8 @@ Used by both desktop side panel and mobile slide-up overlay.
   async function handleDownloadImage() {
     if (!imageSharer) return;
     hapticService?.trigger("selection");
-    const result = await imageSharer.downloadImage(sequence, userName);
+    const seq = fullSequence ?? sequence;
+    const result = await imageSharer.downloadImage(seq, userName);
     if (result.success) {
       hapticService?.trigger("success");
     } else {
@@ -269,7 +271,8 @@ Used by both desktop side panel and mobile slide-up overlay.
   async function handleNativeShare() {
     if (!imageSharer) return;
     hapticService?.trigger("selection");
-    const result = await imageSharer.nativeShare(sequence, userName);
+    const seq = fullSequence ?? sequence;
+    const result = await imageSharer.nativeShare(seq, userName);
     if (result.success) {
       hapticService?.trigger("success");
     } else if (result.error) {

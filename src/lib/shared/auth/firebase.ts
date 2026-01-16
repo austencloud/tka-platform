@@ -435,6 +435,19 @@ export async function getStorageInstance(): Promise<FirebaseStorage> {
 }
 
 // ============================================================================
+// FUNCTIONS (LAZY)
+// ============================================================================
+
+/**
+ * Get Firebase Functions instance (lazy)
+ * Uses the current HMR-safe app instance
+ */
+export async function getFunctionsInstance(): Promise<import("firebase/functions").Functions> {
+  const { getFunctions } = await import("firebase/functions");
+  return getFunctions(app);
+}
+
+// ============================================================================
 // ANALYTICS (LAZY)
 // ============================================================================
 

@@ -25,6 +25,8 @@ body {
   padding: 0;
   /* Prevent browser back navigation on horizontal swipe gestures (PWA) */
   overscroll-behavior-x: none;
+  /* Prevent pull-to-refresh from interfering with swipe-to-dismiss on drawers/sheets (PWA) */
+  overscroll-behavior-y: contain;
 }
 
 /*

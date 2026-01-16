@@ -2,6 +2,7 @@
   /**
    * PermissionMatrix
    * Matrix view showing Features x Roles with inline editing
+   * Modules are collapsible to show/hide their tabs
    */
 
   import type { FeatureFlagConfig } from "$lib/shared/auth/domain/models/FeatureFlag";
@@ -24,6 +25,25 @@
 
   let searchQuery = $state("");
   let savingFlags = $state<Set<string>>(new Set());
+  let expandedModules = $state<Set<string>>(new Set());
+
+  function toggleModule(moduleId: string) {
+    const newSet = new Set(expandedModules);
+    if (newSet.has(moduleId)) {
+      newSet.delete(moduleId);
+    } else {
+      newSet.add(moduleId);
+    }
+    expandedModules = newSet;
+  }
+
+  function expandAll() {
+    expandedModules = new Set(filteredModules().map(m => m.module.id));
+  }
+
+  function collapseAll() {
+    expandedModules = new Set();
+  }
 
   // Get flags from service
   const featureFlags = $derived(featureFlagService.featureConfigs);
@@ -87,12 +107,24 @@
       <h3>Permission Matrix</h3>
       <p>Click role cells to change minimum required role. Toggle to enable/disable globally.</p>
     </div>
-    <div class="search-box">
-      <AdminSearchBox
-        value={searchQuery}
-        placeholder="Filter features..."
-        oninput={(e) => (searchQuery = (e.target as HTMLInputElement).value)}
-      />
+    <div class="header-actions">
+      <div class="expand-controls">
+        <button type="button" class="expand-btn" onclick={expandAll} title="Expand all modules">
+          <i class="fas fa-expand-alt" aria-hidden="true"></i>
+          <span>Expand</span>
+        </button>
+        <button type="button" class="expand-btn" onclick={collapseAll} title="Collapse all modules">
+          <i class="fas fa-compress-alt" aria-hidden="true"></i>
+          <span>Collapse</span>
+        </button>
+      </div>
+      <div class="search-box">
+        <AdminSearchBox
+          value={searchQuery}
+          placeholder="Filter features..."
+          oninput={(e) => (searchQuery = (e.target as HTMLInputElement).value)}
+        />
+      </div>
     </div>
   </div>
 
@@ -111,27 +143,61 @@
 
     <!-- Modules -->
     {#each filteredModules() as { module, tabs }}
-      <MatrixRow
-        flag={module}
-        saving={savingFlags.has(module.id)}
-        toggleLocked={module.id === "module:admin"}
-        toggleLockedReason="Cannot disable admin module while using it"
-        onRoleClick={(role) => handleRoleClick(module, role)}
-        onToggle={() => handleEnabledToggle(module)}
-      />
+      {@const moduleStyle = getFeatureIconAndColor(module.id)}
+      {@const isExpanded = expandedModules.has(module.id)}
+      {@const hasTabs = tabs.length > 0}
 
-      {#each tabs as tab}
-        <MatrixRow
-          flag={tab}
-          indent
-          parentRole={module.minimumRole}
-          saving={savingFlags.has(tab.id)}
-          toggleLocked={tab.id === "tab:admin:flags"}
-          toggleLockedReason="Cannot disable Feature Flags tab while using it"
-          onRoleClick={(role) => handleRoleClick(tab, role)}
-          onToggle={() => handleEnabledToggle(tab)}
-        />
-      {/each}
+      <div class="module-group" style="--module-color: {moduleStyle.color}">
+        <div class="module-header" class:expanded={isExpanded}>
+          {#if hasTabs}
+            <button
+              type="button"
+              class="expand-toggle"
+              onclick={() => toggleModule(module.id)}
+              aria-expanded={isExpanded}
+              aria-label="{isExpanded ? 'Collapse' : 'Expand'} {module.name}"
+            >
+              <i class="fas fa-chevron-right" class:rotated={isExpanded} aria-hidden="true"></i>
+            </button>
+          {:else}
+            <div class="expand-placeholder"></div>
+          {/if}
+
+          <div class="module-row-content">
+            <MatrixRow
+              flag={module}
+              saving={savingFlags.has(module.id)}
+              toggleLocked={module.id === "module:admin"}
+              toggleLockedReason="Cannot disable admin module while using it"
+              onRoleClick={(role) => handleRoleClick(module, role)}
+              onToggle={() => handleEnabledToggle(module)}
+            />
+          </div>
+
+          {#if hasTabs}
+            <span class="tab-count" title="{tabs.length} tab{tabs.length === 1 ? '' : 's'}">
+              {tabs.length}
+            </span>
+          {/if}
+        </div>
+
+        {#if isExpanded && hasTabs}
+          <div class="tabs-container">
+            {#each tabs as tab}
+              <MatrixRow
+                flag={tab}
+                indent
+                parentRole={module.minimumRole}
+                saving={savingFlags.has(tab.id)}
+                toggleLocked={tab.id === "tab:admin:flags"}
+                toggleLockedReason="Cannot disable Feature Flags tab while using it"
+                onRoleClick={(role) => handleRoleClick(tab, role)}
+                onToggle={() => handleEnabledToggle(tab)}
+              />
+            {/each}
+          </div>
+        {/if}
+      </div>
     {/each}
 
     <!-- Capabilities section -->
@@ -188,6 +254,48 @@
     margin: 0;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  @media (min-width: 500px) {
+    .header-actions {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .expand-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .expand-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .expand-btn:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .expand-btn i {
+    font-size: 11px;
   }
 
   .search-box {
@@ -310,5 +418,101 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: #f59e0b;
+  }
+
+  /* Collapsible module groups */
+  .module-group {
+    border-radius: 10px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    border-left: 3px solid var(--module-color, var(--theme-stroke));
+    background: color-mix(in srgb, var(--module-color) 3%, transparent);
+  }
+
+  .module-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0 2px 4px;
+    transition: background 0.15s ease;
+  }
+
+  .module-header:hover {
+    background: color-mix(in srgb, var(--module-color) 6%, transparent);
+  }
+
+  .module-header.expanded {
+    border-bottom: 1px solid color-mix(in srgb, var(--module-color) 15%, transparent);
+  }
+
+  .expand-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--module-color, var(--theme-text-dim));
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .expand-toggle:hover {
+    background: color-mix(in srgb, var(--module-color) 15%, transparent);
+  }
+
+  .expand-toggle i {
+    font-size: 11px;
+    transition: transform 0.2s ease;
+  }
+
+  .expand-toggle i.rotated {
+    transform: rotate(90deg);
+  }
+
+  .expand-placeholder {
+    width: 28px;
+    flex-shrink: 0;
+  }
+
+  .module-row-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tab-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 20px;
+    padding: 0 6px;
+    margin-right: 8px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--module-color) 20%, transparent);
+    color: var(--module-color);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .tabs-container {
+    padding: 4px 0 8px 32px;
+    background: color-mix(in srgb, var(--module-color) 2%, transparent);
+    animation: slideDown 0.15s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 </style>

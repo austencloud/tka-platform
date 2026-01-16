@@ -247,7 +247,17 @@ export class ActivityLogger implements IActivityLogger {
 
           await addDoc(activityRef, docData);
         } catch (error) {
-          console.error("Failed to log activity event:", error);
+          // "Already exists" can happen with Firestore offline persistence
+          // when a retry succeeds after the original write already completed
+          const isAlreadyExists = error instanceof Error &&
+            error.message.includes("already exists");
+
+          if (isAlreadyExists) {
+            // Event was already logged - this is fine, just skip
+            console.debug("[ActivityLogger] Event already logged, skipping duplicate");
+          } else {
+            console.error("Failed to log activity event:", error);
+          }
           // Don't re-buffer failed events to avoid infinite loops
         }
       }
