@@ -9,6 +9,7 @@ import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import type { GridMode, GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
 import type { BackgroundType } from "../../background/shared/domain/enums/background-enums";
 import type { BackgroundLabSettings } from "$lib/features/background-builder/domain/lab-settings-types";
+import type { TimeSignatureKey } from "../../foundation/domain/models/TimeSignature";
 
 /**
  * Prop Preset - A saved prop configuration for quick switching
@@ -102,6 +103,7 @@ export interface AppSettings {
 
   // Timing Display Settings
   musicianMode?: boolean; // Show positions as "1 e & a" instead of decimals (1.25, 1.5)
+  defaultTimeSignature?: TimeSignatureKey; // Default time signature for sequences (default: "4/4")
 
   // Image Export Settings
   imageExport?: {

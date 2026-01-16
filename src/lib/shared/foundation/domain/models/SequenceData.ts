@@ -1,4 +1,5 @@
 ﻿import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { TimeSignatureKey } from "./TimeSignature";
 /**
  * Sequence Domain Model
  *
@@ -41,6 +42,8 @@ export interface SequenceData {
   /** When this library entry was created */
   readonly createdAt?: Date;
   readonly gridMode?: GridMode;
+  /** Time signature for this sequence (overrides global default). */
+  readonly timeSignature?: TimeSignatureKey;
   // NOTE: propType removed - prop type is a viewer preference, not sequence data
   // Each motion stores its own propType, and rendering uses viewer's settings
   /**
@@ -104,6 +107,7 @@ export function createSequenceData(
     ...(data.level !== undefined && { level: data.level }),
     ...(data.dateAdded !== undefined && { dateAdded: data.dateAdded }),
     ...(data.gridMode !== undefined && { gridMode: data.gridMode }),
+    ...(data.timeSignature !== undefined && { timeSignature: data.timeSignature }),
     ...(data.startingPositionBeat !== undefined && {
       startingPositionBeat: data.startingPositionBeat,
     }),

@@ -8,6 +8,7 @@ import type { PictographData } from "../../../../pictograph/shared/domain/models
 import type { MotionData } from "../../../../pictograph/shared/domain/models/MotionData";
 import type { GridMode } from "../../../../pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "../../../domain/models/Letter";
+import type { ICodexLetterMappingRepo } from "../../../../../features/learn/codex/services/contracts/ICodexLetterMappingRepo";
 
 // ============================================================================
 // DATA CONTRACTS - MOVED TO DOMAIN
@@ -54,6 +55,12 @@ export interface ILetterQueryHandler {
    * This returns every row in the CSV as a separate pictograph, including multiple variations per letter
    */
   getAllPictographVariations(gridMode: GridMode): Promise<PictographData[]>;
+
+  /**
+   * Set the letter mapping repository after construction.
+   * Needed when the repo is created in a different container (learn module).
+   */
+  setLetterMappingRepo?(repo: ICodexLetterMappingRepo): void;
 }
 
 export interface IMotionQueryHandler {

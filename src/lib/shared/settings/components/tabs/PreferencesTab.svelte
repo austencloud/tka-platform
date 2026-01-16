@@ -12,6 +12,10 @@
   import type { AppSettings } from "../../domain/AppSettings";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
+  import {
+    TIME_SIGNATURES,
+    type TimeSignatureKey,
+  } from "../../../foundation/domain/models/TimeSignature";
   import { onMount } from "svelte";
   import {
     getSettings,
@@ -47,6 +51,16 @@
     !currentSettings?.skipClearConfirmation
   );
   const musicianMode = $derived(currentSettings?.musicianMode ?? false);
+  const defaultTimeSignature = $derived<TimeSignatureKey>(
+    currentSettings?.defaultTimeSignature ?? "4/4"
+  );
+
+  // Time signature options for the dropdown
+  const timeSignatureOptions: { key: TimeSignatureKey; label: string }[] = [
+    { key: "4/4", label: "4/4 (Common)" },
+    { key: "3/4", label: "3/4 (Waltz)" },
+    { key: "6/8", label: "6/8 (Compound)" },
+  ];
 
   function handleToggleClearConfirmation() {
     hapticService?.trigger("selection");
@@ -69,6 +83,16 @@
     onSettingUpdate?.({
       key: "musicianMode",
       value: !musicianMode,
+    });
+  }
+
+  function handleTimeSignatureChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const value = target.value as TimeSignatureKey;
+    hapticService?.trigger("selection");
+    onSettingUpdate?.({
+      key: "defaultTimeSignature",
+      value,
     });
   }
 </script>
@@ -164,6 +188,27 @@
           <div class="toggle-knob"></div>
         </div>
       </button>
+
+      <!-- Time Signature -->
+      <div class="select-row">
+        <div class="select-info">
+          <span class="select-label">Time Signature</span>
+          <span class="select-description">
+            Default time signature for new sequences. Affects beat subdivision
+            (4/4 uses quarter notes, 6/8 uses triplets).
+          </span>
+        </div>
+        <select
+          class="time-signature-select"
+          value={defaultTimeSignature}
+          onchange={handleTimeSignatureChange}
+          aria-label="Time Signature"
+        >
+          {#each timeSignatureOptions as option (option.key)}
+            <option value={option.key}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
     </div>
   </section>
 
@@ -316,6 +361,68 @@
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     line-height: 1.4;
+  }
+
+  /* Select Row (similar to toggle-row but with select instead of switch) */
+  .select-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+  }
+
+  .select-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .select-label {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .select-description {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    line-height: 1.4;
+  }
+
+  .time-signature-select {
+    padding: 10px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 8px;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    min-width: 140px;
+  }
+
+  .time-signature-select:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  }
+
+  .time-signature-select:focus-visible {
+    outline: 2px solid var(--theme-accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  .time-signature-select option {
+    background: var(--theme-panel-bg, #1a1a2e);
+    color: var(--theme-text, #ffffff);
+    padding: 8px;
   }
 
   /* Toggle Switch */
