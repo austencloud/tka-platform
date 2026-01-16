@@ -123,6 +123,7 @@ export interface AnimationEngineState {
   displayedLetter: Letter | null;
   displayedTurnsTuple: string;
   displayedBeatNumber: number | null;
+  displayedMusicalPosition: string | null;
   fadingOutLetter: Letter | null;
   fadingOutTurnsTuple: string | null;
   fadingOutBeatNumber: number | null;
@@ -167,6 +168,7 @@ export class AnimationEngine {
     displayedLetter: null,
     displayedTurnsTuple: "(s, 0, 0)",
     displayedBeatNumber: null,
+    displayedMusicalPosition: null,
     fadingOutLetter: null,
     fadingOutTurnsTuple: null,
     fadingOutBeatNumber: null,
@@ -221,6 +223,9 @@ export class AnimationEngine {
   private prevSequenceData: SequenceData | null = null;
   private prevIsPlaying: boolean = false;
   private prevGridMode: GridMode | null = null;
+
+  // Sequence content hash for detecting beat duration changes
+  private lastSequenceContentHash: string | null = null;
 
   // Prop type overrides (bypass settings when provided)
   private propTypeOverrideBlue: string | null = null;
@@ -575,6 +580,17 @@ export class AnimationEngine {
     // Handle sequence changes
     this.sequenceCacheService?.handleSequenceChange(props.sequenceData ?? null);
 
+    // Detect sequence content changes and re-initialize orchestrator if needed
+    // This ensures duration changes are reflected in the animation
+    if (props.sequenceData && this.orchestrator) {
+      const newHash = this.getSequenceContentHash(props.sequenceData);
+      if (newHash !== this.lastSequenceContentHash) {
+        console.log('[AnimationEngine] Sequence content changed, re-initializing orchestrator');
+        this.orchestrator.initializeWithDomainData(props.sequenceData);
+        this.lastSequenceContentHash = newHash;
+      }
+    }
+
     // Handle cache clear signals (only process once per signal)
     const clearSignal = this.sequenceCacheService?.state.clearSignal ?? 0;
     if (clearSignal > this.lastClearSignal) {
@@ -662,10 +678,12 @@ export class AnimationEngine {
     // Update glyph transition
     const beatNumber = this.calculateBeatNumber(props);
     const turnsTuple = this.calculateTurnsTuple(props);
+    const musicalPosition = this.calculateMusicalPosition(props);
     this.glyphTransitionService?.updateTarget(
       props.letter ?? null,
       turnsTuple,
-      beatNumber
+      beatNumber,
+      musicalPosition
     );
 
     // Sync glyph state immediately after update so component sees new values
@@ -677,6 +695,8 @@ export class AnimationEngine {
         this.glyphTransitionService.state.displayedTurnsTuple;
       this.state.displayedBeatNumber =
         this.glyphTransitionService.state.displayedBeatNumber;
+      this.state.displayedMusicalPosition =
+        this.glyphTransitionService.state.displayedMusicalPosition;
       this.state.fadingOutLetter =
         this.glyphTransitionService.state.fadingOutLetter;
       this.state.fadingOutTurnsTuple =
@@ -1008,6 +1028,8 @@ export class AnimationEngine {
         this.glyphTransitionService.state.displayedTurnsTuple;
       this.state.displayedBeatNumber =
         this.glyphTransitionService.state.displayedBeatNumber;
+      this.state.displayedMusicalPosition =
+        this.glyphTransitionService.state.displayedMusicalPosition;
       this.state.fadingOutLetter =
         this.glyphTransitionService.state.fadingOutLetter;
       this.state.fadingOutTurnsTuple =
@@ -1071,6 +1093,44 @@ export class AnimationEngine {
   }
 
   /**
+   * Calculate the musical position display string as a continuous decimal.
+   * Shows real-time position during animation (e.g., "2.5" for halfway through beat 2).
+   * For beats with duration > 1, the decimal increments through the full range.
+   *
+   * Example: Beat 2 with duration 2 at 50% progress shows "3.0" (2 + 0.5×2)
+   * Returns null to use the default beat number display.
+   */
+  private calculateMusicalPosition(props: AnimationEngineProps): string | null {
+    // During animation playback, get continuous position from the orchestrator
+    if (this.orchestrator && this.orchestrator.isInitialized()) {
+      const continuousPosition = this.orchestrator.getContinuousMusicalPosition();
+
+      // At start position (returns 0), show nothing
+      if (continuousPosition <= 0) {
+        return null;
+      }
+
+      // Format with one decimal place for cleaner display
+      // e.g., 2.0, 2.5, 3.0, 3.5
+      return continuousPosition.toFixed(1);
+    }
+
+    // Fallback: use beat data from props (static display, not animation)
+    if (props.beatData && props.sequenceData) {
+      const beatIndex = props.sequenceData.beats?.findIndex(
+        (b) => b === props.beatData
+      );
+      if (beatIndex !== undefined && beatIndex >= 0) {
+        const beatNumber = beatIndex + 1;
+        // For static display, just show the beat number with .0
+        return `${beatNumber}.0`;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Shallow comparison of trail settings (faster than JSON.stringify)
    */
   private trailSettingsChanged(a: TrailSettings, b: TrailSettings): boolean {
@@ -1092,6 +1152,16 @@ export class AnimationEngine {
       a.usePathCache !== b.usePathCache ||
       a.previewMode !== b.previewMode
     );
+  }
+
+  /**
+   * Generate a hash string representing sequence content that affects animation.
+   * Includes beat durations, beat count, and sequence ID for change detection.
+   */
+  private getSequenceContentHash(seq: SequenceData): string {
+    const beatDurations = seq.beats?.map((b) => b.duration ?? 1).join(",") || "";
+    const beatCount = seq.beats?.length || 0;
+    return `${seq.id || seq.word || "unknown"}-${beatCount}-${beatDurations}`;
   }
 
   /**

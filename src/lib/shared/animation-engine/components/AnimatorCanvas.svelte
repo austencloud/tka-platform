@@ -143,6 +143,7 @@ Last audit: 2025-12-27
   const displayedLetter = $derived(engine.state.displayedLetter);
   const displayedTurnsTuple = $derived(engine.state.displayedTurnsTuple);
   const displayedBeatNumber = $derived(engine.state.displayedBeatNumber);
+  const displayedMusicalPosition = $derived(engine.state.displayedMusicalPosition);
   const fadingOutLetter = $derived(engine.state.fadingOutLetter);
   const fadingOutTurnsTuple = $derived(engine.state.fadingOutTurnsTuple);
   const fadingOutBeatNumber = $derived(engine.state.fadingOutBeatNumber);
@@ -239,6 +240,7 @@ Last audit: 2025-12-27
         {displayedLetter}
         {displayedTurnsTuple}
         {displayedBeatNumber}
+        {displayedMusicalPosition}
         {fadingOutLetter}
         {fadingOutTurnsTuple}
         {fadingOutBeatNumber}

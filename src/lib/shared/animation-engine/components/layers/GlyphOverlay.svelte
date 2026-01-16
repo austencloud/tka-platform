@@ -24,6 +24,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
     displayedLetter = null,
     displayedTurnsTuple = "(s, 0, 0)",
     displayedBeatNumber = null,
+    displayedMusicalPosition = null,
     // Fading out state
     fadingOutLetter = null,
     fadingOutTurnsTuple = null,
@@ -42,6 +43,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
     displayedLetter?: Letter | null;
     displayedTurnsTuple?: string;
     displayedBeatNumber?: number | null;
+    displayedMusicalPosition?: string | null;
     fadingOutLetter?: Letter | null;
     fadingOutTurnsTuple?: string | null;
     fadingOutBeatNumber?: number | null;
@@ -137,6 +139,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
           >
             <BeatNumber
               beatNumber={isAtStartPosition ? 0 : displayedBeatNumber}
+              musicalPosition={isAtStartPosition ? undefined : displayedMusicalPosition ?? undefined}
               {darkMode}
             />
           </g>

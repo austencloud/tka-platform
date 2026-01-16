@@ -23,6 +23,7 @@ export class GlyphTransitionController implements IGlyphTransitionController {
     displayedLetter: null,
     displayedTurnsTuple: "(s, 0, 0)",
     displayedBeatNumber: null,
+    displayedMusicalPosition: null,
     fadingOutLetter: null,
     fadingOutTurnsTuple: null,
     fadingOutBeatNumber: null,
@@ -35,13 +36,15 @@ export class GlyphTransitionController implements IGlyphTransitionController {
   updateTarget(
     letter: Letter | null,
     turnsTuple: string,
-    beatNumber: number | null
+    beatNumber: number | null,
+    musicalPosition?: string | null
   ): void {
     const hasLetterChanged = letter !== this.state.displayedLetter;
     const hasTurnsChanged = turnsTuple !== this.state.displayedTurnsTuple;
     const hasBeatChanged = beatNumber !== this.state.displayedBeatNumber;
+    const hasPositionChanged = musicalPosition !== this.state.displayedMusicalPosition;
 
-    if (!hasLetterChanged && !hasTurnsChanged && !hasBeatChanged) {
+    if (!hasLetterChanged && !hasTurnsChanged && !hasBeatChanged && !hasPositionChanged) {
       return; // No change at all
     }
 
@@ -78,6 +81,7 @@ export class GlyphTransitionController implements IGlyphTransitionController {
     this.state.displayedLetter = letter;
     this.state.displayedTurnsTuple = turnsTuple;
     this.state.displayedBeatNumber = beatNumber;
+    this.state.displayedMusicalPosition = musicalPosition ?? null;
   }
 
   getTransitionDuration(): number {
@@ -97,6 +101,7 @@ export class GlyphTransitionController implements IGlyphTransitionController {
     this.state.displayedLetter = null;
     this.state.displayedTurnsTuple = "(s, 0, 0)";
     this.state.displayedBeatNumber = null;
+    this.state.displayedMusicalPosition = null;
     this.state.fadingOutLetter = null;
     this.state.fadingOutTurnsTuple = null;
     this.state.fadingOutBeatNumber = null;
