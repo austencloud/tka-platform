@@ -80,6 +80,31 @@ Before decomposition, evaluate through:
 
 ---
 
+## Defending "Leave It Alone" Conclusions
+
+**If the four perspectives test says "don't decompose," trust it.**
+
+When challenged with "but what if it grows?" or "this might become user-facing," don't just flip. Instead ask:
+
+> "What **specific** growth would benefit from this extraction?"
+
+### Bad reasons to extract:
+- "It might get bigger" (vague)
+- "It could become user-facing" (hypothetical)
+- "The line count makes me uncomfortable" (that's what the Skeptic perspective already evaluated)
+
+### Good reasons to revisit:
+- "We're adding 10 new behavior types next sprint" (concrete growth)
+- "This exact logic needs to be reused in ComponentX" (actual duplication)
+- "The drawing code needs unit tests because bugs are silent" (real testing need)
+
+### The trap to avoid:
+Extracting thin wrappers (switch statements, property setters, ctx.save/restore boilerplate) into DI services adds ceremony without benefit. A 50-line service that just delegates to object properties isn't "testable game logic" - it's indirection.
+
+**Lesson learned:** On 2026-01-15, Claude extracted FishStyleMapper, FishBehaviorTrigger, and DeepOceanLabDrawer from DeepOceanLab.svelte after being challenged on a "leave it alone" conclusion. In retrospect, only PersonalityBars.svelte (a reusable UI component) was worth extracting. The services added 7 files and ~240 lines for no meaningful benefit.
+
+---
+
 ## Signs File Needs Decomposition
 
 - Polling/workarounds in comments

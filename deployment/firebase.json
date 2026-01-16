@@ -10,9 +10,9 @@
     "rules": "storage.rules"
   },
   "functions": {
-    "source": "../functions",
+    "source": "functions",
     "codebase": "default",
-    "runtime": "nodejs18",
+    "runtime": "nodejs20",
     "ignore": ["node_modules", ".git", "*.log"],
     "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
   },

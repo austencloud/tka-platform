@@ -406,8 +406,7 @@ export default defineConfig({
   ssr: {
     noExternal: [
       "svelte",
-      "inversify", // Force bundle to avoid CommonJS require()
-      "reflect-metadata", // Required by inversify, often has CJS issues
+      "reflect-metadata", // Often has CJS issues
       "gif.js", // May contain CJS code
       "file-saver", // Often has CJS exports
       "@tsparticles/basic",
@@ -446,12 +445,10 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       // Core DI & validation (lightweight, needed immediately)
-      "inversify",
       "reflect-metadata",
       "zod",
 
       // UI components (lightweight)
-      "vaul-svelte",
       "bits-ui",
       "embla-carousel-svelte",
 
@@ -464,6 +461,16 @@ export default defineConfig({
       // Threlte: avoid on-demand re-optimization (prevents stale dep 504s)
       "@threlte/core",
       "@threlte/extras",
+      // WebGPU renderer: pre-bundle to avoid 504 "Outdated Optimize Dep" errors
+      "three/webgpu",
+
+      // Prevent mid-session optimization reloads (lightweight deps discovered late)
+      "animate-css-grid",
+      "@tanstack/svelte-virtual",
+      "realtime-bpm-analyzer",
+      "threlte-postprocessing",
+      "threlte-postprocessing/effects",
+      "three/examples/jsm/controls/PointerLockControls.js",
     ],
     exclude: [
       "pdfjs-dist",
