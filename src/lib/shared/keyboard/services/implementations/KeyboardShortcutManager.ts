@@ -86,6 +86,7 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
       action: options.action,
       enabled: options.enabled ?? true,
       isSingleKey: (options.modifiers ?? []).length === 0,
+      forceExecute: options.forceExecute ?? false,
     };
 
     // Only add description if it's defined
@@ -191,7 +192,8 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
     // The ArrowAdjustmentControls component handles WASD in this case
     const key = event.key.toLowerCase();
     if (selectedArrowState.selectedArrow && ["w", "a", "s", "d"].includes(key)) {
-      // Arrow is selected, let ArrowAdjustmentControls handle WASD
+      // Arrow is selected, let ArrowAdjustmentPanel handle WASD
+      console.log("[KeyboardShortcutManager] Arrow selected, yielding WASD to ArrowAdjustmentPanel");
       return;
     }
 
@@ -213,7 +215,8 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
     if (!shortcut) return;
 
     // Check if we should ignore (e.g., typing in input)
-    if (normalized.shouldIgnore(shortcut.isSingleKey)) return;
+    // forceExecute bypasses the interactive element check
+    if (!shortcut.forceExecute && normalized.shouldIgnore(shortcut.isSingleKey)) return;
 
     // Log for debugging
     debug.log(`Executing shortcut: ${shortcut.id}`, {

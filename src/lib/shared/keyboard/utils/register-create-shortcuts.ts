@@ -31,13 +31,10 @@ export function registerCreateShortcuts(
     context: ["create", "share-hub"], // Works in both contexts
     scope: "animation",
     priority: "high",
+    forceExecute: true, // Always execute, even when focus is on interactive elements like beats
     condition: () => {
-      if (!state.settings.enableSingleKeyShortcuts) return false;
-      // Only enable if there's a sequence to animate
-      const ref = getCreateModuleRef();
-      if (!ref) return false;
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      return sequenceState?.hasSequence() ?? false;
+      // Only check for single-key shortcuts enabled - sequence check is in action
+      return state.settings.enableSingleKeyShortcuts;
     },
     action: () => {
       const ref = getCreateModuleRef();
@@ -53,8 +50,12 @@ export function registerCreateShortcuts(
           playbackController.togglePlayback();
         }
       } else {
-        // No animation panel open - open the Animation Panel
-        panelState.openAnimationPanel();
+        // No animation panel open - check if we have a sequence first
+        const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+        if (sequenceState?.hasSequence()) {
+          // Open ShareHub with animation format - this is where animation viewer lives in Create module
+          panelState.openShareHubPanel("animation");
+        }
       }
     },
   });

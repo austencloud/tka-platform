@@ -147,11 +147,13 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
    * (e.g., when typing in an input field, or activating a button)
    */
   shouldIgnore(isSingleKeyShortcut: boolean): boolean {
-    // Always allow modifier+key shortcuts
-    if (!isSingleKeyShortcut) return false;
-
     // Single-key shortcuts should be ignored when typing in inputs
-    if (this.isInputTarget) return true;
+    if (isSingleKeyShortcut && this.isInputTarget) return true;
+
+    // Shift-only shortcuts in input fields should be treated as typing.
+    // Shift+1 = !, Shift+2 = @, Shift+A = A, etc.
+    // These are characters the user wants to type, not commands.
+    if (this.isInputTarget && this.isShiftOnlyTyping()) return true;
 
     // Enter and Space on interactive elements should activate the element,
     // not trigger shortcuts
@@ -160,6 +162,43 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
         return true;
       }
     }
+
+    return false;
+  }
+
+  /**
+   * Check if this is a Shift-only combo that produces a typeable character.
+   * Shift+letter = uppercase, Shift+number = symbol (!@#$%^&*())
+   * These should be treated as typing, not shortcuts.
+   */
+  private isShiftOnlyTyping(): boolean {
+    // Only applies when Shift is the only modifier
+    if (this.modifiers.length !== 1 || !this.modifiers.includes("shift")) {
+      return false;
+    }
+
+    // Numbers produce symbols: !@#$%^&*()
+    if (/^[0-9]$/.test(this.key)) return true;
+
+    // Letters produce uppercase
+    if (/^[a-zA-Z]$/.test(this.key)) return true;
+
+    // Common punctuation that shifts to other characters
+    // ` ~ - _ = + [ { ] } \ | ; : ' " , < . > / ?
+    const shiftableSymbols = [
+      "`",
+      "-",
+      "=",
+      "[",
+      "]",
+      "\\",
+      ";",
+      "'",
+      ",",
+      ".",
+      "/",
+    ];
+    if (shiftableSymbols.includes(this.key)) return true;
 
     return false;
   }

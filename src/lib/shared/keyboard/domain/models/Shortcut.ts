@@ -29,6 +29,7 @@ export class Shortcut implements ShortcutDefinition {
   action: (event: KeyboardEvent) => void | Promise<void>;
   enabled: boolean;
   isSingleKey: boolean;
+  forceExecute: boolean;
 
   constructor(definition: ShortcutDefinition) {
     this.id = definition.id;
@@ -43,6 +44,7 @@ export class Shortcut implements ShortcutDefinition {
     this.action = definition.action;
     this.enabled = definition.enabled;
     this.isSingleKey = definition.isSingleKey;
+    this.forceExecute = definition.forceExecute;
 
     // Only assign optional properties if they exist in the definition
     if ("description" in definition) {

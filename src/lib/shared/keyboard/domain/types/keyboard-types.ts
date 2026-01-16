@@ -100,6 +100,9 @@ export interface ShortcutDefinition {
 
   /** Whether this is a single-key shortcut (WCAG 2.1.4 consideration) */
   isSingleKey: boolean;
+
+  /** Force execution even when focus is on interactive elements (overrides shouldIgnore) */
+  forceExecute: boolean;
 }
 
 /**
@@ -144,6 +147,9 @@ export interface ShortcutRegistrationOptions {
 
   /** Whether this shortcut is enabled (default: true) */
   enabled?: boolean;
+
+  /** Force execution even when focus is on interactive elements (default: false) */
+  forceExecute?: boolean;
 }
 
 /**
