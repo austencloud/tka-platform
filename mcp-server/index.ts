@@ -957,6 +957,438 @@ server.tool(
   }
 );
 
+// ============================================================================
+// EDUCATIONAL TOOLS (for TIKA AI Assistant)
+// ============================================================================
+
+// Load knowledge base files
+const GLOSSARY_PATH = path.resolve(__dirname, "./data/tka-glossary.json");
+const LETTER_TYPES_PATH = path.resolve(__dirname, "./data/letter-types.json");
+
+interface GlossaryEntry {
+  definition: string;
+  examples: string[];
+  relatedTerms: string[];
+  category: string;
+}
+
+interface LetterTypeInfo {
+  name: string;
+  description: string;
+  characteristics: string[];
+  letters: string[];
+  motionPattern: {
+    blueMotion: string;
+    redMotion: string;
+    note?: string;
+  };
+}
+
+let glossary: Record<string, GlossaryEntry> = {};
+let letterTypes: Record<string, LetterTypeInfo> = {};
+
+function loadKnowledgeBase() {
+  try {
+    if (fs.existsSync(GLOSSARY_PATH)) {
+      glossary = JSON.parse(fs.readFileSync(GLOSSARY_PATH, "utf-8"));
+    }
+    if (fs.existsSync(LETTER_TYPES_PATH)) {
+      letterTypes = JSON.parse(fs.readFileSync(LETTER_TYPES_PATH, "utf-8"));
+    }
+  } catch (error) {
+    console.error("[MCP] Failed to load knowledge base:", error);
+  }
+}
+
+// Load knowledge base on startup
+loadKnowledgeBase();
+
+// Tool: get_letter_explanation
+server.tool(
+  "get_letter_explanation",
+  "Get a comprehensive explanation of a TKA letter including its type, motion characteristics, and all variations. Perfect for teaching users about specific letters.",
+  {
+    letter: z.string().describe("The letter to explain (A-Z or Greek)"),
+    variation: z.number().optional().default(0).describe("Specific variation to focus on (0-based, optional)"),
+  },
+  async ({ letter, variation = 0 }) => {
+    ensureDataLoaded();
+
+    // Find all variations of this letter
+    const variations = allPictographs.filter((p) => p.letter === letter);
+
+    if (variations.length === 0) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Letter "${letter}" not found in the TKA alphabet. Use list_available_letters to see all valid letters.`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // Get the letter's type
+    const typeInfo = LETTER_TO_TYPE[letter];
+    const typeNum = typeInfo?.type.replace("type", "") || "unknown";
+    const fullTypeInfo = letterTypes[typeNum];
+
+    // Get specific variation data
+    const varData = variations[Math.min(variation, variations.length - 1)];
+
+    // Build comprehensive explanation
+    const explanation = `# Letter: ${letter}
+
+## Type Information
+**Type ${typeNum}: ${fullTypeInfo?.name || typeInfo?.name || "Unknown"}**
+
+${fullTypeInfo?.description || ""}
+
+${fullTypeInfo?.characteristics ? "**Characteristics:**\n" + fullTypeInfo.characteristics.map(c => `- ${c}`).join("\n") : ""}
+
+## Motion Pattern
+- **Blue hand:** ${varData.blueMotion.motionType}${varData.blueMotion.rotationDirection !== "noRotation" ? ` (${varData.blueMotion.rotationDirection})` : ""}
+- **Red hand:** ${varData.redMotion.motionType}${varData.redMotion.rotationDirection !== "noRotation" ? ` (${varData.redMotion.rotationDirection})` : ""}
+
+## Variation ${variation} Details
+- **Start position:** ${varData.startPosition}
+- **End position:** ${varData.endPosition}
+- **Blue motion:** ${varData.blueMotion.startLocation} → ${varData.blueMotion.endLocation}
+- **Red motion:** ${varData.redMotion.startLocation} → ${varData.redMotion.endLocation}
+
+## All Variations (${variations.length} total)
+${variations.slice(0, 5).map((v, i) => `[${i}] ${v.startPosition} → ${v.endPosition}`).join("\n")}${variations.length > 5 ? `\n... and ${variations.length - 5} more` : ""}
+
+## Related Letters
+Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter).slice(0, 5).join(", ") || "N/A"}`;
+
+    return {
+      content: [{ type: "text" as const, text: explanation }],
+    };
+  }
+);
+
+// Tool: get_term_definition
+server.tool(
+  "get_term_definition",
+  "Get the definition of a TKA domain term like alpha, pro, shift, static, etc. Returns definition, examples, and related terms.",
+  {
+    term: z.string().describe("The term to define (e.g., alpha, pro, shift, dash, static, beta, gamma)"),
+  },
+  async ({ term }) => {
+    const normalizedTerm = term.toLowerCase().trim();
+    const entry = glossary[normalizedTerm];
+
+    if (!entry) {
+      // Try to find partial matches
+      const possibleMatches = Object.keys(glossary)
+        .filter(key => key.includes(normalizedTerm) || normalizedTerm.includes(key))
+        .slice(0, 5);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Term "${term}" not found in the TKA glossary.${
+              possibleMatches.length > 0
+                ? `\n\nDid you mean: ${possibleMatches.join(", ")}?`
+                : "\n\nAvailable terms include: " + Object.keys(glossary).slice(0, 10).join(", ") + "..."
+            }`,
+          },
+        ],
+      };
+    }
+
+    const output = `# ${term.charAt(0).toUpperCase() + term.slice(1)}
+
+**Definition:** ${entry.definition}
+
+**Examples:**
+${entry.examples.map(e => `- ${e}`).join("\n")}
+
+**Related terms:** ${entry.relatedTerms.join(", ")}
+
+**Category:** ${entry.category}`;
+
+    return {
+      content: [{ type: "text" as const, text: output }],
+    };
+  }
+);
+
+// Tool: compare_letters
+server.tool(
+  "compare_letters",
+  "Compare two TKA letters side by side, explaining their differences in type, motion patterns, and characteristics.",
+  {
+    letter1: z.string().describe("First letter to compare"),
+    letter2: z.string().describe("Second letter to compare"),
+  },
+  async ({ letter1, letter2 }) => {
+    ensureDataLoaded();
+
+    const var1 = allPictographs.filter((p) => p.letter === letter1);
+    const var2 = allPictographs.filter((p) => p.letter === letter2);
+
+    if (var1.length === 0) {
+      return {
+        content: [{ type: "text" as const, text: `Letter "${letter1}" not found.` }],
+        isError: true,
+      };
+    }
+    if (var2.length === 0) {
+      return {
+        content: [{ type: "text" as const, text: `Letter "${letter2}" not found.` }],
+        isError: true,
+      };
+    }
+
+    const type1 = LETTER_TO_TYPE[letter1];
+    const type2 = LETTER_TO_TYPE[letter2];
+    const typeNum1 = type1?.type.replace("type", "") || "?";
+    const typeNum2 = type2?.type.replace("type", "") || "?";
+
+    // Get representative variations
+    const rep1 = var1[0];
+    const rep2 = var2[0];
+
+    // Find similarities and differences
+    const similarities: string[] = [];
+    const differences: string[] = [];
+
+    // Type comparison
+    if (typeNum1 === typeNum2) {
+      similarities.push(`Both are Type ${typeNum1} (${letterTypes[typeNum1]?.name || type1?.name})`);
+    } else {
+      differences.push(`Different types: ${letter1} is Type ${typeNum1} (${letterTypes[typeNum1]?.name}), ${letter2} is Type ${typeNum2} (${letterTypes[typeNum2]?.name})`);
+    }
+
+    // Motion type comparison
+    if (rep1.blueMotion.motionType === rep2.blueMotion.motionType) {
+      similarities.push(`Both have ${rep1.blueMotion.motionType} blue motion`);
+    } else {
+      differences.push(`Blue motion differs: ${letter1} uses ${rep1.blueMotion.motionType}, ${letter2} uses ${rep2.blueMotion.motionType}`);
+    }
+
+    if (rep1.redMotion.motionType === rep2.redMotion.motionType) {
+      similarities.push(`Both have ${rep1.redMotion.motionType} red motion`);
+    } else {
+      differences.push(`Red motion differs: ${letter1} uses ${rep1.redMotion.motionType}, ${letter2} uses ${rep2.redMotion.motionType}`);
+    }
+
+    // Variation count comparison
+    if (Math.abs(var1.length - var2.length) <= 2) {
+      similarities.push(`Similar variation count: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`);
+    } else {
+      differences.push(`Different variation counts: ${letter1} has ${var1.length}, ${letter2} has ${var2.length}`);
+    }
+
+    const output = `# Comparison: ${letter1} vs ${letter2}
+
+## At a Glance
+| Property | ${letter1} | ${letter2} |
+|----------|------------|------------|
+| Type | ${typeNum1} (${letterTypes[typeNum1]?.name || "?"}) | ${typeNum2} (${letterTypes[typeNum2]?.name || "?"}) |
+| Blue motion | ${rep1.blueMotion.motionType} | ${rep2.blueMotion.motionType} |
+| Red motion | ${rep1.redMotion.motionType} | ${rep2.redMotion.motionType} |
+| Variations | ${var1.length} | ${var2.length} |
+
+## Similarities
+${similarities.length > 0 ? similarities.map(s => `- ${s}`).join("\n") : "- No major similarities"}
+
+## Differences
+${differences.length > 0 ? differences.map(d => `- ${d}`).join("\n") : "- No major differences"}
+
+## When to Use Each
+- **${letter1}:** ${letterTypes[typeNum1]?.description || "Type " + typeNum1 + " letter"}
+- **${letter2}:** ${letterTypes[typeNum2]?.description || "Type " + typeNum2 + " letter"}`;
+
+    return {
+      content: [{ type: "text" as const, text: output }],
+    };
+  }
+);
+
+// Tool: list_letters_by_type
+server.tool(
+  "list_letters_by_type",
+  "List all letters of a specific type (1-6) with descriptions and motion patterns.",
+  {
+    type: z.number().min(1).max(6).describe("Letter type (1-6): 1=Dual-Shift, 2=Shift, 3=Cross-Shift, 4=Dash, 5=Dual-Dash, 6=Static"),
+  },
+  async ({ type }) => {
+    const typeKey = type.toString();
+    const typeInfo = letterTypes[typeKey];
+
+    if (!typeInfo) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Invalid type number. Valid types are 1-6:\n1=Dual-Shift, 2=Shift, 3=Cross-Shift, 4=Dash, 5=Dual-Dash, 6=Static`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    ensureDataLoaded();
+
+    // Get variation counts for each letter
+    const letterCounts = typeInfo.letters.map(letter => {
+      const count = allPictographs.filter(p => p.letter === letter).length;
+      return { letter, count };
+    });
+
+    const output = `# Type ${type}: ${typeInfo.name}
+
+**Description:** ${typeInfo.description}
+
+**Motion Pattern:**
+- Blue hand: ${typeInfo.motionPattern.blueMotion}
+- Red hand: ${typeInfo.motionPattern.redMotion}
+${typeInfo.motionPattern.note ? `- Note: ${typeInfo.motionPattern.note}` : ""}
+
+**Characteristics:**
+${typeInfo.characteristics.map(c => `- ${c}`).join("\n")}
+
+**Letters (${typeInfo.letters.length} total):**
+${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join("\n")}`;
+
+    return {
+      content: [{ type: "text" as const, text: output }],
+    };
+  }
+);
+
+// Tool: get_position_info
+server.tool(
+  "get_position_info",
+  "Get detailed information about a TKA position (alpha, beta, gamma, zeta, eta) including grid configuration and examples.",
+  {
+    position: z.string().describe("Position name (alpha, beta, gamma, zeta, eta)"),
+  },
+  async ({ position }) => {
+    const normalizedPos = position.toLowerCase().trim();
+
+    // Position definitions
+    const positions: Record<string, {
+      name: string;
+      angleDegrees: string;
+      description: string;
+      gridDescription: string;
+      examples: string[];
+      level: number;
+    }> = {
+      alpha: {
+        name: "Alpha (α)",
+        angleDegrees: "180°",
+        description: "Hands are at opposite grid points, forming a straight line through the center.",
+        gridDescription: "Examples: N/S, E/W, NE/SW, NW/SE. The hands are as far apart as possible.",
+        examples: [
+          "alpha1: Hands at N and S (diamond mode, vertical axis)",
+          "alpha3: Hands at E and W (diamond mode, horizontal axis)",
+          "alpha5: Hands at NE and SW (box mode, diagonal)",
+        ],
+        level: 1,
+      },
+      beta: {
+        name: "Beta (β)",
+        angleDegrees: "0°",
+        description: "Both hands are at the same grid point, stacked on top of each other.",
+        gridDescription: "Both props share a single location. This is the 'together' position.",
+        examples: [
+          "beta1: Both hands at N (diamond mode)",
+          "beta5: Both hands at NE (box mode)",
+          "beta3: Both hands at E (diamond mode)",
+        ],
+        level: 1,
+      },
+      gamma: {
+        name: "Gamma (γ)",
+        angleDegrees: "90°",
+        description: "Hands form a right angle, positioned on adjacent grid points.",
+        gridDescription: "One hand is 90° away from the other, creating an 'L' shape.",
+        examples: [
+          "gamma1: Hands at N and E (diamond mode)",
+          "gamma5: Hands at N and NW (diamond-to-box transition)",
+          "gamma9: Hands at NE and SE (box mode)",
+        ],
+        level: 1,
+      },
+      zeta: {
+        name: "Zeta (ζ)",
+        angleDegrees: "~135°",
+        description: "Hands form an obtuse angle. Introduced in Level 4 with skewed grid mode.",
+        gridDescription: "One hand is on a cardinal point, the other on an intercardinal point, forming an angle greater than 90°.",
+        examples: [
+          "Hands at N and SE (skewed mode, ~135°)",
+          "Hands at E and NW (skewed mode)",
+        ],
+        level: 4,
+      },
+      eta: {
+        name: "Eta (η)",
+        angleDegrees: "~45°",
+        description: "Hands form an acute angle. Introduced in Level 4 with skewed grid mode.",
+        gridDescription: "One hand is on a cardinal point, the other on an intercardinal point, forming an angle less than 90°.",
+        examples: [
+          "Hands at N and NE (skewed mode, ~45°)",
+          "Hands at E and SE (skewed mode)",
+        ],
+        level: 4,
+      },
+    };
+
+    const posInfo = positions[normalizedPos];
+
+    if (!posInfo) {
+      const availablePositions = Object.keys(positions).join(", ");
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Position "${position}" not recognized. Available positions: ${availablePositions}`,
+          },
+        ],
+      };
+    }
+
+    // Count how many pictographs use this position
+    ensureDataLoaded();
+    const startCount = allPictographs.filter(p =>
+      p.startPosition.toLowerCase().startsWith(normalizedPos)
+    ).length;
+    const endCount = allPictographs.filter(p =>
+      p.endPosition.toLowerCase().startsWith(normalizedPos)
+    ).length;
+
+    const output = `# ${posInfo.name}
+
+**Angle:** ${posInfo.angleDegrees} between hands
+
+**Description:** ${posInfo.description}
+
+**Grid Configuration:** ${posInfo.gridDescription}
+
+**Examples:**
+${posInfo.examples.map(e => `- ${e}`).join("\n")}
+
+**Introduced:** Level ${posInfo.level}
+
+**Usage in Pictographs:**
+- Used as starting position: ${startCount} pictographs
+- Used as ending position: ${endCount} pictographs
+
+**Related:** ${Object.keys(positions).filter(p => p !== normalizedPos).join(", ")}`;
+
+    return {
+      content: [{ type: "text" as const, text: output }],
+    };
+  }
+);
+
 // Start the server
 async function main() {
   console.error("[MCP] Starting TKA Pictograph MCP Server...");

@@ -11,6 +11,17 @@
 | 5 | Dual-Dash | Both hands dash | Φ-, Ψ-, Λ- |
 | 6 | Static | Both hands stationary | α, β, γ |
 
+### CRITICAL: Motion Type Precision
+
+**NEVER say "both hands move" as the distinguishing feature of Type 1.**
+
+Multiple types have both hands moving:
+- Type 1: Both hands **shift** (adjacent movement)
+- Type 3: Both hands move (one shifts, one dashes)
+- Type 5: Both hands **dash** (opposite movement)
+
+What makes Type 1 unique is that both hands **shift** - not that both move. Always use the specific motion type (shift vs dash vs static).
+
 ---
 
 ## CRITICAL: The "-" Suffix Convention
@@ -116,3 +127,21 @@ Assume zero domain knowledge. Use precise terminology:
 - "Props parallel" (position isn't about props)
 - "180 degrees apart" (implementation detail, not domain language)
 - "Perpendicular" (say "right angle" instead)
+
+---
+
+## Correcting Terminology
+
+When users use incorrect TKA terminology, **explicitly correct it** before answering. Don't silently interpret - teach the correct term.
+
+| User Says | Correct To |
+|-----------|------------|
+| "Type A letter" | "Type 1 - types are numbered 1-6, not lettered" |
+| "Type B letter" | "Type 2 - types are numbered 1-6, not lettered" |
+
+**Note on positions:** Users don't need to know numbered variants (alpha1, alpha2, etc.). Focus on the human-readable descriptions:
+- **Alpha** = hands at opposite points
+- **Beta** = hands at the same point
+- **Gamma** = hands form a right angle
+
+The numbered variants are intermediate/advanced knowledge for those who want to specify exact grid locations.

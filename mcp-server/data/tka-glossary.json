@@ -1,0 +1,152 @@
+{
+  "alpha": {
+    "definition": "A position where the two hands are at opposite grid points (180 degrees apart).",
+    "examples": ["alpha1: hands at N and S", "alpha3: hands at E and W"],
+    "relatedTerms": ["beta", "gamma", "position"],
+    "category": "position"
+  },
+  "beta": {
+    "definition": "A position where both hands are at the same grid point (0 degrees apart).",
+    "examples": ["beta1: both hands at N", "beta5: both hands at NE"],
+    "relatedTerms": ["alpha", "gamma", "position"],
+    "category": "position"
+  },
+  "gamma": {
+    "definition": "A position where the hands form a right angle (90 degrees apart on adjacent grid points).",
+    "examples": ["gamma1: hands at N and E", "gamma5: hands at N and NW"],
+    "relatedTerms": ["alpha", "beta", "position"],
+    "category": "position"
+  },
+  "zeta": {
+    "definition": "A position where the hands form an obtuse angle (greater than 90 degrees). Introduced in Level 4 with skewed grid mode.",
+    "examples": ["One hand cardinal, one intercardinal, forming ~135 degree angle"],
+    "relatedTerms": ["eta", "skewed", "position"],
+    "category": "position"
+  },
+  "eta": {
+    "definition": "A position where the hands form an acute angle (less than 90 degrees). Introduced in Level 4 with skewed grid mode.",
+    "examples": ["One hand cardinal, one intercardinal, forming ~45 degree angle"],
+    "relatedTerms": ["zeta", "skewed", "position"],
+    "category": "position"
+  },
+  "pro": {
+    "definition": "A rotation direction where the prop spins WITH the direction of hand travel. Also called 'prospin'.",
+    "examples": ["If hand moves clockwise, prop rotates clockwise", "Like a wheel rolling forward"],
+    "relatedTerms": ["anti", "rotation", "spin"],
+    "category": "rotation"
+  },
+  "anti": {
+    "definition": "A rotation direction where the prop spins AGAINST the direction of hand travel. Also called 'antispin'.",
+    "examples": ["If hand moves clockwise, prop rotates counter-clockwise", "Creates 'petal' patterns"],
+    "relatedTerms": ["pro", "rotation", "spin"],
+    "category": "rotation"
+  },
+  "static": {
+    "definition": "A motion type where the hand stays at its current grid point (no movement). The prop may still rotate.",
+    "examples": ["Type 6 letters (alpha, beta, gamma) have both hands static", "Type 2 letters have one static hand"],
+    "relatedTerms": ["shift", "dash", "motion"],
+    "category": "motion"
+  },
+  "shift": {
+    "definition": "A motion type where the hand moves to an adjacent grid point (90 degree movement).",
+    "examples": ["N to E is a shift", "NE to N is a shift", "Type 1 and Type 2 letters use shift"],
+    "relatedTerms": ["static", "dash", "motion"],
+    "category": "motion"
+  },
+  "dash": {
+    "definition": "A motion type where the hand moves to the opposite grid point (180 degree movement).",
+    "examples": ["N to S is a dash", "NE to SW is a dash", "Type 4 and Type 5 letters use dash"],
+    "relatedTerms": ["static", "shift", "motion"],
+    "category": "motion"
+  },
+  "dual-shift": {
+    "definition": "A letter type (Type 1) where both hands shift simultaneously to adjacent points.",
+    "examples": ["Letters A through V", "Most common letter type with 22 letters"],
+    "relatedTerms": ["shift", "type 1", "letter type"],
+    "category": "letterType"
+  },
+  "cross-shift": {
+    "definition": "A letter type (Type 3) where one hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix.",
+    "examples": ["W-, X-, Y-, Z-", "Sigma dash (Sigma-) is a Type 3 letter"],
+    "relatedTerms": ["shift", "dash", "type 3", "letter type"],
+    "category": "letterType"
+  },
+  "dual-dash": {
+    "definition": "A letter type (Type 5) where both hands dash simultaneously.",
+    "examples": ["Phi-, Psi-, Lambda-", "Only 3 letters in this type"],
+    "relatedTerms": ["dash", "type 5", "letter type"],
+    "category": "letterType"
+  },
+  "diamond": {
+    "definition": "A grid mode where hands are placed only on cardinal points (N, E, S, W). The default grid mode.",
+    "examples": ["Standard positions like alpha1 (N/S) use diamond mode"],
+    "relatedTerms": ["box", "skewed", "grid"],
+    "category": "grid"
+  },
+  "box": {
+    "definition": "A grid mode where hands are placed only on intercardinal points (NE, SE, SW, NW).",
+    "examples": ["Position beta5 (both hands at NE) uses box mode"],
+    "relatedTerms": ["diamond", "skewed", "grid"],
+    "category": "grid"
+  },
+  "skewed": {
+    "definition": "A grid mode introduced in Level 4 where one hand is on a cardinal point and one is on an intercardinal point.",
+    "examples": ["Hand at N and hand at NE", "Creates zeta and eta positions"],
+    "relatedTerms": ["diamond", "box", "grid", "zeta", "eta"],
+    "category": "grid"
+  },
+  "pictograph": {
+    "definition": "A visual representation of one beat of motion in TKA. Shows two props, arrows indicating motion, and position glyphs.",
+    "examples": ["Each letter has multiple pictograph variations", "Pictographs can be sequenced to create choreography"],
+    "relatedTerms": ["beat", "sequence", "letter"],
+    "category": "general"
+  },
+  "variation": {
+    "definition": "A specific instance of a letter with particular starting/ending positions and locations. Each letter can have many variations.",
+    "examples": ["Letter A has variations starting from alpha1, alpha3, etc.", "Variations differ by rotation direction and grid locations"],
+    "relatedTerms": ["letter", "pictograph", "position"],
+    "category": "general"
+  },
+  "cardinal": {
+    "definition": "The four main compass points on the grid: North (N), East (E), South (S), West (W).",
+    "examples": ["Diamond mode uses cardinal points", "N is at the top of the pictograph"],
+    "relatedTerms": ["intercardinal", "grid", "location"],
+    "category": "grid"
+  },
+  "intercardinal": {
+    "definition": "The four diagonal compass points on the grid: Northeast (NE), Southeast (SE), Southwest (SW), Northwest (NW).",
+    "examples": ["Box mode uses intercardinal points", "NE is at the top-right of the pictograph"],
+    "relatedTerms": ["cardinal", "grid", "location"],
+    "category": "grid"
+  },
+  "cw": {
+    "definition": "Clockwise rotation direction, as viewed from above the performer.",
+    "examples": ["Hand path moving N -> E -> S -> W is clockwise"],
+    "relatedTerms": ["ccw", "rotation", "direction"],
+    "category": "rotation"
+  },
+  "ccw": {
+    "definition": "Counter-clockwise rotation direction, as viewed from above the performer.",
+    "examples": ["Hand path moving N -> W -> S -> E is counter-clockwise"],
+    "relatedTerms": ["cw", "rotation", "direction"],
+    "category": "rotation"
+  },
+  "vtg": {
+    "definition": "Vertical Timing Glyph - a notation showing the relative timing of the two hands during a beat.",
+    "examples": ["Shows whether hands move together, split, or in sequence"],
+    "relatedTerms": ["timing", "glyph", "pictograph"],
+    "category": "notation"
+  },
+  "reversal": {
+    "definition": "A change in prop rotation direction during a movement. Shown as dots on the pictograph.",
+    "examples": ["Prop changes from clockwise to counter-clockwise mid-beat"],
+    "relatedTerms": ["rotation", "pro", "anti"],
+    "category": "motion"
+  },
+  "turns": {
+    "definition": "The number of full prop rotations during a beat. Common values are 0, 0.5, 1, 1.5, 2.",
+    "examples": ["0 turns = prop doesn't rotate", "1 turn = full 360 degree rotation"],
+    "relatedTerms": ["rotation", "spin", "beat"],
+    "category": "motion"
+  }
+}
