@@ -16,7 +16,7 @@ import { WebpMetadataExtractor } from "./webp-metadata-extractor";
 
 export interface MetadataExtractionResult {
   sequenceName: string;
-  beats: Record<string, unknown>[];
+  steps: Record<string, unknown>[];
   sequenceLength: number;
   extractionSource: "webp" | "png";
   extractionTime: number; // milliseconds
@@ -72,15 +72,15 @@ export class UniversalMetadataExtractor {
         // PNG metadata has different structure - extract what we need
         const sequence =
           (pngMetadata.sequence as Record<string, unknown>[]) || [];
-        const beats = sequence.filter(
+        const steps = sequence.filter(
           (step: Record<string, unknown>) =>
             step["letter"] && !step["sequence_start_position"]
         );
 
         return {
           sequenceName,
-          beats,
-          sequenceLength: beats.length,
+          steps,
+          sequenceLength: steps.length,
           extractionSource: "png",
           extractionTime,
           ...pngMetadata, // Include all other metadata fields
@@ -258,7 +258,7 @@ export class UniversalMetadataExtractor {
     preferredPath: string
   ): Promise<{
     sequenceName: string;
-    beats: Record<string, unknown>[];
+    steps: Record<string, unknown>[];
     sequenceLength: number;
     [key: string]: unknown;
   }> {
@@ -318,10 +318,10 @@ export class UniversalMetadataExtractor {
       // Compare critical fields - handle different structures
       const differences: string[] = [];
 
-      // Extract PNG beats from sequence structure
+      // Extract PNG steps from sequence structure
       const pngSequence =
         (pngMetadata.sequence as Record<string, unknown>[]) || [];
-      const pngBeats = pngSequence.filter(
+      const pngSteps = pngSequence.filter(
         (step: Record<string, unknown>) =>
           step["letter"] && !step["sequence_start_position"]
       );
@@ -338,12 +338,12 @@ export class UniversalMetadataExtractor {
         );
       }
 
-      // Deep comparison of beats array
+      // Deep comparison of steps array
       const webpBeatsJson = JSON.stringify(webpMetadata.beats);
-      const pngBeatsJson = JSON.stringify(pngBeats);
+      const pngBeatsJson = JSON.stringify(pngSteps);
 
       if (webpBeatsJson !== pngBeatsJson) {
-        differences.push("beats content differs");
+        differences.push("steps content differs");
       }
 
       return {

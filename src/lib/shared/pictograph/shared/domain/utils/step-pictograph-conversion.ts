@@ -1,28 +1,28 @@
 /**
  * Beat-Pictograph Conversion Utilities
  *
- * Helper functions to convert between BeatData and enhanced PictographData
+ * Helper functions to convert between StepData and enhanced PictographData
  * during the transition period. These utilities ensure smooth migration
  * while maintaining backward compatibility.
  */
 
-import type { BeatData } from "../../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../../features/create/shared/domain/models/StepData";
 import { createPictographData } from "../factories/createPictographData";
 import type { PictographData } from "../models/PictographData";
 
 /**
- * Convert BeatData to enhanced PictographData
+ * Convert StepData to enhanced PictographData
  * Combines the pictograph data with beat context properties
  */
 export function beatDataToPictographData(
-  beatData: BeatData,
+  stepData: StepData,
   isSelected: boolean = false
 ): PictographData {
-  // Since BeatData extends PictographData, we can just return the beatData as PictographData
+  // Since StepData extends PictographData, we can just return the stepData as PictographData
   // The beat context properties will be available but not enforced by the PictographData type
   return {
-    ...beatData,
-    isSelected: isSelected || beatData.isSelected,
+    ...stepData,
+    isSelected: isSelected || stepData.isSelected,
   } as PictographData;
 }
 
@@ -44,17 +44,17 @@ export function extractCorePictographData(
 }
 
 /**
- * Convert enhanced PictographData back to BeatData structure
- * Useful for maintaining compatibility with existing BeatData-based services
+ * Convert enhanced PictographData back to StepData structure
+ * Useful for maintaining compatibility with existing StepData-based services
  */
-export function pictographDataToBeatData(
+export function pictographDataToStepData(
   enhancedData: PictographData,
-  beatId?: string
-): BeatData {
-  // Since BeatData extends PictographData, we can spread the pictograph data
+  stepId?: string
+): StepData {
+  // Since StepData extends PictographData, we can spread the pictograph data
   // and add the beat context properties
   const enhancedDataWithBeatContext = enhancedData as PictographData & {
-    beatNumber?: number;
+    stepNumber?: number;
     duration?: number;
     blueReversal?: boolean;
     redReversal?: boolean;
@@ -63,8 +63,8 @@ export function pictographDataToBeatData(
 
   return {
     ...enhancedData, // Spread all PictographData properties
-    id: beatId || enhancedData.id,
-    beatNumber: enhancedDataWithBeatContext.beatNumber ?? 1,
+    id: stepId || enhancedData.id,
+    stepNumber: enhancedDataWithBeatContext.stepNumber ?? 1,
     duration: enhancedDataWithBeatContext.duration ?? 1.0,
     blueReversal: enhancedDataWithBeatContext.blueReversal ?? false,
     redReversal: enhancedDataWithBeatContext.redReversal ?? false,
@@ -76,9 +76,9 @@ export function pictographDataToBeatData(
  * Check if PictographData has beat context properties
  * Useful for determining if data came from a beat context
  */
-export function hasBeatContext(data: PictographData): boolean {
-  const dataWithBeatContext = data as PictographData & {
-    beatNumber?: number;
+export function hasStepContext(data: PictographData): boolean {
+  const dataWithStepContext = data as PictographData & {
+    stepNumber?: number;
     duration?: number;
     blueReversal?: boolean;
     redReversal?: boolean;
@@ -87,12 +87,12 @@ export function hasBeatContext(data: PictographData): boolean {
   };
 
   return (
-    dataWithBeatContext.beatNumber !== undefined ||
-    dataWithBeatContext.duration !== undefined ||
-    dataWithBeatContext.blueReversal !== undefined ||
-    dataWithBeatContext.redReversal !== undefined ||
-    dataWithBeatContext.isBlank !== undefined ||
-    dataWithBeatContext.isSelected !== undefined
+    dataWithStepContext.stepNumber !== undefined ||
+    dataWithStepContext.duration !== undefined ||
+    dataWithStepContext.blueReversal !== undefined ||
+    dataWithStepContext.redReversal !== undefined ||
+    dataWithStepContext.isBlank !== undefined ||
+    dataWithStepContext.isSelected !== undefined
   );
 }
 

@@ -31,7 +31,7 @@
   let description = $state("");
   let avatar1SequenceId = $state<string | null>(null);
   let avatar2SequenceId = $state<string | null>(null);
-  let beatOffset = $state(0);
+  let stepOffset = $state(0);
   let positioning = $state<DuetPositioning>("side-by-side");
 
   // UI state
@@ -121,7 +121,7 @@
         description: description.trim() || undefined,
         avatar1SequenceId,
         avatar2SequenceId,
-        beatOffset,
+        stepOffset,
         positioning,
       };
 
@@ -136,7 +136,7 @@
   }
 
   function adjustOffset(delta: number) {
-    beatOffset = Math.max(-10, Math.min(10, beatOffset + delta));
+    stepOffset = Math.max(-10, Math.min(10, stepOffset + delta));
   }
 </script>
 
@@ -191,7 +191,7 @@
                 {#if seq.author}
                   <span class="author">{seq.author}</span>
                 {/if}
-                <span class="beats">{seq.beats?.length || 0} beats</span>
+                <span class="steps">{seq.steps?.length || 0} steps</span>
               </span>
             </button>
           {/each}
@@ -248,8 +248,8 @@
               <span class="selection-name">
                 {avatar1Sequence.word || avatar1Sequence.name || "Untitled"}
               </span>
-              <span class="selection-beats"
-                >{avatar1Sequence.beats?.length || 0} beats</span
+              <span class="selection-steps"
+                >{avatar1Sequence.steps?.length || 0} steps</span
               >
             {:else}
               <i class="fas fa-plus" aria-hidden="true"></i>
@@ -269,8 +269,8 @@
               <span class="selection-name">
                 {avatar2Sequence.word || avatar2Sequence.name || "Untitled"}
               </span>
-              <span class="selection-beats"
-                >{avatar2Sequence.beats?.length || 0} beats</span
+              <span class="selection-steps"
+                >{avatar2Sequence.steps?.length || 0} steps</span
               >
             {:else}
               <i class="fas fa-plus" aria-hidden="true"></i>
@@ -287,20 +287,20 @@
           <button
             class="offset-btn"
             onclick={() => adjustOffset(-0.5)}
-            disabled={beatOffset <= -10}
+            disabled={stepOffset <= -10}
             aria-label="Decrease offset"
           >
             <i class="fas fa-minus" aria-hidden="true"></i>
           </button>
           <span class="offset-value">
-            {beatOffset === 0
+            {stepOffset === 0
               ? "Synced"
-              : `${beatOffset > 0 ? "+" : ""}${beatOffset}`}
+              : `${stepOffset > 0 ? "+" : ""}${stepOffset}`}
           </span>
           <button
             class="offset-btn"
             onclick={() => adjustOffset(0.5)}
-            disabled={beatOffset >= 10}
+            disabled={stepOffset >= 10}
             aria-label="Increase offset"
           >
             <i class="fas fa-plus" aria-hidden="true"></i>
@@ -486,7 +486,7 @@
     font-weight: 500;
   }
 
-  .selection-beats {
+  .selection-steps {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }

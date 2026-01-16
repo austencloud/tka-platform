@@ -30,7 +30,7 @@
 
   // Derived sequence info
   const sequenceWord = $derived(sequence.word || sequence.name || "Sequence");
-  const beatCount = $derived(sequence.beats?.length || sequence.sequenceLength || 0);
+  const stepCount = $derived(sequence.steps?.length || sequence.sequenceLength || 0);
 
   // Auto-hide controls after inactivity
   function scheduleHideControls() {
@@ -84,7 +84,7 @@
     <header class="top-bar">
       <div class="sequence-info">
         <h1 class="sequence-name">{sequenceWord}</h1>
-        <span class="beat-count">{beatCount} beats</span>
+        <span class="beat-count">{stepCount} steps</span>
       </div>
     </header>
 

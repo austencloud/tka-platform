@@ -79,7 +79,7 @@ export const CREATE_TAB_INTROS: Record<string, TabIntroContent> = {
           text: "Create sequences by drawing hand paths:",
           points: [
             "Trace the path you want each hand to follow",
-            "The system converts your drawing into beats",
+            "The system converts your drawing into steps",
             "Adjust timing and transitions as needed",
           ],
         },

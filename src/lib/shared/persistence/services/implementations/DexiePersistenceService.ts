@@ -10,7 +10,10 @@ import type { AppSettings } from "../../../settings/domain/AppSettings";
 import type { CompleteExploreState } from "../../../../features/discover/shared/domain/models/discover-models";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { TabId } from "../../../foundation/ui/UITypes";
-import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
+import {
+  createSequenceData,
+  type SequenceData,
+} from "../../../foundation/domain/models/SequenceData";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import { db } from "../../database/TKADatabase";
 import { UserWorkType } from "../../domain/enums/UserWorkType";
@@ -482,7 +485,10 @@ export class DexiePersistenceService implements IPersistenceService {
       }
 
       return {
-        currentSequence: parsed.currentSequence,
+        // Use createSequenceData for backwards compatibility (beats -> steps migration)
+        currentSequence: parsed.currentSequence
+          ? createSequenceData(parsed.currentSequence)
+          : null,
         selectedStartPosition: parsed.selectedStartPosition,
         hasStartPosition: parsed.hasStartPosition,
         activeBuildSection: parsed.activeBuildSection ?? targetMode,

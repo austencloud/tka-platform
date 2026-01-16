@@ -21,7 +21,6 @@
     {
       Profile: () => import("./tabs/ProfileTab.svelte"),
       ReleaseNotes: () => import("./tabs/ReleaseNotesTab.svelte"),
-      Notifications: () => import("./tabs/NotificationsTab.svelte"),
       PropType: () => import("./tabs/PropTypeTab.svelte"),
       Theme: () => import("./tabs/background/BackgroundTab.svelte"),
       Visibility: () => import("./tabs/VisibilityTab.svelte"),
@@ -60,8 +59,6 @@
       {#if activeTab === "Profile"}
         <LoadedTab currentSettings={settings} {onSettingUpdate} />
       {:else if activeTab === "ReleaseNotes"}
-        <LoadedTab />
-      {:else if activeTab === "Notifications"}
         <LoadedTab />
       {:else if activeTab === "PropType"}
         <LoadedTab {settings} onUpdate={onSettingUpdate} />

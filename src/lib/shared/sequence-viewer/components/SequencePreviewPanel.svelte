@@ -63,7 +63,7 @@
   } = $props();
 
   // Derived display values
-  const beatCount = $derived(sequence?.beats?.length ?? 0);
+  const stepCount = $derived(sequence?.steps?.length ?? 0);
 
   // Track current media type - updated by SequenceViewer via callback
   // Child (SequenceViewer) is source of truth - it handles sessionStorage persistence
@@ -261,7 +261,7 @@
       <div class="sequence-stats">
         <span class="stat">
           <i class="fas fa-music" aria-hidden="true"></i>
-          {t("viewer_beats_count", { count: beatCount })}
+          {t("viewer_beats_count", { count: stepCount })}
         </span>
       </div>
     </div>

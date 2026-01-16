@@ -11,7 +11,7 @@
  */
 export interface AnimationVisibilityState {
   grid: boolean;
-  beatNumbers: boolean;
+  stepNumbers: boolean;
   props: boolean;
   trails: boolean;
   tkaGlyph: boolean; // TKA Glyph includes turn numbers

@@ -14,7 +14,10 @@ import {
   type GlobalArrowAdjustment,
   type GlobalArrowAdjustmentInput,
 } from "../../domain/GlobalArrowAdjustment";
-import type { IGlobalArrowAdjustmentRepository } from "../contracts/IGlobalArrowAdjustmentRepository";
+import type {
+  IGlobalArrowAdjustmentRepository,
+  CascadingLookupResult,
+} from "../contracts/IGlobalArrowAdjustmentRepository";
 import type { IGlobalArrowAdjustmentPersister } from "../contracts/IGlobalArrowAdjustmentPersister";
 import {
   createGlobalArrowAdjustmentState,
@@ -136,6 +139,59 @@ export class GlobalArrowAdjustmentRepository
   }
 
   /**
+   * Cascading lookup: Layer 3 → Layer 2 → Layer 1.
+   *
+   * Searches for the most specific adjustment available:
+   * 1. First checks Layer 3 (combination-specific: this prop + other prop)
+   * 2. Then checks Layer 2 (prop-specific: just this prop)
+   * 3. Finally checks Layer 1 (base: no prop types, typically staff defaults)
+   */
+  getAdjustmentCascading(
+    baseKey: GlobalAdjustmentKey,
+    thisPropType: string,
+    otherPropType: string
+  ): CascadingLookupResult | null {
+    // Normalize prop types to lowercase
+    const normalizedThisProp = thisPropType.toLowerCase();
+    const normalizedOtherProp = otherPropType.toLowerCase();
+
+    // Layer 3: Combination-specific (this prop + other prop)
+    // Only check if not both staff (staff has no layer 3 entries)
+    if (normalizedThisProp !== "staff" || normalizedOtherProp !== "staff") {
+      const layer3Key: GlobalAdjustmentKey = {
+        ...baseKey,
+        propType: normalizedThisProp,
+        otherPropType: normalizedOtherProp,
+      };
+      const layer3 = this.getAdjustment(layer3Key);
+      if (layer3) {
+        return { adjustment: layer3, layer: 3 };
+      }
+    }
+
+    // Layer 2: Prop-specific (just this prop)
+    // Only check if not staff (staff uses layer 1)
+    if (normalizedThisProp !== "staff") {
+      const layer2Key: GlobalAdjustmentKey = {
+        ...baseKey,
+        propType: normalizedThisProp,
+      };
+      const layer2 = this.getAdjustment(layer2Key);
+      if (layer2) {
+        return { adjustment: layer2, layer: 2 };
+      }
+    }
+
+    // Layer 1: Base (no prop types, typically staff defaults)
+    const layer1 = this.getAdjustment(baseKey);
+    if (layer1) {
+      return { adjustment: layer1, layer: 1 };
+    }
+
+    return null;
+  }
+
+  /**
    * Save an adjustment to local cache only (admin only).
    * Use this for live preview during WASD adjustment.
    */
@@ -145,13 +201,17 @@ export class GlobalArrowAdjustmentRepository
       throw new Error("Only admin can save global arrow adjustments");
     }
 
-    const keyString = generateAdjustmentKeyString({
+    // Build key with optional prop types
+    const key: GlobalAdjustmentKey = {
       gridMode: input.gridMode,
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
       arrowKey: input.arrowKey,
-    });
+      ...(input.propType && { propType: input.propType }),
+      ...(input.otherPropType && { otherPropType: input.otherPropType }),
+    };
+    const keyString = generateAdjustmentKeyString(key);
 
     logger.info(
       `Saving LOCAL adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
@@ -173,6 +233,8 @@ export class GlobalArrowAdjustmentRepository
       letter: input.letter,
       turnsTuple: input.turnsTuple,
       arrowKey: input.arrowKey,
+      ...(input.propType && { propType: input.propType }),
+      ...(input.otherPropType && { otherPropType: input.otherPropType }),
       adjustmentX: input.adjustmentX,
       adjustmentY: input.adjustmentY,
       updatedAt: fakeTimestamp,
@@ -198,13 +260,17 @@ export class GlobalArrowAdjustmentRepository
       throw new Error("User email not available");
     }
 
-    const keyString = generateAdjustmentKeyString({
+    // Build key with optional prop types
+    const key: GlobalAdjustmentKey = {
       gridMode: input.gridMode,
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
       arrowKey: input.arrowKey,
-    });
+      ...(input.propType && { propType: input.propType }),
+      ...(input.otherPropType && { otherPropType: input.otherPropType }),
+    };
+    const keyString = generateAdjustmentKeyString(key);
 
     logger.info(
       `Saving adjustment to Firestore: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`

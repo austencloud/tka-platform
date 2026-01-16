@@ -7,7 +7,7 @@ import type { IFishPropulsionCalculator } from "../contracts/IFishPropulsionCalc
 const PROPULSION_CONFIG = {
   /**
    * Base thrust coefficient - scales how much tail motion affects speed
-   * Higher = more responsive to tail beats
+   * Higher = more responsive to tail steps
    */
   thrustCoefficient: 0.8,
 
@@ -35,7 +35,7 @@ const PROPULSION_CONFIG = {
 
   /**
    * Frequency influence - how much swim speed affects thrust
-   * Faster tail beats = more thrust
+   * Faster tail steps = more thrust
    */
   frequencyInfluence: 0.5,
 };
@@ -75,7 +75,7 @@ export class FishPropulsionCalculator implements IFishPropulsionCalculator {
       1.0 +
       (tailAmplitude / 10 - 1.0) * PROPULSION_CONFIG.amplitudeInfluence;
 
-    // Scale by swim frequency (faster beats = more thrust)
+    // Scale by swim frequency (faster steps = more thrust)
     // Normalize by reference frequency (~0.08)
     const frequencyScale =
       1.0 +

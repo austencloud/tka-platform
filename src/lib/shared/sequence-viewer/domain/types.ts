@@ -44,7 +44,7 @@ export interface AnimationPlayerProps {
 	// External control callbacks (only used when externalControl=true)
 	isPlaying?: boolean;
 	speed?: number;
-	currentBeat?: number;
+	currentStep?: number;
 	onPlaybackToggle?: () => void;
 	onSpeedChange?: (speed: number) => void;
 	onStepForward?: () => void;

@@ -4,12 +4,12 @@
  * Handles encoding and decoding of sequences for URL sharing.
  * Compresses sequence data into ultra-compact URL-safe strings.
  *
- * Format: startPosition|beat1|beat2|beat3|...
+ * Format: startPosition|step1|step2|step3|...
  * Each motion: startLoc(2)+endLoc(2)+startOrient(1)+endOrient(1)+rotDir(1)+turns(1+)+type(1)+propType(1)
  *
  * IMPORTANT: The first part is the START POSITION (where the user begins),
- * NOT a beat! Beats are numbered 1, 2, 3, ... The start position is beat 0
- * internally but should not be counted when reporting "total beats".
+ * NOT a beat! Steps are numbered 1, 2, 3, ... The start position is beat 0
+ * internally but should not be counted when reporting "total steps".
  *
  * With LZString compression, URLs can be 60-70% smaller for longer sequences.
  *
@@ -19,7 +19,7 @@
 import LZString from "lz-string";
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import { createStartPositionData } from "../../../../features/create/shared/domain/factories/createStartPositionData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -152,26 +152,26 @@ export class SequenceEncoder implements ISequenceEncoder {
 
   /**
    * Encode a sequence into compact URL string format
-   * Format: "startPosition|beat1|beat2|beat3..."
+   * Format: "startPosition|step1|step2|step3..."
    */
   encode(sequence: SequenceData): string {
-    let startPositionBeat: BeatData | StartPositionData;
-    let actualBeats: readonly BeatData[];
+    let startPositionStep: StepData | StartPositionData;
+    let actualSteps: readonly StepData[];
 
     if (sequence.startPosition) {
-      startPositionBeat = sequence.startPosition;
-      actualBeats = sequence.beats;
-    } else if (sequence.startingPositionBeat) {
-      startPositionBeat = sequence.startingPositionBeat;
-      actualBeats = sequence.beats;
+      startPositionStep = sequence.startPosition;
+      actualSteps = sequence.steps;
+    } else if (sequence.startingPosition) {
+      startPositionStep = sequence.startingPosition;
+      actualSteps = sequence.steps;
     } else {
-      const beat0 = sequence.beats.find((b) => b.beatNumber === 0);
-      if (beat0) {
-        startPositionBeat = beat0;
-        actualBeats = sequence.beats.filter((b) => b.beatNumber !== 0);
+      const step0 = sequence.steps.find((b) => b.stepNumber === 0);
+      if (step0) {
+        startPositionStep = step0;
+        actualSteps = sequence.steps.filter((b) => b.stepNumber !== 0);
       } else {
-        startPositionBeat = {
-          beatNumber: 0,
+        startPositionStep = {
+          stepNumber: 0,
           motions: { blue: undefined, red: undefined },
           duration: 1,
           blueReversal: false,
@@ -182,12 +182,12 @@ export class SequenceEncoder implements ISequenceEncoder {
           startPosition: null,
           endPosition: null,
         };
-        actualBeats = sequence.beats;
+        actualSteps = sequence.steps;
       }
     }
 
-    const encodedStartPosition = this.encodeBeat(startPositionBeat);
-    const encodedBeats = actualBeats.map((beat) => this.encodeBeat(beat));
+    const encodedStartPosition = this.encodeBeat(startPositionStep);
+    const encodedBeats = actualSteps.map((beat) => this.encodeBeat(beat));
 
     return `${encodedStartPosition}|${encodedBeats.join("|")}`;
   }
@@ -212,11 +212,11 @@ export class SequenceEncoder implements ISequenceEncoder {
     }
     const isLegacyFormat = /^\d+$/.test(firstPart);
 
-    let beats: BeatData[];
+    let steps: StepData[];
 
     if (isLegacyFormat) {
-      const startBeat = parseInt(firstPart, 10);
-      if (isNaN(startBeat)) {
+      const startStep = parseInt(firstPart, 10);
+      if (isNaN(startStep)) {
         throw new Error("Invalid start beat number");
       }
 
@@ -225,8 +225,8 @@ export class SequenceEncoder implements ISequenceEncoder {
         throw new Error("No beat data found in sequence");
       }
 
-      const startPositionBeat: BeatData = {
-        beatNumber: 0,
+      const startPositionStep: StepData = {
+        stepNumber: 0,
         motions: { blue: undefined, red: undefined },
         duration: 1,
         blueReversal: false,
@@ -238,28 +238,28 @@ export class SequenceEncoder implements ISequenceEncoder {
         endPosition: null,
       };
 
-      const sequenceBeats = beatEncodings.map((encoding, index) =>
-        this.decodeBeat(encoding, startBeat + index)
+      const sequenceSteps = beatEncodings.map((encoding, index) =>
+        this.decodeBeat(encoding, startStep + index)
       );
 
-      beats = [startPositionBeat, ...sequenceBeats];
+      steps = [startPositionStep, ...sequenceSteps];
     } else {
       const startPositionEncoding = parts[0]!;
-      const startingPositionBeat = this.decodeBeat(startPositionEncoding, 0);
+      const startingPosition = this.decodeBeat(startPositionEncoding, 0);
 
-      // Convert BeatData to StartPositionData using the factory function
+      // Convert StepData to StartPositionData using the factory function
       const startPosition = createStartPositionData({
-        id: startingPositionBeat.id || crypto.randomUUID(),
-        letter: startingPositionBeat.letter,
-        gridPosition: startingPositionBeat.startPosition,
-        startPosition: startingPositionBeat.startPosition,
-        endPosition: startingPositionBeat.endPosition,
-        motions: startingPositionBeat.motions,
+        id: startingPosition.id || crypto.randomUUID(),
+        letter: startingPosition.letter,
+        gridPosition: startingPosition.startPosition,
+        startPosition: startingPosition.startPosition,
+        endPosition: startingPosition.endPosition,
+        motions: startingPosition.motions,
       });
 
       const beatEncodings = parts.slice(1).filter((e) => e && e.length > 0);
 
-      beats = beatEncodings.map((encoding, index) =>
+      steps = beatEncodings.map((encoding, index) =>
         this.decodeBeat(encoding, index + 1)
       );
 
@@ -267,15 +267,15 @@ export class SequenceEncoder implements ISequenceEncoder {
         id: crypto.randomUUID(),
         name: "Shared Sequence",
         word: "",
-        beats,
-        startingPositionBeat: startPosition,
+        steps,
+        startingPosition: startPosition,
         startPosition,
         thumbnails: [],
         isFavorite: false,
         isCircular: false,
         tags: [],
         metadata: {},
-        sequenceLength: beats.length,
+        sequenceLength: steps.length,
       };
     }
 
@@ -283,13 +283,13 @@ export class SequenceEncoder implements ISequenceEncoder {
       id: crypto.randomUUID(),
       name: "Shared Sequence",
       word: "",
-      beats,
+      steps,
       thumbnails: [],
       isFavorite: false,
       isCircular: false,
       tags: [],
       metadata: {},
-      sequenceLength: beats.length,
+      sequenceLength: steps.length,
     };
   }
 
@@ -497,7 +497,7 @@ export class SequenceEncoder implements ISequenceEncoder {
     return `${startLoc}${endLoc}${startOrient}${endOrient}${rotation}${turns}${type}${prop}`;
   }
 
-  private encodeBeat(beat: BeatData | StartPositionData): string {
+  private encodeBeat(beat: StepData | StartPositionData): string {
     const motions = beat.motions ?? { blue: undefined, red: undefined };
     const blueMotion = this.encodeMotion(motions.blue);
     const redMotion = this.encodeMotion(motions.red);
@@ -581,7 +581,7 @@ export class SequenceEncoder implements ISequenceEncoder {
     };
   }
 
-  private decodeBeat(encoded: string, beatNumber: number): BeatData {
+  private decodeBeat(encoded: string, stepNumber: number): StepData {
     const parts = encoded.split(":");
 
     // Need exactly 2 parts (blue:red), but either can be empty for no motion
@@ -593,7 +593,7 @@ export class SequenceEncoder implements ISequenceEncoder {
     const redEncoded = parts[1]!;
 
     return {
-      beatNumber,
+      stepNumber,
       duration: 1,
       blueReversal: false,
       redReversal: false,

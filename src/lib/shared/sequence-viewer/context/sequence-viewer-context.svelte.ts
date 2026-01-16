@@ -35,14 +35,14 @@ export interface SequenceViewerContext {
 	// Image settings
 	readonly showVisibilitySettings: boolean;
 	readonly addWord: boolean;
-	readonly addBeatNumbers: boolean;
+	readonly addStepNumbers: boolean;
 	readonly includeStartPosition: boolean;
 	readonly addDifficultyLevel: boolean;
 	readonly showCreatorName: boolean;
 	readonly showNotes: boolean;
 	readonly showBirthday: boolean;
 	toggleWord: () => void;
-	toggleBeatNumbers: () => void;
+	toggleStepNumbers: () => void;
 	toggleStartPosition: () => void;
 	toggleDifficulty: () => void;
 	toggleShowCreatorName: () => void;

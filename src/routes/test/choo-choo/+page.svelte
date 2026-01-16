@@ -118,27 +118,27 @@
   }
 
   // Current beat data for animation
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat === 0 && animationState.sequenceData.startPosition) {
+    if (currentStep === 0 && animationState.sequenceData.startPosition) {
       return animationState.sequenceData.startPosition;
     }
 
-    if (animationState.sequenceData.beats?.length) {
-      const beatIndex = Math.max(0, Math.ceil(currentBeat - 1) - 1);
+    if (animationState.sequenceData.steps?.length) {
+      const stepIndex = Math.max(0, Math.ceil(currentStep - 1) - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
+        stepIndex,
+        animationState.sequenceData.steps.length - 1
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
   });
 
-  let currentLetter = $derived(currentBeatData?.letter || null);
+  let currentLetter = $derived(currentStepData?.letter || null);
 </script>
 
 <div class="choo-choo-page">
@@ -178,8 +178,8 @@
         </label>
 
         <label class="config-item">
-          <span>Beats</span>
-          <select bind:value={config.beats}>
+          <span>Steps</span>
+          <select bind:value={config.steps}>
             <option value={4}>4 (Full)</option>
             <option value={2}>2 (Half)</option>
           </select>
@@ -219,8 +219,8 @@
             gridVisible={true}
             gridMode={animationState.sequenceData?.gridMode ?? null}
             letter={currentLetter}
-            beatData={currentBeatData}
-            currentBeat={animationState.currentBeat}
+            stepData={currentStepData}
+            currentStep={animationState.currentStep}
             sequenceData={animationState.sequenceData}
           />
         </div>
@@ -235,14 +235,14 @@
           </button>
 
           <span class="beat-indicator">
-            Beat: {Math.floor(animationState.currentBeat)}
+            Beat: {Math.floor(animationState.currentStep)}
           </span>
         </div>
 
         <div class="sequence-info">
           <p><strong>Name:</strong> {selectedSequence.name}</p>
           <p><strong>Word:</strong> {selectedSequence.word}</p>
-          <p><strong>Beats:</strong> {selectedSequence.beats.length}</p>
+          <p><strong>Steps:</strong> {selectedSequence.steps.length}</p>
           <p><strong>Tags:</strong> {selectedSequence.tags.join(", ")}</p>
         </div>
 
@@ -285,7 +285,7 @@
                     ? "Half"
                     : "?"}
               </span>
-              <span class="seq-beats">{seq.beats.length} beats</span>
+              <span class="seq-steps">{seq.steps.length} steps</span>
             </div>
             <div class="card-word">{seq.word}</div>
             <div class="card-meta">
@@ -539,7 +539,7 @@
     color: #ec4899;
   }
 
-  .seq-beats {
+  .seq-steps {
     color: var(--theme-text-dim, #888);
     font-size: 0.875rem;
   }

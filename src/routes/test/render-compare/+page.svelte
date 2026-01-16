@@ -5,7 +5,7 @@
    * Three modes:
    * 1. Single Letter - Detailed comparison of one pictograph
    * 2. Bulk Compare - Renders many pictographs from CSV side-by-side
-   * 3. Real Sequences - Renders beats from actual database sequences
+   * 3. Real Sequences - Renders steps from actual database sequences
    *
    * IMPORTANT: Uses motionQueryHandler to load from CSV dataframe
    * (NOT letterQueryHandler which goes to Codex - that's for the Learn tab only)
@@ -63,8 +63,8 @@
   // Sequences mode state
   type SequenceRenderResult = {
     sequence: SequenceData;
-    beats: {
-      beatIndex: number;
+    steps: {
+      stepIndex: number;
       letter: string;
       svgDataUrl: string;
       canvasDataUrl: string;
@@ -77,10 +77,10 @@
     avgSpeedup: number;
   };
   let sequenceResults = $state<SequenceRenderResult[]>([]);
-  let sequenceProgress = $state({ current: 0, total: 0, currentSeq: '', currentBeat: 0, totalBeats: 0 });
+  let sequenceProgress = $state({ current: 0, total: 0, currentSeq: '', currentStep: 0, totalSteps: 0 });
   let sequenceStats = $state<{
     totalSequences: number;
-    totalBeats: number;
+    totalSteps: number;
     totalSvgTime: number;
     totalCanvasTime: number;
     avgSpeedup: number;
@@ -339,20 +339,20 @@
 
     const loader = new PublicSequencesLoader();
 
-    // First get metadata (no beats)
+    // First get metadata (no steps)
     const metadata = await loader.loadSequenceMetadata();
 
     // Take up to SEQUENCE_COUNT sequences
     const sequencesToLoad = metadata.slice(0, SEQUENCE_COUNT);
 
-    // Load full data for each sequence (with beats)
+    // Load full data for each sequence (with steps)
     const fullSequences: SequenceData[] = [];
     for (let i = 0; i < sequencesToLoad.length; i++) {
       const seq = sequencesToLoad[i]!;
       status = `Loading sequence ${i + 1}/${sequencesToLoad.length}: ${seq.word}...`;
 
       const fullData = await loader.loadFullSequenceData(seq.word);
-      if (fullData && fullData.beats && fullData.beats.length > 0) {
+      if (fullData && fullData.steps && fullData.steps.length > 0) {
         fullSequences.push(fullData);
       }
     }
@@ -376,7 +376,7 @@
       }
 
       if (sequences.length === 0) {
-        throw new Error('No sequences with beats found in database. Make sure you have public sequences.');
+        throw new Error('No sequences with steps found in database. Make sure you have public sequences.');
       }
 
       const renderer = new Canvas2DDirectRenderer();
@@ -387,7 +387,7 @@
       let totalBeatsRendered = 0;
       const results: SequenceRenderResult[] = [];
 
-      sequenceProgress = { current: 0, total: sequences.length, currentSeq: '', currentBeat: 0, totalBeats: 0 };
+      sequenceProgress = { current: 0, total: sequences.length, currentSeq: '', currentStep: 0, totalSteps: 0 };
 
       for (let seqIdx = 0; seqIdx < sequences.length; seqIdx++) {
         const sequence = sequences[seqIdx]!;
@@ -395,21 +395,21 @@
           ...sequenceProgress,
           current: seqIdx + 1,
           currentSeq: sequence.word,
-          currentBeat: 0,
-          totalBeats: sequence.beats.length
+          currentStep: 0,
+          totalSteps: sequence.steps.length
         };
-        status = `Rendering sequence ${seqIdx + 1}/${sequences.length}: "${sequence.word}" (${sequence.beats.length} beats)...`;
+        status = `Rendering sequence ${seqIdx + 1}/${sequences.length}: "${sequence.word}" (${sequence.steps.length} steps)...`;
 
-        const beatResults: SequenceRenderResult['beats'] = [];
+        const stepResults: SequenceRenderResult['steps'] = [];
         let seqSvgTime = 0;
         let seqCanvasTime = 0;
 
-        for (let beatIdx = 0; beatIdx < sequence.beats.length; beatIdx++) {
-          const beat = sequence.beats[beatIdx]!;
-          sequenceProgress = { ...sequenceProgress, currentBeat: beatIdx + 1 };
+        for (let stepIdx = 0; stepIdx < sequence.steps.length; stepIdx++) {
+          const beat = sequence.steps[stepIdx]!;
+          sequenceProgress = { ...sequenceProgress, currentStep: stepIdx + 1 };
 
           // Debug: log first beat's motion data structure
-          if (seqIdx === 0 && beatIdx === 0) {
+          if (seqIdx === 0 && stepIdx === 0) {
             console.log('[RenderCompare] First beat data:', {
               letter: beat.letter,
               motions: beat.motions,
@@ -429,7 +429,7 @@
           } : undefined;
 
           const pictograph: PictographData = {
-            id: `${sequence.id}-beat-${beatIdx}`,
+            id: `${sequence.id}-beat-${stepIdx}`,
             letter: beat.letter as Letter,
             startPosition: beat.startPosition,
             endPosition: beat.endPosition,
@@ -469,8 +469,8 @@
             seqCanvasTime += canvasMs;
             totalCanvasTime += canvasMs;
 
-            beatResults.push({
-              beatIndex: beatIdx,
+            stepResults.push({
+              stepIndex: stepIdx,
               letter: beat.letter || '?',
               svgDataUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString),
               canvasDataUrl: canvas.toDataURL('image/png'),
@@ -481,13 +481,13 @@
 
             totalBeatsRendered++;
           } catch (err) {
-            console.error(`Error rendering beat ${beatIdx} of ${sequence.word}:`, err);
+            console.error(`Error rendering beat ${stepIdx} of ${sequence.word}:`, err);
           }
         }
 
         results.push({
           sequence,
-          beats: beatResults,
+          steps: stepResults,
           totalSvgTime: seqSvgTime,
           totalCanvasTime: seqCanvasTime,
           avgSpeedup: seqSvgTime / seqCanvasTime
@@ -499,13 +499,13 @@
 
       sequenceStats = {
         totalSequences: results.length,
-        totalBeats: totalBeatsRendered,
+        totalSteps: totalBeatsRendered,
         totalSvgTime,
         totalCanvasTime,
         avgSpeedup: totalSvgTime / totalCanvasTime
       };
 
-      status = `Done! Rendered ${totalBeatsRendered} beats from ${results.length} sequences. Total: SVG ${totalSvgTime.toFixed(0)}ms, Canvas ${totalCanvasTime.toFixed(0)}ms (${(totalSvgTime / totalCanvasTime).toFixed(1)}x faster)`;
+      status = `Done! Rendered ${totalBeatsRendered} steps from ${results.length} sequences. Total: SVG ${totalSvgTime.toFixed(0)}ms, Canvas ${totalCanvasTime.toFixed(0)}ms (${(totalSvgTime / totalCanvasTime).toFixed(1)}x faster)`;
       saveState();
 
     } catch (err) {
@@ -716,7 +716,7 @@
     <div class="controls">
       <button onclick={renderSequences} disabled={isLoading}>
         {isLoading
-          ? `Rendering seq ${sequenceProgress.current}/${sequenceProgress.total} (beat ${sequenceProgress.currentBeat}/${sequenceProgress.totalBeats})...`
+          ? `Rendering seq ${sequenceProgress.current}/${sequenceProgress.total} (beat ${sequenceProgress.currentStep}/${sequenceProgress.totalSteps})...`
           : `Render ${SEQUENCE_COUNT} Real Sequences`}
       </button>
 
@@ -739,8 +739,8 @@
             <span class="stat-label">Sequences</span>
           </div>
           <div class="stat">
-            <span class="stat-value">{sequenceStats.totalBeats}</span>
-            <span class="stat-label">Total Beats</span>
+            <span class="stat-value">{sequenceStats.totalSteps}</span>
+            <span class="stat-label">Total Steps</span>
           </div>
           <div class="stat">
             <span class="stat-value">{sequenceStats.totalSvgTime.toFixed(0)}ms</span>
@@ -764,17 +764,17 @@
           <div class="sequence-header">
             <span class="sequence-word">{result.sequence.word}</span>
             <span class="sequence-meta">
-              {result.beats.length} beats |
+              {result.steps.length} steps |
               SVG: {result.totalSvgTime.toFixed(0)}ms |
               Canvas: {result.totalCanvasTime.toFixed(0)}ms |
               <span class="speedup">{result.avgSpeedup.toFixed(1)}x faster</span>
             </span>
           </div>
-          <div class="beats-grid">
-            {#each result.beats as beat, beatIdx}
+          <div class="steps-grid">
+            {#each result.steps as beat, stepIdx}
               <div class="beat-item">
                 <div class="beat-header">
-                  <span class="beat-number">Beat {beat.beatIndex + 1}</span>
+                  <span class="beat-number">Beat {beat.stepIndex + 1}</span>
                   <span class="beat-letter">{beat.letter}</span>
                   <span class="beat-speedup">{beat.speedup.toFixed(1)}x</span>
                 </div>
@@ -1170,7 +1170,7 @@
     font-weight: bold;
   }
 
-  .beats-grid {
+  .steps-grid {
     display: flex;
     gap: 12px;
     overflow-x: auto;

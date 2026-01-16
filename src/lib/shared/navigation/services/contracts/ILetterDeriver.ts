@@ -15,7 +15,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
  */
 export interface ILetterDeriver {
   /**
-   * Derive letters for all beats in a sequence using the Motion Query Handler
+   * Derive letters for all steps in a sequence using the Motion Query Handler
    * This should be called AFTER loading a deep link sequence to populate the letter fields
    *
    * @param sequence - The sequence with motion data but no letters

@@ -33,7 +33,7 @@
 
   // Local reactive copies of settings (for UI)
   let addWord = $state(imageSettings.addWord);
-  let addBeatNumbers = $state(imageSettings.addBeatNumbers);
+  let addStepNumbers = $state(imageSettings.addStepNumbers);
   let includeStartPosition = $state(imageSettings.includeStartPosition);
   let addDifficultyLevel = $state(imageSettings.addDifficultyLevel);
   let addUserInfo = $state(imageSettings.addUserInfo);
@@ -55,7 +55,7 @@
   onMount(() => {
     const updateFromManager = () => {
       addWord = imageSettings.addWord;
-      addBeatNumbers = imageSettings.addBeatNumbers;
+      addStepNumbers = imageSettings.addStepNumbers;
       includeStartPosition = imageSettings.includeStartPosition;
       addDifficultyLevel = imageSettings.addDifficultyLevel;
       addUserInfo = imageSettings.addUserInfo;
@@ -73,7 +73,7 @@
     const service = renderService;
     // Track all settings for reactivity
     const _word = addWord;
-    const _beats = addBeatNumbers;
+    const _beats = addStepNumbers;
     const _start = includeStartPosition;
     const _diff = addDifficultyLevel;
     const _user = addUserInfo;
@@ -99,9 +99,9 @@
       .generatePreview(sequence, {
         backgroundColor: _darkMode ? "#0a0a0f" : "#FFFFFF",
         quality: 1.0,
-        beatScale: 1.0,
+        stepScale: 1.0,
         includeStartPosition: _start,
-        addBeatNumbers: _beats,
+        addStepNumbers: _beats,
         addWord: _word,
         addUserInfo: _user,
         addDifficultyLevel: _diff,
@@ -132,8 +132,8 @@
     imageSettings.toggle("addWord");
   }
 
-  function toggleBeatNumbers() {
-    imageSettings.toggle("addBeatNumbers");
+  function toggleStepNumbers() {
+    imageSettings.toggle("addStepNumbers");
   }
 
   function toggleStartPosition() {
@@ -202,9 +202,9 @@
     </button>
     <button
       class="chip"
-      class:active={addBeatNumbers}
-      onclick={toggleBeatNumbers}
-      aria-pressed={addBeatNumbers}
+      class:active={addStepNumbers}
+      onclick={toggleStepNumbers}
+      aria-pressed={addStepNumbers}
     >
       Beat #s
     </button>

@@ -24,7 +24,7 @@ import {
 /**
  * Beat animation controller
  */
-export class BeatAnimation {
+export class StepAnimation {
   readonly progress: Spring<number>;
   private readonly variantConfig: AnimationVariantConfig;
 

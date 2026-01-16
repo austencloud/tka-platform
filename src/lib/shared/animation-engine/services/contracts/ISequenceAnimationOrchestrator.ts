@@ -14,7 +14,7 @@ import type { PropState, PropStates } from "../../domain/PropState";
 
 export interface ISequenceAnimationOrchestrator {
   initializeWithDomainData(sequenceData: SequenceData): boolean;
-  calculateState(currentBeat: number): void;
+  calculateState(currentStep: number): void;
   getPropStates(): PropStates;
   getBluePropState(): PropState;
   getRedPropState(): PropState;

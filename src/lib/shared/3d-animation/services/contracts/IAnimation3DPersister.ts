@@ -69,7 +69,7 @@ export interface Animation3DPersistedState {
 
   // Sequence state
   loadedSequence: SequenceData | null;
-  currentBeatIndex: number;
+  currentStepIndex: number;
 }
 
 export interface IAnimation3DPersister {

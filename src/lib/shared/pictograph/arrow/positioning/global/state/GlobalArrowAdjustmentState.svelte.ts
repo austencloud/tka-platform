@@ -98,13 +98,17 @@ export function createGlobalArrowAdjustmentState() {
      * Called by persister after Firestore write or on initial load
      */
     setAdjustment(adjustment: GlobalArrowAdjustment): void {
-      const keyString = generateAdjustmentKeyString({
+      // Build key including optional propType and otherPropType for Layer 2/3 support
+      const key: GlobalAdjustmentKey = {
         gridMode: adjustment.gridMode,
         oriKey: adjustment.oriKey,
         letter: adjustment.letter,
         turnsTuple: adjustment.turnsTuple,
         arrowKey: adjustment.arrowKey,
-      });
+        ...(adjustment.propType && { propType: adjustment.propType }),
+        ...(adjustment.otherPropType && { otherPropType: adjustment.otherPropType }),
+      };
+      const keyString = generateAdjustmentKeyString(key);
       // Create new map to trigger reactivity
       const newMap = new Map(adjustmentsMap);
       newMap.set(keyString, adjustment);
@@ -133,13 +137,17 @@ export function createGlobalArrowAdjustmentState() {
       try {
         const newMap = new Map<string, GlobalArrowAdjustment>();
         for (const adjustment of adjustments) {
-          const keyString = generateAdjustmentKeyString({
+          // Build key including optional propType and otherPropType for Layer 2/3 support
+          const key: GlobalAdjustmentKey = {
             gridMode: adjustment.gridMode,
             oriKey: adjustment.oriKey,
             letter: adjustment.letter,
             turnsTuple: adjustment.turnsTuple,
             arrowKey: adjustment.arrowKey,
-          });
+            ...(adjustment.propType && { propType: adjustment.propType }),
+            ...(adjustment.otherPropType && { otherPropType: adjustment.otherPropType }),
+          };
+          const keyString = generateAdjustmentKeyString(key);
           newMap.set(keyString, adjustment);
         }
         adjustmentsMap = newMap;

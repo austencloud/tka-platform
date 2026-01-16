@@ -18,7 +18,7 @@ import {
   MotionColor,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 /** Example pictograph data showing Letter A with blue and red motions */
 export const examplePictographData = {
@@ -60,9 +60,9 @@ export const examplePictographData = {
 };
 
 /** Example beat data extending pictograph data with beat-specific properties */
-export const exampleBeatData: BeatData = {
+export const exampleStepData: StepData = {
   ...examplePictographData,
-  beatNumber: 1,
+  stepNumber: 1,
   duration: 1,
   isBlank: false,
 };
@@ -72,7 +72,7 @@ export const exampleSequenceData: SequenceData = {
   id: "visibility-preview-seq",
   name: "Preview",
   word: "A",
-  beats: [exampleBeatData],
+  steps: [exampleStepData],
   thumbnails: [],
   isFavorite: false,
   isCircular: false,

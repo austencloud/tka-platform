@@ -14,7 +14,7 @@ export class SequenceMotionLoader implements ISequenceMotionLoader {
 
   async ensureMotionData(seq: SequenceData): Promise<SequenceData | null> {
     // Check if sequence already has motion data
-    const hasMotions = seq.beats?.some(
+    const hasMotions = seq.steps?.some(
       (b) => b?.motions?.blue && b?.motions?.red
     );
     if (hasMotions) return seq;
@@ -24,7 +24,7 @@ export class SequenceMotionLoader implements ISequenceMotionLoader {
     if (galleryId) {
       try {
         const loaded = await this.discoverLoader.loadFullSequenceData(galleryId);
-        if (loaded?.beats?.some((b) => b?.motions?.blue && b?.motions?.red)) {
+        if (loaded?.steps?.some((b) => b?.motions?.blue && b?.motions?.red)) {
           return loaded;
         }
       } catch (err) {

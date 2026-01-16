@@ -6,18 +6,18 @@
 
 export interface CompositeExportOptions {
   orientation: "horizontal" | "vertical";
-  gridBeatSize: number; // Size of each beat in the grid (pixels)
+  gridStepSize: number; // Size of each beat in the grid (pixels)
   includeStartPosition: boolean;
-  showBeatNumbers: boolean;
+  showStepNumbers: boolean;
   fps: number;
   loopCount: number;
 }
 
 export const DEFAULT_COMPOSITE_OPTIONS: CompositeExportOptions = {
   orientation: "horizontal",
-  gridBeatSize: 120,
+  gridStepSize: 120,
   includeStartPosition: true,
-  showBeatNumbers: true,
+  showStepNumbers: true,
   fps: 50,
   loopCount: 1,
 };

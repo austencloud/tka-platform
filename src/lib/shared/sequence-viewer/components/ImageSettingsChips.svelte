@@ -26,9 +26,9 @@
 		<button
 			type="button"
 			class="chip"
-			class:active={ctx.addBeatNumbers}
-			onclick={ctx.toggleBeatNumbers}
-			aria-pressed={ctx.addBeatNumbers}
+			class:active={ctx.addStepNumbers}
+			onclick={ctx.toggleStepNumbers}
+			aria-pressed={ctx.addStepNumbers}
 		>
 			Beat #s
 		</button>

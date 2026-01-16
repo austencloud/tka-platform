@@ -16,7 +16,7 @@ import {
   createCameraKeyframe,
   createDefaultCameraState,
   lerpCameraState,
-  getKeyframeBeatTime,
+  getKeyframeStepTime,
   sortKeyframesByTime,
   findSurroundingKeyframes,
   lerpCameraPosition,
@@ -99,14 +99,14 @@ export function createCameraChoreographer(): ICameraChoreographer {
    * Calculate camera state for a beat time
    */
   function calculateStateForBeat(
-    beatTime: number,
+    stepTime: number,
     performerProvider?: PerformerPositionProvider
   ): CameraState {
     if (!choreography || choreography.keyframes.length === 0) {
       return createDefaultCameraState(choreography ?? undefined);
     }
 
-    const { previous, next } = findSurroundingKeyframes(choreography.keyframes, beatTime);
+    const { previous, next } = findSurroundingKeyframes(choreography.keyframes, stepTime);
 
     // Update active/next keyframe references
     activeKeyframe = previous;
@@ -114,8 +114,8 @@ export function createCameraChoreographer(): ICameraChoreographer {
 
     // Check if we've reached a new keyframe
     if (previous && previous.id !== lastReachedKeyframeId) {
-      const prevTime = getKeyframeBeatTime(previous);
-      if (Math.abs(beatTime - prevTime) < 0.01) {
+      const prevTime = getKeyframeStepTime(previous);
+      if (Math.abs(stepTime - prevTime) < 0.01) {
         lastReachedKeyframeId = previous.id;
         notifyKeyframeReached(previous);
       }
@@ -163,11 +163,11 @@ export function createCameraChoreographer(): ICameraChoreographer {
     }
 
     // Between two keyframes - interpolate
-    const prevTime = getKeyframeBeatTime(previous);
-    const nextTime = getKeyframeBeatTime(next);
+    const prevTime = getKeyframeStepTime(previous);
+    const nextTime = getKeyframeStepTime(next);
     const duration = nextTime - prevTime;
 
-    transitionProgress = duration > 0 ? (beatTime - prevTime) / duration : 0;
+    transitionProgress = duration > 0 ? (stepTime - prevTime) / duration : 0;
     transitionProgress = Math.max(0, Math.min(1, transitionProgress));
 
     // Get base interpolated state
@@ -266,13 +266,13 @@ export function createCameraChoreographer(): ICameraChoreographer {
     },
 
     // Playback Integration
-    updateForBeat(
-      beatNumber: number,
-      beatProgress: number,
+    updateForStep(
+      stepNumber: number,
+      stepProgress: number,
       performerProvider?: PerformerPositionProvider
     ): CameraState {
-      const beatTime = beatNumber + beatProgress;
-      currentState = calculateStateForBeat(beatTime, performerProvider);
+      const stepTime = stepNumber + stepProgress;
+      currentState = calculateStateForBeat(stepTime, performerProvider);
       notifyStateChange();
       return currentState;
     },
@@ -338,11 +338,11 @@ export function createCameraChoreographer(): ICameraChoreographer {
     },
 
     captureKeyframe(
-      beatNumber: number,
+      stepNumber: number,
       currentPosition: CameraPosition,
       currentTarget: CameraPosition
     ): CameraKeyframe {
-      const keyframe = createCameraKeyframe(beatNumber, currentPosition, currentTarget);
+      const keyframe = createCameraKeyframe(stepNumber, currentPosition, currentTarget);
 
       if (choreography) {
         this.addKeyframe(keyframe);

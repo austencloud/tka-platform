@@ -33,7 +33,7 @@ export class URLSyncer implements IURLSyncer {
     this.cancelPendingUpdates();
 
     // If no sequence, only clear if explicitly allowed
-    if (!sequence?.beats || sequence.beats.length === 0) {
+    if (!sequence?.steps || sequence.steps.length === 0) {
       if (allowClear) {
         this.clearSequenceFromURL();
       }

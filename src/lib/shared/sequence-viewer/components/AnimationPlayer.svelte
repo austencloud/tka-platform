@@ -79,7 +79,7 @@
 
 	// Derived: effective state from context or internal
 	const isPlaying = $derived(useContext ? ctx!.state.isPlaying : animState?.isPlaying ?? false);
-	const currentBeat = $derived(useContext ? ctx!.state.currentBeat : animState?.currentBeat ?? 0);
+	const currentStep = $derived(useContext ? ctx!.state.currentStep : animState?.currentStep ?? 0);
 	const bluePropState = $derived(useContext ? ctx!.state.bluePropState : animState?.bluePropState);
 	const redPropState = $derived(useContext ? ctx!.state.redPropState : animState?.redPropState);
 	const sequenceData = $derived(useContext ? ctx!.state.sequenceData ?? sequence : animState?.sequenceData ?? sequence);
@@ -89,15 +89,15 @@
 	const exportProgress = $derived(useContext ? ctx!.state.exportProgress : null);
 
 	// Derived: current beat data for canvas
-	const beatData = $derived.by(() => {
+	const stepData = $derived.by(() => {
 		const seq = sequenceData;
 		if (!seq) return null;
-		if (currentBeat < 1) return seq.startPosition ?? null;
-		const idx = Math.min(Math.max(0, Math.floor(currentBeat) - 1), (seq.beats?.length ?? 1) - 1);
-		return seq.beats?.[idx] ?? null;
+		if (currentStep < 1) return seq.startPosition ?? null;
+		const idx = Math.min(Math.max(0, Math.floor(currentStep) - 1), (seq.steps?.length ?? 1) - 1);
+		return seq.steps?.[idx] ?? null;
 	});
 
-	const letter = $derived(beatData?.letter ?? null);
+	const letter = $derived(stepData?.letter ?? null);
 	const gridMode = $derived(sequenceData?.gridMode ?? sequence?.gridMode);
 
 	// Trail settings with fine-grained reactivity
@@ -145,10 +145,10 @@
 	$effect(() => {
 		if (useContext || !controller || !motionLoader) return;
 		// Use id + ownerId to uniquely identify sequences (different creators can have same word)
-		// Fall back to word + beats length as last resort for local sequences without ownerId
+		// Fall back to word + steps length as last resort for local sequences without ownerId
 		const seqId = sequence?.id
 			? `${sequence.id}:${sequence.ownerId ?? "local"}`
-			: `${sequence?.word ?? ""}:${sequence?.beats?.length ?? 0}`;
+			: `${sequence?.word ?? ""}:${sequence?.steps?.length ?? 0}`;
 		if (seqId === lastSequenceId) return;
 
 		untrack(async () => {
@@ -217,9 +217,9 @@
 						gridVisible={true}
 						{gridMode}
 						{letter}
-						{beatData}
+						{stepData}
 						{sequenceData}
-						{currentBeat}
+						{currentStep}
 						{isPlaying}
 						word={sequenceData?.word ?? sequence?.word ?? null}
 						onPlaybackToggle={togglePlayback}
@@ -268,9 +268,9 @@
 					gridVisible={true}
 					{gridMode}
 					{letter}
-					{beatData}
+					{stepData}
 					{sequenceData}
-					{currentBeat}
+					{currentStep}
 					{isPlaying}
 					word={sequenceData?.word ?? sequence?.word ?? null}
 					onPlaybackToggle={togglePlayback}

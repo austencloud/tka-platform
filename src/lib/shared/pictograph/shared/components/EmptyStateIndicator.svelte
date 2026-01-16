@@ -5,9 +5,9 @@ Renders the gray circle with question mark for empty pictographs.
 Provides a clear visual indicator when no pictograph data is available.
 -->
 <script lang="ts">
-  let { beatNumber = null, hasValidData = false } = $props<{
+  let { stepNumber = null, hasValidData = false } = $props<{
     /** The beat number to display (or "?" if null) */
-    beatNumber?: number | null;
+    stepNumber?: number | null;
     /** Whether the pictograph has valid data */
     hasValidData?: boolean;
   }>();
@@ -19,7 +19,7 @@ Provides a clear visual indicator when no pictograph data is available.
 
   // Display text - beat number or question mark
   const displayText = $derived(() => {
-    return beatNumber || "?";
+    return stepNumber || "?";
   });
 </script>
 

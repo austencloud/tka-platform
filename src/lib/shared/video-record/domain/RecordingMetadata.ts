@@ -46,8 +46,8 @@ export interface RecordingMetadata {
   readonly metadata: {
     /** Sequence name at time of recording */
     sequenceName?: string;
-    /** Number of beats in sequence */
-    beatCount?: number;
+    /** Number of steps in sequence */
+    stepCount?: number;
     /** Any additional metadata */
     [key: string]: unknown;
   };

@@ -40,13 +40,13 @@
 
   /**
    * Create a 1,1 turn pattern for a 4-beat sequence
-   * This adds 1 turn to both blue and red motions on all beats
+   * This adds 1 turn to both blue and red motions on all steps
    */
-  function createOneTurnPattern(beatCount: number): TurnPattern {
+  function createOneTurnPattern(stepCount: number): TurnPattern {
     const entries = [];
-    for (let i = 0; i < beatCount; i++) {
+    for (let i = 0; i < stepCount; i++) {
       entries.push({
-        beatIndex: i,
+        stepIndex: i,
         blue: 1, // 1 turn for blue
         red: 1, // 1 turn for red
       });
@@ -57,42 +57,42 @@
       name: "1,1 Pattern",
       userId: "system",
       createdAt: Timestamp.now(),
-      beatCount,
+      stepCount,
       entries,
     };
   }
 
   // Derived: Current beat data for AnimatorCanvas
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
 
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
     // Handle start position case (beat 0)
     if (
-      currentBeat === 0 &&
+      currentStep === 0 &&
       !animationState.isPlaying &&
       animationState.sequenceData.startPosition
     ) {
       return animationState.sequenceData.startPosition;
     }
 
-    // For beats, use direct indexing with clamping
-    // Beat indexing: beats[0] = beat 1, beats[1] = beat 2, etc.
-    // currentBeat semantics: beat N's motion spans from N.0 to (N+1).0
+    // For steps, use direct indexing with clamping
+    // Beat indexing: steps[0] = beat 1, steps[1] = beat 2, etc.
+    // currentStep semantics: beat N's motion spans from N.0 to (N+1).0
     if (
-      animationState.sequenceData.beats &&
-      animationState.sequenceData.beats.length > 0
+      animationState.sequenceData.steps &&
+      animationState.sequenceData.steps.length > 0
     ) {
-      // Formula: ceil(currentBeat - 1) gives the beat number whose motion is/was playing
+      // Formula: ceil(currentStep - 1) gives the beat number whose motion is/was playing
       // - At 3.0 (pause after beat 2): ceil(2.0) = 2, shows beat 2
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
+        stepIndex,
+        animationState.sequenceData.steps.length - 1
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
@@ -100,7 +100,7 @@
 
   // Derived: Current letter
   let currentLetter = $derived.by(() => {
-    return currentBeatData?.letter || null;
+    return currentStepData?.letter || null;
   });
 
   onMount(() => {
@@ -195,7 +195,7 @@
       type ITurnPatternManager =
         import("$lib/features/create/shared/services/contracts/ITurnPatternManager").ITurnPatternManager;
       const turnPatternManager = container.items.turnPatternManager as ITurnPatternManager;
-      const turnPattern = createOneTurnPattern(baseSequence.beats.length);
+      const turnPattern = createOneTurnPattern(baseSequence.steps.length);
       const result = turnPatternManager.applyPattern(turnPattern, baseSequence);
 
       if (!result.success || !result.sequence) {
@@ -256,8 +256,8 @@
     {gridVisible}
     gridMode={animationState.sequenceData?.gridMode ?? null}
     letter={currentLetter}
-    beatData={currentBeatData}
-    currentBeat={animationState.currentBeat}
+    stepData={currentStepData}
+    currentStep={animationState.currentStep}
     sequenceData={animationState.sequenceData}
     trailSettings={animationSettings.trail}
   />

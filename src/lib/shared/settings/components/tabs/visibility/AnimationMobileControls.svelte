@@ -15,7 +15,7 @@
     bpm: number;
     bpmPresets: number[];
     gridVisible: boolean;
-    beatNumbersVisible: boolean;
+    stepNumbersVisible: boolean;
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
     trailStyle: TrailStyle;
@@ -33,7 +33,7 @@
     bpm,
     bpmPresets,
     gridVisible,
-    beatNumbersVisible,
+    stepNumbersVisible,
     tkaGlyphVisible,
     wordHeaderVisible,
     trailStyle,

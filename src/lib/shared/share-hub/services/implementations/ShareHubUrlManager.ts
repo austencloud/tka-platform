@@ -59,7 +59,7 @@ export class ShareHubUrlManager implements IShareHubUrlManager {
       sequenceId: state.sequenceId,
       speed: state.speed,
       isPlaying: state.isPlaying,
-      currentBeat: state.currentBeat,
+      currentStep: state.currentStep,
       gridVisible: true,
     });
   }
@@ -74,7 +74,7 @@ export class ShareHubUrlManager implements IShareHubUrlManager {
     this.sheetRouter.updateAnimationPanelState({
       speed: state.speed,
       isPlaying: state.isPlaying,
-      currentBeat: state.currentBeat,
+      currentStep: state.currentStep,
     });
   }
 
@@ -87,7 +87,7 @@ export class ShareHubUrlManager implements IShareHubUrlManager {
     url.searchParams.delete("animSeqId");
     url.searchParams.delete("animSpeed");
     url.searchParams.delete("animPlaying");
-    url.searchParams.delete("animBeat");
+    url.searchParams.delete("animStep");
     url.searchParams.delete("animGrid");
 
     window.history.replaceState({}, "", url);
@@ -109,7 +109,7 @@ export class ShareHubUrlManager implements IShareHubUrlManager {
       sequenceId: state.sequenceId,
       speed: state.speed,
       isPlaying: state.isPlaying,
-      currentBeat: state.currentBeat,
+      currentStep: state.currentStep,
     };
   }
 

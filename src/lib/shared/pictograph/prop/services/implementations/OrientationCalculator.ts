@@ -19,7 +19,7 @@ import {
   createMotionData,
   type MotionData,
 } from "../../../shared/domain/models/MotionData";
-import type { BeatData } from "../../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../../features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../../features/create/shared/domain/models/StartPositionData";
 import type { IOrientationCalculator } from "../contracts/IOrientationCalculator";
 import { GridLocation } from "../../../grid/domain/enums/grid-enums";
@@ -242,15 +242,15 @@ export class OrientationCalculator implements IOrientationCalculator {
    * Update start orientations - returns updated beat data
    */
   updateStartOrientations(
-    nextBeat: BeatData,
-    lastBeat: BeatData | StartPositionData
-  ): BeatData {
-    if (nextBeat.isBlank || ("isBlank" in lastBeat && lastBeat.isBlank)) {
-      throw new Error("Both beats must have motion data (not be blank)");
+    nextStep: StepData,
+    lastStep: StepData | StartPositionData
+  ): StepData {
+    if (nextStep.isBlank || ("isBlank" in lastStep && lastStep.isBlank)) {
+      throw new Error("Both steps must have motion data (not be blank)");
     }
 
-    const lastBlueMotion = lastBeat.motions["blue"];
-    const lastRedMotion = lastBeat.motions["red"];
+    const lastBlueMotion = lastStep.motions["blue"];
+    const lastRedMotion = lastStep.motions["red"];
 
     if (
       !lastBlueMotion ||
@@ -264,7 +264,7 @@ export class OrientationCalculator implements IOrientationCalculator {
     }
 
     // Create updated motions with new start orientations
-    const updatedMotions = { ...nextBeat.motions };
+    const updatedMotions = { ...nextStep.motions };
 
     if (updatedMotions.blue) {
       updatedMotions.blue = {
@@ -282,7 +282,7 @@ export class OrientationCalculator implements IOrientationCalculator {
 
     // Return updated beat data
     return {
-      ...nextBeat,
+      ...nextStep,
       motions: updatedMotions,
     };
   }
@@ -290,7 +290,7 @@ export class OrientationCalculator implements IOrientationCalculator {
   /**
    * Update end orientations - returns updated beat data
    */
-  updateEndOrientations(beat: BeatData): BeatData {
+  updateEndOrientations(beat: StepData): StepData {
     if (beat.isBlank) {
       throw new Error("Beat must have motion data (not be blank)");
     }

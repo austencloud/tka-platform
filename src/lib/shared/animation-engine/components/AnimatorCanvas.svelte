@@ -30,7 +30,7 @@ Last audit: 2025-12-27
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { StartPositionData } from "../../../features/create/shared/domain/models/StartPositionData";
-  import type { BeatData } from "../../../features/create/shared/domain/models/BeatData";
+  import type { StepData } from "../../../features/create/shared/domain/models/StepData";
   import type { PropState } from "../domain/PropState";
   import type { TrailSettings } from "../domain/types/TrailTypes";
   import GlyphRenderer from "./GlyphRenderer.svelte";
@@ -51,9 +51,9 @@ Last audit: 2025-12-27
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
     letter = null,
-    beatData = null,
+    stepData = null,
     sequenceData = null,
-    currentBeat = 0,
+    currentStep = 0,
     isPlaying = false,
     onCanvasReady = () => {},
     onPlaybackToggle = () => {},
@@ -68,7 +68,7 @@ Last audit: 2025-12-27
     previewDarkMode = null,
     // Tunnel mode: hide TKA glyph and beat numbers (combined motions don't form a letter)
     hideTkaGlyph = false,
-    hideBeatNumbers = false,
+    hideStepNumbers = false,
     // Whether sequence returns to start position - controls trail clearing on loop
     isSeamlesslyLoopable = undefined,
   }: {
@@ -80,9 +80,9 @@ Last audit: 2025-12-27
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
     letter?: Letter | null;
-    beatData?: StartPositionData | BeatData | null;
+    stepData?: StartPositionData | StepData | null;
     sequenceData?: SequenceData | null;
-    currentBeat?: number;
+    currentStep?: number;
     isPlaying?: boolean;
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
     onPlaybackToggle?: () => void;
@@ -92,7 +92,7 @@ Last audit: 2025-12-27
     word?: string | null;
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
-    hideBeatNumbers?: boolean;
+    hideStepNumbers?: boolean;
     isSeamlesslyLoopable?: boolean;
   } = $props();
 
@@ -107,7 +107,7 @@ Last audit: 2025-12-27
 
   // Local visibility state updated via observer (more reliable than engine state propagation)
   let tkaGlyphVisible = $state(visibilityManager.getVisibility("tkaGlyph"));
-  let beatNumbersVisible = $state(visibilityManager.getVisibility("beatNumbers"));
+  let stepNumbersVisible = $state(visibilityManager.getVisibility("stepNumbers"));
   let globalDarkMode = $state(visibilityManager.isDarkMode());
   let wordHeaderVisible = $state(visibilityManager.getVisibility("wordHeader"));
 
@@ -118,11 +118,11 @@ Last audit: 2025-12-27
 
   // Effective visibility: combine global settings with hide props (for tunnel mode)
   const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
-  const effectiveBeatNumbersVisible = $derived(beatNumbersVisible && !hideBeatNumbers);
+  const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
 
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
-    beatNumbersVisible = visibilityManager.getVisibility("beatNumbers");
+    stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
   }
@@ -142,11 +142,11 @@ Last audit: 2025-12-27
   const preRenderedFramesReady = $derived(engine.state.preRenderedFramesReady);
   const displayedLetter = $derived(engine.state.displayedLetter);
   const displayedTurnsTuple = $derived(engine.state.displayedTurnsTuple);
-  const displayedBeatNumber = $derived(engine.state.displayedBeatNumber);
+  const displayedStepNumber = $derived(engine.state.displayedStepNumber);
   const displayedMusicalPosition = $derived(engine.state.displayedMusicalPosition);
   const fadingOutLetter = $derived(engine.state.fadingOutLetter);
   const fadingOutTurnsTuple = $derived(engine.state.fadingOutTurnsTuple);
-  const fadingOutBeatNumber = $derived(engine.state.fadingOutBeatNumber);
+  const fadingOutStepNumber = $derived(engine.state.fadingOutStepNumber);
   const isNewLetter = $derived(engine.state.isNewLetter);
 
   // Initialize engine when container mounts
@@ -176,9 +176,9 @@ Last audit: 2025-12-27
       gridMode,
       backgroundAlpha,
       letter,
-      beatData,
+      stepData,
       sequenceData,
-      currentBeat,
+      currentStep,
       isPlaying,
       externalTrailSettings,
       bluePropType,
@@ -213,7 +213,7 @@ Last audit: 2025-12-27
 
 <!-- Hidden GlyphRenderer that converts TKAGlyph to SVG for Canvas2D rendering -->
 {#if letter}
-  <GlyphRenderer {letter} {beatData} onSvgReady={handleGlyphSvgReady} />
+  <GlyphRenderer {letter} {stepData} onSvgReady={handleGlyphSvgReady} />
 {/if}
 
 <!-- Outer container centers the content -->
@@ -225,7 +225,7 @@ Last audit: 2025-12-27
       {word}
       visible={wordHeaderVisible}
       darkMode={darkModeEnabled}
-      activeBeatNumber={isPlaying ? Math.floor(currentBeat) : null}
+      activeStepNumber={isPlaying ? Math.floor(currentStep) : null}
     />
 
     <!-- Canvas wrapper maintains 1:1 aspect ratio for animation only -->
@@ -239,16 +239,16 @@ Last audit: 2025-12-27
         {letter}
         {displayedLetter}
         {displayedTurnsTuple}
-        {displayedBeatNumber}
+        {displayedStepNumber}
         {displayedMusicalPosition}
         {fadingOutLetter}
         {fadingOutTurnsTuple}
-        {fadingOutBeatNumber}
+        {fadingOutStepNumber}
         {isNewLetter}
         tkaGlyphVisible={effectiveTkaGlyphVisible}
-        beatNumbersVisible={effectiveBeatNumbersVisible}
+        stepNumbersVisible={effectiveBeatNumbersVisible}
         darkMode={darkModeEnabled}
-        isAtStartPosition={currentBeat < 1 && sequenceData !== null}
+        isAtStartPosition={currentStep < 1 && sequenceData !== null}
       />
 
       <ProgressOverlay

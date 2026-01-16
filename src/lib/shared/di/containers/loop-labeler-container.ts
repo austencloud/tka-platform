@@ -8,8 +8,8 @@
 import { createContainer } from "iti";
 
 // Services with no dependencies
-import { BeatDataConverter } from "$lib/features/loop-labeler/services/implementations/BeatDataConverter";
-import { BeatPairAnalyzer } from "$lib/features/loop-labeler/services/implementations/BeatPairAnalyzer";
+import { StepDataConverter } from "$lib/features/loop-labeler/services/implementations/StepDataConverter";
+import { StepPairAnalyzer } from "$lib/features/loop-labeler/services/implementations/StepPairAnalyzer";
 import { LOOPDesignator } from "$lib/features/loop-labeler/services/implementations/LOOPDesignator";
 import { PolyrhythmicDetector } from "$lib/features/loop-labeler/services/implementations/PolyrhythmicDetector";
 import { LayeredPathDetector } from "$lib/features/loop-labeler/services/implementations/LayeredPathDetector";
@@ -23,7 +23,7 @@ import { Navigator } from "$lib/features/loop-labeler/services/implementations/N
 import { RuleBasedTagger } from "$lib/features/loop-labeler/services/implementations/RuleBasedTagger";
 
 // Services with internal dependencies
-import { BeatComparisonOrchestrator } from "$lib/features/loop-labeler/services/implementations/comparison/BeatComparisonOrchestrator";
+import { StepComparisonOrchestrator } from "$lib/features/loop-labeler/services/implementations/comparison/StepComparisonOrchestrator";
 import { TransformationAnalyzer } from "$lib/features/loop-labeler/services/implementations/TransformationAnalyzer";
 import { LOOPDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
 
@@ -46,8 +46,8 @@ export function createLoopLabelerContainer(externalDeps: {
     createContainer()
       // === Layer 1: Services with no dependencies ===
       .add({
-        beatDataConverter: () => new BeatDataConverter(),
-        beatPairAnalyzer: () => new BeatPairAnalyzer(),
+        stepDataConverter: () => new StepDataConverter(),
+        beatPairAnalyzer: () => new StepPairAnalyzer(),
         loopDesignator: () => new LOOPDesignator(),
         polyrhythmicDetector: () => new PolyrhythmicDetector(),
         layeredPathDetector: () => new LayeredPathDetector(),
@@ -64,7 +64,7 @@ export function createLoopLabelerContainer(externalDeps: {
       // === Layer 2: Services with internal dependencies ===
       .add((deps) => ({
         beatComparisonOrchestrator: () =>
-          new BeatComparisonOrchestrator(
+          new StepComparisonOrchestrator(
             deps.rotationComparer,
             deps.reflectionComparer,
             deps.swapInvertComparer,

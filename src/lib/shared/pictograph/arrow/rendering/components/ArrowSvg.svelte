@@ -359,7 +359,7 @@ Now with intelligent rotation animation matching prop behavior!
     role={isClickable ? "button" : undefined}
     tabindex={isClickable ? 0 : undefined}
     aria-label={isClickable
-      ? `${color} arrow - ${motionData.motion} ${motionData.turns}`
+      ? `${color} arrow - ${motionData.motionType} ${motionData.turns}`
       : undefined}
     style="
       transform: translate({safePosition.x}px, {safePosition.y}px)

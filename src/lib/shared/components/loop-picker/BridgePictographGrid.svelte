@@ -72,15 +72,15 @@
       return "Same position";
     }
     const len = sampleOption.resultingLength;
-    if (rotation === "half") return `180° rotation → ${len} beats`;
-    if (rotation === "quarter") return `90° rotation → ${len} beats`;
+    if (rotation === "half") return `180° rotation → ${len} steps`;
+    if (rotation === "quarter") return `90° rotation → ${len} steps`;
 
     // For exact, check orientation alignment
     const align = sampleOption.orientationAlignment;
     if (align && !align.matches) {
-      return `×${align.repetitionsNeeded} to align → ${len} beats`;
+      return `×${align.repetitionsNeeded} to align → ${len} steps`;
     }
-    return `True loop → ${len} beats`;
+    return `True loop → ${len} steps`;
   }
 
   // Get badge info for exact position options
@@ -146,7 +146,7 @@
                 )}
                 style:--animation-delay="{index * 40}ms"
                 aria-label="Add {option
-                  .bridgeLetters[0]} → {option.resultingLength || ''} beats"
+                  .bridgeLetters[0]} → {option.resultingLength || ''} steps"
                 title="{option.bridgeLetters[0]} → {option.endPosition}"
               >
                 <div class="pictograph-wrapper">
@@ -182,7 +182,7 @@
                 )}
                 style:--animation-delay="{index * 40}ms"
                 aria-label="Add {option
-                  .bridgeLetters[0]} → {option.resultingLength || ''} beats"
+                  .bridgeLetters[0]} → {option.resultingLength || ''} steps"
                 title="{option.bridgeLetters[0]} → {option.endPosition}"
               >
                 <div class="pictograph-wrapper">
@@ -220,7 +220,7 @@
                 style:--animation-delay="{index * 40}ms"
                 aria-label="Add {option
                   .bridgeLetters[0]} → {option.resultingLength ||
-                  ''} beats ({badgeInfo.tooltip})"
+                  ''} steps ({badgeInfo.tooltip})"
                 title={badgeInfo.tooltip}
               >
                 <div class="pictograph-wrapper">

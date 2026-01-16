@@ -1,8 +1,8 @@
 <!--
-  AnimationBeatGrid.svelte
+  AnimationStepGrid.svelte
 
   Beat grid for animation panels (Create and Compose modules).
-  Shows sequence beats with playback sync highlighting (golden glow on current beat).
+  Shows sequence steps with playback sync highlighting (golden glow on current beat).
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -10,24 +10,24 @@
 
   let {
     sequenceData = null,
-    currentBeat = 0,
+    currentStep = 0,
     isPlaying = false,
   }: {
     sequenceData: SequenceData | null;
-    currentBeat: number;
+    currentStep: number;
     isPlaying: boolean;
   } = $props();
 
-  // Get beats from sequence (excluding metadata beat at index 0 if present)
-  const beats = $derived(() => {
-    if (!sequenceData?.beats) return [];
-    // beats[0] is usually start position data embedded, actual beats start at 1
-    return sequenceData.beats.slice(1);
+  // Get steps from sequence (excluding metadata beat at index 0 if present)
+  const steps = $derived(() => {
+    if (!sequenceData?.steps) return [];
+    // steps[0] is usually start position data embedded, actual steps start at 1
+    return sequenceData.steps.slice(1);
   });
 
   // Calculate grid columns based on beat count
   const gridColumns = $derived(() => {
-    const count = beats().length;
+    const count = steps().length;
     if (count <= 4) return count || 1;
     if (count <= 8) return 4;
     if (count <= 12) return 4;
@@ -35,24 +35,24 @@
   });
 
   // Calculate which beat index is current (accounting for animation timing)
-  const currentBeatIndex = $derived(() => {
-    // currentBeat is 0-indexed from animation, but our display is 1-indexed
-    return Math.floor(currentBeat);
+  const currentStepIndex = $derived(() => {
+    // currentStep is 0-indexed from animation, but our display is 1-indexed
+    return Math.floor(currentStep);
   });
 </script>
 
 <div class="animation-beat-grid">
-  {#if beats().length === 0}
+  {#if steps().length === 0}
     <div class="empty-state">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
       <span>No sequence loaded</span>
     </div>
   {:else}
     <div class="beat-grid" style:--grid-cols={gridColumns()}>
-      {#each beats() as beat, index}
-        {@const beatNumber = index + 1}
-        {@const isCurrentBeat = isPlaying && currentBeatIndex() === index}
-        {@const wasPlayed = isPlaying && currentBeatIndex() > index}
+      {#each steps() as beat, index}
+        {@const stepNumber = index + 1}
+        {@const isCurrentBeat = isPlaying && currentStepIndex() === index}
+        {@const wasPlayed = isPlaying && currentStepIndex() > index}
         <div
           class="beat-cell"
           class:current={isCurrentBeat}
@@ -61,7 +61,7 @@
           <div class="beat-content">
             <TKAGlyph pictographData={beat} letter={beat?.letter} />
           </div>
-          <span class="beat-number">{beatNumber}</span>
+          <span class="beat-number">{stepNumber}</span>
         </div>
       {/each}
     </div>

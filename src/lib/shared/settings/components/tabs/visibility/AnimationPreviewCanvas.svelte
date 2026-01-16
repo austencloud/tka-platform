@@ -18,33 +18,33 @@
   let { animationState, gridVisible }: Props = $props();
 
   // Derived: Current beat data for AnimatorCanvas
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
     if (
-      currentBeat === 0 &&
+      currentStep === 0 &&
       !animationState.isPlaying &&
       animationState.sequenceData.startPosition
     ) {
       return animationState.sequenceData.startPosition;
     }
     if (
-      animationState.sequenceData.beats &&
-      animationState.sequenceData.beats.length > 0
+      animationState.sequenceData.steps &&
+      animationState.sequenceData.steps.length > 0
     ) {
-      // currentBeat is 1-based: currentBeat 1.0-2.0 = beat 1's motion (uses beats[0])
-      const beatIndex = Math.max(0, Math.floor(currentBeat) - 1);
+      // currentStep is 1-based: currentStep 1.0-2.0 = beat 1's motion (uses steps[0])
+      const stepIndex = Math.max(0, Math.floor(currentStep) - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
+        stepIndex,
+        animationState.sequenceData.steps.length - 1
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
     return null;
   });
 
   // Derived: Current letter
-  let currentLetter = $derived(currentBeatData?.letter || null);
+  let currentLetter = $derived(currentStepData?.letter || null);
 </script>
 
 <AnimatorCanvas
@@ -53,8 +53,8 @@
   {gridVisible}
   gridMode={animationState.sequenceData?.gridMode ?? null}
   letter={currentLetter}
-  beatData={currentBeatData}
-  currentBeat={animationState.currentBeat}
+  stepData={currentStepData}
+  currentStep={animationState.currentStep}
   sequenceData={animationState.sequenceData}
   isPlaying={animationState.isPlaying}
   trailSettings={animationSettings.trail}

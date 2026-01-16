@@ -33,13 +33,13 @@
 
   /**
    * Create a 1,1 turn pattern for a 4-beat sequence
-   * This adds 1 turn to both blue and red motions on all beats
+   * This adds 1 turn to both blue and red motions on all steps
    */
-  function createOneTurnPattern(beatCount: number): TurnPattern {
+  function createOneTurnPattern(stepCount: number): TurnPattern {
     const entries = [];
-    for (let i = 0; i < beatCount; i++) {
+    for (let i = 0; i < stepCount; i++) {
       entries.push({
-        beatIndex: i,
+        stepIndex: i,
         blue: 1, // 1 turn for blue
         red: 1, // 1 turn for red
       });
@@ -50,7 +50,7 @@
       name: "1,1 Pattern",
       userId: "system",
       createdAt: Timestamp.now(),
-      beatCount,
+      stepCount,
       entries,
     };
   }
@@ -102,7 +102,7 @@
       type ITurnPatternManager =
         import("$lib/features/create/shared/services/contracts/ITurnPatternManager").ITurnPatternManager;
       const turnPatternManager = container.items.turnPatternManager as ITurnPatternManager;
-      const turnPattern = createOneTurnPattern(baseSequence.beats.length);
+      const turnPattern = createOneTurnPattern(baseSequence.steps.length);
       const result = turnPatternManager.applyPattern(turnPattern, baseSequence);
 
       if (!result.success || !result.sequence) {

@@ -38,7 +38,7 @@
 
     // Camera choreography (optional)
     cameraChoreography?: CameraChoreographyState;
-    currentBeat?: number;
+    currentStep?: number;
     currentCameraPosition?: CameraPosition;
     currentCameraTarget?: CameraPosition;
 
@@ -51,16 +51,16 @@
     progress: number;
     loop: boolean;
     hasSequence?: boolean;
-    currentBeatIndex?: number;
-    totalBeats?: number;
+    currentStepIndex?: number;
+    totalSteps?: number;
     onPlay: () => void;
     onPause: () => void;
     onTogglePlay: () => void;
     onReset: () => void;
     onProgressChange: (value: number) => void;
     onLoopChange: (value: boolean) => void;
-    onPrevBeat?: () => void;
-    onNextBeat?: () => void;
+    onPrevStep?: () => void;
+    onNextStep?: () => void;
 
     /** Callback to show keyboard shortcuts help */
     onShowHelp?: () => void;
@@ -80,7 +80,7 @@
     speed,
     onSpeedChange,
     cameraChoreography,
-    currentBeat = 0,
+    currentStep = 0,
     currentCameraPosition,
     currentCameraTarget,
     sequenceName = null,
@@ -89,16 +89,16 @@
     progress,
     loop,
     hasSequence = false,
-    currentBeatIndex = 0,
-    totalBeats = 0,
+    currentStepIndex = 0,
+    totalSteps = 0,
     onPlay,
     onPause,
     onTogglePlay,
     onReset,
     onProgressChange,
     onLoopChange,
-    onPrevBeat,
-    onNextBeat,
+    onPrevStep,
+    onNextStep,
     onShowHelp,
     trailing,
   }: Props = $props();
@@ -134,7 +134,7 @@
     {#if cameraChoreography}
       <CameraChoreographyControls
         choreographyState={cameraChoreography}
-        {currentBeat}
+        {currentStep}
         {currentCameraPosition}
         {currentCameraTarget}
         hasSequence={hasSequence}
@@ -160,16 +160,16 @@
       {progress}
       {loop}
       {hasSequence}
-      {currentBeatIndex}
-      {totalBeats}
+      {currentStepIndex}
+      {totalSteps}
       {onPlay}
       {onPause}
       {onTogglePlay}
       {onReset}
       {onProgressChange}
       {onLoopChange}
-      {onPrevBeat}
-      {onNextBeat}
+      {onPrevStep}
+      {onNextStep}
     />
 
     {#if trailing}

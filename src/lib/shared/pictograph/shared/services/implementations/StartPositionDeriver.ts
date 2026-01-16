@@ -8,7 +8,7 @@
 
 import type { IStartPositionDeriver } from "../contracts/IStartPositionDeriver";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
@@ -24,9 +24,9 @@ import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid
 export class StartPositionDeriver implements IStartPositionDeriver {
   constructor(private gridPositionDeriver: IGridPositionDeriver) {}
 
-  deriveFromFirstBeat(firstBeat: BeatData): StartPositionData {
-    const blueMotion = firstBeat.motions?.[MotionColor.BLUE];
-    const redMotion = firstBeat.motions?.[MotionColor.RED];
+  deriveFromFirstBeat(firstStep: StepData): StartPositionData {
+    const blueMotion = firstStep.motions?.[MotionColor.BLUE];
+    const redMotion = firstStep.motions?.[MotionColor.RED];
 
     if (!blueMotion || !redMotion) {
       throw new Error(
@@ -104,21 +104,21 @@ export class StartPositionDeriver implements IStartPositionDeriver {
 
   getOrDeriveStartPosition(
     sequence: SequenceData
-  ): StartPositionData | BeatData | null {
+  ): StartPositionData | StepData | null {
     // Check for existing start position data first
     if (sequence.startPosition) {
       return sequence.startPosition;
     }
 
-    if (sequence.startingPositionBeat) {
-      return sequence.startingPositionBeat;
+    if (sequence.startingPosition) {
+      return sequence.startingPosition;
     }
 
     // No stored start position - derive from first beat
-    const firstBeat = sequence.beats?.[0];
-    if (firstBeat) {
+    const firstStep = sequence.steps?.[0];
+    if (firstStep) {
       try {
-        return this.deriveFromFirstBeat(firstBeat);
+        return this.deriveFromFirstBeat(firstStep);
       } catch (error) {
         console.warn("Failed to derive start position from first beat:", error);
         return null;

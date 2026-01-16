@@ -31,8 +31,8 @@ export interface CameraKeyframe {
   id: string;
 
   // Timing (beat-based for sync with sequence)
-  beatNumber: number;
-  beatOffset: number; // Fraction within beat (0-1)
+  stepNumber: number;
+  stepOffset: number; // Fraction within beat (0-1)
 
   // Camera state
   position: CameraPosition;
@@ -90,15 +90,15 @@ export interface CameraState {
  * Create a new camera keyframe
  */
 export function createCameraKeyframe(
-  beatNumber: number,
+  stepNumber: number,
   position: CameraPosition,
   target: CameraPosition,
-  options: Partial<Omit<CameraKeyframe, "id" | "beatNumber" | "position" | "target">> = {}
+  options: Partial<Omit<CameraKeyframe, "id" | "stepNumber" | "position" | "target">> = {}
 ): CameraKeyframe {
   return {
     id: `keyframe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    beatNumber,
-    beatOffset: options.beatOffset ?? 0,
+    stepNumber,
+    stepOffset: options.stepOffset ?? 0,
     position: { ...position },
     target: { ...target },
     fov: options.fov ?? 60,
@@ -206,17 +206,17 @@ export function lerpCameraState(
 }
 
 /**
- * Get the beat time (beatNumber + beatOffset) for a keyframe
+ * Get the beat time (stepNumber + stepOffset) for a keyframe
  */
-export function getKeyframeBeatTime(keyframe: CameraKeyframe): number {
-  return keyframe.beatNumber + keyframe.beatOffset;
+export function getKeyframeStepTime(keyframe: CameraKeyframe): number {
+  return keyframe.stepNumber + keyframe.stepOffset;
 }
 
 /**
  * Sort keyframes by beat time
  */
 export function sortKeyframesByTime(keyframes: CameraKeyframe[]): CameraKeyframe[] {
-  return [...keyframes].sort((a, b) => getKeyframeBeatTime(a) - getKeyframeBeatTime(b));
+  return [...keyframes].sort((a, b) => getKeyframeStepTime(a) - getKeyframeStepTime(b));
 }
 
 /**
@@ -224,7 +224,7 @@ export function sortKeyframesByTime(keyframes: CameraKeyframe[]): CameraKeyframe
  */
 export function findSurroundingKeyframes(
   keyframes: CameraKeyframe[],
-  beatTime: number
+  stepTime: number
 ): { previous: CameraKeyframe | null; next: CameraKeyframe | null } {
   const sorted = sortKeyframesByTime(keyframes);
 
@@ -232,8 +232,8 @@ export function findSurroundingKeyframes(
   let next: CameraKeyframe | null = null;
 
   for (const kf of sorted) {
-    const kfTime = getKeyframeBeatTime(kf);
-    if (kfTime <= beatTime) {
+    const kfTime = getKeyframeStepTime(kf);
+    if (kfTime <= stepTime) {
       previous = kf;
     } else {
       next = kf;

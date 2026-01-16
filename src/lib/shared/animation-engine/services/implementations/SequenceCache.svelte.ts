@@ -37,8 +37,8 @@ export class SequenceCache implements ISequenceCache {
 
     // Generate unique sequence ID
     const word = sequenceData.word || sequenceData.name || "unknown";
-    const totalBeats = sequenceData.beats?.length || 0;
-    const newSequenceId = `${word}-${totalBeats}`;
+    const totalSteps = sequenceData.steps?.length || 0;
+    const newSequenceId = `${word}-${totalSteps}`;
 
     // If sequence changed, signal clear
     if (

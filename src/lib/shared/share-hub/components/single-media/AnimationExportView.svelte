@@ -24,23 +24,23 @@
   let canvasElement: HTMLCanvasElement | null = $state(null);
 
   // Derived values for AnimatorCanvas
-  const currentBeatData = $derived.by(() => {
+  const currentStepData = $derived.by(() => {
     const sequenceData = context.state.sequenceData;
-    const currentBeat = context.state.currentBeat;
+    const currentStep = context.state.currentStep;
     if (!sequenceData) return null;
-    if (currentBeat < 1 && sequenceData.startPosition) {
+    if (currentStep < 1 && sequenceData.startPosition) {
       return sequenceData.startPosition;
     }
-    if (sequenceData.beats?.length > 0) {
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
-      const clampedIndex = Math.min(beatIndex, sequenceData.beats.length - 1);
-      return sequenceData.beats[clampedIndex] || null;
+    if (sequenceData.steps?.length > 0) {
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
+      const clampedIndex = Math.min(stepIndex, sequenceData.steps.length - 1);
+      return sequenceData.steps[clampedIndex] || null;
     }
     return null;
   });
 
-  const currentLetter = $derived(currentBeatData?.letter || null);
+  const currentLetter = $derived(currentStepData?.letter || null);
 
   // Export progress helpers
   const progressPercent = $derived(
@@ -87,8 +87,8 @@
         gridVisible={true}
         gridMode={context.state.sequenceData?.gridMode ?? null}
         letter={currentLetter}
-        beatData={currentBeatData}
-        currentBeat={context.state.currentBeat}
+        stepData={currentStepData}
+        currentStep={context.state.currentStep}
         sequenceData={context.state.sequenceData}
         onCanvasReady={handleCanvasReady}
       />
@@ -149,7 +149,7 @@
         }
       : null}
     sequenceData={context.state.sequenceData}
-    currentBeat={context.state.currentBeat}
+    currentStep={context.state.currentStep}
     isCircular={context.state.isCircular}
     loopCount={context.state.exportLoopCount}
     onSpeedChange={(s) => context.actions.onSpeedChange(s)}

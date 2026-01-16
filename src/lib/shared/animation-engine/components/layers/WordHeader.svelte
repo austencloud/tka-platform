@@ -18,13 +18,13 @@ Supports letter highlighting during animation playback.
     word = null,
     visible = true,
     darkMode = false,
-    activeBeatNumber = null,
+    activeStepNumber = null,
   }: {
     word?: string | null;
     visible?: boolean;
     darkMode?: boolean;
     /** Current beat number during animation playback (1-indexed) for letter highlighting */
-    activeBeatNumber?: number | null;
+    activeStepNumber?: number | null;
   } = $props();
 
   // Animation state machine: "idle" | "exiting" | "entering"
@@ -90,7 +90,7 @@ Supports letter highlighting during animation playback.
 
   // Computed: Whether animation highlighting is active
   const hasActiveHighlighting = $derived(
-    activeBeatNumber !== null && activeBeatNumber >= 1
+    activeStepNumber !== null && activeStepNumber >= 1
   );
 
   /**
@@ -118,8 +118,8 @@ Supports letter highlighting during animation playback.
    */
   const activeLetterIndex = $derived.by(() => {
     if (!hasActiveHighlighting || parsedLetters.length === 0) return -1;
-    // activeBeatNumber is 1-indexed, modulo to wrap around
-    return (activeBeatNumber! - 1) % parsedLetters.length;
+    // activeStepNumber is 1-indexed, modulo to wrap around
+    return (activeStepNumber! - 1) % parsedLetters.length;
   });
 </script>
 

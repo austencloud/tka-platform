@@ -22,11 +22,11 @@ import type { PropState } from "../domain/PropState";
  */
 export interface PlaybackState {
   // Playback position
-  currentBeat: number;
+  currentStep: number;
   isPlaying: boolean;
 
   // Sequence info
-  totalBeats: number;
+  totalSteps: number;
   sequenceWord: string;
   sequenceAuthor: string;
   sequenceData: SequenceData | null;
@@ -55,9 +55,9 @@ const DEFAULT_PROP_STATE: PropState = {
 
 export type AnimationPlaybackState = {
   // Read-only access
-  readonly currentBeat: number;
+  readonly currentStep: number;
   readonly isPlaying: boolean;
-  readonly totalBeats: number;
+  readonly totalSteps: number;
   readonly sequenceWord: string;
   readonly sequenceAuthor: string;
   readonly sequenceData: SequenceData | null;
@@ -72,7 +72,7 @@ export type AnimationPlaybackState = {
   readonly canPlay: boolean;
 
   // Playback control
-  setCurrentBeat: (beat: number) => void;
+  setCurrentStep: (beat: number) => void;
   setIsPlaying: (playing: boolean) => void;
   play: () => void;
   pause: () => void;
@@ -82,7 +82,7 @@ export type AnimationPlaybackState = {
 
   // Sequence management
   setSequenceData: (data: SequenceData | null) => void;
-  setTotalBeats: (beats: number) => void;
+  setTotalSteps: (steps: number) => void;
   setSequenceMetadata: (word: string, author: string) => void;
 
   // Prop state updates (called by animation orchestrator)
@@ -104,11 +104,11 @@ export type AnimationPlaybackState = {
  */
 export function createAnimationPlaybackState(): AnimationPlaybackState {
   // Playback state
-  let currentBeat = $state(0);
+  let currentStep = $state(0);
   let isPlaying = $state(false);
 
   // Sequence info
-  let totalBeats = $state(0);
+  let totalSteps = $state(0);
   let sequenceWord = $state("");
   let sequenceAuthor = $state("");
   let sequenceData = $state<SequenceData | null>(null);
@@ -123,14 +123,14 @@ export function createAnimationPlaybackState(): AnimationPlaybackState {
 
   return {
     // Read-only getters
-    get currentBeat() {
-      return currentBeat;
+    get currentStep() {
+      return currentStep;
     },
     get isPlaying() {
       return isPlaying;
     },
-    get totalBeats() {
-      return totalBeats;
+    get totalSteps() {
+      return totalSteps;
     },
     get sequenceWord() {
       return sequenceWord;
@@ -156,23 +156,23 @@ export function createAnimationPlaybackState(): AnimationPlaybackState {
 
     // Computed
     get progress() {
-      return totalBeats > 0 ? currentBeat / totalBeats : 0;
+      return totalSteps > 0 ? currentStep / totalSteps : 0;
     },
     get hasSequence() {
-      return sequenceData !== null && (sequenceData.beats.length ?? 0) > 0;
+      return sequenceData !== null && (sequenceData.steps.length ?? 0) > 0;
     },
     get canPlay() {
       return (
         !loading &&
         !error &&
         sequenceData !== null &&
-        (sequenceData.beats.length ?? 0) > 0
+        (sequenceData.steps.length ?? 0) > 0
       );
     },
 
     // Playback control
-    setCurrentBeat: (beat: number) => {
-      currentBeat = Math.max(0, beat);
+    setCurrentStep: (beat: number) => {
+      currentStep = Math.max(0, beat);
     },
 
     setIsPlaying: (playing: boolean) => {
@@ -180,7 +180,7 @@ export function createAnimationPlaybackState(): AnimationPlaybackState {
     },
 
     play: () => {
-      if (sequenceData && (sequenceData.beats.length ?? 0) > 0) {
+      if (sequenceData && (sequenceData.steps.length ?? 0) > 0) {
         isPlaying = true;
       }
     },
@@ -192,40 +192,40 @@ export function createAnimationPlaybackState(): AnimationPlaybackState {
     togglePlayback: () => {
       if (isPlaying) {
         isPlaying = false;
-      } else if (sequenceData && (sequenceData.beats.length ?? 0) > 0) {
+      } else if (sequenceData && (sequenceData.steps.length ?? 0) > 0) {
         isPlaying = true;
       }
     },
 
     seekTo: (beat: number) => {
-      currentBeat = Math.max(0, Math.min(beat, totalBeats));
+      currentStep = Math.max(0, Math.min(beat, totalSteps));
     },
 
     seekToProgress: (progress: number) => {
       const clampedProgress = Math.max(0, Math.min(1, progress));
-      currentBeat = clampedProgress * totalBeats;
+      currentStep = clampedProgress * totalSteps;
     },
 
     // Sequence management
     setSequenceData: (data: SequenceData | null) => {
       sequenceData = data;
       if (data) {
-        totalBeats = data.beats.length ?? 0;
+        totalSteps = data.steps.length ?? 0;
         sequenceWord = data.word ?? data.name ?? "";
         sequenceAuthor = (data.metadata["creator"] as string) ?? "";
       } else {
-        totalBeats = 0;
+        totalSteps = 0;
         sequenceWord = "";
         sequenceAuthor = "";
       }
       // Reset playback position when sequence changes
-      currentBeat = 0;
+      currentStep = 0;
       isPlaying = false;
       error = null;
     },
 
-    setTotalBeats: (beats: number) => {
-      totalBeats = beats;
+    setTotalSteps: (steps: number) => {
+      totalSteps = steps;
     },
 
     setSequenceMetadata: (word: string, author: string) => {
@@ -261,9 +261,9 @@ export function createAnimationPlaybackState(): AnimationPlaybackState {
 
     // Reset
     reset: () => {
-      currentBeat = 0;
+      currentStep = 0;
       isPlaying = false;
-      totalBeats = 0;
+      totalSteps = 0;
       sequenceWord = "";
       sequenceAuthor = "";
       sequenceData = null;

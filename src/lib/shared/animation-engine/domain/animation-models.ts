@@ -5,8 +5,8 @@ import type {
 } from "../../pictograph/shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "../../pictograph/grid/domain/enums/grid-enums";
 
-// Note: InterpolationResult and BeatCalculationResult are defined in service contracts
-// (services/contracts/IAnimationStateManager.ts and services/contracts/IBeatCalculator.ts)
+// Note: InterpolationResult and StepCalculationResult are defined in service contracts
+// (services/contracts/IAnimationStateManager.ts and services/contracts/IStepCalculator.ts)
 // Note: MotionEndpoints is now defined in shared domain types
 
 export interface AnimationConfig {
@@ -21,7 +21,7 @@ export interface AnimationState {
   currentFrame: number;
   totalFrames: number;
   progress: number;
-  currentBeat: number;
+  currentStep: number;
 }
 
 export interface PropVisibility {

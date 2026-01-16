@@ -2,7 +2,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import AnimatorCanvas from "./AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -28,7 +28,7 @@
     sequence: SequenceData,
     propType: PropType
   ): SequenceData {
-    const applyToMotions = (data: BeatData | StartPositionData) => {
+    const applyToMotions = (data: StepData | StartPositionData) => {
       if (!data.motions) return data;
       return {
         ...data,
@@ -46,8 +46,8 @@
       startPosition: sequence.startPosition
         ? (applyToMotions(sequence.startPosition) as StartPositionData)
         : undefined,
-      beats:
-        sequence.beats?.map((beat) => applyToMotions(beat) as BeatData) ?? [],
+      steps:
+        sequence.steps?.map((beat) => applyToMotions(beat) as StepData) ?? [],
     };
   }
 
@@ -89,40 +89,40 @@
   // Current letter for AnimatorCanvas
   let currentLetter = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat < 1) {
+    if (currentStep < 1) {
       return derivedStartPosition?.letter || null;
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      const beatIndex = Math.floor(currentBeat) - 1;
+    if (animationState.sequenceData.steps?.length > 0) {
+      const stepIndex = Math.floor(currentStep) - 1;
       const clampedIndex = Math.max(
         0,
-        Math.min(beatIndex, animationState.sequenceData.beats.length - 1)
+        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
       );
-      return animationState.sequenceData.beats[clampedIndex]?.letter || null;
+      return animationState.sequenceData.steps[clampedIndex]?.letter || null;
     }
 
     return null;
   });
 
   // Current beat data for AnimatorCanvas
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat < 1) {
+    if (currentStep < 1) {
       return derivedStartPosition || null;
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      const beatIndex = Math.floor(currentBeat) - 1;
+    if (animationState.sequenceData.steps?.length > 0) {
+      const stepIndex = Math.floor(currentStep) - 1;
       const clampedIndex = Math.max(
         0,
-        Math.min(beatIndex, animationState.sequenceData.beats.length - 1)
+        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
@@ -132,8 +132,8 @@
 
   // Watch for sequence completion - when we loop back to beat 1
   $effect(() => {
-    const current = Math.floor(animationState.currentBeat);
-    const total = animationState.totalBeats;
+    const current = Math.floor(animationState.currentStep);
+    const total = animationState.totalSteps;
 
     // Detect when we've completed a full cycle and looped back
     if (
@@ -235,14 +235,14 @@
    * Extract the end state from a sequence's last beat.
    */
   function extractEndState(sequence: SequenceData): EndState {
-    const lastBeat = sequence.beats?.[sequence.beats.length - 1];
+    const lastStep = sequence.steps?.[sequence.steps.length - 1];
 
     return {
-      position: lastBeat?.endPosition ?? null,
+      position: lastStep?.endPosition ?? null,
       blueOrientation:
-        (lastBeat?.motions?.blue?.endOrientation as Orientation) ?? null,
+        (lastStep?.motions?.blue?.endOrientation as Orientation) ?? null,
       redOrientation:
-        (lastBeat?.motions?.red?.endOrientation as Orientation) ?? null,
+        (lastStep?.motions?.red?.endOrientation as Orientation) ?? null,
     };
   }
 
@@ -286,7 +286,7 @@
 
     // Start continuous playback
     animationState.setPlaybackMode("continuous");
-    animationState.setCurrentBeat(1);
+    animationState.setCurrentStep(1);
     playbackController.togglePlayback();
   }
 
@@ -313,7 +313,7 @@
         gridVisible={true}
         {gridMode}
         letter={currentLetter}
-        beatData={currentBeatData}
+        stepData={currentStepData}
         sequenceData={animationState.sequenceData}
         isPlaying={animationState.isPlaying}
         trailSettings={animationSettings.trail}

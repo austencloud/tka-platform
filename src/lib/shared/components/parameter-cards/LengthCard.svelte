@@ -104,7 +104,7 @@ Can operate as stepper (inline) or panel opener (click to select)
     }
   }
 
-  const displayValue = $derived(value ? `${value} beats` : "Any");
+  const displayValue = $derived(value ? `${value} steps` : "Any");
 </script>
 
 {#if mode === "stepper"}

@@ -8,7 +8,7 @@
    * This indicator:
    * - Shows that the sequence can be turned into a circular/LOOP pattern
    * - Appears in exported images (part of the SVG)
-   * - Only renders on the start position (beatNumber === 0)
+   * - Only renders on the start position (stepNumber === 0)
    * - Can be extended later to show different indicators for completed circular sequences
    */
 

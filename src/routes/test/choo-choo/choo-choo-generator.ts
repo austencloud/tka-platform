@@ -7,12 +7,12 @@
  * - One prop is STATIC with rotation (stays in place, spins)
  * - Other prop is FLOAT with no rotation (orbits around the static prop)
  * - Either the pinky or thumb ends of the props appear tethered together
- * - Full Choo Choo: 4 beats (complete orbit S→W→N→E→S)
- * - Half Choo Choo: 2 beats (half orbit S→W→N)
+ * - Full Choo Choo: 4 steps (complete orbit S→W→N→E→S)
+ * - Half Choo Choo: 2 steps (half orbit S→W→N)
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import {
   GridLocation,
@@ -84,8 +84,8 @@ export interface ChooChooConfig {
   rotationDirection: "cw" | "ccw";
   /** Orbit direction of the floating prop */
   orbitDirection: "cw" | "ccw";
-  /** Number of beats (2 = half, 4 = full) */
-  beats: 2 | 4;
+  /** Number of steps (2 = half, 4 = full) */
+  steps: 2 | 4;
   /** Starting location for the static prop */
   staticLocation: GridLocation;
   /** Starting location for the floating prop */
@@ -98,7 +98,7 @@ export const DEFAULT_CONFIG: ChooChooConfig = {
   staticProp: "blue",
   rotationDirection: "cw",
   orbitDirection: "cw",
-  beats: 4,
+  steps: 4,
   staticLocation: GridLocation.SOUTH,
   floatStartLocation: GridLocation.SOUTH,
   turnsPerBeat: 0.5,
@@ -135,10 +135,10 @@ export async function generateChooChoo(
   const floatStartLoc = orbit[actualStartIndex] ?? GridLocation.SOUTH;
   const startPosition = createStartPosition(fullConfig, floatStartLoc);
 
-  // Build beats with proper letter derivation
-  const beats: BeatData[] = [];
-  for (let i = 0; i < fullConfig.beats; i++) {
-    const beat = await createBeat(
+  // Build steps with proper letter derivation
+  const steps: StepData[] = [];
+  for (let i = 0; i < fullConfig.steps; i++) {
+    const beat = await createStep(
       fullConfig,
       i + 1,
       orbit,
@@ -148,25 +148,25 @@ export async function generateChooChoo(
       i,
       motionQueryHandler
     );
-    beats.push(beat);
+    steps.push(beat);
   }
 
   // Generate sequence
   const sequenceId = crypto.randomUUID();
-  const word = beats.map((b) => b.letter || "?").join("");
+  const word = steps.map((b) => b.letter || "?").join("");
 
   return {
     id: sequenceId,
-    name: `Choo Choo (${fullConfig.beats === 4 ? "Full" : "Half"}, ${fullConfig.staticProp} static, ${fullConfig.rotationDirection} rotation)`,
+    name: `Choo Choo (${fullConfig.steps === 4 ? "Full" : "Half"}, ${fullConfig.staticProp} static, ${fullConfig.rotationDirection} rotation)`,
     word,
-    beats,
+    steps,
     startPosition,
     thumbnails: [],
     isFavorite: false,
-    isCircular: fullConfig.beats === 4,
+    isCircular: fullConfig.steps === 4,
     tags: [
       "choo-choo",
-      fullConfig.beats === 4 ? "full-choo-choo" : "half-choo-choo",
+      fullConfig.steps === 4 ? "full-choo-choo" : "half-choo-choo",
     ],
     metadata: { generatedBy: "ChooChooGenerator", config: fullConfig },
     gridMode: GridMode.DIAMOND,
@@ -221,28 +221,28 @@ function createStartPosition(
   };
 }
 
-async function createBeat(
+async function createStep(
   config: ChooChooConfig,
-  beatNumber: number,
+  stepNumber: number,
   orbit: GridLocation[],
   rotationCycle: Orientation[],
   floatOrientationCycle: Orientation[],
   orbitStartIndex: number,
-  beatIndex: number,
+  stepIndex: number,
   motionQueryHandler?: IMotionQueryHandler
-): Promise<BeatData> {
+): Promise<StepData> {
   // Calculate positions in the cycles
-  const orbitIndex = (orbitStartIndex + beatIndex) % orbit.length;
-  const nextOrbitIndex = (orbitStartIndex + beatIndex + 1) % orbit.length;
+  const orbitIndex = (orbitStartIndex + stepIndex) % orbit.length;
+  const nextOrbitIndex = (orbitStartIndex + stepIndex + 1) % orbit.length;
 
   const floatStart = orbit[orbitIndex] ?? GridLocation.SOUTH;
   const floatEnd = orbit[nextOrbitIndex] ?? GridLocation.WEST;
 
   // Calculate orientations
   const staticStartOri =
-    rotationCycle[beatIndex % rotationCycle.length] ?? Orientation.IN;
+    rotationCycle[stepIndex % rotationCycle.length] ?? Orientation.IN;
   const staticEndOri =
-    rotationCycle[(beatIndex + 1) % rotationCycle.length] ??
+    rotationCycle[(stepIndex + 1) % rotationCycle.length] ??
     Orientation.COUNTER;
 
   const floatStartOri = floatOrientationCycle[orbitIndex] ?? Orientation.IN;
@@ -303,11 +303,11 @@ async function createBeat(
         letter = derivedLetter as Letter;
       } else {
         console.warn(
-          `⚠️ No letter found for beat ${beatNumber}, using fallback`
+          `⚠️ No letter found for beat ${stepNumber}, using fallback`
         );
       }
     } catch (error) {
-      console.warn(`⚠️ Error deriving letter for beat ${beatNumber}:`, error);
+      console.warn(`⚠️ Error deriving letter for beat ${stepNumber}:`, error);
     }
   }
 
@@ -317,8 +317,8 @@ async function createBeat(
 
   return {
     id: crypto.randomUUID(),
-    isBeat: true,
-    beatNumber,
+    isStep: true,
+    stepNumber,
     duration: 1,
     blueReversal: false,
     redReversal: false,
@@ -367,7 +367,7 @@ export async function generateChooChooVariations(
         staticProp: "blue",
         rotationDirection: "cw",
         orbitDirection: "cw",
-        beats: 4,
+        steps: 4,
       },
       motionQueryHandler
     )
@@ -380,7 +380,7 @@ export async function generateChooChooVariations(
         staticProp: "red",
         rotationDirection: "cw",
         orbitDirection: "cw",
-        beats: 4,
+        steps: 4,
       },
       motionQueryHandler
     )
@@ -393,7 +393,7 @@ export async function generateChooChooVariations(
         staticProp: "blue",
         rotationDirection: "ccw",
         orbitDirection: "ccw",
-        beats: 4,
+        steps: 4,
       },
       motionQueryHandler
     )
@@ -406,7 +406,7 @@ export async function generateChooChooVariations(
         staticProp: "blue",
         rotationDirection: "cw",
         orbitDirection: "cw",
-        beats: 2,
+        steps: 2,
       },
       motionQueryHandler
     )
@@ -419,7 +419,7 @@ export async function generateChooChooVariations(
         staticProp: "red",
         rotationDirection: "ccw",
         orbitDirection: "cw",
-        beats: 2,
+        steps: 2,
       },
       motionQueryHandler
     )
@@ -432,7 +432,7 @@ export async function generateChooChooVariations(
         staticProp: "blue",
         rotationDirection: "cw",
         orbitDirection: "cw",
-        beats: 4,
+        steps: 4,
         turnsPerBeat: 1,
       },
       motionQueryHandler
@@ -448,17 +448,17 @@ export async function generateChooChooVariations(
 export function detectChooChoo(sequence: SequenceData): {
   hasChooChoo: boolean;
   type: "full" | "half" | "none";
-  startBeat?: number;
-  endBeat?: number;
+  startStep?: number;
+  endStep?: number;
   staticProp?: "blue" | "red";
 } {
-  if (!sequence.beats || sequence.beats.length < 2) {
+  if (!sequence.steps || sequence.steps.length < 2) {
     return { hasChooChoo: false, type: "none" };
   }
 
-  // Look for consecutive beats that match Choo Choo pattern
-  for (let i = 0; i <= sequence.beats.length - 2; i++) {
-    const result = checkChooChooStartingAt(sequence.beats as BeatData[], i);
+  // Look for consecutive steps that match Choo Choo pattern
+  for (let i = 0; i <= sequence.steps.length - 2; i++) {
+    const result = checkChooChooStartingAt(sequence.steps as StepData[], i);
     if (result.hasChooChoo) {
       return result;
     }
@@ -468,26 +468,26 @@ export function detectChooChoo(sequence: SequenceData): {
 }
 
 function checkChooChooStartingAt(
-  beats: BeatData[],
+  steps: StepData[],
   startIndex: number
 ): {
   hasChooChoo: boolean;
   type: "full" | "half" | "none";
-  startBeat?: number;
-  endBeat?: number;
+  startStep?: number;
+  endStep?: number;
   staticProp?: "blue" | "red";
 } {
-  // Need at least 2 beats for a half Choo Choo
-  if (startIndex + 2 > beats.length) {
+  // Need at least 2 steps for a half Choo Choo
+  if (startIndex + 2 > steps.length) {
     return { hasChooChoo: false, type: "none" };
   }
 
-  const firstBeat = beats[startIndex];
-  if (!firstBeat) {
+  const firstStep = steps[startIndex];
+  if (!firstStep) {
     return { hasChooChoo: false, type: "none" };
   }
-  const blueMotion = firstBeat.motions?.[MotionColor.BLUE];
-  const redMotion = firstBeat.motions?.[MotionColor.RED];
+  const blueMotion = firstStep.motions?.[MotionColor.BLUE];
+  const redMotion = firstStep.motions?.[MotionColor.RED];
 
   if (!blueMotion || !redMotion) {
     return { hasChooChoo: false, type: "none" };
@@ -516,14 +516,14 @@ function checkChooChooStartingAt(
     return { hasChooChoo: false, type: "none" };
   }
 
-  // Check subsequent beats maintain the pattern
+  // Check subsequent steps maintain the pattern
   let consecutiveBeats = 1;
   const floatLocations: GridLocation[] = [
     staticProp === "blue" ? redMotion.startLocation : blueMotion.startLocation,
   ];
 
-  for (let i = startIndex + 1; i < beats.length && i < startIndex + 4; i++) {
-    const beat = beats[i];
+  for (let i = startIndex + 1; i < steps.length && i < startIndex + 4; i++) {
+    const beat = steps[i];
     if (!beat) break;
 
     const bMotion = beat.motions?.[MotionColor.BLUE];
@@ -557,16 +557,16 @@ function checkChooChooStartingAt(
     return {
       hasChooChoo: true,
       type: "full",
-      startBeat: startIndex + 1,
-      endBeat: startIndex + 4,
+      startStep: startIndex + 1,
+      endStep: startIndex + 4,
       staticProp,
     };
   } else if (consecutiveBeats >= 2) {
     return {
       hasChooChoo: true,
       type: "half",
-      startBeat: startIndex + 1,
-      endBeat: startIndex + consecutiveBeats,
+      startStep: startIndex + 1,
+      endStep: startIndex + consecutiveBeats,
       staticProp,
     };
   }

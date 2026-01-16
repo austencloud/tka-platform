@@ -8,9 +8,9 @@ import type {
   GridData,
 } from "../../../grid/domain/models/grid-models";
 import type { GridMode } from "../../../grid/domain/enums/grid-enums";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 export interface IDataTransformer {
-  beatToPictographData(beat: BeatData): PictographData;
+  beatToPictographData(beat: StepData): PictographData;
   adaptGridData(rawGridData: RawGridData, mode: GridMode): GridData;
 }

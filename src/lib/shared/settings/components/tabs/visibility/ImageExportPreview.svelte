@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { container } from "$lib/shared/di";
   import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -14,10 +14,10 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   interface Props {
-    beatData: BeatData;
+    stepData: StepData;
   }
 
-  let { beatData }: Props = $props();
+  let { stepData }: Props = $props();
 
   const compositionManager = getImageCompositionManager();
   const animationVisibilityManager = getAnimationVisibilityManager();
@@ -36,7 +36,7 @@
       if (compositionManager.includeStartPosition) {
         try {
           const startPosDeriver = container.items.startPositionDeriver as IStartPositionDeriver;
-          derivedStartPosition = startPosDeriver.deriveFromFirstBeat(beatData);
+          derivedStartPosition = startPosDeriver.deriveFromFirstBeat(stepData);
         } catch (e) {
           console.warn("Failed to derive start position for preview:", e);
         }
@@ -47,7 +47,7 @@
         id: "preview-temp",
         name: "Preview",
         word: "",
-        beats: [beatData],
+        steps: [stepData],
         startPosition: derivedStartPosition,
         thumbnails: [],
         isFavorite: false,
@@ -58,10 +58,10 @@
       const canvas = await compositionService.composeSequenceImage(
         sequenceData,
         {
-          beatSize: 300,
-          beatScale: 1,
+          stepSize: 300,
+          stepScale: 1,
           addWord: compositionManager.addWord,
-          addBeatNumbers: compositionManager.addBeatNumbers,
+          addStepNumbers: compositionManager.addStepNumbers,
           addUserInfo: compositionManager.addUserInfo,
           addDifficultyLevel: compositionManager.addDifficultyLevel,
           includeStartPosition: compositionManager.includeStartPosition,
@@ -109,10 +109,10 @@
     };
   });
 
-  // Regenerate when beatData changes
+  // Regenerate when stepData changes
   $effect(() => {
-    // Access beatData to trigger effect
-    beatData;
+    // Access stepData to trigger effect
+    stepData;
     generatePreview();
   });
 </script>

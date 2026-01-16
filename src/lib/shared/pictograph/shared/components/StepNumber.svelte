@@ -1,5 +1,5 @@
 <!--
-BeatNumber.svelte - Beat Number Overlay Component
+StepNumber.svelte - Beat Number Overlay Component
 
 Renders beat numbers as SVG text overlays on pictographs.
 Based on the legacy BeatNumberLabel.svelte component architecture.
@@ -11,24 +11,24 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   let {
-    beatNumber = null,
-    showBeatNumber = true,
+    stepNumber = null,
+    showStepNumber = true,
     isStartPosition = false,
     hasValidData = true,
     darkMode = undefined,
     musicalPosition = undefined,
   } = $props<{
     /** The beat number to display */
-    beatNumber?: number | null;
+    stepNumber?: number | null;
     /** Whether to show the beat number */
-    showBeatNumber?: boolean;
+    showStepNumber?: boolean;
     /** Whether this is a start position (no beat number) */
     isStartPosition?: boolean;
     /** Whether the pictograph has valid data */
     hasValidData?: boolean;
     /** Dark mode override for export. When set, overrides visibility manager state. */
     darkMode?: boolean;
-    /** Musical position string (e.g., "1", "1.5", "2e") - overrides beatNumber display when present */
+    /** Musical position string (e.g., "1", "1.5", "2e") - overrides stepNumber display when present */
     musicalPosition?: string;
   }>();
 
@@ -59,31 +59,31 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
   // Beat number 0 is excluded so it falls through to show "Start" text
   const shouldRender = $derived.by(() => {
     return (
-      showBeatNumber &&
+      showStepNumber &&
       !isStartPosition &&
       hasValidData &&
-      beatNumber !== null &&
-      beatNumber !== -1 &&
-      beatNumber !== 0 // Exclude 0 so it shows "Start" instead
+      stepNumber !== null &&
+      stepNumber !== -1 &&
+      stepNumber !== 0 // Exclude 0 so it shows "Start" instead
     );
   });
 
   // Show "Start" text for beat number 0 (start position)
-  // Note: showBeatNumber is false for start positions, but we still want to show "Start" text
+  // Note: showStepNumber is false for start positions, but we still want to show "Start" text
   const shouldRenderStartText = $derived.by(() => {
-    return hasValidData && beatNumber === 0;
+    return hasValidData && stepNumber === 0;
   });
 
   // Get display text - musical position (if available), beat number, or "Start"
   const displayText = $derived.by(() => {
-    if (beatNumber === 0) {
+    if (stepNumber === 0) {
       return "Start";
     }
     // Use musical position if provided, otherwise fall back to beat number
     if (musicalPosition !== undefined) {
       return musicalPosition;
     }
-    return beatNumber?.toString() || "";
+    return stepNumber?.toString() || "";
   });
 
   // Dynamic font size: smaller for decimal values to fit the extra characters

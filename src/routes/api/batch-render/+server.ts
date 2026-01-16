@@ -48,8 +48,8 @@ function requiresNonRadialPoints(sequence: SequenceData): boolean {
     }
   }
 
-  // Check all beats for clock/counter orientations
-  for (const beat of sequence.beats || []) {
+  // Check all steps for clock/counter orientations
+  for (const beat of sequence.steps || []) {
     const { blue, red } = beat.motions;
     if (
       blue?.startOrientation === Orientation.CLOCK ||
@@ -77,7 +77,7 @@ export const GET: RequestHandler = async () => {
     settings: {
       export: {
         includeStartPosition: true,
-        addBeatNumbers: true,
+        addStepNumbers: true,
         addWord: true,
         addDifficultyLevel: true,
         addReversalSymbols: true,
@@ -99,7 +99,7 @@ export const GET: RequestHandler = async () => {
         sequence: "SequenceData object (required)",
         propType:
           "PropType enum value (optional) - e.g., 'staff', 'fan', 'hoop'",
-        beatSize: "number (optional, default: 120)",
+        stepSize: "number (optional, default: 120)",
         format: "PNG | JPEG | WebP (optional, default: WebP)",
         quality: "number 0-1 (optional, default: 0.9)",
       },
@@ -107,11 +107,11 @@ export const GET: RequestHandler = async () => {
         sequence: {
           id: "alpha_ver1",
           word: "alpha",
-          beats: "[ ... ]",
+          steps: "[ ... ]",
           startPosition: "{ ... }",
         },
         propType: "staff",
-        beatSize: 120,
+        stepSize: 120,
         format: "WebP",
         quality: 0.9,
       },
@@ -135,7 +135,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     const body = (await request.json()) as {
       sequence: SequenceData;
       propType?: PropType;
-      beatSize?: number;
+      stepSize?: number;
       format?: "PNG" | "JPEG" | "WebP";
       quality?: number;
     };
@@ -143,12 +143,12 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     const {
       sequence,
       propType,
-      beatSize = 120,
+      stepSize = 120,
       format = "WebP",
       quality = 0.9,
     } = body;
 
-    if (!sequence?.beats || sequence.beats.length === 0) {
+    if (!sequence?.steps || sequence.steps.length === 0) {
       return json({ error: "Invalid sequence data" }, { status: 400 });
     }
 
@@ -160,17 +160,17 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
     // Prepare rendering options with word card visibility settings
     const options: Partial<SequenceExportOptions> = {
-      beatSize,
+      stepSize,
       format,
       quality,
       includeStartPosition: true,
-      addBeatNumbers: true, // Show beat numbers
+      addStepNumbers: true, // Show beat numbers
       addWord: true, // Show word header
       addDifficultyLevel: true, // Show difficulty badge
       addUserInfo: false, // No footer
       addReversalSymbols: true, // Show reversal symbols
       combinedGrids: false,
-      beatScale: 1.0,
+      stepScale: 1.0,
       margin: 0,
       redVisible: true,
       blueVisible: true,

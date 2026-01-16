@@ -6,14 +6,14 @@
  */
 
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { ISequenceViewer } from "../contracts/ISequenceViewer";
 import type { IPersistenceService } from "../../../persistence/services/contracts/IPersistenceService";
 import type { ISequenceEncoder } from "../../../navigation/services/contracts/ISequenceEncoder";
 import {
   updateSequenceData,
-  removeBeatFromSequence,
+  removeStepFromSequence,
 } from "../../../foundation/domain/models/SequenceData";
 
 export class SequenceViewer implements ISequenceViewer {
@@ -51,13 +51,13 @@ export class SequenceViewer implements ISequenceViewer {
   // SEQUENCE MUTATIONS
   // ============================================
 
-  updateBeatOrientation(
+  updateStepOrientation(
     sequence: SequenceData,
-    beatIndex: number,
+    stepIndex: number,
     color: string,
     orientation: string
   ): SequenceData {
-    if (beatIndex === 0) {
+    if (stepIndex === 0) {
       // Update start position
       const startPosition = this.getStartPosition(sequence);
       if (!startPosition) return sequence;
@@ -69,33 +69,33 @@ export class SequenceViewer implements ISequenceViewer {
       );
       return updateSequenceData(sequence, {
         startPosition: updatedStartPosition as StartPositionData,
-        startingPositionBeat: updatedStartPosition as StartPositionData,
+        startingPosition: updatedStartPosition as StartPositionData,
       });
     }
 
     // Update regular beat (1-indexed in UI, 0-indexed in array)
-    const arrayIndex = beatIndex - 1;
-    if (arrayIndex < 0 || arrayIndex >= sequence.beats.length) {
+    const arrayIndex = stepIndex - 1;
+    if (arrayIndex < 0 || arrayIndex >= sequence.steps.length) {
       return sequence;
     }
 
-    const beat = sequence.beats[arrayIndex];
+    const beat = sequence.steps[arrayIndex];
     if (!beat) return sequence;
 
-    const updatedBeat = this.updateMotionOrientation(beat, color, orientation);
-    const newBeats = [...sequence.beats];
-    newBeats[arrayIndex] = updatedBeat;
+    const updatedStep = this.updateMotionOrientation(beat, color, orientation);
+    const newSteps = [...sequence.steps];
+    newSteps[arrayIndex] = updatedStep;
 
-    return updateSequenceData(sequence, { beats: newBeats });
+    return updateSequenceData(sequence, { steps: newSteps });
   }
 
-  updateBeatTurns(
+  updateStepTurns(
     sequence: SequenceData,
-    beatIndex: number,
+    stepIndex: number,
     color: string,
     turnAmount: number | "fl"
   ): SequenceData {
-    if (beatIndex === 0) {
+    if (stepIndex === 0) {
       // Start position doesn't typically have turns, but handle anyway
       const startPosition = this.getStartPosition(sequence);
       if (!startPosition) return sequence;
@@ -107,29 +107,29 @@ export class SequenceViewer implements ISequenceViewer {
       );
       return updateSequenceData(sequence, {
         startPosition: updatedStartPosition as StartPositionData,
-        startingPositionBeat: updatedStartPosition as StartPositionData,
+        startingPosition: updatedStartPosition as StartPositionData,
       });
     }
 
     // Update regular beat
-    const arrayIndex = beatIndex - 1;
-    if (arrayIndex < 0 || arrayIndex >= sequence.beats.length) {
+    const arrayIndex = stepIndex - 1;
+    if (arrayIndex < 0 || arrayIndex >= sequence.steps.length) {
       return sequence;
     }
 
-    const beat = sequence.beats[arrayIndex];
+    const beat = sequence.steps[arrayIndex];
     if (!beat) return sequence;
 
-    const updatedBeat = this.updateMotionTurns(beat, color, turnAmount);
-    const newBeats = [...sequence.beats];
-    newBeats[arrayIndex] = updatedBeat;
+    const updatedStep = this.updateMotionTurns(beat, color, turnAmount);
+    const newSteps = [...sequence.steps];
+    newSteps[arrayIndex] = updatedStep;
 
-    return updateSequenceData(sequence, { beats: newBeats });
+    return updateSequenceData(sequence, { steps: newSteps });
   }
 
-  removeBeat(sequence: SequenceData, beatIndex: number): SequenceData {
-    // beatIndex is 0-indexed here (matches array index)
-    return removeBeatFromSequence(sequence, beatIndex);
+  removeStep(sequence: SequenceData, stepIndex: number): SequenceData {
+    // stepIndex is 0-indexed here (matches array index)
+    return removeStepFromSequence(sequence, stepIndex);
   }
 
   // ============================================
@@ -171,32 +171,32 @@ export class SequenceViewer implements ISequenceViewer {
   }
 
   // ============================================
-  // BEAT DATA HELPERS
+  // STEP DATA HELPERS
   // ============================================
 
-  getBeatData(sequence: SequenceData, beatIndex: number): BeatData | null {
-    if (beatIndex === 0) {
-      // Return start position as BeatData
+  getStepData(sequence: SequenceData, stepIndex: number): StepData | null {
+    if (stepIndex === 0) {
+      // Return start position as StepData
       const startPos = this.getStartPosition(sequence);
       if (!startPos) return null;
 
       return {
         ...startPos,
-        beatNumber: 0,
+        stepNumber: 0,
         duration: 1,
         blueReversal: false,
         redReversal: false,
         isBlank: false,
-      } as BeatData;
+      } as StepData;
     }
 
     // Regular beat (1-indexed in UI, 0-indexed in array)
-    const arrayIndex = beatIndex - 1;
-    if (arrayIndex < 0 || arrayIndex >= sequence.beats.length) {
+    const arrayIndex = stepIndex - 1;
+    if (arrayIndex < 0 || arrayIndex >= sequence.steps.length) {
       return null;
     }
 
-    return sequence.beats[arrayIndex] as BeatData;
+    return sequence.steps[arrayIndex] as StepData;
   }
 
   // ============================================
@@ -205,10 +205,10 @@ export class SequenceViewer implements ISequenceViewer {
 
   private getStartPosition(
     sequence: SequenceData
-  ): StartPositionData | BeatData | null {
+  ): StartPositionData | StepData | null {
     return (
-      (sequence.startPosition as StartPositionData | BeatData) ||
-      (sequence.startingPositionBeat as StartPositionData | BeatData) ||
+      (sequence.startPosition as StartPositionData | StepData) ||
+      (sequence.startingPosition as StartPositionData | StepData) ||
       null
     );
   }

@@ -201,9 +201,9 @@
               </div>
 
               <div class="duet-meta">
-                <span class="offset" class:synced={duet.beatOffset === 0}>
+                <span class="offset" class:synced={duet.stepOffset === 0}>
                   <i class="fas fa-clock" aria-hidden="true"></i>
-                  {formatOffset(duet.beatOffset)}
+                  {formatOffset(duet.stepOffset)}
                 </span>
                 <span class="positioning">
                   <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>

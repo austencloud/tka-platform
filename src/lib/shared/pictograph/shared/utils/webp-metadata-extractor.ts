@@ -306,7 +306,7 @@ export class WebpMetadataExtractor {
     webpPath: string
   ): Promise<{
     sequenceName: string;
-    beats: Record<string, unknown>[];
+    steps: Record<string, unknown>[];
     sequenceLength: number;
     [key: string]: unknown;
   }> {
@@ -317,12 +317,12 @@ export class WebpMetadataExtractor {
       if (!firstMetadata) {
         return {
           sequenceName,
-          beats: [],
+          steps: [],
           sequenceLength: 0,
         };
       }
 
-      const beats = firstMetadata["beats"] as
+      const steps = firstMetadata["steps"] as
         | Record<string, unknown>[]
         | undefined;
       const sequenceLength = firstMetadata["sequenceLength"] as
@@ -331,7 +331,7 @@ export class WebpMetadataExtractor {
 
       return {
         sequenceName,
-        beats: beats ?? [],
+        steps: steps ?? [],
         sequenceLength: sequenceLength ?? 0,
         ...firstMetadata, // Include all other metadata fields
       };

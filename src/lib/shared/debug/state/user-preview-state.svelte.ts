@@ -546,7 +546,7 @@ export async function loadUserPreview(
       ]);
     } else {
       // Lazy mode: fetch profile, gamification, settings, and notification preferences initially
-      // These are needed immediately for ProfileTab and NotificationsTab
+      // These are needed immediately for ProfileTab
       const [profile, gamification, settings, notificationPreferences] =
         await Promise.all([
           fetchProfile(userId),

@@ -116,9 +116,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       trailSettings.mode !== TrailMode.OFF &&
       this.TrailCapturer
     ) {
-      const currentBeat =
-        params.beatData && "beatNumber" in params.beatData
-          ? params.beatData.beatNumber
+      const currentStep =
+        params.stepData && "stepNumber" in params.stepData
+          ? params.stepData.stepNumber
           : undefined;
       this.TrailCapturer.captureFrame(
         {
@@ -127,7 +127,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           secondaryBlueProp: params.props.secondaryBlueProp,
           secondaryRedProp: params.props.secondaryRedProp,
         },
-        currentBeat,
+        currentStep,
         currentTime
       );
     }
@@ -166,8 +166,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     if (!this.renderer) return;
 
     const {
-      beatData,
-      currentBeat,
+      stepData,
+      currentStep,
       trailSettings,
       gridVisible,
       gridMode,
@@ -177,13 +177,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } = params;
 
     // Get turn tuple for glyph rendering
-    const blueMotion = beatData?.motions?.blue;
-    const redMotion = beatData?.motions?.red;
+    const blueMotion = stepData?.motions?.blue;
+    const redMotion = stepData?.motions?.red;
     const turnsTuple =
       blueMotion && redMotion ? `${blueMotion.turns}${redMotion.turns}` : null;
 
     // Gather trail points
-    const trailPoints = this.gatherTrailPoints(currentBeat);
+    const trailPoints = this.gatherTrailPoints(currentStep);
 
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
@@ -245,7 +245,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     });
   }
 
-  private gatherTrailPoints(currentBeat: number): {
+  private gatherTrailPoints(currentStep: number): {
     blue: TrailPoint[];
     red: TrailPoint[];
     secondaryBlue: TrailPoint[];
@@ -259,7 +259,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.reusableSecondaryRedTrailPoints.length = 0;
 
     // Use cache for perfect gap-free trails (if available and valid)
-    if (this.pathCache && this.pathCache.isValid() && currentBeat !== null) {
+    if (this.pathCache && this.pathCache.isValid() && currentStep !== null) {
       const scaleFactor = this.canvasSize / 950;
 
       // Transform points in-place into reusable arrays (no .map() allocation)
@@ -282,21 +282,21 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
       // Blue prop trails (both left and right endpoints)
       transformAndPush(
-        this.pathCache.getTrailPoints(0, 0, 0, currentBeat),
+        this.pathCache.getTrailPoints(0, 0, 0, currentStep),
         this.reusableBlueTrailPoints
       );
       transformAndPush(
-        this.pathCache.getTrailPoints(0, 1, 0, currentBeat),
+        this.pathCache.getTrailPoints(0, 1, 0, currentStep),
         this.reusableBlueTrailPoints
       );
 
       // Red prop trails (both left and right endpoints)
       transformAndPush(
-        this.pathCache.getTrailPoints(1, 0, 0, currentBeat),
+        this.pathCache.getTrailPoints(1, 0, 0, currentStep),
         this.reusableRedTrailPoints
       );
       transformAndPush(
-        this.pathCache.getTrailPoints(1, 1, 0, currentBeat),
+        this.pathCache.getTrailPoints(1, 1, 0, currentStep),
         this.reusableRedTrailPoints
       );
     } else if (this.TrailCapturer) {

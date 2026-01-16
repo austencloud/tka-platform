@@ -312,7 +312,7 @@ export class PngMetadataExtractor {
     author: string;
     startPosition: string;
     level: string;
-    beats: Array<{ letter: string; blueMotion: string; redMotion: string }>;
+    steps: Array<{ letter: string; blueMotion: string; redMotion: string }>;
   }> {
     const metadata = await this.extractSequenceMetadata(sequenceName);
 
@@ -333,7 +333,7 @@ export class PngMetadataExtractor {
         (step: Record<string, unknown>) =>
           step["letter"] && !step["sequence_start_position"]
       );
-    const beats = realBeats.map((step: Record<string, unknown>) => {
+    const steps = realBeats.map((step: Record<string, unknown>) => {
       const blueAttrs = step["blueAttributes"] as
         | Record<string, unknown>
         | undefined;
@@ -347,7 +347,7 @@ export class PngMetadataExtractor {
       };
     });
 
-    return { metadata, author, startPosition, level, beats };
+    return { metadata, author, startPosition, level, steps };
   }
 }
 

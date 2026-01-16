@@ -73,14 +73,14 @@ export interface IAnimationPrecomputer {
   /**
    * Pre-compute animation paths for gap-free trail rendering
    * @param seqData - Sequence data to precompute
-   * @param totalBeats - Total number of beats
-   * @param beatDurationMs - Duration of each beat in milliseconds
+   * @param totalSteps - Total number of steps
+   * @param stepDurationMs - Duration of each beat in milliseconds
    * @param trailSettings - Trail settings including usePathCache flag
    */
   precomputeAnimationPaths(
     seqData: SequenceData,
-    totalBeats: number,
-    beatDurationMs: number,
+    totalSteps: number,
+    stepDurationMs: number,
     trailSettings: TrailSettings
   ): Promise<void>;
 

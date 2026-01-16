@@ -104,7 +104,7 @@
               <div class="sequence-designation">{secondaryLabel}</div>
             {/if}
             <div class="sequence-meta">
-              {seq.sequenceLength} beats · {seq.gridMode?.toUpperCase() ||
+              {seq.sequenceLength} steps · {seq.gridMode?.toUpperCase() ||
                 "DIAMOND"}
             </div>
             {#if cardExtra}

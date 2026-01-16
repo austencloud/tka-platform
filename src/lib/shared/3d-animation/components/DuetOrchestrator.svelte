@@ -68,9 +68,9 @@
       // Apply beat offset via sync state
       const syncState = performerManager.syncState;
       if (syncState) {
-        syncState.setOffset(duet.beatOffset);
+        syncState.setOffset(duet.stepOffset);
         // Enable sync if there's an offset
-        if (duet.beatOffset !== 0 && !syncState.isSyncEnabled) {
+        if (duet.stepOffset !== 0 && !syncState.isSyncEnabled) {
           syncState.toggleSync();
         }
       }

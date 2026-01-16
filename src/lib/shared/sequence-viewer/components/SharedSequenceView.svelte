@@ -274,10 +274,10 @@
             <span class="value">{viewerState.sequence.author}</span>
           </div>
         {/if}
-        {#if viewerState.sequence.beats.length > 0}
+        {#if viewerState.sequence.steps.length > 0}
           <div class="metadata-item">
-            <span class="label">Beats</span>
-            <span class="value">{viewerState.sequence.beats.length}</span>
+            <span class="label">Steps</span>
+            <span class="value">{viewerState.sequence.steps.length}</span>
           </div>
         {/if}
         {#if viewerState.sequence.level}
@@ -448,7 +448,7 @@
     font-weight: 600;
   }
 
-  /* Beats Section */
+  /* Steps Section */
 
   /* Side-by-side layout (desktop) */
   .sequence-viewer.side-by-side .viewer-content {

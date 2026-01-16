@@ -6,23 +6,23 @@
    * Core component for any sequence review workflow.
    */
   import type { BaseSequenceEntry } from "../domain/models/review-models";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import type { Snippet } from "svelte";
 
   interface Props {
     sequence: BaseSequenceEntry | null;
-    parsedBeats: BeatData[];
+    parsedSteps: StepData[];
     startPosition: StartPositionData | null;
     showStartPosition: boolean;
     manualColumnCount: number | null;
     onShowStartPositionChange: (value: boolean) => void;
     onColumnCountChange: (value: number | null) => void;
-    onBeatClick?: (beatNumber: number) => void;
-    highlightedBeats?: Map<number, { bg: string; border: string }>;
+    onStepClick?: (stepNumber: number) => void;
+    highlightedSteps?: Map<number, { bg: string; border: string }>;
     interactive?: boolean;
     onCopyJson?: () => void;
     copiedToast?: boolean;
@@ -34,14 +34,14 @@
 
   let {
     sequence,
-    parsedBeats,
+    parsedSteps,
     startPosition,
     showStartPosition,
     manualColumnCount,
     onShowStartPositionChange,
     onColumnCountChange,
-    onBeatClick,
-    highlightedBeats,
+    onStepClick,
+    highlightedSteps,
     interactive = false,
     onCopyJson,
     copiedToast = false,
@@ -116,7 +116,7 @@
   <!-- Metadata row -->
   {#if sequence}
     <div class="meta-row">
-      <span class="meta-item">{sequence.sequenceLength} beats</span>
+      <span class="meta-item">{sequence.sequenceLength} steps</span>
       <span
         class="meta-item grid-mode"
         class:box={authoritativeGridMode === GridMode.BOX ||
@@ -134,7 +134,7 @@
   {/if}
 
   <!-- Beat Grid -->
-  {#if parsedBeats.length > 0}
+  {#if parsedSteps.length > 0}
     <div class="beat-grid-section">
       <!-- Grid controls -->
       <div class="grid-controls">
@@ -170,12 +170,12 @@
       </div>
 
       <div class="beat-grid-wrapper" class:interactive>
-        <BeatGrid
-          beats={parsedBeats}
+        <StepGrid
+          steps={parsedSteps}
           startPosition={showStartPosition ? startPosition : null}
-          {onBeatClick}
+          {onStepClick}
           manualColumnCount={effectiveColumnCount}
-          {highlightedBeats}
+          {highlightedSteps}
           heightSizingRowThreshold={20}
         />
       </div>

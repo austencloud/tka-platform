@@ -91,16 +91,16 @@ export function createCameraChoreographyState() {
    * Update camera state for current playback position
    * Call this each frame when choreography is enabled
    */
-  function updateForBeat(
-    beatNumber: number,
-    beatProgress: number,
+  function updateForStep(
+    stepNumber: number,
+    stepProgress: number,
     performerProvider?: PerformerPositionProvider
   ) {
     if (!isEnabled || !choreographer.hasChoreography) return;
 
-    cameraState = choreographer.updateForBeat(
-      beatNumber,
-      beatProgress,
+    cameraState = choreographer.updateForStep(
+      stepNumber,
+      stepProgress,
       performerProvider
     );
   }
@@ -109,11 +109,11 @@ export function createCameraChoreographyState() {
    * Add a keyframe at the current beat
    */
   function addKeyframe(
-    beatNumber: number,
+    stepNumber: number,
     position: CameraPosition,
     target: CameraPosition
   ) {
-    choreographer.captureKeyframe(beatNumber, position, target);
+    choreographer.captureKeyframe(stepNumber, position, target);
   }
 
   /**
@@ -183,7 +183,7 @@ export function createCameraChoreographyState() {
     loadChoreography,
     clearChoreography,
     createNew,
-    updateForBeat,
+    updateForStep,
     addKeyframe,
     removeKeyframe,
     startRecording,

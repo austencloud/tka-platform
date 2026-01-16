@@ -200,7 +200,7 @@
       sequenceData: null as SequenceData | null,
       isCircular: false,
       isPlaying: false,
-      currentBeat: 0,
+      currentStep: 0,
       speed: 1,
       playbackMode: "continuous" as PlaybackMode,
       stepPlaybackPauseMs: 300,
@@ -242,7 +242,7 @@
     animationContext.state.sequenceData = animationSequenceData;
     animationContext.state.isCircular = isCircular;
     animationContext.state.isPlaying = isAnimationPlaying;
-    animationContext.state.currentBeat = animationCurrentBeat;
+    animationContext.state.currentStep = animationCurrentBeat;
     animationContext.state.speed = animationSpeed;
     animationContext.state.playbackMode = playbackMode;
     animationContext.state.stepPlaybackPauseMs = stepPlaybackPauseMs;

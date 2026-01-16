@@ -14,7 +14,7 @@ const STORAGE_KEY = "tka-image-composition-settings";
 
 export interface ImageCompositionSettings {
   addWord: boolean;
-  addBeatNumbers: boolean;
+  addStepNumbers: boolean;
   addDifficultyLevel: boolean;
   includeStartPosition: boolean;
   darkMode: boolean;
@@ -32,7 +32,7 @@ export interface ImageCompositionSettings {
 
 const DEFAULT_SETTINGS: ImageCompositionSettings = {
   addWord: true,
-  addBeatNumbers: true,
+  addStepNumbers: true,
   addDifficultyLevel: false,
   includeStartPosition: true,
   darkMode: false, // Default to light mode (will be synced from global on init)
@@ -129,8 +129,8 @@ class ImageCompositionStateManager {
     return this.settings.addWord;
   }
 
-  get addBeatNumbers(): boolean {
-    return this.settings.addBeatNumbers;
+  get addStepNumbers(): boolean {
+    return this.settings.addStepNumbers;
   }
 
   get addDifficultyLevel(): boolean {
@@ -191,7 +191,7 @@ class ImageCompositionStateManager {
   }
 
   setAddBeatNumbers(value: boolean): void {
-    this.settings.addBeatNumbers = value;
+    this.settings.addStepNumbers = value;
     this.saveToStorage();
     this.notifyObservers();
   }

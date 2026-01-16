@@ -64,13 +64,13 @@ export class PreviewCache {
   }
 
   /**
-   * Generate a hash of the sequence beats for change detection
+   * Generate a hash of the sequence steps for change detection
    */
   private hashSequence(sequence: SequenceData): string {
-    // Create a stable string representation of the sequence beats
+    // Create a stable string representation of the sequence steps
     const beatsJson = JSON.stringify({
-      beats: sequence.beats,
-      startingPositionBeat: sequence.startingPositionBeat,
+      steps: sequence.steps,
+      startingPosition: sequence.startingPosition,
       startPosition: sequence.startPosition,
     });
 
@@ -89,7 +89,7 @@ export class PreviewCache {
    * IMPORTANT: All toggle options must be included to avoid stale cache
    */
   private getCacheKey(sequenceId: string, options: ShareOptions): string {
-    const optionsKey = `${options.format}-${options.addWord}-${options.addBeatNumbers}-${options.includeStartPosition}-${options.addDifficultyLevel}-${options.addUserInfo}`;
+    const optionsKey = `${options.format}-${options.addWord}-${options.addStepNumbers}-${options.includeStartPosition}-${options.addDifficultyLevel}-${options.addUserInfo}`;
     return `${sequenceId}-${optionsKey}`;
   }
 

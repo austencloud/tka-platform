@@ -4,7 +4,7 @@
   import { cubicOut, backOut } from "svelte/easing";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
@@ -20,7 +20,7 @@
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import DemoControlBar from "./DemoControlBar.svelte";
   import { RANDOM_PROPS } from "../landing-content";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -34,7 +34,7 @@
     sequence: SequenceData,
     propType: PropType
   ): SequenceData {
-    const applyToMotions = (data: BeatData | StartPositionData) => {
+    const applyToMotions = (data: StepData | StartPositionData) => {
       if (!data.motions) return data;
       return {
         ...data,
@@ -52,8 +52,8 @@
       startPosition: sequence.startPosition
         ? (applyToMotions(sequence.startPosition) as StartPositionData)
         : undefined,
-      beats:
-        sequence.beats?.map((beat) => applyToMotions(beat) as BeatData) ?? [],
+      steps:
+        sequence.steps?.map((beat) => applyToMotions(beat) as StepData) ?? [],
     };
   }
 
@@ -83,7 +83,7 @@
   let currentPropType = $state<PropType>(RANDOM_PROPS[0]!);
 
   // Track beat for sequence completion detection
-  let lastBeat = $state(-1);
+  let lastStep = $state(-1);
 
   // Pre-loaded next sequence for seamless transition
   let preloadedSequence = $state<SequenceData | null>(null);
@@ -107,51 +107,51 @@
   // Current beat data for AnimatorCanvas
   let currentLetter = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat < 1) {
+    if (currentStep < 1) {
       return derivedStartPosition?.letter || null;
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      const beatIndex = Math.floor(currentBeat) - 1;
+    if (animationState.sequenceData.steps?.length > 0) {
+      const stepIndex = Math.floor(currentStep) - 1;
       const clampedIndex = Math.max(
         0,
-        Math.min(beatIndex, animationState.sequenceData.beats.length - 1)
+        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
       );
-      return animationState.sequenceData.beats[clampedIndex]?.letter || null;
+      return animationState.sequenceData.steps[clampedIndex]?.letter || null;
     }
 
     return null;
   });
 
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat < 1) {
+    if (currentStep < 1) {
       return derivedStartPosition || null;
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      const beatIndex = Math.floor(currentBeat) - 1;
+    if (animationState.sequenceData.steps?.length > 0) {
+      const stepIndex = Math.floor(currentStep) - 1;
       const clampedIndex = Math.max(
         0,
-        Math.min(beatIndex, animationState.sequenceData.beats.length - 1)
+        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
   });
 
   let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
-  let currentBeatNumber = $derived(Math.floor(animationState.currentBeat));
+  let currentStepNumber = $derived(Math.floor(animationState.currentStep));
 
   // Pre-load next sequence when we're partway through current one
   $effect(() => {
-    const currentBeat = Math.floor(animationState.currentBeat);
-    const totalBeats = animationState.totalBeats;
+    const currentStep = Math.floor(animationState.currentStep);
+    const totalSteps = animationState.totalSteps;
 
     // Start pre-loading around beat 2 (gives time to load before sequence ends)
     const shouldPreload =
@@ -161,9 +161,9 @@
       !isPreloading &&
       !preloadedSequence &&
       currentSequence &&
-      totalBeats > 2 &&
-      currentBeat >= 2 &&
-      currentBeat < totalBeats - 1;
+      totalSteps > 2 &&
+      currentStep >= 2 &&
+      currentStep < totalSteps - 1;
 
     if (shouldPreload) {
       preloadNextSequence();
@@ -172,8 +172,8 @@
 
   // Watch for sequence completion to chain to next sequence
   $effect(() => {
-    const currentBeat = Math.floor(animationState.currentBeat);
-    const totalBeats = animationState.totalBeats;
+    const currentStep = Math.floor(animationState.currentStep);
+    const totalSteps = animationState.totalSteps;
 
     // Detect when sequence loops back to beginning (completion)
     if (
@@ -181,15 +181,15 @@
       servicesReady &&
       !isChainingNow &&
       animationReady &&
-      lastBeat >= totalBeats - 1 &&
-      currentBeat <= 1 &&
-      totalBeats > 0
+      lastStep >= totalSteps - 1 &&
+      currentStep <= 1 &&
+      totalSteps > 0
     ) {
       // Sequence completed - chain to next
       chainToNextSequence();
     }
 
-    lastBeat = currentBeat;
+    lastStep = currentStep;
   });
 
   // Intersection Observer for lazy loading - only load animation engine when visible
@@ -267,14 +267,14 @@
    * Derives the end position from the motion's endLocation fields using GridPositionDeriver.
    */
   function extractEndState(sequence: SequenceData): EndState {
-    const lastBeat = sequence.beats?.[sequence.beats.length - 1];
+    const lastStep = sequence.steps?.[sequence.steps.length - 1];
 
     // Get the end position - try stored value first, then derive from motion end locations
-    let position = lastBeat?.endPosition ?? null;
+    let position = lastStep?.endPosition ?? null;
 
-    if (!position && gridPositionDeriver && lastBeat?.motions) {
-      const blueMotion = lastBeat.motions[MotionColor.BLUE];
-      const redMotion = lastBeat.motions[MotionColor.RED];
+    if (!position && gridPositionDeriver && lastStep?.motions) {
+      const blueMotion = lastStep.motions[MotionColor.BLUE];
+      const redMotion = lastStep.motions[MotionColor.RED];
 
       if (blueMotion?.endLocation && redMotion?.endLocation) {
         try {
@@ -290,8 +290,8 @@
 
     return {
       position,
-      blueOrientation: (lastBeat?.motions?.blue?.endOrientation as Orientation) ?? null,
-      redOrientation: (lastBeat?.motions?.red?.endOrientation as Orientation) ?? null,
+      blueOrientation: (lastStep?.motions?.blue?.endOrientation as Orientation) ?? null,
+      redOrientation: (lastStep?.motions?.red?.endOrientation as Orientation) ?? null,
     };
   }
 
@@ -365,7 +365,7 @@
     currentSequence = sequenceData;
 
     // Reset beat tracking for chaining detection
-    lastBeat = -1;
+    lastStep = -1;
 
     // Apply current prop type to sequence data
     const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
@@ -382,7 +382,7 @@
 
     // Ensure we're in continuous playback mode and start from beat 1
     animationState.setPlaybackMode("continuous");
-    animationState.setCurrentBeat(1);
+    animationState.setCurrentStep(1);
 
     // Make sure playback is running
     if (!animationState.isPlaying) {
@@ -432,7 +432,7 @@
       currentSequence = sequenceData;
 
       // Reset beat tracking for chaining detection
-      lastBeat = -1;
+      lastStep = -1;
 
       // Apply current prop type to sequence data
       const sequence = applyPropTypeToSequence(sequenceData, currentPropType);
@@ -452,7 +452,7 @@
 
       // Ensure continuous playback mode
       animationState.setPlaybackMode("continuous");
-      animationState.setCurrentBeat(1);
+      animationState.setCurrentStep(1);
       playbackController?.togglePlayback();
     } catch (err) {
       console.error("Failed to load sequence:", err);
@@ -477,7 +477,7 @@
     // Hot swap - instant prop change without transition animation:
     // 1. AnimatorCanvas receives new prop type via bluePropType/redPropType props
     //    (AnimationEngine detects the change and hot-swaps textures)
-    // 2. Update sequence data in animationState for BeatGrid
+    // 2. Update sequence data in animationState for StepGrid
     if (animationState.sequenceData) {
       const updatedSequence = applyPropTypeToSequence(
         animationState.sequenceData,
@@ -518,7 +518,7 @@
                   gridVisible={true}
                   {gridMode}
                   letter={currentLetter}
-                  beatData={currentBeatData}
+                  stepData={currentStepData}
                   sequenceData={animationState.sequenceData}
                   isPlaying={animationState.isPlaying}
                   trailSettings={animationSettings.trail}
@@ -541,10 +541,10 @@
 
           {#if animationState.sequenceData}
             <div class="beat-grid-panel">
-              <BeatGrid
-                beats={animationState.sequenceData.beats}
+              <StepGrid
+                steps={animationState.sequenceData.steps}
                 startPosition={derivedStartPosition}
-                selectedBeatNumber={currentBeatNumber}
+                selectedStepNumber={currentStepNumber}
               />
             </div>
           {/if}

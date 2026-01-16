@@ -12,7 +12,7 @@ import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 import type { AnimationPathCache } from "$lib/features/compose/services/implementations/AnimationPathCache";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 
 /**
@@ -60,8 +60,8 @@ export interface RenderPropsState {
  * Parameters for a single render frame
  */
 export interface RenderFrameParams {
-  beatData: StartPositionData | BeatData | null;
-  currentBeat: number;
+  stepData: StartPositionData | StepData | null;
+  currentStep: number;
   trailSettings: TrailSettings;
   gridVisible: boolean;
   gridMode: GridMode | null;

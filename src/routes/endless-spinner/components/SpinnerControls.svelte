@@ -2,7 +2,7 @@
   interface Props {
     isPlaying: boolean;
     animationReady: boolean;
-    showBeatGrid: boolean;
+    showStepGrid: boolean;
     onToggleGrid: () => void;
     onTogglePause: () => void;
     onSkip: () => void;
@@ -11,7 +11,7 @@
   let {
     isPlaying,
     animationReady,
-    showBeatGrid,
+    showStepGrid,
     onToggleGrid,
     onTogglePause,
     onSkip,
@@ -22,8 +22,8 @@
   <button
     class="control-btn secondary"
     onclick={onToggleGrid}
-    aria-label={showBeatGrid ? "Hide notation grid" : "Show notation grid"}
-    aria-pressed={showBeatGrid}
+    aria-label={showStepGrid ? "Hide notation grid" : "Show notation grid"}
+    aria-pressed={showStepGrid}
   >
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <rect x="3" y="3" width="7" height="7" rx="1" />

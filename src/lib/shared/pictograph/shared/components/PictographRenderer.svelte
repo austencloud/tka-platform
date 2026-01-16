@@ -34,7 +34,7 @@ Usage:
   import VTGGlyph from "./VTGGlyph.svelte";
   import ElementalGlyph from "./ElementalGlyph.svelte";
   import PositionGlyph from "./PositionGlyph.svelte";
-  import BeatNumber from "./BeatNumber.svelte";
+  import StepNumber from "./StepNumber.svelte";
   import { container } from "$lib/shared/di";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
   import type { ITurnsTupleGenerator } from "../../arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
@@ -60,8 +60,8 @@ Usage:
     // Active locations for hand point filtering
     activeLocations = [],
     // Beat number display
-    beatNumber = null,
-    showBeatNumber = false,
+    stepNumber = null,
+    showStepNumber = false,
     musicalPosition = undefined,
     previewMode = false,
     // Grid mode override (if provided, takes precedence over calculated mode)
@@ -99,8 +99,8 @@ Usage:
     handPointVisibility?: "all" | "active";
     /** Active locations for filtering hand points when in "active" mode */
     activeLocations?: GridLocation[];
-    beatNumber?: number | null;
-    showBeatNumber?: boolean;
+    stepNumber?: number | null;
+    showStepNumber?: boolean;
     previewMode?: boolean;
     gridModeOverride?: GridMode | null;
     visibleHand?: "blue" | "red" | null;
@@ -119,9 +119,9 @@ Usage:
   }>();
 
   // Derived beat context
-  const isStartPosition = $derived(beatNumber === 0);
+  const isStartPosition = $derived(stepNumber === 0);
   const shouldShowBeatNumber = $derived(
-    showBeatNumber && beatNumber !== null && !isStartPosition
+    showStepNumber && stepNumber !== null && !isStartPosition
   );
 
   // Derive grid mode from override, pre-calculated, or motions
@@ -237,9 +237,11 @@ Usage:
     xmlns="http://www.w3.org/2000/svg"
     role="img"
     aria-label="Pictograph"
+    style="pointer-events: none;"
   >
     <!-- Background - uses prop override if set, otherwise CSS variable for dark mode support -->
-    <rect width="950" height="950" fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "white" : "var(--dm-pictograph-bg)"} />
+    <!-- pointer-events="none" ensures clicks can pass through to interactive elements like arrows -->
+    <rect width="950" height="950" fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "white" : "var(--dm-pictograph-bg)"} pointer-events="none" />
 
     <!-- Grid -->
     {#if showGrid || previewMode}
@@ -327,9 +329,9 @@ Usage:
     {/if}
 
     <!-- Beat number overlay -->
-    <BeatNumber
-      {beatNumber}
-      showBeatNumber={shouldShowBeatNumber}
+    <StepNumber
+      {stepNumber}
+      showStepNumber={shouldShowBeatNumber}
       {isStartPosition}
       {hasValidData}
       {darkMode}
@@ -386,6 +388,8 @@ Usage:
     display: block;
     box-sizing: border-box;
     transition: border-color 150ms ease-out;
+    /* Allow pointer events to pass through to interactive SVG elements */
+    pointer-events: none;
   }
 
   /* Subtle white outline in dark mode to distinguish boundaries */

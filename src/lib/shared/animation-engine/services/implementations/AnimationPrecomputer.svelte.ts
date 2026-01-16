@@ -76,8 +76,8 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
 
   async precomputeAnimationPaths(
     seqData: SequenceData,
-    totalBeats: number,
-    beatDurationMs: number,
+    totalSteps: number,
+    stepDurationMs: number,
     trailSettings: TrailSettings
   ): Promise<void> {
     if (
@@ -128,8 +128,8 @@ export class AnimationPrecomputer implements IAnimationPrecomputer {
       // Pre-compute paths
       const cacheData = await this.pathCache.precomputePaths(
         calculateStateFunc,
-        totalBeats,
-        beatDurationMs
+        totalSteps,
+        stepDurationMs
       );
 
       this.state.pathCacheData = cacheData;

@@ -155,11 +155,11 @@ function transformSequenceData(rawData: unknown): unknown[] {
       // If step doesn't have a beat property, assign one based on position
       // Skip the first step if it's a start position (has sequence_start_position)
       const isStartPosition = step["sequence_start_position"] !== undefined;
-      const beatNumber = isStartPosition ? 0 : index;
+      const stepNumber = isStartPosition ? 0 : index;
 
       return {
         ...step,
-        beat: beatNumber,
+        beat: stepNumber,
       };
     });
 

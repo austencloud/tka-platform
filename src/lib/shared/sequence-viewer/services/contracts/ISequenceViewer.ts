@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 export interface ISequenceViewer {
   // ============================================
@@ -35,9 +35,9 @@ export interface ISequenceViewer {
    * Update orientation for a beat
    * @returns New sequence with updated beat
    */
-  updateBeatOrientation(
+  updateStepOrientation(
     sequence: SequenceData,
-    beatIndex: number,
+    stepIndex: number,
     color: string,
     orientation: string
   ): SequenceData;
@@ -46,9 +46,9 @@ export interface ISequenceViewer {
    * Update turn amount for a beat
    * @returns New sequence with updated beat
    */
-  updateBeatTurns(
+  updateStepTurns(
     sequence: SequenceData,
-    beatIndex: number,
+    stepIndex: number,
     color: string,
     turnAmount: number | "fl"
   ): SequenceData;
@@ -57,7 +57,7 @@ export interface ISequenceViewer {
    * Remove a beat from the sequence
    * @returns New sequence without the beat
    */
-  removeBeat(sequence: SequenceData, beatIndex: number): SequenceData;
+  removeStep(sequence: SequenceData, stepIndex: number): SequenceData;
 
   // ============================================
   // PERSISTENCE
@@ -88,12 +88,12 @@ export interface ISequenceViewer {
   generateShareUrl(sequence: SequenceData): string;
 
   // ============================================
-  // BEAT DATA HELPERS
+  // STEP DATA HELPERS
   // ============================================
 
   /**
-   * Get BeatData for a specific beat index
-   * @param beatIndex - 0 = start position, 1+ = beats
+   * Get StepData for a specific beat index
+   * @param stepIndex - 0 = start position, 1+ = steps
    */
-  getBeatData(sequence: SequenceData, beatIndex: number): BeatData | null;
+  getStepData(sequence: SequenceData, stepIndex: number): StepData | null;
 }

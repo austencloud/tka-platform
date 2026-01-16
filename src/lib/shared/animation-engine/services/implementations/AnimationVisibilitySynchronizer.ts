@@ -25,7 +25,7 @@ export class AnimationVisibilitySynchronizer implements IAnimationVisibilitySync
   getState(): AnimationVisibilityState {
     return {
       grid: this.manager.isGridVisible(),
-      beatNumbers: this.manager.getVisibility("beatNumbers"),
+      stepNumbers: this.manager.getVisibility("stepNumbers"),
       props: this.manager.getVisibility("props"),
       trails: this.manager.isTrailsVisible(),
       tkaGlyph: this.manager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers

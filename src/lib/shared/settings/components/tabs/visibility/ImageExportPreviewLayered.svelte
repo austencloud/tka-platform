@@ -61,12 +61,12 @@
   const visibilityManager = getVisibilityStateManager();
 
   // Beat numbers visibility comes from Pictograph settings
-  let showBeatNumbers = $state(visibilityManager.getBeatNumbersVisibility());
+  let showStepNumbers = $state(visibilityManager.getBeatNumbersVisibility());
 
   // Update beat numbers when visibility changes
   $effect(() => {
     const observer = () => {
-      showBeatNumbers = visibilityManager.getBeatNumbersVisibility();
+      showStepNumbers = visibilityManager.getBeatNumbersVisibility();
     };
     visibilityManager.registerObserver(observer, ["all"]);
     return () => visibilityManager.unregisterObserver(observer);
@@ -165,7 +165,7 @@
         />
 
         <!-- Beat number overlay -->
-        {#if showBeatNumbers}
+        {#if showStepNumbers}
           <div class="beat-number-overlay" transition:fade={{ duration: 200 }}>
             1
           </div>

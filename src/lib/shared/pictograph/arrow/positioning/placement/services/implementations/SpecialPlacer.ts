@@ -82,19 +82,31 @@ export class SpecialPlacer implements ISpecialPlacer {
     // Determine the arrow key for global adjustment lookup
     const arrowKey = arrowColor || motionData.color || "blue";
 
+    // Get prop types for cascading lookup
+    const thisPropType = motionData.propType?.toLowerCase() || "staff";
+    const otherColor = arrowKey === "blue" ? "red" : "blue";
+    const otherMotion = pictographData.motions?.[otherColor];
+    const otherPropType = otherMotion?.propType?.toLowerCase() || "staff";
+
     // Step 0 (NEW): Check global adjustments first (Firestore-backed overrides)
+    // Uses cascading lookup: Layer 3 (combination) → Layer 2 (prop-specific) → Layer 1 (base)
     const globalAdjustmentRepo = getGlobalAdjustmentRepository();
     if (globalAdjustmentRepo?.isInitialized) {
-      const globalAdjustment = globalAdjustmentRepo.getAdjustment({
+      const baseKey = {
         gridMode,
         oriKey,
         letter,
         turnsTuple,
         arrowKey,
-      });
+      };
+      const cascadingResult = globalAdjustmentRepo.getAdjustmentCascading(
+        baseKey,
+        thisPropType,
+        otherPropType
+      );
 
-      if (globalAdjustment) {
-        return globalAdjustment;
+      if (cascadingResult) {
+        return cascadingResult.adjustment;
       }
     }
 

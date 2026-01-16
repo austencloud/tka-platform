@@ -49,7 +49,7 @@
   let gridVisible = $state(true);
   let nonRadialVisible = $state(false);
   let handPointVisibility = $state<"all" | "active">("all");
-  let beatNumbersVisible = $state(true);
+  let stepNumbersVisible = $state(true);
 
   // Animation visibility state
   let animTrailStyle = $state<TrailStyle>("on");
@@ -125,9 +125,9 @@
         handPointVisibility = handPointVisibility === "all" ? "active" : "all";
         visibilityManager.setHandPointVisibility(handPointVisibility);
         break;
-      case "beatNumbers":
-        beatNumbersVisible = !beatNumbersVisible;
-        visibilityManager.setBeatNumbersVisibility(beatNumbersVisible);
+      case "stepNumbers":
+        stepNumbersVisible = !stepNumbersVisible;
+        visibilityManager.setBeatNumbersVisibility(stepNumbersVisible);
         break;
     }
   }
@@ -228,7 +228,7 @@
     gridVisible = visibilityManager.getGridVisibility();
     nonRadialVisible = visibilityManager.getNonRadialVisibility();
     handPointVisibility = visibilityManager.getHandPointVisibility();
-    beatNumbersVisible = visibilityManager.getBeatNumbersVisibility();
+    stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
 
     // Load initial animation visibility
     animTrailStyle = animationVisibilityManager.getTrailStyle();
@@ -262,7 +262,7 @@
       gridVisible = visibilityManager.getGridVisibility();
       nonRadialVisible = visibilityManager.getNonRadialVisibility();
       handPointVisibility = visibilityManager.getHandPointVisibility();
-      beatNumbersVisible = visibilityManager.getBeatNumbersVisibility();
+      stepNumbersVisible = visibilityManager.getBeatNumbersVisibility();
     };
 
     const animationObserver = () => {
@@ -322,14 +322,14 @@
       {gridVisible}
       {nonRadialVisible}
       {handPointVisibility}
-      {beatNumbersVisible}
+      {stepNumbersVisible}
       onToggle={handlePictographToggle}
       isMobileHidden={mobileMode !== "pictograph"}
     />
 
     <AnimationPanel
       gridVisible={gridVisible}
-      beatNumbersVisible={beatNumbersVisible}
+      stepNumbersVisible={stepNumbersVisible}
       trailStyle={animTrailStyle}
       playbackMode={animPlaybackMode}
       bpm={animBpm}

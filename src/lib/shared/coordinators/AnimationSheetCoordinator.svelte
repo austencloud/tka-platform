@@ -14,7 +14,7 @@
     <AnimationSheetCoordinator
       sequence={yourSequence}
       bind:isOpen={showAnimator}
-      bind:animatingBeatNumber={beatNum}
+      bind:animatingStepNumber={stepNum}
       combinedPanelHeight={panelHeight}
     />
 -->
@@ -52,12 +52,12 @@
   let {
     sequence = $bindable(), // Sequence to animate (from any source)
     isOpen = $bindable(), // Sheet visibility
-    animatingBeatNumber: _animatingBeatNumber = $bindable(), // Current beat (optional)
+    animatingStepNumber: _animatingBeatNumber = $bindable(), // Current beat (optional)
     combinedPanelHeight = 0, // Panel height (optional)
   }: {
     sequence?: SequenceData | null;
     isOpen?: boolean;
-    animatingBeatNumber?: number | null;
+    animatingStepNumber?: number | null;
     combinedPanelHeight?: number;
   } = $props();
 
@@ -105,37 +105,37 @@
 
   // Derived: Current letter from sequence data
   // Uses same indexing as SequenceAnimationOrchestrator:
-  // - currentBeat < 1: start position (the pose before animation begins)
-  // - currentBeat >= 1: motion beats where beat N uses beats[N-1]
+  // - currentStep < 1: start position (the pose before animation begins)
+  // - currentStep >= 1: motion steps where beat N uses steps[N-1]
   let currentLetter = $derived.by(() => {
     if (!animationPanelState.sequenceData) return null;
 
-    const currentBeat = animationPanelState.currentBeat;
+    const currentStep = animationPanelState.currentStep;
 
-    // Start position: currentBeat < 1 (before beat 1 starts)
+    // Start position: currentStep < 1 (before beat 1 starts)
     // This matches SequenceAnimationOrchestrator's check
-    if (currentBeat < 1 && animationPanelState.sequenceData.startPosition) {
+    if (currentStep < 1 && animationPanelState.sequenceData.startPosition) {
       return animationPanelState.sequenceData.startPosition.letter || null;
     }
 
-    // Motion beats: currentBeat >= 1
+    // Motion steps: currentStep >= 1
     if (
-      animationPanelState.sequenceData.beats &&
-      animationPanelState.sequenceData.beats.length > 0
+      animationPanelState.sequenceData.steps &&
+      animationPanelState.sequenceData.steps.length > 0
     ) {
-      // Beat indexing: beats[0] = beat 1, beats[1] = beat 2, etc.
-      // currentBeat semantics: beat N's motion spans from N.0 to (N+1).0
+      // Beat indexing: steps[0] = beat 1, steps[1] = beat 2, etc.
+      // currentStep semantics: beat N's motion spans from N.0 to (N+1).0
       //
-      // Formula: ceil(currentBeat - 1) gives the beat number whose motion is/was playing
+      // Formula: ceil(currentStep - 1) gives the beat number whose motion is/was playing
       // - At 3.0 (pause after beat 2): ceil(2.0) = 2, shows beat 2
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationPanelState.sequenceData.beats.length - 1
+        stepIndex,
+        animationPanelState.sequenceData.steps.length - 1
       );
       return (
-        animationPanelState.sequenceData.beats[clampedIndex]?.letter || null
+        animationPanelState.sequenceData.steps[clampedIndex]?.letter || null
       );
     }
 
@@ -144,35 +144,35 @@
 
   // Derived: Current beat data (for turns tuple generation)
   // Uses same indexing as SequenceAnimationOrchestrator:
-  // - currentBeat < 1: start position
-  // - currentBeat >= 1: motion beats where beat N uses beats[N-1]
-  let currentBeatData = $derived.by(() => {
+  // - currentStep < 1: start position
+  // - currentStep >= 1: motion steps where beat N uses steps[N-1]
+  let currentStepData = $derived.by(() => {
     if (!animationPanelState.sequenceData) return null;
 
-    const currentBeat = animationPanelState.currentBeat;
+    const currentStep = animationPanelState.currentStep;
 
-    // Start position: currentBeat < 1 (before beat 1 starts)
-    if (currentBeat < 1 && animationPanelState.sequenceData.startPosition) {
+    // Start position: currentStep < 1 (before beat 1 starts)
+    if (currentStep < 1 && animationPanelState.sequenceData.startPosition) {
       return animationPanelState.sequenceData.startPosition;
     }
 
-    // Motion beats: currentBeat >= 1
+    // Motion steps: currentStep >= 1
     if (
-      animationPanelState.sequenceData.beats &&
-      animationPanelState.sequenceData.beats.length > 0
+      animationPanelState.sequenceData.steps &&
+      animationPanelState.sequenceData.steps.length > 0
     ) {
-      // Beat indexing: beats[0] = beat 1, beats[1] = beat 2, etc.
-      // currentBeat semantics: beat N's motion spans from N.0 to (N+1).0
+      // Beat indexing: steps[0] = beat 1, steps[1] = beat 2, etc.
+      // currentStep semantics: beat N's motion spans from N.0 to (N+1).0
       //
-      // Formula: ceil(currentBeat - 1) gives the beat number whose motion is/was playing
+      // Formula: ceil(currentStep - 1) gives the beat number whose motion is/was playing
       // - At 3.0 (pause after beat 2): ceil(2.0) = 2, shows beat 2
-      const beatNumber = Math.ceil(currentBeat - 1);
-      const beatIndex = Math.max(0, beatNumber - 1);
+      const stepNumber = Math.ceil(currentStep - 1);
+      const stepIndex = Math.max(0, stepNumber - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationPanelState.sequenceData.beats.length - 1
+        stepIndex,
+        animationPanelState.sequenceData.steps.length - 1
       );
-      return animationPanelState.sequenceData.beats[clampedIndex] || null;
+      return animationPanelState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
@@ -299,8 +299,8 @@
       hasSequence: !!sequence,
       sequenceId: sequence?.id,
       sequenceWord: sequence?.word,
-      beatCount: sequence?.beats?.length,
-      hasMotionData: sequence?.beats?.some(
+      stepCount: sequence?.steps?.length,
+      hasMotionData: sequence?.steps?.some(
         (b) => b?.motions?.blue && b?.motions?.red
       ),
       hasPlaybackController: !!playbackController,
@@ -398,9 +398,9 @@
     if (!sequence) return null;
 
     const hasMotionData = (s: SequenceData) =>
-      Array.isArray(s.beats) &&
-      s.beats.length > 0 &&
-      s.beats.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      Array.isArray(s.steps) &&
+      s.steps.length > 0 &&
+      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
 
     // If sequence already has motion data, use it directly
     if (hasMotionData(sequence)) {
@@ -430,13 +430,13 @@
    */
   function normalizeStartPosition(sequence: SequenceData): SequenceData {
     const withStarting = sequence as unknown as {
-      startingPositionBeat?: unknown;
+      startingPosition?: unknown;
     };
-    if (!sequence.startPosition && withStarting.startingPositionBeat) {
+    if (!sequence.startPosition && withStarting.startingPosition) {
       return {
         ...sequence,
         startPosition:
-          withStarting.startingPositionBeat as SequenceData["startPosition"],
+          withStarting.startingPosition as SequenceData["startPosition"],
       };
     }
     return sequence;
@@ -467,11 +467,11 @@
     // During playback, the animation loop controls beat position
     if (
       !isAnimationActive &&
-      urlState.currentBeat !== undefined &&
-      Math.floor(urlState.currentBeat) !==
-        Math.floor(animationPanelState.currentBeat)
+      urlState.currentStep !== undefined &&
+      Math.floor(urlState.currentStep) !==
+        Math.floor(animationPanelState.currentStep)
     ) {
-      animationPanelState.setCurrentBeat(urlState.currentBeat);
+      animationPanelState.setCurrentStep(urlState.currentStep);
     }
 
     // Note: sequenceId, isPlaying, and gridVisible would need additional handling
@@ -488,7 +488,7 @@
           sequenceId: sequence.id,
           speed: animationPanelState.speed,
           isPlaying: animationPanelState.isPlaying,
-          currentBeat: animationPanelState.currentBeat,
+          currentStep: animationPanelState.currentStep,
           gridVisible: true,
         });
       } else if (!isOpen && previousIsOpen) {
@@ -507,7 +507,7 @@
           url.searchParams.delete("animSeqId");
           url.searchParams.delete("animSpeed");
           url.searchParams.delete("animPlaying");
-          url.searchParams.delete("animBeat");
+          url.searchParams.delete("animStep");
           url.searchParams.delete("animGrid");
           window.history.replaceState({}, "", url);
           // Dispatch route change event
@@ -519,7 +519,7 @@
   });
 
   // Update URL state when animation state changes (without pushing new history)
-  // NOTE: We intentionally DON'T sync currentBeat during active playback to avoid
+  // NOTE: We intentionally DON'T sync currentStep during active playback to avoid
   // rapid URL updates and the route-change event triggering restoreAnimationState.
   let previousSpeed = animationPanelState.speed;
   let previousPlaying = animationPanelState.isPlaying;
@@ -531,7 +531,7 @@
       const currentPlaying = animationPanelState.isPlaying;
 
       // Only sync speed and playing state changes to URL
-      // We skip currentBeat syncing during playback because:
+      // We skip currentStep syncing during playback because:
       // 1. It changes ~60 times/second, causing excessive URL updates
       // 2. The route-change event can interfere with the animation loop
       // 3. Beat position during playback isn't meaningful to bookmark
@@ -557,12 +557,12 @@
   });
 
   // Notify parent when current beat changes
-  // currentBeat uses 1-indexed beat numbers: 1.x = beat 1, 2.x = beat 2, etc.
-  // currentBeat < 1 = start position (beat 0)
+  // currentStep uses 1-indexed beat numbers: 1.x = beat 1, 2.x = beat 2, etc.
+  // currentStep < 1 = start position (beat 0)
   $effect(() => {
-    const currentBeat = animationPanelState.currentBeat;
-    if (animationPanelState.isPlaying || currentBeat > 0) {
-      _animatingBeatNumber = Math.floor(currentBeat);
+    const currentStep = animationPanelState.currentStep;
+    if (animationPanelState.isPlaying || currentStep > 0) {
+      _animatingBeatNumber = Math.floor(currentStep);
     }
   });
 
@@ -685,7 +685,7 @@
   gridVisible={true}
   gridMode={resolvedGridMode}
   letter={currentLetter}
-  beatData={currentBeatData}
+  stepData={currentStepData}
   sequenceData={animationPanelState.sequenceData}
   onClose={handleClose}
   onSpeedChange={handleSpeedChange}

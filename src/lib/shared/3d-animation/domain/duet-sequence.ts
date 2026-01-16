@@ -34,9 +34,9 @@ export interface DuetSequence {
   /**
    * Beat offset applied to avatar 2.
    * Positive = avatar 2 starts later, negative = avatar 2 starts earlier.
-   * In beats (e.g., 1 = one beat behind, -0.5 = half beat ahead)
+   * In steps (e.g., 1 = one beat behind, -0.5 = half beat ahead)
    */
-  beatOffset: number;
+  stepOffset: number;
 
   /** Positioning hint for avatar placement */
   positioning: DuetPositioning;
@@ -71,7 +71,7 @@ export interface CreateDuetInput {
   description?: string;
   avatar1SequenceId: string;
   avatar2SequenceId: string;
-  beatOffset?: number;
+  stepOffset?: number;
   positioning?: DuetPositioning;
   tags?: string[];
 }
@@ -86,7 +86,7 @@ export function createDuetSequence(input: CreateDuetInput): DuetSequence {
     description: input.description,
     avatar1SequenceId: input.avatar1SequenceId,
     avatar2SequenceId: input.avatar2SequenceId,
-    beatOffset: input.beatOffset ?? 0,
+    stepOffset: input.stepOffset ?? 0,
     positioning: input.positioning ?? "side-by-side",
     createdAt: new Date(),
     tags: input.tags,

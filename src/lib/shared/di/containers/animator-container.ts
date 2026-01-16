@@ -15,7 +15,7 @@ import { createContainer } from "iti";
 import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
 import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
-import { BeatCalculator } from "$lib/features/compose/services/implementations/BeatCalculator";
+import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
 import { CanvasRenderer } from "$lib/features/compose/services/implementations/CanvasRenderer";
 import { CoordinateUpdater } from "$lib/features/compose/services/implementations/CoordinateUpdater";
 import { MotionCalculator } from "$lib/features/compose/services/implementations/MotionCalculator";
@@ -74,7 +74,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       angleCalculator: () => new AngleCalculator(),
       animationLoop: () => new AnimationLoop(),
       animationStateService: () => new AnimationStateManager(),
-      beatCalculationService: () => new BeatCalculator(),
+      stepCalculationService: () => new StepCalculator(),
       canvasRenderer: () => new CanvasRenderer(),
       coordinateUpdater: () => new CoordinateUpdater(),
       motionCalculator: () => new MotionCalculator(),
@@ -99,7 +99,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       sequenceAnimationOrchestrator: () =>
         new SequenceAnimationOrchestrator(
           ctx.animationStateService,
-          ctx.beatCalculationService,
+          ctx.stepCalculationService,
           ctx.propInterpolationService
         ),
     }))
@@ -155,7 +155,7 @@ export type AnimatorContainerItems = ReturnType<typeof createAnimatorContainer>[
 export function createPlaybackControllerFactory() {
   // Create fresh instances of stateful services
   const stateManager = new AnimationStateManager();
-  const beatCalculator = new BeatCalculator();
+  const beatCalculator = new StepCalculator();
   const angleCalculator = new AngleCalculator();
   const motionCalculator = new MotionCalculator();
   const endpointCalculator = new EndpointCalculator(angleCalculator, motionCalculator);

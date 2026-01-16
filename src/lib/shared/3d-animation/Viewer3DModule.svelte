@@ -263,8 +263,8 @@
     // Load sequence into first performer if persisted
     if (saved.loadedSequence && performerStates[0]) {
       performerStates[0].loadSequence(saved.loadedSequence);
-      if (saved.currentBeatIndex !== undefined) {
-        performerStates[0].goToBeat(saved.currentBeatIndex);
+      if (saved.currentStepIndex !== undefined) {
+        performerStates[0].goToStep(saved.currentStepIndex);
       }
     }
 
@@ -322,8 +322,8 @@
         },
       };
 
-      cameraChoreography.updateForBeat(
-        activeState?.currentBeatIndex ?? 0,
+      cameraChoreography.updateForStep(
+        activeState?.currentStepIndex ?? 0,
         activeState?.progress ?? 0,
         performerProvider
       );
@@ -353,7 +353,7 @@
       cameraTarget: customCameraTarget,
       loop: firstPerformer.loop,
       loadedSequence: firstPerformer.loadedSequence ?? null,
-      currentBeatIndex: firstPerformer.currentBeatIndex,
+      currentStepIndex: firstPerformer.currentStepIndex,
       avatarId,
       // Note: environmentType removed - now uses settingsService for background
     });
@@ -476,7 +476,7 @@
         {speed}
         onSpeedChange={(s) => (speed = s)}
         {cameraChoreography}
-        currentBeat={activeState?.currentBeatIndex ?? 0}
+        currentStep={activeState?.currentStepIndex ?? 0}
         currentCameraPosition={customCameraPosition ? { x: customCameraPosition[0], y: customCameraPosition[1], z: customCameraPosition[2] } : undefined}
         currentCameraTarget={customCameraTarget ? { x: customCameraTarget[0], y: customCameraTarget[1], z: customCameraTarget[2] } : undefined}
         {sequenceName}
@@ -485,8 +485,8 @@
         progress={activeState?.progress ?? 0}
         loop={activeState?.loop ?? false}
         hasSequence={activeState?.hasSequence ?? false}
-        currentBeatIndex={activeState?.currentBeatIndex ?? 0}
-        totalBeats={activeState?.totalBeats ?? 0}
+        currentStepIndex={activeState?.currentStepIndex ?? 0}
+        totalSteps={activeState?.totalSteps ?? 0}
         onPlay={() => activeState?.play()}
         onPause={() => activeState?.pause()}
         onTogglePlay={() => activeState?.togglePlay()}
@@ -495,8 +495,8 @@
         onLoopChange={(v) => {
           if (activeState) activeState.loop = v;
         }}
-        onPrevBeat={() => activeState?.prevBeat()}
-        onNextBeat={() => activeState?.nextBeat()}
+        onPrevStep={() => activeState?.prevStep()}
+        onNextStep={() => activeState?.nextStep()}
         onShowHelp={() => keyboardShortcutState.openHelp()}
       >
         {#snippet trailing()}
@@ -566,8 +566,8 @@
       <Animation3DSidePanel
         collapsed={!panelOpen}
         hasSequence={activeState?.hasSequence ?? false}
-        currentBeatIndex={activeState?.currentBeatIndex ?? 0}
-        totalBeats={activeState?.totalBeats ?? 0}
+        currentStepIndex={activeState?.currentStepIndex ?? 0}
+        totalSteps={activeState?.totalSteps ?? 0}
         {gridMode}
         {visiblePlanes}
         {showFigure}
@@ -602,11 +602,11 @@
     {speed}
     setSpeed={(s) => (speed = s)}
     hasSequence={activeState?.hasSequence ?? false}
-    currentBeatIndex={activeState?.currentBeatIndex ?? 0}
-    totalBeats={activeState?.totalBeats ?? 0}
-    prevBeat={() => activeState?.prevBeat()}
-    nextBeat={() => activeState?.nextBeat()}
-    goToBeat={(i) => activeState?.goToBeat(i)}
+    currentStepIndex={activeState?.currentStepIndex ?? 0}
+    totalSteps={activeState?.totalSteps ?? 0}
+    prevStep={() => activeState?.prevStep()}
+    nextStep={() => activeState?.nextStep()}
+    goToStep={(i) => activeState?.goToStep(i)}
     {setCameraPreset}
     toggleCameraMode={() => {
       cameraMode = cameraPreferences.toggleMode("stage");

@@ -19,10 +19,10 @@ export interface Viewer3DShortcutHandlers {
   speedDown: () => void;
 
   // Beat navigation
-  prevBeat: () => void;
-  nextBeat: () => void;
-  firstBeat: () => void;
-  lastBeat: () => void;
+  prevStep: () => void;
+  nextStep: () => void;
+  firstStep: () => void;
+  lastStep: () => void;
 
   // Camera presets
   setCameraFront: () => void;
@@ -95,7 +95,7 @@ export function createViewer3DShortcuts(
       action: handlers.speedDown,
     },
 
-    // === BEAT NAVIGATION ===
+    // === STEP NAVIGATION ===
     {
       id: "3d-viewer.prev-beat",
       label: "Previous Beat",
@@ -103,7 +103,7 @@ export function createViewer3DShortcuts(
       key: "ArrowLeft",
       scope: "navigation",
       context: "realm",
-      action: handlers.prevBeat,
+      action: handlers.prevStep,
     },
     {
       id: "3d-viewer.next-beat",
@@ -112,7 +112,7 @@ export function createViewer3DShortcuts(
       key: "ArrowRight",
       scope: "navigation",
       context: "realm",
-      action: handlers.nextBeat,
+      action: handlers.nextStep,
     },
     {
       id: "3d-viewer.first-beat",
@@ -121,7 +121,7 @@ export function createViewer3DShortcuts(
       key: "Home",
       scope: "navigation",
       context: "realm",
-      action: handlers.firstBeat,
+      action: handlers.firstStep,
     },
     {
       id: "3d-viewer.last-beat",
@@ -130,7 +130,7 @@ export function createViewer3DShortcuts(
       key: "End",
       scope: "navigation",
       context: "realm",
-      action: handlers.lastBeat,
+      action: handlers.lastStep,
     },
 
     // === CAMERA PRESETS (number keys - WASD reserved for locomotion) ===

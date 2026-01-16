@@ -35,13 +35,13 @@ with pre-prepared data for better performance.
   import type { IPictographPreparer } from "../services/contracts/IPictographPreparer";
   import type { PreparedPictographData } from "../domain/models/PreparedPictographData";
   import type { PictographData } from "../domain/models/PictographData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { PropType } from "../../prop/domain/enums/PropType";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
   import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";
 
-  // Props - accepts either BeatData (with beat context) or PictographData
+  // Props - accepts either StepData (with beat context) or PictographData
   let {
     pictographData = null,
     disableTransitions = false,
@@ -85,7 +85,7 @@ with pre-prepared data for better performance.
     // Musical position string for beat number display
     musicalPosition = undefined,
   } = $props<{
-    pictographData?: (BeatData | PictographData) | null;
+    pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
     disableContentTransitions?: boolean;
     gridMode?: GridMode | null;
@@ -117,12 +117,12 @@ with pre-prepared data for better performance.
     musicalPosition?: string;
   }>();
 
-  // Extract beat context from BeatData if available
+  // Extract beat context from StepData if available
   const blueReversal = $derived((pictographData as any)?.blueReversal ?? false);
   const redReversal = $derived((pictographData as any)?.redReversal ?? false);
-  const beatNumber = $derived((pictographData as any)?.beatNumber ?? null);
-  const isStartPosition = $derived(beatNumber === 0);
-  const showBeatNumber = $derived(beatNumber !== null && !isStartPosition);
+  const stepNumber = $derived((pictographData as any)?.stepNumber ?? null);
+  const isStartPosition = $derived(stepNumber === 0);
+  const showStepNumber = $derived(stepNumber !== null && !isStartPosition);
 
   // Visibility manager (for glyph visibility)
   const visibilityManager = getVisibilityStateManager();
@@ -289,7 +289,7 @@ with pre-prepared data for better performance.
       hasExplicitBlueProp: bluePropTypeOverride !== undefined,
       hasExplicitRedProp: redPropTypeOverride !== undefined,
       // Include global adjustment version so ALL pictographs re-prepare when adjustments are saved
-      // This ensures beats 6, 10, 14, etc. (same letter rotated) update when beat 2 is adjusted globally
+      // This ensures steps 6, 10, 14, etc. (same letter rotated) update when beat 2 is adjusted globally
       globalAdjustmentVersion: globalAdjustmentVersion.version,
     });
   });
@@ -367,8 +367,8 @@ with pre-prepared data for better performance.
         showPositions={effectiveShowPositions}
         handPointVisibility={effectiveHandPointVisibility}
         {activeLocations}
-        {beatNumber}
-        {showBeatNumber}
+        {stepNumber}
+        {showStepNumber}
         {musicalPosition}
         {previewMode}
         gridModeOverride={overrideGridMode}
@@ -402,8 +402,8 @@ with pre-prepared data for better performance.
             showPositions={effectiveShowPositions}
             handPointVisibility={effectiveHandPointVisibility}
             {activeLocations}
-            {beatNumber}
-            {showBeatNumber}
+            {stepNumber}
+            {showStepNumber}
             {musicalPosition}
             {previewMode}
             gridModeOverride={overrideGridMode}
@@ -436,11 +436,15 @@ with pre-prepared data for better performance.
     display: block;
     box-sizing: border-box;
     position: relative;
+    /* Allow pointer events to pass through to interactive SVG elements */
+    pointer-events: none;
   }
 
   .transition-wrapper {
     width: 100%;
     height: 100%;
+    /* Allow pointer events to pass through to interactive SVG elements */
+    pointer-events: none;
   }
 
   .empty-state {

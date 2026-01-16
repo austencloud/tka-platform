@@ -6,12 +6,12 @@ Handles the forceShowAll logic for showing all glyphs in settings panel.
 -->
 <script lang="ts">
   import type { PictographData } from "../domain/models/PictographData";
-  import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+  import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
   import PictographContainer from "./PictographContainer.svelte";
 
   let {
     pictographData = null,
-    beatData = null,
+    stepData = null,
     forceShowAll = false,
     previewMode = false,
     onToggleTKA = undefined,
@@ -22,7 +22,7 @@ Handles the forceShowAll logic for showing all glyphs in settings panel.
     onToggleNonRadial = undefined,
   } = $props<{
     pictographData?: PictographData | null;
-    beatData?: BeatData | null;
+    stepData?: StepData | null;
     forceShowAll?: boolean;
     previewMode?: boolean;
     onToggleTKA?: () => void;
@@ -41,8 +41,8 @@ Handles the forceShowAll logic for showing all glyphs in settings panel.
     forceShowAll && !previewMode ? true : undefined
   );
 
-  // Use pictographData or extract from beatData
-  const effectiveData = $derived(pictographData || beatData);
+  // Use pictographData or extract from stepData
+  const effectiveData = $derived(pictographData || stepData);
 </script>
 
 <div class="pictograph-with-visibility">

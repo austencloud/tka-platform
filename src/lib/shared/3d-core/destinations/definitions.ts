@@ -56,6 +56,21 @@ export const DESTINATIONS: Destination[] = [
 		component: () =>
 			import("../../../features/infinite-worlds/WorldsDestination.svelte"),
 	},
+	{
+		id: "hannons-camp",
+		name: "Hannon's Camp",
+		description:
+			"Real terrain from Kinetic Fire festival site in Southwest Ohio",
+		icon: "fa-campground",
+		color: "#f97316", // Orange
+		supportsMultiplayer: false,
+		supportsPhysics: true,
+		defaultCameraMode: CameraMode.FIRST_PERSON,
+		category: "exploration",
+		tags: ["real-terrain", "festival", "kinetic-fire", "ohio"],
+		component: () =>
+			import("../../../features/infinite-worlds/HannonsCampDestination.svelte"),
+	},
 	// Future destinations:
 	// {
 	//   id: "forest",

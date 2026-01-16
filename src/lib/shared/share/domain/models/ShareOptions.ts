@@ -12,14 +12,14 @@ export interface ShareOptions {
 
   // === CONTENT OPTIONS ===
   includeStartPosition: boolean;
-  addBeatNumbers: boolean;
+  addStepNumbers: boolean;
   addUserInfo: boolean;
   addWord: boolean;
   addDifficultyLevel: boolean;
   customName?: string; // Optional custom name for header
 
   // === VISUAL OPTIONS ===
-  beatSize: number; // Size of each beat in pixels
+  stepSize: number; // Size of each beat in pixels
   margin: number; // Margin around the sequence
   backgroundColor: string;
   darkMode: boolean; // Dark mode toggle (affects grid, text colors)
@@ -50,11 +50,11 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       format: "JPEG",
       quality: 0.9,
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addUserInfo: false, // Keep clean for social
       addWord: true,
       addDifficultyLevel: false,
-      beatSize: 950, // Always 1:1 scale
+      stepSize: 950, // Always 1:1 scale
       margin: 20,
       backgroundColor: "#ffffff",
       darkMode: false,
@@ -70,11 +70,11 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       format: "PNG",
       quality: 1.0,
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addUserInfo: true,
       addWord: true,
       addDifficultyLevel: true,
-      beatSize: 950, // Always 1:1 scale
+      stepSize: 950, // Always 1:1 scale
       margin: 50,
       backgroundColor: "#ffffff",
       darkMode: false,
@@ -90,11 +90,11 @@ export const SHARE_PRESETS: Record<string, SharePreset> = {
       format: "WebP",
       quality: 0.85,
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addUserInfo: true,
       addWord: true,
       addDifficultyLevel: false,
-      beatSize: 950, // Always 1:1 scale
+      stepSize: 950, // Always 1:1 scale
       margin: 30,
       backgroundColor: "#ffffff",
       darkMode: false,
@@ -109,14 +109,14 @@ export const DEFAULT_SHARE_OPTIONS: ShareOptions = {
   // Fixed sensible defaults - no user choice needed
   format: "PNG", // Best quality for clear images
   quality: 1.0, // Maximum quality
-  beatSize: 950, // Always 1:1 scale - no user choice needed
+  stepSize: 950, // Always 1:1 scale - no user choice needed
   margin: 24, // Clean spacing
   backgroundColor: "#ffffff", // Clean white background
   darkMode: false, // Light mode by default
 
   // User-configurable content options
   includeStartPosition: true,
-  addBeatNumbers: true,
+  addStepNumbers: true,
   addUserInfo: false,
   addWord: true,
   addDifficultyLevel: false,

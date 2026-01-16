@@ -72,13 +72,13 @@
 
   // Extract prop types from sequence for bilateral toggle
   const bluePropType = $derived.by(() => {
-    const firstBeat = sequence?.beats?.[0];
-    return firstBeat?.motions?.blue?.propType ?? sequence?.propType ?? null;
+    const firstStep = sequence?.steps?.[0];
+    return firstStep?.motions?.blue?.propType ?? sequence?.propType ?? null;
   });
 
   const redPropType = $derived.by(() => {
-    const firstBeat = sequence?.beats?.[0];
-    return firstBeat?.motions?.red?.propType ?? sequence?.propType ?? null;
+    const firstStep = sequence?.steps?.[0];
+    return firstStep?.motions?.red?.propType ?? sequence?.propType ?? null;
   });
 
   // Computed: Which reference view to show?

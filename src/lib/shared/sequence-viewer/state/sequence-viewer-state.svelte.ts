@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "../../foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 /**
  * State interface for the Sequence Viewer
@@ -19,8 +19,8 @@ export interface SequenceViewerState {
 
   // Edit panel state
   readonly isEditPanelOpen: boolean;
-  readonly selectedBeatIndex: number | null;
-  readonly selectedBeatData: BeatData | null;
+  readonly selectedStepIndex: number | null;
+  readonly selectedStepData: StepData | null;
 
   // Variation navigation (thumbnails)
   readonly currentVariationIndex: number;
@@ -36,7 +36,7 @@ export interface SequenceViewerState {
   setLoading(loading: boolean): void;
   setError(error: string | null): void;
 
-  selectBeat(beatIndex: number, beatData: BeatData): void;
+  selectStep(stepIndex: number, stepData: StepData): void;
   clearSelection(): void;
 
   openEditPanel(): void;
@@ -60,8 +60,8 @@ export function createSequenceViewerState(): SequenceViewerState {
 
   // Edit panel state
   let isEditPanelOpen = $state(false);
-  let selectedBeatIndex = $state<number | null>(null);
-  let selectedBeatData = $state<BeatData | null>(null);
+  let selectedStepIndex = $state<number | null>(null);
+  let selectedStepData = $state<StepData | null>(null);
 
   // Variation state
   let currentVariationIndex = $state(0);
@@ -87,11 +87,11 @@ export function createSequenceViewerState(): SequenceViewerState {
     get isEditPanelOpen() {
       return isEditPanelOpen;
     },
-    get selectedBeatIndex() {
-      return selectedBeatIndex;
+    get selectedStepIndex() {
+      return selectedStepIndex;
     },
-    get selectedBeatData() {
-      return selectedBeatData;
+    get selectedStepData() {
+      return selectedStepData;
     },
     get currentVariationIndex() {
       return currentVariationIndex;
@@ -128,19 +128,19 @@ export function createSequenceViewerState(): SequenceViewerState {
     },
 
     // Selection actions
-    selectBeat(beatIndex, beatData) {
-      selectedBeatIndex = beatIndex;
-      selectedBeatData = beatData;
+    selectStep(stepIndex, stepData) {
+      selectedStepIndex = stepIndex;
+      selectedStepData = stepData;
     },
 
     clearSelection() {
-      selectedBeatIndex = null;
-      selectedBeatData = null;
+      selectedStepIndex = null;
+      selectedStepData = null;
     },
 
     // Edit panel actions
     openEditPanel() {
-      if (selectedBeatIndex !== null && selectedBeatData !== null) {
+      if (selectedStepIndex !== null && selectedStepData !== null) {
         isEditPanelOpen = true;
       }
     },

@@ -93,7 +93,7 @@
         id: crypto.randomUUID(),
         name: `Test Sequence ${Date.now()}`,
         word: "TEST",
-        beats: [],
+        steps: [],
         thumbnails: [],
         isFavorite: false,
         isCircular: false,

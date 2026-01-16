@@ -24,7 +24,7 @@ import { CreateModuleEffectCoordinator } from "$lib/features/create/shared/servi
 import { DeepLinkSequenceHandler } from "$lib/features/create/shared/services/implementations/DeepLinkSequenceHandler";
 import { ResponsiveLayoutManager } from "$lib/features/create/shared/services/implementations/ResponsiveLayoutManager";
 import { NavigationSyncer } from "$lib/features/create/shared/services/implementations/NavigationSyncer";
-import { BeatOperator } from "$lib/features/create/shared/services/implementations/BeatOperator";
+import { StepOperator } from "$lib/features/create/shared/services/implementations/StepOperator";
 import { KeyboardArrowAdjuster } from "$lib/features/create/shared/services/implementations/KeyboardArrowAdjuster";
 import { UndoManager } from "$lib/features/create/shared/services/implementations/UndoManager";
 import { ConstructCoordinator } from "$lib/features/create/shared/services/implementations/ConstructCoordinator";
@@ -49,14 +49,14 @@ import { AspectLayoutPlanner } from "$lib/features/create/construct/option-picke
 import { StartPositionManager } from "$lib/features/create/construct/start-position-picker/services/implementations/StartPositionManager";
 
 // === Generation Services ===
-import { BeatConverter } from "$lib/features/create/generate/shared/services/implementations/BeatConverter";
+import { StepConverter } from "$lib/features/create/generate/shared/services/implementations/StepConverter";
 import { PictographFilter } from "$lib/features/create/generate/shared/services/implementations/PictographFilter";
 import { TurnManager } from "$lib/features/create/generate/shared/services/implementations/TurnManager";
 import { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/implementations/LOOPParameterProvider";
 import { SequenceMetadataManager } from "$lib/features/create/generate/shared/services/implementations/SequenceMetadataManager";
 import { StartPositionSelector } from "$lib/features/create/generate/shared/services/implementations/StartPositionSelector";
 import { TurnAllocator } from "$lib/features/create/generate/shared/services/implementations/TurnAllocator";
-import { BeatGenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/BeatGenerationOrchestrator";
+import { StepGenerationOrchestrator } from "$lib/features/create/generate/shared/services/implementations/StepGenerationOrchestrator";
 import { PartialSequenceGenerator } from "$lib/features/create/generate/circular/services/implementations/PartialSequenceGenerator";
 import { RotatedEndPositionSelector } from "$lib/features/create/generate/circular/services/implementations/RotatedEndPositionSelector";
 import { LOOPEndPositionSelector } from "$lib/features/create/generate/circular/services/implementations/LOOPEndPositionSelector";
@@ -103,7 +103,7 @@ import { BridgeFinder } from "$lib/features/create/shared/services/implementatio
 import { PanelPersister } from "$lib/features/create/shared/services/implementations/PanelPersister.svelte";
 import { SubDrawerStatePersister } from "$lib/features/create/shared/services/implementations/SubDrawerStatePersister";
 import { SequenceTransferHandler } from "$lib/features/create/shared/services/implementations/SequenceTransferHandler";
-import { FirstBeatAnalyzer } from "$lib/features/create/shared/services/implementations/FirstBeatAnalyzer";
+import { FirstStepAnalyzer } from "$lib/features/create/shared/services/implementations/FirstStepAnalyzer";
 import { SequenceJsonExporter } from "$lib/features/create/shared/services/implementations/SequenceJsonExporter";
 import { ExtensionFlowCoordinator } from "$lib/features/create/shared/services/implementations/ExtensionFlowCoordinator";
 
@@ -208,7 +208,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         aspectLayoutPlanner: () => new AspectLayoutPlanner(),
 
         // Generation - no deps
-        beatConverter: () => new BeatConverter(),
+        stepConverter: () => new StepConverter(),
         pictographFilter: () => new PictographFilter(),
         turnManager: () => new TurnManager(),
         typographyScaler: () => new TypographyScaler(),
@@ -221,7 +221,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         // Panel - no deps
         panelPersister: () => new PanelPersister(),
         subDrawerStatePersister: () => new SubDrawerStatePersister(),
-        firstBeatAnalyzer: () => new FirstBeatAnalyzer(),
+        firstStepAnalyzer: () => new FirstStepAnalyzer(),
 
         // Pattern - no deps
         rotationDirectionPatternManager: () =>
@@ -261,9 +261,9 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             deps.positionDeriver
           ),
 
-        // Beat operator - needs grid services
-        beatOperator: () =>
-          new BeatOperator(deps.motionQueryHandler, deps.gridModeDeriver),
+        // Step operator - needs grid services
+        stepOperator: () =>
+          new StepOperator(deps.motionQueryHandler, deps.gridModeDeriver),
 
         // Option picker - needs grid services
         positionAnalyzer: () => new PositionAnalyzer(deps.gridPositionDeriver),
@@ -368,7 +368,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
 
         // Create module handlers - needs orchestrator and beat operator
         createModuleHandlers: () =>
-          new CreateModuleHandlers(ctx.createModuleOrchestrator, ctx.beatOperator),
+          new CreateModuleHandlers(ctx.createModuleOrchestrator, ctx.stepOperator),
       }))
 
       // === Layer 3.5: LOOP executors that compose other LOOP executors ===
@@ -467,7 +467,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.loopExecutorSelector,
             deps.reversalDetector,
             deps.letterQueryHandler,
-            ctx.beatConverter,
+            ctx.stepConverter,
             deps.orientationCalculator,
             ctx.loopValidator,
             ctx.sequenceAnalyzer,
@@ -486,16 +486,16 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           new StartPositionSelector(
             deps.letterQueryHandler,
             ctx.pictographFilter,
-            ctx.beatConverter,
+            ctx.stepConverter,
             deps.arrowPositioningOrchestrator
           ),
 
-        // BeatGenerationOrchestrator needs multiple dependencies
-        beatGenerationOrchestrator: () =>
-          new BeatGenerationOrchestrator(
+        // StepGenerationOrchestrator needs multiple dependencies
+        stepGenerationOrchestrator: () =>
+          new StepGenerationOrchestrator(
             deps.letterQueryHandler,
             ctx.pictographFilter,
-            ctx.beatConverter,
+            ctx.stepConverter,
             ctx.turnManager,
             deps.orientationCalculator,
             deps.arrowPositioningOrchestrator
@@ -506,7 +506,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           new PartialSequenceGenerator(
             deps.letterQueryHandler,
             ctx.pictographFilter,
-            ctx.beatConverter,
+            ctx.stepConverter,
             ctx.turnManager,
             ctx.sequenceMetadataManager,
             deps.gridPositionDeriver,
@@ -524,7 +524,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.startPositionSelector,
             ctx.loopParameterProvider,
             ctx.turnAllocator,
-            ctx.beatGenerationOrchestrator,
+            ctx.stepGenerationOrchestrator,
             ctx.sequenceMetadataManager,
             deps.reversalDetector,
             ctx.partialSequenceGenerator,
@@ -537,7 +537,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           new WordSequenceGenerator(
             ctx.letterTransitionGraph,
             deps.letterQueryHandler,
-            ctx.beatConverter,
+            ctx.stepConverter,
             deps.orientationCalculator,
             ctx.sequenceExtender
           ),
@@ -545,7 +545,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
           new VariationExplorer(
             ctx.letterTransitionGraph,
             deps.letterQueryHandler,
-            ctx.beatConverter,
+            ctx.stepConverter,
             deps.orientationCalculator
           ),
         spellServiceLoader: () => new SpellServiceLoader(),
@@ -575,7 +575,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
             ctx.createModuleOrchestrator,
             ctx.responsiveLayoutManager,
             ctx.navigationSyncer,
-            ctx.beatOperator,
+            ctx.stepOperator,
             ctx.deepLinkSequenceHandler,
             deps.deepLinker!,
             ctx.createModuleHandlers,

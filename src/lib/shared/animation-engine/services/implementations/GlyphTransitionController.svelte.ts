@@ -22,11 +22,11 @@ export class GlyphTransitionController implements IGlyphTransitionController {
   state = $state<GlyphTransitionState>({
     displayedLetter: null,
     displayedTurnsTuple: "(s, 0, 0)",
-    displayedBeatNumber: null,
+    displayedStepNumber: null,
     displayedMusicalPosition: null,
     fadingOutLetter: null,
     fadingOutTurnsTuple: null,
-    fadingOutBeatNumber: null,
+    fadingOutStepNumber: null,
     isNewLetter: false,
   });
 
@@ -36,12 +36,12 @@ export class GlyphTransitionController implements IGlyphTransitionController {
   updateTarget(
     letter: Letter | null,
     turnsTuple: string,
-    beatNumber: number | null,
+    stepNumber: number | null,
     musicalPosition?: string | null
   ): void {
     const hasLetterChanged = letter !== this.state.displayedLetter;
     const hasTurnsChanged = turnsTuple !== this.state.displayedTurnsTuple;
-    const hasBeatChanged = beatNumber !== this.state.displayedBeatNumber;
+    const hasBeatChanged = stepNumber !== this.state.displayedStepNumber;
     const hasPositionChanged = musicalPosition !== this.state.displayedMusicalPosition;
 
     if (!hasLetterChanged && !hasTurnsChanged && !hasBeatChanged && !hasPositionChanged) {
@@ -53,7 +53,7 @@ export class GlyphTransitionController implements IGlyphTransitionController {
     if (hasLetterChanged && this.state.displayedLetter !== null) {
       this.state.fadingOutLetter = this.state.displayedLetter;
       this.state.fadingOutTurnsTuple = this.state.displayedTurnsTuple;
-      this.state.fadingOutBeatNumber = this.state.displayedBeatNumber;
+      this.state.fadingOutStepNumber = this.state.displayedStepNumber;
       this.state.isNewLetter = true;
 
       // Clear any existing timeouts
@@ -68,7 +68,7 @@ export class GlyphTransitionController implements IGlyphTransitionController {
       this.fadeOutTimeoutId = setTimeout(() => {
         this.state.fadingOutLetter = null;
         this.state.fadingOutTurnsTuple = null;
-        this.state.fadingOutBeatNumber = null;
+        this.state.fadingOutStepNumber = null;
       }, GLYPH_TRANSITION_DURATION_MS);
 
       // Reset isNewLetter flag after transition
@@ -80,7 +80,7 @@ export class GlyphTransitionController implements IGlyphTransitionController {
     // Always update displayed values (silently if letter didn't change)
     this.state.displayedLetter = letter;
     this.state.displayedTurnsTuple = turnsTuple;
-    this.state.displayedBeatNumber = beatNumber;
+    this.state.displayedStepNumber = stepNumber;
     this.state.displayedMusicalPosition = musicalPosition ?? null;
   }
 
@@ -100,11 +100,11 @@ export class GlyphTransitionController implements IGlyphTransitionController {
     // Reset state
     this.state.displayedLetter = null;
     this.state.displayedTurnsTuple = "(s, 0, 0)";
-    this.state.displayedBeatNumber = null;
+    this.state.displayedStepNumber = null;
     this.state.displayedMusicalPosition = null;
     this.state.fadingOutLetter = null;
     this.state.fadingOutTurnsTuple = null;
-    this.state.fadingOutBeatNumber = null;
+    this.state.fadingOutStepNumber = null;
     this.state.isNewLetter = false;
   }
 }

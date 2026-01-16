@@ -26,14 +26,14 @@
     show = false,
     onSelect = (sequence: SequenceData) => {},
     onClose = () => {},
-    requiredBeatCount = undefined,
+    requiredStepCount = undefined,
     placement = undefined,
   }: {
     mode: "primary" | "secondary" | "grid-0" | "grid-1" | "grid-2" | "grid-3";
     show?: boolean;
     onSelect?: (sequence: SequenceData) => void;
     onClose?: () => void;
-    requiredBeatCount?: number | undefined;
+    requiredStepCount?: number | undefined;
     placement?: "bottom" | "right" | "left" | "top" | undefined;
   } = $props();
 
@@ -74,12 +74,12 @@
   const filteredSequences = $derived.by(() => {
     let filtered = sequences;
 
-    // Filter by beat count if required (use normalized beats, excluding start position)
-    if (requiredBeatCount !== undefined && normalizationService) {
+    // Filter by beat count if required (use normalized steps, excluding start position)
+    if (requiredStepCount !== undefined && normalizationService) {
       const service = normalizationService; // capture for closure
       filtered = filtered.filter((seq) => {
-        const normalized = service.separateBeatsFromStartPosition(seq);
-        return normalized.beats.length === requiredBeatCount;
+        const normalized = service.separateStepsFromStartPosition(seq);
+        return normalized.steps.length === requiredStepCount;
       });
     }
 
@@ -172,7 +172,7 @@
     try {
       isSelectingSequence = true;
 
-      // Load full sequence data including beats
+      // Load full sequence data including steps
       const fullSequence = await loaderService.loadFullSequenceData(
         sequence.word || sequence.name || sequence.id
       );
@@ -227,8 +227,8 @@
 
   // Beat count filter message
   const beatCountMessage = $derived(
-    requiredBeatCount !== undefined
-      ? `Showing only ${requiredBeatCount}-beat sequences`
+    requiredStepCount !== undefined
+      ? `Showing only ${requiredStepCount}-beat sequences`
       : null
   );
 </script>

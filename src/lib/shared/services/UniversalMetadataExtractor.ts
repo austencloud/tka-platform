@@ -20,7 +20,7 @@ export interface ModernMetadataResult {
 }
 
 interface SequenceMetadata {
-  sequence?: BeatData[];
+  sequence?: StepData[];
   word?: string;
   author?: string;
   level?: number;
@@ -30,7 +30,7 @@ interface SequenceMetadata {
   [key: string]: unknown;
 }
 
-interface BeatData {
+interface StepData {
   beat?: number;
   letter?: string;
   letter_type?: string;

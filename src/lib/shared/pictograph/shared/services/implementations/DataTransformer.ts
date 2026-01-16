@@ -5,7 +5,7 @@
  * Extracted from PictographRenderer.
  */
 
-import type { BeatData } from "../../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../../features/create/shared/domain/models/StepData";
 import type { GridMode } from "../../../grid/domain/enums/grid-enums";
 import type {
   GridData,
@@ -22,12 +22,12 @@ export class DataTransformer implements IDataTransformer {
   /**
    * Convert beat data to pictograph data
    */
-  beatToPictographData(beat: BeatData): PictographData {
+  beatToPictographData(beat: StepData): PictographData {
     const motions: Record<string, MotionData> = {};
     if (beat.motions["blue"]) motions["blue"] = beat.motions["blue"];
     if (beat.motions["red"]) motions["red"] = beat.motions["red"];
     return createPictographData({
-      id: `beat-${beat.beatNumber}`,
+      id: `beat-${beat.stepNumber}`,
       motions,
       letter: beat.letter || null,
     });

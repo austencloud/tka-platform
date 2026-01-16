@@ -15,7 +15,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { IAnimationRenderer } from "$lib/features/compose/services/contracts/IAnimationRenderer";
 import type { ISVGGenerator } from "$lib/features/compose/services/contracts/ISVGGenerator";
 import type { ITrailCapturer } from "$lib/features/compose/services/contracts/ITrailCapturer";
@@ -70,9 +70,9 @@ export interface AnimationEngineProps {
   gridMode?: GridMode | null;
   backgroundAlpha?: number;
   letter?: Letter | null;
-  beatData?: StartPositionData | BeatData | null;
+  stepData?: StartPositionData | StepData | null;
   sequenceData?: SequenceData | null;
-  currentBeat?: number;
+  currentStep?: number;
   isPlaying?: boolean;
   externalTrailSettings?: TrailSettings;
   // Prop type overrides - bypass settings when provided (useful for demos/previews)
@@ -122,11 +122,11 @@ export interface AnimationEngineState {
   // Glyph transition state
   displayedLetter: Letter | null;
   displayedTurnsTuple: string;
-  displayedBeatNumber: number | null;
+  displayedStepNumber: number | null;
   displayedMusicalPosition: string | null;
   fadingOutLetter: Letter | null;
   fadingOutTurnsTuple: string | null;
-  fadingOutBeatNumber: number | null;
+  fadingOutStepNumber: number | null;
   isNewLetter: boolean;
 
   // Trail settings (can be synced back to component)
@@ -153,7 +153,7 @@ export class AnimationEngine {
     servicesReady: false,
     visibilityState: {
       grid: true,
-      beatNumbers: true,
+      stepNumbers: true,
       props: true,
       trails: true,
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -167,11 +167,11 @@ export class AnimationEngine {
     preRenderedFramesReady: false,
     displayedLetter: null,
     displayedTurnsTuple: "(s, 0, 0)",
-    displayedBeatNumber: null,
+    displayedStepNumber: null,
     displayedMusicalPosition: null,
     fadingOutLetter: null,
     fadingOutTurnsTuple: null,
-    fadingOutBeatNumber: null,
+    fadingOutStepNumber: null,
     isNewLetter: false,
     trailSettings: loadTrailSettings(),
     bluePropDimensions: DEFAULT_PROP_DIMENSIONS,
@@ -219,7 +219,7 @@ export class AnimationEngine {
   private lastPreRenderClearSignal: number = 0;
 
   // Previous props for change detection (only track what we compare)
-  private prevBeatData: StartPositionData | BeatData | null = null;
+  private prevStepData: StartPositionData | StepData | null = null;
   private prevSequenceData: SequenceData | null = null;
   private prevIsPlaying: boolean = false;
   private prevGridMode: GridMode | null = null;
@@ -245,8 +245,8 @@ export class AnimationEngine {
 
   // Reusable frame params object to avoid GC pressure (created once, mutated each frame)
   private readonly frameParams: RenderFrameParams = {
-    beatData: null,
-    currentBeat: 0,
+    stepData: null,
+    currentStep: 0,
     trailSettings: null as unknown as TrailSettings,
     gridVisible: true,
     gridMode: GridMode.DIAMOND,
@@ -296,7 +296,7 @@ export class AnimationEngine {
     this.prevRedMotionVisible = visibilityManager.getVisibility("redMotion");
     this.state.visibilityState = {
       grid: visibilityManager.getGridMode() !== "none",
-      beatNumbers: visibilityManager.getVisibility("beatNumbers"),
+      stepNumbers: visibilityManager.getVisibility("stepNumbers"),
       props: visibilityManager.getVisibility("props"),
       trails: visibilityManager.getTrailStyle() !== "off",
       tkaGlyph: visibilityManager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
@@ -402,7 +402,7 @@ export class AnimationEngine {
     this.lastPropsRef = props;
 
     // Track only what we actually compare (avoid object spread GC pressure)
-    this.prevBeatData = props.beatData ?? null;
+    this.prevStepData = props.stepData ?? null;
     this.prevSequenceData = props.sequenceData ?? null;
     this.prevIsPlaying = props.isPlaying ?? false;
     this.prevGridMode = props.gridMode ?? null;
@@ -676,13 +676,13 @@ export class AnimationEngine {
     }
 
     // Update glyph transition
-    const beatNumber = this.calculateBeatNumber(props);
+    const stepNumber = this.calculateBeatNumber(props);
     const turnsTuple = this.calculateTurnsTuple(props);
     const musicalPosition = this.calculateMusicalPosition(props);
     this.glyphTransitionService?.updateTarget(
       props.letter ?? null,
       turnsTuple,
-      beatNumber,
+      stepNumber,
       musicalPosition
     );
 
@@ -693,16 +693,16 @@ export class AnimationEngine {
         this.glyphTransitionService.state.displayedLetter;
       this.state.displayedTurnsTuple =
         this.glyphTransitionService.state.displayedTurnsTuple;
-      this.state.displayedBeatNumber =
-        this.glyphTransitionService.state.displayedBeatNumber;
+      this.state.displayedStepNumber =
+        this.glyphTransitionService.state.displayedStepNumber;
       this.state.displayedMusicalPosition =
         this.glyphTransitionService.state.displayedMusicalPosition;
       this.state.fadingOutLetter =
         this.glyphTransitionService.state.fadingOutLetter;
       this.state.fadingOutTurnsTuple =
         this.glyphTransitionService.state.fadingOutTurnsTuple;
-      this.state.fadingOutBeatNumber =
-        this.glyphTransitionService.state.fadingOutBeatNumber;
+      this.state.fadingOutStepNumber =
+        this.glyphTransitionService.state.fadingOutStepNumber;
       this.state.isNewLetter = this.glyphTransitionService.state.isNewLetter;
     }
 
@@ -786,7 +786,7 @@ export class AnimationEngine {
     // Clear references
     this.containerElement = null;
     this.lastPropsRef = null;
-    this.prevBeatData = null;
+    this.prevStepData = null;
     this.prevSequenceData = null;
   }
 
@@ -1026,16 +1026,16 @@ export class AnimationEngine {
         this.glyphTransitionService.state.displayedLetter;
       this.state.displayedTurnsTuple =
         this.glyphTransitionService.state.displayedTurnsTuple;
-      this.state.displayedBeatNumber =
-        this.glyphTransitionService.state.displayedBeatNumber;
+      this.state.displayedStepNumber =
+        this.glyphTransitionService.state.displayedStepNumber;
       this.state.displayedMusicalPosition =
         this.glyphTransitionService.state.displayedMusicalPosition;
       this.state.fadingOutLetter =
         this.glyphTransitionService.state.fadingOutLetter;
       this.state.fadingOutTurnsTuple =
         this.glyphTransitionService.state.fadingOutTurnsTuple;
-      this.state.fadingOutBeatNumber =
-        this.glyphTransitionService.state.fadingOutBeatNumber;
+      this.state.fadingOutStepNumber =
+        this.glyphTransitionService.state.fadingOutStepNumber;
       this.state.isNewLetter = this.glyphTransitionService.state.isNewLetter;
     }
 
@@ -1068,26 +1068,26 @@ export class AnimationEngine {
   }
 
   private calculateBeatNumber(props: AnimationEngineProps): number {
-    if (!props.sequenceData || !props.beatData) return 0;
+    if (!props.sequenceData || !props.stepData) return 0;
 
-    const beatIndex = props.sequenceData.beats?.findIndex(
-      (b) => b === props.beatData
+    const stepIndex = props.sequenceData.steps?.findIndex(
+      (b) => b === props.stepData
     );
-    if (beatIndex !== undefined && beatIndex >= 0) {
-      return beatIndex + 1;
+    if (stepIndex !== undefined && stepIndex >= 0) {
+      return stepIndex + 1;
     }
     return 0;
   }
 
   private calculateTurnsTuple(props: AnimationEngineProps): string {
     if (
-      !props.beatData?.motions?.blue ||
-      !props.beatData.motions?.red
+      !props.stepData?.motions?.blue ||
+      !props.stepData.motions?.red
     ) {
       return "(s, 0, 0)";
     }
     return (
-      this.turnsTupleGenerator?.generateTurnsTuple(props.beatData) ??
+      this.turnsTupleGenerator?.generateTurnsTuple(props.stepData) ??
       "(s, 0, 0)"
     );
   }
@@ -1095,7 +1095,7 @@ export class AnimationEngine {
   /**
    * Calculate the musical position display string as a continuous decimal.
    * Shows real-time position during animation (e.g., "2.5" for halfway through beat 2).
-   * For beats with duration > 1, the decimal increments through the full range.
+   * For steps with duration > 1, the decimal increments through the full range.
    *
    * Example: Beat 2 with duration 2 at 50% progress shows "3.0" (2 + 0.5×2)
    * Returns null to use the default beat number display.
@@ -1116,14 +1116,14 @@ export class AnimationEngine {
     }
 
     // Fallback: use beat data from props (static display, not animation)
-    if (props.beatData && props.sequenceData) {
-      const beatIndex = props.sequenceData.beats?.findIndex(
-        (b) => b === props.beatData
+    if (props.stepData && props.sequenceData) {
+      const stepIndex = props.sequenceData.steps?.findIndex(
+        (b) => b === props.stepData
       );
-      if (beatIndex !== undefined && beatIndex >= 0) {
-        const beatNumber = beatIndex + 1;
+      if (stepIndex !== undefined && stepIndex >= 0) {
+        const stepNumber = stepIndex + 1;
         // For static display, just show the beat number with .0
-        return `${beatNumber}.0`;
+        return `${stepNumber}.0`;
       }
     }
 
@@ -1159,9 +1159,9 @@ export class AnimationEngine {
    * Includes beat durations, beat count, and sequence ID for change detection.
    */
   private getSequenceContentHash(seq: SequenceData): string {
-    const beatDurations = seq.beats?.map((b) => b.duration ?? 1).join(",") || "";
-    const beatCount = seq.beats?.length || 0;
-    return `${seq.id || seq.word || "unknown"}-${beatCount}-${beatDurations}`;
+    const beatDurations = seq.steps?.map((b) => b.duration ?? 1).join(",") || "";
+    const stepCount = seq.steps?.length || 0;
+    return `${seq.id || seq.word || "unknown"}-${stepCount}-${beatDurations}`;
   }
 
   /**
@@ -1170,8 +1170,8 @@ export class AnimationEngine {
   private getFrameParams(props: AnimationEngineProps): RenderFrameParams {
     // Mutate the reusable object instead of creating new ones each frame
     const fp = this.frameParams;
-    fp.beatData = props.beatData ?? null;
-    fp.currentBeat = props.currentBeat ?? 0;
+    fp.stepData = props.stepData ?? null;
+    fp.currentStep = props.currentStep ?? 0;
     fp.trailSettings = this.state.trailSettings;
     fp.gridVisible = props.gridVisible ?? true;
     fp.gridMode = props.gridMode ?? GridMode.DIAMOND;

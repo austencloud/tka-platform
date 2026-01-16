@@ -237,8 +237,8 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       }
 
       // Get the last beat from the sequence to determine end orientation
-      const lastBeat = sequence[sequence.length - 1] as PictographData;
-      if (!lastBeat.motions.blue || !lastBeat.motions.red) {
+      const lastStep = sequence[sequence.length - 1] as PictographData;
+      if (!lastStep.motions.blue || !lastStep.motions.red) {
         console.warn(
           "⚠️ MotionQueryHandler: Last beat has no motion data, returning all options"
         );
@@ -246,10 +246,10 @@ export class MotionQueryHandler implements IMotionQueryHandler {
       }
 
       // Get the end orientations from the last beat
-      const endBlueOrientation = lastBeat.motions.blue.endOrientation;
-      const endRedOrientation = lastBeat.motions.red.endOrientation;
-      const endBlueLocation = lastBeat.motions.blue.endLocation;
-      const endRedLocation = lastBeat.motions.red.endLocation;
+      const endBlueOrientation = lastStep.motions.blue.endOrientation;
+      const endRedOrientation = lastStep.motions.red.endOrientation;
+      const endBlueLocation = lastStep.motions.blue.endLocation;
+      const endRedLocation = lastStep.motions.red.endLocation;
 
       // Filter and transform pictographs to start with the correct orientation
       const transformedPictographs: PictographData[] = [];

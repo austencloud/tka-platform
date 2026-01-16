@@ -21,7 +21,7 @@
 
   interface Props {
     gridVisible: boolean;
-    beatNumbersVisible: boolean;
+    stepNumbersVisible: boolean;
     trailStyle: TrailStyle;
     playbackMode: PlaybackMode;
     bpm: number;
@@ -36,7 +36,7 @@
 
   let {
     gridVisible,
-    beatNumbersVisible,
+    stepNumbersVisible,
     trailStyle,
     playbackMode,
     bpm,
@@ -110,7 +110,7 @@
         {bpm}
         {bpmPresets}
         {gridVisible}
-        {beatNumbersVisible}
+        {stepNumbersVisible}
         {tkaGlyphVisible}
         {wordHeaderVisible}
         {trailStyle}
@@ -131,7 +131,7 @@
         {bpm}
         {bpmPresets}
         {gridVisible}
-        {beatNumbersVisible}
+        {stepNumbersVisible}
         {tkaGlyphVisible}
         {wordHeaderVisible}
         {trailStyle}

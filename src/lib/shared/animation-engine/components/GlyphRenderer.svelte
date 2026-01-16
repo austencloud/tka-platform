@@ -16,7 +16,7 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
 
@@ -25,12 +25,12 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
 
   let {
     letter = null,
-    beatData = null,
+    stepData = null,
     pictographData = null,
     onSvgReady,
   } = $props<{
     letter: string | null;
-    beatData?: StartPositionData | BeatData | null;
+    stepData?: StartPositionData | StepData | null;
     pictographData?: PictographData | null;
     onSvgReady?: (
       svgString: string,
@@ -43,10 +43,10 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
 
   // Generate turns tuple from beat data
   const turnsTuple = $derived.by(() => {
-    if (!beatData || !beatData.motions?.blue || !beatData.motions?.red) {
+    if (!stepData || !stepData.motions?.blue || !stepData.motions?.red) {
       return "(s, 0, 0)";
     }
-    return turnsTupleGenerator.generateTurnsTuple(beatData);
+    return turnsTupleGenerator.generateTurnsTuple(stepData);
   });
 
   let svgElement: SVGSVGElement | null = $state(null);

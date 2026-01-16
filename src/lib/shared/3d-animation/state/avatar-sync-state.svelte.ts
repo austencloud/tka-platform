@@ -11,7 +11,7 @@ import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 export interface AvatarSyncConfig {
   isSyncEnabled: boolean;
   masterAvatarId: "avatar1" | "avatar2";
-  beatOffset: number; // -8 to +8
+  stepOffset: number; // -8 to +8
 }
 
 const MIN_OFFSET = -8;
@@ -29,10 +29,10 @@ export function createAvatarSyncState(
 ) {
   let isSyncEnabled = $state(false);
   let masterAvatarId = $state<"avatar1" | "avatar2">("avatar1");
-  let beatOffset = $state(0);
+  let stepOffset = $state(0);
 
   // Track previous master beat to detect changes
-  let prevMasterBeat = -1;
+  let prevMasterStep = -1;
 
   // Cleanup function for effect root
   let cleanupEffects: (() => void) | null = null;
@@ -55,30 +55,30 @@ export function createAvatarSyncState(
    * Calculate follower beat with offset and wrapping
    */
   function calculateFollowerBeat(
-    masterBeat: number,
-    totalBeats: number
+    masterStep: number,
+    totalSteps: number
   ): number {
-    if (totalBeats === 0) return 0;
+    if (totalSteps === 0) return 0;
     // Add offset and wrap using modulo (handles negatives correctly)
     const result =
-      (((masterBeat + beatOffset) % totalBeats) + totalBeats) % totalBeats;
+      (((masterStep + stepOffset) % totalSteps) + totalSteps) % totalSteps;
     return result;
   }
 
   /**
    * Sync follower to master's current beat with offset
    */
-  function syncFollowerBeat() {
+  function syncFollowerStep() {
     if (!isSyncEnabled) return;
     const master = getMaster();
     const follower = getFollower();
     if (!master.hasSequence || !follower.hasSequence) return;
 
     const followerBeat = calculateFollowerBeat(
-      master.currentBeatIndex,
-      follower.totalBeats
+      master.currentStepIndex,
+      follower.totalSteps
     );
-    follower.goToBeat(followerBeat);
+    follower.goToStep(followerBeat);
   }
 
   /**
@@ -103,12 +103,12 @@ export function createAvatarSyncState(
       if (!isSyncEnabled) return;
 
       const master = getMaster();
-      const currentMasterBeat = master.currentBeatIndex;
+      const currentMasterBeat = master.currentStepIndex;
 
       // Only sync when beat actually changes
-      if (currentMasterBeat !== prevMasterBeat) {
-        prevMasterBeat = currentMasterBeat;
-        syncFollowerBeat();
+      if (currentMasterBeat !== prevMasterStep) {
+        prevMasterStep = currentMasterBeat;
+        syncFollowerStep();
       }
     });
 
@@ -126,8 +126,8 @@ export function createAvatarSyncState(
     $effect(() => {
       if (isSyncEnabled) {
         const master = getMaster();
-        prevMasterBeat = master.currentBeatIndex;
-        syncFollowerBeat();
+        prevMasterStep = master.currentStepIndex;
+        syncFollowerStep();
         syncFollowerPlayback();
       }
     });
@@ -141,8 +141,8 @@ export function createAvatarSyncState(
     if (isSyncEnabled) {
       // Sync immediately when enabled
       const master = getMaster();
-      prevMasterBeat = master.currentBeatIndex;
-      syncFollowerBeat();
+      prevMasterStep = master.currentStepIndex;
+      syncFollowerStep();
       syncFollowerPlayback();
     }
   }
@@ -151,9 +151,9 @@ export function createAvatarSyncState(
    * Set beat offset (-8 to +8)
    */
   function setOffset(offset: number) {
-    beatOffset = Math.max(MIN_OFFSET, Math.min(MAX_OFFSET, offset));
+    stepOffset = Math.max(MIN_OFFSET, Math.min(MAX_OFFSET, offset));
     if (isSyncEnabled) {
-      syncFollowerBeat();
+      syncFollowerStep();
     }
   }
 
@@ -161,14 +161,14 @@ export function createAvatarSyncState(
    * Increment offset by 1
    */
   function incrementOffset() {
-    setOffset(beatOffset + 1);
+    setOffset(stepOffset + 1);
   }
 
   /**
    * Decrement offset by 1
    */
   function decrementOffset() {
-    setOffset(beatOffset - 1);
+    setOffset(stepOffset - 1);
   }
 
   /**
@@ -176,9 +176,9 @@ export function createAvatarSyncState(
    */
   function swapMaster() {
     masterAvatarId = masterAvatarId === "avatar1" ? "avatar2" : "avatar1";
-    prevMasterBeat = -1; // Reset to trigger sync
+    prevMasterStep = -1; // Reset to trigger sync
     if (isSyncEnabled) {
-      syncFollowerBeat();
+      syncFollowerStep();
       syncFollowerPlayback();
     }
   }
@@ -188,12 +188,12 @@ export function createAvatarSyncState(
    */
   function getOffsetDescription(): string {
     const followerName = masterAvatarId === "avatar1" ? "Avatar 2" : "Avatar 1";
-    if (beatOffset === 0) {
+    if (stepOffset === 0) {
       return `${followerName} is in sync`;
-    } else if (beatOffset > 0) {
-      return `${followerName} is ${beatOffset} beat${beatOffset !== 1 ? "s" : ""} ahead`;
+    } else if (stepOffset > 0) {
+      return `${followerName} is ${stepOffset} beat${stepOffset !== 1 ? "s" : ""} ahead`;
     } else {
-      const absOffset = Math.abs(beatOffset);
+      const absOffset = Math.abs(stepOffset);
       return `${followerName} is ${absOffset} beat${absOffset !== 1 ? "s" : ""} behind`;
     }
   }
@@ -216,8 +216,8 @@ export function createAvatarSyncState(
     get masterAvatarId() {
       return masterAvatarId;
     },
-    get beatOffset() {
-      return beatOffset;
+    get stepOffset() {
+      return stepOffset;
     },
 
     // Derived state

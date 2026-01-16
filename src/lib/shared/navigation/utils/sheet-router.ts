@@ -23,7 +23,7 @@ export interface AnimationPanelState {
   sequenceId?: string; // Current sequence being animated
   speed?: number; // Playback speed (default 1)
   isPlaying?: boolean; // Playback state
-  currentBeat?: number; // Current beat position
+  currentStep?: number; // Current beat position
   gridVisible?: boolean; // Grid visibility setting
 }
 
@@ -68,14 +68,14 @@ function parseRouteState(): RouteState {
   if (sheet === "animation") {
     const animSeqId = url.searchParams.get("animSeqId");
     const animSpeed = url.searchParams.get("animSpeed");
-    const animBeat = url.searchParams.get("animBeat");
+    const animStep = url.searchParams.get("animStep");
     const animGrid = url.searchParams.get("animGrid");
 
     state.animationPanel = {
       ...(animSeqId ? { sequenceId: animSeqId } : {}),
       speed: animSpeed ? parseFloat(animSpeed) : 1,
       isPlaying: url.searchParams.get("animPlaying") === "true",
-      currentBeat: animBeat ? parseInt(animBeat, 10) : 0,
+      currentStep: animStep ? parseInt(animStep, 10) : 0,
       gridVisible: animGrid !== "false",
     };
   }
@@ -95,7 +95,7 @@ function updateURL(state: RouteState, mode: "push" | "replace" = "push"): void {
   url.searchParams.delete("animSeqId");
   url.searchParams.delete("animSpeed");
   url.searchParams.delete("animPlaying");
-  url.searchParams.delete("animBeat");
+  url.searchParams.delete("animStep");
   url.searchParams.delete("animGrid");
 
   // Set new params
@@ -121,12 +121,12 @@ function updateURL(state: RouteState, mode: "push" | "replace" = "push"): void {
       url.searchParams.set("animPlaying", "true");
     }
     if (
-      state.animationPanel.currentBeat !== undefined &&
-      state.animationPanel.currentBeat !== 0
+      state.animationPanel.currentStep !== undefined &&
+      state.animationPanel.currentStep !== 0
     ) {
       url.searchParams.set(
-        "animBeat",
-        state.animationPanel.currentBeat.toString()
+        "animStep",
+        state.animationPanel.currentStep.toString()
       );
     }
     if (state.animationPanel.gridVisible === false) {

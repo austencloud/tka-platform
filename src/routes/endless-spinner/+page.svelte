@@ -3,7 +3,7 @@
   import { fly } from "svelte/transition";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -25,7 +25,7 @@
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -68,12 +68,12 @@
 
   // UI state
   let showDebugPanel = $state(false);
-  let showBeatGrid = $state(true);
+  let showStepGrid = $state(true);
 
   // Sequence state
   let currentSequence = $state<SequenceData | null>(null);
   let sequenceHistory = $state<string[]>([]);
-  let lastBeat = $state(-1);
+  let lastStep = $state(-1);
   let preloadedSequence = $state<SequenceData | null>(null);
   let isPreloading = $state(false);
   let isChainingNow = $state(false);
@@ -101,7 +101,7 @@
   let broadcastState = $state<BroadcastStateClient | null>(null);
   let serverTimeOffset = $state(0);
   let broadcastUnsubscribe: (() => void) | null = null;
-  let beatSyncInterval: ReturnType<typeof setInterval> | null = null;
+  let stepSyncInterval: ReturnType<typeof setInterval> | null = null;
 
   const visibilityManager = getAnimationVisibilityManager();
 
@@ -115,54 +115,54 @@
 
   let currentLetter = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat < 1) {
+    if (currentStep < 1) {
       return derivedStartPosition?.letter || null;
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      const beatIndex = Math.floor(currentBeat) - 1;
+    if (animationState.sequenceData.steps?.length > 0) {
+      const stepIndex = Math.floor(currentStep) - 1;
       const clampedIndex = Math.max(
         0,
-        Math.min(beatIndex, animationState.sequenceData.beats.length - 1)
+        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
       );
-      return animationState.sequenceData.beats[clampedIndex]?.letter || null;
+      return animationState.sequenceData.steps[clampedIndex]?.letter || null;
     }
 
     return null;
   });
 
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat < 1) {
+    if (currentStep < 1) {
       return derivedStartPosition || null;
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      const beatIndex = Math.floor(currentBeat) - 1;
+    if (animationState.sequenceData.steps?.length > 0) {
+      const stepIndex = Math.floor(currentStep) - 1;
       const clampedIndex = Math.max(
         0,
-        Math.min(beatIndex, animationState.sequenceData.beats.length - 1)
+        Math.min(stepIndex, animationState.sequenceData.steps.length - 1)
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
   });
 
   let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
-  let currentBeatNumber = $derived(Math.floor(animationState.currentBeat));
+  let currentStepNumber = $derived(Math.floor(animationState.currentStep));
 
   // Pre-load next sequence (only in library mode)
   $effect(() => {
     // Skip preloading in infinite or live mode
     if (spinnerMode === "infinite" || spinnerMode === "live") return;
 
-    const currentBeat = Math.floor(animationState.currentBeat);
-    const totalBeats = animationState.totalBeats;
+    const currentStep = Math.floor(animationState.currentStep);
+    const totalSteps = animationState.totalSteps;
 
     const shouldPreload =
       isChainingEnabled &&
@@ -171,9 +171,9 @@
       !isPreloading &&
       !preloadedSequence &&
       currentSequence &&
-      totalBeats > 2 &&
-      currentBeat >= 2 &&
-      currentBeat < totalBeats - 1;
+      totalSteps > 2 &&
+      currentStep >= 2 &&
+      currentStep < totalSteps - 1;
 
     if (shouldPreload) {
       preloadNextSequence();
@@ -185,22 +185,22 @@
     // In live mode, the broadcast subscription handles sequence transitions
     if (spinnerMode === "live") return;
 
-    const currentBeat = Math.floor(animationState.currentBeat);
-    const totalBeats = animationState.totalBeats;
+    const currentStep = Math.floor(animationState.currentStep);
+    const totalSteps = animationState.totalSteps;
 
     if (
       isChainingEnabled &&
       servicesReady &&
       !isChainingNow &&
       animationReady &&
-      lastBeat >= totalBeats - 1 &&
-      currentBeat <= 1 &&
-      totalBeats > 0
+      lastStep >= totalSteps - 1 &&
+      currentStep <= 1 &&
+      totalSteps > 0
     ) {
       chainToNextSequence();
     }
 
-    lastBeat = currentBeat;
+    lastStep = currentStep;
   });
 
   onMount(async () => {
@@ -262,18 +262,18 @@
     animationState.dispose();
     metricsUnsubscribe?.();
     broadcastUnsubscribe?.();
-    if (beatSyncInterval) {
-      clearInterval(beatSyncInterval);
+    if (stepSyncInterval) {
+      clearInterval(stepSyncInterval);
     }
   });
 
   function extractEndState(sequence: SequenceData): EndState {
-    const finalBeat = sequence.beats?.[sequence.beats.length - 1];
-    let position = finalBeat?.endPosition ?? null;
+    const finalStep = sequence.steps?.[sequence.steps.length - 1];
+    let position = finalStep?.endPosition ?? null;
 
-    if (!position && gridPositionDeriver && finalBeat?.motions) {
-      const blueMotion = finalBeat.motions[MotionColor.BLUE];
-      const redMotion = finalBeat.motions[MotionColor.RED];
+    if (!position && gridPositionDeriver && finalStep?.motions) {
+      const blueMotion = finalStep.motions[MotionColor.BLUE];
+      const redMotion = finalStep.motions[MotionColor.RED];
 
       if (blueMotion?.endLocation && redMotion?.endLocation) {
         try {
@@ -289,8 +289,8 @@
 
     return {
       position,
-      blueOrientation: (finalBeat?.motions?.blue?.endOrientation ?? null) as Orientation | null,
-      redOrientation: (finalBeat?.motions?.red?.endOrientation ?? null) as Orientation | null,
+      blueOrientation: (finalStep?.motions?.blue?.endOrientation ?? null) as Orientation | null,
+      redOrientation: (finalStep?.motions?.red?.endOrientation ?? null) as Orientation | null,
     };
   }
 
@@ -366,9 +366,9 @@
       broadcastUnsubscribe?.();
       broadcastUnsubscribe = null;
       broadcastState = null;
-      if (beatSyncInterval) {
-        clearInterval(beatSyncInterval);
-        beatSyncInterval = null;
+      if (stepSyncInterval) {
+        clearInterval(stepSyncInterval);
+        stepSyncInterval = null;
       }
     }
 
@@ -421,26 +421,26 @@
    * Adjusts current beat based on server time.
    */
   function startBeatSync() {
-    if (beatSyncInterval) {
-      clearInterval(beatSyncInterval);
+    if (stepSyncInterval) {
+      clearInterval(stepSyncInterval);
     }
 
-    beatSyncInterval = setInterval(() => {
+    stepSyncInterval = setInterval(() => {
       if (spinnerMode !== "live" || !broadcastState || !broadcastRepository) {
         return;
       }
 
-      const targetBeat = broadcastRepository.getCurrentBeatPosition(
+      const targetStep = broadcastRepository.getCurrentBeatPosition(
         broadcastState.startedAtMs,
         broadcastState.durationMs,
-        broadcastState.currentSequence.totalBeats,
+        broadcastState.currentSequence.totalSteps,
         broadcastState.beatsPerMinute
       );
 
-      // If drift is more than 0.5 beats, resync
-      const currentBeat = animationState.currentBeat;
-      if (Math.abs(currentBeat - targetBeat) > 0.5) {
-        animationState.setCurrentBeat(targetBeat);
+      // If drift is more than 0.5 steps, resync
+      const currentStep = animationState.currentStep;
+      if (Math.abs(currentStep - targetStep) > 0.5) {
+        animationState.setCurrentStep(targetStep);
       }
     }, 100); // Check every 100ms
   }
@@ -452,7 +452,7 @@
     if (!playbackController || !broadcastRepository) return;
 
     currentSequence = sequenceData;
-    lastBeat = -1;
+    lastStep = -1;
     currentGeneratedInfo = null;
 
     const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
@@ -465,13 +465,13 @@
     animationState.setPlaybackMode("continuous");
 
     // Set initial beat position based on server time
-    const currentBeat = broadcastRepository.getCurrentBeatPosition(
+    const currentStep = broadcastRepository.getCurrentBeatPosition(
       state.startedAtMs,
       state.durationMs,
-      state.currentSequence.totalBeats,
+      state.currentSequence.totalSteps,
       state.beatsPerMinute
     );
-    animationState.setCurrentBeat(currentBeat);
+    animationState.setCurrentStep(currentStep);
 
     if (!animationState.isPlaying) {
       playbackController.togglePlayback();
@@ -484,7 +484,7 @@
     if (!playbackController) return;
 
     currentSequence = sequenceData;
-    lastBeat = -1;
+    lastStep = -1;
 
     const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
 
@@ -494,7 +494,7 @@
     if (!success) return;
 
     animationState.setPlaybackMode("continuous");
-    animationState.setCurrentBeat(1);
+    animationState.setCurrentStep(1);
 
     if (!animationState.isPlaying) {
       playbackController.togglePlayback();
@@ -513,7 +513,7 @@
       animationState.reset();
 
       currentSequence = sequenceData;
-      lastBeat = -1;
+      lastStep = -1;
       sequenceHistory = [sequenceData.word, ...sequenceHistory.slice(0, 9)];
 
       const sequence = propTypeApplier.applyToSequence(sequenceData, PropType.STAFF);
@@ -530,7 +530,7 @@
       await tick();
 
       animationState.setPlaybackMode("continuous");
-      animationState.setCurrentBeat(1);
+      animationState.setCurrentStep(1);
       playbackController?.togglePlayback();
     } catch (err) {
       console.error("Load failed:", err);
@@ -610,7 +610,7 @@
       </div>
 
       <!-- Animation area -->
-      <div class="animation-area" class:with-grid={showBeatGrid}>
+      <div class="animation-area" class:with-grid={showStepGrid}>
         <div class="canvas-container">
           {#if animationReady}
             <AnimatorCanvas
@@ -619,7 +619,7 @@
               gridVisible={true}
               {gridMode}
               letter={currentLetter}
-              beatData={currentBeatData}
+              stepData={currentStepData}
               sequenceData={animationState.sequenceData}
               isPlaying={animationState.isPlaying}
               trailSettings={animationSettings.trail}
@@ -642,12 +642,12 @@
           {/if}
         </div>
 
-        {#if showBeatGrid && animationState.sequenceData}
+        {#if showStepGrid && animationState.sequenceData}
           <div class="beat-grid-container" in:fly={{ x: 50, duration: 300 }}>
-            <BeatGrid
-              beats={animationState.sequenceData.beats}
+            <StepGrid
+              steps={animationState.sequenceData.steps}
               startPosition={derivedStartPosition}
-              selectedBeatNumber={currentBeatNumber}
+              selectedStepNumber={currentStepNumber}
             />
           </div>
         {/if}
@@ -657,8 +657,8 @@
       <SpinnerControls
         isPlaying={animationState.isPlaying}
         {animationReady}
-        {showBeatGrid}
-        onToggleGrid={() => (showBeatGrid = !showBeatGrid)}
+        {showStepGrid}
+        onToggleGrid={() => (showStepGrid = !showStepGrid)}
         onTogglePause={handleTogglePause}
         onSkip={handleSkip}
       />

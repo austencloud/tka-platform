@@ -46,11 +46,11 @@
     format === "grid" ? ("static" as MediaFormat) : (format as MediaFormat)
   );
 
-  // Get beats for static/grid preview (limit based on format)
-  const previewBeats = $derived.by(() => {
-    if (!hubState.sequence?.beats) return [];
+  // Get steps for static/grid preview (limit based on format)
+  const previewSteps = $derived.by(() => {
+    if (!hubState.sequence?.steps) return [];
     const limit = format === "grid" ? 4 : 1;
-    return hubState.sequence.beats.slice(0, limit);
+    return hubState.sequence.steps.slice(0, limit);
   });
 
   function handleSettingsClick() {
@@ -75,10 +75,10 @@
       </div>
     {:else if format === "animation"}
       <!-- Animation: show single pictograph preview -->
-      {#if previewBeats.length > 0}
+      {#if previewSteps.length > 0}
         <div class="animation-preview-mini">
           <PictographContainer
-            pictographData={previewBeats[0]}
+            pictographData={previewSteps[0]}
             disableTransitions={true}
           />
           <div class="play-overlay">
@@ -88,29 +88,29 @@
       {:else}
         <div class="placeholder-preview">
           <i class="fas fa-play-circle" aria-hidden="true"></i>
-          <p>No beats</p>
+          <p>No steps</p>
         </div>
       {/if}
     {:else if format === "static"}
       <!-- Static: show first pictograph -->
-      {#if previewBeats.length > 0}
+      {#if previewSteps.length > 0}
         <div class="static-preview-mini">
           <PictographContainer
-            pictographData={previewBeats[0]}
+            pictographData={previewSteps[0]}
             disableTransitions={true}
           />
         </div>
       {:else}
         <div class="placeholder-preview">
           <i class="fas fa-image" aria-hidden="true"></i>
-          <p>No beats</p>
+          <p>No steps</p>
         </div>
       {/if}
     {:else if format === "grid"}
       <!-- Grid: show 2x2 mini grid -->
-      {#if previewBeats.length > 0}
+      {#if previewSteps.length > 0}
         <div class="grid-preview-mini">
-          {#each previewBeats as beat, index (beat.id ?? index)}
+          {#each previewSteps as beat, index (beat.id ?? index)}
             <div class="grid-cell">
               <PictographContainer
                 pictographData={beat}
@@ -122,7 +122,7 @@
       {:else}
         <div class="placeholder-preview">
           <i class="fas fa-th" aria-hidden="true"></i>
-          <p>No beats</p>
+          <p>No steps</p>
         </div>
       {/if}
     {:else if format === "performance"}

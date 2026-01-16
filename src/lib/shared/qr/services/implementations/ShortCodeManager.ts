@@ -79,7 +79,7 @@ export class ShortCodeManager implements IShortCodeManager {
     const firestore = await this.ensureFirestore();
 
     // Use sequence word/name as the unique identifier
-    // This is more reliable than encoding beats (which may be empty for performance)
+    // This is more reliable than encoding steps (which may be empty for performance)
     const sequenceId = sequence.word || sequence.name || sequence.id;
 
     if (!sequenceId) {

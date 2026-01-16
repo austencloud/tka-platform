@@ -16,7 +16,7 @@ export interface ShareHubAnimationUrlState {
   sequenceId?: string;
   speed?: number;
   isPlaying?: boolean;
-  currentBeat?: number;
+  currentStep?: number;
 }
 
 /**

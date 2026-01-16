@@ -3,7 +3,7 @@ import type { TabId } from "../../../navigation/domain/types";
 import type { IDiscoverThumbnailProvider } from "../../../../features/discover/sequences/display/services/contracts/IDiscoverThumbnailProvider";
 
 // Spotlight display modes
-export type SpotlightDisplayMode = "image" | "beatgrid" | "animation";
+export type SpotlightDisplayMode = "image" | "stepgrid" | "animation";
 
 // Centralized UI state leveraging Svelte 5 runes.
 // Uses TabId (which includes both ModuleId and LegacyTabId) for backwards compatibility
@@ -22,7 +22,7 @@ export const uiState = $state({
   spotlightSequence: null as SequenceData | null,
   spotlightThumbnailService: null as IDiscoverThumbnailProvider | null,
   spotlightImageUrl: null as string | null, // Direct image URL (for Create module spotlight)
-  spotlightDisplayMode: "image" as SpotlightDisplayMode, // "image" or "beatgrid"
+  spotlightDisplayMode: "image" as SpotlightDisplayMode, // "image" or "stepgrid"
   showDebugPanel: false, // Admin-only debug console
 });
 
@@ -243,7 +243,7 @@ export function openSpotlightWithBeatGrid(sequence: SequenceData): void {
   uiState.spotlightSequence = sequence;
   uiState.spotlightImageUrl = null;
   uiState.spotlightThumbnailService = null;
-  uiState.spotlightDisplayMode = "beatgrid";
+  uiState.spotlightDisplayMode = "stepgrid";
   uiState.showSpotlight = true;
 }
 

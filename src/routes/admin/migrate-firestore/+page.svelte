@@ -28,49 +28,49 @@
   /**
    * Normalize sequence data
    */
-  function separateBeatsFromStartPosition(sequence: any) {
-    if (sequence.startPosition && Array.isArray(sequence.beats)) {
-      const hasStartInBeats = sequence.beats.some(
-        (beat: any) => beat?.beatNumber === 0 || beat?.isStartPosition === true
+  function separateStepsFromStartPosition(sequence: any) {
+    if (sequence.startPosition && Array.isArray(sequence.steps)) {
+      const hasStartInBeats = sequence.steps.some(
+        (beat: any) => beat?.stepNumber === 0 || beat?.isStartPosition === true
       );
       if (!hasStartInBeats) {
-        return { beats: sequence.beats, startPosition: sequence.startPosition };
+        return { steps: sequence.steps, startPosition: sequence.startPosition };
       }
     }
 
-    if (sequence.startingPositionBeat) {
-      const beats = Array.isArray(sequence.beats)
-        ? sequence.beats.filter(
+    if (sequence.startingPosition) {
+      const steps = Array.isArray(sequence.steps)
+        ? sequence.steps.filter(
             (beat: any) =>
-              beat && beat.beatNumber !== 0 && !beat.isStartPosition
+              beat && beat.stepNumber !== 0 && !beat.isStartPosition
           )
         : [];
-      return { beats, startPosition: sequence.startingPositionBeat };
+      return { steps, startPosition: sequence.startingPosition };
     }
 
-    if (Array.isArray(sequence.beats) && sequence.beats.length > 0) {
-      const startPositionBeat = sequence.beats.find(
-        (beat: any) => beat?.beatNumber === 0 || beat?.isStartPosition === true
+    if (Array.isArray(sequence.steps) && sequence.steps.length > 0) {
+      const startPositionStep = sequence.steps.find(
+        (beat: any) => beat?.stepNumber === 0 || beat?.isStartPosition === true
       );
-      if (startPositionBeat) {
-        const beats = sequence.beats.filter(
-          (beat: any) => beat && beat.beatNumber !== 0 && !beat.isStartPosition
+      if (startPositionStep) {
+        const steps = sequence.steps.filter(
+          (beat: any) => beat && beat.stepNumber !== 0 && !beat.isStartPosition
         );
-        return { beats, startPosition: startPositionBeat };
+        return { steps, startPosition: startPositionStep };
       }
     }
 
     return {
-      beats: sequence.beats || [],
+      steps: sequence.steps || [],
       startPosition: sequence.startPosition || null,
     };
   }
 
   function needsMigration(sequence: any): boolean {
-    if (sequence.startingPositionBeat) return true;
-    if (Array.isArray(sequence.beats)) {
-      return sequence.beats.some(
-        (beat: any) => beat?.beatNumber === 0 || beat?.isStartPosition === true
+    if (sequence.startingPosition) return true;
+    if (Array.isArray(sequence.steps)) {
+      return sequence.steps.some(
+        (beat: any) => beat?.stepNumber === 0 || beat?.isStartPosition === true
       );
     }
     return false;
@@ -106,12 +106,12 @@
         const sequence = docSnapshot.data();
         if (needsMigration(sequence)) {
           needsMigrationCount++;
-          const normalized = separateBeatsFromStartPosition(sequence);
+          const normalized = separateStepsFromStartPosition(sequence);
           migrationLog.push({
             id: docSnapshot.id,
             word: sequence.word || sequence.name || "Untitled",
-            before: sequence.beats?.length || 0,
-            after: normalized.beats.length,
+            before: sequence.steps?.length || 0,
+            after: normalized.steps.length,
           });
         } else {
           alreadyCleanCount++;
@@ -154,16 +154,16 @@
           currentSequence = sequence.word || sequence.name || docSnapshot.id;
 
           try {
-            const normalized = separateBeatsFromStartPosition(sequence);
+            const normalized = separateStepsFromStartPosition(sequence);
             const docRef = doc(
               firestore,
               `users/${user.uid}/sequences/${docSnapshot.id}`
             );
 
             await updateDoc(docRef, {
-              beats: normalized.beats,
+              steps: normalized.steps,
               startPosition: normalized.startPosition,
-              startingPositionBeat: null, // Remove legacy field
+              startingPosition: null, // Remove legacy field
             });
 
             migratedCount++;
@@ -263,7 +263,7 @@
           <div class="sequence-item">
             <span class="word">{item.word}</span>
             <span class="change"
-              >{item.before} items → {item.after} beats + start</span
+              >{item.before} items → {item.after} steps + start</span
             >
           </div>
         {/each}
@@ -310,11 +310,11 @@
     <h3>What this does:</h3>
     <ul>
       <li>Migrates sequences in Firebase Firestore (not IndexedDB)</li>
-      <li>Separates start position from beats array</li>
+      <li>Separates start position from steps array</li>
       <li>
-        Converts <code>startingPositionBeat</code> → <code>startPosition</code>
+        Converts <code>startingPosition</code> → <code>startPosition</code>
       </li>
-      <li>Removes beat 0 from beats array</li>
+      <li>Removes beat 0 from steps array</li>
       <li>Updates at <code>users/{"{uid}"}/sequences</code></li>
     </ul>
   </section>

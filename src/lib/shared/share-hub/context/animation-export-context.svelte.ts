@@ -30,7 +30,7 @@ export interface AnimationExportState {
 
   // Playback
   isPlaying: boolean;
-  currentBeat: number;
+  currentStep: number;
   speed: number;
   playbackMode: PlaybackMode;
   stepPlaybackPauseMs: number;
@@ -126,7 +126,7 @@ const defaultState: AnimationExportState = {
   sequenceData: null,
   isCircular: false,
   isPlaying: false,
-  currentBeat: 0,
+  currentStep: 0,
   speed: 1,
   playbackMode: "continuous",
   stepPlaybackPauseMs: 300,
@@ -221,7 +221,7 @@ export function createAnimationExportContext(props: {
       sequenceData: props.animationSequenceData ?? null,
       isCircular: props.isCircular ?? false,
       isPlaying: props.isAnimationPlaying ?? false,
-      currentBeat: props.animationCurrentBeat ?? 0,
+      currentStep: props.animationCurrentBeat ?? 0,
       speed: props.animationSpeed ?? 1,
       playbackMode: props.playbackMode ?? "continuous",
       stepPlaybackPauseMs: props.stepPlaybackPauseMs ?? 300,

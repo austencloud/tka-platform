@@ -121,7 +121,7 @@ export function createShareState(shareService: ISharer): ShareState {
    */
   function getCacheKey(sequenceId: string, opts: ShareOptions): string {
     const propTypes = getCurrentPropTypes();
-    return `${sequenceId}-${opts.format}-${opts.addWord}-${opts.addBeatNumbers}-${opts.includeStartPosition}-${opts.addDifficultyLevel}-${opts.addUserInfo}-${propTypes.blue}-${propTypes.red}`;
+    return `${sequenceId}-${opts.format}-${opts.addWord}-${opts.addStepNumbers}-${opts.includeStartPosition}-${opts.addDifficultyLevel}-${opts.addUserInfo}-${propTypes.blue}-${propTypes.red}`;
   }
 
   return {
@@ -162,8 +162,8 @@ export function createShareState(shareService: ISharer): ShareState {
       if (newOptions.addWord !== undefined) {
         imageCompositionManager.setAddWord(newOptions.addWord);
       }
-      if (newOptions.addBeatNumbers !== undefined) {
-        imageCompositionManager.setAddBeatNumbers(newOptions.addBeatNumbers);
+      if (newOptions.addStepNumbers !== undefined) {
+        imageCompositionManager.setAddBeatNumbers(newOptions.addStepNumbers);
       }
       if (newOptions.addDifficultyLevel !== undefined) {
         imageCompositionManager.setAddDifficultyLevel(
@@ -192,7 +192,7 @@ export function createShareState(shareService: ISharer): ShareState {
 
         // Update the global image composition settings with preset values
         imageCompositionManager.setAddWord(options.addWord);
-        imageCompositionManager.setAddBeatNumbers(options.addBeatNumbers);
+        imageCompositionManager.setAddBeatNumbers(options.addStepNumbers);
         imageCompositionManager.setAddDifficultyLevel(
           options.addDifficultyLevel
         );
@@ -261,16 +261,16 @@ export function createShareState(shareService: ISharer): ShareState {
 
         const sequenceWithCurrentProps = {
           ...sequence,
-          // Update all beats
-          beats:
-            sequence.beats?.map((beat) => updateMotionsPropTypes(beat)) || [],
+          // Update all steps
+          steps:
+            sequence.steps?.map((beat) => updateMotionsPropTypes(beat)) || [],
           // Update BOTH start position fields (primary and legacy)
           ...(sequence.startPosition && {
             startPosition: updateMotionsPropTypes(sequence.startPosition),
           }),
-          ...(sequence.startingPositionBeat && {
-            startingPositionBeat: updateMotionsPropTypes(
-              sequence.startingPositionBeat
+          ...(sequence.startingPosition && {
+            startingPosition: updateMotionsPropTypes(
+              sequence.startingPosition
             ),
           }),
         };
@@ -345,16 +345,16 @@ export function createShareState(shareService: ISharer): ShareState {
 
         const sequenceWithCurrentProps = {
           ...sequence,
-          // Update all beats
-          beats:
-            sequence.beats?.map((beat) => updateMotionsPropTypes(beat)) || [],
+          // Update all steps
+          steps:
+            sequence.steps?.map((beat) => updateMotionsPropTypes(beat)) || [],
           // Update BOTH start position fields (primary and legacy)
           ...(sequence.startPosition && {
             startPosition: updateMotionsPropTypes(sequence.startPosition),
           }),
-          ...(sequence.startingPositionBeat && {
-            startingPositionBeat: updateMotionsPropTypes(
-              sequence.startingPositionBeat
+          ...(sequence.startingPosition && {
+            startingPosition: updateMotionsPropTypes(
+              sequence.startingPosition
             ),
           }),
         };

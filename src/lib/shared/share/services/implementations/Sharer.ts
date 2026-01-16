@@ -114,8 +114,8 @@ export class Sharer implements ISharer {
     }
 
     // Validate beat size
-    if (options.beatSize <= 0) {
-      errors.push(`Beat size must be positive, got: ${options.beatSize}`);
+    if (options.stepSize <= 0) {
+      errors.push(`Beat size must be positive, got: ${options.stepSize}`);
     }
 
     // Validate margin
@@ -204,7 +204,7 @@ export class Sharer implements ISharer {
     return {
       // Core export settings
       includeStartPosition: shareOptions.includeStartPosition,
-      addBeatNumbers: shareOptions.addBeatNumbers,
+      addStepNumbers: shareOptions.addStepNumbers,
       addReversalSymbols: true, // Always include for completeness
       addUserInfo: shareOptions.addUserInfo,
       addWord: shareOptions.addWord,
@@ -212,8 +212,8 @@ export class Sharer implements ISharer {
       addDifficultyLevel: shareOptions.addDifficultyLevel,
 
       // Scaling and sizing
-      beatScale: 1.0,
-      beatSize: shareOptions.beatSize,
+      stepScale: 1.0,
+      stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
       // Visibility settings
@@ -252,7 +252,7 @@ export class Sharer implements ISharer {
     return {
       // Core export settings - same as full export
       includeStartPosition: shareOptions.includeStartPosition,
-      addBeatNumbers: shareOptions.addBeatNumbers,
+      addStepNumbers: shareOptions.addStepNumbers,
       addReversalSymbols: true,
       addUserInfo: shareOptions.addUserInfo,
       addWord: shareOptions.addWord,
@@ -260,8 +260,8 @@ export class Sharer implements ISharer {
       addDifficultyLevel: shareOptions.addDifficultyLevel,
 
       // Scaling and sizing - MINIMAL SIZE for instant generation
-      beatScale: 0.15, // Tiny thumbnail (15% of full size) - lightning fast
-      beatSize: shareOptions.beatSize,
+      stepScale: 0.15, // Tiny thumbnail (15% of full size) - lightning fast
+      stepSize: shareOptions.stepSize,
       margin: shareOptions.margin,
 
       // Visibility settings
@@ -290,7 +290,7 @@ export class Sharer implements ISharer {
       // Output format - Maximum speed optimization
       format: "JPEG" as const, // JPEG encodes much faster than PNG
       quality: 0.4, // Minimum acceptable quality for instant speed
-      scale: 0.15, // Match beatScale for consistency
+      scale: 0.15, // Match stepScale for consistency
       backgroundColor: shareOptions.backgroundColor,
     };
   }

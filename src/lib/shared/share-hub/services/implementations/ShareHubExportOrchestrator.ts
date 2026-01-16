@@ -120,7 +120,7 @@ export class ShareHubExportOrchestrator implements IShareHubExportOrchestrator {
       backgroundColor: compositionSettings.darkMode ? "#0a0a0f" : "#FFFFFF",
       darkMode: compositionSettings.darkMode,
       includeStartPosition: compositionSettings.includeStartPosition,
-      addBeatNumbers: compositionSettings.addBeatNumbers,
+      addStepNumbers: compositionSettings.addStepNumbers,
       addWord: compositionSettings.addWord,
       addUserInfo: compositionSettings.addUserInfo,
       addDifficultyLevel: compositionSettings.addDifficultyLevel,

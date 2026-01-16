@@ -20,8 +20,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     return rateLimitResponse(rateCheck.resetAt);
   }
   try {
-    const body = (await request.json()) as { beatSize?: unknown };
-    const beatSizeValue = body.beatSize;
+    const body = (await request.json()) as { stepSize?: unknown };
+    const stepSizeValue = body.stepSize;
 
     // Resolve services
     const renderService = container.items.sequenceRenderer as ISequenceRenderer;
@@ -33,23 +33,23 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
       return json({ error: "No sequence loaded" }, { status: 400 });
     }
 
-    // Render with specified beatSize
-    const beatSize =
-      typeof beatSizeValue === "string"
-        ? parseInt(beatSizeValue, 10)
-        : typeof beatSizeValue === "number"
-          ? beatSizeValue
+    // Render with specified stepSize
+    const stepSize =
+      typeof stepSizeValue === "string"
+        ? parseInt(stepSizeValue, 10)
+        : typeof stepSizeValue === "number"
+          ? stepSizeValue
           : 144;
 
     const blob = await renderService.renderSequenceToBlob(
       state.currentSequence,
       {
-        beatSize,
+        stepSize,
         includeStartPosition: true,
-        addBeatNumbers: false,
+        addStepNumbers: false,
         addWord: false,
         addUserInfo: false,
-        beatScale: 1.0,
+        stepScale: 1.0,
         format: "PNG",
         quality: 1.0,
       }

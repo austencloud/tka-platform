@@ -16,8 +16,8 @@
   let { syncState }: Props = $props();
 
   // Derived for cleaner template
-  const canDecrement = $derived(syncState.beatOffset > syncState.minOffset);
-  const canIncrement = $derived(syncState.beatOffset < syncState.maxOffset);
+  const canDecrement = $derived(syncState.stepOffset > syncState.minOffset);
+  const canIncrement = $derived(syncState.stepOffset < syncState.maxOffset);
 </script>
 
 <div class="sync-controls">
@@ -47,8 +47,8 @@
           >
             <i class="fas fa-minus" aria-hidden="true"></i>
           </button>
-          <span class="offset-value" class:negative={syncState.beatOffset < 0}>
-            {syncState.beatOffset > 0 ? "+" : ""}{syncState.beatOffset}
+          <span class="offset-value" class:negative={syncState.stepOffset < 0}>
+            {syncState.stepOffset > 0 ? "+" : ""}{syncState.stepOffset}
           </span>
           <button
             class="stepper-btn"
@@ -68,14 +68,14 @@
       <div class="beat-display">
         <div class="beat-indicator">
           <span class="beat-label">{t('avatar_master')}</span>
-          <span class="beat-value">{syncState.master.currentBeatIndex + 1}</span
+          <span class="beat-value">{syncState.master.currentStepIndex + 1}</span
           >
         </div>
         <i class="fas fa-arrow-right connector" aria-hidden="true"></i>
         <div class="beat-indicator">
           <span class="beat-label">{t('avatar_follower')}</span>
           <span class="beat-value"
-            >{syncState.follower.currentBeatIndex + 1}</span
+            >{syncState.follower.currentStepIndex + 1}</span
           >
         </div>
       </div>

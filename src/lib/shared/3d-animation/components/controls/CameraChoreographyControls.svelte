@@ -13,7 +13,7 @@
     /** Camera choreography state */
     choreographyState: CameraChoreographyState;
     /** Current beat number for keyframe placement */
-    currentBeat: number;
+    currentStep: number;
     /** Current camera position for capturing */
     currentCameraPosition?: CameraPosition;
     /** Current camera target for capturing */
@@ -24,7 +24,7 @@
 
   let {
     choreographyState,
-    currentBeat,
+    currentStep,
     currentCameraPosition,
     currentCameraTarget,
     hasSequence = false,
@@ -32,7 +32,7 @@
 
   function handleAddKeyframe() {
     if (!currentCameraPosition || !currentCameraTarget) return;
-    choreographyState.addKeyframe(currentBeat, currentCameraPosition, currentCameraTarget);
+    choreographyState.addKeyframe(currentStep, currentCameraPosition, currentCameraTarget);
   }
 
   function handleToggleRecording() {

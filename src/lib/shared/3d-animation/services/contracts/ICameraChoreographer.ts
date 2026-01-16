@@ -62,14 +62,14 @@ export interface ICameraChoreographer {
    * Update camera state for current beat/progress
    * Call this each frame or when beat changes
    *
-   * @param beatNumber - Current beat index (0-based)
-   * @param beatProgress - Progress within current beat (0-1)
+   * @param stepNumber - Current beat index (0-based)
+   * @param stepProgress - Progress within current beat (0-1)
    * @param performerProvider - Optional provider for performer positions (for follow mode)
    * @returns Current camera state
    */
-  updateForBeat(
-    beatNumber: number,
-    beatProgress: number,
+  updateForStep(
+    stepNumber: number,
+    stepProgress: number,
     performerProvider?: PerformerPositionProvider
   ): CameraState;
 
@@ -115,13 +115,13 @@ export interface ICameraChoreographer {
   /**
    * Capture current camera position as a new keyframe
    *
-   * @param beatNumber - Beat to place the keyframe at
+   * @param stepNumber - Beat to place the keyframe at
    * @param currentPosition - Current camera position to capture
    * @param currentTarget - Current camera target to capture
    * @returns The created keyframe
    */
   captureKeyframe(
-    beatNumber: number,
+    stepNumber: number,
     currentPosition: CameraPosition,
     currentTarget: CameraPosition
   ): CameraKeyframe;

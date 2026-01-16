@@ -26,7 +26,7 @@
  *   for (const [index, clipInfo] of clips) {
  *     if (clipInfo && performerStates[index]) {
  *       performerStates[index].setSequence(clipInfo.clip.sequence);
- *       performerStates[index].goToBeat(clipInfo.beatIndex);
+ *       performerStates[index].goToStep(clipInfo.stepIndex);
  *     }
  *   }
  * });
@@ -126,31 +126,31 @@ export function createStageSceneAdapter(
       (position - activeClip.startTime) / activeClip.duration;
 
     // Calculate beat info from the sequence
-    const beatCount = activeClip.sequence.beats.length;
-    if (beatCount === 0) {
+    const stepCount = activeClip.sequence.steps.length;
+    if (stepCount === 0) {
       return {
         clipId: activeClip.id,
         sequenceId: activeClip.sequence.id,
         progress: clipProgress,
-        beatIndex: 0,
-        beatProgress: 0,
+        stepIndex: 0,
+        stepProgress: 0,
       };
     }
 
-    // Map progress to beats (accounting for in/out points and playbackRate)
+    // Map progress to steps (accounting for in/out points and playbackRate)
     const effectiveProgress =
       activeClip.inPoint +
       clipProgress * (activeClip.outPoint - activeClip.inPoint);
-    const exactBeat = effectiveProgress * beatCount;
-    const beatIndex = Math.floor(exactBeat) % beatCount;
-    const beatProgress = exactBeat - Math.floor(exactBeat);
+    const exactBeat = effectiveProgress * stepCount;
+    const stepIndex = Math.floor(exactBeat) % stepCount;
+    const stepProgress = exactBeat - Math.floor(exactBeat);
 
     return {
       clipId: activeClip.id,
       sequenceId: activeClip.sequence.id,
       progress: clipProgress,
-      beatIndex,
-      beatProgress,
+      stepIndex,
+      stepProgress,
     };
   }
 

@@ -7,7 +7,7 @@
  * - DimensionCalculator, ImageFormatConverter
  * - SVGToCanvasConverter, TextRenderer
  * - GlyphCache, FilenameGenerator
- * - PictographBlobCache, PictographKeyHasher, PictographMemoryCache, BeatNumberRenderer
+ * - PictographBlobCache, PictographKeyHasher, PictographMemoryCache, StepNumberRenderer
  */
 
 import { createContainer } from "iti";
@@ -25,7 +25,7 @@ import { TextRenderer } from "$lib/shared/render/services/implementations/TextRe
 import { PictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
 import { PictographKeyHasher } from "$lib/shared/render/services/implementations/PictographKeyHasher";
 import { PictographMemoryCache } from "$lib/shared/render/services/implementations/PictographMemoryCache";
-import { BeatNumberRenderer } from "$lib/shared/render/services/implementations/BeatNumberRenderer";
+import { StepNumberRenderer } from "$lib/shared/render/services/implementations/StepNumberRenderer";
 import { Canvas2DDirectRenderer } from "$lib/shared/render/services/implementations/Canvas2DDirectRenderer";
 import { LayerCompositor } from "$lib/shared/render/services/implementations/LayerCompositor";
 
@@ -49,7 +49,7 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     pictographBlobCache: () => new PictographBlobCache(),
     pictographKeyHasher: () => new PictographKeyHasher(),
     pictographMemoryCache: () => new PictographMemoryCache(),
-    beatNumberRenderer: () => new BeatNumberRenderer(),
+    beatNumberRenderer: () => new StepNumberRenderer(),
     // Canvas 2D direct renderer - bypasses SVG for 1000x faster fresh renders
     canvas2DRenderer: () => new Canvas2DDirectRenderer(),
     // Layer compositor - composes cached layers for fast visibility toggles

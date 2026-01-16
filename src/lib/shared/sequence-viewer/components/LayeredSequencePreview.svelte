@@ -27,7 +27,7 @@
     sequence: SequenceData;
     // Visibility toggles
     showWord?: boolean;
-    showBeatNumbers?: boolean;
+    showStepNumbers?: boolean;
     showDifficultyLevel?: boolean;
     includeStartPosition?: boolean;
     showCreatorName?: boolean;
@@ -46,7 +46,7 @@
   const {
     sequence,
     showWord = true,
-    showBeatNumbers = true,
+    showStepNumbers = true,
     showDifficultyLevel = true,
     includeStartPosition = true,
     showCreatorName = true,
@@ -106,7 +106,7 @@
 
   // Derive word from sequence (with null safety)
   const derivedWord = $derived.by(() => {
-    const rawWord = sequence.word || (sequence.beats ?? [])
+    const rawWord = sequence.word || (sequence.steps ?? [])
       .filter(beat => beat.letter)
       .map(beat => beat.letter)
       .join("");
@@ -115,9 +115,9 @@
 
   // Calculate difficulty level (with null safety)
   const difficultyLevel = $derived.by(() => {
-    if (!sequence?.beats?.length) return 1;
+    if (!sequence?.steps?.length) return 1;
     // Spread to convert readonly array to mutable for the calculator
-    return difficultyCalculator.calculateDifficultyLevel([...sequence.beats]);
+    return difficultyCalculator.calculateDifficultyLevel([...sequence.steps]);
   });
 
   // Show header when either word or difficulty is enabled
@@ -153,12 +153,12 @@
   const currentLevelStyle = $derived(levelStyles[difficultyLevel] ?? defaultLevelStyle);
 
   // Calculate beat positions for beat number overlays (percentage-based for scaling)
-  // Matches BeatNumber.svelte: x="50", y="50" in 950x950 viewBox = ~5.26% from top-left
+  // Matches StepNumber.svelte: x="50", y="50" in 950x950 viewBox = ~5.26% from top-left
   // Font sizes: 100/950 = 10.526% for numbers, 80/950 = 8.42% for "Start"
   const beatPositions = $derived.by(() => {
     if (!columns || !rows) return [];
-    const beats = sequence.beats ?? [];
-    if (!beats.length) return [];
+    const steps = sequence.steps ?? [];
+    if (!steps.length) return [];
 
     const cellWidthPct = 100 / columns;
     const cellHeightPct = 100 / rows;
@@ -166,7 +166,7 @@
     const inCellOffsetPct = 5.26;
     const positions: Array<{ leftPct: number; topPct: number; label: string; isStart: boolean }> = [];
     const startColumn = includeStartPosition ? 1 : 0;
-    const beatsPerRow = columns - startColumn;
+    const stepsPerRow = columns - startColumn;
 
     // Start position
     if (includeStartPosition && sequence.startPosition) {
@@ -179,9 +179,9 @@
     }
 
     // Beat positions
-    for (let i = 0; i < beats.length; i++) {
-      const col = startColumn + (i % beatsPerRow);
-      const row = Math.floor(i / beatsPerRow);
+    for (let i = 0; i < steps.length; i++) {
+      const col = startColumn + (i % stepsPerRow);
+      const row = Math.floor(i / stepsPerRow);
       positions.push({
         leftPct: col * cellWidthPct + cellWidthPct * (inCellOffsetPct / 100),
         topPct: row * cellHeightPct + cellHeightPct * (inCellOffsetPct / 100),
@@ -194,7 +194,7 @@
   });
 
   // Calculate font sizes based on cell dimensions
-  // BeatNumber.svelte uses font-size 100 in 950x950 viewBox = 10.526%
+  // StepNumber.svelte uses font-size 100 in 950x950 viewBox = 10.526%
   // "Start" uses font-size 80 = 8.42%
   const beatFontSize = $derived.by(() => {
     if (!renderedImageWidth || !columns) return 12;
@@ -209,13 +209,13 @@
   });
 
   // ===== PIXEL-PERFECT SIZING TO MATCH EXPORT =====
-  // ImageComposer uses beatSize=240 (same as our render), then calculates:
-  // - headerHeight = Math.floor(beatSize / 3)
-  // - footerHeight = Math.floor(beatSize / 7)
+  // ImageComposer uses stepSize=240 (same as our render), then calculates:
+  // - headerHeight = Math.floor(stepSize / 3)
+  // - footerHeight = Math.floor(stepSize / 7)
   // TextRenderer then uses these heights to calculate font sizes.
   // We need to apply the same formulas, scaled by the display ratio.
 
-  const RENDER_BEAT_SIZE = 240; // Must match renderBaseImage beatSize
+  const RENDER_BEAT_SIZE = 240; // Must match renderBaseImage stepSize
 
   // Scale factor: how much the rendered image is scaled from original
   const scaleFactor = $derived.by(() => {
@@ -224,13 +224,13 @@
     return renderedImageWidth / originalWidth;
   });
 
-  // Header height: beatSize / 3 (matches ImageComposer.calculateHeaderHeight)
+  // Header height: stepSize / 3 (matches ImageComposer.calculateHeaderHeight)
   const scaledHeaderHeight = $derived.by(() => {
     const baseHeaderHeight = Math.floor(RENDER_BEAT_SIZE / 3); // 80px at full size
     return Math.floor(baseHeaderHeight * scaleFactor);
   });
 
-  // Footer height: beatSize / 7 (matches ImageComposer.calculateFooterHeight)
+  // Footer height: stepSize / 7 (matches ImageComposer.calculateFooterHeight)
   const scaledFooterHeight = $derived.by(() => {
     const baseFooterHeight = Math.floor(RENDER_BEAT_SIZE / 7); // 34px at full size
     return Math.floor(baseFooterHeight * scaleFactor);
@@ -256,8 +256,8 @@
 
   // Render base image on mount and when relevant props change
   async function renderBaseImage() {
-    // Guard: need valid sequence with beats
-    if (!sequence?.beats?.length) {
+    // Guard: need valid sequence with steps
+    if (!sequence?.steps?.length) {
       isLoading = false;
       return;
     }
@@ -274,18 +274,18 @@
       const layoutService = container.items.layoutCalculator;
 
       // Calculate layout
-      const beatCount = sequence.beats.length;
-      const [cols, rws] = layoutService.calculateLayout(beatCount, includeStartPosition);
+      const stepCount = sequence.steps.length;
+      const [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition);
       columns = cols;
       rows = rws;
 
       // Render base image (without text overlays)
       const blob = await renderer.renderSequenceToBlob(sequence, {
-        beatSize: 240,
+        stepSize: 240,
         format: "PNG",
         quality: 1.0,
         includeStartPosition,
-        addBeatNumbers: false, // We overlay these
+        addStepNumbers: false, // We overlay these
         addWord: false, // We overlay this
         addDifficultyLevel: false, // We overlay this
         addUserInfo: false, // We overlay this
@@ -426,7 +426,7 @@
         />
 
         <!-- Beat numbers overlay - centered to align with centered image -->
-        {#if showBeatNumbers && renderedImageWidth > 0}
+        {#if showStepNumbers && renderedImageWidth > 0}
           <div
             class="beat-numbers-overlay"
             style="width: {renderedImageWidth}px; height: {renderedImageHeight}px; top: 50%; left: 50%; transform: translate(-50%, -50%);"

@@ -36,7 +36,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   // ============================================================================
@@ -142,7 +142,7 @@
     gridVisible = true,
     gridMode = null,
     letter = null,
-    beatData = null,
+    stepData = null,
     sequenceData = null,
     isExporting = false,
     exportProgress = null,
@@ -158,7 +158,7 @@
     onStepFullBeatBackward = () => {},
     onStepFullBeatForward = () => {},
     onCanvasReady = () => {},
-    onVideoBeatChange = () => {},
+    onVideoStepChange = () => {},
     onExportVideo = () => {},
     onCancelExport = () => {},
     onShareAnimation = () => {},
@@ -182,7 +182,7 @@
     gridVisible?: boolean;
     gridMode?: GridMode | null | undefined;
     letter?: Letter | null;
-    beatData?: StartPositionData | BeatData | null;
+    stepData?: StartPositionData | StepData | null;
     sequenceData?: SequenceData | null;
     isExporting?: boolean;
     exportProgress?: { progress: number; stage: string } | null;
@@ -202,7 +202,7 @@
     onStepFullBeatBackward?: () => void;
     onStepFullBeatForward?: () => void;
     onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
-    onVideoBeatChange?: (beat: number) => void;
+    onVideoStepChange?: (beat: number) => void;
     onExportVideo?: () => void;
     onCancelExport?: () => void;
     onShareAnimation?: () => void;
@@ -435,12 +435,12 @@
             {gridVisible}
             {gridMode}
             {letter}
-            {beatData}
+            {stepData}
             {sequenceData}
             {isPlaying}
             {speed}
             {onCanvasReady}
-            {onVideoBeatChange}
+            {onVideoStepChange}
             {onPlaybackToggle}
             {trailSettings}
           />
@@ -459,8 +459,8 @@
             bind:isSettingsOpen
             {mobileToolView}
             {sequenceData}
-            currentBeat={beatData && "beatNumber" in beatData
-              ? beatData.beatNumber
+            currentStep={stepData && "stepNumber" in stepData
+              ? stepData.stepNumber
               : 0}
             {onSpeedChange}
             {onPlaybackStart}

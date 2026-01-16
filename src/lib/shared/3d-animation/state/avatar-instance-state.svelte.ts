@@ -12,7 +12,7 @@ import { createPlaybackState } from "./playback-state.svelte";
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type {
   ISequenceConverter,
-  BeatMotionConfigs,
+  StepMotionConfigs,
 } from "../services/contracts/ISequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
@@ -43,25 +43,25 @@ const SCENE_BOUNDS = {
  * Mirrors SequenceLoopabilityChecker logic from the 2D animator.
  */
 function isSeamlesslyLoopable(sequence: SequenceData): boolean {
-  if (!sequence.beats || sequence.beats.length === 0) {
+  if (!sequence.steps || sequence.steps.length === 0) {
     return false;
   }
 
-  const firstBeat = sequence.beats[0];
-  const lastBeat = sequence.beats[sequence.beats.length - 1];
+  const firstStep = sequence.steps[0];
+  const lastStep = sequence.steps[sequence.steps.length - 1];
 
-  if (!firstBeat || !lastBeat) {
+  if (!firstStep || !lastStep) {
     return false;
   }
 
   // Check if positions match
-  if (firstBeat.startPosition !== lastBeat.endPosition) {
+  if (firstStep.startPosition !== lastStep.endPosition) {
     return false;
   }
 
   // Check blue prop orientations
-  const blueFirst = firstBeat.motions?.blue;
-  const blueLast = lastBeat.motions?.blue;
+  const blueFirst = firstStep.motions?.blue;
+  const blueLast = lastStep.motions?.blue;
   if (blueFirst && blueLast) {
     if (blueFirst.startOrientation !== blueLast.endOrientation) {
       return false;
@@ -71,8 +71,8 @@ function isSeamlesslyLoopable(sequence: SequenceData): boolean {
   }
 
   // Check red prop orientations
-  const redFirst = firstBeat.motions?.red;
-  const redLast = lastBeat.motions?.red;
+  const redFirst = firstStep.motions?.red;
+  const redLast = lastStep.motions?.red;
   if (redFirst && redLast) {
     if (redFirst.startOrientation !== redLast.endOrientation) {
       return false;
@@ -146,8 +146,8 @@ export function createAvatarInstanceState(
 
   // Sequence mode state
   let loadedSequence = $state<SequenceData | null>(null);
-  let beatConfigs = $state<BeatMotionConfigs[]>([]);
-  let currentBeatIndex = $state(0);
+  let stepConfigs = $state<StepMotionConfigs[]>([]);
+  let currentStepIndex = $state(0);
 
   // Per-avatar playback with unique persistence key
   const playback = createPlaybackState({
@@ -158,7 +158,7 @@ export function createAvatarInstanceState(
   /**
    * Update visibility based on a beat's motion configs
    */
-  function updateVisibilityFromBeat(beat: BeatMotionConfigs | undefined) {
+  function updateVisibilityFromStep(beat: StepMotionConfigs | undefined) {
     if (beat) {
       showBlue = beat.blue !== null;
       showRed = beat.red !== null;
@@ -169,24 +169,24 @@ export function createAvatarInstanceState(
    * Handle beat cycle completion - advances to next beat or loops
    */
   function handleCycleComplete(): boolean {
-    if (!loadedSequence || beatConfigs.length === 0) {
+    if (!loadedSequence || stepConfigs.length === 0) {
       return false;
     }
 
-    if (currentBeatIndex < beatConfigs.length - 1) {
-      // More beats to play
-      currentBeatIndex++;
-      updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+    if (currentStepIndex < stepConfigs.length - 1) {
+      // More steps to play
+      currentStepIndex++;
+      updateVisibilityFromStep(stepConfigs[currentStepIndex]);
       return true;
     } else if (playback.loop) {
       // Loop back to start
-      currentBeatIndex = 0;
-      updateVisibilityFromBeat(beatConfigs[0]);
+      currentStepIndex = 0;
+      updateVisibilityFromStep(stepConfigs[0]);
       return true;
     } else {
       // Sequence complete (no loop) - reset to beat 0 for next play
-      currentBeatIndex = 0;
-      updateVisibilityFromBeat(beatConfigs[0]);
+      currentStepIndex = 0;
+      updateVisibilityFromStep(stepConfigs[0]);
       return false;
     }
   }
@@ -196,17 +196,17 @@ export function createAvatarInstanceState(
   const isCircular = $derived(
     loadedSequence ? isSeamlesslyLoopable(loadedSequence) : false
   );
-  const currentBeat = $derived<BeatMotionConfigs | null>(
-    beatConfigs.length > 0 ? (beatConfigs[currentBeatIndex] ?? null) : null
+  const currentStep = $derived<StepMotionConfigs | null>(
+    stepConfigs.length > 0 ? (stepConfigs[currentStepIndex] ?? null) : null
   );
-  const totalBeats = $derived(beatConfigs.length);
+  const totalSteps = $derived(stepConfigs.length);
 
   // Active configs from current beat
   const activeBlueConfig = $derived<MotionConfig3D | null>(
-    currentBeat?.blue ?? null
+    currentStep?.blue ?? null
   );
   const activeRedConfig = $derived<MotionConfig3D | null>(
-    currentBeat?.red ?? null
+    currentStep?.red ?? null
   );
 
   // Computed prop states
@@ -227,13 +227,13 @@ export function createAvatarInstanceState(
    */
   function loadSequence(sequence: SequenceData) {
     loadedSequence = sequence;
-    beatConfigs = sequenceConverter.sequenceToMotionConfigs(
+    stepConfigs = sequenceConverter.sequenceToMotionConfigs(
       sequence,
       Plane.WALL
     );
-    currentBeatIndex = 0;
+    currentStepIndex = 0;
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[0]);
+    updateVisibilityFromStep(stepConfigs[0]);
 
     // Auto-enable loop for circular sequences
     if (isSeamlesslyLoopable(sequence)) {
@@ -246,8 +246,8 @@ export function createAvatarInstanceState(
    */
   function clearSequence() {
     loadedSequence = null;
-    beatConfigs = [];
-    currentBeatIndex = 0;
+    stepConfigs = [];
+    currentStepIndex = 0;
     showBlue = false;
     showRed = false;
     playback.reset();
@@ -256,31 +256,31 @@ export function createAvatarInstanceState(
   /**
    * Navigate to next beat
    */
-  function nextBeat() {
-    if (beatConfigs.length === 0) return;
-    currentBeatIndex = Math.min(currentBeatIndex + 1, beatConfigs.length - 1);
+  function nextStep() {
+    if (stepConfigs.length === 0) return;
+    currentStepIndex = Math.min(currentStepIndex + 1, stepConfigs.length - 1);
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+    updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
   /**
    * Navigate to previous beat
    */
-  function prevBeat() {
-    if (beatConfigs.length === 0) return;
-    currentBeatIndex = Math.max(currentBeatIndex - 1, 0);
+  function prevStep() {
+    if (stepConfigs.length === 0) return;
+    currentStepIndex = Math.max(currentStepIndex - 1, 0);
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+    updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
   /**
    * Jump to specific beat
    */
-  function goToBeat(index: number) {
-    if (beatConfigs.length === 0) return;
-    currentBeatIndex = Math.max(0, Math.min(index, beatConfigs.length - 1));
+  function goToStep(index: number) {
+    if (stepConfigs.length === 0) return;
+    currentStepIndex = Math.max(0, Math.min(index, stepConfigs.length - 1));
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+    updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
   /**
@@ -426,14 +426,14 @@ export function createAvatarInstanceState(
     get loadedSequence() {
       return loadedSequence;
     },
-    get currentBeatIndex() {
-      return currentBeatIndex;
+    get currentStepIndex() {
+      return currentStepIndex;
     },
-    get currentBeat() {
-      return currentBeat;
+    get currentStep() {
+      return currentStep;
     },
-    get totalBeats() {
-      return totalBeats;
+    get totalSteps() {
+      return totalSteps;
     },
 
     // Visibility
@@ -492,9 +492,9 @@ export function createAvatarInstanceState(
     // Sequence methods
     loadSequence,
     clearSequence,
-    nextBeat,
-    prevBeat,
-    goToBeat,
+    nextStep,
+    prevStep,
+    goToStep,
   };
 }
 

@@ -34,12 +34,12 @@ export interface AppSettings {
   catDogMode?: boolean; // Whether CatDog Mode is enabled in prop type settings
   blueBuugengFlipped?: boolean; // Flip buugeng for blue hand (asymmetric prop)
   redBuugengFlipped?: boolean; // Flip buugeng for red hand (asymmetric prop)
-  propPresets?: PropPreset[]; // Up to 6 saved prop configurations
-  selectedPresetIndex?: number; // Index of currently active preset (0-5)
+  propPresets?: PropPreset[]; // Up to 10 saved prop configurations
+  selectedPresetIndex?: number; // Index of currently active preset (0-9)
   backupFrequency?: string;
   enableFades?: boolean;
   growSequence?: boolean;
-  numBeats?: number;
+  numSteps?: number;
   beatLayout?: string;
 
   // Background settings
@@ -86,7 +86,7 @@ export interface AppSettings {
     showGrid?: boolean; // Master toggle for grid visibility
     nonRadialPoints?: boolean;
     handPointVisibility?: "all" | "active"; // Show all hand points or only where props are
-    beatNumbers?: boolean; // Show beat numbers on pictographs in sequences
+    stepNumbers?: boolean; // Show beat numbers on pictographs in sequences
   };
 
   // Community/Privacy Settings
@@ -108,7 +108,7 @@ export interface AppSettings {
   // Image Export Settings
   imageExport?: {
     addWord?: boolean;
-    addBeatNumbers?: boolean;
+    addStepNumbers?: boolean;
     addDifficultyLevel?: boolean;
     includeStartPosition?: boolean;
     darkMode?: boolean;

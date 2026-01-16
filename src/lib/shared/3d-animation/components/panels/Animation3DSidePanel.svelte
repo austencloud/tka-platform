@@ -22,9 +22,9 @@
     /** Whether a sequence is loaded */
     hasSequence: boolean;
     /** Current beat index */
-    currentBeatIndex: number;
-    /** Total beats */
-    totalBeats: number;
+    currentStepIndex: number;
+    /** Total steps */
+    totalSteps: number;
     /** Grid mode */
     gridMode: GridMode;
     /** Visible planes */
@@ -45,8 +45,8 @@
   let {
     collapsed = false,
     hasSequence,
-    currentBeatIndex,
-    totalBeats,
+    currentStepIndex,
+    totalSteps,
     gridMode,
     visiblePlanes,
     showFigure,
@@ -74,7 +74,7 @@
   <!-- Sequence Info -->
   {#if hasSequence}
     <div class="sequence-header">
-      <span class="mode-label">Beat {currentBeatIndex + 1} of {totalBeats}</span
+      <span class="mode-label">Beat {currentStepIndex + 1} of {totalSteps}</span
       >
     </div>
   {:else}

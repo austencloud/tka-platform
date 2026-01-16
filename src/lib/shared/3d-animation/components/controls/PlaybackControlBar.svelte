@@ -14,9 +14,9 @@
     /** Whether loop is enabled */
     loop: boolean;
     /** Current beat index (for sequence mode) */
-    currentBeatIndex?: number;
-    /** Total beats (for sequence mode) */
-    totalBeats?: number;
+    currentStepIndex?: number;
+    /** Total steps (for sequence mode) */
+    totalSteps?: number;
     /** Whether in sequence mode */
     hasSequence?: boolean;
 
@@ -27,16 +27,16 @@
     onReset: () => void;
     onProgressChange: (value: number) => void;
     onLoopChange: (value: boolean) => void;
-    onPrevBeat?: () => void;
-    onNextBeat?: () => void;
+    onPrevStep?: () => void;
+    onNextStep?: () => void;
   }
 
   let {
     isPlaying,
     progress,
     loop,
-    currentBeatIndex = 0,
-    totalBeats = 0,
+    currentStepIndex = 0,
+    totalSteps = 0,
     hasSequence = false,
     onPlay,
     onPause,
@@ -44,21 +44,21 @@
     onReset,
     onProgressChange,
     onLoopChange,
-    onPrevBeat,
-    onNextBeat,
+    onPrevStep,
+    onNextStep,
   }: Props = $props();
 
   const progressPercent = $derived(Math.round(progress * 100));
-  const canGoPrev = $derived(currentBeatIndex > 0);
-  const canGoNext = $derived(currentBeatIndex < totalBeats - 1);
+  const canGoPrev = $derived(currentStepIndex > 0);
+  const canGoNext = $derived(currentStepIndex < totalSteps - 1);
 </script>
 
 <div class="playback-controls">
   <!-- Beat navigation (sequence mode only) -->
-  {#if hasSequence && totalBeats > 0}
+  {#if hasSequence && totalSteps > 0}
     <button
       class="play-btn"
-      onclick={() => onPrevBeat?.()}
+      onclick={() => onPrevStep?.()}
       disabled={!canGoPrev}
       aria-label="Previous beat"
     >
@@ -66,12 +66,12 @@
     </button>
 
     <span class="beat-indicator">
-      {currentBeatIndex + 1} / {totalBeats}
+      {currentStepIndex + 1} / {totalSteps}
     </span>
 
     <button
       class="play-btn"
-      onclick={() => onNextBeat?.()}
+      onclick={() => onNextStep?.()}
       disabled={!canGoNext}
       aria-label="Next beat"
     >

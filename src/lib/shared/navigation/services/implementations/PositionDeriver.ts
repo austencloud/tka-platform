@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
 import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -27,16 +27,16 @@ export class PositionDeriver implements IPositionDeriver {
       return sequence;
     }
 
-    // Derive positions for all beats in the sequence
-    const beatsWithPositions = sequence.beats.map((beat) =>
+    // Derive positions for all steps in the sequence
+    const beatsWithPositions = sequence.steps.map((beat) =>
       this.derivePositionsForBeat(beat)
-    ) as BeatData[];
+    ) as StepData[];
 
     // Derive positions for start position if it exists
     let updatedStartPosition: StartPositionData | null | undefined =
       sequence.startPosition;
-    let updatedStartingPositionBeat: StartPositionData | undefined =
-      sequence.startingPositionBeat;
+    let updatedStartingPositionStep: StartPositionData | undefined =
+      sequence.startingPosition;
 
     if (sequence.startPosition) {
       // Cast is safe - we pass StartPositionData so we get StartPositionData back
@@ -45,29 +45,29 @@ export class PositionDeriver implements IPositionDeriver {
       ) as StartPositionData;
     }
 
-    if (sequence.startingPositionBeat) {
+    if (sequence.startingPosition) {
       // Cast is safe - we pass StartPositionData so we get StartPositionData back
-      updatedStartingPositionBeat = this.derivePositionsForBeat(
-        sequence.startingPositionBeat
+      updatedStartingPositionStep = this.derivePositionsForBeat(
+        sequence.startingPosition
       ) as StartPositionData;
     }
 
     return {
       ...sequence,
-      beats: beatsWithPositions,
+      steps: beatsWithPositions,
       ...(updatedStartPosition !== undefined &&
         updatedStartPosition !== null && {
           startPosition: updatedStartPosition,
         }),
-      ...(updatedStartingPositionBeat !== undefined && {
-        startingPositionBeat: updatedStartingPositionBeat,
+      ...(updatedStartingPositionStep !== undefined && {
+        startingPosition: updatedStartingPositionStep,
       }),
     };
   }
 
   private derivePositionsForBeat(
-    beat: BeatData | StartPositionData
-  ): BeatData | StartPositionData {
+    beat: StepData | StartPositionData
+  ): StepData | StartPositionData {
     // Skip if positions are already set or if motions are missing
     if (
       (beat.startPosition !== null && beat.endPosition !== null) ||
@@ -104,7 +104,7 @@ export class PositionDeriver implements IPositionDeriver {
     } catch (error) {
       // Use appropriate identifier in warning
       const identifier =
-        "beatNumber" in beat ? `beat ${beat.beatNumber}` : "start position";
+        "stepNumber" in beat ? `beat ${beat.stepNumber}` : "start position";
       console.warn(`Failed to derive positions for ${identifier}:`, error);
       return beat;
     }

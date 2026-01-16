@@ -25,7 +25,7 @@ export interface AnimationPanelState {
   sequenceId?: string;
   speed?: number;
   isPlaying?: boolean;
-  currentBeat?: number;
+  currentStep?: number;
   gridVisible?: boolean;
 }
 

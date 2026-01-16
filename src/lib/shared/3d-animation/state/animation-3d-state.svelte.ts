@@ -12,7 +12,7 @@ import { createPlaybackState } from "./playback-state.svelte";
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type {
   ISequenceConverter,
-  BeatMotionConfigs,
+  StepMotionConfigs,
 } from "../services/contracts/ISequenceConverter";
 
 /**
@@ -35,8 +35,8 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
 
   // Sequence mode state
   let loadedSequence = $state<SequenceData | null>(null);
-  let beatConfigs = $state<BeatMotionConfigs[]>([]);
-  let currentBeatIndex = $state(0);
+  let stepConfigs = $state<StepMotionConfigs[]>([]);
+  let currentStepIndex = $state(0);
 
   // Create playback first so we can reference it
   const playback = createPlaybackState({
@@ -46,7 +46,7 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
   /**
    * Update visibility based on a beat's motion configs
    */
-  function updateVisibilityFromBeat(beat: BeatMotionConfigs | undefined) {
+  function updateVisibilityFromStep(beat: StepMotionConfigs | undefined) {
     if (beat) {
       showBlue = beat.blue !== null;
       showRed = beat.red !== null;
@@ -59,20 +59,20 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
    */
   function handleCycleComplete(): boolean {
     // No sequence loaded - nothing to do
-    if (!loadedSequence || beatConfigs.length === 0) {
+    if (!loadedSequence || stepConfigs.length === 0) {
       return false;
     }
 
-    // Check if there are more beats
-    if (currentBeatIndex < beatConfigs.length - 1) {
+    // Check if there are more steps
+    if (currentStepIndex < stepConfigs.length - 1) {
       // Advance to next beat
-      currentBeatIndex++;
-      updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+      currentStepIndex++;
+      updateVisibilityFromStep(stepConfigs[currentStepIndex]);
       return true; // Continue playing
     } else if (playback.loop) {
       // Loop back to first beat
-      currentBeatIndex = 0;
-      updateVisibilityFromBeat(beatConfigs[0]);
+      currentStepIndex = 0;
+      updateVisibilityFromStep(stepConfigs[0]);
       return true; // Continue playing
     } else {
       // Stop at end of sequence
@@ -84,18 +84,18 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
   const hasSequence = $derived(loadedSequence !== null);
 
   // Current beat info for display
-  const currentBeat = $derived<BeatMotionConfigs | null>(
-    beatConfigs.length > 0 ? (beatConfigs[currentBeatIndex] ?? null) : null
+  const currentStep = $derived<StepMotionConfigs | null>(
+    stepConfigs.length > 0 ? (stepConfigs[currentStepIndex] ?? null) : null
   );
-  const totalBeats = $derived(beatConfigs.length);
+  const totalSteps = $derived(stepConfigs.length);
 
   // Active configs from current beat (null if no sequence)
   const activeBlueConfig = $derived<MotionConfig3D | null>(
-    currentBeat?.blue ?? null
+    currentStep?.blue ?? null
   );
 
   const activeRedConfig = $derived<MotionConfig3D | null>(
-    currentBeat?.red ?? null
+    currentStep?.red ?? null
   );
 
   // Computed prop states (only valid when config exists)
@@ -115,13 +115,13 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
    */
   function loadSequence(sequence: SequenceData) {
     loadedSequence = sequence;
-    beatConfigs = sequenceConverter.sequenceToMotionConfigs(
+    stepConfigs = sequenceConverter.sequenceToMotionConfigs(
       sequence,
       Plane.WALL
     );
-    currentBeatIndex = 0;
+    currentStepIndex = 0;
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[0]);
+    updateVisibilityFromStep(stepConfigs[0]);
   }
 
   /**
@@ -129,8 +129,8 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
    */
   function clearSequence() {
     loadedSequence = null;
-    beatConfigs = [];
-    currentBeatIndex = 0;
+    stepConfigs = [];
+    currentStepIndex = 0;
     showBlue = false;
     showRed = false;
     playback.reset();
@@ -139,31 +139,31 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
   /**
    * Navigate to next beat
    */
-  function nextBeat() {
-    if (beatConfigs.length === 0) return;
-    currentBeatIndex = Math.min(currentBeatIndex + 1, beatConfigs.length - 1);
+  function nextStep() {
+    if (stepConfigs.length === 0) return;
+    currentStepIndex = Math.min(currentStepIndex + 1, stepConfigs.length - 1);
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+    updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
   /**
    * Navigate to previous beat
    */
-  function prevBeat() {
-    if (beatConfigs.length === 0) return;
-    currentBeatIndex = Math.max(currentBeatIndex - 1, 0);
+  function prevStep() {
+    if (stepConfigs.length === 0) return;
+    currentStepIndex = Math.max(currentStepIndex - 1, 0);
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+    updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
   /**
    * Jump to specific beat
    */
-  function goToBeat(index: number) {
-    if (beatConfigs.length === 0) return;
-    currentBeatIndex = Math.max(0, Math.min(index, beatConfigs.length - 1));
+  function goToStep(index: number) {
+    if (stepConfigs.length === 0) return;
+    currentStepIndex = Math.max(0, Math.min(index, stepConfigs.length - 1));
     playback.reset();
-    updateVisibilityFromBeat(beatConfigs[currentBeatIndex]);
+    updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
   return {
@@ -220,14 +220,14 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
     get loadedSequence() {
       return loadedSequence;
     },
-    get currentBeatIndex() {
-      return currentBeatIndex;
+    get currentStepIndex() {
+      return currentStepIndex;
     },
-    get currentBeat() {
-      return currentBeat;
+    get currentStep() {
+      return currentStep;
     },
-    get totalBeats() {
-      return totalBeats;
+    get totalSteps() {
+      return totalSteps;
     },
 
     // Playback methods
@@ -241,9 +241,9 @@ export function createAnimation3DState(deps: Animation3DStateDeps) {
     // Sequence methods
     loadSequence,
     clearSequence,
-    nextBeat,
-    prevBeat,
-    goToBeat,
+    nextStep,
+    prevStep,
+    goToStep,
 
     // Initialization
     autoStartIfNeeded: playback.autoStartIfNeeded,

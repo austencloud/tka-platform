@@ -16,24 +16,24 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
-  import BeatNumber from "$lib/shared/pictograph/shared/components/BeatNumber.svelte";
+  import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
 
   let {
     // Current glyph state
     letter = null,
     displayedLetter = null,
     displayedTurnsTuple = "(s, 0, 0)",
-    displayedBeatNumber = null,
+    displayedStepNumber = null,
     displayedMusicalPosition = null,
     // Fading out state
     fadingOutLetter = null,
     fadingOutTurnsTuple = null,
-    fadingOutBeatNumber = null,
+    fadingOutStepNumber = null,
     // Transition flag
     isNewLetter = false,
     // Visibility
     tkaGlyphVisible = true,
-    beatNumbersVisible = true,
+    stepNumbersVisible = true,
     // Dark mode - when provided, overrides global state (for preview isolation)
     darkMode = false,
     // Start position indicator - shows "Start" in top-left when at start position
@@ -42,14 +42,14 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
     letter?: Letter | null;
     displayedLetter?: Letter | null;
     displayedTurnsTuple?: string;
-    displayedBeatNumber?: number | null;
+    displayedStepNumber?: number | null;
     displayedMusicalPosition?: string | null;
     fadingOutLetter?: Letter | null;
     fadingOutTurnsTuple?: string | null;
-    fadingOutBeatNumber?: number | null;
+    fadingOutStepNumber?: number | null;
     isNewLetter?: boolean;
     tkaGlyphVisible?: boolean;
-    beatNumbersVisible?: boolean;
+    stepNumbersVisible?: boolean;
     darkMode?: boolean;
     isAtStartPosition?: boolean;
   } = $props();
@@ -57,7 +57,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
 
 <div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
   <!-- Fading out glyph (previous letter + beat number) -->
-  {#if fadingOutLetter || fadingOutBeatNumber !== null}
+  {#if fadingOutLetter || fadingOutStepNumber !== null}
     <div class="glyph-wrapper fade-out">
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -85,8 +85,8 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
             {darkMode}
           />
         {/if}
-        {#if beatNumbersVisible}
-          <BeatNumber beatNumber={fadingOutBeatNumber} {darkMode} />
+        {#if stepNumbersVisible}
+          <StepNumber stepNumber={fadingOutStepNumber} {darkMode} />
         {/if}
       </svg>
     </div>
@@ -94,7 +94,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
 
   <!-- Current glyph (fades in when letter/beat changes) -->
   <!-- Show when: there's a letter, OR beat number is set, OR at start position -->
-  {#if letter || displayedBeatNumber !== null || isAtStartPosition}
+  {#if letter || displayedStepNumber !== null || isAtStartPosition}
     <div class="glyph-wrapper" class:fade-in={isNewLetter}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -129,7 +129,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
             />
           </g>
         {/if}
-        {#if beatNumbersVisible || isAtStartPosition}
+        {#if stepNumbersVisible || isAtStartPosition}
           <!-- Beat number is top-left: flies in/out toward top-left -->
           <!-- Always show "Start" indicator when at start position, even if beat numbers toggled off -->
           <g
@@ -137,8 +137,8 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
             in:fly={{ x: -30, y: -30, duration: 300, easing: backOut }}
             out:fly={{ x: -30, y: -30, duration: 200, easing: cubicOut }}
           >
-            <BeatNumber
-              beatNumber={isAtStartPosition ? 0 : displayedBeatNumber}
+            <StepNumber
+              stepNumber={isAtStartPosition ? 0 : displayedStepNumber}
               musicalPosition={isAtStartPosition ? undefined : displayedMusicalPosition ?? undefined}
               {darkMode}
             />

@@ -10,7 +10,10 @@ import type { IGridModeDeriver } from "../../../../../grid/services/contracts/IG
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { GlobalAdjustmentKey } from "../../domain/GlobalArrowAdjustment";
-import type { IGlobalAdjustmentKeyGenerator } from "../contracts/IGlobalAdjustmentKeyGenerator";
+import type {
+  IGlobalAdjustmentKeyGenerator,
+  KeyGeneratorPropOptions,
+} from "../contracts/IGlobalAdjustmentKeyGenerator";
 import type { ITurnsTupleGenerator } from "../../../placement/services/contracts/ITurnsTupleGenerator";
 import { SpecialPlacementOriKeyGenerator } from "../../../key-generation/services/implementations/SpecialPlacementOriKeyGenerator";
 
@@ -27,12 +30,16 @@ export class GlobalAdjustmentKeyGenerator
   }
 
   /**
-   * Generate a global adjustment key from motion and pictograph data
+   * Generate a global adjustment key from motion and pictograph data.
+   *
+   * By default generates a Layer 1 (base) key. Pass options.propType
+   * for Layer 2, or both propType and otherPropType for Layer 3.
    */
   generateKey(
     motionData: MotionData,
     pictographData: PictographData,
-    arrowKey: string
+    arrowKey: string,
+    options?: KeyGeneratorPropOptions
   ): GlobalAdjustmentKey {
     // Generate grid mode
     const gridMode = this.getGridMode(pictographData);
@@ -50,13 +57,24 @@ export class GlobalAdjustmentKeyGenerator
     const turnsTuple =
       this.turnsTupleGenerator.generateTurnsTuple(pictographData);
 
-    return {
+    // Build base key
+    const key: GlobalAdjustmentKey = {
       gridMode,
       oriKey,
       letter,
       turnsTuple,
       arrowKey,
     };
+
+    // Add optional prop types for Layer 2/3
+    if (options?.propType) {
+      (key as any).propType = options.propType.toLowerCase();
+    }
+    if (options?.otherPropType) {
+      (key as any).otherPropType = options.otherPropType.toLowerCase();
+    }
+
+    return key;
   }
 
   /**

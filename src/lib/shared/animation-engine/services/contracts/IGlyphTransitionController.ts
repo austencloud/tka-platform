@@ -16,14 +16,14 @@ export interface GlyphTransitionState {
   // Currently displayed values
   displayedLetter: Letter | null;
   displayedTurnsTuple: string;
-  displayedBeatNumber: number | null;
+  displayedStepNumber: number | null;
   /** Musical position display (e.g., "2, 3" for a beat spanning positions 2-3) */
   displayedMusicalPosition: string | null;
 
   // Fading out values (during transition)
   fadingOutLetter: Letter | null;
   fadingOutTurnsTuple: string | null;
-  fadingOutBeatNumber: number | null;
+  fadingOutStepNumber: number | null;
 
   // Transition flags
   isNewLetter: boolean;
@@ -42,13 +42,13 @@ export interface IGlyphTransitionController {
    * Update the target glyph values - triggers transition if changed
    * @param letter - New letter (or null)
    * @param turnsTuple - New turns tuple string
-   * @param beatNumber - New beat number
+   * @param stepNumber - New beat number
    * @param musicalPosition - Musical position display string (e.g., "2, 3")
    */
   updateTarget(
     letter: Letter | null,
     turnsTuple: string,
-    beatNumber: number | null,
+    stepNumber: number | null,
     musicalPosition?: string | null
   ): void;
 

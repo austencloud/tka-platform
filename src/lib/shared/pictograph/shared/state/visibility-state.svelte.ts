@@ -54,7 +54,7 @@ interface VisibilitySettings {
   handPointVisibility: "all" | "active"; // Show all hand points or only where props are
 
   // Beat numbers overlay (appears on pictographs in sequences)
-  beatNumbers: boolean;
+  stepNumbers: boolean;
 }
 
 export class VisibilityStateManager {
@@ -96,7 +96,7 @@ export class VisibilityStateManager {
       handPointVisibility: "all", // Default to showing all hand points
 
       // Beat numbers default
-      beatNumbers: true, // Show beat numbers by default
+      stepNumbers: true, // Show beat numbers by default
 
       // Override with any provided settings
       ...this.convertAppSettingsToVisibility(initialSettings),
@@ -168,8 +168,8 @@ export class VisibilityStateManager {
           this.settings.nonRadialPoints = v.nonRadialPoints;
         if (v.handPointVisibility !== undefined)
           this.settings.handPointVisibility = v.handPointVisibility;
-        if (v.beatNumbers !== undefined)
-          this.settings.beatNumbers = v.beatNumbers;
+        if (v.stepNumbers !== undefined)
+          this.settings.stepNumbers = v.stepNumbers;
 
         debug.log(
           "loadPersistedSettings: Applied settings, result:",
@@ -212,7 +212,7 @@ export class VisibilityStateManager {
       showGrid: this.settings.showGrid,
       nonRadialPoints: this.settings.nonRadialPoints,
       handPointVisibility: this.settings.handPointVisibility,
-      beatNumbers: this.settings.beatNumbers,
+      stepNumbers: this.settings.stepNumbers,
     };
 
     debug.log("Persisting visibility settings", visibilitySettings);
@@ -512,7 +512,7 @@ export class VisibilityStateManager {
   }
 
   // ============================================================================
-  // BEAT NUMBERS
+  // STEP NUMBERS
   // ============================================================================
 
   /**
@@ -520,14 +520,14 @@ export class VisibilityStateManager {
    * Beat numbers appear on pictographs in sequences (1, 2, 3...)
    */
   getBeatNumbersVisibility(): boolean {
-    return this.settings.beatNumbers;
+    return this.settings.stepNumbers;
   }
 
   /**
    * Set beat numbers visibility
    */
   setBeatNumbersVisibility(visible: boolean): void {
-    this.settings.beatNumbers = visible;
+    this.settings.stepNumbers = visible;
     this.notifyObservers(["all"]);
     // Persist to storage (async, non-blocking)
     void this.persistSettings();

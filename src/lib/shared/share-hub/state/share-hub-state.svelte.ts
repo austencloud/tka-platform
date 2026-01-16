@@ -64,7 +64,7 @@ export interface ShareHubState {
 
   // Playback state (for animation preview)
   isPlaying: boolean;
-  currentBeat: number;
+  currentStep: number;
 
   // Core mode
   mode: ShareMode;
@@ -126,7 +126,7 @@ class ShareHubStateHolder implements ShareHubState {
 
   // Playback state
   isPlaying: boolean = $state(false);
-  currentBeat: number = $state(0);
+  currentStep: number = $state(0);
 
   // Mode state
   mode: ShareMode = $state("single");
@@ -144,7 +144,7 @@ class ShareHubStateHolder implements ShareHubState {
 
   setSequence(sequence: SequenceData | null): void {
     this.sequence = sequence;
-    this.currentBeat = 0;
+    this.currentStep = 0;
     this.isPlaying = false;
   }
 }

@@ -25,7 +25,7 @@ export type PlaybackMode = "continuous" | "step";
 interface AnimationVisibilitySettings {
   // Animation-specific elements (no pictograph equivalent)
   gridMode: GridMode; // Grid visualization mode (3-state)
-  beatNumbers: boolean; // "Beat 1, 2, 3..." overlay at top-left
+  stepNumbers: boolean; // "Beat 1, 2, 3..." overlay at top-left
   props: boolean; // Show props vs trails-only mode
   trailStyle: TrailStyle; // Trail visualization style (3-state)
   playbackMode: PlaybackMode; // Continuous flow vs step-by-step
@@ -82,7 +82,7 @@ export class AnimationVisibilityStateManager {
     return {
       // Animation-specific defaults
       gridMode: "diamond", // Default to diamond grid
-      beatNumbers: true,
+      stepNumbers: true,
       props: true,
       trailStyle: "on", // Trails enabled by default (hardcoded vivid style)
       playbackMode: "continuous", // Default to continuous playback

@@ -43,7 +43,7 @@ export interface DeepLinkParseResult {
 export interface ISequenceEncoder {
   /**
    * Encode a sequence into compact URL string format
-   * Format: "startPosition|beat1|beat2|beat3..."
+   * Format: "startPosition|step1|step2|step3..."
    */
   encode(sequence: SequenceData): string;
 

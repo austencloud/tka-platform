@@ -6,7 +6,7 @@
  * allowing performers to play the same sequence at different phases.
  *
  * Use cases:
- * - Canon/round: Followers offset by N beats behind master
+ * - Canon/round: Followers offset by N steps behind master
  * - Complementary: Followers offset to fill in gaps
  * - Synchronized: All performers on same beat (offset = 0)
  */
@@ -35,7 +35,7 @@ export interface PerformerSyncConfig {
   /** Unique performer identifier */
   id: PerformerId;
   /** Beat offset from master (-8 to +8 typically) */
-  beatOffset: number;
+  stepOffset: number;
   /** Whether this performer follows the master */
   followsMaster: boolean;
 }
@@ -47,9 +47,9 @@ export interface PerformerSyncState {
   /** Performer identifier */
   id: PerformerId;
   /** Current beat index (after offset applied) */
-  currentBeat: number;
+  currentStep: number;
   /** Sub-beat progress (0-1) */
-  beatProgress: number;
+  stepProgress: number;
   /** Whether currently synced to master */
   isSynced: boolean;
 }
@@ -62,9 +62,9 @@ export type SyncStateChangeCallback = (states: PerformerSyncState[]) => void;
 /**
  * Callback for beat events
  */
-export type BeatEventCallback = (
+export type StepEventCallback = (
   performerId: PerformerId,
-  beatIndex: number
+  stepIndex: number
 ) => void;
 
 // ============================================================================
@@ -192,14 +192,14 @@ export interface IPerformerSynchronizer {
    * Calculate the beat index for a follower given master's beat
    *
    * @param performerId - Follower performer ID
-   * @param masterBeat - Current master beat index
-   * @param totalBeats - Total beats in the sequence (for wrapping)
+   * @param masterStep - Current master beat index
+   * @param totalSteps - Total steps in the sequence (for wrapping)
    * @returns Calculated beat index for the follower
    */
   calculateFollowerBeat(
     performerId: PerformerId,
-    masterBeat: number,
-    totalBeats: number
+    masterStep: number,
+    totalSteps: number
   ): number;
 
   /**
@@ -220,10 +220,10 @@ export interface IPerformerSynchronizer {
    * Notify the synchronizer that the master beat has changed.
    * This triggers follower beat updates if sync is enabled.
    *
-   * @param masterBeat - New master beat index
-   * @param totalBeats - Total beats in sequence (for wrapping)
+   * @param masterStep - New master beat index
+   * @param totalSteps - Total steps in sequence (for wrapping)
    */
-  onMasterBeatChange(masterBeat: number, totalBeats: number): void;
+  onMasterBeatChange(masterStep: number, totalSteps: number): void;
 
   /**
    * Notify the synchronizer that the master playback state changed.
@@ -250,7 +250,7 @@ export interface IPerformerSynchronizer {
    *
    * @returns Unsubscribe function
    */
-  onBeat(callback: BeatEventCallback): () => void;
+  onStep(callback: StepEventCallback): () => void;
 
   // =========================================================================
   // Lifecycle

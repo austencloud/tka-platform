@@ -5,7 +5,7 @@
   Shows sequence beats in a static grid or with BPM-synced playback highlighting.
 -->
 <script lang="ts">
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { GridSettings } from "../state/video-record-settings.svelte";
   import { onMount, onDestroy } from "svelte";
@@ -21,7 +21,7 @@
   } = $props();
 
   // BPM playback state
-  let currentBeatNumber = $state<number | null>(null);
+  let currentStepNumber = $state<number | null>(null);
   let playbackInterval: number | null = null;
 
   // Start/stop BPM playback
@@ -38,21 +38,21 @@
   function startPlayback() {
     if (!sequence || playbackInterval) return;
 
-    const beatCount = sequence.beats.length;
-    if (beatCount === 0) return;
+    const stepCount = sequence.steps.length;
+    if (stepCount === 0) return;
 
     const beatDuration = (60 / settings.bpm) * 1000; // ms per beat
-    let beatIndex = 0;
+    let stepIndex = 0;
 
-    currentBeatNumber = 0; // Start position
+    currentStepNumber = 0; // Start position
 
     playbackInterval = window.setInterval(() => {
-      beatIndex++;
-      if (beatIndex > beatCount) {
-        beatIndex = 0; // Loop back to start
+      stepIndex++;
+      if (stepIndex > stepCount) {
+        stepIndex = 0; // Loop back to start
       }
-      currentBeatNumber = beatIndex;
-    }, beatDuration);
+      currentStepNumber = stepIndex;
+    }, stepDuration);
   }
 
   function stopPlayback() {
@@ -60,7 +60,7 @@
       clearInterval(playbackInterval);
       playbackInterval = null;
     }
-    currentBeatNumber = null;
+    currentStepNumber = null;
   }
 
   function toggleAnimated() {
@@ -87,11 +87,11 @@
   {#if sequence}
     <!-- Beat Grid -->
     <div class="grid-container">
-      <BeatGrid
-        beats={sequence.beats}
+      <StepGrid
+        steps={sequence.steps}
         startPosition={sequence.startPosition}
-        selectedBeatNumber={currentBeatNumber}
-        practiceBeatNumber={settings.animated ? currentBeatNumber : null}
+        selectedStepNumber={currentStepNumber}
+        practiceStepNumber={settings.animated ? currentStepNumber : null}
         isSideBySideLayout={false}
         shouldOrbitAroundCenter={false}
       />

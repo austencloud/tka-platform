@@ -14,7 +14,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
  */
 export interface IPositionDeriver {
   /**
-   * Derive start and end positions for all beats in a sequence using GridPositionDeriver
+   * Derive start and end positions for all steps in a sequence using GridPositionDeriver
    * This should be called AFTER loading a deep link sequence to populate the position fields
    *
    * @param sequence - The sequence with motion data but no positions

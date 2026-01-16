@@ -79,7 +79,7 @@
 
 	// Local export settings (for Share Hub mode)
 	let localAddWord = $state(imageSettings.addWord);
-	let localAddBeatNumbers = $state(imageSettings.addBeatNumbers);
+	let localAddBeatNumbers = $state(imageSettings.addStepNumbers);
 	let localIncludeStartPosition = $state(imageSettings.includeStartPosition);
 	let localAddDifficultyLevel = $state(imageSettings.addDifficultyLevel);
 	let localAddUserInfo = $state(imageSettings.addUserInfo);
@@ -91,7 +91,7 @@
 
 	function handleImageSettingsChange() {
 		localAddWord = imageSettings.addWord;
-		localAddBeatNumbers = imageSettings.addBeatNumbers;
+		localAddBeatNumbers = imageSettings.addStepNumbers;
 		localIncludeStartPosition = imageSettings.includeStartPosition;
 		localAddDifficultyLevel = imageSettings.addDifficultyLevel;
 		localAddUserInfo = imageSettings.addUserInfo;
@@ -110,7 +110,7 @@
 
 	// Effective settings - use global when browsing, local when customizing for export
 	const addWord = $derived(showVisibilitySettings ? localAddWord : (globalImageExport?.addWord ?? true));
-	const addBeatNumbers = $derived(showVisibilitySettings ? localAddBeatNumbers : (globalImageExport?.addBeatNumbers ?? true));
+	const addStepNumbers = $derived(showVisibilitySettings ? localAddBeatNumbers : (globalImageExport?.addStepNumbers ?? true));
 	const includeStartPosition = $derived(showVisibilitySettings ? localIncludeStartPosition : (globalImageExport?.includeStartPosition ?? true));
 	const addDifficultyLevel = $derived(showVisibilitySettings ? localAddDifficultyLevel : (globalImageExport?.addDifficultyLevel ?? false));
 	const addUserInfo = $derived(showVisibilitySettings ? localAddUserInfo : ((globalImageExport?.showCreatorName || globalImageExport?.showNotes || globalImageExport?.showBirthday) ?? false));
@@ -131,8 +131,8 @@
 	function toggleWord() {
 		imageSettings.toggle("addWord");
 	}
-	function toggleBeatNumbers() {
-		imageSettings.toggle("addBeatNumbers");
+	function toggleStepNumbers() {
+		imageSettings.toggle("addStepNumbers");
 	}
 	function toggleStartPosition() {
 		imageSettings.toggle("includeStartPosition");
@@ -183,11 +183,11 @@
 
 			// Render the image with current settings
 			const blob = await renderer.renderSequenceToBlob(sequence, {
-				beatSize: 240,
+				stepSize: 240,
 				format: "PNG",
 				quality: 1.0,
 				includeStartPosition,
-				addBeatNumbers,
+				addStepNumbers,
 				addWord,
 				addDifficultyLevel,
 				addUserInfo,
@@ -235,7 +235,7 @@
 	const hasVideo = $derived(!!sequence?.performanceVideoUrl);
 
 	// Check if sequence has full beat data loaded (needed for LayeredSequencePreview)
-	const hasFullBeatData = $derived(!!sequence?.beats?.length);
+	const hasFullStepData = $derived(!!sequence?.steps?.length);
 
 	const availableMediaTypes = $derived.by(() => {
 		const types: MediaType[] = [];
@@ -328,15 +328,15 @@
 	<!-- Media Content Area -->
 	<div class="media-content">
 		{#if activeMediaType === "image"}
-			<!-- Image View - LayeredSequencePreview for interactive mode (needs beats), PropAwareThumbnail otherwise -->
+			<!-- Image View - LayeredSequencePreview for interactive mode (needs steps), PropAwareThumbnail otherwise -->
 			<div class="image-view-container">
 				<div class="image-view">
-					{#if showVisibilitySettings && hasFullBeatData}
+					{#if showVisibilitySettings && hasFullStepData}
 						<!-- Interactive mode: Use layered preview for animated toggles (requires full beat data) -->
 						<LayeredSequencePreview
 							{sequence}
 							showWord={addWord}
-							showBeatNumbers={addBeatNumbers}
+							showStepNumbers={addStepNumbers}
 							showDifficultyLevel={addDifficultyLevel}
 							{includeStartPosition}
 							{showCreatorName}
@@ -357,7 +357,7 @@
 							catDogModeEnabled={catDogMode}
 							lightMode={!darkMode}
 							{addWord}
-							{addBeatNumbers}
+							{addStepNumbers}
 							{includeStartPosition}
 							{addDifficultyLevel}
 							{addUserInfo}
@@ -384,9 +384,9 @@
 						<button
 							type="button"
 							class="chip"
-							class:active={addBeatNumbers}
-							onclick={toggleBeatNumbers}
-							aria-pressed={addBeatNumbers}
+							class:active={addStepNumbers}
+							onclick={toggleStepNumbers}
+							aria-pressed={addStepNumbers}
 						>
 							Beat #s
 						</button>

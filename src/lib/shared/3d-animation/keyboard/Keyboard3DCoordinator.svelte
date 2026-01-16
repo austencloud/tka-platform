@@ -31,11 +31,11 @@
 
     // Beat navigation
     hasSequence: boolean;
-    currentBeatIndex: number;
-    totalBeats: number;
-    prevBeat: () => void;
-    nextBeat: () => void;
-    goToBeat: (index: number) => void;
+    currentStepIndex: number;
+    totalSteps: number;
+    prevStep: () => void;
+    nextStep: () => void;
+    goToStep: (index: number) => void;
 
     // Camera
     setCameraPreset: (preset: CameraPreset) => void;
@@ -58,11 +58,11 @@
     speed,
     setSpeed,
     hasSequence,
-    currentBeatIndex,
-    totalBeats,
-    prevBeat,
-    nextBeat,
-    goToBeat,
+    currentStepIndex,
+    totalSteps,
+    prevStep,
+    nextStep,
+    goToStep,
     setCameraPreset,
     toggleCameraMode,
     showGrid,
@@ -89,17 +89,17 @@
         speedDown: () => setSpeed(getNextSpeedDown(speed)),
 
         // Beat navigation
-        prevBeat: () => {
-          if (hasSequence) prevBeat();
+        prevStep: () => {
+          if (hasSequence) prevStep();
         },
-        nextBeat: () => {
-          if (hasSequence) nextBeat();
+        nextStep: () => {
+          if (hasSequence) nextStep();
         },
-        firstBeat: () => {
-          if (hasSequence) goToBeat(0);
+        firstStep: () => {
+          if (hasSequence) goToStep(0);
         },
-        lastBeat: () => {
-          if (hasSequence && totalBeats > 0) goToBeat(totalBeats - 1);
+        lastStep: () => {
+          if (hasSequence && totalSteps > 0) goToStep(totalSteps - 1);
         },
 
         // Camera presets

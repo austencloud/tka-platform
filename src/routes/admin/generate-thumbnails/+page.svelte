@@ -8,7 +8,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import {
     MotionType,
@@ -166,7 +166,7 @@
     legacy: LegacyBeat,
     propType: PropType,
     gridMode: GridMode
-  ): BeatData {
+  ): StepData {
     return {
       id: `beat-${legacy.beat}`,
       letter: legacy.letter as any,
@@ -186,7 +186,7 @@
           gridMode
         ),
       },
-      beatNumber: legacy.beat,
+      stepNumber: legacy.beat,
       duration: 1,
       blueReversal: false,
       redReversal: false,
@@ -202,8 +202,8 @@
     blueProp: PropType,
     redProp: PropType
   ): SequenceData {
-    // Clone beats with new prop types
-    const newBeats: BeatData[] = baseSequence.beats.map((beat) => ({
+    // Clone steps with new prop types
+    const newSteps: StepData[] = baseSequence.steps.map((beat) => ({
       ...beat,
       motions: {
         [MotionColor.BLUE]: beat.motions.blue
@@ -245,7 +245,7 @@
 
     return createSequenceData({
       ...baseSequence,
-      beats: newBeats,
+      steps: newSteps,
       startPosition: newStartPosition,
     });
   }
@@ -343,8 +343,8 @@
           const gridMode =
             seqMeta.grid_mode === "box" ? GridMode.BOX : GridMode.DIAMOND;
 
-          // Transform beats (skip first item: metadata)
-          const beats: BeatData[] = [];
+          // Transform steps (skip first item: metadata)
+          const steps: StepData[] = [];
           let startPosition: StartPositionData | undefined;
 
           for (let i = 1; i < sequenceArray.length; i++) {
@@ -373,22 +373,22 @@
                 isStartPosition: true,
               };
             } else {
-              beats.push(transformLegacyBeat(item, PropType.STAFF, gridMode));
+              steps.push(transformLegacyBeat(item, PropType.STAFF, gridMode));
             }
           }
 
-          if (beats.length > 0) {
+          if (steps.length > 0) {
             const sequenceData = createSequenceData({
               id: `gallery-${word}`,
               name: word,
               word,
-              beats,
+              steps,
               startPosition,
               gridMode,
               author: "TKA Gallery",
             });
             loadedSequences.push(sequenceData);
-            console.log(`Loaded ${word}: ${beats.length} beats`);
+            console.log(`Loaded ${word}: ${steps.length} steps`);
           }
         } catch (fetchError) {
           console.error(`Failed to load ${word}:`, fetchError);
@@ -465,12 +465,12 @@
               proppedSequence,
               {
                 includeStartPosition: true,
-                addBeatNumbers: true,
+                addStepNumbers: true,
                 addWord: true,
                 addUserInfo: false, // No user info for gallery thumbnails
                 addDifficultyLevel: true,
                 addReversalSymbols: true,
-                beatScale: 0.8, // Slightly smaller for thumbnails
+                stepScale: 0.8, // Slightly smaller for thumbnails
               }
             );
 

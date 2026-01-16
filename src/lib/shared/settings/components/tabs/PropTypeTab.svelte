@@ -1,27 +1,31 @@
 <!--
   PropTypeTab.svelte - Prop Type Selection
 
-  Clean button-based interface with bottom sheet prop picker.
-  Supports up to 6 presets for quick prop switching.
+  Clean rewrite with:
+  - 10 preset slots in 5x2 grid
+  - Simple media query for desktop side-by-side layout
+  - Inline prop grid on desktop (700px+)
+  - Keyboard shortcuts (1-9, 0) for presets
 -->
 <script lang="ts">
   import type { AppSettings, PropPreset } from "../../domain/AppSettings";
   import { container } from "$lib/shared/di";
   import { PropType } from "../../../pictograph/prop/domain/enums/PropType";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import { onMount } from "svelte";
+  import type { IDeviceDetector } from "../../../device/services/contracts/IDeviceDetector";
+  import { onMount, onDestroy } from "svelte";
   import {
-    getPropTypeDisplayInfo,
     hasVariations,
     getNextVariation,
   } from "./prop-type/PropTypeRegistry";
   import CatDogToggle from "./prop-type/CatDogToggle.svelte";
   import PropSelectionSheet from "./prop-type/PropSelectionSheet.svelte";
-  import PropPresetBar from "./prop-type/PropPresetBar.svelte";
+  import PresetChipBar from "./prop-type/PresetChipBar.svelte";
+  import CompactPropDisplay from "./prop-type/CompactPropDisplay.svelte";
+  import InlinePropGrid from "./prop-type/InlinePropGrid.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
-  // Entry animation
-  let isVisible = $state(false);
+  const PRESET_COUNT = 10;
 
   let { settings, onUpdate } = $props<{
     settings: AppSettings;
@@ -30,13 +34,12 @@
 
   // Services
   let hapticService: IHapticFeedback;
+  let deviceDetector: IDeviceDetector | null = null;
 
-  onMount(() => {
-    hapticService = container.items.hapticFeedback;
-    setTimeout(() => (isVisible = true), 30);
-  });
+  // Device detection
+  let hasKeyboard = $state(false);
 
-  // Current selections - initialized with defaults, synced from settings via $effect below
+  // Current selections
   let selectedBluePropType = $state(PropType.STAFF);
   let selectedRedPropType = $state(PropType.STAFF);
 
@@ -44,64 +47,98 @@
   let catDogMode = $state(false);
   let rememberedRedProp = $state<PropType | null>(null);
 
-  // Sheet state
+  // Sheet state (mobile)
   let isSheetOpen = $state(false);
   let selectingHand = $state<"blue" | "red">("blue");
 
-  // Preset state (fixed 3 slots)
-  let propPresets = $state<PropPreset[]>([]);
+  // Preset state
+  let propPresets = $state<(PropPreset | null)[]>([]);
   let selectedPresetIndex = $state(-1);
 
-  // Sync from settings prop
+  // Buugeng flip state
+  let blueBuugengFlipped = $state(false);
+  let redBuugengFlipped = $state(false);
+
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
+    deviceDetector = container.items.deviceDetector as IDeviceDetector;
+
+    updateDeviceCapabilities();
+    const cleanup = deviceDetector?.onCapabilitiesChanged(() => {
+      updateDeviceCapabilities();
+    });
+
+    window.addEventListener("keydown", handleKeydown);
+
+    return () => {
+      cleanup?.();
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  });
+
+  onDestroy(() => {
+    window.removeEventListener("keydown", handleKeydown);
+  });
+
+  function updateDeviceCapabilities() {
+    if (!deviceDetector) return;
+    const caps = deviceDetector.getCapabilities();
+    hasKeyboard = caps.inputMethod !== "touch";
+  }
+
+  // Sync from settings
   $effect(() => {
     selectedBluePropType =
       settings.bluePropType || settings.propType || PropType.STAFF;
     selectedRedPropType =
       settings.redPropType || settings.propType || PropType.STAFF;
     catDogMode = settings.catDogMode ?? false;
-    propPresets = settings.propPresets || [];
+    blueBuugengFlipped = settings.blueBuugengFlipped ?? false;
+    redBuugengFlipped = settings.redBuugengFlipped ?? false;
+
+    const existingPresets = settings.propPresets || [];
+    propPresets = Array.from(
+      { length: PRESET_COUNT },
+      (_, i) => existingPresets[i] || null
+    );
     selectedPresetIndex = settings.selectedPresetIndex ?? -1;
   });
 
-  // Watch for settings changes and sync internal state
-  $effect(() => {
-    const newBlueProp =
-      settings.bluePropType || settings.propType || PropType.STAFF;
-    const newRedProp =
-      settings.redPropType || settings.propType || PropType.STAFF;
-    const newCatDogMode = settings.catDogMode ?? false;
-
-    if (newBlueProp !== selectedBluePropType) {
-      selectedBluePropType = newBlueProp;
-    }
-    if (newRedProp !== selectedRedPropType) {
-      selectedRedPropType = newRedProp;
-    }
-    if (newCatDogMode !== catDogMode) {
-      catDogMode = newCatDogMode;
+  // Keyboard shortcuts
+  function handleKeydown(e: KeyboardEvent) {
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) {
+      return;
     }
 
-    if (!catDogMode && selectedBluePropType !== selectedRedPropType) {
-      selectedRedPropType = selectedBluePropType;
+    const key = e.key;
+    let presetIndex = -1;
+
+    if (key >= "1" && key <= "9") {
+      presetIndex = parseInt(key, 10) - 1;
+    } else if (key === "0") {
+      presetIndex = 9;
     }
 
-    // Sync presets from settings
-    const newPresets = settings.propPresets || [];
-    if (JSON.stringify(newPresets) !== JSON.stringify(propPresets)) {
-      propPresets = newPresets;
+    if (presetIndex >= 0 && presetIndex < PRESET_COUNT) {
+      e.preventDefault();
+      const preset = propPresets[presetIndex];
+      if (preset) {
+        handleSelectPreset(presetIndex);
+      } else {
+        handleSaveToSlot(presetIndex);
+      }
     }
-    const newSelectedIndex = settings.selectedPresetIndex ?? -1;
-    if (newSelectedIndex !== selectedPresetIndex) {
-      selectedPresetIndex = newSelectedIndex;
-    }
-  });
+  }
 
-  // Preset management functions
+  // Preset management
   function handleSelectPreset(index: number) {
     hapticService?.trigger("selection");
 
     const preset = propPresets[index];
-    if (!preset) return; // Empty slot - do nothing on select
+    if (!preset) return;
 
     selectedPresetIndex = index;
     selectedBluePropType = preset.bluePropType;
@@ -110,7 +147,6 @@
     blueBuugengFlipped = preset.blueBuugengFlipped ?? false;
     redBuugengFlipped = preset.redBuugengFlipped ?? false;
 
-    // Update all settings at once
     onUpdate?.({ key: "selectedPresetIndex", value: index });
     onUpdate?.({ key: "bluePropType", value: preset.bluePropType });
     onUpdate?.({ key: "redPropType", value: preset.redPropType });
@@ -122,7 +158,6 @@
   function handleSaveToSlot(index: number) {
     hapticService?.trigger("selection");
 
-    // Save current config to this slot
     const newPreset: PropPreset = {
       bluePropType: selectedBluePropType,
       redPropType: selectedRedPropType,
@@ -131,34 +166,34 @@
       redBuugengFlipped,
     };
 
-    // Ensure array is long enough
     const newPresets = [...propPresets];
-    while (newPresets.length <= index) {
-      newPresets.push(undefined as unknown as PropPreset);
-    }
     newPresets[index] = newPreset;
+    propPresets = newPresets;
+    selectedPresetIndex = index;
 
-    // Clean up undefined entries but keep structure
-    const cleanedPresets = newPresets
-      .map((p, i) => p || null)
-      .filter((p): p is PropPreset => p !== null);
+    const presetsToStore = newPresets.filter((p): p is PropPreset => p !== null);
+    onUpdate?.({ key: "propPresets", value: presetsToStore });
+    onUpdate?.({ key: "selectedPresetIndex", value: index });
+  }
 
-    propPresets = cleanedPresets;
-    selectedPresetIndex = cleanedPresets.findIndex(
-      (p) =>
-        p.bluePropType === newPreset.bluePropType &&
-        p.redPropType === newPreset.redPropType &&
-        p.catDogMode === newPreset.catDogMode
-    );
+  function handleClearSlot(index: number) {
+    hapticService?.trigger("selection");
 
-    onUpdate?.({ key: "propPresets", value: cleanedPresets });
-    onUpdate?.({ key: "selectedPresetIndex", value: selectedPresetIndex });
+    const newPresets = [...propPresets];
+    newPresets[index] = null;
+    propPresets = newPresets;
+
+    if (selectedPresetIndex === index) {
+      selectedPresetIndex = -1;
+      onUpdate?.({ key: "selectedPresetIndex", value: -1 });
+    }
+
+    const presetsToStore = newPresets.filter((p): p is PropPreset => p !== null);
+    onUpdate?.({ key: "propPresets", value: presetsToStore });
   }
 
   function updateCurrentPreset() {
-    // Update the currently selected preset with the current prop configuration
-    if (selectedPresetIndex < 0 || selectedPresetIndex >= propPresets.length)
-      return;
+    if (selectedPresetIndex < 0 || !propPresets[selectedPresetIndex]) return;
 
     const updatedPreset: PropPreset = {
       bluePropType: selectedBluePropType,
@@ -172,9 +207,11 @@
     newPresets[selectedPresetIndex] = updatedPreset;
     propPresets = newPresets;
 
-    onUpdate?.({ key: "propPresets", value: newPresets });
+    const presetsToStore = newPresets.filter((p): p is PropPreset => p !== null);
+    onUpdate?.({ key: "propPresets", value: presetsToStore });
   }
 
+  // CatDog mode
   function toggleCatDogMode() {
     hapticService?.trigger("selection");
     const newCatDogMode = !catDogMode;
@@ -195,14 +232,13 @@
 
     catDogMode = newCatDogMode;
     onUpdate?.({ key: "catDogMode", value: catDogMode });
-
-    // Update preset if we have one selected
     updateCurrentPreset();
   }
 
-  function handleChangeProp() {
+  // Prop selection (mobile sheet)
+  function handleOpenSheet(hand: "blue" | "red") {
     hapticService?.trigger("selection");
-    selectingHand = "blue";
+    selectingHand = hand;
     isSheetOpen = true;
   }
 
@@ -214,18 +250,34 @@
         selectedRedPropType = propType;
         onUpdate?.({ key: "redPropType", value: propType });
       }
-      // In cat-dog mode, user clicks the red card directly to select red prop
-      // No need for sequential selection flow
     } else {
       selectedRedPropType = propType;
       onUpdate?.({ key: "redPropType", value: propType });
     }
-
-    // Update preset if we have one selected
     updateCurrentPreset();
   }
 
-  function toggleVariation(hand: "blue" | "red") {
+  // Inline selection (desktop)
+  function handleInlineSelect(propType: PropType) {
+    hapticService?.trigger("selection");
+    selectedBluePropType = propType;
+    onUpdate?.({ key: "bluePropType", value: propType });
+    if (!catDogMode) {
+      selectedRedPropType = propType;
+      onUpdate?.({ key: "redPropType", value: propType });
+    }
+    updateCurrentPreset();
+  }
+
+  function handleInlineSelectRed(propType: PropType) {
+    hapticService?.trigger("selection");
+    selectedRedPropType = propType;
+    onUpdate?.({ key: "redPropType", value: propType });
+    updateCurrentPreset();
+  }
+
+  // Variation/flip
+  function handleToggleVariation(hand: "blue" | "red") {
     hapticService?.trigger("selection");
     const currentProp =
       hand === "blue" ? selectedBluePropType : selectedRedPropType;
@@ -246,35 +298,15 @@
       selectedRedPropType = newProp;
       onUpdate?.({ key: "redPropType", value: newProp });
     }
-
-    // Update preset if we have one selected
     updateCurrentPreset();
   }
 
-  // Buugeng family - asymmetric props that can be flipped
-  const BUUGENG_FAMILY = new Set([
-    PropType.BUUGENG,
-    PropType.BIGBUUGENG,
-    PropType.FRACTALGENG,
-  ]);
-
-  // Buugeng flip state
-  let blueBuugengFlipped = $state(false);
-  let redBuugengFlipped = $state(false);
-
-  // Sync buugeng flip state from settings
-  $effect(() => {
-    blueBuugengFlipped = settings.blueBuugengFlipped ?? false;
-    redBuugengFlipped = settings.redBuugengFlipped ?? false;
-  });
-
-  function toggleBuugengFlip(hand: "blue" | "red") {
+  function handleToggleFlip(hand: "blue" | "red") {
     hapticService?.trigger("selection");
 
     if (hand === "blue") {
       blueBuugengFlipped = !blueBuugengFlipped;
       onUpdate?.({ key: "blueBuugengFlipped", value: blueBuugengFlipped });
-      // In single-prop mode, sync both hands
       if (!catDogMode) {
         redBuugengFlipped = blueBuugengFlipped;
         onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
@@ -283,243 +315,88 @@
       redBuugengFlipped = !redBuugengFlipped;
       onUpdate?.({ key: "redBuugengFlipped", value: redBuugengFlipped });
     }
+    updateCurrentPreset();
   }
-
-  // Display info
-  const blueInfo = $derived(getPropTypeDisplayInfo(selectedBluePropType));
-  const redInfo = $derived(getPropTypeDisplayInfo(selectedRedPropType));
-  const blueHasVariations = $derived(hasVariations(selectedBluePropType));
-  const redHasVariations = $derived(hasVariations(selectedRedPropType));
-  const blueIsBuugeng = $derived(BUUGENG_FAMILY.has(selectedBluePropType));
-  const redIsBuugeng = $derived(BUUGENG_FAMILY.has(selectedRedPropType));
 </script>
 
-<div class="prop-type-tab" class:visible={isVisible}>
-  <section class="settings-panel">
+<div class="prop-type-tab">
+  <!-- Left: Controls -->
+  <section class="controls-panel">
     <header class="panel-header">
-      <span class="panel-icon"
-        ><i class="fas fa-wand-sparkles" aria-hidden="true"></i></span
-      >
+      <span class="panel-icon">
+        <i class="fas fa-wand-sparkles" aria-hidden="true"></i>
+      </span>
       <div class="panel-header-text">
         <h3 class="panel-title">{t("settings_prop_type")}</h3>
         <p class="panel-subtitle">{t("settings_prop_subtitle")}</p>
       </div>
     </header>
 
-    <!-- Prop Presets -->
-    <div class="presets-section">
+    <!-- Presets -->
+    <div class="section">
       <h4 class="section-label">{t("settings_quick_presets")}</h4>
-      <PropPresetBar
+      <PresetChipBar
         presets={propPresets}
         selectedIndex={selectedPresetIndex}
+        showKeyboardBadges={hasKeyboard}
         onSelectPreset={handleSelectPreset}
         onSaveToSlot={handleSaveToSlot}
+        onClearSlot={handleClearSlot}
       />
     </div>
 
-    <!-- Cat Dog Toggle -->
-    <div class="mode-section">
+    <!-- CatDog Toggle -->
+    <div class="mode-row">
       <CatDogToggle {catDogMode} onToggle={toggleCatDogMode} />
-      <p class="mode-hint">
+      <span class="mode-hint">
         {catDogMode ? t("settings_different_props") : t("settings_same_props")}
-      </p>
+      </span>
     </div>
 
-    <!-- Current Selection Display -->
+    <!-- Compact Prop Display -->
+    <div class="prop-display">
+      <CompactPropDisplay
+        bluePropType={selectedBluePropType}
+        redPropType={selectedRedPropType}
+        {catDogMode}
+        {blueBuugengFlipped}
+        {redBuugengFlipped}
+        onOpenSheet={handleOpenSheet}
+        onToggleVariation={handleToggleVariation}
+        onToggleFlip={handleToggleFlip}
+      />
+    </div>
+  </section>
+
+  <!-- Right: Inline Prop Grid (desktop only, via CSS) -->
+  <section class="selection-panel">
     {#if catDogMode}
-      <!-- Two prop display -->
-      <div class="prop-display dual">
-        <button
-          class="prop-card blue"
-          onclick={() => {
-            hapticService?.trigger("selection");
-            selectingHand = "blue";
-            isSheetOpen = true;
-          }}
-        >
-          <span class="hand-label">
-            <span class="hand-dot blue"></span>
-            {t("settings_left_hand")}
-          </span>
-          <img
-            src={blueInfo.image}
-            alt={blueInfo.label}
-            class="prop-icon"
-            class:flipped={blueIsBuugeng && blueBuugengFlipped}
-          />
-          <span class="prop-name">{blueInfo.label}</span>
-          {#if blueHasVariations}
-            <span
-              class="mini-variation-btn"
-              onclick={(e) => {
-                e.stopPropagation();
-                toggleVariation("blue");
-              }}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleVariation("blue");
-                }
-              }}
-              role="button"
-              tabindex="0"
-              aria-label="Toggle variation"
-            >
-              <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            </span>
-          {/if}
-          {#if blueIsBuugeng}
-            <span
-              class="mini-flip-btn"
-              class:active={blueBuugengFlipped}
-              onclick={(e) => {
-                e.stopPropagation();
-                toggleBuugengFlip("blue");
-              }}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleBuugengFlip("blue");
-                }
-              }}
-              role="button"
-              tabindex="0"
-              aria-label="Flip buugeng"
-              title="Flip buugeng (asymmetric prop)"
-            >
-              <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
-            </span>
-          {/if}
-        </button>
-        <button
-          class="prop-card red"
-          onclick={() => {
-            hapticService?.trigger("selection");
-            selectingHand = "red";
-            isSheetOpen = true;
-          }}
-        >
-          <span class="hand-label">
-            <span class="hand-dot red"></span>
-            {t("settings_right_hand")}
-          </span>
-          <img
-            src={redInfo.image}
-            alt={redInfo.label}
-            class="prop-icon"
-            class:flipped={redIsBuugeng && redBuugengFlipped}
-          />
-          <span class="prop-name">{redInfo.label}</span>
-          {#if redHasVariations}
-            <span
-              class="mini-variation-btn"
-              onclick={(e) => {
-                e.stopPropagation();
-                toggleVariation("red");
-              }}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleVariation("red");
-                }
-              }}
-              role="button"
-              tabindex="0"
-              aria-label="Toggle variation"
-            >
-              <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            </span>
-          {/if}
-          {#if redIsBuugeng}
-            <span
-              class="mini-flip-btn"
-              class:active={redBuugengFlipped}
-              onclick={(e) => {
-                e.stopPropagation();
-                toggleBuugengFlip("red");
-              }}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleBuugengFlip("red");
-                }
-              }}
-              role="button"
-              tabindex="0"
-              aria-label="Flip buugeng"
-              title="Flip buugeng (asymmetric prop)"
-            >
-              <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
-            </span>
-          {/if}
-        </button>
+      <div class="dual-grids">
+        <InlinePropGrid
+          selectedPropType={selectedBluePropType}
+          color="blue"
+          title={t("settings_select_left_prop")}
+          onSelect={handleInlineSelect}
+        />
+        <InlinePropGrid
+          selectedPropType={selectedRedPropType}
+          color="red"
+          title={t("settings_select_right_prop")}
+          onSelect={handleInlineSelectRed}
+        />
       </div>
     {:else}
-      <!-- Single prop display -->
-      <div class="prop-display single">
-        <button class="prop-card" onclick={handleChangeProp}>
-          <img
-            src={blueInfo.image}
-            alt={blueInfo.label}
-            class="prop-icon"
-            class:flipped={blueIsBuugeng && blueBuugengFlipped}
-          />
-          <span class="prop-name">{blueInfo.label}</span>
-          {#if blueHasVariations}
-            <span
-              class="mini-variation-btn"
-              onclick={(e) => {
-                e.stopPropagation();
-                toggleVariation("blue");
-              }}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleVariation("blue");
-                }
-              }}
-              role="button"
-              tabindex="0"
-              aria-label="Toggle variation"
-            >
-              <i class="fas fa-sync-alt" aria-hidden="true"></i>
-            </span>
-          {/if}
-          {#if blueIsBuugeng}
-            <span
-              class="mini-flip-btn"
-              class:active={blueBuugengFlipped}
-              onclick={(e) => {
-                e.stopPropagation();
-                toggleBuugengFlip("blue");
-              }}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleBuugengFlip("blue");
-                }
-              }}
-              role="button"
-              tabindex="0"
-              aria-label="Flip buugeng"
-              title="Flip buugeng (asymmetric prop)"
-            >
-              <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
-            </span>
-          {/if}
-        </button>
-      </div>
+      <InlinePropGrid
+        selectedPropType={selectedBluePropType}
+        color="blue"
+        title="Select Prop"
+        onSelect={handleInlineSelect}
+      />
     {/if}
   </section>
 </div>
 
-<!-- Prop Selection Sheet -->
+<!-- Mobile Sheet -->
 <PropSelectionSheet
   bind:isOpen={isSheetOpen}
   selectedPropType={selectingHand === "blue"
@@ -534,45 +411,90 @@
 
 <style>
   .prop-type-tab {
-    container-type: size;
-    container-name: prop-type-tab;
     display: flex;
     flex-direction: column;
-    flex: 1;
+    gap: 20px;
+    padding: 16px;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: clamp(8px, 2cqi, 16px);
-    gap: clamp(10px, 1.5cqi, 14px);
-    height: 100%;
+    flex: 1;
     min-height: 0;
-    opacity: 0;
-    transition: opacity 200ms ease;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 
-  .prop-type-tab.visible {
-    opacity: 1;
+  /* Desktop: side by side, stretch to fill height */
+  @media (min-width: 900px) {
+    .prop-type-tab {
+      flex-direction: row;
+      align-items: stretch;
+      overflow: hidden;
+    }
   }
 
-  .settings-panel {
+  /* Controls Panel - uses container queries for responsive sizing */
+  .controls-panel {
     display: flex;
     flex-direction: column;
-    gap: clamp(16px, 2cqi, 20px);
-    padding: clamp(16px, 2.5cqi, 24px);
+    gap: clamp(12px, 3cqi, 20px);
+    padding: clamp(12px, 3cqi, 20px);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
-    border-radius: 20px;
-    flex: 1;
-    min-height: 0;
+    border-radius: 16px;
+    container-type: inline-size;
+    container-name: controls-panel;
   }
 
-  /* Panel Header */
+  @media (min-width: 900px) {
+    .controls-panel {
+      flex: 0 0 clamp(360px, 25vw, 480px);
+      min-height: 0;
+      overflow-y: auto;
+    }
+  }
+
+  /* Selection Panel - hidden on mobile, shown on desktop */
+  .selection-panel {
+    display: none;
+  }
+
+  @media (min-width: 900px) {
+    .selection-panel {
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+    }
+  }
+
+  .dual-grids {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (min-width: 1200px) {
+    .dual-grids {
+      flex-direction: row;
+    }
+
+    .dual-grids > :global(*) {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  /* Header */
   .panel-header {
     display: flex;
     align-items: center;
     gap: 14px;
     padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .panel-icon {
@@ -582,7 +504,7 @@
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    font-size: var(--font-size-lg);
+    font-size: 18px;
     background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     border: 1px solid color-mix(in srgb, var(--theme-accent) 35%, transparent);
     color: var(--theme-accent);
@@ -593,217 +515,64 @@
   }
 
   .panel-title {
-    font-size: var(--font-size-base);
+    font-size: 16px;
     font-weight: 600;
     color: var(--theme-text);
     margin: 0;
   }
 
   .panel-subtitle {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    margin: 3px 0 0 0;
+    font-size: 13px;
+    color: var(--theme-text-dim);
+    margin: 4px 0 0 0;
   }
 
-  /* Mode Section */
-  .mode-section {
+  /* Section */
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Presets section grows to fill available space on desktop */
+  @media (min-width: 900px) {
+    .section {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+
+  .section-label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Mode Row */
+  .mode-row {
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
   .mode-hint {
-    margin: 0;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    font-size: 13px;
+    color: var(--theme-text-dim);
     font-style: italic;
   }
 
-  /* Presets Section */
-  .presets-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .section-label {
-    margin: 0;
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  /* Prop Display */
+  /* Prop Display - at bottom on mobile, natural position on desktop */
   .prop-display {
-    display: flex;
-    gap: clamp(10px, 2cqi, 16px);
-    flex: 1;
-    min-height: 0;
-    align-items: stretch;
+    margin-top: auto;
   }
 
-  .prop-display.single {
-    justify-content: center;
+  @media (min-width: 900px) {
+    .prop-display {
+      margin-top: auto;
+    }
   }
 
-  .prop-card {
-    position: relative;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(10px, 2cqi, 14px);
-    padding: clamp(16px, 2.5cqi, 24px);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 16px;
-    min-height: clamp(140px, 18cqi, 220px);
-    height: 100%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .prop-card:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    transform: translateY(-2px);
-  }
-
-  .prop-card:active {
-    transform: translateY(0) scale(0.98);
-  }
-
-  .prop-card.blue {
-    border-color: color-mix(in srgb, var(--prop-blue) 30%, transparent);
-    background: color-mix(in srgb, var(--prop-blue) 8%, transparent);
-  }
-
-  .prop-card.blue:hover {
-    border-color: color-mix(in srgb, var(--prop-blue) 50%, transparent);
-    background: color-mix(in srgb, var(--prop-blue) 15%, transparent);
-  }
-
-  .prop-card.red {
-    border-color: color-mix(in srgb, var(--prop-red) 30%, transparent);
-    background: color-mix(in srgb, var(--prop-red) 8%, transparent);
-  }
-
-  .prop-card.red:hover {
-    border-color: color-mix(in srgb, var(--prop-red) 50%, transparent);
-    background: color-mix(in srgb, var(--prop-red) 15%, transparent);
-  }
-
-  .hand-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    color: var(--theme-text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .hand-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .hand-dot.blue {
-    background: var(--prop-blue);
-  }
-
-  .hand-dot.red {
-    background: var(--prop-red);
-  }
-
-  .prop-icon {
-    width: clamp(90px, 20cqw, 160px);
-    height: clamp(90px, 20cqw, 160px);
-    object-fit: contain;
-    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
-  }
-
-  /* Color-code prop icons based on hand */
-  .prop-card.blue .prop-icon {
-    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3)) saturate(1.1);
-  }
-
-  .prop-card.red .prop-icon {
-    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3)) hue-rotate(125deg)
-      saturate(1.2);
-  }
-
-  .prop-name {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--theme-text);
-  }
-
-  .mini-variation-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 36px;
-    height: 36px;
-    min-width: var(--min-touch-target, 48px);
-    min-height: var(--min-touch-target, 48px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    font-size: var(--font-size-compact);
-    transition: all 0.2s ease;
-  }
-
-  .mini-variation-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-accent);
-  }
-
-  /* Flip button for asymmetric props (Buugeng) */
-  .mini-flip-btn {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    width: 36px;
-    height: 36px;
-    min-width: var(--min-touch-target, 48px);
-    min-height: var(--min-touch-target, 48px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    font-size: var(--font-size-compact);
-    transition: all 0.2s ease;
-  }
-
-  .mini-flip-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-accent);
-  }
-
-  .mini-flip-btn.active {
-    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    border-color: var(--theme-accent);
-    color: var(--theme-accent);
-  }
-
-  /* Flipped prop icon preview */
-  .prop-icon.flipped {
-    transform: scaleX(-1);
-  }
 </style>

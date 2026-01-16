@@ -1,0 +1,316 @@
+<!--
+  PresetChip.svelte - Compact preset chip for 10-slot system
+
+  Empty: Shows slot number with + icon, tap to save current config
+  Filled: Shows mini prop icon(s), tap to apply, long-press to clear
+  Desktop: Shows keyboard shortcut badge (1-9, 0)
+-->
+<script lang="ts">
+  import type { PropPreset } from "../../../domain/AppSettings";
+  import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
+
+  let {
+    preset,
+    index,
+    selected = false,
+    showKeyboardBadge = false,
+    onSelect,
+    onSave,
+    onClear,
+  } = $props<{
+    preset: PropPreset | null;
+    index: number;
+    selected?: boolean;
+    showKeyboardBadge?: boolean;
+    onSelect?: () => void;
+    onSave?: () => void;
+    onClear?: () => void;
+  }>();
+
+  const isEmpty = $derived(!preset);
+  const blueInfo = $derived(
+    preset ? getPropTypeDisplayInfo(preset.bluePropType) : null
+  );
+  const redInfo = $derived(
+    preset ? getPropTypeDisplayInfo(preset.redPropType) : null
+  );
+  const isCatDog = $derived(
+    preset && preset.catDogMode && preset.bluePropType !== preset.redPropType
+  );
+
+  // Keyboard shortcut label (1-9, then 0 for slot 10)
+  const keyLabel = $derived(index < 9 ? String(index + 1) : "0");
+
+  // Long-press tracking for clear action
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  let isLongPress = false;
+
+  function handlePointerDown() {
+    if (isEmpty) return;
+
+    isLongPress = false;
+    longPressTimer = setTimeout(() => {
+      isLongPress = true;
+      onClear?.();
+    }, 600);
+  }
+
+  function handlePointerUp() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+
+    // Only trigger click if it wasn't a long press
+    if (!isLongPress) {
+      handleClick();
+    }
+    isLongPress = false;
+  }
+
+  function handlePointerLeave() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
+  function handleClick() {
+    if (isEmpty) {
+      onSave?.();
+    } else {
+      onSelect?.();
+    }
+  }
+</script>
+
+<button
+  class="preset-chip"
+  class:empty={isEmpty}
+  class:selected
+  onpointerdown={handlePointerDown}
+  onpointerup={handlePointerUp}
+  onpointerleave={handlePointerLeave}
+  onpointercancel={handlePointerLeave}
+  aria-label={isEmpty
+    ? `Save to slot ${index + 1}`
+    : isCatDog
+      ? `Preset ${index + 1}: ${blueInfo?.label} and ${redInfo?.label}`
+      : `Preset ${index + 1}: ${blueInfo?.label}`}
+  aria-pressed={!isEmpty && selected}
+  title={isEmpty
+    ? "Save current props"
+    : isCatDog
+      ? `${blueInfo?.label} / ${redInfo?.label} (hold to clear)`
+      : `${blueInfo?.label} (hold to clear)`}
+>
+  <!-- Keyboard badge (desktop only) -->
+  {#if showKeyboardBadge}
+    <span class="keyboard-badge">{keyLabel}</span>
+  {/if}
+
+  <!-- Content -->
+  <span class="chip-content">
+    {#if isEmpty}
+      <span class="slot-number">{index + 1}</span>
+      <i class="fas fa-plus empty-icon" aria-hidden="true"></i>
+    {:else if isCatDog && blueInfo && redInfo}
+      <div class="dual-props">
+        <img src={blueInfo.image} alt="" class="mini-prop" />
+        <img src={redInfo.image} alt="" class="mini-prop red" />
+      </div>
+    {:else if blueInfo}
+      <img src={blueInfo.image} alt="" class="mini-prop single" />
+    {/if}
+  </span>
+
+  <!-- Selection indicator -->
+  {#if selected}
+    <span class="selection-ring"></span>
+  {/if}
+</button>
+
+<style>
+  .preset-chip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Fill grid cell, with reasonable minimum size */
+    width: 100%;
+    height: 100%;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 6px;
+    background: var(--theme-card-bg);
+    border: 2px solid var(--theme-stroke);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .preset-chip:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .preset-chip:active {
+    transform: scale(0.95);
+  }
+
+  /* Empty slot styling */
+  .preset-chip.empty {
+    border-style: dashed;
+    background: transparent;
+  }
+
+  .preset-chip.empty:hover {
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    border-color: var(--theme-accent);
+  }
+
+  /* Selected state */
+  .preset-chip.selected {
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: var(--theme-accent);
+    border-style: solid;
+  }
+
+  /* Selection ring animation */
+  .selection-ring {
+    position: absolute;
+    inset: -4px;
+    border: 2px solid var(--theme-accent);
+    border-radius: 14px;
+    opacity: 0.6;
+    animation: pulse-ring 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.02); }
+  }
+
+  /* Keyboard badge */
+  .keyboard-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: var(--theme-text-dim);
+    font-size: 11px;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    color: var(--theme-panel-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    opacity: 0.8;
+    transition: opacity 0.15s ease;
+  }
+
+  .preset-chip:hover .keyboard-badge {
+    opacity: 1;
+  }
+
+  .preset-chip.selected .keyboard-badge {
+    background: var(--theme-accent);
+    color: white;
+    opacity: 1;
+  }
+
+  /* Chip content */
+  .chip-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .slot-number {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--theme-text-dim);
+    opacity: 0.8;
+  }
+
+  .empty-icon {
+    font-size: 18px;
+    color: var(--theme-text-dim);
+    transition: color 0.15s ease;
+  }
+
+  .preset-chip.empty:hover .empty-icon {
+    color: var(--theme-accent);
+  }
+
+  /* Mini prop icons - scale with container */
+  .mini-prop {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .mini-prop.single {
+    width: 44px;
+    height: 44px;
+  }
+
+  .dual-props {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .dual-props .mini-prop {
+    width: 28px;
+    height: 34px;
+  }
+
+  .dual-props .mini-prop.red {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) hue-rotate(125deg) saturate(1.2);
+  }
+
+  /* Focus state */
+  .preset-chip:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .preset-chip {
+      transition: none;
+    }
+
+    .preset-chip:active {
+      transform: none;
+    }
+
+    .selection-ring {
+      animation: none;
+      opacity: 0.5;
+    }
+  }
+</style>

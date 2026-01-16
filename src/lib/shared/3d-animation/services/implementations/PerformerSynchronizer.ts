@@ -11,19 +11,19 @@
  *
  * // Add performers (first becomes master by default)
  * sync.addPerformer("avatar1");
- * sync.addPerformer("avatar2", 2);  // 2 beats ahead
- * sync.addPerformer("avatar3", -2); // 2 beats behind
+ * sync.addPerformer("avatar2", 2);  // 2 steps ahead
+ * sync.addPerformer("avatar3", -2); // 2 steps behind
  *
  * // Enable sync
  * sync.enableSync();
  *
  * // Subscribe to beat updates
- * const unsubscribe = sync.onBeat((performerId, beat) => {
- *   avatars[performerId].goToBeat(beat);
+ * const unsubscribe = sync.onStep((performerId, beat) => {
+ *   avatars[performerId].goToStep(beat);
  * });
  *
  * // In animation loop, notify of master beat changes
- * sync.onMasterBeatChange(masterAvatar.currentBeat, masterAvatar.totalBeats);
+ * sync.onMasterBeatChange(masterAvatar.currentStep, masterAvatar.totalSteps);
  * ```
  */
 
@@ -34,7 +34,7 @@ import type {
   PerformerSyncConfig,
   PerformerSyncState,
   SyncStateChangeCallback,
-  BeatEventCallback,
+  StepEventCallback,
 } from "../contracts/IPerformerSynchronizer";
 
 // ============================================================================
@@ -69,11 +69,11 @@ export function createPerformerSynchronizer(
 
   // Event callbacks
   const syncStateCallbacks = new Set<SyncStateChangeCallback>();
-  const beatCallbacks = new Set<BeatEventCallback>();
+  const beatCallbacks = new Set<StepEventCallback>();
 
   // Track last known beat for change detection
-  let lastMasterBeat = -1;
-  let lastTotalBeats = 0;
+  let lastMasterStep = -1;
+  let lastTotalSteps = 0;
 
   // =========================================================================
   // Helper Functions
@@ -85,11 +85,11 @@ export function createPerformerSynchronizer(
   function calculateBeatWithOffset(
     baseBeat: number,
     offset: number,
-    totalBeats: number
+    totalSteps: number
   ): number {
-    if (totalBeats === 0) return 0;
+    if (totalSteps === 0) return 0;
     // Modulo that handles negatives correctly
-    return (((baseBeat + offset) % totalBeats) + totalBeats) % totalBeats;
+    return (((baseBeat + offset) % totalSteps) + totalSteps) % totalSteps;
   }
 
   /**
@@ -127,8 +127,8 @@ export function createPerformerSynchronizer(
 
     syncStates.set(performerId, {
       id: performerId,
-      currentBeat: beat,
-      beatProgress: progress,
+      currentStep: beat,
+      stepProgress: progress,
       isSynced: isSyncEnabled && config.followsMaster,
     });
   }
@@ -136,15 +136,15 @@ export function createPerformerSynchronizer(
   /**
    * Sync all followers to master's current beat
    */
-  function syncAllFollowers(masterBeat: number, totalBeats: number): void {
+  function syncAllFollowers(masterStep: number, totalSteps: number): void {
     if (!isSyncEnabled) return;
 
     for (const [id, config] of performers) {
       if (config.followsMaster && id !== masterId) {
         const followerBeat = calculateBeatWithOffset(
-          masterBeat,
-          config.beatOffset,
-          totalBeats
+          masterStep,
+          config.stepOffset,
+          totalSteps
         );
         updateSyncState(id, followerBeat, 0);
         notifyBeat(id, followerBeat);
@@ -180,15 +180,15 @@ export function createPerformerSynchronizer(
       const isFirst = performers.size === 0;
       const config: PerformerSyncConfig = {
         id,
-        beatOffset: clampOffset(initialOffset),
+        stepOffset: clampOffset(initialOffset),
         followsMaster: !isFirst, // First performer is master, doesn't follow
       };
 
       performers.set(id, config);
       syncStates.set(id, {
         id,
-        currentBeat: 0,
-        beatProgress: 0,
+        currentStep: 0,
+        stepProgress: 0,
         isSynced: false,
       });
 
@@ -214,7 +214,7 @@ export function createPerformerSynchronizer(
           const config = performers.get(masterId);
           if (config) {
             config.followsMaster = false;
-            config.beatOffset = 0;
+            config.stepOffset = 0;
           }
         }
       }
@@ -240,8 +240,8 @@ export function createPerformerSynchronizer(
       isSyncEnabled = true;
 
       // Immediately sync all followers
-      if (lastTotalBeats > 0) {
-        syncAllFollowers(lastMasterBeat, lastTotalBeats);
+      if (lastTotalSteps > 0) {
+        syncAllFollowers(lastMasterStep, lastTotalSteps);
       }
 
       notifySyncStateChange();
@@ -282,12 +282,12 @@ export function createPerformerSynchronizer(
       const newMasterConfig = performers.get(id);
       if (newMasterConfig) {
         newMasterConfig.followsMaster = false;
-        newMasterConfig.beatOffset = 0;
+        newMasterConfig.stepOffset = 0;
       }
 
       // Re-sync if enabled
-      if (isSyncEnabled && lastTotalBeats > 0) {
-        syncAllFollowers(lastMasterBeat, lastTotalBeats);
+      if (isSyncEnabled && lastTotalSteps > 0) {
+        syncAllFollowers(lastMasterStep, lastTotalSteps);
       }
 
       notifySyncStateChange();
@@ -298,14 +298,14 @@ export function createPerformerSynchronizer(
       const config = performers.get(id);
       if (!config) return;
 
-      config.beatOffset = clampOffset(offset);
+      config.stepOffset = clampOffset(offset);
 
       // Re-sync this performer if sync is enabled
-      if (isSyncEnabled && config.followsMaster && lastTotalBeats > 0) {
+      if (isSyncEnabled && config.followsMaster && lastTotalSteps > 0) {
         const beat = calculateBeatWithOffset(
-          lastMasterBeat,
-          config.beatOffset,
-          lastTotalBeats
+          lastMasterStep,
+          config.stepOffset,
+          lastTotalSteps
         );
         updateSyncState(id, beat, 0);
         notifyBeat(id, beat);
@@ -316,38 +316,38 @@ export function createPerformerSynchronizer(
     incrementOffset(id: PerformerId): void {
       const config = performers.get(id);
       if (config) {
-        synchronizer.setPerformerOffset(id, config.beatOffset + 1);
+        synchronizer.setPerformerOffset(id, config.stepOffset + 1);
       }
     },
 
     decrementOffset(id: PerformerId): void {
       const config = performers.get(id);
       if (config) {
-        synchronizer.setPerformerOffset(id, config.beatOffset - 1);
+        synchronizer.setPerformerOffset(id, config.stepOffset - 1);
       }
     },
 
     resetAllOffsets(): void {
       for (const config of performers.values()) {
         if (config.followsMaster) {
-          config.beatOffset = 0;
+          config.stepOffset = 0;
         }
       }
 
-      if (isSyncEnabled && lastTotalBeats > 0) {
-        syncAllFollowers(lastMasterBeat, lastTotalBeats);
+      if (isSyncEnabled && lastTotalSteps > 0) {
+        syncAllFollowers(lastMasterStep, lastTotalSteps);
       }
     },
 
     // Beat Calculation
     calculateFollowerBeat(
       performerId: PerformerId,
-      masterBeat: number,
-      totalBeats: number
+      masterStep: number,
+      totalSteps: number
     ): number {
       const config = performers.get(performerId);
-      if (!config) return masterBeat;
-      return calculateBeatWithOffset(masterBeat, config.beatOffset, totalBeats);
+      if (!config) return masterStep;
+      return calculateBeatWithOffset(masterStep, config.stepOffset, totalSteps);
     },
 
     getSyncStates(): PerformerSyncState[] {
@@ -359,20 +359,20 @@ export function createPerformerSynchronizer(
     },
 
     // Beat Updates
-    onMasterBeatChange(masterBeat: number, totalBeats: number): void {
+    onMasterBeatChange(masterStep: number, totalSteps: number): void {
       // Store for later use (e.g., when sync is enabled or performer is added)
-      lastTotalBeats = totalBeats;
+      lastTotalSteps = totalSteps;
 
       // Only process if beat actually changed
-      if (masterBeat === lastMasterBeat) return;
-      lastMasterBeat = masterBeat;
+      if (masterStep === lastMasterStep) return;
+      lastMasterStep = masterStep;
 
       // Update master's state
-      updateSyncState(masterId, masterBeat, 0);
-      notifyBeat(masterId, masterBeat);
+      updateSyncState(masterId, masterStep, 0);
+      notifyBeat(masterId, masterStep);
 
       // Sync followers
-      syncAllFollowers(masterBeat, totalBeats);
+      syncAllFollowers(masterStep, totalSteps);
     },
 
     onMasterPlayStateChange(isPlaying: boolean): void {
@@ -386,7 +386,7 @@ export function createPerformerSynchronizer(
       return () => syncStateCallbacks.delete(callback);
     },
 
-    onBeat(callback: BeatEventCallback): () => void {
+    onStep(callback: StepEventCallback): () => void {
       beatCallbacks.add(callback);
       return () => beatCallbacks.delete(callback);
     },
@@ -399,8 +399,8 @@ export function createPerformerSynchronizer(
       beatCallbacks.clear();
       isSyncEnabled = false;
       masterId = "";
-      lastMasterBeat = -1;
-      lastTotalBeats = 0;
+      lastMasterStep = -1;
+      lastTotalSteps = 0;
     },
   };
 

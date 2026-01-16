@@ -29,9 +29,9 @@ export interface ActivePerformerClip {
   /** Progress within the clip (0-1) */
   progress: number;
   /** Current beat index within the sequence */
-  beatIndex: number;
+  stepIndex: number;
   /** Sub-beat progress within current beat (0-1) */
-  beatProgress: number;
+  stepProgress: number;
   /** The sequence ID being played */
   sequenceId: string;
 }

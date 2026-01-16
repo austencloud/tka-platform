@@ -49,7 +49,7 @@
   <div class="help-content">
     <div class="help-grid">
       <HelpSection icon="fa-image" title="Image Mode" {accentColor}>
-        <p>View your sequence as a static image showing all beats at once.</p>
+        <p>View your sequence as a static image showing all steps at once.</p>
         <ul>
           <li><strong>Toggle options</strong> — Show/hide beat numbers, word, grid</li>
           <li><strong>Dark/light</strong> — Switch background for export</li>
