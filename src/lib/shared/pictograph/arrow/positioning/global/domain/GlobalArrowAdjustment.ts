@@ -2,7 +2,15 @@
  * Global Arrow Adjustment Domain Model
  *
  * Represents a user-defined arrow position adjustment that applies globally
- * to all pictographs matching the same key (gridMode, oriKey, letter, turnsTuple, arrowKey).
+ * to all pictographs matching the same key.
+ *
+ * Key Structure (3 layers for cascading lookups):
+ * - Layer 1 (Base): gridMode|oriKey|letter|turnsTuple|arrowKey
+ *   - Staff adjustments; serve as fallback for all props
+ * - Layer 2 (Prop-Specific): gridMode|oriKey|letter|turnsTuple|arrowKey|propType
+ *   - Adjustments for specific prop types (fan, club, buugeng, etc.)
+ * - Layer 3 (Combination Override): gridMode|oriKey|letter|turnsTuple|arrowKey|propType|otherPropType
+ *   - Edge cases where blue+red prop combo causes conflicts
  *
  * These adjustments are stored in Firestore and override the static JSON special placements.
  */
@@ -28,6 +36,12 @@ export interface GlobalArrowAdjustment {
   /** Arrow identifier: "blue", "red", "pro", "anti", etc. */
   readonly arrowKey: string;
 
+  /** Prop type for this arrow (Layer 2+). Lowercase: "staff", "fan", "club", etc. */
+  readonly propType?: string;
+
+  /** Other hand's prop type (Layer 3 only). For combination-specific overrides. */
+  readonly otherPropType?: string;
+
   /** X-axis adjustment in pixels */
   readonly adjustmentX: number;
 
@@ -50,12 +64,21 @@ export interface GlobalArrowAdjustmentInput {
   readonly letter: string;
   readonly turnsTuple: string;
   readonly arrowKey: string;
+  /** Prop type for this arrow (Layer 2+). Lowercase: "staff", "fan", "club", etc. */
+  readonly propType?: string;
+  /** Other hand's prop type (Layer 3 only). For combination-specific overrides. */
+  readonly otherPropType?: string;
   readonly adjustmentX: number;
   readonly adjustmentY: number;
 }
 
 /**
- * Composite key for looking up adjustments
+ * Composite key for looking up adjustments.
+ *
+ * Key layers:
+ * - Layer 1: 5 parts (base - no prop types)
+ * - Layer 2: 6 parts (includes propType)
+ * - Layer 3: 7 parts (includes propType + otherPropType)
  */
 export interface GlobalAdjustmentKey {
   readonly gridMode: string;
@@ -63,34 +86,77 @@ export interface GlobalAdjustmentKey {
   readonly letter: string;
   readonly turnsTuple: string;
   readonly arrowKey: string;
+  /** Prop type for this arrow (Layer 2+). Lowercase: "staff", "fan", "club", etc. */
+  readonly propType?: string;
+  /** Other hand's prop type (Layer 3 only). For combination-specific overrides. */
+  readonly otherPropType?: string;
 }
 
 /**
- * Generate a string key from adjustment key components
+ * Get the layer (1, 2, or 3) of an adjustment key based on which fields are present.
+ */
+export function getKeyLayer(key: GlobalAdjustmentKey): 1 | 2 | 3 {
+  if (key.otherPropType) return 3;
+  if (key.propType) return 2;
+  return 1;
+}
+
+/**
+ * Generate a string key from adjustment key components.
+ * Format varies by layer:
+ * - Layer 1: gridMode|oriKey|letter|turnsTuple|arrowKey
+ * - Layer 2: gridMode|oriKey|letter|turnsTuple|arrowKey|propType
+ * - Layer 3: gridMode|oriKey|letter|turnsTuple|arrowKey|propType|otherPropType
  */
 export function generateAdjustmentKeyString(key: GlobalAdjustmentKey): string {
-  return `${key.gridMode}|${key.oriKey}|${key.letter}|${key.turnsTuple}|${key.arrowKey}`;
+  let keyString = `${key.gridMode}|${key.oriKey}|${key.letter}|${key.turnsTuple}|${key.arrowKey}`;
+  if (key.propType) {
+    keyString += `|${key.propType}`;
+    if (key.otherPropType) {
+      keyString += `|${key.otherPropType}`;
+    }
+  }
+  return keyString;
 }
 
 /**
- * Parse a string key back into components
+ * Parse a string key back into components.
+ * Handles 5, 6, or 7 part keys (layers 1, 2, or 3).
  */
 export function parseAdjustmentKeyString(
   keyString: string
 ): GlobalAdjustmentKey | null {
   const parts = keyString.split("|");
-  if (parts.length !== 5) {
+
+  // Must have at least 5 parts (base key), at most 7 (layer 3 key)
+  if (parts.length < 5 || parts.length > 7) {
     return null;
   }
-  const [gridMode, oriKey, letter, turnsTuple, arrowKey] = parts;
+
+  const [gridMode, oriKey, letter, turnsTuple, arrowKey, propType, otherPropType] = parts;
+
+  // Base fields are required
   if (!gridMode || !oriKey || !letter || !turnsTuple || !arrowKey) {
     return null;
   }
-  return {
+
+  const key: GlobalAdjustmentKey = {
     gridMode,
     oriKey,
     letter,
     turnsTuple,
     arrowKey,
   };
+
+  // Layer 2+: include propType if present
+  if (propType) {
+    (key as any).propType = propType;
+  }
+
+  // Layer 3: include otherPropType if present
+  if (otherPropType) {
+    (key as any).otherPropType = otherPropType;
+  }
+
+  return key;
 }

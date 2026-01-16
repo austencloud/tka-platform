@@ -12,6 +12,17 @@ import type {
   GlobalArrowAdjustmentInput,
 } from "../../domain/GlobalArrowAdjustment";
 
+/**
+ * Result of a cascading adjustment lookup.
+ * Includes the adjustment point and which layer it was found at.
+ */
+export interface CascadingLookupResult {
+  /** The adjustment offset as a Point */
+  adjustment: Point;
+  /** Which layer the adjustment was found at: 1 (base), 2 (prop-specific), or 3 (combination) */
+  layer: 1 | 2 | 3;
+}
+
 export interface IGlobalArrowAdjustmentRepository {
   /**
    * Check if the repository is initialized
@@ -38,6 +49,25 @@ export interface IGlobalArrowAdjustmentRepository {
    * Check if an adjustment exists
    */
   hasAdjustment(key: GlobalAdjustmentKey): boolean;
+
+  /**
+   * Cascading lookup: Layer 3 → Layer 2 → Layer 1.
+   *
+   * Searches for the most specific adjustment available:
+   * 1. First checks Layer 3 (combination-specific: this prop + other prop)
+   * 2. Then checks Layer 2 (prop-specific: just this prop)
+   * 3. Finally checks Layer 1 (base: no prop types, typically staff defaults)
+   *
+   * @param baseKey The 5-part base key (without prop types)
+   * @param thisPropType The prop type for this arrow (lowercase: "staff", "fan", etc.)
+   * @param otherPropType The other hand's prop type (lowercase)
+   * @returns The adjustment and which layer it was found at, or null if no adjustment exists
+   */
+  getAdjustmentCascading(
+    baseKey: GlobalAdjustmentKey,
+    thisPropType: string,
+    otherPropType: string
+  ): CascadingLookupResult | null;
 
   /**
    * Save an adjustment to local cache only (admin only).
