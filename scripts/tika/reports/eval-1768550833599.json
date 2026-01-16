@@ -1,0 +1,289 @@
+{
+  "runId": "eval-1768550833599",
+  "startedAt": "2026-01-16T08:07:13.599Z",
+  "summary": {
+    "total": 5,
+    "passed": 3,
+    "failed": 2,
+    "passRate": 60,
+    "averageLatencyMs": 6588
+  },
+  "results": [
+    {
+      "scenarioId": "letter-type1-basic",
+      "scenario": {
+        "id": "letter-type1-basic",
+        "name": "Type 1 Letter Explanation (A)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is the letter A in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "Type 1",
+            "dual-shift",
+            "shift",
+            "both hands"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "A is a Type 1 (Dual-Shift) letter",
+            "Both hands shift (move to adjacent points)"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Let me break this down in beginner-friendly terms:\n\nLetter A is a Type 1 Dual-Shift letter, which means both hands move 90 degrees (to an adjacent grid point). In this letter, both hands rotate in a pro (clockwise) direction. The pictograph would show two arrows moving smoothly to nearby points.\n\nIn the basic variation (Variation 0), the hands:\n- Start at opposite points (alpha position)\n- Move together in a coordinated, clockwise manner\n- End at a new set of opposite points\n\nThink of it like a synchronized dance where both hands move smoothly and similarly. The A letter represents a fundamental, flowing motion in The Kinetic Alphabet.\n\nWould you like me to elaborate on any part of the letter A explanation?",
+        "toolsCalled": [
+          {
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "A"
+            },
+            "result": "# Letter: A\n\n## Type Information\n**Type 1: Dual-Shift**\n\nBoth hands shift (move to adjacent grid points). This is the most common letter type.\n\n**Characteristics:**\n- Both hands move 90 degrees on the grid\n- Creates smooth, flowing transitions\n- 22 letters - the largest type\n\n## Motion Pattern\n- **Blue hand:** pro (cw)\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** alpha3\n- **End position:** alpha5\n- **Blue motion:** w → n\n- **Red motion:** e → s\n\n## All Variations (8 total)\n[0] alpha3 → alpha5\n[1] alpha5 → alpha7\n[2] alpha7 → alpha1\n[3] alpha1 → alpha3\n[4] alpha7 → alpha5\n... and 3 more"
+          }
+        ],
+        "latencyMs": 7081
+      },
+      "evaluation": {
+        "passed": true,
+        "issues": []
+      },
+      "timestamp": "2026-01-16T08:06:45.167Z"
+    },
+    {
+      "scenarioId": "letter-type2-basic",
+      "scenario": {
+        "id": "letter-type2-basic",
+        "name": "Type 2 Letter Explanation (W)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "Can you explain what letter W means?",
+        "criteria": {
+          "mustInclude": [
+            "Type 2",
+            "shift",
+            "static",
+            "one hand"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "W is a Type 2 (Shift) letter",
+            "One hand shifts while the other stays static"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Let me break this down in beginner-friendly terms:\n\nLetter W is a Type 2 letter, which means one hand shifts (moves to an adjacent grid point) while the other hand stays still. In this case, the blue hand stays static, while the red hand does a pro (clockwise) shift. \n\nThe specific variation I pulled shows the hands moving from a gamma position (hands at right angles) to an alpha position (hands at opposite points). This makes W great for transitioning between different symmetries in your flow.\n\nThe pictograph would show:\n- One arrow staying in place (blue hand)\n- One arrow moving to an adjacent point in a pro direction (red hand)\n\nWould you like me to elaborate on any part of the W letter explanation?",
+        "toolsCalled": [
+          {
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "W"
+            },
+            "result": "# Letter: W\n\n## Type Information\n**Type 2: Shift**\n\nOne hand shifts while the other stays static. Creates asymmetric movements.\n\n**Characteristics:**\n- One hand moves, one stays in place\n- Often used for transitions between symmetric and asymmetric positions\n- Uses Greek letters for most of this type\n\n## Motion Pattern\n- **Blue hand:** static\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** gamma3\n- **End position:** alpha5\n- **Blue motion:** n → n\n- **Red motion:** e → s\n\n## All Variations (16 total)\n[0] gamma3 → alpha5\n[1] gamma5 → alpha7\n[2] gamma7 → alpha1\n[3] gamma1 → alpha3\n[4] gamma15 → alpha5\n... and 11 more"
+          }
+        ],
+        "latencyMs": 6841
+      },
+      "evaluation": {
+        "passed": true,
+        "issues": []
+      },
+      "timestamp": "2026-01-16T08:06:52.526Z"
+    },
+    {
+      "scenarioId": "letter-type3-naming",
+      "scenario": {
+        "id": "letter-type3-naming",
+        "name": "Type 3 Letter with Dash Suffix (Sigma dash)",
+        "category": "letter-explanation",
+        "userLevel": 1,
+        "question": "What is Sigma dash?",
+        "criteria": {
+          "mustInclude": [
+            "Type 3",
+            "Cross-Shift"
+          ],
+          "mustNotInclude": [
+            "turn",
+            "quarter",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_letter_explanation"
+          ],
+          "keyFacts": [
+            "Sigma dash (Σ-) is a Type 3 letter",
+            "The dash suffix indicates Type 3 (Cross-Shift)",
+            "One hand shifts, one hand dashes"
+          ],
+          "commonMistakes": [
+            "Confusing dash in the name with dash motion type"
+          ]
+        },
+        "difficulty": "medium"
+      },
+      "response": {
+        "explanation": "Let me break this down in simpler terms:\n\nSigma dash (Σ-) is a Type 3 letter, which means one hand shifts while the other hand dashes. It's part of the \"cross-shift\" family of letters that help you move between different grid points. \n\nThe first variation starts in a beta position and ends in a gamma position, with the blue hand dashing from east to west, and the red hand shifting pro (clockwise) from east to south.\n\nThe really cool thing about Σ- is that it helps you transition between different areas of the grid more dynamically than a simple shift would. Think of it like a strategic \"step-and-slide\" motion that gives you more movement options.\n\nWould you like me to explain any part of this in more detail?",
+        "toolsCalled": [
+          {
+            "name": "get_letter_explanation",
+            "input": {
+              "letter": "Σ-"
+            },
+            "result": "# Letter: Σ-\n\n## Type Information\n**Type 3: Cross-Shift**\n\nOne hand shifts and one hand dashes. Also called 'dash letters' due to the '-' suffix in their names.\n\n**Characteristics:**\n- Combines shift (90 degree) and dash (180 degree) motions\n- Named with a '-' suffix (e.g., 'W-', 'Sigma-')\n- IMPORTANT: 'Sigma dash' means the letter Sigma- (Type 3), not a letter with dash motion\n\n## Motion Pattern\n- **Blue hand:** dash\n- **Red hand:** pro (cw)\n\n## Variation 0 Details\n- **Start position:** beta3\n- **End position:** gamma13\n- **Blue motion:** e → w\n- **Red motion:** e → s\n\n## All Variations (16 total)\n[0] beta3 → gamma13\n[1] beta5 → gamma15\n[2] beta7 → gamma9\n[3] beta1 → gamma11\n[4] beta7 → gamma5\n... and 11 more"
+          }
+        ],
+        "latencyMs": 6145
+      },
+      "evaluation": {
+        "passed": true,
+        "issues": []
+      },
+      "timestamp": "2026-01-16T08:06:59.184Z"
+    },
+    {
+      "scenarioId": "term-alpha-position",
+      "scenario": {
+        "id": "term-alpha-position",
+        "name": "Alpha Position Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What does alpha mean?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "opposite"
+          ],
+          "mustNotInclude": [
+            "180 degrees",
+            "perpendicular",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition",
+            "get_position_info"
+          ],
+          "keyFacts": [
+            "Alpha is a position type",
+            "Hands are at opposite grid points"
+          ],
+          "commonMistakes": [
+            "Using 180 degrees instead of opposite points"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Let me break this down in a friendly way! In The Kinetic Alphabet, alpha (α) means your hands are positioned directly opposite each other, creating a straight line through the center of your body. Think of it like being at opposite ends of a line or diameter.\n\nImagine standing in the center of an imaginary grid, with your hands stretched out to completely opposite points. This could be:\n- North and South\n- East and West\n- Northeast and Southwest\n\nThe key is that your hands are 180 degrees apart - a full half-turn from each other. This position gives you maximum extension and symmetry in your movement.\n\nWould you like me to clarify anything about the alpha position?",
+        "toolsCalled": [
+          {
+            "name": "get_position_info",
+            "input": {
+              "position": "alpha"
+            },
+            "result": "# Alpha (α)\n\n**Angle:** 180° between hands\n\n**Description:** Hands are at opposite grid points, forming a straight line through the center.\n\n**Grid:** Examples: N/S, E/W, NE/SW, NW/SE.\n\n**Examples:**\n- alpha1: N and S\n- alpha3: E and W\n- alpha5: NE and SW\n\n**Level:** 1\n\n**Usage:** 144 start positions, 144 end positions"
+          }
+        ],
+        "latencyMs": 6436
+      },
+      "evaluation": {
+        "passed": false,
+        "issues": [
+          {
+            "type": "forbidden-term",
+            "severity": "error",
+            "message": "Contains forbidden term: \"180 degrees\""
+          },
+          {
+            "type": "forbidden-term",
+            "severity": "error",
+            "message": "Contains forbidden term: \"turn\""
+          },
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_term_definition\""
+          }
+        ]
+      },
+      "timestamp": "2026-01-16T08:07:06.134Z"
+    },
+    {
+      "scenarioId": "term-beta-position",
+      "scenario": {
+        "id": "term-beta-position",
+        "name": "Beta Position Definition",
+        "category": "term-definition",
+        "userLevel": 1,
+        "question": "What is beta in TKA?",
+        "criteria": {
+          "mustInclude": [
+            "position",
+            "same point"
+          ],
+          "mustNotInclude": [
+            "0 degrees",
+            "turn",
+            "skew"
+          ],
+          "expectedTools": [
+            "get_term_definition",
+            "get_position_info"
+          ],
+          "keyFacts": [
+            "Beta is a position type",
+            "Both hands are at the same grid point"
+          ]
+        },
+        "difficulty": "easy"
+      },
+      "response": {
+        "explanation": "Let me break this down in a friendly way:\n\nBeta (β) is a hand position where both hands are at the exact same grid point. Imagine you're holding your props and bringing them together so they're occupying the same space. Think of it like two friends standing right next to each other - completely overlapping.\n\nIn the TKA grid system, this means both hands are located at the identical point, with 0° between them. It's like a \"meet in the middle\" position. You'll see beta used in various grid locations - like both hands at North (N), or both hands at Northeast (NE).\n\nWould you like me to explain more about how beta is used in different letters or sequences?",
+        "toolsCalled": [
+          {
+            "name": "get_position_info",
+            "input": {
+              "position": "beta"
+            },
+            "result": "# Beta (β)\n\n**Angle:** 0° between hands\n\n**Description:** Both hands are at the same grid point.\n\n**Grid:** Both props share a single location.\n\n**Examples:**\n- beta1: Both at N\n- beta5: Both at NE\n\n**Level:** 1\n\n**Usage:** 144 start positions, 144 end positions"
+          }
+        ],
+        "latencyMs": 6439
+      },
+      "evaluation": {
+        "passed": false,
+        "issues": [
+          {
+            "type": "missing-term",
+            "severity": "error",
+            "message": "Missing required term: \"same point\""
+          },
+          {
+            "type": "missing-tool",
+            "severity": "warning",
+            "message": "Expected tool not called: \"get_term_definition\""
+          }
+        ]
+      },
+      "timestamp": "2026-01-16T08:07:13.084Z"
+    }
+  ]
+}

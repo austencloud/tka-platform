@@ -1,0 +1,219 @@
+[
+  {
+    "id": "letter-type1-basic",
+    "name": "Type 1 Letter Explanation (A)",
+    "category": "letter-explanation",
+    "userLevel": 1,
+    "question": "What is the letter A in TKA?",
+    "criteria": {
+      "mustInclude": ["Type 1", "dual-shift", "shift", "both hands"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_letter_explanation"],
+      "keyFacts": ["A is a Type 1 (Dual-Shift) letter", "Both hands shift (move to adjacent points)"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "letter-type2-basic",
+    "name": "Type 2 Letter Explanation (W)",
+    "category": "letter-explanation",
+    "userLevel": 1,
+    "question": "Can you explain what letter W means?",
+    "criteria": {
+      "mustInclude": ["Type 2", "shift", "static", "one hand"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_letter_explanation"],
+      "keyFacts": ["W is a Type 2 (Shift) letter", "One hand shifts while the other stays static"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "letter-type3-naming",
+    "name": "Type 3 Letter with Dash Suffix (Sigma dash)",
+    "category": "letter-explanation",
+    "userLevel": 1,
+    "question": "What is Sigma dash?",
+    "criteria": {
+      "mustInclude": ["Type 3", "Cross-Shift"],
+      "mustNotInclude": ["turn", "quarter", "skew"],
+      "expectedTools": ["get_letter_explanation"],
+      "keyFacts": ["Sigma dash (Σ-) is a Type 3 letter", "The dash suffix indicates Type 3 (Cross-Shift)", "One hand shifts, one hand dashes"],
+      "commonMistakes": ["Confusing dash in the name with dash motion type"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "term-alpha-position",
+    "name": "Alpha Position Definition",
+    "category": "term-definition",
+    "userLevel": 1,
+    "question": "What does alpha mean?",
+    "criteria": {
+      "mustInclude": ["position", "opposite"],
+      "mustNotInclude": ["180 degrees", "perpendicular", "turn", "skew"],
+      "expectedTools": ["get_term_definition", "get_position_info"],
+      "keyFacts": ["Alpha is a position type", "Hands are at opposite grid points"],
+      "commonMistakes": ["Using 180 degrees instead of opposite points"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "term-beta-position",
+    "name": "Beta Position Definition",
+    "category": "term-definition",
+    "userLevel": 1,
+    "question": "What is beta in TKA?",
+    "criteria": {
+      "mustInclude": ["position", "same point"],
+      "mustNotInclude": ["0 degrees", "turn", "skew"],
+      "expectedTools": ["get_term_definition", "get_position_info"],
+      "keyFacts": ["Beta is a position type", "Both hands are at the same grid point"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "term-gamma-position",
+    "name": "Gamma Position Definition",
+    "category": "term-definition",
+    "userLevel": 1,
+    "question": "What is gamma?",
+    "criteria": {
+      "mustInclude": ["position", "right angle"],
+      "mustNotInclude": ["90 degrees", "perpendicular", "turn", "skew"],
+      "expectedTools": ["get_term_definition", "get_position_info"],
+      "keyFacts": ["Gamma is a position type", "Hands form a right angle on the grid"],
+      "commonMistakes": ["Using perpendicular instead of right angle"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "term-shift-motion",
+    "name": "Shift Motion Definition",
+    "category": "term-definition",
+    "userLevel": 1,
+    "question": "What does shift mean?",
+    "criteria": {
+      "mustInclude": ["motion", "adjacent"],
+      "mustNotInclude": ["90 degrees", "turn", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Shift is a motion type", "Hand moves to an adjacent grid point"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "term-dash-motion",
+    "name": "Dash Motion Definition",
+    "category": "term-definition",
+    "userLevel": 1,
+    "question": "What is a dash in TKA?",
+    "criteria": {
+      "mustInclude": ["motion", "opposite"],
+      "mustNotInclude": ["180 degrees", "turn", "skew"],
+      "expectedTools": ["get_term_definition"],
+      "keyFacts": ["Dash is a motion type", "Hand moves to the opposite grid point"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "compare-type1-type3",
+    "name": "Compare Type 1 and Type 3",
+    "category": "letter-comparison",
+    "userLevel": 1,
+    "question": "What's the difference between Type 1 and Type 3 letters?",
+    "criteria": {
+      "mustInclude": ["Type 1", "Type 3", "shift"],
+      "mustNotInclude": ["turn", "skew"],
+      "expectedTools": ["list_letters_by_type"],
+      "keyFacts": ["Type 1: Both hands shift", "Type 3: One hand shifts, one dashes", "Both types have both hands moving"],
+      "commonMistakes": ["Saying Type 1 has both hands moving as the distinguishing feature"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "compare-alpha-beta",
+    "name": "Compare Alpha and Beta Positions",
+    "category": "letter-comparison",
+    "userLevel": 1,
+    "question": "How are alpha and beta different?",
+    "criteria": {
+      "mustInclude": ["position", "opposite", "same"],
+      "mustNotInclude": ["degrees", "turn", "skew"],
+      "expectedTools": ["get_position_info"],
+      "keyFacts": ["Alpha: Hands at opposite points", "Beta: Hands at the same point"]
+    },
+    "difficulty": "easy"
+  },
+  {
+    "id": "misconception-type1-both-move",
+    "name": "Misconception: Type 1 = Both Hands Move",
+    "category": "misconception-correction",
+    "userLevel": 1,
+    "question": "Type 1 is when both hands move, right?",
+    "criteria": {
+      "mustInclude": ["shift"],
+      "mustNotInclude": ["turn", "skew"],
+      "expectedTools": ["list_letters_by_type"],
+      "keyFacts": ["MUST correct this misconception", "Type 1 is when both hands SHIFT", "Types 3 and 5 also have both hands moving"],
+      "commonMistakes": ["Agreeing that Type 1 = both hands move"]
+    },
+    "difficulty": "hard"
+  },
+  {
+    "id": "misconception-type-letters",
+    "name": "Misconception: Types are Lettered",
+    "category": "misconception-correction",
+    "userLevel": 1,
+    "question": "Is A a Type A letter?",
+    "criteria": {
+      "mustInclude": ["Type 1", "numbered"],
+      "mustNotInclude": ["Type A"],
+      "expectedTools": ["get_letter_explanation"],
+      "keyFacts": ["MUST correct: Types are numbered 1-6, not lettered", "A is a Type 1 letter"],
+      "commonMistakes": ["Accepting Type A terminology"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "misconception-dash-name-vs-motion",
+    "name": "Misconception: W-dash means W with Dash Motion",
+    "category": "misconception-correction",
+    "userLevel": 1,
+    "question": "Is W dash the letter W but with a dash motion?",
+    "criteria": {
+      "mustInclude": ["Type 3", "naming", "convention"],
+      "mustNotInclude": ["turn", "skew"],
+      "expectedTools": ["get_letter_explanation", "list_letters_by_type"],
+      "keyFacts": ["MUST correct this misconception", "W- is a separate letter (Type 3)", "The dash suffix is a naming convention, not a modifier"],
+      "commonMistakes": ["Agreeing that W- is W with dash motion"]
+    },
+    "difficulty": "hard"
+  },
+  {
+    "id": "level1-no-turns",
+    "name": "Level 1: Should Not Mention Turns",
+    "category": "concept-question",
+    "userLevel": 1,
+    "question": "How do I make a sequence loop?",
+    "criteria": {
+      "mustInclude": ["position", "start", "end"],
+      "mustNotInclude": ["turn", "quarter", "90", "180", "skew"],
+      "expectedTools": [],
+      "keyFacts": ["Explain LOOP concept at Level 1", "Focus on positions, not turns"]
+    },
+    "difficulty": "medium"
+  },
+  {
+    "id": "edge-greek-letter-confusion",
+    "name": "Edge: Greek Letters as Positions vs Letters",
+    "category": "edge-case",
+    "userLevel": 1,
+    "question": "What's the difference between alpha the position and alpha the letter?",
+    "criteria": {
+      "mustInclude": ["position", "letter", "Type 6"],
+      "mustNotInclude": ["turn", "skew"],
+      "expectedTools": ["get_position_info", "get_letter_explanation"],
+      "keyFacts": ["Alpha (position): Hands at opposite points", "α (letter): Type 6 static letter, lowercase"]
+    },
+    "difficulty": "hard"
+  }
+]
