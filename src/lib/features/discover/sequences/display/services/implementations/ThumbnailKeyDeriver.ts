@@ -16,7 +16,7 @@ import type { ThumbnailVariant } from "../contracts/ICloudThumbnailCache";
 
 const GALLERY_DEFAULTS: CompositionDefaults = {
   addWord: true,
-  addBeatNumbers: true,
+  addStepNumbers: true,
   includeStartPosition: true,
   addDifficultyLevel: true,
   addUserInfo: false,
@@ -103,8 +103,8 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
     if (input.addWord !== undefined && input.addWord !== defaults.addWord)
       return false;
     if (
-      input.addBeatNumbers !== undefined &&
-      input.addBeatNumbers !== defaults.addBeatNumbers
+      input.addStepNumbers !== undefined &&
+      input.addStepNumbers !== defaults.addStepNumbers
     )
       return false;
     if (
@@ -178,7 +178,7 @@ export class ThumbnailKeyDeriver implements IThumbnailKeyDeriver {
       light: input.lightMode,
       variant: input.variant,
       addWord: input.addWord,
-      addBeatNumbers: input.addBeatNumbers,
+      addStepNumbers: input.addStepNumbers,
       includeStartPosition: input.includeStartPosition,
       addDifficultyLevel: input.addDifficultyLevel,
       addUserInfo: input.addUserInfo,

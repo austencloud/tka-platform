@@ -31,7 +31,7 @@ const DEFAULT_QUALITY = 0.9;
 
 const GALLERY_DEFAULTS: CompositionDefaults = {
   addWord: true,
-  addBeatNumbers: true,
+  addStepNumbers: true,
   includeStartPosition: true,
   addDifficultyLevel: true,
   addUserInfo: false,
@@ -89,7 +89,7 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     sequence: SequenceData,
     sequenceName: string
   ): Promise<SequenceData> {
-    const hasBeats = sequence.beats && sequence.beats.length > 0;
+    const hasBeats = sequence.steps && sequence.steps.length > 0;
 
     if (hasBeats) {
       return sequence;
@@ -122,17 +122,17 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
     }
 
     // Try to derive from first beat
-    const firstBeat = sequence.beats?.[0];
+    const firstStep = sequence.steps?.[0];
     const firstBeatHasValidMotions =
-      firstBeat?.motions?.blue?.startLocation &&
-      firstBeat?.motions?.red?.startLocation;
+      firstStep?.motions?.blue?.startLocation &&
+      firstStep?.motions?.red?.startLocation;
 
-    if (!firstBeat || !firstBeatHasValidMotions) {
+    if (!firstStep || !firstBeatHasValidMotions) {
       return sequence;
     }
 
     try {
-      const derivedStartPos = this.startPositionDeriver.deriveFromFirstBeat(firstBeat);
+      const derivedStartPos = this.startPositionDeriver.deriveFromFirstBeat(firstStep);
       return {
         ...sequence,
         startPosition: derivedStartPos,
@@ -161,13 +161,13 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       input.bluePropType !== input.redPropType;
 
     return {
-      beatSize: options?.beatSize ?? DEFAULT_BEAT_SIZE,
+      stepSize: options?.stepSize ?? DEFAULT_BEAT_SIZE,
       format: options?.format ?? DEFAULT_FORMAT,
       quality: options?.quality ?? DEFAULT_QUALITY,
 
       // Composition settings (use input or fall back to variant defaults)
       includeStartPosition: input.includeStartPosition ?? defaults.includeStartPosition,
-      addBeatNumbers: input.addBeatNumbers ?? defaults.addBeatNumbers,
+      addStepNumbers: input.addStepNumbers ?? defaults.addStepNumbers,
       addWord: input.addWord ?? defaults.addWord,
       addDifficultyLevel: input.addDifficultyLevel ?? defaults.addDifficultyLevel,
       addUserInfo: input.addUserInfo ?? defaults.addUserInfo,

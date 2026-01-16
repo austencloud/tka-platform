@@ -50,9 +50,9 @@
     }
 
     // 3. Derive from first beat's startPosition field (GridPosition like "alpha1")
-    const firstBeat = seq.beats?.[0];
-    if (firstBeat) {
-      const startPos = firstBeat.startPosition || (firstBeat as any).startPos;
+    const firstStep = seq.steps?.[0];
+    if (firstStep) {
+      const startPos = firstStep.startPosition || (firstStep as any).startPos;
       if (startPos && typeof startPos === "string") {
         const posLower = startPos.toLowerCase();
         if (posLower.startsWith("alpha")) return Letter.ALPHA;
@@ -108,42 +108,42 @@
   // Derived state for canvas
   let currentLetter = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
     // At start position phase (before beat 1) - show Greek letter (α, β, γ)
-    if (currentBeat < 1) {
+    if (currentStep < 1) {
       return getStartPositionLetter();
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      // currentBeat is 1-based: currentBeat 1.0-2.0 = beat 1 (uses beats[0])
-      const beatIndex = Math.max(0, Math.floor(currentBeat) - 1);
+    if (animationState.sequenceData.steps?.length > 0) {
+      // currentStep is 1-based: currentStep 1.0-2.0 = beat 1 (uses steps[0])
+      const stepIndex = Math.max(0, Math.floor(currentStep) - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
+        stepIndex,
+        animationState.sequenceData.steps.length - 1
       );
-      return animationState.sequenceData.beats[clampedIndex]?.letter || null;
+      return animationState.sequenceData.steps[clampedIndex]?.letter || null;
     }
 
     return null;
   });
 
-  let currentBeatData = $derived.by(() => {
+  let currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
-    if (currentBeat < 1 && animationState.sequenceData.startPosition) {
+    if (currentStep < 1 && animationState.sequenceData.startPosition) {
       return animationState.sequenceData.startPosition;
     }
 
-    if (animationState.sequenceData.beats?.length > 0) {
-      // currentBeat is 1-based: currentBeat 1.0-2.0 = beat 1 (uses beats[0])
-      const beatIndex = Math.max(0, Math.floor(currentBeat) - 1);
+    if (animationState.sequenceData.steps?.length > 0) {
+      // currentStep is 1-based: currentStep 1.0-2.0 = beat 1 (uses steps[0])
+      const stepIndex = Math.max(0, Math.floor(currentStep) - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
+        stepIndex,
+        animationState.sequenceData.steps.length - 1
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
@@ -243,9 +243,9 @@
     if (!sequenceService) return null;
 
     const hasMotionData = (s: SequenceData) =>
-      Array.isArray(s.beats) &&
-      s.beats.length > 0 &&
-      s.beats.some((beat) => beat?.motions?.blue && beat?.motions?.red);
+      Array.isArray(s.steps) &&
+      s.steps.length > 0 &&
+      s.steps.some((beat) => beat?.motions?.blue && beat?.motions?.red);
 
     if (hasMotionData(seq)) {
       return seq;
@@ -294,7 +294,7 @@
         gridVisible={true}
         {gridMode}
         letter={currentLetter}
-        beatData={currentBeatData}
+        stepData={currentStepData}
         sequenceData={animationState.sequenceData}
         {isPlaying}
         onPlaybackToggle={togglePlayback}

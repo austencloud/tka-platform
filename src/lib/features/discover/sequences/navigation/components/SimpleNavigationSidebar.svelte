@@ -74,7 +74,7 @@ Matches the desktop Python app navigation pattern exactly.
 
     // For alphabetical sorting, extract just the letter (remove emoji prefixes if any)
     if (sortMethod === ExploreSortMethod.ALPHABETICAL) {
-      // Extract the letter portion before the hyphen (handles "A - 4 beats" format)
+      // Extract the letter portion before the hyphen (handles "A - 4 steps" format)
       const parts = cleanText.split(" - ");
       if (parts.length > 1 && parts[0]) {
         return parts[0].trim(); // Return just "A" or "γ" etc.
@@ -97,7 +97,7 @@ Matches the desktop Python app navigation pattern exactly.
     return cleanText;
   }
 
-  // Deduplicate sections when sorting alphabetically (to handle sub-grouped sections like "A - 4 beats", "A - 8 beats")
+  // Deduplicate sections when sorting alphabetically (to handle sub-grouped sections like "A - 4 steps", "A - 8 steps")
   const uniqueSections = $derived(() => {
     if (currentSortMethod === ExploreSortMethod.ALPHABETICAL) {
       const seen = new Set<string>();

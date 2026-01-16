@@ -100,11 +100,11 @@ export class SequenceImageSharer implements ISequenceImageSharer {
     const imageSettings = getImageCompositionManager();
 
     return this.renderer.renderSequenceToBlob(sequence, {
-      beatSize: 240,
+      stepSize: 240,
       format: "PNG",
       quality: 1.0,
       includeStartPosition: imageSettings.includeStartPosition,
-      addBeatNumbers: imageSettings.addBeatNumbers,
+      addStepNumbers: imageSettings.addStepNumbers,
       addWord: imageSettings.addWord,
       addDifficultyLevel: imageSettings.addDifficultyLevel,
       addUserInfo: imageSettings.addUserInfo,

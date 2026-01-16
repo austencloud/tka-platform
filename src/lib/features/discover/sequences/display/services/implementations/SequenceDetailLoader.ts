@@ -1,7 +1,7 @@
 /**
  * SequenceDetailLoader - Load full sequence data for detail views
  *
- * Handles lazy-loading of complete sequence data (including beats)
+ * Handles lazy-loading of complete sequence data (including steps)
  * when viewing sequence details. Prevents duplicate loads and
  * provides efficient caching.
  */
@@ -17,7 +17,7 @@ export class SequenceDetailLoader implements ISequenceDetailLoader {
   constructor(private readonly discoverLoader: IDiscoverLoader) {}
 
   async loadFullSequence(sequence: SequenceData): Promise<SequenceData | null> {
-    // If sequence already has beats, use it directly
+    // If sequence already has steps, use it directly
     if (!this.needsFullLoad(sequence)) {
       return sequence;
     }
@@ -43,6 +43,6 @@ export class SequenceDetailLoader implements ISequenceDetailLoader {
   }
 
   needsFullLoad(sequence: SequenceData): boolean {
-    return !sequence.beats || sequence.beats.length === 0;
+    return !sequence.steps || sequence.steps.length === 0;
   }
 }

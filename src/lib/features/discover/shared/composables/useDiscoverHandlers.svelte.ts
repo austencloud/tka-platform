@@ -82,9 +82,9 @@ export function useDiscoverHandlers({
 
   async function handleEditSequence(sequence: SequenceData) {
     try {
-      // Gallery sequences have empty beats - need to load full sequence data
+      // Gallery sequences have empty steps - need to load full sequence data
       let fullSequence = sequence;
-      if (!sequence.beats || sequence.beats.length === 0) {
+      if (!sequence.steps || sequence.steps.length === 0) {
         const loaderService = container.items.discoverLoader;
         if (loaderService) {
           const sequenceName = sequence.word || sequence.id;

@@ -78,9 +78,9 @@ export class Navigator implements INavigator {
       case "length": {
         const length = parseInt(item.value as string);
         return allSequences.filter((seq) => {
-          // Calculate correct sequence length: beats.length - 2
+          // Calculate correct sequence length: steps.length - 2
           // Subtract 2 for metadata beat and start position beat
-          const sequenceLength = seq.beats.length - 2;
+          const sequenceLength = seq.steps.length - 2;
           return sequenceLength === length;
         });
       }
@@ -209,10 +209,10 @@ export class Navigator implements INavigator {
     const lengthGroups = new Map<number, SequenceData[]>();
 
     sequences.forEach((seq) => {
-      // Calculate correct sequence length: beats.length - 2
+      // Calculate correct sequence length: steps.length - 2
       // Subtract 2 for metadata beat and start position beat
-      if (!seq.beats) return;
-      const length = seq.beats.length - 2;
+      if (!seq.steps) return;
+      const length = seq.steps.length - 2;
       if (!lengthGroups.has(length)) {
         lengthGroups.set(length, []);
       }
@@ -226,7 +226,7 @@ export class Navigator implements INavigator {
       .sort(([a], [b]) => a - b)
       .map(([length, seqs]) => ({
         id: `length-${length}`,
-        label: `${length} beats`,
+        label: `${length} steps`,
         value: length,
         count: seqs.length,
         isActive: false,
@@ -456,9 +456,9 @@ export class Navigator implements INavigator {
           if (typeof item === "object" && item && "value" in item) {
             const length = (item as { value: number }).value;
             return sequences.filter((seq) => {
-              // Calculate correct sequence length: beats.length - 2
+              // Calculate correct sequence length: steps.length - 2
               // Subtract 2 for metadata beat and start position beat
-              const sequenceLength = seq.beats.length - 2;
+              const sequenceLength = seq.steps.length - 2;
               return sequenceLength === length;
             });
           }

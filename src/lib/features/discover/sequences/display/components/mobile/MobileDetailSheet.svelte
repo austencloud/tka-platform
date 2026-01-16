@@ -175,7 +175,7 @@
   <div class="peek-content">
     <h2 class="word-label">{sequence.name || sequence.word}</h2>
     <div class="peek-meta">
-      <span class="meta-item">{sequence.sequenceLength} beats</span>
+      <span class="meta-item">{sequence.sequenceLength} steps</span>
       <span class="meta-separator">•</span>
       <span class="meta-item">{sequence.difficultyLevel}</span>
     </div>

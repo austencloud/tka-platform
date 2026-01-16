@@ -9,15 +9,15 @@
  * - Level 3 (Advanced): Non-radial orientations (CLOCK/COUNTER) or half-turns or floats
  */
 
-import type { BeatData } from "../../../../../create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../../create/shared/domain/models/StepData";
 
 export interface ISequenceDifficultyCalculator {
   /**
    * Calculate the difficulty level of a sequence based on its content
-   * @param beats - Array of beat data containing motion information
+   * @param steps - Array of beat data containing motion information
    * @returns Numeric difficulty level (1 = beginner, 2 = intermediate, 3 = advanced)
    */
-  calculateDifficultyLevel(beats: BeatData[]): number;
+  calculateDifficultyLevel(steps: StepData[]): number;
 
   /**
    * Convert numeric level to difficulty string

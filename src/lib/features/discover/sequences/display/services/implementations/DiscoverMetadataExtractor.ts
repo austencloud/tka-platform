@@ -5,7 +5,7 @@
  * with proper error handling and type safety.
  */
 
-import type { BeatData } from "../../../../../create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../../create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../../create/shared/domain/models/StartPositionData";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -30,7 +30,7 @@ import type { ISequenceDifficultyCalculator } from "../contracts/ISequenceDiffic
 // Constants for metadata extraction
 // Using function to avoid module-level enum reference (fixes test initialization)
 const getDefaultMetadata = (): SequenceMetadata => ({
-  beats: [],
+  steps: [],
   author: "Unknown",
   difficultyLevel: "beginner",
   dateAdded: new Date(),
@@ -116,25 +116,25 @@ export class DiscoverMetadataExtractor implements IDiscoverMetadataExtractor {
     rawData: Record<string, unknown>
   ): SequenceMetadata {
     const sequence = rawData["sequence"];
-    const beats = this.parseBeats(sequenceName, sequence);
+    const steps = this.parseBeats(sequenceName, sequence);
     const startPosition = this.parseStartPosition(sequenceName, sequence);
     const gridMode = this.parseGridMode(rawData["grid_mode"]);
 
     // Calculate difficulty from actual sequence data instead of stored level
-    const difficultyLevel = this.calculateDifficultyLevel(beats);
+    const difficultyLevel = this.calculateDifficultyLevel(steps);
 
     const dateAdded = this.parseDateAdded(rawData);
-    const startingPosition = this.parseStartingPosition(beats);
+    const startingPosition = this.parseStartingPosition(steps);
 
     return {
-      beats,
+      steps,
       author: String(rawData["author"] || "Unknown"),
       difficultyLevel,
       dateAdded,
       gridMode,
       isCircular: Boolean(rawData["is_circular"]),
       propType: String(rawData["prop_type"] || "Staff") as PropType,
-      sequenceLength: beats.length,
+      sequenceLength: steps.length,
       startingPosition,
       startPosition,
     };
@@ -144,7 +144,7 @@ export class DiscoverMetadataExtractor implements IDiscoverMetadataExtractor {
    * Parse beat data from sequence array with full motion parsing
    * NOTE: Skips the first element if it's a start position (has sequence_start_position field)
    */
-  private parseBeats(sequenceName: string, sequence: unknown): BeatData[] {
+  private parseBeats(sequenceName: string, sequence: unknown): StepData[] {
     if (!Array.isArray(sequence)) {
       return [];
     }
@@ -213,12 +213,12 @@ export class DiscoverMetadataExtractor implements IDiscoverMetadataExtractor {
             : undefined,
         },
         // Beat context properties
-        beatNumber: Number(stepData["beat"] || index + 1),
+        stepNumber: Number(stepData["beat"] || index + 1),
         duration: 1.0,
         blueReversal: false,
         redReversal: false,
         isBlank: false,
-      } as BeatData;
+      } as StepData;
     });
   }
 
@@ -316,9 +316,9 @@ export class DiscoverMetadataExtractor implements IDiscoverMetadataExtractor {
    * Calculate difficulty level from actual beat data
    * Replaces the old parseDifficultyLevel that just read a stored value
    */
-  private calculateDifficultyLevel(beats: BeatData[]): string {
+  private calculateDifficultyLevel(steps: StepData[]): string {
     const numericLevel =
-      this.difficultyCalculator.calculateDifficultyLevel(beats);
+      this.difficultyCalculator.calculateDifficultyLevel(steps);
     return this.difficultyCalculator.levelToString(numericLevel);
   }
 
@@ -473,9 +473,9 @@ export class DiscoverMetadataExtractor implements IDiscoverMetadataExtractor {
   /**
    * Extract starting position from first beat
    */
-  private parseStartingPosition(beats: BeatData[]): string {
-    if (beats.length > 0) {
-      const firstLetter = beats[0]?.letter;
+  private parseStartingPosition(steps: StepData[]): string {
+    if (steps.length > 0) {
+      const firstLetter = steps[0]?.letter;
       if (firstLetter) {
         return firstLetter;
       }

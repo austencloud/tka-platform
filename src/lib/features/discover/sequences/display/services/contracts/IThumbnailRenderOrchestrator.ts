@@ -16,7 +16,7 @@ import type { ThumbnailRenderInput, ThumbnailCacheKey } from "./IThumbnailKeyDer
 
 /**
  * Progress data for rendering state.
- * Tracks how many beats have been rendered out of total.
+ * Tracks how many steps have been rendered out of total.
  */
 export interface RenderProgress {
   current: number;

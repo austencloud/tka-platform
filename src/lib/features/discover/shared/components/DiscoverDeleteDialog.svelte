@@ -106,7 +106,7 @@ about the sequence being deleted and potential consequences.
             {/if}
             {#if confirmationData.sequence.sequenceLength}
               <div class="sequence-length">
-                {confirmationData.sequence.sequenceLength} beats
+                {confirmationData.sequence.sequenceLength} steps
               </div>
             {/if}
           </div>

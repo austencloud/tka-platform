@@ -149,10 +149,10 @@ export class DiscoverSorter implements IDiscoverSorter {
   private getLengthSection(sequence: SequenceData): string {
     const length = sequence.sequenceLength ?? 0;
 
-    if (length <= 4) return "3-4 beats";
-    if (length <= 6) return "5-6 beats";
-    if (length <= 8) return "7-8 beats";
-    return "9+ beats";
+    if (length <= 4) return "3-4 steps";
+    if (length <= 6) return "5-6 steps";
+    if (length <= 8) return "7-8 steps";
+    return "9+ steps";
   }
 
   // ============================================================================

@@ -5,7 +5,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IDiscoverThumbnailProvider } from "../../display/services/contracts/IDiscoverThumbnailProvider";
   import type { SpotlightDisplayMode } from "$lib/shared/application/state/ui/ui-state.svelte";
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import AnimationPlayer from "$lib/shared/sequence-viewer/components/AnimationPlayer.svelte";
   import PropAwareThumbnail from "../../display/components/PropAwareThumbnail.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -132,27 +132,27 @@
   }
 
   const columnOptions = $derived(
-    sequence?.beats
-      ? getColumnOptions(sequence.beats.length, window.innerWidth)
+    sequence?.steps
+      ? getColumnOptions(sequence.steps.length, window.innerWidth)
       : [4, 6, 8]
   );
 
   // Calculate optimal column count that maximizes cell size while fitting in viewport
   // This is used when manualColumnCount is null (Auto mode)
   const optimalColumnCount = $derived.by(() => {
-    if (!sequence?.beats || !browser) return null;
+    if (!sequence?.steps || !browser) return null;
 
-    const beatCount = sequence.beats.length;
+    const stepCount = sequence.steps.length;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // Grid gap and padding (must match BeatGrid.svelte values)
+    // Grid gap and padding (must match StepGrid.svelte values)
     const gridGap = 1;
     const padding = 32; // Account for viewport padding
 
     // Test each viable column count and find which gives the largest cell size
     const candidateColumns = [2, 4, 6, 8].filter(
-      (cols) => cols <= beatCount + 1
+      (cols) => cols <= stepCount + 1
     );
 
     let bestColumns = 4;
@@ -160,7 +160,7 @@
 
     for (const cols of candidateColumns) {
       const totalColumns = cols + 1; // +1 for start position
-      const rows = Math.ceil(beatCount / cols);
+      const rows = Math.ceil(stepCount / cols);
 
       // Calculate cell size constrained by both width and height
       const widthGaps = (totalColumns - 1) * gridGap;
@@ -189,7 +189,7 @@
 
   // Detect if current layout is suboptimal (too many columns for screen size)
   const isLayoutCramped = $derived.by(() => {
-    if (!manualColumnCount || !sequence?.beats) return false;
+    if (!manualColumnCount || !sequence?.steps) return false;
 
     const MIN_COMFORTABLE_CELL_SIZE = 80;
     const estimatedCellWidth =
@@ -290,14 +290,14 @@
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
-    {:else if displayMode === "beatgrid" && sequence}
+    {:else if displayMode === "stepgrid" && sequence}
       <!-- Beat grid mode: render sequence directly, filling viewport -->
       <!-- Tap anywhere to close - no buttons needed -->
-      <div class="spotlight-beatgrid">
-        <BeatGrid
-          beats={sequence.beats ?? []}
+      <div class="spotlight-stepgrid">
+        <StepGrid
+          steps={sequence.steps ?? []}
           startPosition={sequence.startPosition ??
-            sequence.startingPositionBeat ??
+            sequence.startingPosition ??
             null}
           isSideBySideLayout={false}
           isSpotlightMode={true}
@@ -305,7 +305,7 @@
         />
       </div>
 
-      <!-- Column picker button - bottom left corner (beatgrid mode only) -->
+      <!-- Column picker button - bottom left corner (stepgrid mode only) -->
       <button
         class="column-picker-button"
         class:pulsing={isLayoutCramped}
@@ -520,7 +520,7 @@
   }
 
   /* Beat grid container - fills entire viewport, tap anywhere to close */
-  .spotlight-beatgrid {
+  .spotlight-stepgrid {
     width: 100vw;
     height: 100vh;
     display: flex;
@@ -532,7 +532,7 @@
   }
 
   /* Beat grid content - constrain to container size */
-  .spotlight-beatgrid :global(.beat-grid-container) {
+  .spotlight-stepgrid :global(.beat-grid-container) {
     pointer-events: none;
     max-width: 100%;
     max-height: 100%;
@@ -577,7 +577,7 @@
     height: 24px;
   }
 
-  /* Column picker button - bottom left corner (beatgrid mode only) */
+  /* Column picker button - bottom left corner (stepgrid mode only) */
   .column-picker-button {
     position: fixed;
     bottom: 2rem;
@@ -735,7 +735,7 @@
   @media (prefers-reduced-motion: reduce) {
     .spotlight,
     .spotlight-image-container,
-    .spotlight-beatgrid,
+    .spotlight-stepgrid,
     .spotlight-animation,
     .rotate-button,
     .close-button,

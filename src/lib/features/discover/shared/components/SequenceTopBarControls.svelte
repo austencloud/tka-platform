@@ -46,7 +46,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     if (filter.type === "favorites") return "Favorites";
     if (filter.type === "difficulty") return `Level ${filter.value}`;
     if (filter.type === "startingLetter") return `Letter ${filter.value}`;
-    if (filter.type === "length") return `${filter.value} beats`;
+    if (filter.type === "length") return `${filter.value} steps`;
     if (filter.type === "startingPosition") return filter.value;
     return filter.type;
   });

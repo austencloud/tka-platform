@@ -117,9 +117,9 @@ export function createExploreState() {
   const availableSequenceLengths = $derived.by(() => {
     const lengths = new Set<number>();
     allSequences.forEach((seq) => {
-      // Calculate correct sequence length: beats.length - 2
+      // Calculate correct sequence length: steps.length - 2
       // Subtract 2 for metadata beat and start position beat
-      const length = seq.beats.length - 2;
+      const length = seq.steps.length - 2;
       if (length > 0) {
         lengths.add(length);
       }

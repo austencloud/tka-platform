@@ -42,7 +42,7 @@ export interface ThumbnailRenderInput {
 
   // Composition overrides (undefined = use variant defaults)
   addWord?: boolean;
-  addBeatNumbers?: boolean;
+  addStepNumbers?: boolean;
   includeStartPosition?: boolean;
   addDifficultyLevel?: boolean;
   addUserInfo?: boolean;
@@ -82,7 +82,7 @@ export interface ThumbnailCacheKey {
  */
 export interface CompositionDefaults {
   addWord: boolean;
-  addBeatNumbers: boolean;
+  addStepNumbers: boolean;
   includeStartPosition: boolean;
   addDifficultyLevel: boolean;
   addUserInfo: boolean;

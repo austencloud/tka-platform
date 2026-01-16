@@ -8,7 +8,7 @@
  * This replaces storing difficulty in metadata and calculates it on-the-fly.
  */
 
-import type { BeatData } from "../../../../../create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../../create/shared/domain/models/StepData";
 import {
   Orientation,
   MotionColor,
@@ -17,18 +17,18 @@ import type { ISequenceDifficultyCalculator } from "../contracts/ISequenceDiffic
 
 export class SequenceDifficultyCalculator implements ISequenceDifficultyCalculator {
   /**
-   * Calculate difficulty level by analyzing all beats in the sequence
+   * Calculate difficulty level by analyzing all steps in the sequence
    */
-  calculateDifficultyLevel(beats: BeatData[]): number {
-    if (!beats || beats.length === 0) {
+  calculateDifficultyLevel(steps: StepData[]): number {
+    if (!steps || steps.length === 0) {
       return 1; // Default to beginner for empty sequences
     }
 
     let hasNonRadialOrientation = false;
     let hasTurns = false;
 
-    // Analyze all beats
-    for (const beat of beats) {
+    // Analyze all steps
+    for (const beat of steps) {
       if (!beat.motions) continue;
 
       // Check both blue and red motions

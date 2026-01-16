@@ -24,7 +24,7 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
   }
 
   async generatePrompt(sequence: SequenceData): Promise<string> {
-    // Load full sequence data if beats are missing
+    // Load full sequence data if steps are missing
     let fullSequence = sequence;
     if (this.detailLoader.needsFullLoad(sequence)) {
       const loaded = await this.detailLoader.loadFullSequence(sequence);
@@ -34,7 +34,7 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
     }
 
     // Build comprehensive sequence context
-    const beatCount = fullSequence.beats?.length ?? 0;
+    const stepCount = fullSequence.steps?.length ?? 0;
     const difficultyText =
       fullSequence.difficultyLevel ||
       fullSequence.level?.toString() ||
@@ -53,7 +53,7 @@ export class ClaudeCodeCopier implements IClaudeCodeCopier {
     return `Analyze sequence ID: ${fullSequence.id}
 
 **${fullSequence.word || fullSequence.name || "Untitled"}**
-Difficulty: ${difficultyText} | Length: ${beatCount} beats | LOOP Type: ${fullSequence.loopType || "Unknown"}
+Difficulty: ${difficultyText} | Length: ${stepCount} steps | LOOP Type: ${fullSequence.loopType || "Unknown"}
 Tags: ${tagsText}
 Owner: ${fullSequence.ownerDisplayName || fullSequence.author || "Unknown"} (${fullSequence.ownerId || "no-id"})
 
@@ -80,11 +80,11 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
   }
 
   private formatBeatSummary(sequence: SequenceData): string {
-    if (!sequence.beats?.length) {
+    if (!sequence.steps?.length) {
       return "  No beat data available";
     }
 
-    return sequence.beats
+    return sequence.steps
       .map((beat, i) => {
         const blueMotion = beat.motions?.blue;
         const redMotion = beat.motions?.red;
@@ -100,13 +100,13 @@ Use this data to investigate issues, analyze the sequence structure, or make mod
   }
 
   private formatStartingPosition(sequence: SequenceData): string {
-    const firstBeat = sequence.beats?.[0];
-    if (!firstBeat) {
-      return "No beats to derive from";
+    const firstStep = sequence.steps?.[0];
+    if (!firstStep) {
+      return "No steps to derive from";
     }
 
-    const blueStart = firstBeat.motions?.blue;
-    const redStart = firstBeat.motions?.red;
+    const blueStart = firstStep.motions?.blue;
+    const redStart = firstStep.motions?.red;
 
     return `Blue: ${blueStart?.startLocation || "?"} (${blueStart?.startOrientation || "?"}), Red: ${redStart?.startLocation || "?"} (${redStart?.startOrientation || "?"})`;
   }

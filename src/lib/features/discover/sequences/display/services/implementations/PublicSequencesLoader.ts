@@ -5,7 +5,7 @@
  * Now loads from the publicSequences Firestore collection.
  *
  * Features:
- * - Loads display metadata efficiently (no beats until needed)
+ * - Loads display metadata efficiently (no steps until needed)
  * - Caches results to avoid repeated queries
  * - Fetches full sequence data on demand via sourceRef
  */
@@ -32,7 +32,7 @@ export class PublicSequencesLoader implements IDiscoverLoader {
 
   /**
    * Load all public sequences from Firestore
-   * Returns display metadata (no beats) for gallery grid
+   * Returns display metadata (no steps) for gallery grid
    */
   async loadSequenceMetadata(): Promise<SequenceData[]> {
     // Return cached data if available
@@ -128,7 +128,7 @@ export class PublicSequencesLoader implements IDiscoverLoader {
 
   /**
    * Map PublicSequenceIndex to SequenceData for display
-   * Note: beats are empty - will be fetched on demand if needed
+   * Note: steps are empty - will be fetched on demand if needed
    */
   private mapPublicIndexToSequenceData(
     data: PublicSequenceIndex,
@@ -139,7 +139,7 @@ export class PublicSequencesLoader implements IDiscoverLoader {
       name: data.name,
       displayName: (data as unknown as { displayName?: string }).displayName,
       word: data.word,
-      beats: [], // Empty - will be fetched on demand for rendering
+      steps: [], // Empty - will be fetched on demand for rendering
       thumbnails: [...data.thumbnails],
       sequenceLength: data.sequenceLength,
       difficultyLevel: data.difficultyLevel,
@@ -174,9 +174,10 @@ export class PublicSequencesLoader implements IDiscoverLoader {
       name: (data.name as string) ?? "",
       displayName: data.displayName as string | undefined,
       word: (data.word as string) ?? "",
-      beats: (data.beats as SequenceData["beats"]) ?? [],
+      // Backwards compatibility: support old 'beats' property name
+      steps: (data.steps as SequenceData["steps"]) ?? (data.beats as SequenceData["steps"]) ?? [],
       startPosition: data.startPosition as SequenceData["startPosition"],
-      startingPositionBeat: data.startingPositionBeat as SequenceData["startingPositionBeat"],
+      startingPosition: data.startingPosition as SequenceData["startingPosition"],
       startingPositionGroup: data.startingPositionGroup as SequenceData["startingPositionGroup"],
       thumbnails: (data.thumbnails as readonly string[]) ?? [],
       sequenceLength: data.sequenceLength as number | undefined,

@@ -16,7 +16,7 @@ import type { ThumbnailRenderInput } from "./IThumbnailKeyDeriver";
 
 export interface RenderOptions {
   /** Beat size in pixels (default: 240) */
-  beatSize?: number;
+  stepSize?: number;
 
   /** Output format (default: WebP) */
   format?: "WebP" | "PNG" | "JPEG";
@@ -39,7 +39,7 @@ export interface IThumbnailRenderer {
    * Render a sequence to a blob image.
    * Pure function - same inputs always produce same output.
    *
-   * The sequence may have partial data (e.g., no beats).
+   * The sequence may have partial data (e.g., no steps).
    * This method handles loading full data if needed.
    *
    * @param sequence The sequence to render (may be partial)

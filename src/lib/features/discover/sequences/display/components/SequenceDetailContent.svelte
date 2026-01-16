@@ -60,7 +60,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   // Current media type (tracked for maximize behavior)
   let currentMediaType = $state<MediaType>("image");
 
-  // Full sequence with beats loaded
+  // Full sequence with steps loaded
   let fullSequence = $state<SequenceData | null>(null);
   let isLoadingFullSequence = $state(false);
 
@@ -130,7 +130,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 
     if (!currentSequence || !loader) return;
 
-    if (currentSequence.beats && currentSequence.beats.length > 0) {
+    if (currentSequence.steps && currentSequence.steps.length > 0) {
       fullSequence = currentSequence;
       return;
     }

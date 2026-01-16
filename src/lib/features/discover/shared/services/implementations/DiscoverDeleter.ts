@@ -25,7 +25,7 @@ export class DiscoverDeleter implements IDiscoverDeleter {
     return {
       sequenceId: sequence.id,
       sequenceName: sequence.name || sequence.word,
-      beatCount: sequence.beats.length,
+      stepCount: sequence.steps.length,
       sequence,
       relatedSequences,
       hasVariations,

@@ -15,7 +15,7 @@ export interface CopyResult {
 export interface IClaudeCodeCopier {
   /**
    * Copy sequence data to clipboard formatted for Claude Code
-   * Loads full sequence data if beats are missing
+   * Loads full sequence data if steps are missing
    *
    * @param sequence - The sequence to format and copy
    * @returns Success/failure result

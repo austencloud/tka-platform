@@ -137,16 +137,16 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
 
         const secondChar = word.charAt(1);
         const letter = secondChar === "-" ? `${char}-` : char;
-        // Use sequenceLength if available, otherwise fall back to beats array length
-        const beatCount = sequence.sequenceLength ?? sequence.beats?.length ?? 0;
+        // Use sequenceLength if available, otherwise fall back to steps array length
+        const stepCount = sequence.sequenceLength ?? sequence.steps?.length ?? 0;
         // Use pipe separator to avoid conflict with dash in letter names
-        return `${letter}|${beatCount}`;
+        return `${letter}|${stepCount}`;
       }
 
       case "length": {
         const word = this.wordDeriver.derive(sequence);
         const length = sequence.sequenceLength ?? word.length;
-        return `${length} beats`;
+        return `${length} steps`;
       }
 
       case "difficulty":
@@ -214,9 +214,9 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
       case "letter": {
         // Key format: "A|4" or "W-|4" (letter|beatcount, where letter might be "W-")
         const [letter = "", beatCountStr = "0"] = key.split("|");
-        const beats = parseInt(beatCountStr) || 0;
+        const steps = parseInt(beatCountStr) || 0;
         // Use parentheses to avoid double dash with letters like "W-"
-        return `${letter} (${beats} beats) (${countText})`;
+        return `${letter} (${steps} steps) (${countText})`;
       }
 
       case "length":
@@ -428,7 +428,7 @@ export class DiscoverSectionManager implements IDiscoverSectionManager {
       }
 
       case "length": {
-        // Extract number from "X beats"
+        // Extract number from "X steps"
         const match = key.match(/^(\d+)/);
         return match?.[1] ? parseInt(match[1]) : 999;
       }

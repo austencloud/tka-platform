@@ -12,7 +12,7 @@ export interface IDiscoverLoader {
   loadSequenceMetadata(): Promise<SequenceData[]>;
 
   /**
-   * Lazy-load full sequence data including beats
+   * Lazy-load full sequence data including steps
    * Called only when user opens a specific sequence
    * This prevents the N+1 query problem during initial gallery load
    */

@@ -5,7 +5,7 @@
  * This provides a simple persistence layer for sequences and settings.
  */
 
-import type { BeatData } from "../../../../create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../create/shared/domain/models/StartPositionData";
 import { createStartPositionData } from "../../../../create/shared/domain/factories/createStartPositionData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -25,49 +25,49 @@ export class DiscoverPersister {
   private readonly SEQUENCE_PREFIX = `tka-${this.CACHE_VERSION}-sequence-`;
 
   /**
-   * Normalize beats array to ensure all required properties are present
+   * Normalize steps array to ensure all required properties are present
    */
-  private normalizeBeats(beats: unknown[]): BeatData[] {
-    return beats.map((beat: unknown, index: number) => {
-      const beatData = beat as Record<string, unknown>;
+  private normalizeBeats(steps: unknown[]): StepData[] {
+    return steps.map((beat: unknown, index: number) => {
+      const stepData = beat as Record<string, unknown>;
 
       // Handle both old format (with pictographData) and new unified format
-      const pictographData = beatData as unknown as PictographData;
+      const pictographData = stepData as unknown as PictographData;
 
       return {
         // Core beat properties
-        id: (beatData["id"] as string) || crypto.randomUUID(),
-        beatNumber:
-          typeof beatData["beatNumber"] === "number"
-            ? beatData["beatNumber"]
+        id: (stepData["id"] as string) || crypto.randomUUID(),
+        stepNumber:
+          typeof stepData["stepNumber"] === "number"
+            ? stepData["stepNumber"]
             : index + 1,
-        duration: (beatData["duration"] as number) || 1,
-        blueReversal: (beatData["blueReversal"] as boolean) || false,
-        redReversal: (beatData["redReversal"] as boolean) || false,
-        isBlank: (beatData["isBlank"] as boolean) || false,
+        duration: (stepData["duration"] as number) || 1,
+        blueReversal: (stepData["blueReversal"] as boolean) || false,
+        redReversal: (stepData["redReversal"] as boolean) || false,
+        isBlank: (stepData["isBlank"] as boolean) || false,
 
         // Pictograph properties (from old pictographData or directly from beat)
         letter:
           (pictographData["letter"] as Letter | null | undefined) ??
-          (beatData["letter"] as Letter | null | undefined) ??
+          (stepData["letter"] as Letter | null | undefined) ??
           null,
         startPosition:
           (pictographData["startPosition"] as
             | GridPosition
             | null
             | undefined) ??
-          (beatData["startPosition"] as GridPosition | null | undefined) ??
+          (stepData["startPosition"] as GridPosition | null | undefined) ??
           null,
         endPosition:
           (pictographData["endPosition"] as GridPosition | null | undefined) ??
-          (beatData["endPosition"] as GridPosition | null | undefined) ??
+          (stepData["endPosition"] as GridPosition | null | undefined) ??
           null,
         motions:
           (pictographData["motions"] as
             | Record<string, MotionData>
             | null
             | undefined) ??
-          (beatData["motions"] as
+          (stepData["motions"] as
             | Record<string, MotionData>
             | null
             | undefined) ??
@@ -79,41 +79,41 @@ export class DiscoverPersister {
   /**
    * Normalize a single beat to ensure all required properties are present
    */
-  private normalizeBeat(beat: unknown): BeatData | undefined {
+  private normalizeBeat(beat: unknown): StepData | undefined {
     if (!beat) return undefined;
-    const beatData = beat as Record<string, unknown>;
+    const stepData = beat as Record<string, unknown>;
 
     // Handle both old format (with pictographData) and new unified format
-    const pictographData = beatData as unknown as PictographData;
+    const pictographData = stepData as unknown as PictographData;
 
     return {
       // Core beat properties
-      id: (beatData["id"] as string) || crypto.randomUUID(),
-      beatNumber: (beatData["beatNumber"] as number) || 1,
-      duration: (beatData["duration"] as number) || 1,
-      blueReversal: (beatData["blueReversal"] as boolean) || false,
-      redReversal: (beatData["redReversal"] as boolean) || false,
-      isBlank: (beatData["isBlank"] as boolean) || false,
+      id: (stepData["id"] as string) || crypto.randomUUID(),
+      stepNumber: (stepData["stepNumber"] as number) || 1,
+      duration: (stepData["duration"] as number) || 1,
+      blueReversal: (stepData["blueReversal"] as boolean) || false,
+      redReversal: (stepData["redReversal"] as boolean) || false,
+      isBlank: (stepData["isBlank"] as boolean) || false,
 
       // Pictograph properties (from old pictographData or directly from beat)
       letter:
         (pictographData["letter"] as Letter | null | undefined) ??
-        (beatData["letter"] as Letter | null | undefined) ??
+        (stepData["letter"] as Letter | null | undefined) ??
         null,
       startPosition:
         (pictographData["startPosition"] as GridPosition | null | undefined) ??
-        (beatData["startPosition"] as GridPosition | null | undefined) ??
+        (stepData["startPosition"] as GridPosition | null | undefined) ??
         null,
       endPosition:
         (pictographData["endPosition"] as GridPosition | null | undefined) ??
-        (beatData["endPosition"] as GridPosition | null | undefined) ??
+        (stepData["endPosition"] as GridPosition | null | undefined) ??
         null,
       motions:
         (pictographData["motions"] as
           | Record<string, MotionData>
           | null
           | undefined) ??
-        (beatData["motions"] as
+        (stepData["motions"] as
           | Record<string, MotionData>
           | null
           | undefined) ??
@@ -151,15 +151,15 @@ export class DiscoverPersister {
    */
   private normalizeSequence(sequence: unknown): SequenceData {
     const sequenceData = sequence as Record<string, unknown>;
-    const startingPositionBeat = this.normalizeStartPosition(
-      sequenceData["startingPositionBeat"]
+    const startingPosition = this.normalizeStartPosition(
+      sequenceData["startingPosition"]
     );
     const startPosition = this.normalizeStartPosition(
       sequenceData["startPosition"]
     );
 
-    const beatsValue = sequenceData["beats"];
-    const beats = Array.isArray(beatsValue) ? beatsValue : [];
+    const beatsValue = sequenceData["steps"];
+    const steps = Array.isArray(beatsValue) ? beatsValue : [];
 
     const thumbnailsValue = sequenceData["thumbnails"];
     const thumbnails =
@@ -191,8 +191,8 @@ export class DiscoverPersister {
         (sequenceData["word"] as string) ||
         "",
       word: (sequenceData["word"] as string) || "",
-      beats: this.normalizeBeats(beats),
-      ...(startingPositionBeat && { startingPositionBeat }),
+      steps: this.normalizeBeats(steps),
+      ...(startingPosition && { startingPosition }),
       ...(startPosition && { startPosition }),
       thumbnails,
       tags,

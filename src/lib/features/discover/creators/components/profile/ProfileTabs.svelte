@@ -88,9 +88,9 @@
       return sequence.name;
     }
 
-    // Fallback to beats count
-    if (sequence.beats && sequence.beats.length > 0) {
-      return `${sequence.beats.length} beat sequence`;
+    // Fallback to steps count
+    if (sequence.steps && sequence.steps.length > 0) {
+      return `${sequence.steps.length} beat sequence`;
     }
 
     return "Untitled Sequence";
@@ -159,10 +159,10 @@
                       : new Date(sequence.createdAt).toLocaleDateString()}
                   </span>
                 {/if}
-                {#if sequence.beats && sequence.beats.length > 0}
+                {#if sequence.steps && sequence.steps.length > 0}
                   <span class="meta-item">
                     <i class="fas fa-music" aria-hidden="true"></i>
-                    {sequence.beats.length} beats
+                    {sequence.steps.length} steps
                   </span>
                 {/if}
               </div>

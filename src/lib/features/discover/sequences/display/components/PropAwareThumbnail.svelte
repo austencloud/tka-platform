@@ -40,7 +40,7 @@
     variant?: ThumbnailVariant;
     // Composition overrides
     addWord?: boolean;
-    addBeatNumbers?: boolean;
+    addStepNumbers?: boolean;
     includeStartPosition?: boolean;
     addDifficultyLevel?: boolean;
     addUserInfo?: boolean;
@@ -61,7 +61,7 @@
     lightMode = false,
     variant = "gallery",
     addWord,
-    addBeatNumbers,
+    addStepNumbers,
     includeStartPosition,
     addDifficultyLevel,
     addUserInfo,
@@ -101,11 +101,11 @@
   const displayName = $derived(simplifyRepeatedWord(sequenceName));
 
   // Derived: beat count for aspect ratio calculation
-  // Priority: beats array length (if not empty) > sequenceLength field > fallback to 4
-  // NOTE: Use || not ?? because beats is often [] (empty array) for Community sequences,
+  // Priority: steps array length (if not empty) > sequenceLength field > fallback to 4
+  // NOTE: Use || not ?? because steps is often [] (empty array) for Community sequences,
   // and [].length is 0 which ?? treats as valid (only null/undefined fall through)
-  const beatCount = $derived(
-    sequence.beats?.length || sequence.sequenceLength || 4
+  const stepCount = $derived(
+    sequence.steps?.length || sequence.sequenceLength || 4
   );
 
   // Derived: aspect ratio based on beat count and variant
@@ -114,7 +114,7 @@
     if (variant === "wordcard") {
       return undefined; // Wordcard uses natural image aspect ratio
     }
-    return layoutCalculator.calculateGalleryAspectRatio(beatCount);
+    return layoutCalculator.calculateGalleryAspectRatio(stepCount);
   });
 
   // Derived: Build render input from props
@@ -126,7 +126,7 @@
     lightMode,
     variant,
     addWord,
-    addBeatNumbers,
+    addStepNumbers,
     includeStartPosition,
     addDifficultyLevel,
     addUserInfo,
@@ -301,7 +301,7 @@
   // Derive progress percentage from status state
   // Maps to where time is ACTUALLY spent:
   // - Waiting (cache/queue): 0% - no work started yet
-  // - Rendering beats: 0-98% of bar (all the real work)
+  // - Rendering steps: 0-98% of bar (all the real work)
   // - Finalize: instant → 98-100% of bar
   const progressPercent = $derived.by(() => {
     switch (status.state) {
@@ -316,8 +316,8 @@
           const { current, total } = status.progress;
           if (total > 0) {
             // Scale beat progress to 0-98% range
-            const beatProgress = (current / total) * 98;
-            return Math.round(beatProgress);
+            const stepProgress = (current / total) * 98;
+            return Math.round(stepProgress);
           }
         }
         // Fallback when no progress data yet (just started)
@@ -335,7 +335,7 @@
   });
 
   // Status label for accessibility
-  // Uses beatCount (defined above) for display instead of progress.total which includes start position
+  // Uses stepCount (defined above) for display instead of progress.total which includes start position
   const statusLabel = $derived.by(() => {
     switch (status.state) {
       case "checking-cache":
@@ -346,8 +346,8 @@
         if (status.progress && status.progress.total > 0) {
           // Show progress relative to beat count, not total (which includes start position)
           // current starts at 1 for start position, so subtract 1 for beat-only display
-          const currentBeat = Math.max(0, status.progress.current - (status.progress.total - beatCount));
-          return `${currentBeat}/${beatCount}`;
+          const currentStep = Math.max(0, status.progress.current - (status.progress.total - stepCount));
+          return `${currentStep}/${stepCount}`;
         }
         return "Rendering";
       }

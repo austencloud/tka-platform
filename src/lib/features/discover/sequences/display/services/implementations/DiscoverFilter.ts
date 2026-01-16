@@ -203,9 +203,9 @@ export class DiscoverFilter implements IDiscoverFilter {
         }
       }
 
-      // Finally, calculate from beats (library sequences often don't have level stored)
-      if (seq.beats && seq.beats.length > 0) {
-        const calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel(seq.beats);
+      // Finally, calculate from steps (library sequences often don't have level stored)
+      if (seq.steps && seq.steps.length > 0) {
+        const calculatedLevel = this.difficultyCalculator.calculateDifficultyLevel(seq.steps);
         return calculatedLevel === targetLevel;
       }
 
@@ -243,7 +243,7 @@ export class DiscoverFilter implements IDiscoverFilter {
 
     const results = sequences.filter((seq) => {
       // Try exact position match first
-      const seqStartPos = seq.startPosition || seq.startingPositionBeat;
+      const seqStartPos = seq.startPosition || seq.startingPosition;
       if (seqStartPos) {
         // Check gridPosition field (StartPositionData)
         const gridPos = (seqStartPos as { gridPosition?: string | null })
@@ -252,7 +252,7 @@ export class DiscoverFilter implements IDiscoverFilter {
           return true;
         }
 
-        // Check startPosition field (PictographData/BeatData)
+        // Check startPosition field (PictographData/StepData)
         const startPos = (seqStartPos as { startPosition?: string | null })
           .startPosition;
         if (startPos?.toLowerCase() === targetPosition) {
@@ -302,19 +302,19 @@ export class DiscoverFilter implements IDiscoverFilter {
 
     return sequences.filter((seq) => {
       // Get the last beat to check end position
-      const lastBeat = seq.beats[seq.beats.length - 1];
-      if (!lastBeat) {
+      const lastStep = seq.steps[seq.steps.length - 1];
+      if (!lastStep) {
         return false;
       }
 
       // Check endPosition field on the last beat
-      const endPos = (lastBeat as { endPosition?: string | null }).endPosition;
+      const endPos = (lastStep as { endPosition?: string | null }).endPosition;
       if (endPos?.toLowerCase() === targetPosition) {
         return true;
       }
 
       // Check startPosition on last beat (some data might use this)
-      const startPos = (lastBeat as { startPosition?: string | null })
+      const startPos = (lastStep as { startPosition?: string | null })
         .startPosition;
       if (startPos?.toLowerCase() === targetPosition) {
         return true;

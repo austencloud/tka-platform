@@ -51,7 +51,7 @@ Shows visual feedback of active filters with easy removal.
         }
         return `Contains: ${value}`;
       case "length":
-        return `${value} beats`;
+        return `${value} steps`;
       case "gridMode":
         return `${value} mode`;
       default:
