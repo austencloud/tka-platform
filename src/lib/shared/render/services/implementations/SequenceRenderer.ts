@@ -121,7 +121,7 @@ export class SequenceRenderer implements ISequenceRenderer {
     try {
       // Create preview options - use passed values or fall back to preview defaults
       const previewOptions = this.mergeWithDefaults({
-        beatScale: options.beatScale ?? 0.5, // Default to smaller scale, but allow override
+        stepScale: options.stepScale ?? 0.5, // Default to smaller scale, but allow override
         quality: options.quality ?? 0.8, // Default to decent quality, but allow override
         ...options, // Spread AFTER defaults so explicit options take precedence
       });
@@ -164,7 +164,7 @@ export class SequenceRenderer implements ISequenceRenderer {
     if (!sequence) {
       errors.push("Sequence data is required");
     } else {
-      if (!sequence.beats || sequence.beats.length === 0) {
+      if (!sequence.steps || sequence.steps.length === 0) {
         errors.push("Sequence must contain at least one beat");
       }
       // Word validation disabled - not required for grid-only exports
@@ -196,7 +196,7 @@ export class SequenceRenderer implements ISequenceRenderer {
     return {
       // Core export settings
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addReversalSymbols: true,
       addUserInfo: true,
       addWord: true,
@@ -204,9 +204,9 @@ export class SequenceRenderer implements ISequenceRenderer {
       addDifficultyLevel: true,
 
       // Scaling and sizing
-      beatScale: 1.0,
-      beatSize: LayoutCalculator.getBaseBeatSize(), // Use desktop-compatible BASE_BEAT_SIZE (150px)
-      margin: 0, // No margin - beats are directly adjacent like BeatGrid
+      stepScale: 1.0,
+      stepSize: LayoutCalculator.getBaseBeatSize(), // Use desktop-compatible BASE_BEAT_SIZE (150px)
+      margin: 0, // No margin - steps are directly adjacent like StepGrid
 
       // Visibility settings
       redVisible: true,

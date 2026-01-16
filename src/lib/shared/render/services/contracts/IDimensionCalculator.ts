@@ -12,8 +12,8 @@ export interface IDimensionCalculator {
    */
   determineAdditionalHeights(
     options: ImageRenderOptions,
-    beatCount: number,
-    beatScale: number
+    stepCount: number,
+    stepScale: number
   ): [number, number];
 
   /**
@@ -30,8 +30,8 @@ export interface IDimensionCalculator {
    * Validate dimension parameters
    */
   validateDimensions(
-    beatCount: number,
-    beatScale: number,
+    stepCount: number,
+    stepScale: number,
     options: ImageRenderOptions
   ): boolean;
 
@@ -39,7 +39,7 @@ export interface IDimensionCalculator {
    * Get text scaling factors based on beat count
    * Matches desktop FontMarginHelper patterns
    */
-  getTextScalingFactors(beatCount: number): {
+  getTextScalingFactors(stepCount: number): {
     fontScale: number;
     marginScale: number;
     description: string;

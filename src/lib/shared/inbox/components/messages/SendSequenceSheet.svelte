@@ -55,7 +55,7 @@
   const sequenceWord = $derived(sequence.word);
   const sequenceName = $derived(sequence.displayName || sequence.name);
   const authorName = $derived(sequence.ownerDisplayName || sequence.author);
-  const beatCount = $derived(sequence.beats?.length ?? sequence.sequenceLength ?? 0);
+  const stepCount = $derived(sequence.steps?.length ?? sequence.sequenceLength ?? 0);
 
   onMount(async () => {
     hapticService = container.items.hapticFeedback;
@@ -105,14 +105,14 @@
       sequenceId: sequence.id,
       sequenceWord: sequenceWord,
       title: sequenceWord,
-      description: `${beatCount || 0} beats${authorName ? ` by ${authorName}` : ""}`,
+      description: `${stepCount || 0} steps${authorName ? ` by ${authorName}` : ""}`,
     };
 
     // Only add optional fields if they have values
     if (sequenceName) metadata.sequenceName = sequenceName;
     if (thumbnailUrl) metadata.sequenceThumbnail = thumbnailUrl;
     if (authorName) metadata.sequenceAuthor = authorName;
-    if (beatCount) metadata.sequenceBeatCount = beatCount;
+    if (stepCount) metadata.sequenceStepCount = stepCount;
 
     return {
       type: "sequence",
@@ -224,10 +224,10 @@
               {authorName}
             </span>
           {/if}
-          {#if beatCount}
+          {#if stepCount}
             <span class="meta-item">
               <i class="fas fa-music" aria-hidden="true"></i>
-              {beatCount} beats
+              {stepCount} steps
             </span>
           {/if}
         </div>

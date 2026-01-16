@@ -1,24 +1,24 @@
 /**
  * Word Deriver Contract
  *
- * Derives the TKA word from a sequence's beats.
+ * Derives the TKA word from a sequence's steps.
  * The word is NOT stored data - it's derived from the sequence's letters.
  * This is the single source of truth for what "word" a sequence represents.
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "../../domain/models/SequenceData";
 
 export interface IWordDeriver {
   /**
-   * Derive the word from a sequence's beats
-   * Returns empty string if no beats or no letters found
+   * Derive the word from a sequence's steps
+   * Returns empty string if no steps or no letters found
    */
-  deriveFromBeats(beats: readonly BeatData[]): string;
+  deriveFromBeats(steps: readonly StepData[]): string;
 
   /**
    * Derive the word from a SequenceData object
-   * Prefers derived word from beats, falls back to stored word/name
+   * Prefers derived word from steps, falls back to stored word/name
    */
   derive(sequence: SequenceData): string;
 

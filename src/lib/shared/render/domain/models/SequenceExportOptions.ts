@@ -14,7 +14,7 @@ import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 export interface SequenceExportOptions {
   // Core export settings (match desktop defaults)
   includeStartPosition: boolean;
-  addBeatNumbers: boolean;
+  addStepNumbers: boolean;
   addReversalSymbols: boolean;
   /** @deprecated Footer visibility is now derived from individual flags (showCreatorName, showNotes, showBirthday) */
   addUserInfo?: boolean;
@@ -30,7 +30,7 @@ export interface SequenceExportOptions {
   customNotesText?: string; // Custom text for notes (default: "Created using TKA Scribe")
 
   // Prop type override (optional)
-  // If provided, overrides the prop type for all beats in the sequence
+  // If provided, overrides the prop type for all steps in the sequence
   // Used for batch re-rendering sequences with different prop types
   propTypeOverride?: PropType;
 
@@ -40,8 +40,8 @@ export interface SequenceExportOptions {
   redPropTypeOverride?: PropType;
 
   // Scaling and sizing
-  beatScale: number;
-  beatSize: number;
+  stepScale: number;
+  stepSize: number;
   margin: number;
 
   // Visibility settings (prop colors)
@@ -88,16 +88,16 @@ export interface SequenceExportOptions {
 }
 
 export interface BeatRenderOptions {
-  addBeatNumbers: boolean;
+  addStepNumbers: boolean;
   redVisible: boolean;
   blueVisible: boolean;
   combinedGrids: boolean;
-  beatScale: number;
+  stepScale: number;
 }
 
 export interface TextRenderOptions {
   margin: number;
-  beatScale: number;
+  stepScale: number;
   additionalHeightTop?: number;
   additionalHeightBottom?: number;
 }
@@ -118,7 +118,7 @@ export interface UserExportInfo {
 export interface LayoutData {
   columns: number;
   rows: number;
-  beatSize: number;
+  stepSize: number;
   includeStartPosition: boolean;
   additionalHeightTop: number;
   additionalHeightBottom: number;
@@ -132,8 +132,8 @@ export interface ExportProgress {
   stage: "validation" | "rendering" | "composition" | "share" | "complete";
   progress: number; // 0-100
   message: string;
-  currentBeat?: number;
-  totalBeats?: number;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 export interface ExportError extends Error {
@@ -155,7 +155,7 @@ export interface SequenceExportResult {
     format: string;
     size: number;
     dimensions: { width: number; height: number };
-    beatCount: number;
+    stepCount: number;
     processingTime: number;
   };
 }

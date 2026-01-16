@@ -18,7 +18,7 @@ import type {
   RenderTiming,
 } from "../contracts/IDirectRenderer";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import type { IPictographPreparer } from "../../../pictograph/shared/services/contracts/IPictographPreparer";
 import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
@@ -45,8 +45,8 @@ const TKA_GLYPH_Y = 800;
 const TKA_GLYPH_SCALE = 1;
 
 // Beat number positioning
-const BEAT_NUMBER_X = 50;
-const BEAT_NUMBER_Y = 50;
+const STEP_NUMBER_X = 50;
+const STEP_NUMBER_Y = 50;
 const BEAT_NUMBER_FONT_SIZE = 100;
 const BEAT_NUMBER_START_FONT_SIZE = 80;
 
@@ -135,7 +135,7 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
   }
 
   async renderPictograph(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<HTMLCanvasElement> {
     const { canvas } = await this.renderPictographWithTiming(pictograph, options);
@@ -143,7 +143,7 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
   }
 
   async renderPictographWithTiming(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<{ canvas: HTMLCanvasElement; timing: RenderTiming }> {
     const timing: RenderTiming = {
@@ -182,7 +182,7 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
    * Ensure pictograph has prepared data, calling PictographPreparer if available
    */
   private async ensurePrepared(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<PreparedPictographData> {
     const asPrepared = pictograph as PreparedPictographData;
@@ -285,14 +285,14 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
     }
 
     // 8. Draw beat number
-    const beatData = preparedPictograph as BeatData;
-    if (typeof beatData.beatNumber === "number") {
-      this.drawBeatNumber(ctx, beatData.beatNumber, scale, isDarkMode);
+    const stepData = preparedPictograph as StepData;
+    if (typeof stepData.stepNumber === "number") {
+      this.drawStepNumber(ctx, stepData.stepNumber, scale, isDarkMode);
     }
 
     // 9. Draw reversal indicators
-    if (visibility.showReversals && this.isBeatData(preparedPictograph)) {
-      this.drawReversalIndicators(ctx, preparedPictograph as BeatData, size);
+    if (visibility.showReversals && this.isStepData(preparedPictograph)) {
+      this.drawReversalIndicators(ctx, preparedPictograph as StepData, size);
     }
 
     // Log timing breakdown for slow renders
@@ -367,21 +367,21 @@ export class Canvas2DNodeRenderer implements IDirectRenderer {
     // TODO: Copy from Canvas2DDirectRenderer
   }
 
-  private drawBeatNumber(
+  private drawStepNumber(
     ctx: CanvasRenderingContext2D,
-    beatNumber: number,
+    stepNumber: number,
     scale: number,
     isDarkMode: boolean
   ): void {
     // TODO: Copy from Canvas2DDirectRenderer
   }
 
-  private drawReversalIndicators(ctx: CanvasRenderingContext2D, beat: BeatData, size: number): void {
+  private drawReversalIndicators(ctx: CanvasRenderingContext2D, beat: StepData, size: number): void {
     // TODO: Copy from Canvas2DDirectRenderer
   }
 
-  private isBeatData(pictograph: any): pictograph is BeatData {
-    return typeof (pictograph as BeatData).beatNumber === "number";
+  private isStepData(pictograph: any): pictograph is StepData {
+    return typeof (pictograph as StepData).stepNumber === "number";
   }
 
   getMemoryUsage(): number {

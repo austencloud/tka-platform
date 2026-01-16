@@ -6,7 +6,7 @@
  */
 
 export interface TimeSignature {
-	numerator: number; // beats per measure (4, 3, 6)
+	numerator: number; // steps per measure (4, 3, 6)
 	denominator: number; // note value that gets one beat (4, 4, 8)
 }
 
@@ -20,7 +20,7 @@ export type TimeSignatureKey = keyof typeof TIME_SIGNATURES;
 export const DEFAULT_TIME_SIGNATURE: TimeSignatureKey = '4/4';
 
 /**
- * Compound meters (6/8, 9/8, 12/8) group beats in threes
+ * Compound meters (6/8, 9/8, 12/8) group steps in threes
  * and use triplet subdivision.
  */
 export function isCompoundMeter(ts: TimeSignature): boolean {
@@ -52,16 +52,16 @@ export function getSubdivisionsPerBeat(ts: TimeSignature): number {
  *   - beat 1, subdivision 2 → "1.67"
  */
 export function formatBeatPosition(
-	beatNumber: number,
+	stepNumber: number,
 	subdivisionIndex: number,
 	subdivisionsPerBeat: number
 ): string {
 	if (subdivisionIndex === 0) {
-		return String(beatNumber);
+		return String(stepNumber);
 	}
 
 	const fraction = subdivisionIndex / subdivisionsPerBeat;
-	const decimal = beatNumber + fraction;
+	const decimal = stepNumber + fraction;
 
 	// Format to avoid floating point weirdness
 	// Use 2 decimal places, trim trailing zeros

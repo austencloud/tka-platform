@@ -31,7 +31,7 @@ export function registerCreateShortcuts(
     context: ["create", "share-hub"], // Works in both contexts
     scope: "animation",
     priority: "high",
-    forceExecute: true, // Always execute, even when focus is on interactive elements like beats
+    forceExecute: true, // Always execute, even when focus is on interactive elements like steps
     condition: () => {
       // Only check for single-key shortcuts enabled - sequence check is in action
       return state.settings.enableSingleKeyShortcuts;
@@ -344,9 +344,9 @@ export function registerCreateShortcuts(
       const sequenceState = CreateModuleState.sequenceState;
 
       // Check if start position (beat 0) is selected
-      const selectedBeatData = sequenceState.selectedBeatData;
+      const selectedStepData = sequenceState.selectedStepData;
 
-      if (selectedBeatData?.beatNumber === 0) {
+      if (selectedStepData?.stepNumber === 0) {
         // Start position is selected - clear entire sequence using the same workflow as clear button
         try {
           await executeClearSequenceWorkflow({
@@ -356,8 +356,8 @@ export function registerCreateShortcuts(
           });
 
           // Close beat editor panel if it's open
-          if (panelState.isBeatEditorPanelOpen) {
-            panelState.closeBeatEditorPanel();
+          if (panelState.isStepEditorPanelOpen) {
+            panelState.closeStepEditorPanel();
           }
         } catch (err) {
           console.error("Failed to clear sequence:", err);
@@ -365,20 +365,20 @@ export function registerCreateShortcuts(
         return;
       }
 
-      const selectedBeatIndex = sequenceState.getSelectedBeatIndex();
+      const selectedStepIndex = sequenceState.getSelectedStepIndex();
 
-      if (selectedBeatIndex === null) {
+      if (selectedStepIndex === null) {
         debug.log("Backspace - No beat selected");
         return;
       }
 
-      // Remove the beat and all subsequent beats with animation (same as trash can button)
+      // Remove the beat and all subsequent steps with animation (same as trash can button)
       sequenceState.removeBeatAndSubsequentWithAnimation(
-        selectedBeatIndex,
+        selectedStepIndex,
         () => {
           // After animation completes, select appropriate beat
-          if (selectedBeatIndex > 0) {
-            sequenceState.selectBeat(selectedBeatIndex);
+          if (selectedStepIndex > 0) {
+            sequenceState.selectStep(selectedStepIndex);
           } else {
             sequenceState.selectStartPositionForEditing();
           }

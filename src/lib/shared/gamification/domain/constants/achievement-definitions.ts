@@ -55,7 +55,7 @@ const CREATOR_ACHIEVEMENTS: Achievement[] = [
   {
     id: "long_sequence",
     title: "Marathon Flow",
-    description: "Create a sequence with 10+ beats",
+    description: "Create a sequence with 10+ steps",
     category: "creator",
     tier: "silver",
     xpReward: 150,

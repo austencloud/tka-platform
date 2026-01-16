@@ -20,7 +20,7 @@ export type CompositionProgressCallback = (progress: {
  */
 export interface IImageComposer {
   /**
-   * Compose complete sequence image from rendered beats
+   * Compose complete sequence image from rendered steps
    * @param onProgress Optional callback for progress tracking
    */
   composeSequenceImage(

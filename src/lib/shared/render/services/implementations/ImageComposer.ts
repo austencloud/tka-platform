@@ -5,7 +5,7 @@
  * No intermediate canvases, no complex calculations, just straightforward rendering.
  */
 
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
@@ -28,7 +28,7 @@ import type { ILayoutCalculator } from "../contracts/ILayoutCalculator";
 import type { ITextRenderer } from "../contracts/ITextRenderer";
 import type { IPictographBlobCache } from "../contracts/IPictographBlobCache";
 import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
-import type { IBeatNumberRenderer } from "../contracts/IBeatNumberRenderer";
+import type { IStepNumberRenderer } from "../contracts/IStepNumberRenderer";
 import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
 import type { ILayerCompositor } from "../contracts/ILayerCompositor";
@@ -63,7 +63,7 @@ export class ImageComposer implements IImageComposer {
     private readonly blobCache: IPictographBlobCache,
     private readonly keyHasher: IPictographKeyHasher,
     private readonly memoryCache: PictographMemoryCache,
-    private readonly beatNumberRenderer: IBeatNumberRenderer,
+    private readonly beatNumberRenderer: IStepNumberRenderer,
     private readonly canvas2DRenderer: Canvas2DDirectRenderer,
     private readonly layerCompositor?: ILayerCompositor
   ) {}
@@ -185,7 +185,7 @@ export class ImageComposer implements IImageComposer {
     options: SequenceExportOptions,
     onProgress?: CompositionProgressCallback
   ): Promise<HTMLCanvasElement> {
-    if (!sequence.beats || sequence.beats.length === 0) {
+    if (!sequence.steps || sequence.steps.length === 0) {
       throw new Error("Sequence must have at least one beat");
     }
 
@@ -203,23 +203,23 @@ export class ImageComposer implements IImageComposer {
 
     // Step 1: Calculate layout using LayoutCalculator
     // This service has the proper lookup tables matching the desktop application
-    const beatCount = sequence.beats.length;
+    const stepCount = sequence.steps.length;
     const [columns, rows] = this.layoutService.calculateLayout(
-      beatCount,
+      stepCount,
       options.includeStartPosition
     );
 
     // Step 2: Calculate canvas dimensions including title space
-    // Scale beatSize by beatScale to maintain proportions between grid and title areas
-    const baseBeatSize = options.beatSize || 120;
-    const beatSize = Math.floor(baseBeatSize * (options.beatScale || 1));
-    const canvasWidth = columns * beatSize;
+    // Scale stepSize by stepScale to maintain proportions between grid and title areas
+    const baseBeatSize = options.stepSize || 120;
+    const stepSize = Math.floor(baseBeatSize * (options.stepScale || 1));
+    const canvasWidth = columns * stepSize;
 
     // Derive word from beat letters if sequence.word is empty
     // This ensures the word displays even when built dynamically in the create module
     const rawWord =
       sequence.word ||
-      sequence.beats
+      sequence.steps
         .filter((beat) => beat.letter)
         .map((beat) => beat.letter)
         .join("");
@@ -234,7 +234,7 @@ export class ImageComposer implements IImageComposer {
     // (Will be recalculated with custom name logic later)
     const showHeaderForLayout = (options.addWord && (derivedWord || options.customName)) || options.addDifficultyLevel;
     const headerHeight = showHeaderForLayout
-        ? this.calculateHeaderHeight(beatCount, beatSize)
+        ? this.calculateHeaderHeight(stepCount, stepSize)
         : 0;
 
     // Calculate footer height if user info should be included
@@ -244,10 +244,10 @@ export class ImageComposer implements IImageComposer {
     const showBirthday = options.showBirthday ?? options.addUserInfo;
     const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
     const footerHeight = hasAnyFooterContent
-      ? this.calculateFooterHeight(beatSize)
+      ? this.calculateFooterHeight(stepSize)
       : 0;
 
-    const canvasHeight = rows * beatSize + headerHeight + footerHeight;
+    const canvasHeight = rows * stepSize + headerHeight + footerHeight;
 
     const canvas = document.createElement("canvas");
     canvas.width = canvasWidth;
@@ -263,18 +263,18 @@ export class ImageComposer implements IImageComposer {
     // Dark Mode uses dark background (#0a0a0f), normal mode uses white
     const isDarkMode = visibilitySettings.darkMode ?? false;
     ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
-    ctx.fillRect(0, headerHeight, canvasWidth, rows * beatSize);
+    ctx.fillRect(0, headerHeight, canvasWidth, rows * stepSize);
 
     // Calculate total items to render for progress tracking
     // Derive start position from beat 1 if missing but requested
     let derivedStartPosition: StartPositionData | null = null;
-    const firstBeat = sequence.beats[0];
-    if (options.includeStartPosition && !sequence.startPosition && firstBeat) {
-      derivedStartPosition = createStartPositionFromBeatStart(firstBeat);
+    const firstStep = sequence.steps[0];
+    if (options.includeStartPosition && !sequence.startPosition && firstStep) {
+      derivedStartPosition = createStartPositionFromBeatStart(firstStep);
     }
     const effectiveStartPosition = sequence.startPosition ?? derivedStartPosition;
     const hasStartPosition = options.includeStartPosition && effectiveStartPosition;
-    const totalItems = sequence.beats.length + (hasStartPosition ? 1 : 0);
+    const totalItems = sequence.steps.length + (hasStartPosition ? 1 : 0);
     let renderedCount = 0;
 
     // Report initial progress
@@ -295,8 +295,8 @@ export class ImageComposer implements IImageComposer {
     // Step 4: Render each pictograph directly onto the canvas (offset by header height)
     // Render start position if needed (always at column 0, row 0)
     if (hasStartPosition && effectiveStartPosition) {
-      // Only pass beat number 0 if addBeatNumbers is true (shows "Start" text)
-      const startBeatNumber = options.addBeatNumbers ? 0 : undefined;
+      // Only pass beat number 0 if addStepNumbers is true (shows "Start" text)
+      const startBeatNumber = options.addStepNumbers ? 0 : undefined;
       const startPositionData = hasPropOverride
         ? this.applyPropTypeOverride(
             effectiveStartPosition,
@@ -310,7 +310,7 @@ export class ImageComposer implements IImageComposer {
         startPositionData,
         0,
         0,
-        beatSize,
+        stepSize,
         startBeatNumber,
         headerHeight, // Offset grid below header
         visibilitySettings, // Pass visibility settings
@@ -325,22 +325,22 @@ export class ImageComposer implements IImageComposer {
       });
     }
 
-    // Step 5: Render all beats in the grid
-    // Calculate how many beats per row based on the layout
+    // Step 5: Render all steps in the grid
+    // Calculate how many steps per row based on the layout
     const startColumn = options.includeStartPosition ? 1 : 0;
-    const beatsPerRow = columns - startColumn; // Available columns for beats
+    const stepsPerRow = columns - startColumn; // Available columns for steps
 
-    for (let i = 0; i < sequence.beats.length; i++) {
-      const beat = sequence.beats[i];
+    for (let i = 0; i < sequence.steps.length; i++) {
+      const beat = sequence.steps[i];
       if (!beat) continue; // Skip if beat is undefined
-      // Calculate position: beats fill remaining columns, then wrap to next row
+      // Calculate position: steps fill remaining columns, then wrap to next row
       // All rows start at startColumn (column 1 if start position exists, column 0 otherwise)
-      const col = startColumn + (i % beatsPerRow);
-      const row = Math.floor(i / beatsPerRow);
-      // Only pass beat number if addBeatNumbers is true
-      const beatNumber = options.addBeatNumbers ? i + 1 : undefined;
+      const col = startColumn + (i % stepsPerRow);
+      const row = Math.floor(i / stepsPerRow);
+      // Only pass beat number if addStepNumbers is true
+      const stepNumber = options.addStepNumbers ? i + 1 : undefined;
       // Apply prop type override if provided (supports single or per-color overrides)
-      const beatData = hasPropOverride
+      const stepData = hasPropOverride
         ? this.applyPropTypeOverride(
             beat,
             options.propTypeOverride,
@@ -350,11 +350,11 @@ export class ImageComposer implements IImageComposer {
         : beat;
       await this.renderPictographAt(
         ctx,
-        beatData,
+        stepData,
         col,
         row,
-        beatSize,
-        beatNumber,
+        stepSize,
+        stepNumber,
         headerHeight, // Offset grid below header
         visibilitySettings, // Pass visibility settings
         effectiveBluePropType, // Pass snapshotted blue prop type
@@ -373,7 +373,7 @@ export class ImageComposer implements IImageComposer {
       ctx,
       columns,
       rows,
-      beatSize,
+      stepSize,
       sequence,
       options,
       headerHeight, // Offset grid below header
@@ -394,7 +394,7 @@ export class ImageComposer implements IImageComposer {
         displayName,
         {
           margin: options.margin || 0,
-          beatScale: options.beatScale || 1,
+          stepScale: options.stepScale || 1,
         },
         headerHeight,
         difficultyLevel,
@@ -415,10 +415,10 @@ export class ImageComposer implements IImageComposer {
         },
         {
           margin: options.margin || 10,
-          beatScale: options.beatScale || 1,
+          stepScale: options.stepScale || 1,
         },
         footerHeight, // Pass footer height for proper text positioning
-        beatCount, // Pass beat count for legacy-matching font sizing
+        stepCount, // Pass beat count for legacy-matching font sizing
         isDarkMode, // Dark Mode for dark theme styling
         // Granular footer visibility flags
         {
@@ -437,7 +437,7 @@ export class ImageComposer implements IImageComposer {
       const cacheRate = ((cachedCount / totalPictographs) * 100).toFixed(0);
       const sequenceName = derivedWord || sequence.name || "unnamed";
       console.log(
-        `[Render] "${sequenceName}" ${totalPictographs} beats: ` +
+        `[Render] "${sequenceName}" ${totalPictographs} steps: ` +
         `${this.compositionL2Hits} L2, ${this.compositionL1Hits} L1, ${this.compositionFreshRenders} fresh ` +
         `(${cacheRate}% cached)`
       );
@@ -464,11 +464,11 @@ export class ImageComposer implements IImageComposer {
    */
   private async renderPictographAt(
     ctx: CanvasRenderingContext2D,
-    pictographData: BeatData | PictographData,
+    pictographData: StepData | PictographData,
     column: number,
     row: number,
-    beatSize: number,
-    beatNumber?: number,
+    stepSize: number,
+    stepNumber?: number,
     titleOffset: number = 0,
     visibilitySettings?: PictographVisibilityOptions,
     bluePropType?: PropType,
@@ -491,8 +491,8 @@ export class ImageComposer implements IImageComposer {
           pictographData,
           column,
           row,
-          beatSize,
-          beatNumber,
+          stepSize,
+          stepNumber,
           titleOffset,
           finalVisibilitySettings
         );
@@ -503,7 +503,7 @@ export class ImageComposer implements IImageComposer {
       const baseKey = this.keyHasher.deriveKey(pictographData, finalVisibilitySettings);
 
       // 🚀 PERF: L1 blob cache is size-specific (blobs are rasterized at specific size)
-      const blobKey = `${baseKey}:${beatSize}`;
+      const blobKey = `${baseKey}:${stepSize}`;
 
       // 🚀 PERF: Check Layer 2 (memory) first - same key as blob cache
       let img = this.memoryCache.get(blobKey);
@@ -534,12 +534,12 @@ export class ImageComposer implements IImageComposer {
           await this.ensureCanvas2DInitialized();
 
           // Render pictograph directly to canvas
-          // Note: beatNumber is handled separately via overlay, so we pass undefined here
+          // Note: stepNumber is handled separately via overlay, so we pass undefined here
           const renderStart = performance.now();
           const pictographCanvas = await this.canvas2DRenderer.renderPictograph(
             pictographData,
             {
-              size: beatSize,
+              size: stepSize,
               visibility: finalVisibilitySettings,
               bluePropType: bluePropType,
               redPropType: redPropType,
@@ -570,26 +570,26 @@ export class ImageComposer implements IImageComposer {
       }
 
       // Draw base image onto the canvas at the correct position
-      const x = column * beatSize;
-      const y = row * beatSize + titleOffset;
-      ctx.drawImage(img, x, y, beatSize, beatSize);
+      const x = column * stepSize;
+      const y = row * stepSize + titleOffset;
+      ctx.drawImage(img, x, y, stepSize, stepSize);
 
       // Draw beat number as text overlay (if provided)
-      if (beatNumber !== undefined) {
+      if (stepNumber !== undefined) {
         const isDarkMode = finalVisibilitySettings.darkMode ?? false;
-        this.beatNumberRenderer.drawBeatNumber(ctx, beatNumber, x, y, beatSize, isDarkMode);
+        this.beatNumberRenderer.drawStepNumber(ctx, stepNumber, x, y, stepSize, isDarkMode);
       }
     } catch (error) {
       console.error(`❌ Failed to render beat at (${column}, ${row}):`, error);
       // Draw error placeholder
-      const x = column * beatSize;
-      const y = row * beatSize + titleOffset;
+      const x = column * stepSize;
+      const y = row * stepSize + titleOffset;
       ctx.fillStyle = "#ffeeee";
-      ctx.fillRect(x + 5, y + 5, beatSize - 10, beatSize - 10);
+      ctx.fillRect(x + 5, y + 5, stepSize - 10, stepSize - 10);
       ctx.fillStyle = "#cc0000";
       ctx.font = "14px Arial";
       ctx.textAlign = "center";
-      ctx.fillText("Error", x + beatSize / 2, y + beatSize / 2);
+      ctx.fillText("Error", x + stepSize / 2, y + stepSize / 2);
     }
   }
 
@@ -666,7 +666,7 @@ export class ImageComposer implements IImageComposer {
     ctx: CanvasRenderingContext2D,
     columns: number,
     rows: number,
-    beatSize: number,
+    stepSize: number,
     sequence: SequenceData,
     options: SequenceExportOptions,
     titleOffset: number = 0,
@@ -688,10 +688,10 @@ export class ImageComposer implements IImageComposer {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns - 1; col++) {
         if (isOccupied(col, row) && isOccupied(col + 1, row)) {
-          const x = (col + 1) * beatSize;
+          const x = (col + 1) * stepSize;
           ctx.beginPath();
-          ctx.moveTo(x, row * beatSize + titleOffset);
-          ctx.lineTo(x, (row + 1) * beatSize + titleOffset);
+          ctx.moveTo(x, row * stepSize + titleOffset);
+          ctx.lineTo(x, (row + 1) * stepSize + titleOffset);
           ctx.stroke();
         }
       }
@@ -701,10 +701,10 @@ export class ImageComposer implements IImageComposer {
     for (let col = 0; col < columns; col++) {
       for (let row = 0; row < rows - 1; row++) {
         if (isOccupied(col, row) && isOccupied(col, row + 1)) {
-          const y = (row + 1) * beatSize + titleOffset;
+          const y = (row + 1) * stepSize + titleOffset;
           ctx.beginPath();
-          ctx.moveTo(col * beatSize, y);
-          ctx.lineTo((col + 1) * beatSize, y);
+          ctx.moveTo(col * stepSize, y);
+          ctx.lineTo((col + 1) * stepSize, y);
           ctx.stroke();
         }
       }
@@ -724,19 +724,19 @@ export class ImageComposer implements IImageComposer {
     // Add start position if included (either explicit or derivable from beat 1)
     const hasStartPositionToRender =
       options.includeStartPosition &&
-      (sequence.startPosition || sequence.beats?.length > 0);
+      (sequence.startPosition || sequence.steps?.length > 0);
     if (hasStartPositionToRender) {
       occupied.add("0,0");
     }
 
-    // Add all beats using the same positioning logic as rendering:
+    // Add all steps using the same positioning logic as rendering:
     // All rows start at startColumn (column 1 if start position exists, column 0 otherwise)
     const startColumn = options.includeStartPosition ? 1 : 0;
-    const beatsPerRow = columns - startColumn;
+    const stepsPerRow = columns - startColumn;
 
-    for (let i = 0; i < (sequence.beats.length || 0); i++) {
-      const col = startColumn + (i % beatsPerRow);
-      const row = Math.floor(i / beatsPerRow);
+    for (let i = 0; i < (sequence.steps.length || 0); i++) {
+      const col = startColumn + (i % stepsPerRow);
+      const row = Math.floor(i / stepsPerRow);
       occupied.add(`${col},${row}`);
     }
 
@@ -881,26 +881,26 @@ export class ImageComposer implements IImageComposer {
    *
    * Height is proportional to beat size for balanced layout:
    * - 1 beat: 1.0x beat size
-   * - 2 beats: 1.0x beat size
-   * - 3+ beats: 1.0x beat size (header equals one beat height)
+   * - 2 steps: 1.0x beat size
+   * - 3+ steps: 1.0x beat size (header equals one beat height)
    */
-  private calculateHeaderHeight(beatCount: number, beatSize: number): number {
-    if (beatCount === 0) {
+  private calculateHeaderHeight(stepCount: number, stepSize: number): number {
+    if (stepCount === 0) {
       return 0;
     }
 
     // Header height = 1x beat size for balanced proportions
     // This ensures the header doesn't dominate the image
-    return Math.floor(beatSize / 3);
+    return Math.floor(stepSize / 3);
   }
 
   /**
    * Calculate footer height for user info based on beat size
    * Footer is at the bottom of the image - proportional to beat size for consistency
    */
-  private calculateFooterHeight(beatSize: number): number {
+  private calculateFooterHeight(stepSize: number): number {
     // Footer height = 1/3 of beat size (same as header for balanced layout)
-    return Math.floor(beatSize / 7);
+    return Math.floor(stepSize / 7);
   }
 
   /**
@@ -913,7 +913,7 @@ export class ImageComposer implements IImageComposer {
    * 3. Both - per-color overrides take precedence
    */
   private applyPropTypeOverride<
-    T extends BeatData | PictographData | StartPositionData,
+    T extends StepData | PictographData | StartPositionData,
   >(
     data: T,
     propType?: PropType,
@@ -942,19 +942,19 @@ export class ImageComposer implements IImageComposer {
   }
 
   /**
-   * Calculate difficulty level from sequence beats
+   * Calculate difficulty level from sequence steps
    * Uses the SequenceDifficultyCalculator to analyze turns and orientations
    */
   private getDifficultyLevel(sequence: SequenceData): number {
-    // Use the difficulty calculator to analyze beats dynamically
-    if (sequence.beats && sequence.beats.length > 0) {
+    // Use the difficulty calculator to analyze steps dynamically
+    if (sequence.steps && sequence.steps.length > 0) {
       // Copy to mutable array for the calculator
       return this.difficultyCalculator.calculateDifficultyLevel([
-        ...sequence.beats,
+        ...sequence.steps,
       ]);
     }
 
-    // Fallback to stored level if no beats
+    // Fallback to stored level if no steps
     if (typeof sequence.level === "number" && sequence.level > 0) {
       return sequence.level;
     }
@@ -975,11 +975,11 @@ export class ImageComposer implements IImageComposer {
    */
   private async renderPictographWithLayerCompositor(
     ctx: CanvasRenderingContext2D,
-    pictographData: BeatData | PictographData,
+    pictographData: StepData | PictographData,
     column: number,
     row: number,
-    beatSize: number,
-    beatNumber: number | undefined,
+    stepSize: number,
+    stepNumber: number | undefined,
     titleOffset: number,
     visibilitySettings: PictographVisibilityOptions
   ): Promise<void> {
@@ -993,7 +993,7 @@ export class ImageComposer implements IImageComposer {
     // Get prepared pictograph data
     const { container } = await import("../../../di");
     const preparer = container.items.pictographPreparer as {
-      prepareSingle: (data: PictographData | BeatData, opts: object) => Promise<PictographData>;
+      prepareSingle: (data: PictographData | StepData, opts: object) => Promise<PictographData>;
     };
 
     const preparedPictograph = await preparer.prepareSingle(pictographData, {
@@ -1004,7 +1004,7 @@ export class ImageComposer implements IImageComposer {
 
     // Build layer render options
     const layerOptions = {
-      size: beatSize,
+      size: stepSize,
       darkMode: visibilitySettings.darkMode ?? false,
       showNonRadialPoints: visibilitySettings.showNonRadialPoints ?? false,
       handPointVisibility: visibilitySettings.handPointVisibility ?? "all",
@@ -1023,7 +1023,7 @@ export class ImageComposer implements IImageComposer {
       preparedPictograph as unknown as import("../../../pictograph/shared/domain/models/PreparedPictographData").PreparedPictographData,
       layerOptions,
       layerVisibility,
-      beatNumber
+      stepNumber
     );
 
     // Track stats
@@ -1036,8 +1036,8 @@ export class ImageComposer implements IImageComposer {
     }
 
     // Draw composited result onto the main canvas
-    const x = column * beatSize;
-    const y = row * beatSize + titleOffset;
-    ctx.drawImage(result.canvas, x, y, beatSize, beatSize);
+    const x = column * stepSize;
+    const y = row * stepSize + titleOffset;
+    ctx.drawImage(result.canvas, x, y, stepSize, stepSize);
   }
 }

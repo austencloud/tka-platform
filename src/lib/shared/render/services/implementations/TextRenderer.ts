@@ -30,7 +30,7 @@ export class TextRenderer implements ITextRenderer {
     canvas: HTMLCanvasElement,
     word: string,
     options: TextRenderOptions,
-    beatCount: number = 3 // Default to 3+ beats scaling
+    stepCount: number = 3 // Default to 3+ steps scaling
   ): void {
     if (!word || word.trim() === "") {
       return;
@@ -43,15 +43,15 @@ export class TextRenderer implements ITextRenderer {
 
     // Get desktop-compatible font scaling based on beat count
     const scalingFactors =
-      this.dimensionService.getTextScalingFactors(beatCount);
+      this.dimensionService.getTextScalingFactors(stepCount);
 
     // Calculate title area height (matches ImageComposer logic)
-    // titleHeight is already scaled by beatScale internally
+    // titleHeight is already scaled by stepScale internally
     const titleHeight = this.calculateTitleHeight(
-      beatCount,
-      options.beatScale || 1
+      stepCount,
+      options.stepScale || 1
     );
-    // Apply font scaling factor - but NOT beatScale again since titleHeight is already scaled
+    // Apply font scaling factor - but NOT stepScale again since titleHeight is already scaled
     // Additional 0.7 multiplier to reduce overall font size for better visual balance
     const finalFontSize = titleHeight * scalingFactors.fontScale * 0.7;
 
@@ -404,23 +404,23 @@ export class TextRenderer implements ITextRenderer {
   /**
    * Calculate title height based on beat count (matches desktop logic)
    */
-  private calculateTitleHeight(beatCount: number, beatScale: number): number {
+  private calculateTitleHeight(stepCount: number, stepScale: number): number {
     let baseHeight = 0;
 
     // Match desktop logic exactly based on beat count
-    if (beatCount === 0) {
+    if (stepCount === 0) {
       baseHeight = 0;
-    } else if (beatCount === 1) {
+    } else if (stepCount === 1) {
       baseHeight = 150;
-    } else if (beatCount === 2) {
+    } else if (stepCount === 2) {
       baseHeight = 200;
     } else {
-      // beatCount >= 3
+      // stepCount >= 3
       baseHeight = 300;
     }
 
     // Apply beat scale
-    return Math.floor(baseHeight * beatScale);
+    return Math.floor(baseHeight * stepScale);
   }
 
   /**

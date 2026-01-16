@@ -41,7 +41,7 @@ export type ShortcutScope =
   | "panel" // Panel management (open, close, navigate)
   | "focus" // Focus management (regions, inputs)
   | "help" // Help and information
-  | "sequence-management" // Sequence management (save, add, delete beats)
+  | "sequence-management" // Sequence management (save, add, delete steps)
   | "animation" // Animation control (play, pause, seek)
   | "workspace" // Workspace navigation and interaction
   | "playback" // Media playback controls

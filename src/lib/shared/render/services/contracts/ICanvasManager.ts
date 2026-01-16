@@ -1,4 +1,4 @@
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { SequenceData } from "../../../foundation/domain/models/SequenceData";
 
 /**
@@ -35,21 +35,21 @@ export interface IReversalDetector {
   /**
    * Process reversals for sequence
    */
-  processReversals(sequence: SequenceData, beats: BeatData[]): BeatData[];
+  processReversals(sequence: SequenceData, steps: StepData[]): StepData[];
 
   /**
    * Detect reversal for single beat
    */
   detectReversal(
-    previousBeats: BeatData[],
-    currentBeat: BeatData
+    previousSteps: StepData[],
+    currentStep: StepData
   ): { blueReversal: boolean; redReversal: boolean };
 
   /**
    * Apply reversal symbols to beat
    */
   applyReversalSymbols(
-    beatData: BeatData,
+    stepData: StepData,
     reversalInfo: { blueReversal: boolean; redReversal: boolean }
-  ): BeatData;
+  ): StepData;
 }

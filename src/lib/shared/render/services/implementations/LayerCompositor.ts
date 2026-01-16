@@ -38,7 +38,7 @@ import type {
   LayerCacheStats,
 } from "../contracts/ILayerCompositor";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import { LayerKeyDeriver } from "./LayerKeyDeriver";
 import { container } from "../../../di";
 import type { ITurnsTupleGenerator } from "../../../pictograph/arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
@@ -49,8 +49,8 @@ import { GridMode } from "../../../pictograph/grid/domain/enums/grid-enums";
 const VIEWBOX_SIZE = 950;
 const TKA_GLYPH_X = 50;
 const TKA_GLYPH_Y = 800;
-const BEAT_NUMBER_X = 50;
-const BEAT_NUMBER_Y = 50;
+const STEP_NUMBER_X = 50;
+const STEP_NUMBER_Y = 50;
 const BEAT_NUMBER_FONT_SIZE = 100;
 const BEAT_NUMBER_START_FONT_SIZE = 80;
 const BLUE_COLOR = "#2E77AE";
@@ -133,7 +133,7 @@ export class LayerCompositor implements ILayerCompositor {
     pictograph: PreparedPictographData,
     options: LayerRenderOptions,
     visibility: LayerVisibility,
-    beatNumber?: number
+    stepNumber?: number
   ): Promise<CompositionResult> {
     const totalStart = performance.now();
     this.stats.totalCompositions++;
@@ -183,10 +183,10 @@ export class LayerCompositor implements ILayerCompositor {
 
     // 4. Get/render reversal overlay (if enabled and applicable)
     let reversalResult: LayerRenderResult | null = null;
-    const beatData = pictograph as BeatData;
-    if (visibility.showReversals && this.isBeatData(pictograph)) {
+    const stepData = pictograph as StepData;
+    if (visibility.showReversals && this.isStepData(pictograph)) {
       const reversalStart = performance.now();
-      reversalResult = await this.renderReversalOverlay(beatData, options.size);
+      reversalResult = await this.renderReversalOverlay(stepData, options.size);
       timing.reversalLayerMs = performance.now() - reversalStart;
       if (reversalResult) {
         cacheStats.reversalFromCache = reversalResult.fromCache;
@@ -217,9 +217,9 @@ export class LayerCompositor implements ILayerCompositor {
     }
 
     // 6. Draw beat number (not cached - simple text)
-    if (typeof beatNumber === "number" && beatNumber !== -1) {
+    if (typeof stepNumber === "number" && stepNumber !== -1) {
       const beatStart = performance.now();
-      this.drawBeatNumber(ctx, beatNumber, options.size, options.darkMode);
+      this.drawStepNumber(ctx, stepNumber, options.size, options.darkMode);
       timing.beatLayerMs = performance.now() - beatStart;
     }
 
@@ -362,13 +362,13 @@ export class LayerCompositor implements ILayerCompositor {
   }
 
   async renderReversalOverlay(
-    beatData: BeatData,
+    stepData: StepData,
     size: number
   ): Promise<LayerRenderResult | null> {
-    if (!beatData.blueReversal && !beatData.redReversal) return null;
+    if (!stepData.blueReversal && !stepData.redReversal) return null;
 
     const startTime = performance.now();
-    const cacheKey = this.keyDeriver.deriveReversalLayerKey(beatData, size);
+    const cacheKey = this.keyDeriver.deriveReversalLayerKey(stepData, size);
 
     // Check cache
     const cached = this.reversalCache.get(cacheKey);
@@ -384,7 +384,7 @@ export class LayerCompositor implements ILayerCompositor {
     }
 
     // Render reversal overlay (transparent background)
-    const canvas = this.renderReversalOverlayInternal(beatData, size);
+    const canvas = this.renderReversalOverlayInternal(stepData, size);
 
     // Add to cache
     if (this.reversalCache.size >= REVERSAL_CACHE_LIMIT) {
@@ -651,7 +651,7 @@ export class LayerCompositor implements ILayerCompositor {
   /**
    * Render reversal overlay: blue/red dots
    */
-  private renderReversalOverlayInternal(beatData: BeatData, size: number): HTMLCanvasElement {
+  private renderReversalOverlayInternal(stepData: StepData, size: number): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
@@ -665,16 +665,16 @@ export class LayerCompositor implements ILayerCompositor {
     const margin = size * 0.02;
     const y = size - indicatorSize - margin;
 
-    if (beatData.blueReversal) {
+    if (stepData.blueReversal) {
       ctx.fillStyle = BLUE_COLOR;
       ctx.beginPath();
       ctx.arc(margin + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    if (beatData.redReversal) {
+    if (stepData.redReversal) {
       ctx.fillStyle = RED_COLOR;
-      const x = beatData.blueReversal ? margin * 2 + indicatorSize : margin;
+      const x = stepData.blueReversal ? margin * 2 + indicatorSize : margin;
       ctx.beginPath();
       ctx.arc(x + indicatorSize / 2, y + indicatorSize / 2, indicatorSize / 2, 0, Math.PI * 2);
       ctx.fill();
@@ -686,25 +686,25 @@ export class LayerCompositor implements ILayerCompositor {
   /**
    * Draw beat number (not cached, simple text)
    */
-  private drawBeatNumber(
+  private drawStepNumber(
     ctx: CanvasRenderingContext2D,
-    beatNumber: number,
+    stepNumber: number,
     size: number,
     darkMode: boolean
   ): void {
-    if (beatNumber === -1) return;
+    if (stepNumber === -1) return;
 
     const scale = size / VIEWBOX_SIZE;
-    const text = beatNumber === 0 ? "Start" : String(beatNumber);
-    const fontSize = (beatNumber === 0 ? BEAT_NUMBER_START_FONT_SIZE : BEAT_NUMBER_FONT_SIZE) * scale;
+    const text = stepNumber === 0 ? "Start" : String(stepNumber);
+    const fontSize = (stepNumber === 0 ? BEAT_NUMBER_START_FONT_SIZE : BEAT_NUMBER_FONT_SIZE) * scale;
 
     ctx.font = `bold ${fontSize}px Georgia, serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.fillStyle = darkMode ? "#ffffff" : "#231f20";
 
-    const x = BEAT_NUMBER_X * scale;
-    const y = BEAT_NUMBER_Y * scale;
+    const x = STEP_NUMBER_X * scale;
+    const y = STEP_NUMBER_Y * scale;
     ctx.fillText(text, x, y);
   }
 
@@ -790,7 +790,7 @@ export class LayerCompositor implements ILayerCompositor {
     return "(s, 0, 0)";
   }
 
-  private isBeatData(pictograph: PreparedPictographData): pictograph is BeatData & PreparedPictographData {
+  private isStepData(pictograph: PreparedPictographData): pictograph is StepData & PreparedPictographData {
     return "blueReversal" in pictograph || "redReversal" in pictograph;
   }
 }

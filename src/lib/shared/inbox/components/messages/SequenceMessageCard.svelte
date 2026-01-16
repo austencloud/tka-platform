@@ -40,7 +40,7 @@
     attachment.metadata?.sequenceThumbnail || attachment.thumbnailUrl
   );
   const authorName = $derived(attachment.metadata?.sequenceAuthor);
-  const beatCount = $derived(attachment.metadata?.sequenceBeatCount);
+  const stepCount = $derived(attachment.metadata?.sequenceStepCount);
 
   // Initialize haptic service
   onMount(() => {
@@ -112,10 +112,10 @@
               {authorName}
             </span>
           {/if}
-          {#if beatCount}
-            <span class="beats">
+          {#if stepCount}
+            <span class="steps">
               <i class="fas fa-music" aria-hidden="true"></i>
-              {beatCount} beats
+              {stepCount} steps
             </span>
           {/if}
         </div>
@@ -284,7 +284,7 @@
   }
 
   .author,
-  .beats {
+  .steps {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -293,12 +293,12 @@
   }
 
   .own .author,
-  .own .beats {
+  .own .steps {
     color: rgba(255, 255, 255, 0.7);
   }
 
   .author i,
-  .beats i {
+  .steps i {
     font-size: 10px;
     opacity: 0.8;
   }

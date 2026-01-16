@@ -18,7 +18,7 @@ export class LayoutCalculator implements ILayoutCalculator {
   /**
    * Layout table for sequences WITH start position
    * Copied exactly from desktop get_layout_options_with_start()
-   * Format: beatCount -> [columns, rows]
+   * Format: stepCount -> [columns, rows]
    */
   private readonly LAYOUT_WITH_START_POSITION: Record<
     number,
@@ -94,7 +94,7 @@ export class LayoutCalculator implements ILayoutCalculator {
   /**
    * Layout table for sequences WITHOUT start position
    * Copied exactly from desktop get_layout_options_without_start()
-   * Format: beatCount -> [columns, rows]
+   * Format: stepCount -> [columns, rows]
    */
   private readonly LAYOUT_WITHOUT_START_POSITION: Record<
     number,
@@ -172,12 +172,12 @@ export class LayoutCalculator implements ILayoutCalculator {
    * Matches desktop calculate_layout() method exactly
    */
   calculateLayout(
-    beatCount: number,
+    stepCount: number,
     includeStartPosition: boolean
   ): [number, number] {
-    if (!this.validateLayout(beatCount, includeStartPosition)) {
+    if (!this.validateLayout(stepCount, includeStartPosition)) {
       throw new Error(
-        `Invalid layout parameters: beatCount=${beatCount}, includeStartPosition=${includeStartPosition}`
+        `Invalid layout parameters: stepCount=${stepCount}, includeStartPosition=${includeStartPosition}`
       );
     }
 
@@ -186,12 +186,12 @@ export class LayoutCalculator implements ILayoutCalculator {
       : this.LAYOUT_WITHOUT_START_POSITION;
 
     // Check if we have a predefined layout for this beat count
-    if (beatCount in layoutTable) {
-      return layoutTable[beatCount]!;
+    if (stepCount in layoutTable) {
+      return layoutTable[stepCount]!;
     }
 
     // Fallback for beat counts beyond our tables
-    return this.getFallbackLayout(beatCount, includeStartPosition);
+    return this.getFallbackLayout(stepCount, includeStartPosition);
   }
 
   /**
@@ -201,13 +201,13 @@ export class LayoutCalculator implements ILayoutCalculator {
   calculateImageDimensions(
     layout: [number, number],
     additionalHeight: number,
-    beatScale: number = 1,
-    beatSize?: number
+    stepScale: number = 1,
+    stepSize?: number
   ): [number, number] {
     const [columns, rows] = layout;
-    // Use explicit beatSize if provided, otherwise calculate from BASE_BEAT_SIZE
+    // Use explicit stepSize if provided, otherwise calculate from BASE_BEAT_SIZE
     const actualBeatSize =
-      beatSize ?? LayoutCalculator.BASE_BEAT_SIZE * beatScale;
+      stepSize ?? LayoutCalculator.BASE_BEAT_SIZE * stepScale;
 
     const width = Math.floor(columns * actualBeatSize);
     const height = Math.floor(rows * actualBeatSize + additionalHeight);
@@ -219,23 +219,23 @@ export class LayoutCalculator implements ILayoutCalculator {
    * Get layout for current beat grid (compatibility method)
    * Matches desktop get_current_beat_frame_layout()
    */
-  getCurrentBeatGridLayout(beatCount: number): [number, number] {
+  getCurrentBeatGridLayout(stepCount: number): [number, number] {
     // For web implementation, we use the same logic as calculateLayout
     // This method exists for compatibility with desktop patterns
-    return this.calculateLayout(beatCount, false);
+    return this.calculateLayout(stepCount, false);
   }
 
   /**
    * Validate layout parameters
    */
-  validateLayout(beatCount: number, includeStartPosition: boolean): boolean {
+  validateLayout(stepCount: number, includeStartPosition: boolean): boolean {
     // Beat count must be non-negative
-    if (beatCount < 0) {
+    if (stepCount < 0) {
       return false;
     }
 
     // Beat count must be reasonable (prevent memory issues)
-    if (beatCount > 1000) {
+    if (stepCount > 1000) {
       return false;
     }
 
@@ -252,15 +252,15 @@ export class LayoutCalculator implements ILayoutCalculator {
    * Matches desktop fallback behavior
    */
   private getFallbackLayout(
-    beatCount: number,
+    stepCount: number,
     includeStartPosition: boolean
   ): [number, number] {
-    if (beatCount === 0) {
+    if (stepCount === 0) {
       return [1, 1];
     }
 
     // For large beat counts, prefer roughly square layouts
-    const totalCells = includeStartPosition ? beatCount + 1 : beatCount;
+    const totalCells = includeStartPosition ? stepCount + 1 : stepCount;
     const aspectRatio = 1.2; // Slightly wider than square
 
     // Calculate ideal dimensions
@@ -282,33 +282,33 @@ export class LayoutCalculator implements ILayoutCalculator {
    * Calculate total image area for layout
    */
   calculateImageArea(
-    beatCount: number,
+    stepCount: number,
     includeStartPosition: boolean,
     additionalHeight: number,
-    beatScale: number = 1
+    stepScale: number = 1
   ): number {
-    const layout = this.calculateLayout(beatCount, includeStartPosition);
+    const layout = this.calculateLayout(stepCount, includeStartPosition);
     const [width, height] = this.calculateImageDimensions(
       layout,
       additionalHeight,
-      beatScale
+      stepScale
     );
     return width * height;
   }
 
   /**
-   * Get layout efficiency (how well beats fill the grid)
+   * Get layout efficiency (how well steps fill the grid)
    */
   getLayoutEfficiency(
-    beatCount: number,
+    stepCount: number,
     includeStartPosition: boolean
   ): number {
-    if (beatCount === 0) return 1.0;
+    if (stepCount === 0) return 1.0;
 
-    const layout = this.calculateLayout(beatCount, includeStartPosition);
+    const layout = this.calculateLayout(stepCount, includeStartPosition);
     const [columns, rows] = layout;
     const totalCells = columns * rows;
-    const usedCells = includeStartPosition ? beatCount + 1 : beatCount;
+    const usedCells = includeStartPosition ? stepCount + 1 : stepCount;
 
     return usedCells / totalCells;
   }
@@ -317,26 +317,26 @@ export class LayoutCalculator implements ILayoutCalculator {
    * Get all available layouts within a beat count range
    */
   getLayoutsInRange(
-    minBeats: number,
+    minSteps: number,
     maxBeats: number,
     includeStartPosition: boolean
   ): Array<{
-    beatCount: number;
+    stepCount: number;
     layout: [number, number];
     efficiency: number;
   }> {
     const results = [];
 
-    for (let beatCount = minBeats; beatCount <= maxBeats; beatCount++) {
-      if (this.validateLayout(beatCount, includeStartPosition)) {
-        const layout = this.calculateLayout(beatCount, includeStartPosition);
+    for (let stepCount = minSteps; stepCount <= maxBeats; stepCount++) {
+      if (this.validateLayout(stepCount, includeStartPosition)) {
+        const layout = this.calculateLayout(stepCount, includeStartPosition);
         const efficiency = this.getLayoutEfficiency(
-          beatCount,
+          stepCount,
           includeStartPosition
         );
 
         results.push({
-          beatCount,
+          stepCount,
           layout,
           efficiency,
         });
@@ -351,23 +351,23 @@ export class LayoutCalculator implements ILayoutCalculator {
    *
    * Gallery thumbnails use fixed composition options:
    * - includeStartPosition: true
-   * - addWord: true (headerHeight = beatSize / 3)
-   * - showCreatorName/Notes/Birthday: true (footerHeight = beatSize / 7)
+   * - addWord: true (headerHeight = stepSize / 3)
+   * - showCreatorName/Notes/Birthday: true (footerHeight = stepSize / 7)
    *
    * Formula:
-   *   width = columns * beatSize
-   *   height = rows * beatSize + beatSize/3 + beatSize/7
-   *          = beatSize * (rows + 10/21)
+   *   width = columns * stepSize
+   *   height = rows * stepSize + stepSize/3 + stepSize/7
+   *          = stepSize * (rows + 10/21)
    *   aspectRatio = columns / (rows + 10/21)
    *
-   * @param beatCount Number of beats in the sequence (not including start position)
+   * @param stepCount Number of steps in the sequence (not including start position)
    * @returns Aspect ratio (width / height) for the gallery thumbnail
    */
-  calculateGalleryAspectRatio(beatCount: number): number {
+  calculateGalleryAspectRatio(stepCount: number): number {
     // Gallery variant always includes start position
-    const [columns, rows] = this.calculateLayout(beatCount, true);
+    const [columns, rows] = this.calculateLayout(stepCount, true);
 
-    // Header = beatSize/3, Footer = beatSize/7
+    // Header = stepSize/3, Footer = stepSize/7
     // Total fractional height: 1/3 + 1/7 = 7/21 + 3/21 = 10/21
     const additionalHeightFraction = 10 / 21;
 
@@ -378,13 +378,13 @@ export class LayoutCalculator implements ILayoutCalculator {
    * Calculate the aspect ratio for a thumbnail given beat count and options.
    * More flexible than calculateGalleryAspectRatio for custom compositions.
    *
-   * @param beatCount Number of beats in the sequence
+   * @param stepCount Number of steps in the sequence
    * @param options.includeStartPosition Whether start position is shown
-   * @param options.hasHeader Whether word/difficulty header is shown (adds beatSize/3)
-   * @param options.hasFooter Whether creator/notes/birthday footer is shown (adds beatSize/7)
+   * @param options.hasHeader Whether word/difficulty header is shown (adds stepSize/3)
+   * @param options.hasFooter Whether creator/notes/birthday footer is shown (adds stepSize/7)
    */
   calculateThumbnailAspectRatio(
-    beatCount: number,
+    stepCount: number,
     options: {
       includeStartPosition?: boolean;
       hasHeader?: boolean;
@@ -397,12 +397,12 @@ export class LayoutCalculator implements ILayoutCalculator {
       hasFooter = true,
     } = options;
 
-    const [columns, rows] = this.calculateLayout(beatCount, includeStartPosition);
+    const [columns, rows] = this.calculateLayout(stepCount, includeStartPosition);
 
-    // Calculate additional height fraction relative to beatSize
+    // Calculate additional height fraction relative to stepSize
     let additionalHeightFraction = 0;
-    if (hasHeader) additionalHeightFraction += 1 / 3; // beatSize / 3
-    if (hasFooter) additionalHeightFraction += 1 / 7; // beatSize / 7
+    if (hasHeader) additionalHeightFraction += 1 / 3; // stepSize / 3
+    if (hasFooter) additionalHeightFraction += 1 / 7; // stepSize / 7
 
     return columns / (rows + additionalHeightFraction);
   }
@@ -414,31 +414,31 @@ export class LayoutCalculator implements ILayoutCalculator {
     const errors: string[] = [];
 
     // Check that all entries in WITH_START table are valid
-    for (const [beatCount, layout] of Object.entries(
+    for (const [stepCount, layout] of Object.entries(
       this.LAYOUT_WITH_START_POSITION
     )) {
       const [columns, rows] = layout;
       const totalCells = columns * rows;
-      const requiredCells = parseInt(beatCount) + 1; // +1 for start position
+      const requiredCells = parseInt(stepCount) + 1; // +1 for start position
 
       if (totalCells < requiredCells) {
         errors.push(
-          `WITH_START[${beatCount}]: ${columns}×${rows} = ${totalCells} cells < ${requiredCells} required`
+          `WITH_START[${stepCount}]: ${columns}×${rows} = ${totalCells} cells < ${requiredCells} required`
         );
       }
     }
 
     // Check that all entries in WITHOUT_START table are valid
-    for (const [beatCount, layout] of Object.entries(
+    for (const [stepCount, layout] of Object.entries(
       this.LAYOUT_WITHOUT_START_POSITION
     )) {
       const [columns, rows] = layout;
       const totalCells = columns * rows;
-      const requiredCells = parseInt(beatCount);
+      const requiredCells = parseInt(stepCount);
 
       if (totalCells < requiredCells) {
         errors.push(
-          `WITHOUT_START[${beatCount}]: ${columns}×${rows} = ${totalCells} cells < ${requiredCells} required`
+          `WITHOUT_START[${stepCount}]: ${columns}×${rows} = ${totalCells} cells < ${requiredCells} required`
         );
       }
     }

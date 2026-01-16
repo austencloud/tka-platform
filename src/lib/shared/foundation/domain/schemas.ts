@@ -26,12 +26,12 @@ import { PictographDataSchema } from "../../pictograph/shared/domain/schemas/pic
 // Pictograph-specific schemas moved to pictograph/shared/domain/schemas/
 
 // ============================================================================
-// BEAT AND SEQUENCE SCHEMAS - The Main Targets
+// STEP AND SEQUENCE SCHEMAS - The Main Targets
 // ============================================================================
 
-export const BeatDataSchema = PictographDataSchema.extend({
+export const StepDataSchema = PictographDataSchema.extend({
   // Beat context properties
-  beatNumber: z
+  stepNumber: z
     .number()
     .int()
     .nonnegative("Beat number must be non-negative (0 or positive)"),
@@ -62,12 +62,12 @@ export const SequenceDataSchema = z.object({
     .min(1, "Sequence name cannot be empty")
     .max(100, "Sequence name too long"),
   word: z.string().default(""),
-  beats: z.array(BeatDataSchema).default([]),
+  steps: z.array(StepDataSchema).default([]),
 
   // Optional positioning data
-  startingPositionBeat: BeatDataSchema.optional(),
+  startingPosition: StepDataSchema.optional(),
   startingPositionGroup: z.nativeEnum(GridPositionGroup).optional(),
-  startPosition: BeatDataSchema.optional(),
+  startPosition: StepDataSchema.optional(),
 
   // Metadata and display
   thumbnails: z.array(z.string().url()).default([]),
@@ -126,7 +126,7 @@ export const PngMetadataArraySchema = z.array(PngStepSchema);
 // ============================================================================
 
 export type ValidatedSequenceData = z.infer<typeof SequenceDataSchema>;
-export type ValidatedBeatData = z.infer<typeof BeatDataSchema>;
+export type ValidatedStepData = z.infer<typeof StepDataSchema>;
 export type ValidatedPngStep = z.infer<typeof PngStepSchema>;
 export type ValidatedMotionData = z.infer<typeof MotionDataSchema>;
 export type ValidatedPictographData = z.infer<typeof PictographDataSchema>;

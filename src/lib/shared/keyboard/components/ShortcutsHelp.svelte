@@ -124,7 +124,7 @@
       panel: "Manage panels and dialogs",
       focus: "Move focus between UI regions",
       help: "Access help and documentation",
-      "sequence-management": "Save, add, delete beats and manage sequences",
+      "sequence-management": "Save, add, delete steps and manage sequences",
       animation: "Control animation playback and settings",
       workspace: "Navigate and interact with the workspace",
       playback: "Media playback controls",

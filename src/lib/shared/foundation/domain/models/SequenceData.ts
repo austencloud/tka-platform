@@ -6,11 +6,11 @@ import type { TimeSignatureKey } from "./TimeSignature";
  * Immutable data structure for complete kinetic sequences.
  * Based on the modern desktop app's SequenceData but adapted for TypeScript.
  *
- * MIGRATION NOTE: Start position now uses StartPositionData type instead of BeatData.
- * The beats array should only contain actual beats (beatNumber >= 1), never start position.
+ * MIGRATION NOTE: Start position now uses StartPositionData type instead of StepData.
+ * The steps array should only contain actual steps (stepNumber >= 1), never start position.
  */
 
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "../../../../features/create/shared/domain/models/StartPositionData";
 import type { GridPositionGroup } from "../../../pictograph/grid/domain/enums/grid-enums";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
@@ -23,13 +23,13 @@ export interface SequenceData {
   readonly displayName?: string;
   /** TKA word - auto-generated from sequence letters, immutable */
   readonly word: string;
-  readonly beats: readonly BeatData[]; // Only actual beats (beatNumber >= 1), never start position
+  readonly steps: readonly StepData[]; // Only actual steps (stepNumber >= 1), never start position
 
   // Start position storage (CONSOLIDATED):
-  // Start positions are semantically distinct from beats - they have no duration, no beat number,
+  // Start positions are semantically distinct from steps - they have no duration, no beat number,
   // and represent the initial static prop configuration before the sequence begins.
   readonly startPosition?: StartPositionData;
-  readonly startingPositionBeat?: StartPositionData; // Legacy field name, same type
+  readonly startingPosition?: StartPositionData; // Legacy field name, same type
   readonly startingPositionGroup?: GridPositionGroup; // Position group metadata: "alpha", "beta", "gamma"
 
   readonly thumbnails: readonly string[];
@@ -83,13 +83,15 @@ export interface SequenceData {
 }
 
 export function createSequenceData(
-  data: Partial<SequenceData> = {}
+  data: Partial<SequenceData> & { beats?: readonly StepData[] } = {}
 ): SequenceData {
+  // Backwards compatibility: support old 'beats' property name
+  const steps = data.steps ?? data.beats ?? [];
   const result: SequenceData = {
     id: data.id ?? crypto.randomUUID(),
     name: data.name ?? "",
     word: data.word ?? "",
-    beats: data.beats ?? [],
+    steps,
     ...(data.displayName !== undefined && { displayName: data.displayName }),
     thumbnails: data.thumbnails ?? [],
     isFavorite: data.isFavorite ?? false,
@@ -108,8 +110,8 @@ export function createSequenceData(
     ...(data.dateAdded !== undefined && { dateAdded: data.dateAdded }),
     ...(data.gridMode !== undefined && { gridMode: data.gridMode }),
     ...(data.timeSignature !== undefined && { timeSignature: data.timeSignature }),
-    ...(data.startingPositionBeat !== undefined && {
-      startingPositionBeat: data.startingPositionBeat,
+    ...(data.startingPosition !== undefined && {
+      startingPosition: data.startingPosition,
     }),
     ...(data.startingPositionGroup !== undefined && {
       startingPositionGroup: data.startingPositionGroup,
@@ -158,26 +160,26 @@ export function updateSequenceData(
   };
 }
 
-export function addBeatToSequence(
+export function addStepToSequence(
   sequence: SequenceData,
-  beat: BeatData
+  beat: StepData
 ): SequenceData {
   return updateSequenceData(sequence, {
-    beats: [...sequence.beats, beat],
+    steps: [...sequence.steps, beat],
   });
 }
 
-export function removeBeatFromSequence(
+export function removeStepFromSequence(
   sequence: SequenceData,
-  beatIndex: number
+  stepIndex: number
 ): SequenceData {
-  if (beatIndex < 0 || beatIndex >= sequence.beats.length) {
+  if (stepIndex < 0 || stepIndex >= sequence.steps.length) {
     return sequence;
   }
 
-  const newBeats = sequence.beats.filter((_, index) => index !== beatIndex);
+  const newSteps = sequence.steps.filter((_, index) => index !== stepIndex);
   return updateSequenceData(sequence, {
-    beats: newBeats,
+    steps: newSteps,
   });
 }
 
@@ -200,7 +202,7 @@ export interface PropDimensions {
 export interface SequenceMetadata {
   word: string;
   author: string;
-  totalBeats: number;
+  totalSteps: number;
   // Optional animation-related properties (viewer preferences, not stored with sequence)
   bluePropType?: PropType; // Per-color prop type for blue motions
   redPropType?: PropType; // Per-color prop type for red motions

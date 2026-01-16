@@ -14,7 +14,7 @@
  *         (contains: hand points, layer 2 points)
  * - TKA: includes letter, turnsTuple, darkMode, size (SHARED across pictographs!)
  * - Reversal: includes blueReversal, redReversal, size (only 4 states possible)
- * - Beat: includes beatNumber, size (simple text, rarely cached)
+ * - Beat: includes stepNumber, size (simple text, rarely cached)
  *
  * Behavior:
  * - TKA toggle: base layer cache HIT (instant)
@@ -23,7 +23,7 @@
  */
 
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { LayerRenderOptions, LayerType } from "../contracts/ILayerCompositor";
 
 export interface BaseLayerKeyComponents {
@@ -71,7 +71,7 @@ export interface ReversalLayerKeyComponents {
 }
 
 export interface BeatLayerKeyComponents {
-  beatNumber: number;
+  stepNumber: number;
   darkMode: boolean;
   size: number;
 }
@@ -180,18 +180,18 @@ export class LayerKeyDeriver {
    *
    * Only 4 possible states: none, blue, red, both
    */
-  deriveReversalLayerKey(beatData: BeatData, size: number): string {
-    const components = this.getReversalLayerComponents(beatData, size);
+  deriveReversalLayerKey(stepData: StepData, size: number): string {
+    const components = this.getReversalLayerComponents(stepData, size);
     return `rev:${components.blueReversal ? "b" : ""}${components.redReversal ? "r" : ""}_${size}`;
   }
 
   /**
    * Get reversal layer key components
    */
-  getReversalLayerComponents(beatData: BeatData, size: number): ReversalLayerKeyComponents {
+  getReversalLayerComponents(stepData: StepData, size: number): ReversalLayerKeyComponents {
     return {
-      blueReversal: beatData.blueReversal ?? false,
-      redReversal: beatData.redReversal ?? false,
+      blueReversal: stepData.blueReversal ?? false,
+      redReversal: stepData.redReversal ?? false,
       size,
     };
   }
@@ -199,8 +199,8 @@ export class LayerKeyDeriver {
   /**
    * Derive cache key for beat number overlay
    */
-  deriveBeatLayerKey(beatNumber: number, darkMode: boolean, size: number): string {
-    return `beat:${beatNumber}_${darkMode ? "d" : "l"}_${size}`;
+  deriveBeatLayerKey(stepNumber: number, darkMode: boolean, size: number): string {
+    return `beat:${stepNumber}_${darkMode ? "d" : "l"}_${size}`;
   }
 
   /**

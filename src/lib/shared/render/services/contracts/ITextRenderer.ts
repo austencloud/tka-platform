@@ -15,7 +15,7 @@ export interface ITextRenderer {
     canvas: HTMLCanvasElement,
     word: string,
     options: TextRenderOptions,
-    beatCount?: number
+    stepCount?: number
   ): void;
 
   /**
@@ -48,7 +48,7 @@ export interface ITextRenderer {
   /**
    * Render user information (name, date, notes)
    * @param footerHeight - Height of the footer area for proper text positioning
-   * @param beatCount - Number of beats for legacy-matching font sizing
+   * @param stepCount - Number of steps for legacy-matching font sizing
    * @param darkMode - When true, uses dark theme styling (dark bg, light text)
    * @param showFlags - Granular controls for which footer elements to show
    * @param customNotesText - Custom text to use for notes instead of default
@@ -58,7 +58,7 @@ export interface ITextRenderer {
     userInfo: UserInfo,
     options: TextRenderOptions,
     footerHeight?: number,
-    beatCount?: number,
+    stepCount?: number,
     darkMode?: boolean,
     showFlags?: {
       showCreatorName?: boolean;

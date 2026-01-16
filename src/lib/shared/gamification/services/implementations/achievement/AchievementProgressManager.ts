@@ -91,8 +91,8 @@ export class AchievementProgressManager {
 
       case "sequence_length":
         // Check if sequence meets length requirement
-        if (action === "sequence_created" && metadata?.beatCount) {
-          return metadata.beatCount >= req.target ? 1 : 0;
+        if (action === "sequence_created" && metadata?.stepCount) {
+          return metadata.stepCount >= req.target ? 1 : 0;
         }
         return 0;
 

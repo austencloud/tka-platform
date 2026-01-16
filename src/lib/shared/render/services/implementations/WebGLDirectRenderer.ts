@@ -16,7 +16,7 @@ import type {
   ArrowPathsData,
 } from "../contracts/IDirectRenderer";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { MotionData } from "../../../pictograph/shared/domain/models/MotionData";
 import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-enums";
 import { drawPathCommands, type PathCommand } from "../../utils/svg-path-parser";
@@ -284,7 +284,7 @@ export class WebGLDirectRenderer implements IDirectRenderer {
   }
 
   async renderPictograph(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<HTMLCanvasElement> {
     const { canvas } = await this.renderPictographWithTiming(pictograph, options);
@@ -292,7 +292,7 @@ export class WebGLDirectRenderer implements IDirectRenderer {
   }
 
   async renderPictographWithTiming(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<{ canvas: HTMLCanvasElement; timing: RenderTiming }> {
     const timing: RenderTiming = {
@@ -342,7 +342,7 @@ export class WebGLDirectRenderer implements IDirectRenderer {
    * Main drawing function
    */
   private drawPictograph(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): void {
     if (!this.gl || !this.program) return;

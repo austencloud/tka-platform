@@ -1,13 +1,13 @@
 /**
- * BeatNumberRenderer
+ * StepNumberRenderer
  *
  * Draws beat numbers as canvas text overlays on pictographs.
  *
- * This replaces the SVG-based BeatNumber component for cached pictograph rendering,
+ * This replaces the SVG-based StepNumber component for cached pictograph rendering,
  * allowing base pictographs to be cached without beat numbers and then have
  * beat numbers composited at draw time.
  *
- * Styling matches BeatNumber.svelte exactly:
+ * Styling matches StepNumber.svelte exactly:
  * - Position: x=50, y=50 in 950x950 viewBox (scaled proportionally)
  * - Font: Georgia, serif, bold
  * - Size: 100 for numbers, 80 for "Start"
@@ -16,16 +16,16 @@
  * - Dominant baseline: hanging (top-aligned)
  */
 
-import type { IBeatNumberRenderer } from "../contracts/IBeatNumberRenderer";
+import type { IStepNumberRenderer } from "../contracts/IStepNumberRenderer";
 
 /** The SVG viewBox size used in pictographs */
 const VIEW_BOX_SIZE = 950;
 
 /** X position of beat number in viewBox coordinates */
-const BEAT_NUMBER_X = 50;
+const STEP_NUMBER_X = 50;
 
 /** Y position of beat number in viewBox coordinates */
-const BEAT_NUMBER_Y = 50;
+const STEP_NUMBER_Y = 50;
 
 /** Font size for numeric beat numbers (1, 2, 3...) */
 const NUMBER_FONT_SIZE = 100;
@@ -39,17 +39,17 @@ const DARK_MODE_COLOR = "#ffffff";
 /** Text color for light mode (dark text on light background) */
 const LIGHT_MODE_COLOR = "#231f20";
 
-export class BeatNumberRenderer implements IBeatNumberRenderer {
-  drawBeatNumber(
+export class StepNumberRenderer implements IStepNumberRenderer {
+  drawStepNumber(
     ctx: CanvasRenderingContext2D,
-    beatNumber: number,
+    stepNumber: number,
     x: number,
     y: number,
     cellSize: number,
     isDarkMode: boolean
   ): void {
     // Don't render for invalid beat numbers
-    if (beatNumber === null || beatNumber === undefined || beatNumber === -1) {
+    if (stepNumber === null || stepNumber === undefined || stepNumber === -1) {
       return;
     }
 
@@ -57,20 +57,20 @@ export class BeatNumberRenderer implements IBeatNumberRenderer {
     const scale = cellSize / VIEW_BOX_SIZE;
 
     // Determine font size based on beat number
-    const baseFontSize = beatNumber === 0 ? START_FONT_SIZE : NUMBER_FONT_SIZE;
+    const baseFontSize = stepNumber === 0 ? START_FONT_SIZE : NUMBER_FONT_SIZE;
     const fontSize = baseFontSize * scale;
 
     // Determine text content
-    const text = beatNumber === 0 ? "Start" : beatNumber.toString();
+    const text = stepNumber === 0 ? "Start" : stepNumber.toString();
 
     // Calculate position (scaled from viewBox coordinates)
-    const textX = x + BEAT_NUMBER_X * scale;
-    const textY = y + BEAT_NUMBER_Y * scale;
+    const textX = x + STEP_NUMBER_X * scale;
+    const textY = y + STEP_NUMBER_Y * scale;
 
     // Save context state
     ctx.save();
 
-    // Apply font styling to match BeatNumber.svelte
+    // Apply font styling to match StepNumber.svelte
     ctx.font = `bold ${fontSize}px Georgia, serif`;
     ctx.fillStyle = isDarkMode ? DARK_MODE_COLOR : LIGHT_MODE_COLOR;
 

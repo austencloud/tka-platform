@@ -51,7 +51,7 @@ export interface AchievementRequirement {
     | "daily_streak" // Login/practice X days in a row
     | "gallery_exploration" // Discover X sequences
     | "letter_usage" // Create sequence with specific letters
-    | "sequence_length" // Create sequence of X beats
+    | "sequence_length" // Create sequence of X steps
     | "generation_count" // Generate X sequences
     | "challenge_count" // Complete training challenges
     | "feedback_count" // Submit X feedback items
@@ -88,7 +88,7 @@ export interface UserXP {
  */
 export interface XPEventMetadata {
   // For sequence_created
-  beatCount?: number;
+  stepCount?: number;
   letters?: string[];
   // For achievement_unlocked
   achievementId?: string;

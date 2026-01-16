@@ -8,7 +8,7 @@
  * - BASE: Background + Grid + Props + Arrows (visibility-independent)
  * - TKA: Letter + Turns + DirectionDot (only when showTKA=true)
  * - REVERSAL: Blue/red dots (only when showReversals=true)
- * - BEAT: Beat number text (always shown)
+ * - STEP: Beat number text (always shown)
  *
  * Cache key strategy:
  * - Base layer key includes: motions, props, darkMode, gridOptions, size
@@ -18,7 +18,7 @@
  */
 
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 
 /**
@@ -118,14 +118,14 @@ export interface ILayerCompositor {
    * @param pictograph - Prepared pictograph data
    * @param options - Render options (size, dark mode, grid settings)
    * @param visibility - Which overlays to include
-   * @param beatNumber - Optional beat number to display
+   * @param stepNumber - Optional beat number to display
    * @returns Composited canvas with timing and cache stats
    */
   compose(
     pictograph: PreparedPictographData,
     options: LayerRenderOptions,
     visibility: LayerVisibility,
-    beatNumber?: number
+    stepNumber?: number
   ): Promise<CompositionResult>;
 
   /**
@@ -160,7 +160,7 @@ export interface ILayerCompositor {
    * Returns null if no reversals
    */
   renderReversalOverlay(
-    beatData: BeatData,
+    stepData: StepData,
     size: number
   ): Promise<LayerRenderResult | null>;
 

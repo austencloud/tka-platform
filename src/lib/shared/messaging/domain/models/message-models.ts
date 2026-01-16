@@ -36,7 +36,7 @@ export interface MessageAttachment {
     sequenceName?: string;
     sequenceThumbnail?: string;
     sequenceAuthor?: string;
-    sequenceBeatCount?: number;
+    sequenceStepCount?: number;
     // Feedback-specific fields
     feedbackId?: string;
     feedbackTitle?: string;

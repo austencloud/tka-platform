@@ -21,12 +21,12 @@ export class DimensionCalculator implements IDimensionCalculator {
    */
   determineAdditionalHeights(
     options: SequenceExportOptions,
-    beatCount: number,
-    beatScale: number
+    stepCount: number,
+    stepScale: number
   ): [number, number] {
-    if (!this.validateDimensions(beatCount, beatScale, options)) {
+    if (!this.validateDimensions(stepCount, stepScale, options)) {
       throw new Error(
-        `Invalid dimension parameters: beatCount=${beatCount}, beatScale=${beatScale}`
+        `Invalid dimension parameters: stepCount=${stepCount}, stepScale=${stepScale}`
       );
     }
 
@@ -40,24 +40,24 @@ export class DimensionCalculator implements IDimensionCalculator {
     const hasFooter = showCreatorName || showNotes || showBirthday;
 
     // Match desktop logic exactly based on beat count
-    if (beatCount === 0) {
+    if (stepCount === 0) {
       additionalHeightTop = 0;
       additionalHeightBottom = hasFooter ? 55 : 0;
-    } else if (beatCount === 1) {
+    } else if (stepCount === 1) {
       additionalHeightTop = options.addWord ? 150 : 0;
       additionalHeightBottom = hasFooter ? 55 : 0;
-    } else if (beatCount === 2) {
+    } else if (stepCount === 2) {
       additionalHeightTop = options.addWord ? 200 : 0;
       additionalHeightBottom = hasFooter ? 75 : 0;
     } else {
-      // beatCount >= 3
+      // stepCount >= 3
       additionalHeightTop = options.addWord ? 300 : 0;
       additionalHeightBottom = hasFooter ? 150 : 0;
     }
 
     // Apply beat scale exactly as desktop does
-    const scaledTop = Math.floor(additionalHeightTop * beatScale);
-    const scaledBottom = Math.floor(additionalHeightBottom * beatScale);
+    const scaledTop = Math.floor(additionalHeightTop * stepScale);
+    const scaledBottom = Math.floor(additionalHeightBottom * stepScale);
 
     return [scaledTop, scaledBottom];
   }
@@ -94,22 +94,22 @@ export class DimensionCalculator implements IDimensionCalculator {
    * Validate dimension parameters
    */
   validateDimensions(
-    beatCount: number,
-    beatScale: number,
+    stepCount: number,
+    stepScale: number,
     options: SequenceExportOptions
   ): boolean {
     // Beat count must be non-negative
-    if (beatCount < 0) {
+    if (stepCount < 0) {
       return false;
     }
 
     // Beat scale must be positive
-    if (beatScale <= 0) {
+    if (stepScale <= 0) {
       return false;
     }
 
     // Beat scale should be reasonable to prevent memory issues
-    if (beatScale > 10) {
+    if (stepScale > 10) {
       return false;
     }
 
@@ -141,13 +141,13 @@ export class DimensionCalculator implements IDimensionCalculator {
    */
   calculateTotalAdditionalHeight(
     options: SequenceExportOptions,
-    beatCount: number,
-    beatScale: number
+    stepCount: number,
+    stepScale: number
   ): number {
     const [top, bottom] = this.determineAdditionalHeights(
       options,
-      beatCount,
-      beatScale
+      stepCount,
+      stepScale
     );
     return top + bottom;
   }
@@ -157,20 +157,20 @@ export class DimensionCalculator implements IDimensionCalculator {
    * Helper for text rendering service
    */
   calculateWordAreaDimensions(
-    beatCount: number,
-    beatScale: number,
+    stepCount: number,
+    stepScale: number,
     imageWidth: number
   ): { width: number; height: number; available: boolean } {
     let height = 0;
 
-    if (beatCount === 0) {
+    if (stepCount === 0) {
       height = 0;
-    } else if (beatCount === 1) {
-      height = 150 * beatScale;
-    } else if (beatCount === 2) {
-      height = 200 * beatScale;
+    } else if (stepCount === 1) {
+      height = 150 * stepScale;
+    } else if (stepCount === 2) {
+      height = 200 * stepScale;
     } else {
-      height = 300 * beatScale;
+      height = 300 * stepScale;
     }
 
     return {
@@ -185,20 +185,20 @@ export class DimensionCalculator implements IDimensionCalculator {
    * Helper for text rendering service
    */
   calculateUserInfoAreaDimensions(
-    beatCount: number,
-    beatScale: number,
+    stepCount: number,
+    stepScale: number,
     imageWidth: number
   ): { width: number; height: number; available: boolean } {
     let height = 0;
 
-    if (beatCount === 0) {
-      height = 55 * beatScale;
-    } else if (beatCount === 1) {
-      height = 55 * beatScale;
-    } else if (beatCount === 2) {
-      height = 75 * beatScale;
+    if (stepCount === 0) {
+      height = 55 * stepScale;
+    } else if (stepCount === 1) {
+      height = 55 * stepScale;
+    } else if (stepCount === 2) {
+      height = 75 * stepScale;
     } else {
-      height = 150 * beatScale;
+      height = 150 * stepScale;
     }
 
     return {
@@ -236,34 +236,34 @@ export class DimensionCalculator implements IDimensionCalculator {
    * Get text scaling factors based on beat count
    * Matches desktop FontMarginHelper patterns
    */
-  getTextScalingFactors(beatCount: number): {
+  getTextScalingFactors(stepCount: number): {
     fontScale: number;
     marginScale: number;
     description: string;
   } {
-    if (beatCount <= 1) {
+    if (stepCount <= 1) {
       return {
         fontScale: 1 / 1.3,
         marginScale: 1 / 3,
-        description: "Small scaling for 0-1 beats",
+        description: "Small scaling for 0-1 steps",
       };
-    } else if (beatCount === 2) {
+    } else if (stepCount === 2) {
       return {
         fontScale: 1 / 1.4,
         marginScale: 1 / 2,
-        description: "Medium scaling for 2 beats",
+        description: "Medium scaling for 2 steps",
       };
-    } else if (beatCount === 3) {
+    } else if (stepCount === 3) {
       return {
         fontScale: 1 / 1.5,
         marginScale: 1 / 2,
-        description: "Medium scaling for 2 beats",
+        description: "Medium scaling for 2 steps",
       };
     } else {
       return {
         fontScale: 1.0,
         marginScale: 1.0,
-        description: "Full scaling for 3+ beats",
+        description: "Full scaling for 3+ steps",
       };
     }
   }
@@ -320,9 +320,9 @@ export class DimensionCalculator implements IDimensionCalculator {
    */
   debugHeightCalculations(
     maxBeats: number = 10,
-    beatScale: number = 1
+    stepScale: number = 1
   ): Array<{
-    beatCount: number;
+    stepCount: number;
     topHeight: number;
     bottomHeight: number;
     totalHeight: number;
@@ -336,11 +336,11 @@ export class DimensionCalculator implements IDimensionCalculator {
       addUserInfo: true,
       // Other required properties with defaults
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addReversalSymbols: true,
       combinedGrids: false,
-      beatScale: beatScale,
-      beatSize: 144,
+      stepScale: stepScale,
+      stepSize: 144,
       margin: 50,
       redVisible: true,
       blueVisible: true,
@@ -353,15 +353,15 @@ export class DimensionCalculator implements IDimensionCalculator {
       addDifficultyLevel: false,
     };
 
-    for (let beatCount = 0; beatCount <= maxBeats; beatCount++) {
+    for (let stepCount = 0; stepCount <= maxBeats; stepCount++) {
       const [topHeight, bottomHeight] = this.determineAdditionalHeights(
         testOptions,
-        beatCount,
-        beatScale
+        stepCount,
+        stepScale
       );
 
       results.push({
-        beatCount,
+        stepCount,
         topHeight,
         bottomHeight,
         totalHeight: topHeight + bottomHeight,

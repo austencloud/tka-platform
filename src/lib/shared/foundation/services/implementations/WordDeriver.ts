@@ -1,24 +1,24 @@
 /**
  * Word Deriver Implementation
  *
- * Derives the TKA word from a sequence's beats.
+ * Derives the TKA word from a sequence's steps.
  * Each beat has a letter (from the kinetic alphabet), and the word is simply
  * the concatenation of all beat letters in order.
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { SequenceData } from "../../domain/models/SequenceData";
 import type { IWordDeriver } from "../contracts/IWordDeriver";
 
 export class WordDeriver implements IWordDeriver {
   /**
-   * Derive the word from a sequence's beats
-   * Returns empty string if no beats or no letters found
+   * Derive the word from a sequence's steps
+   * Returns empty string if no steps or no letters found
    */
-  deriveFromBeats(beats: readonly BeatData[]): string {
-    if (!beats || beats.length === 0) return "";
+  deriveFromBeats(steps: readonly StepData[]): string {
+    if (!steps || steps.length === 0) return "";
 
-    return beats
+    return steps
       .map((beat) => beat.letter ?? "")
       .filter((letter) => letter !== "")
       .join("");
@@ -26,16 +26,16 @@ export class WordDeriver implements IWordDeriver {
 
   /**
    * Derive the word from a SequenceData object
-   * Prefers derived word from beats, falls back to stored word/name
+   * Prefers derived word from steps, falls back to stored word/name
    */
   derive(sequence: SequenceData): string {
-    // First try to derive from beats (single source of truth)
-    if (sequence.beats && sequence.beats.length > 0) {
-      const derived = this.deriveFromBeats(sequence.beats);
+    // First try to derive from steps (single source of truth)
+    if (sequence.steps && sequence.steps.length > 0) {
+      const derived = this.deriveFromBeats(sequence.steps);
       if (derived) return derived;
     }
 
-    // Fallback to stored word or name (for sequences without loaded beats)
+    // Fallback to stored word or name (for sequences without loaded steps)
     // This handles the case where we only have metadata without full beat data
     return sequence.word || sequence.name || "";
   }

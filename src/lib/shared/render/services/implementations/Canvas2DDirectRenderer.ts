@@ -45,7 +45,7 @@
  * 5. TKA Glyph (letter at x=50, y=800)
  * 6. TurnsColumn (to the RIGHT of letter, NOT left/right sides of pictograph)
  * 7. DirectionDot (same/opp indicator above/below letter)
- * 8. BeatNumber (x=50, y=50)
+ * 8. StepNumber (x=50, y=50)
  * 9. VTG Glyph (bottom-right corner, Type1 letters only)
  * 10. Elemental Glyph (top-right corner, Type1 letters only)
  * 11. Position Glyph (top center, shows α→β etc)
@@ -61,7 +61,7 @@ import type {
   RenderTiming,
 } from "../contracts/IDirectRenderer";
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { PreparedPictographData } from "../../../pictograph/shared/domain/models/PreparedPictographData";
 import { GridMode, GridPosition } from "../../../pictograph/grid/domain/enums/grid-enums";
 import { getSvgImageCache } from "./SvgImageCache";
@@ -88,9 +88,9 @@ const TKA_GLYPH_X = 50;
 const TKA_GLYPH_Y = 800;
 const TKA_GLYPH_SCALE = 1;
 
-// Beat number positioning (from BeatNumber.svelte)
-const BEAT_NUMBER_X = 50;
-const BEAT_NUMBER_Y = 50;
+// Beat number positioning (from StepNumber.svelte)
+const STEP_NUMBER_X = 50;
+const STEP_NUMBER_Y = 50;
 const BEAT_NUMBER_FONT_SIZE = 100;
 const BEAT_NUMBER_START_FONT_SIZE = 80;
 
@@ -200,7 +200,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 
   async renderPictograph(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<HTMLCanvasElement> {
     const { canvas } = await this.renderPictographWithTiming(pictograph, options);
@@ -208,7 +208,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 
   async renderPictographWithTiming(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<{ canvas: HTMLCanvasElement; timing: RenderTiming }> {
     const timing: RenderTiming = {
@@ -247,7 +247,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
    * Ensure pictograph has prepared data, calling PictographPreparer if needed
    */
   private async ensurePrepared(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<PreparedPictographData> {
     const asPrepared = pictograph as PreparedPictographData;
@@ -353,9 +353,9 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     }
 
     // 8. Draw beat number (top-left corner at x=50, y=50)
-    const beatData = preparedPictograph as BeatData;
-    if (typeof beatData.beatNumber === "number") {
-      this.drawBeatNumber(ctx, beatData.beatNumber, scale, isDarkMode);
+    const stepData = preparedPictograph as StepData;
+    if (typeof stepData.stepNumber === "number") {
+      this.drawStepNumber(ctx, stepData.stepNumber, scale, isDarkMode);
     }
 
     // 9. Draw VTG glyph (bottom-right corner)
@@ -1062,27 +1062,27 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 
   /**
-   * Draw beat number at x=50, y=50 (matching BeatNumber.svelte)
+   * Draw beat number at x=50, y=50 (matching StepNumber.svelte)
    */
-  private drawBeatNumber(
+  private drawStepNumber(
     ctx: CanvasRenderingContext2D,
-    beatNumber: number,
+    stepNumber: number,
     scale: number,
     isDarkMode: boolean
   ): void {
     // Beat 0 shows "Start", beat -1 is hidden
-    if (beatNumber === -1) return;
+    if (stepNumber === -1) return;
 
-    const text = beatNumber === 0 ? "Start" : String(beatNumber);
-    const fontSize = (beatNumber === 0 ? BEAT_NUMBER_START_FONT_SIZE : BEAT_NUMBER_FONT_SIZE) * scale;
+    const text = stepNumber === 0 ? "Start" : String(stepNumber);
+    const fontSize = (stepNumber === 0 ? BEAT_NUMBER_START_FONT_SIZE : BEAT_NUMBER_FONT_SIZE) * scale;
 
     ctx.font = `bold ${fontSize}px Georgia, serif`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
     ctx.fillStyle = isDarkMode ? "#ffffff" : "#231f20";
 
-    const x = BEAT_NUMBER_X * scale;
-    const y = BEAT_NUMBER_Y * scale;
+    const x = STEP_NUMBER_X * scale;
+    const y = STEP_NUMBER_Y * scale;
     ctx.fillText(text, x, y);
   }
 
@@ -1353,24 +1353,24 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
   /**
    * Draw reversal indicators
-   * Works with both BeatData (has blueReversal/redReversal properties)
+   * Works with both StepData (has blueReversal/redReversal properties)
    * and PictographData (check motions for reversals)
    */
   private drawReversalIndicators(
     ctx: CanvasRenderingContext2D,
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     size: number
   ): void {
     const indicatorSize = size * 0.04;
     const margin = size * 0.02;
     const y = size - indicatorSize - margin;
 
-    // Check for reversals - handle both BeatData and PictographData
+    // Check for reversals - handle both StepData and PictographData
     let blueReversal = false;
     let redReversal = false;
 
-    if (this.isBeatData(pictograph)) {
-      // BeatData has explicit reversal flags
+    if (this.isStepData(pictograph)) {
+      // StepData has explicit reversal flags
       blueReversal = pictograph.blueReversal ?? false;
       redReversal = pictograph.redReversal ?? false;
     } else {
@@ -1396,9 +1396,9 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   }
 
   /**
-   * Type guard for BeatData
+   * Type guard for StepData
    */
-  private isBeatData(pictograph: PictographData | BeatData): pictograph is BeatData {
+  private isStepData(pictograph: PictographData | StepData): pictograph is StepData {
     return "blueReversal" in pictograph || "redReversal" in pictograph;
   }
 

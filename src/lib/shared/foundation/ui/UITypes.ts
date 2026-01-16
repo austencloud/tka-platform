@@ -91,7 +91,7 @@ export interface ExportResult {
     format: string;
     size: number;
     dimensions: { width: number; height: number };
-    beatCount: number;
+    stepCount: number;
     processingTime: number;
     successCount?: number;
     failureCount?: number;

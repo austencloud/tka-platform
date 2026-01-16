@@ -10,14 +10,14 @@
  * - Visibility settings (showTKA, showVTG, etc.)
  *
  * The key explicitly EXCLUDES:
- * - beatNumber (drawn as canvas overlay)
+ * - stepNumber (drawn as canvas overlay)
  * - size (handled by Layer 2 memory cache)
  *
  * This allows identical pictographs with different beat numbers to share
  * the same cached base SVG.
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 
@@ -30,7 +30,7 @@ export interface IPictographKeyHasher {
    * @returns A hash string suitable for use as a cache key
    */
   deriveKey(
-    data: BeatData | PictographData,
+    data: StepData | PictographData,
     visibility: PictographVisibilityOptions
   ): string;
 }

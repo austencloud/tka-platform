@@ -11,7 +11,7 @@
  */
 
 import type { PictographData } from "../../../pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 
 /**
@@ -74,7 +74,7 @@ export interface IDirectRenderer {
    * @returns Canvas containing the rendered pictograph
    */
   renderPictograph(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<HTMLCanvasElement>;
 
@@ -87,7 +87,7 @@ export interface IDirectRenderer {
    * @returns Canvas and timing breakdown
    */
   renderPictographWithTiming(
-    pictograph: PictographData | BeatData,
+    pictograph: PictographData | StepData,
     options: DirectRenderOptions
   ): Promise<{ canvas: HTMLCanvasElement; timing: RenderTiming }>;
 

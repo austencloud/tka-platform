@@ -15,7 +15,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 
 interface SequenceRenderResult {
   name: string;
-  beatCount: number;
+  stepCount: number;
   renderTimeMs: number;
   l2Hits: number;
   l1Hits: number;
@@ -26,7 +26,7 @@ interface SequenceRenderResult {
 interface BenchmarkResult {
   testName: string;
   totalSequences: number;
-  totalBeats: number;
+  totalSteps: number;
   totalRenderTimeMs: number;
   avgRenderTimeMs: number;
   avgTimePerBeatMs: number;
@@ -79,7 +79,7 @@ let capturedStats: { l2: number; l1: number; fresh: number } | null = null;
  * Parse the render log to extract cache stats
  */
 function parseRenderLog(log: string): { l2: number; l1: number; fresh: number } | null {
-  // Format: [Render] "Name" N beats: X L2, Y L1, Z fresh (N% cached)
+  // Format: [Render] "Name" N steps: X L2, Y L1, Z fresh (N% cached)
   const match = log.match(/(\d+) L2, (\d+) L1, (\d+) fresh/);
   if (match) {
     return {
@@ -122,9 +122,9 @@ export async function runCacheBenchmark(
     console.log(`✓ Loaded ${sequences.length} sequences with valid beat data\n`);
 
     const renderOptions = {
-      beatSize: 240,
+      stepSize: 240,
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addWord: true,
       addDifficultyLevel: true,
       visibilityOverrides: {
@@ -181,9 +181,9 @@ export async function runCacheBenchmark(
 
     // Calculate cross-sequence benefit
     const uniquePictographs = coldPass.cacheStats.totalFreshRenders;
-    const sharedPictographs = coldPass.totalBeats - uniquePictographs;
-    const reuseRate = coldPass.totalBeats > 0
-      ? (sharedPictographs / coldPass.totalBeats) * 100
+    const sharedPictographs = coldPass.totalSteps - uniquePictographs;
+    const reuseRate = coldPass.totalSteps > 0
+      ? (sharedPictographs / coldPass.totalSteps) * 100
       : 0;
 
     // Build result
@@ -230,15 +230,15 @@ async function runPass(
 ): Promise<BenchmarkResult> {
   const results: SequenceRenderResult[] = [];
   let totalRenderTime = 0;
-  let totalBeats = 0;
+  let totalSteps = 0;
   let totalL2 = 0;
   let totalL1 = 0;
   let totalFresh = 0;
 
   for (let i = 0; i < sequences.length; i++) {
     const seq = sequences[i]!;
-    const beatCount = seq.beats?.length || 0;
-    totalBeats += beatCount;
+    const stepCount = seq.steps?.length || 0;
+    totalSteps += stepCount;
 
     capturedStats = null;
     const start = performance.now();
@@ -246,7 +246,7 @@ async function runPass(
     const renderTime = performance.now() - start;
     totalRenderTime += renderTime;
 
-    const stats = capturedStats || { l2: 0, l1: 0, fresh: beatCount };
+    const stats = capturedStats || { l2: 0, l1: 0, fresh: stepCount };
     totalL2 += stats.l2;
     totalL1 += stats.l1;
     totalFresh += stats.fresh;
@@ -257,7 +257,7 @@ async function runPass(
 
     results.push({
       name: seq.word || seq.name || "unnamed",
-      beatCount,
+      stepCount,
       renderTimeMs: renderTime,
       l2Hits: stats.l2,
       l1Hits: stats.l1,
@@ -278,10 +278,10 @@ async function runPass(
   return {
     testName: passName,
     totalSequences: sequences.length,
-    totalBeats,
+    totalSteps,
     totalRenderTimeMs: totalRenderTime,
     avgRenderTimeMs: totalRenderTime / sequences.length,
-    avgTimePerBeatMs: totalBeats > 0 ? totalRenderTime / totalBeats : 0,
+    avgTimePerBeatMs: totalSteps > 0 ? totalRenderTime / totalSteps : 0,
     cacheStats: {
       totalL2Hits: totalL2,
       totalL1Hits: totalL1,
@@ -339,12 +339,12 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
       loadAttempts++;
       try {
         const fullSeq = await discoverLoader.loadFullSequenceData(name);
-        if (fullSeq && fullSeq.beats && fullSeq.beats.length > 0) {
-          // Just accept sequences with beats - the renderer will show what works
+        if (fullSeq && fullSeq.steps && fullSeq.steps.length > 0) {
+          // Just accept sequences with steps - the renderer will show what works
           loadedSequences.push(fullSeq);
-          console.log(`[CacheBenchmark] ✓ Loaded "${name}" (${fullSeq.beats.length} beats)`);
+          console.log(`[CacheBenchmark] ✓ Loaded "${name}" (${fullSeq.steps.length} steps)`);
         } else {
-          console.log(`[CacheBenchmark] ✗ "${name}" has no beats or returned null`);
+          console.log(`[CacheBenchmark] ✗ "${name}" has no steps or returned null`);
         }
       } catch (err) {
         // Skip sequences that fail to load
@@ -353,7 +353,7 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
       }
     }
 
-    console.log(`[CacheBenchmark] Loaded ${loadedSequences.length} sequences with beats`);
+    console.log(`[CacheBenchmark] Loaded ${loadedSequences.length} sequences with steps`);
 
     return loadedSequences;
 
@@ -395,7 +395,7 @@ function printComprehensiveSummary(result: ComprehensiveResult): void {
   console.log("│ TOTALS                                                              │");
   console.log("├─────────────────────────────────────────────────────────────────────┤");
   console.log(`│ Sequences tested:      ${String(result.coldPass.totalSequences).padStart(5)}                                       │`);
-  console.log(`│ Total beats rendered:  ${String(result.coldPass.totalBeats).padStart(5)}                                       │`);
+  console.log(`│ Total steps rendered:  ${String(result.coldPass.totalSteps).padStart(5)}                                       │`);
   console.log(`│ Memory cache entries:  ${String(result.summary.memoryCacheSize).padStart(5)}                                       │`);
   console.log("└─────────────────────────────────────────────────────────────────────┘");
 
@@ -487,9 +487,9 @@ export async function runVisibilityChangeBenchmark(
 
     // Base render options (without visibility)
     const baseRenderOptions = {
-      beatSize: 240,
+      stepSize: 240,
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addWord: true,
       addDifficultyLevel: true,
     };

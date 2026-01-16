@@ -20,8 +20,8 @@ export interface IFontManager {
   adjustFontAndMargin(
     baseFontSize: number,
     baseMargin: number,
-    beatCount: number,
-    beatScale: number
+    stepCount: number,
+    stepScale: number
   ): { fontSize: number; margin: number };
 
   /**

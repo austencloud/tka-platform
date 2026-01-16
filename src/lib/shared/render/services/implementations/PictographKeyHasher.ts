@@ -4,11 +4,11 @@
  * Generates deterministic cache keys for pictograph configurations.
  *
  * The key includes all properties that affect the visual SVG output,
- * but explicitly EXCLUDES beatNumber and size to enable cache sharing
+ * but explicitly EXCLUDES stepNumber and size to enable cache sharing
  * across sequences with identical pictographs.
  */
 
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
@@ -52,7 +52,7 @@ interface PictographKeyInput {
 
 export class PictographKeyHasher implements IPictographKeyHasher {
   deriveKey(
-    data: BeatData | PictographData,
+    data: StepData | PictographData,
     visibility: PictographVisibilityOptions
   ): string {
     const input = this.buildKeyInput(data, visibility);
@@ -63,7 +63,7 @@ export class PictographKeyHasher implements IPictographKeyHasher {
    * Build the key input object from pictograph data
    */
   private buildKeyInput(
-    data: BeatData | PictographData,
+    data: StepData | PictographData,
     visibility: PictographVisibilityOptions
   ): PictographKeyInput {
     // Guard against missing motions data

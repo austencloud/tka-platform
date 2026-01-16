@@ -56,7 +56,7 @@ const VIEWER_3D_SHORTCUTS: Omit<ShortcutRegistrationOptions, "action">[] = [
     context: "realm",
   },
 
-  // === BEAT NAVIGATION ===
+  // === STEP NAVIGATION ===
   {
     id: "3d-viewer.prev-beat",
     label: "Previous Beat",

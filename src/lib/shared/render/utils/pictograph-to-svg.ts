@@ -11,7 +11,7 @@
  */
 
 import type { PictographData } from "../../pictograph/shared/domain/models/PictographData";
-import type { BeatData } from "../../../features/create/shared/domain/models/BeatData";
+import type { StepData } from "../../../features/create/shared/domain/models/StepData";
 import type { PropType } from "../../pictograph/prop/domain/enums/PropType";
 import PictographContainer from "../../pictograph/shared/components/PictographContainer.svelte";
 import { mount, tick, unmount } from "svelte";
@@ -62,16 +62,16 @@ export interface PictographVisibilityOptions {
 /**
  * Render a Pictograph component to SVG string
  *
- * @param pictographData - BeatData or PictographData to render
+ * @param pictographData - StepData or PictographData to render
  * @param size - Size of the SVG viewBox (will be size x size)
- * @param beatNumber - Optional beat number to display (for export)
+ * @param stepNumber - Optional beat number to display (for export)
  * @param visibilityOptions - Optional visibility settings to override global defaults
  * @returns Promise<string> - SVG string ready to be converted to canvas
  */
 export async function renderPictographToSVG(
-  pictographData: BeatData | PictographData,
+  pictographData: StepData | PictographData,
   size: number = 300,
-  beatNumber?: number,
+  stepNumber?: number,
   visibilityOptions?: PictographVisibilityOptions
 ): Promise<string> {
   // Debug: Log visibility options being passed
@@ -90,12 +90,12 @@ export async function renderPictographToSVG(
 
   try {
     // Prepare pictograph data with beat number if provided
-    // IMPORTANT: Explicitly set beatNumber to undefined when not provided,
-    // otherwise the original pictographData.beatNumber will be preserved
+    // IMPORTANT: Explicitly set stepNumber to undefined when not provided,
+    // otherwise the original pictographData.stepNumber will be preserved
     const dataWithBeatNumber =
-      beatNumber !== undefined
-        ? { ...pictographData, beatNumber }
-        : { ...pictographData, beatNumber: undefined };
+      stepNumber !== undefined
+        ? { ...pictographData, stepNumber }
+        : { ...pictographData, stepNumber: undefined };
 
     // Build props object explicitly (not using spread) to ensure visibility settings are passed
     const componentProps: Record<string, unknown> = {
@@ -220,7 +220,7 @@ async function waitForServicesInitialized(
  */
 async function waitForArrowsAndPropsCalculated(
   container: HTMLElement,
-  pictographData: BeatData | PictographData
+  pictographData: StepData | PictographData
 ): Promise<void> {
   // Check if this pictograph should have arrows or props
   const shouldHaveArrows =
