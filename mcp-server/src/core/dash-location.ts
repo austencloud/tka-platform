@@ -193,9 +193,9 @@ export function calculateDashLocation(input: DashLocationInput): GridLocation {
     gridMode,
   } = input;
 
-  const startLoc = motionStartLocation.toUpperCase() as GridLocation;
-  const endLoc = motionEndLocation.toUpperCase() as GridLocation;
-  const otherEndLoc = otherMotionEndLocation?.toUpperCase() as GridLocation | undefined;
+  const startLoc = motionStartLocation.toLowerCase() as GridLocation;
+  const endLoc = motionEndLocation.toLowerCase() as GridLocation;
+  const otherEndLoc = otherMotionEndLocation?.toLowerCase() as GridLocation | undefined;
   const turns = typeof motionTurns === "number" ? motionTurns : 0;
   const otherTurns = typeof otherMotionTurns === "number" ? otherMotionTurns : 0;
 
@@ -210,7 +210,7 @@ export function calculateDashLocation(input: DashLocationInput): GridLocation {
     // Current motion has zero turns, other doesn't - use opposite of other
     if (turns === 0 && otherTurns !== 0) {
       const otherLocation = dashLocationNonZeroTurns(
-        input.otherMotionStartLocation?.toUpperCase() as GridLocation,
+        input.otherMotionStartLocation?.toLowerCase() as GridLocation,
         input.otherMotionRotationDirection || "cw"
       );
       return getOppositeLocation(otherLocation);
@@ -245,7 +245,7 @@ export function calculateDashLocation(input: DashLocationInput): GridLocation {
       const isOtherShift = otherMotionType === "pro" || otherMotionType === "anti" || otherMotionType === "float";
 
       if (isOtherShift && input.otherMotionStartLocation && otherEndLoc) {
-        const otherStartLoc = input.otherMotionStartLocation.toUpperCase() as GridLocation;
+        const otherStartLoc = input.otherMotionStartLocation.toLowerCase() as GridLocation;
         const shiftLocation = calculateShiftLocation(otherStartLoc, otherEndLoc);
 
         if (shiftLocation) {

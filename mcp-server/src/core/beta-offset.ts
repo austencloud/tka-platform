@@ -175,6 +175,27 @@ const SHIFT_NON_RADIAL_MAP: Record<string, Record<string, VectorDirection>> = {
 // ============================================================================
 
 /**
+ * Opposite direction lookup table
+ */
+const OPPOSITE_DIRECTIONS: Record<VectorDirection, VectorDirection> = {
+  [VectorDirection.UP]: VectorDirection.DOWN,
+  [VectorDirection.DOWN]: VectorDirection.UP,
+  [VectorDirection.LEFT]: VectorDirection.RIGHT,
+  [VectorDirection.RIGHT]: VectorDirection.LEFT,
+  [VectorDirection.UPRIGHT]: VectorDirection.DOWNLEFT,
+  [VectorDirection.DOWNLEFT]: VectorDirection.UPRIGHT,
+  [VectorDirection.UPLEFT]: VectorDirection.DOWNRIGHT,
+  [VectorDirection.DOWNRIGHT]: VectorDirection.UPLEFT,
+};
+
+/**
+ * Get the opposite direction
+ */
+function getOppositeDirection(direction: VectorDirection): VectorDirection {
+  return OPPOSITE_DIRECTIONS[direction];
+}
+
+/**
  * Check if orientation is radial (IN or OUT)
  */
 function isRadialOrientation(orientation: string | undefined): boolean {
@@ -274,8 +295,8 @@ export function calculateBetaOffset(
 
   // Check for letter-specific handling (Y/Z have special logic)
   if (letter === "Y" || letter === "Z" || letter === "Y-" || letter === "Z-") {
-    // Y/Z use shift motion logic even for static/dash
-    return calculateShiftBetaOffset(targetMotion, isRadial, gridMode);
+    // Y/Z letters: shift motion gets calculated direction, non-shift gets OPPOSITE
+    return calculateYZBetaOffset(input, targetMotion, isRadial, gridMode);
   }
 
   // Check if this is a shift motion (PRO/ANTI/FLOAT)
@@ -357,6 +378,62 @@ function calculateShiftBetaOffset(
     // Fall back to static/dash calculation
     return calculateStaticDashBetaOffset(endLoc, motion.color, isRadial, gridMode);
   }
+
+  return directionToOffset(direction, gridMode);
+}
+
+/**
+ * Calculate beta offset for Y/Z letters.
+ *
+ * Y/Z letters combine a shift motion with a static/dash motion.
+ * The shift motion gets its calculated direction, the non-shift motion
+ * gets the OPPOSITE direction.
+ */
+function calculateYZBetaOffset(
+  input: BetaOffsetInput,
+  targetMotion: BetaMotionInput,
+  isRadial: boolean,
+  gridMode: GridMode
+): { x: number; y: number } {
+  const { blueMotion, redMotion } = input;
+
+  // Identify which motion is shift (PRO/ANTI/FLOAT) vs non-shift (STATIC/DASH)
+  const redIsShift = isShiftMotion(redMotion.motionType);
+  const blueIsShift = isShiftMotion(blueMotion.motionType);
+
+  const shiftMotion = redIsShift ? redMotion : blueIsShift ? blueMotion : null;
+
+  if (!shiftMotion) {
+    // Neither is a shift motion - fall back to static/dash calculation
+    const location = normalizeLocation(targetMotion.endLocation);
+    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+  }
+
+  // Calculate direction from the SHIFT motion (not the target motion)
+  const startLoc = normalizeLocation(shiftMotion.startLocation);
+  const endLoc = normalizeLocation(shiftMotion.endLocation);
+  const map = isRadial ? SHIFT_RADIAL_MAP : SHIFT_NON_RADIAL_MAP;
+
+  const startMap = map[startLoc];
+  if (!startMap) {
+    // Fall back
+    const location = normalizeLocation(targetMotion.endLocation);
+    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+  }
+
+  const shiftDirection = startMap[endLoc];
+  if (!shiftDirection) {
+    // Fall back
+    const location = normalizeLocation(targetMotion.endLocation);
+    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+  }
+
+  // If target is the shift motion, use the calculated direction
+  // If target is the non-shift motion, use the OPPOSITE direction
+  const isTargetShiftMotion = targetMotion.color === shiftMotion.color;
+  const direction = isTargetShiftMotion
+    ? shiftDirection
+    : getOppositeDirection(shiftDirection);
 
   return directionToOffset(direction, gridMode);
 }

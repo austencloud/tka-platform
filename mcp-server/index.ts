@@ -387,26 +387,206 @@ server.tool(
   }
 );
 
+// ============================================================================
+// TKA LETTER TYPE DEFINITIONS
+// ============================================================================
+
+/**
+ * The 6 TKA letter types, organized by motion characteristics.
+ * This is the canonical source of truth for letter classification.
+ */
+const TKA_LETTER_TYPES = {
+  type1: {
+    name: "Type 1: Dual-Shift",
+    description: "Both hands shift (move to adjacent grid point)",
+    letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
+  },
+  type2: {
+    name: "Type 2: Shift",
+    description: "One hand shifts, one hand stays static",
+    letters: ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"],
+  },
+  type3: {
+    name: "Type 3: Cross-Shift (Dash Letters)",
+    description: "One hand shifts + one hand dashes. The '-' suffix indicates Type 3.",
+    letters: ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"],
+  },
+  type4: {
+    name: "Type 4: Dash",
+    description: "One hand dashes (moves to opposite grid point), one stays static",
+    letters: ["Φ", "Ψ", "Λ"],
+  },
+  type5: {
+    name: "Type 5: Dual-Dash",
+    description: "Both hands dash simultaneously",
+    letters: ["Φ-", "Ψ-", "Λ-"],
+  },
+  type6: {
+    name: "Type 6: Static",
+    description: "Both hands remain stationary (no hand motion)",
+    letters: ["α", "β", "γ"],
+  },
+};
+
+/**
+ * Lookup table: letter -> type info (for quick resolution)
+ */
+const LETTER_TO_TYPE: Record<string, { type: string; name: string }> = {};
+for (const [typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
+  for (const letter of typeInfo.letters) {
+    LETTER_TO_TYPE[letter] = { type: typeKey, name: typeInfo.name };
+  }
+}
+
 // Tool: list_available_letters
 server.tool(
   "list_available_letters",
   "List all letters available in the TKA alphabet dataframe",
-  {},
-  async () => {
+  {
+    compact: z.boolean().optional().default(false).describe("Compact output (just letter lists, no descriptions - saves ~800 tokens)"),
+  },
+  async ({ compact = false }) => {
     ensureDataLoaded();
 
-    const letters = new Set<string>();
+    // Get letters actually present in the dataframe
+    const availableLetters = new Set<string>();
     for (const p of allPictographs) {
-      letters.add(p.letter);
+      availableLetters.add(p.letter);
     }
 
-    const sorted = Array.from(letters).sort();
+    // Compact mode: just the letters, minimal formatting
+    if (compact) {
+      const byType: string[] = [];
+      for (const [_typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
+        const presentLetters = typeInfo.letters.filter((l) => availableLetters.has(l));
+        if (presentLetters.length > 0) {
+          byType.push(`${typeInfo.name.split(":")[0]}: ${presentLetters.join(",")}`);
+        }
+      }
+      return {
+        content: [{ type: "text" as const, text: byType.join("\n") }],
+      };
+    }
+
+    // Full mode: verbose with descriptions
+    const output: string[] = [
+      "# TKA Letters by Type",
+      "",
+      "IMPORTANT: When a user says '[Letter] dash' (e.g., 'Sigma dash'), they mean the Type 3 letter with '-' suffix (e.g., 'Σ-'), NOT a letter with dash motion.",
+      "",
+    ];
+
+    for (const [_typeKey, typeInfo] of Object.entries(TKA_LETTER_TYPES)) {
+      const presentLetters = typeInfo.letters.filter((l) => availableLetters.has(l));
+      if (presentLetters.length > 0) {
+        output.push(`## ${typeInfo.name}`);
+        output.push(`${typeInfo.description}`);
+        output.push(`Letters: ${presentLetters.join(", ")}`);
+        output.push("");
+      }
+    }
+
+    output.push(`Total: ${availableLetters.size} letters`);
 
     return {
       content: [
         {
           type: "text" as const,
-          text: `Available letters (${sorted.length} total):\n\n${sorted.join(", ")}`,
+          text: output.join("\n"),
+        },
+      ],
+    };
+  }
+);
+
+// Tool: get_alphabet_info
+server.tool(
+  "get_alphabet_info",
+  "Get comprehensive information about the TKA (The Kinetic Alphabet) system. Use this to understand the domain before working with pictographs.",
+  {},
+  async () => {
+    const info = `# The Kinetic Alphabet (TKA) - Domain Reference
+
+## Overview
+
+TKA is a notation system for flow arts (poi, staff, etc.) that encodes hand positions and movements into letters. Each "pictograph" represents one beat of motion showing:
+- Two props (blue and red) at specific grid positions
+- Motion arrows showing how each hand moves
+- Start and end positions (Alpha, Beta, or Gamma)
+
+## The Grid System
+
+Pictographs use a diamond grid with 8 points:
+- **Cardinal**: North (n), East (e), South (s), West (w)
+- **Intercardinal**: Northeast (ne), Southeast (se), Southwest (sw), Northwest (nw)
+
+## Hand Positions
+
+- **Alpha (α)**: Hands across from each other (opposite points)
+- **Beta (β)**: Hands at the same point
+- **Gamma (γ)**: Hands form a right angle (adjacent points)
+
+## Motion Types
+
+Each hand can perform one of 4 motion types:
+- **Static**: Hand stays at current grid point (no motion)
+- **Shift**: Hand moves to an adjacent grid point (90° movement)
+- **Dash**: Hand moves to the opposite grid point (180° movement)
+- **Pro/Anti**: Refers to prop rotation direction (prospin = with hand path, antispin = against)
+
+## The 6 Letter Types
+
+### Type 1: Dual-Shift (22 letters: A-V)
+Both hands shift. The most common type.
+- Letters: A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V
+
+### Type 2: Shift (8 letters)
+One hand shifts, one hand stays static.
+- Letters: W, X, Y, Z, Σ (Sigma), Δ (Delta), Θ (Theta), Ω (Omega)
+
+### Type 3: Cross-Shift / "Dash Letters" (8 letters)
+One hand shifts + one hand dashes. These have a "-" suffix.
+- Letters: W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-
+- **CRITICAL**: When someone says "Sigma dash" or "W dash", they mean the Type 3 letter (Σ-, W-), NOT a letter that uses dash motion.
+
+### Type 4: Dash (3 letters)
+One hand dashes, one stays static.
+- Letters: Φ (Phi), Ψ (Psi), Λ (Lambda)
+
+### Type 5: Dual-Dash (3 letters)
+Both hands dash simultaneously. These also have a "-" suffix.
+- Letters: Φ-, Ψ-, Λ-
+
+### Type 6: Static (3 letters)
+Both hands remain stationary.
+- Letters: α (alpha), β (beta), γ (gamma)
+
+## Naming Convention Summary
+
+| User Says | They Mean | Type |
+|-----------|-----------|------|
+| "Sigma" or "Σ" | Σ | Type 2 (Shift) |
+| "Sigma dash" or "Σ-" | Σ- | Type 3 (Cross-Shift) |
+| "W" | W | Type 2 (Shift) |
+| "W dash" or "W-" | W- | Type 3 (Cross-Shift) |
+| "Phi" or "Φ" | Φ | Type 4 (Dash) |
+| "Phi dash" or "Φ-" | Φ- | Type 5 (Dual-Dash) |
+
+## Variations
+
+Each letter has multiple **variations** - different ways to execute the same letter type based on:
+- Starting position (alpha1, alpha3, beta1, gamma5, etc.)
+- Ending position
+- Rotation directions (cw = clockwise, ccw = counter-clockwise)
+- Start/end locations on the grid
+
+Use \`list_letter_variations\` to see all variations for a specific letter.`;
+
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: info,
         },
       ],
     };
@@ -491,8 +671,9 @@ server.tool(
     showNonRadialPoints: z.boolean().optional().describe("Override: show non-radial grid points"),
     showBlueMotion: z.boolean().optional().describe("Override: show blue motion (prop + arrow)"),
     showRedMotion: z.boolean().optional().describe("Override: show red motion (prop + arrow)"),
+    includeTextData: z.boolean().optional().default(true).describe("Include motion data as text (false = image only, saves tokens)"),
   },
-  async ({ letter, variation = 0, ...overrides }) => {
+  async ({ letter, variation = 0, includeTextData = true, ...overrides }) => {
     ensureDataLoaded();
 
     // Validate the letter exists
@@ -535,6 +716,7 @@ server.tool(
       if (overrides.showRedMotion !== undefined) prefs.showRedMotion = overrides.showRedMotion;
 
       // Convert CSV row to the simple input format for standalone renderer
+      // Note: CSV doesn't have turns or startOrientation, so we default them
       const pictographInput = {
         letter: csvRow.letter,
         startPosition: csvRow.startPosition,
@@ -545,6 +727,8 @@ server.tool(
           startLocation: csvRow.blueMotion.startLocation,
           endLocation: csvRow.blueMotion.endLocation,
           color: "blue",
+          turns: 0, // Default - CSV basic variations are all 0 turns
+          startOrientation: "in", // Default to radial orientation
         },
         redMotion: {
           motionType: csvRow.redMotion.motionType,
@@ -552,6 +736,8 @@ server.tool(
           startLocation: csvRow.redMotion.startLocation,
           endLocation: csvRow.redMotion.endLocation,
           color: "red",
+          turns: 0, // Default - CSV basic variations are all 0 turns
+          startOrientation: "in", // Default to radial orientation
         },
       };
 
@@ -587,19 +773,32 @@ server.tool(
       if (prefs.showReversals) enabledFeatures.push("reversals");
       if (prefs.showGrid) enabledFeatures.push("grid");
 
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: `${letter}`,
-          },
-          {
-            type: "image" as const,
-            data: base64,
-            mimeType: "image/png",
-          },
-        ],
-      };
+      // Build accurate motion descriptions from the actual data
+      const blueMotionDesc = `${csvRow.blueMotion.motionType} from ${csvRow.blueMotion.startLocation} to ${csvRow.blueMotion.endLocation}` +
+        (csvRow.blueMotion.rotationDirection !== "noRotation" ? ` (${csvRow.blueMotion.rotationDirection})` : "");
+      const redMotionDesc = `${csvRow.redMotion.motionType} from ${csvRow.redMotion.startLocation} to ${csvRow.redMotion.endLocation}` +
+        (csvRow.redMotion.rotationDirection !== "noRotation" ? ` (${csvRow.redMotion.rotationDirection})` : "");
+
+      // Conditionally include text data (saves ~250 tokens when false)
+      const content: Array<{ type: "text"; text: string } | { type: "image"; data: string; mimeType: string }> = [];
+
+      if (includeTextData) {
+        const motionData = `## ${letter} (variation ${variation})
+
+**Position:** ${csvRow.startPosition} → ${csvRow.endPosition}
+
+**Blue Motion:** ${blueMotionDesc}
+**Red Motion:** ${redMotionDesc}`;
+        content.push({ type: "text" as const, text: motionData });
+      }
+
+      content.push({
+        type: "image" as const,
+        data: base64,
+        mimeType: "image/png",
+      });
+
+      return { content };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
@@ -677,10 +876,31 @@ server.tool(
 server.tool(
   "get_preferences",
   "Get current visibility preferences for pictograph generation.",
-  {},
-  async () => {
+  {
+    compact: z.boolean().optional().default(false).describe("Compact output (key:value pairs only - saves ~300 tokens)"),
+  },
+  async ({ compact = false }) => {
     const prefs = currentPreferences;
 
+    // Compact mode: terse key:value format
+    if (compact) {
+      const pairs = [
+        `dark:${prefs.darkMode}`,
+        `size:${prefs.size}`,
+        `tka:${prefs.showTKA}`,
+        `vtg:${prefs.showVTG}`,
+        `pos:${prefs.showPositions}`,
+        `rev:${prefs.showReversals}`,
+        `grid:${prefs.showGrid}`,
+        `blue:${prefs.showBlueMotion}`,
+        `red:${prefs.showRedMotion}`,
+      ];
+      return {
+        content: [{ type: "text" as const, text: pairs.join(" ") }],
+      };
+    }
+
+    // Full mode: verbose with grouping
     const summary = `Current Pictograph Preferences:
 
 Display:

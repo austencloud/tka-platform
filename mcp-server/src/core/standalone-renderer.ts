@@ -640,9 +640,11 @@ ${svgParts.join("\n")}
       // Anti + ccw → Mirror = False
       // Pro + cw → Mirror = False
       // Pro + ccw → Mirror = True
+      // No rotation → Mirror = False (no-rotation dashes are symmetric)
       const rotDir = motion.rotationDirection.toLowerCase();
+      const isNoRotation = rotDir === "no_rot" || rotDir === "no_rotation" || rotDir === "norotation";
       const isCW = rotDir === "cw" || rotDir === "clockwise";
-      const shouldMirror = motionType === "anti" ? isCW : !isCW;
+      const shouldMirror = isNoRotation ? false : (motionType === "anti" ? isCW : !isCW);
 
       // Canvas2D renderer transform order:
       // translate to position → rotate → mirror (if needed) → translate by -center
