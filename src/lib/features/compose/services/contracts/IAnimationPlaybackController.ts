@@ -93,4 +93,10 @@ export interface IAnimationPlaybackController {
    * Clean up resources
    */
   dispose(): void;
+
+  /**
+   * Whether the loaded sequence returns to its starting position
+   * (seamless loop vs non-seamless that jumps back)
+   */
+  readonly isSeamlesslyLoopable: boolean;
 }

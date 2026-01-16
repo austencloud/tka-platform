@@ -20,7 +20,7 @@ import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-
 export class AnimationPlaybackController implements IAnimationPlaybackController {
   private state: AnimationPanelState | null = null;
   private sequenceData: SequenceData | null = null;
-  private isSeamlesslyLoopable: boolean = false;
+  private _isSeamlesslyLoopable: boolean = false;
 
   // Step playback (auto-step) state
   private stepPlaybackTimer: ReturnType<typeof setTimeout> | null = null;
@@ -60,7 +60,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.sequenceData = sequenceData;
 
     // Check if sequence is seamlessly loopable
-    this.isSeamlesslyLoopable =
+    this._isSeamlesslyLoopable =
       this.loopabilityChecker.isSeamlesslyLoopable(sequenceData);
 
     // Initialize animation engine with sequence data
@@ -346,6 +346,13 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     this.sequenceData = null;
   }
 
+  /**
+   * Whether the loaded sequence returns to its starting position
+   */
+  get isSeamlesslyLoopable(): boolean {
+    return this._isSeamlesslyLoopable;
+  }
+
   private startStepPlayback(): void {
     if (!this.state) return;
 
@@ -398,14 +405,14 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
         // to totalBeats, so immediately animate to the first step instead
         // of pausing at beat 0. This shows beat 1's motion without the
         // redundant pause at the start position.
-        if (this.isSeamlesslyLoopable) {
+        if (this._isSeamlesslyLoopable) {
           const duration = this.getStepDuration(stepSize);
           this.animateToBeatInternal(stepSize, duration, true, false);
         }
 
         // Schedule next tick to continue looping
         // Use pause at start position (unless seamlessly loopable, where we animate immediately)
-        const duration = this.isSeamlesslyLoopable
+        const duration = this._isSeamlesslyLoopable
           ? this.getStepDuration(stepSize)
           : 0;
         const pauseMs = this.state.stepPlaybackPauseMs;
@@ -466,7 +473,7 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
       if (this.state.shouldLoop) {
         // For seamlessly loopable sequences, skip start position and loop to beat 1
         // For non-loopable sequences, show start position briefly by looping to 0
-        const loopBackBeat = this.isSeamlesslyLoopable ? 1 : 0;
+        const loopBackBeat = this._isSeamlesslyLoopable ? 1 : 0;
         this.syncCurrentBeat(loopBackBeat);
 
         // Re-initialize engine if needed

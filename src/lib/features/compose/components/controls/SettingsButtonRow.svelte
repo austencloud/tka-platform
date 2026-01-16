@@ -26,8 +26,7 @@
   const trailSummary = $derived.by(() => {
     const trail = animationSettings.trail;
     if (!trail.enabled || trail.mode === TrailMode.OFF) return "Off";
-    if (trail.lineWidth <= 2.5 && trail.maxOpacity <= 0.7) return "Subtle";
-    return "Vivid";
+    return "On";
   });
 
   // Get visibility summary with reactive dependency

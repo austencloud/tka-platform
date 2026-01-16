@@ -91,6 +91,12 @@
   // This ensures changes to trail effect settings are picked up
   let trailSettings = $derived(animationSettings.trail);
 
+  // Whether sequence loops seamlessly (affects trail clearing behavior)
+  let isSeamlesslyLoopable = $derived.by(() => {
+    if (!primaryPlaybackController) return false;
+    return primaryPlaybackController.isSeamlesslyLoopable;
+  });
+
   // Initialize services
   onMount(() => {
     try {
@@ -409,6 +415,7 @@
       sequenceData={primaryAnimationState.sequenceData}
       word={sequenceWord}
       {trailSettings}
+      {isSeamlesslyLoopable}
     />
   {:else}
     <div class="empty-message">

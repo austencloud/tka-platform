@@ -45,6 +45,8 @@ export interface TrailCaptureConfig {
   bluePropType?: string | null;
   /** Prop type for red prop (e.g., "staff", "minihoop") - used for bilateral detection */
   redPropType?: string | null;
+  /** Whether the sequence returns to its starting position (LOOP pattern) */
+  isSeamlesslyLoopable?: boolean;
 }
 
 /**
