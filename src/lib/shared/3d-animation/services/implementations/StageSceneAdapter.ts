@@ -1,5 +1,5 @@
 /**
- * StageSceneAdapter
+ * StageSceneAdapter (implements ISceneOrchestrator)
  *
  * Interprets compose's TimelineState for multi-performer 3D rendering.
  * Maps timeline concepts to Stage concepts:
@@ -39,84 +39,54 @@
  * ```
  */
 
-import type {
-  TimelineState,
-} from "$lib/features/compose/timeline/state/timeline-state.svelte";
+import type { TimelineState } from "$lib/features/compose/timeline/state/timeline-state.svelte";
 import type {
   TimelineTrack,
   TimelineClip,
   TimeSeconds,
 } from "$lib/features/compose/timeline/domain/timeline-types";
 import type { FormationPreset } from "../../domain/formation";
+import type {
+  ISceneOrchestrator,
+  ActivePerformerClip,
+  OrchestratedCameraState,
+  PlayheadChangeCallback,
+  PlayStateChangeCallback,
+  FormationCueCallback,
+} from "../contracts/ISceneOrchestrator";
 
 // ============================================================================
-// Types
+// Internal Types
 // ============================================================================
-
-/**
- * Active clip info for a performer at current playhead position
- */
-export interface ActivePerformerClip {
-  /** The timeline clip */
-  clip: TimelineClip;
-  /** Progress within the clip (0-1) */
-  progress: number;
-  /** Current beat index within the sequence */
-  beatIndex: number;
-  /** Sub-beat progress within current beat (0-1) */
-  beatProgress: number;
-}
 
 /**
  * Camera keyframe from a camera track clip
  * (stored in clip.label as JSON or parsed from clip metadata)
  */
-export interface CameraKeyframe {
+interface CameraKeyframe {
   position: { x: number; y: number; z: number };
   target: { x: number; y: number; z: number };
-}
-
-/**
- * Interpolated camera state from camera track
- */
-export interface StageCamera {
-  position: { x: number; y: number; z: number };
-  target: { x: number; y: number; z: number };
-}
-
-// ============================================================================
-// Adapter Factory
-// ============================================================================
-
-export interface StageSceneAdapter {
-  // Read-only accessors
-  readonly playheadPosition: TimeSeconds;
-  readonly isPlaying: boolean;
-  readonly bpm: number;
-
-  // Performer methods
-  getPerformerTracks(): TimelineTrack[];
-  getActivePerformerClip(performerIndex: number): ActivePerformerClip | null;
-  getAllActivePerformerClips(): Map<number, ActivePerformerClip | null>;
-
-  // Formation methods
-  getActiveFormation(): FormationPreset;
-  getFormationTrack(): TimelineTrack | null;
-
-  // Camera methods
-  getCameraTrack(): TimelineTrack | null;
-  getCameraState(): StageCamera | null;
 }
 
 /**
  * Create an adapter that interprets compose's timeline state for Stage 3D rendering.
+ * Implements ISceneOrchestrator for formal DI integration.
  *
  * @param timelineState - The compose timeline state (from getTimelineState())
- * @returns An adapter with methods to query timeline data for Stage rendering
+ * @returns An ISceneOrchestrator implementation
  */
 export function createStageSceneAdapter(
   timelineState: TimelineState
-): StageSceneAdapter {
+): ISceneOrchestrator {
+  // Event callback stores
+  const playheadCallbacks = new Set<PlayheadChangeCallback>();
+  const playStateCallbacks = new Set<PlayStateChangeCallback>();
+  const formationCueCallbacks = new Set<FormationCueCallback>();
+
+  // Track previous values for change detection
+  let prevPlayhead = -1;
+  let prevIsPlaying = false;
+  let prevFormation: FormationPreset = "grid-2x2";
   // =========================================================================
   // Performer Track Methods
   // =========================================================================
@@ -159,7 +129,8 @@ export function createStageSceneAdapter(
     const beatCount = activeClip.sequence.beats.length;
     if (beatCount === 0) {
       return {
-        clip: activeClip,
+        clipId: activeClip.id,
+        sequenceId: activeClip.sequence.id,
         progress: clipProgress,
         beatIndex: 0,
         beatProgress: 0,
@@ -175,7 +146,8 @@ export function createStageSceneAdapter(
     const beatProgress = exactBeat - Math.floor(exactBeat);
 
     return {
-      clip: activeClip,
+      clipId: activeClip.id,
+      sequenceId: activeClip.sequence.id,
       progress: clipProgress,
       beatIndex,
       beatProgress,
@@ -270,7 +242,7 @@ export function createStageSceneAdapter(
    * Get interpolated camera state from camera track.
    * Camera clips contain keyframe data; we interpolate between them.
    */
-  function getCameraState(): StageCamera | null {
+  function getCameraState(): OrchestratedCameraState | null {
     const cameraTrack = getCameraTrack();
     if (!cameraTrack || cameraTrack.clips.length === 0) return null;
 
@@ -338,7 +310,9 @@ export function createStageSceneAdapter(
   /**
    * Parse camera keyframe data from a clip's label (stored as JSON)
    */
-  function parseCameraKeyframe(clip: TimelineClip): StageCamera | null {
+  function parseCameraKeyframe(
+    clip: TimelineClip
+  ): OrchestratedCameraState | null {
     if (!clip.label) return null;
 
     try {
@@ -361,8 +335,69 @@ export function createStageSceneAdapter(
     return a + (b - a) * t;
   }
 
+  /**
+   * Check if formation track exists
+   */
+  function hasFormationTrack(): boolean {
+    return getFormationTrack() !== null;
+  }
+
+  /**
+   * Check if camera track exists
+   */
+  function hasCameraTrack(): boolean {
+    return getCameraTrack() !== null;
+  }
+
   // =========================================================================
-  // Return Adapter Interface
+  // Event Subscriptions
+  // =========================================================================
+
+  function onPlayheadChange(callback: PlayheadChangeCallback): () => void {
+    playheadCallbacks.add(callback);
+    return () => playheadCallbacks.delete(callback);
+  }
+
+  function onPlayStateChange(callback: PlayStateChangeCallback): () => void {
+    playStateCallbacks.add(callback);
+    return () => playStateCallbacks.delete(callback);
+  }
+
+  function onFormationCue(callback: FormationCueCallback): () => void {
+    formationCueCallbacks.add(callback);
+    return () => formationCueCallbacks.delete(callback);
+  }
+
+  /**
+   * Check for state changes and notify subscribers.
+   * Call this from a frame loop or $effect to detect changes.
+   */
+  function checkForChanges(): void {
+    const currentPlayhead = timelineState.playhead.position;
+    const currentIsPlaying = timelineState.playhead.isPlaying;
+    const currentFormation = getActiveFormation();
+
+    // Playhead change
+    if (currentPlayhead !== prevPlayhead) {
+      prevPlayhead = currentPlayhead;
+      playheadCallbacks.forEach((cb) => cb(currentPlayhead));
+    }
+
+    // Play state change
+    if (currentIsPlaying !== prevIsPlaying) {
+      prevIsPlaying = currentIsPlaying;
+      playStateCallbacks.forEach((cb) => cb(currentIsPlaying));
+    }
+
+    // Formation cue change
+    if (currentFormation !== prevFormation) {
+      prevFormation = currentFormation;
+      formationCueCallbacks.forEach((cb) => cb(currentFormation));
+    }
+  }
+
+  // =========================================================================
+  // Return ISceneOrchestrator Implementation
   // =========================================================================
 
   return {
@@ -376,18 +411,28 @@ export function createStageSceneAdapter(
     get bpm() {
       return timelineState.project.defaultBpm;
     },
+    get performerTrackCount() {
+      return getPerformerTracks().length;
+    },
 
     // Performer methods
-    getPerformerTracks,
     getActivePerformerClip,
     getAllActivePerformerClips,
 
     // Formation methods
     getActiveFormation,
-    getFormationTrack,
+    hasFormationTrack,
 
     // Camera methods
-    getCameraTrack,
     getCameraState,
+    hasCameraTrack,
+
+    // Event subscriptions
+    onPlayheadChange,
+    onPlayStateChange,
+    onFormationCue,
   };
 }
+
+// Re-export interface for convenience
+export type { ISceneOrchestrator };

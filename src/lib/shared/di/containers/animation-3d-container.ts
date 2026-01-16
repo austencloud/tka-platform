@@ -24,6 +24,7 @@ import { PropStateInterpolator } from "$lib/shared/3d-animation/services/impleme
 import { SequenceConverter } from "$lib/shared/3d-animation/services/implementations/SequenceConverter";
 import { Animation3DPersister } from "$lib/shared/3d-animation/services/implementations/Animation3DPersister";
 import { DuetPersister } from "$lib/shared/3d-animation/services/implementations/DuetPersister";
+import { createPerformerSynchronizer } from "$lib/shared/3d-animation/services/implementations/PerformerSynchronizer";
 
 // External dependency types
 import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
@@ -75,9 +76,12 @@ export function createAnimation3DContainer(deps: Animation3DContainerDeps) {
     animation3DPersister: () => new Animation3DPersister(),
   });
 
-  // Tier 3: Duet system (depends on external discoverLoader)
+  // Tier 3: Duet and multi-performer systems
   const container = tier2.add({
     duetPersister: () => new DuetPersister(deps.discoverLoader),
+    // Factory function - creates new instance each time (not singleton)
+    // Use container.items.performerSynchronizerFactory() to create instances
+    performerSynchronizerFactory: () => createPerformerSynchronizer,
   });
 
   return container;

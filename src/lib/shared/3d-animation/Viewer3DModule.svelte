@@ -526,21 +526,6 @@
         {/snippet}
       </SceneOverlayControls>
 
-      <!-- Empty State Overlay (shown when no sequence loaded) -->
-      {#if !activeState?.hasSequence}
-        <div class="empty-state-overlay">
-          <div class="empty-state-content">
-            <i class="fas fa-film" aria-hidden="true"></i>
-            <h3>No Sequence Loaded</h3>
-            <p>Load a sequence to see it performed in 3D</p>
-            <button class="load-sequence-btn" onclick={() => (browserOpen = true)}>
-              <i class="fas fa-folder-open" aria-hidden="true"></i>
-              Browse Sequences
-            </button>
-          </div>
-        </div>
-      {/if}
-
       <!-- Locomotion Hint (shown when in locomotion mode but pointer not locked) -->
       {#if locomotionMode && !isPointerLocked}
         <div class="locomotion-hint">
@@ -831,79 +816,6 @@
     .toggle-panel-btn i {
       transform: rotate(90deg);
     }
-  }
-
-  /* Empty State Overlay */
-  .empty-state-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .empty-state-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    padding: 2rem 3rem;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 16px;
-    text-align: center;
-    pointer-events: auto;
-    backdrop-filter: blur(8px);
-  }
-
-  .empty-state-content i {
-    font-size: 3rem;
-    color: var(--theme-accent, #8b5cf6);
-    opacity: 0.8;
-  }
-
-  .empty-state-content h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .empty-state-content p {
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  .load-sequence-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: var(--theme-accent, #8b5cf6);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .load-sequence-btn:hover {
-    background: var(--theme-accent-strong, #7c3aed);
-    transform: translateY(-1px);
-  }
-
-  .load-sequence-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  .load-sequence-btn:active {
-    transform: translateY(0);
   }
 
 </style>
