@@ -201,6 +201,112 @@
   const needsTokens = $derived(
     !hasMapboxToken || (satelliteProvider === "google" && !hasGoogleKey)
   );
+
+  /**
+   * Export terrain data for use in infinite-worlds chunk generator.
+   * Creates a JSON file with boundary, heightmap, and geo data.
+   */
+  // Handle terrain click from 3D scene (via raycasting)
+  function handleTerrainClick(point: { x: number; y: number; z: number }) {
+    // Calculate UV coordinates from world position
+    const terrainOffsetX = -terrainSize * 0.35;
+    const terrainOffsetZ = -terrainSize * 0.35;
+
+    const u = (point.x - terrainOffsetX) / terrainSize + 0.5;
+    const v = (point.z - terrainOffsetZ) / terrainSize + 0.5;
+
+    // Clamp UV to valid range
+    const clampedU = Math.max(0, Math.min(1, u));
+    const clampedV = Math.max(0, Math.min(1, v));
+
+    // Sample heightmap to get actual terrain height at this position
+    let terrainY = 0;
+    if (heightmap) {
+      const pixelX = Math.floor(clampedU * (heightmap.width - 1));
+      const pixelY = Math.floor(clampedV * (heightmap.height - 1));
+      const idx = pixelY * heightmap.width + pixelX;
+      const normalizedHeight = heightmap.heights[idx] ?? 0;
+      const maxTerrainHeight = 40; // Same as terrainConfig.maxHeight
+      terrainY = normalizedHeight * maxTerrainHeight;
+    }
+
+    const newPoint = {
+      world: { x: point.x, y: terrainY, z: point.z },
+      uv: { u: clampedU, v: clampedV },
+    };
+
+    boundaryPoints = [...boundaryPoints, newPoint];
+    boundaryMessage = `${boundaryPoints.length} point${boundaryPoints.length !== 1 ? "s" : ""} placed`;
+    console.log("[BoundaryClick] Added point:", newPoint, "TerrainY:", terrainY.toFixed(1));
+  }
+
+  function exportForInfiniteWorlds() {
+    if (!heightmap || boundaryPoints.length < 3) {
+      boundaryMessage = "Need boundary + heightmap";
+      return;
+    }
+
+    // Convert heightmap Float32Array to regular array for JSON
+    const heightsArray = Array.from(heightmap.heights);
+
+    // Calculate world-space dimensions (in meters, approximate)
+    // At ~40° latitude, 1 degree lat ≈ 111km, 1 degree lng ≈ 85km
+    const latDegrees = Math.abs(currentGeoBounds.nw.lat - currentGeoBounds.se.lat);
+    const lngDegrees = Math.abs(currentGeoBounds.se.lng - currentGeoBounds.nw.lng);
+    const metersPerLatDegree = 111000;
+    const metersPerLngDegree = 85000; // approximate at 40° N
+    const widthMeters = lngDegrees * metersPerLngDegree;
+    const depthMeters = latDegrees * metersPerLatDegree;
+
+    const exportData = {
+      version: 1,
+      name: "Hannon's Camp America",
+      timestamp: new Date().toISOString(),
+
+      // Geographic data
+      geoBounds: currentGeoBounds,
+      center: currentCenter,
+
+      // World-space dimensions (for infinite-worlds coordinate mapping)
+      worldDimensions: {
+        width: widthMeters,
+        depth: depthMeters,
+        // Suggest placing at world origin
+        originX: 0,
+        originZ: 0,
+      },
+
+      // Heightmap data
+      heightmap: {
+        width: heightmap.width,
+        height: heightmap.height,
+        minElevation: heightmap.minElevation,
+        maxElevation: heightmap.maxElevation,
+        heights: heightsArray,
+      },
+
+      // Boundary polygon (UV coordinates relative to heightmap)
+      boundary: boundaryPoints.map(p => ({
+        u: p.uv.u,
+        v: p.uv.v,
+        worldX: p.world.x,
+        worldZ: p.world.z,
+      })),
+    };
+
+    // Create and download file
+    const json = JSON.stringify(exportData);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "hannons-camp-terrain.json";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    boundaryMessage = "Exported terrain data!";
+    console.log("Exported terrain data:", exportData);
+  }
 </script>
 
 <div class="endless-world-module">
@@ -213,12 +319,17 @@
     {satelliteTexture}
     onazimuthchange={(az) => (cameraAzimuth = az)}
     {boundaryEditMode}
-    geoBounds={currentGeoBounds}
-    onboundarychange={(points) => {
-      boundaryPoints = points;
-      boundaryMessage = `${points.length} point${points.length !== 1 ? "s" : ""} placed`;
-    }}
+    {boundaryPoints}
+    onterrainclick={handleTerrainClick}
   />
+
+  <!-- Boundary mode indicator - doesn't block clicks, just shows hint -->
+  {#if boundaryEditMode}
+    <div class="boundary-mode-indicator">
+      <i class="fas fa-crosshairs" aria-hidden="true"></i>
+      <span>Click on terrain to place fence posts</span>
+    </div>
+  {/if}
 
   <!-- Controls overlay -->
   {#if showControls}
@@ -492,6 +603,18 @@
           {#if boundaryMessage}
             <div class="boundary-message">{boundaryMessage}</div>
           {/if}
+        {/if}
+
+        <!-- Export for Infinite Worlds -->
+        {#if boundaryPoints.length >= 3 && heightmap}
+          <button
+            class="export-btn"
+            onclick={() => exportForInfiniteWorlds()}
+            disabled={isLoading}
+          >
+            <i class="fas fa-download" aria-hidden="true"></i>
+            <span>Export for Infinite Worlds</span>
+          </button>
         {/if}
       </div>
 
@@ -868,6 +991,64 @@
     font-size: 0.75rem;
     color: #22c55e;
     text-align: center;
+  }
+
+  .export-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(6, 182, 212, 0.2));
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: 10px;
+    color: #86efac;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .export-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(6, 182, 212, 0.3));
+    border-color: rgba(34, 197, 94, 0.6);
+    color: white;
+  }
+
+  .export-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Boundary mode indicator - non-blocking hint at top of screen */
+  .boundary-mode-indicator {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(249, 115, 22, 0.5);
+    border-radius: 8px;
+    color: #fdba74;
+    font-size: 0.85rem;
+    z-index: 90;
+    pointer-events: none;
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+
+  .boundary-mode-indicator i {
+    font-size: 1rem;
+    color: #f97316;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { border-color: rgba(249, 115, 22, 0.5); }
+    50% { border-color: rgba(249, 115, 22, 0.9); }
   }
 
   /* Responsive */

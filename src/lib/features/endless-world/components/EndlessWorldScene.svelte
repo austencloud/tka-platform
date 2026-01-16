@@ -6,12 +6,13 @@
    * Renders heightmap-based terrain with first-person navigation.
    */
 
-  import { T, Canvas, useThrelte } from "@threlte/core";
+  import { T, Canvas } from "@threlte/core";
   import { OrbitControls, Sky } from "@threlte/extras";
   import HeightmapTerrain from "./HeightmapTerrain.svelte";
   import BoundaryEditor from "./BoundaryEditor.svelte";
+  import BoundaryClickPlane from "./BoundaryClickPlane.svelte";
   import { generateCampgroundTerrain } from "../terrain/procedural-heightmap";
-  import type { TerrainConfig, HeightmapData, GeoBounds } from "../terrain/terrain-types";
+  import type { TerrainConfig, HeightmapData } from "../terrain/terrain-types";
   import type { OrbitControls as OrbitControlsType } from "three/examples/jsm/controls/OrbitControls.js";
 
   interface BoundaryPoint {
@@ -34,10 +35,10 @@
     onazimuthchange?: (azimuth: number) => void;
     /** Whether boundary editing mode is active */
     boundaryEditMode?: boolean;
-    /** Callback when boundary points change */
-    onboundarychange?: (points: BoundaryPoint[]) => void;
-    /** Geographic bounds for coordinate conversion */
-    geoBounds?: GeoBounds;
+    /** Boundary points to render */
+    boundaryPoints?: BoundaryPoint[];
+    /** Callback when terrain is clicked (for boundary placement) */
+    onterrainclick?: (point: { x: number; y: number; z: number }) => void;
   }
 
   let {
@@ -48,8 +49,8 @@
     satelliteTexture = null,
     onazimuthchange,
     boundaryEditMode = false,
-    onboundarychange,
-    geoBounds,
+    boundaryPoints = [],
+    onterrainclick,
   }: Props = $props();
 
   // Track orbit controls to get azimuth
@@ -161,15 +162,18 @@
       <T.MeshStandardMaterial color="#2d5a3d" roughness={0.95} />
     </T.Mesh>
 
-    <!-- Boundary Editor -->
-    {#if boundaryEditMode}
-      <BoundaryEditor
-        active={boundaryEditMode}
-        terrainConfig={terrainConfig}
-        terrainOffset={terrainOffset}
-        {geoBounds}
-        onboundarychange={onboundarychange}
+    <!-- Click detection for boundary placement -->
+    {#if boundaryEditMode && onterrainclick}
+      <BoundaryClickPlane
+        planeY={20}
+        onclick={onterrainclick}
+        enabled={boundaryEditMode}
       />
+    {/if}
+
+    <!-- Boundary markers (fence posts) -->
+    {#if boundaryPoints.length > 0}
+      <BoundaryEditor points={boundaryPoints} />
     {/if}
 
     <!-- Camera with orbit controls for exploration -->
