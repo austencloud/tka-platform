@@ -46,6 +46,7 @@
   const showClearConfirmation = $derived(
     !currentSettings?.skipClearConfirmation
   );
+  const musicianMode = $derived(currentSettings?.musicianMode ?? false);
 
   function handleToggleClearConfirmation() {
     hapticService?.trigger("selection");
@@ -61,6 +62,14 @@
     const newValue = !darkMode;
     void updateSettings({ darkMode: newValue });
     animationVisibilityManager.setDarkMode(newValue);
+  }
+
+  function handleToggleMusicianMode() {
+    hapticService?.trigger("selection");
+    onSettingUpdate?.({
+      key: "musicianMode",
+      value: !musicianMode,
+    });
   }
 </script>
 
@@ -127,6 +136,34 @@
       </button>
 
       <!-- Future preferences can be added here with the same pattern -->
+    </div>
+  </section>
+
+  <!-- Timing Display Section -->
+  <section class="section">
+    <h2 class="section-title">
+      <i class="fas fa-music" aria-hidden="true"></i>
+      Timing Display
+    </h2>
+
+    <div class="toggle-list">
+      <!-- Musician Mode -->
+      <button
+        type="button"
+        class="toggle-row"
+        onclick={handleToggleMusicianMode}
+        aria-pressed={musicianMode}
+      >
+        <div class="toggle-info">
+          <span class="toggle-label">Musician Mode</span>
+          <span class="toggle-description">
+            Show beat positions as "1 e & a" instead of decimals (1.25, 1.5)
+          </span>
+        </div>
+        <div class="toggle-switch" class:active={musicianMode}>
+          <div class="toggle-knob"></div>
+        </div>
+      </button>
     </div>
   </section>
 
@@ -221,6 +258,10 @@
     color: #00ffff;
   }
 
+  .section-title i.fa-music {
+    color: #a855f7;
+  }
+
   /* Toggle List */
   .toggle-list {
     display: flex;
@@ -269,6 +310,12 @@
     font-size: var(--font-size-base);
     font-weight: 500;
     color: var(--theme-text, #ffffff);
+  }
+
+  .toggle-description {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    line-height: 1.4;
   }
 
   /* Toggle Switch */

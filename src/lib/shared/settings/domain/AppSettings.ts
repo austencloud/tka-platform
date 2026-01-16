@@ -100,6 +100,9 @@ export interface AppSettings {
   // Global Visual Effects
   darkMode?: boolean; // Dark Mode: dark background, inverted grid, white text/outlines
 
+  // Timing Display Settings
+  musicianMode?: boolean; // Show positions as "1 e & a" instead of decimals (1.25, 1.5)
+
   // Image Export Settings
   imageExport?: {
     addWord?: boolean;
