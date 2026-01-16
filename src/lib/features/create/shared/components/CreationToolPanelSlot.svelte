@@ -257,7 +257,7 @@
                 }
 
                 const beats = pictographs.map((p, i) =>
-                  createBeatData({ ...p, beatNumber: i + 1, duration: 1000 })
+                  createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
                 );
                 assemblerSequenceState.updateSequence({
                   ...currentSeq,
@@ -285,7 +285,7 @@
                 }
 
                 const beats = pictographs.map((p, i) =>
-                  createBeatData({ ...p, beatNumber: i + 1, duration: 1000 })
+                  createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
                 );
                 assemblerSequenceState.updateSequence({
                   ...currentSeq,

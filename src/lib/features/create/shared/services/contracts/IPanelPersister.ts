@@ -46,4 +46,10 @@ export interface IPanelPersister {
    * Some panels (edit, cap) require context and won't be restored.
    */
   restoreSavedPanel(panelState: PanelCoordinationState, panelId: PanelId): void;
+
+  /**
+   * Check if a panel is supported for a given tab.
+   * Used to prevent restoring panels on tabs that don't support them.
+   */
+  isPanelSupportedForTab(panelId: PanelId, tab: string): boolean;
 }

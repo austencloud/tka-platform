@@ -326,7 +326,7 @@
                   createModuleState.sequenceState.currentSequence;
                 if (currentSeq) {
                   const beats = pictographs.map((p, i) =>
-                    createBeatData({ ...p, beatNumber: i + 1, duration: 1000 })
+                    createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
                   );
                   createModuleState.sequenceState.updateSequence({
                     ...currentSeq,
@@ -340,7 +340,7 @@
                   createModuleState.sequenceState.currentSequence;
                 if (currentSeq) {
                   const beats = pictographs.map((p, i) =>
-                    createBeatData({ ...p, beatNumber: i + 1, duration: 1000 })
+                    createBeatData({ ...p, beatNumber: i + 1, duration: 1 })
                   );
                   createModuleState.sequenceState.updateSequence({
                     ...currentSeq,

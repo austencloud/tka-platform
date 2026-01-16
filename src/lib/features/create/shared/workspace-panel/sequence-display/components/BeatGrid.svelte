@@ -24,6 +24,7 @@
     formatPosition,
   } from "../../../services/implementations/MusicalPositionCalculator";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
 
   // Services
   const hapticService = container.items.hapticFeedback;
@@ -57,9 +58,12 @@
     selectedBeatNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
+    timeSignature = undefined,
   } = $props<{
     beats: ReadonlyArray<BeatData> | BeatData[];
     startPosition?: StartPositionData | BeatData | null;
+    /** Time signature for this sequence (overrides global default) */
+    timeSignature?: TimeSignatureKey;
     onBeatClick?: (beatNumber: number) => void;
     onStartClick?: () => void;
     onBeatDelete?: (beatNumber: number) => void;
@@ -367,11 +371,15 @@
   // Musical position display settings
   const settings = $derived(getSettings());
   const musicianMode = $derived(settings.musicianMode ?? false);
+  // Use prop time signature if provided, otherwise fall back to global default
+  const effectiveTimeSignature = $derived(
+    timeSignature ?? settings.defaultTimeSignature ?? "4/4"
+  );
 
   // Calculate musical position for a beat at a given index
   function getMusicalPosition(beatIndex: number): string {
-    const subdivisionIndex = calculateSubdivisionIndex(beatIndex, beats);
-    return formatPosition(subdivisionIndex, musicianMode);
+    const subdivisionIndex = calculateSubdivisionIndex(beatIndex, beats, effectiveTimeSignature);
+    return formatPosition(subdivisionIndex, musicianMode, effectiveTimeSignature);
   }
 </script>
 

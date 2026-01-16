@@ -356,13 +356,20 @@
         // Restore previously open panel if returning to create module
         // Only restore if no deep link was processed (deep link takes priority)
         // AND there's actually a sequence to work with (canAccessEditTab)
+        // AND the panel is supported for the current tab
         if (!hasDeepLink && CreateModuleState.canAccessEditTab) {
           const currentTab = navigationState.activeTab;
           const savedPanel = navigationState.getLastPanelForTab(
             "create",
             currentTab
           );
-          if (savedPanel) {
+          if (
+            savedPanel &&
+            panelPersistenceService.isPanelSupportedForTab(
+              savedPanel as any,
+              currentTab
+            )
+          ) {
             logger.log(
               `Restoring saved panel "${savedPanel}" for tab "create:${currentTab}"`
             );

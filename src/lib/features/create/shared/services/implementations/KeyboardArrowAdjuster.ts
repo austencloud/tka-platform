@@ -82,12 +82,6 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     // Calculate screen-space adjustment (W = up on screen, etc.)
     const adjustment = this.calculateAdjustment(key, increment);
 
-    // DEBUG: Log everything to trace data corruption
-    console.log(`%c[WASD DEBUG] ========== KEY: ${key.toUpperCase()} ==========`, 'background: #ff0; color: #000; font-weight: bold');
-    console.log(`[WASD DEBUG] Calculated adjustment: x=${adjustment.x}, y=${adjustment.y}`);
-    console.log(`[WASD DEBUG] Selected arrow color: "${selectedArrow.color}"`);
-    console.log(`[WASD DEBUG] beatData.motions keys:`, Object.keys(beatData.motions));
-
     this.logger.log(
       `🎯 WASD adjustment: ${key} → (${adjustment.x}, ${adjustment.y})px for ${selectedArrow.color} arrow`
     );
@@ -96,7 +90,6 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     const currentMotion = beatData.motions[selectedArrow.color as MotionColor];
     if (!currentMotion) {
       this.logger.warn(`No motion data found for ${selectedArrow.color} arrow`);
-      console.log(`%c[WASD DEBUG] ERROR: No motion for color "${selectedArrow.color}"`, 'color: red');
       return beatData;
     }
 
@@ -106,14 +99,10 @@ export class KeyboardArrowAdjuster implements IKeyboardArrowAdjuster {
     const currentAdjustY =
       currentMotion.arrowPlacementData.manualAdjustmentY ?? 0;
 
-    console.log(`[WASD DEBUG] Current values from beatData: x=${currentAdjustX}, y=${currentAdjustY}`);
-
     // Add the new adjustment to the existing manual adjustments
     // Store in screen-space - user expects W = up, D = right, etc.
     const newAdjustX = currentAdjustX + adjustment.x;
     const newAdjustY = currentAdjustY + adjustment.y;
-
-    console.log(`[WASD DEBUG] New values (current + adjustment): x=${newAdjustX}, y=${newAdjustY}`);
 
     this.logger.log(
       `  Previous adjustment: (${currentAdjustX}, ${currentAdjustY})`

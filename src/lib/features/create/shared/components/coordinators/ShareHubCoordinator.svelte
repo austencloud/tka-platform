@@ -324,6 +324,37 @@
     }
   });
 
+  // Sync sequence data changes to animation (e.g., when user edits beat duration)
+  // This triggers when currentSequence content changes but ID stays the same
+  let lastSequenceHash = $state<string | null>(null);
+
+  function getSequenceHash(seq: SequenceData | null): string | null {
+    if (!seq) return null;
+    // Create a simple hash from beat durations to detect relevant changes
+    const beatDurations = seq.beats?.map(b => b.duration ?? 1).join(',') || '';
+    return `${seq.id || seq.word || 'unknown'}-${seq.beats?.length || 0}-${beatDurations}`;
+  }
+
+  $effect(() => {
+    if (
+      selectedFormat === "animation" &&
+      panelState.isShareHubPanelOpen &&
+      animationServicesReady &&
+      currentSequence &&
+      playbackController &&
+      lastLoadedSequenceId // Only sync after initial load
+    ) {
+      const currentHash = getSequenceHash(currentSequence);
+      if (currentHash !== lastSequenceHash && lastSequenceHash !== null) {
+        // Sequence content changed - sync to animation
+        console.log('[ShareHubCoordinator] Syncing sequence changes to animation');
+        playbackController.updateSequenceData(currentSequence);
+        animationPanelState.setSequenceData(currentSequence);
+      }
+      lastSequenceHash = currentHash;
+    }
+  });
+
   async function initializeAnimation(seq: SequenceData, sequenceId: string) {
     if (!playbackController || !sequenceService) return;
 

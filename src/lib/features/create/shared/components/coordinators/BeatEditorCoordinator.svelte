@@ -14,6 +14,7 @@
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import BeatEditorPanel from "../sequence-actions/BeatEditorPanel.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
@@ -32,6 +33,11 @@
 
   const logger = createComponentLogger("BeatEditorCoordinator");
 
+  // Tabs that support the Beat Editor Panel
+  // Only tabs with beat sequences support individual beat editing
+  // Spell tab has its own self-contained UI and doesn't use shared panels
+  const SUPPORTED_TABS = new Set(["constructor", "assembler", "generator"]);
+
   // Get context
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
@@ -40,8 +46,10 @@
   const hapticService: IHapticFeedback = container.items.hapticFeedback;
   const BeatOperator: IBeatOperator = container.items.beatOperator;
 
-  // Panel state
-  const isOpen = $derived(panelState.isBeatEditorPanelOpen);
+  // Only show panel if the current tab supports it AND panel state says it's open
+  const currentTab = $derived(navigationState.activeTab);
+  const isTabSupported = $derived(SUPPORTED_TABS.has(currentTab));
+  const isOpen = $derived(panelState.isBeatEditorPanelOpen && isTabSupported);
 
   // Get active sequence state and selected beat data
   // Use $derived.by() to ensure reactive property tracking through function calls

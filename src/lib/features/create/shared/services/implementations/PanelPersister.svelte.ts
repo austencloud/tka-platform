@@ -9,6 +9,32 @@ import { navigationState } from "$lib/shared/navigation/state/navigation-state.s
 import type { IPanelPersister, PanelId } from "../contracts/IPanelPersister";
 import type { PanelCoordinationState } from "../../state/panel-coordination-state.svelte";
 
+/**
+ * Maps panel IDs to the tabs that support them.
+ * Panels should only be restored for tabs that can actually use them.
+ *
+ * - Spell tab has its own self-contained UI and doesn't use shared panels
+ * - Beat Editor only makes sense for tabs with beat sequences
+ * - Filter is primarily for generator
+ */
+const PANEL_TAB_SUPPORT: Record<PanelId, Set<string>> = {
+  animation: new Set(["constructor", "assembler", "generator", "spell"]),
+  videoRecord: new Set(["constructor", "assembler", "generator", "spell"]),
+  filter: new Set(["constructor", "generator"]),
+  sequenceActions: new Set(["constructor", "assembler", "generator"]),
+  cap: new Set(["constructor", "assembler", "generator"]),
+  customize: new Set(["constructor", "generator"]),
+  beatEditor: new Set(["constructor", "assembler", "generator"]),
+};
+
+/**
+ * Check if a panel is supported by a given tab.
+ */
+function isPanelSupportedForTab(panelId: PanelId, tab: string): boolean {
+  const supportedTabs = PANEL_TAB_SUPPORT[panelId];
+  return supportedTabs?.has(tab) ?? false;
+}
+
 export class PanelPersister implements IPanelPersister {
   getCurrentOpenPanel(panelState: PanelCoordinationState): PanelId | null {
     if (panelState.isAnimationPanelOpen) return "animation";
@@ -51,6 +77,10 @@ export class PanelPersister implements IPanelPersister {
       // edit and cap panels require context (beat data, LOOP type)
       // so we don't restore them - they need user interaction
     }
+  }
+
+  isPanelSupportedForTab(panelId: PanelId, tab: string): boolean {
+    return isPanelSupportedForTab(panelId, tab);
   }
 
   startTracking(params: {
@@ -129,7 +159,11 @@ export class PanelPersister implements IPanelPersister {
               "create",
               currentTab
             );
-            if (savedPanel) {
+            // Only restore if the panel is supported for this tab
+            if (
+              savedPanel &&
+              isPanelSupportedForTab(savedPanel as PanelId, currentTab)
+            ) {
               // Delay to allow close animation to complete
               setTimeout(() => {
                 if (isTracking) {

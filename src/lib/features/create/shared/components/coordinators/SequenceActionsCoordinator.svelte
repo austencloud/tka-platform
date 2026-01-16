@@ -10,16 +10,26 @@
    */
 
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import SequenceActionsPanel from "../sequence-actions/SequenceActionsPanel.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
 
   const logger = createComponentLogger("SequenceActionsCoordinator");
 
+  // Tabs that support the Sequence Actions Panel
+  // Spell tab has its own self-contained UI and doesn't use shared panels
+  const SUPPORTED_TABS = new Set(["constructor", "assembler", "generator"]);
+
   // Get context
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState } = ctx;
 
-  const isEditorOpen = $derived.by(() => panelState.isSequenceActionsPanelOpen);
+  // Only show panel if the current tab supports it AND panel state says it's open
+  const currentTab = $derived(navigationState.activeTab);
+  const isTabSupported = $derived(SUPPORTED_TABS.has(currentTab));
+  const isEditorOpen = $derived.by(
+    () => panelState.isSequenceActionsPanelOpen && isTabSupported
+  );
 
   // Event handlers
   function handleClose() {

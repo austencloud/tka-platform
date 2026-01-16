@@ -82,7 +82,7 @@
     return {
       ...selectedStartPosition,
       beatNumber: 0,
-      duration: 1000,
+      duration: 1,
       blueReversal: false,
       redReversal: false,
       isBlank: false,
