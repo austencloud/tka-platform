@@ -81,6 +81,8 @@ export interface AnimationEngineProps {
   // Preview-only dark mode override - when provided, bypasses global setting
   // Used in sequence viewer preview so dark mode toggle doesn't affect global app state
   previewDarkMode?: boolean | null;
+  // Whether sequence returns to start position - controls trail clearing on loop
+  isSeamlesslyLoopable?: boolean;
 }
 
 /**
@@ -644,11 +646,12 @@ export class AnimationEngine {
     // during loading/transitions, and clearing trails causes them to disappear.
     // TrailCapturer handles clearing appropriately based on settings and loop detection.
 
-    // Update trail capturer with prop type changes
+    // Update trail capturer with prop type and loopability changes
     if (this.trailCapturer && this.settingsLoaded) {
       this.trailCapturer.updateConfig({
         bluePropType: this.state.currentBluePropType,
         redPropType: this.state.currentRedPropType,
+        isSeamlesslyLoopable: props.isSeamlesslyLoopable,
       });
     }
 

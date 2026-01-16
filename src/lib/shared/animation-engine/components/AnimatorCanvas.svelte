@@ -69,6 +69,8 @@ Last audit: 2025-12-27
     // Tunnel mode: hide TKA glyph and beat numbers (combined motions don't form a letter)
     hideTkaGlyph = false,
     hideBeatNumbers = false,
+    // Whether sequence returns to start position - controls trail clearing on loop
+    isSeamlesslyLoopable = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -91,6 +93,7 @@ Last audit: 2025-12-27
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
     hideBeatNumbers?: boolean;
+    isSeamlesslyLoopable?: boolean;
   } = $props();
 
   // Container element
@@ -181,6 +184,8 @@ Last audit: 2025-12-27
       redPropType,
       // Pass preview dark mode override to engine for background rendering
       previewDarkMode,
+      // Pass loopability for trail clearing logic
+      isSeamlesslyLoopable,
     };
     untrack(() => {
       engine.update(props);

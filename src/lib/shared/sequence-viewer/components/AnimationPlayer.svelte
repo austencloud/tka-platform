@@ -34,6 +34,8 @@
 
 	const DEFAULT_BPM = 60;
 
+	import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
 	let {
 		sequence,
 		autoPlay = true,
@@ -43,6 +45,8 @@
 		onCanvasReady,
 		previewDarkMode = null,
 		layout = "vertical" as "vertical" | "horizontal",
+		bluePropType = null,
+		redPropType = null,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -52,6 +56,8 @@
 		onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 		previewDarkMode?: boolean | null;
 		layout?: "vertical" | "horizontal";
+		bluePropType?: PropType | null;
+		redPropType?: PropType | null;
 	} = $props();
 
 	// Context for external control mode
@@ -104,6 +110,9 @@
 		void t.maxOpacity;
 		void t.glowEnabled;
 		void t.trackingMode;
+		void t.fadeStyle;
+		void t.taperStyle;
+		void t.effect;
 		return { ...t };
 	});
 
@@ -217,6 +226,8 @@
 						{trailSettings}
 						onCanvasReady={handleCanvasReady}
 						{previewDarkMode}
+						{bluePropType}
+						{redPropType}
 					/>
 
 					{#if isExporting && exportProgress}
@@ -266,6 +277,8 @@
 					{trailSettings}
 					onCanvasReady={handleCanvasReady}
 					{previewDarkMode}
+					{bluePropType}
+					{redPropType}
 				/>
 
 				{#if isExporting && exportProgress}

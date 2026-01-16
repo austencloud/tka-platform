@@ -20,6 +20,8 @@
   } from "../domain/types";
   import SequenceViewer from "./SequenceViewer.svelte";
   import ExportControlsSection from "./ExportControlsSection.svelte";
+  import SequenceViewerHelpModal from "./SequenceViewerHelpModal.svelte";
+  import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   let {
@@ -77,6 +79,9 @@
   let isEditingName = $state(false);
   let editedName = $state("");
 
+  // Help modal state
+  let showHelpModal = $state(false);
+
   // Sync editedName with sequence displayName when not editing
   $effect(() => {
     if (!isEditingName) {
@@ -132,6 +137,12 @@
     <h2 class="title">{t("viewer_sequence_viewer")}</h2>
 
     <div class="header-right">
+      <!-- Help button -->
+      <HelpButton
+        onclick={() => (showHelpModal = true)}
+        ariaLabel="Help with sequence viewer"
+      />
+
       {#if mode === "full" && onFavorite}
         <button
           class="icon-btn favorite-btn"
@@ -272,6 +283,12 @@
     </div>
   {/if}
 </div>
+
+<!-- Help Modal -->
+<SequenceViewerHelpModal
+  bind:show={showHelpModal}
+  onClose={() => (showHelpModal = false)}
+/>
 
 <style>
   .sequence-viewer-panel {

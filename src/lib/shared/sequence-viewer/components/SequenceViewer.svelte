@@ -24,7 +24,6 @@
 	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import { tryGetAnimationExportContext } from "$lib/shared/share-hub/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-	import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 	import { authState } from "$lib/shared/auth/state/authState.svelte";
 	import { browser } from "$app/environment";
 
@@ -73,52 +72,10 @@
 
 	onDestroy(() => {
 		imageSettings.unregisterObserver(handleImageSettingsChange);
-		animationSettings.unregisterObserver(handleAnimationSettingsChange);
 	});
 
 	// Image export settings from ImageCompositionManager
 	const imageSettings = getImageCompositionManager();
-
-	// Animation visibility settings
-	const animationSettings = getAnimationVisibilityManager();
-	// Note: Dark mode uses imageSettings for persistence - shared between image & animation tabs
-	// This is separate from the global app dark mode
-	let animGridVisible = $state(animationSettings.getGridMode() !== "none");
-	let animBeatNumbers = $state(animationSettings.getVisibility("beatNumbers"));
-	let animTkaGlyph = $state(animationSettings.getVisibility("tkaGlyph"));
-	let animWordHeader = $state(animationSettings.getVisibility("wordHeader"));
-	let animTrails = $state(animationSettings.getTrailStyle() !== "off");
-
-	function handleAnimationSettingsChange() {
-		animGridVisible = animationSettings.getGridMode() !== "none";
-		animBeatNumbers = animationSettings.getVisibility("beatNumbers");
-		animTkaGlyph = animationSettings.getVisibility("tkaGlyph");
-		animWordHeader = animationSettings.getVisibility("wordHeader");
-		animTrails = animationSettings.getTrailStyle() !== "off";
-	}
-
-	animationSettings.registerObserver(handleAnimationSettingsChange);
-
-	// Animation toggle handlers
-	function toggleAnimGrid() {
-		// Toggle between diamond and none
-		const current = animationSettings.getGridMode();
-		animationSettings.setGridMode(current === "none" ? "diamond" : "none");
-	}
-	function toggleAnimBeatNumbers() {
-		animationSettings.toggleVisibility("beatNumbers");
-	}
-	function toggleAnimTkaGlyph() {
-		animationSettings.toggleVisibility("tkaGlyph");
-	}
-	function toggleAnimWordHeader() {
-		animationSettings.toggleVisibility("wordHeader");
-	}
-	function toggleAnimTrails() {
-		// Toggle between subtle and off
-		const current = animationSettings.getTrailStyle();
-		animationSettings.setTrailStyle(current === "off" ? "subtle" : "off");
-	}
 
 	// Local export settings (for Share Hub mode)
 	let localAddWord = $state(imageSettings.addWord);
@@ -498,58 +455,6 @@
 						layout={useHorizontalLayout ? "horizontal" : "vertical"}
 					/>
 				</div>
-
-				<!-- Animation Visibility Settings Chips (only shown in Share Hub, not browse mode) -->
-				<!-- When controlsLevel="full", these are redundant with AnimationPlayer's Visual tab -->
-				{#if showVisibilitySettings && controlsLevel !== "full"}
-					<div class="settings-chips">
-						<button
-							type="button"
-							class="chip"
-							class:active={animGridVisible}
-							onclick={toggleAnimGrid}
-							aria-pressed={animGridVisible}
-						>
-							Grid
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={animBeatNumbers}
-							onclick={toggleAnimBeatNumbers}
-							aria-pressed={animBeatNumbers}
-						>
-							Beat #s
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={animTkaGlyph}
-							onclick={toggleAnimTkaGlyph}
-							aria-pressed={animTkaGlyph}
-						>
-							TKA Glyph
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={animWordHeader}
-							onclick={toggleAnimWordHeader}
-							aria-pressed={animWordHeader}
-						>
-							Word
-						</button>
-						<button
-							type="button"
-							class="chip"
-							class:active={animTrails}
-							onclick={toggleAnimTrails}
-							aria-pressed={animTrails}
-						>
-							Trails
-						</button>
-					</div>
-				{/if}
 			</div>
 		{:else if activeMediaType === "video"}
 			<!-- Video View -->
