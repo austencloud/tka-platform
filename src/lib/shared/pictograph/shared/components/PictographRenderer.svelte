@@ -62,6 +62,7 @@ Usage:
     // Beat number display
     beatNumber = null,
     showBeatNumber = false,
+    musicalPosition = undefined,
     previewMode = false,
     // Grid mode override (if provided, takes precedence over calculated mode)
     gridModeOverride = null,

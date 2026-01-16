@@ -77,7 +77,14 @@ export class ArrowPositioningOrchestrator implements IArrowPositioningOrchestrat
       const finalX = validPosition.x + adjustmentX;
       const finalY = validPosition.y + adjustmentY;
 
-      console.log(`[ArrowPosition] ${pictographData.letter} ${motion.color}: base=(${validPosition.x}, ${validPosition.y}), adj=(${adjustmentX}, ${adjustmentY}), final=(${finalX}, ${finalY})`);
+      // Debug: trace each component of the calculation
+      console.log(`%c[CalcArrowPoint] ${motion.color}:`, 'color: #ff00ff', {
+        location,
+        initialPos: { x: initialPosition.x, y: initialPosition.y },
+        validPos: { x: validPosition.x, y: validPosition.y },
+        adjustment: { x: adjustmentX, y: adjustmentY },
+        final: { x: finalX, y: finalY }
+      });
 
       return [finalX, finalY, rotation];
     } catch (error) {

@@ -13,7 +13,7 @@ import { createContainer } from "iti";
 
 // === TIER 0: No dependencies ===
 import { AngleCalculator } from "$lib/features/compose/services/implementations/AngleCalculator";
-import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoopService";
+import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
 import { BeatCalculator } from "$lib/features/compose/services/implementations/BeatCalculator";
 import { CanvasRenderer } from "$lib/features/compose/services/implementations/CanvasRenderer";

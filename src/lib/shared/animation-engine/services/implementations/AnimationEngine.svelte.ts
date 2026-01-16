@@ -648,6 +648,10 @@ export class AnimationEngine {
 
     // Update trail capturer with prop type and loopability changes
     if (this.trailCapturer && this.settingsLoaded) {
+      // DEBUG: Log what we're passing
+      if (props.isSeamlesslyLoopable !== undefined) {
+        console.log('[AnimationEngine] Passing isSeamlesslyLoopable to TrailCapturer:', props.isSeamlesslyLoopable);
+      }
       this.trailCapturer.updateConfig({
         bluePropType: this.state.currentBluePropType,
         redPropType: this.state.currentRedPropType,

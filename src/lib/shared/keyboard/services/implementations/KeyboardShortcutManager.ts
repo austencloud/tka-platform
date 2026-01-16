@@ -193,7 +193,6 @@ export class KeyboardShortcutManager implements IKeyboardShortcutManager {
     const key = event.key.toLowerCase();
     if (selectedArrowState.selectedArrow && ["w", "a", "s", "d"].includes(key)) {
       // Arrow is selected, let ArrowAdjustmentPanel handle WASD
-      console.log("[KeyboardShortcutManager] Arrow selected, yielding WASD to ArrowAdjustmentPanel");
       return;
     }
 

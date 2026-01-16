@@ -81,6 +81,8 @@ with pre-prepared data for better performance.
     // When provided, passed to PictographPreparer for consistency during async operations
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    // Musical position string for beat number display
+    musicalPosition = undefined,
   } = $props<{
     pictographData?: (BeatData | PictographData) | null;
     disableTransitions?: boolean;
@@ -110,6 +112,8 @@ with pre-prepared data for better performance.
     bluePropTypeOverride?: PropType;
     /** Explicit prop type for red hand. Export/thumbnail rendering provides this for consistency. */
     redPropTypeOverride?: PropType;
+    /** Musical position string (e.g., "1", "1.5", "2e") - overrides beat number display when present */
+    musicalPosition?: string;
   }>();
 
   // Extract beat context from BeatData if available
@@ -361,6 +365,7 @@ with pre-prepared data for better performance.
         {activeLocations}
         {beatNumber}
         {showBeatNumber}
+        {musicalPosition}
         {previewMode}
         gridModeOverride={overrideGridMode}
         {visibleHand}
@@ -395,6 +400,7 @@ with pre-prepared data for better performance.
             {activeLocations}
             {beatNumber}
             {showBeatNumber}
+            {musicalPosition}
             {previewMode}
             gridModeOverride={overrideGridMode}
             {visibleHand}

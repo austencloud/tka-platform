@@ -16,6 +16,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     isStartPosition = false,
     hasValidData = true,
     darkMode = undefined,
+    musicalPosition = undefined,
   } = $props<{
     /** The beat number to display */
     beatNumber?: number | null;
@@ -27,6 +28,8 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     hasValidData?: boolean;
     /** Dark mode override for export. When set, overrides visibility manager state. */
     darkMode?: boolean;
+    /** Musical position string (e.g., "1", "1.5", "2e") - overrides beatNumber display when present */
+    musicalPosition?: string;
   }>();
 
   // Get centralized visibility manager for dark mode state
@@ -71,10 +74,14 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     return hasValidData && beatNumber === 0;
   });
 
-  // Get display text - either beat number or "Start"
+  // Get display text - musical position (if available), beat number, or "Start"
   const displayText = $derived.by(() => {
     if (beatNumber === 0) {
       return "Start";
+    }
+    // Use musical position if provided, otherwise fall back to beat number
+    if (musicalPosition !== undefined) {
+      return musicalPosition;
     }
     return beatNumber?.toString() || "";
   });
@@ -92,7 +99,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     font-weight="bold"
     fill={fillColor}
   >
-    {beatNumber}
+    {displayText}
   </text>
 {:else if shouldRenderStartText}
   <text

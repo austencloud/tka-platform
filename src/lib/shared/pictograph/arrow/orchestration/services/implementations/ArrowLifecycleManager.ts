@@ -3,6 +3,10 @@
  *
  * Single responsibility service for coordinating all arrow lifecycle operations.
  * Orchestrates loading, positioning, and state management for arrows.
+ *
+ * Manual adjustments from WASD are stored and applied in SCREEN-SPACE directly.
+ * No transformation is needed because the user expects WASD to move arrows
+ * in screen directions (W = up, D = right, etc.).
  */
 
 import type { PictographData } from "../../../../shared/domain/models/PictographData";
@@ -78,13 +82,29 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
         options?.gridMode
       );
 
-    // Apply manual adjustments from keyboard controls (WASD)
-    const manualAdjustX = motionData.arrowPlacementData.manualAdjustmentX || 0;
-    const manualAdjustY = motionData.arrowPlacementData.manualAdjustmentY || 0;
+    // IMPORTANT: calculateArrowPoint() returns the base position + calculated
+    // adjustments (from special/default placement JSON files), but does NOT
+    // include manual adjustments from WASD controls.
+    // Manual adjustments must be applied HERE for rendering.
+    const manualAdjustX = motionData.arrowPlacementData?.manualAdjustmentX ?? 0;
+    const manualAdjustY = motionData.arrowPlacementData?.manualAdjustmentY ?? 0;
+
+    const finalX = x + manualAdjustX;
+    const finalY = y + manualAdjustY;
+
+    console.log(`%c[ArrowLifecycle] ${motionData.color} position:`, 'color: #00ff00', {
+      baseX: x,
+      baseY: y,
+      manualX: manualAdjustX,
+      manualY: manualAdjustY,
+      finalX,
+      finalY,
+      rotation
+    });
 
     return createArrowPosition({
-      x: x + manualAdjustX,
-      y: y + manualAdjustY,
+      x: finalX,
+      y: finalY,
       rotation,
     });
   }

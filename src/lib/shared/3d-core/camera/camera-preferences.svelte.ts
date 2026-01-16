@@ -94,6 +94,16 @@ export function createCameraPreferences() {
 }
 
 /**
+ * Built-in defaults per destination (see docs/DESTINATIONS-VISION.md)
+ * - Stage: 3rd person (director's view for choreography)
+ * - Gallery/Worlds: 1st person (immersive exploration)
+ */
+const DESTINATION_DEFAULTS: Record<string, CameraMode> = {
+	stage: CameraMode.THIRD_PERSON,
+	// gallery and endless-world use globalDefault (first-person)
+};
+
+/**
  * Load preferences from localStorage
  */
 function loadFromStorage(): CameraPreferencesData {
@@ -106,17 +116,24 @@ function loadFromStorage(): CameraPreferencesData {
 				parsed.globalDefault &&
 				Object.values(CameraMode).includes(parsed.globalDefault)
 			) {
-				return parsed;
+				// Merge with built-in defaults (user overrides take precedence)
+				return {
+					globalDefault: parsed.globalDefault,
+					destinationOverrides: {
+						...DESTINATION_DEFAULTS,
+						...parsed.destinationOverrides,
+					},
+				};
 			}
 		}
 	} catch (err) {
 		console.warn("Failed to load camera preferences:", err);
 	}
 
-	// Return defaults
+	// Return defaults with built-in destination overrides
 	return {
 		globalDefault: CameraMode.FIRST_PERSON,
-		destinationOverrides: {},
+		destinationOverrides: { ...DESTINATION_DEFAULTS },
 	};
 }
 
