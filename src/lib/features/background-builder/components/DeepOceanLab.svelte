@@ -13,7 +13,7 @@
   import ChipGroup from "$lib/shared/components/selection/ChipGroup.svelte";
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
-  import { browser } from "$app/environment";
+  import PersonalityBars from "./PersonalityBars.svelte";
 
   type ColorPreset = "default" | "cyan" | "blue" | "lime" | "amber" | "rose" | "emerald" | "red" | "gray";
 
@@ -232,12 +232,11 @@
     const homeZone = f.homeZone;
     if (!homeZone) return;
 
-    const radius = 150; // Base home zone radius
+    const radius = 150;
     const isSelected = fishList[selectedFishIndex] === f;
 
     ctx.save();
 
-    // Draw zone circle
     ctx.strokeStyle = isSelected
       ? `rgba(34, 211, 238, ${0.3 + homeZone.affinity * 0.4})`
       : `rgba(100, 150, 200, ${0.15 + homeZone.affinity * 0.2})`;
@@ -248,7 +247,6 @@
     ctx.arc(homeZone.x, homeZone.y, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Draw connection line from fish to home zone center
     if (isSelected) {
       const headJoint = f.spineJoints?.[0];
       const fishX = headJoint?.x ?? f.x;
@@ -262,7 +260,6 @@
       ctx.lineTo(homeZone.x, homeZone.y);
       ctx.stroke();
 
-      // Draw home marker
       ctx.fillStyle = "rgba(34, 211, 238, 0.6)";
       ctx.beginPath();
       ctx.arc(homeZone.x, homeZone.y, 4, 0, Math.PI * 2);
@@ -298,7 +295,6 @@
 
       ctx.save();
 
-      // Draw line from predator to prey
       const isChasing = hunt.state === "chasing";
       ctx.strokeStyle = isChasing ? "rgba(239, 68, 68, 0.6)" : "rgba(249, 115, 22, 0.4)";
       ctx.lineWidth = isChasing ? 2 : 1;
@@ -309,13 +305,11 @@
       ctx.lineTo(preyX, preyY);
       ctx.stroke();
 
-      // Draw state label above predator
       ctx.font = "10px monospace";
       ctx.textAlign = "center";
       ctx.fillStyle = isChasing ? "#ef4444" : "#f97316";
       ctx.fillText(hunt.state.toUpperCase(), predatorX, predatorY - predator.bodyLength - 8);
 
-      // Draw target marker on prey
       ctx.strokeStyle = "#ef4444";
       ctx.lineWidth = 2;
       ctx.setLineDash([]);
@@ -533,7 +527,7 @@
       partner = actualFish.find((other, idx) => idx !== selectedFishIndex);
     }
 
-    // Use the wobble animator directly for simplicity
+    // Set wobble animation with appropriate duration
     const wobbleType = type as FishMarineLife["wobbleType"];
     f.wobbleType = wobbleType;
     f.wobbleTimer = type === "barrel_roll" ? 0.8 : type === "freeze" ? 0.6 : 0.5;
@@ -696,24 +690,7 @@
           </div>
         </div>
         {#if selectedFish.personality}
-          <div class="personality-bars">
-            <div class="trait">
-              <span>Boldness</span>
-              <div class="bar"><div class="fill" style="width: {selectedFish.personality.boldness * 100}%"></div></div>
-            </div>
-            <div class="trait">
-              <span>Sociability</span>
-              <div class="bar"><div class="fill" style="width: {selectedFish.personality.sociability * 100}%"></div></div>
-            </div>
-            <div class="trait">
-              <span>Activity</span>
-              <div class="bar"><div class="fill" style="width: {selectedFish.personality.activity * 100}%"></div></div>
-            </div>
-            <div class="trait">
-              <span>Curiosity</span>
-              <div class="bar"><div class="fill" style="width: {selectedFish.personality.curiosity * 100}%"></div></div>
-            </div>
-          </div>
+          <PersonalityBars personality={selectedFish.personality} />
         {/if}
       {/if}
     </CollapsibleLabSection>
@@ -1017,41 +994,6 @@
     font-weight: 600;
     color: #22d3ee;
     text-transform: capitalize;
-  }
-
-  /* Personality Bars */
-  .personality-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .trait {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .trait span {
-    font-size: 0.65rem;
-    color: #9ca3af;
-    width: 60px;
-    flex-shrink: 0;
-  }
-
-  .bar {
-    flex: 1;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .fill {
-    height: 100%;
-    background: linear-gradient(90deg, #06b6d4, #22d3ee);
-    border-radius: 3px;
-    transition: width 0.3s ease;
   }
 
   /* Stats Grid */
