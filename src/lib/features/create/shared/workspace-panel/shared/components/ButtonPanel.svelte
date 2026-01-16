@@ -36,6 +36,11 @@
   // Show help button only on generator tab (mobile only - CSS handles desktop hide)
   const showGeneratorHelp = $derived(navigationState.activeTab === "generator");
 
+  // Hide help button when beat editor or share hub is open (not relevant in those contexts)
+  const shouldHideHelpButton = $derived(
+    panelState.isBeatEditorPanelOpen || panelState.isShareHubPanelOpen
+  );
+
   // Props interface - only event handler callbacks
   const {
     onClearSequence,
@@ -126,7 +131,11 @@
     <!-- RIGHT ZONE: Help button (mobile only) + Clear Sequence button (rightmost) -->
     <div class="right-zone">
       {#if showGeneratorHelp}
-        <div class="mobile-only" transition:presenceTransition>
+        <div
+          class="mobile-only"
+          class:faded-out={shouldHideHelpButton}
+          transition:presenceTransition
+        >
           <GeneratorHelpButton onclick={() => panelState.triggerGeneratorHelpMode()} />
         </div>
       {/if}
@@ -208,6 +217,17 @@
     .mobile-only {
       display: none;
     }
+  }
+
+  /* Fade out help button when beat editor is open */
+  .faded-out {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease-out;
+  }
+
+  .mobile-only:not(.faded-out) {
+    transition: opacity 200ms ease-in;
   }
 
   /* Remove mobile tap highlight (blue selection box) */

@@ -206,11 +206,18 @@ export function createCreateModuleState(
 
   /**
    * Check if sequence actions button can be shown
+   * Shows when there's a start position OR beats (not just beats)
    */
   function canShowSequenceActionsButton(): boolean {
     const activeSequenceState = getActiveTabSequenceState();
-    const beatCount = activeSequenceState.beatCount();
-    return beatCount > 0;
+    const sequence = activeSequenceState.currentSequence;
+    if (!sequence) return false;
+
+    const hasBeat = sequence.beats && sequence.beats.length > 0;
+    const hasStartPosition = !!(
+      sequence.startingPositionBeat || sequence.startPosition
+    );
+    return hasBeat || hasStartPosition;
   }
 
   /**

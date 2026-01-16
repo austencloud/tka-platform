@@ -128,6 +128,7 @@
 
     // Handle WASD movement
     if (["w", "a", "s", "d"].includes(key)) {
+      console.log("[ArrowAdjustmentPanel] WASD key pressed:", key);
       event.preventDefault();
       handleWASDMovement(key as "w" | "a" | "s" | "d");
     }
@@ -140,12 +141,24 @@
   }
 
   function handleWASDMovement(key: "w" | "a" | "s" | "d") {
+    console.log("[ArrowAdjustmentPanel] handleWASDMovement called", {
+      hasSelectedArrow: !!selectedArrowState.selectedArrow,
+      hasBeatData: !!beatData,
+      hasService: !!keyboardAdjustmentService,
+    });
+
     if (!selectedArrowState.selectedArrow || !beatData || !keyboardAdjustmentService) {
+      console.log("[ArrowAdjustmentPanel] Early return - missing:", {
+        selectedArrow: !selectedArrowState.selectedArrow,
+        beatData: !beatData,
+        service: !keyboardAdjustmentService,
+      });
       return;
     }
 
     const adjustment = keyboardAdjustmentService.calculateAdjustment(key, currentIncrement);
     lastAdjustment = adjustment;
+    console.log("[ArrowAdjustmentPanel] Calculated adjustment:", adjustment);
 
     const updatedBeatData = keyboardAdjustmentService.handleWASDMovement(
       key,
@@ -154,6 +167,7 @@
       beatData
     );
 
+    console.log("[ArrowAdjustmentPanel] Calling onBeatDataUpdate with updated data");
     onBeatDataUpdate(updatedBeatData);
     hapticService?.trigger("selection");
   }
@@ -164,16 +178,25 @@
   }
 
   onMount(() => {
+    console.log("[ArrowAdjustmentPanel] Mounting...");
     try {
       hapticService = container.items.hapticFeedback;
       keyboardAdjustmentService = container.items.keyboardArrowAdjuster;
+      console.log("[ArrowAdjustmentPanel] Services initialized:", {
+        haptic: !!hapticService,
+        keyboardAdjuster: !!keyboardAdjustmentService,
+      });
     } catch (error) {
       console.error("[ArrowAdjustmentPanel] Failed to initialize services:", error);
     }
 
     // Add keyboard listener
+    console.log("[ArrowAdjustmentPanel] Adding keyboard listener");
     window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
+    return () => {
+      console.log("[ArrowAdjustmentPanel] Removing keyboard listener");
+      window.removeEventListener("keydown", handleKeydown);
+    };
   });
 </script>
 

@@ -392,9 +392,12 @@
           style:grid-column="1"
           onclick={handleStartClick}
           onkeydown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+            if (e.key === "Enter") {
               e.preventDefault();
               handleStartClick();
+            } else if (e.key === " ") {
+              // Prevent browser default click, let global shortcuts handle Space
+              e.preventDefault();
             }
           }}
           aria-label="Start Position"
@@ -476,9 +479,12 @@
             style:grid-column="1"
             onclick={handleStartClick}
             onkeydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+              if (e.key === "Enter") {
                 e.preventDefault();
                 handleStartClick();
+              } else if (e.key === " ") {
+                // Prevent browser default click, let global shortcuts handle Space
+                e.preventDefault();
               }
             }}
             aria-label="Start Position"

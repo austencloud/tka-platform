@@ -211,6 +211,11 @@
   }
 
   function handleBeatDataUpdate(updatedBeatData: typeof selectedBeatData) {
+    console.log("[BeatEditorCoordinator] handleBeatDataUpdate called", {
+      beatNumber: selectedBeatNumber,
+      hasUpdatedData: !!updatedBeatData,
+    });
+
     if (selectedBeatNumber === null || !updatedBeatData) return;
 
     const currentSequence = activeSequenceState.currentSequence;
@@ -227,6 +232,7 @@
     const updatedBeats = [...(currentSequence.beats ?? [])];
     updatedBeats[beatIndex] = updatedBeatData;
 
+    console.log("[BeatEditorCoordinator] Updating sequence with new beat data");
     activeSequenceState.setCurrentSequence({
       ...currentSequence,
       beats: updatedBeats,

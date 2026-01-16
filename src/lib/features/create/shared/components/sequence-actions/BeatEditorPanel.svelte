@@ -14,6 +14,8 @@
   import TurnsEditMode from "./TurnsEditMode.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
+  import BeatEditorHelpModal from "./BeatEditorHelpModal.svelte";
+  import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import BeatGrid from "../../workspace-panel/sequence-display/components/BeatGrid.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
   import type { BeatData } from "../../domain/models/BeatData";
@@ -158,6 +160,9 @@
   // Inspect modal state (admin-only)
   let showInspectModal = $state(false);
 
+  // Help modal state
+  let showHelpModal = $state(false);
+
   function handleClose() {
     selectedArrowState.clearSelection();
     onClose();
@@ -176,6 +181,10 @@
   }
 
   function handleBeatDataUpdate(updatedBeatData: BeatData) {
+    console.log("[BeatEditorPanel] handleBeatDataUpdate called", {
+      hasCallback: !!onBeatDataUpdate,
+      hasData: !!updatedBeatData,
+    });
     // Forward to parent for persistence
     onBeatDataUpdate?.(updatedBeatData);
     // Also update the displayed beat data locally for immediate visual feedback
@@ -202,6 +211,12 @@
         <span class="subtitle">{beatLabel}</span>
       </div>
       <div class="header-actions">
+        <!-- Help button -->
+        <HelpButton
+          onclick={() => (showHelpModal = true)}
+          ariaLabel="Help with beat editor"
+          size="compact"
+        />
         {#if isAdmin() && hasSelection && displayedBeatData}
           <button
             class="icon-btn inspect"
@@ -310,6 +325,12 @@
   show={showInspectModal}
   beatData={displayedBeatData}
   onClose={handleCloseInspect}
+/>
+
+<!-- Help Modal -->
+<BeatEditorHelpModal
+  bind:show={showHelpModal}
+  onClose={() => (showHelpModal = false)}
 />
 
 <style>

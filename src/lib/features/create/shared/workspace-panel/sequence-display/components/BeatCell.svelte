@@ -204,11 +204,18 @@
   }
 
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === "Enter") {
+      // Enter activates the beat (accessibility)
       event.preventDefault();
-      // Trigger haptic feedback for keyboard interaction
       hapticService?.trigger("selection");
       onClick?.();
+    } else if (event.key === " ") {
+      // Space is reserved for animation controls (play/pause)
+      // Prevent browser default (which would trigger a click on this button-like element)
+      // but let the event bubble up to global keyboard shortcut handler
+      event.preventDefault();
+      // Don't call onClick - let global shortcuts handle Space
+      return;
     } else if (event.key === "Delete" || event.key === "Backspace") {
       // Allow deletion if beat is selected (including start position)
       if (isSelected) {
