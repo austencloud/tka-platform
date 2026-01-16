@@ -49,9 +49,13 @@
     type SystemContext,
   } from "../core/systems";
   import { generateWorldSeed, encodeSeed, SeededNoise, getBiome } from "../generation/seed-generator";
+  import { type ImportedTerrainData, isPointInPolygon } from "../generation/real-terrain-zone";
   import { VegetationManager } from "../rendering/instanced-vegetation";
   import { AtmosphereManager } from "../rendering/atmosphere";
   import { WaterManager } from "../rendering/water";
+
+  // Import Hannon's Camp terrain data
+  import hannonsTerrainData from "../data/hannons-camp-terrain.json";
   import {
     BufferGeometry,
     BufferAttribute,
@@ -77,12 +81,15 @@
     viewDistance?: number;
     /** Show debug info overlay */
     showDebug?: boolean;
+    /** Auto-load Hannon's Camp terrain on mount */
+    autoLoadHannons?: boolean;
   }
 
   let {
     seed,
     viewDistance = 256,
     showDebug = false,
+    autoLoadHannons = false,
   }: Props = $props();
 
   // ============================================================================
@@ -118,6 +125,10 @@
   let rendererType = $state("Unknown");
   let isLocked = $state(false);
   let currentBiome = $state("forest");
+  let hannonsLoaded = $state(false);
+  let zoneBounds = $state<{ minX: number; maxX: number; minZ: number; maxZ: number } | null>(null);
+  let zoneBoundary = $state<Array<{ x: number; z: number }>>([]);
+  let isInsideZone = $state(false);
 
   // World
   const worldSeed = seed ?? generateWorldSeed();
@@ -248,6 +259,12 @@
     // Start animation loop
     lastTime = performance.now();
     animate(lastTime);
+
+    // Auto-load Hannon's Camp if requested
+    if (autoLoadHannons) {
+      // Small delay to ensure chunk manager is ready
+      setTimeout(() => loadHannonsCamp(), 100);
+    }
   });
 
   onDestroy(() => {
@@ -404,6 +421,53 @@
     }
   }
 
+  function loadHannonsCamp(): void {
+    if (!chunkManager) return;
+
+    // Calculate the center of the terrain zone from boundary points
+    // The boundary has worldX/worldZ coordinates we need to navigate to
+    const boundary = (hannonsTerrainData as ImportedTerrainData).boundary;
+    let minX = Infinity, maxX = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const p of boundary) {
+      minX = Math.min(minX, p.worldX);
+      maxX = Math.max(maxX, p.worldX);
+      minZ = Math.min(minZ, p.worldZ);
+      maxZ = Math.max(maxZ, p.worldZ);
+    }
+    const centerX = (minX + maxX) / 2;
+    const centerZ = (minZ + maxZ) / 2;
+
+    // Store zone data for UI
+    zoneBounds = { minX, maxX, minZ, maxZ };
+    zoneBoundary = boundary.map(p => ({ x: p.worldX, z: p.worldZ }));
+
+    console.log(`[InfiniteWorlds] Zone bounds: X(${minX.toFixed(0)} to ${maxX.toFixed(0)}), Z(${minZ.toFixed(0)} to ${maxZ.toFixed(0)})`);
+    console.log(`[InfiniteWorlds] Zone center: (${centerX.toFixed(0)}, ${centerZ.toFixed(0)})`);
+
+    // Load the real terrain zone
+    chunkManager.loadRealTerrainZone(hannonsTerrainData as ImportedTerrainData);
+    hannonsLoaded = true;
+
+    // Teleport player to the center of the actual terrain zone
+    // Higher Y to start above terrain while chunks load
+    handleTeleport(centerX, 100, centerZ);
+
+    console.log(`[InfiniteWorlds] Loaded Hannon's Camp, teleporting to center: (${centerX.toFixed(0)}, ${centerZ.toFixed(0)})`);
+  }
+
+  function clearHannonsCamp(): void {
+    if (!chunkManager) return;
+
+    chunkManager.clearRealTerrainZone();
+    hannonsLoaded = false;
+    zoneBounds = null;
+    zoneBoundary = [];
+    isInsideZone = false;
+
+    console.log("[InfiniteWorlds] Cleared Hannon's Camp terrain zone");
+  }
+
   // ============================================================================
   // GAME LOOP
   // ============================================================================
@@ -446,6 +510,11 @@
         };
         // Update current biome based on player position
         currentBiome = getBiome(worldNoise, camera.position.x, camera.position.z);
+
+        // Check if inside zone boundary
+        if (zoneBoundary.length > 0) {
+          isInsideZone = isPointInPolygon(camera.position.x, camera.position.z, zoneBoundary);
+        }
       }
     }
 
@@ -502,6 +571,19 @@
         <p><strong>Space</strong> to jump</p>
         <p><strong>ESC</strong> to release cursor</p>
       </div>
+      <div class="terrain-buttons">
+        {#if !hannonsLoaded}
+          <button class="terrain-btn hannons" onclick={loadHannonsCamp}>
+            <i class="fas fa-campground" aria-hidden="true"></i>
+            Load Hannon's Camp
+          </button>
+        {:else}
+          <button class="terrain-btn clear" onclick={clearHannonsCamp}>
+            <i class="fas fa-times" aria-hidden="true"></i>
+            Clear Real Terrain
+          </button>
+        {/if}
+      </div>
     </div>
   {/if}
 
@@ -512,6 +594,67 @@
     onToggleWater={handleToggleWater}
     onToggleFog={handleToggleFog}
   />
+
+  {#if hannonsLoaded && zoneBounds}
+    <div class="zone-overlay">
+      <div class="zone-header">
+        <i class="fas fa-campground" aria-hidden="true"></i>
+        <span>Hannon's Camp</span>
+        <span class="zone-status" class:inside={isInsideZone}>
+          {isInsideZone ? "INSIDE ZONE" : "OUTSIDE ZONE"}
+        </span>
+      </div>
+
+      <div class="zone-info">
+        <div class="info-row">
+          <span class="label">Position:</span>
+          <span class="value">X: {playerPos.x.toFixed(0)}, Z: {playerPos.z.toFixed(0)}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Zone X:</span>
+          <span class="value">{zoneBounds.minX.toFixed(0)} to {zoneBounds.maxX.toFixed(0)}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Zone Z:</span>
+          <span class="value">{zoneBounds.minZ.toFixed(0)} to {zoneBounds.maxZ.toFixed(0)}</span>
+        </div>
+      </div>
+
+      <!-- Mini-map -->
+      <div class="minimap">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- Zone boundary polygon -->
+          {#if zoneBoundary.length > 0}
+            {@const mapScale = 180 / Math.max(zoneBounds.maxX - zoneBounds.minX, zoneBounds.maxZ - zoneBounds.minZ)}
+            {@const offsetX = 100 - ((zoneBounds.maxX + zoneBounds.minX) / 2) * mapScale}
+            {@const offsetZ = 100 - ((zoneBounds.maxZ + zoneBounds.minZ) / 2) * mapScale}
+            <polygon
+              points={zoneBoundary.map(p => `${p.x * mapScale + offsetX},${p.z * mapScale + offsetZ}`).join(" ")}
+              fill="rgba(249, 115, 22, 0.3)"
+              stroke="#f97316"
+              stroke-width="2"
+            />
+            <!-- Player position -->
+            <circle
+              cx={playerPos.x * mapScale + offsetX}
+              cy={playerPos.z * mapScale + offsetZ}
+              r="6"
+              fill={isInsideZone ? "#22c55e" : "#ef4444"}
+              stroke="white"
+              stroke-width="2"
+            />
+            <!-- Player direction indicator -->
+            <circle
+              cx={playerPos.x * mapScale + offsetX}
+              cy={playerPos.z * mapScale + offsetZ}
+              r="3"
+              fill="white"
+            />
+          {/if}
+        </svg>
+      </div>
+    </div>
+  {/if}
 
   {#if showDebug}
     <div class="debug-overlay">
@@ -639,5 +782,126 @@
 
   .debug-row .value {
     color: #60a5fa;
+  }
+
+  .terrain-buttons {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .terrain-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    pointer-events: auto;
+  }
+
+  .terrain-btn.hannons {
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: white;
+  }
+
+  .terrain-btn.hannons:hover {
+    background: linear-gradient(135deg, #fb923c, #f97316);
+    transform: scale(1.02);
+  }
+
+  .terrain-btn.clear {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .terrain-btn.clear:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+
+  /* Zone overlay with minimap */
+  .zone-overlay {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 16px;
+    border-radius: 12px;
+    border: 2px solid #f97316;
+    color: white;
+    font-family: system-ui, sans-serif;
+    min-width: 220px;
+  }
+
+  .zone-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .zone-header i {
+    color: #f97316;
+    font-size: 18px;
+  }
+
+  .zone-header span:first-of-type {
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .zone-status {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #ef4444;
+  }
+
+  .zone-status.inside {
+    background: #22c55e;
+  }
+
+  .zone-info {
+    margin-bottom: 12px;
+  }
+
+  .zone-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin: 4px 0;
+  }
+
+  .zone-info .label {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .zone-info .value {
+    color: #60a5fa;
+    font-family: monospace;
+  }
+
+  .minimap {
+    background: rgba(30, 30, 50, 0.8);
+    border-radius: 8px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .minimap svg {
+    width: 100%;
+    height: 180px;
+    display: block;
   }
 </style>

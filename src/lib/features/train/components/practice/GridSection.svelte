@@ -1,47 +1,47 @@
 <!--
   GridSection.svelte - Beat Grid visualization wrapper for Practice tab
 
-  Displays the BeatGrid component with proper aspect ratio and empty state.
+  Displays the StepGrid component with proper aspect ratio and empty state.
   Used as one of the visualization panels in the Practice view.
 -->
 <script lang="ts">
-  import BeatGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
     sequence: SequenceData | null;
-    currentBeatIndex?: number;
-    onBeatSelect?: (beatIndex: number) => void;
+    currentStepIndex?: number;
+    onStepSelect?: (stepIndex: number) => void;
     onBrowseSequences?: () => void;
   }
 
   let {
     sequence = null,
-    currentBeatIndex = 0,
-    onBeatSelect,
+    currentStepIndex = 0,
+    onStepSelect,
     onBrowseSequences,
   }: Props = $props();
 
-  // Handle beat click from BeatGrid - converts from 1-indexed beat number to 0-indexed
-  function handleBeatClick(beatNumber: number) {
-    // BeatGrid uses 1-indexed beat numbers, convert to 0-indexed for state
-    const beatIndex = beatNumber - 1;
-    onBeatSelect?.(beatIndex);
+  // Handle beat click from StepGrid - converts from 1-indexed beat number to 0-indexed
+  function handleStepClick(stepNumber: number) {
+    // StepGrid uses 1-indexed beat numbers, convert to 0-indexed for state
+    const stepIndex = stepNumber - 1;
+    onStepSelect?.(stepIndex);
   }
 
   // Handle start position click - use -1 to represent start position
   function handleStartClick() {
-    onBeatSelect?.(-1);
+    onStepSelect?.(-1);
   }
 </script>
 
 <div class="grid-section">
   {#if sequence}
-    <BeatGrid
-      beats={sequence.beats}
+    <StepGrid
+      steps={sequence.steps}
       startPosition={sequence.startPosition}
-      practiceBeatNumber={currentBeatIndex + 1}
-      onBeatClick={handleBeatClick}
+      practiceStepNumber={currentStepIndex + 1}
+      onStepClick={handleStepClick}
       onStartClick={handleStartClick}
     />
   {:else}

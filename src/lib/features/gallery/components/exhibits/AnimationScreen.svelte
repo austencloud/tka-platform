@@ -54,8 +54,8 @@
   let initError = $state<string | null>(null);
 
   // Animation state - use continuous float for smooth interpolation
-  // Start at beat 1 (beat 0 is start position, beat 1+ are motion beats)
-  let currentBeat = $state(1);
+  // Start at beat 1 (beat 0 is start position, beat 1+ are motion steps)
+  let currentStep = $state(1);
   const BEAT_DURATION = 1.0; // seconds per beat (60 BPM)
 
   // Screen dimensions - position to the right of the frame with good spacing
@@ -72,7 +72,7 @@
 
   // Get sequence data
   const sequence = exhibit.sequence as SequenceData;
-  const totalBeats = sequence.beats?.length ?? 0;
+  const totalSteps = sequence.steps?.length ?? 0;
 
   // Get settings (reactive) for prop type and dark mode
   const settings = $derived(getSettings());
@@ -82,7 +82,7 @@
 
   // Initialize renderer and load textures
   async function initializeRenderer() {
-    if (initialized || totalBeats === 0) return;
+    if (initialized || totalSteps === 0) return;
 
     try {
       // Load services
@@ -160,7 +160,7 @@
 
     try {
       // Calculate state for current beat
-      orchestrator.calculateState(currentBeat);
+      orchestrator.calculateState(currentStep);
 
       // Get prop states
       const blueProp = orchestrator.getBluePropState();
@@ -240,7 +240,7 @@
 
   // Initialize on mount
   onMount(() => {
-    if (active && totalBeats > 0) {
+    if (active && totalSteps > 0) {
       initializeRenderer();
     }
   });
@@ -251,16 +251,16 @@
 
   // Animation loop - continuous interpolation for smooth animation
   useTask((delta) => {
-    if (!active || !initialized || totalBeats === 0) return;
+    if (!active || !initialized || totalSteps === 0) return;
 
     // Advance beat continuously (delta is in seconds)
-    // Beat 1 starts the animation, so we animate from 1 to totalBeats+1
-    currentBeat += delta / BEAT_DURATION;
+    // Beat 1 starts the animation, so we animate from 1 to totalSteps+1
+    currentStep += delta / BEAT_DURATION;
 
-    // Loop back to start when we complete all beats
-    // Animation runs from beat 1 to totalBeats+1 (to show final beat's motion)
-    if (currentBeat > totalBeats + 1) {
-      currentBeat = 1;
+    // Loop back to start when we complete all steps
+    // Animation runs from beat 1 to totalSteps+1 (to show final beat's motion)
+    if (currentStep > totalSteps + 1) {
+      currentStep = 1;
     }
 
     // Render every frame with the current interpolated beat
@@ -269,7 +269,7 @@
 
   // Handle active state changes - init when nearby, cleanup when far
   $effect(() => {
-    if (active && !initialized && totalBeats > 0) {
+    if (active && !initialized && totalSteps > 0) {
       initializeRenderer();
     } else if (!active && initialized) {
       // User walked away - clean up to save memory

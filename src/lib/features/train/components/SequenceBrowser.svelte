@@ -118,7 +118,7 @@
                 <div class="sequence-meta">
                   <span
                     ><i class="fas fa-drum" aria-hidden="true"></i>
-                    {sequence.beats?.length || 0} beats</span
+                    {sequence.steps?.length || 0} steps</span
                   >
                   {#if sequence.author}
                     <span

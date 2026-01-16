@@ -62,7 +62,7 @@
 <div class="quick-reference">
   <header class="panel-header">
     <span class="header-title">
-      <i class="fas fa-compass"></i> Quick Reference
+      <i class="fas fa-compass" aria-hidden="true"></i> Quick Reference
     </span>
   </header>
 
@@ -140,7 +140,7 @@
             class="suggestion-btn"
             onclick={() => onSuggestionClick(question)}
           >
-            <i class="fas fa-comment-dots"></i>
+            <i class="fas fa-comment-dots" aria-hidden="true"></i>
             {question}
           </button>
         {/each}
@@ -235,6 +235,11 @@
     background: rgba(99, 102, 241, 0.1);
   }
 
+  .type-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
   .type-header {
     display: flex;
     align-items: center;
@@ -299,6 +304,11 @@
     background: rgba(99, 102, 241, 0.1);
   }
 
+  .position-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
   .position-symbol {
     font-size: 20px;
     color: var(--theme-accent, #6366f1);
@@ -340,6 +350,11 @@
     background: rgba(99, 102, 241, 0.1);
   }
 
+  .motion-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
   .motion-name {
     font-size: 12px;
     font-weight: 600;
@@ -378,6 +393,11 @@
     background: rgba(99, 102, 241, 0.1);
   }
 
+  .suggestion-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
   .suggestion-btn i {
     color: var(--theme-accent, #6366f1);
     font-size: 12px;
@@ -392,6 +412,16 @@
     .position-grid,
     .motion-grid {
       grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    .type-card,
+    .position-card,
+    .motion-card,
+    .suggestion-btn {
+      transition: none;
     }
   }
 </style>

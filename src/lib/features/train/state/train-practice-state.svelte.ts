@@ -14,8 +14,8 @@ const MAX_RECENT_SEQUENCES = 3;
 /**
  * Display View - controls WHAT visualization panels are shown
  * - camera-canvas: Camera + AnimatorCanvas (side-by-side)
- * - camera-grid: Camera + BeatGrid (current default)
- * - camera-canvas-grid: Camera + AnimatorCanvas + BeatGrid (all three)
+ * - camera-grid: Camera + StepGrid (current default)
+ * - camera-canvas-grid: Camera + AnimatorCanvas + StepGrid (all three)
  */
 type DisplayView = "camera-canvas" | "camera-grid" | "camera-canvas-grid";
 const DISPLAY_VIEWS: DisplayView[] = [
@@ -45,7 +45,7 @@ interface RecentSequence {
   id: string;
   name: string;
   word?: string;
-  beatCount: number;
+  stepCount: number;
   lastPracticedAt: number; // timestamp
 }
 
@@ -220,7 +220,7 @@ export function createTrainPracticeState() {
       id: sequence.id,
       name: sequence.name ?? sequence.word ?? "Untitled",
       word: sequence.word,
-      beatCount: sequence.beats?.length ?? 0,
+      stepCount: sequence.steps?.length ?? 0,
       lastPracticedAt: Date.now(),
     };
 

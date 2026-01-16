@@ -13,7 +13,7 @@ export interface IPropTypeApplier {
   /**
    * Apply a prop type to all motions in a sequence.
    * Returns a new sequence with the specified prop type set on all
-   * blue and red motions in both the start position and beats.
+   * blue and red motions in both the start position and steps.
    *
    * @param sequence The original sequence
    * @param propType The prop type to apply

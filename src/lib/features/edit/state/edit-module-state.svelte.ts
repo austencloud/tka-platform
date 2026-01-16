@@ -9,7 +9,7 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
 export type EditMode = "beat" | "sequence";
 
@@ -21,11 +21,11 @@ export function createEditModuleState() {
   let editingSequence = $state<SequenceData | null>(null);
 
   // Selected beat for individual editing (beat mode)
-  let selectedBeatNumber = $state<number | null>(null);
-  let selectedBeatData = $state<BeatData | null>(null);
+  let selectedStepNumber = $state<number | null>(null);
+  let selectedStepData = $state<StepData | null>(null);
 
   // Multi-select for batch editing
-  let selectedBeatNumbers = $state<number[]>([]);
+  let selectedStepNumbers = $state<number[]>([]);
 
   // Track if sequence has unsaved changes
   let hasUnsavedChanges = $state(false);
@@ -69,56 +69,56 @@ export function createEditModuleState() {
   /**
    * Select a beat for editing
    */
-  function selectBeat(beatNumber: number, beatData: BeatData | null) {
-    selectedBeatNumber = beatNumber;
-    selectedBeatData = beatData;
+  function selectStep(stepNumber: number, stepData: StepData | null) {
+    selectedStepNumber = stepNumber;
+    selectedStepData = stepData;
     // Clear multi-select when selecting single beat
-    selectedBeatNumbers = [];
+    selectedStepNumbers = [];
   }
 
   /**
    * Toggle beat in multi-select mode
    */
-  function toggleBeatInMultiSelect(beatNumber: number) {
-    const index = selectedBeatNumbers.indexOf(beatNumber);
+  function toggleStepInMultiSelect(stepNumber: number) {
+    const index = selectedStepNumbers.indexOf(stepNumber);
     if (index === -1) {
-      selectedBeatNumbers = [...selectedBeatNumbers, beatNumber];
+      selectedStepNumbers = [...selectedStepNumbers, stepNumber];
     } else {
-      selectedBeatNumbers = selectedBeatNumbers.filter((n) => n !== beatNumber);
+      selectedStepNumbers = selectedStepNumbers.filter((n) => n !== stepNumber);
     }
     // Clear single selection when using multi-select
-    selectedBeatNumber = null;
-    selectedBeatData = null;
+    selectedStepNumber = null;
+    selectedStepData = null;
   }
 
   /**
    * Clear beat selection
    */
   function clearSelection() {
-    selectedBeatNumber = null;
-    selectedBeatData = null;
-    selectedBeatNumbers = [];
+    selectedStepNumber = null;
+    selectedStepData = null;
+    selectedStepNumbers = [];
   }
 
   /**
    * Update a beat in the editing sequence
    */
-  function updateBeat(beatIndex: number, updates: Partial<BeatData>) {
+  function updateStep(stepIndex: number, updates: Partial<StepData>) {
     if (!editingSequence) return;
 
-    const newBeats = [...editingSequence.beats];
-    if (beatIndex >= 0 && beatIndex < newBeats.length) {
-      const updatedBeat = {
-        ...newBeats[beatIndex],
+    const newSteps = [...editingSequence.steps];
+    if (stepIndex >= 0 && stepIndex < newSteps.length) {
+      const updatedStep = {
+        ...newSteps[stepIndex],
         ...updates,
-      } as BeatData;
-      newBeats[beatIndex] = updatedBeat;
-      editingSequence = { ...editingSequence, beats: newBeats };
+      } as StepData;
+      newSteps[stepIndex] = updatedStep;
+      editingSequence = { ...editingSequence, steps: newSteps };
       hasUnsavedChanges = true;
 
       // Update selected beat data if this beat is selected
-      if (selectedBeatNumber === beatIndex + 1) {
-        selectedBeatData = updatedBeat;
+      if (selectedStepNumber === stepIndex + 1) {
+        selectedStepData = updatedStep;
       }
     }
   }
@@ -127,12 +127,12 @@ export function createEditModuleState() {
    * Update the start position
    */
   function updateStartPosition(updates: Partial<PictographData>) {
-    if (!editingSequence?.startingPositionBeat) return;
+    if (!editingSequence?.startingPosition) return;
 
     editingSequence = {
       ...editingSequence,
-      startingPositionBeat: {
-        ...editingSequence.startingPositionBeat,
+      startingPosition: {
+        ...editingSequence.startingPosition,
         ...updates,
       },
     };
@@ -162,14 +162,14 @@ export function createEditModuleState() {
     get editingSequence() {
       return editingSequence;
     },
-    get selectedBeatNumber() {
-      return selectedBeatNumber;
+    get selectedStepNumber() {
+      return selectedStepNumber;
     },
-    get selectedBeatData() {
-      return selectedBeatData;
+    get selectedStepData() {
+      return selectedStepData;
     },
-    get selectedBeatNumbers() {
-      return selectedBeatNumbers;
+    get selectedStepNumbers() {
+      return selectedStepNumbers;
     },
     get hasUnsavedChanges() {
       return hasUnsavedChanges;
@@ -178,10 +178,10 @@ export function createEditModuleState() {
       return sequenceSource;
     },
     get isMultiSelectMode() {
-      return selectedBeatNumbers.length > 0;
+      return selectedStepNumbers.length > 0;
     },
     get hasBeatSelected() {
-      return selectedBeatNumber !== null || selectedBeatNumbers.length > 0;
+      return selectedStepNumber !== null || selectedStepNumbers.length > 0;
     },
     get hasSequence() {
       return editingSequence !== null;
@@ -191,10 +191,10 @@ export function createEditModuleState() {
     setCurrentMode,
     loadSequence,
     clearSequence,
-    selectBeat,
-    toggleBeatInMultiSelect,
+    selectStep,
+    toggleStepInMultiSelect,
     clearSelection,
-    updateBeat,
+    updateStep,
     updateStartPosition,
     transformSequence,
     markAsSaved,

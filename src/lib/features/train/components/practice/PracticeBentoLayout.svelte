@@ -34,7 +34,7 @@
 
   interface Props {
     sequence: SequenceData | null;
-    currentBeatIndex?: number;
+    currentStepIndex?: number;
     isPlaying?: boolean;
     bpm?: number;
     // Camera props
@@ -62,7 +62,7 @@
     onCameraReady?: () => void;
     onCameraError?: (error: string) => void;
     onFrame?: (video: HTMLVideoElement) => void;
-    onBeatSelect?: (beatIndex: number) => void;
+    onStepSelect?: (stepIndex: number) => void;
     onBrowseSequences?: () => void;
     onPlayStop?: () => void;
     onModeClick?: () => void;
@@ -74,7 +74,7 @@
 
   let {
     sequence = null,
-    currentBeatIndex = 0,
+    currentStepIndex = 0,
     isPlaying = false,
     bpm = 60,
     isCameraReady = false,
@@ -97,7 +97,7 @@
     onCameraReady,
     onCameraError,
     onFrame,
-    onBeatSelect,
+    onStepSelect,
     onBrowseSequences,
     onPlayStop,
     onModeClick,
@@ -136,7 +136,7 @@
       {propsVisible}
       {propType}
       {sequence}
-      {currentBeatIndex}
+      {currentStepIndex}
       {onCameraReady}
       {onCameraError}
       {onFrame}
@@ -150,7 +150,7 @@
       <section class="sequence-cell">
         <button class="sequence-info" onclick={onBrowseSequences}>
           <span class="seq-name">{sequence.word || sequence.name}</span>
-          <span class="seq-meta">{sequence.beats?.length || 0} beats</span>
+          <span class="seq-meta">{sequence.steps?.length || 0} steps</span>
           <i class="fas fa-exchange-alt" aria-hidden="true"></i>
         </button>
       </section>
@@ -160,8 +160,8 @@
     <section class="grid-cell">
       <GridSection
         {sequence}
-        {currentBeatIndex}
-        {onBeatSelect}
+        {currentStepIndex}
+        {onStepSelect}
         {onBrowseSequences}
       />
     </section>

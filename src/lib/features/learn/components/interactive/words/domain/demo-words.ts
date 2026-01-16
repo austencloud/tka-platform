@@ -28,7 +28,7 @@ export const singleB: LetterDefinition[] = [
   },
 ];
 
-// AABB word (4 beats)
+// AABB word (4 steps)
 export const wordAABB: LetterDefinition[] = [
   {
     letter: "A",
@@ -72,7 +72,7 @@ export const wordAABB: LetterDefinition[] = [
   },
 ];
 
-// GGGG word (Tog-Same, 4 beats)
+// GGGG word (Tog-Same, 4 steps)
 export const wordGGGG: LetterDefinition[] = [
   {
     letter: "G",

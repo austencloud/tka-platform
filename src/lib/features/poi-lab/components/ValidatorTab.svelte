@@ -20,9 +20,9 @@
   let isValidating = $state(false);
   let validationResult = $state<{
     isValid: boolean;
-    beatResults: Array<{
+    stepResults: Array<{
       letter: string;
-      beatIndex: number;
+      stepIndex: number;
       isValid: boolean;
       violations: Array<{ message: string }>;
     }>;
@@ -74,11 +74,11 @@
       const result = sequenceValidator.validateSequence(pictographs);
 
       // Build detailed result
-      const beatResults = pictographs.map((p, i) => {
+      const stepResults = pictographs.map((p, i) => {
         const beatValidation = sequenceValidator.validatePictograph(p);
         return {
           letter: p.letter || letters[i] || "?",
-          beatIndex: i + 1,
+          stepIndex: i + 1,
           isValid: beatValidation.isValid,
           violations: beatValidation.violations,
         };
@@ -91,7 +91,7 @@
 
       validationResult = {
         isValid: result.isValid,
-        beatResults,
+        stepResults,
         transitionViolations,
       };
     } catch (e) {
@@ -190,7 +190,7 @@
             {validationResult.isValid ? "Valid Poi Sequence" : "Invalid Poi Sequence"}
           </span>
           <span class="result-subtitle">
-            {validationResult.beatResults.length} beats analyzed
+            {validationResult.stepResults.length} steps analyzed
           </span>
         </div>
       </div>
@@ -198,11 +198,11 @@
       <!-- Beat-by-beat results -->
       <div class="beat-results">
         <h4>Beat Analysis</h4>
-        <div class="beats-grid">
-          {#each validationResult.beatResults as beat}
+        <div class="steps-grid">
+          {#each validationResult.stepResults as beat}
             <div class="beat-card" class:valid={beat.isValid} class:invalid={!beat.isValid}>
               <div class="beat-header">
-                <span class="beat-number">Beat {beat.beatIndex}</span>
+                <span class="beat-number">Beat {beat.stepIndex}</span>
                 <span class="beat-letter">{beat.letter}</span>
                 <span class="beat-status">
                   {#if beat.isValid}
@@ -478,7 +478,7 @@
     letter-spacing: 0.05em;
   }
 
-  .beats-grid {
+  .steps-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 0.5rem;

@@ -40,7 +40,7 @@
     propsVisible?: boolean;
     propType?: PropType | null;
     sequence?: SequenceData | null;
-    currentBeatIndex?: number;
+    currentStepIndex?: number;
     onCameraReady?: () => void;
     onCameraError?: (error: string) => void;
     onFrame?: (video: HTMLVideoElement) => void;
@@ -66,7 +66,7 @@
     propsVisible = true,
     propType = null,
     sequence = null,
-    currentBeatIndex = 0,
+    currentStepIndex = 0,
     onCameraReady,
     onCameraError,
     onFrame,
@@ -82,16 +82,16 @@
 
   // Beat interpolation for smooth animation
   let fractionalBeat = $state(0);
-  let beatAnimFrameId: number | null = null;
+  let stepAnimFrameId: number | null = null;
   let beatStartTime = 0;
 
   // Track beat changes and start interpolation
-  let lastBeatIndex = -1;
+  let lastStepIndex = -1;
   $effect(() => {
-    if (currentBeatIndex !== lastBeatIndex) {
-      lastBeatIndex = currentBeatIndex;
+    if (currentStepIndex !== lastStepIndex) {
+      lastStepIndex = currentStepIndex;
       beatStartTime = performance.now();
-      if (!beatAnimFrameId && isPerforming) {
+      if (!stepAnimFrameId && isPerforming) {
         startBeatAnimation();
       }
     }
@@ -99,13 +99,13 @@
 
   // Start/stop animation based on performance state
   $effect(() => {
-    if (isPerforming && !beatAnimFrameId) {
+    if (isPerforming && !stepAnimFrameId) {
       beatStartTime = performance.now();
       startBeatAnimation();
-    } else if (!isPerforming && beatAnimFrameId) {
-      cancelAnimationFrame(beatAnimFrameId);
-      beatAnimFrameId = null;
-      fractionalBeat = currentBeatIndex;
+    } else if (!isPerforming && stepAnimFrameId) {
+      cancelAnimationFrame(stepAnimFrameId);
+      stepAnimFrameId = null;
+      fractionalBeat = currentStepIndex;
     }
   });
 
@@ -113,17 +113,17 @@
     function animate() {
       const elapsed = performance.now() - beatStartTime;
       const beatDuration = (60 / bpm) * 1000;
-      const progress = Math.min(elapsed / beatDuration, 1.0);
+      const progress = Math.min(elapsed / stepDuration, 1.0);
 
-      fractionalBeat = currentBeatIndex + progress;
+      fractionalBeat = currentStepIndex + progress;
 
       if (isPerforming) {
-        beatAnimFrameId = requestAnimationFrame(animate);
+        stepAnimFrameId = requestAnimationFrame(animate);
       } else {
-        beatAnimFrameId = null;
+        stepAnimFrameId = null;
       }
     }
-    beatAnimFrameId = requestAnimationFrame(animate);
+    stepAnimFrameId = requestAnimationFrame(animate);
   }
 
   onMount(() => {
@@ -142,8 +142,8 @@
     if (perfInterval !== null) {
       clearInterval(perfInterval);
     }
-    if (beatAnimFrameId !== null) {
-      cancelAnimationFrame(beatAnimFrameId);
+    if (stepAnimFrameId !== null) {
+      cancelAnimationFrame(stepAnimFrameId);
     }
   });
 </script>
@@ -170,7 +170,7 @@
           blueProp={null}
           redProp={null}
           sequenceData={sequence}
-          currentBeat={fractionalBeat}
+          currentStep={fractionalBeat}
           gridVisible={false}
           backgroundAlpha={0}
           isPlaying={isPerforming}

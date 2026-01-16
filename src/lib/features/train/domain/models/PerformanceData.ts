@@ -1,8 +1,8 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DetectionFrame, DetectionSource } from "./DetectionFrame";
 
-export interface BeatResult {
-  beatNumber: number;
+export interface StepResult {
+  stepNumber: number;
   expected: { blue: GridLocation; red: GridLocation };
   detected: { blue: GridLocation | null; red: GridLocation | null };
   timing: TimingGrade;
@@ -32,7 +32,7 @@ export interface PerformanceData {
   detectionMethod: DetectionSource;
   bpm: number;
   frames: DetectionFrame[];
-  beatResults: BeatResult[];
+  stepResults: StepResult[];
   score: PerformanceScore;
   videoBlob?: Blob;
 }

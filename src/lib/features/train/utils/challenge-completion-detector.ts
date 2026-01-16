@@ -11,7 +11,7 @@ import type {
 import { PracticeMode } from "../domain/enums/TrainEnums";
 
 export interface SessionResult {
-  totalBeats: number;
+  totalSteps: number;
   hits: number;
   misses: number;
   maxCombo: number;

@@ -35,8 +35,8 @@
 
   // Extended validation result with pending state for sequences without beat data
   type ExtendedValidationResult = PoiValidationResult & {
-    beatViolations: Map<number, string[]>;
-    isPending: boolean; // true if beats not yet loaded
+    stepViolations: Map<number, string[]>;
+    isPending: boolean; // true if steps not yet loaded
   };
 
   // Validation results cache
@@ -48,52 +48,52 @@
     }
 
     // Check if sequence has beat data - community sequences may not have it initially
-    if (!seq.beats || seq.beats.length === 0) {
+    if (!seq.steps || seq.steps.length === 0) {
       const pendingResult: ExtendedValidationResult = {
         isValid: true, // Assume valid until proven otherwise
         violations: [],
-        beatViolations: new Map(),
+        stepViolations: new Map(),
         isPending: true, // Flag that this needs full data to validate
       };
       validationCache.set(seq.id, pendingResult);
       return pendingResult;
     }
 
-    // Convert beats to pictograph format for validation
-    const pictographs = seq.beats.map((beat) => ({
+    // Convert steps to pictograph format for validation
+    const pictographs = seq.steps.map((beat) => ({
       ...beat,
-      id: beat.id ?? `${seq.id}-beat-${beat.beatNumber}`,
+      id: beat.id ?? `${seq.id}-beat-${beat.stepNumber}`,
     }));
 
     // Validate the sequence
     const result = sequenceValidator.validateSequence(pictographs);
 
     // Group violations by beat index
-    const beatViolations = new Map<number, string[]>();
+    const stepViolations = new Map<number, string[]>();
     for (const violation of result.violations) {
       const beatMatch = violation.message.match(/Beat (\d+)/i);
       if (beatMatch) {
-        const beatNum = parseInt(beatMatch[1]!, 10);
-        if (!beatViolations.has(beatNum)) {
-          beatViolations.set(beatNum, []);
+        const stepNum = parseInt(beatMatch[1]!, 10);
+        if (!stepViolations.has(stepNum)) {
+          stepViolations.set(stepNum, []);
         }
-        beatViolations.get(beatNum)!.push(violation.message);
+        stepViolations.get(stepNum)!.push(violation.message);
       } else {
-        if (!beatViolations.has(-1)) {
-          beatViolations.set(-1, []);
+        if (!stepViolations.has(-1)) {
+          stepViolations.set(-1, []);
         }
-        beatViolations.get(-1)!.push(violation.message);
+        stepViolations.get(-1)!.push(violation.message);
       }
     }
 
-    const fullResult: ExtendedValidationResult = { ...result, beatViolations, isPending: false };
+    const fullResult: ExtendedValidationResult = { ...result, stepViolations, isPending: false };
     validationCache.set(seq.id, fullResult);
     return fullResult;
   }
 
-  // Get beat count (handles community sequences with empty beats array)
-  function getBeatCount(seq: SequenceData): number {
-    return seq.beats?.length || seq.sequenceLength || 0;
+  // Get beat count (handles community sequences with empty steps array)
+  function getStepCount(seq: SequenceData): number {
+    return seq.steps?.length || seq.sequenceLength || 0;
   }
 
   // Filtered and paginated
@@ -129,7 +129,7 @@
   // Load sequences on mount - from community (Firestore)
   onMount(async () => {
     try {
-      // Load community sequences - these have thumbnails but beats are loaded on-demand
+      // Load community sequences - these have thumbnails but steps are loaded on-demand
       const all = await discoverLoader.loadSequenceMetadata();
       allSequences = all;
       isLoading = false;
@@ -283,11 +283,11 @@
         {@const expandedSeq = paginated.find((s) => s.id === expandedId)}
         {#if expandedSeq}
           {@const validation = validateSequence(expandedSeq)}
-          {@const beatCount = getBeatCount(expandedSeq)}
+          {@const stepCount = getStepCount(expandedSeq)}
           <div class="detail-drawer">
             <div class="drawer-header">
               <span class="sequence-word">{expandedSeq.word || expandedSeq.name || "Untitled"}</span>
-              <span class="beat-count">{beatCount} beat{beatCount !== 1 ? "s" : ""}</span>
+              <span class="beat-count">{stepCount} beat{stepCount !== 1 ? "s" : ""}</span>
             </div>
             {#if validation.isPending}
               <div class="pending-message">

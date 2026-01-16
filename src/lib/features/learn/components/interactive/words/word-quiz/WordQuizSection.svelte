@@ -12,16 +12,16 @@ WordQuizSection - Main quiz UI with visualizer and answers
     question,
     answerState,
     selectedAnswer,
-    currentBeat,
+    currentStep,
     onAnswer,
-    onBeatChange,
+    onStepChange,
   }: {
     question: WordQuizQuestion;
     answerState: "idle" | "correct" | "incorrect";
     selectedAnswer: number | null;
-    currentBeat: number;
+    currentStep: number;
     onAnswer: (index: number) => void;
-    onBeatChange: (index: number) => void;
+    onStepChange: (index: number) => void;
   } = $props();
 </script>
 
@@ -34,12 +34,12 @@ WordQuizSection - Main quiz UI with visualizer and answers
     <div class="visualizer-container">
       <WordVisualizer
         letters={question.letters}
-        currentBeatIndex={currentBeat}
+        currentStepIndex={currentStep}
         isAnimating={true}
         animationSpeed={1500}
         showLetterLabel={answerState !== "idle"}
-        showBeatNumber={true}
-        {onBeatChange}
+        showStepNumber={true}
+        {onStepChange}
       />
     </div>
   {/if}

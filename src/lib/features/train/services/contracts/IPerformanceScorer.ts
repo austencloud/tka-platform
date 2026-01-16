@@ -1,13 +1,13 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { DetectionFrame } from "../../domain/models/DetectionFrame";
 import type {
-  BeatResult,
+  StepResult,
   PerformanceScore,
   PerformanceGrade,
 } from "../../domain/models/PerformanceData";
 
 export interface ExpectedBeatPosition {
-  beatNumber: number;
+  stepNumber: number;
   blue: GridLocation;
   red: GridLocation;
   timestamp: number;
@@ -18,9 +18,9 @@ export interface IPerformanceScorer {
     detected: DetectionFrame,
     expected: ExpectedBeatPosition,
     currentCombo: number
-  ): BeatResult;
+  ): StepResult;
 
-  calculateFinalScore(beatResults: BeatResult[]): PerformanceScore;
+  calculateFinalScore(stepResults: StepResult[]): PerformanceScore;
 
   getGradeForPercentage(percentage: number): PerformanceGrade;
 

@@ -144,7 +144,7 @@ export class LibrarySaveService implements ILibrarySaveService {
       const thumbnailOptions = {
         ...DEFAULT_SHARE_OPTIONS,
         addWord: compositionSettings.addWord,
-        addBeatNumbers: compositionSettings.addBeatNumbers,
+        addStepNumbers: compositionSettings.addStepNumbers,
         addDifficultyLevel: compositionSettings.addDifficultyLevel,
         addUserInfo: compositionSettings.addUserInfo,
         includeStartPosition: compositionSettings.includeStartPosition,

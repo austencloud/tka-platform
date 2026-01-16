@@ -92,7 +92,7 @@
   let loopLabel = $derived(sequenceInfo?.settings ? getLoopLabel(sequenceInfo.settings.loopType) : "");
   let sliceLabel = $derived(sequenceInfo?.settings ? getSliceLabel(sequenceInfo.settings.sliceSize) : "");
   let loopColor = $derived(sequenceInfo?.settings ? getLoopColor(sequenceInfo.settings.loopType) : "#6366f1");
-  let totalBeats = $derived(sequenceInfo?.settings?.totalBeats ?? 0);
+  let totalSteps = $derived(sequenceInfo?.settings?.totalSteps ?? 0);
 </script>
 
 {#if sequenceInfo}
@@ -109,7 +109,7 @@
         </span>
       {/key}
       <span class="loop-details">
-        {sliceLabel} · {totalBeats} beats
+        {sliceLabel} · {totalSteps} steps
       </span>
     </div>
 

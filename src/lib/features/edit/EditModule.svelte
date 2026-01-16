@@ -16,7 +16,7 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { onMount } from "svelte";
   import {
     createEditModuleState,
@@ -28,7 +28,7 @@
   import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
-  import BeatEditPanel from "./components/BeatEditPanel.svelte";
+  import StepEditPanel from "./components/StepEditPanel.svelte";
   import SequenceEditPanel from "./components/SequenceEditPanel.svelte";
   import EditWorkspace from "./components/EditWorkspace.svelte";
   import EmptyEditState from "./components/EmptyEditState.svelte";
@@ -56,7 +56,7 @@
   }
 
   async function handleSequenceSelect(sequenceMetadata: SequenceData) {
-    // The browser returns lightweight metadata without beats
+    // The browser returns lightweight metadata without steps
     // We need to load the full sequence data
     if (!exploreLoader) {
       console.error("EditModule: DiscoverLoader not available");
@@ -119,24 +119,24 @@
    * Handle beat updates with letter derivation
    * When motion properties change (rotation direction, turns, etc.), re-derive the letter
    */
-  async function handleBeatUpdate(
-    beatIndex: number,
-    updates: Partial<BeatData>
+  async function handleStepUpdate(
+    stepIndex: number,
+    updates: Partial<StepData>
   ) {
     const sequence = editState.editingSequence;
     if (!sequence) return;
 
     // Get the current beat data
-    const currentBeat = sequence.beats[beatIndex];
-    if (!currentBeat) return;
+    const currentStep = sequence.steps[stepIndex];
+    if (!currentStep) return;
 
     // Merge updates to get the new beat state
-    const updatedBeat = { ...currentBeat, ...updates };
+    const updatedStep = { ...currentStep, ...updates };
 
     // Check if motions were updated - if so, derive the new letter
     if (updates.motions && motionQueryHandler && gridModeDeriver) {
-      const blueMotion = updatedBeat.motions?.[MotionColor.BLUE];
-      const redMotion = updatedBeat.motions?.[MotionColor.RED];
+      const blueMotion = updatedStep.motions?.[MotionColor.BLUE];
+      const redMotion = updatedStep.motions?.[MotionColor.RED];
 
       if (blueMotion && redMotion) {
         try {
@@ -154,7 +154,7 @@
               gridMode
             );
 
-          if (newLetter && newLetter !== updatedBeat.letter) {
+          if (newLetter && newLetter !== updatedStep.letter) {
             // Include the new letter in the updates (cast string to Letter enum)
             updates = { ...updates, letter: newLetter as Letter };
           }
@@ -168,7 +168,7 @@
     }
 
     // Update the beat with the (possibly augmented) updates
-    editState.updateBeat(beatIndex, updates);
+    editState.updateStep(stepIndex, updates);
   }
 
   /**
@@ -225,12 +225,12 @@
       <div class="workspace-area">
         <EditWorkspace
           sequence={editState.editingSequence}
-          selectedBeatNumber={editState.selectedBeatNumber}
-          selectedBeatNumbers={editState.selectedBeatNumbers}
-          onBeatSelect={(beatNumber, beatData) =>
-            editState.selectBeat(beatNumber, beatData)}
-          onBeatMultiSelect={(beatNumber) =>
-            editState.toggleBeatInMultiSelect(beatNumber)}
+          selectedStepNumber={editState.selectedStepNumber}
+          selectedStepNumbers={editState.selectedStepNumbers}
+          onStepSelect={(stepNumber, stepData) =>
+            editState.selectStep(stepNumber, stepData)}
+          onBeatMultiSelect={(stepNumber) =>
+            editState.toggleStepInMultiSelect(stepNumber)}
           onChangeSequence={openSequenceBrowser}
         />
       </div>
@@ -262,13 +262,13 @@
         <!-- Edit Controls -->
         <div class="edit-controls">
           {#if currentMode === "beat"}
-            <BeatEditPanel
-              selectedBeatNumber={editState.selectedBeatNumber}
-              selectedBeatData={editState.selectedBeatData}
-              selectedBeatNumbers={editState.selectedBeatNumbers}
+            <StepEditPanel
+              selectedStepNumber={editState.selectedStepNumber}
+              selectedStepData={editState.selectedStepData}
+              selectedStepNumbers={editState.selectedStepNumbers}
               sequence={editState.editingSequence}
-              onBeatUpdate={(index, updates) =>
-                handleBeatUpdate(index, updates)}
+              onStepUpdate={(index, updates) =>
+                handleStepUpdate(index, updates)}
               onStartPositionUpdate={(updates) =>
                 editState.updateStartPosition(updates)}
             />

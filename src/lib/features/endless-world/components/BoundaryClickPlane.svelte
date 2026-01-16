@@ -3,74 +3,100 @@
    * BoundaryClickPlane
    *
    * Manual raycaster for detecting clicks when placing boundary markers.
-   * Uses direct canvas event listeners since Threlte's interactivity has issues.
+   * Uses document-level event listeners to bypass any OrbitControls interception.
+   * Raycasts against actual scene meshes (terrain, ground plane) for accurate placement.
    */
   import { useThrelte } from "@threlte/core";
   import * as THREE from "three";
   import { onMount, onDestroy } from "svelte";
 
   interface Props {
-    /** Y position of the detection plane */
-    planeY?: number;
-    /** Callback when plane is clicked */
+    /** Callback when terrain is clicked */
     onclick: (point: { x: number; y: number; z: number }) => void;
     /** Whether click detection is enabled */
     enabled?: boolean;
   }
 
-  let { planeY = 20, onclick, enabled = true }: Props = $props();
+  let { onclick, enabled = true }: Props = $props();
 
-  const { camera, renderer } = useThrelte();
+  const { scene, camera, renderer } = useThrelte();
 
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
-  // Horizontal plane at planeY for raycasting
-  const clickPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY);
-  const intersectPoint = new THREE.Vector3();
-
   let canvasElement: HTMLCanvasElement | null = null;
-  let pointerDownPos = { x: 0, y: 0 };
+  let downPos = { x: 0, y: 0 };
+  let downTime = 0;
 
-  function getCanvasCoords(event: PointerEvent): THREE.Vector2 {
+  function getCanvasCoords(clientX: number, clientY: number): THREE.Vector2 {
     if (!canvasElement) return pointer;
 
     const rect = canvasElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
     return pointer;
   }
 
-  function handlePointerDown(event: PointerEvent) {
-    pointerDownPos = { x: event.clientX, y: event.clientY };
+  function isClickOnCanvas(event: MouseEvent): boolean {
+    if (!canvasElement) return false;
+    const rect = canvasElement.getBoundingClientRect();
+    return (
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    );
   }
 
-  function handlePointerUp(event: PointerEvent) {
-    if (!enabled) return;
+  function handleMouseDown(event: MouseEvent) {
+    if (!isClickOnCanvas(event)) return;
+    downPos = { x: event.clientX, y: event.clientY };
+    downTime = Date.now();
+  }
 
-    // Check if it was a drag (moved more than 5px)
-    const dx = event.clientX - pointerDownPos.x;
-    const dy = event.clientY - pointerDownPos.y;
-    if (Math.sqrt(dx * dx + dy * dy) > 5) {
-      return; // Was a drag (orbit), ignore
+  function handleMouseUp(event: MouseEvent) {
+    if (!enabled) return;
+    if (!isClickOnCanvas(event)) return;
+
+    // Check if it was a drag (moved more than 5px) or long press (> 300ms = likely orbit)
+    const dx = event.clientX - downPos.x;
+    const dy = event.clientY - downPos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const duration = Date.now() - downTime;
+
+    if (distance > 5) {
+      console.log("[BoundaryClickPlane] Ignored: drag detected", distance.toFixed(1), "px");
+      return;
     }
 
     const cam = camera.current;
-    if (!cam) return;
+    if (!cam || !scene) {
+      console.log("[BoundaryClickPlane] No camera or scene");
+      return;
+    }
 
-    getCanvasCoords(event);
+    getCanvasCoords(event.clientX, event.clientY);
     raycaster.setFromCamera(pointer, cam);
 
-    // Intersect with horizontal plane
-    if (raycaster.ray.intersectPlane(clickPlane, intersectPoint)) {
-      console.log("[BoundaryClickPlane] Click at:", intersectPoint.x.toFixed(1), intersectPoint.y.toFixed(1), intersectPoint.z.toFixed(1));
-      onclick({
-        x: intersectPoint.x,
-        y: intersectPoint.y,
-        z: intersectPoint.z,
-      });
+    // Raycast against all meshes in the scene
+    const intersects = raycaster.intersectObjects(scene.children, true);
+
+    // Find first mesh intersection (terrain or ground plane)
+    for (const intersection of intersects) {
+      if (intersection.object instanceof THREE.Mesh) {
+        const point = intersection.point;
+        console.log("[BoundaryClickPlane] Click at:", point.x.toFixed(1), point.y.toFixed(1), point.z.toFixed(1));
+        onclick({
+          x: point.x,
+          y: point.y,
+          z: point.z,
+        });
+        return;
+      }
     }
+
+    console.log("[BoundaryClickPlane] No mesh intersection found");
   }
 
   onMount(() => {
@@ -80,16 +106,16 @@
       return;
     }
 
-    console.log("[BoundaryClickPlane] Mounted, attaching listeners");
-    canvasElement.addEventListener("pointerdown", handlePointerDown);
-    canvasElement.addEventListener("pointerup", handlePointerUp);
+    console.log("[BoundaryClickPlane] Mounted, attaching document-level listeners");
+
+    // Use document-level listeners to bypass any canvas event interception
+    document.addEventListener("mousedown", handleMouseDown, true);
+    document.addEventListener("mouseup", handleMouseUp, true);
   });
 
   onDestroy(() => {
-    if (canvasElement) {
-      console.log("[BoundaryClickPlane] Destroying, removing listeners");
-      canvasElement.removeEventListener("pointerdown", handlePointerDown);
-      canvasElement.removeEventListener("pointerup", handlePointerUp);
-    }
+    console.log("[BoundaryClickPlane] Destroying, removing listeners");
+    document.removeEventListener("mousedown", handleMouseDown, true);
+    document.removeEventListener("mouseup", handleMouseUp, true);
   });
 </script>

@@ -54,7 +54,7 @@ export interface IBroadcastRepository {
   getCurrentBeatPosition(
     startedAtMs: number,
     durationMs: number,
-    totalBeats: number,
+    totalSteps: number,
     beatsPerMinute: number
   ): number;
 }

@@ -165,7 +165,6 @@
     <!-- Click detection for boundary placement -->
     {#if boundaryEditMode && onterrainclick}
       <BoundaryClickPlane
-        planeY={20}
         onclick={onterrainclick}
         enabled={boundaryEditMode}
       />

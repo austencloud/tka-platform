@@ -86,7 +86,7 @@ export interface ILibraryMigrationService {
    * @returns Array of local sequence IDs and names
    */
   getLocalSequences(): Promise<
-    Array<{ id: string; name: string; beatCount: number }>
+    Array<{ id: string; name: string; stepCount: number }>
   >;
 
   /**

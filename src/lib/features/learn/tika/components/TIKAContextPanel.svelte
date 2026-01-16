@@ -5,46 +5,7 @@
   Displays pictographs, letter details, term definitions, etc.
 -->
 <script lang="ts">
-  // Types
-  interface ContextData {
-    type: "letter" | "term" | "comparison" | "list" | "position" | null;
-    letter?: {
-      letter: string;
-      type: number;
-      typeName: string;
-      startPosition: string;
-      endPosition: string;
-      blueMotion: {
-        motionType: string;
-        startLocation: string;
-        endLocation: string;
-        rotationDirection: string;
-      };
-      redMotion: {
-        motionType: string;
-        startLocation: string;
-        endLocation: string;
-        rotationDirection: string;
-      };
-    };
-    term?: {
-      term: string;
-      definition: string;
-      examples: string[];
-      relatedTerms: string[];
-    };
-    comparison?: {
-      letter1: string;
-      letter2: string;
-      type1: string;
-      type2: string;
-    };
-    position?: {
-      name: string;
-      angleDegrees: string;
-      description: string;
-    };
-  }
+  import type { ContextData } from "../types";
 
   // Props
   let {
@@ -63,21 +24,21 @@
   <header class="panel-header">
     <span class="header-title">
       {#if context?.type === "letter"}
-        <i class="fas fa-font"></i> Letter Details
+        <i class="fas fa-font" aria-hidden="true"></i> Letter Details
       {:else if context?.type === "term"}
-        <i class="fas fa-book"></i> Term Definition
+        <i class="fas fa-book" aria-hidden="true"></i> Term Definition
       {:else if context?.type === "comparison"}
-        <i class="fas fa-balance-scale"></i> Comparison
+        <i class="fas fa-balance-scale" aria-hidden="true"></i> Comparison
       {:else if context?.type === "position"}
-        <i class="fas fa-crosshairs"></i> Position Info
+        <i class="fas fa-crosshairs" aria-hidden="true"></i> Position Info
       {:else if context?.type === "list"}
-        <i class="fas fa-list"></i> Letter Type
+        <i class="fas fa-list" aria-hidden="true"></i> Letter Type
       {:else}
-        <i class="fas fa-info-circle"></i> Context
+        <i class="fas fa-info-circle" aria-hidden="true"></i> Context
       {/if}
     </span>
-    <button class="close-btn" onclick={onClose} title="Close panel">
-      <i class="fas fa-times"></i>
+    <button class="close-btn" onclick={onClose} title="Close panel" aria-label="Close context panel">
+      <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </header>
 
@@ -110,7 +71,7 @@
           <h4>Position</h4>
           <div class="position-flow">
             <span class="position-tag">{context.letter.startPosition}</span>
-            <i class="fas fa-arrow-right"></i>
+            <i class="fas fa-arrow-right" aria-hidden="true"></i>
             <span class="position-tag">{context.letter.endPosition}</span>
           </div>
         </div>
@@ -234,7 +195,7 @@
     {:else}
       <!-- Empty State -->
       <div class="empty-state">
-        <i class="fas fa-info-circle"></i>
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
         <p>Context information will appear here</p>
       </div>
     {/if}
@@ -272,8 +233,8 @@
   }
 
   .close-btn {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     border-radius: 8px;
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -288,6 +249,11 @@
   .close-btn:hover {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #ffffff);
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   /* Content */
@@ -557,6 +523,13 @@
 
     .pictograph-display img {
       max-height: 180px;
+    }
+  }
+
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    .close-btn {
+      transition: none;
     }
   }
 </style>

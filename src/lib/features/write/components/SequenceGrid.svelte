@@ -101,8 +101,8 @@
                 <i class="fas fa-clock" aria-hidden="true"></i>
                 {formatDuration(sequence.sequenceLength)}
               </span>
-              {#if sequence.beats && sequence.beats.length > 0}
-                <span class="sequence-beats">{sequence.beats.length} beats</span
+              {#if sequence.steps && sequence.steps.length > 0}
+                <span class="sequence-steps">{sequence.steps.length} steps</span
                 >
               {/if}
             </div>
@@ -271,7 +271,7 @@
     opacity: 0.7;
   }
 
-  .sequence-beats {
+  .sequence-steps {
     opacity: 0.8;
   }
 

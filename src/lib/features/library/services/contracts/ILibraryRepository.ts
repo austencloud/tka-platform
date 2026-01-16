@@ -29,8 +29,8 @@ export interface LibraryStats {
   totalCollections: number;
   /** Total acts (playlists) */
   totalActs: number;
-  /** Total beats across all sequences */
-  totalBeats: number;
+  /** Total steps across all sequences */
+  totalSteps: number;
 }
 
 /**

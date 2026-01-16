@@ -218,7 +218,7 @@ export class BroadcastRepository implements IBroadcastRepository {
   getCurrentBeatPosition(
     startedAtMs: number,
     durationMs: number,
-    totalBeats: number,
+    totalSteps: number,
     beatsPerMinute: number
   ): number {
     // Adjust client time by server offset
@@ -235,14 +235,14 @@ export class BroadcastRepository implements IBroadcastRepository {
 
     // If sequence has ended, return last beat
     if (elapsed >= durationMs) {
-      return totalBeats;
+      return totalSteps;
     }
 
     // Calculate ms per beat
     const msPerBeat = 60000 / beatsPerMinute;
 
     // Calculate current beat (1-indexed)
-    const beatIndex = Math.floor(elapsed / msPerBeat);
-    return Math.min(beatIndex + 1, totalBeats);
+    const stepIndex = Math.floor(elapsed / msPerBeat);
+    return Math.min(stepIndex + 1, totalSteps);
   }
 }

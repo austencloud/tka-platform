@@ -73,7 +73,7 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
   let detectionConfidence = $state(0);
 
   // Performance state (during performing)
-  let currentBeatIndex = $state(0);
+  let currentStepIndex = $state(0);
   let currentCombo = $state(0);
   let currentScore = $state(0);
   let performanceStartTime = $state<number | null>(null);
@@ -96,20 +96,20 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
   const canStartPerformance = $derived(
     hasSequence && isCameraReady && mode === TrainMode.SETUP
   );
-  const totalBeats = $derived(sequence?.beats?.length ?? 0);
+  const totalSteps = $derived(sequence?.steps?.length ?? 0);
   const progress = $derived(
-    totalBeats > 0 ? (currentBeatIndex / totalBeats) * 100 : 0
+    totalSteps > 0 ? (currentStepIndex / totalSteps) * 100 : 0
   );
 
   // Current expected positions (derived from sequence and beat index)
   const expectedPositions = $derived.by(() => {
     if (
-      !sequence?.beats ||
-      currentBeatIndex >= sequence.beats.length
+      !sequence?.steps ||
+      currentStepIndex >= sequence.steps.length
     ) {
       return null;
     }
-    const beat = sequence.beats[currentBeatIndex];
+    const beat = sequence.steps[currentStepIndex];
     if (!beat?.motions) return null;
 
     return {
@@ -176,7 +176,7 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
   function startPerformance() {
     mode = TrainMode.PERFORMING;
     performanceStartTime = performance.now();
-    currentBeatIndex = 0;
+    currentStepIndex = 0;
     currentCombo = 0;
     currentScore = 0;
     totalHits = 0;
@@ -186,8 +186,8 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
   }
 
   function advanceBeat() {
-    if (currentBeatIndex < totalBeats - 1) {
-      currentBeatIndex++;
+    if (currentStepIndex < totalSteps - 1) {
+      currentStepIndex++;
     } else {
       endPerformance();
     }
@@ -217,7 +217,7 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
   }
 
   function resetPerformanceState() {
-    currentBeatIndex = 0;
+    currentStepIndex = 0;
     currentCombo = 0;
     currentScore = 0;
     totalHits = 0;
@@ -267,8 +267,8 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
     get detectionConfidence() {
       return detectionConfidence;
     },
-    get currentBeatIndex() {
-      return currentBeatIndex;
+    get currentStepIndex() {
+      return currentStepIndex;
     },
     get currentCombo() {
       return currentCombo;
@@ -308,8 +308,8 @@ export function createTrainState(config: Partial<TrainStateConfig> = {}) {
     get canStartPerformance() {
       return canStartPerformance;
     },
-    get totalBeats() {
-      return totalBeats;
+    get totalSteps() {
+      return totalSteps;
     },
     get progress() {
       return progress;

@@ -23,7 +23,7 @@
       <WordVisualizer
         letters={singleA}
         showLetterLabel={true}
-        showBeatNumber={false}
+        showStepNumber={false}
         compact={true}
       />
       <p class="letter-info">
@@ -36,7 +36,7 @@
       <WordVisualizer
         letters={singleB}
         showLetterLabel={true}
-        showBeatNumber={false}
+        showStepNumber={false}
         compact={true}
       />
       <p class="letter-info">

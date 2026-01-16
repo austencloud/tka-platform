@@ -177,7 +177,7 @@ class LibraryStateManager {
           id: seq.id,
           name: seq.name || "Untitled",
           word: seq.word || "",
-          beats: [],
+          steps: [],
           thumbnails: seq.thumbnailUrl ? [seq.thumbnailUrl] : [],
           isFavorite: false,
           isCircular: false,

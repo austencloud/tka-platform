@@ -4,15 +4,15 @@
   import { wordGGGG, wordCCCC } from "../domain/demo-words";
 
   let {
-    ggggBeatIndex,
-    ccccBeatIndex,
+    ggggStepIndex,
+    ccccStepIndex,
     onBack,
     onNext,
     onGGGGBeatChange,
     onCCCCBeatChange,
   } = $props<{
-    ggggBeatIndex: number;
-    ccccBeatIndex: number;
+    ggggStepIndex: number;
+    ccccStepIndex: number;
     onBack: () => void;
     onNext: () => void;
     onGGGGBeatChange: (index: number) => void;
@@ -33,11 +33,11 @@
       <h3>GGGG - Beta Circle</h3>
       <WordVisualizer
         letters={wordGGGG}
-        currentBeatIndex={ggggBeatIndex}
+        currentStepIndex={ggggStepIndex}
         showLetterLabel={true}
-        showBeatNumber={true}
+        showStepNumber={true}
         compact={true}
-        onBeatChange={onGGGGBeatChange}
+        onStepChange={onGGGGBeatChange}
       />
       <p class="example-note">
         G uses <strong>Tog-Same</strong> (β→β) motion. Both hands stay together as
@@ -49,11 +49,11 @@
       <h3>CCCC - Hybrid Flow</h3>
       <WordVisualizer
         letters={wordCCCC}
-        currentBeatIndex={ccccBeatIndex}
+        currentStepIndex={ccccStepIndex}
         showLetterLabel={true}
-        showBeatNumber={true}
+        showStepNumber={true}
         compact={true}
-        onBeatChange={onCCCCBeatChange}
+        onStepChange={onCCCCBeatChange}
       />
       <p class="example-note">
         C is a <strong>hybrid</strong> - one hand pro, one anti. Creates a unique

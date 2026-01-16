@@ -11,11 +11,11 @@
 
   interface Props {
     sequence: SequenceData | null;
-    totalBeats?: number;
+    totalSteps?: number;
     onBrowseSequences?: () => void;
   }
 
-  let { sequence = null, totalBeats = 0, onBrowseSequences }: Props = $props();
+  let { sequence = null, totalSteps = 0, onBrowseSequences }: Props = $props();
 
   const hapticService = container.items.hapticFeedback;
 
@@ -36,7 +36,7 @@
   {#if sequence}
     <div class="sequence-content">
       <span class="sequence-name">{sequence.word || sequence.name}</span>
-      <span class="sequence-beats">{totalBeats} beats</span>
+      <span class="sequence-steps">{totalSteps} steps</span>
     </div>
   {:else}
     <div class="sequence-content">
@@ -174,7 +174,7 @@
     max-width: 200px;
   }
 
-  .sequence-beats {
+  .sequence-steps {
     font-size: 0.7rem;
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-weight: 500;
@@ -193,7 +193,7 @@
       max-width: 120px;
     }
 
-    .sequence-beats {
+    .sequence-steps {
       font-size: 0.625rem;
     }
   }
@@ -211,7 +211,7 @@
       max-width: 152px;
     }
 
-    .sequence-beats::before {
+    .sequence-steps::before {
       content: "•";
       margin-right: var(--space-2026-xs, 6px);
       color: color-mix(in srgb, var(--theme-text, white) 30%, transparent);
@@ -241,12 +241,12 @@
       text-align: left;
     }
 
-    .sequence-beats {
+    .sequence-steps {
       font-size: 0.875rem;
       font-weight: 500;
     }
 
-    .sequence-beats::before {
+    .sequence-steps::before {
       content: "•";
       margin-right: var(--space-2026-sm, 12px);
       color: color-mix(in srgb, var(--theme-text, white) 30%, transparent);

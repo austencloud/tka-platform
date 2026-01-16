@@ -1,5 +1,5 @@
 <!--
-WordBeatNavigation - Beat navigation dots for letter sequence
+WordStepNavigation - Beat navigation dots for letter sequence
 -->
 <script lang="ts">
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
@@ -8,23 +8,23 @@ WordBeatNavigation - Beat navigation dots for letter sequence
 
   let {
     letters,
-    currentBeatIndex,
-    showBeatNumber = true,
+    currentStepIndex,
+    showStepNumber = true,
     compact = false,
-    onBeatChange,
+    onStepChange,
   }: {
     letters: LetterDefinition[];
-    currentBeatIndex: number;
-    showBeatNumber?: boolean;
+    currentStepIndex: number;
+    showStepNumber?: boolean;
     compact?: boolean;
-    onBeatChange: (index: number) => void;
+    onStepChange: (index: number) => void;
   } = $props();
 
   const hapticService = container.items.hapticFeedback as IHapticFeedback;
 
-  function goToBeat(index: number) {
+  function goToStep(index: number) {
     hapticService?.trigger("selection");
-    onBeatChange(index);
+    onStepChange(index);
   }
 </script>
 
@@ -32,12 +32,12 @@ WordBeatNavigation - Beat navigation dots for letter sequence
   {#each letters as letter, i}
     <button
       class="beat-dot"
-      class:active={i === currentBeatIndex}
+      class:active={i === currentStepIndex}
       class:compact
-      onclick={() => goToBeat(i)}
+      onclick={() => goToStep(i)}
       aria-label="Beat {i + 1}: {letter.letter}"
     >
-      {#if showBeatNumber}
+      {#if showStepNumber}
         <span class="beat-number">{i + 1}</span>
       {/if}
     </button>

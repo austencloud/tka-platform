@@ -178,7 +178,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     category: "foundation",
     name: "Type 6: Static",
     shortName: "Static",
-    description: "Hold positions for beats with no motion",
+    description: "Hold positions for steps with no motion",
     icon: "fa-circle",
     pdfPages: [14],
     prerequisites: ["dual-dash-type5"],
@@ -186,7 +186,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     concepts: [
       "Static holds in sequences",
       "Adding prop rotations to statics",
-      "Body turns during static beats",
+      "Body turns during static steps",
     ],
   },
   {
@@ -203,7 +203,7 @@ export const TKA_CONCEPTS: LearnConcept[] = [
     concepts: [
       "Thumbs in/out orientations",
       "Marking the thumb end",
-      "Position checking on beats",
+      "Position checking on steps",
     ],
   },
   {

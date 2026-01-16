@@ -13,28 +13,28 @@ Displays letters transitioning smoothly on the grid with motion arrows
     type HandPosition8,
   } from "../../../domain/constants/word-visualizer-data";
   import WordLetterLabel from "./word-visualizer/WordLetterLabel.svelte";
-  import WordBeatNavigation from "./word-visualizer/WordBeatNavigation.svelte";
+  import WordStepNavigation from "./word-visualizer/WordStepNavigation.svelte";
   import WordHandPositions from "./word-visualizer/WordHandPositions.svelte";
   import WordMotionArrow from "./word-visualizer/WordMotionArrow.svelte";
 
   let {
     letters = [],
-    currentBeatIndex = 0,
+    currentStepIndex = 0,
     isAnimating = false,
     animationSpeed = 1000,
     showLetterLabel = true,
-    showBeatNumber = true,
+    showStepNumber = true,
     compact = false,
-    onBeatChange,
+    onStepChange,
   } = $props<{
     letters: LetterDefinition[];
-    currentBeatIndex?: number;
+    currentStepIndex?: number;
     isAnimating?: boolean;
     animationSpeed?: number;
     showLetterLabel?: boolean;
-    showBeatNumber?: boolean;
+    showStepNumber?: boolean;
     compact?: boolean;
-    onBeatChange?: (index: number) => void;
+    onStepChange?: (index: number) => void;
   }>();
 
   let animationProgress = $state(0);
@@ -42,7 +42,7 @@ Displays letters transitioning smoothly on the grid with motion arrows
 
   const currentLetter = $derived(() => {
     if (letters.length === 0) return null;
-    return letters[Math.min(currentBeatIndex, letters.length - 1)] ?? null;
+    return letters[Math.min(currentStepIndex, letters.length - 1)] ?? null;
   });
 
   const leftHandPos = $derived((): { x: number; y: number } => {
@@ -78,7 +78,7 @@ Displays letters transitioning smoothly on the grid with motion arrows
     const totalFrames = animationSpeed / frameInterval;
     let frame = 0;
     const lettersLength = letters.length;
-    const beatChangeCallback = onBeatChange;
+    const stepChangeCallback = onStepChange;
 
     animationInterval = setInterval(() => {
       frame++;
@@ -87,9 +87,9 @@ Displays letters transitioning smoothly on the grid with motion arrows
       if (frame >= totalFrames) {
         animationProgress = 0;
         frame = 0;
-        const currentIdx = untrack(() => currentBeatIndex);
+        const currentIdx = untrack(() => currentStepIndex);
         const nextIndex = (currentIdx + 1) % lettersLength;
-        beatChangeCallback?.(nextIndex);
+        stepChangeCallback?.(nextIndex);
       }
     }, frameInterval) as unknown as number;
   }
@@ -123,8 +123,8 @@ Displays letters transitioning smoothly on the grid with motion arrows
     };
   });
 
-  function handleBeatChange(index: number) {
-    onBeatChange?.(index);
+  function handleStepChange(index: number) {
+    onStepChange?.(index);
     animationProgress = 0;
   }
 </script>
@@ -181,12 +181,12 @@ Displays letters transitioning smoothly on the grid with motion arrows
 
   <!-- Beat navigation -->
   {#if letters.length > 1}
-    <WordBeatNavigation
+    <WordStepNavigation
       {letters}
-      {currentBeatIndex}
-      {showBeatNumber}
+      {currentStepIndex}
+      {showStepNumber}
       {compact}
-      onBeatChange={handleBeatChange}
+      onStepChange={handleStepChange}
     />
   {/if}
 </div>

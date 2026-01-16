@@ -6,7 +6,7 @@
  *
  * Standard generation settings:
  * - Level 2 (Intermediate difficulty)
- * - 16 count (4 beats × 4 slices for quartered)
+ * - 16 count (4 steps × 4 slices for quartered)
  * - Max turn 1
  * - Cycles through LOOP types: Rotated, Mirrored, Swapped, Inverted, and combinations
  */
@@ -56,8 +56,8 @@ const LOOP_TYPE_ROTATION: LOOPType[] = [
  * Quartered (4 slices) is more common as it produces 16-beat sequences.
  */
 const SLICE_OPTIONS: { slice: SliceSize; weight: number }[] = [
-  { slice: SliceSize.QUARTERED, weight: 70 }, // 70% - 16 beats total
-  { slice: SliceSize.HALVED, weight: 30 },    // 30% - 8 beats total
+  { slice: SliceSize.QUARTERED, weight: 70 }, // 70% - 16 steps total
+  { slice: SliceSize.HALVED, weight: 30 },    // 30% - 8 steps total
 ];
 
 export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
@@ -93,7 +93,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
     try {
       const sequence = await this.generationOrchestrator.generateSequence({
         mode: GenerationMode.CIRCULAR,
-        length: settings.totalBeats, // Pass total (16), generator divides by slice count
+        length: settings.totalSteps, // Pass total (16), generator divides by slice count
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
         difficulty: settings.difficulty,
@@ -108,7 +108,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
       const globalIndex = await this.incrementMetricsSafely();
 
       // Update settings with actual beat count from generated sequence
-      settings.totalBeats = sequence.beats?.length ?? settings.totalBeats;
+      settings.totalSteps = sequence.steps?.length ?? settings.totalSteps;
 
       return {
         sequence,
@@ -133,20 +133,20 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
   private async generateFallbackLOOP(
     originalSettings: GenerationSettings
   ): Promise<GeneratedSequenceInfo | null> {
-    // Try with the simplest LOOP type: strict rotated, 16 beats
+    // Try with the simplest LOOP type: strict rotated, 16 steps
     const fallbackSettings: GenerationSettings = {
       loopType: LOOPType.STRICT_ROTATED,
       sliceSize: SliceSize.QUARTERED,
       difficulty: DifficultyLevel.BEGINNER,
       turnIntensity: 0,
       baseLength: 4,
-      totalBeats: 16,
+      totalSteps: 16,
     };
 
     try {
       const sequence = await this.generationOrchestrator.generateSequence({
         mode: GenerationMode.CIRCULAR,
-        length: fallbackSettings.totalBeats, // Pass total (16)
+        length: fallbackSettings.totalSteps, // Pass total (16)
         gridMode: GridMode.DIAMOND,
         propType: PropType.STAFF,
         difficulty: fallbackSettings.difficulty,
@@ -158,7 +158,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
 
       this.sessionCount++;
       const globalIndex = await this.incrementMetricsSafely();
-      fallbackSettings.totalBeats = sequence.beats?.length ?? fallbackSettings.totalBeats;
+      fallbackSettings.totalSteps = sequence.steps?.length ?? fallbackSettings.totalSteps;
 
       return {
         sequence,
@@ -183,13 +183,13 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
     // Select slice size (weighted random)
     const sliceSize = this.selectWeightedSlice();
 
-    // Total length is 16 beats (standard)
+    // Total length is 16 steps (standard)
     // The generator divides by slice count internally:
-    // - Quartered: 16 / 4 = 4 base beats × 4 slices = 16 total
-    // - Halved: 16 / 2 = 8 base beats × 2 slices = 16 total
-    const totalBeats = 16;
+    // - Quartered: 16 / 4 = 4 base steps × 4 slices = 16 total
+    // - Halved: 16 / 2 = 8 base steps × 2 slices = 16 total
+    const totalSteps = 16;
     const multiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
-    const baseLength = totalBeats / multiplier;
+    const baseLength = totalSteps / multiplier;
 
     return {
       loopType,
@@ -197,7 +197,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
       difficulty: DifficultyLevel.INTERMEDIATE,
       turnIntensity: 1,
       baseLength,
-      totalBeats,
+      totalSteps,
     };
   }
 

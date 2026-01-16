@@ -3,8 +3,8 @@
 
   Manages responsive layouts for three display views:
   - camera-canvas: Camera + AnimatorCanvas (side-by-side)
-  - camera-grid: Camera + BeatGrid (side-by-side)
-  - camera-canvas-grid: Camera + AnimatorCanvas + BeatGrid (all three)
+  - camera-grid: Camera + StepGrid (side-by-side)
+  - camera-canvas-grid: Camera + AnimatorCanvas + StepGrid (all three)
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -17,7 +17,7 @@
 
   interface Props {
     sequence: SequenceData | null;
-    currentBeatIndex?: number;
+    currentStepIndex?: number;
     isPlaying?: boolean;
     bpm?: number;
     // Camera props
@@ -43,14 +43,14 @@
     onCameraReady?: () => void;
     onCameraError?: (error: string) => void;
     onFrame?: (video: HTMLVideoElement) => void;
-    onBeatSelect?: (beatIndex: number) => void;
+    onStepSelect?: (stepIndex: number) => void;
     onBrowseSequences?: () => void;
     onGridSettingsClick?: () => void;
   }
 
   let {
     sequence = null,
-    currentBeatIndex = 0,
+    currentStepIndex = 0,
     isPlaying = false,
     bpm = 60,
     isCameraReady = false,
@@ -71,7 +71,7 @@
     onCameraReady,
     onCameraError,
     onFrame,
-    onBeatSelect,
+    onStepSelect,
     onBrowseSequences,
     onGridSettingsClick,
   }: Props = $props();
@@ -105,7 +105,7 @@
       {propsVisible}
       {propType}
       {sequence}
-      {currentBeatIndex}
+      {currentStepIndex}
       {onCameraReady}
       {onCameraError}
       {onFrame}
@@ -117,8 +117,8 @@
   <div class="panel grid-panel">
     <GridSection
       {sequence}
-      {currentBeatIndex}
-      {onBeatSelect}
+      {currentStepIndex}
+      {onStepSelect}
       {onBrowseSequences}
     />
   </div>

@@ -135,7 +135,7 @@
             <div class="sequence-info-large">
               <span class="sequence-name">{selectedSequence.name}</span>
               <span class="sequence-details">
-                {selectedSequence.beats?.length ?? 0} beats • {selectedSequence.word ||
+                {selectedSequence.steps?.length ?? 0} steps • {selectedSequence.word ||
                   "Unknown"}
               </span>
             </div>

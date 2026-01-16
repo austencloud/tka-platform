@@ -1,33 +1,33 @@
 <!--
   EditWorkspace.svelte
 
-  Displays the sequence being edited with selectable beats.
-  Reuses the existing BeatGrid component from the Create module.
+  Displays the sequence being edited with selectable steps.
+  Reuses the existing StepGrid component from the Create module.
 -->
 <script lang="ts">
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StartPositionData } from "../../create/shared/domain/models/StartPositionData";
-  import type { BeatData } from "../../create/shared/domain/models/BeatData";
+  import type { StepData } from "../../create/shared/domain/models/StepData";
   import { isStartPosition } from "../../create/shared/domain/type-guards/pictograph-type-guards";
-  import BeatGrid from "../../create/shared/workspace-panel/sequence-display/components/BeatGrid.svelte";
+  import StepGrid from "../../create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import type { ISequenceNormalizer } from "$lib/features/compose/services/contracts/ISequenceNormalizer";
   import { onMount } from "svelte";
 
   interface Props {
     sequence: SequenceData | null;
-    selectedBeatNumber: number | null;
-    selectedBeatNumbers: number[];
-    onBeatSelect: (beatNumber: number, beatData: BeatData | null) => void;
-    onBeatMultiSelect: (beatNumber: number) => void;
+    selectedStepNumber: number | null;
+    selectedStepNumbers: number[];
+    onStepSelect: (stepNumber: number, stepData: StepData | null) => void;
+    onBeatMultiSelect: (stepNumber: number) => void;
     onChangeSequence?: () => void;
   }
 
   let {
     sequence,
-    selectedBeatNumber,
-    selectedBeatNumbers,
-    onBeatSelect,
+    selectedStepNumber,
+    selectedStepNumbers,
+    onStepSelect,
     onBeatMultiSelect,
     onChangeSequence,
   }: Props = $props();
@@ -48,72 +48,72 @@
 
   /**
    * Fallback normalization when service isn't available
-   * Handles the case where start position might be mixed in the beats array
+   * Handles the case where start position might be mixed in the steps array
    */
   function manualNormalize(seq: SequenceData) {
     // Check for dedicated start position fields first
     if (seq.startPosition) {
       return {
-        beats: seq.beats || [],
+        steps: seq.steps || [],
         startPosition: seq.startPosition,
       };
     }
 
-    if (seq.startingPositionBeat) {
+    if (seq.startingPosition) {
       return {
-        beats: seq.beats || [],
-        startPosition: seq.startingPositionBeat,
+        steps: seq.steps || [],
+        startPosition: seq.startingPosition,
       };
     }
 
-    // Fallback: start position might be in the beats array
-    const allBeats = seq.beats || [];
-    const startPos = allBeats.find((beat) => isStartPosition(beat)) || null;
-    const beats = allBeats.filter((beat) => !isStartPosition(beat));
+    // Fallback: start position might be in the steps array
+    const allSteps = seq.steps || [];
+    const startPos = allSteps.find((beat) => isStartPosition(beat)) || null;
+    const steps = allSteps.filter((beat) => !isStartPosition(beat));
 
-    return { beats, startPosition: startPos };
+    return { steps, startPosition: startPos };
   }
 
-  // Normalize sequence data (separate beats from startPosition)
+  // Normalize sequence data (separate steps from startPosition)
   const normalizedData = $derived.by(() => {
     if (!sequence) {
-      return { beats: [], startPosition: null };
+      return { steps: [], startPosition: null };
     }
 
     // Use service if available, otherwise use manual normalization
     if (normalizationService) {
-      return normalizationService.separateBeatsFromStartPosition(sequence);
+      return normalizationService.separateStepsFromStartPosition(sequence);
     }
 
     return manualNormalize(sequence);
   });
 
-  // Get beats and start position
-  const beats = $derived(normalizedData.beats);
-  const startPosition = $derived<StartPositionData | BeatData | null>(
+  // Get steps and start position
+  const steps = $derived(normalizedData.steps);
+  const startPosition = $derived<StartPositionData | StepData | null>(
     normalizedData.startPosition
   );
 
-  // Convert selectedBeatNumbers array to Set for BeatGrid
-  const selectedBeatNumbersSet = $derived(new Set(selectedBeatNumbers));
+  // Convert selectedStepNumbers array to Set for StepGrid
+  const selectedBeatNumbersSet = $derived(new Set(selectedStepNumbers));
 
-  // Handle beat click from BeatGrid
-  function handleBeatClick(beatNumber: number) {
-    const beatData =
-      beatNumber === 0
-        ? (startPosition as BeatData | null)
-        : (beats[beatNumber - 1] ?? null);
-    onBeatSelect(beatNumber, beatData);
+  // Handle beat click from StepGrid
+  function handleStepClick(stepNumber: number) {
+    const stepData =
+      stepNumber === 0
+        ? (startPosition as StepData | null)
+        : (steps[stepNumber - 1] ?? null);
+    onStepSelect(stepNumber, stepData);
   }
 
   // Handle start position click
   function handleStartClick() {
-    onBeatSelect(0, startPosition as BeatData | null);
+    onStepSelect(0, startPosition as StepData | null);
   }
 
   // Handle long press for multi-select
-  function handleBeatLongPress(beatNumber: number) {
-    onBeatMultiSelect(beatNumber);
+  function handleBeatLongPress(stepNumber: number) {
+    onBeatMultiSelect(stepNumber);
   }
 
   function handleStartLongPress() {
@@ -126,7 +126,7 @@
     <div class="sequence-header">
       <div class="header-left">
         <h3 class="sequence-name">{sequence.name || "Untitled Sequence"}</h3>
-        <span class="beat-count">{beats.length} beats</span>
+        <span class="beat-count">{steps.length} steps</span>
       </div>
       {#if onChangeSequence}
         <button
@@ -141,16 +141,16 @@
     </div>
 
     <div class="beat-grid-wrapper">
-      <BeatGrid
-        {beats}
+      <StepGrid
+        {steps}
         {startPosition}
-        {selectedBeatNumber}
-        selectedBeatNumbers={selectedBeatNumbersSet}
-        onBeatClick={handleBeatClick}
+        {selectedStepNumber}
+        selectedStepNumbers={selectedBeatNumbersSet}
+        onStepClick={handleStepClick}
         onStartClick={handleStartClick}
-        onBeatLongPress={handleBeatLongPress}
+        onStepLongPress={handleBeatLongPress}
         onStartLongPress={handleStartLongPress}
-        isMultiSelectMode={selectedBeatNumbers.length > 0}
+        isMultiSelectMode={selectedStepNumbers.length > 0}
       />
     </div>
 
@@ -226,7 +226,7 @@
     border-color: rgba(6, 182, 212, 0.5);
   }
 
-  /* Wrapper for the reused BeatGrid component */
+  /* Wrapper for the reused StepGrid component */
   .beat-grid-wrapper {
     flex: 1;
     min-height: 0;

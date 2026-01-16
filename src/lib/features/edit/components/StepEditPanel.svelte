@@ -1,46 +1,46 @@
 <!--
-  BeatEditPanel.svelte
+  StepEditPanel.svelte
 
-  Panel for editing individual beats.
+  Panel for editing individual steps.
   Provides controls for turns, rotation direction, and motion type.
 -->
 <script lang="ts">
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import {
     MotionColor,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
-    selectedBeatNumber: number | null;
-    selectedBeatData: BeatData | null;
-    selectedBeatNumbers: number[];
+    selectedStepNumber: number | null;
+    selectedStepData: StepData | null;
+    selectedStepNumbers: number[];
     sequence: SequenceData | null;
-    onBeatUpdate: (beatIndex: number, updates: Partial<BeatData>) => void;
+    onStepUpdate: (stepIndex: number, updates: Partial<StepData>) => void;
     onStartPositionUpdate: (updates: Partial<PictographData>) => void;
   }
 
   let {
-    selectedBeatNumber,
-    selectedBeatData,
-    selectedBeatNumbers,
+    selectedStepNumber,
+    selectedStepData,
+    selectedStepNumbers,
     sequence,
-    onBeatUpdate,
+    onStepUpdate,
     onStartPositionUpdate,
   }: Props = $props();
 
   // Derived state
   const hasSelection = $derived(
-    selectedBeatNumber !== null || selectedBeatNumbers.length > 0
+    selectedStepNumber !== null || selectedStepNumbers.length > 0
   );
-  const isMultiSelect = $derived(selectedBeatNumbers.length > 1);
-  const isStartPosition = $derived(selectedBeatNumber === 0);
+  const isMultiSelect = $derived(selectedStepNumbers.length > 1);
+  const isStartPosition = $derived(selectedStepNumber === 0);
 
   // Get current values from motions using MotionColor enum
-  const blueMotion = $derived(selectedBeatData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(selectedBeatData?.motions?.[MotionColor.RED]);
+  const blueMotion = $derived(selectedStepData?.motions?.[MotionColor.BLUE]);
+  const redMotion = $derived(selectedStepData?.motions?.[MotionColor.RED]);
   // Handle "fl" (float) turns - converts to -0.5 for calculations, otherwise converts to number
   const normalizeTurns = (turns: number | string | undefined): number =>
     turns === "fl" ? -0.5 : Number(turns) || 0;
@@ -68,9 +68,9 @@
   );
 
   function handleBlueTurnsChange(delta: number) {
-    if (selectedBeatNumber === null || !selectedBeatData?.motions) return;
+    if (selectedStepNumber === null || !selectedStepData?.motions) return;
 
-    const blueMotionData = selectedBeatData.motions[MotionColor.BLUE];
+    const blueMotionData = selectedStepData.motions[MotionColor.BLUE];
     if (!blueMotionData) return;
 
     // Allow turns to go to -0.5 (float), floor at -0.5
@@ -79,7 +79,7 @@
     const newTurns: number | "fl" =
       newNumericTurns === -0.5 ? "fl" : newNumericTurns;
     const updatedMotions = {
-      ...selectedBeatData.motions,
+      ...selectedStepData.motions,
       [MotionColor.BLUE]: {
         ...blueMotionData,
         turns: newTurns,
@@ -89,14 +89,14 @@
     if (isStartPosition) {
       onStartPositionUpdate({ motions: updatedMotions });
     } else {
-      onBeatUpdate(selectedBeatNumber - 1, { motions: updatedMotions });
+      onStepUpdate(selectedStepNumber - 1, { motions: updatedMotions });
     }
   }
 
   function handleRedTurnsChange(delta: number) {
-    if (selectedBeatNumber === null || !selectedBeatData?.motions) return;
+    if (selectedStepNumber === null || !selectedStepData?.motions) return;
 
-    const redMotionData = selectedBeatData.motions[MotionColor.RED];
+    const redMotionData = selectedStepData.motions[MotionColor.RED];
     if (!redMotionData) return;
 
     // Allow turns to go to -0.5 (float), floor at -0.5
@@ -105,7 +105,7 @@
     const newTurns: number | "fl" =
       newNumericTurns === -0.5 ? "fl" : newNumericTurns;
     const updatedMotions = {
-      ...selectedBeatData.motions,
+      ...selectedStepData.motions,
       [MotionColor.RED]: {
         ...redMotionData,
         turns: newTurns,
@@ -115,18 +115,18 @@
     if (isStartPosition) {
       onStartPositionUpdate({ motions: updatedMotions });
     } else {
-      onBeatUpdate(selectedBeatNumber - 1, { motions: updatedMotions });
+      onStepUpdate(selectedStepNumber - 1, { motions: updatedMotions });
     }
   }
 
   function handleBlueRotationChange(direction: RotationDirection) {
-    if (selectedBeatNumber === null || !selectedBeatData?.motions) return;
+    if (selectedStepNumber === null || !selectedStepData?.motions) return;
 
-    const blueMotionData = selectedBeatData.motions[MotionColor.BLUE];
+    const blueMotionData = selectedStepData.motions[MotionColor.BLUE];
     if (!blueMotionData) return;
 
     const updatedMotions = {
-      ...selectedBeatData.motions,
+      ...selectedStepData.motions,
       [MotionColor.BLUE]: {
         ...blueMotionData,
         rotationDirection: direction,
@@ -136,18 +136,18 @@
     if (isStartPosition) {
       onStartPositionUpdate({ motions: updatedMotions });
     } else {
-      onBeatUpdate(selectedBeatNumber - 1, { motions: updatedMotions });
+      onStepUpdate(selectedStepNumber - 1, { motions: updatedMotions });
     }
   }
 
   function handleRedRotationChange(direction: RotationDirection) {
-    if (selectedBeatNumber === null || !selectedBeatData?.motions) return;
+    if (selectedStepNumber === null || !selectedStepData?.motions) return;
 
-    const redMotionData = selectedBeatData.motions[MotionColor.RED];
+    const redMotionData = selectedStepData.motions[MotionColor.RED];
     if (!redMotionData) return;
 
     const updatedMotions = {
-      ...selectedBeatData.motions,
+      ...selectedStepData.motions,
       [MotionColor.RED]: {
         ...redMotionData,
         rotationDirection: direction,
@@ -157,7 +157,7 @@
     if (isStartPosition) {
       onStartPositionUpdate({ motions: updatedMotions });
     } else {
-      onBeatUpdate(selectedBeatNumber - 1, { motions: updatedMotions });
+      onStepUpdate(selectedStepNumber - 1, { motions: updatedMotions });
     }
   }
 </script>
@@ -171,7 +171,7 @@
   {:else if isMultiSelect}
     <div class="multi-select-info">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
-      <p>{selectedBeatNumbers.length} beats selected</p>
+      <p>{selectedStepNumbers.length} steps selected</p>
       <p class="hint">Batch editing coming soon</p>
     </div>
   {:else}
@@ -179,7 +179,7 @@
       <h3 class="panel-title">
         {isStartPosition
           ? "Edit Start Position"
-          : `Edit Beat ${selectedBeatNumber}`}
+          : `Edit Beat ${selectedStepNumber}`}
       </h3>
 
       <!-- Blue Prop Section -->

@@ -100,7 +100,7 @@
             >
               <div class="recent-name">{recent.word ?? recent.name}</div>
               <div class="recent-meta">
-                <span class="beat-count">{recent.beatCount} beats</span>
+                <span class="beat-count">{recent.stepCount} steps</span>
                 <span class="time-ago"
                   >{formatTimeAgo(recent.lastPracticedAt)}</span
                 >

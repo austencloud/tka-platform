@@ -18,7 +18,20 @@ import {
   type Entity,
 } from "./ecs-world";
 import { Octree } from "../spatial/octree";
-import type { ChunkResultMessage, GenerateChunkMessage, VegetationData } from "../workers/chunk-generator.worker";
+import type {
+  ChunkResultMessage,
+  GenerateChunkMessage,
+  VegetationData,
+  LoadRealZoneMessage,
+  ClearRealZoneMessage,
+  RealZoneLoadedMessage,
+} from "../workers/chunk-generator.worker";
+import {
+  type RealTerrainZone,
+  type ImportedTerrainData,
+  createRealTerrainZone,
+  serializeZoneForWorker,
+} from "../generation/real-terrain-zone";
 
 // ============================================================================
 // TYPES
@@ -81,9 +94,13 @@ export class ChunkManager {
   private nextRequestId = 0;
   private octree: Octree;
 
+  // Real terrain zone
+  private realTerrainZone: RealTerrainZone | null = null;
+
   // Callbacks
   public onChunkLoaded?: (chunkKey: ChunkKey, state: ChunkState) => void;
   public onChunkUnloaded?: (chunkKey: ChunkKey) => void;
+  public onRealZoneLoaded?: (zoneName: string) => void;
 
   constructor(worldSeed: number, config: Partial<ChunkManagerConfig> = {}) {
     this.worldSeed = worldSeed;
@@ -123,8 +140,14 @@ export class ChunkManager {
         { type: "module" }
       );
 
-      worker.onmessage = (event: MessageEvent<ChunkResultMessage>) => {
-        this.handleWorkerResult(event.data);
+      worker.onmessage = (event: MessageEvent<ChunkResultMessage | RealZoneLoadedMessage>) => {
+        const msg = event.data;
+        if (msg.type === "chunk-result") {
+          this.handleWorkerResult(msg);
+        } else if (msg.type === "real-zone-loaded") {
+          console.log(`[ChunkManager] Worker loaded real zone: ${msg.name}`);
+          this.onRealZoneLoaded?.(msg.name);
+        }
       };
 
       worker.onerror = (error) => {
@@ -404,6 +427,158 @@ export class ChunkManager {
       queueLength: this.loadQueue.length,
       activeLoads: this.activeLoads,
     };
+  }
+
+  // ==========================================================================
+  // REAL TERRAIN ZONES
+  // ==========================================================================
+
+  /**
+   * Load a real terrain zone from imported data
+   * This distributes the zone data to all workers
+   */
+  loadRealTerrainZone(data: ImportedTerrainData): void {
+    // Create zone from imported data
+    this.realTerrainZone = createRealTerrainZone(data);
+
+    console.log(`[ChunkManager] Loading real terrain zone: ${this.realTerrainZone.name}`);
+    console.log(`[ChunkManager] Boundary points: ${this.realTerrainZone.boundary.length}`);
+    console.log(`[ChunkManager] Heightmap: ${this.realTerrainZone.heightmap.width}x${this.realTerrainZone.heightmap.height}`);
+
+    // Serialize for workers
+    const serialized = serializeZoneForWorker(this.realTerrainZone);
+
+    // Send to all workers
+    const message: LoadRealZoneMessage = {
+      type: "load-real-zone",
+      zone: serialized,
+    };
+
+    for (const worker of this.workers) {
+      // Need to clone the heights array for each worker since transferable can only be sent once
+      const clonedMessage: LoadRealZoneMessage = {
+        type: "load-real-zone",
+        zone: {
+          ...serialized,
+          heights: new Float32Array(serialized.heights),
+        },
+      };
+      worker.postMessage(clonedMessage);
+    }
+
+    // Regenerate affected chunks
+    this.regenerateChunksInZone();
+  }
+
+  /**
+   * Load a real terrain zone from a JSON file
+   */
+  async loadRealTerrainZoneFromFile(file: File): Promise<void> {
+    const text = await file.text();
+    const data = JSON.parse(text) as ImportedTerrainData;
+    this.loadRealTerrainZone(data);
+  }
+
+  /**
+   * Clear the real terrain zone
+   */
+  clearRealTerrainZone(): void {
+    if (!this.realTerrainZone) return;
+
+    console.log(`[ChunkManager] Clearing real terrain zone: ${this.realTerrainZone.name}`);
+    this.realTerrainZone = null;
+
+    // Notify workers
+    const message: ClearRealZoneMessage = {
+      type: "clear-real-zone",
+    };
+
+    for (const worker of this.workers) {
+      worker.postMessage(message);
+    }
+
+    // Regenerate all loaded chunks
+    this.regenerateAllChunks();
+  }
+
+  /**
+   * Check if a real terrain zone is loaded
+   */
+  hasRealTerrainZone(): boolean {
+    return this.realTerrainZone !== null;
+  }
+
+  /**
+   * Get the loaded real terrain zone name
+   */
+  getRealTerrainZoneName(): string | null {
+    return this.realTerrainZone?.name ?? null;
+  }
+
+  /**
+   * Regenerate chunks that overlap with the real terrain zone
+   */
+  private regenerateChunksInZone(): void {
+    if (!this.realTerrainZone) return;
+
+    const { chunkSize } = this.config;
+    const zone = this.realTerrainZone;
+
+    // Find chunks that intersect the zone
+    const chunksToRegenerate: ChunkKey[] = [];
+
+    for (const [key, state] of this.chunks) {
+      if (state.loadState !== "loaded") continue;
+
+      const [chunkX, , chunkZ] = this.parseChunkKey(key);
+      const chunkMinX = chunkX * chunkSize;
+      const chunkMaxX = (chunkX + 1) * chunkSize;
+      const chunkMinZ = chunkZ * chunkSize;
+      const chunkMaxZ = (chunkZ + 1) * chunkSize;
+
+      // Check if chunk overlaps zone bounds (with margin for blending)
+      const margin = 50;
+      if (
+        chunkMaxX >= zone.bounds.minX - margin &&
+        chunkMinX <= zone.bounds.maxX + margin &&
+        chunkMaxZ >= zone.bounds.minZ - margin &&
+        chunkMinZ <= zone.bounds.maxZ + margin
+      ) {
+        chunksToRegenerate.push(key);
+      }
+    }
+
+    console.log(`[ChunkManager] Regenerating ${chunksToRegenerate.length} chunks in zone`);
+
+    // Unload and re-queue these chunks
+    for (const key of chunksToRegenerate) {
+      const state = this.chunks.get(key);
+      if (state) {
+        state.loadState = "pending";
+        state.meshData = null;
+        this.loadQueue.push(key);
+      }
+    }
+
+    this.processQueue();
+  }
+
+  /**
+   * Regenerate all loaded chunks (used when clearing zone)
+   */
+  private regenerateAllChunks(): void {
+    const chunksToRegenerate = Array.from(this.chunks.keys());
+
+    for (const key of chunksToRegenerate) {
+      const state = this.chunks.get(key);
+      if (state && state.loadState === "loaded") {
+        state.loadState = "pending";
+        state.meshData = null;
+        this.loadQueue.push(key);
+      }
+    }
+
+    this.processQueue();
   }
 
   /**

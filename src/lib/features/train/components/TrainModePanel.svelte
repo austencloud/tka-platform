@@ -102,9 +102,9 @@
   >(undefined);
 
   // Timing system (using requestAnimationFrame for better performance)
-  let beatAnimationFrameId: number | null = null;
+  let stepAnimationFrameId: number | null = null;
   let lastBeatTime = 0;
-  let beatDuration = 0;
+  let stepDuration = 0;
 
   // Hit detection tracking
   let hasCheckedCurrentBeat = false;
@@ -112,12 +112,12 @@
   let lastHitPoints = $state(0);
 
   // Beat selection for setup mode (manual beat preview)
-  // -1 = start position, 0+ = actual beats (0-indexed)
-  let selectedBeatIndex = $state(-1);
+  // -1 = start position, 0+ = actual steps (0-indexed)
+  let selectedStepIndex = $state(-1);
 
   // Determine which beat index to show - selected during setup, current during performance
   const displayBeatIndex = $derived(
-    trainState.isPerforming ? trainState.currentBeatIndex : selectedBeatIndex
+    trainState.isPerforming ? trainState.currentStepIndex : selectedStepIndex
   );
 
   // Set sequence if provided
@@ -225,12 +225,12 @@
 
   // Timing system - start beat timer when performance begins
   $effect(() => {
-    if (trainState.isPerforming && !beatAnimationFrameId) {
+    if (trainState.isPerforming && !stepAnimationFrameId) {
       startBeatTimer();
       // Record session start time
       sessionStartTime = Date.now();
       hasProcessedSession = false;
-    } else if (!trainState.isPerforming && beatAnimationFrameId) {
+    } else if (!trainState.isPerforming && stepAnimationFrameId) {
       stopBeatTimer();
     }
   });
@@ -246,12 +246,12 @@
   async function processSessionCompletion() {
     const duration = Date.now() - sessionStartTime;
     const accuracy =
-      trainState.totalBeats > 0
-        ? (trainState.totalHits / trainState.totalBeats) * 100
+      trainState.totalSteps > 0
+        ? (trainState.totalHits / trainState.totalSteps) * 100
         : 0;
 
     const sessionResult: SessionResult = {
-      totalBeats: trainState.totalBeats,
+      totalSteps: trainState.totalSteps,
       hits: trainState.totalHits,
       misses: trainState.totalMisses,
       maxCombo: trainState.maxCombo,
@@ -443,7 +443,7 @@
       const now = performance.now();
       const elapsed = now - lastBeatTime;
 
-      if (elapsed >= beatDuration) {
+      if (elapsed >= stepDuration) {
         lastBeatTime = now;
         hasCheckedCurrentBeat = false;
         trainState.advanceBeat();
@@ -451,11 +451,11 @@
 
       // Continue the loop if still performing
       if (trainState.isPerforming) {
-        beatAnimationFrameId = requestAnimationFrame(tick);
+        stepAnimationFrameId = requestAnimationFrame(tick);
       }
     }
 
-    beatAnimationFrameId = requestAnimationFrame(tick);
+    stepAnimationFrameId = requestAnimationFrame(tick);
   }
 
   // Hit detection
@@ -489,9 +489,9 @@
   });
 
   function stopBeatTimer() {
-    if (beatAnimationFrameId) {
-      cancelAnimationFrame(beatAnimationFrameId);
-      beatAnimationFrameId = null;
+    if (stepAnimationFrameId) {
+      cancelAnimationFrame(stepAnimationFrameId);
+      stepAnimationFrameId = null;
     }
   }
 
@@ -499,14 +499,14 @@
     trainState.setSequence(selectedSequence);
     showSequenceBrowser = false;
     // Reset beat selection to start position when sequence changes
-    selectedBeatIndex = -1;
+    selectedStepIndex = -1;
     onSequenceSelect?.(selectedSequence);
   }
 
-  function handleBeatSelect(beatIndex: number) {
+  function handleStepSelect(stepIndex: number) {
     // Only allow beat selection during setup mode
     if (!trainState.isPerforming) {
-      selectedBeatIndex = beatIndex;
+      selectedStepIndex = stepIndex;
       hapticService?.trigger("selection");
     }
   }
@@ -538,7 +538,7 @@
   <div class="training-mode-body">
     <PracticeBentoLayout
       sequence={trainState.sequence}
-      currentBeatIndex={displayBeatIndex}
+      currentStepIndex={displayBeatIndex}
       isPlaying={trainState.isPerforming}
       bpm={trainState.bpm}
       isCameraReady={trainState.isCameraReady}
@@ -561,7 +561,7 @@
       onCameraReady={handleCameraReady}
       onCameraError={handleCameraError}
       onFrame={handleFrame}
-      onBeatSelect={handleBeatSelect}
+      onStepSelect={handleStepSelect}
       onBrowseSequences={handleOpenSequenceBrowser}
       onPlayStop={trainState.mode === TrainMode.PERFORMING
         ? handleBackToSetup
@@ -581,7 +581,7 @@
     <!-- Results Screen Overlay -->
     {#if trainState.mode === TrainMode.REVIEW}
       <ResultsScreen
-        totalBeats={trainState.totalBeats}
+        totalSteps={trainState.totalSteps}
         hits={trainState.totalHits}
         misses={trainState.totalMisses}
         maxCombo={trainState.maxCombo}

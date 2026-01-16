@@ -295,7 +295,7 @@ export const SEQUENCE_TERMS: Record<string, TermDefinition> = {
 			0: 'A sequence is a string of letters performed one after another - like spelling out a word with your movement.',
 			1: 'Sequences chain pictographs together. Each beat flows into the next.',
 			2: 'Sequences must connect: the end position of one beat must match the start of the next.',
-			3: 'Valid sequences maintain position continuity between beats.',
+			3: 'Valid sequences maintain position continuity between steps.',
 			4: 'Sequence validation ensures smooth transitions. LOOPs are special repeatable sequences.'
 		}
 	},

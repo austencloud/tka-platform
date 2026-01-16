@@ -49,7 +49,7 @@
   async function handleSequenceSelect(sequence: SequenceData) {
     if (!loaderService) return;
 
-    // Load full sequence data including beats
+    // Load full sequence data including steps
     try {
       isLoadingFullSequence = true;
       const fullSequence = await loaderService.loadFullSequenceData(

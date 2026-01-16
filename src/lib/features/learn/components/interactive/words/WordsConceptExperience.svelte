@@ -33,9 +33,9 @@ Orchestrator component that manages page navigation and state
   const totalPages = 5;
 
   // Animation state for demos (ephemeral - resets on page change)
-  let aabbBeatIndex = $state(0);
-  let ggggBeatIndex = $state(0);
-  let ccccBeatIndex = $state(0);
+  let aabbStepIndex = $state(0);
+  let ggggStepIndex = $state(0);
+  let ccccStepIndex = $state(0);
   let isAnimating = $state(false);
 
   function handleNext() {
@@ -74,9 +74,9 @@ Orchestrator component that manages page navigation and state
 
   function resetAnimationState() {
     isAnimating = false;
-    aabbBeatIndex = 0;
-    ggggBeatIndex = 0;
-    ccccBeatIndex = 0;
+    aabbStepIndex = 0;
+    ggggStepIndex = 0;
+    ccccStepIndex = 0;
   }
 </script>
 
@@ -88,20 +88,20 @@ Orchestrator component that manages page navigation and state
   {:else if currentPage === 3}
     <AABBDemoPage
       {isAnimating}
-      beatIndex={aabbBeatIndex}
+      stepIndex={aabbStepIndex}
       onBack={handlePrevious}
       onNext={handleNext}
       onToggleAnimation={toggleAnimation}
-      onBeatChange={(i) => (aabbBeatIndex = i)}
+      onStepChange={(i) => (aabbStepIndex = i)}
     />
   {:else if currentPage === 4}
     <MorePatternsPage
-      {ggggBeatIndex}
-      {ccccBeatIndex}
+      {ggggStepIndex}
+      {ccccStepIndex}
       onBack={handlePrevious}
       onNext={handleNext}
-      onGGGGBeatChange={(i) => (ggggBeatIndex = i)}
-      onCCCCBeatChange={(i) => (ccccBeatIndex = i)}
+      onGGGGBeatChange={(i) => (ggggStepIndex = i)}
+      onCCCCBeatChange={(i) => (ccccStepIndex = i)}
     />
   {:else if currentPage === 5}
     <QuizPage onComplete={handleQuizComplete} />

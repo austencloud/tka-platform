@@ -11,7 +11,7 @@ import type { LOOPType, SliceSize } from "$lib/features/create/generate/circular
 /**
  * A beat in a broadcast sequence.
  */
-export interface BroadcastBeatData {
+export interface BroadcastStepData {
   id: string;
   letter: string;
   startPosition: string;
@@ -34,7 +34,7 @@ export interface BroadcastBeatData {
     startOrientation?: string;
     endOrientation?: string;
   };
-  beatNumber?: number;
+  stepNumber?: number;
 }
 
 /**
@@ -43,13 +43,13 @@ export interface BroadcastBeatData {
 export interface BroadcastSequence {
   id: string;
   word: string;
-  beats: BroadcastBeatData[];
+  steps: BroadcastStepData[];
   startPosition: string;
   gridMode: string;
   isCircular: boolean;
   loopType: LOOPType;
   sliceSize: SliceSize;
-  totalBeats: number;
+  totalSteps: number;
 }
 
 /**

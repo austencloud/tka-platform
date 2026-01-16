@@ -142,7 +142,7 @@
       <p>
         The Kinetic Alphabet is a notation system for prop manipulation
         choreography. Like musicians reading sheet music, flow artists can write
-        sequences, jump between beats, and share ideas without scrubbing through
+        sequences, jump between steps, and share ideas without scrubbing through
         video. TKA Scribe is the digital version of what started as a physical
         book distributed at flow festivals.
       </p>

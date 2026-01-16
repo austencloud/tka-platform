@@ -35,7 +35,6 @@
   // Import all tab components directly
   import ProfileTab from "$lib/shared/settings/components/tabs/ProfileTab.svelte";
   import ReleaseNotesTab from "$lib/shared/settings/components/tabs/ReleaseNotesTab.svelte";
-  import NotificationsTab from "$lib/shared/settings/components/tabs/NotificationsTab.svelte";
   import PropTypeTab from "$lib/shared/settings/components/tabs/PropTypeTab.svelte";
   import BackgroundTab from "$lib/shared/settings/components/tabs/background/BackgroundTab.svelte";
   import VisibilityTab from "$lib/shared/settings/components/tabs/VisibilityTab.svelte";
@@ -99,20 +98,30 @@
 
   // Adapter for settings updates with instant save
   async function handleSettingUpdate(event: { key: string; value: unknown }) {
-    // Create updated settings object with the change
-    const updatedSettings = { ...settings, [event.key]: event.value };
+    try {
+      // Create updated settings object with the change
+      const updatedSettings = { ...settings, [event.key]: event.value };
 
-    // Apply changes immediately - this will trigger reactivity
-    await updateSettings(updatedSettings);
+      // Apply changes immediately - this will trigger reactivity
+      await updateSettings(updatedSettings);
 
-    // Show success toast briefly
-    showToast = true;
-    toastMessage = "Saved";
+      // Show success toast briefly
+      showToast = true;
+      toastMessage = "Saved";
 
-    // Auto-hide toast after 1.5 seconds
-    setTimeout(() => {
-      showToast = false;
-    }, 1500);
+      // Auto-hide toast after 1.5 seconds
+      setTimeout(() => {
+        showToast = false;
+      }, 1500);
+    } catch (error) {
+      console.error("Settings save failed:", error);
+      showToast = true;
+      toastMessage = "Save failed";
+      // Keep error toast visible longer
+      setTimeout(() => {
+        showToast = false;
+      }, 3000);
+    }
   }
 
   // Use navigation state's active tab
@@ -239,8 +248,6 @@
           />
         {:else if activeTab === "release-notes"}
           <ReleaseNotesTab />
-        {:else if activeTab === "notifications"}
-          <NotificationsTab />
         {:else if activeTab === "props"}
           <PropTypeTab {settings} onUpdate={handleSettingUpdate} />
         {:else if activeTab === "theme"}

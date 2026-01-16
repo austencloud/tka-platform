@@ -58,7 +58,7 @@
   <section class="section">
     <h3 class="section-title">
       <i class="fas fa-filter" aria-hidden="true"></i>
-      <span>Beats</span>
+      <span>Steps</span>
     </h3>
     <div class="length-grid">
       {#each lengthOptions as option (option.value)}

@@ -1,9 +1,9 @@
 <!--
   TIKA Tab - AI-Powered TKA Learning Assistant
 
-  Split-pane layout:
-  - Left: Conversation panel with chat history
-  - Right: Context panel showing relevant pictographs and data
+  Two modes:
+  - Conversation: Split-pane layout for learning with TIKA
+  - Review: Human review of flagged evaluation results
 
   Uses tool-use architecture where Haiku calls educational tools
   to retrieve authoritative information before responding.
@@ -12,68 +12,13 @@
   import TIKAConversation from "./TIKAConversation.svelte";
   import TIKAContextPanel from "./TIKAContextPanel.svelte";
   import TIKAQuickReference from "./TIKAQuickReference.svelte";
+  import TIKAReviewPanel from "./TIKAReviewPanel.svelte";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+  import type { ContextData, ConversationItem } from "../types";
 
-  // Types matching API response
-  interface ToolCall {
-    name: string;
-    input: Record<string, unknown>;
-    result: unknown;
-  }
-
-  interface ContextData {
-    type: "letter" | "term" | "comparison" | "list" | "position" | null;
-    letter?: {
-      letter: string;
-      type: number;
-      typeName: string;
-      startPosition: string;
-      endPosition: string;
-      blueMotion: {
-        motionType: string;
-        startLocation: string;
-        endLocation: string;
-        rotationDirection: string;
-      };
-      redMotion: {
-        motionType: string;
-        startLocation: string;
-        endLocation: string;
-        rotationDirection: string;
-      };
-    };
-    term?: {
-      term: string;
-      definition: string;
-      examples: string[];
-      relatedTerms: string[];
-    };
-    comparison?: {
-      letter1: string;
-      letter2: string;
-      type1: string;
-      type2: string;
-    };
-    position?: {
-      name: string;
-      angleDegrees: string;
-      description: string;
-    };
-  }
-
-  interface ConversationItem {
-    question: string;
-    response: {
-      explanation: string;
-      showPictograph: boolean;
-      pictographLetter?: string;
-      pictographVariation?: number;
-      latencyMs: number;
-      toolsCalled: ToolCall[];
-      contextData?: ContextData;
-    };
-    timestamp: Date;
-  }
+  // Mode toggle - conversation vs review
+  type TabMode = "conversation" | "review";
+  let mode = $state<TabMode>("conversation");
 
   // State
   let conversationHistory = $state<ConversationItem[]>([]);
@@ -205,29 +150,53 @@
 </script>
 
 <div class="tika-tab">
-  <div class="panel-container" class:has-context={hasContext}>
-    <!-- Conversation Panel (Left) -->
-    <div class="conversation-panel">
-      <TIKAConversation
-        {conversationHistory}
-        {isLoading}
-        onSubmit={handleSubmit}
-      />
-    </div>
-
-    <!-- Context Panel (Right) - always visible -->
-    <div class="context-panel">
-      {#if hasContext}
-        <TIKAContextPanel
-          context={currentContext}
-          {pictographBase64}
-          onClose={handleCloseContext}
-        />
-      {:else}
-        <TIKAQuickReference onSuggestionClick={handleSuggestionClick} />
-      {/if}
-    </div>
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button
+      class="mode-btn"
+      class:active={mode === "conversation"}
+      onclick={() => (mode = "conversation")}
+    >
+      <i class="fas fa-comments" aria-hidden="true"></i>
+      <span>Conversation</span>
+    </button>
+    <button
+      class="mode-btn"
+      class:active={mode === "review"}
+      onclick={() => (mode = "review")}
+    >
+      <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+      <span>Review</span>
+    </button>
   </div>
+
+  {#if mode === "conversation"}
+    <div class="panel-container" class:has-context={hasContext}>
+      <!-- Conversation Panel (Left) -->
+      <div class="conversation-panel">
+        <TIKAConversation
+          {conversationHistory}
+          {isLoading}
+          onSubmit={handleSubmit}
+        />
+      </div>
+
+      <!-- Context Panel (Right) - always visible -->
+      <div class="context-panel">
+        {#if hasContext}
+          <TIKAContextPanel
+            context={currentContext}
+            {pictographBase64}
+            onClose={handleCloseContext}
+          />
+        {:else}
+          <TIKAQuickReference onSuggestionClick={handleSuggestionClick} />
+        {/if}
+      </div>
+    </div>
+  {:else}
+    <TIKAReviewPanel />
+  {/if}
 </div>
 
 <style>
@@ -298,6 +267,53 @@
 
     .panel-container.has-context .context-panel {
       flex: 0.5;
+    }
+  }
+
+  /* Mode Toggle */
+  .mode-toggle {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+
+  .mode-btn:hover {
+    color: var(--theme-text, #fff);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .mode-btn.active {
+    color: var(--theme-accent, #6366f1);
+    background: rgba(99, 102, 241, 0.15);
+  }
+
+  .mode-btn i {
+    font-size: 1rem;
+  }
+
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    .panel-container,
+    .conversation-panel,
+    .context-panel,
+    .mode-btn {
+      transition: none;
     }
   }
 </style>

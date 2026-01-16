@@ -6,7 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import type { IPropTypeApplier } from "../contracts/IPropTypeApplier";
@@ -18,11 +18,11 @@ export class PropTypeApplier implements IPropTypeApplier {
       startPosition: sequence.startPosition
         ? this.applyToStartPosition(sequence.startPosition, propType)
         : undefined,
-      beats: sequence.beats?.map((beat) => this.applyToBeat(beat, propType)) ?? [],
+      steps: sequence.steps?.map((beat) => this.applyToBeat(beat, propType)) ?? [],
     };
   }
 
-  private applyToBeat(beat: BeatData, propType: PropType): BeatData {
+  private applyToBeat(beat: StepData, propType: PropType): StepData {
     if (!beat.motions) return beat;
 
     return {

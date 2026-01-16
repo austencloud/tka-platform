@@ -45,7 +45,7 @@ export interface StoredPerformance {
  * Stored beat result for detailed analysis
  */
 export interface StoredBeatResult {
-  beatNumber: number;
+  stepNumber: number;
   expected: { blue: GridLocation; red: GridLocation };
   detected: { blue: GridLocation | null; red: GridLocation | null };
   timing: TimingGrade;

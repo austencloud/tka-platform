@@ -47,7 +47,7 @@
       </span>
       <span class="separator">·</span>
       <span class="beat-count">
-        {broadcastState.currentSequence.totalBeats} beats
+        {broadcastState.currentSequence.totalSteps} steps
       </span>
     </div>
 

@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
-  import type { IBeatDataConverter } from "$lib/features/loop-labeler/services/contracts/IBeatDataConverter";
+  import type { IStepDataConverter } from "$lib/features/loop-labeler/services/contracts/IStepDataConverter";
   import { tagReviewerState } from "../state/tag-reviewer-state.svelte";
 
   // Shared components
@@ -71,7 +71,7 @@
       // Current notes
       notes: tagReviewerState.notes || "(no notes)",
       // Raw beat data for context
-      beats: seq.fullMetadata?.sequence ?? [],
+      steps: seq.fullMetadata?.sequence ?? [],
     };
 
     const text = `## Tag Review: "${seq.word}"
@@ -80,7 +80,7 @@
 - **Word:** ${seq.word}
 - **Grid Mode:** ${seq.gridMode}
 - **Circular:** ${seq.isCircular}
-- **Length:** ${seq.sequenceLength} beats
+- **Length:** ${seq.sequenceLength} steps
 - **LOOP Type:** ${seq.loopType ?? "not labeled"}
 
 ### Suggested Tags
@@ -127,14 +127,14 @@ ${JSON.stringify(summary, null, 2)}
 
   // Services for beat parsing
   const conversionService = $derived(
-    container.items.beatDataConverter as IBeatDataConverter | null
+    container.items.stepDataConverter as IStepDataConverter | null
   );
 
-  // Parse beats for current sequence
+  // Parse steps for current sequence
   const parsedData = $derived.by(() => {
     const seq = tagReviewerState.currentSequence;
     if (!seq?.fullMetadata?.sequence || !conversionService) {
-      return { beats: [], startPosition: null };
+      return { steps: [], startPosition: null };
     }
 
     const gridMode = conversionService.getAuthoritativeGridMode(seq as any);
@@ -251,7 +251,7 @@ ${JSON.stringify(summary, null, 2)}
           <!-- Sequence preview -->
           <SequencePreviewPanel
             sequence={tagReviewerState.currentSequence}
-            parsedBeats={parsedData.beats}
+            parsedSteps={parsedData.steps}
             startPosition={parsedData.startPosition}
             {showStartPosition}
             {manualColumnCount}

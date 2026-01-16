@@ -5,37 +5,37 @@
   Displays pictograph visualization and beat information.
 -->
 <script lang="ts">
-  import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+  import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 
   interface Props {
-    beat: BeatData | null;
-    beatNumber: number;
-    totalBeats: number;
+    beat: StepData | null;
+    stepNumber: number;
+    totalSteps: number;
     showDetails?: boolean;
   }
 
   let {
     beat = null,
-    beatNumber = 0,
-    totalBeats = 0,
+    stepNumber = 0,
+    totalSteps = 0,
     showDetails = true,
   }: Props = $props();
 
   // Get beat info for display
-  const hasBeat = $derived(beat !== null);
+  const hasStep = $derived(beat !== null);
   const isBlank = $derived(beat?.isBlank ?? false);
 </script>
 
 <div class="beat-visualization">
   <!-- Beat counter -->
   <div class="beat-header">
-    <span class="beat-counter">Beat {beatNumber} / {totalBeats}</span>
+    <span class="beat-counter">Beat {stepNumber} / {totalSteps}</span>
   </div>
 
   <!-- Pictograph visualization -->
   <div class="pictograph-container">
-    {#if hasBeat && !isBlank}
+    {#if hasStep && !isBlank}
       <PictographContainer pictographData={beat} />
     {:else if isBlank}
       <div class="blank-beat">

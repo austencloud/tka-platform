@@ -22,7 +22,7 @@
   }
 
   interface Props {
-    totalBeats: number;
+    totalSteps: number;
     hits: number;
     misses: number;
     maxCombo: number;
@@ -35,7 +35,7 @@
   }
 
   let {
-    totalBeats = 0,
+    totalSteps = 0,
     hits = 0,
     misses = 0,
     maxCombo = 0,
@@ -48,7 +48,7 @@
   }: Props = $props();
 
   // Calculate stats
-  const accuracy = $derived(totalBeats > 0 ? (hits / totalBeats) * 100 : 0);
+  const accuracy = $derived(totalSteps > 0 ? (hits / totalSteps) * 100 : 0);
   const grade = $derived(
     accuracy >= 95
       ? "S"
@@ -177,7 +177,7 @@
       <div class="detailed-stats">
         <div class="detail-row">
           <span class="detail-label">{t("train_total_beats")}</span>
-          <span class="detail-value">{totalBeats}</span>
+          <span class="detail-value">{totalSteps}</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">{t("train_hit_rate")}</span>
@@ -186,7 +186,7 @@
         <div class="detail-row">
           <span class="detail-label">{t("train_perfect_combo")}</span>
           <span class="detail-value"
-            >{maxCombo === totalBeats ? t("train_perfect_yes") + " 🎉" : t("common_no")}</span
+            >{maxCombo === totalSteps ? t("train_perfect_yes") + " 🎉" : t("common_no")}</span
           >
         </div>
       </div>

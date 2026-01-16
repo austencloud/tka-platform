@@ -219,25 +219,15 @@
     const clampedU = Math.max(0, Math.min(1, u));
     const clampedV = Math.max(0, Math.min(1, v));
 
-    // Sample heightmap to get actual terrain height at this position
-    let terrainY = 0;
-    if (heightmap) {
-      const pixelX = Math.floor(clampedU * (heightmap.width - 1));
-      const pixelY = Math.floor(clampedV * (heightmap.height - 1));
-      const idx = pixelY * heightmap.width + pixelX;
-      const normalizedHeight = heightmap.heights[idx] ?? 0;
-      const maxTerrainHeight = 40; // Same as terrainConfig.maxHeight
-      terrainY = normalizedHeight * maxTerrainHeight;
-    }
-
+    // Use the raycast intersection point directly - it already has the correct terrain height
     const newPoint = {
-      world: { x: point.x, y: terrainY, z: point.z },
+      world: { x: point.x, y: point.y, z: point.z },
       uv: { u: clampedU, v: clampedV },
     };
 
     boundaryPoints = [...boundaryPoints, newPoint];
     boundaryMessage = `${boundaryPoints.length} point${boundaryPoints.length !== 1 ? "s" : ""} placed`;
-    console.log("[BoundaryClick] Added point:", newPoint, "TerrainY:", terrainY.toFixed(1));
+    console.log("[BoundaryClick] Added point:", newPoint);
   }
 
   function exportForInfiniteWorlds() {

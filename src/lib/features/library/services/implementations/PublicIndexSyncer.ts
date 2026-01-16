@@ -42,7 +42,7 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         displayName: sequence.displayName,
         word: sequence.word,
         thumbnails: sequence.thumbnails.slice(0, 3) ?? [],
-        sequenceLength: sequence.beats.length ?? 0,
+        sequenceLength: sequence.steps.length ?? 0,
         difficultyLevel: sequence.difficultyLevel,
         forkCount: sequence.forkCount ?? 0,
         viewCount: sequence.viewCount ?? 0,

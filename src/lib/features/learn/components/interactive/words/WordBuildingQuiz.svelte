@@ -24,7 +24,7 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
   let score = $state(0);
   let answerState = $state<AnswerState>("idle");
   let selectedAnswer = $state<number | null>(null);
-  let currentBeat = $state(0);
+  let currentStep = $state(0);
   const shuffledQuestions = $state<WordQuizQuestion[]>(
     generateWordQuizQuestions()
   );
@@ -55,7 +55,7 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
         currentQuestion++;
         answerState = "idle";
         selectedAnswer = null;
-        currentBeat = 0;
+        currentStep = 0;
       } else {
         answerState = "idle";
         currentQuestion++;
@@ -70,11 +70,11 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
     score = 0;
     answerState = "idle";
     selectedAnswer = null;
-    currentBeat = 0;
+    currentStep = 0;
   }
 
-  function handleBeatChange(index: number) {
-    currentBeat = index;
+  function handleStepChange(index: number) {
+    currentStep = index;
   }
 </script>
 
@@ -90,9 +90,9 @@ Questions about letter sequences, motion types, position transitions, and LOOPs
       question={getCurrentQuestion()}
       {answerState}
       {selectedAnswer}
-      {currentBeat}
+      {currentStep}
       onAnswer={handleAnswer}
-      onBeatChange={handleBeatChange}
+      onStepChange={handleStepChange}
     />
   {:else}
     <WordQuizCompleteSection

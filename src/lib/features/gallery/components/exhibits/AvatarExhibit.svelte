@@ -61,7 +61,7 @@
   $effect(() => {
     if (shouldBeActive && !sequenceLoaded) {
       const sequence = exhibit.sequence as SequenceData;
-      if (sequence?.beats?.length > 0) {
+      if (sequence?.steps?.length > 0) {
         avatarState.loadSequence(sequence);
         avatarState.loop = true;
         avatarState.play();

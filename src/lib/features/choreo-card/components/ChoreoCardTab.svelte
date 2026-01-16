@@ -214,12 +214,12 @@
       result = result.filter((seq) => seq.sequenceLength === selectedLength);
     }
 
-    // Difficulty filter - calculate level dynamically from beats if not stored
+    // Difficulty filter - calculate level dynamically from steps if not stored
     if (difficulty !== null) {
       result = result.filter((seq) => {
-        // Use stored level if available, otherwise calculate from beats
-        const level = seq.level ?? (seq.beats?.length > 0
-          ? difficultyCalculator.calculateDifficultyLevel([...seq.beats])
+        // Use stored level if available, otherwise calculate from steps
+        const level = seq.level ?? (seq.steps?.length > 0
+          ? difficultyCalculator.calculateDifficultyLevel([...seq.steps])
           : 1);
         return level === difficulty;
       });
@@ -245,12 +245,12 @@
 
   // Estimate sequences per page based on beat length
   // Shorter sequences = more rows fit, longer = fewer rows
-  function getSequencesPerPage(beatCount: number): number {
+  function getSequencesPerPage(stepCount: number): number {
     // 2 columns, rows depend on sequence height
-    if (beatCount <= 3) return 10; // 5 rows
-    if (beatCount <= 4) return 8; // 4 rows
-    if (beatCount <= 8) return 6; // 3 rows
-    return 6; // 3 rows for 10-16 beats (tight spacing)
+    if (stepCount <= 3) return 10; // 5 rows
+    if (stepCount <= 4) return 8; // 4 rows
+    if (stepCount <= 8) return 6; // 3 rows
+    return 6; // 3 rows for 10-16 steps (tight spacing)
   }
 
   // Create pages from filtered sequences (dynamic per page based on beat length)

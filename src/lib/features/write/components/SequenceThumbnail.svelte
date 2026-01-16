@@ -51,7 +51,7 @@
   const thumbnailSrc = $derived(
     sequence.thumbnails?.[0] || generateSequenceThumbnail(sequence)
   );
-  const beatsCount = $derived(sequence.beats.length);
+  const beatsCount = $derived(sequence.steps.length);
 </script>
 
 <div
@@ -83,7 +83,7 @@
   <!-- Sequence info -->
   <div class="sequence-info">
     <div class="sequence-name">{sequence.word || sequence.name}</div>
-    <div class="beats-count">
+    <div class="steps-count">
       {beatsCount} beat{beatsCount !== 1 ? "s" : ""}
     </div>
   </div>
@@ -203,7 +203,7 @@
     margin-bottom: 2px;
   }
 
-  .beats-count {
+  .steps-count {
     color: var(--text-secondary);
     font-size: var(--font-size-compact);
     text-align: center;
@@ -238,7 +238,7 @@
       font-size: var(--font-size-compact);
     }
 
-    .beats-count {
+    .steps-count {
       font-size: var(--font-size-compact);
     }
   }
@@ -274,7 +274,7 @@
       margin-bottom: 1px;
     }
 
-    .beats-count {
+    .steps-count {
       font-size: var(--font-size-compact);
     }
   }

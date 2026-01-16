@@ -124,11 +124,11 @@ export class ExhibitLoader implements IExhibitLoader {
 
     // Filter to only sequences with actual beat data (for animation)
     const sequencesWithBeats = sequences.filter(
-      (seq) => seq.beats && seq.beats.length > 0
+      (seq) => seq.steps && seq.steps.length > 0
     );
 
     console.debug(
-      `[ExhibitLoader] Loaded ${sequences.length} sequences, ${sequencesWithBeats.length} have beats`
+      `[ExhibitLoader] Loaded ${sequences.length} sequences, ${sequencesWithBeats.length} have steps`
     );
 
     return sequencesWithBeats.slice(0, limit);

@@ -7,7 +7,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
 import type { IGenerationOrchestrator } from "$lib/features/create/generate/shared/services/contracts/IGenerationOrchestrator";
@@ -40,7 +40,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import {
   shiftStartPosition,
-  createStartPositionFromBeatEnd,
+  createStartPositionFromStepEnd,
 } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 
@@ -94,25 +94,25 @@ function validateMotionData(
   }
 
   // Check each beat
-  sequence.beats?.forEach((beat, idx) => {
-    const beatNum = idx + 1;
+  sequence.steps?.forEach((beat, idx) => {
+    const stepNum = idx + 1;
     const blue = beat.motions?.[MotionColor.BLUE];
     const red = beat.motions?.[MotionColor.RED];
 
     if (blue) {
       if (blue.gridMode !== seqGridMode) {
-        warnings.push(`Beat ${beatNum} blue gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
+        warnings.push(`Beat ${stepNum} blue gridMode (${blue.gridMode}) != sequence (${seqGridMode})`);
       }
       if (!blue.endOrientation) {
-        warnings.push(`Beat ${beatNum} blue missing endOrientation`);
+        warnings.push(`Beat ${stepNum} blue missing endOrientation`);
       }
       if (!blue.endLocation) {
-        warnings.push(`Beat ${beatNum} blue missing endLocation`);
+        warnings.push(`Beat ${stepNum} blue missing endLocation`);
       }
     }
     if (red) {
       if (red.gridMode !== seqGridMode) {
-        warnings.push(`Beat ${beatNum} red gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
+        warnings.push(`Beat ${stepNum} red gridMode (${red.gridMode}) != sequence (${seqGridMode})`);
       }
     }
   });
@@ -147,7 +147,7 @@ function getLetterForPositionGroup(group: PositionGroup | null): Letter | null {
 interface RotatableMatch {
   sequence: SequenceData;
   /** Beat number to rotate to (this beat becomes the new beat 1) */
-  targetBeatNumber: number;
+  targetStepNumber: number;
 }
 
 /**
@@ -355,9 +355,9 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
     this.sequenceIndex.clear();
 
     for (const sequence of this.circularSequences) {
-      // Load full sequence data to get the beats
+      // Load full sequence data to get the steps
       const fullSequence = await this.discoverLoader.loadFullSequenceData(sequence.word);
-      if (!fullSequence || !fullSequence.beats || fullSequence.beats.length === 0) continue;
+      if (!fullSequence || !fullSequence.steps || fullSequence.steps.length === 0) continue;
 
       // Get or derive start position
       const startPos = this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
@@ -365,7 +365,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
       // Extract start state
       const position = (startPos as StartPositionData).gridPosition ??
-        (startPos as BeatData).startPosition ??
+        (startPos as StepData).startPosition ??
         null;
       const blueOri = startPos.motions?.blue?.startOrientation ?? null;
       const redOri = startPos.motions?.red?.startOrientation ?? null;
@@ -417,7 +417,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
   /**
    * Derive the grid position from a beat's end state using motion end locations.
    */
-  private deriveBeatEndPosition(beat: BeatData): GridPosition | null {
+  private deriveBeatEndPosition(beat: StepData): GridPosition | null {
     const blueMotion = beat.motions?.[MotionColor.BLUE];
     const redMotion = beat.motions?.[MotionColor.RED];
 
@@ -447,7 +447,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
     // Shuffle sequences for variety
     const shuffled = [...this.circularSequences].sort(() => Math.random() - 0.5);
 
-    // Limit attempts for performance (scanning all beats is O(n*m))
+    // Limit attempts for performance (scanning all steps is O(n*m))
     const maxSequenceAttempts = Math.min(20, shuffled.length);
 
     for (let seqIdx = 0; seqIdx < maxSequenceAttempts; seqIdx++) {
@@ -461,22 +461,22 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
       // Load full sequence data
       const fullSequence = await this.discoverLoader.loadFullSequenceData(candidate.word);
-      if (!fullSequence?.beats?.length || !fullSequence.isCircular) continue;
+      if (!fullSequence?.steps?.length || !fullSequence.isCircular) continue;
 
       // Scan each beat for a position match
-      for (let beatIndex = 0; beatIndex < fullSequence.beats.length; beatIndex++) {
-        const beat = fullSequence.beats[beatIndex];
+      for (let stepIndex = 0; stepIndex < fullSequence.steps.length; stepIndex++) {
+        const beat = fullSequence.steps[stepIndex];
         if (!beat) continue;
 
-        const beatEndPosition = this.deriveBeatEndPosition(beat);
-        const beatGroup = getPositionGroup(beatEndPosition);
+        const stepEndPosition = this.deriveBeatEndPosition(beat);
+        const beatGroup = getPositionGroup(stepEndPosition);
 
         // Check if beat is in target position group
         if (beatGroup !== targetGroup) continue;
 
         // For gamma, also check cycle compatibility
         if (targetGroup === "gamma") {
-          const beatCycle = getGammaCycle(beatEndPosition);
+          const beatCycle = getGammaCycle(stepEndPosition);
           if (beatCycle !== targetGammaCycle) continue;
         }
 
@@ -484,14 +484,14 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
         // Apply three-step transform pipeline
         const result = await this.applyTransformPipeline(
           fullSequence,
-          beatIndex,
-          beatEndPosition!,
+          stepIndex,
+          stepEndPosition!,
           endState
         );
 
         if (result) {
           console.log(
-            `[EndlessSpinner] ✅ Seamless transition: "${fullSequence.word}" (beat ${beatIndex + 1} → ${endState.position})`
+            `[EndlessSpinner] ✅ Seamless transition: "${fullSequence.word}" (beat ${stepIndex + 1} → ${endState.position})`
           );
           return result;
         }
@@ -509,22 +509,22 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
    */
   private async applyTransformPipeline(
     sequence: SequenceData,
-    beatIndex: number,
-    beatEndPosition: GridPosition,
+    stepIndex: number,
+    stepEndPosition: GridPosition,
     targetEndState: EndState
   ): Promise<SequenceData | null> {
     try {
       // Step 1: First-beat rotation - make the beat AFTER this one become beat 1
-      // (beatIndex is 0-based, shiftStartPosition expects 1-based beat number)
-      // The next beat (beatIndex + 2) becomes the new beat 1
-      const targetBeatNumber = beatIndex + 2;
+      // (stepIndex is 0-based, shiftStartPosition expects 1-based beat number)
+      // The next beat (stepIndex + 2) becomes the new beat 1
+      const targetStepNumber = stepIndex + 2;
       console.log(
-        `[EndlessSpinner] Step 1: Rotating sequence "${sequence.word}" - beat ${targetBeatNumber} becomes new beat 1`
+        `[EndlessSpinner] Step 1: Rotating sequence "${sequence.word}" - beat ${targetStepNumber} becomes new beat 1`
       );
-      const rotated = this.sequenceTransformer.shiftStartPosition(sequence, targetBeatNumber);
+      const rotated = this.sequenceTransformer.shiftStartPosition(sequence, targetStepNumber);
 
       // Step 2: Position rotation - match exact variant
-      const rotationSteps = calculateRotationSteps(beatEndPosition, targetEndState.position);
+      const rotationSteps = calculateRotationSteps(stepEndPosition, targetEndState.position);
       let positionMatched = rotated;
 
       if (rotationSteps !== null && rotationSteps !== 0) {
@@ -534,7 +534,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
           "both"
         );
         console.log(
-          `[EndlessSpinner] Step 2: Rotated positions by ${rotationSteps * 45}° (${beatEndPosition} → ${targetEndState.position})`
+          `[EndlessSpinner] Step 2: Rotated positions by ${rotationSteps * 45}° (${stepEndPosition} → ${targetEndState.position})`
         );
       }
 
@@ -584,7 +584,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
         }
       }
 
-      // Step 4: Always recalculate orientations through all beats
+      // Step 4: Always recalculate orientations through all steps
       // This ensures orientation chain integrity after rotation transforms
       const orientationCorrected = recalculateAllOrientations(
         finalSequence,
@@ -608,10 +608,10 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
   }
 
   /**
-   * Force a specific grid mode on the sequence and all its beats/motions.
+   * Force a specific grid mode on the sequence and all its steps/motions.
    * This ensures visual consistency when sequences from different grid modes are chained.
    *
-   * IMPORTANT: We must update gridMode on motions too, not just beats/sequence.
+   * IMPORTANT: We must update gridMode on motions too, not just steps/sequence.
    * The PropRotAngleManager uses motion gridMode for angle calculations.
    */
   private forceGridMode(sequence: SequenceData, gridMode: GridMode): SequenceData {
@@ -621,9 +621,9 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       gridMode,
     };
 
-    // Update grid mode on all beats AND their motions
-    if (updatedSequence.beats?.length) {
-      updatedSequence.beats = updatedSequence.beats.map((beat) => ({
+    // Update grid mode on all steps AND their motions
+    if (updatedSequence.steps?.length) {
+      updatedSequence.steps = updatedSequence.steps.map((beat) => ({
         ...beat,
         gridMode,
         motions: {
@@ -721,7 +721,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
       // Load full sequence data
       const fullSequence = await this.discoverLoader.loadFullSequenceData(candidate.word);
-      if (!fullSequence?.beats?.length) continue;
+      if (!fullSequence?.steps?.length) continue;
 
       // Get the sequence's start position
       const startPos = this.startPositionDeriver.getOrDeriveStartPosition(fullSequence);
@@ -731,7 +731,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       const sequenceStartPosition =
         (startPos as any).gridPosition ??
         (startPos as any).startPosition ??
-        fullSequence.beats?.[0]?.startPosition ??
+        fullSequence.steps?.[0]?.startPosition ??
         null;
 
       // Check if it's in the same position group
@@ -821,11 +821,11 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
     for (const sequence of this.circularSequences) {
       // Load full sequence data
       const fullSequence = await this.discoverLoader.loadFullSequenceData(sequence.word);
-      if (!fullSequence?.beats || !fullSequence.isCircular) continue;
+      if (!fullSequence?.steps || !fullSequence.isCircular) continue;
 
       // Check each beat's end state
-      for (let i = 0; i < fullSequence.beats.length; i++) {
-        const beat = fullSequence.beats[i];
+      for (let i = 0; i < fullSequence.steps.length; i++) {
+        const beat = fullSequence.steps[i];
         if (!beat) continue;
 
         // Check if this beat's END state matches our target
@@ -841,7 +841,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
           // Beat i+1 should become the new beat 1 (rotating past this beat)
           matches.push({
             sequence: fullSequence,
-            targetBeatNumber: i + 2, // +2 because beatNumber is 1-indexed and we want the NEXT beat
+            targetStepNumber: i + 2, // +2 because stepNumber is 1-indexed and we want the NEXT beat
           });
           break; // Only need one match per sequence
         }
@@ -879,7 +879,7 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
       // Generate a short freeform sequence from current state to target
       const bridge = await this.generationOrchestrator.generateSequence({
         mode: GenerationMode.FREEFORM,
-        length: 3 + Math.floor(Math.random() * 3), // 3-5 beats
+        length: 3 + Math.floor(Math.random() * 3), // 3-5 steps
         gridMode,
         propType: PropType.STAFF, // Will be overridden by viewer
         difficulty: DifficultyLevel.BEGINNER,

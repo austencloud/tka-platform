@@ -84,7 +84,7 @@
           <div class="sequence-meta">
             <span class="meta-item">
               <i class="fas fa-layer-group" aria-hidden="true"></i>
-              {sequence.beats?.length || 0} beats
+              {sequence.steps?.length || 0} steps
             </span>
             {#if sequence.dateAdded}
               <span class="meta-item">

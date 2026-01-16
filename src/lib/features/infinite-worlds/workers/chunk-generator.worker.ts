@@ -7,9 +7,23 @@
  * Communication:
  * - Main → Worker: Generate chunk at (x, y, z) with seed
  * - Worker → Main: Chunk data (vertices, normals, colors)
+ *
+ * Real Terrain Support:
+ * - Worker can receive real terrain zone data (e.g., Hannon's Camp)
+ * - Blends real heightmap with procedural terrain at zone boundaries
  */
 
 import { SeededNoise, createChunkRNG, getTerrainHeight, getBiome, getVegetationDensity, shouldPlaceTree } from "../generation/seed-generator";
+import {
+  type RealTerrainZone,
+  deserializeZoneInWorker,
+  getBlendedHeight,
+  chunkIntersectsZone,
+  isPointInPolygon,
+} from "../generation/real-terrain-zone";
+
+// Real terrain zone (loaded once, used for all chunks)
+let realTerrainZone: RealTerrainZone | null = null;
 
 // ============================================================================
 // MESSAGE TYPES
@@ -25,6 +39,37 @@ export interface GenerateChunkMessage {
   chunkSize: number;
   resolution: number; // Vertices per side
   lod: number;
+}
+
+export interface LoadRealZoneMessage {
+  type: "load-real-zone";
+  zone: {
+    name: string;
+    boundary: Array<{ x: number; z: number }>;
+    heightmapWidth: number;
+    heightmapHeight: number;
+    minElevation: number;
+    maxElevation: number;
+    heights: Float32Array;
+    bounds: {
+      minX: number;
+      maxX: number;
+      minZ: number;
+      maxZ: number;
+      width: number;
+      depth: number;
+    };
+    origin: { x: number; z: number };
+  };
+}
+
+export interface ClearRealZoneMessage {
+  type: "clear-real-zone";
+}
+
+export interface RealZoneLoadedMessage {
+  type: "real-zone-loaded";
+  name: string;
 }
 
 export interface ChunkResultMessage {
@@ -50,8 +95,8 @@ export interface VegetationData {
   scale: number;
 }
 
-export type WorkerMessage = GenerateChunkMessage;
-export type WorkerResponse = ChunkResultMessage;
+export type WorkerMessage = GenerateChunkMessage | LoadRealZoneMessage | ClearRealZoneMessage;
+export type WorkerResponse = ChunkResultMessage | RealZoneLoadedMessage;
 
 // ============================================================================
 // CHUNK GENERATION
@@ -78,6 +123,16 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
 
   const step = chunkSize / (effectiveResolution - 1);
 
+  // Check if this chunk intersects with the real terrain zone
+  const usesRealTerrain = realTerrainZone
+    ? chunkIntersectsZone(realTerrainZone, chunkX, chunkZ, chunkSize, 30)
+    : false;
+
+  // Debug logging for real terrain zone detection
+  if (realTerrainZone && chunkX >= -30 && chunkX <= 10 && chunkZ >= -25 && chunkZ <= -10) {
+    console.log(`[ChunkWorker] Chunk (${chunkX}, ${chunkZ}) at world (${originX}, ${originZ}): usesRealTerrain=${usesRealTerrain}`);
+  }
+
   // First pass: generate vertices
   for (let z = 0; z < effectiveResolution; z++) {
     for (let x = 0; x < effectiveResolution; x++) {
@@ -85,15 +140,31 @@ function generateChunk(msg: GenerateChunkMessage): ChunkResultMessage {
 
       const worldX = originX + x * step;
       const worldZ = originZ + z * step;
-      const height = getTerrainHeight(noise, worldX, worldZ);
+
+      // Get procedural height
+      const proceduralHeight = getTerrainHeight(noise, worldX, worldZ);
+
+      // Blend with real terrain if zone is loaded and chunk intersects
+      const height = usesRealTerrain
+        ? getBlendedHeight(realTerrainZone, worldX, worldZ, proceduralHeight, 30)
+        : proceduralHeight;
 
       vertices[idx] = x * step;
       vertices[idx + 1] = height;
       vertices[idx + 2] = z * step;
 
       // Color based on biome and height
-      const biome = getBiome(noise, worldX, worldZ);
-      const color = getBiomeColor(biome, height);
+      // Use special coloring for real terrain zone (grassier, more natural)
+      let biome = getBiome(noise, worldX, worldZ);
+      let color: { r: number; g: number; b: number };
+
+      if (usesRealTerrain && realTerrainZone && isPointInPolygon(worldX, worldZ, realTerrainZone.boundary)) {
+        // Inside real zone - use campground-appropriate colors
+        color = getCampgroundColor(height);
+      } else {
+        color = getBiomeColor(biome, height);
+      }
+
       colors[idx] = color.r;
       colors[idx + 1] = color.g;
       colors[idx + 2] = color.b;
@@ -332,6 +403,23 @@ function getBiomeColor(biome: string, height: number): { r: number; g: number; b
   }
 }
 
+/**
+ * Colors for real terrain zone (Hannon's Camp)
+ * Southwest Ohio campground - grassy fields, some bare earth
+ */
+function getCampgroundColor(height: number): { r: number; g: number; b: number } {
+  const heightFactor = Math.min(1, Math.max(0, height / 40));
+
+  // Mix of grass green and earthy brown based on height variation
+  // Lower areas: greener (more moisture)
+  // Higher areas: slightly browner (drier)
+  return {
+    r: 0.25 + heightFactor * 0.15,
+    g: 0.45 - heightFactor * 0.05,
+    b: 0.15 + heightFactor * 0.05,
+  };
+}
+
 // ============================================================================
 // WORKER MESSAGE HANDLER
 // ============================================================================
@@ -339,17 +427,40 @@ function getBiomeColor(biome: string, height: number): { r: number; g: number; b
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   const msg = event.data;
 
-  if (msg.type === "generate-chunk") {
-    const result = generateChunk(msg);
+  switch (msg.type) {
+    case "generate-chunk": {
+      const result = generateChunk(msg);
 
-    // Transfer ownership of typed arrays for zero-copy
-    self.postMessage(result, {
-      transfer: [
-        result.vertices.buffer,
-        result.normals.buffer,
-        result.colors.buffer,
-        result.indices.buffer,
-      ]
-    });
+      // Transfer ownership of typed arrays for zero-copy
+      self.postMessage(result, {
+        transfer: [
+          result.vertices.buffer,
+          result.normals.buffer,
+          result.colors.buffer,
+          result.indices.buffer,
+        ]
+      });
+      break;
+    }
+
+    case "load-real-zone": {
+      // Load real terrain zone data
+      realTerrainZone = deserializeZoneInWorker(msg.zone);
+      console.log(`[ChunkWorker] Loaded real terrain zone: ${realTerrainZone.name}`);
+      console.log(`[ChunkWorker] Zone bounds: ${realTerrainZone.bounds.minX.toFixed(0)} to ${realTerrainZone.bounds.maxX.toFixed(0)} X, ${realTerrainZone.bounds.minZ.toFixed(0)} to ${realTerrainZone.bounds.maxZ.toFixed(0)} Z`);
+
+      self.postMessage({
+        type: "real-zone-loaded",
+        name: realTerrainZone.name,
+      } as RealZoneLoadedMessage);
+      break;
+    }
+
+    case "clear-real-zone": {
+      const name = realTerrainZone?.name ?? "none";
+      realTerrainZone = null;
+      console.log(`[ChunkWorker] Cleared real terrain zone: ${name}`);
+      break;
+    }
   }
 };

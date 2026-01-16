@@ -6,31 +6,7 @@
 -->
 <script lang="ts">
   import { tick } from "svelte";
-
-  // Types
-  interface ToolCall {
-    name: string;
-    input: Record<string, unknown>;
-    result: unknown;
-  }
-
-  interface ContextData {
-    type: "letter" | "term" | "comparison" | "list" | "position" | null;
-  }
-
-  interface ConversationItem {
-    question: string;
-    response: {
-      explanation: string;
-      showPictograph: boolean;
-      pictographLetter?: string;
-      pictographVariation?: number;
-      latencyMs: number;
-      toolsCalled: ToolCall[];
-      contextData?: ContextData;
-    };
-    timestamp: Date;
-  }
+  import type { ConversationItem } from "../types";
 
   // Props
   let {
@@ -90,7 +66,7 @@
   <!-- Header -->
   <header class="panel-header">
     <div class="header-title">
-      <i class="fas fa-robot"></i>
+      <i class="fas fa-robot" aria-hidden="true"></i>
       <span>TIKA</span>
     </div>
     <div class="header-subtitle">TKA Intelligent Knowledge Assistant</div>
@@ -99,8 +75,10 @@
         class="tool-toggle"
         onclick={() => (showToolDetails = !showToolDetails)}
         title="Toggle tool details"
+        aria-label={showToolDetails ? "Hide tool details" : "Show tool details"}
+        aria-expanded={showToolDetails}
       >
-        <i class="fas fa-wrench"></i>
+        <i class="fas fa-wrench" aria-hidden="true"></i>
         {showToolDetails ? "Hide Tools" : "Show Tools"}
       </button>
     {/if}
@@ -112,7 +90,7 @@
       <!-- Welcome State -->
       <div class="welcome-state">
         <div class="welcome-icon">
-          <i class="fas fa-graduation-cap"></i>
+          <i class="fas fa-graduation-cap" aria-hidden="true"></i>
         </div>
         <h2>Welcome to TIKA</h2>
         <p>
@@ -120,23 +98,23 @@
         </p>
         <ul class="suggestion-list">
           <li>
-            <button onclick={() => (inputValue = "What is letter A?")}>
-              <i class="fas fa-font"></i> Letters (A-Z, Greek)
+            <button onclick={() => onSubmit("What is letter A?")} disabled={isLoading}>
+              <i class="fas fa-font" aria-hidden="true"></i> Letters (A-Z, Greek)
             </button>
           </li>
           <li>
-            <button onclick={() => (inputValue = "What does alpha mean?")}>
-              <i class="fas fa-book"></i> Terms (alpha, pro, shift)
+            <button onclick={() => onSubmit("What does alpha mean?")} disabled={isLoading}>
+              <i class="fas fa-book" aria-hidden="true"></i> Terms (alpha, pro, shift)
             </button>
           </li>
           <li>
-            <button onclick={() => (inputValue = "Compare A and B")}>
-              <i class="fas fa-balance-scale"></i> Letter comparisons
+            <button onclick={() => onSubmit("Compare A and B")} disabled={isLoading}>
+              <i class="fas fa-balance-scale" aria-hidden="true"></i> Letter comparisons
             </button>
           </li>
           <li>
-            <button onclick={() => (inputValue = "What are Type 1 letters?")}>
-              <i class="fas fa-layer-group"></i> Letter types
+            <button onclick={() => onSubmit("What are Type 1 letters?")} disabled={isLoading}>
+              <i class="fas fa-layer-group" aria-hidden="true"></i> Letter types
             </button>
           </li>
         </ul>
@@ -154,7 +132,7 @@
         <!-- Assistant Response -->
         <div class="message assistant-message">
           <div class="message-avatar">
-            <i class="fas fa-robot"></i>
+            <i class="fas fa-robot" aria-hidden="true"></i>
           </div>
           <div class="message-content">
             <p>{item.response.explanation}</p>
@@ -163,7 +141,7 @@
             {#if showToolDetails && item.response.toolsCalled.length > 0}
               <div class="tool-details">
                 <div class="tool-header">
-                  <i class="fas fa-wrench"></i>
+                  <i class="fas fa-wrench" aria-hidden="true"></i>
                   Tools called ({item.response.toolsCalled.length})
                 </div>
                 {#each item.response.toolsCalled as tool}
@@ -182,7 +160,7 @@
               <span class="latency">{item.response.latencyMs}ms</span>
               {#if item.response.toolsCalled.length > 0}
                 <span class="tools-badge">
-                  <i class="fas fa-wrench"></i>
+                  <i class="fas fa-wrench" aria-hidden="true"></i>
                   {item.response.toolsCalled.length}
                 </span>
               {/if}
@@ -195,7 +173,7 @@
       {#if isLoading}
         <div class="message assistant-message loading">
           <div class="message-avatar">
-            <i class="fas fa-robot"></i>
+            <i class="fas fa-robot" aria-hidden="true"></i>
           </div>
           <div class="message-content">
             <div class="typing-indicator">
@@ -224,11 +202,12 @@
         class="send-button"
         disabled={!inputValue.trim() || isLoading}
         title="Send message"
+        aria-label={isLoading ? "Sending message" : "Send message"}
       >
         {#if isLoading}
-          <i class="fas fa-spinner fa-spin"></i>
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         {:else}
-          <i class="fas fa-paper-plane"></i>
+          <i class="fas fa-paper-plane" aria-hidden="true"></i>
         {/if}
       </button>
     </div>
@@ -289,6 +268,11 @@
   .tool-toggle:hover {
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, #ffffff);
+  }
+
+  .tool-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   /* Chat Container */
@@ -371,6 +355,16 @@
   .suggestion-list button:hover {
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-accent, #6366f1);
+  }
+
+  .suggestion-list button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .suggestion-list button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .suggestion-list button i {
@@ -561,8 +555,8 @@
   }
 
   .send-button {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     border-radius: 8px;
     background: var(--theme-accent, #6366f1);
     border: none;
@@ -583,5 +577,29 @@
   .send-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .send-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  /* Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    .tool-toggle,
+    .suggestion-list button,
+    .send-button,
+    .input-wrapper {
+      transition: none;
+    }
+
+    .send-button:hover:not(:disabled) {
+      transform: none;
+    }
+
+    .typing-indicator span {
+      animation: none;
+      opacity: 0.5;
+    }
   }
 </style>

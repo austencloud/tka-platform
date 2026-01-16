@@ -37,17 +37,17 @@ export class GalleryRenderer implements IGalleryRenderer {
   ): Promise<Blob> {
     const seqName = sequence.word || sequence.name;
 
-    // Check if beats need parsing - old format has blueAttributes, modern has motions.blue
-    const firstBeatRaw = sequence.beats?.[0] as
+    // Check if steps need parsing - old format has blueAttributes, modern has motions.blue
+    const firstBeatRaw = sequence.steps?.[0] as
       | Record<string, unknown>
       | undefined;
     const needsParsing =
-      !sequence.beats?.length ||
+      !sequence.steps?.length ||
       (firstBeatRaw &&
         "blueAttributes" in firstBeatRaw &&
         !firstBeatRaw.motions);
 
-    // Load full sequence data if not loaded OR if beats are in old format
+    // Load full sequence data if not loaded OR if steps are in old format
     if (needsParsing) {
       const fullSequence =
         await this.loaderService.loadFullSequenceData(seqName);
@@ -63,7 +63,7 @@ export class GalleryRenderer implements IGalleryRenderer {
     // Derive start position from first beat if not present OR if the existing one is invalid
     // This is the modern approach: start positions are derived, not stored
     let sequenceWithStartPos = sequence;
-    const firstBeat = sequence.beats?.[0];
+    const firstStep = sequence.steps?.[0];
 
     // Check if existing start position is valid (has motion data for both hands)
     const existingStartPos = sequence.startPosition;
@@ -74,13 +74,13 @@ export class GalleryRenderer implements IGalleryRenderer {
     // Check if first beat has valid motion data for derivation
     // Must have both blue and red motions with startLocation defined
     const firstBeatHasValidMotions =
-      firstBeat?.motions?.blue?.startLocation &&
-      firstBeat?.motions?.red?.startLocation;
+      firstStep?.motions?.blue?.startLocation &&
+      firstStep?.motions?.red?.startLocation;
 
-    if (!hasValidStartPosition && firstBeat && firstBeatHasValidMotions) {
+    if (!hasValidStartPosition && firstStep && firstBeatHasValidMotions) {
       try {
         const derivedStartPos =
-          this.startPositionDeriver.deriveFromFirstBeat(firstBeat);
+          this.startPositionDeriver.deriveFromFirstBeat(firstStep);
         sequenceWithStartPos = {
           ...sequence,
           startPosition: derivedStartPos,
@@ -92,7 +92,7 @@ export class GalleryRenderer implements IGalleryRenderer {
         );
       }
     } else {
-      if (!firstBeat) {
+      if (!firstStep) {
         console.warn(
           `[GalleryRenderer] Cannot derive start position: no first beat available`
         );
@@ -100,10 +100,10 @@ export class GalleryRenderer implements IGalleryRenderer {
         console.warn(
           `[GalleryRenderer] Cannot derive start position: first beat missing motion data or startLocation`,
           {
-            hasBlueMotion: !!firstBeat.motions?.blue,
-            hasRedMotion: !!firstBeat.motions?.red,
-            blueStartLocation: firstBeat.motions?.blue?.startLocation,
-            redStartLocation: firstBeat.motions?.red?.startLocation,
+            hasBlueMotion: !!firstStep.motions?.blue,
+            hasRedMotion: !!firstStep.motions?.red,
+            blueStartLocation: firstStep.motions?.blue?.startLocation,
+            redStartLocation: firstStep.motions?.red?.startLocation,
           }
         );
       }
@@ -112,17 +112,17 @@ export class GalleryRenderer implements IGalleryRenderer {
     const showNonRadial = this.requiresNonRadialPoints(sequenceWithStartPos);
 
     const options: Partial<SequenceExportOptions> = {
-      beatSize: 240,
+      stepSize: 240,
       format: "WebP",
       quality: 0.95,
       includeStartPosition: true,
-      addBeatNumbers: true,
+      addStepNumbers: true,
       addWord: true,
       addDifficultyLevel: true,
       addUserInfo: false,
       addReversalSymbols: true,
       combinedGrids: false,
-      beatScale: 1.0,
+      stepScale: 1.0,
       margin: 0,
       redVisible: true,
       blueVisible: true,
@@ -199,7 +199,7 @@ export class GalleryRenderer implements IGalleryRenderer {
       return true;
     }
 
-    for (const beat of sequence.beats || []) {
+    for (const beat of sequence.steps || []) {
       if (checkOrientations(beat.motions)) return true;
     }
 

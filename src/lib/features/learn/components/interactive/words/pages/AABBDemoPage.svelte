@@ -5,18 +5,18 @@
 
   let {
     isAnimating,
-    beatIndex,
+    stepIndex,
     onBack,
     onNext,
     onToggleAnimation,
-    onBeatChange,
+    onStepChange,
   } = $props<{
     isAnimating: boolean;
-    beatIndex: number;
+    stepIndex: number;
     onBack: () => void;
     onNext: () => void;
     onToggleAnimation: () => void;
-    onBeatChange: (index: number) => void;
+    onStepChange: (index: number) => void;
   }>();
 </script>
 
@@ -24,19 +24,19 @@
   <h2>Words in Motion: AABB</h2>
 
   <p class="page-intro">
-    Watch how the word <strong>AABB</strong> flows through 4 beats, returning to its
+    Watch how the word <strong>AABB</strong> flows through 4 steps, returning to its
     starting position!
   </p>
 
   <div class="word-demo">
     <WordVisualizer
       letters={wordAABB}
-      currentBeatIndex={beatIndex}
+      currentStepIndex={stepIndex}
       {isAnimating}
       animationSpeed={1200}
       showLetterLabel={true}
-      showBeatNumber={true}
-      {onBeatChange}
+      showStepNumber={true}
+      {onStepChange}
     />
 
     <div class="demo-controls">
@@ -58,23 +58,23 @@
 
   <div class="beat-breakdown">
     <h4>Beat Breakdown</h4>
-    <div class="beats-grid">
-      <div class="beat-item" class:active={beatIndex === 0}>
+    <div class="steps-grid">
+      <div class="beat-item" class:active={stepIndex === 0}>
         <span class="beat-num">1</span>
         <span class="beat-letter">A</span>
         <span class="beat-desc">Pro, α→α</span>
       </div>
-      <div class="beat-item" class:active={beatIndex === 1}>
+      <div class="beat-item" class:active={stepIndex === 1}>
         <span class="beat-num">2</span>
         <span class="beat-letter">A</span>
         <span class="beat-desc">Pro, α→α</span>
       </div>
-      <div class="beat-item" class:active={beatIndex === 2}>
+      <div class="beat-item" class:active={stepIndex === 2}>
         <span class="beat-num">3</span>
         <span class="beat-letter">B</span>
         <span class="beat-desc">Anti, α→α</span>
       </div>
-      <div class="beat-item" class:active={beatIndex === 3}>
+      <div class="beat-item" class:active={stepIndex === 3}>
         <span class="beat-num">4</span>
         <span class="beat-letter">B</span>
         <span class="beat-desc">Anti, α→α</span>
@@ -183,7 +183,7 @@
     border-radius: 12px;
   }
 
-  .beats-grid {
+  .steps-grid {
     display: flex;
     justify-content: center;
     gap: 0.75rem;

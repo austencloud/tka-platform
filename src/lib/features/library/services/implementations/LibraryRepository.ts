@@ -129,14 +129,14 @@ export class LibraryRepository implements ILibraryRepository {
     // Ensure sequenceTags exists (for backward compatibility)
     const sequenceTags = data["sequenceTags"] || [];
 
-    // Derive word from beats (single source of truth)
-    // Fall back to stored word/name only if beats aren't available
-    // Check both top-level beats and nested sequenceData.beats
-    const beats = (data["beats"] || seqData["beats"]) as Array<{ letter?: string }> | undefined;
+    // Derive word from steps (single source of truth)
+    // Fall back to stored word/name only if steps aren't available
+    // Check both top-level steps and nested sequenceData.steps
+    const steps = (data["steps"] || seqData["steps"]) as Array<{ letter?: string }> | undefined;
     let word: string | null = null;
-    if (beats && beats.length > 0) {
+    if (steps && steps.length > 0) {
       // Derive word by concatenating beat letters
-      word = beats
+      word = steps
         .map((beat) => beat.letter ?? "")
         .filter((letter) => letter !== "")
         .join("");
@@ -312,7 +312,7 @@ export class LibraryRepository implements ILibraryRepository {
     if (isNewSequence) {
       try {
         await this.achievementService.trackAction("sequence_created", {
-          beatCount: sequence.beats.length ?? 0,
+          stepCount: sequence.steps.length ?? 0,
         });
       } catch (_e) {
         console.warn("Failed to track achievement:", _e);
@@ -564,7 +564,7 @@ export class LibraryRepository implements ILibraryRepository {
       try {
         await this.achievementService.trackAction("sequence_published", {
           sequenceId,
-          beatCount: existing.beats.length ?? 0,
+          stepCount: existing.steps.length ?? 0,
         });
       } catch (_e) {
         console.warn("Failed to track achievement:", _e);
@@ -718,9 +718,9 @@ export class LibraryRepository implements ILibraryRepository {
       privateSequences: privateSnapshot.data().count,
       totalCollections: 0, // TODO: Get from collection service
       totalActs: 0, // TODO: Get from act service
-      // Note: totalBeats requires fetching docs or a denormalized counter
+      // Note: totalSteps requires fetching docs or a denormalized counter
       // For now, return 0 - consider denormalizing if this stat is needed frequently
-      totalBeats: 0,
+      totalSteps: 0,
     };
   }
 

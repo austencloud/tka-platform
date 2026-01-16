@@ -32,7 +32,7 @@ export interface GenerationSettings {
   /** Base length before LOOP multiplication */
   baseLength: number;
   /** Total beat count after LOOP expansion */
-  totalBeats: number;
+  totalSteps: number;
 }
 
 /**

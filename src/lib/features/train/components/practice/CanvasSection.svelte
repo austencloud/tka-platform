@@ -14,7 +14,7 @@
 
   interface Props {
     sequence: SequenceData | null;
-    currentBeatIndex?: number;
+    currentStepIndex?: number;
     isPlaying?: boolean;
     isPerforming?: boolean;
     bpm?: number;
@@ -23,7 +23,7 @@
 
   let {
     sequence = null,
-    currentBeatIndex = 0,
+    currentStepIndex = 0,
     isPlaying = false,
     isPerforming = false,
     bpm = 60,
@@ -80,7 +80,7 @@
       const success = controller.initialize(currentSequence, animationState);
       if (success) {
         // Beat 0 = start position in animation system
-        controller.jumpToBeat(0);
+        controller.jumpToStep(0);
       }
     } catch (error) {
       console.error("[CanvasSection] Error initializing animation:", error);
@@ -94,32 +94,32 @@
   $effect(() => {
     // IMPORTANT: Read all reactive dependencies BEFORE any early returns
     // Otherwise Svelte won't track them and the effect won't re-run when they change
-    const currentIndex = currentBeatIndex;
+    const currentIndex = currentStepIndex;
     const performing = isPerforming;
     const currentBpm = bpm;
 
     if (!playbackController || !animationState.sequenceData) return;
 
-    // Animation beat indexing: 0 = start position, 1+ = sequence beats
-    // currentBeatIndex: -1 = start position, 0+ = beats (0-indexed)
-    // Convert: currentBeatIndex + 1
-    const targetBeat = currentIndex + 1;
+    // Animation beat indexing: 0 = start position, 1+ = sequence steps
+    // currentStepIndex: -1 = start position, 0+ = steps (0-indexed)
+    // Convert: currentStepIndex + 1
+    const targetStep = currentIndex + 1;
 
     // Only trigger animation if the TARGET beat changes (user clicked a different beat)
-    // Don't retrigger just because animationState.currentBeat changed during animation
-    if (targetBeat !== lastTargetBeat) {
-      lastTargetBeat = targetBeat;
+    // Don't retrigger just because animationState.currentStep changed during animation
+    if (targetStep !== lastTargetBeat) {
+      lastTargetBeat = targetStep;
 
       // Calculate animation duration based on BPM during performance
       // At 60 BPM = 1000ms per beat, use 80% of beat duration for smooth animation
       // For manual selection, use fixed 300ms
       const beatDurationMs = (60 / currentBpm) * 1000;
-      const animationDuration = performing ? beatDurationMs * 0.8 : 300;
+      const animationDuration = performing ? stepDurationMs * 0.8 : 300;
 
       // Use linear interpolation during performance for consistent motion,
       // ease-out for manual selection (feels more responsive)
-      playbackController.animateToBeat(
-        targetBeat,
+      playbackController.animateToStep(
+        targetStep,
         animationDuration,
         performing
       );
@@ -127,32 +127,32 @@
   });
 
   // Derived: Current beat data (handles start position and beat indexing correctly)
-  const currentBeatData = $derived.by(() => {
+  const currentStepData = $derived.by(() => {
     if (!animationState.sequenceData) return null;
 
-    const currentBeat = animationState.currentBeat;
+    const currentStep = animationState.currentStep;
 
     // Handle start position case explicitly
     if (
-      currentBeat === 0 &&
+      currentStep === 0 &&
       !animationState.isPlaying &&
       animationState.sequenceData.startPosition
     ) {
       return animationState.sequenceData.startPosition;
     }
 
-    // For beats, use direct indexing with clamping
-    // currentBeat is 1-based: currentBeat 1.0-2.0 = beat 1 (uses beats[0])
+    // For steps, use direct indexing with clamping
+    // currentStep is 1-based: currentStep 1.0-2.0 = beat 1 (uses steps[0])
     if (
-      animationState.sequenceData.beats &&
-      animationState.sequenceData.beats.length > 0
+      animationState.sequenceData.steps &&
+      animationState.sequenceData.steps.length > 0
     ) {
-      const beatIndex = Math.max(0, Math.floor(currentBeat) - 1);
+      const stepIndex = Math.max(0, Math.floor(currentStep) - 1);
       const clampedIndex = Math.min(
-        beatIndex,
-        animationState.sequenceData.beats.length - 1
+        stepIndex,
+        animationState.sequenceData.steps.length - 1
       );
-      return animationState.sequenceData.beats[clampedIndex] || null;
+      return animationState.sequenceData.steps[clampedIndex] || null;
     }
 
     return null;
@@ -176,8 +176,8 @@
       redProp={animationState.redPropState}
       gridVisible={true}
       gridMode={animationState.sequenceData?.gridMode ?? null}
-      beatData={currentBeatData}
-      currentBeat={animationState.currentBeat}
+      stepData={currentStepData}
+      currentStep={animationState.currentStep}
       sequenceData={animationState.sequenceData}
     />
   {:else}

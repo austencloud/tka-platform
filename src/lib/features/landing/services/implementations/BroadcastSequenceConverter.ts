@@ -5,9 +5,9 @@
  * internal sequence formats used by the animation engine.
  */
 
-import type { BroadcastSequence, BroadcastBeatData } from "../../domain/models/broadcast-models";
+import type { BroadcastSequence, BroadcastStepData } from "../../domain/models/broadcast-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-import type { BeatData } from "$lib/features/create/shared/domain/models/BeatData";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
 import type { IBroadcastSequenceConverter } from "../contracts/IBroadcastSequenceConverter";
 import type { GridPosition, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -21,12 +21,12 @@ import {
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 
 export class BroadcastSequenceConverter implements IBroadcastSequenceConverter {
-  convertBeat(beat: BroadcastBeatData, index: number): BeatData {
+  convertBeat(beat: BroadcastStepData, index: number): StepData {
     const gridMode = GridMode.DIAMOND; // Default for broadcast sequences
 
     return {
       id: beat.id,
-      letter: beat.letter as BeatData["letter"],
+      letter: beat.letter as StepData["letter"],
       startPosition: beat.startPosition as GridPosition,
       endPosition: beat.endPosition as GridPosition,
       motions: {
@@ -51,7 +51,7 @@ export class BroadcastSequenceConverter implements IBroadcastSequenceConverter {
           gridMode,
         }),
       },
-      beatNumber: beat.beatNumber ?? index + 1,
+      stepNumber: beat.stepNumber ?? index + 1,
       duration: 1,
       blueReversal: false,
       redReversal: false,
@@ -60,36 +60,36 @@ export class BroadcastSequenceConverter implements IBroadcastSequenceConverter {
   }
 
   convertSequence(broadcast: BroadcastSequence): SequenceData {
-    // First beat is start position (beat 0), rest are actual beats
-    const startBeat = broadcast.beats[0];
-    const actualBeats = broadcast.beats.slice(1);
+    // First beat is start position (beat 0), rest are actual steps
+    const startStep = broadcast.steps[0];
+    const actualSteps = broadcast.steps.slice(1);
     const gridMode = (broadcast.gridMode as GridMode) ?? GridMode.DIAMOND;
 
-    const startPosition: StartPositionData | undefined = startBeat
+    const startPosition: StartPositionData | undefined = startStep
       ? {
           isStartPosition: true as const,
-          id: startBeat.id,
-          letter: startBeat.letter as StartPositionData["letter"],
-          startPosition: startBeat.startPosition as GridPosition,
-          endPosition: startBeat.endPosition as GridPosition,
+          id: startStep.id,
+          letter: startStep.letter as StartPositionData["letter"],
+          startPosition: startStep.startPosition as GridPosition,
+          endPosition: startStep.endPosition as GridPosition,
           motions: {
             blue: createMotionData({
-              motionType: startBeat.blue.motionType as MotionType,
-              rotationDirection: startBeat.blue.rotationDirection as RotationDirection,
-              startLocation: startBeat.blue.startLocation as GridLocation,
-              endLocation: startBeat.blue.endLocation as GridLocation,
-              startOrientation: (startBeat.blue.startOrientation as Orientation) ?? Orientation.IN,
-              endOrientation: (startBeat.blue.endOrientation as Orientation) ?? Orientation.IN,
+              motionType: startStep.blue.motionType as MotionType,
+              rotationDirection: startStep.blue.rotationDirection as RotationDirection,
+              startLocation: startStep.blue.startLocation as GridLocation,
+              endLocation: startStep.blue.endLocation as GridLocation,
+              startOrientation: (startStep.blue.startOrientation as Orientation) ?? Orientation.IN,
+              endOrientation: (startStep.blue.endOrientation as Orientation) ?? Orientation.IN,
               color: MotionColor.BLUE,
               gridMode,
             }),
             red: createMotionData({
-              motionType: startBeat.red.motionType as MotionType,
-              rotationDirection: startBeat.red.rotationDirection as RotationDirection,
-              startLocation: startBeat.red.startLocation as GridLocation,
-              endLocation: startBeat.red.endLocation as GridLocation,
-              startOrientation: (startBeat.red.startOrientation as Orientation) ?? Orientation.IN,
-              endOrientation: (startBeat.red.endOrientation as Orientation) ?? Orientation.IN,
+              motionType: startStep.red.motionType as MotionType,
+              rotationDirection: startStep.red.rotationDirection as RotationDirection,
+              startLocation: startStep.red.startLocation as GridLocation,
+              endLocation: startStep.red.endLocation as GridLocation,
+              startOrientation: (startStep.red.startOrientation as Orientation) ?? Orientation.IN,
+              endOrientation: (startStep.red.endOrientation as Orientation) ?? Orientation.IN,
               color: MotionColor.RED,
               gridMode,
             }),
@@ -101,7 +101,7 @@ export class BroadcastSequenceConverter implements IBroadcastSequenceConverter {
       id: broadcast.id,
       name: broadcast.word,
       word: broadcast.word,
-      beats: actualBeats.map((b, i) => this.convertBeat(b, i)),
+      steps: actualSteps.map((b, i) => this.convertBeat(b, i)),
       startPosition,
       thumbnails: [],
       isFavorite: false,

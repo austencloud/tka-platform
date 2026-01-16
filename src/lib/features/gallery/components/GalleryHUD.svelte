@@ -320,8 +320,8 @@
       {#if author}
         <p class="author">{t("gallery_by_author", { author })}</p>
       {/if}
-      {#if galleryState.focusedExhibit.sequence.beats?.length}
-        <p class="beats">{t("gallery_beats_count", { count: galleryState.focusedExhibit.sequence.beats.length.toString() })}</p>
+      {#if galleryState.focusedExhibit.sequence.steps?.length}
+        <p class="steps">{t("gallery_beats_count", { count: galleryState.focusedExhibit.sequence.steps.length.toString() })}</p>
       {/if}
     </div>
   {/if}
@@ -499,7 +499,7 @@
     font-size: 14px;
   }
 
-  .exhibit-info .beats {
+  .exhibit-info .steps {
     margin: 0;
     color: rgba(255, 255, 255, 0.5);
     font-size: 12px;

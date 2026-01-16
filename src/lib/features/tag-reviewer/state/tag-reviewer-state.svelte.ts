@@ -8,7 +8,7 @@
 import { container } from "$lib/shared/di";
 import type { ISequenceFeatureExtractor } from "$lib/features/loop-labeler/services/contracts/ISequenceFeatureExtractor";
 import type { IRuleBasedTagger } from "$lib/features/loop-labeler/services/contracts/IRuleBasedTagger";
-import type { IBeatDataConverter } from "$lib/features/loop-labeler/services/contracts/IBeatDataConverter";
+import type { IStepDataConverter } from "$lib/features/loop-labeler/services/contracts/IStepDataConverter";
 import type {
   TaggedSequenceEntry,
   SequenceTagReview,
@@ -19,7 +19,7 @@ import type {
 import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import type { SequenceEntry, RawBeatData } from "$lib/features/loop-labeler/services/contracts/IBeatDataConverter";
+import type { SequenceEntry, RawStepData } from "$lib/features/loop-labeler/services/contracts/IStepDataConverter";
 
 // Clear any old persisted reviews from localStorage
 const _OLD_STORAGE_KEY = "tka-tag-reviews";
@@ -39,7 +39,7 @@ export function createTagReviewerState() {
   // === Services ===
   let featureExtractor: ISequenceFeatureExtractor | null = null;
   let tagger: IRuleBasedTagger | null = null;
-  let conversionService: IBeatDataConverter | null = null;
+  let conversionService: IStepDataConverter | null = null;
 
   // === Derived State ===
   const filteredSequences = $derived.by(() => {
@@ -134,12 +134,12 @@ export function createTagReviewerState() {
         thumbnails: seq.thumbnails,
         sequenceLength: seq.sequenceLength,
         gridMode: seq.gridMode,
-        fullMetadata: seq.fullMetadata as { sequence?: RawBeatData[] },
+        fullMetadata: seq.fullMetadata as { sequence?: RawStepData[] },
       };
       const gridMode = conversionService.getAuthoritativeGridMode(sequenceEntry);
-      const { beats, startPosition } = conversionService.convertRawToBeats(
+      const { steps, startPosition } = conversionService.convertRawToBeats(
         seq.word,
-        (seq.fullMetadata.sequence ?? []) as RawBeatData[],
+        (seq.fullMetadata.sequence ?? []) as RawStepData[],
         gridMode
       );
 
@@ -147,7 +147,7 @@ export function createTagReviewerState() {
       // Include loopType for accurate tag generation (uses authoritative LOOP label)
       const sequenceData = createSequenceData({
         word: seq.word,
-        beats,
+        steps,
         gridMode: gridMode as GridMode,
         isCircular: seq.isCircular,
         startPosition: startPosition ?? undefined,
@@ -196,7 +196,7 @@ export function createTagReviewerState() {
       .sequenceFeatureExtractor as ISequenceFeatureExtractor | null;
     tagger = container.items.ruleBasedTagger as IRuleBasedTagger | null;
     conversionService = container.items
-      .beatDataConverter as IBeatDataConverter | null;
+      .stepDataConverter as IStepDataConverter | null;
 
     // Load sequences from sequence-index.json
     try {
