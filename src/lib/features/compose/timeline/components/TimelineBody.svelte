@@ -25,6 +25,7 @@
     onAddTrack: () => void;
     onBrowseLibrary: () => void;
     onScrollXChange: (startTime: number) => void;
+    onVerticalZoom?: (delta: number) => void;
   }
 
   const {
@@ -41,6 +42,7 @@
     onAddTrack,
     onBrowseLibrary,
     onScrollXChange,
+    onVerticalZoom,
   }: Props = $props();
 
   // Container refs for scroll sync
@@ -97,6 +99,25 @@
     const x = e.clientX - rect.left + (tracksContainer?.scrollLeft ?? 0);
     const time = x / pixelsPerSecond;
     onSeek(time);
+  }
+
+  // Svelte action to attach non-passive wheel listener for Alt+Wheel vertical zoom
+  function wheelHandler(node: HTMLElement) {
+    function handleWheel(e: WheelEvent) {
+      if (e.altKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = e.deltaY > 0 ? -10 : 10;
+        onVerticalZoom?.(delta);
+      }
+    }
+
+    node.addEventListener('wheel', handleWheel, { passive: false });
+    return {
+      destroy() {
+        node.removeEventListener('wheel', handleWheel);
+      }
+    };
   }
 
   // Expose scrollTo for parent auto-scroll during playback
@@ -156,6 +177,7 @@
         class="tracks-container"
         bind:this={tracksContainer}
         use:trackWidth
+        use:wheelHandler
         onscroll={handleTracksScroll}
         onclick={handleTimelineClick}
         onkeydown={(e) => {

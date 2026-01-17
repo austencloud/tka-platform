@@ -23,6 +23,8 @@
     };
     /** How long to show success state (ms) */
     successDuration?: number;
+    /** Called immediately when clicked (before async work) - use for haptic feedback */
+    onActivate?: () => void;
     /** Called on successful copy */
     onSuccess?: () => void;
     /** Called on error */
@@ -44,6 +46,7 @@
     idleIcon = "fa-terminal",
     labels = {},
     successDuration = 2000,
+    onActivate,
     onSuccess,
     onError,
     useToast = false,
@@ -65,7 +68,7 @@
     loading: "Preparing...",
     success: "Copied!",
     error: "Failed",
-  };
+  } as const;
 
   const currentLabel = $derived(labels[state] ?? defaultLabels[state]);
 
@@ -92,21 +95,75 @@
     return base;
   });
 
+  // Tooltip text - shows error message on error state
+  const tooltipText = $derived(
+    isError && errorMessage
+      ? `Error: ${errorMessage}. Click to retry.`
+      : isSuccess
+        ? "Copied!"
+        : ariaLabel ?? defaultLabels.idle
+  );
+
   // Screen reader announcement text
   const announcement = $derived(
     isSuccess ? "Copied to clipboard" : isError ? "Copy failed" : ""
   );
 
+  /**
+   * Fallback copy method for browsers without clipboard API
+   * Uses the legacy execCommand approach
+   */
+  async function fallbackCopyToClipboard(text: string): Promise<void> {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand("copy");
+      if (!successful) {
+        throw new Error("execCommand copy failed");
+      }
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  }
+
+  /**
+   * Copy text to clipboard with fallback support
+   */
+  async function copyToClipboard(text: string): Promise<void> {
+    // Try modern clipboard API first
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    // Fallback for older browsers or restricted contexts
+    await fallbackCopyToClipboard(text);
+  }
+
   async function handleClick() {
     if (isLoading || disabled) return;
     if (resetTimer) clearTimeout(resetTimer);
+
+    // Fire activation callback immediately (for haptic feedback)
+    onActivate?.();
 
     state = "loading";
     errorMessage = null;
 
     try {
       const text = await Promise.resolve(getData());
-      await navigator.clipboard.writeText(text);
+      await copyToClipboard(text);
 
       state = "success";
       onSuccess?.();
@@ -145,6 +202,7 @@
   class:error={isError}
   aria-label={computedAriaLabel}
   aria-busy={isLoading}
+  title={tooltipText}
   disabled={disabled || isLoading}
   onclick={handleClick}
 >
@@ -162,6 +220,7 @@
 
 <style>
   .copy-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -174,10 +233,10 @@
     font-weight: 500;
     cursor: pointer;
     transition:
-      background 0.15s,
-      border-color 0.15s,
-      color 0.15s,
-      transform 0.1s;
+      background var(--duration-fast, 0.15s),
+      border-color var(--duration-fast, 0.15s),
+      color var(--duration-fast, 0.15s),
+      transform var(--duration-micro, 0.1s);
   }
 
   /* Size variants */
@@ -198,21 +257,12 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  /* Icon-only variant */
+  /* Icon-only variant - always 48px for WCAG AAA touch targets */
   .icon-only {
     width: var(--min-touch-target, 48px);
     height: var(--min-touch-target, 48px);
     padding: 0;
-  }
-
-  .icon-only.size-sm {
-    width: 36px;
-    height: 36px;
-  }
-
-  .icon-only.size-md {
-    width: 44px;
-    height: 44px;
+    border-radius: 50%;
   }
 
   /* Full width */
@@ -220,11 +270,24 @@
     width: 100%;
   }
 
-  /* Success state */
+  /* Success state with pulse animation */
   .success {
     background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
     border-color: var(--semantic-success, #22c55e);
     color: var(--semantic-success, #22c55e);
+    animation: success-pulse var(--duration-normal, 0.3s) ease-out;
+  }
+
+  @keyframes success-pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   /* Error state */
@@ -239,6 +302,11 @@
     .copy-btn:hover:not(:disabled):not(.success):not(.error) {
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    }
+
+    /* Subtle hover on error to indicate retry is possible */
+    .copy-btn.error:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
     }
   }
 
@@ -265,6 +333,10 @@
       transition: none;
     }
 
+    .copy-btn.success {
+      animation: none;
+    }
+
     .copy-btn :global(.fa-spin) {
       animation: none;
     }
@@ -286,5 +358,14 @@
   /* Label styling */
   .label {
     white-space: nowrap;
+  }
+
+  /* Icon transition for smooth state changes */
+  .copy-btn i {
+    transition: transform var(--duration-fast, 0.15s) ease;
+  }
+
+  .success i {
+    transform: scale(1.1);
   }
 </style>

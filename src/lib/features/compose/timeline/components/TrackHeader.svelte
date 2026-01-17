@@ -28,9 +28,8 @@
   // Track is empty if no clips
   const isEmpty = $derived(track.clips.length === 0);
 
-  // Dynamic height: collapsed when empty, full when has clips
-  const COLLAPSED_HEIGHT = 40;
-  const effectiveHeight = $derived(isEmpty ? COLLAPSED_HEIGHT : track.height);
+  // Use track.height directly (respects vertical zoom)
+  const effectiveHeight = $derived(track.height);
 
   // Sync local state from timeline state
   $effect(() => {

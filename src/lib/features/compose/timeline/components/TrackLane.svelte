@@ -41,9 +41,8 @@
   // Track is empty if no clips
   const isEmpty = $derived(track.clips.length === 0);
 
-  // Dynamic height: collapsed when empty, full when has clips
-  const COLLAPSED_HEIGHT = 40;
-  const effectiveHeight = $derived(isEmpty ? COLLAPSED_HEIGHT : track.height);
+  // Use track.height for both empty and non-empty tracks (respects vertical zoom)
+  const effectiveHeight = $derived(track.height);
 
   // Get project settings for beat grid
   let projectBpm = $state(120);

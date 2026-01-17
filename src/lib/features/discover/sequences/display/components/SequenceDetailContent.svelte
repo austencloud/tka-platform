@@ -221,8 +221,12 @@ Used by both desktop side panel and mobile slide-up overlay.
   // Get copy data for Claude (async because it uses the service)
   async function getCopyDataForClaude(): Promise<string> {
     if (!claudeCopier) return "";
-    hapticService?.trigger("selection");
     return await claudeCopier.generatePrompt(sequence);
+  }
+
+  // Haptic feedback on copy activation
+  function handleCopyActivate() {
+    hapticService?.trigger("selection");
   }
 
   // Share handlers
@@ -275,6 +279,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     title="Sequence Details"
     isExpanded={sequencePanelManager.isDetailExpanded}
     getCopyData={getCopyDataForClaude}
+    onCopyActivate={handleCopyActivate}
     onCollapse={() => sequencePanelManager.setDetailExpanded(false)}
     {onClose}
   />

@@ -47,7 +47,7 @@
       getData={getCopyAllData}
       ariaLabel="Copy all data for AI"
       variant="icon-text"
-      size="sm"
+      size="md"
       idleIcon="fa-copy"
       labels={{ idle: "Copy All for AI", success: "Copied!" }}
       disabled={isCalculating}
@@ -57,7 +57,7 @@
       getData={getCopyJsonData}
       ariaLabel="Copy JSON"
       variant="icon-text"
-      size="sm"
+      size="md"
       idleIcon="fa-code"
       labels={{ idle: "Copy JSON", success: "Copied!" }}
       disabled={isCalculating}

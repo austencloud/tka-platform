@@ -71,6 +71,15 @@
   let panelElement: HTMLDivElement;
   let timelineBodyRef: TimelineBody;
 
+  // Handle vertical zoom (Alt+Wheel) - called from TimelineBody
+  function handleVerticalZoom(delta: number) {
+    const state = getState();
+    for (const track of state.project.tracks) {
+      const newHeight = Math.max(40, Math.min(200, track.height + delta));
+      state.updateTrack(track.id, { height: newHeight });
+    }
+  }
+
   // Local reactive state (synced via effects)
   let timelineWidth = $state(1000);
   let playheadPosition = $state(0);
@@ -231,6 +240,7 @@
   });
 
   // Handle wheel events for scroll/zoom
+  // Note: Alt+Wheel (vertical zoom) is handled in capture phase above
   function handleWheel(e: WheelEvent) {
     // Ctrl/Cmd + Wheel = Horizontal zoom (time scale)
     if (e.ctrlKey || e.metaKey) {
@@ -255,20 +265,6 @@
         timelineBodyRef?.scrollTo(newPixelPos - mouseX);
       } else {
         state.setZoom(newZoom);
-      }
-      return;
-    }
-
-    // Alt + Wheel = Vertical zoom (track height)
-    if (e.altKey) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -10 : 10;
-      const state = getState();
-
-      // Adjust all track heights
-      for (const track of state.project.tracks) {
-        const newHeight = Math.max(40, Math.min(200, track.height + delta));
-        state.updateTrack(track.id, { height: newHeight });
       }
       return;
     }
@@ -519,6 +515,7 @@
     onAddTrack={() => getState().addTrack()}
     onBrowseLibrary={toggleMediaBrowser}
     onScrollXChange={(startTime) => getState().setScrollX(startTime)}
+    onVerticalZoom={handleVerticalZoom}
   />
 {/snippet}
 

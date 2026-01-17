@@ -21,6 +21,7 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
     visible = true,
     previewMode = false,
     onToggle = undefined,
+    xOffset = 0,
   } = $props<{
     /** The VTG mode to display (SS, SO, TS, TO, QS, QO) */
     vtgMode?: VTGMode | null;
@@ -34,6 +35,8 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
+    /** X offset for expanded timeline cells (shifts glyph right) */
+    xOffset?: number;
   }>();
 
   // Only render for Type1 letters with valid VTG mode AND when visible
@@ -75,8 +78,8 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
   const offsetWidth = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
   const offsetHeight = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
 
-  // Position in bottom-right corner
-  const xPosition = PICTOGRAPH_SIZE - GLYPH_WIDTH - offsetWidth;
+  // Position in bottom-right corner (with x-offset for expanded cells)
+  const xPosition = $derived(PICTOGRAPH_SIZE - GLYPH_WIDTH - offsetWidth + xOffset);
   const yPosition = PICTOGRAPH_SIZE - GLYPH_HEIGHT - offsetHeight;
 </script>
 

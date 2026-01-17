@@ -165,6 +165,7 @@ Card-based architecture with integrated Generate button:
       onGenerateClicked={actionsState.onGenerateClicked}
       {startEndState}
       helpMode={helpMode !== "inactive"}
+      helpModeExiting={isExiting}
       onHelpSelect={selectControlHelp}
     />
   </div>

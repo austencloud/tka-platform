@@ -14,6 +14,7 @@ Displays:
     title?: string;
     isExpanded?: boolean;
     getCopyData?: () => string | Promise<string>;
+    onCopyActivate?: () => void;
     onCollapse?: () => void;
     onClose?: () => void;
   }
@@ -22,6 +23,7 @@ Displays:
     title = "Sequence Details",
     isExpanded = false,
     getCopyData,
+    onCopyActivate,
     onCollapse = () => {},
     onClose = () => {},
   }: Props = $props();
@@ -34,6 +36,7 @@ Displays:
     {#if getCopyData}
       <CopyForAIButton
         getData={getCopyData}
+        onActivate={onCopyActivate}
         ariaLabel="Copy for Claude Code"
         variant="icon-only"
         size="md"

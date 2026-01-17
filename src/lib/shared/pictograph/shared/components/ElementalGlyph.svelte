@@ -21,6 +21,7 @@ Based on legacy elemental_glyph.py implementation.
     visible = true,
     previewMode = false,
     onToggle = undefined,
+    xOffset = 0,
   } = $props<{
     /** The elemental type to display (water, fire, earth, air, sun, moon) */
     elementalType?: ElementalType | null;
@@ -34,6 +35,8 @@ Based on legacy elemental_glyph.py implementation.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
+    /** X offset for expanded timeline cells (shifts glyph right) */
+    xOffset?: number;
   }>();
 
   // Only render for Type1 letters with valid elemental type AND when visible
@@ -77,8 +80,8 @@ Based on legacy elemental_glyph.py implementation.
   const offsetWidth = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
   const offsetHeight = PICTOGRAPH_SIZE * OFFSET_PERCENTAGE;
 
-  // Position in top-right corner
-  const xPosition = PICTOGRAPH_SIZE - GLYPH_WIDTH - offsetWidth;
+  // Position in top-right corner (with x-offset for expanded cells)
+  const xPosition = $derived(PICTOGRAPH_SIZE - GLYPH_WIDTH - offsetWidth + xOffset);
   const yPosition = offsetHeight;
 </script>
 

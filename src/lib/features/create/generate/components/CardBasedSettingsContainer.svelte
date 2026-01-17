@@ -52,6 +52,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     onGenerateClicked,
     startEndState,
     helpMode = false,
+    helpModeExiting = false,
     onHelpSelect,
   } = $props<{
     config: UIGenerationConfig;
@@ -61,6 +62,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     onGenerateClicked: (options: any) => Promise<void>;
     startEndState?: StartEndOptionsState;
     helpMode?: boolean;
+    helpModeExiting?: boolean;
     onHelpSelect?: (controlId: GeneratorHelpId) => void;
   }>();
 
@@ -228,7 +230,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
   });
 </script>
 
-<div class="card-settings-container" class:help-mode={helpMode}>
+<div class="card-settings-container" class:help-mode={helpMode} class:help-mode-exiting={helpModeExiting}>
   <!-- LOOP Expanded Overlay - covers cards when open -->
   {#if panelState?.isLOOPPanelOpen && panelState.loopSelectedComponents && panelState.loopOnChange}
     <LOOPExpandedOverlay
@@ -353,15 +355,29 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     pointer-events: none;
   }
 
-  /* Highlight effect on clickable cards in help mode */
-  .card-settings-container.help-mode .card-wrapper.help-clickable::after {
+  /* Glow border - always present but invisible by default for smooth transitions */
+  .card-wrapper.help-clickable::after {
     content: "";
     position: absolute;
     inset: -2px;
     border-radius: 14px;
     border: 2px solid rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease-out;
+  }
+
+  /* Show and animate the glow in help mode */
+  .card-settings-container.help-mode .card-wrapper.help-clickable::after {
+    opacity: 1;
     animation: help-card-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Fade out glow during exit */
+  .card-settings-container.help-mode-exiting .card-wrapper.help-clickable::after {
+    opacity: 0;
+    animation: none;
   }
 
   @keyframes help-card-pulse {
