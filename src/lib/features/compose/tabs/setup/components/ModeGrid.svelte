@@ -10,6 +10,7 @@
   import { cubicOut } from "svelte/easing";
   import ModeCard from "./ModeCard.svelte";
   import type { ComposeMode } from "$lib/features/compose/shared/state/compose-module-state.svelte";
+  import { DURATION, STAGGER, SLIDE } from "$lib/shared/transitions/transitions";
 
   interface Props {
     onModeSelect: (mode: ComposeMode) => void;
@@ -19,11 +20,6 @@
 
   // Animation visibility state
   let isVisible = $state(false);
-
-  // Transition constants
-  const DURATION = { normal: 200, emphasis: 280 };
-  const STAGGER = { normal: 50 };
-  const SLIDE = { sm: 8, md: 12 };
 
   // Mode definitions with metadata
   const modes = [

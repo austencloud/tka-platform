@@ -4,6 +4,11 @@
  */
 
 import type { ModuleId } from "$lib/shared/navigation/domain/types";
+import {
+  DURATION,
+  STAGGER,
+  SLIDE,
+} from "$lib/shared/transitions/transitions";
 
 export const MODULE_GRADIENTS: Record<ModuleId | string, string> = {
   create: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
@@ -17,11 +22,8 @@ export const MODULE_GRADIENTS: Record<ModuleId | string, string> = {
   settings: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
 };
 
-export const ANIMATION_CONSTANTS = {
-  DURATION: { normal: 200, emphasis: 280 },
-  STAGGER: { normal: 50 },
-  SLIDE: { sm: 8, md: 12 },
-};
+/** @deprecated Import DURATION, STAGGER, SLIDE directly from '$lib/shared/transitions/transitions' */
+export const ANIMATION_CONSTANTS = { DURATION, STAGGER, SLIDE };
 
 export function getModuleGradient(id: ModuleId | string): string {
   return (

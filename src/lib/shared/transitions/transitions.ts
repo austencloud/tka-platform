@@ -1,396 +1,59 @@
 /**
- * 2026 Unified Transitions System
+ * Animation Constants
  *
- * Consistent, physics-based Svelte transitions for use across the app.
- * All durations and easings align with the CSS design tokens in app.css.
+ * Centralized timing and distance constants for Svelte transitions.
+ * Use with native Svelte transitions (fade, fly, scale, slide).
+ *
+ * @example
+ * import { fade, fly } from 'svelte/transition';
+ * import { DURATION, SLIDE, STAGGER } from '$lib/shared/transitions/transitions';
+ *
+ * <div in:fade={{ duration: DURATION.normal }}>
+ * <div in:fly={{ y: SLIDE.md, duration: DURATION.fast, delay: i * STAGGER.normal }}>
  */
 
-import { cubicOut, quintOut, backOut } from "svelte/easing";
-import type { TransitionConfig } from "svelte/transition";
-
 // ============================================================================
-// DURATION CONSTANTS (match app.css tokens)
+// DURATION CONSTANTS (match CSS variables in app.css)
 // ============================================================================
 
 export const DURATION = {
-  instant: 100, // Micro-feedback (hover states, toggles)
-  fast: 150, // Quick UI responses (buttons, inputs)
-  normal: 200, // Standard transitions (panels, tabs)
-  emphasis: 280, // Emphasized changes (module switches)
-  dramatic: 350, // Major transitions (drawers, modals)
+  /** 100ms - Micro-feedback (hover states, toggles) */
+  instant: 100,
+  /** 150ms - Quick UI responses (buttons, inputs) */
+  fast: 150,
+  /** 200ms - Standard transitions (panels, tabs) */
+  normal: 200,
+  /** 280ms - Emphasized changes (module switches) */
+  emphasis: 280,
+  /** 350ms - Major transitions (drawers, modals) */
+  dramatic: 350,
 } as const;
 
 // ============================================================================
-// STAGGER CONSTANTS (match app.css tokens)
+// STAGGER CONSTANTS (for sequenced animations)
 // ============================================================================
 
 export const STAGGER = {
-  micro: 30, // Tight sequences (list items)
-  normal: 50, // Standard sequences (cards)
-  relaxed: 80, // Spread out (major sections)
+  /** 30ms - Tight sequences (list items) */
+  micro: 30,
+  /** 50ms - Standard sequences (cards) */
+  normal: 50,
+  /** 80ms - Spread out (major sections) */
+  relaxed: 80,
 } as const;
 
 // ============================================================================
-// TRANSFORM CONSTANTS (match app.css tokens)
+// SLIDE DISTANCE CONSTANTS (for fly transitions)
 // ============================================================================
 
-export const SLIDE_DISTANCE = {
-  sm: 8, // Subtle slides (tabs)
-  md: 12, // Standard slides (cards, panels)
-  lg: 20, // Prominent slides (modals)
+export const SLIDE = {
+  /** 8px - Subtle slides (tabs) */
+  sm: 8,
+  /** 12px - Standard slides (cards, panels) */
+  md: 12,
+  /** 20px - Prominent slides (modals) */
+  lg: 20,
 } as const;
 
-// ============================================================================
-// CUSTOM EASING FUNCTIONS
-// These match the CSS cubic-bezier curves in app.css
-// ============================================================================
-
-/** Material Design ease-out: cubic-bezier(0.16, 1, 0.3, 1) */
-export function easeOut(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
-
-/** Spring easing with overshoot: cubic-bezier(0.34, 1.56, 0.64, 1) */
-export function easeSpring(t: number): number {
-  const c4 = (2 * Math.PI) / 3;
-  return t === 0
-    ? 0
-    : t === 1
-      ? 1
-      : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-}
-
-// ============================================================================
-// FADE TRANSITIONS
-// ============================================================================
-
-export interface FadeParams {
-  delay?: number;
-  duration?: number;
-}
-
-/** Standard fade - for simple visibility changes */
-export function fadeStandard(
-  _node: Element,
-  { delay = 0, duration = DURATION.fast }: FadeParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    css: (t) => `opacity: ${t}`,
-  };
-}
-
-/** Emphasized fade - slightly slower for important content */
-export function fadeEmphasis(
-  _node: Element,
-  { delay = 0, duration = DURATION.normal }: FadeParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing: cubicOut,
-    css: (t) => `opacity: ${t}`,
-  };
-}
-
-// ============================================================================
-// FLY TRANSITIONS
-// ============================================================================
-
-export interface FlyParams {
-  delay?: number;
-  duration?: number;
-  x?: number;
-  y?: number;
-  easing?: (t: number) => number;
-}
-
-/** Fly up - content enters from below */
-export function flyUp(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.normal,
-    y = SLIDE_DISTANCE.md,
-    easing = cubicOut,
-  }: FlyParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const translateY = (1 - t) * y;
-      return `
-        opacity: ${t};
-        transform: translateY(${translateY}px);
-      `;
-    },
-  };
-}
-
-/** Fly down - content enters from above */
-export function flyDown(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.normal,
-    y = SLIDE_DISTANCE.md,
-    easing = cubicOut,
-  }: FlyParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const translateY = (1 - t) * -y;
-      return `
-        opacity: ${t};
-        transform: translateY(${translateY}px);
-      `;
-    },
-  };
-}
-
-/** Fly left - content enters from right */
-export function flyLeft(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.normal,
-    x = SLIDE_DISTANCE.md,
-    easing = cubicOut,
-  }: FlyParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const translateX = (1 - t) * x;
-      return `
-        opacity: ${t};
-        transform: translateX(${translateX}px);
-      `;
-    },
-  };
-}
-
-/** Fly right - content enters from left */
-export function flyRight(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.normal,
-    x = SLIDE_DISTANCE.md,
-    easing = cubicOut,
-  }: FlyParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const translateX = (1 - t) * -x;
-      return `
-        opacity: ${t};
-        transform: translateX(${translateX}px);
-      `;
-    },
-  };
-}
-
-// ============================================================================
-// SCALE TRANSITIONS
-// ============================================================================
-
-export interface ScaleParams {
-  delay?: number;
-  duration?: number;
-  start?: number;
-  easing?: (t: number) => number;
-}
-
-/** Scale pop - subtle zoom for cards/modals */
-export function scalePop(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.normal,
-    start = 0.95,
-    easing = backOut,
-  }: ScaleParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const scale = start + (1 - start) * t;
-      return `
-        opacity: ${t};
-        transform: scale(${scale});
-      `;
-    },
-  };
-}
-
-/** Scale spring - bouncy zoom with overshoot */
-export function scaleSpring(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.emphasis,
-    start = 0.9,
-    easing = quintOut,
-  }: ScaleParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const scale = start + (1 - start) * t;
-      return `
-        opacity: ${t};
-        transform: scale(${scale});
-      `;
-    },
-  };
-}
-
-// ============================================================================
-// COMBINED TRANSITIONS (fly + scale for depth)
-// ============================================================================
-
-export interface CombinedParams {
-  delay?: number;
-  duration?: number;
-  y?: number;
-  x?: number;
-  scale?: number;
-  easing?: (t: number) => number;
-}
-
-/** Fly up with subtle scale - adds depth perception */
-export function flyUpScale(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.normal,
-    y = SLIDE_DISTANCE.md,
-    scale = 0.98,
-    easing = cubicOut,
-  }: CombinedParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const translateY = (1 - t) * y;
-      const currentScale = scale + (1 - scale) * t;
-      return `
-        opacity: ${t};
-        transform: translateY(${translateY}px) scale(${currentScale});
-      `;
-    },
-  };
-}
-
-/** Fly down with subtle scale */
-export function flyDownScale(
-  _node: Element,
-  {
-    delay = 0,
-    duration = DURATION.normal,
-    y = SLIDE_DISTANCE.md,
-    scale = 0.98,
-    easing = cubicOut,
-  }: CombinedParams = {}
-): TransitionConfig {
-  return {
-    delay,
-    duration,
-    easing,
-    css: (t) => {
-      const translateY = (1 - t) * -y;
-      const currentScale = scale + (1 - scale) * t;
-      return `
-        opacity: ${t};
-        transform: translateY(${translateY}px) scale(${currentScale});
-      `;
-    },
-  };
-}
-
-// ============================================================================
-// STAGGERED HELPERS
-// ============================================================================
-
-/**
- * Calculate staggered delay for list items
- * @param index - Item index in the list
- * @param baseDelay - Initial delay before staggering starts
- * @param staggerMs - Milliseconds between each item (default: STAGGER.normal)
- */
-export function staggerDelay(
-  index: number,
-  baseDelay: number = 0,
-  staggerMs: number = STAGGER.normal
-): number {
-  return baseDelay + index * staggerMs;
-}
-
-/**
- * Calculate staggered delay with a maximum cap
- * Prevents very long delays for long lists
- */
-export function staggerDelayCapped(
-  index: number,
-  baseDelay: number = 0,
-  staggerMs: number = STAGGER.normal,
-  maxDelay: number = 400
-): number {
-  const calculatedDelay = baseDelay + index * staggerMs;
-  return Math.min(calculatedDelay, maxDelay);
-}
-
-// ============================================================================
-// PRESET CONFIGURATIONS
-// For quick use in components: in:flyUp={presets.cardEnter}
-// ============================================================================
-
-export const presets = {
-  /** Cards entering a grid/list */
-  cardEnter: {
-    duration: DURATION.normal,
-    y: SLIDE_DISTANCE.md,
-  },
-
-  /** Modal/dialog appearing */
-  modalEnter: {
-    duration: DURATION.emphasis,
-    start: 0.95,
-  },
-
-  /** Subtle header entrance */
-  headerEnter: {
-    duration: DURATION.normal,
-    y: -SLIDE_DISTANCE.sm,
-  },
-
-  /** Quick toast/notification */
-  toastEnter: {
-    duration: DURATION.fast,
-    y: SLIDE_DISTANCE.sm,
-  },
-
-  /** Widget panel entrance */
-  widgetEnter: {
-    duration: DURATION.normal,
-    y: SLIDE_DISTANCE.md,
-  },
-} as const;
+/** @deprecated Use SLIDE instead */
+export const SLIDE_DISTANCE = SLIDE;

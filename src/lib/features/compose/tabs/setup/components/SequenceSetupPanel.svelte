@@ -8,6 +8,7 @@
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+  import { DURATION, STAGGER, SLIDE } from "$lib/shared/transitions/transitions";
   import type { ComposeMode } from "$lib/features/compose/shared/state/compose-module-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import SequenceBrowserPanel from "$lib/shared/animation-engine/components/SequenceBrowserPanel.svelte";
@@ -54,11 +55,6 @@
 
   // Haptic feedback
   let hapticService: IHapticFeedback | undefined;
-
-  // Transition constants
-  const DURATION = { normal: 200, emphasis: 280 };
-  const STAGGER = { normal: 50 };
-  const SLIDE = { sm: 8, md: 12 };
 
   // Slot metadata
   const slotMetadata: Record<string, { label: string; icon: string }> = {
