@@ -14,15 +14,15 @@ export class SimpleJsonCache implements IJsonCache {
   /**
    * Get JSON data from cache or load it
    */
-  async get(path: string): Promise<unknown> {
+  async get<T = unknown>(path: string): Promise<T> {
     // Return cached data if available
     if (this.cache.has(path)) {
-      return this.cache.get(path);
+      return this.cache.get(path) as T;
     }
 
     // Return existing promise if already loading
     if (this.loadingPromises.has(path)) {
-      return this.loadingPromises.get(path);
+      return this.loadingPromises.get(path) as Promise<T>;
     }
 
     // Start loading and cache the promise
@@ -33,7 +33,7 @@ export class SimpleJsonCache implements IJsonCache {
       const data = await loadPromise;
       this.cache.set(path, data);
       this.loadingPromises.delete(path);
-      return data;
+      return data as T;
     } catch (error) {
       this.loadingPromises.delete(path);
       throw error;

@@ -72,9 +72,9 @@ export interface ITransformationAnalyzer {
   findAllCommonTransformations(stepPairs: InternalStepPair[]): string[];
 
   /**
-   * Group beat pairs by their primary transformation pattern.
+   * Group step pairs by their primary transformation pattern.
    */
-  groupBeatPairsByPattern(beatPairs: InternalBeatPair[]): BeatPairGroups;
+  groupStepPairsByPattern(stepPairs: InternalStepPair[]): StepPairGroups;
 
   /**
    * Re-prioritize beat pairs based on common transformations.

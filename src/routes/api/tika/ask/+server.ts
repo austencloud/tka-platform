@@ -337,8 +337,8 @@ function executeListLettersByType(type: number): TypeListResult | string {
 		return { letter, count }
 	})
 
-	// Pick up to 4 example letters to show as pictographs
-	const exampleLetters = typeInfo.letters.slice(0, 4)
+	// Show all letters of this type as pictographs
+	const exampleLetters = typeInfo.letters
 
 	const explanation = `# Type ${type}: ${typeInfo.name}
 
@@ -355,7 +355,7 @@ ${typeInfo.characteristics.map(c => `- ${c}`).join('\n')}
 **Letters (${typeInfo.letters.length} total):**
 ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join('\n')}
 
-**Visual Examples:** ${exampleLetters.join(', ')} (shown in context panel)`
+**All Letters:** Pictographs shown in context panel.`
 
 	return {
 		explanation,

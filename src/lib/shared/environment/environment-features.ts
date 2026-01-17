@@ -120,7 +120,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   // inbox module retired - messages/notifications accessible via Dashboard widget drawer
   // Unreleased modules
   learn: false,
-  library: false,
   compose: false,
   train: false,
   "ml-training": false,

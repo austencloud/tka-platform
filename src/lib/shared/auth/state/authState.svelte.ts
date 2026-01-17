@@ -296,7 +296,7 @@ export async function initializeAuthListener() {
           if (profilePictureService) {
             profilePictureService
               .updateFacebookProfilePictureIfNeeded(user)
-              .catch((error) => {
+              .catch((error: unknown) => {
                 console.warn(
                   "⚠️ [authState] Facebook profile picture update failed:",
                   error
@@ -304,7 +304,7 @@ export async function initializeAuthListener() {
               });
             profilePictureService
               .updateGoogleProfilePictureIfNeeded(user)
-              .catch((error) => {
+              .catch((error: unknown) => {
                 console.warn(
                   "⚠️ [authState] Google profile picture update failed:",
                   error
@@ -350,7 +350,7 @@ export async function initializeAuthListener() {
         try {
           const activityService = container.items.activityLogger;
           if (activityService) {
-            activityService.logSessionStart().catch((error) => {
+            activityService.logSessionStart().catch((error: unknown) => {
               console.warn(
                 "⚠️ [authState] Session start logging failed:",
                 error

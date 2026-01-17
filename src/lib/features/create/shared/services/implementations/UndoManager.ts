@@ -51,6 +51,7 @@ const OPERATION_DESCRIPTIONS: Record<UndoOperationType, string> = {
   SHIFT_START: "Shift Start",
   APPLY_TURN_PATTERN: "Apply Turn Pattern",
   APPLY_ROTATION_PATTERN: "Apply Rotation Pattern",
+  APPLY_DURATION_PATTERN: "Apply Duration Pattern",
   EXTEND_SEQUENCE: "Extend",
   MODIFY_BEAT_PROPERTIES: "Modify Beat Properties",
   GENERATE_SEQUENCE: "Generate Sequence",

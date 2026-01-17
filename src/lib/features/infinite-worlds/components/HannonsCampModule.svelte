@@ -54,8 +54,14 @@
   import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 
   // Object placement system
-  import { type PlacedObject, createPlacedObject } from "../domain/PlacedObject";
-  import { type ObjectDefinition, getObjectDefinition } from "../objects/object-catalog";
+  import {
+    type PlacedObject,
+    createPlacedObject,
+  } from "../domain/PlacedObject";
+  import {
+    type ObjectDefinition,
+    getObjectDefinition,
+  } from "../objects/object-catalog";
   import { getPlacedObjectRenderer } from "../objects/PlacedObjectRenderer";
   import ObjectPalette from "./ObjectPalette.svelte";
   import ObjectQuickSelect from "./ObjectQuickSelect.svelte";
@@ -113,7 +119,7 @@
 
   // Spawn configuration - entrance location (Hannon's Camp entrance)
   const SPAWN_POINT = { x: 231, z: -96 };
-  const SPAWN_YAW = 88 * Math.PI / 180; // 88 degrees, facing the parking lot
+  const SPAWN_YAW = (88 * Math.PI) / 180; // 88 degrees, facing the parking lot
 
   // Position display for finding spawn points
   let currentPosition = $state({ x: 0, y: 0, z: 0 });
@@ -126,10 +132,10 @@
     try {
       await navigator.clipboard.writeText(text);
       copyFeedback = "Copied!";
-      setTimeout(() => copyFeedback = "", 2000);
+      setTimeout(() => (copyFeedback = ""), 2000);
     } catch {
       copyFeedback = "Failed";
-      setTimeout(() => copyFeedback = "", 2000);
+      setTimeout(() => (copyFeedback = ""), 2000);
     }
   }
 
@@ -146,7 +152,13 @@
 
   // Touch input support (works for native touch AND DevTools emulation)
   let touchLookId: number | null = null; // Track touch ID for look
-  let touchLook = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
+  let touchLook = {
+    active: false,
+    startX: 0,
+    startY: 0,
+    currentX: 0,
+    currentY: 0,
+  };
   let cameraYaw = $state(0);
   let cameraPitch = $state(0);
   const TOUCH_SENSITIVITY = 0.004;
@@ -190,7 +202,14 @@
   // Quick select objects (keys 1-6, Q to cycle)
   import { OBJECT_CATALOG } from "../objects/object-catalog";
   const quickSelectObjects = OBJECT_CATALOG.filter((obj) =>
-    ["bell-tent", "dome-tent", "flag", "fire-pit", "pin-marker", "waypoint"].includes(obj.key)
+    [
+      "bell-tent",
+      "dome-tent",
+      "flag",
+      "fire-pit",
+      "pin-marker",
+      "waypoint",
+    ].includes(obj.key)
   );
 
   // ============================================================================
@@ -202,8 +221,8 @@
     const { width, height, minElevation, maxElevation, heights } = heightmap;
 
     // Use world dimensions from the terrain data (in real meters)
-    const boundsWidth = worldDimensions.width;  // ~467m
-    const boundsDepth = worldDimensions.depth;  // ~444m
+    const boundsWidth = worldDimensions.width; // ~467m
+    const boundsDepth = worldDimensions.depth; // ~444m
 
     // Store bounds for satellite texture loading
     terrainBounds = geoBounds as GeoBounds;
@@ -211,12 +230,19 @@
 
     // Store for UI
     elevationRange = { min: minElevation, max: maxElevation };
-    terrainSize = { width: Math.round(boundsWidth), depth: Math.round(boundsDepth) };
+    terrainSize = {
+      width: Math.round(boundsWidth),
+      depth: Math.round(boundsDepth),
+    };
 
     console.log(`[HannonsCamp] Creating terrain mesh (1:1 METER SCALE)`);
     console.log(`[HannonsCamp] Heightmap: ${width}x${height}`);
-    console.log(`[HannonsCamp] Elevation: ${minElevation.toFixed(1)}m to ${maxElevation.toFixed(1)}m (${(maxElevation - minElevation).toFixed(1)}m range)`);
-    console.log(`[HannonsCamp] Size: ${boundsWidth.toFixed(0)}m x ${boundsDepth.toFixed(0)}m`);
+    console.log(
+      `[HannonsCamp] Elevation: ${minElevation.toFixed(1)}m to ${maxElevation.toFixed(1)}m (${(maxElevation - minElevation).toFixed(1)}m range)`
+    );
+    console.log(
+      `[HannonsCamp] Size: ${boundsWidth.toFixed(0)}m x ${boundsDepth.toFixed(0)}m`
+    );
 
     // Create geometry - use heightmap resolution
     const geometry = new BufferGeometry();
@@ -252,11 +278,11 @@
 
         // UV coordinates (0-1 range)
         uvs[uvIdx] = x / (width - 1);
-        uvs[uvIdx + 1] = 1 - (z / (height - 1)); // Flip V for correct orientation
+        uvs[uvIdx + 1] = 1 - z / (height - 1); // Flip V for correct orientation
 
         // Color based on elevation - grass green to tan/brown (used until texture loads)
         const t = (rawHeight - minElevation) / (maxElevation - minElevation);
-        colors[idx] = 0.2 + t * 0.3;     // R: 0.2 -> 0.5
+        colors[idx] = 0.2 + t * 0.3; // R: 0.2 -> 0.5
         colors[idx + 1] = 0.5 - t * 0.15; // G: 0.5 -> 0.35
         colors[idx + 2] = 0.15 + t * 0.1; // B: 0.15 -> 0.25
       }
@@ -270,9 +296,11 @@
         // Get neighboring heights
         const h = vertices[idx + 1] ?? 0;
         const hL = x > 0 ? (vertices[(z * width + (x - 1)) * 3 + 1] ?? h) : h;
-        const hR = x < width - 1 ? (vertices[(z * width + (x + 1)) * 3 + 1] ?? h) : h;
+        const hR =
+          x < width - 1 ? (vertices[(z * width + (x + 1)) * 3 + 1] ?? h) : h;
         const hD = z > 0 ? (vertices[((z - 1) * width + x) * 3 + 1] ?? h) : h;
-        const hU = z < height - 1 ? (vertices[((z + 1) * width + x) * 3 + 1] ?? h) : h;
+        const hU =
+          z < height - 1 ? (vertices[((z + 1) * width + x) * 3 + 1] ?? h) : h;
 
         // Calculate normal
         const stepX = boundsWidth / (width - 1);
@@ -351,7 +379,9 @@
     textureError = null;
 
     try {
-      console.log("[HannonsCamp] Loading high-resolution satellite imagery (zoom 18, 4096x4096)...");
+      console.log(
+        "[HannonsCamp] Loading high-resolution satellite imagery (zoom 18, 4096x4096)..."
+      );
 
       // Fetch satellite imagery at maximum resolution
       // Zoom 18 is the highest detail available from Mapbox
@@ -359,7 +389,7 @@
       const satCanvas = await satelliteLoader.loadSatelliteTexture(
         terrainBounds,
         { width: 4096, height: 4096 },
-        18  // Maximum zoom level for highest detail
+        18 // Maximum zoom level for highest detail
       );
 
       // Create Three.js texture
@@ -378,7 +408,10 @@
       console.log("[HannonsCamp] Satellite texture applied successfully");
     } catch (error) {
       console.error("[HannonsCamp] Failed to load satellite texture:", error);
-      textureError = error instanceof Error ? error.message : "Failed to load satellite imagery";
+      textureError =
+        error instanceof Error
+          ? error.message
+          : "Failed to load satellite imagery";
     } finally {
       isLoadingTexture = false;
     }
@@ -476,9 +509,25 @@
     }
   }
 
+  function exitFirstPerson(): void {
+    if (!isFirstPerson) return;
+    console.log("[HannonsCamp] Exiting first-person mode");
+    document.exitPointerLock();
+  }
+
+  function toggleCameraMode(): void {
+    if (isFirstPerson) {
+      exitFirstPerson();
+    } else {
+      enterFirstPerson();
+    }
+  }
+
   function enterFirstPerson(): void {
     if (!pointerLockControls || !camera || !terrainMesh || !canvas) {
-      console.error("[HannonsCamp] Cannot enter first person - missing dependencies");
+      console.error(
+        "[HannonsCamp] Cannot enter first person - missing dependencies"
+      );
       return;
     }
 
@@ -507,6 +556,13 @@
   }
 
   function onKeyDown(event: KeyboardEvent): void {
+    // V key to toggle camera mode (consistent with Gallery and Endless World)
+    if (event.code === "KeyV") {
+      toggleCameraMode();
+      event.preventDefault();
+      return;
+    }
+
     // Quick select cycle (Q) - cycles through objects without leaving first-person
     if (event.code === "KeyQ" && isFirstPerson) {
       cycleToNextObject();
@@ -524,21 +580,39 @@
       }
     }
 
-    // Cancel first-person placement with Escape
-    if (event.code === "Escape" && fpPlacementObject) {
-      cancelFpPlacement();
-      return;
+    // Escape handling:
+    // 1. Cancel placement if in placement mode
+    // 2. Otherwise exit first-person mode
+    if (event.code === "Escape") {
+      if (fpPlacementObject) {
+        cancelFpPlacement();
+        return;
+      }
+      if (isFirstPerson) {
+        exitFirstPerson();
+        event.preventDefault();
+        return;
+      }
     }
 
     // E key still works as alternative placement method
-    if (event.code === "KeyE" && isFirstPerson && fpPlacementObject && ghostMesh) {
+    if (
+      event.code === "KeyE" &&
+      isFirstPerson &&
+      fpPlacementObject &&
+      ghostMesh
+    ) {
       placeObjectAtGhost();
       event.preventDefault();
       return;
     }
 
     // Handle transform controls gizmo mode switching (works in overhead/edit mode)
-    if (viewMode === "overhead" && placementMode === "edit" && transformControls) {
+    if (
+      viewMode === "overhead" &&
+      placementMode === "edit" &&
+      transformControls
+    ) {
       switch (event.code) {
         case "KeyW":
           transformControls.setMode("translate");
@@ -597,7 +671,7 @@
         if (isFlyMode) {
           velocity.y = 0; // Stop vertical velocity when entering fly mode
         }
-        console.log(`[HannonsCamp] Fly mode: ${isFlyMode ? 'ON' : 'OFF'}`);
+        console.log(`[HannonsCamp] Fly mode: ${isFlyMode ? "ON" : "OFF"}`);
         break;
     }
   }
@@ -700,7 +774,10 @@
 
         cameraYaw -= deltaX * TOUCH_SENSITIVITY;
         cameraPitch -= deltaY * TOUCH_SENSITIVITY;
-        cameraPitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraPitch));
+        cameraPitch = Math.max(
+          -Math.PI / 2 + 0.1,
+          Math.min(Math.PI / 2 - 0.1, cameraPitch)
+        );
 
         touchLook.currentX = touch.clientX;
         touchLook.currentY = touch.clientY;
@@ -722,7 +799,9 @@
 
   function enterFirstPersonMobile(): void {
     if (!camera || !terrainMesh) {
-      console.error("[HannonsCamp] Cannot enter first person - missing dependencies");
+      console.error(
+        "[HannonsCamp] Cannot enter first person - missing dependencies"
+      );
       return;
     }
 
@@ -756,11 +835,15 @@
 
   function autoEnterFirstPerson(): void {
     if (!camera || !terrainMesh) {
-      console.error("[HannonsCamp] Cannot auto-enter first person - terrain not ready");
+      console.error(
+        "[HannonsCamp] Cannot auto-enter first person - terrain not ready"
+      );
       return;
     }
 
-    console.log(`[HannonsCamp] Auto-entering first-person at spawn (${SPAWN_POINT.x}, ${SPAWN_POINT.z}) facing ${Math.round(SPAWN_YAW * 180 / Math.PI)}°`);
+    console.log(
+      `[HannonsCamp] Auto-entering first-person at spawn (${SPAWN_POINT.x}, ${SPAWN_POINT.z}) facing ${Math.round((SPAWN_YAW * 180) / Math.PI)}°`
+    );
 
     // Get ground height at spawn point
     const groundY = getTerrainHeightAt(SPAWN_POINT.x, SPAWN_POINT.z);
@@ -783,14 +866,22 @@
     // If pointer lock is available (mouse/pen input, not touch), set up click-to-lock.
     // This works correctly for DevTools emulation and external mouse on tablet.
     if (inputCaps.canUsePointerLock() && canvas) {
-      console.log("[HannonsCamp] Pointer lock available: Click anywhere to enable mouse look");
+      console.log(
+        "[HannonsCamp] Pointer lock available: Click anywhere to enable mouse look"
+      );
       canvas.addEventListener("click", handleCanvasClick);
     }
   }
 
   function handleCanvasClick(): void {
     // Only request pointer lock if using mouse/pen (not touch) and in first-person mode
-    if (inputCaps.canUsePointerLock() && isFirstPerson && viewMode === "first-person" && canvas && !document.pointerLockElement) {
+    if (
+      inputCaps.canUsePointerLock() &&
+      isFirstPerson &&
+      viewMode === "first-person" &&
+      canvas &&
+      !document.pointerLockElement
+    ) {
       canvas.requestPointerLock();
     }
   }
@@ -836,7 +927,9 @@
   function exitOverheadMode(): void {
     if (!camera || !orbitControls) return;
 
-    console.log("[HannonsCamp] Exiting overhead mode, returning to first-person");
+    console.log(
+      "[HannonsCamp] Exiting overhead mode, returning to first-person"
+    );
     viewMode = "first-person";
 
     // Reset orbit controls constraints
@@ -849,7 +942,11 @@
 
     // Re-enter first-person at current position (or spawn if too high)
     const groundY = getTerrainHeightAt(camera.position.x, camera.position.z);
-    camera.position.set(camera.position.x, groundY + PLAYER_HEIGHT, camera.position.z);
+    camera.position.set(
+      camera.position.x,
+      groundY + PLAYER_HEIGHT,
+      camera.position.z
+    );
     velocity.set(0, 0, 0);
 
     // Initialize camera angles
@@ -909,7 +1006,10 @@
 
       // First check placed objects
       if (objectsGroup && objectsGroup.children.length > 0) {
-        const objIntersects = raycaster.intersectObjects(objectsGroup.children, true);
+        const objIntersects = raycaster.intersectObjects(
+          objectsGroup.children,
+          true
+        );
         if (objIntersects.length > 0) {
           // Find the root mesh (with placedObjectId)
           let target = objIntersects[0]!.object;
@@ -958,7 +1058,9 @@
     renderBoundary();
     saveBoundaryToStorage();
 
-    console.log(`[HannonsCamp] Added boundary point ${boundaryPoints.length}: (${x.toFixed(1)}, ${z.toFixed(1)})`);
+    console.log(
+      `[HannonsCamp] Added boundary point ${boundaryPoints.length}: (${x.toFixed(1)}, ${z.toFixed(1)})`
+    );
   }
 
   function closeBoundaryPolygon(): void {
@@ -967,7 +1069,9 @@
     isPolygonClosed = true;
     renderBoundary();
     saveBoundaryToStorage();
-    console.log(`[HannonsCamp] Boundary polygon closed with ${boundaryPoints.length} points`);
+    console.log(
+      `[HannonsCamp] Boundary polygon closed with ${boundaryPoints.length} points`
+    );
   }
 
   function clearBoundary(): void {
@@ -994,7 +1098,9 @@
         timestamp: new Date().toISOString(),
       };
       localStorage.setItem(BOUNDARY_STORAGE_KEY, JSON.stringify(data));
-      console.log(`[HannonsCamp] Boundary saved (${boundaryPoints.length} points)`);
+      console.log(
+        `[HannonsCamp] Boundary saved (${boundaryPoints.length} points)`
+      );
     } catch (error) {
       console.warn("[HannonsCamp] Failed to save boundary:", error);
     }
@@ -1011,7 +1117,9 @@
       if (data.points && Array.isArray(data.points)) {
         boundaryPoints = data.points;
         isPolygonClosed = data.isClosed ?? false;
-        console.log(`[HannonsCamp] Boundary loaded (${boundaryPoints.length} points, closed: ${isPolygonClosed})`);
+        console.log(
+          `[HannonsCamp] Boundary loaded (${boundaryPoints.length} points, closed: ${isPolygonClosed})`
+        );
       }
     } catch (error) {
       console.warn("[HannonsCamp] Failed to load boundary:", error);
@@ -1119,7 +1227,9 @@
     const geometry = new ShapeGeometry(outerShape);
 
     // Position at average terrain height
-    const avgY = boundaryPoints.reduce((sum, p) => sum + getTerrainHeightAt(p.x, p.z), 0) / boundaryPoints.length;
+    const avgY =
+      boundaryPoints.reduce((sum, p) => sum + getTerrainHeightAt(p.x, p.z), 0) /
+      boundaryPoints.length;
 
     // Create mesh with semi-transparent dark material
     const material = new MeshBasicMaterial({
@@ -1188,7 +1298,14 @@
 
   function handlePlacementClick(event: MouseEvent): void {
     // Only handle placement in overhead mode with an object selected
-    if (viewMode !== "overhead" || !selectedObjectDef || !camera || !terrainMesh || !canvas) return;
+    if (
+      viewMode !== "overhead" ||
+      !selectedObjectDef ||
+      !camera ||
+      !terrainMesh ||
+      !canvas
+    )
+      return;
     if (placementMode !== "place") return;
 
     // Get normalized device coordinates
@@ -1208,7 +1325,11 @@
     }
   }
 
-  function createAndPlaceObject(def: ObjectDefinition, x: number, z: number): void {
+  function createAndPlaceObject(
+    def: ObjectDefinition,
+    x: number,
+    z: number
+  ): void {
     // Get ground height at position
     const groundY = getTerrainHeightAt(x, z);
 
@@ -1237,7 +1358,9 @@
     // Select the new object for editing
     selectObject(mesh, placedObject.id);
 
-    console.log(`[HannonsCamp] Placed ${def.name} at (${x.toFixed(1)}, ${groundY.toFixed(1)}, ${z.toFixed(1)})`);
+    console.log(
+      `[HannonsCamp] Placed ${def.name} at (${x.toFixed(1)}, ${groundY.toFixed(1)}, ${z.toFixed(1)})`
+    );
   }
 
   function selectObject(mesh: Mesh | Group, objectId: string): void {
@@ -1406,7 +1529,9 @@
   function selectFpObject(def: ObjectDefinition): void {
     fpPlacementObject = def;
     createGhostMesh(def);
-    console.log(`[HannonsCamp] Selected: ${def.name} (Click to place, Q to cycle, ESC to cancel)`);
+    console.log(
+      `[HannonsCamp] Selected: ${def.name} (Click to place, Q to cycle, ESC to cancel)`
+    );
   }
 
   function handleQuickSelectChoice(def: ObjectDefinition): void {
@@ -1511,7 +1636,9 @@
     createAndPlaceObject(fpPlacementObject, ghostPosition.x, ghostPosition.z);
 
     // Keep placement mode active for placing more of the same object
-    console.log(`[HannonsCamp] Placed ${fpPlacementObject.name}. Click again or ESC to cancel.`);
+    console.log(
+      `[HannonsCamp] Placed ${fpPlacementObject.name}. Click again or ESC to cancel.`
+    );
   }
 
   function handleFirstPersonMouseDown(event: MouseEvent): void {
@@ -1550,19 +1677,20 @@
 
     if (isFirstPerson && camera) {
       // Determine current speed based on mode
-      const currentSpeed = isFlyMode ? FLY_SPEED : (isRunning ? RUN_SPEED : WALK_SPEED);
+      const currentSpeed = isFlyMode
+        ? FLY_SPEED
+        : isRunning
+          ? RUN_SPEED
+          : WALK_SPEED;
 
       // Apply gravity (only if not flying)
       if (!isFlyMode) {
         velocity.y -= GRAVITY * delta;
       }
 
-      // Update movement from touch input (works for native touch AND DevTools emulation)
-      // Only process touch movement when NOT using pointer lock
+      // Apply camera rotation from touch/manual input when NOT using pointer lock
+      // (Touch movement is now handled by the shared VirtualJoystick component via handleJoystickInput)
       if (!inputCaps.current.isPointerLocked) {
-        updateMovementFromTouch();
-
-        // Apply camera rotation from touch/manual input
         camera.rotation.order = "YXZ";
         camera.rotation.y = cameraYaw;
         camera.rotation.x = cameraPitch;
@@ -1585,7 +1713,9 @@
         }
       } else {
         // Manual movement based on camera yaw (touch, emulation, or unlocked mouse)
-        const forward = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        const forward = new Vector3(0, 0, -1).applyQuaternion(
+          camera.quaternion
+        );
         if (!isFlyMode) forward.y = 0; // Lock to ground unless flying
         forward.normalize();
 
@@ -1594,10 +1724,16 @@
         right.normalize();
 
         if (moveForward || moveBackward) {
-          camera.position.addScaledVector(forward, direction.z * currentSpeed * delta);
+          camera.position.addScaledVector(
+            forward,
+            direction.z * currentSpeed * delta
+          );
         }
         if (moveLeft || moveRight) {
-          camera.position.addScaledVector(right, direction.x * currentSpeed * delta);
+          camera.position.addScaledVector(
+            right,
+            direction.x * currentSpeed * delta
+          );
         }
       }
 
@@ -1606,7 +1742,10 @@
         camera.position.y += velocity.y * delta;
 
         // Ground collision
-        const groundY = getTerrainHeightAt(camera.position.x, camera.position.z);
+        const groundY = getTerrainHeightAt(
+          camera.position.x,
+          camera.position.z
+        );
         if (camera.position.y < groundY + PLAYER_HEIGHT) {
           camera.position.y = groundY + PLAYER_HEIGHT;
           velocity.y = 0;
@@ -1623,13 +1762,13 @@
       currentPosition = {
         x: Math.round(camera.position.x),
         y: Math.round(camera.position.y * 10) / 10,
-        z: Math.round(camera.position.z)
+        z: Math.round(camera.position.z),
       };
 
       // Calculate yaw from camera's forward direction for display
       const forward = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       const calculatedYaw = Math.atan2(-forward.x, -forward.z);
-      displayYaw = Math.round(calculatedYaw * 180 / Math.PI); // Convert to degrees for display
+      displayYaw = Math.round((calculatedYaw * 180) / Math.PI); // Convert to degrees for display
 
       // Sync cameraYaw when pointer is locked (PointerLockControls manages rotation)
       // When not locked (touch/manual mode), cameraYaw is set by touch input directly
@@ -1685,7 +1824,9 @@
     // - Touch on tablets with external mouse (touch still works)
     // The handlers check context and won't interfere with mouse input.
     if (canvas) {
-      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchstart", handleTouchStart, {
+        passive: false,
+      });
       canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
       canvas.addEventListener("touchend", handleTouchEnd);
       canvas.addEventListener("touchcancel", handleTouchEnd);
@@ -1747,7 +1888,7 @@
     if (terrainMesh) {
       terrainMesh.geometry.dispose();
       if (Array.isArray(terrainMesh.material)) {
-        terrainMesh.material.forEach(m => m.dispose());
+        terrainMesh.material.forEach((m) => m.dispose());
       } else {
         terrainMesh.material.dispose();
       }
@@ -1789,7 +1930,7 @@
     <button
       class="mode-btn"
       class:active={viewMode === "first-person"}
-      onclick={() => viewMode === "overhead" ? exitOverheadMode() : null}
+      onclick={() => (viewMode === "overhead" ? exitOverheadMode() : null)}
       title="First-person view"
     >
       <i class="fas fa-walking" aria-hidden="true"></i>
@@ -1797,7 +1938,7 @@
     <button
       class="mode-btn"
       class:active={viewMode === "overhead"}
-      onclick={() => viewMode === "first-person" ? enterOverheadMode() : null}
+      onclick={() => (viewMode === "first-person" ? enterOverheadMode() : null)}
       title="Overhead view"
     >
       <i class="fas fa-map" aria-hidden="true"></i>
@@ -1944,7 +2085,11 @@
         </div>
       </div>
       <div class="mode-row">
-        <span class="mode-badge" class:fly={isFlyMode} class:run={isRunning && !isFlyMode}>
+        <span
+          class="mode-badge"
+          class:fly={isFlyMode}
+          class:run={isRunning && !isFlyMode}
+        >
           {isFlyMode ? "FLY" : isRunning ? "RUN" : "WALK"}
         </span>
         <span class="mode-keys">G fly · Shift run</span>
@@ -1987,7 +2132,18 @@
       <!-- Mouse/keyboard input: Keyboard hints (bottom) -->
       <div class="fp-overlay">
         <div class="fp-controls">
-          <p><strong>WASD</strong> move • <strong>1-6</strong> select object • <strong>Q</strong> cycle • <strong>{getPlacementHint()}</strong> place • <strong>ESC</strong> cancel</p>
+          <p>
+            <strong>WASD</strong> move • <strong>Mouse</strong> look •
+            <strong>V</strong>
+            orbit view • <strong>ESC</strong> exit
+          </p>
+        </div>
+        <div class="fp-controls-secondary">
+          <p>
+            <strong>1-6</strong> select object • <strong>Q</strong> cycle •
+            <strong>{getPlacementHint()}</strong>
+            place • <strong>G</strong> fly • <strong>Shift</strong> run
+          </p>
         </div>
       </div>
     {/if}
@@ -2007,7 +2163,9 @@
       <div class="placement-item">
         <div
           class="placement-icon"
-          style="background-color: #{fpPlacementObject.color.toString(16).padStart(6, '0')}"
+          style="background-color: #{fpPlacementObject.color
+            .toString(16)
+            .padStart(6, '0')}"
         >
           <i class="fas {fpPlacementObject.icon}" aria-hidden="true"></i>
         </div>
@@ -2475,6 +2633,20 @@
 
   .fp-controls strong {
     color: #f97316;
+  }
+
+  .fp-controls-secondary {
+    margin-top: 4px;
+  }
+
+  .fp-controls-secondary p {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .fp-controls-secondary strong {
+    color: rgba(249, 115, 22, 0.7);
   }
 
   /* Mobile controls */

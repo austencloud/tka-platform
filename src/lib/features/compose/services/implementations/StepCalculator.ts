@@ -140,7 +140,8 @@ export class StepCalculator implements IStepCalculator {
     // Find which beat we're in by accumulating durations
     let accumulatedTime = 0;
     for (let i = 0; i < steps.length; i++) {
-      const stepDuration = steps[i].duration ?? 1;
+      const step = steps[i]!;
+      const stepDuration = step.duration ?? 1;
       const beatEndTime = accumulatedTime + stepDuration;
 
       if (clampedTime < beatEndTime || i === steps.length - 1) {
@@ -175,7 +176,7 @@ export class StepCalculator implements IStepCalculator {
     const clampedIndex = Math.min(stepIndex, steps.length);
 
     for (let i = 0; i < clampedIndex; i++) {
-      accumulatedTime += steps[i].duration ?? 1;
+      accumulatedTime += steps[i]!.duration ?? 1;
     }
 
     return accumulatedTime;

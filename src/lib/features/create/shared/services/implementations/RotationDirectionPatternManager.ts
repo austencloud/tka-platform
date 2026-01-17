@@ -258,6 +258,13 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       return;
     }
 
+    if (!motionQueryHandler) {
+      logger.warn(
+        "IMotionQueryHandler is null - letters will not be updated"
+      );
+      return;
+    }
+
     for (const stepIndex of modifiedBeatIndices) {
       const beat = steps[stepIndex];
       if (!beat) continue;

@@ -296,6 +296,11 @@
     }
   }
 
+  function handlePointerMove(e: PointerEvent) {
+    // Track pointer type for proper input detection (works with DevTools touch simulation)
+    inputCaps.handlePointerEvent(e);
+  }
+
   // Touch look handlers
   function handleTouchStart(e: TouchEvent) {
     if (cameraMode !== "first-person") return;
@@ -417,9 +422,10 @@
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
 
-    // Mouse
+    // Mouse and pointer events
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointermove", handlePointerMove);
 
     // Touch
     window.addEventListener("touchstart", handleTouchStart, { passive: false });
@@ -440,6 +446,7 @@
     document.removeEventListener("keyup", handleKeyUp);
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("pointerdown", handlePointerDown);
+    document.removeEventListener("pointermove", handlePointerMove);
 
     window.removeEventListener("touchstart", handleTouchStart);
     window.removeEventListener("touchmove", handleTouchMove);

@@ -7,6 +7,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import type { UIMessage } from "ai";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   // Props - using AI SDK types
   let {
@@ -14,20 +15,19 @@
     status = "ready",
     onSubmit,
     onStop,
-    onCopyForAI,
+    generateCopyForAI,
   }: {
     messages: UIMessage[];
     status: "submitted" | "streaming" | "ready" | "error";
     onSubmit: (question: string) => void;
     onStop: () => void;
-    onCopyForAI?: () => void;
+    generateCopyForAI?: () => string;
   } = $props();
 
   // Local state
   let inputValue = $state("");
   let chatContainer: HTMLElement | null = $state(null);
   let showToolDetails = $state(false);
-  let copySuccess = $state(false);
 
   // Derived state
   const isLoading = $derived(status === "submitted" || status === "streaming");
@@ -103,17 +103,6 @@
       index === messages.length - 1
     );
   }
-
-  // Handle copy for AI with feedback
-  async function handleCopyForAI() {
-    if (onCopyForAI) {
-      onCopyForAI();
-      copySuccess = true;
-      setTimeout(() => {
-        copySuccess = false;
-      }, 2000);
-    }
-  }
 </script>
 
 <div class="conversation-panel">
@@ -136,22 +125,14 @@
           <i class="fas fa-wrench" aria-hidden="true"></i>
           {showToolDetails ? "Hide Tools" : "Show Tools"}
         </button>
-        {#if onCopyForAI}
-          <button
-            class="header-btn"
-            class:success={copySuccess}
-            onclick={handleCopyForAI}
-            title="Copy conversation for AI review"
-            aria-label="Copy conversation for AI review"
-          >
-            {#if copySuccess}
-              <i class="fas fa-check" aria-hidden="true"></i>
-              Copied!
-            {:else}
-              <i class="fas fa-copy" aria-hidden="true"></i>
-              Copy for AI
-            {/if}
-          </button>
+        {#if generateCopyForAI}
+          <CopyForAIButton
+            getData={generateCopyForAI}
+            variant="icon-text"
+            size="sm"
+            idleIcon="fa-copy"
+            ariaLabel="Copy conversation for AI review"
+          />
         {/if}
       </div>
     {/if}
@@ -379,12 +360,6 @@
   .header-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
-  }
-
-  .header-btn.success {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.4);
-    color: #22c55e;
   }
 
   /* Chat Container */

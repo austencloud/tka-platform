@@ -243,15 +243,6 @@
           </div>
         {/if}
 
-        <!-- All Letters List -->
-        <div class="info-section">
-          <h4>All {context.typeList.typeName} Letters</h4>
-          <div class="all-letters">
-            {#each context.typeList.allLetters as letter}
-              <span class="letter-chip">{letter}</span>
-            {/each}
-          </div>
-        </div>
       </div>
     {:else if context?.type === "list"}
       <!-- Legacy list context fallback -->
@@ -576,11 +567,11 @@
     margin: 8px 0 0 0;
   }
 
-  /* Motion Pattern */
+  /* Motion Pattern - horizontal layout */
   .motion-pattern {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row;
+    gap: 16px;
     padding: 12px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: 8px;
@@ -594,22 +585,22 @@
     color: var(--theme-text, #ffffff);
   }
 
-  /* Pictograph Gallery */
+  /* Pictograph Gallery - optimized for 22 items */
   .pictograph-gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
   }
 
   .gallery-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 12px;
+    gap: 4px;
+    padding: 6px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
+    border-radius: 6px;
     transition: border-color var(--duration-fast) ease;
   }
 
@@ -619,13 +610,13 @@
 
   .gallery-item img {
     width: 100%;
-    max-width: 100px;
+    max-width: 80px;
     height: auto;
     border-radius: 4px;
   }
 
   .gallery-letter {
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--theme-text, #ffffff);
   }
@@ -638,23 +629,6 @@
     padding: 24px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: 13px;
-  }
-
-  /* All Letters List */
-  .all-letters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .letter-chip {
-    padding: 4px 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--theme-text, #ffffff);
   }
 
   /* Empty State */
@@ -678,6 +652,13 @@
     margin: 0;
   }
 
+  /* Tablet Adjustments */
+  @media (max-width: 1024px) {
+    .pictograph-gallery {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
   /* Mobile Adjustments */
   @media (max-width: 768px) {
     .motion-grid {
@@ -686,6 +667,10 @@
 
     .pictograph-display img {
       max-height: 180px;
+    }
+
+    .pictograph-gallery {
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 

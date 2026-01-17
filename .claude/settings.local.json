@@ -271,7 +271,9 @@
       "WebFetch(domain:cloudscape.design)",
       "WebFetch(domain:flowarts.life)",
       "WebFetch(domain:www.homeofpoi.com)",
-      "WebFetch(domain:noelyee.weebly.com)"
+      "WebFetch(domain:noelyee.weebly.com)",
+      "Bash(corepack enable:*)",
+      "Bash(corepack prepare:*)"
     ]
   }
 }

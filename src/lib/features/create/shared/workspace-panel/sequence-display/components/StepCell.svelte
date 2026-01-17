@@ -316,18 +316,28 @@
 
 <div
   bind:this={cellElement}
-  class="beat-cell"
+  class="step-cell"
   class:invisible={!isVisible}
   class:animate={shouldAnimateIn}
   class:expanded={widthMultiplier > 1}
   class:timeline-mode={isTimelineMode}
   class:selected={isSelected && !isTimelineMode}
   class:practice-beat={isPracticeStep && !isTimelineMode}
-  class:practice-intense={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'intense'}
-  class:practice-subtle={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'subtle'}
-  class:practice-glow-only={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'glow-only'}
-  class:practice-minimal={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'minimal'}
-  class:practice-wave={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'wave'}
+  class:practice-intense={isPracticeStep &&
+    !isTimelineMode &&
+    practiceAnimationStyle.current === "intense"}
+  class:practice-subtle={isPracticeStep &&
+    !isTimelineMode &&
+    practiceAnimationStyle.current === "subtle"}
+  class:practice-glow-only={isPracticeStep &&
+    !isTimelineMode &&
+    practiceAnimationStyle.current === "glow-only"}
+  class:practice-minimal={isPracticeStep &&
+    !isTimelineMode &&
+    practiceAnimationStyle.current === "minimal"}
+  class:practice-wave={isPracticeStep &&
+    !isTimelineMode &&
+    practiceAnimationStyle.current === "wave"}
   class:highlighted={!!highlightStyle}
   class:long-pressing={isLongPressing}
   class:anim-gentleBloom={currentAnimationName === "gentleBloom"}
@@ -359,7 +369,7 @@
 </div>
 
 <style>
-  .beat-cell {
+  .step-cell {
     position: relative;
     display: flex;
     align-items: center;
@@ -392,7 +402,7 @@
   }
 
   /* Default: pictograph maintains square aspect ratio */
-  .beat-cell :global(.pictograph-container) {
+  .step-cell :global(.pictograph-container) {
     aspect-ratio: 1;
     max-width: 100%;
     max-height: 100%;
@@ -401,7 +411,7 @@
   }
 
   /* Timeline mode: pictograph fills container, SVG viewBox handles aspect ratio */
-  .beat-cell.timeline-mode :global(.pictograph-container) {
+  .step-cell.timeline-mode :global(.pictograph-container) {
     aspect-ratio: auto;
     width: 100%;
     height: 100%;
@@ -410,12 +420,12 @@
   }
 
   /* Disable transitions during entry animations to prevent conflicts */
-  .beat-cell.animate {
+  .step-cell.animate {
     transition: none;
   }
 
   /* Invisible state - beat takes up space but pictograph is hidden */
-  .beat-cell.invisible {
+  .step-cell.invisible {
     opacity: 0;
     pointer-events: none;
     /* Start smaller when invisible - animation will scale up from here */
@@ -423,43 +433,46 @@
   }
 
   /* Default animation (Spring Pop) */
-  .beat-cell.animate {
-    animation: springPop var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  .step-cell.animate {
+    animation: springPop var(--duration-dramatic)
+      cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
   /* Animation overrides based on selected animation */
-  .beat-cell.animate.anim-gentleBloom {
+  .step-cell.animate.anim-gentleBloom {
     animation: gentleBloom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
   }
 
-  .beat-cell.animate.anim-softCascade {
+  .step-cell.animate.anim-softCascade {
     animation: softCascade 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .beat-cell.animate.anim-springPop {
-    animation: springPop var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  .step-cell.animate.anim-springPop {
+    animation: springPop var(--duration-dramatic)
+      cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
-  .beat-cell.animate.anim-microFade {
-    animation: microFade var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1) both;
+  .step-cell.animate.anim-microFade {
+    animation: microFade var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1)
+      both;
   }
 
-  .beat-cell.animate.anim-glassBlur {
+  .step-cell.animate.anim-glassBlur {
     animation: glassBlur 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
   }
 
-  .beat-cell:hover {
+  .step-cell:hover {
     opacity: 0.9;
     transform: scale(1.02);
   }
 
   /* Override global focus-visible outline - selection styling is sufficient */
-  .beat-cell:focus-visible {
+  .step-cell:focus-visible {
     outline: none;
   }
 
   /* Visual feedback during long-press */
-  .beat-cell.long-pressing {
+  .step-cell.long-pressing {
     transform: scale(0.95);
     opacity: 0.8;
     transition:
@@ -468,7 +481,7 @@
   }
 
   /* Elevated Luxury - 2025/2026 Selection State */
-  .beat-cell.selected {
+  .step-cell.selected {
     /* Ensure it appears above other steps */
     z-index: 10;
     position: relative;
@@ -507,8 +520,8 @@
   }
 
   /* Selection fade-in animation using a pseudo-element for the glow */
-  .beat-cell.selected::before {
-    content: '';
+  .step-cell.selected::before {
+    content: "";
     position: absolute;
     inset: -6px;
     border: 3px solid transparent;
@@ -543,7 +556,7 @@
   }
 
   /* Selection styling DURING animation - border/glow visible while beat animates in */
-  .beat-cell.animate.selected {
+  .step-cell.animate.selected {
     z-index: 10;
     border: 3px solid transparent;
     background:
@@ -563,7 +576,7 @@
     /* Let animation control transform/opacity, but show selection border/glow */
   }
 
-  .beat-cell.selected:hover {
+  .step-cell.selected:hover {
     /* Keep fully opaque even on hover */
     opacity: 1;
     transform: scale(1.12);
@@ -574,7 +587,7 @@
   }
 
   /* Custom highlight styling (multi-select, section highlighting, etc.) */
-  .beat-cell.highlighted {
+  .step-cell.highlighted {
     position: relative;
     z-index: 5;
     border: 3px solid var(--highlight-border, rgba(59, 130, 246, 0.8));
@@ -583,7 +596,7 @@
   }
 
   /* Colored overlay on top of pictograph content */
-  .beat-cell.highlighted::after {
+  .step-cell.highlighted::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -593,7 +606,7 @@
     z-index: 1;
   }
 
-  .beat-cell.highlighted:hover::after {
+  .step-cell.highlighted:hover::after {
     background: var(--highlight-bg, rgba(59, 130, 246, 0.45));
   }
 
@@ -603,14 +616,14 @@
      ========================================================================= */
 
   /* Base practice beat styling - shared by all variants */
-  .beat-cell.practice-beat {
+  .step-cell.practice-beat {
     border: 3px solid var(--semantic-warning);
     border-radius: 8px;
     z-index: 10;
   }
 
   /* STYLE 1: INTENSE - pop with glow bloom (toned down to 80%) */
-  .beat-cell.practice-intense {
+  .step-cell.practice-intense {
     background: rgba(251, 191, 36, 0.08);
     animation:
       practiceEnterIntense 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
@@ -623,31 +636,42 @@
       box-shadow: 0 0 0 rgba(251, 191, 36, 0);
     }
     50% {
-      transform: scale(1.10);
-      box-shadow: 0 0 28px rgba(251, 191, 36, 0.8), 0 0 56px rgba(251, 191, 36, 0.35);
+      transform: scale(1.1);
+      box-shadow:
+        0 0 28px rgba(251, 191, 36, 0.8),
+        0 0 56px rgba(251, 191, 36, 0.35);
     }
     100% {
       transform: scale(1.05);
-      box-shadow: 0 0 18px rgba(251, 191, 36, 0.55), 0 0 36px rgba(251, 191, 36, 0.22);
+      box-shadow:
+        0 0 18px rgba(251, 191, 36, 0.55),
+        0 0 36px rgba(251, 191, 36, 0.22);
     }
   }
 
   @keyframes practiceGlowIntense {
-    0%, 100% {
-      box-shadow: 0 0 18px rgba(251, 191, 36, 0.55), 0 0 36px rgba(251, 191, 36, 0.22);
+    0%,
+    100% {
+      box-shadow:
+        0 0 18px rgba(251, 191, 36, 0.55),
+        0 0 36px rgba(251, 191, 36, 0.22);
       transform: scale(1.05);
     }
     50% {
-      box-shadow: 0 0 24px rgba(251, 191, 36, 0.65), 0 0 44px rgba(251, 191, 36, 0.28);
+      box-shadow:
+        0 0 24px rgba(251, 191, 36, 0.65),
+        0 0 44px rgba(251, 191, 36, 0.28);
       transform: scale(1.07);
     }
   }
 
   /* STYLE 2: SUBTLE - gentle fade with slight scale */
-  .beat-cell.practice-subtle {
+  .step-cell.practice-subtle {
     background: rgba(251, 191, 36, 0.08);
     animation: practiceEnterSubtle var(--duration-emphasis) ease-out forwards;
-    box-shadow: 0 0 16px rgba(251, 191, 36, 0.5), 0 0 32px rgba(251, 191, 36, 0.2);
+    box-shadow:
+      0 0 16px rgba(251, 191, 36, 0.5),
+      0 0 32px rgba(251, 191, 36, 0.2);
     transform: scale(1.04);
   }
 
@@ -659,13 +683,15 @@
     }
     100% {
       transform: scale(1.04);
-      box-shadow: 0 0 16px rgba(251, 191, 36, 0.5), 0 0 32px rgba(251, 191, 36, 0.2);
+      box-shadow:
+        0 0 16px rgba(251, 191, 36, 0.5),
+        0 0 32px rgba(251, 191, 36, 0.2);
       opacity: 1;
     }
   }
 
   /* STYLE 3: GLOW-ONLY - no scale, just glow appears */
-  .beat-cell.practice-glow-only {
+  .step-cell.practice-glow-only {
     background: transparent;
     transform: scale(1);
     animation: practiceEnterGlow var(--duration-normal) ease-out forwards;
@@ -676,12 +702,14 @@
       box-shadow: 0 0 0 rgba(251, 191, 36, 0);
     }
     100% {
-      box-shadow: 0 0 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(251, 191, 36, 0.25);
+      box-shadow:
+        0 0 20px rgba(251, 191, 36, 0.6),
+        0 0 40px rgba(251, 191, 36, 0.25);
     }
   }
 
   /* STYLE 4: MINIMAL - quick fade, almost instant */
-  .beat-cell.practice-minimal {
+  .step-cell.practice-minimal {
     background: transparent;
     transform: scale(1.02);
     box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
@@ -698,15 +726,15 @@
   }
 
   /* STYLE 5: WAVE - expanding ring effect */
-  .beat-cell.practice-wave {
+  .step-cell.practice-wave {
     background: rgba(251, 191, 36, 0.05);
     transform: scale(1.05);
     box-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
     animation: practiceEnterWave var(--duration-dramatic) ease-out forwards;
   }
 
-  .beat-cell.practice-wave::before {
-    content: '';
+  .step-cell.practice-wave::before {
+    content: "";
     position: absolute;
     inset: -4px;
     border: 2px solid rgba(251, 191, 36, 0.6);
@@ -737,8 +765,10 @@
     }
   }
 
-  .beat-cell.practice-beat:hover {
-    box-shadow: 0 0 24px rgba(251, 191, 36, 0.7), 0 0 48px rgba(251, 191, 36, 0.3);
+  .step-cell.practice-beat:hover {
+    box-shadow:
+      0 0 24px rgba(251, 191, 36, 0.7),
+      0 0 48px rgba(251, 191, 36, 0.3);
   }
 
   /* FAVORITE: Gentle Bloom - soft float-up with blur */
@@ -822,7 +852,7 @@
     .animate {
       animation: none;
     }
-    .beat-cell.selected::before {
+    .step-cell.selected::before {
       animation: none;
       opacity: 1;
     }

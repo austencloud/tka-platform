@@ -102,7 +102,7 @@ export class LOOPDetector implements ILOOPDetector {
       this.comparisonOrchestrator.generateHalvedBeatPairs(steps);
     this.analysisService.reprioritizeBeatPairs(halvedStepPairs);
     const halvedStepPairGroups =
-      this.analysisService.groupBeatPairsByPattern(halvedBeatPairs);
+      this.analysisService.groupStepPairsByPattern(halvedStepPairs);
 
     // Detect rotation direction for quartered sequences
     let rotationDirection: "cw" | "ccw" | null = null;
@@ -254,10 +254,10 @@ export class LOOPDetector implements ILOOPDetector {
 
     const combinedGroups = compoundPattern
       ? {
-          ...this.analysisService.groupBeatPairsByPattern(quarteredBeatPairs),
+          ...this.analysisService.groupStepPairsByPattern(quarteredStepPairs),
           "HALVED (180°)": halvedStepPairs.map((p) => p.keyStep),
         }
-      : this.analysisService.groupBeatPairsByPattern(quarteredBeatPairs);
+      : this.analysisService.groupStepPairsByPattern(quarteredStepPairs);
 
     return {
       loopType,

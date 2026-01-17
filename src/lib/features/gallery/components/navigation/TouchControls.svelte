@@ -7,10 +7,18 @@
    * - Drag anywhere else to look around
    * - Tap-to-walk detection
    * - Also supports mouse drag as fallback (for DevTools mobile simulation)
+   *
+   * Uses InputCapabilities for proper input-based detection that works with:
+   * - Native touch on mobile
+   * - DevTools touch emulation on desktop
+   * - External mouse on touch devices
    */
 
   import { onMount, onDestroy } from "svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
+  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+
+  const inputCaps = getInputCapabilities();
 
   interface Props {
     /** Callback when movement input changes (x: -1 to 1, z: -1 to 1) */
@@ -44,8 +52,11 @@
   const TAP_MAX_DURATION = 300; // ms
   const TAP_MAX_DISTANCE = 15; // pixels
 
-  // Detect touch device
-  let isTouchDevice = $state(false);
+  // Check if touch UI should be shown based on ACTUAL input, not device detection
+  // This works correctly for DevTools touch emulation and external mouse on touch devices
+  function shouldShowTouchUI(): boolean {
+    return inputCaps.shouldShowTouchUI();
+  }
 
   // Check if a touch is in the joystick zone
   function isInJoystickZone(x: number, y: number): boolean {
@@ -58,6 +69,11 @@
   function handleJoystickInput(x: number, y: number) {
     // Convert y to z (joystick y is forward/back, which maps to z in 3D)
     onMove(x, y);
+  }
+
+  // Track pointer type for InputCapabilities
+  function handlePointerEvent(e: PointerEvent) {
+    inputCaps.handlePointerEvent(e);
   }
 
   // Touch event handlers for look controls
@@ -154,38 +170,44 @@
   }
 
   onMount(() => {
-    isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    // Initialize input capabilities for proper touch/mouse detection
+    inputCaps.init();
 
-    if (!isTouchDevice) {
-      return;
-    }
+    // Track pointer type (mouse, touch, pen) to update InputCapabilities
+    window.addEventListener("pointerdown", handlePointerEvent);
+    window.addEventListener("pointermove", handlePointerEvent);
 
-    // Add touch listeners for look controls
+    // Always attach touch listeners - they work for:
+    // - Native touch on mobile
+    // - DevTools touch emulation on desktop
+    // The handlers check context and won't interfere with mouse input.
     window.addEventListener("touchstart", handleTouchStart, { passive: false });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd);
     window.addEventListener("touchcancel", handleTouchEnd);
 
-    // Add mouse listeners as fallback
+    // Add mouse listeners as fallback for DevTools mobile simulation
     window.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
   });
 
   onDestroy(() => {
-    if (isTouchDevice) {
-      window.removeEventListener("touchstart", handleTouchStart);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
-      window.removeEventListener("touchcancel", handleTouchEnd);
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    }
+    inputCaps.destroy();
+
+    window.removeEventListener("pointerdown", handlePointerEvent);
+    window.removeEventListener("pointermove", handlePointerEvent);
+    window.removeEventListener("touchstart", handleTouchStart);
+    window.removeEventListener("touchmove", handleTouchMove);
+    window.removeEventListener("touchend", handleTouchEnd);
+    window.removeEventListener("touchcancel", handleTouchEnd);
+    window.removeEventListener("mousedown", handleMouseDown);
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
   });
 </script>
 
-{#if isTouchDevice && enabled}
+{#if shouldShowTouchUI() && enabled}
   <!-- Shared virtual joystick for movement -->
   <VirtualJoystick
     onInput={handleJoystickInput}

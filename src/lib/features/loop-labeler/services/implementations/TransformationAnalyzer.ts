@@ -98,7 +98,7 @@ export class TransformationAnalyzer implements ITransformationAnalyzer {
     return [];
   }
 
-  groupBeatPairsByPattern(beatPairs: InternalBeatPair[]): BeatPairGroups {
+  groupStepPairsByPattern(stepPairs: InternalStepPair[]): StepPairGroups {
     const groups: StepPairGroups = {};
 
     for (const pair of stepPairs) {

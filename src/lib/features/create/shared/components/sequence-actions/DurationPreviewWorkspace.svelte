@@ -14,9 +14,8 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { StepData } from "../../domain/models/StepData";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import Pictograph from "$lib/shared/pictograph/shared/components/Pictograph.svelte";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -238,11 +237,14 @@
             style="width: {width}px; min-width: {width}px;"
           >
             <div class="cell-pictograph">
-              <Pictograph
+              <PictographContainer
                 pictographData={step}
-                size={60}
-                showGrid={false}
-                showGlyphs={false}
+                showTKA={false}
+                showVTG={false}
+                showPositions={false}
+                showReversals={false}
+                showElemental={false}
+                disableTransitions={true}
               />
             </div>
             <div class="cell-info">

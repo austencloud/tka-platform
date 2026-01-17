@@ -15,6 +15,8 @@
   import TIKAQuickReference from "./TIKAQuickReference.svelte";
   import TIKAReviewPanel from "./TIKAReviewPanel.svelte";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
+  import { ConceptProgressTracker } from "$lib/features/learn/services/implementations/ConceptProgressTracker";
+  import { tikaPictographCache } from "$lib/features/learn/tika/services/implementations/TikaPictographCache";
   import type { ContextData } from "../types";
 
   // Persistence key for sessionStorage
@@ -46,6 +48,14 @@
   // User identity
   const userId = $derived(getEffectiveUserId() || "anonymous");
 
+  // Progress tracker for user level detection
+  const progressTracker = browser ? new ConceptProgressTracker() : null;
+  const completedConcepts = $derived.by(() => {
+    if (!progressTracker) return [];
+    const progress = progressTracker.getProgress();
+    return Array.from(progress.completedConcepts);
+  });
+
   // Initialize useChat hook from AI SDK with persistence
   const {
     messages,
@@ -59,7 +69,7 @@
     api: "/api/tika/ask",
     body: {
       userId,
-      completedConcepts: [],
+      completedConcepts,
       language: "en",
     },
     initialMessages: loadPersistedMessages(),
@@ -103,8 +113,22 @@
     stop();
   }
 
-  // Fetch single pictograph image
+  // Generate cache key for pictograph
+  function getCacheKey(letter: string, variation: number, size: number): string {
+    return `${letter}-${variation}-${size}`;
+  }
+
+  // Fetch single pictograph image (with cache)
   async function fetchPictograph(letter: string, variation: number = 0) {
+    const cacheKey = getCacheKey(letter, variation, 300);
+
+    // Check cache first
+    const cached = await tikaPictographCache.get(cacheKey);
+    if (cached) {
+      pictographBase64 = cached;
+      return;
+    }
+
     try {
       const response = await fetch("/api/tika/pictograph", {
         method: "POST",
@@ -123,50 +147,93 @@
 
       if (response.ok) {
         const data = await response.json();
-        pictographBase64 = data.imageBase64;
+        const base64 = data.imageBase64 as string;
+        pictographBase64 = base64;
+
+        // Cache for future use
+        await tikaPictographCache.set(cacheKey, base64);
       }
     } catch (error) {
       console.error("[TIKA] Pictograph fetch error:", error);
     }
   }
 
-  // Fetch multiple pictographs for a gallery
+  // Fetch multiple pictographs for a gallery (with cache and batching)
   async function fetchPictographGallery(letters: string[]) {
-    pictographGallery = new Map();
+    const BATCH_SIZE = 4; // Fetch 4 at a time to avoid overwhelming the server
+    const GALLERY_SIZE = 200;
 
-    const fetchPromises = letters.map(async (letter) => {
-      try {
-        const response = await fetch("/api/tika/pictograph", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            letter,
-            variation: 0,
-            options: {
-              darkMode: true,
-              size: 200,
-              showTKA: true,
-              showGrid: false,
-            },
-          }),
+    const newGallery = new Map<string, string>();
+    const lettersToFetch: string[] = [];
+
+    // Step 1: Check cache for all letters
+    for (const letter of letters) {
+      const cacheKey = getCacheKey(letter, 0, GALLERY_SIZE);
+      const cached = await tikaPictographCache.get(cacheKey);
+      if (cached) {
+        newGallery.set(letter, cached);
+      } else {
+        lettersToFetch.push(letter);
+      }
+    }
+
+    // Show cached results immediately
+    pictographGallery = new Map(newGallery);
+
+    // Step 2: Fetch missing letters in batches
+    if (lettersToFetch.length > 0) {
+      console.log(
+        `[TIKA] Cache hit: ${newGallery.size}/${letters.length}, fetching ${lettersToFetch.length} pictographs`
+      );
+
+      for (let i = 0; i < lettersToFetch.length; i += BATCH_SIZE) {
+        const batch = lettersToFetch.slice(i, i + BATCH_SIZE);
+
+        const batchPromises = batch.map(async (letter) => {
+          try {
+            const response = await fetch("/api/tika/pictograph", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                letter,
+                variation: 0,
+                options: {
+                  darkMode: true,
+                  size: GALLERY_SIZE,
+                  showTKA: true,
+                  showGrid: true,
+                },
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              const base64 = data.imageBase64 as string;
+
+              // Cache for future use
+              const cacheKey = getCacheKey(letter, 0, GALLERY_SIZE);
+              await tikaPictographCache.set(cacheKey, base64);
+
+              return { letter, base64 };
+            }
+          } catch (error) {
+            console.error(`[TIKA] Pictograph fetch error for ${letter}:`, error);
+          }
+          return null;
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          return { letter, base64: data.imageBase64 as string };
-        }
-      } catch (error) {
-        console.error(`[TIKA] Pictograph fetch error for ${letter}:`, error);
-      }
-      return null;
-    });
+        // Wait for this batch to complete before starting the next
+        const batchResults = await Promise.all(batchPromises);
 
-    const results = await Promise.all(fetchPromises);
-    const newGallery = new Map<string, string>();
-    results.forEach((r) => {
-      if (r) newGallery.set(r.letter, r.base64);
-    });
-    pictographGallery = newGallery;
+        // Update gallery with new results
+        batchResults.forEach((r) => {
+          if (r) newGallery.set(r.letter, r.base64);
+        });
+
+        // Update UI after each batch
+        pictographGallery = new Map(newGallery);
+      }
+    }
   }
 
   // Close context panel
@@ -175,10 +242,10 @@
     pictographBase64 = null;
   }
 
-  // Copy conversation for AI review
-  function handleCopyForAI() {
+  // Generate conversation data for AI review (returns string for CopyForAIButton)
+  function generateCopyForAI(): string {
     const currentMessages = $messages;
-    if (currentMessages.length === 0) return;
+    if (currentMessages.length === 0) return "";
 
     // Format conversation for AI review
     const lines: string[] = [
@@ -243,11 +310,69 @@
       lines.push("");
     }
 
-    // Copy to clipboard
-    const text = lines.join("\n");
-    navigator.clipboard.writeText(text).catch((err) => {
-      console.error("[TIKA] Failed to copy:", err);
-    });
+    // Add context panel data if present
+    if (currentContext) {
+      lines.push("## Context Panel Data");
+      lines.push("");
+
+      if (currentContext.type === "letter" && currentContext.letter) {
+        const l = currentContext.letter;
+        lines.push(`**Letter:** ${l.letter}`);
+        lines.push(`**Type:** ${l.type} (${l.typeName})`);
+        lines.push(`**Position:** ${l.startPosition} → ${l.endPosition}`);
+        lines.push("");
+        lines.push("**Blue Motion:**");
+        lines.push(`- Type: ${l.blueMotion.motionType}`);
+        lines.push(`- Path: ${l.blueMotion.startLocation} → ${l.blueMotion.endLocation}`);
+        if (l.blueMotion.rotationDirection !== "noRotation") {
+          lines.push(`- Rotation: ${l.blueMotion.rotationDirection}`);
+        }
+        lines.push("");
+        lines.push("**Red Motion:**");
+        lines.push(`- Type: ${l.redMotion.motionType}`);
+        lines.push(`- Path: ${l.redMotion.startLocation} → ${l.redMotion.endLocation}`);
+        if (l.redMotion.rotationDirection !== "noRotation") {
+          lines.push(`- Rotation: ${l.redMotion.rotationDirection}`);
+        }
+      } else if (currentContext.type === "term" && currentContext.term) {
+        const t = currentContext.term;
+        lines.push(`**Term:** ${t.term}`);
+        lines.push(`**Definition:** ${t.definition}`);
+        if (t.examples.length > 0) {
+          lines.push(`**Examples:** ${t.examples.join(", ")}`);
+        }
+        if (t.relatedTerms.length > 0) {
+          lines.push(`**Related Terms:** ${t.relatedTerms.join(", ")}`);
+        }
+      } else if (currentContext.type === "typeList" && currentContext.typeList) {
+        const tl = currentContext.typeList;
+        lines.push(`**Type ${tl.typeNumber}:** ${tl.typeName}`);
+        lines.push(`**Description:** ${tl.description}`);
+        lines.push(`**Motion Pattern:** Blue=${tl.motionPattern.blueMotion}, Red=${tl.motionPattern.redMotion}`);
+        lines.push(`**Example Letters:** ${tl.exampleLetters.join(", ")}`);
+        lines.push(`**All Letters:** ${tl.allLetters.join(", ")}`);
+      } else if (currentContext.type === "comparison" && currentContext.comparison) {
+        const c = currentContext.comparison;
+        lines.push(`**Comparing:** ${c.letter1} (${c.type1}) vs ${c.letter2} (${c.type2})`);
+      } else if (currentContext.type === "position" && currentContext.position) {
+        const p = currentContext.position;
+        lines.push(`**Position:** ${p.name}`);
+        lines.push(`**Angle:** ${p.angleDegrees}`);
+        lines.push(`**Description:** ${p.description}`);
+      }
+
+      // Note about visual context
+      if (pictographBase64 || pictographGallery.size > 0) {
+        lines.push("");
+        lines.push("*(Pictographs visible in context panel - screenshot if needed)*");
+      }
+
+      lines.push("");
+      lines.push("---");
+      lines.push("");
+    }
+
+    return lines.join("\n");
   }
 
   // Watch for tool results that might update context
@@ -408,7 +533,7 @@
           status={$status}
           onSubmit={handleSubmit}
           onStop={handleStop}
-          onCopyForAI={handleCopyForAI}
+          {generateCopyForAI}
         />
       </div>
 

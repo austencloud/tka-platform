@@ -431,7 +431,8 @@ export class ConversationManager implements IConversationManager {
         const names: string[] = [];
         for (const userId of participantIds) {
           const userInfo = await this.fetchUserInfo(userId);
-          names.push(userInfo.displayName.split(" ")[0]);
+          const firstName = userInfo.displayName?.split(" ")[0] ?? "User";
+          names.push(firstName);
         }
         finalGroupName = names.join(", ");
       }

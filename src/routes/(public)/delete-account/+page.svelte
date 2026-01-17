@@ -4,17 +4,20 @@
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
+  import { getPublicThemeIndex, savePublicThemeIndex, getNextThemeIndex } from "$lib/shared/background/shared/config/public-page-theme";
 
   // Use shared animated backgrounds config
   const backgrounds = ANIMATED_BACKGROUNDS;
 
-  let currentBgIndex = $state(0);
+  // Restore saved theme from localStorage (persists across public pages)
+  let currentBgIndex = $state(getPublicThemeIndex());
   let currentBackground = $derived(backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY);
   let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
   let currentLabel = $derived(backgrounds[currentBgIndex]?.label ?? "Night Sky");
 
   function cycleBackground() {
-    currentBgIndex = (currentBgIndex + 1) % backgrounds.length;
+    currentBgIndex = getNextThemeIndex(currentBgIndex);
+    savePublicThemeIndex(currentBgIndex);
     applyThemeForBackground(backgrounds[currentBgIndex]!.type);
   }
 
