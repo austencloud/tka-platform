@@ -11,10 +11,12 @@
   let {
     context,
     pictographBase64,
+    pictographGallery = new Map(),
     onClose,
   }: {
     context: ContextData | null;
     pictographBase64: string | null;
+    pictographGallery?: Map<string, string>;
     onClose: () => void;
   } = $props();
 </script>
@@ -31,8 +33,8 @@
         <i class="fas fa-balance-scale" aria-hidden="true"></i> Comparison
       {:else if context?.type === "position"}
         <i class="fas fa-crosshairs" aria-hidden="true"></i> Position Info
-      {:else if context?.type === "list"}
-        <i class="fas fa-list" aria-hidden="true"></i> Letter Type
+      {:else if context?.type === "list" || context?.type === "typeList"}
+        <i class="fas fa-layer-group" aria-hidden="true"></i> Letter Type
       {:else}
         <i class="fas fa-info-circle" aria-hidden="true"></i> Context
       {/if}
@@ -185,8 +187,74 @@
           <p class="definition-text">{context.position.description}</p>
         </div>
       </div>
+    {:else if context?.type === "typeList" && context.typeList}
+      <!-- Type List Context with Gallery -->
+      <div class="type-list-context">
+        <!-- Type Header Card -->
+        <div class="info-card">
+          <div class="info-header">
+            <span class="type-number">Type {context.typeList.typeNumber}</span>
+            <span class="type-badge">{context.typeList.typeName}</span>
+          </div>
+          <p class="type-description">{context.typeList.description}</p>
+        </div>
+
+        <!-- Motion Pattern -->
+        <div class="info-section">
+          <h4>Motion Pattern</h4>
+          <div class="motion-pattern">
+            <div class="pattern-item">
+              <span class="color-dot blue"></span>
+              <span>{context.typeList.motionPattern.blueMotion}</span>
+            </div>
+            <div class="pattern-item">
+              <span class="color-dot red"></span>
+              <span>{context.typeList.motionPattern.redMotion}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pictograph Gallery -->
+        {#if pictographGallery.size > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="pictograph-gallery">
+              {#each context.typeList.exampleLetters as letter}
+                {@const base64 = pictographGallery.get(letter)}
+                {#if base64}
+                  <div class="gallery-item">
+                    <img
+                      src="data:image/png;base64,{base64}"
+                      alt="Pictograph for letter {letter}"
+                    />
+                    <span class="gallery-letter">{letter}</span>
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {:else if context.typeList.exampleLetters.length > 0}
+          <div class="info-section">
+            <h4>Examples</h4>
+            <div class="gallery-loading">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <span>Loading pictographs...</span>
+            </div>
+          </div>
+        {/if}
+
+        <!-- All Letters List -->
+        <div class="info-section">
+          <h4>All {context.typeList.typeName} Letters</h4>
+          <div class="all-letters">
+            {#each context.typeList.allLetters as letter}
+              <span class="letter-chip">{letter}</span>
+            {/each}
+          </div>
+        </div>
+      </div>
     {:else if context?.type === "list"}
-      <!-- List Context (minimal) -->
+      <!-- Legacy list context fallback -->
       <div class="list-context">
         <div class="info-card">
           <div class="list-info">Letter type information shown in chat</div>
@@ -487,11 +555,106 @@
     margin-top: 4px;
   }
 
-  /* List Context */
+  /* List Context (legacy) */
   .list-info {
     font-size: 14px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     text-align: center;
+  }
+
+  /* Type List Context */
+  .type-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .type-description {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.8));
+    margin: 8px 0 0 0;
+  }
+
+  /* Motion Pattern */
+  .motion-pattern {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 8px;
+  }
+
+  .pattern-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--theme-text, #ffffff);
+  }
+
+  /* Pictograph Gallery */
+  .pictograph-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .gallery-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    transition: border-color var(--duration-fast) ease;
+  }
+
+  .gallery-item:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .gallery-item img {
+    width: 100%;
+    max-width: 100px;
+    height: auto;
+    border-radius: 4px;
+  }
+
+  .gallery-letter {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .gallery-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 13px;
+  }
+
+  /* All Letters List */
+  .all-letters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .letter-chip {
+    padding: 4px 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--theme-text, #ffffff);
   }
 
   /* Empty State */

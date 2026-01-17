@@ -66,14 +66,30 @@ export interface PositionContext {
 }
 
 /**
+ * Type list context data (for showing letter type galleries)
+ */
+export interface TypeListContext {
+  typeNumber: number;
+  typeName: string;
+  description: string;
+  exampleLetters: string[];
+  allLetters: string[];
+  motionPattern: {
+    blueMotion: string;
+    redMotion: string;
+  };
+}
+
+/**
  * Context data returned by the TIKA API
  */
 export interface ContextData {
-  type: "letter" | "term" | "comparison" | "list" | "position" | null;
+  type: "letter" | "term" | "comparison" | "list" | "position" | "typeList" | null;
   letter?: LetterContext;
   term?: TermContext;
   comparison?: ComparisonContext;
   position?: PositionContext;
+  typeList?: TypeListContext;
 }
 
 /**

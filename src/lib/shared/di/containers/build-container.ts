@@ -110,6 +110,7 @@ import { ExtensionFlowCoordinator } from "$lib/features/create/shared/services/i
 // === Pattern Management ===
 import { RotationDirectionPatternManager } from "$lib/features/create/shared/services/implementations/RotationDirectionPatternManager";
 import { TurnPatternManager } from "$lib/features/create/shared/services/implementations/TurnPatternManager";
+import { DurationPatternManager } from "$lib/features/create/shared/services/implementations/DurationPatternManager";
 
 // === Spell Tab Services ===
 import { LetterTransitionGraph } from "$lib/features/create/spell/services/implementations/LetterTransitionGraph";
@@ -227,6 +228,7 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
         rotationDirectionPatternManager: () =>
           new RotationDirectionPatternManager(),
         turnPatternManager: () => new TurnPatternManager(),
+        durationPatternManager: () => new DurationPatternManager(),
 
         // Spell - no deps
         variationScorer: () => new VariationScorer(),

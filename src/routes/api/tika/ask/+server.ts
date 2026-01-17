@@ -157,7 +157,31 @@ function ensureDataLoaded() {
 // Tool Execute Functions
 // ═══════════════════════════════════════════════════════════════════════════
 
-function executeGetLetterExplanation(letter: string, variation: number = 0): string {
+interface LetterExplanationResult {
+	explanation: string
+	contextData: {
+		type: 'letter'
+		letter: string
+		letterType: number
+		typeName: string
+		startPosition: string
+		endPosition: string
+		blueMotion: {
+			motionType: string
+			startLoc: string
+			endLoc: string
+			propRotDir: string
+		}
+		redMotion: {
+			motionType: string
+			startLoc: string
+			endLoc: string
+			propRotDir: string
+		}
+	}
+}
+
+function executeGetLetterExplanation(letter: string, variation: number = 0): LetterExplanationResult | string {
 	ensureDataLoaded()
 
 	const variations = allPictographs.filter((p) => p.letter === letter)
@@ -174,7 +198,7 @@ function executeGetLetterExplanation(letter: string, variation: number = 0): str
 		return `Letter "${letter}" variation data not available.`
 	}
 
-	return `# Letter: ${letter}
+	const explanation = `# Letter: ${letter}
 
 ## Type Information
 **Type ${typeNum}: ${fullTypeInfo?.name || typeInfo?.name || 'Unknown'}**
@@ -195,6 +219,30 @@ ${fullTypeInfo?.characteristics ? '**Characteristics:**\n' + fullTypeInfo.charac
 
 ## All Variations (${variations.length} total)
 ${variations.slice(0, 5).map((v, i) => `[${i}] ${v.startPosition} → ${v.endPosition}`).join('\n')}${variations.length > 5 ? `\n... and ${variations.length - 5} more` : ''}`
+
+	return {
+		explanation,
+		contextData: {
+			type: 'letter',
+			letter,
+			letterType: parseInt(typeNum) || 1,
+			typeName: fullTypeInfo?.name || typeInfo?.name || 'Unknown',
+			startPosition: varData.startPosition,
+			endPosition: varData.endPosition,
+			blueMotion: {
+				motionType: varData.blueMotion.motionType,
+				startLoc: varData.blueMotion.startLocation,
+				endLoc: varData.blueMotion.endLocation,
+				propRotDir: varData.blueMotion.rotationDirection
+			},
+			redMotion: {
+				motionType: varData.redMotion.motionType,
+				startLoc: varData.redMotion.startLocation,
+				endLoc: varData.redMotion.endLocation,
+				propRotDir: varData.redMotion.rotationDirection
+			}
+		}
+	}
 }
 
 function executeGetTermDefinition(term: string): string {
@@ -258,7 +306,23 @@ function executeCompareLetters(letter1: string, letter2: string): string {
 - **${letter2}:** ${letterTypes[typeNum2]?.description || 'Type ' + typeNum2}`
 }
 
-function executeListLettersByType(type: number): string {
+interface TypeListResult {
+	explanation: string
+	contextData: {
+		type: 'typeList'
+		typeNumber: number
+		typeName: string
+		description: string
+		exampleLetters: string[]
+		allLetters: string[]
+		motionPattern: {
+			blueMotion: string
+			redMotion: string
+		}
+	}
+}
+
+function executeListLettersByType(type: number): TypeListResult | string {
 	ensureDataLoaded()
 
 	const typeKey = type.toString()
@@ -273,7 +337,10 @@ function executeListLettersByType(type: number): string {
 		return { letter, count }
 	})
 
-	return `# Type ${type}: ${typeInfo.name}
+	// Pick up to 4 example letters to show as pictographs
+	const exampleLetters = typeInfo.letters.slice(0, 4)
+
+	const explanation = `# Type ${type}: ${typeInfo.name}
 
 **Description:** ${typeInfo.description}
 
@@ -286,7 +353,25 @@ ${typeInfo.motionPattern.note ? `- Note: ${typeInfo.motionPattern.note}` : ''}
 ${typeInfo.characteristics.map(c => `- ${c}`).join('\n')}
 
 **Letters (${typeInfo.letters.length} total):**
-${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join('\n')}`
+${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join('\n')}
+
+**Visual Examples:** ${exampleLetters.join(', ')} (shown in context panel)`
+
+	return {
+		explanation,
+		contextData: {
+			type: 'typeList',
+			typeNumber: type,
+			typeName: typeInfo.name,
+			description: typeInfo.description,
+			exampleLetters,
+			allLetters: typeInfo.letters,
+			motionPattern: {
+				blueMotion: typeInfo.motionPattern.blueMotion,
+				redMotion: typeInfo.motionPattern.redMotion
+			}
+		}
+	}
 }
 
 function executeGetPositionInfo(position: string): string {
@@ -495,7 +580,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		// Stream the response
 		const result = streamText({
-			model: anthropic('claude-3-5-haiku-20241022'),
+			model: anthropic('claude-sonnet-4-20250514'),
 			system: systemPrompt,
 			messages: convertToCoreMessages(messages),
 			tools: tikaTools,

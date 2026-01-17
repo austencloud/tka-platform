@@ -62,6 +62,7 @@
 	let resolutionNotes = $state('');
 	let correctedResponse = $state('');
 	let saving = $state(false);
+	let copySuccess = $state(false);
 
 	// Derived
 	let filteredItems = $derived(
@@ -141,7 +142,7 @@
 	}
 
 	// Copy item to clipboard for discussion
-	function copyForDiscussion() {
+	async function copyForDiscussion() {
 		if (!selectedItem) return;
 
 		const text = `## TIKA Review Item
@@ -163,7 +164,13 @@ ${selectedItem.issues.map((i) => `- ${i.type}: ${i.message}`).join('\n')}
 ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 `;
 
-		navigator.clipboard.writeText(text);
+		try {
+			await navigator.clipboard.writeText(text);
+			copySuccess = true;
+			setTimeout(() => (copySuccess = false), 2000);
+		} catch (e) {
+			console.error('Failed to copy:', e);
+		}
 	}
 
 	// Category badge color
@@ -271,115 +278,122 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 			<div class="detail-panel">
 				<div class="detail-header">
 					<h3>{selectedItem.scenarioName}</h3>
-					<button class="copy-btn" onclick={copyForDiscussion} title="Copy for discussion">
-						<i class="fas fa-copy"></i>
+					<button class="copy-btn" class:success={copySuccess} onclick={copyForDiscussion} title="Copy for discussion">
+						<i class="fas" class:fa-copy={!copySuccess} class:fa-check={copySuccess}></i>
 					</button>
 				</div>
 
-				<section class="detail-section">
-					<h4>Question</h4>
-					<blockquote>{selectedItem.question}</blockquote>
-				</section>
-
-				<section class="detail-section">
-					<h4>TIKA's Response</h4>
-					<div class="response-text">{selectedItem.tikaResponse}</div>
-				</section>
-
-				<section class="detail-section issues">
-					<h4>Issues Found</h4>
-					<ul>
-						{#each selectedItem.issues as issue}
-							<li class="issue-item" class:error={issue.severity === 'error'}>
-								<strong>{issue.type}:</strong>
-								{issue.message}
-							</li>
-						{/each}
-					</ul>
-				</section>
-
-				<section class="detail-section">
-					<h4>Expected Key Facts</h4>
-					<ul>
-						{#each selectedItem.expectedKeyFacts as fact}
-							<li>{fact}</li>
-						{/each}
-					</ul>
-				</section>
-
-				{#if selectedItem.toolsCalled.length > 0}
+				<!-- Scrollable content area -->
+				<div class="detail-content">
 					<section class="detail-section">
-						<h4>Tools Called</h4>
-						<div class="tools-list">
-							{#each selectedItem.toolsCalled as tool}
-								<span class="tool-badge">{tool}</span>
+						<h4>Question</h4>
+						<blockquote>{selectedItem.question}</blockquote>
+					</section>
+
+					<section class="detail-section">
+						<h4>TIKA's Response</h4>
+						<div class="response-text">{selectedItem.tikaResponse}</div>
+					</section>
+
+					<section class="detail-section issues">
+						<h4>Issues Found</h4>
+						<ul>
+							{#each selectedItem.issues as issue}
+								<li class="issue-item" class:error={issue.severity === 'error'}>
+									<strong>{issue.type}:</strong>
+									{issue.message}
+								</li>
 							{/each}
-						</div>
+						</ul>
 					</section>
-				{/if}
 
-				<!-- Resolution Form -->
-				{#if selectedItem.status === 'pending'}
-					<section class="resolution-form">
-						<h4>Resolution</h4>
-
-						<label>
-							<span>Notes</span>
-							<textarea
-								bind:value={resolutionNotes}
-								placeholder="What's wrong with this response? How should it be fixed?"
-								rows="3"
-							></textarea>
-						</label>
-
-						<label>
-							<span>Corrected Response (optional)</span>
-							<textarea
-								bind:value={correctedResponse}
-								placeholder="Write the ideal response..."
-								rows="4"
-							></textarea>
-						</label>
-
-						<div class="resolution-actions">
-							<button
-								class="approve-btn"
-								onclick={() => resolveItem('approved')}
-								disabled={saving}
-							>
-								<i class="fas fa-check"></i> Approve (Response is OK)
-							</button>
-							<button
-								class="rewrite-btn"
-								onclick={() => resolveItem('needs-rewrite')}
-								disabled={saving || !correctedResponse}
-							>
-								<i class="fas fa-pen"></i> Use Corrected Version
-							</button>
-							<button
-								class="reject-btn"
-								onclick={() => resolveItem('rejected')}
-								disabled={saving}
-							>
-								<i class="fas fa-times"></i> Reject
-							</button>
-						</div>
+					<section class="detail-section">
+						<h4>Expected Key Facts</h4>
+						<ul>
+							{#each selectedItem.expectedKeyFacts as fact}
+								<li>{fact}</li>
+							{/each}
+						</ul>
 					</section>
-				{:else if selectedItem.resolution}
-					<section class="resolution-display">
-						<h4>Resolution</h4>
-						<p><strong>Status:</strong> {selectedItem.status}</p>
-						<p><strong>Resolved:</strong> {new Date(selectedItem.resolution.resolvedAt).toLocaleString()}</p>
-						{#if selectedItem.resolution.notes}
-							<p><strong>Notes:</strong> {selectedItem.resolution.notes}</p>
-						{/if}
-						{#if selectedItem.resolution.correctedResponse}
-							<div class="corrected-response">
-								<strong>Corrected Response:</strong>
-								<div class="response-text">{selectedItem.resolution.correctedResponse}</div>
+
+					{#if selectedItem.toolsCalled.length > 0}
+						<section class="detail-section">
+							<h4>Tools Called</h4>
+							<div class="tools-list">
+								{#each selectedItem.toolsCalled as tool}
+									<span class="tool-badge">{tool}</span>
+								{/each}
 							</div>
-						{/if}
-					</section>
+						</section>
+					{/if}
+				</div>
+
+				<!-- Resolution Form - fixed at bottom -->
+				{#if selectedItem.status === 'pending'}
+					<div class="resolution-footer">
+						<section class="resolution-form">
+							<h4>Resolution</h4>
+
+							<label>
+								<span>Notes</span>
+								<textarea
+									bind:value={resolutionNotes}
+									placeholder="What's wrong with this response? How should it be fixed?"
+									rows="2"
+								></textarea>
+							</label>
+
+							<label>
+								<span>Corrected Response (optional)</span>
+								<textarea
+									bind:value={correctedResponse}
+									placeholder="Write the ideal response..."
+									rows="2"
+								></textarea>
+							</label>
+
+							<div class="resolution-actions">
+								<button
+									class="approve-btn"
+									onclick={() => resolveItem('approved')}
+									disabled={saving}
+								>
+									<i class="fas fa-check"></i> Approve
+								</button>
+								<button
+									class="rewrite-btn"
+									onclick={() => resolveItem('needs-rewrite')}
+									disabled={saving || !correctedResponse}
+								>
+									<i class="fas fa-pen"></i> Use Correction
+								</button>
+								<button
+									class="reject-btn"
+									onclick={() => resolveItem('rejected')}
+									disabled={saving}
+								>
+									<i class="fas fa-times"></i> Reject
+								</button>
+							</div>
+						</section>
+					</div>
+				{:else if selectedItem.resolution}
+					<div class="resolution-footer">
+						<section class="resolution-display">
+							<h4>Resolution</h4>
+							<p><strong>Status:</strong> {selectedItem.status}</p>
+							<p><strong>Resolved:</strong> {new Date(selectedItem.resolution.resolvedAt).toLocaleString()}</p>
+							{#if selectedItem.resolution.notes}
+								<p><strong>Notes:</strong> {selectedItem.resolution.notes}</p>
+							{/if}
+							{#if selectedItem.resolution.correctedResponse}
+								<div class="corrected-response">
+									<strong>Corrected Response:</strong>
+									<div class="response-text">{selectedItem.resolution.correctedResponse}</div>
+								</div>
+							{/if}
+						</section>
+					</div>
 				{/if}
 			</div>
 		{:else}
@@ -395,7 +409,8 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 	.review-panel {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		flex: 1;
+		min-height: 0;
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
 	}
 
@@ -608,21 +623,38 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 
 	.detail-panel {
 		flex: 1;
-		overflow-y: auto;
-		padding: 1rem;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		min-height: 0;
 	}
 
 	.detail-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 1rem;
+		padding: 1rem 1rem 0.5rem;
+		flex-shrink: 0;
 	}
 
 	.detail-header h3 {
 		margin: 0;
 		font-size: 1.125rem;
 		font-weight: 600;
+	}
+
+	.detail-content {
+		flex: 1;
+		overflow-y: auto;
+		padding: 0.5rem 1rem 1rem;
+		min-height: 0;
+	}
+
+	.resolution-footer {
+		flex-shrink: 0;
+		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		padding: 0.75rem;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
 	}
 
 	.copy-btn {
@@ -633,11 +665,17 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		border-radius: 6px;
 		cursor: pointer;
+		transition: all var(--duration-fast) ease;
 	}
 
 	.copy-btn:hover {
 		background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		color: var(--theme-text, #fff);
+	}
+
+	.copy-btn.success {
+		background: rgba(34, 197, 94, 0.2);
+		color: #4ade80;
 	}
 
 	.detail-section {
@@ -707,33 +745,41 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 	}
 
 	.resolution-form {
-		padding: 1rem;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border-radius: 8px;
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		padding: 0.5rem;
+		background: transparent;
+	}
+
+	.resolution-form h4 {
+		margin: 0 0 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.resolution-form label {
 		display: block;
-		margin-bottom: 0.75rem;
+		margin-bottom: 0.5rem;
 	}
 
 	.resolution-form label span {
 		display: block;
-		margin-bottom: 0.375rem;
-		font-size: 0.875rem;
+		margin-bottom: 0.25rem;
+		font-size: 0.75rem;
 		font-weight: 500;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 	}
 
 	.resolution-form textarea {
 		width: 100%;
-		padding: 0.75rem;
+		padding: 0.5rem;
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 6px;
 		color: var(--theme-text, #fff);
-		font-size: 0.875rem;
-		resize: vertical;
+		font-size: 0.8125rem;
+		resize: none;
 	}
 
 	.resolution-form textarea:focus {
@@ -744,17 +790,15 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 	.resolution-actions {
 		display: flex;
 		gap: 0.5rem;
-		margin-top: 1rem;
-		flex-wrap: wrap;
+		margin-top: 0.75rem;
 	}
 
 	.resolution-actions button {
 		flex: 1;
-		min-width: 120px;
-		padding: 0.625rem 1rem;
+		padding: 0.5rem 0.75rem;
 		border: none;
 		border-radius: 6px;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
 		font-weight: 500;
 		cursor: pointer;
 		transition: all var(--duration-fast) ease;

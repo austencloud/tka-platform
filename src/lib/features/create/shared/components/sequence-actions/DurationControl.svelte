@@ -4,6 +4,8 @@
   Controls for adjusting beat duration using the musical subdivision system.
   Dual controls: fine (±¼) and coarse (±1) stepping.
   Display uses Unicode fractions for universal understanding.
+
+  Compact mode: Smaller buttons and tighter spacing for mobile.
 -->
 <script lang="ts">
   import {
@@ -18,10 +20,12 @@
 
   interface Props {
     duration: number;
+    /** Compact mode: smaller buttons and tighter layout */
+    compact?: boolean;
     onDurationChange: (newDuration: number) => void;
   }
 
-  let { duration, onDurationChange }: Props = $props();
+  let { duration, compact = false, onDurationChange }: Props = $props();
 
   const displayDuration = $derived(formatDurationDisplay(duration));
   const canDecrease = $derived(duration > MIN_DURATION);
@@ -35,7 +39,7 @@
   }
 </script>
 
-<div class="duration-control">
+<div class="duration-control" class:compact>
   <span class="duration-label">Duration</span>
 
   <div class="duration-row">
@@ -97,6 +101,14 @@
     margin-top: 12px;
   }
 
+  /* Compact mode: tighter layout */
+  .duration-control.compact {
+    gap: 4px;
+    padding: 8px;
+    border-radius: 10px;
+    margin-top: 6px;
+  }
+
   .duration-label {
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
@@ -105,10 +117,19 @@
     letter-spacing: 0.05em;
   }
 
+  .duration-control.compact .duration-label {
+    font-size: var(--font-size-compact, 12px);
+    letter-spacing: 0.03em;
+  }
+
   .duration-row {
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .duration-control.compact .duration-row {
+    gap: 4px;
   }
 
   .duration-value {
@@ -118,6 +139,11 @@
     min-width: 64px;
     text-align: center;
     font-feature-settings: "tnum"; /* Tabular numbers for consistent width */
+  }
+
+  .duration-control.compact .duration-value {
+    font-size: 1.1rem;
+    min-width: 48px;
   }
 
   /* ============================================================================
@@ -173,6 +199,23 @@
     width: 36px;
     height: 36px;
     font-size: 0.9rem;
+  }
+
+  /* ============================================================================
+     COMPACT MODE - Smaller buttons
+     ============================================================================ */
+
+  .duration-control.compact .ctrl-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  .duration-control.compact .ctrl-btn.fine {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
   }
 
   /* ============================================================================

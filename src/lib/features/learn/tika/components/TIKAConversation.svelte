@@ -14,17 +14,20 @@
     status = "ready",
     onSubmit,
     onStop,
+    onCopyForAI,
   }: {
     messages: UIMessage[];
     status: "submitted" | "streaming" | "ready" | "error";
     onSubmit: (question: string) => void;
     onStop: () => void;
+    onCopyForAI?: () => void;
   } = $props();
 
   // Local state
   let inputValue = $state("");
   let chatContainer: HTMLElement | null = $state(null);
   let showToolDetails = $state(false);
+  let copySuccess = $state(false);
 
   // Derived state
   const isLoading = $derived(status === "submitted" || status === "streaming");
@@ -100,6 +103,17 @@
       index === messages.length - 1
     );
   }
+
+  // Handle copy for AI with feedback
+  async function handleCopyForAI() {
+    if (onCopyForAI) {
+      onCopyForAI();
+      copySuccess = true;
+      setTimeout(() => {
+        copySuccess = false;
+      }, 2000);
+    }
+  }
 </script>
 
 <div class="conversation-panel">
@@ -111,16 +125,35 @@
     </div>
     <div class="header-subtitle">TKA Intelligent Knowledge Assistant</div>
     {#if messages.length > 0}
-      <button
-        class="tool-toggle"
-        onclick={() => (showToolDetails = !showToolDetails)}
-        title="Toggle tool details"
-        aria-label={showToolDetails ? "Hide tool details" : "Show tool details"}
-        aria-expanded={showToolDetails}
-      >
-        <i class="fas fa-wrench" aria-hidden="true"></i>
-        {showToolDetails ? "Hide Tools" : "Show Tools"}
-      </button>
+      <div class="header-actions">
+        <button
+          class="header-btn"
+          onclick={() => (showToolDetails = !showToolDetails)}
+          title="Toggle tool details"
+          aria-label={showToolDetails ? "Hide tool details" : "Show tool details"}
+          aria-expanded={showToolDetails}
+        >
+          <i class="fas fa-wrench" aria-hidden="true"></i>
+          {showToolDetails ? "Hide Tools" : "Show Tools"}
+        </button>
+        {#if onCopyForAI}
+          <button
+            class="header-btn"
+            class:success={copySuccess}
+            onclick={handleCopyForAI}
+            title="Copy conversation for AI review"
+            aria-label="Copy conversation for AI review"
+          >
+            {#if copySuccess}
+              <i class="fas fa-check" aria-hidden="true"></i>
+              Copied!
+            {:else}
+              <i class="fas fa-copy" aria-hidden="true"></i>
+              Copy for AI
+            {/if}
+          </button>
+        {/if}
+      </div>
     {/if}
   </header>
 
@@ -319,7 +352,12 @@
     flex: 1;
   }
 
-  .tool-toggle {
+  .header-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .header-btn {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -333,14 +371,20 @@
     transition: all var(--duration-normal) ease;
   }
 
-  .tool-toggle:hover {
+  .header-btn:hover {
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, #ffffff);
   }
 
-  .tool-toggle:focus-visible {
+  .header-btn:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
+  }
+
+  .header-btn.success {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #22c55e;
   }
 
   /* Chat Container */
@@ -680,7 +724,7 @@
 
   /* Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
-    .tool-toggle,
+    .header-btn,
     .suggestion-list button,
     .send-button,
     .stop-button,
