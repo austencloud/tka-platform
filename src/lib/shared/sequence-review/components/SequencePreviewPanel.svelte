@@ -128,9 +128,9 @@
     </div>
   {/if}
 
-  <!-- Beat Grid -->
+  <!-- Step Grid -->
   {#if parsedSteps.length > 0}
-    <div class="beat-grid-section">
+    <div class="step-grid-section">
       <!-- Grid controls -->
       <div class="grid-controls">
         <button
@@ -164,7 +164,7 @@
         </div>
       </div>
 
-      <div class="beat-grid-wrapper" class:interactive>
+      <div class="step-grid-wrapper" class:interactive>
         <StepGrid
           steps={parsedSteps}
           startPosition={showStartPosition ? startPosition : null}
@@ -258,7 +258,7 @@
     color: #fde047;
   }
 
-  .beat-grid-section {
+  .step-grid-section {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
@@ -315,7 +315,7 @@
     color: var(--foreground);
   }
 
-  .beat-grid-wrapper {
+  .step-grid-wrapper {
     flex: 1;
     min-height: 0;
     background: var(--surface-dark);
@@ -327,7 +327,7 @@
     justify-content: center;
   }
 
-  .beat-grid-wrapper.interactive {
+  .step-grid-wrapper.interactive {
     border: 2px solid rgba(99, 102, 241, 0.3);
     cursor: pointer;
   }

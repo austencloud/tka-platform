@@ -27,7 +27,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Dashboard",
     icon: '<i class="fas fa-home" style="color: #10b981;" aria-hidden="true"></i>',
     color: "#10b981", // Emerald - home/dashboard
-    description: "Your TKA Scribe home",
+    description: "Home",
     isMain: true,
     sections: [], // Dashboard has no sub-tabs
   },
@@ -45,7 +45,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Discover",
     icon: '<i class="fas fa-compass" style="color: #a855f7;" aria-hidden="true"></i>',
     color: "#a855f7", // Purple - discovery/exploration
-    description: "Discover sequences and creators",
+    description: "Browse sequences and creators",
     isMain: true,
     sections: DISCOVER_TABS,
   },

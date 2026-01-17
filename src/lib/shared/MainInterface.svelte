@@ -112,6 +112,15 @@
       layoutState.canAccessEditAndExportPanels;
   });
 
+  // Sync preview banner state to body for drawer CSS positioning
+  $effect(() => {
+    if (isPreviewMode) {
+      document.body.classList.add("has-preview-banner");
+    } else {
+      document.body.classList.remove("has-preview-banner");
+    }
+  });
+
   // Handle reveal navigation from peek indicator
   function handleRevealNav() {
     discoverScrollState.forceShowUI();

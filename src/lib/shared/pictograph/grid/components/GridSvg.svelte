@@ -102,6 +102,20 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     }
   }
 
+  /**
+   * Strip outer <svg> wrapper and convert to inner content.
+   * This is necessary because nested <svg> elements create isolated viewports
+   * that don't respond to parent transforms. By stripping the outer <svg>,
+   * the content becomes part of the parent coordinate system.
+   */
+  function stripSvgWrapper(svgContent: string): string {
+    // Remove opening <svg ...> tag (with all attributes)
+    let content = svgContent.replace(/<svg[^>]*>/i, "");
+    // Remove closing </svg> tag
+    content = content.replace(/<\/svg>/i, "");
+    return content.trim();
+  }
+
   // Styled grid content - reactively updates when gridMode or previewMode changes
   // IMPORTANT: Does NOT depend on gridColor - CSS handles color transitions for smooth animation
   // In preview mode, we DON'T depend on showNonRadialPoints or handPointVisibility to avoid re-rendering
@@ -109,6 +123,8 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   // EXCEPTION: When darkMode is explicitly set (for export), inline colors ARE applied
   const styledGridSvg = $derived.by(() => {
     if (!baseGridSvg) return "";
+    // Strip the outer <svg> wrapper so content respects parent transforms
+    const unwrappedSvg = stripSvgWrapper(baseGridSvg);
     // In preview mode, always pass false for showNonRadial since CSS classes handle visibility
     // This prevents SVG re-rendering when toggling, allowing CSS transitions to work
     const effectiveShowNonRadial = previewMode ? false : showNonRadialPoints;
@@ -116,7 +132,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     // This prevents re-rendering when toggling hand points, allowing CSS transitions
     const effectiveHandPointMode = previewMode ? "active" : handPointVisibility;
     return applyGridModeStyles(
-      baseGridSvg,
+      unwrappedSvg,
       gridMode,
       effectiveShowNonRadial,
       previewMode,

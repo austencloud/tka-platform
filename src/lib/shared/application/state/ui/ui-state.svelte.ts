@@ -236,10 +236,10 @@ export function openSpotlightWithImage(
 }
 
 /**
- * Open spotlight viewer with a beat grid (renders sequence data directly)
+ * Open spotlight viewer with a step grid (renders sequence data directly)
  * Faster than image mode since it doesn't need to generate/fetch an image first
  */
-export function openSpotlightWithBeatGrid(sequence: SequenceData): void {
+export function openSpotlightWithStepGrid(sequence: SequenceData): void {
   uiState.spotlightSequence = sequence;
   uiState.spotlightImageUrl = null;
   uiState.spotlightThumbnailService = null;

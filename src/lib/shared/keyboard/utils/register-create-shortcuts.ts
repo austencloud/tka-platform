@@ -83,13 +83,13 @@ export function registerCreateShortcuts(
     },
   });
 
-  // ==================== Beat Grid Navigation ====================
+  // ==================== Step Grid Navigation ====================
 
-  // Arrow Up - Move focus up in beat grid
+  // Arrow Up - Move focus up in step grid
   service.register({
     id: "create.grid-nav-up",
     label: "Navigate Grid Up",
-    description: "Move focus up in the beat grid",
+    description: "Move focus up in the step grid",
     key: "ArrowUp",
     modifiers: [],
     context: "create",
@@ -103,15 +103,15 @@ export function registerCreateShortcuts(
     },
     action: () => {
       debug.log("Arrow Up - Grid navigation (not yet implemented)");
-      // TODO: Integrate with beat grid navigation
+      // TODO: Integrate with step grid navigation
     },
   });
 
-  // Arrow Down - Move focus down in beat grid
+  // Arrow Down - Move focus down in step grid
   service.register({
     id: "create.grid-nav-down",
     label: "Navigate Grid Down",
-    description: "Move focus down in the beat grid",
+    description: "Move focus down in the step grid",
     key: "ArrowDown",
     modifiers: [],
     context: "create",
@@ -123,15 +123,15 @@ export function registerCreateShortcuts(
     },
     action: () => {
       debug.log("Arrow Down - Grid navigation (not yet implemented)");
-      // TODO: Integrate with beat grid navigation
+      // TODO: Integrate with step grid navigation
     },
   });
 
-  // Arrow Left - Move focus left in beat grid
+  // Arrow Left - Move focus left in step grid
   service.register({
     id: "create.grid-nav-left",
     label: "Navigate Grid Left",
-    description: "Move focus left in the beat grid",
+    description: "Move focus left in the step grid",
     key: "ArrowLeft",
     modifiers: [],
     context: "create",
@@ -142,15 +142,15 @@ export function registerCreateShortcuts(
     },
     action: () => {
       debug.log("Arrow Left - Grid navigation (not yet implemented)");
-      // TODO: Integrate with beat grid navigation
+      // TODO: Integrate with step grid navigation
     },
   });
 
-  // Arrow Right - Move focus right in beat grid
+  // Arrow Right - Move focus right in step grid
   service.register({
     id: "create.grid-nav-right",
     label: "Navigate Grid Right",
-    description: "Move focus right in the beat grid",
+    description: "Move focus right in the step grid",
     key: "ArrowRight",
     modifiers: [],
     context: "create",
@@ -161,7 +161,7 @@ export function registerCreateShortcuts(
     },
     action: () => {
       debug.log("Arrow Right - Grid navigation (not yet implemented)");
-      // TODO: Integrate with beat grid navigation
+      // TODO: Integrate with step grid navigation
     },
   });
 
@@ -355,7 +355,7 @@ export function registerCreateShortcuts(
             panelState,
           });
 
-          // Close beat editor panel if it's open
+          // Close step editor panel if it's open
           if (panelState.isStepEditorPanelOpen) {
             panelState.closeStepEditorPanel();
           }

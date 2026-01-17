@@ -35,8 +35,8 @@
   pointer-events: none !important;
 }
 
-/* Beat Editor panel backdrop - transparent and non-interactive to allow clicking other beats */
-.drawer-overlay.beat-editor-backdrop {
+/* Step Editor panel backdrop - transparent and non-interactive to allow clicking other steps */
+.drawer-overlay.step-editor-backdrop {
   background: transparent !important;
   backdrop-filter: none !important;
   pointer-events: none !important;
@@ -71,6 +71,40 @@
    */
 :global(.has-desktop-sidebar) .drawer-overlay {
   left: var(--desktop-sidebar-width, 220px);
+}
+
+/*
+   * Admin preview banner support: When admin toolbar is visible,
+   * offset drawers to not overlap with the banner.
+   * Banner height: 58px desktop, 50px mobile
+   * Class applied to body by MainInterface.svelte effect
+   */
+body.has-preview-banner .drawer-overlay {
+  top: 58px;
+}
+
+body.has-preview-banner .drawer-content[data-placement="right"],
+body.has-preview-banner .drawer-content[data-placement="left"] {
+  top: 58px;
+  height: calc(100vh - 58px);
+  height: calc(100dvh - 58px);
+  max-height: calc(100vh - 58px);
+  max-height: calc(100dvh - 58px);
+}
+
+@media (max-width: 768px) {
+  body.has-preview-banner .drawer-overlay {
+    top: 50px;
+  }
+
+  body.has-preview-banner .drawer-content[data-placement="right"],
+  body.has-preview-banner .drawer-content[data-placement="left"] {
+    top: 50px;
+    height: calc(100vh - 50px);
+    height: calc(100dvh - 50px);
+    max-height: calc(100vh - 50px);
+    max-height: calc(100dvh - 50px);
+  }
 }
 
 /* ============================================
