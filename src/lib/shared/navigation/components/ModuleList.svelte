@@ -594,4 +594,15 @@
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 60%, transparent);
     outline-offset: 2px;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .unread-badge {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="badgePop"] {
+      animation: none;
+    }
+  }
 </style>

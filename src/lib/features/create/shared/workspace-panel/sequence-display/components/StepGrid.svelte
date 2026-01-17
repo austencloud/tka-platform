@@ -5,6 +5,7 @@
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
   import type { StartPositionData } from "../../../domain/models/StartPositionData";
+  import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
   import { createStepData } from "../../../domain/factories/createStepData";
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
@@ -17,14 +18,17 @@
   import {
     calculateBeatPosition,
     calculateGridLayout,
+    calculateTimelineRows,
+    calculateTimelineUnitSize,
+    getTimelineWidthMultiplier,
+    type TimelineRow,
   } from "../utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import {
     calculateSubdivisionIndex,
     formatPosition,
   } from "../../../services/implementations/MusicalPositionCalculator";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
 
   // Services
   const hapticService = container.items.hapticFeedback;
@@ -47,6 +51,8 @@
     activeMode = null,
     // Spotlight mode: maximize cell size to fill viewport
     isSpotlightMode = false,
+    // Timeline mode: cell width proportional to step duration
+    isTimelineMode = false,
     // Manual column override (null = auto)
     manualColumnCount = null,
     // Highlighted steps for multi-select/section highlighting
@@ -58,12 +64,11 @@
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
+    // Time signature for musical position calculation
     timeSignature = undefined,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
-    /** Time signature for this sequence (overrides global default) */
-    timeSignature?: TimeSignatureKey;
     onStepClick?: (stepNumber: number) => void;
     onStartClick?: () => void;
     onStepDelete?: (stepNumber: number) => void;
@@ -78,6 +83,8 @@
     activeMode?: BuildModeId | null;
     // Spotlight mode: maximize cell size to fill viewport (no max constraint)
     isSpotlightMode?: boolean;
+    // Timeline mode: cell width proportional to step duration
+    isTimelineMode?: boolean;
     // Manual column override (null = auto)
     manualColumnCount?: number | null;
     // Highlighted steps for multi-select/section highlighting (stepNumber -> style)
@@ -89,6 +96,8 @@
     selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
+    // Time signature for musical position calculation (e.g., "4/4", "6/8")
+    timeSignature?: TimeSignatureKey;
   }>();
 
   const placeholderStep = createStepData({
@@ -129,6 +138,28 @@
         manualColumnCount,
       }
     );
+  });
+
+  // Timeline mode: calculate row assignments based on duration capacity
+  // Returns empty array when not in timeline mode
+  // Note: Uses fixed capacity of 4 duration units per row (not grid layout columns)
+  // This ensures consistent timeline behavior regardless of container width
+  // Start position is rendered in its own column (like grid mode), not consuming row capacity
+  const TIMELINE_ROW_CAPACITY = 4;
+  const timelineRows = $derived(() => {
+    if (!isTimelineMode) return [];
+    // Don't pass hasStartPosition - start position gets its own column like grid mode
+    return calculateTimelineRows(steps, TIMELINE_ROW_CAPACITY, false);
+  });
+
+  // Timeline mode: calculate unit size independently from grid cell size
+  // With start position in its own column, total width = start (1 unit) + row (4 units) = 5 units
+  const timelineUnitSize = $derived(() => {
+    if (!isTimelineMode) return 0;
+    const hasStart = startPosition && !startPosition.isBlank;
+    // Total columns = start column (if present) + row capacity
+    const totalUnits = hasStart ? TIMELINE_ROW_CAPACITY + 1 : TIMELINE_ROW_CAPACITY;
+    return calculateTimelineUnitSize(containerWidth, totalUnits);
   });
 
   // Track previous beat state for change detection
@@ -368,18 +399,13 @@
   const getBeatKey = (beat: StepData, index: number) =>
     `${beat.id ?? "no-id"}-${beat.stepNumber ?? index}-${index}`;
 
-  // Musical position display settings
-  const settings = $derived(getSettings());
-  const musicianMode = $derived(settings.musicianMode ?? false);
-  // Use prop time signature if provided, otherwise fall back to global default
-  const effectiveTimeSignature = $derived(
-    timeSignature ?? settings.defaultTimeSignature ?? "4/4"
-  );
-
-  // Calculate musical position for a beat at a given index
+  // Helper to calculate musical position for a step
+  // Returns the formatted position string (e.g., "1", "1.5", "2e")
   function getMusicalPosition(stepIndex: number): string {
-    const subdivisionIndex = calculateSubdivisionIndex(stepIndex, steps, effectiveTimeSignature);
-    return formatPosition(subdivisionIndex, musicianMode, effectiveTimeSignature);
+    const settings = getSettings();
+    const musicianMode = settings.musicianMode ?? false;
+    const subdivisionIndex = calculateSubdivisionIndex(stepIndex, steps, timeSignature);
+    return formatPosition(subdivisionIndex, musicianMode, timeSignature);
   }
 </script>
 
@@ -450,6 +476,7 @@
           index > removingStepIndex}
         {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
         {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
+        {@const musicalPosition = getMusicalPosition(index)}
         <div
           class="beat-container"
           class:deleting={isDeleting}
@@ -472,13 +499,110 @@
             isPracticeStep={practiceStepNumber === beat.stepNumber}
             {activeMode}
             highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
-            musicalPosition={getMusicalPosition(index)}
+            {musicalPosition}
           />
         </div>
       {/each}
     </div>
+  {:else if isTimelineMode}
+    <!-- Timeline mode: start position in own column (like grid mode), rows with duration-proportional widths -->
+    <div
+      class="beat-grid-scroll timeline-scroll"
+      class:has-scrollbar={scrollState.hasVerticalScrollbar}
+      bind:this={scrollContainerRef}
+    >
+      <div
+        class="timeline-container"
+        class:clearing={isClearing || displayState.isClearingForGeneration}
+        style:--cell-size="{timelineUnitSize()}px"
+      >
+        <!-- Start Position Column (matches grid mode layout) -->
+        {#if startPosition && !startPosition.isBlank}
+          <div class="timeline-start-column">
+            <div
+              class="timeline-cell start-tile"
+              class:timeline-selected={selectedStepNumber === 0}
+              class:timeline-practice={practiceStepNumber === 0}
+              style:--duration-multiplier={1}
+              title="Start Position"
+              role="button"
+              tabindex="0"
+              onclick={handleStartClick}
+              onkeydown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleStartClick();
+                } else if (e.key === " ") {
+                  e.preventDefault();
+                }
+              }}
+              aria-label="Start Position"
+            >
+              <StepCell
+                beat={startPosition}
+                index={-1}
+                shouldAnimate={displayState.shouldAnimateStartPosition}
+                isSelected={selectedStepNumber === 0}
+                isPracticeStep={practiceStepNumber === 0}
+                {activeMode}
+                onLongPress={onStepLongPress}
+                onDelete={() => onStepDelete?.(0)}
+                isTimelineMode={true}
+              />
+            </div>
+          </div>
+        {/if}
+
+        <!-- Timeline Rows (full capacity, not reduced by start position) -->
+        <div class="timeline-rows">
+          {#each timelineRows() as row, rowIndex (rowIndex)}
+            <div class="timeline-row">
+              {#each row.steps as { stepIndex, duration } (getBeatKey(steps[stepIndex], stepIndex))}
+                {@const beat = steps[stepIndex]}
+                {@const isDeleting = removingStepIndices.has(stepIndex)}
+                {@const shouldSlide =
+                  removingStepIndex !== null &&
+                  !isDeleting &&
+                  stepIndex > removingStepIndex}
+                {@const shouldAnimateBeat = displayState.shouldBeatAnimate(stepIndex)}
+                {@const shouldHideBeat = displayState.shouldBeatBeHidden(stepIndex)}
+                {@const musicalPosition = getMusicalPosition(stepIndex)}
+                <div
+                  class="timeline-cell beat-container"
+                  class:deleting={isDeleting}
+                  class:sliding={shouldSlide}
+                  class:hidden-for-sequential={shouldHideBeat}
+                  class:timeline-selected={selectedStepNumber === beat.stepNumber}
+                  class:timeline-practice={practiceStepNumber === beat.stepNumber}
+                  style:--duration-multiplier={getTimelineWidthMultiplier(duration)}
+                  style:animation-delay={shouldSlide
+                    ? `${Math.min(stepIndex - removingStepIndex - 1, 5) * 50}ms`
+                    : "0ms"}
+                >
+                  <StepCell
+                    {beat}
+                    index={stepIndex}
+                    onClick={() => handleStepClick(beat.stepNumber)}
+                    onDelete={() => onStepDelete?.(beat.stepNumber)}
+                    onLongPress={onStepLongPress}
+                    shouldAnimate={shouldAnimateBeat}
+                    isSelected={selectedStepNumber === beat.stepNumber}
+                    isPracticeStep={practiceStepNumber === beat.stepNumber}
+                    {activeMode}
+                    highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
+                    {musicalPosition}
+                    isTimelineMode={true}
+                    widthMultiplier={duration}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
   {:else}
-    <!-- Workspace mode: render grid inside scroll wrapper -->
+    <!-- Grid mode: render standard grid inside scroll wrapper -->
     <div
       class="beat-grid-scroll"
       class:has-scrollbar={scrollState.hasVerticalScrollbar}
@@ -538,6 +662,7 @@
             index > removingStepIndex}
           {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
           {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
+          {@const musicalPosition = getMusicalPosition(index)}
           <div
             class="beat-container"
             class:deleting={isDeleting}
@@ -560,7 +685,7 @@
               isPracticeStep={practiceStepNumber === beat.stepNumber}
               {activeMode}
               highlightStyle={highlightedSteps?.get(beat.stepNumber) ?? null}
-              musicalPosition={getMusicalPosition(index)}
+              {musicalPosition}
             />
           </div>
         {/each}
@@ -667,6 +792,116 @@
     padding-right: 12px;
   }
 
+  /* ============================================
+     TIMELINE MODE STYLES
+     Column layout: start position on left, timeline rows on right
+     Matches grid mode's treatment of start position
+     ============================================ */
+
+  /* Timeline scroll container */
+  .beat-grid-scroll.timeline-scroll {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Timeline container - horizontal layout: start column + timeline rows */
+  .timeline-container {
+    display: flex;
+    flex-direction: row;
+    gap: 1px;
+    width: 100%;
+    margin: auto;
+    padding: 0;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transition:
+      opacity 300ms ease-out,
+      transform 300ms ease-out;
+  }
+
+  .timeline-container.clearing {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+
+  /* Start position column - fixed width, aligns to top */
+  .timeline-start-column {
+    width: var(--cell-size);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    /* Don't stretch to fill height - keep start position at top */
+    align-self: flex-start;
+  }
+
+  /* Start cell in column should be square, not stretch to full height */
+  .timeline-start-column .timeline-cell {
+    height: var(--cell-size);
+  }
+
+  /* Timeline rows container - fills remaining width */
+  .timeline-rows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0; /* Allow shrinking below content size */
+  }
+
+  /* Each row in the timeline */
+  .timeline-row {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: var(--cell-size);
+    gap: 1px;
+  }
+
+  /* Individual cell in timeline row - pixel-based width from duration */
+  .timeline-cell {
+    /* Width = cell-size × duration-multiplier (duration=1 is square, duration=2 is 2x wide) */
+    width: calc(var(--cell-size) * var(--duration-multiplier, 1));
+    flex-shrink: 0;
+    flex-grow: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Dark background fills entire cell (including extra width for duration > 1) */
+    background: var(--dm-pictograph-bg, #0a0a0f);
+    border-radius: 4px;
+  }
+
+  /* Selection in timeline mode - wraps entire cell */
+  .timeline-cell.timeline-selected {
+    z-index: 10;
+    border: 3px solid transparent;
+    /* Gradient border trick: solid dark bg for content, gold gradient for border */
+    background:
+      linear-gradient(var(--dm-pictograph-bg, #0a0a0f), var(--dm-pictograph-bg, #0a0a0f)) padding-box,
+      linear-gradient(135deg, var(--semantic-warning), var(--semantic-warning), #d97706) border-box;
+    border-radius: 8px;
+    box-shadow:
+      0 0 20px rgba(251, 191, 36, 0.5),
+      0 8px 32px rgba(251, 191, 36, 0.3);
+    transform: scale(1.03);
+  }
+
+  /* Practice step in timeline mode */
+  .timeline-cell.timeline-practice {
+    z-index: 10;
+    border: 3px solid var(--semantic-warning);
+    border-radius: 8px;
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
+  }
+
+  /* ============================================
+     GRID MODE STYLES
+     Standard CSS Grid with uniform cell sizes
+     ============================================ */
+
   .beat-grid {
     display: grid;
     grid-template-columns: repeat(var(--grid-cols), var(--cell-size));
@@ -735,6 +970,13 @@
     pointer-events: none;
   }
 
+  /* Timeline mode: override width: 100% from .beat-container/.start-tile */
+  /* Must come after those rules to win CSS cascade */
+  .timeline-cell.beat-container,
+  .timeline-cell.start-tile {
+    width: calc(var(--cell-size) * var(--duration-multiplier, 1));
+  }
+
   @keyframes fadeOutDisintegrate {
     0% {
       opacity: 1;
@@ -763,6 +1005,78 @@
     }
     100% {
       transform: translateX(0) translateY(0);
+    }
+  }
+
+  /* ============================================
+     EXPANDED CELL GLYPH OVERLAY
+     Positions glyphs at corners of expanded timeline cells
+     to visually communicate the cell's expanded duration
+     ============================================ */
+
+  .timeline-cell.timeline-expanded {
+    position: relative;
+  }
+
+  .expanded-glyph-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* Step number - top-left corner */
+  .expanded-step-number {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: clamp(14px, 3.5cqw, 20px);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* TKA letter - bottom-left corner */
+  .expanded-tka-letter {
+    position: absolute;
+    bottom: 4px;
+    left: 6px;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: clamp(16px, 4cqw, 24px);
+    color: #00b8b8;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Duration indicator - top-right corner */
+  .expanded-duration {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: clamp(12px, 3cqw, 16px);
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .deleting {
+      animation: none;
+    }
+    .sliding {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="fadeOutDisintegrate"] {
+      animation: none;
+    }
+    [style*="slideIntoPlace"] {
+      animation: none;
     }
   }
 </style>

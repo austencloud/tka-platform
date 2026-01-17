@@ -279,4 +279,21 @@ Provides a beautiful, unified experience for creating new presets
       height: 20px;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .modal-backdrop {
+      animation: none;
+    }
+    .modal-content {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="backdrop-appear"] {
+      animation: none;
+    }
+    [style*="modal-appear"] {
+      animation: none;
+    }
+  }
 </style>

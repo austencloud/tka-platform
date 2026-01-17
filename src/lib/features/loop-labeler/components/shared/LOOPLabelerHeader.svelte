@@ -460,4 +460,11 @@
     white-space: nowrap;
     border: 0;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .syncing {
+      animation: none;
+    }
+  }
 </style>

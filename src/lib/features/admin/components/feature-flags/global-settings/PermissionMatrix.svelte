@@ -515,4 +515,11 @@
       transform: translateY(0);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .tabs-container {
+      animation: none;
+    }
+  }
 </style>

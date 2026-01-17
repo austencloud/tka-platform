@@ -165,4 +165,15 @@
       transform: translateY(0);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .popover {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="popoverIn"] {
+      animation: none;
+    }
+  }
 </style>

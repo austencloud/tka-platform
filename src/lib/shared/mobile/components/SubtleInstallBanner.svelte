@@ -416,4 +416,11 @@
       min-height: var(--min-touch-target);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .subtle-banner {
+      animation: none;
+    }
+  }
 </style>

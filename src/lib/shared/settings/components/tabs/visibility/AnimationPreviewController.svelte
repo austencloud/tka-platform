@@ -254,4 +254,11 @@
     color: var(--semantic-warning, var(--semantic-warning));
     opacity: 0.6;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

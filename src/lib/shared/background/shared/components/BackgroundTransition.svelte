@@ -108,4 +108,11 @@ Uses a crossfade technique with two layers to animate between gradients
       background-position: 0% 50%;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .background-layer {
+      animation: none;
+    }
+  }
 </style>

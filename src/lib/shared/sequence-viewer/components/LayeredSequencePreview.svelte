@@ -651,4 +651,11 @@
   }
 
   /* Responsive adjustments no longer needed - scaling is handled via JS calculations */
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

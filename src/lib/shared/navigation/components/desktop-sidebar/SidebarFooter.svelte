@@ -1,15 +1,33 @@
 <!-- Sidebar Footer Component -->
-<!-- Footer with settings gear/back button -->
+<!-- Footer with inbox button and version badge -->
 <script lang="ts">
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
   import { releaseNotesDrawerState } from "../../../settings/state/release-notes-drawer-state.svelte";
+  import { inboxState } from "../../../inbox/state/inbox-state.svelte";
 
-  let { isCollapsed, isSettingsActive, onSettingsClick } = $props<{
+  let { isCollapsed } = $props<{
     isCollapsed: boolean;
-    isSettingsActive: boolean;
-    onSettingsClick?: () => void;
   }>();
+
+  const hasUnread = $derived(inboxState.totalUnreadCount > 0);
+  const badgeCount = $derived(
+    inboxState.totalUnreadCount > 99
+      ? "99+"
+      : String(inboxState.totalUnreadCount)
+  );
+
+  function handleInboxClick() {
+    // Haptic feedback
+    try {
+      const hapticService = container.items.hapticFeedback as IHapticFeedback;
+      hapticService?.trigger("selection");
+    } catch {
+      // Ignore if not available
+    }
+
+    inboxState.open();
+  }
 
   function handleVersionClick() {
     // Haptic feedback
@@ -25,32 +43,32 @@
   }
 </script>
 
-<!-- Footer with settings -->
+<!-- Footer with inbox -->
 <div
   class="sidebar-footer"
   class:collapsed={isCollapsed}
   style="--button-accent-color: #64748b;"
 >
-  <!-- Settings Button -->
+  <!-- Inbox Button -->
   <button
-    class="settings-button"
-    class:active={isSettingsActive}
+    class="inbox-button"
     class:collapsed={isCollapsed}
-    onclick={onSettingsClick}
-    aria-label={isSettingsActive ? "Exit Settings" : "Settings"}
+    class:has-unread={hasUnread}
+    onclick={handleInboxClick}
+    aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
   >
     <div class="button-icon">
-      <i
-        class="fas {isSettingsActive ? 'fa-arrow-left' : 'fa-cog'}"
-        aria-hidden="true"
-      ></i>
+      <i class="fas fa-inbox" aria-hidden="true"></i>
+      {#if hasUnread}
+        <span class="unread-badge" aria-hidden="true">{badgeCount}</span>
+      {/if}
     </div>
     {#if !isCollapsed}
-      <span class="button-label">{isSettingsActive ? "Back" : "Settings"}</span>
+      <span class="button-label">Inbox</span>
     {/if}
   </button>
 
-  <!-- Version Number (below settings) -->
+  <!-- Version Number (below inbox) -->
   <button
     class="version-badge"
     class:collapsed={isCollapsed}
@@ -67,7 +85,7 @@
 
 <style>
   /* ============================================================================
-     SIDEBAR FOOTER - Inbox + Settings entry points
+     SIDEBAR FOOTER - Inbox button + version badge
      ============================================================================ */
   .sidebar-footer {
     display: flex;
@@ -84,9 +102,9 @@
   }
 
   /* ============================================================================
-     SETTINGS BUTTON
+     INBOX BUTTON
      ============================================================================ */
-  .settings-button {
+  .inbox-button {
     width: 100%;
     display: flex;
     align-items: center;
@@ -102,23 +120,17 @@
     font-weight: 500;
   }
 
-  .settings-button:hover {
+  .inbox-button:hover {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-stroke-strong);
     color: var(--theme-text);
   }
 
-  .settings-button.active {
-    background: color-mix(in srgb, var(--button-accent-color) 15%, transparent);
-    border-color: color-mix(
-      in srgb,
-      var(--button-accent-color) 25%,
-      transparent
-    );
-    color: white;
+  .inbox-button.has-unread {
+    border-color: color-mix(in srgb, var(--semantic-info) 40%, var(--theme-accent));
   }
 
-  .settings-button.collapsed {
+  .inbox-button.collapsed {
     width: var(--min-touch-target);
     height: var(--min-touch-target);
     padding: 0;
@@ -127,6 +139,7 @@
   }
 
   .button-icon {
+    position: relative;
     width: 32px;
     height: 32px;
     display: flex;
@@ -138,24 +151,15 @@
     transition: all 0.2s ease;
   }
 
-  .settings-button.collapsed .button-icon {
+  .inbox-button.collapsed .button-icon {
     width: 100%;
     height: 100%;
     background: transparent;
     border-radius: 12px;
   }
 
-  .settings-button:hover .button-icon {
+  .inbox-button:hover .button-icon {
     background: var(--theme-card-hover-bg);
-  }
-
-  .settings-button.active .button-icon {
-    background: color-mix(in srgb, var(--button-accent-color) 20%, transparent);
-  }
-
-  .settings-button:not(.active):hover .button-icon i {
-    transform: rotate(90deg);
-    transition: transform 0.3s ease;
   }
 
   .button-label {
@@ -179,18 +183,57 @@
   }
 
   /* ============================================================================
+     UNREAD BADGE
+     ============================================================================ */
+  .unread-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--semantic-error, #ef4444);
+    border-radius: 9px;
+    color: white;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 2px 4px hsl(0 0% 0% / 0.3);
+    pointer-events: none;
+    animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 1;
+  }
+
+  @keyframes badgePop {
+    0% {
+      transform: scale(0);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* ============================================================================
      ACCESSIBILITY
      ============================================================================ */
-  .settings-button:focus-visible {
+  .inbox-button:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
     outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .sidebar-footer,
-    .settings-button,
+    .inbox-button,
     .button-icon {
       transition: none !important;
+    }
+
+    .unread-badge {
+      animation: none;
     }
   }
 

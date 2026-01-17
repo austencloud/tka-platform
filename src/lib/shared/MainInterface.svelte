@@ -117,46 +117,6 @@
     discoverScrollState.forceShowUI();
   }
 
-  function isTypingTarget(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
-    const tag = target.tagName.toLowerCase();
-    return (
-      tag === "input" ||
-      tag === "textarea" ||
-      tag === "select" ||
-      target.isContentEditable ||
-      target.getAttribute("role") === "textbox"
-    );
-  }
-
-  function shouldDeferEscapeNavigation(): boolean {
-    if (keyboardShortcutState.showCommandPalette) return true;
-    if (keyboardShortcutState.showHelp) return true;
-    if (hasOpenDrawers()) return true;
-    return false;
-  }
-
-  const handleGlobalEscape = (event: KeyboardEvent) => {
-    if (event.key !== "Escape") return;
-    if (isTypingTarget(event.target)) return;
-    if (shouldDeferEscapeNavigation()) return;
-
-    const currentModuleId = navigationState.currentModule;
-    if (currentModuleId === "dashboard") return;
-
-    event.preventDefault();
-
-    if (currentModuleId === "settings") {
-      const previousModule =
-        navigationState.previousModule ||
-        navigationCoordinator.previousModuleBeforeSettings ||
-        "dashboard";
-      void handleModuleChange(previousModule as ModuleId);
-      return;
-    }
-
-    void handleModuleChange("dashboard");
-  };
 
   // 🚀 Prefetch likely next modules when current module changes
   $effect(() => {
@@ -201,12 +161,7 @@
       );
     }
 
-    // No longer auto-opening info page - users go straight into Create module
-    // Info page is now an info/resources page accessible via the info button
-    window.addEventListener("keydown", handleGlobalEscape, true);
-
     return () => {
-      window.removeEventListener("keydown", handleGlobalEscape, true);
       desktopSidebarVisibility?.cleanup();
     };
   });

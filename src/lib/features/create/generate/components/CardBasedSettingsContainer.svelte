@@ -400,4 +400,15 @@ Supports help mode: when active, clicking cards opens help instead of normal act
       transition: none;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .help-clickable {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="help-card-pulse"] {
+      animation: none;
+    }
+  }
 </style>

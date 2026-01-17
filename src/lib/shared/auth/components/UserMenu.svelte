@@ -252,4 +252,18 @@
       font-weight: 600;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .menu-dropdown {
+      animation: none;
+    }
+    .spinner {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="slideIn"] {
+      animation: none;
+    }
+  }
 </style>

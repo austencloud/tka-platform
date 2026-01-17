@@ -333,4 +333,11 @@ Shows both grids simultaneously for comparison
       padding: 1.5rem;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .merged-view {
+      animation: none;
+    }
+  }
 </style>

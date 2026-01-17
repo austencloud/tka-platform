@@ -395,4 +395,12 @@
       font-size: 0.6875rem;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    /* Disable local keyframe animations */
+    [style*="fadeInUp"] {
+      animation: none;
+    }
+  }
 </style>

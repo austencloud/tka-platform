@@ -417,4 +417,27 @@ Provides consistent styling and interaction patterns for all generation setting 
       right: clamp(6px, 1cqw, 10px);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .base-card {
+      animation: none;
+    }
+    .cap-card {
+      animation: none;
+    }
+    .clickable {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="cardEnter"] {
+      animation: none;
+    }
+    [style*="springBounce"] {
+      animation: none;
+    }
+    [style*="meshGradientFlow"] {
+      animation: none;
+    }
+  }
 </style>

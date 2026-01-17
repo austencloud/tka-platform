@@ -318,4 +318,15 @@ Landscape: Left half decrements, right half increments (horizontal layout)
       }
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .stepper-card {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="cardEnter"] {
+      animation: none;
+    }
+  }
 </style>

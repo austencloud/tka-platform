@@ -291,4 +291,21 @@ Provides a beautiful, unified experience for customizing presets
       font-size: var(--font-size-sm);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .modal-backdrop {
+      animation: none;
+    }
+    .modal-content {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="backdrop-appear"] {
+      animation: none;
+    }
+    [style*="modal-appear"] {
+      animation: none;
+    }
+  }
 </style>

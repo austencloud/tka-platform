@@ -415,4 +415,11 @@ Features square aspect ratio for consistent layout and settings dialog for camer
       font-size: var(--font-size-xl);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

@@ -644,4 +644,14 @@
   .transport-btn.play-btn:hover {
     background: rgba(74, 158, 255, 0.3);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+    .playback-status {
+      animation: none;
+    }
+  }
 </style>

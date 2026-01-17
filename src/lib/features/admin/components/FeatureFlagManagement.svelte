@@ -138,4 +138,11 @@
     overflow: hidden;
     min-height: 0;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .error-banner {
+      animation: none;
+    }
+  }
 </style>

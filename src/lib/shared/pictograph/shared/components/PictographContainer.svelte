@@ -76,6 +76,7 @@ with pre-prepared data for better performance.
     onTogglePositions = undefined,
     onToggleReversals = undefined,
     onToggleNonRadial = undefined,
+    onToggleBeatPosition = undefined,
     // Dark Mode override for export (when set, overrides CSS-based detection)
     darkMode = undefined,
     // Explicit prop types for export/thumbnail rendering
@@ -84,6 +85,8 @@ with pre-prepared data for better performance.
     redPropTypeOverride = undefined,
     // Musical position string for beat number display
     musicalPosition = undefined,
+    // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider)
+    widthMultiplier = 1,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
@@ -107,6 +110,7 @@ with pre-prepared data for better performance.
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
     onToggleNonRadial?: () => void;
+    onToggleBeatPosition?: () => void;
     /** Dark Mode override for export. When set, overrides CSS-based detection. */
     darkMode?: boolean;
     /** Explicit prop type for blue hand. Export/thumbnail rendering provides this for consistency. */
@@ -115,6 +119,8 @@ with pre-prepared data for better performance.
     redPropTypeOverride?: PropType;
     /** Musical position string (e.g., "1", "1.5", "2e") - overrides beat number display when present */
     musicalPosition?: string;
+    /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
+    widthMultiplier?: number;
   }>();
 
   // Extract beat context from StepData if available
@@ -141,6 +147,7 @@ with pre-prepared data for better performance.
     elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
     positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
     handPointVisibility: visibilityManager.getHandPointVisibility(),
+    beatPositionGlyph: visibilityManager.getBeatPositionGlyphVisibility(),
     darkMode: animVisibilityManager.isDarkMode(),
   });
 
@@ -156,6 +163,7 @@ with pre-prepared data for better performance.
       elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
       positionsGlyph: visibilityManager.getGlyphVisibility("positionsGlyph"),
       handPointVisibility: visibilityManager.getHandPointVisibility(),
+      beatPositionGlyph: visibilityManager.getBeatPositionGlyphVisibility(),
       darkMode: syncedVisibility.darkMode, // Keep dark mode unchanged
     };
   }
@@ -212,6 +220,9 @@ with pre-prepared data for better performance.
 
   // Hand point visibility mode
   const effectiveHandPointVisibility = $derived(syncedVisibility.handPointVisibility);
+
+  // Beat position glyph visibility (musical timeline position at bottom-center)
+  const effectiveShowBeatPosition = $derived(syncedVisibility.beatPositionGlyph);
 
   // Active locations (where props are positioned)
   // Extract from pictograph motion data - use endLocation for prop positioning
@@ -370,6 +381,7 @@ with pre-prepared data for better performance.
         {stepNumber}
         {showStepNumber}
         {musicalPosition}
+        showBeatPosition={effectiveShowBeatPosition}
         {previewMode}
         gridModeOverride={overrideGridMode}
         {visibleHand}
@@ -381,6 +393,8 @@ with pre-prepared data for better performance.
         {onTogglePositions}
         {onToggleReversals}
         {onToggleNonRadial}
+        {onToggleBeatPosition}
+        {widthMultiplier}
       />
     {:else}
       {#key contentKey}
@@ -405,6 +419,7 @@ with pre-prepared data for better performance.
             {stepNumber}
             {showStepNumber}
             {musicalPosition}
+            showBeatPosition={effectiveShowBeatPosition}
             {previewMode}
             gridModeOverride={overrideGridMode}
             {visibleHand}
@@ -416,6 +431,8 @@ with pre-prepared data for better performance.
             {onTogglePositions}
             {onToggleReversals}
             {onToggleNonRadial}
+            {onToggleBeatPosition}
+            {widthMultiplier}
           />
         </div>
       {/key}

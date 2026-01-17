@@ -248,4 +248,21 @@ the actual fullscreen state rather than inferring from viewport size.
       transform: scale(1.02);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .fullscreen-prompt-overlay {
+      animation: none;
+    }
+    .fullscreen-prompt-content {
+      animation: none;
+    }
+    .prompt-title {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="glow"] {
+      animation: none;
+    }
+  }
 </style>

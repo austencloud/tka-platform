@@ -441,4 +441,45 @@
       text-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .copied-message {
+      animation: none;
+    }
+    .active-intense {
+      animation: none;
+    }
+    .active-subtle {
+      animation: none;
+    }
+    .active-glow-only {
+      animation: none;
+    }
+    .active-minimal {
+      animation: none;
+    }
+    .active-wave {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="fadeInOut"] {
+      animation: none;
+    }
+    [style*="letterPopIntense"] {
+      animation: none;
+    }
+    [style*="letterFadeSubtle"] {
+      animation: none;
+    }
+    [style*="letterGlowOnly"] {
+      animation: none;
+    }
+    [style*="letterMinimal"] {
+      animation: none;
+    }
+    [style*="letterWave"] {
+      animation: none;
+    }
+  }
 </style>

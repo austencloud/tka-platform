@@ -17,7 +17,6 @@
     animationSettings,
     TrailMode,
     TrackingMode,
-    TrailEffect,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -142,19 +141,6 @@
   function toggleDarkMode() {
     const current = visibilityManager.isDarkMode();
     visibilityManager.setDarkMode(!current);
-
-    // When enabling Dark Mode, auto-enable neon trail effect
-    if (!current) {
-      animationSettings.setTrailEffect(TrailEffect.NEON);
-      // Also enable trails if currently off
-      if (currentTrailStyle === "off") {
-        setTrailStyle("on");
-      }
-    } else {
-      // When disabling, go back to standard glow
-      animationSettings.setTrailEffect(TrailEffect.GLOW);
-    }
-
     updateCounter++;
   }
 

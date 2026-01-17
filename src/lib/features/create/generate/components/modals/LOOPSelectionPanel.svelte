@@ -529,4 +529,11 @@ Includes curated presets, user favorites, and manual component selection
       font-size: var(--font-size-sm);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .coming-soon-badge {
+      animation: none;
+    }
+  }
 </style>

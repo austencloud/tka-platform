@@ -56,9 +56,9 @@
   const MIN_PARTICIPANTS = 2; // Plus current user = 3 total minimum
   const MAX_PARTICIPANTS = 49; // Plus current user = 50 total maximum
 
+  // Group name is optional - if not provided, we'll generate one from participant names
   const canCreate = $derived(
-    groupName.trim().length > 0 &&
-      selectedUsers.length >= MIN_PARTICIPANTS &&
+    selectedUsers.length >= MIN_PARTICIPANTS &&
       selectedUsers.length <= MAX_PARTICIPANTS &&
       !isCreating
   );
@@ -155,8 +155,13 @@
     error = null;
 
     try {
+      // Generate default name from participant names if none provided
+      const finalGroupName =
+        groupName.trim() ||
+        selectedUsers.map((u) => u.displayName.split(" ")[0]).join(", ");
+
       const result = await conversationService.createGroup({
-        name: groupName.trim(),
+        name: finalGroupName,
         participantIds: selectedUsers.map((u) => u.id),
       });
 
@@ -179,112 +184,117 @@
 </script>
 
 <div class="new-group-sheet">
-  <div class="header-section">
-    <h2>Create Group</h2>
-    <p class="subtitle">Add at least 2 people to start a group conversation</p>
-  </div>
-
-  {#if error}
-    <div class="error-banner" role="alert">
-      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-      <span>{error}</span>
+  <!-- Fixed header section -->
+  <div class="fixed-top">
+    <div class="header-section">
+      <h2>Create Group</h2>
+      <p class="subtitle">Add at least 2 people to start a group conversation</p>
     </div>
-  {/if}
 
-  <!-- Group Name Input -->
-  <div class="form-section">
-    <label for="group-name" class="form-label">Group Name</label>
-    <input
-      id="group-name"
-      type="text"
-      bind:value={groupName}
-      placeholder="Enter group name..."
-      maxlength={100}
-      class="name-input"
-      disabled={isCreating}
-    />
+    {#if error}
+      <div class="error-banner" role="alert">
+        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+        <span>{error}</span>
+      </div>
+    {/if}
+
+    <!-- Group Name Input -->
+    <div class="form-section">
+      <label for="group-name" class="form-label">Group Name <span class="optional">(optional)</span></label>
+      <input
+        id="group-name"
+        type="text"
+        bind:value={groupName}
+        placeholder="Enter group name..."
+        maxlength={100}
+        class="name-input"
+        disabled={isCreating}
+      />
+    </div>
+
+    <!-- Selected Users -->
+    {#if selectedUsers.length > 0}
+      <div class="selected-section">
+        <div class="selected-header">
+          <span class="selected-label">Selected</span>
+          <span class="selected-count">{participantCountText()}</span>
+        </div>
+        <div class="selected-chips">
+          {#each selectedUsers as user (user.id)}
+            <div class="user-chip">
+              <RobustAvatar
+                src={user.avatar}
+                name={user.displayName}
+                alt=""
+                customSize={24}
+              />
+              <span class="chip-name">{user.displayName}</span>
+              <button
+                type="button"
+                class="chip-remove"
+                onclick={() => removeUser(user.id)}
+                aria-label="Remove {user.displayName}"
+                disabled={isCreating}
+              >
+                <i class="fas fa-times" aria-hidden="true"></i>
+              </button>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    <!-- User Search -->
+    <div class="search-section">
+      <label class="form-label">Add People</label>
+      <UserSearchInput
+        selectedUserId={searchUserId}
+        selectedUserDisplay={searchUserDisplay}
+        onSelect={handleUserSelect}
+        placeholder="Search by name or email..."
+        inlineResults={true}
+        {excludeUserIds}
+      />
+    </div>
   </div>
 
-  <!-- Selected Users -->
-  {#if selectedUsers.length > 0}
-    <div class="selected-section">
-      <div class="selected-header">
-        <span class="selected-label">Selected</span>
-        <span class="selected-count">{participantCountText()}</span>
+  <!-- Scrollable suggestions area -->
+  <div class="scrollable-content">
+    {#if isLoadingSuggestions}
+      <div class="suggestions-loading">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        <span>Loading suggestions...</span>
       </div>
-      <div class="selected-chips">
-        {#each selectedUsers as user (user.id)}
-          <div class="user-chip">
-            <RobustAvatar
-              src={user.avatar}
-              name={user.displayName}
-              alt=""
-              customSize={24}
-            />
-            <span class="chip-name">{user.displayName}</span>
+    {:else if availableSuggestions.length > 0}
+      <div class="suggestions-section">
+        <span class="suggestions-label">
+          <i class="fas fa-user-friends" aria-hidden="true"></i>
+          People You Follow
+        </span>
+        <div class="suggestions-grid">
+          {#each availableSuggestions as user (user.id)}
             <button
               type="button"
-              class="chip-remove"
-              onclick={() => removeUser(user.id)}
-              aria-label="Remove {user.displayName}"
+              class="suggestion-item"
+              onclick={() => handleSuggestionClick(user)}
               disabled={isCreating}
             >
-              <i class="fas fa-times" aria-hidden="true"></i>
+              <RobustAvatar
+                src={user.avatar}
+                name={user.displayName}
+                alt=""
+                customSize={36}
+              />
+              <span class="suggestion-name">{user.displayName}</span>
+              <i class="fas fa-plus suggestion-add" aria-hidden="true"></i>
             </button>
-          </div>
-        {/each}
+          {/each}
+        </div>
       </div>
-    </div>
-  {/if}
-
-  <!-- User Search -->
-  <div class="search-section">
-    <label class="form-label">Add People</label>
-    <UserSearchInput
-      selectedUserId={searchUserId}
-      selectedUserDisplay={searchUserDisplay}
-      onSelect={handleUserSelect}
-      placeholder="Search by name or email..."
-      inlineResults={true}
-      {excludeUserIds}
-    />
+    {/if}
   </div>
 
-  <!-- Suggestions -->
-  {#if isLoadingSuggestions}
-    <div class="suggestions-loading">
-      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <span>Loading suggestions...</span>
-    </div>
-  {:else if availableSuggestions.length > 0}
-    <div class="suggestions-section">
-      <span class="suggestions-label">
-        <i class="fas fa-user-friends" aria-hidden="true"></i>
-        People You Follow
-      </span>
-      <div class="suggestions-grid">
-        {#each availableSuggestions as user (user.id)}
-          <button
-            type="button"
-            class="suggestion-item"
-            onclick={() => handleSuggestionClick(user)}
-            disabled={isCreating}
-          >
-            <RobustAvatar
-              src={user.avatar}
-              name={user.displayName}
-              alt=""
-              customSize={36}
-            />
-            <span class="suggestion-name">{user.displayName}</span>
-            <i class="fas fa-plus suggestion-add" aria-hidden="true"></i>
-          </button>
-        {/each}
-      </div>
-    </div>
-  {/if}
-
-  <!-- Action Buttons -->
+  <!-- Fixed action buttons at bottom -->
   <div class="actions">
     <button type="button" class="btn-cancel" onclick={onCancel}>Cancel</button>
     <button
@@ -308,10 +318,27 @@
   .new-group-sheet {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 16px;
     height: 100%;
+    overflow: hidden; /* Don't scroll the whole sheet */
+    isolation: isolate; /* Create new stacking context */
+  }
+
+  .fixed-top {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px 16px 0;
+  }
+
+  .scrollable-content {
+    flex: 1;
+    min-height: 0; /* Allow shrinking below content size */
     overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    position: relative;
+    z-index: 0;
   }
 
   .header-section {
@@ -355,6 +382,12 @@
     color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+
+  .form-label .optional {
+    font-weight: 400;
+    text-transform: none;
+    opacity: 0.7;
   }
 
   .name-input {
@@ -547,11 +580,15 @@
   }
 
   .actions {
+    flex-shrink: 0;
     display: flex;
     gap: 12px;
-    margin-top: auto;
-    padding-top: 16px;
+    padding: 16px;
     border-top: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg); /* Ensure button area has solid background */
+    position: relative;
+    z-index: 10; /* Ensure actions are above scrollable content */
+    pointer-events: auto; /* Ensure clicks are registered */
   }
 
   .btn-cancel,

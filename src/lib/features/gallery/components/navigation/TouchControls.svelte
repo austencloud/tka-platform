@@ -350,4 +350,15 @@
     0%, 100% { opacity: 0; }
     20%, 80% { opacity: 1; }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .look-hint {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="fadeInOut"] {
+      animation: none;
+    }
+  }
 </style>

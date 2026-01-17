@@ -28,7 +28,7 @@
   import ShareHubButton from "./buttons/ShareHubButton.svelte";
   import GeneratorHelpButton from "./buttons/GeneratorHelpButton.svelte";
   import SpotlightButton from "./buttons/SpotlightButton.svelte";
-  // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
+    // TEMPORARY: Animation style toggle for A/B testing - delete after choosing preferred style
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
@@ -112,7 +112,7 @@
 
 {#if visible}
   <div class="button-panel" transition:fade={{ duration: 200 }}>
-    <!-- LEFT ZONE: Sequence Actions button (tools/menu) + Spotlight button -->
+    <!-- LEFT ZONE: Sequence Actions button (tools/menu) + display toggles -->
     <div class="left-zone">
       {#if showSequenceActions && onSequenceActionsClick}
         <div transition:presenceTransition>
@@ -230,8 +230,9 @@
   }
 
   /* Mobile-only elements hidden on desktop (side-by-side layout) */
+  /* Use higher specificity to override .right-zone > div { display: inline-block } */
   @media (min-width: 1024px) {
-    .mobile-only {
+    .right-zone > .mobile-only {
       display: none;
     }
   }

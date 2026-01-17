@@ -245,4 +245,15 @@
       display: flex;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .hit-feedback {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="fadeInOut"] {
+      animation: none;
+    }
+  }
 </style>

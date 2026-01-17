@@ -868,4 +868,15 @@
   :global(body.help-mode-active .sequence-actions-panel-container) {
     z-index: 210 !important;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .active {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="help-pulse"] {
+      animation: none;
+    }
+  }
 </style>

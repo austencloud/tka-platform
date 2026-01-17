@@ -740,4 +740,14 @@
       max-width: none;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+      animation: none;
+    }
+    .unread-badge {
+      animation: none;
+    }
+  }
 </style>

@@ -676,4 +676,15 @@
       transition: none;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .priority-badge {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="pulse-critical"] {
+      animation: none;
+    }
+  }
 </style>

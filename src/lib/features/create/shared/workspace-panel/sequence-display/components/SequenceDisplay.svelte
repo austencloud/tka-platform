@@ -10,6 +10,7 @@
   import UndoButton from "../../shared/components/buttons/UndoButton.svelte";
   import SaveToLibraryButton from "../../shared/components/buttons/SaveToLibraryButton.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+  import { getIsTimelineMode } from "../state/timeline-mode.svelte";
 
   let {
     sequenceState,
@@ -73,6 +74,7 @@
   );
   const isClearing = $derived.by(() => sequenceState.getIsClearing());
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
+  const isTimelineMode = $derived(getIsTimelineMode());
 
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
   const startPositionStep = $derived(() => {
@@ -165,6 +167,7 @@
           {practiceStepNumber}
           {isSideBySideLayout}
           {activeMode}
+          {isTimelineMode}
         />
       </div>
     </div>

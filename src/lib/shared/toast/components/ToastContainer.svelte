@@ -156,4 +156,15 @@
       font-size: var(--font-size-compact);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .toast {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="slideIn"] {
+      animation: none;
+    }
+  }
 </style>

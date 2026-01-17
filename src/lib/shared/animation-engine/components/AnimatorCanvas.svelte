@@ -108,6 +108,7 @@ Last audit: 2025-12-27
   // Local visibility state updated via observer (more reliable than engine state propagation)
   let tkaGlyphVisible = $state(visibilityManager.getVisibility("tkaGlyph"));
   let stepNumbersVisible = $state(visibilityManager.getVisibility("stepNumbers"));
+  let beatPositionVisible = $state(visibilityManager.getVisibility("beatPosition"));
   let globalDarkMode = $state(visibilityManager.isDarkMode());
   let wordHeaderVisible = $state(visibilityManager.getVisibility("wordHeader"));
 
@@ -119,10 +120,12 @@ Last audit: 2025-12-27
   // Effective visibility: combine global settings with hide props (for tunnel mode)
   const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
+  const effectiveBeatPositionVisible = $derived(beatPositionVisible);
 
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
+    beatPositionVisible = visibilityManager.getVisibility("beatPosition");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
   }
@@ -247,6 +250,7 @@ Last audit: 2025-12-27
         {isNewLetter}
         tkaGlyphVisible={effectiveTkaGlyphVisible}
         stepNumbersVisible={effectiveBeatNumbersVisible}
+        beatPositionVisible={effectiveBeatPositionVisible}
         darkMode={darkModeEnabled}
         isAtStartPosition={currentStep < 1 && sequenceData !== null}
       />

@@ -158,4 +158,21 @@ Displays user-saved presets with delete option and allows loading preset configu
       transform: scale(1) translateY(0);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .modal-backdrop {
+      animation: none;
+    }
+    .modal-content {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="backdrop-appear"] {
+      animation: none;
+    }
+    [style*="modal-appear"] {
+      animation: none;
+    }
+  }
 </style>

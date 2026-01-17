@@ -80,4 +80,11 @@
     background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
     color: var(--theme-accent-strong);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .toast {
+      animation: none;
+    }
+  }
 </style>

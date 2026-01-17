@@ -444,4 +444,11 @@ Shows box and diamond grids side-by-side with animations
       font-size: 0.875rem;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .point-glow {
+      animation: none;
+    }
+  }
 </style>

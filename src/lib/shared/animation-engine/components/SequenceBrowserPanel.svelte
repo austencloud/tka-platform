@@ -554,4 +554,11 @@
   .error-state button:hover {
     background: rgba(236, 72, 153, 0.3);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

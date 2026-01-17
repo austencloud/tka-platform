@@ -430,4 +430,11 @@ Provides quiz functionality for learning TKA notation:
       transform: rotate(360deg);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+      animation: none;
+    }
+  }
 </style>

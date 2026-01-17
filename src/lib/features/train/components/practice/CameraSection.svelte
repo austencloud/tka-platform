@@ -434,4 +434,18 @@
       transform: scale(0.9);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .countdown-number {
+      animation: none;
+    }
+    .hit-indicator {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="fadeInOut"] {
+      animation: none;
+    }
+  }
 </style>

@@ -467,4 +467,11 @@
   .sequence-viewer.side-by-side .metadata-section {
     width: 100%;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

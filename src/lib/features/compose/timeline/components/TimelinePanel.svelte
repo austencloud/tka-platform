@@ -721,4 +721,17 @@
   .dismiss-btn:hover {
     background: color-mix(in srgb, var(--semantic-warning) 20%, transparent);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-controls {
+      animation: none;
+    }
+    .skeleton-monitors {
+      animation: none;
+    }
+    .skeleton-track {
+      animation: none;
+    }
+  }
 </style>

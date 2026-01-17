@@ -436,4 +436,11 @@ Responsive behavior:
     font-size: 1rem;
     flex-shrink: 0;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .dropdown-menu {
+      animation: none;
+    }
+  }
 </style>

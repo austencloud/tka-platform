@@ -5,114 +5,69 @@
   - Conversation: Split-pane layout for learning with TIKA
   - Review: Human review of flagged evaluation results
 
-  Uses tool-use architecture where Haiku calls educational tools
-  to retrieve authoritative information before responding.
+  Uses AI SDK for streaming chat with tool-use architecture.
 -->
 <script lang="ts">
+  import { useChat } from "@ai-sdk/svelte";
   import TIKAConversation from "./TIKAConversation.svelte";
   import TIKAContextPanel from "./TIKAContextPanel.svelte";
   import TIKAQuickReference from "./TIKAQuickReference.svelte";
   import TIKAReviewPanel from "./TIKAReviewPanel.svelte";
   import { getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
-  import type { ContextData, ConversationItem } from "../types";
+  import type { ContextData } from "../types";
 
   // Mode toggle - conversation vs review
   type TabMode = "conversation" | "review";
   let mode = $state<TabMode>("conversation");
 
-  // State
-  let conversationHistory = $state<ConversationItem[]>([]);
+  // Context panel state
   let currentContext = $state<ContextData | null>(null);
-  let isLoading = $state(false);
   let pictographBase64 = $state<string | null>(null);
 
   // User identity
   const userId = $derived(getEffectiveUserId() || "anonymous");
+
+  // Initialize useChat hook from AI SDK
+  // Returns Svelte stores for messages and status
+  const {
+    messages,
+    status,
+    append,
+    stop,
+    input,
+  } = useChat({
+    api: "/api/tika/ask",
+    body: {
+      userId,
+      completedConcepts: [],
+      language: "en",
+    },
+    onError: (error: Error) => {
+      console.error("[TIKA] Chat error:", error);
+    },
+  });
 
   // Derived - has context to show?
   let hasContext = $derived(currentContext !== null);
 
   // Handle suggestion click from Quick Reference - submit directly
   function handleSuggestionClick(question: string) {
-    if (!isLoading) {
-      handleSubmit(question);
+    // Check store value for status
+    let currentStatus: string = "ready";
+    status.subscribe((s) => (currentStatus = s))();
+    if (currentStatus === "ready") {
+      append({ role: "user", content: question });
     }
   }
 
-  // Handle new message submission
-  async function handleSubmit(question: string) {
-    isLoading = true;
+  // Handle new message submission from conversation component
+  function handleSubmit(question: string) {
+    append({ role: "user", content: question });
+  }
 
-    try {
-      // Call the TIKA API
-      const response = await fetch("/api/tika/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question,
-          userId,
-          completedConcepts: [],
-          language: "en",
-        }),
-      });
-
-      const data = await response.json();
-
-      // Add to conversation history
-      conversationHistory = [
-        ...conversationHistory,
-        {
-          question,
-          response: {
-            explanation: data.explanation,
-            showPictograph: data.showPictograph,
-            pictographLetter: data.pictographLetter,
-            pictographVariation: data.pictographVariation || 0,
-            latencyMs: data.latencyMs,
-            toolsCalled: data.toolsCalled || [],
-            contextData: data.contextData,
-          },
-          timestamp: new Date(),
-        },
-      ];
-
-      // Update context panel
-      if (data.contextData) {
-        currentContext = data.contextData;
-
-        // Fetch pictograph if we have a letter context
-        if (
-          data.showPictograph &&
-          data.pictographLetter &&
-          (data.contextData.type === "letter" ||
-            data.contextData.type === "comparison")
-        ) {
-          await fetchPictograph(
-            data.pictographLetter,
-            data.pictographVariation || 0
-          );
-        }
-      }
-    } catch (error) {
-      console.error("[TIKA] API error:", error);
-      // Add error to conversation
-      conversationHistory = [
-        ...conversationHistory,
-        {
-          question,
-          response: {
-            explanation:
-              "Sorry, I had trouble processing that question. Please try again.",
-            showPictograph: false,
-            latencyMs: 0,
-            toolsCalled: [],
-          },
-          timestamp: new Date(),
-        },
-      ];
-    } finally {
-      isLoading = false;
-    }
+  // Handle stop/abort streaming
+  function handleStop() {
+    stop();
   }
 
   // Fetch pictograph image
@@ -147,6 +102,36 @@
     currentContext = null;
     pictographBase64 = null;
   }
+
+  // Watch for tool results that might update context
+  // The AI SDK handles tool calls internally, but we can observe messages for context
+  $effect(() => {
+    // Subscribe to messages store
+    const currentMessages = $messages;
+    if (currentMessages.length === 0) return;
+
+    // Check the latest assistant message for tool results
+    const lastMessage = currentMessages[currentMessages.length - 1];
+    if (lastMessage?.role === "assistant" && lastMessage.parts) {
+      for (const part of lastMessage.parts) {
+        if (part.type === "tool-invocation") {
+          // Access the toolInvocation object - state is on the invocation, not the part
+          const invocation = part.toolInvocation;
+          if (invocation?.state === "result") {
+            const toolName = invocation.toolName;
+
+            if (toolName === "get_letter_explanation") {
+              // Could parse result for context data if needed
+              const letter = invocation.args?.letter as string | undefined;
+              if (letter) {
+                fetchPictograph(letter, 0);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
 </script>
 
 <div class="tika-tab">
@@ -175,9 +160,10 @@
       <!-- Conversation Panel (Left) -->
       <div class="conversation-panel">
         <TIKAConversation
-          {conversationHistory}
-          {isLoading}
+          messages={$messages}
+          status={$status}
           onSubmit={handleSubmit}
+          onStop={handleStop}
         />
       </div>
 

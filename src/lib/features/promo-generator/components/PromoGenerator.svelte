@@ -996,4 +996,11 @@
       grid-template-columns: repeat(3, 1fr);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .loader {
+      animation: none;
+    }
+  }
 </style>

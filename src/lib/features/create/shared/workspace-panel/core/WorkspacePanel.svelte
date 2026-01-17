@@ -96,14 +96,17 @@
   function handleBeatSelected(stepNumber: number) {
     if (!sequenceState) return;
 
-    // Close the animation panel if it's open - beat editing takes priority
+    // Close any open viewer/animation panels - editing takes priority
+    // ShareHub panel handles stopping its own animation when closed
+    panelState?.closeShareHubPanel();
     panelState?.closeAnimationPanel();
+    animationStateRef?.stop();
 
-    // Select the beat - the edit panel will open automatically
+    // Select the step - the edit panel will open automatically
     localSelectedStepNumber = stepNumber;
     sequenceState.selectStep(stepNumber);
     // Note: We no longer switch to edit tab! The edit slide panel will open instead.
-    // This is handled by an effect in CreateModule.svelte that watches for beat selection.
+    // This is handled by an effect in CreateModule.svelte that watches for step selection.
   }
 
   // Handle start position selection (stepNumber 0)
@@ -118,8 +121,11 @@
       return;
     }
 
-    // Close the animation panel if it's open - beat editing takes priority
+    // Close any open viewer/animation panels - editing takes priority
+    // ShareHub panel handles stopping its own animation when closed
+    panelState?.closeShareHubPanel();
     panelState?.closeAnimationPanel();
+    animationStateRef?.stop();
 
     // Select start position for editing (stepNumber 0)
     localSelectedStepNumber = 0;

@@ -912,4 +912,11 @@
     color: var(--theme-text-dim); /* Improved contrast for WCAG AAA */
     font-size: var(--font-size-sm);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

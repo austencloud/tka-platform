@@ -601,4 +601,11 @@
       opacity: 1;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-toast {
+      animation: none;
+    }
+  }
 </style>

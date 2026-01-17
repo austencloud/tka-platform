@@ -622,4 +622,11 @@ Responsive behavior:
     border-color: color-mix(in srgb, var(--theme-text, white) 40%, transparent);
     transform: scale(0.96);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .dropdown-menu {
+      animation: none;
+    }
+  }
 </style>

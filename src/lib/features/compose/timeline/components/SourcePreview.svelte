@@ -678,4 +678,14 @@
   .add-btn i {
     font-size: var(--font-size-compact);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+    .playback-status {
+      animation: none;
+    }
+  }
 </style>

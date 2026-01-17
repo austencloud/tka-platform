@@ -605,4 +605,21 @@
       transform: translateY(0);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-card {
+      animation: none;
+    }
+    .defer-dialog-overlay {
+      animation: none;
+    }
+    .defer-dialog {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="skeleton-pulse"] {
+      animation: none;
+    }
+  }
 </style>

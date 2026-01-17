@@ -82,4 +82,11 @@ Note: This file must stay in sync with src/routes/+page.svelte
     min-height: 100vh;
     background: linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 100%);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+      animation: none;
+    }
+  }
 </style>

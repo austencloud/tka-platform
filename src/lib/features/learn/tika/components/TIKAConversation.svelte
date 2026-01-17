@@ -2,21 +2,23 @@
   TIKA Conversation Panel
 
   Chat interface for interacting with the TIKA AI assistant.
-  Shows conversation history and input field.
+  Shows conversation history with streaming support via AI SDK.
 -->
 <script lang="ts">
   import { tick } from "svelte";
-  import type { ConversationItem } from "../types";
+  import type { UIMessage } from "ai";
 
-  // Props
+  // Props - using AI SDK types
   let {
-    conversationHistory = [],
-    isLoading = false,
+    messages = [],
+    status = "ready",
     onSubmit,
+    onStop,
   }: {
-    conversationHistory: ConversationItem[];
-    isLoading: boolean;
-    onSubmit: (question: string) => Promise<void>;
+    messages: UIMessage[];
+    status: "submitted" | "streaming" | "ready" | "error";
+    onSubmit: (question: string) => void;
+    onStop: () => void;
   } = $props();
 
   // Local state
@@ -24,9 +26,13 @@
   let chatContainer: HTMLElement | null = $state(null);
   let showToolDetails = $state(false);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Derived state
+  const isLoading = $derived(status === "submitted" || status === "streaming");
+  const isStreaming = $derived(status === "streaming");
+
+  // Auto-scroll to bottom when new messages arrive or content streams
   $effect(() => {
-    if (conversationHistory.length > 0 && chatContainer) {
+    if (messages.length > 0 && chatContainer) {
       tick().then(() => {
         chatContainer?.scrollTo({
           top: chatContainer.scrollHeight,
@@ -37,13 +43,13 @@
   });
 
   // Handle form submission
-  async function handleSubmit(e: Event) {
+  function handleSubmit(e: Event) {
     e.preventDefault();
     const question = inputValue.trim();
     if (!question || isLoading) return;
 
     inputValue = "";
-    await onSubmit(question);
+    onSubmit(question);
   }
 
   // Handle keyboard shortcut
@@ -60,6 +66,40 @@
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
   }
+
+  // Get text content from message parts
+  function getTextFromParts(parts: UIMessage["parts"]): string {
+    if (!parts) return "";
+    return parts
+      .filter((part) => part.type === "text")
+      .map((part) => (part as { type: "text"; text: string }).text)
+      .join("");
+  }
+
+  // Get tool invocations from message parts
+  function getToolsFromParts(parts: UIMessage["parts"]) {
+    if (!parts) return [];
+    return parts.filter(
+      (part) => part.type === "tool-invocation"
+    ) as Array<{
+      type: "tool-invocation";
+      toolInvocation: {
+        toolName: string;
+        args: Record<string, unknown>;
+        state: "partial-call" | "call" | "result";
+        result?: unknown;
+      };
+    }>;
+  }
+
+  // Check if a message is still streaming (last assistant message with streaming status)
+  function isMessageStreaming(message: UIMessage, index: number): boolean {
+    return (
+      isStreaming &&
+      message.role === "assistant" &&
+      index === messages.length - 1
+    );
+  }
 </script>
 
 <div class="conversation-panel">
@@ -70,7 +110,7 @@
       <span>TIKA</span>
     </div>
     <div class="header-subtitle">TKA Intelligent Knowledge Assistant</div>
-    {#if conversationHistory.length > 0}
+    {#if messages.length > 0}
       <button
         class="tool-toggle"
         onclick={() => (showToolDetails = !showToolDetails)}
@@ -86,7 +126,7 @@
 
   <!-- Chat Messages -->
   <div class="chat-container themed-scrollbar" bind:this={chatContainer}>
-    {#if conversationHistory.length === 0}
+    {#if messages.length === 0}
       <!-- Welcome State -->
       <div class="welcome-state">
         <div class="welcome-icon">
@@ -121,56 +161,70 @@
       </div>
     {:else}
       <!-- Conversation History -->
-      {#each conversationHistory as item, index}
-        <!-- User Message -->
-        <div class="message user-message">
-          <div class="message-content">
-            <p>{item.question}</p>
+      {#each messages as message, index (message.id)}
+        {#if message.role === "user"}
+          <!-- User Message -->
+          <div class="message user-message">
+            <div class="message-content">
+              <p>{getTextFromParts(message.parts) || message.content}</p>
+            </div>
           </div>
-        </div>
-
-        <!-- Assistant Response -->
-        <div class="message assistant-message">
-          <div class="message-avatar">
-            <i class="fas fa-robot" aria-hidden="true"></i>
-          </div>
-          <div class="message-content">
-            <p>{item.response.explanation}</p>
-
-            <!-- Tool Details (if enabled) -->
-            {#if showToolDetails && item.response.toolsCalled.length > 0}
-              <div class="tool-details">
-                <div class="tool-header">
-                  <i class="fas fa-wrench" aria-hidden="true"></i>
-                  Tools called ({item.response.toolsCalled.length})
+        {:else if message.role === "assistant"}
+          <!-- Assistant Response -->
+          <div class="message assistant-message">
+            <div class="message-avatar">
+              <i class="fas fa-robot" aria-hidden="true"></i>
+            </div>
+            <div class="message-content">
+              <!-- Text content -->
+              {#if getTextFromParts(message.parts)}
+                <p>
+                  {getTextFromParts(message.parts)}
+                  {#if isMessageStreaming(message, index)}
+                    <span class="streaming-cursor"></span>
+                  {/if}
+                </p>
+              {:else if isMessageStreaming(message, index)}
+                <!-- Still waiting for text to stream -->
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
                 </div>
-                {#each item.response.toolsCalled as tool}
-                  <div class="tool-item">
-                    <span class="tool-name">{formatToolName(tool.name)}</span>
-                    <span class="tool-input">
-                      {JSON.stringify(tool.input)}
-                    </span>
-                  </div>
-                {/each}
-              </div>
-            {/if}
+              {/if}
 
-            <!-- Metadata -->
-            <div class="message-meta">
-              <span class="latency">{item.response.latencyMs}ms</span>
-              {#if item.response.toolsCalled.length > 0}
-                <span class="tools-badge">
-                  <i class="fas fa-wrench" aria-hidden="true"></i>
-                  {item.response.toolsCalled.length}
-                </span>
+              <!-- Tool Details (if enabled) -->
+              {#if showToolDetails}
+                {@const tools = getToolsFromParts(message.parts)}
+                {#if tools.length > 0}
+                  <div class="tool-details">
+                    <div class="tool-header">
+                      <i class="fas fa-wrench" aria-hidden="true"></i>
+                      Tools called ({tools.length})
+                    </div>
+                    {#each tools as toolPart}
+                      <div class="tool-item" class:pending={toolPart.toolInvocation.state !== "result"}>
+                        <span class="tool-name">
+                          {formatToolName(toolPart.toolInvocation.toolName)}
+                          {#if toolPart.toolInvocation.state !== "result"}
+                            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                          {/if}
+                        </span>
+                        <span class="tool-input">
+                          {JSON.stringify(toolPart.toolInvocation.args)}
+                        </span>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
               {/if}
             </div>
           </div>
-        </div>
+        {/if}
       {/each}
 
-      <!-- Loading Indicator -->
-      {#if isLoading}
+      <!-- Loading indicator for submitted state (before streaming starts) -->
+      {#if status === "submitted"}
         <div class="message assistant-message loading">
           <div class="message-avatar">
             <i class="fas fa-robot" aria-hidden="true"></i>
@@ -197,19 +251,33 @@
         disabled={isLoading}
         rows="1"
       ></textarea>
-      <button
-        type="submit"
-        class="send-button"
-        disabled={!inputValue.trim() || isLoading}
-        title="Send message"
-        aria-label={isLoading ? "Sending message" : "Send message"}
-      >
-        {#if isLoading}
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        {:else}
-          <i class="fas fa-paper-plane" aria-hidden="true"></i>
-        {/if}
-      </button>
+      {#if isStreaming}
+        <!-- Stop button when streaming -->
+        <button
+          type="button"
+          class="stop-button"
+          onclick={onStop}
+          title="Stop generating"
+          aria-label="Stop generating"
+        >
+          <i class="fas fa-stop" aria-hidden="true"></i>
+        </button>
+      {:else}
+        <!-- Send button -->
+        <button
+          type="submit"
+          class="send-button"
+          disabled={!inputValue.trim() || isLoading}
+          title="Send message"
+          aria-label={isLoading ? "Sending message" : "Send message"}
+        >
+          {#if status === "submitted"}
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          {:else}
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+          {/if}
+        </button>
+      {/if}
     </div>
   </form>
 </div>
@@ -427,18 +495,21 @@
     white-space: pre-wrap;
   }
 
-  .message-meta {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-    font-size: 12px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+  /* Streaming cursor */
+  .streaming-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--theme-accent, #6366f1);
+    margin-left: 2px;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
   }
 
-  .tools-badge {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
   }
 
   /* Tool Details */
@@ -469,9 +540,16 @@
     margin-bottom: 4px;
   }
 
+  .tool-item.pending {
+    opacity: 0.7;
+  }
+
   .tool-name {
     color: var(--theme-text, #ffffff);
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .tool-input {
@@ -483,6 +561,12 @@
 
   /* Loading Indicator */
   .loading .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 4px 0;
+  }
+
+  .typing-indicator {
     display: flex;
     gap: 4px;
     padding: 4px 0;
@@ -554,11 +638,11 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
-  .send-button {
+  .send-button,
+  .stop-button {
     width: 48px;
     height: 48px;
     border-radius: 8px;
-    background: var(--theme-accent, #6366f1);
     border: none;
     color: white;
     display: flex;
@@ -569,7 +653,16 @@
     flex-shrink: 0;
   }
 
-  .send-button:hover:not(:disabled) {
+  .send-button {
+    background: var(--theme-accent, #6366f1);
+  }
+
+  .stop-button {
+    background: var(--semantic-error, #ef4444);
+  }
+
+  .send-button:hover:not(:disabled),
+  .stop-button:hover {
     transform: scale(1.05);
     filter: brightness(1.1);
   }
@@ -579,7 +672,8 @@
     cursor: not-allowed;
   }
 
-  .send-button:focus-visible {
+  .send-button:focus-visible,
+  .stop-button:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
@@ -589,11 +683,15 @@
     .tool-toggle,
     .suggestion-list button,
     .send-button,
-    .input-wrapper {
+    .stop-button,
+    .input-wrapper,
+    .streaming-cursor {
       transition: none;
+      animation: none;
     }
 
-    .send-button:hover:not(:disabled) {
+    .send-button:hover:not(:disabled),
+    .stop-button:hover {
       transform: none;
     }
 

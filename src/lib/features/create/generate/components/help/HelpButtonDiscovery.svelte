@@ -2,6 +2,10 @@
   HelpButtonDiscovery.svelte - First-time attention grabber for help button
 
   Shows a cute animated overlay pointing to the help button on first visit.
+  Responsive positioning:
+  - Desktop (>= 1024px): Points to top-right of generator panel
+  - Mobile (< 1024px): Points to bottom-right of ButtonPanel
+
   Features:
   - Pulsing ring animation around the button
   - Friendly speech bubble with helpful text
@@ -11,35 +15,46 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fade, fly, scale } from "svelte/transition";
-  import { cubicOut, elasticOut } from "svelte/easing";
+  import { fade, fly } from "svelte/transition";
+  import { elasticOut } from "svelte/easing";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
 
   interface Props {
-    /** Position of the help button from bottom-right corner */
-    buttonBottom?: number;
-    buttonRight?: number;
+    /** Button size (same for both layouts) */
     buttonSize?: number;
+    /** Desktop position: distance from top */
+    desktopTop?: number;
+    /** Desktop position: distance from right */
+    desktopRight?: number;
+    /** Mobile position: distance from bottom */
+    mobileBottom?: number;
+    /** Mobile position: distance from right */
+    mobileRight?: number;
     onDismiss?: () => void;
   }
 
   const {
-    buttonBottom = 12,
-    buttonRight = 12,
     buttonSize = 44,
+    desktopTop = 12,
+    desktopRight = 12,
+    mobileBottom = 20,
+    mobileRight = 20,
     onDismiss,
   }: Props = $props();
 
   const STORAGE_KEY = "helpButtonDiscoverySeen:generator";
+  const DESKTOP_BREAKPOINT = 1024;
 
   let isVisible = $state(false);
   let hasCheckedStorage = $state(false);
   let hapticService: IHapticFeedback | null = $state(null);
+  let isDesktop = $state(false);
 
-  // Derived position for the speech bubble (ABOVE the button)
-  const bubbleBottom = $derived(buttonBottom + buttonSize + 16);
-  const bubbleRight = $derived(buttonRight);
+  // Update isDesktop based on viewport
+  function updateIsDesktop() {
+    isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT;
+  }
 
   onMount(() => {
     try {
@@ -47,6 +62,10 @@
     } catch {
       /* Optional */
     }
+
+    // Initialize desktop detection
+    updateIsDesktop();
+    window.addEventListener("resize", updateIsDesktop);
 
     // Check if user has seen this before
     checkAndShowIfNeeded();
@@ -69,6 +88,7 @@
     window.addEventListener("helpDiscoveryReset", handleReset);
 
     return () => {
+      window.removeEventListener("resize", updateIsDesktop);
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("helpDiscoveryReset", handleReset);
     };
@@ -115,35 +135,65 @@
     aria-label="Dismiss help button hint"
     transition:fade={{ duration: 200 }}
   >
-    <!-- Pulsing ring effect positioned around the button (bottom-right) -->
-    <div
-      class="pulse-container"
-      style="bottom: {buttonBottom}px; right: {buttonRight}px; width: {buttonSize}px; height: {buttonSize}px;"
-    >
-      <div class="pulse-ring pulse-ring-1"></div>
-      <div class="pulse-ring pulse-ring-2"></div>
-      <div class="pulse-ring pulse-ring-3"></div>
-      <div class="glow-dot"></div>
-    </div>
+    {#if isDesktop}
+      <!-- DESKTOP: Top-right positioning, bubble BELOW button -->
+      <div
+        class="pulse-container"
+        style="top: {desktopTop}px; right: {desktopRight}px; width: {buttonSize}px; height: {buttonSize}px;"
+      >
+        <div class="pulse-ring pulse-ring-1"></div>
+        <div class="pulse-ring pulse-ring-2"></div>
+        <div class="pulse-ring pulse-ring-3"></div>
+        <div class="glow-dot"></div>
+      </div>
 
-    <!-- Speech bubble (positioned ABOVE the button) -->
-    <div
-      class="speech-bubble"
-      style="bottom: {bubbleBottom}px; right: {bubbleRight}px;"
-      transition:fly={{ y: 10, duration: 400, delay: 200, easing: elasticOut }}
-    >
-      <div class="bubble-pointer"></div>
-      <div class="bubble-content">
-        <i class="fas fa-lightbulb bubble-icon" aria-hidden="true"></i>
-        <div class="bubble-text">
-          <span class="bubble-title">Feeling overwhelmed?</span>
-          <span class="bubble-hint">Tap the <strong>?</strong> button to learn what each setting does</span>
+      <div
+        class="speech-bubble speech-bubble-desktop"
+        style="top: {desktopTop + buttonSize + 16}px; right: {desktopRight}px;"
+        transition:fly={{ y: -10, duration: 400, delay: 200, easing: elasticOut }}
+      >
+        <div class="bubble-pointer bubble-pointer-top"></div>
+        <div class="bubble-content">
+          <i class="fas fa-lightbulb bubble-icon" aria-hidden="true"></i>
+          <div class="bubble-text">
+            <span class="bubble-title">Feeling overwhelmed?</span>
+            <span class="bubble-hint">Click the <strong>?</strong> button to learn what each setting does</span>
+          </div>
+        </div>
+        <div class="tap-hint">
+          <span>Click anywhere to dismiss</span>
         </div>
       </div>
-      <div class="tap-hint">
-        <span>Tap anywhere to dismiss</span>
+    {:else}
+      <!-- MOBILE: Bottom-right positioning, bubble ABOVE button -->
+      <div
+        class="pulse-container"
+        style="bottom: {mobileBottom}px; right: {mobileRight}px; width: {buttonSize}px; height: {buttonSize}px;"
+      >
+        <div class="pulse-ring pulse-ring-1"></div>
+        <div class="pulse-ring pulse-ring-2"></div>
+        <div class="pulse-ring pulse-ring-3"></div>
+        <div class="glow-dot"></div>
       </div>
-    </div>
+
+      <div
+        class="speech-bubble speech-bubble-mobile"
+        style="bottom: {mobileBottom + buttonSize + 16}px; right: {mobileRight}px;"
+        transition:fly={{ y: 10, duration: 400, delay: 200, easing: elasticOut }}
+      >
+        <div class="bubble-pointer bubble-pointer-bottom"></div>
+        <div class="bubble-content">
+          <i class="fas fa-lightbulb bubble-icon" aria-hidden="true"></i>
+          <div class="bubble-text">
+            <span class="bubble-title">Feeling overwhelmed?</span>
+            <span class="bubble-hint">Tap the <strong>?</strong> button to learn what each setting does</span>
+          </div>
+        </div>
+        <div class="tap-hint">
+          <span>Tap anywhere to dismiss</span>
+        </div>
+      </div>
+    {/if}
   </button>
 {/if}
 
@@ -225,7 +275,7 @@
     }
   }
 
-  /* Speech bubble */
+  /* Speech bubble - base styles */
   .speech-bubble {
     position: absolute;
     width: 240px;
@@ -243,7 +293,21 @@
     pointer-events: none;
   }
 
-  .bubble-pointer {
+  /* Bubble pointer pointing UP (for desktop - bubble below button) */
+  .bubble-pointer-top {
+    position: absolute;
+    top: -8px;
+    right: 16px;
+    width: 16px;
+    height: 16px;
+    background: rgba(30, 30, 50, 0.98);
+    border-left: 1px solid rgba(99, 102, 241, 0.4);
+    border-top: 1px solid rgba(99, 102, 241, 0.4);
+    transform: rotate(45deg);
+  }
+
+  /* Bubble pointer pointing DOWN (for mobile - bubble above button) */
+  .bubble-pointer-bottom {
     position: absolute;
     bottom: -8px;
     right: 16px;
@@ -340,7 +404,7 @@
       padding: 12px;
     }
 
-    .bubble-pointer {
+    .bubble-pointer-bottom {
       right: 14px;
     }
   }

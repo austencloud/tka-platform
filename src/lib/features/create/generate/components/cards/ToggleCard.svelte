@@ -258,4 +258,15 @@ Hides header when card height is below 65px for space optimization
       gap: clamp(6px, 2cqi, 12px);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-card {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="cardEnter"] {
+      animation: none;
+    }
+  }
 </style>

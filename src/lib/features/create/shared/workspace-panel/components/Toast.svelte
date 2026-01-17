@@ -113,4 +113,15 @@ Shows at the bottom center of screen, auto-dismisses after 3 seconds
       font-size: var(--font-size-xs);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .toast {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="slide-up"] {
+      animation: none;
+    }
+  }
 </style>

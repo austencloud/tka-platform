@@ -350,4 +350,15 @@ about the sequence being deleted and potential consequences.
     outline: 2px solid var(--semantic-info, var(--semantic-info));
     outline-offset: 2px;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .modal-dialog {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="modalSlideIn"] {
+      animation: none;
+    }
+  }
 </style>

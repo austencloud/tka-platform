@@ -893,4 +893,14 @@
       padding: 6px 12px;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .pulse {
+      animation: none;
+    }
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

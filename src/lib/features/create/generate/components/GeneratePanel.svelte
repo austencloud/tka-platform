@@ -56,12 +56,13 @@ Card-based architecture with integrated Generate button:
 
   // ===== Help Mode State =====
   let helpMode = $state<HelpMode>("inactive");
+  let isExiting = $state(false); // True during exit animation
   let selectedControl = $state<GeneratorHelpId | null>(null);
   let hapticService = $state<IHapticFeedback | null>(null);
 
-  // Toggle body class for z-index boosting when help mode active (selecting or viewing)
+  // Toggle body class for z-index boosting when help mode active OR exiting
   $effect(() => {
-    if (helpMode !== "inactive") {
+    if (helpMode !== "inactive" || isExiting) {
       document.body.classList.add("generator-help-mode-active");
     } else {
       document.body.classList.remove("generator-help-mode-active");
@@ -77,7 +78,8 @@ Card-based architecture with integrated Generate button:
     }
   });
 
-  function enterHelpMode() {
+  function enterHelpMode(event?: MouseEvent) {
+    event?.stopPropagation(); // Prevent panel click from immediately exiting
     hapticService?.trigger("selection");
     helpMode = "selecting";
   }
@@ -95,9 +97,25 @@ Card-based architecture with integrated Generate button:
   }
 
   function exitHelpMode() {
-    // Fully exit help mode
-    helpMode = "inactive";
-    selectedControl = null;
+    // Start exit animation (keeps z-index boosted)
+    isExiting = true;
+
+    // After animation completes, fully exit
+    setTimeout(() => {
+      helpMode = "inactive";
+      selectedControl = null;
+      isExiting = false;
+    }, 200); // Match CSS animation duration
+  }
+
+  // Handle clicks on the panel background (not on cards) to exit help mode
+  function handlePanelClick(event: MouseEvent) {
+    // Only act when in selecting mode (not viewing a modal)
+    if (helpMode !== "selecting") return;
+
+    // If the click was on a card, it will have stopped propagation
+    // So we only get here for clicks on empty panel space
+    exitHelpMode();
   }
 
   // ===== Device Service Integration =====
@@ -116,6 +134,7 @@ Card-based architecture with integrated Generate button:
   });
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
   class="generate-panel"
   class:help-active={helpMode !== "inactive"}
@@ -123,6 +142,7 @@ Card-based architecture with integrated Generate button:
   data-allow-scroll={deviceState.shouldAllowScrolling}
   data-is-desktop={isDesktop}
   style="--min-touch-target: {deviceState.minTouchTarget}px; --element-spacing: {deviceState.elementSpacing}px;"
+  onclick={handlePanelClick}
 >
   <!-- Desktop-only help button in top-right corner -->
   {#if isDesktop}
@@ -151,8 +171,8 @@ Card-based architecture with integrated Generate button:
 </div>
 
 <!-- Help mode overlays -->
-{#if helpMode !== "inactive"}
-  <GeneratorHelpOverlay onClose={exitHelpMode} />
+{#if helpMode !== "inactive" || isExiting}
+  <GeneratorHelpOverlay onClose={exitHelpMode} {isExiting} />
 {/if}
 {#if helpMode === "viewing" && selectedControl}
   <GeneratorHelpModal controlId={selectedControl} onClose={closeHelpModal} />

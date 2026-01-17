@@ -464,4 +464,15 @@
       color-mix(in srgb, var(--semantic-error) 30%, transparent);
     transform: scale(1.05);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .controls-panel {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="slideIn"] {
+      animation: none;
+    }
+  }
 </style>

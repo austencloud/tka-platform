@@ -434,4 +434,11 @@
   .view-all-btn:hover {
     background: var(--theme-card-hover-bg);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+    }
+  }
 </style>

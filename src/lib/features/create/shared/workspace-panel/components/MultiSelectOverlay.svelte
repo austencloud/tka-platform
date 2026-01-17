@@ -156,4 +156,14 @@ Shows "Select Items" banner and makes escape prominent.
       min-height: var(--min-touch-target);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .backdrop {
+      animation: none;
+    }
+    .mode-banner {
+      animation: none;
+    }
+  }
 </style>

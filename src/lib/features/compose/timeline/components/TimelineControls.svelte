@@ -12,11 +12,8 @@
   import { getTimelineState } from "../state/timeline-state.svelte";
   import { getTimelinePlayer } from "../services/implementations/TimelinePlaybackService";
   import SnapControls from "./SnapControls.svelte";
+  import TimeSignatureChip from "./TimeSignatureChip.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import {
-    animationSettings,
-    TrailEffect,
-  } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   interface Props {
     onOpenMediaBrowser?: () => void;
@@ -120,14 +117,6 @@
     const newState = !darkModeEnabled;
     visibilityManager.setDarkMode(newState);
     darkModeEnabled = newState;
-
-    // When enabling Dark Mode, also enable neon trail effect
-    if (newState) {
-      animationSettings.setTrailEffect(TrailEffect.NEON);
-    } else {
-      // When disabling, revert to simple glow
-      animationSettings.setTrailEffect(TrailEffect.GLOW);
-    }
   }
 </script>
 
@@ -141,6 +130,9 @@
       <span class="shuttle-indicator">{shuttleDisplay}</span>
     {/if}
   </div>
+
+  <!-- Time Signature -->
+  <TimeSignatureChip />
 
   <!-- Undo/Redo Controls -->
   <div class="undo-redo-section">
@@ -425,5 +417,12 @@
       0 0 16px color-mix(in srgb, var(--neon-color) 50%, transparent),
       0 0 28px color-mix(in srgb, var(--neon-color) 30%, transparent),
       inset 0 0 10px color-mix(in srgb, var(--neon-color) 15%, transparent);
+  }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .shuttle-indicator {
+      animation: none;
+    }
   }
 </style>

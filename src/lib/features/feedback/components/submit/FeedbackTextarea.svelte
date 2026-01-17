@@ -327,4 +327,15 @@
       transform: translateY(-4px);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .draft-saved {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="fadeInOut"] {
+      animation: none;
+    }
+  }
 </style>

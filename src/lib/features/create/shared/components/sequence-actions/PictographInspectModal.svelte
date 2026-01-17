@@ -393,4 +393,14 @@
       border-radius: 12px;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .modal-backdrop {
+      animation: none;
+    }
+    .modal-content {
+      animation: none;
+    }
+  }
 </style>

@@ -816,4 +816,12 @@ Timestamp: ${new Date().toISOString()}
 			right: 16px;
 		}
 	}
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    /* Disable local keyframe animations */
+    [style*="typing"] {
+      animation: none;
+    }
+  }
 </style>

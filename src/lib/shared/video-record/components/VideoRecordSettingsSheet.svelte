@@ -418,4 +418,14 @@
     color: var(--theme-text, var(--theme-text));
     text-align: right;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .sheet-backdrop {
+      animation: none;
+    }
+    .sheet-content {
+      animation: none;
+    }
+  }
 </style>

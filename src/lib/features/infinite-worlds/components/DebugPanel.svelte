@@ -2,9 +2,10 @@
   /**
    * DebugPanel
    *
-   * Debug/teleport GUI for exploring infinite worlds.
+   * Modern debug/teleport GUI for exploring infinite worlds.
    * Shows current position, biome, and provides quick teleport to different biomes.
    */
+  import ChipToggle from "$lib/shared/components/selection/ChipToggle.svelte";
 
   interface Props {
     position: { x: number; y: number; z: number };
@@ -26,25 +27,25 @@
   let fogEnabled = $state(true);
   let isCollapsed = $state(false);
 
-  // Biome teleport presets (x, y, z)
+  // Biome teleport presets with icons
   const BIOME_PRESETS = [
-    { name: "Forest", x: 0, y: 60, z: 0, color: "#2d5a27" },
-    { name: "Plains", x: 500, y: 60, z: 500, color: "#7cb342" },
-    { name: "Mountains", x: 0, y: 80, z: 1500, color: "#78909c" },
-    { name: "Desert", x: 2000, y: 60, z: 0, color: "#d4a373" },
-    { name: "Ocean", x: -800, y: 60, z: -800, color: "#1a6b8a" },
+    { name: "Forest", x: 0, y: 60, z: 0, color: "#22c55e", icon: "fa-tree" },
+    { name: "Plains", x: 500, y: 60, z: 500, color: "#84cc16", icon: "fa-seedling" },
+    { name: "Mountains", x: 0, y: 80, z: 1500, color: "#94a3b8", icon: "fa-mountain" },
+    { name: "Desert", x: 2000, y: 60, z: 0, color: "#f59e0b", icon: "fa-sun" },
+    { name: "Ocean", x: -800, y: 60, z: -800, color: "#0ea5e9", icon: "fa-water" },
   ];
 
-  function handleTeleport(preset: typeof BIOME_PRESETS[0]) {
+  function handleTeleport(preset: (typeof BIOME_PRESETS)[0]) {
     onTeleport(preset.x, preset.y, preset.z);
   }
 
-  function toggleWater() {
+  function handleToggleWater() {
     waterVisible = !waterVisible;
     onToggleWater?.(waterVisible);
   }
 
-  function toggleFog() {
+  function handleToggleFog() {
     fogEnabled = !fogEnabled;
     onToggleFog?.(fogEnabled);
   }
@@ -52,56 +53,101 @@
   function formatCoord(val: number): string {
     return val.toFixed(1);
   }
+
+  const currentBiomeColor = $derived(
+    BIOME_PRESETS.find((p) => p.name.toLowerCase() === biome)?.color ?? "#64748b"
+  );
 </script>
 
 <div class="debug-panel" class:collapsed={isCollapsed}>
-  <button class="collapse-btn" onclick={() => isCollapsed = !isCollapsed}>
-    {isCollapsed ? "+" : "-"}
+  <button
+    class="collapse-btn"
+    onclick={() => (isCollapsed = !isCollapsed)}
+    aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
+  >
+    <i class="fas {isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}" aria-hidden="true"></i>
   </button>
 
   {#if !isCollapsed}
+    <!-- Position Section -->
     <div class="section">
-      <div class="section-title">Position</div>
-      <div class="coords">
-        <span class="coord">X: {formatCoord(position.x)}</span>
-        <span class="coord">Y: {formatCoord(position.y)}</span>
-        <span class="coord">Z: {formatCoord(position.z)}</span>
+      <div class="section-header">
+        <i class="fas fa-location-dot" aria-hidden="true"></i>
+        <span>Position</span>
+      </div>
+      <div class="coords-grid">
+        <div class="coord-item">
+          <span class="coord-label">X</span>
+          <span class="coord-value">{formatCoord(position.x)}</span>
+        </div>
+        <div class="coord-item">
+          <span class="coord-label">Y</span>
+          <span class="coord-value">{formatCoord(position.y)}</span>
+        </div>
+        <div class="coord-item">
+          <span class="coord-label">Z</span>
+          <span class="coord-value">{formatCoord(position.z)}</span>
+        </div>
       </div>
     </div>
 
+    <!-- Biome Section -->
     <div class="section">
-      <div class="section-title">Current Biome</div>
-      <div class="biome-badge" style="--biome-color: {BIOME_PRESETS.find(p => p.name.toLowerCase() === biome)?.color ?? '#666'}">
-        {biome || "Unknown"}
+      <div class="section-header">
+        <i class="fas fa-globe" aria-hidden="true"></i>
+        <span>Current Biome</span>
+      </div>
+      <div class="biome-pill" style="--biome-color: {currentBiomeColor}">
+        <span class="biome-dot"></span>
+        <span class="biome-name">{biome || "Unknown"}</span>
       </div>
     </div>
 
+    <!-- Teleport Section -->
     <div class="section">
-      <div class="section-title">Teleport</div>
+      <div class="section-header">
+        <i class="fas fa-bolt" aria-hidden="true"></i>
+        <span>Quick Travel</span>
+      </div>
       <div class="teleport-grid">
         {#each BIOME_PRESETS as preset}
           <button
-            class="teleport-btn"
-            style="--btn-color: {preset.color}"
+            class="teleport-chip"
+            class:active={biome === preset.name.toLowerCase()}
+            style="--chip-color: {preset.color}"
             onclick={() => handleTeleport(preset)}
+            aria-label="Teleport to {preset.name}"
           >
-            {preset.name}
+            <i class="fas {preset.icon}" aria-hidden="true"></i>
+            <span>{preset.name}</span>
           </button>
         {/each}
       </div>
     </div>
 
+    <!-- Environment Toggles -->
     <div class="section">
-      <div class="section-title">Toggles</div>
-      <div class="toggles">
-        <label class="toggle">
-          <input type="checkbox" checked={waterVisible} onchange={toggleWater} />
-          <span>Water</span>
-        </label>
-        <label class="toggle">
-          <input type="checkbox" checked={fogEnabled} onchange={toggleFog} />
-          <span>Fog</span>
-        </label>
+      <div class="section-header">
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        <span>Environment</span>
+      </div>
+      <div class="toggle-chips">
+        <ChipToggle
+          label="Water"
+          icon="fa-droplet"
+          active={waterVisible}
+          color="cyan"
+          size="sm"
+          onclick={handleToggleWater}
+        />
+        <ChipToggle
+          label="Fog"
+          icon="fa-cloud"
+          active={fogEnabled}
+          color="gray"
+          size="sm"
+          onclick={handleToggleFog}
+        />
       </div>
     </div>
   {/if}
@@ -112,119 +158,212 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    background: rgba(0, 0, 0, 0.85);
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-family: monospace;
-    font-size: 12px;
+    background: rgba(15, 15, 25, 0.95);
+    padding: 16px;
+    border-radius: 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
     color: white;
-    min-width: 180px;
+    min-width: 200px;
+    max-width: 240px;
     z-index: 100;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    backdrop-filter: blur(12px);
   }
 
   .debug-panel.collapsed {
     min-width: auto;
-    padding: 8px 12px;
+    padding: 12px;
   }
 
   .collapse-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 20px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 4px;
-    color: white;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.15s ease;
   }
 
   .collapse-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
+  .collapse-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Sections */
   .section {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
   .section:last-child {
     margin-bottom: 0;
   }
 
-  .section-title {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-  }
-
-  .coords {
-    display: flex;
-    gap: 12px;
-  }
-
-  .coord {
-    color: #60a5fa;
-  }
-
-  .biome-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    background: var(--biome-color, #666);
-    border-radius: 4px;
-    font-weight: 600;
-    text-transform: capitalize;
-  }
-
-  .teleport-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-  }
-
-  .teleport-btn {
-    padding: 6px 10px;
-    background: var(--btn-color, #444);
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 500;
-    transition: filter 0.15s;
-  }
-
-  .teleport-btn:hover {
-    filter: brightness(1.2);
-  }
-
-  .teleport-btn:active {
-    filter: brightness(0.9);
-  }
-
-  .toggles {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .toggle {
+  .section-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
   }
 
-  .toggle input {
-    cursor: pointer;
+  .section-header i {
+    font-size: 10px;
+    opacity: 0.7;
   }
 
-  .toggle span {
+  /* Position Coordinates */
+  .coords-grid {
+    display: flex;
+    gap: 8px;
+  }
+
+  .coord-item {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .coord-label {
+    display: block;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .coord-value {
+    display: block;
+    font-family: "SF Mono", "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: #60a5fa;
+    font-weight: 500;
+  }
+
+  /* Biome Badge */
+  .biome-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .biome-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--biome-color, #64748b);
+    box-shadow: 0 0 8px var(--biome-color, #64748b);
+  }
+
+  .biome-name {
+    font-weight: 600;
+    text-transform: capitalize;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+  }
+
+  /* Teleport Chips */
+  .teleport-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .teleport-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
     color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .teleport-chip i {
+    font-size: 11px;
+    color: var(--chip-color, #64748b);
+    transition: color 0.15s ease;
+  }
+
+  .teleport-chip:hover {
+    background: color-mix(in srgb, var(--chip-color, #64748b) 20%, transparent);
+    border-color: var(--chip-color, #64748b);
+    color: white;
+  }
+
+  .teleport-chip:hover i {
+    color: var(--chip-color, #64748b);
+    filter: brightness(1.2);
+  }
+
+  .teleport-chip:active {
+    transform: scale(0.97);
+  }
+
+  .teleport-chip.active {
+    background: color-mix(in srgb, var(--chip-color, #64748b) 25%, transparent);
+    border-color: var(--chip-color, #64748b);
+    color: white;
+  }
+
+  .teleport-chip.active i {
+    color: var(--chip-color, #64748b);
+  }
+
+  /* Toggle Chips */
+  .toggle-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Focus states */
+  .collapse-btn:focus-visible,
+  .teleport-chip:focus-visible {
+    outline: 2px solid #60a5fa;
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .collapse-btn,
+    .teleport-chip,
+    .biome-dot {
+      transition: none;
+    }
   }
 </style>

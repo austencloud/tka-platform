@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { FeedbackType } from "../../../domain/models/feedback-models";
   import type { FeedbackDetailState } from "../../../state/feedback-detail-state.svelte";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   const {
     detailState,
@@ -12,9 +13,6 @@
     onClose: () => void;
   }>();
 
-  // Copy feedback state
-  let justCopied = $state(false);
-
   function cycleType() {
     if (readOnly) return;
     const types: FeedbackType[] = ["bug", "feature", "general"];
@@ -25,14 +23,16 @@
   }
 
   /**
-   * Copy feedback as a prompt for Claude Code agents
+   * Get feedback formatted as a prompt for Claude Code agents
    */
-  async function copyForClaudeCode() {
+  function getClaudePrompt(): string {
     const item = detailState.item;
-    const priorityText = item.priority ? item.priority.charAt(0).toUpperCase() + item.priority.slice(1) : "None";
+    const priorityText = item.priority
+      ? item.priority.charAt(0).toUpperCase() + item.priority.slice(1)
+      : "None";
     const typeText = item.type.charAt(0).toUpperCase() + item.type.slice(1);
 
-    const text = `Work on feedback ID: ${item.id}
+    return `Work on feedback ID: ${item.id}
 
 **${item.title}**
 Type: ${typeText} | Priority: ${priorityText}
@@ -42,16 +42,6 @@ ${item.description}
 
 ---
 Claim this item by updating its status to "in-progress" in Firebase (collection: feedback, doc: ${item.id}), then investigate and fix the issue. Follow the /fb workflow documented in .claude/rules/workflows.md.`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      justCopied = true;
-      setTimeout(() => {
-        justCopied = false;
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
   }
 </script>
 
@@ -74,20 +64,13 @@ Claim this item by updating its status to "in-progress" in Firebase (collection:
 
   <div class="header-actions">
     <!-- Copy for Claude Code button -->
-    <button
-      type="button"
-      class="header-btn copy-btn"
-      class:copied={justCopied}
-      onclick={copyForClaudeCode}
-      aria-label="Copy for Claude Code"
-      title="Copy for Claude Code"
-    >
-      {#if justCopied}
-        <i class="fas fa-check" aria-hidden="true"></i>
-      {:else}
-        <i class="fas fa-terminal" aria-hidden="true"></i>
-      {/if}
-    </button>
+    <CopyForAIButton
+      getData={getClaudePrompt}
+      ariaLabel="Copy feedback for Claude Code"
+      variant="icon-only"
+      size="md"
+      class="header-btn"
+    />
     {#if detailState.hasChanges || detailState.isSaving}
       <button
         type="button"
@@ -215,17 +198,6 @@ Claim this item by updating its status to "in-progress" in Firebase (collection:
   .restore-btn:hover {
     border-color: var(--fb-warning);
     color: var(--fb-warning);
-  }
-
-  .copy-btn:hover {
-    border-color: var(--fb-purple);
-    color: var(--fb-purple);
-  }
-
-  .copy-btn.copied {
-    background: var(--fb-primary);
-    border-color: var(--fb-primary);
-    color: white;
   }
 
   .save-btn {

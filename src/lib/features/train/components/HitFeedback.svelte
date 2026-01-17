@@ -314,4 +314,27 @@
       transform: translate(-50%, -80%) scale(0.8);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .combo-display {
+      animation: none;
+    }
+    .high-combo {
+      animation: none;
+    }
+    .feedback-popup {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="pulse-combo"] {
+      animation: none;
+    }
+    [style*="pulse-high-combo"] {
+      animation: none;
+    }
+    [style*="popup"] {
+      animation: none;
+    }
+  }
 </style>

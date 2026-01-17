@@ -17,6 +17,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
+  import BeatPositionGlyph from "$lib/shared/pictograph/shared/components/BeatPositionGlyph.svelte";
 
   let {
     // Current glyph state
@@ -34,6 +35,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
     // Visibility
     tkaGlyphVisible = true,
     stepNumbersVisible = true,
+    beatPositionVisible = true,
     // Dark mode - when provided, overrides global state (for preview isolation)
     darkMode = false,
     // Start position indicator - shows "Start" in top-left when at start position
@@ -50,6 +52,7 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
     isNewLetter?: boolean;
     tkaGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
+    beatPositionVisible?: boolean;
     darkMode?: boolean;
     isAtStartPosition?: boolean;
   } = $props();
@@ -139,7 +142,21 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
           >
             <StepNumber
               stepNumber={isAtStartPosition ? 0 : displayedStepNumber}
-              musicalPosition={isAtStartPosition ? undefined : displayedMusicalPosition ?? undefined}
+              {darkMode}
+            />
+          </g>
+        {/if}
+        {#if beatPositionVisible && !isAtStartPosition && displayedMusicalPosition}
+          <!-- Beat position is bottom-center: flies in/out from bottom -->
+          <g
+            class="beat-position-group"
+            in:fly={{ x: 0, y: 30, duration: 300, easing: backOut }}
+            out:fly={{ x: 0, y: 30, duration: 200, easing: cubicOut }}
+          >
+            <BeatPositionGlyph
+              musicalPosition={displayedMusicalPosition}
+              visible={true}
+              hasValidData={true}
               {darkMode}
             />
           </g>
@@ -202,6 +219,10 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
 
   .beat-number-group {
     transform-origin: 0% 0%; /* Top-left corner */
+  }
+
+  .beat-position-group {
+    transform-origin: 50% 100%; /* Bottom-center */
   }
 
   /* Dark Mode via prop (preview isolation) */

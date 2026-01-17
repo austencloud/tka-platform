@@ -397,4 +397,11 @@ ${JSON.stringify(summary, null, 2)}
       max-height: 400px;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

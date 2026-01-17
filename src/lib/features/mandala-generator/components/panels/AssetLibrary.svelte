@@ -739,4 +739,11 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     font-style: italic;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+      animation: none;
+    }
+  }
 </style>

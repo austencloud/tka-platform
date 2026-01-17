@@ -7,9 +7,16 @@ Features:
 - Optional percentage display
 -->
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { tweened } from 'svelte/motion';
+	import { Tween } from 'svelte/motion';
 	import { cubicOut } from 'svelte/easing';
+
+	interface Props {
+		value: number;
+		suffix?: string;
+		duration?: number;
+		delay?: number;
+		tier?: 'excellent' | 'good' | 'needs-work' | 'default';
+	}
 
 	let {
 		value,
@@ -17,31 +24,24 @@ Features:
 		duration = 1000,
 		delay = 0,
 		tier = 'default'
-	} = $props<{
-		value: number;
-		suffix?: string;
-		duration?: number;
-		delay?: number;
-		tier?: 'excellent' | 'good' | 'needs-work' | 'default';
-	}>();
+	}: Props = $props();
 
-	const displayValue = tweened(0, {
+	const displayValue = new Tween(0, {
 		duration,
 		easing: cubicOut
 	});
 
-	onMount(() => {
-		setTimeout(() => {
+	// Start animation after delay when component mounts
+	$effect(() => {
+		const timeout = setTimeout(() => {
 			displayValue.set(value);
 		}, delay);
+
+		return () => clearTimeout(timeout);
 	});
 
 	// Format with appropriate decimal places
-	const formattedValue = $derived(
-		suffix === '%'
-			? Math.round($displayValue)
-			: Math.round($displayValue)
-	);
+	const formattedValue = $derived(Math.round(displayValue.current));
 </script>
 
 <div class="counter" class:excellent={tier === 'excellent'} class:good={tier === 'good'} class:needs-work={tier === 'needs-work'}>

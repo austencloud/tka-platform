@@ -173,4 +173,21 @@
       }
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .xp-toast {
+      animation: none;
+    }
+    .exiting {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="fadeInUp"] {
+      animation: none;
+    }
+    [style*="fadeOutDown"] {
+      animation: none;
+    }
+  }
 </style>

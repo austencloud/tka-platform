@@ -340,4 +340,11 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .pending {
+      animation: none;
+    }
+  }
 </style>

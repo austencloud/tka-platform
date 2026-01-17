@@ -1055,4 +1055,15 @@
       top: 5rem;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .boundary-mode-indicator {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="pulse-border"] {
+      animation: none;
+    }
+  }
 </style>

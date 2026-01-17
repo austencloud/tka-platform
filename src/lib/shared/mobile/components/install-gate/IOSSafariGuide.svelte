@@ -570,4 +570,36 @@
       bottom: calc(20px + env(safe-area-inset-bottom));
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .highlight-glow {
+      animation: none;
+    }
+    .celebration-icon {
+      animation: none;
+    }
+    .arrow-container {
+      animation: none;
+    }
+    .arrow-label {
+      animation: none;
+    }
+    .arrow-with-icon {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="celebrate"] {
+      animation: none;
+    }
+    [style*="bounce-arrow"] {
+      animation: none;
+    }
+    [style*="fade-pulse"] {
+      animation: none;
+    }
+    [style*="gentle-pulse"] {
+      animation: none;
+    }
+  }
 </style>

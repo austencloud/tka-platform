@@ -671,4 +671,18 @@
       font-size: var(--font-size-lg);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .fullscreen-prompt-overlay {
+      animation: none;
+    }
+    .fullscreen-prompt {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="slideIn"] {
+      animation: none;
+    }
+  }
 </style>

@@ -93,4 +93,11 @@
       transform: scale(1.02);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .highlight-pulse {
+      animation: none;
+    }
+  }
 </style>

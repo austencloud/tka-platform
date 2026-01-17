@@ -306,4 +306,15 @@
       transform: translateY(-50%) translateX(0);
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .tour-tooltip {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="tooltipIn"] {
+      animation: none;
+    }
+  }
 </style>

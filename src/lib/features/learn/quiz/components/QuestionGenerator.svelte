@@ -449,4 +449,21 @@
       font-size: 1.125rem;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .correct {
+      animation: none;
+    }
+    .incorrect {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="correctPulse"] {
+      animation: none;
+    }
+    [style*="incorrectShake"] {
+      animation: none;
+    }
+  }
 </style>

@@ -765,4 +765,11 @@
   .error-toast button:hover {
     background: color-mix(in srgb, var(--theme-text, white) 25%, transparent);
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .error-toast {
+      animation: none;
+    }
+  }
 </style>

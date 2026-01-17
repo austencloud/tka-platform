@@ -984,4 +984,14 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .dialog-content {
+      animation: none;
+    }
+    .delete-confirm-dialog {
+      animation: none;
+    }
+  }
 </style>

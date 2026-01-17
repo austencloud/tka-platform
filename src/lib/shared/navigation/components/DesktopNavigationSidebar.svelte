@@ -428,13 +428,9 @@
     {/if}
   </div>
 
-  <!-- Sidebar Footer - only shown when NOT in settings (gear icon entry point) -->
+  <!-- Sidebar Footer - only shown when NOT in settings (inbox button + version) -->
   {#if !isInSettings}
-    <SidebarFooter
-      {isCollapsed}
-      isSettingsActive={false}
-      onSettingsClick={handleSettingsTap}
-    />
+    <SidebarFooter {isCollapsed} />
   {/if}
 </nav>
 

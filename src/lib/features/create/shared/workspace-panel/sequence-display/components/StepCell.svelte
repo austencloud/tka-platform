@@ -21,6 +21,10 @@
     highlightStyle = null,
     // Musical position string (e.g., "1", "1.5", "2e") for beat number display
     musicalPosition = undefined,
+    // Timeline mode: skip selection/practice classes (parent handles them at cell level)
+    isTimelineMode = false,
+    // Width multiplier for expanded timeline cells (1 = normal, 2 = double width, etc.)
+    widthMultiplier = 1,
   } = $props<{
     beat: StepData;
     index?: number;
@@ -36,6 +40,10 @@
     highlightStyle?: { bg: string; border: string } | null;
     // Musical position string (e.g., "1", "1.5", "2e") for beat number display
     musicalPosition?: string;
+    // Timeline mode: skip selection/practice classes (parent handles them at cell level)
+    isTimelineMode?: boolean;
+    // Width multiplier for expanded timeline cells (1 = normal, 2 = double width, etc.)
+    widthMultiplier?: number;
   }>();
 
   // Services
@@ -286,13 +294,15 @@
   class="beat-cell"
   class:invisible={!isVisible}
   class:animate={shouldAnimateIn}
-  class:selected={isSelected}
-  class:practice-beat={isPracticeStep}
-  class:practice-intense={isPracticeStep && practiceAnimationStyle.current === 'intense'}
-  class:practice-subtle={isPracticeStep && practiceAnimationStyle.current === 'subtle'}
-  class:practice-glow-only={isPracticeStep && practiceAnimationStyle.current === 'glow-only'}
-  class:practice-minimal={isPracticeStep && practiceAnimationStyle.current === 'minimal'}
-  class:practice-wave={isPracticeStep && practiceAnimationStyle.current === 'wave'}
+  class:expanded={widthMultiplier > 1}
+  class:timeline-mode={isTimelineMode}
+  class:selected={isSelected && !isTimelineMode}
+  class:practice-beat={isPracticeStep && !isTimelineMode}
+  class:practice-intense={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'intense'}
+  class:practice-subtle={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'subtle'}
+  class:practice-glow-only={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'glow-only'}
+  class:practice-minimal={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'minimal'}
+  class:practice-wave={isPracticeStep && !isTimelineMode && practiceAnimationStyle.current === 'wave'}
   class:highlighted={!!highlightStyle}
   class:long-pressing={isLongPressing}
   class:anim-gentleBloom={currentAnimationName === "gentleBloom"}
@@ -319,6 +329,7 @@
     pictographData={stepDataWithSelection}
     disableTransitions={!enableTransitionsForNewData}
     {musicalPosition}
+    {widthMultiplier}
   />
 </div>
 
@@ -349,6 +360,24 @@
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     touch-action: manipulation;
+  }
+
+  /* Default: pictograph maintains square aspect ratio */
+  .beat-cell :global(.pictograph-container) {
+    aspect-ratio: 1;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
+
+  /* Timeline mode: pictograph fills container, SVG viewBox handles aspect ratio */
+  .beat-cell.timeline-mode :global(.pictograph-container) {
+    aspect-ratio: auto;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
   }
 
   /* Disable transitions during entry animations to prevent conflicts */
@@ -716,6 +745,80 @@
       opacity: 1;
       filter: blur(0px);
       backdrop-filter: blur(4px);
+    }
+  }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .animate {
+      animation: none;
+    }
+    .anim-gentleBloom {
+      animation: none;
+    }
+    .anim-softCascade {
+      animation: none;
+    }
+    .anim-springPop {
+      animation: none;
+    }
+    .anim-microFade {
+      animation: none;
+    }
+    .anim-glassBlur {
+      animation: none;
+    }
+    .practice-intense {
+      animation: none;
+    }
+    .practice-subtle {
+      animation: none;
+    }
+    .practice-glow-only {
+      animation: none;
+    }
+    .practice-minimal {
+      animation: none;
+    }
+    .practice-wave {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="practiceEnterIntense"] {
+      animation: none;
+    }
+    [style*="practiceGlowIntense"] {
+      animation: none;
+    }
+    [style*="practiceEnterSubtle"] {
+      animation: none;
+    }
+    [style*="practiceEnterGlow"] {
+      animation: none;
+    }
+    [style*="practiceEnterMinimal"] {
+      animation: none;
+    }
+    [style*="practiceEnterWave"] {
+      animation: none;
+    }
+    [style*="practiceRing"] {
+      animation: none;
+    }
+    [style*="gentleBloom"] {
+      animation: none;
+    }
+    [style*="softCascade"] {
+      animation: none;
+    }
+    [style*="springPop"] {
+      animation: none;
+    }
+    [style*="microFade"] {
+      animation: none;
+    }
+    [style*="glassBlur"] {
+      animation: none;
     }
   }
 </style>

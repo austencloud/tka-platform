@@ -418,4 +418,30 @@
       font-size: 1.25rem;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .previous-image {
+      animation: none;
+    }
+    .transitioning {
+      animation: none;
+    }
+    .loading-spinner {
+      animation: none;
+    }
+    .spinner {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="scaleOutFade"] {
+      animation: none;
+    }
+    [style*="scaleInFade"] {
+      animation: none;
+    }
+    [style*="spinnerFadeIn"] {
+      animation: none;
+    }
+  }
 </style>

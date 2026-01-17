@@ -190,4 +190,15 @@
       background: var(--row-tint, rgba(255, 255, 255, 0.12));
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .animate {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="slideInFade"] {
+      animation: none;
+    }
+  }
 </style>

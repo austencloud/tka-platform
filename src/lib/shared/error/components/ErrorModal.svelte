@@ -504,4 +504,14 @@
       padding: 14px 16px;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .error-overlay {
+      animation: none;
+    }
+    .error-modal {
+      animation: none;
+    }
+  }
 </style>

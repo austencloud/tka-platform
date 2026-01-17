@@ -243,4 +243,21 @@
 			transition: none;
 		}
 	}
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .center-point {
+      animation: none;
+    }
+    .hand-point {
+      animation: none;
+    }
+    .outer-point {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="highlightPulse"] {
+      animation: none;
+    }
+  }
 </style>

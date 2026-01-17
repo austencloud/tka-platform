@@ -183,4 +183,18 @@ Always opens selector panel when clicked
       background-position: 0% 50% !important;
     }
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .loop-card-wrapper {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="accentShimmer"] {
+      animation: none;
+    }
+    [style*="cardEnter"] {
+      animation: none;
+    }
+  }
 </style>

@@ -189,9 +189,11 @@
     <!-- Help button discovery overlay - only on generator tab -->
     {#if isGeneratorTab}
       <HelpButtonDiscovery
-        buttonBottom={20}
-        buttonRight={20}
-        buttonSize={48}
+        buttonSize={44}
+        desktopTop={12}
+        desktopRight={12}
+        mobileBottom={20}
+        mobileRight={20}
       />
     {/if}
   </div>

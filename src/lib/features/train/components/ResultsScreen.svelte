@@ -932,4 +932,18 @@
     color: var(--semantic-success, var(--semantic-success));
     font-variant-numeric: tabular-nums;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .results-screen {
+      animation: none;
+    }
+    .results-container {
+      animation: none;
+    }
+    /* Disable local keyframe animations */
+    [style*="pulseGrade"] {
+      animation: none;
+    }
+  }
 </style>

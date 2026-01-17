@@ -197,4 +197,14 @@
     text-align: center;
     font-size: 0.875rem;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .rendering-count {
+      animation: none;
+    }
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

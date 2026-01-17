@@ -228,4 +228,11 @@ Features frame processing loop for pose estimation and overlay support.
   .overlay-container :global(*) {
     pointer-events: auto;
   }
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 </style>

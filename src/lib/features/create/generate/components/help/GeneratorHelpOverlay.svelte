@@ -7,14 +7,16 @@
 <script lang="ts">
   interface Props {
     onClose: () => void;
+    isExiting?: boolean;
   }
 
-  let { onClose }: Props = $props();
+  let { onClose, isExiting = false }: Props = $props();
 
   // Handle Escape key to close
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopImmediatePropagation(); // Prevent other window listeners (like navigation) from handling
       onClose();
     }
   }
@@ -25,11 +27,12 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydowncapture={handleKeydown} />
 
 <!-- Clickable backdrop that dims everything and exits on click -->
 <div
   class="help-backdrop"
+  class:exiting={isExiting}
   onclick={handleBackdropClick}
   onkeydown={(e) => e.key === "Enter" && handleBackdropClick()}
   role="button"
@@ -40,6 +43,7 @@
 <!-- Instruction banner at top of viewport - tapping dismisses help mode -->
 <button
   class="help-banner"
+  class:exiting={isExiting}
   onclick={handleBackdropClick}
   aria-label="Tap any setting to learn what it does. Tap here or press X to exit."
 >
@@ -58,15 +62,17 @@
     z-index: 200;
     cursor: pointer;
     animation: fadeIn 0.2s ease;
+    transition: opacity 0.2s ease;
+  }
+
+  .help-backdrop.exiting {
+    opacity: 0;
+    pointer-events: none;
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .help-banner {
@@ -89,11 +95,17 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     z-index: 250;
-    animation: fadeIn 0.2s ease;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     border: none;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, opacity 0.2s ease, transform 0.2s ease;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .help-banner.exiting {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
   }
 
   .help-banner:hover {
@@ -154,8 +166,12 @@
     outline-offset: -3px;
   }
 
+
+  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
-    .help-backdrop,
+    .help-backdrop {
+      animation: none;
+    }
     .help-banner {
       animation: none;
     }
