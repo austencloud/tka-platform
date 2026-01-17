@@ -286,6 +286,22 @@ export default defineConfig({
             : undefined,
         runtimeCaching: [
           {
+            // 🔥 Firebase auth/config APIs - bypass service worker entirely
+            // These are dynamic and must never be cached or intercepted
+            urlPattern: /^https:\/\/firebase\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 🔥 Firebase Auth identity toolkit - bypass service worker
+            urlPattern: /^https:\/\/identitytoolkit\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
+            // 🔥 Firebase Auth securetoken - bypass service worker
+            urlPattern: /^https:\/\/securetoken\.googleapis\.com\/.*/i,
+            handler: "NetworkOnly",
+          },
+          {
             // Cache Google Fonts
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
