@@ -18,6 +18,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     visible = true,
     previewMode = false,
     onToggle = undefined,
+    centerX = 475,
   } = $props<{
     /** Start position */
     startPosition?: GridPosition | null;
@@ -33,6 +34,8 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
+    /** Center X position for horizontal centering (expandedWidth / 2) */
+    centerX?: number;
   }>();
 
   // Static letters that don't show position glyph
@@ -158,7 +161,8 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   // Calculate total width for centering
   const totalWidth =
     scaledLetterWidth + scaledArrowWidth + scaledLetterWidth + SPACING;
-  const groupX = PICTOGRAPH_SIZE / 2 - totalWidth / 2;
+  // Use centerX prop for horizontal centering (supports expanded timeline cells)
+  const groupX = $derived(centerX - totalWidth / 2);
 </script>
 
 {#if shouldRender}
