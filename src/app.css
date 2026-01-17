@@ -8,6 +8,9 @@
 /* Panel Utilities - Unified theming patterns for containers and panels */
 @import "./styles/panel-utilities.css";
 
+/* Centralized Keyframe Animations - common animations with reduced-motion support */
+@import "./lib/shared/transitions/keyframes.css";
+
 /* CSS Reset and Base Styles */
 *,
 *::before,

@@ -1,0 +1,428 @@
+/**
+ * ============================================================================
+ * CENTRALIZED KEYFRAME ANIMATIONS
+ * ============================================================================
+ *
+ * Common CSS keyframe animations used across the application.
+ * Import in app.css for global availability.
+ *
+ * These complement the JS-based Svelte transitions in transitions.ts.
+ * Use keyframes for:
+ *   - Continuous/looping animations (spinners, pulsing indicators)
+ *   - Pure CSS animations that don't need JS control
+ *
+ * Use transitions.ts for:
+ *   - Enter/exit transitions tied to Svelte's in:/out: directives
+ *   - Transitions that need dynamic parameters
+ *
+ * All animations respect prefers-reduced-motion via the media query at the end.
+ */
+
+/* ============================================================================
+   SPINNER ANIMATIONS
+   ============================================================================ */
+
+/**
+ * Standard rotation - continuous 360deg spin
+ * Usage: animation: spin 1s linear infinite;
+ */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * Reverse spin - for secondary spinners or visual variety
+ * Usage: animation: spin-reverse 1s linear infinite;
+ */
+@keyframes spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* ============================================================================
+   PULSE ANIMATIONS
+   ============================================================================ */
+
+/**
+ * Standard pulse - opacity fade for loading states
+ * Usage: animation: pulse 2s ease-in-out infinite;
+ */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/**
+ * Scale pulse - subtle size change for attention
+ * Usage: animation: pulse-scale 2s ease-in-out infinite;
+ */
+@keyframes pulse-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/**
+ * Glow pulse - for highlighted/active states
+ * Usage: animation: pulse-glow 2s ease-in-out infinite;
+ */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+  }
+}
+
+/* ============================================================================
+   FADE ANIMATIONS
+   ============================================================================ */
+
+/**
+ * Standard fade in
+ * Usage: animation: fadeIn var(--duration-normal) ease-out;
+ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/**
+ * Fade out
+ * Usage: animation: fadeOut var(--duration-normal) ease-in;
+ */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ============================================================================
+   SLIDE ANIMATIONS
+   ============================================================================ */
+
+/**
+ * Slide up with fade - content entering from below
+ * Usage: animation: slideUp var(--duration-normal) ease-out;
+ */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--slide-distance-md, 12px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Slide down with fade - content entering from above
+ * Usage: animation: slideDown var(--duration-normal) ease-out;
+ */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--slide-distance-md, 12px)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Slide left with fade - content entering from right
+ * Usage: animation: slideLeft var(--duration-normal) ease-out;
+ */
+@keyframes slideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(var(--slide-distance-md, 12px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/**
+ * Slide right with fade - content entering from left
+ * Usage: animation: slideRight var(--duration-normal) ease-out;
+ */
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--slide-distance-md, 12px)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================================================
+   SCALE ANIMATIONS
+   ============================================================================ */
+
+/**
+ * Scale in with fade - for modals, cards
+ * Usage: animation: scaleIn var(--duration-normal) ease-out;
+ */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/**
+ * Scale out with fade
+ * Usage: animation: scaleOut var(--duration-normal) ease-in;
+ */
+@keyframes scaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/**
+ * Pop in - scale with overshoot for playful UI
+ * Usage: animation: popIn var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
+ */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================================
+   ATTENTION/INDICATOR ANIMATIONS
+   ============================================================================ */
+
+/**
+ * Bounce - for notifications, alerts
+ * Usage: animation: bounce 1s ease infinite;
+ */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/**
+ * Shake - for error states, invalid input
+ * Usage: animation: shake 0.5s ease;
+ */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/**
+ * Shimmer - for skeleton loaders
+ * Usage: animation: shimmer 1.5s linear infinite;
+ * Note: Element needs a gradient background for the effect
+ */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ============================================================================
+   REDUCED MOTION SUPPORT (WCAG AAA)
+   ============================================================================
+
+   For users with vestibular disorders or motion sensitivity.
+   This query disables all decorative animations defined above.
+
+   Essential UI feedback (opacity changes) are preserved but instantaneous.
+*/
+@media (prefers-reduced-motion: reduce) {
+  /* Disable all keyframe animations from this file */
+  *,
+  *::before,
+  *::after {
+    animation-name: spin, spin-reverse, pulse, pulse-scale, pulse-glow, fadeIn,
+      fadeOut, slideUp, slideDown, slideLeft, slideRight, scaleIn, scaleOut,
+      popIn, bounce, shake, shimmer !important;
+  }
+
+  /* Make animations instant - preserves state changes without motion */
+  @keyframes spin {
+    from,
+    to {
+      transform: rotate(0deg);
+    }
+  }
+  @keyframes spin-reverse {
+    from,
+    to {
+      transform: rotate(0deg);
+    }
+  }
+  @keyframes pulse {
+    from,
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pulse-scale {
+    from,
+    to {
+      transform: scale(1);
+    }
+  }
+  @keyframes pulse-glow {
+    from,
+    to {
+      box-shadow: none;
+    }
+  }
+  @keyframes fadeIn {
+    from,
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fadeOut {
+    from,
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes slideUp {
+    from,
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slideDown {
+    from,
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slideLeft {
+    from,
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes slideRight {
+    from,
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes scaleIn {
+    from,
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes scaleOut {
+    from,
+    to {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+  @keyframes popIn {
+    from,
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes bounce {
+    from,
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes shake {
+    from,
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes shimmer {
+    from,
+    to {
+      background-position: 0 0;
+    }
+  }
+}
