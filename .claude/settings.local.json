@@ -268,7 +268,10 @@
       "WebFetch(domain:helios.hashicorp.design)",
       "WebFetch(domain:www.patternfly.org)",
       "WebFetch(domain:gravity-ui.com)",
-      "WebFetch(domain:cloudscape.design)"
+      "WebFetch(domain:cloudscape.design)",
+      "WebFetch(domain:flowarts.life)",
+      "WebFetch(domain:www.homeofpoi.com)",
+      "WebFetch(domain:noelyee.weebly.com)"
     ]
   }
 }
