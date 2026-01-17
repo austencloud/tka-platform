@@ -11,6 +11,10 @@ import {
   type TrailSettings,
   DEFAULT_TRAIL_SETTINGS,
 } from "$lib/features/compose/shared/domain/types/TrailTypes";
+import {
+  type TimeSignatureKey,
+  DEFAULT_TIME_SIGNATURE,
+} from "$lib/shared/foundation/domain/models/TimeSignature";
 
 // ============================================================================
 // Time Units
@@ -216,6 +220,9 @@ export interface TimelineProject {
 
   /** Default BPM for new clips */
   defaultBpm: number;
+
+  /** Time signature for beat grid display */
+  timeSignature: TimeSignatureKey;
 
   /** Snap settings */
   snap: SnapSettings;
@@ -485,6 +492,7 @@ export function createProject(name: string = "Untitled"): TimelineProject {
     },
     duration: 60, // 1 minute default
     defaultBpm: 120,
+    timeSignature: DEFAULT_TIME_SIGNATURE,
     snap: createDefaultSnapSettings(),
     frameRate: 30,
     createdAt: new Date(),

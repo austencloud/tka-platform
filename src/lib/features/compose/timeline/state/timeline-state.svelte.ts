@@ -8,6 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/TimeSignature";
 import type {
   TimelineProject,
   TimelineTrack,
@@ -36,6 +37,7 @@ import {
   saveToStorage,
   TIMELINE_STORAGE_KEYS,
 } from "./timeline-storage";
+import { getBeatTimes } from "../services/BeatGridCalculator";
 import { createPlayheadActions } from "./actions/playhead-actions";
 import { createSelectionActions } from "./actions/selection-actions";
 import { createViewportActions } from "./actions/viewport-actions";
@@ -215,6 +217,13 @@ export function createTimelineState() {
   const totalDuration = $derived(calculateProjectDuration(project));
   const hasSelection = $derived(selection.selectedClipIds.length > 0);
 
+  // Calculate beat marker times for snap functionality
+  const beatMarkerTimes = $derived.by(() => {
+    if (project.defaultBpm <= 0) return [];
+    const ts = project.timeSignature ?? "4/4";
+    return getBeatTimes(project.defaultBpm, totalDuration + 10, ts);
+  });
+
   // =========================================================================
   // Helper Functions
   // =========================================================================
@@ -270,6 +279,11 @@ export function createTimelineState() {
 
   function setDefaultBpm(bpm: number) {
     project = { ...project, defaultBpm: bpm, updatedAt: new Date() };
+    saveProject();
+  }
+
+  function setTimeSignature(timeSignature: TimeSignatureKey) {
+    project = { ...project, timeSignature, updatedAt: new Date() };
     saveProject();
   }
 
@@ -410,7 +424,7 @@ export function createTimelineState() {
     const snappedStart = snapTime(
       startTime,
       project.snap,
-      [],
+      beatMarkerTimes,
       clipEdges,
       playhead.position
     );
@@ -514,7 +528,7 @@ export function createTimelineState() {
       : snapTime(
           newStartTime,
           project.snap,
-          [],
+          beatMarkerTimes,
           clipEdges.filter((t) => {
             const clip = allClips.find((c) => c.id === clipId);
             return clip
@@ -794,6 +808,7 @@ export function createTimelineState() {
     // Project mutations
     setProjectName,
     setDefaultBpm,
+    setTimeSignature,
     setFrameRate,
     updateSnapSettings,
     loadProject,

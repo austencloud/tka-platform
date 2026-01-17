@@ -9,6 +9,7 @@
   import type { TimelineTrack } from "../domain/timeline-types";
   import { getTimelineState } from "../state/timeline-state.svelte";
   import TimelineClip from "./TimelineClip.svelte";
+  import BeatGrid from "./BeatGrid.svelte";
   import { timeToPixels } from "../domain/timeline-types";
   import { container } from "$lib/shared/di";
   import type { IDiscoverLoader } from "$lib/features/discover/sequences/display/services/contracts/IDiscoverLoader";
@@ -43,6 +44,18 @@
   // Dynamic height: collapsed when empty, full when has clips
   const COLLAPSED_HEIGHT = 40;
   const effectiveHeight = $derived(isEmpty ? COLLAPSED_HEIGHT : track.height);
+
+  // Get project settings for beat grid
+  let projectBpm = $state(120);
+  let projectTimeSignature = $state<"4/4" | "3/4" | "6/8">("4/4");
+  let projectDuration = $state(60);
+
+  $effect(() => {
+    const state = getState();
+    projectBpm = state.project.defaultBpm;
+    projectTimeSignature = state.project.timeSignature ?? "4/4";
+    projectDuration = state.totalDuration;
+  });
 
   // Local reactive state
   let isDimmed = $state(false);
@@ -132,8 +145,14 @@
   role="list"
   aria-label="Track {track.name}"
 >
-  <!-- Grid lines (beat markers would go here) -->
-  <div class="grid-lines"></div>
+  <!-- Beat grid markers -->
+  <BeatGrid
+    bpm={projectBpm}
+    timeSignature={projectTimeSignature}
+    duration={projectDuration}
+    {pixelsPerSecond}
+    showSubdivisions={pixelsPerSecond > 100}
+  />
 
   <!-- Clips -->
   {#each deduplicatedClips as clip (clip.id)}
@@ -198,21 +217,6 @@
     border-color: var(--theme-accent);
     box-shadow: inset 0 0 20px
       color-mix(in srgb, var(--theme-accent) 20%, transparent);
-  }
-
-  .grid-lines {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    /* Subtle vertical grid lines using theme */
-    background-image: repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent calc(100% - 1px),
-      var(--theme-stroke, var(--theme-card-bg)) calc(100% - 1px),
-      var(--theme-stroke, var(--theme-card-bg)) 100%
-    );
-    background-size: 50px 100%; /* Adjusts with zoom via parent */
   }
 
   .lock-overlay {
