@@ -80,7 +80,7 @@ export function serializePlacedObject(obj: PlacedObject): Record<string, unknown
  */
 export function deserializePlacedObject(data: Record<string, unknown>): PlacedObject {
 	return {
-		...(data as PlacedObject),
+		...(data as unknown as PlacedObject),
 		createdAt: new Date(data.createdAt as string),
 		lastModified: new Date(data.lastModified as string),
 	};

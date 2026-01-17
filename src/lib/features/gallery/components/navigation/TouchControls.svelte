@@ -3,13 +3,14 @@
    * TouchControls
    *
    * Mobile touch controls for 3D gallery navigation:
-   * - Virtual joystick (bottom-left) for movement
+   * - Virtual joystick (bottom-left) for movement - uses shared component
    * - Drag anywhere else to look around
-   * - 48px minimum touch targets
+   * - Tap-to-walk detection
    * - Also supports mouse drag as fallback (for DevTools mobile simulation)
    */
 
   import { onMount, onDestroy } from "svelte";
+  import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
 
   interface Props {
     /** Callback when movement input changes (x: -1 to 1, z: -1 to 1) */
@@ -24,11 +25,9 @@
 
   let { onMove, onLook, onTap, enabled = true }: Props = $props();
 
-  // Joystick state
-  let joystickActive = $state(false);
-  let joystickTouchId = $state<number | null>(null);
-  let joystickCenter = { x: 0, y: 0 };
-  let joystickOffset = $state({ x: 0, y: 0 });
+  // Joystick zone dimensions (must match VirtualJoystick defaults)
+  const JOYSTICK_SIZE = 120;
+  const JOYSTICK_MARGIN = 24;
 
   // Look state (touch)
   let lookTouchId = $state<number | null>(null);
@@ -45,16 +44,8 @@
   const TAP_MAX_DURATION = 300; // ms
   const TAP_MAX_DISTANCE = 15; // pixels
 
-  // Joystick config
-  const JOYSTICK_SIZE = 120; // Outer ring diameter
-  const JOYSTICK_KNOB_SIZE = 56; // Inner knob diameter (>48px touch target)
-  const JOYSTICK_MAX_DISTANCE = 40; // Max offset from center
-  const JOYSTICK_DEADZONE = 8; // Pixels before registering input
-
-  // Joystick position (bottom-left corner)
-  const JOYSTICK_MARGIN = 24;
-  let joystickBaseX = $state(JOYSTICK_MARGIN + JOYSTICK_SIZE / 2);
-  let joystickBaseY = $state(0); // Set on mount
+  // Detect touch device
+  let isTouchDevice = $state(false);
 
   // Check if a touch is in the joystick zone
   function isInJoystickZone(x: number, y: number): boolean {
@@ -63,41 +54,24 @@
     return x < joystickZoneWidth && y > window.innerHeight - joystickZoneHeight;
   }
 
-  // Calculate joystick input from offset
-  function calculateJoystickInput(offsetX: number, offsetY: number): { x: number; z: number } {
-    const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-
-    if (distance < JOYSTICK_DEADZONE) {
-      return { x: 0, z: 0 };
-    }
-
-    // Normalize to -1 to 1 range
-    const normalized = Math.min(distance, JOYSTICK_MAX_DISTANCE) / JOYSTICK_MAX_DISTANCE;
-    const angle = Math.atan2(offsetY, offsetX);
-
-    return {
-      x: Math.cos(angle) * normalized, // Left/right (A/D)
-      z: -Math.sin(angle) * normalized, // Forward/back (W/S) - negative because screen Y is inverted
-    };
+  // Handle joystick input from shared component
+  function handleJoystickInput(x: number, y: number) {
+    // Convert y to z (joystick y is forward/back, which maps to z in 3D)
+    onMove(x, y);
   }
 
-  // Touch event handlers
+  // Touch event handlers for look controls
   function handleTouchStart(e: TouchEvent) {
     if (!enabled) return;
 
     for (const touch of Array.from(e.changedTouches)) {
       const { clientX, clientY, identifier } = touch;
 
-      // Check if this touch starts in joystick zone
-      if (isInJoystickZone(clientX, clientY) && joystickTouchId === null) {
-        joystickTouchId = identifier;
-        joystickActive = true;
-        joystickCenter = { x: joystickBaseX, y: joystickBaseY };
-        joystickOffset = { x: 0, y: 0 };
-        e.preventDefault();
-      }
-      // Otherwise, use for looking (and track for potential tap)
-      else if (lookTouchId === null) {
+      // Skip if in joystick zone (handled by VirtualJoystick)
+      if (isInJoystickZone(clientX, clientY)) continue;
+
+      // Use for looking (and track for potential tap)
+      if (lookTouchId === null) {
         lookTouchId = identifier;
         lastLookPos = { x: clientX, y: clientY };
 
@@ -117,26 +91,8 @@
     for (const touch of Array.from(e.changedTouches)) {
       const { clientX, clientY, identifier } = touch;
 
-      // Joystick movement
-      if (identifier === joystickTouchId) {
-        let offsetX = clientX - joystickCenter.x;
-        let offsetY = clientY - joystickCenter.y;
-
-        // Clamp to max distance
-        const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-        if (distance > JOYSTICK_MAX_DISTANCE) {
-          offsetX = (offsetX / distance) * JOYSTICK_MAX_DISTANCE;
-          offsetY = (offsetY / distance) * JOYSTICK_MAX_DISTANCE;
-        }
-
-        joystickOffset = { x: offsetX, y: offsetY };
-
-        const input = calculateJoystickInput(offsetX, offsetY);
-        onMove(input.x, input.z);
-        e.preventDefault();
-      }
       // Look movement
-      else if (identifier === lookTouchId) {
+      if (identifier === lookTouchId) {
         const deltaX = clientX - lastLookPos.x;
         const deltaY = clientY - lastLookPos.y;
         lastLookPos = { x: clientX, y: clientY };
@@ -157,14 +113,9 @@
 
   function handleTouchEnd(e: TouchEvent) {
     for (const touch of Array.from(e.changedTouches)) {
-      const { identifier, clientX, clientY } = touch;
+      const { identifier } = touch;
 
-      if (identifier === joystickTouchId) {
-        joystickTouchId = null;
-        joystickActive = false;
-        joystickOffset = { x: 0, y: 0 };
-        onMove(0, 0);
-      } else if (identifier === lookTouchId) {
+      if (identifier === lookTouchId) {
         // Check if this was a tap (quick, didn't move much)
         const tapDuration = performance.now() - tapStartTime;
         if (!tapMoved && tapDuration < TAP_MAX_DURATION) {
@@ -178,16 +129,13 @@
   }
 
   // Mouse event handlers (fallback for DevTools mobile simulation)
-  // When touch device is detected but user is using mouse (no pointer lock)
   function handleMouseDown(e: MouseEvent) {
-    console.log('[TouchControls] Mouse down - enabled:', enabled, 'inJoystickZone:', isInJoystickZone(e.clientX, e.clientY));
     if (!enabled) return;
     // Don't interfere with joystick clicks
     if (isInJoystickZone(e.clientX, e.clientY)) return;
 
     isMouseDragging = true;
     lastMousePos = { x: e.clientX, y: e.clientY };
-    console.log('[TouchControls] Mouse drag started');
     e.preventDefault();
   }
 
@@ -202,47 +150,26 @@
   }
 
   function handleMouseUp() {
-    if (isMouseDragging) {
-      console.log('[TouchControls] Mouse drag ended');
-    }
     isMouseDragging = false;
   }
 
-  // Detect touch device
-  let isTouchDevice = $state(false);
-
   onMount(() => {
     isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    console.log('[TouchControls] onMount - isTouchDevice:', isTouchDevice, 'maxTouchPoints:', navigator.maxTouchPoints);
 
     if (!isTouchDevice) {
       return;
     }
 
-    // Set joystick Y position (from bottom)
-    joystickBaseY = window.innerHeight - JOYSTICK_MARGIN - JOYSTICK_SIZE / 2;
-
-    // Add touch listeners
+    // Add touch listeners for look controls
     window.addEventListener("touchstart", handleTouchStart, { passive: false });
     window.addEventListener("touchmove", handleTouchMove, { passive: false });
     window.addEventListener("touchend", handleTouchEnd);
     window.addEventListener("touchcancel", handleTouchEnd);
 
-    // Add mouse listeners as fallback (for DevTools mobile simulation where
-    // touch device is detected but user is actually using mouse)
+    // Add mouse listeners as fallback
     window.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
-
-    // Update position on resize
-    const handleResize = () => {
-      joystickBaseY = window.innerHeight - JOYSTICK_MARGIN - JOYSTICK_SIZE / 2;
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
   });
 
   onDestroy(() => {
@@ -259,32 +186,18 @@
 </script>
 
 {#if isTouchDevice && enabled}
-  <!-- Joystick UI overlay -->
-  <div class="touch-controls">
-    <!-- Joystick base ring -->
-    <div
-      class="joystick-base"
-      class:active={joystickActive}
-      style="
-        left: {joystickBaseX - JOYSTICK_SIZE / 2}px;
-        bottom: {JOYSTICK_MARGIN}px;
-        width: {JOYSTICK_SIZE}px;
-        height: {JOYSTICK_SIZE}px;
-      "
-    >
-      <!-- Joystick knob -->
-      <div
-        class="joystick-knob"
-        style="
-          width: {JOYSTICK_KNOB_SIZE}px;
-          height: {JOYSTICK_KNOB_SIZE}px;
-          transform: translate({joystickOffset.x}px, {joystickOffset.y}px);
-        "
-      ></div>
-    </div>
+  <!-- Shared virtual joystick for movement -->
+  <VirtualJoystick
+    onInput={handleJoystickInput}
+    {enabled}
+    left={JOYSTICK_MARGIN}
+    bottom={JOYSTICK_MARGIN}
+    size={JOYSTICK_SIZE}
+  />
 
-    <!-- Look hint (shows when not using joystick) -->
-    {#if !joystickActive && !lookTouchId}
+  <!-- Look hint overlay -->
+  <div class="touch-controls">
+    {#if lookTouchId === null}
       <div class="look-hint">
         Drag to look around
       </div>
@@ -299,38 +212,6 @@
     pointer-events: none;
     z-index: 100;
     touch-action: none;
-  }
-
-  .joystick-base {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity var(--duration-normal) ease;
-    opacity: 0.6;
-    pointer-events: auto;
-    touch-action: none;
-  }
-
-  .joystick-base.active {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
-  }
-
-  .joystick-knob {
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: transform 0.05s ease-out;
-  }
-
-  .joystick-base.active .joystick-knob {
-    background: white;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
   }
 
   .look-hint {
@@ -354,10 +235,6 @@
   /* Accessibility: Respect user's motion preferences (WCAG AAA) */
   @media (prefers-reduced-motion: reduce) {
     .look-hint {
-      animation: none;
-    }
-    /* Disable local keyframe animations */
-    [style*="fadeInOut"] {
       animation: none;
     }
   }

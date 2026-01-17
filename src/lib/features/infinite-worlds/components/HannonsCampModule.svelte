@@ -51,6 +51,19 @@
   } from "three";
   import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
   import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
+  import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
+
+  // Object placement system
+  import { type PlacedObject, createPlacedObject } from "../domain/PlacedObject";
+  import { type ObjectDefinition, getObjectDefinition } from "../objects/object-catalog";
+  import { getPlacedObjectRenderer } from "../objects/PlacedObjectRenderer";
+  import ObjectPalette from "./ObjectPalette.svelte";
+  import ObjectQuickSelect from "./ObjectQuickSelect.svelte";
+  import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
+
+  // Unified input system - adapts to mouse, touch, or pen based on actual input
+  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
+  const inputCaps = getInputCapabilities();
 
   // Import terrain data and satellite loader
   import terrainData from "../data/hannons-camp-terrain.json";
@@ -131,14 +144,9 @@
   let terrainBounds: GeoBounds | null = null;
   let terrainMinElevation = 0;
 
-  // Mobile/touch support
-  let isMobile = $state(false);
+  // Touch input support (works for native touch AND DevTools emulation)
   let touchLookId: number | null = null; // Track touch ID for look
-  let touchMoveId: number | null = null; // Track touch ID for movement
   let touchLook = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
-  let touchMove = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
-  let joystickBase: HTMLDivElement | null = null;
-  let joystickKnob: HTMLDivElement | null = null;
   let cameraYaw = $state(0);
   let cameraPitch = $state(0);
   const TOUCH_SENSITIVITY = 0.004;
@@ -154,6 +162,36 @@
   let boundaryMarkers: Mesh[] = [];
   let boundaryLine: Line | null = null;
   let boundaryMask: Mesh | null = null;
+
+  // ============================================================================
+  // OBJECT PLACEMENT
+  // ============================================================================
+
+  type PlacementMode = "off" | "place" | "edit";
+  let placementMode = $state<PlacementMode>("off");
+  let showObjectPalette = $state(false);
+  let selectedObjectDef = $state<ObjectDefinition | null>(null);
+  let selectedObjectId = $state<string | null>(null);
+  let placedObjects = $state<PlacedObject[]>([]);
+  let objectMeshes = new Map<string, Mesh | Group>();
+  let objectsGroup: Group | null = null;
+  let transformControls: TransformControls | null = null;
+  const objectRenderer = getPlacedObjectRenderer();
+  const SCENE_ID = "hannons-camp";
+  const OBJECTS_STORAGE_KEY = "hannons-camp-objects";
+
+  // First-person placement (HL2 style)
+  let showQuickSelect = $state(false);
+  let fpPlacementObject = $state<ObjectDefinition | null>(null); // Object selected for FP placement
+  let fpObjectIndex = $state(-1); // Current index in quick select
+  let ghostMesh: Mesh | Group | null = null; // Preview mesh at crosshair
+  let ghostPosition = new Vector3(); // Current ghost position
+
+  // Quick select objects (keys 1-6, Q to cycle)
+  import { OBJECT_CATALOG } from "../objects/object-catalog";
+  const quickSelectObjects = OBJECT_CATALOG.filter((obj) =>
+    ["bell-tent", "dome-tent", "flag", "fire-pit", "pin-marker", "waypoint"].includes(obj.key)
+  );
 
   // ============================================================================
   // TERRAIN GENERATION
@@ -469,6 +507,61 @@
   }
 
   function onKeyDown(event: KeyboardEvent): void {
+    // Quick select cycle (Q) - cycles through objects without leaving first-person
+    if (event.code === "KeyQ" && isFirstPerson) {
+      cycleToNextObject();
+      event.preventDefault();
+      return;
+    }
+
+    // Number keys 1-6 for quick object selection in first-person
+    if (isFirstPerson && event.code.startsWith("Digit")) {
+      const num = parseInt(event.code.replace("Digit", ""));
+      if (num >= 1 && num <= quickSelectObjects.length) {
+        selectQuickObject(num - 1);
+        event.preventDefault();
+        return;
+      }
+    }
+
+    // Cancel first-person placement with Escape
+    if (event.code === "Escape" && fpPlacementObject) {
+      cancelFpPlacement();
+      return;
+    }
+
+    // E key still works as alternative placement method
+    if (event.code === "KeyE" && isFirstPerson && fpPlacementObject && ghostMesh) {
+      placeObjectAtGhost();
+      event.preventDefault();
+      return;
+    }
+
+    // Handle transform controls gizmo mode switching (works in overhead/edit mode)
+    if (viewMode === "overhead" && placementMode === "edit" && transformControls) {
+      switch (event.code) {
+        case "KeyW":
+          transformControls.setMode("translate");
+          console.log("[HannonsCamp] Gizmo: translate mode");
+          return;
+        case "KeyE":
+          transformControls.setMode("rotate");
+          console.log("[HannonsCamp] Gizmo: rotate mode");
+          return;
+        case "KeyR":
+          transformControls.setMode("scale");
+          console.log("[HannonsCamp] Gizmo: scale mode");
+          return;
+        case "Delete":
+        case "Backspace":
+          deleteSelectedObject();
+          return;
+        case "Escape":
+          deselectObject();
+          return;
+      }
+    }
+
     if (!isFirstPerson) return;
 
     switch (event.code) {
@@ -535,58 +628,73 @@
   }
 
   // ============================================================================
-  // TOUCH CONTROLS (Mobile)
+  // TOUCH CONTROLS (Cross-Platform)
   // ============================================================================
 
-  function detectMobile(): boolean {
-    return "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  /**
+   * Check if we should show touch UI based on ACTUAL input, not device detection.
+   * This works correctly for:
+   * - DevTools touch emulation on desktop
+   * - External mouse on mobile/tablet
+   * - Normal touch on mobile
+   * - Normal mouse on desktop
+   */
+  function shouldShowTouchUI(): boolean {
+    const caps = inputCaps.current;
+    // Show touch UI if currently using touch AND no pointer lock
+    return caps.currentPointerType === "touch" && !caps.isPointerLocked;
+  }
+
+  /**
+   * Get appropriate hint text for placement action
+   */
+  function getPlacementHint(): string {
+    return inputCaps.current.currentPointerType === "touch" ? "Tap" : "Click";
+  }
+
+  // Joystick zone check (matches VirtualJoystick defaults)
+  const JOYSTICK_SIZE = 120;
+  const JOYSTICK_MARGIN = 24;
+  function isInJoystickZone(x: number, y: number): boolean {
+    const zoneWidth = JOYSTICK_SIZE + JOYSTICK_MARGIN * 2;
+    const zoneHeight = JOYSTICK_SIZE + JOYSTICK_MARGIN * 2;
+    return x < zoneWidth && y > window.innerHeight - zoneHeight;
+  }
+
+  // Handle joystick input from shared VirtualJoystick component
+  function handleJoystickInput(x: number, y: number): void {
+    const deadzone = 0.2;
+    moveForward = y > deadzone;
+    moveBackward = y < -deadzone;
+    moveLeft = x < -deadzone;
+    moveRight = x > deadzone;
   }
 
   function handleTouchStart(event: TouchEvent): void {
     if (!isFirstPerson) return;
 
     for (const touch of event.changedTouches) {
-      const x = touch.clientX;
-      const screenHalf = window.innerWidth / 2;
+      // Skip if in joystick zone (handled by VirtualJoystick)
+      if (isInJoystickZone(touch.clientX, touch.clientY)) continue;
 
-      if (x < screenHalf && touchMoveId === null) {
-        // Left side - movement joystick (only if not already tracking a move touch)
-        touchMoveId = touch.identifier;
-        touchMove.active = true;
-        touchMove.startX = x;
-        touchMove.startY = touch.clientY;
-        touchMove.currentX = x;
-        touchMove.currentY = touch.clientY;
-        updateJoystickVisual(0, 0);
-      } else if (x >= screenHalf && touchLookId === null) {
-        // Right side - look control (only if not already tracking a look touch)
+      // Use for look control
+      if (touchLookId === null) {
         touchLookId = touch.identifier;
         touchLook.active = true;
-        touchLook.startX = x;
+        touchLook.startX = touch.clientX;
         touchLook.startY = touch.clientY;
-        touchLook.currentX = x;
+        touchLook.currentX = touch.clientX;
         touchLook.currentY = touch.clientY;
+        event.preventDefault();
       }
     }
-
-    event.preventDefault();
   }
 
   function handleTouchMove(event: TouchEvent): void {
     if (!isFirstPerson) return;
 
     for (const touch of event.changedTouches) {
-      // Track by touch ID, not by current position
-      if (touch.identifier === touchMoveId && touchMove.active) {
-        // Movement touch - update regardless of current position
-        touchMove.currentX = touch.clientX;
-        touchMove.currentY = touch.clientY;
-
-        const dx = touchMove.currentX - touchMove.startX;
-        const dy = touchMove.currentY - touchMove.startY;
-        updateJoystickVisual(dx, dy);
-      } else if (touch.identifier === touchLookId && touchLook.active) {
-        // Look touch - update regardless of current position
+      if (touch.identifier === touchLookId && touchLook.active) {
         const deltaX = touch.clientX - touchLook.currentX;
         const deltaY = touch.clientY - touchLook.currentY;
 
@@ -596,53 +704,20 @@
 
         touchLook.currentX = touch.clientX;
         touchLook.currentY = touch.clientY;
+        event.preventDefault();
       }
     }
-
-    event.preventDefault();
   }
 
   function handleTouchEnd(event: TouchEvent): void {
     if (!isFirstPerson) return;
 
     for (const touch of event.changedTouches) {
-      // Check by touch ID, not position
-      if (touch.identifier === touchMoveId) {
-        touchMoveId = null;
-        touchMove.active = false;
-        moveForward = false;
-        moveBackward = false;
-        moveLeft = false;
-        moveRight = false;
-        updateJoystickVisual(0, 0);
-      } else if (touch.identifier === touchLookId) {
+      if (touch.identifier === touchLookId) {
         touchLookId = null;
         touchLook.active = false;
       }
     }
-  }
-
-  function updateJoystickVisual(dx: number, dy: number): void {
-    if (!joystickKnob) return;
-
-    const maxOffset = 40;
-    const clampedX = Math.max(-maxOffset, Math.min(maxOffset, dx));
-    const clampedY = Math.max(-maxOffset, Math.min(maxOffset, dy));
-
-    joystickKnob.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
-  }
-
-  function updateMovementFromTouch(): void {
-    if (!touchMove.active) return;
-
-    const dx = touchMove.currentX - touchMove.startX;
-    const dy = touchMove.currentY - touchMove.startY;
-    const deadzone = 15;
-
-    moveForward = dy < -deadzone;
-    moveBackward = dy > deadzone;
-    moveLeft = dx < -deadzone;
-    moveRight = dx > deadzone;
   }
 
   function enterFirstPersonMobile(): void {
@@ -675,9 +750,7 @@
     moveBackward = false;
     moveLeft = false;
     moveRight = false;
-    touchMove.active = false;
     touchLook.active = false;
-    touchMoveId = null;
     touchLookId = null;
   }
 
@@ -707,18 +780,17 @@
     isFirstPerson = true;
     if (orbitControls) orbitControls.enabled = false;
 
-    // On desktop, we need pointer lock - but don't request it automatically
-    // (browsers block auto pointer lock requests). User can click to lock.
-    // On mobile, we're already good to go with touch controls.
-    if (!isMobile && canvas) {
-      console.log("[HannonsCamp] Desktop: Click anywhere to enable mouse look");
-      // Add click handler for pointer lock on desktop
+    // If pointer lock is available (mouse/pen input, not touch), set up click-to-lock.
+    // This works correctly for DevTools emulation and external mouse on tablet.
+    if (inputCaps.canUsePointerLock() && canvas) {
+      console.log("[HannonsCamp] Pointer lock available: Click anywhere to enable mouse look");
       canvas.addEventListener("click", handleCanvasClick);
     }
   }
 
   function handleCanvasClick(): void {
-    if (!isMobile && isFirstPerson && viewMode === "first-person" && canvas && !document.pointerLockElement) {
+    // Only request pointer lock if using mouse/pen (not touch) and in first-person mode
+    if (inputCaps.canUsePointerLock() && isFirstPerson && viewMode === "first-person" && canvas && !document.pointerLockElement) {
       canvas.requestPointerLock();
     }
   }
@@ -790,8 +862,8 @@
     isFirstPerson = true;
     orbitControls.enabled = false;
 
-    // On desktop, add click handler for pointer lock
-    if (!isMobile && canvas) {
+    // Add click handler for pointer lock if available (mouse/pen input)
+    if (inputCaps.canUsePointerLock() && canvas) {
       canvas.addEventListener("click", handleCanvasClick);
     }
   }
@@ -819,13 +891,51 @@
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     );
 
-    // Raycast to terrain
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObject(terrainMesh);
+    // Object placement mode - place object on terrain
+    if (placementMode === "place" && selectedObjectDef) {
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(terrainMesh);
 
-    if (intersects.length > 0) {
-      const point = intersects[0]!.point;
-      addBoundaryPoint(point.x, point.z);
+      if (intersects.length > 0) {
+        const point = intersects[0]!.point;
+        createAndPlaceObject(selectedObjectDef, point.x, point.z);
+      }
+      return;
+    }
+
+    // Edit mode - try to select an existing object
+    if (placementMode === "edit" || placementMode === "off") {
+      raycaster.setFromCamera(mouse, camera);
+
+      // First check placed objects
+      if (objectsGroup && objectsGroup.children.length > 0) {
+        const objIntersects = raycaster.intersectObjects(objectsGroup.children, true);
+        if (objIntersects.length > 0) {
+          // Find the root mesh (with placedObjectId)
+          let target = objIntersects[0]!.object;
+          while (target.parent && !target.userData.placedObjectId) {
+            target = target.parent;
+          }
+          if (target.userData.placedObjectId) {
+            const mesh = objectMeshes.get(target.userData.placedObjectId);
+            if (mesh) {
+              selectObject(mesh, target.userData.placedObjectId);
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    // Default: boundary editing (only if no object selected and placement is off)
+    if (placementMode === "off") {
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(terrainMesh);
+
+      if (intersects.length > 0) {
+        const point = intersects[0]!.point;
+        addBoundaryPoint(point.x, point.z);
+      }
     }
   }
 
@@ -1029,6 +1139,395 @@
     console.log("[HannonsCamp] Boundary mask updated");
   }
 
+  // ============================================================================
+  // OBJECT PLACEMENT SYSTEM
+  // ============================================================================
+
+  function initObjectsGroup(): void {
+    if (!scene) return;
+    objectsGroup = new Group();
+    objectsGroup.name = "PlacedObjects";
+    scene.add(objectsGroup);
+  }
+
+  function initTransformControls(): void {
+    if (!camera || !renderer || !scene) return;
+
+    transformControls = new TransformControls(camera, renderer.domElement);
+    transformControls.addEventListener("dragging-changed", (event) => {
+      // Disable orbit controls while dragging gizmo
+      const isDragging = (event as unknown as { value: boolean }).value;
+      if (orbitControls) orbitControls.enabled = !isDragging;
+    });
+    transformControls.addEventListener("objectChange", handleTransformChange);
+    scene.add(transformControls as unknown as Group);
+
+    console.log("[HannonsCamp] TransformControls initialized");
+  }
+
+  function togglePlacementMode(): void {
+    if (placementMode === "off") {
+      placementMode = "place";
+      showObjectPalette = true;
+      // Enter overhead mode for easier placement
+      if (viewMode === "first-person") {
+        enterOverheadMode();
+      }
+    } else {
+      placementMode = "off";
+      showObjectPalette = false;
+      selectedObjectDef = null;
+      deselectObject();
+    }
+  }
+
+  function handleObjectSelect(def: ObjectDefinition): void {
+    selectedObjectDef = def;
+    placementMode = "place";
+  }
+
+  function handlePlacementClick(event: MouseEvent): void {
+    // Only handle placement in overhead mode with an object selected
+    if (viewMode !== "overhead" || !selectedObjectDef || !camera || !terrainMesh || !canvas) return;
+    if (placementMode !== "place") return;
+
+    // Get normalized device coordinates
+    const rect = canvas.getBoundingClientRect();
+    const mouse = new Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+
+    // Raycast to terrain
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(terrainMesh);
+
+    if (intersects.length > 0) {
+      const point = intersects[0]!.point;
+      createAndPlaceObject(selectedObjectDef, point.x, point.z);
+    }
+  }
+
+  function createAndPlaceObject(def: ObjectDefinition, x: number, z: number): void {
+    // Get ground height at position
+    const groundY = getTerrainHeightAt(x, z);
+
+    // Create domain object
+    const placedObject = createPlacedObject(
+      SCENE_ID,
+      def.type,
+      def.key,
+      [x, groundY, z],
+      "local-user" // TODO: Get actual user ID when auth is integrated
+    );
+
+    // Create mesh
+    const mesh = objectRenderer.createMesh(placedObject);
+    if (objectsGroup) {
+      objectsGroup.add(mesh);
+    }
+    objectMeshes.set(placedObject.id, mesh);
+
+    // Add to state
+    placedObjects = [...placedObjects, placedObject];
+
+    // Save to storage
+    saveObjectsToStorage();
+
+    // Select the new object for editing
+    selectObject(mesh, placedObject.id);
+
+    console.log(`[HannonsCamp] Placed ${def.name} at (${x.toFixed(1)}, ${groundY.toFixed(1)}, ${z.toFixed(1)})`);
+  }
+
+  function selectObject(mesh: Mesh | Group, objectId: string): void {
+    if (!transformControls) return;
+
+    transformControls.attach(mesh);
+    selectedObjectId = objectId;
+    placementMode = "edit";
+
+    console.log(`[HannonsCamp] Selected object: ${objectId}`);
+  }
+
+  function deselectObject(): void {
+    if (!transformControls) return;
+
+    transformControls.detach();
+    selectedObjectId = null;
+
+    if (placementMode === "edit") {
+      placementMode = showObjectPalette ? "place" : "off";
+    }
+  }
+
+  let transformSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function handleTransformChange(): void {
+    if (!selectedObjectId || !transformControls) return;
+
+    const mesh = transformControls.object;
+    if (!mesh) return;
+
+    // Find and update the domain object
+    const objIndex = placedObjects.findIndex((o) => o.id === selectedObjectId);
+    if (objIndex === -1) return;
+
+    const obj = placedObjects[objIndex]!;
+    const updated: PlacedObject = {
+      ...obj,
+      position: mesh.position.toArray() as [number, number, number],
+      rotation: mesh.quaternion.toArray() as [number, number, number, number],
+      scale: mesh.scale.toArray() as [number, number, number],
+      lastModified: new Date(),
+    };
+
+    // Update state
+    placedObjects = [
+      ...placedObjects.slice(0, objIndex),
+      updated,
+      ...placedObjects.slice(objIndex + 1),
+    ];
+
+    // Debounced save (500ms)
+    if (transformSaveTimeout) {
+      clearTimeout(transformSaveTimeout);
+    }
+    transformSaveTimeout = setTimeout(() => {
+      saveObjectsToStorage();
+    }, 500);
+  }
+
+  function deleteSelectedObject(): void {
+    if (!selectedObjectId) return;
+
+    // Find the mesh
+    const mesh = objectMeshes.get(selectedObjectId);
+    if (mesh && objectsGroup) {
+      objectsGroup.remove(mesh);
+      // Dispose geometry and material
+      if (mesh instanceof Mesh) {
+        mesh.geometry.dispose();
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((m) => m.dispose());
+        } else {
+          mesh.material.dispose();
+        }
+      }
+    }
+    objectMeshes.delete(selectedObjectId);
+
+    // Remove from state
+    placedObjects = placedObjects.filter((o) => o.id !== selectedObjectId);
+
+    // Deselect
+    deselectObject();
+
+    // Save
+    saveObjectsToStorage();
+
+    console.log(`[HannonsCamp] Deleted object: ${selectedObjectId}`);
+  }
+
+  // ============================================================================
+  // OBJECT PERSISTENCE (localStorage)
+  // ============================================================================
+
+  function saveObjectsToStorage(): void {
+    if (typeof localStorage === "undefined") return;
+
+    try {
+      // Serialize PlacedObjects (convert Dates to ISO strings)
+      const serialized = placedObjects.map((obj) => ({
+        ...obj,
+        createdAt: obj.createdAt.toISOString(),
+        lastModified: obj.lastModified.toISOString(),
+      }));
+      localStorage.setItem(OBJECTS_STORAGE_KEY, JSON.stringify(serialized));
+      console.log(`[HannonsCamp] Saved ${placedObjects.length} objects`);
+    } catch (error) {
+      console.warn("[HannonsCamp] Failed to save objects:", error);
+    }
+  }
+
+  function loadObjectsFromStorage(): void {
+    if (typeof localStorage === "undefined") return;
+
+    try {
+      const stored = localStorage.getItem(OBJECTS_STORAGE_KEY);
+      if (!stored) return;
+
+      const data = JSON.parse(stored) as Array<Record<string, unknown>>;
+      const loaded: PlacedObject[] = data.map((obj) => ({
+        ...obj,
+        createdAt: new Date(obj.createdAt as string),
+        lastModified: new Date(obj.lastModified as string),
+      })) as PlacedObject[];
+
+      // Create meshes for each loaded object
+      for (const obj of loaded) {
+        const mesh = objectRenderer.createMesh(obj);
+        if (objectsGroup) {
+          objectsGroup.add(mesh);
+        }
+        objectMeshes.set(obj.id, mesh);
+      }
+
+      placedObjects = loaded;
+      console.log(`[HannonsCamp] Loaded ${loaded.length} objects`);
+    } catch (error) {
+      console.warn("[HannonsCamp] Failed to load objects:", error);
+    }
+  }
+
+  // ============================================================================
+  // FIRST-PERSON PLACEMENT (HL2 Style)
+  // ============================================================================
+
+  function cycleToNextObject(): void {
+    // Cycle to next object in quick select
+    fpObjectIndex = (fpObjectIndex + 1) % quickSelectObjects.length;
+    const def = quickSelectObjects[fpObjectIndex];
+    if (def) {
+      selectFpObject(def);
+    }
+  }
+
+  function selectQuickObject(index: number): void {
+    if (index >= 0 && index < quickSelectObjects.length) {
+      fpObjectIndex = index;
+      const def = quickSelectObjects[index];
+      if (def) {
+        selectFpObject(def);
+      }
+    }
+  }
+
+  function selectFpObject(def: ObjectDefinition): void {
+    fpPlacementObject = def;
+    createGhostMesh(def);
+    console.log(`[HannonsCamp] Selected: ${def.name} (Click to place, Q to cycle, ESC to cancel)`);
+  }
+
+  function handleQuickSelectChoice(def: ObjectDefinition): void {
+    showQuickSelect = false;
+    selectFpObject(def);
+
+    // Re-enter pointer lock for placement
+    if (canvas && !document.pointerLockElement) {
+      canvas.requestPointerLock();
+    }
+  }
+
+  function handleQuickSelectClose(): void {
+    showQuickSelect = false;
+
+    // Re-enter pointer lock
+    if (canvas && !document.pointerLockElement && isFirstPerson) {
+      canvas.requestPointerLock();
+    }
+  }
+
+  function cancelFpPlacement(): void {
+    fpPlacementObject = null;
+    removeGhostMesh();
+    console.log("[HannonsCamp] FP Placement cancelled");
+  }
+
+  function createGhostMesh(def: ObjectDefinition): void {
+    if (!scene) return;
+
+    // Remove existing ghost
+    removeGhostMesh();
+
+    // Create a temporary PlacedObject just for rendering
+    const tempObject = createPlacedObject(
+      SCENE_ID,
+      def.type,
+      def.key,
+      [0, 0, 0],
+      "ghost"
+    );
+
+    ghostMesh = objectRenderer.createMesh(tempObject);
+
+    // Make it semi-transparent
+    ghostMesh.traverse((child) => {
+      if (child instanceof Mesh && child.material) {
+        const mat = child.material as MeshStandardMaterial;
+        mat.transparent = true;
+        mat.opacity = 0.5;
+        mat.depthWrite = false;
+      }
+    });
+
+    scene.add(ghostMesh);
+  }
+
+  function removeGhostMesh(): void {
+    if (ghostMesh && scene) {
+      scene.remove(ghostMesh);
+      // Dispose materials
+      ghostMesh.traverse((child) => {
+        if (child instanceof Mesh) {
+          child.geometry?.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((m) => m.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      });
+      ghostMesh = null;
+    }
+  }
+
+  function updateGhostPosition(): void {
+    if (!ghostMesh || !camera || !terrainMesh) return;
+
+    // Cast ray from camera center (crosshair)
+    const centerRay = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    raycaster.set(camera.position, centerRay);
+
+    const intersects = raycaster.intersectObject(terrainMesh);
+
+    if (intersects.length > 0) {
+      const point = intersects[0]!.point;
+      ghostPosition.copy(point);
+      ghostMesh.position.copy(point);
+      ghostMesh.visible = true;
+    } else {
+      // No terrain hit - place at max distance in front
+      ghostMesh.visible = false;
+    }
+  }
+
+  function placeObjectAtGhost(): void {
+    if (!fpPlacementObject || !ghostMesh || !ghostMesh.visible) return;
+
+    // Create the actual object at ghost position
+    createAndPlaceObject(fpPlacementObject, ghostPosition.x, ghostPosition.z);
+
+    // Keep placement mode active for placing more of the same object
+    console.log(`[HannonsCamp] Placed ${fpPlacementObject.name}. Click again or ESC to cancel.`);
+  }
+
+  function handleFirstPersonMouseDown(event: MouseEvent): void {
+    // Only handle left-click in first-person mode with an object selected
+    if (event.button !== 0) return; // Left click only
+    if (!isFirstPerson) return;
+    if (!fpPlacementObject || !ghostMesh) return;
+
+    // Only place when pointer lock is active (looking around)
+    if (!document.pointerLockElement) return;
+
+    // Place the object
+    placeObjectAtGhost();
+    event.preventDefault();
+  }
+
   function handleResize(): void {
     if (!renderer || !camera || !container) return;
 
@@ -1058,11 +1557,12 @@
         velocity.y -= GRAVITY * delta;
       }
 
-      // Update movement from touch if on mobile
-      if (isMobile) {
+      // Update movement from touch input (works for native touch AND DevTools emulation)
+      // Only process touch movement when NOT using pointer lock
+      if (!inputCaps.current.isPointerLocked) {
         updateMovementFromTouch();
 
-        // Apply camera rotation from touch input
+        // Apply camera rotation from touch/manual input
         camera.rotation.order = "YXZ";
         camera.rotation.y = cameraYaw;
         camera.rotation.x = cameraPitch;
@@ -1073,9 +1573,18 @@
       direction.x = Number(moveRight) - Number(moveLeft);
       direction.normalize();
 
-      // Move camera - use manual movement on mobile, PointerLockControls on desktop
-      if (isMobile) {
-        // Manual movement based on camera yaw
+      // Move camera - use PointerLockControls when pointer is locked, manual movement otherwise
+      // This correctly handles: touch, DevTools emulation, mouse without lock, and mouse with lock
+      if (inputCaps.current.isPointerLocked && pointerLockControls) {
+        // Pointer locked - use PointerLockControls for movement
+        if (moveForward || moveBackward) {
+          pointerLockControls.moveForward(direction.z * currentSpeed * delta);
+        }
+        if (moveLeft || moveRight) {
+          pointerLockControls.moveRight(direction.x * currentSpeed * delta);
+        }
+      } else {
+        // Manual movement based on camera yaw (touch, emulation, or unlocked mouse)
         const forward = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
         if (!isFlyMode) forward.y = 0; // Lock to ground unless flying
         forward.normalize();
@@ -1089,14 +1598,6 @@
         }
         if (moveLeft || moveRight) {
           camera.position.addScaledVector(right, direction.x * currentSpeed * delta);
-        }
-      } else if (pointerLockControls) {
-        // Desktop - use PointerLockControls
-        if (moveForward || moveBackward) {
-          pointerLockControls.moveForward(direction.z * currentSpeed * delta);
-        }
-        if (moveLeft || moveRight) {
-          pointerLockControls.moveRight(direction.x * currentSpeed * delta);
         }
       }
 
@@ -1113,6 +1614,11 @@
         }
       }
 
+      // Update ghost mesh position if in placement mode
+      if (fpPlacementObject && ghostMesh) {
+        updateGhostPosition();
+      }
+
       // Update position display
       currentPosition = {
         x: Math.round(camera.position.x),
@@ -1120,12 +1626,14 @@
         z: Math.round(camera.position.z)
       };
 
-      // Calculate yaw from camera's forward direction for display (works for both mobile and desktop)
+      // Calculate yaw from camera's forward direction for display
       const forward = new Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       const calculatedYaw = Math.atan2(-forward.x, -forward.z);
       displayYaw = Math.round(calculatedYaw * 180 / Math.PI); // Convert to degrees for display
 
-      if (!isMobile) {
+      // Sync cameraYaw when pointer is locked (PointerLockControls manages rotation)
+      // When not locked (touch/manual mode), cameraYaw is set by touch input directly
+      if (inputCaps.current.isPointerLocked) {
         cameraYaw = calculatedYaw;
       }
     } else if (orbitControls) {
@@ -1141,23 +1649,42 @@
   // LIFECYCLE
   // ============================================================================
 
+  // Pointer event handler for capability detection
+  function handlePointerEvent(e: PointerEvent): void {
+    inputCaps.handlePointerEvent(e);
+  }
+
   onMount(() => {
-    // Detect mobile/touch device
-    isMobile = detectMobile();
-    console.log(`[HannonsCamp] Mobile detected: ${isMobile}`);
+    // Initialize input capabilities system (detects input method dynamically)
+    inputCaps.init();
 
     setupScene();
     initBoundaryGroup(); // Initialize boundary visuals group
     loadBoundaryFromStorage(); // Load saved boundary
     renderBoundary(); // Render it if exists
+    initObjectsGroup(); // Initialize objects group
+    initTransformControls(); // Initialize transform gizmos
+    loadObjectsFromStorage(); // Load saved objects
     animate();
 
     window.addEventListener("resize", handleResize);
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("keyup", onKeyUp);
+    document.addEventListener("mousedown", handleFirstPersonMouseDown);
 
-    // Add touch listeners for mobile
-    if (isMobile && canvas) {
+    // Add pointer event listener for capability detection
+    // This tracks whether we're using mouse, touch, or pen
+    if (canvas) {
+      canvas.addEventListener("pointerdown", handlePointerEvent);
+      canvas.addEventListener("pointermove", handlePointerEvent);
+    }
+
+    // Always attach touch listeners - they work for:
+    // - Native touch on mobile
+    // - DevTools touch emulation on desktop
+    // - Touch on tablets with external mouse (touch still works)
+    // The handlers check context and won't interfere with mouse input.
+    if (canvas) {
       canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
       canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
       canvas.addEventListener("touchend", handleTouchEnd);
@@ -1187,16 +1714,22 @@
     window.removeEventListener("resize", handleResize);
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("keyup", onKeyUp);
+    document.removeEventListener("mousedown", handleFirstPersonMouseDown);
     document.removeEventListener("pointerlockchange", handlePointerLockChange);
 
-    // Clean up touch listeners and click handler
+    // Clean up touch listeners, pointer events, and click handler
     if (canvas) {
       canvas.removeEventListener("touchstart", handleTouchStart);
       canvas.removeEventListener("touchmove", handleTouchMove);
       canvas.removeEventListener("touchend", handleTouchEnd);
       canvas.removeEventListener("touchcancel", handleTouchEnd);
       canvas.removeEventListener("click", handleCanvasClick);
+      canvas.removeEventListener("pointerdown", handlePointerEvent);
+      canvas.removeEventListener("pointermove", handlePointerEvent);
     }
+
+    // Clean up input capabilities
+    inputCaps.destroy();
 
     // Exit pointer lock if active
     if (document.pointerLockElement) {
@@ -1219,6 +1752,13 @@
         terrainMesh.material.dispose();
       }
     }
+
+    // Clean up object placement system
+    if (transformControls) {
+      transformControls.dispose();
+    }
+    objectRenderer.dispose();
+    objectMeshes.clear();
   });
 </script>
 
@@ -1261,6 +1801,15 @@
       title="Overhead view"
     >
       <i class="fas fa-map" aria-hidden="true"></i>
+    </button>
+    <div class="mode-divider"></div>
+    <button
+      class="mode-btn"
+      class:active={placementMode !== "off"}
+      onclick={togglePlacementMode}
+      title="Place objects"
+    >
+      <i class="fas fa-cubes" aria-hidden="true"></i>
     </button>
   </div>
 
@@ -1328,6 +1877,40 @@
     </div>
   {/if}
 
+  <!-- Object Palette (left side, when in placement mode) -->
+  {#if showObjectPalette && viewMode === "overhead"}
+    <div class="object-palette-container">
+      <ObjectPalette
+        onSelect={handleObjectSelect}
+        selectedKey={selectedObjectDef?.key ?? null}
+        onClose={() => {
+          showObjectPalette = false;
+          placementMode = "off";
+          selectedObjectDef = null;
+        }}
+      />
+    </div>
+  {/if}
+
+  <!-- Placement mode hints -->
+  {#if viewMode === "overhead" && placementMode === "edit"}
+    <div class="edit-hints">
+      <span class="hint-key">W</span> Move
+      <span class="hint-key">E</span> Rotate
+      <span class="hint-key">R</span> Scale
+      <span class="hint-key">Del</span> Delete
+      <span class="hint-key">Esc</span> Deselect
+    </div>
+  {/if}
+
+  <!-- Object count badge -->
+  {#if placedObjects.length > 0}
+    <div class="object-count">
+      <i class="fas fa-cubes" aria-hidden="true"></i>
+      {placedObjects.length} object{placedObjects.length !== 1 ? "s" : ""}
+    </div>
+  {/if}
+
   <!-- Dev panel (position + mode) -->
   {#if isFirstPerson}
     <div class="dev-panel">
@@ -1369,45 +1952,103 @@
     </div>
   {/if}
 
-  <!-- First-person controls -->
+  <!-- First-person controls - adapts based on CURRENT input method, not device -->
   {#if isFirstPerson}
-    {#if isMobile}
-      <!-- Mobile: Exit button -->
+    {#if shouldShowTouchUI()}
+      <!-- Touch input: Exit button -->
       <button class="exit-fp-btn" onclick={exitFirstPersonMobile}>
         <i class="fas fa-expand" aria-hidden="true"></i>
         <span>Orbit View</span>
       </button>
 
-      <!-- Mobile: Virtual joystick and controls -->
-      <div class="mobile-controls">
-        <!-- Joystick (left side) -->
-        <div class="joystick-area">
-          <div class="joystick-base" bind:this={joystickBase}>
-            <div class="joystick-knob" bind:this={joystickKnob}></div>
-          </div>
-          <span class="joystick-label">Move</span>
-        </div>
+      <!-- Touch input: Shared virtual joystick -->
+      <VirtualJoystick
+        onInput={handleJoystickInput}
+        enabled={isFirstPerson}
+        left={JOYSTICK_MARGIN}
+        bottom={JOYSTICK_MARGIN}
+        size={JOYSTICK_SIZE}
+      />
 
-        <!-- Look hint (right side) -->
+      <!-- Look hint (right side) -->
+      <div class="mobile-controls">
         <div class="look-hint">
           <i class="fas fa-hand-pointer" aria-hidden="true"></i>
           <span>Drag to look</span>
         </div>
       </div>
     {:else}
-      <!-- Desktop: Show hint if pointer not locked -->
+      <!-- Mouse/keyboard input: Show hint if pointer not locked -->
       {#if !document.pointerLockElement}
         <div class="click-to-look">
           <p>Click to enable mouse look</p>
         </div>
       {/if}
-      <!-- Desktop: Keyboard hints (bottom) -->
+      <!-- Mouse/keyboard input: Keyboard hints (bottom) -->
       <div class="fp-overlay">
         <div class="fp-controls">
-          <p><strong>WASD</strong> move • <strong>Space</strong> jump • <strong>ESC</strong> release mouse</p>
+          <p><strong>WASD</strong> move • <strong>1-6</strong> select object • <strong>Q</strong> cycle • <strong>{getPlacementHint()}</strong> place • <strong>ESC</strong> cancel</p>
         </div>
       </div>
     {/if}
+  {/if}
+
+  <!-- First-person placement mode crosshair and HUD -->
+  {#if isFirstPerson && fpPlacementObject}
+    <!-- Crosshair -->
+    <div class="fp-crosshair">
+      <div class="crosshair-line horizontal"></div>
+      <div class="crosshair-line vertical"></div>
+      <div class="crosshair-dot"></div>
+    </div>
+
+    <!-- Placement HUD -->
+    <div class="fp-placement-hud">
+      <div class="placement-item">
+        <div
+          class="placement-icon"
+          style="background-color: #{fpPlacementObject.color.toString(16).padStart(6, '0')}"
+        >
+          <i class="fas {fpPlacementObject.icon}" aria-hidden="true"></i>
+        </div>
+        <span class="placement-name">{fpPlacementObject.name}</span>
+      </div>
+      <div class="placement-controls">
+        <span class="hint-key">{getPlacementHint()}</span> Place
+        <span class="hint-key">Q</span> Next
+        <span class="hint-key">ESC</span> Cancel
+      </div>
+    </div>
+  {/if}
+
+  <!-- Quick object slots (bottom of screen, always visible in FP) -->
+  {#if isFirstPerson}
+    <div class="fp-object-slots">
+      {#each quickSelectObjects as obj, i}
+        <button
+          class="object-slot"
+          class:active={fpObjectIndex === i}
+          onclick={() => selectQuickObject(i)}
+          title="{obj.name} (Press {i + 1})"
+        >
+          <span class="slot-number">{i + 1}</span>
+          <div
+            class="slot-icon"
+            style="background-color: #{obj.color.toString(16).padStart(6, '0')}"
+          >
+            <i class="fas {obj.icon}" aria-hidden="true"></i>
+          </div>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Quick Select Modal (HL2 style) -->
+  {#if showQuickSelect}
+    <ObjectQuickSelect
+      onSelect={handleQuickSelectChoice}
+      onClose={handleQuickSelectClose}
+    />
   {/if}
 </div>
 
@@ -1849,42 +2490,6 @@
     z-index: 200;
   }
 
-  .joystick-area {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    pointer-events: auto;
-  }
-
-  .joystick-base {
-    width: 100px;
-    height: 100px;
-    background: rgba(255, 255, 255, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: none;
-  }
-
-  .joystick-knob {
-    width: 40px;
-    height: 40px;
-    background: rgba(249, 115, 22, 0.8);
-    border: 2px solid #f97316;
-    border-radius: 50%;
-    transition: transform 0.05s ease-out;
-  }
-
-  .joystick-label {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
   .look-hint {
     display: flex;
     flex-direction: column;
@@ -1930,5 +2535,235 @@
   .exit-fp-btn:active {
     background: rgba(249, 115, 22, 0.2);
     border-color: #f97316;
+  }
+
+  /* Mode toggle divider */
+  .mode-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0 4px;
+  }
+
+  /* Object palette container (left side) */
+  .object-palette-container {
+    position: absolute;
+    top: 70px;
+    left: 16px;
+    z-index: 200;
+  }
+
+  /* Edit mode hints (bottom center) */
+  .edit-hints {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  .hint-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    padding: 3px 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    margin-right: 4px;
+  }
+
+  /* Object count badge (bottom-left) */
+  .object-count {
+    position: absolute;
+    bottom: 20px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    z-index: 200;
+  }
+
+  .object-count i {
+    color: #f97316;
+  }
+
+  /* First-person placement crosshair */
+  .fp-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 300;
+  }
+
+  .crosshair-line {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .crosshair-line.horizontal {
+    width: 20px;
+    height: 2px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .crosshair-line.vertical {
+    width: 2px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .crosshair-dot {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #f97316;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 4px rgba(249, 115, 22, 0.8);
+  }
+
+  /* First-person placement HUD */
+  .fp-placement-hud {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    border-radius: 12px;
+    z-index: 250;
+  }
+
+  .placement-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .placement-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+  }
+
+  .placement-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+  }
+
+  .placement-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .placement-controls .hint-key {
+    margin-right: 4px;
+  }
+
+  /* First-person object slots (HL2 weapon slots style) */
+  .fp-object-slots {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 6px;
+    z-index: 250;
+  }
+
+  .object-slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    opacity: 0.7;
+  }
+
+  .object-slot:hover {
+    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .object-slot.active {
+    opacity: 1;
+    background: rgba(249, 115, 22, 0.2);
+    border-color: #f97316;
+  }
+
+  .slot-number {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .object-slot.active .slot-number {
+    color: #f97316;
+  }
+
+  .slot-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
   }
 </style>
