@@ -104,9 +104,9 @@
 
   // Event handlers
   function handleClose() {
-    logger.log("StepEditorCoordinator closing beat editor panel");
+    logger.log("StepEditorCoordinator closing step editor panel");
     panelState.closeStepEditorPanel();
-    // Clear beat selection when closing the Beat Editor
+    // Clear step selection when closing the Step Editor
     activeSequenceState.clearSelection();
   }
 

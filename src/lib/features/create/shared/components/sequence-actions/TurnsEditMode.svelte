@@ -4,6 +4,8 @@
   The "Turns" tab content - allows editing turns and rotation for a selected beat.
   Uses PropControlPair for consistent blue/red card layout.
   Also provides quick access to prop type selection and chirality toggle.
+
+  Compact mode: Single-row controls with icon-only prop selector for mobile.
 -->
 <script lang="ts">
   import {
@@ -29,6 +31,8 @@
     showBlueRotation: boolean;
     showRedRotation: boolean;
     stacked?: boolean;
+    /** Compact mode: single-row layout with icon-only prop selector */
+    compact?: boolean;
     onTurnsChange: (color: MotionColor, delta: number) => void;
     onRotationChange: (
       color: MotionColor,
@@ -46,6 +50,7 @@
     showBlueRotation,
     showRedRotation,
     stacked = false,
+    compact = false,
     onTurnsChange,
     onRotationChange,
     onOpenPropSheet,
@@ -84,34 +89,52 @@
     <p>Tap a beat in the sequence to edit its turns</p>
   </div>
 {:else}
-  <PropControlPair {stacked}>
+  <PropControlPair {stacked} {compact}>
     {#snippet blueContent()}
       <PropTurnsControl
         color="blue"
         turns={blueTurns}
         rotationDirection={blueRotation}
         showRotation={showBlueRotation}
+        {compact}
         onTurnsChange={(delta) => onTurnsChange(MotionColor.BLUE, delta)}
         onRotationChange={(dir) => onRotationChange(MotionColor.BLUE, dir)}
       />
-      <!-- Prop type row -->
-      <div class="prop-type-row blue">
-        <button
-          class="prop-type-btn"
-          onclick={() => onOpenPropSheet?.("blue")}
-          aria-label="Change blue prop type"
-        >
-          <img
-            src={blueDisplayInfo.image}
-            alt={blueDisplayInfo.label}
-            class="prop-icon"
-          />
-          <span class="prop-name">{blueDisplayInfo.label}</span>
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </button>
+      <!-- Prop type row - compact shows icon-only -->
+      <div class="prop-type-row blue" class:compact>
+        {#if compact}
+          <!-- Icon-only button for compact mode -->
+          <button
+            class="prop-icon-btn"
+            onclick={() => onOpenPropSheet?.("blue")}
+            aria-label="Change blue prop type: {blueDisplayInfo.label}"
+          >
+            <img
+              src={blueDisplayInfo.image}
+              alt={blueDisplayInfo.label}
+              class="prop-icon-sm"
+            />
+          </button>
+        {:else}
+          <!-- Full button with label -->
+          <button
+            class="prop-type-btn"
+            onclick={() => onOpenPropSheet?.("blue")}
+            aria-label="Change blue prop type"
+          >
+            <img
+              src={blueDisplayInfo.image}
+              alt={blueDisplayInfo.label}
+              class="prop-icon"
+            />
+            <span class="prop-name">{blueDisplayInfo.label}</span>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        {/if}
         {#if blueIsBuugeng}
           <button
             class="chirality-btn"
+            class:compact
             class:flipped={blueBuugengFlipped}
             onclick={toggleBlueChirality}
             aria-label="Flip blue buugeng chirality"
@@ -128,27 +151,45 @@
         turns={redTurns}
         rotationDirection={redRotation}
         showRotation={showRedRotation}
+        {compact}
         onTurnsChange={(delta) => onTurnsChange(MotionColor.RED, delta)}
         onRotationChange={(dir) => onRotationChange(MotionColor.RED, dir)}
       />
-      <!-- Prop type row -->
-      <div class="prop-type-row red">
-        <button
-          class="prop-type-btn"
-          onclick={() => onOpenPropSheet?.("red")}
-          aria-label="Change red prop type"
-        >
-          <img
-            src={redDisplayInfo.image}
-            alt={redDisplayInfo.label}
-            class="prop-icon"
-          />
-          <span class="prop-name">{redDisplayInfo.label}</span>
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </button>
+      <!-- Prop type row - compact shows icon-only -->
+      <div class="prop-type-row red" class:compact>
+        {#if compact}
+          <!-- Icon-only button for compact mode -->
+          <button
+            class="prop-icon-btn"
+            onclick={() => onOpenPropSheet?.("red")}
+            aria-label="Change red prop type: {redDisplayInfo.label}"
+          >
+            <img
+              src={redDisplayInfo.image}
+              alt={redDisplayInfo.label}
+              class="prop-icon-sm"
+            />
+          </button>
+        {:else}
+          <!-- Full button with label -->
+          <button
+            class="prop-type-btn"
+            onclick={() => onOpenPropSheet?.("red")}
+            aria-label="Change red prop type"
+          >
+            <img
+              src={redDisplayInfo.image}
+              alt={redDisplayInfo.label}
+              class="prop-icon"
+            />
+            <span class="prop-name">{redDisplayInfo.label}</span>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        {/if}
         {#if redIsBuugeng}
           <button
             class="chirality-btn"
+            class:compact
             class:flipped={redBuugengFlipped}
             onclick={toggleRedChirality}
             aria-label="Flip red buugeng chirality"
@@ -197,6 +238,14 @@
     margin-top: 4px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Compact mode: tighter prop type row */
+  .prop-type-row.compact {
+    gap: 4px;
+    margin-top: 2px;
+    padding-top: 4px;
+    justify-content: center;
   }
 
   .prop-type-btn {
@@ -257,6 +306,51 @@
   }
 
   /* ============================================================================
+     COMPACT ICON-ONLY PROP BUTTON - Small icon button for mobile
+     ============================================================================ */
+
+  .prop-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+    padding: 4px;
+  }
+
+  .prop-icon-sm {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+
+  /* Blue icon button */
+  .prop-type-row.blue .prop-icon-btn {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .prop-type-row.blue .prop-icon-btn:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  /* Red icon button */
+  .prop-type-row.red .prop-icon-btn {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .prop-type-row.red .prop-icon-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+
+  /* ============================================================================
      CHIRALITY BUTTON - Flip for Buugeng family
      ============================================================================ */
 
@@ -272,6 +366,14 @@
     font-size: 0.85rem;
     transition: all var(--duration-fast) ease;
     flex-shrink: 0;
+  }
+
+  /* Compact chirality button */
+  .chirality-btn.compact {
+    width: 30px;
+    height: 30px;
+    font-size: 0.75rem;
+    border-radius: 6px;
   }
 
   /* Blue chirality button */
@@ -316,6 +418,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .prop-type-btn,
+    .prop-icon-btn,
     .chirality-btn {
       transition: none;
     }

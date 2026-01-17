@@ -1,7 +1,7 @@
 <!--
   StepGridSection.svelte
 
-  Beat grid display section for SequenceActionsPanel.
+  Step grid display section for SequenceActionsPanel.
   Includes shift-mode banner when in shift start mode.
 -->
 <script lang="ts">
@@ -32,7 +32,7 @@
   }: Props = $props();
 </script>
 
-<div class="beat-grid-section" class:shift-mode={isShiftMode}>
+<div class="step-grid-section" class:shift-mode={isShiftMode}>
   {#if isShiftMode}
     <div class="shift-mode-banner">
       <span>Tap the beat to play first — it becomes Beat 1</span>
@@ -50,7 +50,7 @@
 </div>
 
 <style>
-  .beat-grid-section {
+  .step-grid-section {
     flex: 0 0 40%;
     min-height: 0;
     border-top: 1px solid var(--theme-stroke);
@@ -61,7 +61,7 @@
     flex-direction: column;
   }
 
-  .beat-grid-section.shift-mode {
+  .step-grid-section.shift-mode {
     border-color: rgba(6, 182, 212, 0.5);
     background: rgba(6, 182, 212, 0.05);
   }

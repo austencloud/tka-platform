@@ -35,6 +35,7 @@
     onRewind: () => void;
     onTurnPattern: () => void;
     onRotationDirection: () => void;
+    onDuration: () => void;
     onExtend?: () => void;
     onShiftStart?: () => void;
     onEditInConstructor: () => void;
@@ -63,6 +64,7 @@
     onRewind,
     onTurnPattern,
     onRotationDirection,
+    onDuration,
     onExtend,
     onShiftStart,
     onEditInConstructor,
@@ -83,9 +85,9 @@
   // Transform: always 6 items
   const transformItemCount = 6;
 
-  // Patterns: Turn Pattern + Direction + Rewind (always) + Extend (conditional) + Shift Start (conditional)
+  // Patterns: Turn Pattern + Direction + Duration + Rewind (always) + Extend (conditional) + Shift Start (conditional)
   const patternsItemCount = $derived(
-    3 + // Turn Pattern, Direction, Rewind (always present)
+    4 + // Turn Pattern, Direction, Duration, Rewind (always present)
       (onExtend && canExtend ? 1 : 0) +
       (onShiftStart ? 1 : 0)
   );
@@ -250,6 +252,21 @@
         <div class="btn-text">
           <span class="btn-label">Direction</span>
           <span class="btn-desc">CW/CCW patterns</span>
+        </div>
+      </button>
+      <button
+        class="grid-btn duration"
+        class:help-active={helpMode}
+        onclick={() => handleActionClick("duration", onDuration)}
+        disabled={!hasSequence && !helpMode}
+        aria-label={helpMode ? "Learn about Duration" : "Apply duration pattern (beat timing)"}
+      >
+        <div class="btn-icon">
+          <i class="fas fa-stopwatch" aria-hidden="true"></i>
+        </div>
+        <div class="btn-text">
+          <span class="btn-label">Duration</span>
+          <span class="btn-desc">Beat timing</span>
         </div>
       </button>
       {#if onExtend && canExtend}
@@ -533,6 +550,9 @@
   .grid-btn.direction {
     --btn-color: 14, 165, 233;
   } /* Sky */
+  .grid-btn.duration {
+    --btn-color: 251, 146, 60;
+  } /* Orange-400 */
   .grid-btn.extend {
     --btn-color: 34, 197, 94;
   } /* Green */

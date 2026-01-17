@@ -4,6 +4,9 @@
   Internal controls for adjusting turns and rotation of a single prop.
   Designed to be used inside PropControlPair which provides the card styling.
   Uses CSS custom properties from parent card for color theming.
+
+  Compact mode: Single row with [CW] [−] [value] [+] [CCW] for mobile.
+  Normal mode: Two rows with turns controls above rotation controls.
 -->
 <script lang="ts">
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -13,6 +16,8 @@
     turns: number | "fl";
     rotationDirection: RotationDirection;
     showRotation: boolean;
+    /** Compact mode: single row layout for mobile */
+    compact?: boolean;
     onTurnsChange: (delta: number) => void;
     onRotationChange: (direction: RotationDirection) => void;
   }
@@ -22,6 +27,7 @@
     turns,
     rotationDirection,
     showRotation,
+    compact = false,
     onTurnsChange,
     onRotationChange,
   }: Props = $props();
@@ -44,48 +50,92 @@
   class="turns-controls"
   class:blue={color === "blue"}
   class:red={color === "red"}
+  class:compact
 >
-  <div class="turns-row">
-    <button
-      class="ctrl-btn"
-      aria-label="Decrease {color} turns"
-      onclick={(e) => handleTurnsChangeClick(e, -0.5)}
-    >
-      <i class="fas fa-minus" aria-hidden="true"></i>
-    </button>
-    <span class="turns-value">{displayTurns}</span>
-    <button
-      class="ctrl-btn"
-      aria-label="Increase {color} turns"
-      onclick={(e) => handleTurnsChangeClick(e, 0.5)}
-    >
-      <i class="fas fa-plus" aria-hidden="true"></i>
-    </button>
-  </div>
+  {#if compact}
+    <!-- Compact: Single row with rotation + turns combined -->
+    <div class="combined-row">
+      <button
+        class="rot-btn-sm"
+        class:active={showRotation &&
+          rotationDirection === RotationDirection.CLOCKWISE}
+        aria-label="Rotate {color} clockwise"
+        onclick={(e) => handleRotationClick(e, RotationDirection.CLOCKWISE)}
+        disabled={!showRotation}
+      >
+        <i class="fas fa-rotate-right" aria-hidden="true"></i>
+      </button>
+      <button
+        class="ctrl-btn-sm"
+        aria-label="Decrease {color} turns"
+        onclick={(e) => handleTurnsChangeClick(e, -0.5)}
+      >
+        <i class="fas fa-minus" aria-hidden="true"></i>
+      </button>
+      <span class="turns-value-sm">{displayTurns}</span>
+      <button
+        class="ctrl-btn-sm"
+        aria-label="Increase {color} turns"
+        onclick={(e) => handleTurnsChangeClick(e, 0.5)}
+      >
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </button>
+      <button
+        class="rot-btn-sm"
+        class:active={showRotation &&
+          rotationDirection === RotationDirection.COUNTER_CLOCKWISE}
+        aria-label="Rotate {color} counter clockwise"
+        onclick={(e) =>
+          handleRotationClick(e, RotationDirection.COUNTER_CLOCKWISE)}
+        disabled={!showRotation}
+      >
+        <i class="fas fa-rotate-left" aria-hidden="true"></i>
+      </button>
+    </div>
+  {:else}
+    <!-- Normal: Two rows -->
+    <div class="turns-row">
+      <button
+        class="ctrl-btn"
+        aria-label="Decrease {color} turns"
+        onclick={(e) => handleTurnsChangeClick(e, -0.5)}
+      >
+        <i class="fas fa-minus" aria-hidden="true"></i>
+      </button>
+      <span class="turns-value">{displayTurns}</span>
+      <button
+        class="ctrl-btn"
+        aria-label="Increase {color} turns"
+        onclick={(e) => handleTurnsChangeClick(e, 0.5)}
+      >
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </button>
+    </div>
 
-  <div class="rotation-row">
-    <button
-      class="rot-btn"
-      class:active={showRotation &&
-        rotationDirection === RotationDirection.CLOCKWISE}
-      aria-label="Rotate {color} clockwise"
-      onclick={(e) => handleRotationClick(e, RotationDirection.CLOCKWISE)}
-      disabled={!showRotation}
-    >
-      <i class="fas fa-rotate-right" aria-hidden="true"></i>
-    </button>
-    <button
-      class="rot-btn"
-      class:active={showRotation &&
-        rotationDirection === RotationDirection.COUNTER_CLOCKWISE}
-      aria-label="Rotate {color} counter clockwise"
-      onclick={(e) =>
-        handleRotationClick(e, RotationDirection.COUNTER_CLOCKWISE)}
-      disabled={!showRotation}
-    >
-      <i class="fas fa-rotate-left" aria-hidden="true"></i>
-    </button>
-  </div>
+    <div class="rotation-row">
+      <button
+        class="rot-btn"
+        class:active={showRotation &&
+          rotationDirection === RotationDirection.CLOCKWISE}
+        aria-label="Rotate {color} clockwise"
+        onclick={(e) => handleRotationClick(e, RotationDirection.CLOCKWISE)}
+        disabled={!showRotation}
+      >
+        <i class="fas fa-rotate-right" aria-hidden="true"></i>
+      </button>
+      <button
+        class="rot-btn"
+        class:active={showRotation &&
+          rotationDirection === RotationDirection.COUNTER_CLOCKWISE}
+        aria-label="Rotate {color} counter clockwise"
+        onclick={(e) =>
+          handleRotationClick(e, RotationDirection.COUNTER_CLOCKWISE)}
+        disabled={!showRotation}
+      >
+        <i class="fas fa-rotate-left" aria-hidden="true"></i>
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -114,6 +164,131 @@
   .rotation-row {
     display: flex;
     gap: 8px;
+  }
+
+  /* ============================================================================
+     COMPACT MODE - Single row layout for mobile
+     ============================================================================ */
+
+  .turns-controls.compact {
+    gap: 0;
+  }
+
+  .combined-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .turns-value-sm {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    min-width: 36px;
+    text-align: center;
+  }
+
+  /* Compact control buttons (turns +/-) */
+  .ctrl-btn-sm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .ctrl-btn-sm:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  /* Compact rotation buttons */
+  .rot-btn-sm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .rot-btn-sm:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .rot-btn-sm:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Blue compact styles */
+  .turns-controls.blue.compact .ctrl-btn-sm {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.2);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.4);
+    color: var(--prop-color, var(--semantic-info));
+  }
+
+  .turns-controls.blue.compact .ctrl-btn-sm:hover {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.3);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.6);
+  }
+
+  .turns-controls.blue.compact .rot-btn-sm {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.12);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.25);
+    color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.6);
+  }
+
+  .turns-controls.blue.compact .rot-btn-sm:hover:not(:disabled) {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.2);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.4);
+    color: var(--prop-color, var(--semantic-info));
+  }
+
+  .turns-controls.blue.compact .rot-btn-sm.active {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.25);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.5);
+    color: var(--prop-color, var(--semantic-info));
+  }
+
+  /* Red compact styles */
+  .turns-controls.red.compact .ctrl-btn-sm {
+    background: rgba(var(--prop-color-rgb, 239, 68, 68), 0.2);
+    border-color: rgba(var(--prop-color-rgb, 239, 68, 68), 0.4);
+    color: var(--prop-color, var(--semantic-error));
+  }
+
+  .turns-controls.red.compact .ctrl-btn-sm:hover {
+    background: rgba(var(--prop-color-rgb, 239, 68, 68), 0.3);
+    border-color: rgba(var(--prop-color-rgb, 239, 68, 68), 0.6);
+  }
+
+  .turns-controls.red.compact .rot-btn-sm {
+    background: rgba(var(--prop-color-rgb, 239, 68, 68), 0.12);
+    border-color: rgba(var(--prop-color-rgb, 239, 68, 68), 0.25);
+    color: rgba(var(--prop-color-rgb, 239, 68, 68), 0.6);
+  }
+
+  .turns-controls.red.compact .rot-btn-sm:hover:not(:disabled) {
+    background: rgba(var(--prop-color-rgb, 239, 68, 68), 0.2);
+    border-color: rgba(var(--prop-color-rgb, 239, 68, 68), 0.4);
+    color: var(--prop-color, var(--semantic-error));
+  }
+
+  .turns-controls.red.compact .rot-btn-sm.active {
+    background: rgba(var(--prop-color-rgb, 239, 68, 68), 0.25);
+    border-color: rgba(var(--prop-color-rgb, 239, 68, 68), 0.5);
+    color: var(--prop-color, var(--semantic-error));
   }
 
   /* ============================================================================
@@ -210,11 +385,15 @@
 
   @media (prefers-reduced-motion: reduce) {
     .ctrl-btn,
-    .rot-btn {
+    .rot-btn,
+    .ctrl-btn-sm,
+    .rot-btn-sm {
       transition: none;
     }
     .ctrl-btn:active:not(:disabled),
-    .rot-btn:active:not(:disabled) {
+    .rot-btn:active:not(:disabled),
+    .ctrl-btn-sm:active:not(:disabled),
+    .rot-btn-sm:active:not(:disabled) {
       transform: none;
     }
   }

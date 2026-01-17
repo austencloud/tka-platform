@@ -1,7 +1,7 @@
 /**
- * Beat Grid Domain Models
+ * Step Grid Domain Models
  *
- * Pure TypeScript interfaces for beat grid layout and positioning.
+ * Pure TypeScript interfaces for step grid layout and positioning.
  * Moved from main workbench/domain to sequence-display specific domain.
  */
 

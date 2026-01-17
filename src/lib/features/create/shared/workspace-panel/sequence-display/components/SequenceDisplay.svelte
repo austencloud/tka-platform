@@ -151,7 +151,7 @@
         </div>
       </div>
 
-      <div class="beat-grid-wrapper" class:shift-mode={isShiftStartMode}>
+      <div class="step-grid-wrapper" class:shift-mode={isShiftStartMode}>
         <StepGrid
           steps={currentSequence?.steps ?? []}
           startPosition={startPositionStep() ?? undefined}
@@ -242,7 +242,7 @@
     flex: 1;
   }
 
-  .beat-grid-wrapper {
+  .step-grid-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -257,7 +257,7 @@
       border-color 0.2s ease;
   }
 
-  .beat-grid-wrapper.shift-mode {
+  .step-grid-wrapper.shift-mode {
     box-shadow:
       0 0 0 2px rgba(6, 182, 212, 0.5),
       0 0 20px rgba(6, 182, 212, 0.2);

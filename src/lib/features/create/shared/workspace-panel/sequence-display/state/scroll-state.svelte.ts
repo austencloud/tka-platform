@@ -5,7 +5,7 @@
  */
 
 /**
- * Create scroll state for beat grid
+ * Create scroll state for step grid
  */
 export function createScrollState() {
   // Scroll state

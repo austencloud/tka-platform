@@ -5,8 +5,10 @@
   Provides consistent glass-morphism card styling for both props.
   Handles stacked (mobile) vs side-by-side (desktop) layout.
 
+  Compact mode: Tighter padding and gaps for mobile screens.
+
   Usage:
-    <PropControlPair stacked={isMobile}>
+    <PropControlPair stacked={isMobile} compact={isMobile}>
       {#snippet blueContent()} ... blue controls ... {/snippet}
       {#snippet redContent()} ... red controls ... {/snippet}
     </PropControlPair>
@@ -17,16 +19,18 @@
   interface Props {
     /** Stack cards vertically (mobile) vs side-by-side (desktop) */
     stacked?: boolean;
+    /** Use compact styling with tighter padding/gaps */
+    compact?: boolean;
     /** Content for the blue prop card */
     blueContent?: Snippet;
     /** Content for the red prop card */
     redContent?: Snippet;
   }
 
-  let { stacked = false, blueContent, redContent }: Props = $props();
+  let { stacked = false, compact = false, blueContent, redContent }: Props = $props();
 </script>
 
-<div class="prop-pair" class:stacked>
+<div class="prop-pair" class:stacked class:compact>
   <div class="prop-card blue">
     <span class="prop-label">Blue</span>
     <div class="card-content">
@@ -55,6 +59,11 @@
     flex-direction: column;
   }
 
+  /* Compact mode: tighter gaps */
+  .prop-pair.compact {
+    gap: 6px;
+  }
+
   /* ============================================================================
      PROP CARD - Glass-morphism colored panels
      Unified styling for all blue/red control contexts
@@ -70,6 +79,13 @@
     border-radius: 12px;
     border: 1px solid;
     transition: all var(--duration-fast) ease;
+  }
+
+  /* Compact mode: tighter padding and gaps */
+  .prop-pair.compact .prop-card {
+    padding: 8px;
+    gap: 6px;
+    border-radius: 10px;
   }
 
   /* Blue - Indigo glass pane */
@@ -124,6 +140,12 @@
     letter-spacing: 0.75px;
   }
 
+  /* Compact mode: smaller label */
+  .prop-pair.compact .prop-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+  }
+
   /* ============================================================================
      CARD CONTENT - Container for slotted controls
      Minimum height ensures consistent card size between different control types
@@ -139,6 +161,12 @@
     gap: 8px;
     /* Min height to accommodate turns controls (2 rows of buttons) */
     min-height: calc(var(--min-touch-target, 44px) * 2 + 8px);
+  }
+
+  /* Compact mode: reduced gap and min-height (single row layout) */
+  .prop-pair.compact .card-content {
+    gap: 4px;
+    min-height: 38px; /* Single row of compact buttons */
   }
 
   /* ============================================================================

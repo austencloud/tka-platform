@@ -9,6 +9,7 @@ export type SubDrawerType =
   | "help"
   | "turnPattern"
   | "rotationDirection"
+  | "duration"
   | "extend"
   | null;
 

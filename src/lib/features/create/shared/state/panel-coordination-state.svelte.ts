@@ -20,6 +20,7 @@
  */
 
 import type { StepData } from "../domain/models/StepData";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { LOOPType } from "../../generate/circular/domain/models/circular-models";
 import type { LOOPComponent } from "../../generate/shared/domain/models/generate-models";
 import type { PictographData } from "../../../../shared/pictograph/shared/domain/models/PictographData";
@@ -241,6 +242,15 @@ export interface PanelCoordinationState {
   get shouldEnterGeneratorHelpMode(): boolean;
   triggerGeneratorHelpMode(): void;
   clearGeneratorHelpModeTrigger(): void;
+
+  // Duration Preview Mode State (for live preview in duration pattern drawer)
+  get isDurationPreviewMode(): boolean;
+  get previewSequence(): SequenceData | null;
+  get originalSequence(): SequenceData | null;
+
+  enterDurationPreviewMode(sequence: SequenceData): void;
+  exitDurationPreviewMode(apply: boolean): { sequence: SequenceData | null };
+  setPreviewSequence(sequence: SequenceData): void;
 }
 
 export function createPanelCoordinationState(): PanelCoordinationState {
@@ -328,6 +338,11 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
   // Generator help mode trigger (for mobile - ButtonPanel triggers, GeneratePanel listens)
   let shouldEnterGeneratorHelpMode = $state(false);
+
+  // Duration preview mode state (for live preview in duration pattern drawer)
+  let isDurationPreviewMode = $state(false);
+  let previewSequence = $state<SequenceData | null>(null);
+  let originalSequence = $state<SequenceData | null>(null);
 
   // Start/End options panel state
   let isStartEndPanelOpen = $state(false);
@@ -787,6 +802,35 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     clearGeneratorHelpModeTrigger() {
       shouldEnterGeneratorHelpMode = false;
+    },
+
+    // Duration Preview Mode
+    get isDurationPreviewMode() {
+      return isDurationPreviewMode;
+    },
+    get previewSequence() {
+      return previewSequence;
+    },
+    get originalSequence() {
+      return originalSequence;
+    },
+
+    enterDurationPreviewMode(sequence: SequenceData) {
+      isDurationPreviewMode = true;
+      originalSequence = sequence;
+      previewSequence = sequence;
+    },
+
+    exitDurationPreviewMode(apply: boolean) {
+      const result = apply ? previewSequence : originalSequence;
+      isDurationPreviewMode = false;
+      previewSequence = null;
+      originalSequence = null;
+      return { sequence: result };
+    },
+
+    setPreviewSequence(sequence: SequenceData) {
+      previewSequence = sequence;
     },
   };
 }

@@ -1,7 +1,7 @@
 /**
- * Beat Grid Display State Factory
+ * Step Grid Display State Factory
  *
- * Svelte 5 runes-based state management for beat grid display animations.
+ * Svelte 5 runes-based state management for step grid display animations.
  * Handles entrance/exit animations, sequential reveals, and animation coordination.
  * This is for DISPLAY animations (how steps appear in grid), NOT playback animations.
  */
@@ -33,7 +33,7 @@ export function isPendingGenerationAnimation(): boolean {
 }
 
 /**
- * Create beat grid display animation state
+ * Create step grid display animation state
  */
 export function createStepGridDisplayState() {
   // Animation state

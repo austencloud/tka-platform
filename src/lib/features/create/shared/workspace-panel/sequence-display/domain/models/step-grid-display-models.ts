@@ -1,7 +1,7 @@
 /**
- * Beat Grid Display Models
+ * Step Grid Display Models
  *
- * Domain models for beat grid display animations and transitions.
+ * Domain models for step grid display animations and transitions.
  * These handle how steps appear/disappear in the Create module grid,
  * NOT playback animations in the Animator tab.
  */

@@ -4,22 +4,24 @@
   Split workspace for live preview of duration patterns.
 
   Layout (desktop):
-  - Top half: Animation preview (props animating with current timing)
-  - Bottom half: Timeline beat grid (showing duration-proportional widths)
+  - Top: Animation preview (props animating with current timing)
+  - Bottom: Horizontal timeline strip (single row, duration-proportional widths)
 
   Features:
   - Auto-plays animation in a loop
   - Updates instantly when duration pattern changes
-  - Timeline mode shows duration-proportional cell widths
+  - Horizontal scrollable timeline with duration-proportional cell widths
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { StepData } from "../../domain/models/StepData";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-  import StepGrid from "../../workspace-panel/sequence-display/components/StepGrid.svelte";
+  import Pictograph from "$lib/shared/pictograph/shared/components/Pictograph.svelte";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { onMount, onDestroy } from "svelte";
+  import { formatDurationCompact } from "../../domain/models/DurationPatternData";
 
   interface Props {
     /** Sequence to preview with duration pattern applied */
@@ -163,11 +165,39 @@
   const currentLetter = $derived(currentStepData?.letter ?? null);
 
   // Grid mode from sequence
-  const gridMode = $derived(() => {
+  const gridMode = $derived.by(() => {
     if (sequence.startPosition?.gridMode) {
       return sequence.startPosition.gridMode;
     }
     return GridMode.DIAMOND;
+  });
+
+  // Calculate base unit width (100px per 1.0 duration unit)
+  const BASE_UNIT_WIDTH = 100;
+
+  // Auto-scroll timeline to keep current step visible
+  let timelineRef: HTMLElement | undefined = $state();
+
+  $effect(() => {
+    if (!timelineRef) return;
+
+    // Calculate the position of the current step in the timeline
+    let offsetX = 0;
+    for (let i = 0; i < currentStepIndex; i++) {
+      offsetX += (sequence.steps[i]?.duration ?? 1.0) * BASE_UNIT_WIDTH;
+    }
+
+    // Get current step width
+    const currentWidth = (sequence.steps[currentStepIndex]?.duration ?? 1.0) * BASE_UNIT_WIDTH;
+
+    // Center the current step in view
+    const containerWidth = timelineRef.clientWidth;
+    const targetScroll = offsetX - (containerWidth / 2) + (currentWidth / 2);
+
+    timelineRef.scrollTo({
+      left: Math.max(0, targetScroll),
+      behavior: 'smooth'
+    });
   });
 </script>
 
@@ -179,7 +209,7 @@
         blueProp={blueProp}
         redProp={redProp}
         gridVisible={true}
-        gridMode={gridMode()}
+        gridMode={gridMode}
         letter={currentLetter}
         stepData={currentStepData}
         sequenceData={sequence}
@@ -190,20 +220,41 @@
     </div>
   </div>
 
-  <!-- Timeline Beat Grid -->
+  <!-- Horizontal Timeline Strip -->
   <div class="timeline-section">
     <div class="timeline-header">
       <span class="timeline-label">Timeline</span>
-      <span class="duration-hint">Cell width = beat duration</span>
+      <span class="duration-hint">Width = duration</span>
     </div>
-    <div class="timeline-grid">
-      <StepGrid
-        steps={sequence.steps}
-        startPosition={sequence.startPosition ?? sequence.startingPosition ?? null}
-        selectedStepNumber={currentStepIndex + 1}
-        isTimelineMode={true}
-        isSideBySideLayout={true}
-      />
+    <div class="timeline-strip" bind:this={timelineRef}>
+      <div class="timeline-track">
+        {#each sequence.steps as step, index}
+          {@const duration = step.duration ?? 1.0}
+          {@const isActive = index === currentStepIndex}
+          {@const width = duration * BASE_UNIT_WIDTH}
+          <div
+            class="timeline-cell"
+            class:active={isActive}
+            style="width: {width}px; min-width: {width}px;"
+          >
+            <div class="cell-pictograph">
+              <Pictograph
+                pictographData={step}
+                size={60}
+                showGrid={false}
+                showGlyphs={false}
+              />
+            </div>
+            <div class="cell-info">
+              <span class="beat-number">{index + 1}</span>
+              <span class="duration-badge">{formatDurationCompact(duration)}</span>
+            </div>
+            {#if step.letter}
+              <span class="letter-badge">{step.letter}</span>
+            {/if}
+          </div>
+        {/each}
+      </div>
     </div>
   </div>
 </div>
@@ -214,7 +265,7 @@
     flex-direction: column;
     height: 100%;
     width: 100%;
-    gap: 8px;
+    gap: 12px;
     padding: 12px;
     background: var(--theme-panel-bg);
     overflow: hidden;
@@ -222,7 +273,7 @@
 
   .animation-section {
     flex: 1;
-    min-height: 0;
+    min-height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -244,8 +295,7 @@
 
   .timeline-section {
     flex: 0 0 auto;
-    min-height: 120px;
-    max-height: 200px;
+    height: 140px;
     display: flex;
     flex-direction: column;
     background: var(--theme-card-bg);
@@ -258,7 +308,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-bottom: 1px solid var(--theme-stroke);
     flex-shrink: 0;
   }
@@ -274,11 +324,98 @@
     color: var(--theme-text-dim);
   }
 
-  .timeline-grid {
+  .timeline-strip {
     flex: 1;
     min-height: 0;
-    padding: 8px;
     overflow-x: auto;
     overflow-y: hidden;
+    padding: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .timeline-strip::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .timeline-strip::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, transparent);
+  }
+
+  .timeline-strip::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
+    border-radius: 4px;
+  }
+
+  .timeline-track {
+    display: flex;
+    gap: 4px;
+    height: 100%;
+    min-width: max-content;
+  }
+
+  .timeline-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 6px;
+    transition: all 150ms ease;
+    overflow: hidden;
+  }
+
+  .timeline-cell.active {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.5);
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
+  }
+
+  .cell-pictograph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .cell-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    width: 100%;
+    justify-content: center;
+  }
+
+  .beat-number {
+    font-size: var(--font-size-xs, 12px);
+    font-weight: 600;
+    color: var(--theme-text);
+  }
+
+  .duration-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .letter-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 5px;
+    background: rgba(0, 0, 0, 0.5);
+    color: var(--theme-text);
+    border-radius: 3px;
   }
 </style>

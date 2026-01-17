@@ -25,7 +25,7 @@
   import { UndoOperationType } from "../../services/contracts/IUndoManager";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
-  import { openSpotlightWithBeatGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
+  import { openSpotlightWithStepGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
 
@@ -40,6 +40,7 @@
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
   import RotationDirectionDrawer from "./RotationDirectionDrawer.svelte";
+import DurationPatternDrawer from "./DurationPatternDrawer.svelte";
   import ExtendDrawer from "./ExtendDrawer.svelte";
   import StepGridSection from "./StepGridSection.svelte";
   import FirstStepConfirmDialog from "./FirstStepConfirmDialog.svelte";
@@ -113,6 +114,7 @@
   let selectedTransform = $state<ActionHelpId | null>(null);
   let showTurnPatternDrawer = $state(false);
   let showRotationDirectionDrawer = $state(false);
+  let showDurationDrawer = $state(false);
   let showExtendDrawer = $state(false);
   let extensionAnalysis = $state<ExtensionAnalysis | null>(null);
   let circularizationOptions = $state<CircularizationOption[]>([]);
@@ -132,6 +134,7 @@
     let activeDrawer: SubDrawerType = null;
     if (showTurnPatternDrawer) activeDrawer = "turnPattern";
     else if (showRotationDirectionDrawer) activeDrawer = "rotationDirection";
+    else if (showDurationDrawer) activeDrawer = "duration";
     else if (showExtendDrawer) activeDrawer = "extend";
     else if (helpMode !== "inactive") activeDrawer = "help";
 
@@ -184,6 +187,7 @@
           showTurnPatternDrawer = true;
         else if (restoredSubDrawer === "rotationDirection")
           showRotationDirectionDrawer = true;
+        else if (restoredSubDrawer === "duration") showDurationDrawer = true;
         else if (restoredSubDrawer === "extend") showExtendDrawer = true;
         // Mark restoration complete so auto-save can clear when user closes sub-drawers
         restorationComplete = true;
@@ -254,7 +258,7 @@
     hapticService?.trigger("selection");
     handleClose();
     // Open spotlight with beat grid - renders sequence directly without generating an image
-    openSpotlightWithBeatGrid(sequence);
+    openSpotlightWithStepGrid(sequence);
   }
 
   function handleTurnPattern() {
@@ -287,6 +291,50 @@
     CreateModuleState.pushUndoSnapshot(
       UndoOperationType.APPLY_ROTATION_PATTERN
     );
+
+    // Update the active sequence with the pattern-applied sequence
+    activeSequenceState.setCurrentSequence(result.sequence);
+    hapticService?.trigger("success");
+  }
+
+  function handleDuration() {
+    hapticService?.trigger("selection");
+    showDurationDrawer = true;
+    // Enter preview mode on desktop (side-by-side layout)
+    if (isSideBySideLayout && sequence) {
+      panelState.enterDurationPreviewMode(sequence);
+    }
+  }
+
+  function handleDurationDrawerClose() {
+    showDurationDrawer = false;
+    // Exit preview mode and revert to original sequence
+    if (panelState.isDurationPreviewMode) {
+      const { sequence: original } = panelState.exitDurationPreviewMode(false);
+      // Don't need to do anything with original - preview mode already reverts
+    }
+  }
+
+  function handleDurationPreview(previewSequence: any) {
+    // Update preview sequence in panel state (for workspace display)
+    if (panelState.isDurationPreviewMode) {
+      panelState.setPreviewSequence(previewSequence);
+    }
+  }
+
+  function handleDurationApply(result: {
+    sequence: any;
+    warnings?: readonly string[];
+  }) {
+    // Push undo snapshot BEFORE applying pattern
+    CreateModuleState.pushUndoSnapshot(
+      UndoOperationType.APPLY_DURATION_PATTERN
+    );
+
+    // Exit preview mode and apply the changes
+    if (panelState.isDurationPreviewMode) {
+      panelState.exitDurationPreviewMode(true); // apply = true
+    }
 
     // Update the active sequence with the pattern-applied sequence
     activeSequenceState.setCurrentSequence(result.sequence);
@@ -644,6 +692,7 @@
         onRewind={handleRewind}
         onTurnPattern={handleTurnPattern}
         onRotationDirection={handleRotationDirection}
+        onDuration={handleDuration}
         onExtend={handleExtend}
         onShiftStart={handleShiftStart}
         onEditInConstructor={handleEditInConstructor}
@@ -693,6 +742,16 @@
   toolPanelWidth={panelState.toolPanelWidth}
   onClose={() => (showRotationDirectionDrawer = false)}
   onApply={handleRotationDirectionApply}
+/>
+
+<DurationPatternDrawer
+  bind:isOpen={showDurationDrawer}
+  sequence={panelState.isDurationPreviewMode ? panelState.previewSequence : sequence}
+  toolPanelWidth={panelState.toolPanelWidth}
+  previewMode={isSideBySideLayout}
+  onClose={handleDurationDrawerClose}
+  onPreview={handleDurationPreview}
+  onApply={handleDurationApply}
 />
 
 <ExtendDrawer

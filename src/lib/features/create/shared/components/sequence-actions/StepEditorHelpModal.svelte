@@ -1,8 +1,8 @@
 <!--
   StepEditorHelpModal.svelte
 
-  Help modal explaining beat editor controls.
-  Shows when user taps the help button in the beat editor panel.
+  Help modal explaining step editor controls.
+  Shows when user taps the help button in the step editor panel.
 -->
 <script lang="ts">
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
@@ -32,16 +32,16 @@
   size="fit"
   animation="pop"
   onclose={handleClose}
-  labelledBy="beat-editor-help-title"
+  labelledBy="step-editor-help-title"
 >
   {#snippet header()}
     <ModalHeader
-      title="Beat Editor"
+      title="Step Editor"
       subtitle="Edit individual steps in your sequence"
       icon="fa-sliders-h"
       iconColor={accentColor}
       onClose={handleClose}
-      id="beat-editor-help-title"
+      id="step-editor-help-title"
     />
   {/snippet}
 

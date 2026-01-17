@@ -9,7 +9,7 @@
    */
 
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
-  import { openSpotlightWithBeatGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
+  import { openSpotlightWithStepGrid } from "$lib/shared/application/state/ui/ui-state.svelte";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import CreationWorkspaceArea from "./CreationWorkspaceArea.svelte";
   import CreationToolPanelSlot from "./CreationToolPanelSlot.svelte";
@@ -140,7 +140,7 @@
   function handleSpotlight() {
     const sequence = CreateModuleState.sequenceState.currentSequence;
     if (sequence) {
-      openSpotlightWithBeatGrid(sequence);
+      openSpotlightWithStepGrid(sequence);
     }
   }
 </script>

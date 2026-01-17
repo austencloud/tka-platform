@@ -77,6 +77,11 @@
   // Track previous beat ID for change detection
   let previousBeatId = "";
 
+  // HMR detection: track if this is a fresh mount with existing data
+  // If beat already has data on first mount and we're not explicitly told to animate,
+  // skip the animation (likely HMR scenario)
+  let isInitialMount = true;
+
   // Long-press detection
   const LONG_PRESS_DURATION = 500; // ms
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -139,11 +144,24 @@
   });
 
   const shouldAnimateIn = $derived.by(() => {
+    // Skip animation on HMR: if this is initial mount with pre-existing non-blank data
+    // and we're told to animate, it's likely HMR preserving parent state but resetting child
+    // The parent should re-trigger animation explicitly through proper channels
+    if (isInitialMount && !beat.isBlank && shouldAnimate) {
+      // Will be set to false in onMount, at which point we'll have hasAnimated = true
+      return false;
+    }
     return shouldAnimate && !hasAnimated && !beat.isBlank;
   });
 
   // Steps should be invisible ONLY if they're waiting to animate
   const isVisible = $derived.by(() => {
+    // HMR case: if initial mount with existing data and told to animate,
+    // show it immediately (don't hide waiting for animation)
+    if (isInitialMount && !beat.isBlank && shouldAnimate) {
+      return true;
+    }
+
     // If it should animate but hasn't yet, hide it (will become visible via animation)
     // This applies to ALL steps, including start position during generation
     if (shouldAnimate && !hasAnimated) return false;
@@ -165,6 +183,13 @@
 
   // Listen for animation changes from the AnimationSelector
   onMount(() => {
+    // Handle HMR case: if we mounted with existing data and animation was requested,
+    // mark as already animated to prevent re-animation
+    if (isInitialMount && !beat.isBlank && shouldAnimate) {
+      hasAnimated = true;
+    }
+    isInitialMount = false;
+
     const handleAnimationChange = (event: CustomEvent) => {
       currentAnimationName = event.detail.animation;
     };
@@ -350,10 +375,14 @@
     /* Smooth deselection animation - morphs back from selected state */
     transform: scale(1);
     box-shadow: none;
+    border: 3px solid transparent;
+    background: transparent;
     transition:
-      transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.25s ease-out,
-      opacity 0.15s ease-out;
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.35s ease-out,
+      border 0.35s ease-out,
+      background 0.35s ease-out,
+      opacity 0.25s ease-out;
 
     /* Prevent text selection during long-press */
     user-select: none;
@@ -469,8 +498,48 @@
     /* NO transparency - keep selected beat fully opaque */
     opacity: 1;
 
-    /* Smooth spring animation */
-    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Smooth spring animation - longer duration for more noticeable fade-in */
+    transition:
+      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.35s ease-out,
+      border 0.35s ease-out,
+      background 0.35s ease-out;
+  }
+
+  /* Selection fade-in animation using a pseudo-element for the glow */
+  .beat-cell.selected::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 3px solid transparent;
+    background:
+      linear-gradient(transparent, transparent) padding-box,
+      linear-gradient(
+          135deg,
+          rgba(251, 191, 36, 0.8),
+          rgba(251, 191, 36, 0.6),
+          rgba(217, 119, 6, 0.6)
+        )
+        border-box;
+    border-radius: 16px;
+    opacity: 0;
+    animation: selectionGlowIn 0.4s ease-out forwards;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  @keyframes selectionGlowIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    50% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   /* Selection styling DURING animation - border/glow visible while beat animates in */
@@ -752,6 +821,10 @@
   @media (prefers-reduced-motion: reduce) {
     .animate {
       animation: none;
+    }
+    .beat-cell.selected::before {
+      animation: none;
+      opacity: 1;
     }
     .anim-gentleBloom {
       animation: none;

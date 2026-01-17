@@ -1,4 +1,4 @@
-<!-- StepGrid.svelte - Responsive beat grid with display animations -->
+<!-- StepGrid.svelte - Responsive step grid with display animations -->
 <script lang="ts">
   import type { StepData } from "../../../domain/models/StepData";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
@@ -25,11 +25,7 @@
     type TimelineRow,
   } from "../utils/grid-calculations";
   import StepCell from "./StepCell.svelte";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-  import {
-    calculateSubdivisionIndex,
-    formatPosition,
-  } from "../../../services/implementations/MusicalPositionCalculator";
+  import { formatDurationCompact } from "../../../domain/models/DurationPatternData";
 
   // Services
   const hapticService = container.items.hapticFeedback;
@@ -405,18 +401,17 @@
   const getBeatKey = (beat: StepData, index: number) =>
     `${beat.id ?? "no-id"}-${beat.stepNumber ?? index}-${index}`;
 
-  // Helper to calculate musical position for a step
-  // Returns the formatted position string (e.g., "1", "1.5", "2e")
-  function getMusicalPosition(stepIndex: number): string {
-    const settings = getSettings();
-    const musicianMode = settings.musicianMode ?? false;
-    const subdivisionIndex = calculateSubdivisionIndex(stepIndex, steps, timeSignature);
-    return formatPosition(subdivisionIndex, musicianMode, timeSignature);
+  // Helper to get duration display for a step
+  // Returns the formatted duration string (e.g., "1×", "50%", "2×")
+  function getDurationDisplay(stepIndex: number): string {
+    const beat = steps[stepIndex];
+    const duration = beat?.duration ?? 1.0;
+    return formatDurationCompact(duration);
   }
 </script>
 
 <div
-  class="beat-grid-container"
+  class="step-grid-container"
   class:spotlight-mode={isSpotlightMode}
   bind:this={containerRef}
 >
@@ -429,7 +424,7 @@
   {:else if isSpotlightMode}
     <!-- Spotlight mode: render grid directly without scroll wrapper -->
     <div
-      class="beat-grid spotlight-static"
+      class="step-grid spotlight-static"
       class:clearing={isClearing || displayState.isClearingForGeneration}
       style:--grid-rows={gridLayout().rows}
       style:--grid-cols={gridLayout().totalColumns}
@@ -470,7 +465,7 @@
         </div>
       {/if}
 
-      <!-- Beat Grid -->
+      <!-- Step Grid -->
       {#each steps as beat, index (getBeatKey(beat, index))}
         {@const position = calculateBeatPosition(index, gridLayout().columns)}
         {@const gridRow = position.row}
@@ -482,7 +477,7 @@
           index > removingStepIndex}
         {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
         {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
-        {@const musicalPosition = getMusicalPosition(index)}
+        {@const musicalPosition = getDurationDisplay(index)}
         <div
           class="beat-container"
           class:deleting={isDeleting}
@@ -513,7 +508,7 @@
   {:else if isTimelineMode}
     <!-- Timeline mode: start position in own column (like grid mode), rows with duration-proportional widths -->
     <div
-      class="beat-grid-scroll timeline-scroll"
+      class="step-grid-scroll timeline-scroll"
       class:has-scrollbar={scrollState.hasVerticalScrollbar}
       bind:this={scrollContainerRef}
     >
@@ -573,7 +568,7 @@
                   stepIndex > removingStepIndex}
                 {@const shouldAnimateBeat = displayState.shouldBeatAnimate(stepIndex)}
                 {@const shouldHideBeat = displayState.shouldBeatBeHidden(stepIndex)}
-                {@const musicalPosition = getMusicalPosition(stepIndex)}
+                {@const musicalPosition = getDurationDisplay(stepIndex)}
                 <div
                   class="timeline-cell beat-container"
                   class:deleting={isDeleting}
@@ -611,12 +606,12 @@
   {:else}
     <!-- Grid mode: render standard grid inside scroll wrapper -->
     <div
-      class="beat-grid-scroll"
+      class="step-grid-scroll"
       class:has-scrollbar={scrollState.hasVerticalScrollbar}
       bind:this={scrollContainerRef}
     >
       <div
-        class="beat-grid"
+        class="step-grid"
         class:clearing={isClearing || displayState.isClearingForGeneration}
         style:--grid-rows={gridLayout().rows}
         style:--grid-cols={gridLayout().totalColumns}
@@ -657,7 +652,7 @@
           </div>
         {/if}
 
-        <!-- Beat Grid -->
+        <!-- Step Grid -->
         {#each steps as beat, index (getBeatKey(beat, index))}
           {@const position = calculateBeatPosition(index, gridLayout().columns)}
           {@const gridRow = position.row}
@@ -669,7 +664,7 @@
             index > removingStepIndex}
           {@const shouldAnimateBeat = displayState.shouldBeatAnimate(index)}
           {@const shouldHideBeat = displayState.shouldBeatBeHidden(index)}
-          {@const musicalPosition = getMusicalPosition(index)}
+          {@const musicalPosition = getDurationDisplay(index)}
           <div
             class="beat-container"
             class:deleting={isDeleting}
@@ -702,7 +697,7 @@
 </div>
 
 <style>
-  .beat-grid-container {
+  .step-grid-container {
     position: relative;
     background: transparent;
     border-radius: 12px;
@@ -716,7 +711,7 @@
   }
 
   /* Spotlight mode: container becomes flexbox to center the grid */
-  .beat-grid-container.spotlight-mode {
+  .step-grid-container.spotlight-mode {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -742,7 +737,7 @@
     font-weight: 500;
   }
 
-  .beat-grid-scroll {
+  .step-grid-scroll {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
@@ -760,42 +755,42 @@
   }
 
   /* Webkit scrollbar styling (Chrome, Safari, Edge) */
-  .beat-grid-scroll::-webkit-scrollbar {
+  .step-grid-scroll::-webkit-scrollbar {
     width: 8px;
   }
 
-  .beat-grid-scroll::-webkit-scrollbar-track {
+  .step-grid-scroll::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
     border-radius: 4px;
   }
 
-  .beat-grid-scroll::-webkit-scrollbar-thumb {
+  .step-grid-scroll::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 4px;
   }
 
-  .beat-grid-scroll::-webkit-scrollbar-thumb:hover {
+  .step-grid-scroll::-webkit-scrollbar-thumb:hover {
     background: var(--scrollbar-thumb-hover);
   }
 
   /* Mobile: make scrollbar more visible */
   @media (max-width: 768px) {
-    .beat-grid-scroll {
+    .step-grid-scroll {
       scrollbar-width: auto;
       scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     }
 
-    .beat-grid-scroll::-webkit-scrollbar {
+    .step-grid-scroll::-webkit-scrollbar {
       width: 10px;
     }
 
-    .beat-grid-scroll::-webkit-scrollbar-thumb {
+    .step-grid-scroll::-webkit-scrollbar-thumb {
       background: var(--scrollbar-thumb);
     }
   }
 
   /* When scrollbar is present, add right padding to prevent content clipping */
-  .beat-grid-scroll.has-scrollbar {
+  .step-grid-scroll.has-scrollbar {
     padding-right: 12px;
   }
 
@@ -806,7 +801,7 @@
      ============================================ */
 
   /* Timeline scroll container */
-  .beat-grid-scroll.timeline-scroll {
+  .step-grid-scroll.timeline-scroll {
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -909,7 +904,7 @@
      Standard CSS Grid with uniform cell sizes
      ============================================ */
 
-  .beat-grid {
+  .step-grid {
     display: grid;
     grid-template-columns: repeat(var(--grid-cols), var(--cell-size));
     grid-auto-rows: var(--cell-size);
@@ -927,7 +922,7 @@
   }
 
   /* Spotlight mode: static grid without scroll wrapper */
-  .beat-grid.spotlight-static {
+  .step-grid.spotlight-static {
     /* Center in container */
     margin: auto;
     /* Ensure grid fits within available space */
@@ -935,7 +930,7 @@
     max-height: 100%;
   }
 
-  .beat-grid.clearing {
+  .step-grid.clearing {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
   }
@@ -953,13 +948,8 @@
     min-height: 0;
   }
 
-  .start-tile {
-    border-radius: 8px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    background: transparent;
-    transition: all var(--duration-normal) ease;
-  }
+  /* Start tile inherits all styling from shared .beat-container, .start-tile rule above.
+     No additional styling needed - keeps it visually consistent with beat cells. */
 
   /* Beat deletion animations */
   .beat-container.deleting {

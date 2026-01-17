@@ -147,13 +147,13 @@
       if (stepNumber === 0) {
         sequenceState?.setStartPosition(null);
         sequenceState?.clearSelection();
-        // Close beat editor panel since workspace is now empty
+        // Close step editor panel since workspace is now empty
         panelState?.closeStepEditorPanel();
         return;
       }
 
       if (!StepOperator) {
-        console.warn("Cannot delete beat - StepOperator not initialized");
+        console.warn("Cannot delete step - StepOperator not initialized");
         return;
       }
 

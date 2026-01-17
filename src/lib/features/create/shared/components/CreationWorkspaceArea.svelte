@@ -16,6 +16,7 @@
   import type { IToolPanelMethods } from "../types/create-module-types";
   import type { LetterSource } from "$lib/features/create/spell/domain/models/spell-models";
   import WorkspacePanel from "../workspace-panel/core/WorkspacePanel.svelte";
+  import DurationPreviewWorkspace from "./sequence-actions/DurationPreviewWorkspace.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
@@ -44,6 +45,10 @@
   const shouldOrbitAroundCenter = $derived(panelState.shouldOrbitAroundCenter);
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
   const isMobilePortrait = $derived(layout.isMobilePortrait());
+
+  // Duration preview mode - shows split workspace with animation and timeline
+  const isDurationPreviewMode = $derived(panelState.isDurationPreviewMode);
+  const previewSequence = $derived(panelState.previewSequence);
 
   // Derive assembler back handler from state - only available when in assembler tab and has started building
   const assemblerBackHandler = $derived.by(() => {
@@ -80,24 +85,29 @@
   in:fade={{ duration: 400, delay: 200 }}
   out:fade={{ duration: 300 }}
 >
-  <!-- CRITICAL: {#key} block ensures fresh StepGrid instances per tab
-       This prevents animation state pollution (step-grid-display-state.svelte)
-       But we DON'T key the parent layout to avoid workspace visibility timing issues -->
-  {#key navigationState.activeTab}
-    <WorkspacePanel
-      sequenceState={activeSequenceState}
-      createModuleState={CreateModuleState}
-      {panelState}
-      {practiceStepIndex}
-      {animatingStepNumber}
-      {isSideBySideLayout}
-      {shouldOrbitAroundCenter}
-      {animationStateRef}
-      {currentDisplayWord}
-      {letterSources}
-      onAssemblerBack={assemblerBackHandler}
-    />
-  {/key}
+  {#if isDurationPreviewMode && previewSequence}
+    <!-- Duration Preview Mode: Split workspace with animation preview and timeline -->
+    <DurationPreviewWorkspace sequence={previewSequence} />
+  {:else}
+    <!-- CRITICAL: {#key} block ensures fresh StepGrid instances per tab
+         This prevents animation state pollution (step-grid-display-state.svelte)
+         But we DON'T key the parent layout to avoid workspace visibility timing issues -->
+    {#key navigationState.activeTab}
+      <WorkspacePanel
+        sequenceState={activeSequenceState}
+        createModuleState={CreateModuleState}
+        {panelState}
+        {practiceStepIndex}
+        {animatingStepNumber}
+        {isSideBySideLayout}
+        {shouldOrbitAroundCenter}
+        {animationStateRef}
+        {currentDisplayWord}
+        {letterSources}
+        onAssemblerBack={assemblerBackHandler}
+      />
+    {/key}
+  {/if}
 </div>
 
 <style>

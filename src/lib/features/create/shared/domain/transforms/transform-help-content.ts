@@ -10,7 +10,7 @@
 export type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
 
 // Pattern/Tool IDs (pattern application and sequence tools)
-export type PatternId = "turn-pattern" | "direction" | "extend" | "shift-start";
+export type PatternId = "turn-pattern" | "direction" | "duration" | "extend" | "shift-start";
 
 // All action IDs that support help mode
 export type ActionHelpId = TransformId | PatternId;
@@ -113,6 +113,16 @@ export const actionHelpContent: ActionHelpItem[] = [
     shortDesc: "CW/CCW patterns",
     fullDesc:
       "Sets the rotation direction pattern for your sequence. Control whether each beat rotates clockwise (CW) or counter-clockwise (CCW). Choose from presets like 'All Clockwise', 'Alternating', or create custom direction patterns for each beat.",
+    category: "pattern",
+  },
+  {
+    id: "duration",
+    icon: "fa-stopwatch",
+    name: "Duration",
+    color: "#fb923c",
+    shortDesc: "Beat timing",
+    fullDesc:
+      "Controls how long each beat is held. Apply rhythmic patterns like 'Every Third Doubled' (beats 3, 6, 9 hold twice as long), 'Swing' (triplet feel), or musical meters like 'Waltz' or 'Shuffle'. Use uniform buttons to speed up (50%, 25%) or slow down (150%, 200%, 400%) your entire sequence.",
     category: "pattern",
   },
 

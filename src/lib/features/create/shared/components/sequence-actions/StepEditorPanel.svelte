@@ -5,7 +5,7 @@
   Opens directly when clicking a pictograph, or via "Edit Turns" in Sequence Actions.
   Non-modal - allows clicking through to other pictographs while open.
 
-  Mobile: Full-height panel with beat grid at top, stacked controls at bottom
+  Mobile: Full-height panel with step grid at top, stacked controls at bottom
   Desktop: Side panel with pictograph preview, horizontal controls
 -->
 <script lang="ts">
@@ -17,7 +17,6 @@
   import PictographInspectModal from "./PictographInspectModal.svelte";
   import StepEditorHelpModal from "./StepEditorHelpModal.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
-  import StepGrid from "../../workspace-panel/sequence-display/components/StepGrid.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
   import type { StepData } from "../../domain/models/StepData";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -155,7 +154,7 @@
     redMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
   );
 
-  const beatLabel = $derived.by(() => {
+  const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
     return displayedStepNumber === 0
       ? "Start Position"
@@ -195,21 +194,21 @@
 
 <CreatePanelDrawer
   bind:isOpen
-  panelName="beat-editor"
+  panelName="step-editor"
   fullHeightOnMobile={true}
   showHandle={true}
   closeOnBackdrop={false}
   focusTrap={false}
   autoFocus={false}
-  ariaLabel="Beat editor panel"
+  ariaLabel="Step editor panel"
   onClose={handleClose}
 >
   <div class="editor-panel" class:desktop={isSideBySideLayout}>
     <!-- Header -->
     <header class="panel-header">
       <div class="header-info">
-        <h2>Beat Editor</h2>
-        <span class="subtitle">{beatLabel}</span>
+        <h2>Step Editor</h2>
+        <span class="subtitle">{stepLabel}</span>
       </div>
 
       <!-- Arrow adjustment panel in header when arrow is selected -->
@@ -225,7 +224,7 @@
         <!-- Help button -->
         <HelpButton
           onclick={() => (showHelpModal = true)}
-          ariaLabel="Help with beat editor"
+          ariaLabel="Help with step editor"
           size="compact"
         />
         {#if isAdmin() && hasSelection && displayedStepData}
@@ -262,26 +261,9 @@
       </div>
     </header>
 
-    <!-- Mobile layout: Beat grid at top -->
-    {#if !isSideBySideLayout && sequence}
-      <div class="beat-grid-section">
-        <StepGrid
-          steps={sequence.steps ?? []}
-          startPosition={sequence.startPosition ||
-            sequence.startingPosition ||
-            null}
-          {selectedStepNumber}
-          {removingStepIndices}
-          onStepClick={handleStepClick}
-          onStartClick={() => handleStepClick(0)}
-          onStepDelete={() => onDelete?.()}
-        />
-      </div>
-    {/if}
-
-    <!-- Desktop layout: Pictograph Preview with clickable arrows (admin) -->
-    {#if isSideBySideLayout && hasSelection && displayedStepData}
-      <div class="preview-section">
+    <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
+    {#if hasSelection && displayedStepData}
+      <div class="preview-section" class:mobile={!isSideBySideLayout}>
         <div class="pictograph-container">
           <PictographContainer
             pictographData={displayedStepData}
@@ -315,6 +297,7 @@
           {showBlueRotation}
           {showRedRotation}
           stacked={!isSideBySideLayout}
+          compact={!isSideBySideLayout}
           {onTurnsChange}
           {onRotationChange}
           {onOpenPropSheet}
@@ -322,6 +305,7 @@
         {#if onDurationChange}
           <DurationControl
             duration={displayedStepData?.duration ?? 1}
+            compact={!isSideBySideLayout}
             onDurationChange={onDurationChange}
           />
         {/if}
@@ -356,7 +340,7 @@
     overflow: hidden;
     position: relative;
     container-type: size;
-    container-name: beat-editor;
+    container-name: step-editor;
   }
 
   /* ============================================================================
@@ -465,23 +449,7 @@
   }
 
   /* ============================================================================
-     STEP GRID SECTION - Mobile only, flexible height
-     Takes ALL available space - controls sit at bottom with natural size
-     ============================================================================ */
-
-  .beat-grid-section {
-    flex: 1 1 auto; /* Grow to fill ALL available space */
-    min-height: 120px; /* Minimum usable height for beat grid */
-    /* No max-height - let it grow to fill space */
-    border-bottom: 1px solid var(--theme-stroke);
-    background: rgba(255, 255, 255, 0.02);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* ============================================================================
-     PREVIEW SECTION - Desktop only, pictograph preview
+     PREVIEW SECTION - Pictograph preview (both mobile and desktop)
      ============================================================================ */
 
   .preview-section {
@@ -495,6 +463,12 @@
     overflow: hidden;
     /* Enable container queries for responsive pictograph sizing */
     container-type: size;
+  }
+
+  /* Mobile: tighter padding, fill available space */
+  .preview-section.mobile {
+    padding: 12px;
+    flex: 1 1 auto;
   }
 
   .pictograph-container {
@@ -520,7 +494,7 @@
     background: var(--theme-panel-bg);
   }
 
-  /* Mobile: controls take only what they need - beat grid fills the rest */
+  /* Mobile: controls take only what they need - step grid fills the rest */
   .controls-section.mobile {
     flex: 0 0 auto; /* Don't grow - take natural size only */
     display: flex;
@@ -554,20 +528,13 @@
      CONTAINER QUERY ADJUSTMENTS - Responsive to actual available space
      ============================================================================ */
 
-  /* Small container height (< 600px) - compact mode */
-  @container beat-editor (max-height: 600px) {
-    .beat-grid-section {
-      min-height: 80px; /* Smaller minimum on tight screens */
-    }
-
+  /* Small container height (< 600px) - tighter padding */
+  @container step-editor (max-height: 600px) {
     .controls-section.mobile {
       padding: 6px;
     }
-  }
 
-  /* Medium container height (600-700px) */
-  @container beat-editor (min-height: 600px) and (max-height: 700px) {
-    .controls-section.mobile {
+    .preview-section.mobile {
       padding: 8px;
     }
   }
