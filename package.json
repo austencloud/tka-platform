@@ -194,6 +194,7 @@
     "@simplewebauthn/server": "^13.2.2",
     "@simplewebauthn/types": "^12.0.0",
     "@tanstack/svelte-virtual": "^3.13.13",
+    "@three.ez/main": "^0.5.12",
     "@threlte/core": "^8.0.0",
     "@threlte/extras": "^9.0.0",
     "ai": "^4.3.19",
