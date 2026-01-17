@@ -173,7 +173,7 @@
     overflow-x: hidden;
     padding: clamp(16px, 3vh, 32px) clamp(20px, 4vw, 50px); /* Fluid padding */
     min-height: 0;
-    transition: padding 0.2s ease;
+    transition: padding var(--duration-normal) ease;
     display: flex;
     flex-direction: column;
     align-items: center; /* Center form fields horizontally */
@@ -198,7 +198,7 @@
       transparent 100%
     );
     border-top: 1px solid var(--theme-stroke);
-    transition: padding 0.2s ease;
+    transition: padding var(--duration-normal) ease;
   }
 
   .section.compact .footer {
@@ -235,7 +235,7 @@
     font-weight: 500;
     color: var(--theme-text-dim);
     margin-bottom: clamp(6px, 1vh, 10px);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .section.compact :global(.label) {
@@ -256,7 +256,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     font-size: clamp(14px, 1.9vh, 17px); /* Fluid font size */
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .section.compact :global(.input) {
@@ -336,7 +336,7 @@
     font-size: clamp(14px, 1.9vh, 17px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: 1px solid rgba(239, 68, 68, 0.4);
     background: rgba(239, 68, 68, 0.1);
     color: rgba(239, 68, 68, 0.95);
@@ -399,7 +399,7 @@
       rgba(255, 255, 255, 0.65)
     ); /* Improved contrast for WCAG AA */
     margin: 6px 0 0 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .section.compact :global(.hint) {
@@ -425,7 +425,7 @@
     font-size: clamp(14px, 1.9vh, 17px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: none;
     margin-top: clamp(6px, 1vh, 10px);
   }
@@ -454,7 +454,7 @@
 
   :global(.button i) {
     font-size: var(--font-size-base);
-    transition: font-size 0.2s ease;
+    transition: font-size var(--duration-normal) ease;
   }
 
   .section.compact :global(.button i) {

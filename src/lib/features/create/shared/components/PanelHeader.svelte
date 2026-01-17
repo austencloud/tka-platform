@@ -140,7 +140,7 @@
     color: #ffffff; /* White icons */
     font-size: var(--font-size-lg);
     cursor: pointer;
-    transition: all var(--transition-normal, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
     flex-shrink: 0;
     box-shadow: 0 2px 8px var(--theme-shadow);
   }
@@ -154,7 +154,7 @@
   :global(.panel-header .action-button:active),
   .close-button:active {
     transform: scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   :global(.panel-header .action-button:focus-visible),

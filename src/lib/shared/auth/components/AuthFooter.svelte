@@ -85,7 +85,7 @@
     font-family: inherit;
     text-decoration: none;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .auth-footer__link:hover {

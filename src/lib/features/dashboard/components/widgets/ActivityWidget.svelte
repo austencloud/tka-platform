@@ -470,7 +470,7 @@
       );
     border-radius: 16px;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     flex: 1;
     min-width: 140px;
     max-width: 220px;
@@ -611,7 +611,7 @@
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     margin-top: auto;
   }
 

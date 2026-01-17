@@ -56,7 +56,7 @@ QuizProgressBar - Progress indicator for grid quiz
     height: 100%;
     background: linear-gradient(90deg, var(--theme-accent), #a855f7);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-text {

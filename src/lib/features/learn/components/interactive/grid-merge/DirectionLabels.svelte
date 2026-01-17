@@ -151,16 +151,16 @@
 		animation: labelPopIn var(--label-duration) var(--merge-easing) both;
 	}
 	.cardinal-label.animate-in[data-index='0'] {
-		animation-delay: 0.1s;
+		animation-delay: var(--duration-instant);
 	}
 	.cardinal-label.animate-in[data-index='1'] {
-		animation-delay: 0.2s;
+		animation-delay: var(--duration-normal);
 	}
 	.cardinal-label.animate-in[data-index='2'] {
-		animation-delay: 0.3s;
+		animation-delay: var(--duration-emphasis);
 	}
 	.cardinal-label.animate-in[data-index='3'] {
-		animation-delay: 0.4s;
+		animation-delay: var(--duration-dramatic);
 	}
 
 	/* Animate-in with stagger for intercardinal labels (first appearance only) */
@@ -168,16 +168,16 @@
 		animation: labelPopInBox var(--label-duration) var(--merge-easing) both;
 	}
 	.intercardinal-label.animate-in[data-index='0'] {
-		animation-delay: 0.1s;
+		animation-delay: var(--duration-instant);
 	}
 	.intercardinal-label.animate-in[data-index='1'] {
-		animation-delay: 0.2s;
+		animation-delay: var(--duration-normal);
 	}
 	.intercardinal-label.animate-in[data-index='2'] {
-		animation-delay: 0.3s;
+		animation-delay: var(--duration-emphasis);
 	}
 	.intercardinal-label.animate-in[data-index='3'] {
-		animation-delay: 0.4s;
+		animation-delay: var(--duration-dramatic);
 	}
 
 	/* Hide labels during highlighting */

@@ -218,7 +218,7 @@
     cursor: pointer;
     width: 100%;
     text-align: left;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .action-button:hover:not(:disabled) {

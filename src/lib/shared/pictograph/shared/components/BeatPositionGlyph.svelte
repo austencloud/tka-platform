@@ -132,11 +132,11 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 
 <style>
   .beat-position-glyph {
-    transition: opacity 150ms ease-out;
+    transition: opacity var(--duration-fast) ease-out;
   }
 
   .beat-position-text {
-    transition: fill 150ms ease-out;
+    transition: fill var(--duration-fast) ease-out;
   }
 
   .beat-position-glyph.clickable {

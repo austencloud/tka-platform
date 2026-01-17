@@ -117,7 +117,7 @@
     border-radius: 50%;
     font-size: 1.25rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .main-controls button:disabled {
@@ -180,7 +180,7 @@
     color: var(--theme-text-dim);
     font-size: 1.1rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .btn-settings:hover {

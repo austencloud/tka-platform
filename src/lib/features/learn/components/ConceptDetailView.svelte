@@ -215,7 +215,7 @@ Supports two navigation modes:
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button:hover {
@@ -245,7 +245,7 @@ Supports two navigation modes:
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .mode-toggle:hover {

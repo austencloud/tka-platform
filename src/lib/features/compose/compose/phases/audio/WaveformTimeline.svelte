@@ -444,7 +444,7 @@
     border-radius: 8px;
     outline: none;
     border: 1px solid var(--theme-stroke-strong);
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
     overflow: hidden;
   }
 
@@ -513,7 +513,7 @@
     border-radius: 6px;
     color: rgba(255, 255, 255, 0.8); /* WCAG AAA */
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-btn.small {
@@ -575,7 +575,7 @@
     background: rgba(139, 92, 246, 0.8);
     border-radius: 50%;
     cursor: pointer;
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   .zoom-slider::-webkit-slider-thumb:hover {

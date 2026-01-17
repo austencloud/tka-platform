@@ -329,7 +329,7 @@
     display: flex;
     flex-direction: column;
     will-change: transform;
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .sheet.dragging {
@@ -408,7 +408,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .creator-row:hover {
@@ -438,7 +438,7 @@
 
   .creator-arrow {
     color: color-mix(in srgb, var(--theme-text, white) 40%, transparent);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .creator-row:hover .creator-arrow {
@@ -468,7 +468,7 @@
     font-weight: 500;
     line-height: 1.3;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .action-btn:hover {

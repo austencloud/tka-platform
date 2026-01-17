@@ -20,6 +20,7 @@
     nonRadialVisible: boolean;
     handPointVisibility: "all" | "active";
     stepNumbersVisible: boolean;
+    beatPositionVisible: boolean;
     onToggle: (key: string) => void;
     isMobileHidden?: boolean;
   }
@@ -34,6 +35,7 @@
     nonRadialVisible,
     handPointVisibility,
     stepNumbersVisible,
+    beatPositionVisible,
     onToggle,
     isMobileHidden = false,
   }: Props = $props();
@@ -84,25 +86,36 @@
           class="toggle-btn"
           class:active={elementalGlyphVisible}
           aria-pressed={elementalGlyphVisible}
-          onclick={() => onToggle("elemental")}>{t("visibility_elemental")}</button
+          onclick={() => onToggle("elemental")}
+          >{t("visibility_elemental")}</button
         >
         <button
           class="toggle-btn"
           class:active={positionsGlyphVisible}
           aria-pressed={positionsGlyphVisible}
-          onclick={() => onToggle("positions")}>{t("visibility_positions")}</button
+          onclick={() => onToggle("positions")}
+          >{t("visibility_positions")}</button
         >
         <button
           class="toggle-btn"
           class:active={reversalIndicatorsVisible}
           aria-pressed={reversalIndicatorsVisible}
-          onclick={() => onToggle("reversals")}>{t("visibility_reversals")}</button
+          onclick={() => onToggle("reversals")}
+          >{t("visibility_reversals")}</button
         >
         <button
           class="toggle-btn"
           class:active={stepNumbersVisible}
           aria-pressed={stepNumbersVisible}
-          onclick={() => onToggle("stepNumbers")}>{t("visibility_beat_numbers")}</button
+          onclick={() => onToggle("stepNumbers")}
+          >{t("visibility_step_numbers")}</button
+        >
+        <button
+          class="toggle-btn"
+          class:active={beatPositionVisible}
+          aria-pressed={beatPositionVisible}
+          onclick={() => onToggle("beatPosition")}
+          >{t("visibility_beat_position")}</button
         >
         <button
           class="toggle-btn"
@@ -116,14 +129,16 @@
             class="toggle-btn"
             class:active={handPointVisibility === "all"}
             aria-pressed={handPointVisibility === "all"}
-            onclick={() => onToggle("handPoints")}>{t("visibility_hand_points")}</button
+            onclick={() => onToggle("handPoints")}
+            >{t("visibility_hand_points")}</button
           >
           <button
             transition:slide={{ duration: 150 }}
             class="toggle-btn"
             class:active={nonRadialVisible}
             aria-pressed={nonRadialVisible}
-            onclick={() => onToggle("nonRadial")}>{t("visibility_non_radial")}</button
+            onclick={() => onToggle("nonRadial")}
+            >{t("visibility_non_radial")}</button
           >
         {/if}
       </div>
@@ -178,7 +193,7 @@
     border-radius: clamp(6px, 2cqi, 8px);
     font-size: var(--font-size-sm);
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .panel-icon.pictograph-icon {
@@ -280,7 +295,7 @@
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 

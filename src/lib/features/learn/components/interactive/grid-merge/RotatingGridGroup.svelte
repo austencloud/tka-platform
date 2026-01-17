@@ -131,16 +131,16 @@
 		animation-delay: 0s;
 	}
 	.intro .outer-point[data-index='0'] {
-		animation-delay: 0.1s;
+		animation-delay: var(--duration-instant);
 	}
 	.intro .outer-point[data-index='1'] {
-		animation-delay: 0.2s;
+		animation-delay: var(--duration-normal);
 	}
 	.intro .outer-point[data-index='2'] {
-		animation-delay: 0.3s;
+		animation-delay: var(--duration-emphasis);
 	}
 	.intro .outer-point[data-index='3'] {
-		animation-delay: 0.4s;
+		animation-delay: var(--duration-dramatic);
 	}
 	.intro .hand-point[data-index='0'] {
 		animation-delay: 0.5s;

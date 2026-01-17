@@ -138,7 +138,7 @@
 
   .point-dot {
     fill: var(--theme-text-dim);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .point-group:hover .point-dot {

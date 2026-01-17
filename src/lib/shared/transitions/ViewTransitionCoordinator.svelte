@@ -77,7 +77,7 @@
     z-index: 9999;
     background: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(2px);
-    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* When native View Transitions are supported, reduce overlay visibility */
@@ -103,7 +103,7 @@
     );
     box-shadow: 0 0 8px rgba(103, 126, 234, 0.6);
     transform-origin: left center;
-    transition: transform 0.1s linear;
+    transition: transform var(--duration-instant) linear;
   }
 
   /* ============================================================================

@@ -152,7 +152,7 @@
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .disconnect-btn:hover {
@@ -204,7 +204,7 @@
     font-weight: 500;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .cancel-btn:hover {

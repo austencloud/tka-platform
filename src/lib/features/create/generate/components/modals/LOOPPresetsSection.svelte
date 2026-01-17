@@ -103,7 +103,7 @@ Organized by tabs: Featured, All, Favorites
     font-size: var(--font-size-xs);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .tab:hover {

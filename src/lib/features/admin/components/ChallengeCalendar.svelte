@@ -128,7 +128,7 @@
     border-radius: 8px;
     padding: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     color: var(--text-color, #ffffff);
   }
@@ -211,7 +211,7 @@
     color: var(--semantic-error);
     cursor: pointer;
     opacity: 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: 0.85rem;
     z-index: 1;
   }

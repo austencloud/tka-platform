@@ -408,7 +408,7 @@
     overflow-x: hidden;
 
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .profile-tab.visible {

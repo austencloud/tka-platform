@@ -60,7 +60,7 @@ StaffElement - Renders a single staff prop with thumb marker
 
 <style>
   .staff {
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .staff.animating line {

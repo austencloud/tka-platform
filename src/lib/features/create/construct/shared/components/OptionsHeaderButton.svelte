@@ -70,7 +70,7 @@
     margin: 0;
     min-height: var(--min-touch-target);
     color: inherit;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     position: relative;
@@ -92,7 +92,7 @@
       rgba(255, 255, 255, 0) 100%
     );
     opacity: 0;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
   }
 
@@ -140,7 +140,7 @@
   .chevron {
     font-size: 0.75rem;
     color: var(--theme-text-dim);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: center;
     line-height: 1;
   }
@@ -182,7 +182,7 @@
 
   .options-header-button:active {
     transform: scale(0.99);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Mobile optimizations */

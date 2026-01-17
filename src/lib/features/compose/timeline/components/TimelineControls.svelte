@@ -259,7 +259,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
@@ -374,7 +374,7 @@
     cursor: pointer;
     font-size: var(--font-size-compact);
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     margin-left: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   }

@@ -225,7 +225,7 @@
     color: var(--theme-text, #ffffff);
     text-align: left;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .field-display:hover {
@@ -258,7 +258,7 @@
     font-size: 0.7rem;
     opacity: 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .field-display:hover .edit-icon {
@@ -283,7 +283,7 @@
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .music-btn:hover:not(:disabled) {

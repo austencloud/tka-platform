@@ -237,7 +237,7 @@
     font-size: clamp(0.75rem, 2.5cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     white-space: nowrap;
   }
 
@@ -355,7 +355,7 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: clamp(0.8rem, 2.5cqi, 0.9rem);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .dropdown-item:hover {

@@ -142,7 +142,7 @@
     border: 1px solid var(--theme-stroke);
     background: var(--theme-card-bg);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: 160px;
   }
 

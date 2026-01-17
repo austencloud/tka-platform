@@ -235,7 +235,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .edit-button:hover {
@@ -255,7 +255,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-edit:hover {
@@ -273,7 +273,7 @@
     font-size: 1.1rem;
     font-weight: 500;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .name-input::placeholder {
@@ -314,7 +314,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button:hover {
@@ -339,7 +339,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .next-button:hover:not(:disabled) {
@@ -371,7 +371,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.9rem;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
     margin-top: 4px;
   }
 

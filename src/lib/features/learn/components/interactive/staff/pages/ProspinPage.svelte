@@ -95,7 +95,7 @@ ProspinPage - Page 3: Prospin rotation concept
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideInUp {
@@ -191,7 +191,7 @@ ProspinPage - Page 3: Prospin rotation concept
     color: var(--theme-text-dim);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cycle-button:hover {
@@ -291,7 +291,7 @@ ProspinPage - Page 3: Prospin rotation concept
     font-size: 1.125rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: var(--min-touch-target);
     margin-top: 1rem;
   }

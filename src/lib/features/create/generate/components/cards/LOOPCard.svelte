@@ -161,7 +161,7 @@ Always opens selector panel when clicked
         0 12px 24px color-mix(in srgb, var(--theme-accent) 15%, transparent),
         inset 0 1px 0 var(--theme-stroke-strong);
       border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 

@@ -69,7 +69,7 @@
     font-weight: 700;
     letter-spacing: 0.01em;
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 3px 12px
       color-mix(in srgb, var(--active-type-color) 30%, var(--theme-shadow));
   }

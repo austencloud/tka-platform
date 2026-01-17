@@ -113,7 +113,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .sync-toggle:hover {
@@ -166,7 +166,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .stepper-btn:hover:not(:disabled) {
@@ -248,7 +248,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .swap-btn:hover {

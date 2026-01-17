@@ -98,7 +98,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     margin-bottom: 24px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .photo-container.compact {
@@ -122,7 +122,7 @@
     background: transparent;
     padding: 0;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .photo-wrapper:hover .photo-overlay {
@@ -149,7 +149,7 @@
     object-fit: cover;
     border: 3px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
     display: block;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .photo-container.compact .photo-wrapper {
@@ -206,7 +206,7 @@
     font-weight: 600;
     color: white;
     border: 3px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .photo-container.compact .photo-placeholder {
@@ -237,7 +237,7 @@
     color: white;
     box-shadow: 0 2px 8px var(--theme-shadow);
     border: 3px solid rgba(20, 25, 35, 0.98); /* Match container background */
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .photo-badge i {
@@ -258,7 +258,7 @@
     justify-content: center;
     gap: 4px;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     color: white;
   }
 
@@ -299,7 +299,7 @@
     font-weight: 600;
     color: var(--theme-text);
     margin: 0;
-    transition: font-size 0.2s ease;
+    transition: font-size var(--duration-normal) ease;
   }
 
   .photo-container.compact .photo-title {

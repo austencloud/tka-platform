@@ -257,7 +257,7 @@
     align-items: center;
     gap: 1rem;
     color: white;
-    animation: spinnerFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: spinnerFadeIn var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
   @keyframes spinnerFadeIn {
@@ -307,7 +307,7 @@
     padding: 0.5rem 1rem;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-button:hover {
@@ -328,7 +328,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     z-index: 10;
   }
 
@@ -377,7 +377,7 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
     background: rgba(255, 255, 255, 0.1);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .variation-dot:hover {

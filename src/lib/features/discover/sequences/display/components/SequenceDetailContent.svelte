@@ -64,10 +64,6 @@ Used by both desktop side panel and mobile slide-up overlay.
   let fullSequence = $state<SequenceData | null>(null);
   let isLoadingFullSequence = $state(false);
 
-  // Copy for Claude state
-  let justCopied = $state(false);
-  let isCopyLoading = $state(false);
-
   // User name for sharing
   const userName = $derived(authState.user?.displayName ?? "");
 
@@ -222,19 +218,11 @@ Used by both desktop side panel and mobile slide-up overlay.
     );
   }
 
-  // Copy for Claude handler
-  async function handleCopyForClaude() {
-    if (isCopyLoading || !claudeCopier) return;
+  // Get copy data for Claude (async because it uses the service)
+  async function getCopyDataForClaude(): Promise<string> {
+    if (!claudeCopier) return "";
     hapticService?.trigger("selection");
-    isCopyLoading = true;
-
-    const result = await claudeCopier.copyForClaude(sequence);
-    isCopyLoading = false;
-
-    if (result.success) {
-      justCopied = true;
-      setTimeout(() => { justCopied = false; }, 2000);
-    }
+    return await claudeCopier.generatePrompt(sequence);
   }
 
   // Share handlers
@@ -286,9 +274,7 @@ Used by both desktop side panel and mobile slide-up overlay.
   <DetailHeader
     title="Sequence Details"
     isExpanded={sequencePanelManager.isDetailExpanded}
-    isCopying={isCopyLoading}
-    {justCopied}
-    onCopyForClaude={handleCopyForClaude}
+    getCopyData={getCopyDataForClaude}
     onCollapse={() => sequencePanelManager.setDetailExpanded(false)}
     {onClose}
   />
@@ -432,7 +418,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     border: 2px solid var(--theme-stroke-strong);
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 8px var(--theme-shadow);
   }
 
@@ -478,7 +464,7 @@ Used by both desktop side panel and mobile slide-up overlay.
     padding: 8px 14px;
     border-radius: 20px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .creator-link:hover {
@@ -502,7 +488,7 @@ Used by both desktop side panel and mobile slide-up overlay.
 
   .creator-arrow {
     opacity: 0.6;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .creator-link:hover .creator-arrow {

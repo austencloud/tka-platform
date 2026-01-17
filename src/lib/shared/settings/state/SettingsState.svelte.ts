@@ -20,7 +20,7 @@ import {
 import { ThemeService } from "../../theme/services/ThemeService";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/PropType";
-import type { AppSettings } from "../domain/AppSettings";
+import type { AppSettings, PropPreset } from "../domain/AppSettings";
 import { container } from "$lib/shared/di";
 import type { ISettingsPersister } from "../services/contracts/ISettingsPersister";
 import { auth } from "../../auth/firebase";
@@ -32,6 +32,20 @@ const debug = createComponentLogger("SettingsState");
 
 const SETTINGS_STORAGE_KEY = "tka-modern-web-settings";
 const OFFLINE_QUEUE_KEY = "tka-settings-offline-queue";
+
+// Default prop presets for new users (10 commonly-used configurations)
+const DEFAULT_PROP_PRESETS: PropPreset[] = [
+  { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
+  { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
+  { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
+  { bluePropType: PropType.BUUGENG, redPropType: PropType.BUUGENG, catDogMode: false },
+  { bluePropType: PropType.HAND, redPropType: PropType.HAND, catDogMode: false },
+  { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
+  { bluePropType: PropType.MINIHOOP, redPropType: PropType.MINIHOOP, catDogMode: false },
+  { bluePropType: PropType.POI, redPropType: PropType.POI, catDogMode: false },
+  { bluePropType: PropType.TRIQUETRA, redPropType: PropType.TRIQUETRA, catDogMode: false },
+  { bluePropType: PropType.SWORD, redPropType: PropType.SWORD, catDogMode: false },
+];
 
 const DEFAULT_SETTINGS: AppSettings = {
   gridMode: GridMode.DIAMOND,
@@ -46,6 +60,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   bluePropType: PropType.STAFF, // Default prop type for blue
   redPropType: PropType.STAFF, // Default prop type for red
   blockedStartPositions: [], // No positions blocked by default (allows all)
+  propPresets: DEFAULT_PROP_PRESETS,
+  selectedPresetIndex: 0,
 } as AppSettings;
 
 // Initialize with loaded settings immediately (non-reactive)

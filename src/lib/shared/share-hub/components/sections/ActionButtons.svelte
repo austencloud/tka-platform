@@ -158,7 +158,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
   }
 
@@ -220,7 +220,7 @@
     color: var(--semantic-error);
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
   }
 
@@ -262,7 +262,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
   }
 

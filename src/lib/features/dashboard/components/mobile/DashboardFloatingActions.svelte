@@ -160,7 +160,7 @@
     font-size: var(--font-size-compact);
     font-weight: 700;
     line-height: 1;
-    animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: badgePop var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes badgePop {

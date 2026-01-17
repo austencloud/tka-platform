@@ -344,7 +344,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .close-btn:hover {
@@ -462,7 +462,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-sm);
     font-family: inherit;
-    transition: border-color 0.2s;
+    transition: border-color var(--duration-normal);
   }
 
   input:focus {
@@ -584,7 +584,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .primary-btn {

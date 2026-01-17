@@ -84,7 +84,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     font-size: var(--font-size-sm);
     position: relative;
     overflow: hidden;
@@ -102,7 +102,7 @@
       transparent 60%
     );
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .collapse-toggle:hover::before {
@@ -130,11 +130,11 @@
 
   .collapse-toggle:active {
     transform: scale(0.97);
-    transition-duration: 0.1s;
+    transition-duration: var(--duration-instant);
   }
 
   .collapse-toggle i {
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .collapse-toggle:hover i {

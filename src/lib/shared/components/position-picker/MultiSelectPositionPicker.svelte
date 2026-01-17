@@ -211,7 +211,7 @@ Uses blocklist approach: positions in blockedPositions are excluded.
     border-radius: 8px;
     cursor: pointer;
     padding: 4px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     overflow: hidden;
   }
 

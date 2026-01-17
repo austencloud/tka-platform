@@ -156,7 +156,7 @@
     color: var(--theme-text);
     font-size: var(--fb-text-sm);
     font-family: inherit;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .search-input::placeholder {
@@ -190,7 +190,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     border-radius: 50%;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .search-clear:hover {
@@ -224,7 +224,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--fb-text-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .filter-chip:hover {
@@ -261,7 +261,7 @@
     color: var(--semantic-error, var(--semantic-error));
     font-size: var(--fb-text-sm);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     margin-left: auto;
   }
 

@@ -220,7 +220,7 @@ Animates forward in z-axis and expands to fill the container space
     padding: 8px;
     width: 36px;
     height: 36px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -284,7 +284,7 @@ Animates forward in z-axis and expands to fill the container space
     letter-spacing: 0.5px;
 
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .apply-button:hover:not(:disabled) {

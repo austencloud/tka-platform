@@ -203,7 +203,7 @@
     background: var(--accent);
     border-radius: 2px;
     opacity: 0.3;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .hidden {
@@ -270,7 +270,7 @@
     border-radius: clamp(8px, 2cqi, 12px);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 

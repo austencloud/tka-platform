@@ -317,7 +317,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .validate-btn:hover:not(:disabled) {
@@ -345,7 +345,7 @@
     background: transparent;
     color: var(--theme-text-secondary, #888);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .clear-btn:hover {
@@ -381,7 +381,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   @media (pointer: coarse) {

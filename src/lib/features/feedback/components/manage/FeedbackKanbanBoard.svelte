@@ -362,7 +362,7 @@
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
     z-index: 1000;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   .defer-dialog {
@@ -380,7 +380,7 @@
     box-shadow:
       0 20px 60px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 var(--theme-stroke, var(--theme-stroke));
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: slideUp var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .dialog-header {
@@ -434,7 +434,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: clamp(16px, 4cqi, 18px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -506,7 +506,7 @@
     color: var(--theme-text);
     font-size: clamp(0.875rem, 2.5cqi, 1rem);
     font-family: inherit;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .date-input:focus,
@@ -545,7 +545,7 @@
     font-size: clamp(0.875rem, 2.5cqi, 1rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-button {

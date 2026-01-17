@@ -65,7 +65,7 @@
     border-top: 3px solid var(--column-color);
     border-radius: clamp(10px, 2.5cqi, 16px);
     overflow: hidden;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:
       0 4px 20px color-mix(in srgb, var(--column-color) 15%, transparent),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -147,7 +147,7 @@
     background: color-mix(in srgb, var(--column-color) 12%, transparent);
     backdrop-filter: blur(4px);
     pointer-events: none;
-    animation: pulseIn 0.2s ease;
+    animation: pulseIn var(--duration-normal) ease;
   }
 
   .drop-indicator i {

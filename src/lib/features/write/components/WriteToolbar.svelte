@@ -96,7 +96,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
     min-height: var(--min-touch-target);
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .write-toolbar.disabled {
@@ -123,7 +123,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 

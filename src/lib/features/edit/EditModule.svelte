@@ -365,7 +365,7 @@
     border: 1px solid transparent;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: 0.9rem;
   }
 

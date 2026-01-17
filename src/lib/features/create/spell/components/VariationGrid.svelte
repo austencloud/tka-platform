@@ -356,7 +356,7 @@ Features:
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .sort-chip:hover,
@@ -382,7 +382,7 @@ Features:
   .progress-bar {
     height: 100%;
     background: var(--theme-accent, #6366f1);
-    transition: width 0.2s ease;
+    transition: width var(--duration-normal) ease;
   }
 
   .variation-grid {
@@ -402,7 +402,7 @@ Features:
     border-radius: var(--settings-radius-sm, 8px);
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     padding: 0;
   }
 

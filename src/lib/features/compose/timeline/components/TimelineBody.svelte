@@ -243,7 +243,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-min);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .add-track-btn:hover {
@@ -319,7 +319,7 @@
     border-radius: 12px;
     margin: 12px;
     opacity: 0.5;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     background: var(--theme-card-bg);
   }
 

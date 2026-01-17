@@ -250,7 +250,7 @@ and smooth hover animations.
     border-radius: 20px;
     backdrop-filter: blur(16px);
     cursor: pointer;
-    transition: all 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     text-align: left;
     box-shadow:
@@ -270,7 +270,7 @@ and smooth hover animations.
 
   .quiz-card:active:not(.disabled) {
     transform: translateY(-1px) scale(0.995);
-    transition-duration: 100ms;
+    transition-duration: var(--duration-instant);
   }
 
   .quiz-card.disabled {
@@ -300,7 +300,7 @@ and smooth hover animations.
     border-radius: 14px;
     color: var(--theme-text);
     border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
-    transition: all 280ms ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .card-icon svg {
@@ -360,7 +360,7 @@ and smooth hover animations.
     align-items: center;
     justify-content: center;
     color: rgba(255, 255, 255, 0.4);
-    transition: all 280ms ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .quiz-card:hover:not(.disabled) .card-arrow {

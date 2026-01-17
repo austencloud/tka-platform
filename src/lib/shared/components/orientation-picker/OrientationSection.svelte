@@ -100,7 +100,7 @@ Uses 2x2 grid with all 4 orientation options
     border: none;
     color: white;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -153,7 +153,7 @@ Uses 2x2 grid with all 4 orientation options
   .chevron {
     width: 24px;
     height: 24px;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .chevron.expanded {

@@ -140,7 +140,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
     min-height: var(--min-touch-target, 44px);
   }

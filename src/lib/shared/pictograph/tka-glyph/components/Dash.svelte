@@ -68,7 +68,7 @@ DO NOT add dark mode color logic here - it would cause double-inversion!
   .letter-dash {
     /* Match TKA glyph fade behavior */
     opacity: 0;
-    transition: opacity 150ms ease-out;
+    transition: opacity var(--duration-fast) ease-out;
   }
 
   .letter-dash.visible {

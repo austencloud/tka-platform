@@ -5,14 +5,14 @@
    * Header with title, badges, and copy buttons for the pictograph inspector.
    */
   import type { StepData } from "../../../domain/models/StepData";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   interface Props {
     displayData: StepData | null;
     stepData: StepData;
     isCalculating: boolean;
-    copiedSection: string | null;
-    onCopyAll: () => void;
-    onCopyJson: () => void;
+    getCopyAllData: () => string | Promise<string>;
+    getCopyJsonData: () => string;
     onClose: () => void;
   }
 
@@ -20,9 +20,8 @@
     displayData,
     stepData,
     isCalculating,
-    copiedSection,
-    onCopyAll,
-    onCopyJson,
+    getCopyAllData,
+    getCopyJsonData,
     onClose,
   }: Props = $props();
 </script>
@@ -44,14 +43,26 @@
     {/if}
   </div>
   <div class="header-actions">
-    <button class="copy-all-btn" onclick={onCopyAll} disabled={isCalculating}>
-      <i class="fas fa-copy" aria-hidden="true"></i>
-      {copiedSection === "all" ? "Copied!" : "Copy All for AI"}
-    </button>
-    <button class="copy-json-btn" onclick={onCopyJson} disabled={isCalculating}>
-      <i class="fas fa-code" aria-hidden="true"></i>
-      {copiedSection === "json" ? "Copied!" : "Copy JSON"}
-    </button>
+    <CopyForAIButton
+      getData={getCopyAllData}
+      ariaLabel="Copy all data for AI"
+      variant="icon-text"
+      size="sm"
+      idleIcon="fa-copy"
+      labels={{ idle: "Copy All for AI", success: "Copied!" }}
+      disabled={isCalculating}
+      class="copy-all-btn"
+    />
+    <CopyForAIButton
+      getData={getCopyJsonData}
+      ariaLabel="Copy JSON"
+      variant="icon-text"
+      size="sm"
+      idleIcon="fa-code"
+      labels={{ idle: "Copy JSON", success: "Copied!" }}
+      disabled={isCalculating}
+      class="copy-json-btn"
+    />
     <button class="close-btn" onclick={onClose} aria-label="Close">
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
@@ -128,7 +139,7 @@
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .copy-all-btn {
@@ -170,7 +181,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     margin-left: 8px;
   }
 

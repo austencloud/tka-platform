@@ -242,7 +242,7 @@
     justify-content: center;
     gap: clamp(2px, 2cqi, 8px);
     color: var(--theme-text-dim);
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .composition-cell:hover .empty-state {

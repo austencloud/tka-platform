@@ -273,7 +273,7 @@ Features square aspect ratio for consistent layout and settings dialog for camer
     object-fit: cover; /* Cover to fill square container */
     background: #000;
     display: block;
-    transition: transform 0.3s ease;
+    transition: transform var(--duration-emphasis) ease;
   }
 
   .video-feed.active {
@@ -297,7 +297,7 @@ Features square aspect ratio for consistent layout and settings dialog for camer
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     z-index: 10;
   }
 
@@ -390,7 +390,7 @@ Features square aspect ratio for consistent layout and settings dialog for camer
     border-radius: var(--border-radius-md, 8px);
     cursor: pointer;
     font-size: var(--font-size-md);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-button:hover {

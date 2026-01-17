@@ -107,11 +107,11 @@
   }
 
   .trail-2 {
-    animation: fade 2s ease-in-out infinite 0.2s;
+    animation: fade 2s ease-in-out infinite var(--duration-normal);
   }
 
   .trail-3 {
-    animation: fade 2s ease-in-out infinite 0.4s;
+    animation: fade 2s ease-in-out infinite var(--duration-dramatic);
   }
 
   @keyframes fade {

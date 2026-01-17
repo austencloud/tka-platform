@@ -85,7 +85,7 @@
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     min-width: 80px;
   }
 

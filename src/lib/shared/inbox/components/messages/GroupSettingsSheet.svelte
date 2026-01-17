@@ -397,7 +397,7 @@
     border-radius: 50%;
     color: var(--theme-text);
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .back-btn:hover {
@@ -507,7 +507,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: filter 0.2s ease;
+    transition: filter var(--duration-normal) ease;
   }
 
   .btn-secondary {
@@ -552,7 +552,7 @@
     gap: 12px;
     padding: 10px 12px;
     border-radius: 10px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .member-row:hover {
@@ -593,7 +593,7 @@
     display: flex;
     gap: 4px;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .member-row:hover .member-actions {
@@ -686,7 +686,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: filter 0.2s ease;
+    transition: filter var(--duration-normal) ease;
   }
 
   .btn-danger:hover {

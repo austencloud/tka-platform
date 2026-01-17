@@ -227,7 +227,7 @@
     border-radius: 8px;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .type-card:hover {
@@ -292,7 +292,7 @@
     border-radius: 8px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -339,7 +339,7 @@
     border-radius: 8px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -383,7 +383,7 @@
     border-radius: 8px;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: 13px;
     color: var(--theme-text, #ffffff);
   }

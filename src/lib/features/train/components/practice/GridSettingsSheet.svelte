@@ -295,7 +295,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -379,7 +379,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .mode-btn i {
@@ -433,7 +433,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .scale-btn:hover:not(:disabled) {
@@ -512,7 +512,7 @@
     font-size: 0.7rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .reset-btn:hover {
@@ -540,7 +540,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .toggle-btn i {

@@ -310,7 +310,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
     isolation: isolate;
   }
 
@@ -330,7 +330,7 @@
     border-radius: 20px 20px 0 0;
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.3s ease;
+    animation: slideUp var(--duration-emphasis) ease;
     isolation: isolate;
     position: relative;
     z-index: 1;
@@ -373,7 +373,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {

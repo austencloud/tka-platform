@@ -201,7 +201,7 @@
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
     white-space: nowrap;
   }
@@ -289,7 +289,7 @@
     color: white;
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .remove-btn:hover:not(:disabled) {

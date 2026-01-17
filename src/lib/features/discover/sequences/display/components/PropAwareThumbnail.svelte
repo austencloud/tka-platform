@@ -567,7 +567,7 @@
   .progress-fill {
     height: 100%;
     background: var(--theme-accent, #6366f1);
-    transition: width 0.3s ease-out;
+    transition: width var(--duration-emphasis) ease-out;
     border-radius: 0 2px 2px 0;
   }
 

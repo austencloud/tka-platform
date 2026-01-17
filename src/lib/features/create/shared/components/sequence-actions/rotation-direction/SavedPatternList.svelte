@@ -118,7 +118,7 @@
     border-radius: 8px;
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     user-select: none;
   }
 
@@ -162,7 +162,7 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     background: rgba(239, 68, 68, 0.15);
     color: var(--semantic-error);
     font-size: 0.75rem;

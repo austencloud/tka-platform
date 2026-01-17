@@ -176,7 +176,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toggle-btn:hover {
@@ -222,7 +222,7 @@
     font-size: var(--font-size-base);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-btn:hover:not(:disabled) {

@@ -131,7 +131,7 @@ QuizGlyphCard - Displays TKA glyph with smooth crossfade transitions between let
 
   /* Only animate on initial load, not every question */
   .glyph-section.initial-load {
-    animation: glyphEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: glyphEntrance var(--duration-dramatic) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes glyphEntrance {
@@ -164,7 +164,7 @@ QuizGlyphCard - Displays TKA glyph with smooth crossfade transitions between let
       0 0 0 1px rgba(255, 255, 255, 0.08),
       0 0 80px -20px color-mix(in srgb, var(--theme-accent) 15%, transparent);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease;
   }
 
   .glyph-card.loaded {

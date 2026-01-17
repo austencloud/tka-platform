@@ -152,7 +152,7 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     color: #ffffff;
 
     /* Professional glass styling matching ButtonPanel and UndoButton */
@@ -171,7 +171,7 @@
 
   .fullscreen-button:active {
     transform: scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .fullscreen-button:focus-visible {

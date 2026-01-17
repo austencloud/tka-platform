@@ -64,7 +64,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     margin-bottom: 3px;
     overflow: hidden;
@@ -78,7 +78,7 @@
 
   .section-button:active:not(.disabled) {
     transform: translateX(2px) scale(0.99);
-    transition-duration: 0.1s;
+    transition-duration: var(--duration-instant);
   }
 
   .section-button.active {
@@ -110,7 +110,7 @@
     flex-shrink: 0;
     width: 22px;
     height: 22px;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Style icons with gradient colors and glow */
@@ -120,7 +120,7 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .section-button:not(.active) .section-icon :global(i) {
@@ -155,7 +155,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in 0.25s ease-out 0.15s both;
+    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
   @keyframes label-fade-in {

@@ -152,10 +152,10 @@ Used by both Generate and Discover for consistent Bento card styling
       0 4px 8px hsl(var(--shadow-color) / 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
 
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
 
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
     animation-delay: calc(var(--card-index) * 50ms);
     animation-fill-mode: backwards;
   }
@@ -204,7 +204,7 @@ Used by both Generate and Discover for consistent Bento card styling
 
   .parameter-card.clickable:not(.disabled):active {
     transform: translateY(0) scale(0.98);
-    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .parameter-card:focus-visible {
@@ -264,7 +264,7 @@ Used by both Generate and Discover for consistent Bento card styling
     width: 18px;
     height: 18px;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     z-index: 2;
   }
 

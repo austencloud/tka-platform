@@ -419,7 +419,7 @@
     padding: 12px 8px;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     text-align: center;
     min-height: var(--min-touch-target, 44px);
     container-type: size;

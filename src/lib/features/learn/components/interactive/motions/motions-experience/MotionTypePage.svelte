@@ -80,7 +80,7 @@ MotionTypePage - Displays a single motion type with visualizer
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideInUp {
@@ -128,7 +128,7 @@ MotionTypePage - Displays a single motion type with visualizer
     color: var(--theme-text-dim);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cycle-button:hover {
@@ -154,7 +154,7 @@ MotionTypePage - Displays a single motion type with visualizer
     font-size: 1.0625rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: 54px;
     margin-top: 0.5rem;
   }

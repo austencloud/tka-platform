@@ -152,7 +152,7 @@
     padding: 1rem;
     width: 280px;
     z-index: 9999;
-    animation: tooltipIn 0.2s ease-out;
+    animation: tooltipIn var(--duration-normal) ease-out;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(12px);
   }
@@ -183,7 +183,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     cursor: pointer;
     border-radius: 4px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-size: 0.75rem;
   }
 
@@ -242,7 +242,7 @@
     height: 8px;
     border-radius: 50%;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .dot.completed {
@@ -268,7 +268,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border: none;
   }
 

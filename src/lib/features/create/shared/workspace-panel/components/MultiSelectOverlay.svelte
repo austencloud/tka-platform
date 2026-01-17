@@ -57,7 +57,7 @@ Shows "Select Items" banner and makes escape prominent.
     bottom: 0;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(8px);
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn var(--duration-emphasis) ease-out;
     pointer-events: auto;
   }
 
@@ -80,7 +80,7 @@ Shows "Select Items" banner and makes escape prominent.
     box-shadow:
       0 4px 16px rgba(251, 191, 36, 0.4),
       0 0 0 1px rgba(255, 255, 255, 0.2);
-    animation: slideDown 0.3s ease-out;
+    animation: slideDown var(--duration-emphasis) ease-out;
     pointer-events: auto;
     z-index: 999; /* Very high to be above everything including containers with z-index */
   }
@@ -99,7 +99,7 @@ Shows "Select Items" banner and makes escape prominent.
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);

@@ -247,7 +247,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-button:hover {

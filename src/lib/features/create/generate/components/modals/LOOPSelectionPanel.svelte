@@ -239,11 +239,11 @@ Includes curated presets, user favorites, and manual component selection
 
   /* Slide animations for drawer */
   :global(.drawer-content.loop-selection-sheet[data-placement="bottom"]) {
-    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   :global(.drawer-content.loop-selection-sheet[data-placement="right"]) {
-    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   :global(
@@ -346,7 +346,7 @@ Includes curated presets, user favorites, and manual component selection
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .presets-toggle:hover {
@@ -357,7 +357,7 @@ Includes curated presets, user favorites, and manual component selection
   .presets-toggle .chevron {
     width: 18px;
     height: 18px;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .presets-toggle.expanded .chevron {
@@ -433,7 +433,7 @@ Includes curated presets, user favorites, and manual component selection
     line-height: 1.2;
 
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
     box-shadow: 0 4px 12px var(--theme-shadow);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 

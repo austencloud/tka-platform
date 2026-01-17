@@ -256,7 +256,7 @@
   }
 
   .bridge-container:not(.layout-stabilizing) {
-    animation: fadeIn 200ms ease-out forwards;
+    animation: fadeIn var(--duration-normal) ease-out forwards;
   }
 
   /* Rotation group section */
@@ -397,12 +397,12 @@
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 0.5rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Entrance animation */
     opacity: 0;
     transform: scale(0.9);
-    animation: scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: scaleIn var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     animation-delay: var(--animation-delay, 0ms);
 
     /* Larger touch target for bigger pictographs */
@@ -437,7 +437,7 @@
   /* Active/pressed state */
   .bridge-option:active:not(:disabled) {
     transform: scale(0.95);
-    transition-duration: 0.1s;
+    transition-duration: var(--duration-instant);
   }
 
   /* Focus state for accessibility */

@@ -777,7 +777,7 @@
     color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     z-index: 100;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .toggle-controls:hover {
@@ -808,7 +808,7 @@
   .compass-needle {
     font-size: 1rem;
     color: #ef4444;
-    transition: transform 0.1s ease-out;
+    transition: transform var(--duration-instant) ease-out;
   }
 
   .compass span {
@@ -854,7 +854,7 @@
     border-radius: 8px;
     color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     font-size: 0.9rem;
   }
 
@@ -960,7 +960,7 @@
     border-radius: 8px;
     color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .action-btn:hover {
@@ -997,7 +997,7 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .export-btn:hover:not(:disabled) {

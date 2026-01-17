@@ -44,7 +44,7 @@ CardFooter.svelte - Footer section with subtitle and description
     text-overflow: ellipsis;
     width: 100%;
     flex-shrink: 0;
-    transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .card-description {
@@ -59,6 +59,6 @@ CardFooter.svelte - Footer section with subtitle and description
     text-overflow: ellipsis;
     width: 100%;
     flex-shrink: 0;
-    transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 </style>

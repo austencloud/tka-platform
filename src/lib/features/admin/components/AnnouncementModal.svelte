@@ -183,7 +183,7 @@
     justify-content: center;
     z-index: 10000;
     padding: 20px;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn var(--duration-normal) ease-out;
   }
 
   @keyframes fadeIn {
@@ -205,7 +205,7 @@
     border: 1px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
     border-radius: 20px;
     overflow: hidden;
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp var(--duration-emphasis) ease-out;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   }
 
@@ -264,7 +264,7 @@
     border-radius: 8px;
     color: var(--theme-text, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -332,7 +332,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-decoration: none;
   }
 

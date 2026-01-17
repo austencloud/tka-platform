@@ -128,7 +128,7 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
   .direction-dot {
     /* Match TKA glyph fade behavior */
     opacity: 0;
-    transition: opacity 150ms ease-out;
+    transition: opacity var(--duration-fast) ease-out;
   }
 
   .direction-dot.visible {
@@ -142,6 +142,6 @@ because TKAGlyph now loads the base letter SVG and caches it under the full lett
 
   /* Animate fill color changes for dark mode transition */
   .direction-dot circle {
-    transition: fill 150ms ease-out;
+    transition: fill var(--duration-fast) ease-out;
   }
 </style>

@@ -599,7 +599,7 @@
     border-radius: 50%;
     background: var(--theme-accent);
     cursor: pointer;
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   .scrub-slider::-webkit-slider-thumb:hover {
@@ -625,7 +625,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-compact);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .transport-btn:hover {

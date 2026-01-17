@@ -45,7 +45,7 @@ PositionQuizProgress - Progress bar for position quiz
     height: 100%;
     background: linear-gradient(90deg, #22d3ee, #06b6d4);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-text {

@@ -453,7 +453,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 20px;
-    animation: chipIn 0.2s ease-out;
+    animation: chipIn var(--duration-normal) ease-out;
   }
 
   @keyframes chipIn {
@@ -548,7 +548,7 @@
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .suggestion-item:hover {
@@ -572,7 +572,7 @@
     font-size: var(--font-size-compact);
     color: var(--theme-accent);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .suggestion-item:hover .suggestion-add {

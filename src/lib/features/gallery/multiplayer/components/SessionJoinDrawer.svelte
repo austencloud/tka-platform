@@ -428,7 +428,7 @@
 		align-items: center;
 		gap: 4px;
 		border-bottom: 2px solid transparent;
-		transition: all 0.15s;
+		transition: all var(--duration-fast);
 	}
 
 	.tab:hover {
@@ -467,7 +467,7 @@
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 8px;
 		cursor: pointer;
-		transition: all 0.15s;
+		transition: all var(--duration-fast);
 		text-align: left;
 		width: 100%;
 	}
@@ -618,7 +618,7 @@
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 8px;
-		transition: all 0.15s;
+		transition: all var(--duration-fast);
 	}
 
 	.visibility-option input:checked + .option-content {
@@ -662,7 +662,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
-		transition: all 0.15s;
+		transition: all var(--duration-fast);
 	}
 
 	.create-button:hover:not(:disabled),

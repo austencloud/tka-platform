@@ -136,7 +136,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     font-family: "SF Mono", "Monaco", "Consolas", monospace;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: 60px;
     justify-content: space-between;
   }
@@ -157,7 +157,7 @@
 
   .dropdown-icon {
     font-size: 10px;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
     opacity: 0.6;
   }
 
@@ -178,7 +178,7 @@
       0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 100;
     overflow: hidden;
-    animation: dropdown-appear 0.15s ease-out;
+    animation: dropdown-appear var(--duration-fast) ease-out;
   }
 
   @keyframes dropdown-appear {
@@ -204,7 +204,7 @@
     color: var(--theme-text);
     cursor: pointer;
     text-align: left;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .dropdown-option:hover {

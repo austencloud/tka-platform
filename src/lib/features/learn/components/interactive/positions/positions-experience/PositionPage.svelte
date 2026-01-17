@@ -95,7 +95,7 @@ PositionPage - Single position type learning page
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideInUp {
@@ -138,7 +138,7 @@ PositionPage - Single position type learning page
     color: var(--theme-text-dim);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cycle-button:hover {
@@ -164,7 +164,7 @@ PositionPage - Single position type learning page
     font-size: 1.125rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: var(--min-touch-target, 44px);
     margin-top: 1rem;
   }

@@ -248,7 +248,7 @@
     flex-direction: column;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     z-index: 10;
-    animation: slideIn 0.25s ease-out;
+    animation: slideIn var(--duration-normal) ease-out;
   }
 
   @keyframes slideIn {
@@ -290,7 +290,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button svg {
@@ -315,7 +315,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .record-button:hover {
@@ -410,7 +410,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .primary-button:hover {
@@ -434,7 +434,7 @@
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .video-card:hover {
@@ -494,7 +494,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .play-overlay i {
@@ -578,7 +578,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
     overflow: hidden;
-    animation: modalIn 0.2s ease-out;
+    animation: modalIn var(--duration-normal) ease-out;
   }
 
   @keyframes modalIn {
@@ -632,7 +632,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .video-player-invite:hover {
@@ -651,7 +651,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .video-player-close:hover {

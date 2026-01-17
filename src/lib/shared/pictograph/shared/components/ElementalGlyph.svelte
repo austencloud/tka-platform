@@ -113,7 +113,7 @@ Based on legacy elemental_glyph.py implementation.
   .elemental-glyph {
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .elemental-glyph.visible {

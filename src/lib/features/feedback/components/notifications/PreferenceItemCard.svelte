@@ -73,7 +73,7 @@
 
   .preference-item:active {
     transform: translateY(0) scale(0.98);
-    transition-duration: 0.1s;
+    transition-duration: var(--duration-instant);
   }
 
   .preference-item[aria-busy="true"] {

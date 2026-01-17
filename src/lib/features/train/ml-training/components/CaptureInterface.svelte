@@ -436,7 +436,7 @@ Hybrid sync: saves locally first, then syncs to Firebase in background.
     border-radius: 10px;
     color: inherit;
     font-size: 1rem;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .config-field input:focus,
@@ -466,7 +466,7 @@ Hybrid sync: saves locally first, then syncs to Firebase in background.
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .btn-done:hover {

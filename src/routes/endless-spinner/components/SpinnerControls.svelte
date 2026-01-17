@@ -78,7 +78,7 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .control-btn:disabled {

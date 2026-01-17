@@ -121,7 +121,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   /* Expand touch target while maintaining visual size */

@@ -193,7 +193,7 @@
     display: flex;
     align-items: flex-end; /* Mobile: bottom sheet */
     justify-content: center;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   @keyframes fadeIn {
@@ -218,7 +218,7 @@
     border-radius: 20px 20px 0 0; /* Mobile: rounded top only */
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    animation: slideUp var(--duration-emphasis) cubic-bezier(0.32, 0.72, 0, 1);
     box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.4);
   }
 
@@ -242,7 +242,7 @@
       max-width: 1200px;
       max-height: 85vh;
       border-radius: 16px; /* Rounded all corners */
-      animation: scaleIn 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+      animation: scaleIn var(--duration-normal) cubic-bezier(0.32, 0.72, 0, 1);
       box-shadow:
         0 24px 80px rgba(0, 0, 0, 0.5),
         0 8px 24px var(--theme-shadow),
@@ -290,7 +290,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     font-size: var(--font-size-base);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .help-close:hover {

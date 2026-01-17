@@ -239,7 +239,7 @@ Combines video feed with playback controls for practicing sequences.
         var(--theme-accent-strong, var(--theme-accent-strong))
       )
     );
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-text {

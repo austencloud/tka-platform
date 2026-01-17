@@ -304,7 +304,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .edit-btn:hover {
@@ -337,7 +337,7 @@
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .icon-btn.save {
@@ -372,7 +372,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .input:focus {
@@ -398,7 +398,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .username-input-wrapper:focus-within {
@@ -477,7 +477,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .suggestion-btn:hover {

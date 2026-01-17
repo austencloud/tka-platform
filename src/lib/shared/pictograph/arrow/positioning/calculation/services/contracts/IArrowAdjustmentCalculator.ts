@@ -20,4 +20,16 @@ export interface IArrowAdjustmentCalculator {
     location: GridLocation,
     arrowColor?: string
   ): Promise<Point>;
+
+  /**
+   * Get the base adjustment (before directional tuple transformation).
+   * This is useful for the WASD adjustment panel to get the same base value
+   * that the rendering pipeline uses.
+   */
+  getBaseAdjustmentPublic(
+    pictographData: PictographData,
+    motionData: MotionData,
+    letter: string,
+    arrowColor?: string
+  ): Promise<Point>;
 }

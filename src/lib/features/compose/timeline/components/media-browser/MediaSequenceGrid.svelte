@@ -112,7 +112,7 @@
     background: var(--scrollbar-thumb);
     border: 3px solid var(--scrollbar-track);
     border-radius: 6px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sequence-list::-webkit-scrollbar-thumb:hover {
@@ -160,7 +160,7 @@
     cursor: pointer;
     font-size: var(--font-size-compact);
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .state-message button:hover {

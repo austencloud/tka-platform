@@ -132,7 +132,7 @@ Follows Svelte 5 runes + microservices architecture.
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .filter-button:hover {
@@ -173,7 +173,7 @@ Follows Svelte 5 runes + microservices architecture.
     color: var(--theme-text, white);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: 140px;
   }
 
@@ -199,7 +199,7 @@ Follows Svelte 5 runes + microservices architecture.
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sort-direction-button:hover {

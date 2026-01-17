@@ -360,7 +360,7 @@ Uses pure runes instead of stores for reactivity.
     z-index: 4;
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition: opacity 150ms ease-out, filter 150ms ease-out;
+    transition: opacity var(--duration-fast) ease-out, filter var(--duration-fast) ease-out;
   }
 
   .tka-glyph.visible {

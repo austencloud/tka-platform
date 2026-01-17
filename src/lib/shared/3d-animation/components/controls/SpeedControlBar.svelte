@@ -55,7 +55,7 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .speed-btn:hover {

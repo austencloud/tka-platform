@@ -223,7 +223,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn var(--duration-normal) ease-out;
     padding: 20px;
   }
 
@@ -245,7 +245,7 @@
       0 0 60px var(--error-bg);
     max-width: 480px;
     width: 100%;
-    animation: slideUp 0.25s ease-out;
+    animation: slideUp var(--duration-normal) ease-out;
     overflow: hidden;
   }
 
@@ -304,7 +304,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .close-button:hover {
@@ -357,7 +357,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: color 0.15s;
+    transition: color var(--duration-fast);
   }
 
   .details-toggle:hover {
@@ -447,7 +447,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .dismiss-button {

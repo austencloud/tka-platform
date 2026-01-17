@@ -121,7 +121,7 @@
     border-radius: 12px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     padding: 0;
   }
@@ -203,7 +203,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .play-overlay i {

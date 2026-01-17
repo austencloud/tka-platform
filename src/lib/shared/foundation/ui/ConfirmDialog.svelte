@@ -308,7 +308,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     color: var(--theme-text-dim);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     user-select: none;
   }
 
@@ -361,7 +361,7 @@
     font-size: var(--font-size-base);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: 2px solid transparent;
     min-width: 120px;
   }

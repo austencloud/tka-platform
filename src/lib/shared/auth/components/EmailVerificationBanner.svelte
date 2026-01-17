@@ -184,7 +184,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 
@@ -205,7 +205,7 @@
     border-radius: 4px;
     cursor: pointer;
     opacity: 0.7;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .dismiss-button:hover {

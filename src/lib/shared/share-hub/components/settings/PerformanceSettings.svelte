@@ -251,7 +251,7 @@
     border: 1.5px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -312,7 +312,7 @@
     color: var(--theme-text, white);
     font-family: inherit;
     cursor: pointer;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .camera-select:hover {
@@ -363,7 +363,7 @@
     font-weight: 600;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .permission-button:hover {
@@ -383,7 +383,7 @@
     border: 2px dashed var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .upload-area:hover {

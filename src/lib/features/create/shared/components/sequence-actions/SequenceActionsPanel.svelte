@@ -765,7 +765,7 @@
     border-radius: 50%;
     cursor: pointer;
     font-size: var(--font-size-base);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border: 1px solid var(--theme-stroke-strong);
   }
 
@@ -861,7 +861,7 @@
   .dimmed {
     opacity: 0.3;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   /* Boost drawer z-index when help mode is active (above backdrop at 200) */

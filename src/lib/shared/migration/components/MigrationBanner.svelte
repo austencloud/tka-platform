@@ -181,7 +181,7 @@
     font-size: var(--font-size-compact);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .update-button:hover {
@@ -199,7 +199,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .learn-more:hover {
@@ -218,7 +218,7 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .dismiss-button:hover {

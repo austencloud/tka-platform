@@ -197,7 +197,7 @@
     color: rgba(255, 255, 255, 0.85); /* WCAG AAA */
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-btn:hover {
@@ -275,7 +275,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .mini-btn:hover:enabled {
@@ -316,7 +316,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .speed-btn:hover {

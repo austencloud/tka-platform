@@ -48,7 +48,7 @@
     color: white;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     -webkit-tap-highlight-color: transparent;
   }
 

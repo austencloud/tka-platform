@@ -114,7 +114,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .nav-btn:hover {
@@ -140,7 +140,7 @@
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.8rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .today-btn:hover {
@@ -185,7 +185,7 @@
     justify-content: center;
     gap: 4px;
     color: #fff;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     position: relative;
   }
 

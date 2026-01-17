@@ -285,7 +285,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .expand-btn:hover {
@@ -434,7 +434,7 @@
     align-items: center;
     gap: 4px;
     padding: 2px 0 2px 4px;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .module-header:hover {
@@ -456,7 +456,7 @@
     background: transparent;
     color: var(--module-color, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 
@@ -466,7 +466,7 @@
 
   .expand-toggle i {
     font-size: 11px;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .expand-toggle i.rotated {
@@ -502,7 +502,7 @@
   .tabs-container {
     padding: 4px 0 8px 32px;
     background: color-mix(in srgb, var(--module-color) 2%, transparent);
-    animation: slideDown 0.15s ease-out;
+    animation: slideDown var(--duration-fast) ease-out;
   }
 
   @keyframes slideDown {

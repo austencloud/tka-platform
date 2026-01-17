@@ -164,7 +164,7 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     font-size: var(--font-size-md);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-button:hover {
@@ -241,7 +241,7 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     border-radius: var(--border-radius-md, 8px);
     font-size: var(--font-size-lg);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .bpm-adjust-button:hover {
@@ -267,7 +267,7 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     background: var(--theme-accent, var(--primary, var(--semantic-info)));
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .speed-slider::-webkit-slider-thumb:hover {
@@ -281,7 +281,7 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .speed-slider::-moz-range-thumb:hover {
@@ -313,7 +313,7 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     border-radius: 12px;
     position: relative;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .metronome-toggle input[type="checkbox"]::before {
@@ -325,7 +325,7 @@ Provides play/pause, speed adjustment (BPM), reset, and metronome toggle.
     background: var(--theme-text, var(--foreground, #ffffff));
     left: 2px;
     top: 2px;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .metronome-toggle input[type="checkbox"]:checked {

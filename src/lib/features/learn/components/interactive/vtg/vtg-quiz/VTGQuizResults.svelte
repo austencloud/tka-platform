@@ -131,7 +131,7 @@ VTGQuizResults - Final quiz results display
     font-size: 1.0625rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .finish-button:hover {

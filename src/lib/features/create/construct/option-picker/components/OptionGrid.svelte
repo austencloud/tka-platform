@@ -105,7 +105,7 @@ Computes reversal indicators for options based on current sequence.
     justify-content: center;
     width: fit-content;
     margin: 0 auto;
-    transition: opacity 250ms ease-out;
+    transition: opacity var(--duration-normal) ease-out;
   }
 
   /* Wrapper for FLIP animation - thin wrapper that doesn't affect layout */

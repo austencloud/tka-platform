@@ -72,7 +72,7 @@
     font-weight: 700;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow:
       0 4px 16px var(--theme-shadow),
       0 0 0 1px var(--theme-accent-glow);
@@ -117,7 +117,7 @@
   .progress-fill {
     height: 100%;
     background: rgba(255, 255, 255, 0.8);
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   /* Pulse animation */

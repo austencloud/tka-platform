@@ -230,7 +230,7 @@
     --icon-size-large: 22px;
 
     /* Timing */
-    --transition-smooth: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* ============================================================================
@@ -542,7 +542,7 @@
     border: none;
     cursor: pointer;
     z-index: 99;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .peek-indicator:hover {
@@ -569,7 +569,7 @@
 
   /* Single entrance animation - plays once when indicator appears */
   .peek-indicator.animate-entrance i {
-    animation: peek-entrance 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: peek-entrance var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
   @keyframes peek-entrance {

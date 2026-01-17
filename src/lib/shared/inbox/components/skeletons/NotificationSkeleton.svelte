@@ -36,7 +36,7 @@
     gap: 12px;
     padding: 12px 16px;
     border-bottom: 1px solid var(--theme-stroke);
-    animation: fadeIn 0.3s ease-out backwards;
+    animation: fadeIn var(--duration-emphasis) ease-out backwards;
     animation-delay: calc(var(--stagger) * 50ms);
   }
 
@@ -82,7 +82,7 @@
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
-    animation-delay: 0.1s;
+    animation-delay: var(--duration-instant);
   }
 
   .skeleton-time {
@@ -97,7 +97,7 @@
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
-    animation-delay: 0.2s;
+    animation-delay: var(--duration-normal);
   }
 
   @keyframes shimmer {

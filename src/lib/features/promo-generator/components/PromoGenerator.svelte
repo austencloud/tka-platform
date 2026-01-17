@@ -529,7 +529,7 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: 18px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     backdrop-filter: blur(8px);
   }
 
@@ -557,7 +557,7 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .export-trigger:hover:not(:disabled) {
@@ -616,7 +616,7 @@
     color: rgba(255, 255, 255, 0.7);
     font-size: 13px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .pill:hover {
@@ -653,7 +653,7 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .render-btn:hover:not(:disabled) {
@@ -682,7 +682,7 @@
     color: white;
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -794,7 +794,7 @@
     padding: 8px 10px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 8px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .shot-item:hover {
@@ -830,7 +830,7 @@
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.02);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .env-card:hover:not(:disabled) {
@@ -931,7 +931,7 @@
     stroke: url(#gradient);
     stroke: #6366f1;
     stroke-dasharray: 283;
-    transition: stroke-dashoffset 0.3s ease;
+    transition: stroke-dashoffset var(--duration-emphasis) ease;
   }
 
   .progress-text {
@@ -952,7 +952,7 @@
     color: rgba(255, 255, 255, 0.7);
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn:hover {

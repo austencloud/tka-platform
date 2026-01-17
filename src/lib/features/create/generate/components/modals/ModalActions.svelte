@@ -48,7 +48,7 @@ Provides consistent, beautiful button layouts for modal actions
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
     position: relative;
     overflow: hidden;
@@ -65,7 +65,7 @@ Provides consistent, beautiful button layouts for modal actions
       transparent 70%
     );
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease;
   }
 
   .action-button:hover::before {

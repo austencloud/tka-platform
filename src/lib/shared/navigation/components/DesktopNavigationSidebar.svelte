@@ -516,7 +516,7 @@
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -544,7 +544,7 @@
     font-size: var(--font-size-base);
     border-radius: 8px;
     background: var(--theme-card-bg, var(--theme-card-bg));
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .settings-back-button.collapsed .back-icon {
@@ -564,7 +564,7 @@
     font-weight: 500;
 
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in 0.25s ease-out 0.15s both;
+    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
   .settings-back-button:focus-visible {
@@ -593,7 +593,7 @@
     border-radius: clamp(8px, 5cqw, 12px);
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: clamp(13px, 7.5cqw, 15px);
     font-weight: 600;
     text-align: left;
@@ -619,7 +619,7 @@
     justify-content: center;
     font-size: clamp(16px, 10cqw, 20px);
     opacity: 0.8;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -640,7 +640,7 @@
     flex: 1;
 
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in 0.25s ease-out 0.15s both;
+    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
   @keyframes label-fade-in {

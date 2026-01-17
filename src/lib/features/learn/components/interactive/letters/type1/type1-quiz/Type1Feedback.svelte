@@ -40,7 +40,7 @@ Type1Feedback - Shows feedback after answer
     border-radius: 10px;
     font-size: 0.9375rem;
     text-align: center;
-    animation: slideUp 0.3s ease;
+    animation: slideUp var(--duration-emphasis) ease;
   }
 
   @keyframes slideUp {

@@ -172,13 +172,13 @@ Provides consistent styling and interaction patterns for all generation setting 
       0 4px 8px hsl(var(--shadow-color) / 0.1),
       /* Inner highlight for 3D effect */ inset 0 1px 0 var(--theme-stroke);
 
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible; /* Allow hover effects to overflow and pop over neighbors */
     color: white;
     text-align: center;
 
     /* 🎬 ANIMATION - Clean fade in on load (400ms - 2025 standard) */
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   /* 🌟 GLOSSY SHEEN OVERLAY - Creates 3D glass effect */
@@ -218,7 +218,7 @@ Provides consistent styling and interaction patterns for all generation setting 
   /* 🎯 ELASTIC PRESS - Universal click/tap feedback for ALL devices */
   .base-card.clickable:active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* 🎬 Card entrance animation - clean fade in */
@@ -265,10 +265,10 @@ Provides consistent styling and interaction patterns for all generation setting 
       inset 0 1px 0 var(--theme-stroke, var(--theme-stroke));
 
     /* Faster transition on press */
-    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
 
     /* 🎯 SPRING BOUNCE - Trigger bounce animation on release */
-    animation: springBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: springBounce var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* 🎯 Spring bounce animation - overshoot and settle */
@@ -323,7 +323,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     height: 20px;
     color: var(--theme-stroke-strong, var(--theme-text-dim));
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   @media (hover: hover) {

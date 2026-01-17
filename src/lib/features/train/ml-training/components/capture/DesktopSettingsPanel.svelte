@@ -186,7 +186,7 @@
       border-radius: 10px;
       color: inherit;
       font-size: 1rem;
-      transition: all 0.2s;
+      transition: all var(--duration-normal);
     }
 
     .config-field input:focus,
@@ -261,7 +261,7 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all var(--duration-normal) ease;
     }
 
     .desktop-controls button:disabled {

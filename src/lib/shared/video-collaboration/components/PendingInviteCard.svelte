@@ -140,7 +140,7 @@
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .invite-card:hover {
@@ -235,7 +235,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .btn:disabled {

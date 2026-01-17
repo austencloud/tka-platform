@@ -70,7 +70,7 @@
     border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     min-height: var(--min-touch-target);
     width: 100%;

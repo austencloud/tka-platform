@@ -208,7 +208,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     color: var(--theme-text-dim);
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .status-badge.customized {
@@ -237,7 +237,7 @@
     font-weight: 600;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -288,7 +288,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-compact);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     box-sizing: border-box;
   }
 
@@ -322,7 +322,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 

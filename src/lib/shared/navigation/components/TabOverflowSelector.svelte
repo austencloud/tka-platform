@@ -183,7 +183,7 @@
   .chevron {
     font-size: var(--font-size-compact);
     opacity: 0.6;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .chevron.rotated {

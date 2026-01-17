@@ -280,7 +280,7 @@ Shows box and diamond grids side-by-side with animations
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.5px;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .grid-mode-badge.diamond {
@@ -323,7 +323,7 @@ Shows box and diamond grids side-by-side with animations
 
   .grid-point {
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .grid-point:hover .point-circle {
@@ -333,7 +333,7 @@ Shows box and diamond grids side-by-side with animations
   }
 
   .point-circle {
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .point-circle.center {
@@ -370,7 +370,7 @@ Shows box and diamond grids side-by-side with animations
       -apple-system,
       sans-serif;
     font-weight: 600;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .point-label.highlighted {

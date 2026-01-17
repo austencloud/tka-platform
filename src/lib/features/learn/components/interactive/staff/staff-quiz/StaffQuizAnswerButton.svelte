@@ -60,7 +60,7 @@ StaffQuizAnswerButton - Single answer option button
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 
@@ -105,7 +105,7 @@ StaffQuizAnswerButton - Single answer option button
   .answer-btn.incorrect {
     background: rgba(255, 74, 74, 0.2);
     border-color: rgba(255, 74, 74, 0.6);
-    animation: shake 0.4s ease;
+    animation: shake var(--duration-dramatic) ease;
   }
 
   @keyframes shake {

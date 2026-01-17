@@ -165,7 +165,7 @@
     border-radius: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -205,7 +205,7 @@
   .progress-bar {
     height: 100%;
     background: var(--semantic-success, #22c55e);
-    transition: width 0.15s ease;
+    transition: width var(--duration-fast) ease;
   }
 
   .progress-text {

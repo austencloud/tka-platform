@@ -287,7 +287,7 @@ Features:
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-btn:hover {
@@ -329,7 +329,7 @@ Features:
     );
     border-radius: 2px;
     opacity: 0.6;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   :global(.detail-drawer.drawer-content[data-placement="right"]:hover::before) {

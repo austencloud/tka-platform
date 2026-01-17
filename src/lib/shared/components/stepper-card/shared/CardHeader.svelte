@@ -51,7 +51,7 @@ Reusable header for all card types with consistent styling
     flex: 1;
     /* Container-aware font sizing - only applies if no inline style is set */
     font-size: clamp(8px, 2.5cqi, 11px);
-    transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Progressive enhancement for wider containers */

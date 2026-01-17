@@ -400,7 +400,7 @@
     border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -609,7 +609,7 @@
     border-radius: 12px;
     color: var(--text-primary);
     font-size: 1rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .search-input-wrapper input:focus {
@@ -647,7 +647,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 

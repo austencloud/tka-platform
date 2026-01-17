@@ -71,7 +71,7 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
     -webkit-tap-highlight-color: transparent;
 
     /* Smooth transitions */
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Shadow */
     box-shadow:
@@ -100,7 +100,7 @@ Action-oriented pattern: Shows the mode you can switch TO (not current mode)
   /* Active/pressed state */
   .view-mode-toggle:active {
     transform: translateY(0) scale(0.98);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Focus state */

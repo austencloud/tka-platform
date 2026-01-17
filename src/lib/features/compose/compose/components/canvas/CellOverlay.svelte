@@ -128,7 +128,7 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: clamp(0.7rem, 5cqi, 1rem);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .toolbar-btn:hover {
@@ -160,7 +160,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     pointer-events: none;
     border-radius: 0;
   }
@@ -195,7 +195,7 @@
     color: var(--theme-text);
     font-size: clamp(0.7rem, 5cqi, 1rem);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .overlay-btn:hover {

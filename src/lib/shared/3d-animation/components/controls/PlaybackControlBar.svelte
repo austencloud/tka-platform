@@ -161,7 +161,7 @@
     color: var(--theme-text);
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .play-btn:hover:not(:disabled) {

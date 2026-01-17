@@ -800,7 +800,7 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     pointer-events: auto;
   }
 

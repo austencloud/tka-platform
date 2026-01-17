@@ -137,7 +137,7 @@
 <style>
   .mandala-element {
     cursor: grab;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .mandala-element:active {

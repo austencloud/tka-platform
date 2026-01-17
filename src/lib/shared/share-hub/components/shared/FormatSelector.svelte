@@ -87,7 +87,7 @@
     font-weight: 500;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 

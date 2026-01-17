@@ -330,7 +330,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .tool-toggle:hover {
@@ -417,7 +417,7 @@
     font-size: 13px;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .suggestion-list button:hover {
@@ -581,11 +581,11 @@
   }
 
   .typing-indicator span:nth-child(2) {
-    animation-delay: 0.2s;
+    animation-delay: var(--duration-normal);
   }
 
   .typing-indicator span:nth-child(3) {
-    animation-delay: 0.4s;
+    animation-delay: var(--duration-dramatic);
   }
 
   @keyframes typing {
@@ -614,7 +614,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     padding: 8px 12px;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .input-wrapper:focus-within {
@@ -649,7 +649,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 

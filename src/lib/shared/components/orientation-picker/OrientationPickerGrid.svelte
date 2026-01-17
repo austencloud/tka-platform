@@ -119,7 +119,7 @@ Shows all 4 orientations: in, out, clock, counter
     border-radius: 16px;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .orientation-cell:hover {
@@ -175,7 +175,7 @@ Shows all 4 orientations: in, out, clock, counter
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-button:hover {

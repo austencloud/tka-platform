@@ -88,7 +88,7 @@ ModeQuizSection - Identify diamond vs box grid
     flex-direction: column;
     align-items: center;
     gap: 1.25rem;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--duration-emphasis) ease;
   }
 
   @keyframes fadeIn {
@@ -149,7 +149,7 @@ ModeQuizSection - Identify diamond vs box grid
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 
@@ -189,7 +189,7 @@ ModeQuizSection - Identify diamond vs box grid
   .answer-btn.incorrect {
     background: rgba(255, 74, 74, 0.2);
     border-color: rgba(255, 74, 74, 0.6);
-    animation: shake 0.4s ease;
+    animation: shake var(--duration-dramatic) ease;
   }
 
   @keyframes shake {
@@ -231,7 +231,7 @@ ModeQuizSection - Identify diamond vs box grid
     border-radius: 10px;
     font-size: 0.9375rem;
     text-align: center;
-    animation: slideUp 0.3s ease;
+    animation: slideUp var(--duration-emphasis) ease;
   }
 
   @keyframes slideUp {

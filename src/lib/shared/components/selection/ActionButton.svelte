@@ -64,7 +64,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: var(--action-shadow);
     -webkit-tap-highlight-color: transparent;
   }

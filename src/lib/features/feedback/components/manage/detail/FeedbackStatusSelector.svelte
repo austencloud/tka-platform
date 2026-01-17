@@ -138,7 +138,7 @@
     border-radius: 999px;
     color: var(--fb-text-muted);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-size: var(--fb-text-xs);
     font-weight: 500;
   }
@@ -185,7 +185,7 @@
     color: var(--fb-text, rgba(255, 255, 255, 0.95));
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .cycle-btn:hover:not(:disabled) {

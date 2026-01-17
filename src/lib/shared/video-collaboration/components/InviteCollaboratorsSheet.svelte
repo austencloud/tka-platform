@@ -335,7 +335,7 @@
     border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -384,7 +384,7 @@
     border-radius: 12px;
     color: var(--text-primary);
     font-size: 1rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .search-input-wrapper input:focus {
@@ -450,7 +450,7 @@
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .collaborator-item:hover,
@@ -531,7 +531,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 

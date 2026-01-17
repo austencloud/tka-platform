@@ -106,7 +106,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
     border-radius: 4px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
     align-self: center;
   }

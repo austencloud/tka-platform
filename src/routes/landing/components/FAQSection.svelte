@@ -77,7 +77,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .faq-item summary:hover {
@@ -93,7 +93,7 @@
     font-size: 1.5rem;
     color: var(--theme-accent-strong, #818cf8);
     font-weight: 300;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .faq-item[open] summary::after {

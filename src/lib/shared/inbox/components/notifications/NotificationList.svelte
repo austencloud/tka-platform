@@ -125,7 +125,7 @@
   }
 
   .notification-wrapper {
-    animation: slideInStagger 0.3s ease-out backwards;
+    animation: slideInStagger var(--duration-emphasis) ease-out backwards;
     animation-delay: calc(var(--stagger-index) * 30ms);
   }
 

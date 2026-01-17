@@ -144,7 +144,7 @@
     border-radius: 0.5rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .home-button:hover {

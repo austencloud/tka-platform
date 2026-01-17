@@ -152,7 +152,7 @@
     border: 1.5px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     min-height: 52px;
     -webkit-tap-highlight-color: transparent;
   }
@@ -301,7 +301,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     font-size: 13px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   @media (min-width: 500px) {

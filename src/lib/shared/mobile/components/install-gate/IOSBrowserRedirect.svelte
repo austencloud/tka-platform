@@ -235,7 +235,7 @@
     font-size: 17px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
   }
 
@@ -271,7 +271,7 @@
     padding: 14px;
     font-size: 15px;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .dismiss-btn:hover {

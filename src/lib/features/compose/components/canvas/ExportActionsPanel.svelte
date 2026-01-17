@@ -166,7 +166,7 @@
     border-radius: 12px;
     color: white;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     overflow: hidden;
     background: var(--theme-accent);
@@ -179,7 +179,7 @@
   .save-btn .main-icon {
     font-size: var(--font-size-lg);
     color: white;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .btn-label {
@@ -267,7 +267,7 @@
   .progress-fill {
     height: 100%;
     background: var(--theme-accent, rgba(139, 92, 246, 1));
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   /* ===========================
@@ -325,7 +325,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 

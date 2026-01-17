@@ -104,7 +104,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -141,7 +141,7 @@
     border-radius: 50%;
     color: var(--theme-accent, rgba(139, 92, 246, 1));
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:
       0 2px 8px var(--theme-shadow),
       inset 0 1px 0 var(--theme-stroke);

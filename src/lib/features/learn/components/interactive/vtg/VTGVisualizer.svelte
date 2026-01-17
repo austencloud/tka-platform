@@ -445,7 +445,7 @@ Shows how hands coordinate their movements in different VTG patterns
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: 140px;
   }
 

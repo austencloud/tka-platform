@@ -401,7 +401,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
     flex-shrink: 0;
   }
@@ -470,7 +470,7 @@
     font-weight: 500;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -607,7 +607,7 @@
     font-weight: 500;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-filters-btn:hover {
@@ -657,7 +657,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-lg);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -708,7 +708,7 @@
     border-radius: 16px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .option-btn i {
@@ -800,7 +800,7 @@
     font-weight: 500;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .reset-btn:hover {
@@ -822,7 +822,7 @@
     font-weight: 600;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .apply-btn:hover {

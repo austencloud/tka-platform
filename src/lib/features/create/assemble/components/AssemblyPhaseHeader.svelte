@@ -127,7 +127,7 @@ Undo is handled by the workspace-level undo button, not here.
     width: 100%;
     height: 100%;
     fill: var(--phase-color);
-    transition: fill 0.3s ease;
+    transition: fill var(--duration-emphasis) ease;
   }
 
   .phase-title {
@@ -149,7 +149,7 @@ Undo is handled by the workspace-level undo button, not here.
     height: 4px;
     border-radius: 2px;
     background: var(--theme-stroke);
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .progress-segment.active {

@@ -99,7 +99,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .visibility-toggle:hover {
@@ -132,7 +132,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .avatar-card:hover {

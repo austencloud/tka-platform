@@ -330,7 +330,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .format-card:hover {
@@ -379,7 +379,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .quality-btn:hover {
@@ -420,7 +420,7 @@
     background: rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     position: relative;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .toggle-track::after {
@@ -432,7 +432,7 @@
     height: 20px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .audio-toggle input:checked + .toggle-track {
@@ -479,7 +479,7 @@
     border-radius: 8px;
     color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .loop-btn:hover:not(:disabled) {
@@ -524,7 +524,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .export-btn:hover:not(:disabled) {

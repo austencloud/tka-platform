@@ -189,7 +189,7 @@ Supports letter highlighting during animation playback.
     /* Light mode: dark text, no pill background */
     color: #1f2937;
     /* Smooth transition synced with canvas background (150ms) */
-    transition: color 150ms ease-out;
+    transition: color var(--duration-fast) ease-out;
     /* Prevent text from overflowing - truncate if needed */
     max-width: 100%;
     overflow: hidden;
@@ -251,7 +251,7 @@ Supports letter highlighting during animation playback.
 
   /* Entering: animate from hidden to visible with staggered delay */
   .letter.animated.entering {
-    animation: letterEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: letterEnter var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     animation-delay: calc(var(--letter-index) * (180ms / max(var(--total-letters), 4)));
   }
 
@@ -259,7 +259,7 @@ Supports letter highlighting during animation playback.
   .letter.animated.exiting {
     opacity: 1;
     transform: translateY(0) scale(1);
-    animation: letterExit 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+    animation: letterExit var(--duration-normal) cubic-bezier(0.4, 0, 1, 1) forwards;
     animation-delay: calc(var(--letter-index) * (120ms / max(var(--total-letters), 4)));
   }
 

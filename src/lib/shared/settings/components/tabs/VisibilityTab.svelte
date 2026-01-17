@@ -378,7 +378,7 @@
     gap: clamp(8px, 1.5cqi, 12px);
     padding: clamp(8px, 1.5cqi, 12px);
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--duration-normal) ease;
     box-sizing: border-box;
   }
 

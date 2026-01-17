@@ -79,7 +79,7 @@ StaffGridPoint - Single grid point with label and interactivity
   }
 
   .outer-point {
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .point-label {

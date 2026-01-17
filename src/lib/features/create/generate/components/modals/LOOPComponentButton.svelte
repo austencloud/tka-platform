@@ -71,7 +71,7 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     border-radius: 12px;
     cursor: pointer;
     color: var(--theme-text, white);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     width: 100%;
     height: 100%;
   }

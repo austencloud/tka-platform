@@ -161,7 +161,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -214,7 +214,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: 36px;
   }
 
@@ -260,7 +260,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .letter-select-btn:hover {
@@ -301,7 +301,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     margin-top: 6px;
   }
 

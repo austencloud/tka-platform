@@ -126,7 +126,7 @@
     background: transparent;
     color: var(--theme-text, var(--theme-text));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -169,7 +169,7 @@
     flex-shrink: 0;
     font-size: var(--font-size-xl);
     position: relative;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .dashboard-button:hover .profile-icon-wrapper {

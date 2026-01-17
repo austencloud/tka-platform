@@ -34,7 +34,7 @@ WordQuizFeedback - Feedback display with explanation
     max-width: 500px;
     padding: 1rem 1.25rem;
     border-radius: 12px;
-    animation: slideUp 0.3s ease;
+    animation: slideUp var(--duration-emphasis) ease;
   }
 
   @keyframes slideUp {

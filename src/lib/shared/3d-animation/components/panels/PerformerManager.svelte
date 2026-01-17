@@ -108,7 +108,7 @@
     color: #000;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .action-btn:hover:not(:disabled) {
@@ -142,7 +142,7 @@
     font-size: 1.125rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .performer-chip:hover {
@@ -188,7 +188,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .remove-btn:hover {

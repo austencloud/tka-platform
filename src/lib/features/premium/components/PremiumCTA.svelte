@@ -89,7 +89,7 @@
     font-size: var(--font-size-lg);
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition-fast, 150ms ease);
+    transition: all var(--transition-fast, var(--duration-fast) ease);
     margin-bottom: var(--spacing-md, 16px);
   }
 

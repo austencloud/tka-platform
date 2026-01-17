@@ -153,7 +153,7 @@
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
   }
@@ -175,7 +175,7 @@
       transparent 60%
     );
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     pointer-events: none;
   }
 
@@ -202,7 +202,7 @@
 
   .module-button:active {
     transform: translateX(2px) scale(0.99);
-    transition-duration: 0.1s;
+    transition-duration: var(--duration-instant);
   }
 
   /* Expanded state - blends with surrounding panel, not interactive */
@@ -315,7 +315,7 @@
     flex-shrink: 0;
     width: 22px;
     height: 22px;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Profile Avatar for Dashboard */
@@ -326,7 +326,7 @@
     object-fit: cover;
     border: 2px solid rgba(16, 185, 129, 0.4);
     flex-shrink: 0;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .module-button:hover .profile-avatar {
@@ -356,7 +356,7 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in 0.25s ease-out 0.15s both;
+    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
   @keyframes label-fade-in {
@@ -373,7 +373,7 @@
   .expand-icon {
     font-size: var(--font-size-compact);
     opacity: 0.5;
-    transition: all 0.25s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .module-button.expanded .expand-icon {

@@ -379,7 +379,7 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toggle-btn.active {

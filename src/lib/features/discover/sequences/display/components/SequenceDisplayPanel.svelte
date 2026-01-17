@@ -178,7 +178,7 @@
     border-radius: 6px;
     color: var(--semantic-error);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .error-state button:hover {

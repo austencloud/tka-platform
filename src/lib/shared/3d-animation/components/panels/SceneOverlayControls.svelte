@@ -220,7 +220,7 @@
     color: var(--theme-text-muted, var(--theme-text-dim));
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .help-btn:hover {

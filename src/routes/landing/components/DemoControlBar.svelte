@@ -74,7 +74,7 @@
     font-size: var(--font-size-base, 1rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 4px 20px rgba(13, 148, 136, 0.3);
   }
 
@@ -116,7 +116,7 @@
     font-size: var(--font-size-base, 1rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
   }
 

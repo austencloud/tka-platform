@@ -135,7 +135,7 @@ Variation support:
   @media (hover: none) and (pointer: coarse) {
     .sequence-card:active {
       transform: scale(0.98);
-      transition-duration: 0.1s;
+      transition-duration: var(--duration-instant);
     }
   }
 
@@ -171,6 +171,6 @@ Variation support:
   /* Smooth crossfade when cycling variations */
   .thumbnail-container.crossfade :global(img),
   .thumbnail-container.crossfade :global(.placeholder) {
-    transition: opacity 0.2s ease-out;
+    transition: opacity var(--duration-normal) ease-out;
   }
 </style>

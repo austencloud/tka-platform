@@ -213,7 +213,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .close-btn:hover {
@@ -370,7 +370,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .feedback-btn:hover {
@@ -384,7 +384,7 @@
 
   .feedback-btn i {
     font-size: var(--font-size-xs);
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal);
   }
 
   .feedback-btn:hover i {
@@ -428,7 +428,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .view-all-btn:hover {

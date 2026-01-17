@@ -148,7 +148,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     border: none;
   }
 

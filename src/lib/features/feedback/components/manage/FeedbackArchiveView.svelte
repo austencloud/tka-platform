@@ -265,7 +265,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     width: fit-content;
   }
 
@@ -349,7 +349,7 @@
     color: var(--theme-text, var(--theme-text));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .detail-error button:hover {

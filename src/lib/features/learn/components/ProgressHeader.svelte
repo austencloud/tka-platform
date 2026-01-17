@@ -214,7 +214,7 @@ Shows:
     height: 100%;
     background: var(--cat-color);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .bar-count {

@@ -340,7 +340,7 @@ export class ConversationManager implements IConversationManager {
 
       const groupMetadata: GroupMetadata = {
         name: input.name,
-        description: input.description,
+        ...(input.description !== undefined && { description: input.description }),
         adminIds: [currentUserId],
         createdBy: currentUserId,
       };

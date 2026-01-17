@@ -304,7 +304,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.85); /* AAA contrast */
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 
@@ -402,7 +402,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border: none;
   }
 
@@ -479,7 +479,7 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: white;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .done-btn:hover {

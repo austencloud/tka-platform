@@ -60,7 +60,7 @@
       transparent
     );
     border-radius: 50%;
-    animation: success-pop 0.4s ease-out;
+    animation: success-pop var(--duration-dramatic) ease-out;
   }
 
   .success-checkmark i {
@@ -149,7 +149,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .done-btn:hover {

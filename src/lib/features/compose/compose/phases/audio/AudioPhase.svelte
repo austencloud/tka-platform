@@ -459,7 +459,7 @@
     border-radius: 16px;
     background: rgba(255, 255, 255, 0.02);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: 300px;
   }
 
@@ -583,7 +583,7 @@
     color: rgba(248, 113, 113, 0.9);
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-btn:hover {
@@ -637,7 +637,7 @@
     height: 100%;
     background: rgba(251, 191, 36, 0.8);
     border-radius: 2px;
-    transition: width 0.2s ease;
+    transition: width var(--duration-normal) ease;
   }
 
   /* Error Container */
@@ -680,7 +680,7 @@
     font-size: 0.95rem;
     font-weight: 600;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .bpm-input:focus,

@@ -149,7 +149,7 @@
     background: var(--theme-panel-bg);
     border-left: 1px solid var(--theme-stroke);
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
-    animation: slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .settings-header {
@@ -179,7 +179,7 @@
     border-radius: 8px;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {

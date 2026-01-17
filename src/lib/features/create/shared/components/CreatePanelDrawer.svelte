@@ -379,7 +379,7 @@
     width: 100%;
     /* height set dynamically via inline style for reactive sizing */
     /* When height: 100dvh is set inline, it will force drawer-content to that height */
-    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: height var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent; /* Background is on drawer-content */
   }
 

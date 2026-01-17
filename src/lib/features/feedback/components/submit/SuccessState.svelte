@@ -28,7 +28,7 @@
     text-align: center;
     padding: 40px 20px;
     min-height: 300px;
-    animation: successEnter 0.3s ease-out;
+    animation: successEnter var(--duration-emphasis) ease-out;
   }
 
   @keyframes successEnter {
@@ -116,7 +116,7 @@
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .success-action:hover {

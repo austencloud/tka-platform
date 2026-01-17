@@ -131,7 +131,7 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 0.95rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .add-challenge-btn:hover {
@@ -154,7 +154,7 @@
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .timeline-item:hover {
@@ -243,7 +243,7 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .timeline-item:hover .timeline-delete {

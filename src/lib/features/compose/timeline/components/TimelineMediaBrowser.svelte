@@ -504,7 +504,7 @@
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button {
@@ -572,7 +572,7 @@
     color: white;
     cursor: pointer;
     opacity: 0.7;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-search:hover {
@@ -602,7 +602,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .filter-tab:hover {
@@ -724,7 +724,7 @@
     border-radius: var(--border-radius-md, 8px);
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .error-state button:hover {
@@ -813,7 +813,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     width: fit-content;
   }
 
@@ -847,7 +847,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: var(--border-radius-md, 8px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     width: 100%;
   }

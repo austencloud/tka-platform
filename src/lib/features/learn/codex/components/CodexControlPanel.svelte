@@ -203,7 +203,7 @@ rotating, mirroring, and color-swapping pictographs.
     font-weight: 500;
     cursor: pointer;
     outline: none;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
     appearance: none;
     -webkit-appearance: none;
   }
@@ -254,7 +254,7 @@ rotating, mirroring, and color-swapping pictographs.
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-button:hover {
@@ -276,11 +276,11 @@ rotating, mirroring, and color-swapping pictographs.
 
   /* Swap button with colored circles */
   .swap-button svg circle:first-of-type {
-    transition: fill 200ms ease;
+    transition: fill var(--duration-normal) ease;
   }
 
   .swap-button svg circle:last-of-type {
-    transition: fill 200ms ease;
+    transition: fill var(--duration-normal) ease;
   }
 
   .swap-button:hover svg circle:first-of-type {

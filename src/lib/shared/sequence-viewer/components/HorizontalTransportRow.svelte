@@ -96,7 +96,7 @@
 		border-radius: 50%;
 		color: var(--theme-text-dim);
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all var(--duration-normal) ease;
 		flex-shrink: 0;
 	}
 
@@ -125,7 +125,7 @@
 		color: white;
 		cursor: pointer;
 		flex-shrink: 0;
-		transition: transform 0.15s ease, box-shadow 0.15s ease;
+		transition: transform var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
 	}
 
 	.play-btn svg {

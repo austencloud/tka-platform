@@ -427,7 +427,7 @@
     color: white;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
+    transition: background var(--duration-normal), border-color var(--duration-normal);
   }
 
   .exit-button:hover,
@@ -591,7 +591,7 @@
     color: white;
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     position: relative;
   }
 
@@ -691,7 +691,7 @@
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   @media (hover: hover) {

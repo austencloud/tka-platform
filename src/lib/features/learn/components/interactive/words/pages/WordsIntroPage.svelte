@@ -79,7 +79,7 @@
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
     padding-bottom: 3rem;
   }
 
@@ -237,7 +237,7 @@
     font-size: 1.0625rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: var(--min-touch-target);
     margin-left: auto;
   }

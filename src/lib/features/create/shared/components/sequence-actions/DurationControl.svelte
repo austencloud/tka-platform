@@ -134,7 +134,7 @@
     border: 1px solid;
     cursor: pointer;
     font-size: 1rem;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.7);

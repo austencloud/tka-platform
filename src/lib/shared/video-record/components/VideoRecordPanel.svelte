@@ -525,7 +525,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .settings-fab:hover {
@@ -689,7 +689,7 @@
     border-radius: 50%;
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-btn.primary {
@@ -756,7 +756,7 @@
     border: 3px solid var(--theme-stroke-strong);
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .record-btn:hover {
@@ -773,7 +773,7 @@
     height: 32px;
     background: var(--semantic-error, var(--semantic-error));
     border-radius: 50%;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .record-btn:hover .record-dot {
@@ -827,7 +827,7 @@
     color: var(--theme-text, white);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-btn:hover {

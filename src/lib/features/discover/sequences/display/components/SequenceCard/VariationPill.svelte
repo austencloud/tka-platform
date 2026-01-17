@@ -76,7 +76,7 @@ Touch target: 44px minimum for accessibility.
 
     /* Interaction */
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
 
     /* Ensure clickable on top of thumbnail */
     z-index: 10;

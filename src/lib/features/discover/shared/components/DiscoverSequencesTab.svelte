@@ -98,7 +98,7 @@
     flex: 1;
     overflow: hidden;
     height: 100%;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   /* Main sequences area (grid) */
@@ -112,7 +112,7 @@
       90vw
     ); /* Default width, overridden by inline style */
     /* Smooth transition for padding when panel expands/collapses */
-    transition: padding-right 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: padding-right var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Add padding when panel is open (desktop only) - simple, standard approach */

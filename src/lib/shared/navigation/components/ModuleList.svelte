@@ -313,7 +313,7 @@
     cursor: pointer;
     text-align: center;
     overflow: hidden;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     isolation: isolate;
   }
 
@@ -329,7 +329,7 @@
     border: 1px solid
       color-mix(in srgb, var(--module-color) 25%, var(--theme-stroke));
     border-radius: 16px; /* Match parent border-radius */
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 0;
   }
 
@@ -342,7 +342,7 @@
       transparent 60%
     );
     opacity: 0.1; /* Prominent default glow */
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
     mix-blend-mode: screen;
   }
@@ -417,7 +417,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .module-cell:hover .cell-icon {
@@ -447,7 +447,7 @@
     color: var(--theme-text);
     letter-spacing: 0.01em;
     line-height: 1.2;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .module-cell.active .cell-label {
@@ -491,7 +491,7 @@
     line-height: 18px;
     text-align: center;
     box-shadow: 0 2px 4px var(--theme-shadow);
-    animation: badgePop 0.3s ease;
+    animation: badgePop var(--duration-emphasis) ease;
     z-index: 3;
   }
 

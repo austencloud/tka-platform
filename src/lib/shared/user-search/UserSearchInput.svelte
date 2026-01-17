@@ -347,7 +347,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     z-index: 2;
   }
 
@@ -358,7 +358,7 @@
     height: 28px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .clear-btn:hover::before {
@@ -386,7 +386,7 @@
     border-radius: 12px;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: var(--theme-shadow, 0 2px 8px var(--theme-shadow));
   }
 
@@ -448,7 +448,7 @@
     border: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
   }
 
@@ -497,7 +497,7 @@
     color: var(--theme-text-dim); /* Improved contrast for WCAG AAA */
     font-size: var(--font-size-sm);
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
     flex-shrink: 0;
   }
 

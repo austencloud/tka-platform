@@ -193,7 +193,7 @@
     border-radius: clamp(6px, 2cqi, 8px);
     font-size: var(--font-size-sm);
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .panel-icon.animation-icon {

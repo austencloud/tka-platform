@@ -96,7 +96,7 @@
     box-shadow: 0 2px 8px var(--theme-shadow);
     color: #ffffff;
     cursor: pointer;
-    transition: all var(--transition-normal, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   .nav-action.layout-left {

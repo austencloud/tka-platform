@@ -381,7 +381,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .retry-btn:hover {
@@ -443,7 +443,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .chip:hover:not(:disabled) {
@@ -525,7 +525,7 @@
     color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   @media (pointer: coarse) {
@@ -581,7 +581,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
-    transition: border-color 0.15s ease;
+    transition: border-color var(--duration-fast) ease;
   }
 
   .card:hover {
@@ -662,7 +662,7 @@
     background: rgba(255, 255, 255, 0.08);
     color: var(--theme-text-secondary, #888);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   @media (pointer: coarse) {

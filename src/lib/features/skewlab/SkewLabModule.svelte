@@ -351,7 +351,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   @media (pointer: coarse) {
@@ -414,7 +414,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .chip:hover {
@@ -517,7 +517,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   @media (pointer: coarse) {
@@ -574,7 +574,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     overflow: hidden;
-    transition: border-color 0.15s ease;
+    transition: border-color var(--duration-fast) ease;
   }
 
   .card:hover {

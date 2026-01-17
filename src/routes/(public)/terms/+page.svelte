@@ -145,7 +145,7 @@
     text-decoration: none;
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .back-link:hover {

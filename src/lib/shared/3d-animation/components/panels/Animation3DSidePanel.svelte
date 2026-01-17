@@ -270,7 +270,7 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .load-btn:hover {
@@ -353,7 +353,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .section-header:hover {
@@ -379,7 +379,7 @@
   .section-header .chevron {
     font-size: 0.75rem;
     opacity: 0.5;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .section-header .chevron.rotated {

@@ -140,7 +140,7 @@
   .placeholder-visual {
     font-size: 6rem;
     opacity: 0.1;
-    transition: transform 0.3s ease;
+    transition: transform var(--duration-emphasis) ease;
   }
 
   .split-divider {

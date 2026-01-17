@@ -355,7 +355,7 @@ Mobile-first design:
     border-radius: 50%;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     flex-shrink: 0;
   }
 
@@ -520,7 +520,7 @@ Mobile-first design:
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .detail-actions button:disabled {

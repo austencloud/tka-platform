@@ -173,7 +173,7 @@
     font-size: 1.25rem;
     cursor: pointer;
     z-index: 10;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -227,7 +227,7 @@
     color: white;
     font-size: 1.25rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     z-index: 5;
   }
 
@@ -264,7 +264,7 @@
     border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     background: transparent;
   }
 

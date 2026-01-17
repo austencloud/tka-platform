@@ -335,7 +335,7 @@ Now with smooth transitions when position or orientation changes!
     pointer-events: none;
     /* Smooth transition for position and rotation changes - matches arrow and grid behavior */
     /* IMPORTANT: transform must be a CSS property (not SVG attribute) for transitions to work */
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   /* Disable transitions during sequence transforms to prevent janky mid-calculation animation */

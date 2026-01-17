@@ -408,7 +408,7 @@
     position: relative;
     z-index: 2; /* Above body::after transition layer (z-index: 1) */
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
     background: transparent;
     --text-color: rgba(255, 255, 255, 0.95);
     --foreground: rgba(255, 255, 255, 0.95);

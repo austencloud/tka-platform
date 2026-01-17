@@ -309,7 +309,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     opacity: 0.6;
     pointer-events: auto;
     touch-action: none;

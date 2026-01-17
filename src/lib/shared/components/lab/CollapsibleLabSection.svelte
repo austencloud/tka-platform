@@ -80,7 +80,7 @@
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .collapsible-section.expanded {
@@ -101,7 +101,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .collapsible-section.expanded .section-toggle {
@@ -129,7 +129,7 @@
     margin-left: auto;
     font-size: 0.65rem;
     opacity: 0.5;
-    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .collapsible-section.expanded .chevron {
@@ -138,7 +138,7 @@
 
   .section-content {
     padding: 8px 14px 14px;
-    animation: slideDown 0.2s ease-out;
+    animation: slideDown var(--duration-normal) ease-out;
   }
 
   @keyframes slideDown {

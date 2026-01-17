@@ -110,7 +110,7 @@
     margin-bottom: 8px;
     border-radius: 12px;
     padding: 4px;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Active module with expanded sections gets unified background */

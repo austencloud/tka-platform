@@ -97,7 +97,7 @@
     backdrop-filter: blur(8px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     padding: 4px 8px;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   /* Side-by-side layout: completely transparent, no visual separation */

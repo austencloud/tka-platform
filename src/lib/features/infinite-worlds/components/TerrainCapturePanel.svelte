@@ -415,7 +415,7 @@
     color: rgba(255, 255, 255, 0.7);
     font-size: 11px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .preset-btn:hover {
@@ -475,7 +475,7 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .capture-btn:hover:not(:disabled) {

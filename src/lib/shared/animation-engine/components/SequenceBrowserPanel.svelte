@@ -379,7 +379,7 @@
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -442,7 +442,7 @@
     color: white;
     cursor: pointer;
     opacity: 0.7;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-search:hover {
@@ -548,7 +548,7 @@
     border-radius: var(--border-radius-md);
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .error-state button:hover {

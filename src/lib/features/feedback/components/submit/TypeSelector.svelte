@@ -67,7 +67,7 @@
     font-size: clamp(0.8rem, 2.5cqi, 0.9375rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
     overflow: hidden;
   }
@@ -82,14 +82,14 @@
       color-mix(in srgb, var(--type-color) 8%, transparent) 100%
     );
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .segment i {
     position: relative;
     z-index: 1;
     font-size: clamp(0.9em, 2cqi, 1.15em);
-    transition: color 200ms ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .segment-label {

@@ -333,7 +333,7 @@
     color: var(--theme-text-muted);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .tab.active {

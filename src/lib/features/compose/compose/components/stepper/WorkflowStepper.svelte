@@ -86,7 +86,7 @@
     height: 2px;
     background: rgba(255, 255, 255, 0.15);
     border-radius: 1px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .step-connector.active {

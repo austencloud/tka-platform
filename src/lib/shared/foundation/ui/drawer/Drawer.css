@@ -509,7 +509,7 @@ dialog.drawer-content {
 
 /* Spring animation for bottom placement - refined 2026 spring physics */
 .drawer-content.spring-animation[data-placement="bottom"][data-state="open"] {
-  animation: spring-slide-up 400ms
+  animation: spring-slide-up var(--duration-dramatic)
     var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
 }
 
@@ -530,7 +530,7 @@ dialog.drawer-content {
 
 /* Spring animation for top placement */
 .drawer-content.spring-animation[data-placement="top"][data-state="open"] {
-  animation: spring-slide-down 400ms
+  animation: spring-slide-down var(--duration-dramatic)
     var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
 }
 
@@ -551,7 +551,7 @@ dialog.drawer-content {
 
 /* Spring animation for right placement */
 .drawer-content.spring-animation[data-placement="right"][data-state="open"] {
-  animation: spring-slide-left 400ms
+  animation: spring-slide-left var(--duration-dramatic)
     var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
 }
 
@@ -572,7 +572,7 @@ dialog.drawer-content {
 
 /* Spring animation for left placement */
 .drawer-content.spring-animation[data-placement="left"][data-state="open"] {
-  animation: spring-slide-right 400ms
+  animation: spring-slide-right var(--duration-dramatic)
     var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
 }
 
@@ -634,7 +634,7 @@ dialog.drawer-content {
   background: black;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 350ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition: opacity var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   z-index: 1;
 }
 

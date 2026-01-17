@@ -175,7 +175,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .add-entry-btn:hover {
@@ -245,7 +245,7 @@
     font-weight: 500;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .glass-btn:hover:not(:disabled) {

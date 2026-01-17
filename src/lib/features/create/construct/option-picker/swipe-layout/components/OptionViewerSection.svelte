@@ -441,7 +441,7 @@ Renders a section with:
   /* Mobile/universal active state */
   .pictograph-option:active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pictograph-option:focus {

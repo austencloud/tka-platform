@@ -124,7 +124,7 @@
     height: 100%;
     background: linear-gradient(90deg, #10b981, #34d399);
     border-radius: 4px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .counter-mini {

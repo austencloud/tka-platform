@@ -221,7 +221,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     font-size: var(--font-size-min);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .search-box input::placeholder {
@@ -248,7 +248,7 @@
     border-radius: 4px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-search:hover {
@@ -275,7 +275,7 @@
     font-size: var(--font-size-min);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 
@@ -310,7 +310,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-min);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .filter-toggle-btn:hover {
@@ -395,7 +395,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-min);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .type-selector-btn:hover {
@@ -426,7 +426,7 @@
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
     z-index: 1000;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   .sheet {
@@ -438,7 +438,7 @@
     background: var(--theme-panel-bg);
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 24px var(--theme-shadow);
-    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .sheet-header {
@@ -467,7 +467,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -495,7 +495,7 @@
     font-size: var(--font-size-min);
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .type-option:hover {

@@ -329,7 +329,7 @@
   }
 
   .answer-option {
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .answer-option.selected {
@@ -389,7 +389,7 @@
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .next-button:hover {

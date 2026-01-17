@@ -330,7 +330,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .stat-card:hover {
@@ -512,7 +512,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
     overflow: hidden;
   }
@@ -546,7 +546,7 @@
   .start-btn i:last-child {
     font-size: var(--font-size-sm);
     opacity: 0.8;
-    transition: transform 200ms ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .start-btn:hover i:last-child {

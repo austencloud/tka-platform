@@ -229,7 +229,7 @@ Displays a single preset with icon, name, summary, and action buttons
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     text-align: left;
     color: var(--theme-text, white);
     font-family: inherit;
@@ -343,7 +343,7 @@ Displays a single preset with icon, name, summary, and action buttons
     cursor: pointer;
     padding: 10px;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: var(--min-touch-target);
     min-height: var(--min-touch-target);
     flex-shrink: 0;
@@ -414,7 +414,7 @@ Displays a single preset with icon, name, summary, and action buttons
     cursor: pointer;
     padding: 10px;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: var(--min-touch-target);
     min-height: var(--min-touch-target);
     flex-shrink: 0;

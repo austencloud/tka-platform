@@ -55,7 +55,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .filter-btn:hover {

@@ -71,7 +71,7 @@
     padding: 0;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 100;
     box-shadow:
       0 0 0 2px var(--theme-stroke, var(--theme-stroke)),
@@ -100,7 +100,7 @@
   }
 
   .back-button svg {
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .back-button:hover svg {

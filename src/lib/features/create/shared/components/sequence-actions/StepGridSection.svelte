@@ -87,7 +87,7 @@
     color: white;
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .shift-mode-banner .cancel-btn:hover {

@@ -212,7 +212,7 @@
     color: var(--theme-text, var(--theme-text));
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .error-state button:hover {

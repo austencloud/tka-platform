@@ -214,7 +214,7 @@ Ends with "Pick Best" or "Browse All" selection.
   .progress-bar {
     height: 100%;
     background: var(--theme-accent, #6366f1);
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   /* Step indicators */
@@ -237,7 +237,7 @@ Ends with "Pick Best" or "Browse All" selection.
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .step-indicator:hover {
@@ -314,7 +314,7 @@ Ends with "Pick Best" or "Browse All" selection.
     font-size: var(--font-size-md, 16px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -371,7 +371,7 @@ Ends with "Pick Best" or "Browse All" selection.
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }

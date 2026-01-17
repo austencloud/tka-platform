@@ -293,7 +293,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -329,7 +329,7 @@
     border: 1.5px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     width: 100%;
   }
@@ -415,7 +415,7 @@
     color: var(--theme-text-dim);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 

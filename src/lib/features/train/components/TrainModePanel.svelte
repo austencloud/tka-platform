@@ -718,7 +718,7 @@
     justify-content: space-between;
     gap: 0.75rem;
     z-index: 150;
-    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 20px
       color-mix(
         in srgb,
@@ -759,7 +759,7 @@
     color: var(--theme-text, white);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background var(--duration-normal);
   }
 
   .error-toast button:hover {

@@ -97,7 +97,7 @@
     color: rgba(196, 181, 253, 1);
     font-size: 1.25rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -137,7 +137,7 @@
     color: var(--theme-text-dim);
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
   }
 

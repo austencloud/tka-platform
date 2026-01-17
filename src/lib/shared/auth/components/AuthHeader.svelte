@@ -71,7 +71,7 @@
     color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
     font-size: var(--font-size-xl);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;

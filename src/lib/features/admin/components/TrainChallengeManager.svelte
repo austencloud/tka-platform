@@ -459,7 +459,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .seed-btn {
@@ -520,7 +520,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .close-btn:hover {
@@ -595,7 +595,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .cancel-btn {
@@ -669,7 +669,7 @@
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .challenge-item:hover {

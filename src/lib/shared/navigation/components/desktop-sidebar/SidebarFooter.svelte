@@ -115,7 +115,7 @@
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -148,7 +148,7 @@
     font-size: var(--font-size-base);
     border-radius: 8px;
     background: var(--theme-card-bg, var(--theme-card-bg));
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .inbox-button.collapsed .button-icon {
@@ -168,7 +168,7 @@
     font-weight: 500;
 
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in 0.25s ease-out 0.15s both;
+    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
   @keyframes label-fade-in {
@@ -201,7 +201,7 @@
     text-align: center;
     box-shadow: 0 2px 4px hsl(0 0% 0% / 0.3);
     pointer-events: none;
-    animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: badgePop var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 1;
   }
 
@@ -251,7 +251,7 @@
     color: var(--theme-text-dim);
     letter-spacing: 0.3px;
     opacity: 0.7;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -282,6 +282,6 @@
 
   .version-label {
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in 0.25s ease-out 0.15s both;
+    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 </style>

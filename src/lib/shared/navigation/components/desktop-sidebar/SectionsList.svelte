@@ -68,7 +68,7 @@
   /* Celebrate animation - tabs revealed after tutorial */
   .section-item.celebrate {
     animation: sectionCelebrate 0.6s ease-out forwards;
-    animation-delay: calc(0.15s + var(--item-index, 0) * 0.1s);
+    animation-delay: calc(0.15s + var(--item-index, 0) * var(--duration-instant));
   }
 
   @keyframes sectionCelebrate {
@@ -102,7 +102,7 @@
     border-radius: 16px;
     opacity: 0;
     animation: glowFadeIn 0.8s ease-out forwards;
-    animation-delay: 0.2s;
+    animation-delay: var(--duration-normal);
     pointer-events: none;
     z-index: -1;
   }

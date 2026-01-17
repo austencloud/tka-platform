@@ -154,7 +154,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     width: 100%;
   }
@@ -271,7 +271,7 @@
     height: 100%;
     background: var(--category-color);
     border-radius: 2.5px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-fill.completed {

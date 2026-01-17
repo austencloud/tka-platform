@@ -241,7 +241,7 @@
     color: white;
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .add-marker-btn:hover:not(:disabled) {
@@ -273,7 +273,7 @@
     width: 2px;
     height: 100%;
     background: rgba(139, 92, 246, 0.4);
-    transition: background 0.1s ease;
+    transition: background var(--duration-instant) ease;
   }
 
   .beat-marker.downbeat {
@@ -334,7 +334,7 @@
     color: white;
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .custom-marker:hover {

@@ -177,27 +177,145 @@ export function calculateBeatPosition(
 }
 
 /**
- * Generate CSS grid-template-columns for timeline mode.
- * Each cell width is proportional to its duration using fr units.
+ * Timeline row assignment - groups steps into rows based on duration capacity
+ */
+export interface TimelineRow {
+  /** Index of this row (0-based) */
+  rowIndex: number;
+  /** Steps in this row with their original indices */
+  steps: Array<{ stepIndex: number; duration: number }>;
+  /** Total duration units in this row */
+  totalDuration: number;
+}
+
+/**
+ * Calculate timeline row assignments based on duration capacity.
+ * Steps are placed left-to-right, wrapping to a new row when adding
+ * the next step would exceed the row's capacity.
+ *
+ * Example with capacity=4:
+ * - Steps with durations [1, 2, 1, 1, 1, 1, 1, 1]
+ * - Row 1: [1, 2, 1] = 4 units
+ * - Row 2: [1, 1, 1, 1] = 4 units
+ * - Row 3: [1] = 1 unit
  *
  * @param steps - Array of step data with optional duration (defaults to 1)
- * @param hasStartPosition - Whether to include a 1fr column for start position
- * @returns CSS grid-template-columns value (e.g., "1fr 2fr 0.5fr 1fr")
+ * @param rowCapacity - Maximum duration units per row (default: 4)
+ * @param hasStartPosition - Whether to include start position in first row
+ * @returns Array of row assignments
  */
-export function calculateTimelineGridColumns(
+export function calculateTimelineRows(
   steps: readonly { duration?: number }[],
-  hasStartPosition: boolean
-): string {
-  // Start position gets 1fr (standard width)
-  const startCol = hasStartPosition ? "1fr " : "";
+  rowCapacity: number = 4,
+  hasStartPosition: boolean = false
+): TimelineRow[] {
+  const rows: TimelineRow[] = [];
 
-  // Each step gets width proportional to its duration
-  const stepCols = steps
-    .map((step) => {
-      const fraction = step.duration ?? 1;
-      return `${fraction}fr`;
-    })
-    .join(" ");
+  // Start position takes 1 unit from first row if present
+  let currentRow: TimelineRow = {
+    rowIndex: 0,
+    steps: [],
+    totalDuration: hasStartPosition ? 1 : 0,
+  };
 
-  return startCol + stepCols;
+  for (let i = 0; i < steps.length; i++) {
+    const duration = steps[i].duration ?? 1;
+
+    // Would adding this step exceed capacity?
+    // Always add at least one step per row (handles edge case of step > capacity)
+    if (
+      currentRow.totalDuration + duration > rowCapacity &&
+      currentRow.steps.length > 0
+    ) {
+      // Start new row
+      rows.push(currentRow);
+      currentRow = {
+        rowIndex: rows.length,
+        steps: [],
+        totalDuration: 0,
+      };
+    }
+
+    currentRow.steps.push({ stepIndex: i, duration });
+    currentRow.totalDuration += duration;
+  }
+
+  // Push final row if it has content
+  if (currentRow.steps.length > 0 || (hasStartPosition && rows.length === 0)) {
+    rows.push(currentRow);
+  }
+
+  return rows;
+}
+
+/**
+ * Calculate the width multiplier for a timeline cell.
+ * Duration=1 gets 1x base width, duration=2 gets 2x, etc.
+ * This ensures consistent sizing - all duration=1 steps are the same width
+ * regardless of what row they're in.
+ *
+ * @param stepDuration - Duration of the step
+ * @returns Width multiplier (e.g., 1, 1.5, 2, etc.)
+ */
+export function getTimelineWidthMultiplier(stepDuration: number): number {
+  return stepDuration ?? 1;
+}
+
+/**
+ * Calculate responsive horizontal padding for timeline mode.
+ * Scales with container width to provide appropriate breathing room:
+ * - Small mobile (~320px): 8px total (4px each side)
+ * - Medium screens (~600px): ~16px total
+ * - Large desktop (~1200px): ~32px total
+ * - 4K screens (2000px+): 48px total (capped)
+ *
+ * @param containerWidth - Container width in pixels
+ * @returns Total horizontal padding (both sides combined)
+ */
+export function calculateTimelinePadding(containerWidth: number): number {
+  if (containerWidth <= 0) return 8;
+
+  // Use ~2.5% of container width, clamped between 8px and 48px
+  const percentage = 0.025;
+  const calculated = Math.round(containerWidth * percentage);
+
+  const MIN_PADDING = 8;
+  const MAX_PADDING = 48;
+
+  return Math.max(MIN_PADDING, Math.min(MAX_PADDING, calculated));
+}
+
+/**
+ * Calculate the base unit size for timeline mode.
+ * This ensures exactly `rowCapacity` duration units fit per row.
+ *
+ * Unlike grid mode which has a maxCellSize constraint, timeline mode
+ * sizes cells to fill the available width proportionally. Each duration
+ * unit gets an equal share of the row width.
+ *
+ * @param containerWidth - Available width in pixels
+ * @param rowCapacity - Duration units per row (default: 4)
+ * @param minSize - Minimum cell size for touch targets (default: 48)
+ * @returns Unit size in pixels
+ */
+export function calculateTimelineUnitSize(
+  containerWidth: number,
+  rowCapacity: number = 4,
+  minSize: number = 48
+): number {
+  if (containerWidth <= 0) return minSize;
+
+  // Account for gaps between cells (1px each)
+  // Maximum gaps = rowCapacity - 1 (if row is full)
+  const gaps = (rowCapacity - 1) * 1;
+
+  // Account for responsive horizontal breathing room padding
+  const padding = calculateTimelinePadding(containerWidth);
+  const availableWidth = containerWidth - gaps - padding;
+
+  // Calculate unit size to fit exactly rowCapacity units
+  // No max constraint - timeline cells should fill the available width
+  const calculatedSize = Math.floor(availableWidth / rowCapacity);
+
+  return Math.max(minSize, calculatedSize);
 }

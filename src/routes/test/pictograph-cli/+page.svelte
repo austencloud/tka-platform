@@ -372,7 +372,7 @@
     font-size: 11px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .letter-btn:hover {
@@ -401,7 +401,7 @@
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .toggle-btn:hover {
@@ -462,7 +462,7 @@
     color: var(--theme-text, #fff);
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .turns-stepper button:hover {
@@ -551,7 +551,7 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    transition: background 0.2s;
+    transition: background var(--duration-normal);
   }
 
   .pictograph-card.dark {

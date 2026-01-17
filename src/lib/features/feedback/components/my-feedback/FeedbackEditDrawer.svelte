@@ -349,7 +349,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -456,7 +456,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .segment:hover:not(.selected) {
@@ -511,7 +511,7 @@
         var(--theme-stroke, var(--theme-stroke))
       );
     border-radius: 10px;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
     flex: 1;
     min-height: 0;
     display: flex;
@@ -604,7 +604,7 @@
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn {

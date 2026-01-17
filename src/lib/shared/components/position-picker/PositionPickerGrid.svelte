@@ -167,7 +167,7 @@ Uses IStartPositionManager to load variations and displays actual pictographs
     font-size: var(--font-size-base);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .any-button:hover {
@@ -213,7 +213,7 @@ Uses IStartPositionManager to load variations and displays actual pictographs
     border-radius: 8px;
     cursor: pointer;
     padding: 4px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     overflow: hidden;
   }
 

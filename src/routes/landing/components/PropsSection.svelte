@@ -59,7 +59,7 @@
     padding: 10px 20px;
     border-radius: 100px;
     font-size: var(--font-size-sm, 0.875rem);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .prop-tag:hover {

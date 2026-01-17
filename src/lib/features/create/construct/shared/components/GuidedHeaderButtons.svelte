@@ -111,7 +111,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: 0.95rem;
   }
 
@@ -138,7 +138,7 @@
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     white-space: nowrap;
   }

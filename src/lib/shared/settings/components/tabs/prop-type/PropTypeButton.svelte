@@ -240,7 +240,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.36, 0.66, 0.04, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.36, 0.66, 0.04, 1);
     color: var(--theme-text);
     position: relative;
     /* Percentage-based padding scales with button size */
@@ -289,7 +289,7 @@
 
   .prop-button:active {
     transform: scale(0.98);
-    transition-duration: 0.1s; /* iOS immediate feedback */
+    transition-duration: var(--duration-instant); /* iOS immediate feedback */
   }
 
   .prop-image-container {
@@ -316,7 +316,7 @@
     max-height: 85%;
     object-fit: contain;
     opacity: 0.9;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   /* Rotate image 90 degrees counterclockwise when aspect ratios don't match */
@@ -371,7 +371,7 @@
     color: white;
     font-size: var(--font-size-compact);
     font-weight: 700;
-    animation: ios-checkmark-pop 0.3s cubic-bezier(0.36, 0.66, 0.04, 1);
+    animation: ios-checkmark-pop var(--duration-emphasis) cubic-bezier(0.36, 0.66, 0.04, 1);
   }
 
   .ios-checkmark.blue {

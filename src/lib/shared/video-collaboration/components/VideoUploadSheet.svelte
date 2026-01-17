@@ -462,7 +462,7 @@
     border-radius: 8px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -511,7 +511,7 @@
     border: 2px dashed var(--theme-stroke-strong);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .file-drop-zone:hover {
@@ -585,7 +585,7 @@
     color: white;
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .change-btn:hover {
@@ -629,7 +629,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .visibility-btn:hover {
@@ -651,7 +651,7 @@
     font-size: 0.9rem;
     font-family: inherit;
     resize: none;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .option-group textarea:focus {
@@ -687,7 +687,7 @@
       var(--theme-accent-strong) 100%
     );
     border-radius: 4px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-text {
@@ -728,7 +728,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .btn-secondary {

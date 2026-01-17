@@ -148,7 +148,7 @@ Opens sheet with start/end position selection (multi-select with presets)
 
   /* Slide up animation when positions are reset */
   .start-end-card-wrapper.resetting :global(.card-value) {
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp var(--duration-emphasis) ease-out;
   }
 
   @keyframes slideUp {

@@ -314,7 +314,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .cancel-edit-button:hover {
@@ -408,7 +408,7 @@
 
   .send-button.success {
     background: var(--semantic-success, var(--semantic-success));
-    animation: successPop 0.3s ease;
+    animation: successPop var(--duration-emphasis) ease;
   }
 
   @keyframes successPop {
@@ -425,7 +425,7 @@
 
   .send-button i {
     font-size: var(--font-size-base);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .send-button:hover:not(:disabled) i {
@@ -433,7 +433,7 @@
   }
 
   .send-button.success i {
-    animation: checkPop 0.3s ease;
+    animation: checkPop var(--duration-emphasis) ease;
   }
 
   @keyframes checkPop {

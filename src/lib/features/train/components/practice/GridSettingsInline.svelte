@@ -155,7 +155,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .toggle-option:hover {
@@ -191,7 +191,7 @@
     color: color-mix(in srgb, var(--theme-text, white) 70%, transparent);
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .scale-btn:hover:not(:disabled) {
@@ -238,7 +238,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.65rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .reset-btn:hover {
@@ -259,7 +259,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .visibility-toggle i {

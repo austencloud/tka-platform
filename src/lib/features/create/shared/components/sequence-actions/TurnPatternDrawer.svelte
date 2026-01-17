@@ -554,7 +554,7 @@
     color: var(--theme-text-muted, var(--theme-text-dim));
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .tab.active {
@@ -729,7 +729,7 @@
     color: white;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .save-btn:hover:not(:disabled) {
@@ -782,7 +782,7 @@
     border-radius: 8px;
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     user-select: none;
   }
 
@@ -827,7 +827,7 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     background: rgba(239, 68, 68, 0.15);
     color: var(--semantic-error);
     font-size: 0.75rem;
@@ -877,7 +877,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .uniform-btn:hover {
@@ -924,7 +924,7 @@
     border-radius: 16px;
     color: var(--theme-text-muted, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .filter-btn:hover {

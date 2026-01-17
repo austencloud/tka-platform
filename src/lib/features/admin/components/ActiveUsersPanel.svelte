@@ -267,7 +267,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 0.5rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .stat-button:hover {
@@ -330,7 +330,7 @@
     color: var(--theme-text-secondary, var(--theme-text-dim));
     font-size: 0.75rem;
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color var(--duration-fast) ease;
   }
 
   .clear-filter:hover {

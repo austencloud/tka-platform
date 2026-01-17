@@ -849,7 +849,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .retry-btn:hover {
@@ -889,7 +889,7 @@
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .debug-toggle:hover {

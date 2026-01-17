@@ -52,7 +52,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 

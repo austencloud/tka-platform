@@ -414,7 +414,7 @@ Timestamp: ${new Date().toISOString()}
 		align-items: center;
 		justify-content: center;
 		font-size: 1.25rem;
-		transition: transform 0.2s, background 0.2s;
+		transition: transform var(--duration-normal), background var(--duration-normal);
 		z-index: 1000;
 	}
 
@@ -482,7 +482,7 @@ Timestamp: ${new Date().toISOString()}
 		cursor: pointer;
 		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
 		border-radius: var(--radius-sm, 4px);
-		transition: color 0.2s, background 0.2s;
+		transition: color var(--duration-normal), background var(--duration-normal);
 		font-size: var(--font-size-sm, 14px);
 	}
 
@@ -564,7 +564,7 @@ Timestamp: ${new Date().toISOString()}
 		color: var(--theme-text, #ffffff);
 		font-size: var(--font-size-min, 14px);
 		cursor: pointer;
-		transition: background 0.2s, border-color 0.2s;
+		transition: background var(--duration-normal), border-color var(--duration-normal);
 		text-align: left;
 	}
 
@@ -676,7 +676,7 @@ Timestamp: ${new Date().toISOString()}
 		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		cursor: pointer;
-		transition: all 0.2s;
+		transition: all var(--duration-normal);
 	}
 
 	.feedback-btn:hover {
@@ -714,11 +714,11 @@ Timestamp: ${new Date().toISOString()}
 	}
 
 	.typing-indicator span:nth-child(2) {
-		animation-delay: 0.2s;
+		animation-delay: var(--duration-normal);
 	}
 
 	.typing-indicator span:nth-child(3) {
-		animation-delay: 0.4s;
+		animation-delay: var(--duration-dramatic);
 	}
 
 	@keyframes typing {
@@ -765,7 +765,7 @@ Timestamp: ${new Date().toISOString()}
 		color: var(--theme-text, #ffffff);
 		font-size: var(--font-size-min, 14px);
 		outline: none;
-		transition: border-color 0.2s;
+		transition: border-color var(--duration-normal);
 	}
 
 	.tika-input input:focus {
@@ -784,7 +784,7 @@ Timestamp: ${new Date().toISOString()}
 		border-radius: var(--radius-md, 8px);
 		color: white;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: background var(--duration-normal);
 		display: flex;
 		align-items: center;
 		justify-content: center;

@@ -171,7 +171,7 @@ about the sequence being deleted and potential consequences.
     width: 90%;
     max-height: 80vh;
     overflow: hidden;
-    animation: modalSlideIn 0.3s ease-out;
+    animation: modalSlideIn var(--duration-emphasis) ease-out;
   }
 
   @keyframes modalSlideIn {
@@ -209,7 +209,7 @@ about the sequence being deleted and potential consequences.
     cursor: pointer;
     padding: 4px;
     border-radius: 50%;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -313,7 +313,7 @@ about the sequence being deleted and potential consequences.
     border-radius: 6px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-button:hover {
@@ -329,7 +329,7 @@ about the sequence being deleted and potential consequences.
     border-radius: 6px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .delete-button:hover {

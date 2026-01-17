@@ -348,7 +348,7 @@
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     margin-top: auto;
   }
 

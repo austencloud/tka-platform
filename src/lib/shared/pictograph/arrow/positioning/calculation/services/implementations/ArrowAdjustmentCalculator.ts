@@ -68,6 +68,30 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
     }
   }
 
+  /**
+   * Get the base adjustment (before directional tuple transformation).
+   * This is useful for the WASD adjustment panel to get the same base value
+   * that the rendering pipeline uses.
+   */
+  async getBaseAdjustmentPublic(
+    pictographData: PictographData,
+    motionData: MotionData,
+    letter: string,
+    arrowColor?: string
+  ): Promise<Point> {
+    try {
+      return await this.getBaseAdjustment(
+        pictographData,
+        motionData,
+        letter,
+        arrowColor
+      );
+    } catch (error) {
+      console.error(`Base adjustment lookup failed: ${error}`);
+      return new Point(0, 0);
+    }
+  }
+
   async calculateAdjustmentResult(
     pictographData: PictographData,
     motionData: MotionData,

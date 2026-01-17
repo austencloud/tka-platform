@@ -174,7 +174,7 @@
     border-radius: 6px;
     color: var(--theme-text, white);
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .field-input:focus,
@@ -218,7 +218,7 @@
     right: 0;
     bottom: 0;
     background-color: var(--theme-card-bg);
-    transition: 0.3s;
+    transition: var(--duration-emphasis);
     border-radius: 24px;
   }
 
@@ -230,7 +230,7 @@
     left: 3px;
     bottom: 3px;
     background-color: white;
-    transition: 0.3s;
+    transition: var(--duration-emphasis);
     border-radius: 50%;
   }
 

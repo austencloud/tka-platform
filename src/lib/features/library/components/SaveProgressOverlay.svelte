@@ -133,7 +133,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--duration-emphasis) ease;
   }
 
   @keyframes fadeIn {
@@ -257,7 +257,7 @@
     gap: 12px;
     padding: 8px 12px;
     border-radius: 8px;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .step.completed {
@@ -282,7 +282,7 @@
     font-size: var(--font-size-compact);
     font-weight: 600;
     flex-shrink: 0;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .step.completed .step-indicator {
@@ -327,7 +327,7 @@
   .step-label {
     font-size: var(--font-size-compact);
     color: rgba(255, 255, 255, 0.8);
-    transition: color 0.3s ease;
+    transition: color var(--duration-emphasis) ease;
   }
 
   .step.completed .step-label {
@@ -363,7 +363,7 @@
       #a78bfa 100%
     );
     border-radius: 4px;
-    transition: width 0.15s ease-out;
+    transition: width var(--duration-fast) ease-out;
     box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
   }
 
@@ -436,7 +436,7 @@
   .success-circle i {
     font-size: var(--font-size-3xl);
     color: white;
-    animation: checkPop 0.3s ease 0.2s both;
+    animation: checkPop var(--duration-emphasis) ease var(--duration-normal) both;
   }
 
   @keyframes checkPop {

@@ -335,7 +335,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
     border-radius: 0.25rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
   }
@@ -368,7 +368,7 @@
     font-weight: 600;
     text-align: center;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: none;
     cursor: pointer;
     font-size: 1rem;

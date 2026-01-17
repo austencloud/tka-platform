@@ -208,7 +208,7 @@
 		font-size: 1.125rem;
 		font-weight: 700;
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.complete-button:hover {

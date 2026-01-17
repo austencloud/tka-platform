@@ -148,7 +148,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     min-width: 0; /* Allow shrinking below content size */
     height: 100%;
     overflow: hidden;
-    transition: flex 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: flex var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .grid-panel.compressed {
@@ -161,7 +161,7 @@ Provides access to the complete TKA letter codex with drill-down detail view:
     min-width: 0;
     height: 100%;
     overflow: hidden;
-    transition: flex 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: flex var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
     border-left: 0 solid var(--theme-stroke);
     transition:
       flex 400ms cubic-bezier(0.4, 0, 0.2, 1),

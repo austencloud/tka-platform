@@ -128,7 +128,7 @@ Features:
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-md, 12px);
     padding: var(--settings-spacing-sm, 8px);
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .input-wrapper:focus-within {
@@ -172,7 +172,7 @@ Features:
     border-radius: var(--settings-radius-sm, 8px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .action-button:hover:not(:disabled) {

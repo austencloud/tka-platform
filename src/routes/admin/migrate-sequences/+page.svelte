@@ -428,7 +428,7 @@
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   button:disabled {

@@ -93,7 +93,7 @@
   }
 
   .pictograph-container.transitioning .pictograph-wrapper {
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .pictograph-wrapper {
@@ -108,7 +108,7 @@
     min-height: 0;
     display: block; /* Use block instead of flex to avoid sizing conflicts */
     box-sizing: border-box;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     background: var(--row-tint, var(--theme-card-bg));
     border: 2px solid transparent;
     border-radius: 0px;
@@ -146,7 +146,7 @@
   /* Mobile/universal active state */
   .pictograph-container:active .pictograph-wrapper {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pictograph-container.selected .pictograph-wrapper {

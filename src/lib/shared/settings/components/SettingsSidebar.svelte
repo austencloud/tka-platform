@@ -141,7 +141,7 @@
     border-radius: 12px; /* Slightly more rounded */
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth easing */
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1); /* Smooth easing */
     text-align: left;
     font-size: clamp(13px, 4cqi, 15px);
     font-weight: 500;
@@ -215,7 +215,7 @@
     font-size: var(--font-size-xl); /* Good size for touch target visibility */
     width: 24px;
     text-align: center;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
     flex-shrink: 0; /* Prevent icon from shrinking */
   }
 
@@ -224,7 +224,7 @@
   }
 
   .sidebar-label {
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     flex: 1; /* Allow label to take remaining space */
   }
 
@@ -237,7 +237,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     opacity: 0;
     transform: translateX(-4px);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     margin-left: auto;
   }
 
@@ -411,7 +411,7 @@
     font-size: var(--font-size-base);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dropdown-trigger:hover {
@@ -431,7 +431,7 @@
 
   .dropdown-arrow {
     font-size: var(--font-size-sm);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
     opacity: 0.7;
   }
 

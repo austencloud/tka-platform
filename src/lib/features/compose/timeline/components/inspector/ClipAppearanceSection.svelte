@@ -154,7 +154,7 @@
     border-radius: 6px;
     border: 2px solid transparent;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .color-swatch:hover {

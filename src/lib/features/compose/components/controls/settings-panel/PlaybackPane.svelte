@@ -99,7 +99,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    animation: fadeSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeSlideIn var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes fadeSlideIn {
@@ -134,7 +134,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .style-btn i {
@@ -165,7 +165,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
-    animation: fadeSlideIn 0.3s ease;
+    animation: fadeSlideIn var(--duration-emphasis) ease;
   }
 
   .step-label {
@@ -192,7 +192,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .step-chip.active {

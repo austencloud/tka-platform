@@ -72,7 +72,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
   }
 
@@ -99,7 +99,7 @@
     border-radius: 50%;
     flex-shrink: 0;
     position: relative;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .option-radio::after {
@@ -112,7 +112,7 @@
     background: var(--option-color, var(--semantic-success));
     border-radius: 50%;
     transform: translate(-50%, -50%) scale(0);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .filter-option.selected {

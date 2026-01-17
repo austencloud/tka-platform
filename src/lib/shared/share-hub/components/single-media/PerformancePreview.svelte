@@ -475,7 +475,7 @@
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-upload:hover {
@@ -498,7 +498,7 @@
     margin: 16px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .upload-dropzone:hover {
@@ -565,7 +565,7 @@
     color: var(--theme-text, white);
     font-size: var(--font-size-min);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-button:hover {
@@ -620,7 +620,7 @@
     font-weight: 500;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 

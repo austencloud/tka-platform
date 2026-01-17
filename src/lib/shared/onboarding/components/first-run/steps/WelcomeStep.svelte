@@ -126,7 +126,7 @@
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     margin-top: 12px;
   }
 
@@ -166,7 +166,7 @@
     font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .quick-start-button:hover {

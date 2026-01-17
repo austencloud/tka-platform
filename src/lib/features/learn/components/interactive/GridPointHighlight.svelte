@@ -123,7 +123,7 @@ Used in the Point Types lesson step.
 
   .grid-bg {
     fill: #ffffff;
-    transition: fill 150ms ease-out;
+    transition: fill var(--duration-fast) ease-out;
   }
 
   :global(:root.dark) .grid-bg {

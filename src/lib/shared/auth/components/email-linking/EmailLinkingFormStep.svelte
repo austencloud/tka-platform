@@ -156,7 +156,7 @@
     left: 14px;
     font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
     pointer-events: none;
   }
 
@@ -172,7 +172,7 @@
     border-radius: 12px;
     color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .form-group input::placeholder {
@@ -208,7 +208,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toggle-password:hover:not(:disabled) {
@@ -277,7 +277,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn:hover:not(:disabled) {
@@ -308,7 +308,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .submit-btn:hover:not(:disabled) {

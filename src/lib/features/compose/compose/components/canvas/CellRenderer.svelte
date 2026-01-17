@@ -361,7 +361,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.3s ease;
+    transition: transform var(--duration-emphasis) ease;
   }
 
   /* Ensure AnimatorCanvas fills container properly */

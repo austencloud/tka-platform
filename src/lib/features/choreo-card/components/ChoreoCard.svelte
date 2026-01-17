@@ -122,7 +122,7 @@
     border-radius: 0;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .choreo-card:hover {

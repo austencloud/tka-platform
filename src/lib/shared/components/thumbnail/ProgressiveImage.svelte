@@ -110,7 +110,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.3s ease-out;
+    transition: opacity var(--duration-emphasis) ease-out;
   }
 
   .placeholder.hidden {
@@ -132,7 +132,7 @@
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    transition: opacity 0.3s ease-out;
+    transition: opacity var(--duration-emphasis) ease-out;
   }
 
   .main-image.loaded {

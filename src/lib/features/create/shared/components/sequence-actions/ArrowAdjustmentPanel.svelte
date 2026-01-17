@@ -703,7 +703,7 @@
     justify-content: center;
     font-size: 0.5rem;
     border-radius: 50%;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .save-indicator.unsaved {
@@ -737,7 +737,7 @@
     align-items: center;
     justify-content: center;
     font-size: 0.6rem;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     padding: 0;
   }
 

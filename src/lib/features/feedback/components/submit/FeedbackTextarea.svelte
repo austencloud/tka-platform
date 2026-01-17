@@ -280,7 +280,7 @@
       var(--theme-text-dim, var(--theme-text-dim)) 80%,
       transparent
     );
-    transition: color 150ms ease;
+    transition: color var(--duration-fast) ease;
   }
 
   .char-count.met {

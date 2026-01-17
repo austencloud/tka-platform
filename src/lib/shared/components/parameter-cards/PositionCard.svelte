@@ -136,7 +136,7 @@ Supports Alpha, Beta, Gamma positions with Greek symbol pills
       transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
 
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   .position-card.disabled {
@@ -179,7 +179,7 @@ Supports Alpha, Beta, Gamma positions with Greek symbol pills
 
   .position-card:active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes cardEnter {
@@ -242,7 +242,7 @@ Supports Alpha, Beta, Gamma positions with Greek symbol pills
     border-radius: 100px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .pill-option:hover:not(.selected):not(:disabled) {

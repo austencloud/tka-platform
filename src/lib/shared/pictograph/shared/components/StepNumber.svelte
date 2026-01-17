@@ -1,8 +1,10 @@
 <!--
-StepNumber.svelte - Beat Number Overlay Component
+StepNumber.svelte - Step Number Overlay Component
 
-Renders beat numbers as SVG text overlays on pictographs.
-Based on the legacy BeatNumberLabel.svelte component architecture.
+Renders step numbers (sequential index: 1, 2, 3...) as SVG text overlays on pictographs.
+Displays at top-left corner. Shows "Start" for step 0.
+
+Note: Musical beat position (1.5, 2e, etc.) is handled by BeatPositionGlyph at bottom-center.
 
 Dark mode: Polls visibility manager for dark mode state (supports pictograph
 dark mode independent of app dark mode). Export uses explicit darkMode prop.
@@ -16,20 +18,17 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     isStartPosition = false,
     hasValidData = true,
     darkMode = undefined,
-    musicalPosition = undefined,
   } = $props<{
-    /** The beat number to display */
+    /** The step number to display (sequential index: 1, 2, 3...) */
     stepNumber?: number | null;
-    /** Whether to show the beat number */
+    /** Whether to show the step number */
     showStepNumber?: boolean;
-    /** Whether this is a start position (no beat number) */
+    /** Whether this is a start position (no step number) */
     isStartPosition?: boolean;
     /** Whether the pictograph has valid data */
     hasValidData?: boolean;
     /** Dark mode override for export. When set, overrides visibility manager state. */
     darkMode?: boolean;
-    /** Musical position string (e.g., "1", "1.5", "2e") - overrides stepNumber display when present */
-    musicalPosition?: string;
   }>();
 
   // Get centralized visibility manager for dark mode state
@@ -74,26 +73,12 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     return hasValidData && stepNumber === 0;
   });
 
-  // Get display text - musical position (if available), beat number, or "Start"
+  // Get display text - step number or "Start"
   const displayText = $derived.by(() => {
     if (stepNumber === 0) {
       return "Start";
     }
-    // Use musical position if provided, otherwise fall back to beat number
-    if (musicalPosition !== undefined) {
-      return musicalPosition;
-    }
     return stepNumber?.toString() || "";
-  });
-
-  // Dynamic font size: smaller for decimal values to fit the extra characters
-  const fontSize = $derived.by(() => {
-    // Decimal musical positions (e.g., "2.5") need smaller font
-    if (musicalPosition !== undefined && musicalPosition.includes(".")) {
-      return "70";
-    }
-    // Default size for simple numbers
-    return "100";
   });
 </script>
 
@@ -104,7 +89,7 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
     y="50"
     dominant-baseline="hanging"
     text-anchor="start"
-    font-size={fontSize}
+    font-size="100"
     font-family="Georgia, serif"
     font-weight="bold"
     fill={fillColor}
@@ -130,6 +115,6 @@ dark mode independent of app dark mode). Export uses explicit darkMode prop.
 <style>
   /* Smooth color transitions for dark mode toggle */
   .beat-number {
-    transition: fill 150ms ease-out;
+    transition: fill var(--duration-fast) ease-out;
   }
 </style>

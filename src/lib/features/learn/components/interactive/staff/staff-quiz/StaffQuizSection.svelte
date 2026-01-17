@@ -83,7 +83,7 @@ StaffQuizSection - Main quiz UI with visualizer and answers
     flex-direction: column;
     align-items: center;
     gap: 1.25rem;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--duration-emphasis) ease;
   }
 
   @keyframes fadeIn {

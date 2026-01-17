@@ -586,7 +586,7 @@
     border-radius: 50%;
     background: #ffd43b;
     cursor: pointer;
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   .scrub-slider::-webkit-slider-thumb:hover {
@@ -628,7 +628,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-compact);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .transport-btn:hover:not(:disabled) {
@@ -667,7 +667,7 @@
     cursor: pointer;
     font-size: var(--font-size-compact);
     font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .add-btn:hover {

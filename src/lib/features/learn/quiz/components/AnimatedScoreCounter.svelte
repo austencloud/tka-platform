@@ -63,7 +63,7 @@ Features:
 		font-weight: 800;
 		color: var(--theme-text, #ffffff);
 		font-variant-numeric: tabular-nums;
-		transition: color 0.3s ease;
+		transition: color var(--duration-emphasis) ease;
 	}
 
 	.suffix {

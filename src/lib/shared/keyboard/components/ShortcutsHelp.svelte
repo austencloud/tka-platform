@@ -312,7 +312,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     margin: -8px -8px 0 0;
   }
 
@@ -363,7 +363,7 @@
     background: var(--theme-card-bg);
     border-radius: 6px;
     gap: 0.75rem;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .shortcuts-help__item:hover {

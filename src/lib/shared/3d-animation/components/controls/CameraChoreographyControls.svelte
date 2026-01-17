@@ -123,7 +123,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .mode-toggle:hover:not(:disabled) {
@@ -177,7 +177,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .action-btn:hover:not(:disabled) {

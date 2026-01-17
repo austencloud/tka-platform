@@ -324,7 +324,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
     width: 100%;
   }
@@ -404,7 +404,7 @@
     font-size: var(--font-size-base);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
     min-width: 140px;
   }
@@ -432,7 +432,7 @@
     background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 16px;
     padding: 3px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -445,7 +445,7 @@
     height: 26px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 

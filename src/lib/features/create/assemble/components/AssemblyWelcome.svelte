@@ -159,13 +159,13 @@ Shown when sequence is empty.
 
   /* Grid dots in the icon */
   .welcome-icon :global(.grid-dot) {
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .welcome-icon :global(.grid-dot.active) {
     fill: var(--theme-accent);
     animation: dot-pulse 2s ease-in-out infinite;
-    animation-delay: calc(var(--delay) * 0.15s);
+    animation-delay: calc(var(--delay) * var(--duration-fast));
   }
 
   .welcome-icon :global(.grid-dot.inactive) {
@@ -230,7 +230,7 @@ Shown when sequence is empty.
     border-radius: 16px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .mode-button.active {
@@ -258,7 +258,7 @@ Shown when sequence is empty.
     height: 10px;
     border-radius: 50%;
     background: currentColor;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   /* Diamond mode: N, E, S, W */
@@ -303,7 +303,7 @@ Shown when sequence is empty.
     font-size: var(--font-size-lg);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent-strong) 35%, transparent);
   }
 
@@ -318,7 +318,7 @@ Shown when sequence is empty.
 
   .button-icon {
     font-size: var(--font-size-xl);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .start-button:hover .button-icon {

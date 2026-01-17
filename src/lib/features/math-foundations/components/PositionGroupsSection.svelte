@@ -101,7 +101,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 24px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .group-card:hover {

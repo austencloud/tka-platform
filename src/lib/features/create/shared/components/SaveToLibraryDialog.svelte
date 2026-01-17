@@ -364,7 +364,7 @@ Allows user to set name, visibility, tags, collections, and notes.
     color: var(--theme-text, var(--theme-text));
     font-size: var(--font-size-sm);
     font-family: inherit;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-sizing: border-box;
   }
 
@@ -437,7 +437,7 @@ Allows user to set name, visibility, tags, collections, and notes.
     border-radius: 8px;
     color: var(--theme-accent-strong, var(--theme-accent-strong));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -502,7 +502,7 @@ Allows user to set name, visibility, tags, collections, and notes.
     align-items: center;
     justify-content: center;
     opacity: 0.7;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .tag-remove:hover {
@@ -553,7 +553,7 @@ Allows user to set name, visibility, tags, collections, and notes.
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;

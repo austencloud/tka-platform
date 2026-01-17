@@ -71,7 +71,7 @@
     border: none;
     cursor: pointer;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sequence-item:hover:not(:disabled) {
@@ -99,7 +99,7 @@
     border-radius: 12px;
     overflow: hidden;
     border: 2px solid var(--theme-stroke);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     background: var(--theme-card-bg);
   }
 

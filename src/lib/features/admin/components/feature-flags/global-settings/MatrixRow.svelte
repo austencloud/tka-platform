@@ -143,7 +143,7 @@
     padding: 6px 0;
     border-radius: 8px;
     position: relative;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   @media (min-width: 700px) {
@@ -231,7 +231,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-size: var(--font-size-compact, 12px);
   }
 
@@ -280,7 +280,7 @@
     color: #f87171;
     font-size: 18px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .enable-toggle:hover:not(:disabled) {

@@ -116,7 +116,7 @@
     padding: var(--spacing-lg, 24px);
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease, transform var(--duration-emphasis) ease;
   }
 
   .language-tab.visible {
@@ -199,7 +199,7 @@
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .language-card:hover {

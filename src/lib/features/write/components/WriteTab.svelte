@@ -300,7 +300,7 @@
     width: 12px;
     background: transparent;
     cursor: col-resize;
-    transition: background-color 0.2s ease;
+    transition: background-color var(--duration-normal) ease;
     flex-shrink: 0;
     position: relative;
   }
@@ -314,7 +314,7 @@
     width: 4px;
     transform: translateX(-50%);
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    transition: background-color 0.2s ease;
+    transition: background-color var(--duration-normal) ease;
   }
 
   .splitter:hover::before,

@@ -245,7 +245,7 @@ Allows viewing, continuing, or deleting sessions.
     border-radius: 6px;
     color: inherit;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .btn-refresh:hover {
@@ -314,7 +314,7 @@ Allows viewing, continuing, or deleting sessions.
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .session-card:hover {
@@ -410,7 +410,7 @@ Allows viewing, continuing, or deleting sessions.
       )
     );
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-text {
@@ -430,7 +430,7 @@ Allows viewing, continuing, or deleting sessions.
     border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     display: flex;
     align-items: center;
     gap: 0.35rem;

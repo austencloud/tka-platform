@@ -473,7 +473,7 @@
     color: rgba(255, 255, 255, 0.6);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .preview-action.save:hover {
@@ -493,7 +493,7 @@
     font-size: var(--font-size-compact);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .exit-preview-btn:hover {
@@ -551,7 +551,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 
@@ -579,7 +579,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 
@@ -613,7 +613,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .actions-trigger:hover {
@@ -628,7 +628,7 @@
 
   .actions-trigger .chevron {
     font-size: 10px;
-    transition: transform 0.15s;
+    transition: transform var(--duration-fast);
   }
 
   .actions-trigger .chevron.open {
@@ -660,7 +660,7 @@
     font-size: var(--font-size-sm);
     text-align: left;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .dropdown-item:hover:not(:disabled) {
@@ -727,7 +727,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 

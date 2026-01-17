@@ -145,7 +145,7 @@
     justify-content: space-between;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease;
   }
 
   .overlay.visible {

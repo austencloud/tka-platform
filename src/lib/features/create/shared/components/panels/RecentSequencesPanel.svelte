@@ -250,7 +250,7 @@
     color: var(--text-secondary);
     cursor: pointer;
     padding: 0.5rem;
-    transition: color 0.2s;
+    transition: color var(--duration-normal);
   }
 
   .close-btn:hover {
@@ -301,7 +301,7 @@
     background: var(--background-secondary);
     border-radius: 12px;
     border: 1px solid var(--border-color);
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .list-item:hover {
@@ -362,7 +362,7 @@
     background: var(--background-primary);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .action-btn:hover {

@@ -64,7 +64,7 @@ Makes the two modes immediately discoverable and self-explanatory
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .mode-option:hover {

@@ -320,7 +320,7 @@
     border: 1.5px solid rgba(139, 92, 246, 0.3);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     box-shadow:
       0 0 20px rgba(139, 92, 246, 0.2),
       inset 0 1px 0 var(--theme-stroke);
@@ -378,7 +378,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow:
       0 1px 3px rgba(0, 0, 0, 0.1),
@@ -428,7 +428,7 @@
     font-size: clamp(0.75rem, 2.5vw, 0.85rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     font-variant-numeric: tabular-nums;
     box-shadow:
@@ -514,7 +514,7 @@
       0 0 0 1px var(--theme-stroke),
       0 0 24px rgba(139, 92, 246, 0.5);
     backdrop-filter: blur(20px);
-    animation: popoverSlide 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: popoverSlide var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: auto;
   }
 
@@ -557,7 +557,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-size: 0.75rem;
     box-shadow:
       0 1px 3px rgba(0, 0, 0, 0.15),

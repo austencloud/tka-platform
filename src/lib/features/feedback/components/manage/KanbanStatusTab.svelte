@@ -51,7 +51,7 @@
     font-size: clamp(0.875rem, 2.5cqi, 1rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .status-tab i {

@@ -196,7 +196,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   @keyframes fadeIn {
@@ -216,7 +216,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 20px 20px 0 0;
     overflow: hidden;
-    animation: slideUp 0.3s ease;
+    animation: slideUp var(--duration-emphasis) ease;
   }
 
   @keyframes slideUp {
@@ -257,7 +257,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -311,7 +311,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .option-btn i {

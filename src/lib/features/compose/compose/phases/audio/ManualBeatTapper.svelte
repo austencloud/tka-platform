@@ -240,7 +240,7 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 8px;
     overflow: hidden;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .manual-beat-tapper.active {
@@ -290,7 +290,7 @@
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     position: relative;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .toggle-track::after {
@@ -302,7 +302,7 @@
     height: 16px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .tap-mode-toggle input:checked + .toggle-track {
@@ -356,7 +356,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .tap-button i {
@@ -462,7 +462,7 @@
     color: var(--theme-text-dim);
     font-size: 0.7rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .action-btn:hover {
@@ -518,7 +518,7 @@
     font-size: var(--font-size-compact);
     cursor: pointer;
     opacity: 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .tap-item:hover .tap-remove {

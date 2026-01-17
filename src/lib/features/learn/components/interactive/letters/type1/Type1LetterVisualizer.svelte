@@ -224,7 +224,7 @@ Shows letters A-V with their start/end positions and prospin/antispin motions
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .type1-visualizer:hover {

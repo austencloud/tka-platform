@@ -100,7 +100,7 @@
     padding: 0;
     cursor: pointer;
     overflow: hidden;
-    transition: transform 0.15s ease;
+    transition: transform var(--duration-fast) ease;
   }
 
   .preview-card:hover {

@@ -135,7 +135,7 @@
     border-radius: 12px;
     cursor: pointer;
     text-align: left;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .version-card:hover {

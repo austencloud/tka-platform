@@ -347,7 +347,7 @@
     color: white;
     font-size: var(--font-size-lg);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {

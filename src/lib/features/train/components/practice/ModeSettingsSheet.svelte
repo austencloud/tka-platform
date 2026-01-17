@@ -238,7 +238,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 

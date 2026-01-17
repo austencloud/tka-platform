@@ -110,7 +110,7 @@
     border-radius: 12px;
     color: #ffffff;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
     backdrop-filter: blur(10px);
     overflow: hidden;
   }

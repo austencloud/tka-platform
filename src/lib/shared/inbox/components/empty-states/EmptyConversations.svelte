@@ -92,11 +92,11 @@
   }
 
   .dot:nth-child(2) {
-    animation-delay: 0.2s;
+    animation-delay: var(--duration-normal);
   }
 
   .dot:nth-child(3) {
-    animation-delay: 0.4s;
+    animation-delay: var(--duration-dramatic);
   }
 
   @keyframes pulse {

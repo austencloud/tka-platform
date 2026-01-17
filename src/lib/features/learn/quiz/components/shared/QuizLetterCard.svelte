@@ -16,7 +16,7 @@ QuizLetterCard - Question letter display
     display: flex;
     justify-content: center;
     align-items: center;
-    animation: letterEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: letterEntrance var(--duration-dramatic) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes letterEntrance {

@@ -93,7 +93,7 @@
     border: none;
     color: hsl(0 0% 100% / 0.6);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -252,7 +252,7 @@
     line-height: 16px;
     text-align: center;
     box-shadow: 0 1px 3px var(--theme-shadow);
-    animation: badgePop 0.3s ease;
+    animation: badgePop var(--duration-emphasis) ease;
     pointer-events: none;
     z-index: 5;
   }

@@ -97,7 +97,7 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .action-btn:hover {

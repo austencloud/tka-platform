@@ -73,11 +73,11 @@
         transparent
       );
     box-shadow: 0 2px 8px var(--theme-shadow, var(--theme-shadow));
-    animation: fadeInUp 0.3s ease-out;
+    animation: fadeInUp var(--duration-emphasis) ease-out;
   }
 
   .xp-toast.exiting {
-    animation: fadeOutDown 0.3s ease-in forwards;
+    animation: fadeOutDown var(--duration-emphasis) ease-in forwards;
   }
 
   @keyframes fadeInUp {
@@ -148,11 +148,11 @@
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .xp-toast {
-      animation: fadeIn 0.15s ease;
+      animation: fadeIn var(--duration-fast) ease;
     }
 
     .xp-toast.exiting {
-      animation: fadeOut 0.15s ease forwards;
+      animation: fadeOut var(--duration-fast) ease forwards;
     }
 
     @keyframes fadeIn {

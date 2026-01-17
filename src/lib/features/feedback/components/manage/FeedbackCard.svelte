@@ -367,7 +367,7 @@
     font-size: var(--fb-text-sm);
     font-weight: 600;
     color: white;
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   .action-content i {
@@ -443,7 +443,7 @@
   }
 
   .feedback-card.just-selected {
-    animation: selectPop 0.4s var(--spring-bounce);
+    animation: selectPop var(--duration-dramatic) var(--spring-bounce);
   }
 
   @keyframes selectPop {
@@ -471,7 +471,7 @@
     width: 3px;
     background: var(--fb-primary);
     border-radius: 0 2px 2px 0;
-    animation: indicatorSlide 0.3s var(--spring-bounce);
+    animation: indicatorSlide var(--duration-emphasis) var(--spring-bounce);
   }
 
   @keyframes indicatorSlide {
@@ -499,7 +499,7 @@
     border-radius: var(--fb-radius-sm);
     color: var(--type-color);
     font-size: var(--font-size-lg);
-    transition: all 0.2s var(--spring-bounce);
+    transition: all var(--duration-normal) var(--spring-bounce);
   }
 
   .feedback-card:hover:not(.swiping) .card-type {

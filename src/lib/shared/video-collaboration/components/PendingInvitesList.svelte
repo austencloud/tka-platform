@@ -124,7 +124,7 @@
     color: var(--text-secondary);
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-button:hover {

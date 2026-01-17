@@ -131,7 +131,7 @@
     border: 1px solid;
     cursor: pointer;
     font-size: 1.1rem;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .ctrl-btn:active:not(:disabled),

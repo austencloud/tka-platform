@@ -67,7 +67,7 @@
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     height: var(--min-touch-target);
     min-width: var(--min-touch-target);
   }
@@ -94,7 +94,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     font-size: var(--font-size-lg);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 

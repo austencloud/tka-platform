@@ -333,7 +333,7 @@ Supports help mode: when active, clicking cards opens help instead of normal act
     min-height: 0;
     min-width: 0;
     overflow: visible; /* Allow cards to pop over neighbors */
-    transition: grid-column 350ms ease;
+    transition: grid-column var(--duration-dramatic) ease;
     position: relative;
   }
 

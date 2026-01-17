@@ -153,7 +153,7 @@ Features:
 		width: 100%;
 		height: 100%;
 		color: var(--theme-text-dim, #9ca3af);
-		transition: color 0.3s ease;
+		transition: color var(--duration-emphasis) ease;
 	}
 
 	.active .flame-icon {
@@ -212,7 +212,7 @@ Features:
 		color: var(--theme-text-dim, #9ca3af);
 		min-width: 1rem;
 		text-align: center;
-		transition: color 0.3s ease;
+		transition: color var(--duration-emphasis) ease;
 	}
 
 	.active .streak-count {

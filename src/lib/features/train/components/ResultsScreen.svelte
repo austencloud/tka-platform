@@ -330,7 +330,7 @@
     justify-content: center;
     background: color-mix(in srgb, var(--theme-shadow) 98%, transparent);
     z-index: 100;
-    animation: fadeIn 0.4s ease-out;
+    animation: fadeIn var(--duration-dramatic) ease-out;
   }
 
   @keyframes fadeIn {
@@ -516,7 +516,7 @@
     background: var(--theme-card-bg, var(--theme-card-bg));
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 8px;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
   }
 
   .stat-card:hover {
@@ -654,7 +654,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .primary-button {

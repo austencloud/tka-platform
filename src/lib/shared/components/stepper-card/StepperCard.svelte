@@ -199,7 +199,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
     text-align: center;
 
     /* Clean fade in on load (400ms - 2025 standard) */
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   /* Gradient crossfade: ::before shows OLD gradient, background shows NEW gradient */
@@ -260,7 +260,7 @@ Landscape: Left half decrements, right half increments (horizontal layout)
   /* Elastic press - Universal click/tap feedback for ALL devices */
   .stepper-card:active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Card entrance animation - clean fade in */

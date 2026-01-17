@@ -104,7 +104,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     margin-bottom: 0; /* No margin - controlled by context group */
     /* Subtle border for differentiation */
@@ -152,7 +152,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   /* Profile Avatar for Dashboard */
@@ -162,7 +162,7 @@
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid rgba(16, 185, 129, 0.4);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .collapsed-module-button:hover:not(.disabled) .profile-avatar {
@@ -198,7 +198,7 @@
     pointer-events: none;
     opacity: 0;
     transform: translateX(-8px);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--theme-shadow, 0 4px 12px rgba(0, 0, 0, 0.4));
     z-index: 200;
   }

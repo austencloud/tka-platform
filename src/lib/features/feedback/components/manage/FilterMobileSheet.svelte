@@ -265,11 +265,11 @@
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
     z-index: 1000;
-    animation: fadeIn 0.25s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   .sheet-backdrop.closing {
-    animation: fadeOut 0.25s ease forwards;
+    animation: fadeOut var(--duration-normal) ease forwards;
   }
 
   @keyframes fadeIn {
@@ -303,13 +303,13 @@
     border-radius: 20px 20px 0 0;
     display: flex;
     flex-direction: column;
-    animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: slideUp var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
   }
 
   .sheet-container.closing {
-    animation: slideDown 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideDown var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
   @keyframes slideUp {
@@ -345,7 +345,7 @@
     height: 5px;
     background: var(--theme-stroke-strong);
     border-radius: 3px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .sheet-handle-area:hover .sheet-handle {
@@ -402,7 +402,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
     border-radius: 12px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .sheet-close:hover {
@@ -442,7 +442,7 @@
 
   .filter-section.expanded .filter-options {
     display: flex;
-    animation: expandIn 0.2s ease;
+    animation: expandIn var(--duration-normal) ease;
   }
 
   @keyframes expandIn {
@@ -476,7 +476,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .sheet-btn:active {

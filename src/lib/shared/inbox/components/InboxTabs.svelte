@@ -162,7 +162,7 @@
     background: var(--theme-accent, var(--semantic-info));
     border-radius: 8px;
     transform: translateX(calc(var(--active-index) * (100% + 4px)));
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 0;
   }
 
@@ -208,7 +208,7 @@
 
   .tab i {
     font-size: var(--font-size-sm);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .tab:hover i {
@@ -226,7 +226,7 @@
     font-weight: 600;
     line-height: 20px;
     text-align: center;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .tab.active .inbox-tab-badge {

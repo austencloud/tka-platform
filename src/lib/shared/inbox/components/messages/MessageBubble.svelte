@@ -189,7 +189,7 @@
     display: flex;
     flex-direction: column;
     max-width: 80%;
-    animation: slideIn 0.25s ease-out;
+    animation: slideIn var(--duration-normal) ease-out;
     transform-origin: bottom left;
   }
 
@@ -208,7 +208,7 @@
   }
 
   .message-bubble.is-new {
-    animation: slideInNew 0.3s ease-out;
+    animation: slideInNew var(--duration-emphasis) ease-out;
   }
 
   @keyframes slideIn {
@@ -237,7 +237,7 @@
     padding: 10px 14px;
     border-radius: 18px;
     background: var(--theme-card-bg, var(--theme-card-bg));
-    transition: transform 0.15s ease;
+    transition: transform var(--duration-fast) ease;
   }
 
   .bubble:hover {
@@ -372,7 +372,7 @@
   .read-receipt {
     font-size: var(--font-size-compact);
     opacity: 0.7;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .read-receipt.read {

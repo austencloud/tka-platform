@@ -203,7 +203,7 @@
     justify-content: center;
     padding: 1rem;
     box-sizing: border-box;
-    transition: background 0.3s;
+    transition: background var(--duration-emphasis);
   }
 
   .page.light {

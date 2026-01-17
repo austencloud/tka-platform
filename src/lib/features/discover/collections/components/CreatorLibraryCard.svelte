@@ -282,7 +282,7 @@ Displays:
     border: 1px solid var(--theme-stroke);
     border-radius: 16px;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .creator-library-card:hover {
@@ -305,7 +305,7 @@ Displays:
     width: 100%;
     text-align: left;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .card-header:hover {
@@ -392,7 +392,7 @@ Displays:
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .view-profile-btn:hover {
@@ -429,7 +429,7 @@ Displays:
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .tab:hover:not(.disabled) {
@@ -474,7 +474,7 @@ Displays:
     border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .sequence-thumbnail:hover {
@@ -527,7 +527,7 @@ Displays:
     border-radius: 8px;
     color: var(--theme-accent);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .see-all-btn:hover {

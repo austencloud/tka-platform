@@ -115,7 +115,7 @@
     text-align: center;
     box-shadow: 0 2px 4px hsl(0 0% 0% / 0.3);
     pointer-events: none;
-    animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: badgePop var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 1;
   }
 

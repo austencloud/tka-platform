@@ -129,7 +129,7 @@
     color: var(--theme-text-dim);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .toggle-btn:hover {
@@ -159,7 +159,7 @@
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     display: flex;
     align-items: center;
     justify-content: center;

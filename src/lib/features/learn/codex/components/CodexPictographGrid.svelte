@@ -352,7 +352,7 @@
 
   /* Animation for loading */
   .pictograph-item:not(.placeholder) {
-    animation: fadeInUp 0.3s ease-out;
+    animation: fadeInUp var(--duration-emphasis) ease-out;
   }
 
   @keyframes fadeInUp {

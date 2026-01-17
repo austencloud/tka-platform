@@ -130,7 +130,7 @@ Claim this item by updating its status to "in-progress" in Firebase (collection:
     font-size: var(--fb-text-sm);
     font-weight: 600;
     color: var(--badge-color);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .header-badge.clickable {
@@ -178,7 +178,7 @@ Claim this item by updating its status to "in-progress" in Firebase (collection:
     border-radius: var(--fb-radius-md);
     color: var(--fb-text-muted);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .header-btn:hover:not(:disabled) {
@@ -223,7 +223,7 @@ Claim this item by updating its status to "in-progress" in Firebase (collection:
     border-radius: var(--fb-radius-md);
     color: var(--fb-text-muted);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {

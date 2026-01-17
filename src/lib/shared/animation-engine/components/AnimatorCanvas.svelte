@@ -294,7 +294,7 @@ Last audit: 2025-12-27
     border: 1.5px solid #1a1a2e;
     border-radius: 4px;
     overflow: hidden;
-    transition: border-color 150ms ease-out;
+    transition: border-color var(--duration-fast) ease-out;
   }
 
   /* Dark Mode: solid cyan border (not transparent) */

@@ -84,7 +84,7 @@
     font-weight: 600;
     font-size: var(--font-size-base, 1rem);
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     cursor: pointer;
     border: none;
   }
@@ -103,7 +103,7 @@
   .expand-icon {
     margin-left: 4px;
     font-size: var(--font-size-compact, 0.75rem);
-    transition: transform 0.3s ease;
+    transition: transform var(--duration-emphasis) ease;
   }
 
   .expand-icon.rotated {

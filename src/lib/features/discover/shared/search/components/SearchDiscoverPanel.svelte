@@ -357,7 +357,7 @@ Allows natural language queries to find sequences, users, and collections.
     border-radius: 12px;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .search-input:focus {
@@ -382,7 +382,7 @@ Allows natural language queries to find sequences, users, and collections.
     color: var(--semantic-info);
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .search-button:hover:not(:disabled) {
@@ -419,7 +419,7 @@ Allows natural language queries to find sequences, users, and collections.
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 
@@ -474,7 +474,7 @@ Allows natural language queries to find sequences, users, and collections.
     font-size: var(--font-size-sm);
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .suggestion-chip:hover {
@@ -566,7 +566,7 @@ Allows natural language queries to find sequences, users, and collections.
     border-radius: 12px;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .result-item:hover {
@@ -644,7 +644,7 @@ Allows natural language queries to find sequences, users, and collections.
       var(--semantic-success),
       var(--semantic-info)
     );
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .relevance-text {

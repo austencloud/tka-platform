@@ -349,7 +349,7 @@ Provides quiz functionality for learning TKA notation:
     border-radius: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .header-back-btn:hover {

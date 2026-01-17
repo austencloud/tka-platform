@@ -470,7 +470,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		font-size: 0.875rem;
 		cursor: pointer;
 		border-radius: 4px;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast) ease;
 	}
 
 	.filter-tabs button:hover {
@@ -490,7 +490,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		border-radius: 6px;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast) ease;
 	}
 
 	.refresh-btn:hover {
@@ -537,7 +537,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border-radius: 8px;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast) ease;
 	}
 
 	.item-card:hover {
@@ -757,7 +757,7 @@ ${selectedItem.expectedKeyFacts.map((f) => `- ${f}`).join('\n')}
 		font-size: 0.875rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: all 0.15s ease;
+		transition: all var(--duration-fast) ease;
 	}
 
 	.approve-btn {

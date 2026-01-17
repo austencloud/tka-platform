@@ -95,7 +95,7 @@ WordHandPositions - Renders left and right hand positions with connection
 <style>
   .hand-point {
     filter: drop-shadow(0 0 4px currentColor);
-    transition: all 0.1s ease-out;
+    transition: all var(--duration-instant) ease-out;
   }
 
   .hand-glow {

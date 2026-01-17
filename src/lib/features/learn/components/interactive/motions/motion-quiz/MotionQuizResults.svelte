@@ -132,7 +132,7 @@ MotionQuizResults - Final results display with score and review
     font-size: 1.0625rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .finish-button:hover {

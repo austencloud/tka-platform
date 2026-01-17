@@ -321,7 +321,7 @@ Features:
     border-radius: 8px;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .search-input::placeholder {
@@ -345,7 +345,7 @@ Features:
     color: var(--theme-text-dim);
     cursor: pointer;
     padding: 4px;
-    transition: color 0.15s ease;
+    transition: color var(--duration-fast) ease;
   }
 
   .search-clear:hover {
@@ -379,7 +379,7 @@ Features:
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .expand-toggle:hover {
@@ -406,7 +406,7 @@ Features:
   .expand-toggle .chevron-icon {
     font-size: 10px;
     opacity: 0.6;
-    transition: transform 0.2s ease, opacity 0.15s ease;
+    transition: transform var(--duration-normal) ease, opacity var(--duration-fast) ease;
   }
 
   /* Compact Favorites Toggle (always visible in toolbar) */
@@ -422,7 +422,7 @@ Features:
     border-radius: 8px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .favorites-toggle-compact:hover {
@@ -498,7 +498,7 @@ Features:
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .clear-all-btn:hover {
@@ -522,7 +522,7 @@ Features:
     padding: 4px;
     margin: -4px -2px -4px 2px; /* Negative margin to expand hit area without visual size */
     opacity: 0.7;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
     border-radius: 2px;
   }
 
@@ -559,7 +559,7 @@ Features:
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sort-select:hover {
@@ -589,7 +589,7 @@ Features:
     border-radius: 6px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sort-direction-btn:hover {
@@ -647,7 +647,7 @@ Features:
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .mode-chip:hover:not(.active) {
@@ -685,7 +685,7 @@ Features:
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .favorites-toggle:hover {

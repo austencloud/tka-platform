@@ -457,7 +457,7 @@
   .collapse-icon {
     font-size: 0.625rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .collapse-icon.collapsed {
@@ -530,7 +530,7 @@
     background: var(--theme-accent);
     cursor: pointer;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   .slider::-webkit-slider-thumb:hover {
@@ -567,7 +567,7 @@
     font-size: 0.6875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .mode-btn:hover {
@@ -595,7 +595,7 @@
     border-radius: 50%;
     background: none;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .color-btn.active {
@@ -636,7 +636,7 @@
     inset: 0;
     background: rgba(120, 120, 128, 0.32);
     border-radius: 999px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .mini-slider::before {
@@ -648,7 +648,7 @@
     top: 2px;
     background: white;
     border-radius: 50%;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
@@ -681,7 +681,7 @@
     font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .reset-btn:hover {

@@ -41,7 +41,7 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text, var(--theme-text));
     z-index: 1000;
-    animation: slideUp 0.2s ease-out;
+    animation: slideUp var(--duration-normal) ease-out;
   }
 
   @keyframes slideUp {
@@ -73,7 +73,7 @@
     font-size: var(--font-size-compact);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .toast-btn:hover {

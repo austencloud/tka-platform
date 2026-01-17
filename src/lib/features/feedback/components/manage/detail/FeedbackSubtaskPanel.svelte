@@ -111,7 +111,7 @@
     background: var(--fb-surface);
     border: 1px solid var(--fb-border);
     border-radius: var(--fb-radius-md);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .subtask-item.completed {

@@ -101,7 +101,7 @@
 		font-size: var(--font-size-base, 16px);
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.mode-switch-btn i {
@@ -159,12 +159,12 @@
 		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
 		cursor: pointer;
-		transition: all 0.25s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.lamp-btn i {
 		font-size: 22px;
-		transition: all 0.25s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	/* Lit state - lamp is "on" (light mode preview) */
@@ -214,12 +214,12 @@
 		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
 		cursor: pointer;
-		transition: all 0.25s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.copy-btn i {
 		font-size: 20px;
-		transition: all 0.25s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.copy-btn:hover:not(:disabled) {

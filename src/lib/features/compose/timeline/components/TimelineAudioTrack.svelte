@@ -423,7 +423,7 @@
     border-radius: 4px;
     color: var(--theme-text-muted, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .icon-btn:hover {
@@ -447,7 +447,7 @@
     color: white;
     cursor: pointer;
     font-size: var(--font-size-compact);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .add-audio-btn:hover {
@@ -518,7 +518,7 @@
     border: 2px dashed var(--theme-stroke, var(--theme-stroke));
     margin: 4px;
     border-radius: 4px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .empty-state:hover {

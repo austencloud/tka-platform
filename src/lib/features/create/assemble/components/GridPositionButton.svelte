@@ -109,7 +109,7 @@ Supports enabled/disabled states and highlights current position.
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     color: var(--theme-text-dim);
   }
 
@@ -151,7 +151,7 @@ Supports enabled/disabled states and highlights current position.
 
   .grid-position-button.enabled:active {
     transform: scale(0.95);
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   /* Staggered entrance animation - pop in with attention pulse (enabled only) */

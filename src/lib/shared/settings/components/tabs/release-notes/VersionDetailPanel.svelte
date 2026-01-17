@@ -295,12 +295,6 @@
     return lines.join("\n").trim();
   }
 
-  async function handleCopy() {
-    const text = formatReleaseNotesForCopy();
-    await navigator.clipboard.writeText(text);
-    showToast("Copied to clipboard", "action");
-  }
-
   onMount(() => {
     const mq = window.matchMedia("(max-width: 768px)");
     isMobile = mq.matches;
@@ -331,7 +325,7 @@
         version={version.version}
         releasedAt={version.releasedAt}
         onClose={() => (isOpen = false)}
-        onCopy={handleCopy}
+        getCopyData={formatReleaseNotesForCopy}
       />
 
       {#if version.releaseNotes}

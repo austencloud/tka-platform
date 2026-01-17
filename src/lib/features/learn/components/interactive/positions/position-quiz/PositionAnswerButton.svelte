@@ -67,7 +67,7 @@ PositionAnswerButton - Answer button for position type selection
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 
@@ -107,7 +107,7 @@ PositionAnswerButton - Answer button for position type selection
   .answer-btn.incorrect {
     background: rgba(255, 74, 74, 0.2);
     border-color: rgba(255, 74, 74, 0.6);
-    animation: shake 0.4s ease;
+    animation: shake var(--duration-dramatic) ease;
   }
 
   @keyframes shake {

@@ -135,7 +135,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: 1px solid transparent;
   }
 
@@ -180,7 +180,7 @@
     color: var(--theme-text-dim);
     font-size: 1.1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {

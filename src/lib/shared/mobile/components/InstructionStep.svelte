@@ -45,7 +45,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: clamp(8px, 2cqw, 12px);
     padding: clamp(10px, 2.5cqh, 14px);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .compact.step-card {

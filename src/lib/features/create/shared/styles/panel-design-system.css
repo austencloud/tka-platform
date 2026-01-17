@@ -160,10 +160,10 @@
    * TRANSITIONS & ANIMATIONS
    * ============================================================================ */
 
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.2s ease;
-  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-spring: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-fast: var(--duration-fast) ease;
+  --transition-normal: var(--duration-normal) ease;
+  --transition-smooth: var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ============================================================================
    * Z-INDEX LAYERS

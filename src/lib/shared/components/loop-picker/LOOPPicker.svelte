@@ -215,7 +215,7 @@
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-md, 16px);
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }

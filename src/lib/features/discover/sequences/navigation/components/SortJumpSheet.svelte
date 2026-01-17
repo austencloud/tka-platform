@@ -170,7 +170,7 @@ Touch-friendly interface for changing sort method and jumping to sections
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -247,7 +247,7 @@ Touch-friendly interface for changing sort method and jumping to sections
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .jump-button:hover {

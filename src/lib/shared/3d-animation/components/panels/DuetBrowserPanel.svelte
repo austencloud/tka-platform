@@ -258,7 +258,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .toggle-btn:hover {
@@ -285,7 +285,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .create-btn:hover {
@@ -363,7 +363,7 @@
     border-radius: 10px;
     text-align: left;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .duet-card:hover {
@@ -392,7 +392,7 @@
     font-size: 0.75rem;
     cursor: pointer;
     opacity: 0;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .duet-card:hover .delete-btn {

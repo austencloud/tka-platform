@@ -184,7 +184,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .upload-btn:hover {
@@ -230,7 +230,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .empty-upload-btn:hover {
@@ -255,7 +255,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .video-item:hover {

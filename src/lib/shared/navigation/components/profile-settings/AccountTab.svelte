@@ -77,7 +77,7 @@
     overflow-x: hidden;
     padding: clamp(16px, 3vh, 32px) clamp(20px, 4vw, 50px); /* Fluid padding */
     min-height: 0;
-    transition: padding 0.2s ease;
+    transition: padding var(--duration-normal) ease;
     display: flex;
     flex-direction: column;
     align-items: center; /* Center cards horizontally */
@@ -103,7 +103,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: clamp(12px, 2vh, 18px);
     padding: clamp(18px, 3vh, 28px);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .section.compact .security-card {

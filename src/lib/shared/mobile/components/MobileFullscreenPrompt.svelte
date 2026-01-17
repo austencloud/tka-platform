@@ -459,7 +459,7 @@
     padding: 16px;
     background: color-mix(in srgb, var(--theme-shadow) 50%, transparent);
     backdrop-filter: blur(4px);
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn var(--duration-emphasis) ease-out;
   }
 
   .fullscreen-prompt-overlay.nag-mode {
@@ -488,7 +488,7 @@
     box-shadow: 0 12px 40px var(--theme-shadow);
     max-width: 420px;
     width: 100%;
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn var(--duration-emphasis) ease-out;
   }
 
   .fullscreen-prompt.nag-mode {
@@ -537,7 +537,7 @@
     font-size: var(--font-size-base);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .install-button:hover {
@@ -559,7 +559,7 @@
     padding: 12px 24px;
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .dismiss-button:hover {

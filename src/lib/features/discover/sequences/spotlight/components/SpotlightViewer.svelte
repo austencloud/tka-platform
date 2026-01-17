@@ -415,13 +415,13 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeIn var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) forwards;
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
     user-select: none;
   }
 
   .spotlight.closing {
-    animation: fadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: fadeOut var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 
   @keyframes fadeIn {
@@ -453,7 +453,7 @@
     justify-content: center;
     padding: 16px;
     box-sizing: border-box;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     pointer-events: none; /* prevent selecting; clicks handled by overlay */
@@ -497,7 +497,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     z-index: 10001;
@@ -555,7 +555,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     z-index: 10000;
@@ -592,7 +592,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     z-index: 10000;
@@ -640,7 +640,7 @@
     pointer-events: auto;
     min-width: 140px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    animation: slideUp 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideUp var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideUp {
@@ -675,7 +675,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     text-align: left;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     margin-bottom: 4px;
   }
 
@@ -712,7 +712,7 @@
     z-index: 10001;
     pointer-events: none;
     box-shadow: 0 4px 16px var(--theme-shadow);
-    animation: slideUpBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    animation: slideUpBounce var(--duration-dramatic) cubic-bezier(0.68, -0.55, 0.265, 1.55);
     max-width: 220px;
   }
 

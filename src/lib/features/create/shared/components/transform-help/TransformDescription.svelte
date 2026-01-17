@@ -124,7 +124,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     width: 100%;
     color: inherit;
@@ -187,7 +187,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     font-size: var(--font-size-sm);
   }
 
@@ -226,7 +226,7 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     white-space: nowrap;
   }
 

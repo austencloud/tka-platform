@@ -133,14 +133,14 @@ Hides header when card height is below 65px for space optimization
       0 4px 8px hsl(var(--shadow-color) / 0.1),
       /* Inner highlight for 3D effect */ inset 0 1px 0 var(--theme-stroke);
 
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible; /* Allow hover effects to overflow and pop over neighbors */
     color: white;
     text-align: center;
     cursor: pointer;
 
     /* 🎬 ANIMATION - Clean fade in on load (400ms - 2025 standard) */
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   /* 🌟 GLOSSY SHEEN OVERLAY - Creates 3D glass effect */
@@ -190,7 +190,7 @@ Hides header when card height is below 65px for space optimization
   /* 🎯 ELASTIC PRESS - Universal click/tap feedback for ALL devices */
   .toggle-card:active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .toggle-card:focus-within {

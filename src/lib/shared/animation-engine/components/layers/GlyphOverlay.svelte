@@ -190,12 +190,12 @@ Toggle animations: Delightful scale/pop transitions when visibility toggles.
   /* Only disable opacity transition, allow filter transition for dark mode */
   .glyph-wrapper :global(.tka-glyph) {
     opacity: 1 !important;
-    transition: filter 150ms ease-out !important;
+    transition: filter var(--duration-fast) ease-out !important;
   }
 
   .glyph-wrapper :global(.turns-column) {
     opacity: 1 !important;
-    transition: filter 150ms ease-out !important;
+    transition: filter var(--duration-fast) ease-out !important;
   }
 
   /* Instant transitions - no fade animation for step playback sync */

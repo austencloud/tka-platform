@@ -387,7 +387,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
 
   .base-point,
   .hand-point {
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .hand-glow {
@@ -443,7 +443,7 @@ Visualizes Alpha (opposite), Beta (same), and Gamma (right angle) positions
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     color: var(--theme-text-dim);
     font-size: 0.8125rem;
   }

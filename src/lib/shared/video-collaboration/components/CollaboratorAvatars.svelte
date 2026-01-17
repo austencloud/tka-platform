@@ -108,7 +108,7 @@
     );
     border: 2px solid rgba(20, 20, 30, 1);
     overflow: hidden;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .avatar:not(:last-child) {

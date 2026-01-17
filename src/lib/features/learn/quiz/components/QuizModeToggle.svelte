@@ -143,7 +143,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
     background: var(--theme-accent);
     border-radius: 12px;
     transform: translateX(calc(var(--slider-position) * 100%));
-    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:
       0 2px 8px color-mix(in srgb, var(--theme-accent) 40%, transparent),
       0 0 20px color-mix(in srgb, var(--theme-accent) 20%, transparent);
@@ -172,7 +172,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
     font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
-    transition: color 200ms ease;
+    transition: color var(--duration-normal) ease;
     white-space: nowrap;
   }
 
@@ -198,7 +198,7 @@ Fixed Questions mode (set number) and Countdown mode (timed challenge).
   }
 
   .segment-icon svg {
-    transition: transform 200ms ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .segment.active .segment-icon svg {

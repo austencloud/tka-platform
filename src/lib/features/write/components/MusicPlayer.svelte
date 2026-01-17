@@ -178,7 +178,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .music-player.disabled {
@@ -251,7 +251,7 @@
     cursor: pointer;
     -webkit-appearance: none;
     appearance: none;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .scrubber:disabled {
@@ -268,7 +268,7 @@
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     cursor: pointer;
-    transition: transform 0.15s ease;
+    transition: transform var(--duration-fast) ease;
   }
 
   .scrubber:not(:disabled)::-webkit-slider-thumb:hover {
@@ -321,7 +321,7 @@
     color: var(--theme-text, #ffffff);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .transport-btn:hover:not(:disabled) {

@@ -74,7 +74,7 @@
     border-radius: 8px;
     color: white;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .empty-action:hover {

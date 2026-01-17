@@ -47,8 +47,6 @@
     redRotationOverrideKey: string | null;
   } | null>(null);
 
-  // Copy state for feedback
-  let copiedSection = $state<string | null>(null);
 
   // Calculate arrow positions when modal opens
   $effect(() => {
@@ -217,18 +215,9 @@
   const blueMotion = $derived(displayData?.motions?.[MotionColor.BLUE]);
   const redMotion = $derived(displayData?.motions?.[MotionColor.RED]);
 
-  async function copyToClipboard(text: string, section: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      copiedSection = section;
-      setTimeout(() => (copiedSection = null), 1500);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  }
-
-  async function handleCopyAll() {
-    const text = await formatAllForAI(
+  // Get formatted data for AI
+  async function getCopyAllData(): Promise<string> {
+    return await formatAllForAI(
       displayData,
       blueMotion,
       redMotion,
@@ -236,11 +225,11 @@
       redRotationOverride,
       pictographDataState ?? undefined
     );
-    copyToClipboard(text, "all");
   }
 
-  function handleCopyJson() {
-    copyToClipboard(JSON.stringify(displayData ?? stepData, null, 2), "json");
+  // Get raw JSON data
+  function getCopyJsonData(): string {
+    return JSON.stringify(displayData ?? stepData, null, 2);
   }
 
   function handleBackdropClick(e: MouseEvent) {
@@ -273,9 +262,8 @@
         {displayData}
         {stepData}
         {isCalculating}
-        {copiedSection}
-        onCopyAll={handleCopyAll}
-        onCopyJson={handleCopyJson}
+        {getCopyAllData}
+        {getCopyJsonData}
         {onClose}
       />
 
@@ -322,7 +310,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    animation: fadeIn 0.15s ease-out;
+    animation: fadeIn var(--duration-fast) ease-out;
   }
 
   .modal-content {
@@ -340,7 +328,7 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
-    animation: slideUp 0.2s ease-out;
+    animation: slideUp var(--duration-normal) ease-out;
   }
 
   .modal-body {

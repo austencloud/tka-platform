@@ -258,7 +258,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
     height: 100%;
     background: var(--theme-accent);
     border-radius: 3px;
-    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: width var(--duration-dramatic) cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .progress-text {
@@ -288,7 +288,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 16px var(--theme-shadow);
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow var(--duration-emphasis) ease;
   }
 
   .grid-wrapper.feedback-correct {
@@ -339,7 +339,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
   /* Incorrect feedback - red shake */
   .click-target.incorrect {
     fill: rgba(239, 68, 68, 0.4);
-    animation: incorrect-shake 0.4s ease;
+    animation: incorrect-shake var(--duration-dramatic) ease;
   }
 
   @keyframes incorrect-shake {
@@ -371,7 +371,7 @@ Provides instant visual feedback (correct = green glow, wrong = red shake).
     background: rgba(74, 158, 255, 0.2);
     color: #4a9eff;
     border: 2px solid rgba(74, 158, 255, 0.3);
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .mode-badge.box {

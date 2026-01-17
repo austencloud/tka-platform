@@ -213,7 +213,7 @@
     border-radius: 16px;
     text-align: left;
     cursor: default;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     width: 100%;
     position: relative;
     overflow: hidden;
@@ -234,7 +234,7 @@
 
   .challenge-card.clickable:active {
     transform: translateY(-1px);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   /* Completed state */
@@ -385,7 +385,7 @@
   .progress-fill {
     height: 100%;
     border-radius: 3px;
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .progress-fill.complete {
@@ -429,7 +429,7 @@
     font-size: var(--font-size-compact);
     font-weight: 600;
     color: var(--accent-color);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .challenge-card.clickable:hover .action-hint {
@@ -440,7 +440,7 @@
 
   .action-hint i {
     font-size: var(--font-size-compact);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .challenge-card.clickable:hover .action-hint i {

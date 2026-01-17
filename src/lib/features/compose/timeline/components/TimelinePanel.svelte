@@ -232,6 +232,7 @@
 
   // Handle wheel events for scroll/zoom
   function handleWheel(e: WheelEvent) {
+    // Ctrl/Cmd + Wheel = Horizontal zoom (time scale)
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -1 : 1;
@@ -258,11 +259,31 @@
       return;
     }
 
+    // Alt + Wheel = Vertical zoom (track height)
+    if (e.altKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -10 : 10;
+      const state = getState();
+
+      // Adjust all track heights
+      for (const track of state.project.tracks) {
+        const newHeight = Math.max(40, Math.min(200, track.height + delta));
+        state.updateTrack(track.id, { height: newHeight });
+      }
+      return;
+    }
+
+    // Shift + Wheel = Horizontal scroll
     if (e.shiftKey && timelineBodyRef) {
       e.preventDefault();
       const scrollInfo = timelineBodyRef.getScrollInfo();
       timelineBodyRef.scrollTo(scrollInfo.scrollLeft + e.deltaY);
     }
+  }
+
+  // Ensure panel gets focus when interacting with it
+  function handlePanelClick() {
+    panelElement?.focus();
   }
 
   // Keyboard shortcuts
@@ -507,6 +528,7 @@
   bind:this={panelElement}
   onkeydown={handleKeyDown}
   onwheel={handleWheel}
+  onclick={handlePanelClick}
   tabindex="0"
   role="application"
   aria-label="Timeline editor"
@@ -647,7 +669,7 @@
     background: var(--theme-card-bg);
     border-radius: 8px;
     animation: pulse 1.5s ease-in-out infinite;
-    animation-delay: 0.2s;
+    animation-delay: var(--duration-normal);
   }
 
   .skeleton-tracks {
@@ -664,7 +686,7 @@
   }
 
   .skeleton-track:nth-child(2) {
-    animation-delay: 0.4s;
+    animation-delay: var(--duration-dramatic);
   }
 
   @keyframes pulse {
@@ -715,7 +737,7 @@
     color: var(--semantic-warning);
     cursor: pointer;
     border-radius: 4px;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .dismiss-btn:hover {

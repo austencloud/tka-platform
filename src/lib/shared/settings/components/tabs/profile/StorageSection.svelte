@@ -50,7 +50,7 @@
     font-size: clamp(14px, 2.5cqi, 15px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .action-btn:hover:not(:disabled) {

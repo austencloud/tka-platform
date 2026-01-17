@@ -45,7 +45,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-btn:hover {
@@ -70,7 +70,7 @@
     font-size: 1.0625rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: var(--min-touch-target);
     margin-left: auto;
   }

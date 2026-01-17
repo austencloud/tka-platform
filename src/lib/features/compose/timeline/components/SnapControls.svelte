@@ -257,7 +257,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-sm);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .master-toggle:hover {
@@ -275,7 +275,7 @@
   .snap-chips {
     display: flex;
     gap: 4px;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .snap-chips.disabled {
@@ -294,7 +294,7 @@
     color: var(--theme-text-muted, var(--theme-text-dim));
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     white-space: nowrap;
   }
 
@@ -350,7 +350,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .grid-chip:hover {
@@ -376,7 +376,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-compact);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .more-btn:hover {
@@ -428,7 +428,7 @@
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -466,7 +466,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -523,7 +523,7 @@
     font-weight: 700;
     letter-spacing: 0.05em;
     color: var(--theme-text-dim);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toggle-indicator.on {
@@ -548,7 +548,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .snap-option-card:hover:not(:disabled) {
@@ -598,7 +598,7 @@
     font-weight: 600;
     color: var(--theme-text-muted, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .interval-btn:hover:not(:disabled) {

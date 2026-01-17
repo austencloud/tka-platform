@@ -299,7 +299,7 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
     border: none;
     color: white;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -352,7 +352,7 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
   .chevron {
     width: 24px;
     height: 24px;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .chevron.expanded {
@@ -389,7 +389,7 @@ LetterConstraintsSection.svelte - Section for letter must-contain/must-not-conta
     font-weight: 600;
 
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .tab-button:hover {

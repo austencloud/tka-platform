@@ -110,6 +110,9 @@
     e.stopPropagation();
     if (!isDragging) {
       getState().selectClip(clip.id, e.shiftKey || e.ctrlKey || e.metaKey);
+      // Focus the parent timeline panel so keyboard shortcuts work
+      const panel = (e.currentTarget as HTMLElement).closest('.timeline-panel') as HTMLElement;
+      panel?.focus();
     }
   }
 
@@ -324,7 +327,7 @@
     cursor: grab;
     display: flex;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 6px var(--theme-shadow);
     user-select: none;
     border: 1px solid
@@ -578,7 +581,7 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
     z-index: 11;
   }
 

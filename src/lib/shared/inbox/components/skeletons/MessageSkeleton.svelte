@@ -49,7 +49,7 @@
   .skeleton-bubble {
     display: flex;
     max-width: var(--width, 60%);
-    animation: fadeIn 0.3s ease-out backwards;
+    animation: fadeIn var(--duration-emphasis) ease-out backwards;
     animation-delay: calc(var(--stagger) * 80ms);
   }
 
@@ -115,7 +115,7 @@
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
-    animation-delay: 0.2s;
+    animation-delay: var(--duration-normal);
   }
 
   .skeleton-bubble.own .skeleton-meta {

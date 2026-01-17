@@ -104,7 +104,7 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .mode-btn:hover {
@@ -139,7 +139,7 @@
     font-size: var(--font-size-sm, 0.8rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .plane-btn:hover {
@@ -159,7 +159,7 @@
     border-radius: 50%;
     background: var(--color);
     opacity: 0.4;
-    transition: opacity 0.15s;
+    transition: opacity var(--duration-fast);
   }
 
   .plane-btn.active .indicator {

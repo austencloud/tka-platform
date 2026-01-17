@@ -121,7 +121,7 @@
 
   /* Fade in once stabilization complete */
   .pictograph-row:not(.layout-stabilizing) {
-    animation: fadeInGrid 250ms ease-out forwards;
+    animation: fadeInGrid var(--duration-normal) ease-out forwards;
   }
 
   @keyframes fadeInGrid {
@@ -201,7 +201,7 @@
     display: block; /* Use block instead of flex to avoid sizing conflicts */
     position: relative;
     box-sizing: border-box;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid transparent;
     border-radius: 0px;
     box-shadow:
@@ -264,7 +264,7 @@
   /* Mobile/universal active state */
   .pictograph-container:active .pictograph-wrapper {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pictograph-container.selected .pictograph-wrapper {

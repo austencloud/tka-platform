@@ -117,7 +117,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .blue .btn:hover:not(:disabled) {

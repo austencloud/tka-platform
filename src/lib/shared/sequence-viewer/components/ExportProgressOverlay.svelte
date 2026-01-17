@@ -75,7 +75,7 @@
 	.export-card .progress-bar div {
 		height: 100%;
 		background: var(--theme-accent);
-		transition: width 0.15s ease;
+		transition: width var(--duration-fast) ease;
 	}
 
 	.export-card button {

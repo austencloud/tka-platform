@@ -93,7 +93,7 @@
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
     padding-bottom: 3rem;
   }
 
@@ -163,7 +163,7 @@
     font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-btn:hover {
@@ -200,7 +200,7 @@
     background: var(--theme-card-bg);
     border: 2px solid transparent;
     border-radius: 10px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: 80px;
   }
 

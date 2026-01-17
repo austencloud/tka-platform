@@ -137,7 +137,7 @@ Shows count of active options, click to open configuration sheet
     overflow: visible;
     cursor: pointer;
 
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
     animation-delay: calc(var(--card-index) * 50ms);
     animation-fill-mode: backwards;
   }
@@ -204,7 +204,7 @@ Shows count of active options, click to open configuration sheet
 
   .options-card:active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .options-card:focus-visible {
@@ -274,7 +274,7 @@ Shows count of active options, click to open configuration sheet
     height: 20px;
     color: var(--theme-text-dim);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     z-index: 2;
   }
 

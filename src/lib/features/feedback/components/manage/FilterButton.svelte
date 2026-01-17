@@ -54,7 +54,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
   }
 
@@ -99,7 +99,7 @@
       var(--theme-text-dim, var(--theme-text-dim)) 80%,
       transparent
     );
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .filter-button.panel:hover .panel-arrow {
@@ -118,7 +118,7 @@
     color: white;
     font-size: var(--font-size-compact);
     font-weight: 700;
-    animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: popIn var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes popIn {

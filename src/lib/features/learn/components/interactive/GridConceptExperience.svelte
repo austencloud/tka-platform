@@ -211,7 +211,7 @@ Supports two view modes:
 		border-radius: 8px;
 		cursor: pointer;
 		z-index: 1000;
-		transition: top 0.2s ease;
+		transition: top var(--duration-normal) ease;
 	}
 
 	.skip-link:focus {

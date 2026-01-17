@@ -84,7 +84,7 @@ Design Principles:
     background: var(--theme-card-bg);
     box-shadow: 0 2px 8px var(--theme-shadow);
     cursor: pointer;
-    transition: all var(--transition-normal, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
     color: var(--theme-text);
   }
 
@@ -104,7 +104,7 @@ Design Principles:
 
   .toggle-button:active {
     transform: scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .toggle-button:focus-visible {
@@ -115,7 +115,7 @@ Design Principles:
   /* Icon styling */
   .toggle-button i {
     font-size: var(--font-size-lg);
-    transition: all var(--transition-normal, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   /* Label text styling */

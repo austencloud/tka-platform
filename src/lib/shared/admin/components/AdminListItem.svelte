@@ -63,7 +63,7 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     text-align: left;
     width: 100%;
     color: inherit;

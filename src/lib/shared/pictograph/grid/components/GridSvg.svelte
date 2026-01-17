@@ -570,7 +570,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
     z-index: 1;
     /* Beautiful fade in/out effect matching other pictograph elements */
     opacity: 0;
-    transition: opacity 150ms ease-out;
+    transition: opacity var(--duration-fast) ease-out;
   }
 
   .grid-container.visible {
@@ -726,7 +726,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   /* Center point */
   :global(#center_point) {
     fill: #000;
-    transition: fill 150ms ease-out;
+    transition: fill var(--duration-fast) ease-out;
   }
 
   /* Dark mode - center point uses light color */
@@ -742,7 +742,7 @@ Pure reactive approach - grid mode determines styling, rotation provides animati
   /* Transition timing synced with pictograph/canvas (150ms ease-out) */
   :global(.grid-container line) {
     stroke: #000;
-    transition: stroke 150ms ease-out;
+    transition: stroke var(--duration-fast) ease-out;
   }
 
   /* Dark mode - lines use light color */

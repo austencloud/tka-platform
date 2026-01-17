@@ -170,7 +170,7 @@
     color: var(--theme-text-dim);
     font-size: 0.875rem;
     pointer-events: none;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .search-input {
@@ -183,7 +183,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-base);
     font-family: inherit;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .search-input::placeholder {
@@ -221,7 +221,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     border-radius: 50%;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .search-clear::before {
@@ -268,7 +268,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border-radius: 12px;
   }
 

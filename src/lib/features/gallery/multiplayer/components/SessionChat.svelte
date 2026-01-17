@@ -365,7 +365,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: all 0.15s;
+		transition: all var(--duration-fast);
 	}
 
 	.input-form button:hover:not(:disabled) {

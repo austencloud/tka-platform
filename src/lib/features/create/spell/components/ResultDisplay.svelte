@@ -156,7 +156,7 @@ Displays the original word and expanded word with visual differentiation:
     padding: 0 4px;
     border-radius: var(--settings-radius-xs, 4px);
     font-size: var(--font-size-md, 16px);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .letter:hover {

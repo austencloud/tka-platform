@@ -272,7 +272,7 @@
     justify-content: center;
     background: color-mix(in srgb, var(--theme-panel-bg) 85%, transparent);
     z-index: 10000;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   @keyframes fadeIn {
@@ -297,7 +297,7 @@
       );
     border-radius: 20px;
     box-shadow: 0 20px 60px var(--theme-shadow);
-    animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: modalSlideIn var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes modalSlideIn {

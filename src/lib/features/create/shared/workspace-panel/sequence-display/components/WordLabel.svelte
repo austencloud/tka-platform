@@ -194,7 +194,7 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border-radius: 8px;
     text-align: center;
     white-space: nowrap;
@@ -358,7 +358,7 @@
   /* STYLE 1: INTENSE - pop with glow bloom (toned down to 80%) */
   .letter.active-intense {
     text-shadow: 0 0 14px rgba(255, 255, 255, 0.5), 0 0 28px rgba(255, 255, 255, 0.22);
-    animation: letterPopIntense 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: letterPopIntense var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes letterPopIntense {
@@ -379,7 +379,7 @@
   /* STYLE 2: SUBTLE - gentle fade with slight scale */
   .letter.active-subtle {
     text-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
-    animation: letterFadeSubtle 0.25s ease-out;
+    animation: letterFadeSubtle var(--duration-normal) ease-out;
   }
 
   @keyframes letterFadeSubtle {
@@ -398,7 +398,7 @@
   /* STYLE 3: GLOW-ONLY - no scale, just glow appears */
   .letter.active-glow-only {
     text-shadow: 0 0 16px rgba(255, 255, 255, 0.6);
-    animation: letterGlowOnly 0.15s ease-out;
+    animation: letterGlowOnly var(--duration-fast) ease-out;
   }
 
   @keyframes letterGlowOnly {
@@ -424,7 +424,7 @@
   /* STYLE 5: WAVE - pulse outward effect */
   .letter.active-wave {
     text-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
-    animation: letterWave 0.35s ease-out;
+    animation: letterWave var(--duration-dramatic) ease-out;
   }
 
   @keyframes letterWave {

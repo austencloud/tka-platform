@@ -381,7 +381,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-btn:hover {
@@ -466,7 +466,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .picker-btn:hover {
@@ -514,7 +514,7 @@
     color: var(--theme-text, #ffffff);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .offset-btn:hover:not(:disabled) {
@@ -554,7 +554,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .pos-btn:hover {
@@ -592,7 +592,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .cancel-btn {
@@ -658,7 +658,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .back-btn:hover {
@@ -706,7 +706,7 @@
     border-radius: 8px;
     text-align: left;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .sequence-item:hover {

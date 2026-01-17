@@ -51,7 +51,7 @@
     border-radius: 7px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     margin-bottom: 4px;
   }
@@ -124,7 +124,7 @@
     pointer-events: none;
     opacity: 0;
     transform: translateX(-8px);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--theme-shadow, 0 4px 12px var(--theme-shadow));
     z-index: 200;
   }

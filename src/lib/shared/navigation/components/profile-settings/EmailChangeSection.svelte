@@ -156,7 +156,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: clamp(12px, 2vh, 18px);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .email-change-section.compact {
@@ -264,7 +264,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     font-size: clamp(14px, 1.9vh, 17px);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .email-change-section.compact .input {
@@ -350,7 +350,7 @@
     font-size: clamp(14px, 1.9vh, 17px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: none;
   }
 

@@ -99,7 +99,7 @@
 
   .role-badge.interactive {
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border: 1.5px solid transparent;
   }
 

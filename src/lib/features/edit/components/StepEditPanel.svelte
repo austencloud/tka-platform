@@ -419,7 +419,7 @@
     border: 1px solid var(--theme-stroke);
     color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .control-btn:hover:not(:disabled) {
@@ -456,7 +456,7 @@
     border: 1px solid var(--theme-stroke);
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .rotation-btn:hover {

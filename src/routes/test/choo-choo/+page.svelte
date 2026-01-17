@@ -515,7 +515,7 @@
     border-radius: 8px;
     cursor: pointer;
     text-align: left;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     color: var(--theme-text, #fff);
   }
 

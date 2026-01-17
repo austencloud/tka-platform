@@ -95,7 +95,7 @@ Displays user-saved presets with delete option and allows loading preset configu
       max(16px, env(safe-area-inset-right, 16px))
       max(16px, env(safe-area-inset-bottom, 16px))
       max(16px, env(safe-area-inset-left, 16px));
-    animation: backdrop-appear 0.3s ease-out;
+    animation: backdrop-appear var(--duration-emphasis) ease-out;
   }
 
   @keyframes backdrop-appear {
@@ -122,7 +122,7 @@ Displays user-saved presets with delete option and allows loading preset configu
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: modal-appear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: modal-appear var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     margin: auto;
     flex-shrink: 0;

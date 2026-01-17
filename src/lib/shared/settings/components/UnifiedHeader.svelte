@@ -106,7 +106,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color var(--transition-fast, 0.15s ease);
+    transition: color var(--transition-fast, var(--duration-fast) ease);
     flex-shrink: 0;
   }
 
@@ -134,7 +134,7 @@
     box-shadow: 0 4px 12px var(--theme-shadow);
     z-index: 1000;
     pointer-events: none;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn var(--duration-normal) ease-out;
   }
 
   .tooltip::after {

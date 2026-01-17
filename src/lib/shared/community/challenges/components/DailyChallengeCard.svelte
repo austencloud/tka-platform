@@ -111,7 +111,7 @@
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .daily-challenge-card.compact {
@@ -233,7 +233,7 @@
     height: 100%;
     background: linear-gradient(90deg, var(--semantic-warning), #f97316);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-fill.complete {

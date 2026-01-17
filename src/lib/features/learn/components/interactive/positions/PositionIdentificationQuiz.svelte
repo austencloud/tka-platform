@@ -140,7 +140,7 @@ Shows hand positions on grid, user identifies the type
     flex-direction: column;
     align-items: center;
     gap: 1.25rem;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--duration-emphasis) ease;
   }
 
   @keyframes fadeIn {

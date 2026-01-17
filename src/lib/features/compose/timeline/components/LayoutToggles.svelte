@@ -55,7 +55,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toggle-btn:hover {

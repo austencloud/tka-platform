@@ -189,7 +189,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     font-size: 0.75rem;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .copy-btn:hover {

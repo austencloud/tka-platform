@@ -184,7 +184,7 @@
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .btn-label {
@@ -216,7 +216,7 @@
   /* Active/pressed state */
   .floating-btn:active {
     transform: translateY(0) scale(0.95);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Sequence button with sequence loaded */

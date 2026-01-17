@@ -211,7 +211,7 @@
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 20px;
-    transition: all 0.25s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .motion-card:hover {
@@ -266,7 +266,7 @@
     height: 100%;
     background: var(--card-accent);
     border-radius: 4px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .intensity-label {
@@ -382,7 +382,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 24px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .pairing-card:hover {

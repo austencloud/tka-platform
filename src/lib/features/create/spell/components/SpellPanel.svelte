@@ -475,7 +475,7 @@ This component orchestrates the UI phases; business logic lives in services.
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .mode-chip:hover {
@@ -509,7 +509,7 @@ This component orchestrates the UI phases; business logic lives in services.
     font-size: var(--font-size-md, 16px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -570,7 +570,7 @@ This component orchestrates the UI phases; business logic lives in services.
     font-size: var(--font-size-md, 16px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -651,7 +651,7 @@ This component orchestrates the UI phases; business logic lives in services.
   .progress-bar {
     height: 100%;
     background: var(--theme-accent, #6366f1);
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-hint {
@@ -669,7 +669,7 @@ This component orchestrates the UI phases; business logic lives in services.
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-button:hover {
@@ -705,7 +705,7 @@ This component orchestrates the UI phases; business logic lives in services.
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button:hover {

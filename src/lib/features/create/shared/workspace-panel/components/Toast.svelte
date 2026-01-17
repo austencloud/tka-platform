@@ -50,7 +50,7 @@ Shows at the bottom center of screen, auto-dismisses after 3 seconds
     border-radius: 8px;
     box-shadow: 0 4px 16px var(--theme-shadow);
     pointer-events: auto;
-    animation: slide-up 0.3s ease-out;
+    animation: slide-up var(--duration-emphasis) ease-out;
     min-width: 280px;
     max-width: 90vw;
   }
@@ -79,7 +79,7 @@ Shows at the bottom center of screen, auto-dismisses after 3 seconds
     cursor: pointer;
     padding: var(--spacing-xs);
     border-radius: 4px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;

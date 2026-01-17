@@ -531,7 +531,7 @@
     border-radius: 8px;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .empty-state .close-btn:hover {

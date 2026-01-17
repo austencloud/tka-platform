@@ -221,7 +221,7 @@
 		border-radius: 8px;
 		overflow: hidden;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-		transition: all 0.2s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.minimap-container.expanded {
@@ -239,7 +239,7 @@
 	}
 
 	.remote-player circle {
-		transition: r 0.15s ease;
+		transition: r var(--duration-fast) ease;
 	}
 
 	.remote-player:hover circle {
@@ -266,7 +266,7 @@
 		justify-content: center;
 		font-size: 10px;
 		opacity: 0.7;
-		transition: opacity 0.15s;
+		transition: opacity var(--duration-fast);
 	}
 
 	.expand-button:hover {

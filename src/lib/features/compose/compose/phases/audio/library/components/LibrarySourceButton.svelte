@@ -32,7 +32,7 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     width: 300px;
     max-width: 100%;
   }

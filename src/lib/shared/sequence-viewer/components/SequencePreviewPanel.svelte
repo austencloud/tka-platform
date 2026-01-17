@@ -350,7 +350,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .icon-btn svg {
@@ -442,7 +442,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .name-edit-btn:hover {
@@ -465,7 +465,7 @@
     color: var(--theme-text, white);
     font-size: var(--font-size-md, 15px);
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .name-input:focus {
@@ -493,7 +493,7 @@
     border-radius: 6px;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .name-action-btn.save {
@@ -583,7 +583,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .action-btn:hover {

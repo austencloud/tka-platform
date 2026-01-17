@@ -65,7 +65,7 @@
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .open-button:hover {

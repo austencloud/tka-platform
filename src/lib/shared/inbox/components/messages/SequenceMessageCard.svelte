@@ -151,7 +151,7 @@
     width: 100%;
     min-width: 200px;
     max-width: 280px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sequence-card.clickable:hover {

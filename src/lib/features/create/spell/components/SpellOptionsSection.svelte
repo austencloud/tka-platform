@@ -105,7 +105,7 @@ Remembers expansion state in localStorage.
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .options-header:hover {
@@ -130,7 +130,7 @@ Remembers expansion state in localStorage.
 
   .expand-icon {
     font-size: var(--font-size-compact);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .expand-icon.rotated {
@@ -141,7 +141,7 @@ Remembers expansion state in localStorage.
   .options-content {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: grid-template-rows var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .options-content.expanded {
@@ -151,7 +151,7 @@ Remembers expansion state in localStorage.
   .options-inner {
     overflow: hidden;
     padding: 0 16px;
-    transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: padding var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .options-content.expanded .options-inner {

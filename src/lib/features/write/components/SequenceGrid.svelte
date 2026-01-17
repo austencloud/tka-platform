@@ -187,7 +187,7 @@
     border-radius: var(--border-radius-lg, 12px);
     overflow: hidden;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 
@@ -214,7 +214,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .sequence-card:hover .sequence-thumbnail img {
@@ -291,7 +291,7 @@
     cursor: pointer;
     font-size: 0.8rem;
     opacity: 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sequence-card:hover .remove-btn {

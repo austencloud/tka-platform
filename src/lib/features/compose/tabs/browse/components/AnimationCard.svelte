@@ -274,7 +274,7 @@ Features:
   @media (hover: none) and (pointer: coarse) {
     .animation-card:active {
       transform: scale(0.98);
-      transition-duration: 0.1s;
+      transition-duration: var(--duration-instant);
     }
   }
 

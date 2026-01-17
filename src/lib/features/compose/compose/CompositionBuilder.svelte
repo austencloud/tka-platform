@@ -302,7 +302,7 @@
   .inline-controls {
     flex-shrink: 0;
     padding: clamp(8px, 2cqi, 16px);
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease;
   }
 
   .inline-controls.playing {

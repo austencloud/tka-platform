@@ -59,7 +59,7 @@
     height: 24px;
     background: rgba(255, 255, 255, 0.15);
     border-radius: 12px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .toggle-switch.checked .toggle-track {
@@ -74,7 +74,7 @@
     height: 20px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
     box-shadow: 0 2px 4px var(--theme-shadow);
   }
 

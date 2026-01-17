@@ -211,7 +211,7 @@
     border-radius: clamp(6px, 1.8cqw, 10px);
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     flex-shrink: 0;
   }
 

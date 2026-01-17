@@ -355,7 +355,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sheet-close-btn:hover {
@@ -444,7 +444,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   /* Blue motion active */
@@ -530,7 +530,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .ends-toggle.active {

@@ -434,7 +434,7 @@
     border-radius: 12px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -499,7 +499,7 @@
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-sm);
     font-family: inherit;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     resize: vertical;
   }
 
@@ -562,7 +562,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     box-shadow: 0 2px 8px var(--theme-shadow);
@@ -609,7 +609,7 @@
   .chip-check {
     margin-left: auto;
     font-size: var(--font-size-sm);
-    animation: checkPop 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: checkPop var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes checkPop {
@@ -655,7 +655,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
   }
 

@@ -48,7 +48,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact, 0.75rem);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     display: flex;
     align-items: center;
     justify-content: center;

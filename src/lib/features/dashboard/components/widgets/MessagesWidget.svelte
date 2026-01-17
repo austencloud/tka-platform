@@ -219,7 +219,7 @@
     font-size: 0.6875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .mark-read-btn:hover {
@@ -281,7 +281,7 @@
     border: 1px solid transparent;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
     min-width: 0;
     width: 100%;
@@ -368,7 +368,7 @@
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 

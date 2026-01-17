@@ -35,7 +35,7 @@ QuizBackButton - Back navigation button for quizzes
     border-radius: 12px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     z-index: 10;
   }
 

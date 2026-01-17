@@ -384,7 +384,7 @@
     overflow: hidden;
     touch-action: none;
     border: 2px solid transparent;
-    transition: border-color 0.15s ease;
+    transition: border-color var(--duration-fast) ease;
   }
 
   .mandala-canvas-container.drag-over {

@@ -182,7 +182,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: clamp(0.625rem, 2.5vw, 1rem);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     overflow: hidden;
     text-align: left;
   }
@@ -193,7 +193,7 @@
     inset: 0;
     background: linear-gradient(135deg, var(--mode-color) 0%, transparent 100%);
     opacity: 0.1;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .composition-card:hover {
@@ -265,7 +265,7 @@
     color: white;
     font-size: clamp(1.5rem, 6vw, 2rem);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     pointer-events: none;
   }
 

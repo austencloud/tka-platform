@@ -271,7 +271,7 @@
 		font-size: var(--font-size-min, 14px);
 		color: var(--theme-text, #ffffff);
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.category-chip:hover {
@@ -307,7 +307,7 @@
 		border-radius: 1rem;
 		overflow: hidden;
 		cursor: pointer;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
 		text-align: left;
 		color: var(--theme-text, #ffffff);
 	}
@@ -338,7 +338,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: opacity 0.3s ease;
+		transition: opacity var(--duration-emphasis) ease;
 	}
 
 	.preview-loading {
@@ -352,7 +352,7 @@
 		font-size: 4rem;
 		color: var(--dest-color, var(--theme-accent, #8b5cf6));
 		opacity: 0.4;
-		transition: all 0.3s ease;
+		transition: all var(--duration-emphasis) ease;
 	}
 
 	/* Badges */
@@ -431,7 +431,7 @@
 		background: var(--dest-color, var(--theme-accent, #8b5cf6));
 		border-radius: 0.5rem;
 		font-weight: 600;
-		transition: all 0.2s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.destination-card:hover .enter-button {
@@ -439,7 +439,7 @@
 	}
 
 	.enter-button i {
-		transition: transform 0.2s ease;
+		transition: transform var(--duration-normal) ease;
 	}
 
 	.destination-card:hover .enter-button i {

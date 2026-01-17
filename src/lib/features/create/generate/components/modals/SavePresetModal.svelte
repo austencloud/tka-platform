@@ -127,7 +127,7 @@ Provides a beautiful, unified experience for creating new presets
       max(16px, env(safe-area-inset-right, 16px))
       max(16px, env(safe-area-inset-bottom, 16px))
       max(16px, env(safe-area-inset-left, 16px));
-    animation: backdrop-appear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: backdrop-appear var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes backdrop-appear {
@@ -154,7 +154,7 @@ Provides a beautiful, unified experience for creating new presets
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: modal-appear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: modal-appear var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     margin: auto;
     flex-shrink: 0;

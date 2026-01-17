@@ -242,7 +242,7 @@ Features:
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     z-index: 10;
   }
 
@@ -433,7 +433,7 @@ Features:
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
   }
 

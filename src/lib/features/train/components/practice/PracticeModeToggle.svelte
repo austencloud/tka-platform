@@ -86,7 +86,7 @@
     border-radius: 0.5rem;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     white-space: nowrap;
   }
 

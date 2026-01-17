@@ -149,7 +149,7 @@
       );
     border-radius: 12px;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
   }
 

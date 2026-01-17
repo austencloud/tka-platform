@@ -83,7 +83,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .sort-order-btn:hover {

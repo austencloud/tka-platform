@@ -410,7 +410,7 @@ ${
     right: 0;
     bottom: 0;
     background-color: var(--theme-stroke-strong);
-    transition: 0.3s;
+    transition: var(--duration-emphasis);
     border-radius: 28px;
   }
 
@@ -422,7 +422,7 @@ ${
     left: 4px;
     bottom: 4px;
     background-color: white;
-    transition: 0.3s;
+    transition: var(--duration-emphasis);
     border-radius: 50%;
   }
 
@@ -472,7 +472,7 @@ ${
     color: var(--theme-text, var(--theme-text));
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     margin-bottom: 1rem;
   }
 
@@ -671,7 +671,7 @@ ${
     font-size: var(--font-size-sm);
     border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .btn:disabled {

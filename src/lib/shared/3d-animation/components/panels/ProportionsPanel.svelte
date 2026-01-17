@@ -229,7 +229,7 @@
     border-radius: 6px;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .preset-btn:hover {
@@ -291,7 +291,7 @@
     font-size: 0.75rem;
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .apply-btn {

@@ -429,7 +429,7 @@
     .footer-birthday,
     .start-position-cell,
     .beat-number-overlay {
-      transition: opacity 0.2s ease;
+      transition: opacity var(--duration-normal) ease;
     }
   }
 </style>

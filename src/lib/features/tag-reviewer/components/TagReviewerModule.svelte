@@ -30,7 +30,6 @@
   let isReady = $state(false);
   let showStartPosition = $state(true);
   let manualColumnCount = $state<number | null>(null);
-  let copiedToast = $state(false);
 
   // Generate tags when current sequence changes
   $effect(() => {
@@ -39,11 +38,11 @@
     }
   });
 
-  // Copy sequence data for AI review
-  function handleCopyForReview() {
+  // Get sequence data formatted for AI review
+  function getCopyDataForReview(): string {
     const seq = tagReviewerState.currentSequence;
     const review = tagReviewerState.currentReview;
-    if (!seq) return;
+    if (!seq) return "";
 
     // Build a comprehensive summary for AI review
     const summary = {
@@ -74,7 +73,7 @@
       steps: seq.fullMetadata?.sequence ?? [],
     };
 
-    const text = `## Tag Review: "${seq.word}"
+    return `## Tag Review: "${seq.word}"
 
 ### Sequence Info
 - **Word:** ${seq.word}
@@ -104,13 +103,6 @@ ${tagReviewerState.notes || "(no notes)"}
 ${JSON.stringify(summary, null, 2)}
 \`\`\`
 `;
-
-    navigator.clipboard.writeText(text).then(() => {
-      copiedToast = true;
-      setTimeout(() => {
-        copiedToast = false;
-      }, 2000);
-    });
   }
 
   onMount(() => {
@@ -257,8 +249,7 @@ ${JSON.stringify(summary, null, 2)}
             {manualColumnCount}
             onShowStartPositionChange={(val) => (showStartPosition = val)}
             onColumnCountChange={(val) => (manualColumnCount = val)}
-            onCopyJson={handleCopyForReview}
-            {copiedToast}
+            getCopyData={getCopyDataForReview}
           />
 
           <!-- Tag panel -->

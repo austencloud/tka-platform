@@ -81,7 +81,7 @@
     font-weight: 500;
     font-size: var(--fb-text-xs);
     opacity: 0.7;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .delete-btn:hover {
@@ -120,7 +120,7 @@
     color: var(--fb-text);
     cursor: pointer;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn:hover {
@@ -140,7 +140,7 @@
     color: white;
     cursor: pointer;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .delete-confirm-btn:hover:not(:disabled) {

@@ -172,16 +172,16 @@ Optimized for mobile performance with CSS-only animations.
     animation-delay: 0ms;
   }
   .skeleton-thumbnail:nth-child(2) {
-    animation-delay: 100ms;
+    animation-delay: var(--duration-instant);
   }
   .skeleton-thumbnail:nth-child(3) {
-    animation-delay: 200ms;
+    animation-delay: var(--duration-normal);
   }
   .skeleton-thumbnail:nth-child(4) {
-    animation-delay: 300ms;
+    animation-delay: var(--duration-emphasis);
   }
   .skeleton-thumbnail:nth-child(5) {
-    animation-delay: 400ms;
+    animation-delay: var(--duration-dramatic);
   }
   .skeleton-thumbnail:nth-child(6) {
     animation-delay: 500ms;

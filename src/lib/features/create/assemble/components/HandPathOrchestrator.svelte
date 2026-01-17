@@ -724,7 +724,7 @@ Integrates all Assembly components and manages state transitions.
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: build-phases-entrance 280ms cubic-bezier(0.33, 1, 0.68, 1) both;
+    animation: build-phases-entrance var(--duration-emphasis) cubic-bezier(0.33, 1, 0.68, 1) both;
   }
 
   @keyframes build-phases-entrance {
@@ -740,7 +740,7 @@ Integrates all Assembly components and manages state transitions.
 
   /* Exit animation when undoing back to welcome */
   .build-phases.exiting {
-    animation: build-phases-exit 280ms cubic-bezier(0.33, 1, 0.68, 1) both;
+    animation: build-phases-exit var(--duration-emphasis) cubic-bezier(0.33, 1, 0.68, 1) both;
   }
 
   @keyframes build-phases-exit {
@@ -760,7 +760,7 @@ Integrates all Assembly components and manages state transitions.
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: welcome-entrance 280ms cubic-bezier(0.33, 1, 0.68, 1) both;
+    animation: welcome-entrance var(--duration-emphasis) cubic-bezier(0.33, 1, 0.68, 1) both;
   }
 
   @keyframes welcome-entrance {

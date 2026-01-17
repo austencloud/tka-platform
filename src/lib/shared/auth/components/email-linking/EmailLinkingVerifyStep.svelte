@@ -194,7 +194,7 @@
       var(--theme-accent-strong, var(--theme-accent-strong))
     );
     border-radius: 2px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .resend-section {
@@ -221,7 +221,7 @@
     color: color-mix(in srgb, var(--theme-text, white) 80%, transparent);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .resend-btn:hover:not(:disabled) {
@@ -271,7 +271,7 @@
     cursor: pointer;
     text-decoration: underline;
     text-underline-offset: 3px;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .skip-btn:hover {

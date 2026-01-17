@@ -89,7 +89,7 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim, var(--theme-text-dim));
     text-decoration: none;
-    transition: all var(--transition-fast, 150ms ease);
+    transition: all var(--transition-fast, var(--duration-fast) ease);
   }
 
   a.trust-badge:hover {

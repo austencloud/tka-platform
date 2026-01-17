@@ -35,6 +35,7 @@ Usage:
   import ElementalGlyph from "./ElementalGlyph.svelte";
   import PositionGlyph from "./PositionGlyph.svelte";
   import StepNumber from "./StepNumber.svelte";
+  import BeatPositionGlyph from "./BeatPositionGlyph.svelte";
   import { container } from "$lib/shared/di";
   import type { IGridModeDeriver } from "../../grid/services/contracts/IGridModeDeriver";
   import type { ITurnsTupleGenerator } from "../../arrow/positioning/placement/services/contracts/ITurnsTupleGenerator";
@@ -63,6 +64,8 @@ Usage:
     stepNumber = null,
     showStepNumber = false,
     musicalPosition = undefined,
+    // Beat position glyph (musical timeline position at bottom-center)
+    showBeatPosition = true,
     previewMode = false,
     // Grid mode override (if provided, takes precedence over calculated mode)
     gridModeOverride = null,
@@ -83,6 +86,9 @@ Usage:
     onTogglePositions = undefined,
     onToggleReversals = undefined,
     onToggleNonRadial = undefined,
+    onToggleBeatPosition = undefined,
+    // Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox)
+    widthMultiplier = 1,
   } = $props<{
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
@@ -101,6 +107,10 @@ Usage:
     activeLocations?: GridLocation[];
     stepNumber?: number | null;
     showStepNumber?: boolean;
+    /** Musical position string (e.g., "1", "1.5", "2e") for beat position display */
+    musicalPosition?: string;
+    /** Show beat position glyph at bottom-center (musical timeline position) */
+    showBeatPosition?: boolean;
     previewMode?: boolean;
     gridModeOverride?: GridMode | null;
     visibleHand?: "blue" | "red" | null;
@@ -116,7 +126,17 @@ Usage:
     onTogglePositions?: () => void;
     onToggleReversals?: () => void;
     onToggleNonRadial?: () => void;
+    onToggleBeatPosition?: () => void;
+    /** Width multiplier for expanded timeline cells (1 = normal square, >1 = wider viewBox) */
+    widthMultiplier?: number;
   }>();
+
+  // Expanded viewBox calculations
+  const BASE_SIZE = 950;
+  const expandedWidth = $derived(BASE_SIZE * widthMultiplier);
+  const isExpanded = $derived(widthMultiplier > 1);
+  // Offset to center the core 950x950 content in the expanded viewBox
+  const coreContentOffset = $derived((expandedWidth - BASE_SIZE) / 2);
 
   // Derived beat context
   const isStartPosition = $derived(stepNumber === 0);
@@ -233,151 +253,167 @@ Usage:
   <svg
     width="100%"
     height="100%"
-    viewBox="0 0 950 950"
+    viewBox="0 0 {expandedWidth} {BASE_SIZE}"
+    preserveAspectRatio="xMidYMid meet"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
     aria-label="Pictograph"
     style="pointer-events: none;"
   >
-    <!-- Background - uses prop override if set, otherwise CSS variable for dark mode support -->
-    <!-- pointer-events="none" ensures clicks can pass through to interactive elements like arrows -->
-    <rect width="950" height="950" fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "white" : "var(--dm-pictograph-bg)"} pointer-events="none" />
+    <!-- Background - fills entire expanded viewBox -->
+    <rect width={expandedWidth} height={BASE_SIZE} fill={darkMode === true ? "#0a0a0f" : darkMode === false ? "white" : "var(--dm-pictograph-bg)"} pointer-events="none" />
 
-    <!-- Grid -->
-    {#if showGrid || previewMode}
-      <GridSvg
-        {gridMode}
-        {showNonRadialPoints}
-        {handPointVisibility}
-        {activeLocations}
-        {previewMode}
-        {darkMode}
-        visible={showGrid}
-        onLoaded={() => {}}
-        onError={() => {}}
-        {onToggleNonRadial}
-      />
-    {/if}
-
-    <!-- Props -->
-    {#each motions as { color, data } (color)}
-      {#if propAssets[color] && propPositions[color]}
-        <PropSvg
-          motionData={data}
-          propAssets={propAssets[color]}
-          propPosition={propPositions[color]}
-          showProp={true}
-          isClickable={propsClickable}
-          isSelected={selectedPropHand === color}
-          onPropClick={propsClickable && onPropClick
-            ? () => onPropClick(color)
-            : undefined}
+    <!-- Core content (grid, props, arrows) - centered in expanded viewBox -->
+    <g transform="translate({coreContentOffset}, 0)">
+      <!-- Grid -->
+      {#if showGrid || previewMode}
+        <GridSvg
+          {gridMode}
+          {showNonRadialPoints}
+          {handPointVisibility}
+          {activeLocations}
+          {previewMode}
+          {darkMode}
+          visible={showGrid}
+          onLoaded={() => {}}
+          onError={() => {}}
+          {onToggleNonRadial}
         />
       {/if}
-    {/each}
 
-    <!-- Arrows -->
-    {#each motions as { color, data } (color)}
-      {#if arrowAssets[color] && arrowPositions[color]}
-        <ArrowSvg
-          motionData={data}
-          {color}
+      <!-- Props -->
+      {#each motions as { color, data } (color)}
+        {#if propAssets[color] && propPositions[color]}
+          <PropSvg
+            motionData={data}
+            propAssets={propAssets[color]}
+            propPosition={propPositions[color]}
+            showProp={true}
+            isClickable={propsClickable}
+            isSelected={selectedPropHand === color}
+            onPropClick={propsClickable && onPropClick
+              ? () => onPropClick(color)
+              : undefined}
+          />
+        {/if}
+      {/each}
+
+      <!-- Arrows -->
+      {#each motions as { color, data } (color)}
+        {#if arrowAssets[color] && arrowPositions[color]}
+          <ArrowSvg
+            motionData={data}
+            {color}
+            pictographData={pictograph}
+            arrowAssets={arrowAssets[color]}
+            arrowPosition={arrowPositions[color]}
+            shouldMirror={arrowMirroring[color] || false}
+            showArrow={true}
+            isClickable={arrowsClickable}
+          />
+        {/if}
+      {/each}
+    </g>
+
+    <!-- Corner glyphs - positioned at edges of expanded viewBox -->
+      <!-- TKA Glyph -->
+      {#if pictograph.letter}
+        <TKAGlyph
+          letter={pictograph.letter}
           pictographData={pictograph}
-          arrowAssets={arrowAssets[color]}
-          arrowPosition={arrowPositions[color]}
-          shouldMirror={arrowMirroring[color] || false}
-          showArrow={true}
-          isClickable={arrowsClickable}
+          visible={showTKA}
+          {previewMode}
+          {darkMode}
+          onToggle={onToggleTKA}
         />
       {/if}
-    {/each}
 
-    <!-- TKA Glyph -->
-    {#if pictograph.letter}
-      <TKAGlyph
+      <!-- Turns Column (part of TKA) -->
+      <TurnsColumn
+        {turnsTuple}
         letter={pictograph.letter}
         pictographData={pictograph}
         visible={showTKA}
         {previewMode}
-        {darkMode}
+        standalone={false}
         onToggle={onToggleTKA}
       />
-    {/if}
 
-    <!-- Turns Column (part of TKA) -->
-    <TurnsColumn
-      {turnsTuple}
-      letter={pictograph.letter}
-      pictographData={pictograph}
-      visible={showTKA}
-      {previewMode}
-      standalone={false}
-      onToggle={onToggleTKA}
-    />
+      <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
+      <!-- NOTE: letterDimensions is already the base letter dimensions for dash letters -->
+      {#if pictograph.letter}
+        <DirectionDot
+          direction={parsedDirection}
+          letter={pictograph.letter}
+          {letterDimensions}
+          visible={showTKA}
+          {previewMode}
+          {darkMode}
+        />
+      {/if}
 
-    <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
-    <!-- NOTE: letterDimensions is already the base letter dimensions for dash letters -->
-    {#if pictograph.letter}
-      <DirectionDot
-        direction={parsedDirection}
-        letter={pictograph.letter}
-        {letterDimensions}
-        visible={showTKA}
-        {previewMode}
+      <!-- Beat number overlay -->
+      <StepNumber
+        {stepNumber}
+        showStepNumber={shouldShowBeatNumber}
+        {isStartPosition}
+        {hasValidData}
         {darkMode}
       />
-    {/if}
 
-    <!-- Beat number overlay -->
-    <StepNumber
-      {stepNumber}
-      showStepNumber={shouldShowBeatNumber}
-      {isStartPosition}
-      {hasValidData}
-      {darkMode}
-      {musicalPosition}
-    />
+      <!-- Beat position glyph (musical timeline position at bottom-center) -->
+      {#if !isStartPosition && musicalPosition}
+        <BeatPositionGlyph
+          {musicalPosition}
+          visible={showBeatPosition}
+          {previewMode}
+          {hasValidData}
+          {darkMode}
+          onToggle={onToggleBeatPosition}
+          centerX={expandedWidth / 2}
+        />
+      {/if}
 
-    <!-- Reversal indicators -->
-    <ReversalIndicators
-      {blueReversal}
-      {redReversal}
-      {hasValidData}
-      visible={showReversals}
-      {previewMode}
-      onToggle={onToggleReversals}
-    />
+      <!-- Reversal indicators -->
+      <ReversalIndicators
+        {blueReversal}
+        {redReversal}
+        {hasValidData}
+        visible={showReversals}
+        {previewMode}
+        onToggle={onToggleReversals}
+      />
 
-    <!-- Elemental glyph -->
-    <ElementalGlyph
-      elementalType={vtgInfo.elementalType}
-      letter={pictograph.letter}
-      {hasValidData}
-      visible={showElemental}
-      {previewMode}
-      onToggle={onToggleElemental}
-    />
+      <!-- Elemental glyph -->
+      <ElementalGlyph
+        elementalType={vtgInfo.elementalType}
+        letter={pictograph.letter}
+        {hasValidData}
+        visible={showElemental}
+        {previewMode}
+        onToggle={onToggleElemental}
+      />
 
-    <!-- VTG glyph -->
-    <VTGGlyph
-      vtgMode={vtgInfo.vtgMode}
-      letter={pictograph.letter}
-      {hasValidData}
-      visible={showVTG}
-      {previewMode}
-      onToggle={onToggleVTG}
-    />
+      <!-- VTG glyph -->
+      <VTGGlyph
+        vtgMode={vtgInfo.vtgMode}
+        letter={pictograph.letter}
+        {hasValidData}
+        visible={showVTG}
+        {previewMode}
+        onToggle={onToggleVTG}
+      />
 
-    <!-- Position glyph -->
-    <PositionGlyph
-      startPosition={pictograph.startPosition}
-      endPosition={pictograph.endPosition}
-      letter={pictograph.letter}
-      {hasValidData}
-      visible={showPositions}
-      {previewMode}
-      onToggle={onTogglePositions}
-    />
+      <!-- Position glyph -->
+      <PositionGlyph
+        startPosition={pictograph.startPosition}
+        endPosition={pictograph.endPosition}
+        letter={pictograph.letter}
+        {hasValidData}
+        visible={showPositions}
+        {previewMode}
+        onToggle={onTogglePositions}
+      />
   </svg>
 </div>
 
@@ -387,7 +423,7 @@ Usage:
     height: 100%;
     display: block;
     box-sizing: border-box;
-    transition: border-color 150ms ease-out;
+    transition: border-color var(--duration-fast) ease-out;
     /* Allow pointer events to pass through to interactive SVG elements */
     pointer-events: none;
   }
@@ -403,6 +439,6 @@ Usage:
 
   /* Animate SVG background fill changes */
   svg rect:first-child {
-    transition: fill 150ms ease-out;
+    transition: fill var(--duration-fast) ease-out;
   }
 </style>

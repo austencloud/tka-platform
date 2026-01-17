@@ -117,7 +117,7 @@
     color: var(--theme-text);
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .toggle-btn:hover {
@@ -152,7 +152,7 @@
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     z-index: 100;
-    animation: popoverIn 0.15s ease-out;
+    animation: popoverIn var(--duration-fast) ease-out;
   }
 
   @keyframes popoverIn {

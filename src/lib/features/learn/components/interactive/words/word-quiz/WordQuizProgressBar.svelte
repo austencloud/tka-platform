@@ -46,7 +46,7 @@ WordQuizProgressBar - Progress indicator for word building quiz
     height: 100%;
     background: linear-gradient(90deg, #a855f7, #ec4899);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .progress-text {

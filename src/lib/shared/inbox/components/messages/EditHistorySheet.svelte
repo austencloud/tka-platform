@@ -99,7 +99,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    animation: slide-up 0.2s ease-out;
+    animation: slide-up var(--duration-normal) ease-out;
   }
 
   @keyframes slide-up {
@@ -137,7 +137,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
     border-radius: 8px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-button:hover {
@@ -220,7 +220,7 @@
       max-height: 60vh;
       border-radius: 16px;
       border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-      animation: fade-scale-in 0.2s ease-out;
+      animation: fade-scale-in var(--duration-normal) ease-out;
     }
 
     @keyframes fade-scale-in {

@@ -374,7 +374,7 @@
   .progress-fill {
     height: 100%;
     background: var(--theme-accent-strong, #8b5cf6);
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   /* Skip button */
@@ -389,7 +389,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .skip-button:hover {
@@ -450,7 +450,7 @@
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(255, 255, 255, 0.15);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     padding: 0;
     color: rgba(255, 255, 255, 0.4);
     font-size: 0.9rem;

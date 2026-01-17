@@ -165,7 +165,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .fold-chip:hover {
@@ -196,7 +196,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .mirror-chip:hover {
@@ -243,7 +243,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .toggle-button:hover {

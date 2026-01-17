@@ -166,7 +166,7 @@
     font-weight: 500;
     color: var(--theme-text);
     margin-bottom: 8px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .input-wrapper {
@@ -183,7 +183,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .input-with-toggle {
@@ -203,7 +203,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toggle-visibility:hover {
@@ -280,7 +280,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: none;
     margin-top: 8px;
   }

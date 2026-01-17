@@ -111,7 +111,7 @@ Based on legacy vtg_glyph.py and vtg_glyph_renderer.py implementations.
   .vtg-glyph {
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .vtg-glyph.visible {

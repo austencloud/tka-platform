@@ -251,7 +251,7 @@ Responsive behavior:
     font-weight: 590; /* SF Pro semibold */
     letter-spacing: -0.2px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
     backdrop-filter: blur(12px);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -276,7 +276,7 @@ Responsive behavior:
   .chevron-icon {
     font-size: var(--font-size-compact);
     opacity: 0.75;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   /* Dropdown Menu - Modern 2026 style */
@@ -294,7 +294,7 @@ Responsive behavior:
       0 2px 8px var(--theme-shadow);
     z-index: 10000;
     overflow: hidden;
-    animation: slideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideDown var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideDown {
@@ -336,7 +336,7 @@ Responsive behavior:
     font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -405,7 +405,7 @@ Responsive behavior:
     font-size: 1.1rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 

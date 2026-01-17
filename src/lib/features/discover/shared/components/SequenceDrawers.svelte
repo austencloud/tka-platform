@@ -397,7 +397,7 @@
     );
     border-radius: 2px;
     opacity: 0.6;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   :global(.detail-drawer.drawer-content[data-placement="right"]:hover::before) {
@@ -488,7 +488,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   :global(.drawer-content) .drawer-close-btn:hover {
@@ -549,7 +549,7 @@
     );
     border-radius: 2px;
     opacity: 0.6;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   :global(

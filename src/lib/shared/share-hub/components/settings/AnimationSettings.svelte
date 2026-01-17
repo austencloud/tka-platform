@@ -188,7 +188,7 @@
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 2px 8px var(--theme-shadow);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .slider::-webkit-slider-thumb:hover {
@@ -208,7 +208,7 @@
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 2px 8px var(--theme-shadow);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .slider::-moz-range-thumb:hover {
@@ -274,7 +274,7 @@
     border: 2px solid var(--theme-stroke);
     border-radius: 14px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
     flex-shrink: 0;
   }
 
@@ -300,7 +300,7 @@
     height: 20px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.3s ease;
+    transition: transform var(--duration-emphasis) ease;
     box-shadow: 0 2px 4px var(--theme-shadow);
   }
 

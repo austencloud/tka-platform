@@ -64,7 +64,7 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
     width: 100%;
     color: var(--theme-text, white);
@@ -99,7 +99,7 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
     padding: 4px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.4);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border-radius: 4px;
     display: flex;
     align-items: center;

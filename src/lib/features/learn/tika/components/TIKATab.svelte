@@ -200,7 +200,7 @@
     flex: 1;
     gap: 0;
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   /* Default: 60% conversation, 40% reference */
@@ -210,7 +210,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: flex 0.3s ease;
+    transition: flex var(--duration-emphasis) ease;
   }
 
   /* With context: 55% conversation, 45% context */
@@ -276,7 +276,7 @@
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
     border-radius: 6px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .mode-btn:hover {

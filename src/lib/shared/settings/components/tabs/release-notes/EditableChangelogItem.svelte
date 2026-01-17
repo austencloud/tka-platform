@@ -339,7 +339,7 @@
     font-size: var(--font-size-compact);
     cursor: pointer;
     border-radius: 8px;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -431,7 +431,7 @@
     font-weight: 500;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .glass-btn.flex-2 {

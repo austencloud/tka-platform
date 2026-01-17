@@ -217,7 +217,7 @@
     border: 1px solid rgba(6, 182, 212, 0.3);
     color: #06b6d4;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 

@@ -258,7 +258,7 @@
     border-radius: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     z-index: 100;
-    animation: bar-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: bar-pop var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   }
 
   .reaction-bar.own {
@@ -306,10 +306,10 @@
     background: transparent;
     cursor: pointer;
     border-radius: 50%;
-    transition: transform 0.15s ease;
+    transition: transform var(--duration-fast) ease;
     padding: 0;
     opacity: 0;
-    animation: emoji-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: emoji-pop var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     animation-delay: var(--delay);
   }
 
@@ -346,7 +346,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     border-radius: 50%;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-size: var(--font-size-sm, 14px);
     padding: 0;
   }
@@ -367,7 +367,7 @@
     background: var(--theme-panel-bg, rgba(30, 30, 40, 0.98));
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    animation: menu-slide 0.15s ease-out;
+    animation: menu-slide var(--duration-fast) ease-out;
     z-index: 101;
   }
 

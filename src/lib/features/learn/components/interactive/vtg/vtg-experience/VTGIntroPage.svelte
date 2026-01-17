@@ -51,7 +51,7 @@ VTGIntroPage - Introduction page explaining VTG fundamentals
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideInUp {
@@ -116,7 +116,7 @@ VTGIntroPage - Introduction page explaining VTG fundamentals
     font-size: 1.0625rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: 54px;
     margin-top: 0.5rem;
   }

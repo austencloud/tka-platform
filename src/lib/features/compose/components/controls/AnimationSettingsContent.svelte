@@ -197,7 +197,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .visibility-toggle.blue.active {

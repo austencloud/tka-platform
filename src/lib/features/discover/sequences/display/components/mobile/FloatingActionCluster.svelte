@@ -100,7 +100,7 @@
     border-radius: 50%;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 4px 20px var(--theme-shadow);
   }
 

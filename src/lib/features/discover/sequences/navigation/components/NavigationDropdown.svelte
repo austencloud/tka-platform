@@ -329,7 +329,7 @@ Responsive behavior:
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 
@@ -350,7 +350,7 @@ Responsive behavior:
   .chevron-icon {
     font-size: 0.75rem;
     opacity: 0.7;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   /* Dropdown Menu */
@@ -367,7 +367,7 @@ Responsive behavior:
     box-shadow: 0 8px 32px var(--theme-shadow);
     z-index: 10000;
     overflow: hidden;
-    animation: slideDown 0.2s ease;
+    animation: slideDown var(--duration-normal) ease;
   }
 
   @keyframes slideDown {
@@ -421,7 +421,7 @@ Responsive behavior:
     font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -487,7 +487,7 @@ Responsive behavior:
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: center;
   }
 
@@ -561,7 +561,7 @@ Responsive behavior:
     font-size: 1.1rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -613,7 +613,7 @@ Responsive behavior:
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: center;
   }
 

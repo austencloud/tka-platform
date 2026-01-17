@@ -113,7 +113,7 @@
     border: 2px solid transparent;
     padding: 0;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     background: transparent;
   }
 
@@ -159,7 +159,7 @@
     box-shadow: 0 10px 25px var(--theme-shadow, var(--theme-shadow));
     z-index: 50;
     overflow: hidden;
-    animation: slideIn 0.2s ease;
+    animation: slideIn var(--duration-normal) ease;
   }
 
   @keyframes slideIn {
@@ -206,7 +206,7 @@
     color: var(--semantic-error, var(--semantic-error));
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;

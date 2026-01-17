@@ -62,7 +62,7 @@ WordStepNavigation - Beat navigation dots for letter sequence
     border: 2px solid var(--theme-stroke-strong);
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     color: var(--theme-text-dim);
     font-size: 0.75rem;
     font-weight: 600;

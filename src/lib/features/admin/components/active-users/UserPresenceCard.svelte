@@ -177,7 +177,7 @@
       var(--card-accent-light) 100%
     );
     border-radius: 50%;
-    transition: background 0.3s ease;
+    transition: background var(--duration-emphasis) ease;
   }
 
   .avatar-ring :global(.robust-avatar) {
@@ -271,7 +271,7 @@
     background: color-mix(in srgb, var(--card-accent) 15%, transparent);
     color: var(--card-accent);
     font-size: var(--font-size-compact);
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .user-card:hover .device-badge {

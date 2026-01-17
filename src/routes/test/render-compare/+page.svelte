@@ -904,7 +904,7 @@
   .progress-fill {
     height: 100%;
     background: #51cf66;
-    transition: width 0.2s ease;
+    transition: width var(--duration-normal) ease;
   }
 
   .status {

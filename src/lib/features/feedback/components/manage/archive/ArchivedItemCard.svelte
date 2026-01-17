@@ -80,7 +80,7 @@
     border-radius: 12px;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .feedback-item-card:hover {
@@ -99,7 +99,7 @@
       transparent
     );
     font-size: var(--font-size-compact);
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal);
   }
 
   .feedback-item-card:hover .item-arrow {

@@ -106,7 +106,7 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.5));
     cursor: pointer;
     text-align: left;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .preset-button:hover {

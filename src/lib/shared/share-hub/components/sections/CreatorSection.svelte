@@ -60,7 +60,7 @@
     border-radius: var(--radius-2026-md, 14px);
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     width: 100%;
     font: inherit;
   }

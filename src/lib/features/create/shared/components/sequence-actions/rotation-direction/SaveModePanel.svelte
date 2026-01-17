@@ -206,7 +206,7 @@
     color: white;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .save-btn:hover:not(:disabled) {

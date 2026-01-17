@@ -314,7 +314,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -356,7 +356,7 @@
     border-radius: 10px;
     color: #fff;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .select-sequence-btn:hover {
@@ -398,7 +398,7 @@
     border-radius: 10px;
     color: #fff;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -458,7 +458,7 @@
     border-radius: 6px;
     font-size: 0.7rem;
     opacity: 0.7;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .selected-sequence-card:hover .change-sequence {
@@ -490,7 +490,7 @@
     border-radius: 6px;
     color: #fff;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .form-group input:focus,
@@ -528,7 +528,7 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 0.95rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn {
@@ -577,7 +577,7 @@
       width: 100%;
       max-width: 400px;
       transform: translateX(100%);
-      transition: transform 0.3s ease;
+      transition: transform var(--duration-emphasis) ease;
       z-index: 100;
       border-radius: 0;
     }

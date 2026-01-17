@@ -77,7 +77,7 @@
     background: transparent;
     color: var(--theme-text, #ffffff);
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .section-header:hover {
@@ -119,7 +119,7 @@
   .chevron {
     font-size: 12px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .collapsible-section.open .chevron {

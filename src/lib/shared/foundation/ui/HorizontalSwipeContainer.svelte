@@ -388,7 +388,7 @@
     color: rgba(255, 255, 255, 0.8);
 
     /* Smooth transitions matching app design system */
-    transition: all var(--transition-normal, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
 
     /* Ensure opacity stays at 1 and doesn't inherit transition effects */
     opacity: 1 !important;
@@ -404,7 +404,7 @@
 
   .embla__button:active:not(:disabled) {
     transform: translateY(-50%) scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .embla__button:focus-visible {

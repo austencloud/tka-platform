@@ -24,7 +24,7 @@
     gap: 12px;
     padding: 12px;
     border-radius: 10px;
-    animation: toastIn 0.3s ease;
+    animation: toastIn var(--duration-emphasis) ease;
   }
 
   @keyframes toastIn {

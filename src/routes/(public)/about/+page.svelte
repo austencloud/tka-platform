@@ -223,7 +223,7 @@
     border: 1px solid var(--border);
     border-radius: 100px;
     margin-bottom: 2rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-link:hover {
@@ -285,7 +285,7 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 2rem;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .section-card:hover {
@@ -372,7 +372,7 @@
     border-radius: 12px;
     font-weight: 600;
     font-size: 1.125rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cta-button:hover {
@@ -382,7 +382,7 @@
   }
 
   .cta-button i {
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .cta-button:hover i {

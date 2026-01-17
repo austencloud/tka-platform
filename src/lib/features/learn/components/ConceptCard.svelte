@@ -95,7 +95,7 @@ Displays:
     border-radius: 10px;
     position: relative;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     width: 100%;
     text-align: center;
     cursor: pointer;

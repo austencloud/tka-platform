@@ -172,7 +172,7 @@
 		font-size: var(--font-size-min, 14px);
 		font-weight: 600;
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: all var(--duration-normal) ease;
 	}
 
 	.back-button:hover {
@@ -195,7 +195,7 @@
 		border-radius: 0.5rem;
 		font-size: var(--font-size-compact, 12px);
 		opacity: 0.7;
-		transition: opacity 0.2s ease;
+		transition: opacity var(--duration-normal) ease;
 		pointer-events: none;
 	}
 

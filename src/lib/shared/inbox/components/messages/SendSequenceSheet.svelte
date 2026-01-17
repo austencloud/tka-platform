@@ -395,7 +395,7 @@
     justify-content: center;
     background: color-mix(in srgb, var(--semantic-success) 20%, transparent);
     border-radius: 50%;
-    animation: scaleIn 0.3s ease-out;
+    animation: scaleIn var(--duration-emphasis) ease-out;
   }
 
   .success-icon i {
@@ -544,7 +544,7 @@
     font-size: var(--font-size-sm);
     font-family: inherit;
     resize: none;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .message-input::placeholder {
@@ -678,7 +678,7 @@
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .suggestion-row:hover {
@@ -706,7 +706,7 @@
   .suggestion-arrow {
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim);
-    transition: transform 0.2s ease, color 0.2s ease;
+    transition: transform var(--duration-normal) ease, color var(--duration-normal) ease;
   }
 
   .suggestion-row:hover .suggestion-arrow {

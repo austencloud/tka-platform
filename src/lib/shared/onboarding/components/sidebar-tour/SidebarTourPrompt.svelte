@@ -82,7 +82,7 @@
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn var(--duration-normal) ease-out;
   }
 
   .tour-prompt-modal {
@@ -93,7 +93,7 @@
     max-width: 400px;
     width: 90%;
     text-align: center;
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp var(--duration-emphasis) ease-out;
   }
 
   .tour-icon {
@@ -139,7 +139,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border: none;
   }
 

@@ -287,7 +287,7 @@
         .settings-portal-exit
       )::view-transition-old(root)
   ) {
-    animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both zoom-out-fade;
+    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both zoom-out-fade;
     transform-origin: var(--transition-origin-x, 50%)
       var(--transition-origin-y, 50%);
   }
@@ -299,7 +299,7 @@
         .settings-portal-exit
       )::view-transition-new(root)
   ) {
-    animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both zoom-in-reveal;
+    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both zoom-in-reveal;
     transform-origin: var(--transition-origin-x, 50%)
       var(--transition-origin-y, 50%);
   }
@@ -334,11 +334,11 @@
 
   /* When going back to dashboard, reverse the effect */
   :global(.back-transition)::view-transition-old(root) {
-    animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both pull-out-old;
+    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both pull-out-old;
   }
 
   :global(.back-transition)::view-transition-new(root) {
-    animation: 350ms cubic-bezier(0.4, 0, 0.2, 1) both pull-out-new;
+    animation: var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1) both pull-out-new;
   }
 
   /* Module shrinks as we pull back from it */
@@ -381,7 +381,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     opacity: 0;
-    transition: opacity 300ms ease;
+    transition: opacity var(--duration-emphasis) ease;
     display: flex;
     flex-direction: column;
     gap: 24px;

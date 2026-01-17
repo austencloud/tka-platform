@@ -8,12 +8,12 @@ Displays:
 - Close button
 -->
 <script lang="ts">
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
+
   interface Props {
     title?: string;
     isExpanded?: boolean;
-    isCopying?: boolean;
-    justCopied?: boolean;
-    onCopyForClaude?: () => void;
+    getCopyData?: () => string | Promise<string>;
     onCollapse?: () => void;
     onClose?: () => void;
   }
@@ -21,9 +21,7 @@ Displays:
   const {
     title = "Sequence Details",
     isExpanded = false,
-    isCopying = false,
-    justCopied = false,
-    onCopyForClaude = () => {},
+    getCopyData,
     onCollapse = () => {},
     onClose = () => {},
   }: Props = $props();
@@ -33,30 +31,15 @@ Displays:
   <span class="header-title">{title}</span>
   <div class="header-buttons">
     <!-- Copy for Claude Code button -->
-    <button
-      class="header-btn copy-btn"
-      class:copied={justCopied}
-      class:loading={isCopying}
-      onclick={onCopyForClaude}
-      disabled={isCopying}
-      aria-label="Copy for Claude Code"
-      title="Copy sequence data for AI analysis"
-    >
-      {#if isCopying}
-        <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle>
-        </svg>
-      {:else if justCopied}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-      {:else}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="4 17 10 11 4 5"></polyline>
-          <line x1="12" y1="19" x2="20" y2="19"></line>
-        </svg>
-      {/if}
-    </button>
+    {#if getCopyData}
+      <CopyForAIButton
+        getData={getCopyData}
+        ariaLabel="Copy for Claude Code"
+        variant="icon-only"
+        size="md"
+        class="header-btn"
+      />
+    {/if}
 
     {#if isExpanded}
       <button
@@ -123,7 +106,7 @@ Displays:
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -154,7 +137,7 @@ Displays:
     border-radius: 50%;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -185,7 +168,7 @@ Displays:
     border-radius: 50%;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -202,37 +185,6 @@ Displays:
 
   .header-btn:active {
     transform: scale(0.95);
-  }
-
-  /* Copy button - terminal/code icon style */
-  .copy-btn:hover {
-    border-color: var(--semantic-info, #3b82f6);
-    color: var(--semantic-info, #3b82f6);
-  }
-
-  .copy-btn.copied {
-    background: var(--semantic-success, #22c55e);
-    border-color: var(--semantic-success, #22c55e);
-    color: white;
-  }
-
-  .copy-btn.loading {
-    border-color: var(--semantic-info, #3b82f6);
-    color: var(--semantic-info, #3b82f6);
-    cursor: wait;
-  }
-
-  .copy-btn .spinner {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   /* Reduced motion */

@@ -37,7 +37,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .filter-section-header:hover {
@@ -73,7 +73,7 @@
     margin-left: auto;
     font-size: 0.75em;
     color: var(--theme-text-dim);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .section-chevron.rotated {

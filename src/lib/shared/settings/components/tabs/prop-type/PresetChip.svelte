@@ -144,7 +144,7 @@
     border: 2px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
@@ -211,7 +211,7 @@
     justify-content: center;
     z-index: 2;
     opacity: 0.8;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .preset-chip:hover .keyboard-badge {
@@ -247,7 +247,7 @@
   .empty-icon {
     font-size: 18px;
     color: var(--theme-text-dim);
-    transition: color 0.15s ease;
+    transition: color var(--duration-fast) ease;
   }
 
   .preset-chip.empty:hover .empty-icon {

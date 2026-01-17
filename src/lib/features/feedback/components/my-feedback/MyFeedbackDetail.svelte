@@ -502,7 +502,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 8px var(--theme-shadow);
   }
 
@@ -800,7 +800,7 @@
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .screenshot-btn:hover {
@@ -826,7 +826,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.5);
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .screenshot-btn:hover .screenshot-overlay {
@@ -874,7 +874,7 @@
   .delete-confirm-dialog::backdrop {
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
-    animation: fadeIn 0.15s ease;
+    animation: fadeIn var(--duration-fast) ease;
   }
 
   @keyframes fadeIn {
@@ -899,7 +899,7 @@
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     text-align: center;
-    animation: slideUp 0.2s ease;
+    animation: slideUp var(--duration-normal) ease;
   }
 
   @keyframes slideUp {
@@ -952,7 +952,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn {

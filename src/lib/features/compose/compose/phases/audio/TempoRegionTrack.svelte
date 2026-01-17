@@ -310,7 +310,7 @@
     color: rgba(167, 139, 250, 0.95);
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .add-btn:hover:not(:disabled) {
@@ -359,7 +359,7 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-width: 30px;
   }
 
@@ -397,7 +397,7 @@
     font-size: 0.55rem;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .tempo-region:hover .region-delete {
@@ -487,7 +487,7 @@
     color: rgba(34, 197, 94, 0.9);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .confirm-btn:hover {
@@ -502,7 +502,7 @@
     color: var(--theme-text-dim);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn:hover {

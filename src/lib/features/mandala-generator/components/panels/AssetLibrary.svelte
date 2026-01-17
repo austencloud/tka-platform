@@ -594,7 +594,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .tab:hover {
@@ -621,7 +621,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .color-swatch:hover {
@@ -654,7 +654,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .filter-chip:hover {
@@ -684,7 +684,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     cursor: grab;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .asset-item:hover {

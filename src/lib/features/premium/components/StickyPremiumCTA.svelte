@@ -88,7 +88,7 @@
     font-size: var(--font-size-base);
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition-fast, 150ms ease);
+    transition: all var(--transition-fast, var(--duration-fast) ease);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 

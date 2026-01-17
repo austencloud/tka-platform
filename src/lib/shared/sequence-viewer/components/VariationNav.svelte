@@ -63,7 +63,7 @@
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background var(--duration-normal);
   }
 
   .nav-button:hover:not(:disabled) {

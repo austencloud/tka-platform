@@ -177,7 +177,7 @@
   .avatar-wrapper {
     position: relative;
     flex-shrink: 0;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .conversation-item:hover .avatar-wrapper {

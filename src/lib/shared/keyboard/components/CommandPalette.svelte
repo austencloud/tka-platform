@@ -325,7 +325,7 @@
     border-radius: 6px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: background 0.1s;
+    transition: background var(--duration-instant);
     text-align: left;
   }
 

@@ -182,7 +182,7 @@
     padding: 0.5rem 1rem;
     color: var(--text-color, #ffffff);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-search:hover {
@@ -195,7 +195,7 @@
     border-radius: 8px;
     padding: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     color: var(--text-color, #ffffff);
   }

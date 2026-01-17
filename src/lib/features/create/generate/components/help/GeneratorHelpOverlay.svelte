@@ -61,8 +61,8 @@
     background: rgba(0, 0, 0, 0.7);
     z-index: 200;
     cursor: pointer;
-    animation: fadeIn 0.2s ease;
-    transition: opacity 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .help-backdrop.exiting {
@@ -98,13 +98,16 @@
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     border: none;
     cursor: pointer;
-    transition: background 0.15s ease, opacity 0.2s ease, transform 0.2s ease;
-    animation: fadeIn 0.2s ease;
+    transition:
+      background 0.15s ease,
+      opacity 0.25s cubic-bezier(0.4, 0, 1, 1),
+      transform 0.25s cubic-bezier(0.4, 0, 1, 1);
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   .help-banner.exiting {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-100%);
     pointer-events: none;
   }
 
@@ -133,7 +136,7 @@
   .help-banner.dimmed {
     opacity: 0.4;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .help-banner i {
@@ -150,7 +153,7 @@
     height: 32px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.15);
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .close-hint:hover {

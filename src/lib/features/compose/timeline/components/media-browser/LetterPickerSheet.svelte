@@ -73,7 +73,7 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: fadeIn 0.25s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   @keyframes fadeIn {
@@ -94,7 +94,7 @@
     width: 92%;
     max-height: 80vh;
     overflow-y: auto;
-    animation: slideUp 0.3s ease;
+    animation: slideUp var(--duration-emphasis) ease;
     box-shadow: var(--theme-shadow, 0 14px 36px rgba(0, 0, 0, 0.4));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -137,7 +137,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-compact);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -164,7 +164,7 @@
     font-size: var(--font-size-min);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .letter-btn:hover {

@@ -221,7 +221,7 @@
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background var(--duration-normal);
   }
 
   .export-btn:hover {

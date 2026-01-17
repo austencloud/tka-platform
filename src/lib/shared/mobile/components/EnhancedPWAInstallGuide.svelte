@@ -159,7 +159,7 @@
     margin: 12px auto 8px;
     flex-shrink: 0;
     cursor: grab;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .sheet-handle:hover {
@@ -216,7 +216,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-btn:hover {
@@ -268,7 +268,7 @@
     font-size: clamp(13px, 3cqw, 15px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 12px
       color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }

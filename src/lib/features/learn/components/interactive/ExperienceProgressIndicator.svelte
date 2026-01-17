@@ -62,7 +62,7 @@ Displays:
     height: 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .progress-dot.active {

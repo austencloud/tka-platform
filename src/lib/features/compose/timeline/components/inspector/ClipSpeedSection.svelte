@@ -170,7 +170,7 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text-muted, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .preset-btn:hover {

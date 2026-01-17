@@ -72,7 +72,7 @@
     background: var(--theme-accent);
     border: 1px solid var(--theme-accent);
     border-radius: 10px;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1);
     box-shadow: 0 2px 6px var(--theme-shadow);
     pointer-events: none;
   }
@@ -98,13 +98,13 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: color 0.3s ease;
+    transition: color var(--duration-emphasis) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
   .switcher-btn i {
     font-size: 0.85rem;
-    transition: transform 0.3s ease;
+    transition: transform var(--duration-emphasis) ease;
   }
 
   .switcher-btn.active {

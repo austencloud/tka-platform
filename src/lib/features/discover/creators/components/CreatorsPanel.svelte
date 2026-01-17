@@ -428,7 +428,7 @@
       var(--card-accent-light) 100%
     );
     border-radius: 50%;
-    transition: background 0.3s var(--ease-out, ease);
+    transition: background var(--duration-emphasis) var(--ease-out, ease);
   }
 
   .user-avatar img,
@@ -455,7 +455,7 @@
   .avatar-placeholder i {
     font-size: var(--font-size-xl);
     color: var(--card-accent-light);
-    transition: color 0.3s var(--ease-out, ease);
+    transition: color var(--duration-emphasis) var(--ease-out, ease);
   }
 
   /* User info */
@@ -527,7 +527,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s var(--ease-out, ease);
+    transition: all var(--duration-emphasis) var(--ease-out, ease);
     background: var(--card-accent);
     color: white;
   }

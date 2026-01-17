@@ -193,7 +193,7 @@
     border-radius: 16px;
     color: var(--theme-text-muted, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .filter-btn:hover {
@@ -311,7 +311,7 @@
     border-radius: 8px;
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     user-select: none;
   }
 

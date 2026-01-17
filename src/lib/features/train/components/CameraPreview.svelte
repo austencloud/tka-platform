@@ -202,7 +202,7 @@ Features frame processing loop for pose estimation and overlay support.
     border-radius: var(--border-radius-md, 8px);
     cursor: pointer;
     font-size: var(--font-size-md);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-button:hover {

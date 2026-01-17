@@ -83,7 +83,7 @@
     left: calc(3px + (100% - 6px) / var(--count) * var(--index));
     width: calc((100% - 6px) / var(--count) - 2px);
     border-radius: 6px;
-    transition: left 0.2s ease;
+    transition: left var(--duration-normal) ease;
     z-index: 0;
   }
 
@@ -106,7 +106,7 @@
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 500;
     cursor: pointer;
-    transition: color 0.15s;
+    transition: color var(--duration-fast);
     position: relative;
     z-index: 1;
     white-space: nowrap;

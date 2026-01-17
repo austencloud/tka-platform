@@ -279,7 +279,7 @@
     font-size: 1rem;
     cursor: pointer;
     z-index: 20;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     box-shadow: 0 2px 8px var(--theme-shadow);
   }
 

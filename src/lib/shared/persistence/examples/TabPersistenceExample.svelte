@@ -211,7 +211,7 @@ async function handleTabClick(tabId) {
     background: white;
     cursor: pointer;
     font-size: var(--font-size-sm);
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .tab-buttons button:hover {

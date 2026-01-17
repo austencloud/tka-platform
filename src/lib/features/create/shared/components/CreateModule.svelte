@@ -659,6 +659,6 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
-    transition: background-color 200ms ease-out;
+    transition: background-color var(--duration-normal) ease-out;
   }
 </style>

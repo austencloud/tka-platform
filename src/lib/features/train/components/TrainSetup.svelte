@@ -263,7 +263,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     box-shadow: 0 4px 12px
       color-mix(
         in srgb,

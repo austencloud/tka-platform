@@ -121,7 +121,7 @@
     background: var(--theme-card-hover-bg);
     color: var(--theme-text, var(--theme-text));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -252,7 +252,7 @@
   .profile-button.variant-sidebar {
     border-radius: 10px; /* Match sidebar button radius */
     background: transparent; /* Transparent by default like other sidebar buttons */
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Match sidebar easing */
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1); /* Match sidebar easing */
   }
 
   .profile-button.variant-sidebar:hover {

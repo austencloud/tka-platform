@@ -167,7 +167,7 @@
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     font-size: var(--font-size-sm);
     font-weight: 500;
     /* Ensure proper box-sizing */
@@ -206,7 +206,7 @@
     border: none; /* No border on wrapper itself */
     font-size: var(--font-size-xl);
     flex-shrink: 0;
-    transition: all 0.25s ease;
+    transition: all var(--duration-normal) ease;
     position: relative; /* For badge positioning */
   }
 
@@ -253,7 +253,7 @@
   /* User icon styling (when signed out) */
   .icon-wrapper > i {
     color: var(--theme-text-dim, var(--theme-text-dim));
-    transition: all 0.25s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .account-settings-button:hover .icon-wrapper > i {

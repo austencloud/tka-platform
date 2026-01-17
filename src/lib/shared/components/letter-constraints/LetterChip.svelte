@@ -50,7 +50,7 @@ Supports include (green) and exclude (red) modes
       sans-serif;
 
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
 
     touch-action: manipulation;
   }

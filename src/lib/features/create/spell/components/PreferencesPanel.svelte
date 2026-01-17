@@ -145,7 +145,7 @@ Modern chip-based UI for sequence generation preferences:
     font-size: var(--font-size-md, 16px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -217,7 +217,7 @@ Modern chip-based UI for sequence generation preferences:
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -276,7 +276,7 @@ Modern chip-based UI for sequence generation preferences:
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }

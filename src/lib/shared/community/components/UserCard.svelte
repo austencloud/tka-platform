@@ -192,7 +192,7 @@
       var(--card-accent-light) 100%
     );
     border-radius: 50%;
-    transition: background 0.3s ease;
+    transition: background var(--duration-emphasis) ease;
   }
 
   .user-avatar img,
@@ -218,7 +218,7 @@
   .avatar-placeholder i {
     font-size: var(--font-size-xl);
     color: var(--card-accent-light);
-    transition: color 0.3s ease;
+    transition: color var(--duration-emphasis) ease;
   }
 
   /* Role badge */
@@ -306,7 +306,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
     background: var(--card-accent);
     color: white;
   }

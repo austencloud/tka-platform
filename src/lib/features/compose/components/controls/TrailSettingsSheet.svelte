@@ -109,7 +109,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sheet-close-btn:hover {

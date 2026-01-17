@@ -115,7 +115,7 @@
     background: var(--theme-card-bg, var(--theme-card-bg));
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 0.75rem;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     cursor: pointer;
   }
 

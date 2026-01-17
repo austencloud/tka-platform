@@ -63,7 +63,7 @@
     background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    transition: background 150ms ease-out;
+    transition: background var(--duration-fast) ease-out;
   }
 
   .glass-scrollable.primary::-webkit-scrollbar-thumb:hover {
@@ -85,7 +85,7 @@
     background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.1));
     border: 1px solid var(--theme-stroke-strong);
     border-radius: 6px;
-    transition: background 150ms ease-out;
+    transition: background var(--duration-fast) ease-out;
   }
 
   .glass-scrollable.secondary::-webkit-scrollbar-thumb:hover {
@@ -104,7 +104,7 @@
   .glass-scrollable.minimal::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.12));
     border-radius: 3px;
-    transition: background 150ms ease-out;
+    transition: background var(--duration-fast) ease-out;
   }
 
   .glass-scrollable.minimal::-webkit-scrollbar-thumb:hover {
@@ -114,7 +114,7 @@
   /* Hover Glass Scrollbar */
   .glass-scrollable.hover::-webkit-scrollbar {
     width: 0px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .glass-scrollable.hover:hover::-webkit-scrollbar {
@@ -126,7 +126,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease;
   }
 
   .glass-scrollable.hover:hover::-webkit-scrollbar-track {
@@ -138,7 +138,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
     opacity: 0;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .glass-scrollable.hover:hover::-webkit-scrollbar-thumb {
@@ -160,7 +160,7 @@
     background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
     border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    transition: background 150ms ease-out;
+    transition: background var(--duration-fast) ease-out;
   }
 
   .glass-scrollable.gradient::-webkit-scrollbar-thumb:hover {

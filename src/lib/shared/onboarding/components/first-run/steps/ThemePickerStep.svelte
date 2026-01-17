@@ -195,7 +195,7 @@
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 
@@ -261,7 +261,7 @@
     border-radius: 50%;
     color: white;
     font-size: 0.65rem;
-    animation: pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: pop-in var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes pop-in {
@@ -300,7 +300,7 @@
     border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 
@@ -357,7 +357,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button:hover {
@@ -382,7 +382,7 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .next-button:hover {
@@ -400,7 +400,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 0.9rem;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
     margin-top: 4px;
   }
 

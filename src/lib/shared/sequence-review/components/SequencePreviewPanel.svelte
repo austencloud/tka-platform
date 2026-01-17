@@ -10,7 +10,7 @@
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import type { Snippet } from "svelte";
 
   interface Props {
@@ -24,8 +24,7 @@
     onStepClick?: (stepNumber: number) => void;
     highlightedSteps?: Map<number, { bg: string; border: string }>;
     interactive?: boolean;
-    onCopyJson?: () => void;
-    copiedToast?: boolean;
+    getCopyData?: () => string;
     /** Slot for header actions (delete, etc.) */
     headerActions?: Snippet;
     /** Slot for metadata badges */
@@ -43,8 +42,7 @@
     onStepClick,
     highlightedSteps,
     interactive = false,
-    onCopyJson,
-    copiedToast = false,
+    getCopyData,
     headerActions,
     metaBadges,
   }: Props = $props();
@@ -97,18 +95,15 @@
       {#if headerActions}
         {@render headerActions()}
       {/if}
-      {#if onCopyJson}
-        <button
+      {#if getCopyData}
+        <CopyForAIButton
+          getData={getCopyData}
+          ariaLabel="Copy sequence data"
+          variant="icon-only"
+          size="lg"
+          idleIcon="fa-copy"
           class="action-btn"
-          onclick={onCopyJson}
-          title="Copy sequence JSON"
-        >
-          {#if copiedToast}
-            <FontAwesomeIcon icon="check" size="0.85em" />
-          {:else}
-            <FontAwesomeIcon icon="copy" size="0.85em" />
-          {/if}
-        </button>
+        />
       {/if}
     </div>
   </div>

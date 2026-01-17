@@ -131,7 +131,7 @@ Displays the most frequently used Greek letters for quick insertion.
     font-size: var(--font-size-md, 16px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -162,7 +162,7 @@ Displays the most frequently used Greek letters for quick insertion.
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
     flex-shrink: 0;
   }

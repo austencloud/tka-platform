@@ -59,7 +59,7 @@ WordQuizCompleteSection - Score display and completion actions
     flex-direction: column;
     align-items: center;
     gap: 1.25rem;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--duration-emphasis) ease;
   }
 
   @keyframes fadeIn {
@@ -142,7 +142,7 @@ WordQuizCompleteSection - Score display and completion actions
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .action-btn.secondary {

@@ -245,7 +245,7 @@
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: clamp(10px, 2cqi, 14px);
-    transition: border-color 200ms ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .feedback-form:hover {

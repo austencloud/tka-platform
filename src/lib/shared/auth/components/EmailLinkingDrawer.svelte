@@ -179,7 +179,7 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     z-index: 1000;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn var(--duration-normal) ease-out;
   }
 
   /* Modal Container */
@@ -216,7 +216,7 @@
           transparent
         );
     z-index: 1001;
-    animation: modalSlideIn 0.3s ease-out;
+    animation: modalSlideIn var(--duration-emphasis) ease-out;
   }
 
   @keyframes fadeIn {
@@ -341,7 +341,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 

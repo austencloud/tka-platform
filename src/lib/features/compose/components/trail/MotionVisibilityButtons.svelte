@@ -68,7 +68,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow:
       0 1px 3px rgba(0, 0, 0, 0.1),

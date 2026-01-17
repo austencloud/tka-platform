@@ -296,7 +296,7 @@ Props:
   .turns-column {
     /* Beautiful fade in/out effect matching TKA glyph */
     opacity: 0;
-    transition: opacity 150ms ease-out;
+    transition: opacity var(--duration-fast) ease-out;
   }
 
   .turns-column.visible {

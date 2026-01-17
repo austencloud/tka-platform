@@ -20,6 +20,7 @@
     calculateGridLayout,
     calculateTimelineRows,
     calculateTimelineUnitSize,
+    calculateTimelinePadding,
     getTimelineWidthMultiplier,
     type TimelineRow,
   } from "../utils/grid-calculations";
@@ -160,6 +161,11 @@
     // Total columns = start column (if present) + row capacity
     const totalUnits = hasStart ? TIMELINE_ROW_CAPACITY + 1 : TIMELINE_ROW_CAPACITY;
     return calculateTimelineUnitSize(containerWidth, totalUnits);
+  });
+
+  // Timeline mode: calculate responsive padding based on container width
+  const timelinePadding = $derived(() => {
+    return calculateTimelinePadding(containerWidth);
   });
 
   // Track previous beat state for change detection
@@ -515,6 +521,7 @@
         class="timeline-container"
         class:clearing={isClearing || displayState.isClearingForGeneration}
         style:--cell-size="{timelineUnitSize()}px"
+        style:--timeline-padding="{timelinePadding()}px"
       >
         <!-- Start Position Column (matches grid mode layout) -->
         {#if startPosition && !startPosition.isBlank}
@@ -809,7 +816,7 @@
     display: flex;
     flex-direction: row;
     gap: 1px;
-    width: 100%;
+    width: calc(100% - var(--timeline-padding, 16px)); /* Breathing room on each side */
     margin: auto;
     padding: 0;
     opacity: 1;
@@ -951,16 +958,16 @@
     font-weight: 700;
     letter-spacing: 0.5px;
     background: transparent;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   /* Beat deletion animations */
   .beat-container.deleting {
-    animation: fadeOutDisintegrate 250ms ease-out forwards;
+    animation: fadeOutDisintegrate var(--duration-normal) ease-out forwards;
   }
 
   .beat-container.sliding {
-    animation: slideIntoPlace 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    animation: slideIntoPlace var(--duration-normal) cubic-bezier(0.25, 0.46, 0.45, 0.94)
       forwards;
   }
 

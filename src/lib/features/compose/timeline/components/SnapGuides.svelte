@@ -149,7 +149,7 @@
     position: absolute;
     top: 0;
     width: 1px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   /* Beat marker guides - purple/info color */

@@ -96,7 +96,7 @@
     padding: 0.75rem 1.5rem;
     border-radius: 1.5rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: 0.875rem;
     font-weight: 500;
     min-width: 6rem;

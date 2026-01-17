@@ -225,7 +225,7 @@ Shows contextual action buttons based on current phase:
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 
@@ -298,7 +298,7 @@ Shows contextual action buttons based on current phase:
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--theme-text);
 
     /* Purple gradient matching standard UndoButton */
@@ -323,7 +323,7 @@ Shows contextual action buttons based on current phase:
 
   .undo-button:active:not(:disabled) {
     transform: scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .undo-button:focus-visible {

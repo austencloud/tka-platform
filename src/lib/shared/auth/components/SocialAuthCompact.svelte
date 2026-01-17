@@ -149,7 +149,7 @@
     font-size: clamp(0.75rem, 1.8vh, var(--font-size-sm));
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: none;
     box-shadow: 0 2px 6px var(--theme-shadow);
   }

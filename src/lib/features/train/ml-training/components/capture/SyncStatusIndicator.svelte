@@ -127,6 +127,6 @@
       color-mix(in srgb, var(--semantic-info, var(--semantic-info)) 80%, white)
     );
     border-radius: 2px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 </style>

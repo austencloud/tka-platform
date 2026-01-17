@@ -89,7 +89,7 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     min-height: 44px; /* Accessibility: touch target */
   }
 

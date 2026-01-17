@@ -146,7 +146,7 @@ Clicking a letter inserts it into the word input.
     font-size: var(--font-size-lg, 18px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .letter-button:hover {

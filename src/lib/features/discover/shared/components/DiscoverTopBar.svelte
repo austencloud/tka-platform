@@ -170,7 +170,7 @@ Structure:
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .nav-button:hover:not(:disabled) {

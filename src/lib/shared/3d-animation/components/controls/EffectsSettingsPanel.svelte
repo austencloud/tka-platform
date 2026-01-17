@@ -272,13 +272,13 @@
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .effect-chip i {
     font-size: 1rem;
     opacity: 0.6;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .effect-chip:hover {
@@ -336,7 +336,7 @@
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .mode-chip:hover {
@@ -374,7 +374,7 @@
     background: var(--color);
     border-radius: 50%;
     cursor: pointer;
-    transition: transform 0.1s;
+    transition: transform var(--duration-instant);
   }
 
   .intensity-slider::-webkit-slider-thumb:hover {

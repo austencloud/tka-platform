@@ -32,7 +32,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     z-index: 20;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .generate-video-btn:hover {

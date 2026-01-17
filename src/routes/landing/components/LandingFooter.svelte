@@ -125,7 +125,7 @@
     font-weight: 600;
     font-size: 1rem;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     cursor: pointer;
   }
 
@@ -146,7 +146,7 @@
   }
 
   .arrow {
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .btn:hover .arrow {
@@ -189,7 +189,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     text-decoration: none;
     font-size: 0.875rem;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .footer-links a:hover {
@@ -220,7 +220,7 @@
     text-decoration: none;
     font-size: var(--font-size-compact, 0.75rem);
     padding: 8px 0;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .footer-legal a:hover {

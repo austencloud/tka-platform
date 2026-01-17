@@ -231,7 +231,7 @@
     text-align: left;
     border-radius: 4px;
     cursor: pointer;
-    transition: background 0.1s ease;
+    transition: background var(--duration-instant) ease;
   }
 
   .menu-item:hover {

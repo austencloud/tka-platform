@@ -170,7 +170,7 @@ Shows all pictographs for a selected letter with:
     border-radius: 10px;
     color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
@@ -269,7 +269,7 @@ Shows all pictographs for a selected letter with:
 
   .pictograph-item {
     cursor: pointer;
-    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .pictograph-item:hover {
@@ -278,7 +278,7 @@ Shows all pictographs for a selected letter with:
 
   .pictograph-item:active {
     transform: scale(0.98);
-    transition-duration: 100ms;
+    transition-duration: var(--duration-instant);
   }
 
   .empty-state {

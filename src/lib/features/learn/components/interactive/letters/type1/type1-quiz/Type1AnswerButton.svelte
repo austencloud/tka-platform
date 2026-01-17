@@ -62,7 +62,7 @@ Type1AnswerButton - Single answer option for motion pattern
     border-radius: 12px;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
     text-align: left;
     width: 100%;
@@ -123,7 +123,7 @@ Type1AnswerButton - Single answer option for motion pattern
   .answer-btn.incorrect {
     background: rgba(255, 74, 74, 0.2);
     border-color: rgba(255, 74, 74, 0.6);
-    animation: shake 0.4s ease;
+    animation: shake var(--duration-dramatic) ease;
   }
 
   @keyframes shake {

@@ -140,7 +140,7 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     font-size: 0.625rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .effect-indicator.enabled {
@@ -160,7 +160,7 @@
   .expand-icon {
     font-size: 0.625rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .expand-icon.expanded {
@@ -192,7 +192,7 @@
     inset: 0;
     background: rgba(120, 120, 128, 0.32);
     border-radius: 999px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toggle-slider::before {
@@ -204,7 +204,7 @@
     top: 2px;
     background: white;
     border-radius: 50%;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 

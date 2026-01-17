@@ -222,7 +222,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 11px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .show-more:hover {

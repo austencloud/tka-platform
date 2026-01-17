@@ -242,7 +242,7 @@
     background: rgba(74, 158, 255, 0.6);
     border-radius: 1px;
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .viewport-edge.left {

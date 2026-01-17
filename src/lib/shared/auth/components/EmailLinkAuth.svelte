@@ -259,7 +259,7 @@
     border: 2px solid var(--theme-stroke, var(--theme-stroke-strong));
     border-radius: 0.5rem;
     font-size: 1rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     background: var(--theme-card-bg, var(--theme-card-bg));
     color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
   }
@@ -302,7 +302,7 @@
     font-weight: 600;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
     box-shadow: 0 4px 6px
       color-mix(

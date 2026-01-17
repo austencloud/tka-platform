@@ -20,7 +20,7 @@
     margin: var(--sheet-handle-spacing) auto;
     border-radius: var(--sheet-handle-radius);
     background: var(--sheet-handle-bg);
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
     flex-shrink: 0;
   }
 

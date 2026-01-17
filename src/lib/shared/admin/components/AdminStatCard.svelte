@@ -59,7 +59,7 @@
     display: flex;
     align-items: flex-start;
     gap: 16px;
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .admin-stat-card:hover {

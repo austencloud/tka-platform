@@ -322,7 +322,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .provider-row.linked {
@@ -400,7 +400,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 

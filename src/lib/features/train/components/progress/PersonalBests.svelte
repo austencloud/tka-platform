@@ -86,7 +86,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 0.75rem;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .best-card:hover {

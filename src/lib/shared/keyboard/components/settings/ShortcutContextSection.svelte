@@ -91,7 +91,7 @@
     border: none;
     cursor: pointer;
     text-align: left;
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -166,7 +166,7 @@
   .chevron {
     font-size: var(--font-size-sm);
     color: var(--theme-text-dim);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .section-header.expanded .chevron {

@@ -272,7 +272,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     border-radius: clamp(4px, 1.5cqi, 8px);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-btn:hover {
@@ -393,7 +393,7 @@
     border: none;
     color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color var(--duration-fast) ease;
     flex-shrink: 0;
   }
 
@@ -417,7 +417,7 @@
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .add-sequence-btn:hover,
@@ -445,7 +445,7 @@
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .clear-btn {

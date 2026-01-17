@@ -90,7 +90,7 @@ Receives pre-calculated data, just renders it.
 
   .option-card:active {
     transform: scale(0.97);
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   .option-card:focus {

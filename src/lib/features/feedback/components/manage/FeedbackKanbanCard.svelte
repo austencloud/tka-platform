@@ -387,7 +387,7 @@
     cursor: grab;
     text-align: left;
     overflow: hidden;
-    transition: all 0.2s var(--spring-smooth);
+    transition: all var(--duration-normal) var(--spring-smooth);
     box-shadow:
       0 2px 8px var(--theme-shadow),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -615,7 +615,7 @@
     color: var(--kc-text-subtle);
     font-size: clamp(9px, 1.8cqi, 11px);
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .kanban-card:hover .drag-handle {

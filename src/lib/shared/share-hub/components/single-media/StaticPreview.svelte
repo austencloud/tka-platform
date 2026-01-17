@@ -319,7 +319,7 @@
     font-size: var(--font-size-min);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 

@@ -224,7 +224,7 @@
     border-radius: 0.25rem;
     color: var(--theme-text-secondary, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-btn:hover {
@@ -299,7 +299,7 @@
     border-radius: 0.375rem;
     cursor: pointer;
     text-align: left;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .session-card:hover {

@@ -204,7 +204,7 @@
     color: var(--theme-accent);
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: opacity var(--duration-normal);
   }
 
   .edit-btn:hover {
@@ -288,7 +288,7 @@
     border-radius: var(--radius-2026-sm, 10px);
     color: white;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: opacity var(--duration-normal);
   }
 
   .add-tag-btn:disabled {
@@ -341,7 +341,7 @@
     color: var(--theme-accent);
     cursor: pointer;
     opacity: 0.7;
-    transition: opacity 0.15s;
+    transition: opacity var(--duration-fast);
   }
 
   .remove-tag-btn:hover {
@@ -376,7 +376,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: 44px;
   }
 

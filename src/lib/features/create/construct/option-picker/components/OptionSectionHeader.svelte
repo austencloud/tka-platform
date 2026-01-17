@@ -85,15 +85,15 @@ Styling: Uses CSS cascade from parent OptionPickerContent via custom properties:
     box-shadow: 0 2px 8px var(--option-header-shadow, rgba(0, 0, 0, 0.1));
     /* Transitions sync with parent dark mode toggle */
     transition:
-      background var(--option-dark-transition, 150ms ease-out),
-      border-color var(--option-dark-transition, 150ms ease-out),
-      box-shadow var(--option-dark-transition, 150ms ease-out);
+      background var(--option-dark-transition, var(--duration-fast) ease-out),
+      border-color var(--option-dark-transition, var(--duration-fast) ease-out),
+      box-shadow var(--option-dark-transition, var(--duration-fast) ease-out);
   }
 
   .label-text {
     display: block;
     color: var(--option-header-text, #000000);
-    transition: color var(--option-dark-transition, 150ms ease-out);
+    transition: color var(--option-dark-transition, var(--duration-fast) ease-out);
   }
 
   @media (max-height: 800px) {

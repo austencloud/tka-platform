@@ -131,7 +131,7 @@ for SHIFT motions in the completed hand paths.
     border: 2px solid var(--theme-stroke);
     border-radius: 20px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   /* Icon container with continuous animation */
@@ -147,7 +147,7 @@ for SHIFT motions in the completed hand paths.
     width: 100%;
     height: 100%;
     color: var(--theme-text-dim);
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   /* Continuous rotation animation */
@@ -203,7 +203,7 @@ for SHIFT motions in the completed hand paths.
 
   .rotation-button:active {
     transform: translateY(-2px);
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   /* Color themes */

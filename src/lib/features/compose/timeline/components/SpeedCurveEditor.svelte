@@ -380,7 +380,7 @@
     border-radius: 4px;
     color: var(--theme-text-muted, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-btn:hover {
@@ -418,7 +418,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .preset-card:hover {

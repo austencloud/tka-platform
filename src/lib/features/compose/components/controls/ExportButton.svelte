@@ -42,7 +42,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
     -webkit-tap-highlight-color: transparent;
     min-height: var(--min-touch-target);

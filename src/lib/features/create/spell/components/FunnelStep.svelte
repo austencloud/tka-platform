@@ -104,7 +104,7 @@ Each option shows how many variations would match that choice.
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
@@ -159,7 +159,7 @@ Each option shows how many variations would match that choice.
 
   .count-after {
     color: var(--theme-text, #ffffff);
-    transition: color 0.3s ease;
+    transition: color var(--duration-emphasis) ease;
   }
 
   .count-after.decreased {

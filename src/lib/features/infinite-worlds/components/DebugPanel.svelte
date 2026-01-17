@@ -194,7 +194,7 @@
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .collapse-btn:hover {
@@ -309,14 +309,14 @@
     cursor: pointer;
     font-size: 12px;
     font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-family: inherit;
   }
 
   .teleport-chip i {
     font-size: 11px;
     color: var(--chip-color, #64748b);
-    transition: color 0.15s ease;
+    transition: color var(--duration-fast) ease;
   }
 
   .teleport-chip:hover {

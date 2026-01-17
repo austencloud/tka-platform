@@ -84,7 +84,7 @@
     border-radius: 10px;
     border: 1.5px solid transparent;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .hand-btn:hover {

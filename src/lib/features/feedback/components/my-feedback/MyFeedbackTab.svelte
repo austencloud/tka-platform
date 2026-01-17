@@ -367,7 +367,7 @@
     color: var(--semantic-info);
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .error-state button:hover {

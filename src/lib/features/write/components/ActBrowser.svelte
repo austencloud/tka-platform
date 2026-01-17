@@ -139,7 +139,7 @@
     border-radius: var(--border-radius-sm, 6px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .icon-btn:hover:not(:disabled) {

@@ -72,7 +72,7 @@ Used for sort method selection (Letter/Length/Date)
     box-shadow:
       inset 0 0.5px 1px var(--theme-shadow),
       0 1px 2px var(--theme-shadow);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .segment {
@@ -89,7 +89,7 @@ Used for sort method selection (Letter/Length/Date)
     font-weight: 590; /* SF Pro semibold weight */
     letter-spacing: -0.2px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
     position: relative;
     -webkit-tap-highlight-color: transparent;

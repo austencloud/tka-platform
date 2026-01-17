@@ -146,7 +146,7 @@
     border-radius: 10px;
     border: 1px solid;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 
@@ -170,7 +170,7 @@
     border-radius: 10px;
     border: 1px solid;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .orientation-display i {
@@ -197,7 +197,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     width: 100%;
-    animation: options-fade-in 0.15s ease;
+    animation: options-fade-in var(--duration-fast) ease;
   }
 
   @keyframes options-fade-in {
@@ -221,7 +221,7 @@
     border-radius: 10px;
     border: 1px solid;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .option-btn i {

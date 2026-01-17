@@ -203,7 +203,7 @@
     font-weight: 600;
     font-size: var(--font-size-base, 1rem);
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     cursor: pointer;
     border: none;
   }
@@ -232,7 +232,7 @@
   }
 
   .arrow {
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .btn:hover .arrow {
@@ -247,7 +247,7 @@
     font-size: var(--font-size-sm, 0.875rem);
     text-decoration: none;
     margin-top: -8px;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .link-secondary:hover {

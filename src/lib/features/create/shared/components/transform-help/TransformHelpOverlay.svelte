@@ -55,7 +55,7 @@
     background: rgba(0, 0, 0, 0.7);
     z-index: 200; /* Above sidebar (150) - drawer is boosted to 210 when help active */
     cursor: pointer;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   @keyframes fadeIn {
@@ -87,7 +87,7 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     z-index: 250;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   }
 

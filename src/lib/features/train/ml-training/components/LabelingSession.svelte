@@ -461,7 +461,7 @@ Allows navigating through frames and labeling each one.
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--semantic-success), #34d399);
-    transition: width 0.3s;
+    transition: width var(--duration-emphasis);
   }
 
   .main-content {
@@ -526,7 +526,7 @@ Allows navigating through frames and labeling each one.
     background: rgba(255, 255, 255, 0.1);
     color: inherit;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .nav-btn:hover:not(:disabled) {
@@ -636,7 +636,7 @@ Allows navigating through frames and labeling each one.
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .action-bar button:disabled {

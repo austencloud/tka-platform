@@ -241,7 +241,7 @@
   function updateTransition(deltaTime: number) {
     if (!transitionState?.isActive || !camera) return;
 
-    transitionState.progress += deltaTime / 0.3; // 300ms transition
+    transitionState.progress += deltaTime / 0.3; // var(--duration-emphasis) transition
 
     if (transitionState.progress >= 1) {
       transitionState.isActive = false;

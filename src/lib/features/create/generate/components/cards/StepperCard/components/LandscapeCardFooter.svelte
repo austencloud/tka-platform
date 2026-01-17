@@ -38,7 +38,7 @@ LandscapeCardFooter.svelte - Absolutely positioned subtitle and description for 
     overflow: hidden;
     text-overflow: ellipsis;
     pointer-events: none;
-    transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .card-subtitle.has-description {
@@ -61,7 +61,7 @@ LandscapeCardFooter.svelte - Absolutely positioned subtitle and description for 
     overflow: hidden;
     text-overflow: ellipsis;
     pointer-events: none;
-    transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @media (min-width: 1280px) {

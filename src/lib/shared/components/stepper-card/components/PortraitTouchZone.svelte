@@ -70,6 +70,6 @@ Covers top or bottom half of the card for increment/decrement
   .portrait-touch-zone:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--text-color) 70%, transparent);
     outline-offset: -2px;
-    transition: outline-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: outline-color var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 </style>

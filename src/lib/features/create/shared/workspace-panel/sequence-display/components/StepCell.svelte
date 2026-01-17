@@ -395,7 +395,7 @@
 
   /* Default animation (Spring Pop) */
   .beat-cell.animate {
-    animation: springPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: springPop var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
   /* Animation overrides based on selected animation */
@@ -408,11 +408,11 @@
   }
 
   .beat-cell.animate.anim-springPop {
-    animation: springPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: springPop var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
   .beat-cell.animate.anim-microFade {
-    animation: microFade 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: microFade var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
   .beat-cell.animate.anim-glassBlur {
@@ -470,7 +470,7 @@
     opacity: 1;
 
     /* Smooth spring animation */
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Selection styling DURING animation - border/glow visible while beat animates in */
@@ -577,7 +577,7 @@
   /* STYLE 2: SUBTLE - gentle fade with slight scale */
   .beat-cell.practice-subtle {
     background: rgba(251, 191, 36, 0.08);
-    animation: practiceEnterSubtle 0.3s ease-out forwards;
+    animation: practiceEnterSubtle var(--duration-emphasis) ease-out forwards;
     box-shadow: 0 0 16px rgba(251, 191, 36, 0.5), 0 0 32px rgba(251, 191, 36, 0.2);
     transform: scale(1.04);
   }
@@ -599,7 +599,7 @@
   .beat-cell.practice-glow-only {
     background: transparent;
     transform: scale(1);
-    animation: practiceEnterGlow 0.2s ease-out forwards;
+    animation: practiceEnterGlow var(--duration-normal) ease-out forwards;
   }
 
   @keyframes practiceEnterGlow {
@@ -616,7 +616,7 @@
     background: transparent;
     transform: scale(1.02);
     box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
-    animation: practiceEnterMinimal 0.1s ease-out;
+    animation: practiceEnterMinimal var(--duration-instant) ease-out;
   }
 
   @keyframes practiceEnterMinimal {
@@ -633,7 +633,7 @@
     background: rgba(251, 191, 36, 0.05);
     transform: scale(1.05);
     box-shadow: 0 0 16px rgba(251, 191, 36, 0.5);
-    animation: practiceEnterWave 0.4s ease-out forwards;
+    animation: practiceEnterWave var(--duration-dramatic) ease-out forwards;
   }
 
   .beat-cell.practice-wave::before {

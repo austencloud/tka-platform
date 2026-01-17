@@ -37,7 +37,7 @@
     padding: 8px 16px;
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    animation: fade-in 0.2s ease-out;
+    animation: fade-in var(--duration-normal) ease-out;
   }
 
   @keyframes fade-in {

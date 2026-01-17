@@ -229,7 +229,7 @@
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .donate-btn:hover {
@@ -290,7 +290,7 @@
     font-size: var(--font-size-base);
     text-decoration: none;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .social-btn:hover {

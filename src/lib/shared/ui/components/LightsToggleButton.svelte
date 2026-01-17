@@ -67,7 +67,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   /* Has label - pill shape */

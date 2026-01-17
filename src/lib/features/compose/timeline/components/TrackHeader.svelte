@@ -351,7 +351,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .menu-toggle:hover {
@@ -380,7 +380,7 @@
     border-radius: 6px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     margin-right: 4px;
-    animation: slideIn 0.15s ease-out;
+    animation: slideIn var(--duration-fast) ease-out;
     z-index: 10;
   }
 
@@ -410,7 +410,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 
@@ -451,7 +451,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
     margin-left: 4px;
   }

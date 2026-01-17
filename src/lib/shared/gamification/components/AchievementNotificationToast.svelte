@@ -103,7 +103,7 @@
     left: 50%;
     transform: translateX(-50%) translateY(-120%);
     z-index: 2000;
-    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: transform var(--duration-dramatic) cubic-bezier(0.68, -0.55, 0.265, 1.55);
     pointer-events: none;
   }
 
@@ -214,7 +214,7 @@
     line-height: 1;
     cursor: pointer;
     flex-shrink: 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .toast-close:hover {
@@ -247,7 +247,7 @@
     .toast-icon,
     .toast-close {
       animation: none;
-      transition: opacity 0.2s ease;
+      transition: opacity var(--duration-normal) ease;
     }
 
     .toast-container:not(.visible) {

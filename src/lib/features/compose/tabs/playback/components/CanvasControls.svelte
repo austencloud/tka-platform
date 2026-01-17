@@ -51,7 +51,7 @@
     cursor: pointer;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .settings-btn:hover {

@@ -10,7 +10,8 @@
 import { BackgroundType } from "../../background/shared/domain/enums/background-enums";
 import type { PerformanceSnapshot } from "../../foundation/ui/UITypes";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
-import type { AppSettings } from "../../settings/domain/AppSettings";
+import { PropType } from "../../pictograph/prop/domain/enums/PropType";
+import type { AppSettings, PropPreset } from "../../settings/domain/AppSettings";
 import {
   getIsInitialized,
   getIsInitializing,
@@ -39,6 +40,20 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 // SETTINGS
 // ============================================================================
 
+// Default prop presets for new users (10 commonly-used configurations)
+const DEFAULT_PROP_PRESETS: PropPreset[] = [
+  { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
+  { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
+  { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
+  { bluePropType: PropType.BUUGENG, redPropType: PropType.BUUGENG, catDogMode: false },
+  { bluePropType: PropType.HAND, redPropType: PropType.HAND, catDogMode: false },
+  { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
+  { bluePropType: PropType.MINIHOOP, redPropType: PropType.MINIHOOP, catDogMode: false },
+  { bluePropType: PropType.POI, redPropType: PropType.POI, catDogMode: false },
+  { bluePropType: PropType.TRIQUETRA, redPropType: PropType.TRIQUETRA, catDogMode: false },
+  { bluePropType: PropType.SWORD, redPropType: PropType.SWORD, catDogMode: false },
+];
+
 // Default settings returned when services aren't initialized
 const DEFAULT_SETTINGS: AppSettings = {
   gridMode: GridMode.DIAMOND,
@@ -46,6 +61,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   backgroundQuality: "medium",
   backgroundEnabled: true,
   backgroundColor: "#000000",
+  propPresets: DEFAULT_PROP_PRESETS,
+  bluePropType: PropType.STAFF,
+  redPropType: PropType.STAFF,
+  selectedPresetIndex: 0,
 };
 
 export function getSettings() {

@@ -200,7 +200,7 @@
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.85);
-    transition: background 0.3s ease;
+    transition: background var(--duration-emphasis) ease;
   }
 
   .backdrop.step-1 {
@@ -334,7 +334,7 @@
     height: 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
+    transition: all var(--duration-emphasis) ease;
   }
 
   .step-dot.active {
@@ -430,7 +430,7 @@
     font-size: 17px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .btn-primary:hover {
@@ -449,7 +449,7 @@
     padding: 12px;
     font-size: 15px;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .btn-secondary:hover {

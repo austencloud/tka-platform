@@ -73,7 +73,7 @@ Presentational component for a single toggle option with icon and label
     border: none;
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-weight: 600;
-    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1);
     user-select: none;
     -webkit-user-select: none;
     pointer-events: none;

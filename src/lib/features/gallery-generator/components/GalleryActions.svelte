@@ -71,7 +71,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .action-btn:disabled {

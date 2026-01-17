@@ -42,7 +42,7 @@ QuizPictographCard - Question pictograph display
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    animation: pictographEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: pictographEntrance var(--duration-dramatic) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes pictographEntrance {

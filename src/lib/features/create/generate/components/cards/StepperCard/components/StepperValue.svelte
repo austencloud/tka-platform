@@ -22,7 +22,7 @@ StepperValue.svelte - Displays the current value in the stepper
     text-shadow: 0 2px 4px var(--theme-shadow);
     white-space: nowrap;
     flex-shrink: 0;
-    transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: color var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Desktop optimization */

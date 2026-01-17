@@ -210,7 +210,7 @@
     cursor: pointer;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .prop-type-btn .prop-icon {
@@ -270,7 +270,7 @@
     border: 1px solid;
     cursor: pointer;
     font-size: 0.85rem;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 

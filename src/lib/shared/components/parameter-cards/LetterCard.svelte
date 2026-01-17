@@ -129,7 +129,7 @@ Opens a sheet/panel for letter selection
       transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
 
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   .letter-card.clickable {
@@ -176,7 +176,7 @@ Opens a sheet/panel for letter selection
 
   .letter-card.clickable:active {
     transform: translateY(0) scale(0.98);
-    transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .letter-card:focus-visible {
@@ -238,7 +238,7 @@ Opens a sheet/panel for letter selection
     height: 20px;
     color: var(--theme-text-dim);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     z-index: 2;
   }
 

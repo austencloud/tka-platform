@@ -214,7 +214,7 @@ Shows:
     align-items: center;
     gap: 0.375rem;
     opacity: 0.5;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .legend-item.has-progress {

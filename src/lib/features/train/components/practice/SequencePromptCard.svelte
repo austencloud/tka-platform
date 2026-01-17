@@ -244,7 +244,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: clamp(0.5rem, 2vw, 0.75rem);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -330,7 +330,7 @@
     font-size: clamp(0.9rem, 3vw, 1rem);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .browse-button:hover {

@@ -313,7 +313,7 @@
     font-size: var(--fb-text-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .retry-btn:hover {
@@ -331,7 +331,7 @@
     background: var(--fb-surface);
     border: 1px solid var(--fb-border);
     border-radius: var(--fb-radius-md);
-    animation: skeletonFadeIn 0.3s ease backwards;
+    animation: skeletonFadeIn var(--duration-emphasis) ease backwards;
   }
 
   @keyframes skeletonFadeIn {
@@ -461,7 +461,7 @@
     font-size: var(--fb-text-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .load-more-btn:hover {

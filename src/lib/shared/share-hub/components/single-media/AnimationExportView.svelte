@@ -278,7 +278,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-button:hover {
@@ -298,7 +298,7 @@
   .progress-bar {
     height: 100%;
     background: var(--theme-accent);
-    transition: width 0.1s ease;
+    transition: width var(--duration-instant) ease;
   }
 
   .progress-percent {

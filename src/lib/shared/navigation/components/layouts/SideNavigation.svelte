@@ -153,7 +153,7 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
     opacity: 1;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease;
     pointer-events: auto;
   }
 

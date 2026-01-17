@@ -39,7 +39,7 @@
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     flex-shrink: 0;
     align-self: flex-start;
@@ -73,7 +73,7 @@
   }
 
   .chip-icons i {
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .catdog-chip.active .chip-icons i:first-child {

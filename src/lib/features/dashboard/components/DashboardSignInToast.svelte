@@ -48,7 +48,7 @@
         ),
       0 2px 8px rgba(0, 0, 0, 0.15);
     z-index: 10000;
-    animation: toast-enter 0.4s cubic-bezier(0.36, 0.66, 0.04, 1);
+    animation: toast-enter var(--duration-dramatic) cubic-bezier(0.36, 0.66, 0.04, 1);
   }
 
   .sign-in-toast i {

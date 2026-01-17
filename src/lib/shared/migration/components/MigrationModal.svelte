@@ -190,7 +190,7 @@
     font-weight: 600;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .primary-button:hover {
@@ -207,7 +207,7 @@
     font-weight: 500;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .dismiss-button:hover {

@@ -97,7 +97,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .sort-chip:hover {
@@ -132,7 +132,7 @@
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-compact);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .advanced-toggle:hover {

@@ -310,7 +310,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-sm);
     outline: none;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .search-input::placeholder {
@@ -342,7 +342,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .clear-btn:hover {
@@ -370,7 +370,7 @@
     font-weight: 600;
     color: var(--semantic-error, var(--semantic-error));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     white-space: nowrap;
   }
 

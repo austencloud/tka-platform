@@ -65,7 +65,7 @@ Features:
     background: rgba(239, 68, 68, 0.9);
     border-radius: 12px;
     text-align: center;
-    animation: bannerFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: bannerFadeIn var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
     backdrop-filter: blur(8px);
     white-space: nowrap;
     z-index: 150;

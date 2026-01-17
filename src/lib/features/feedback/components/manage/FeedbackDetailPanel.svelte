@@ -402,7 +402,7 @@
     font-size: var(--fb-text-lg);
     font-weight: 700;
     font-family: inherit;
-    transition: border-color 0.2s ease;
+    transition: border-color var(--duration-normal) ease;
   }
 
   .title-input:focus {
@@ -437,7 +437,7 @@
     font-family: inherit;
     resize: none;
     min-height: 80px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .inline-edit-textarea:focus {
@@ -535,7 +535,7 @@
     border-radius: 999px;
     color: var(--fb-text-muted);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: var(--fb-text-xs);
     font-weight: 500;
     white-space: nowrap;
@@ -580,7 +580,7 @@
     font-size: var(--fb-text-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .screenshots-button:hover {
@@ -620,7 +620,7 @@
     border: 1px solid var(--fb-border);
     background: transparent;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .screenshot-btn:hover {
@@ -648,7 +648,7 @@
     color: white;
     font-size: 1rem;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .screenshot-btn:hover .screenshot-overlay {
@@ -677,7 +677,7 @@
     color: var(--fb-text);
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .cycle-btn:hover:not(:disabled) {

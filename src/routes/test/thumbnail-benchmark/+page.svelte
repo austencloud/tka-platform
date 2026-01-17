@@ -980,7 +980,7 @@
   .progress-fill {
     height: 100%;
     background: #51cf66;
-    transition: width 0.2s ease;
+    transition: width var(--duration-normal) ease;
   }
 
   .progress-count {
@@ -1022,7 +1022,7 @@
     border: 1px solid #444;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .copy-button:hover {

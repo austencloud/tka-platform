@@ -186,7 +186,7 @@ colored according to the motion that is reversing between pictographs.
   .reversal-indicators {
     /* Beautiful fade in/out effect */
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .reversal-indicators.visible {

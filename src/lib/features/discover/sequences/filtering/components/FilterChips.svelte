@@ -130,8 +130,8 @@ Shows visual feedback of active filters with easy removal.
     letter-spacing: -0.1px;
     white-space: nowrap;
     box-shadow: 0 2px 4px var(--theme-shadow);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideIn {
@@ -162,7 +162,7 @@ Shows visual feedback of active filters with easy removal.
     border-radius: 50%;
     color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
     position: relative;
   }

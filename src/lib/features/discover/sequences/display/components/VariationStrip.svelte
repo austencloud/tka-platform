@@ -188,7 +188,7 @@ Features:
     border-radius: 8px;
     cursor: pointer;
     scroll-snap-align: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .variation-thumb:hover {

@@ -171,7 +171,7 @@
     border-radius: 8px;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .close-button:hover {
@@ -242,7 +242,7 @@
     color: var(--theme-text, white);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .error-state button:hover {
@@ -272,7 +272,7 @@
     border-radius: 12px;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     text-align: left;
   }
 
@@ -314,7 +314,7 @@
 
   .sequence-card > i {
     color: var(--theme-stroke-strong);
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .sequence-card:hover > i {

@@ -177,7 +177,7 @@
     border-top: 3px solid var(--column-color);
     border-radius: var(--kc-radius-md);
     overflow: hidden;
-    transition: all 0.25s var(--spring-smooth);
+    transition: all var(--duration-normal) var(--spring-smooth);
     /* Subtle glow */
     box-shadow:
       0 4px 20px color-mix(in srgb, var(--column-color) 15%, transparent),
@@ -364,7 +364,7 @@
     background: color-mix(in srgb, var(--column-color) 10%, transparent);
     backdrop-filter: blur(4px);
     pointer-events: none;
-    animation: pulseIn 0.2s ease;
+    animation: pulseIn var(--duration-normal) ease;
   }
 
   .drop-indicator i {

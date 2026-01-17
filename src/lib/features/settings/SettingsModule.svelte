@@ -330,7 +330,7 @@
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .back-header-button:hover {
@@ -354,7 +354,7 @@
 
   .back-header-button i {
     font-size: var(--font-size-sm);
-    transition: transform 0.15s ease;
+    transition: transform var(--duration-fast) ease;
   }
 
   .back-header-button:hover i {
@@ -472,7 +472,7 @@
     color: var(--theme-accent);
     font-size: var(--font-size-sm);
     transform: translateX(calc(var(--swipe-progress, 0) * 2px));
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   /* Reduced motion */

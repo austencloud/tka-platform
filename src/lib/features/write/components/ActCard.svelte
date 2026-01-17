@@ -100,7 +100,7 @@
     border: 1px solid transparent;
     border-radius: var(--border-radius-md, 8px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
   }
 

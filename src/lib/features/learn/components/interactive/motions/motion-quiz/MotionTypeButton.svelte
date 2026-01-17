@@ -54,7 +54,7 @@ MotionTypeButton - Answer button for motion type selection
     border-radius: 10px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 

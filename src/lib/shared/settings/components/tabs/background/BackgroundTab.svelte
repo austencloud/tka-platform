@@ -220,7 +220,7 @@
     -webkit-overflow-scrolling: touch;
 
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--duration-normal) ease;
   }
 
   .background-tab.visible {
@@ -275,7 +275,7 @@
     color: var(--theme-accent);
     box-shadow: 0 0 12px
       color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .settings-panel:hover .panel-icon {

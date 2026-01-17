@@ -86,7 +86,7 @@
     background: var(--gradient);
     border-radius: 1rem;
     box-shadow: 0 4px 6px var(--theme-shadow);
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal);
   }
 
   .stat-card:hover {

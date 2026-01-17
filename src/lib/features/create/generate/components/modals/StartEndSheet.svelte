@@ -306,11 +306,11 @@ End Position: Single select (for freeform mode only)
 
   /* Slide animations for drawer */
   :global(.drawer-content.start-end-sheet[data-placement="bottom"]) {
-    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   :global(.drawer-content.start-end-sheet[data-placement="right"]) {
-    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: transform var(--duration-dramatic) cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   :global(
@@ -424,7 +424,7 @@ End Position: Single select (for freeform mode only)
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-button:hover {
@@ -446,7 +446,7 @@ End Position: Single select (for freeform mode only)
     border-radius: 50%;
     color: var(--theme-text, white);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -491,7 +491,7 @@ End Position: Single select (for freeform mode only)
     cursor: pointer;
     text-align: left;
     color: var(--theme-text, white);
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .section-header:hover {
@@ -520,7 +520,7 @@ End Position: Single select (for freeform mode only)
     width: 24px;
     height: 24px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .chevron.expanded {
@@ -553,7 +553,7 @@ End Position: Single select (for freeform mode only)
     border: 2px solid transparent;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .preset-button:hover {

@@ -121,7 +121,7 @@ Filter-specific card (not used in Generate)
       background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
 
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   .favorites-card.disabled {
@@ -189,7 +189,7 @@ Filter-specific card (not used in Generate)
 
   .favorites-card:not(.disabled):active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .favorites-card:focus-visible {
@@ -234,13 +234,13 @@ Filter-specific card (not used in Generate)
     width: clamp(32px, 10cqw, 50px);
     height: clamp(32px, 10cqw, 50px);
     color: var(--theme-text-dim);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .heart-icon.filled {
     color: white;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
-    animation: heartPulse 0.4s ease;
+    animation: heartPulse var(--duration-dramatic) ease;
   }
 
   @keyframes heartPulse {

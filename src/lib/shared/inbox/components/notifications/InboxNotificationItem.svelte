@@ -275,7 +275,7 @@
     border-radius: 50%;
     font-size: var(--font-size-sm);
     color: var(--icon-color);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .notification-item:hover .icon {
@@ -293,7 +293,7 @@
     font-size: var(--font-size-min);
     line-height: 1.4;
     color: var(--theme-text);
-    transition: font-weight 0.3s ease;
+    transition: font-weight var(--duration-emphasis) ease;
   }
 
   .unread .message {
@@ -328,7 +328,7 @@
     height: 20px;
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .notification-item:hover .chevron {

@@ -90,7 +90,7 @@
     border: 1px solid var(--toast-color);
     border-radius: 10px;
     box-shadow: 0 4px 20px var(--theme-shadow, var(--theme-shadow));
-    animation: slideIn 0.25s ease-out;
+    animation: slideIn var(--duration-normal) ease-out;
     pointer-events: auto;
   }
 
@@ -130,7 +130,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 

@@ -338,7 +338,7 @@
     border-radius: clamp(6px, 1.5cqi, 10px);
     color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     text-align: left;
   }
 
@@ -413,7 +413,7 @@
     color: rgba(16, 185, 129, 1);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .add-sequence-btn:hover,
@@ -464,7 +464,7 @@
     border: none;
     color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color var(--duration-fast) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -496,7 +496,7 @@
     border-radius: clamp(4px, 1cqi, 8px);
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .rotation-btn:hover {
@@ -512,7 +512,7 @@
 
   .rotation-btn i {
     font-size: clamp(0.9rem, 3cqi, 1.1rem);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .rotation-btn span {
@@ -562,7 +562,7 @@
     font-weight: 500;
     font-size: clamp(0.85rem, 2.8cqi, 1rem);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .clear-btn {

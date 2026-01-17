@@ -408,7 +408,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-btn:hover {
@@ -476,7 +476,7 @@
       );
     border-radius: 12px;
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .capture-area:hover {
@@ -576,7 +576,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .btn-primary {

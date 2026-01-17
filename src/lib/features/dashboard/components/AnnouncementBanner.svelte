@@ -274,7 +274,7 @@
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     border: none;
   }
 
@@ -308,7 +308,7 @@
     border-radius: 8px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .dismiss-btn:hover {
@@ -336,7 +336,7 @@
     border-radius: 6px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     font-size: var(--font-size-compact);
   }
 

@@ -185,7 +185,7 @@
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 

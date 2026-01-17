@@ -114,7 +114,7 @@
     border-radius: 16px;
     padding: 24px;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .level-card:hover {

@@ -90,7 +90,7 @@ Displays A-Z grid with clear option
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .clear-btn:hover {
@@ -122,7 +122,7 @@ Displays A-Z grid with clear option
     font-size: var(--font-size-lg);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .letter-btn:hover {

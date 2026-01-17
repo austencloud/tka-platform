@@ -112,7 +112,7 @@
     text-decoration: none;
     font-weight: 600;
     z-index: 9999;
-    transition: top 0.2s ease;
+    transition: top var(--duration-normal) ease;
   }
 
   .skip-link:focus {

@@ -88,7 +88,7 @@ in a horizontal row when share is expanded.
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
-    animation: slideDown 0.2s ease-out;
+    animation: slideDown var(--duration-normal) ease-out;
   }
 
   @keyframes slideDown {
@@ -116,7 +116,7 @@ in a horizontal row when share is expanded.
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     flex: 1;
     min-width: 100px;
   }

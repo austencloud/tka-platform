@@ -79,7 +79,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .stat-card:hover {

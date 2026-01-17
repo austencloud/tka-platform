@@ -241,7 +241,7 @@
     padding: 4px 6px;
     border-radius: 4px;
     opacity: 0.5;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .zone-row.active {
@@ -267,7 +267,7 @@
     height: 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
-    transition: background 0.15s ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .zone-dot.filled {
@@ -306,7 +306,7 @@
     height: 100%;
     background: linear-gradient(90deg, #a855f7, #c4b5fd);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .confidence-value {

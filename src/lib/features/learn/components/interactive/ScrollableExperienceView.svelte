@@ -73,7 +73,7 @@ all content at once instead of stepping through one page at a time.
     border-radius: 10px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button:hover {

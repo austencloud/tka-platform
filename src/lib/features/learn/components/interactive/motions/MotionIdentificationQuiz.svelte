@@ -182,7 +182,7 @@ User must play animation first, then identify the motion type (1-6)
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .next-button:hover {

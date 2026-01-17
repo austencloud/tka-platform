@@ -365,7 +365,7 @@ Uses organizer and sizer services for section grouping and sizing.
     --option-header-border: rgba(0, 0, 0, 0.1);
     --option-header-shadow: rgba(0, 0, 0, 0.1);
     --option-header-text: #000000;
-    --option-dark-transition: 150ms ease-out;
+    --option-dark-transition: var(--duration-fast) ease-out;
   }
 
   :global(:root.dark) .option-picker-content {
@@ -385,12 +385,12 @@ Uses organizer and sizer services for section grouping and sizing.
 
   /* Entrance animation for swipe layout - fade only (no scale to avoid carousel dimension issues) */
   .animated-content.swipe-entrance {
-    animation: fade-in 200ms cubic-bezier(0.33, 1, 0.68, 1) both;
+    animation: fade-in var(--duration-normal) cubic-bezier(0.33, 1, 0.68, 1) both;
   }
 
   /* Entrance animation for desktop layout - scale + fade */
   .animated-content.scale-entrance {
-    animation: scale-in 280ms cubic-bezier(0.33, 1, 0.68, 1) both;
+    animation: scale-in var(--duration-emphasis) cubic-bezier(0.33, 1, 0.68, 1) both;
   }
 
   @keyframes fade-in {
@@ -451,7 +451,7 @@ Uses organizer and sizer services for section grouping and sizing.
     font-weight: 500;
     cursor: pointer;
     margin: 4px 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     -webkit-tap-highlight-color: transparent;
   }
 

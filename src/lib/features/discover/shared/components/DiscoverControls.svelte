@@ -108,7 +108,7 @@
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
     min-height: var(--min-touch-target);
     min-width: var(--min-touch-target);
@@ -136,7 +136,7 @@
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
   }
 

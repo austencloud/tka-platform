@@ -175,7 +175,7 @@
     border: 2px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 16px;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .grid-cell:hover {
@@ -226,7 +226,7 @@
     color: var(--semantic-error);
     cursor: pointer;
     opacity: 0;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     position: relative;
   }
 
@@ -263,7 +263,7 @@
     font-size: 3.5rem;
     opacity: 0.25;
     color: var(--cell-color);
-    transition: transform 0.3s ease;
+    transition: transform var(--duration-emphasis) ease;
   }
 
   .sequence-name {
@@ -289,7 +289,7 @@
     color: var(--theme-text-dim);
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .change-cell-btn:hover {
@@ -310,7 +310,7 @@
     border: none;
     color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .empty-cell-btn:hover {
@@ -327,7 +327,7 @@
     border: 2px dashed rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     font-size: 1.5rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .empty-cell-btn:hover .empty-icon {

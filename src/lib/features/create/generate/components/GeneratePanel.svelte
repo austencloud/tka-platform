@@ -105,7 +105,7 @@ Card-based architecture with integrated Generate button:
       helpMode = "inactive";
       selectedControl = null;
       isExiting = false;
-    }, 200); // Match CSS animation duration
+    }, 250); // Match CSS animation duration
   }
 
   // Handle clicks on the panel background (not on cards) to exit help mode
@@ -242,7 +242,7 @@ Card-based architecture with integrated Generate button:
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1.25rem;
     color: var(--theme-text);
 
@@ -260,7 +260,7 @@ Card-based architecture with integrated Generate button:
 
   .desktop-help-button:active {
     transform: scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .desktop-help-button:focus-visible {

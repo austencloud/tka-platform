@@ -443,7 +443,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .role-btn:hover:not(:disabled) {
@@ -479,7 +479,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .action-btn:hover:not(:disabled) {
@@ -556,7 +556,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .modal-btn.cancel {

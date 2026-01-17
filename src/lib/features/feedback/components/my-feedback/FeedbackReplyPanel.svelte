@@ -246,7 +246,7 @@
     font-size: 0.9375rem;
     line-height: 1.5;
     resize: vertical;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .reply-textarea:focus {
@@ -282,7 +282,7 @@
       var(--theme-text-dim, var(--theme-text-dim)) 80%,
       transparent
     );
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .char-count.met {
@@ -306,7 +306,7 @@
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .cancel-btn {

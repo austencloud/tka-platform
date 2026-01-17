@@ -79,7 +79,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     border-radius: 10px;
     border: 1px solid transparent;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .feature-row.indent {

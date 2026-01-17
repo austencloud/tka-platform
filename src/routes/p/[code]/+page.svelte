@@ -227,7 +227,7 @@
     font-weight: 600;
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .home-button:hover {

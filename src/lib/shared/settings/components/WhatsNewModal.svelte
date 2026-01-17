@@ -221,7 +221,7 @@
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(8px);
     z-index: 10000;
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn var(--duration-normal) ease-out;
   }
 
   @keyframes fadeIn {
@@ -250,7 +250,7 @@
     box-shadow:
       0 24px 80px rgba(0, 0, 0, 0.6),
       0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUp var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   @keyframes slideUp {
@@ -333,7 +333,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .close-btn:hover {
@@ -366,7 +366,7 @@
   .modal-body::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 4px;
-    transition: background 0.2s;
+    transition: background var(--duration-normal);
   }
 
   .modal-body::-webkit-scrollbar-thumb:hover {
@@ -447,7 +447,7 @@
     background: var(--cat-bg);
     border: 1.5px solid color-mix(in srgb, var(--cat-color) 20%, transparent);
     border-radius: 14px;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .category-card:hover {
@@ -561,7 +561,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .footer-btn.primary {

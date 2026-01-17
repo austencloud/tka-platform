@@ -236,7 +236,7 @@
     border-radius: 6px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: var(--font-size-sm);
   }
 

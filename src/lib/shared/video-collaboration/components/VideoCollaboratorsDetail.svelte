@@ -168,7 +168,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .invite-btn:hover {
@@ -290,7 +290,7 @@
     border-radius: 6px;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .remove-btn:hover {

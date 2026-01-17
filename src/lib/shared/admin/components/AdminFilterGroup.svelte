@@ -68,7 +68,7 @@
     color: var(--theme-text-dim);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: var(--font-size-compact);
     display: flex;
     align-items: center;

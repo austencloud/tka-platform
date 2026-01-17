@@ -194,7 +194,7 @@ Can operate as stepper (inline) or panel opener (click to select)
     overflow: visible;
     cursor: pointer;
 
-    animation: cardEnter 0.4s ease-out;
+    animation: cardEnter var(--duration-dramatic) ease-out;
   }
 
   .length-card.disabled {
@@ -236,7 +236,7 @@ Can operate as stepper (inline) or panel opener (click to select)
 
   .length-card:active {
     transform: scale(0.97);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-instant) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .length-card:focus-visible {
@@ -293,7 +293,7 @@ Can operate as stepper (inline) or panel opener (click to select)
     height: 20px;
     color: var(--theme-text-dim);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--duration-normal) ease;
     z-index: 2;
   }
 

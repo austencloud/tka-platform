@@ -316,7 +316,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
   }
 
@@ -385,7 +385,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     width: 100%;
   }
@@ -448,7 +448,7 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim);
     flex-shrink: 0;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .user-list-card:hover .user-list-arrow {
@@ -470,7 +470,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .achievement-card:hover {

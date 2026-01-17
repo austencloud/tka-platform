@@ -137,7 +137,7 @@
     border-radius: 10px;
     background: rgba(0, 0, 0, 0.3);
     overflow: hidden;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .pictograph-wrapper:active {
@@ -184,7 +184,7 @@
     color: white;
     cursor: pointer;
     font-size: var(--font-size-sm);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .transform-btn:hover:not(:disabled) {
@@ -219,7 +219,7 @@
     color: var(--theme-text-dim);
     cursor: pointer;
     font-size: var(--font-size-sm);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .shuffle-btn:hover:not(:disabled) {

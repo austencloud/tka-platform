@@ -345,7 +345,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target); /* WCAG 2.1 AA touch target minimum */
     box-sizing: border-box;
     background: var(--theme-card-bg);
@@ -421,7 +421,7 @@
     margin-left: 4px;
     font-size: var(--font-size-compact);
     opacity: 0.8;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .tag-chip.selected:hover .tag-check-icon {
@@ -441,7 +441,7 @@
     color: var(--theme-text-secondary, var(--theme-text-dim));
     font-size: var(--font-size-min);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
     box-sizing: border-box;
   }
@@ -483,7 +483,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-min);
     outline: none;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
     box-sizing: border-box;
   }
@@ -507,7 +507,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: var(--font-size-sm);
     flex-shrink: 0;
   }
@@ -563,7 +563,7 @@
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;

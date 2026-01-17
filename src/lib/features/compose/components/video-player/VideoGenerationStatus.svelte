@@ -125,6 +125,6 @@
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #4ade80, var(--semantic-success));
-    transition: width 0.2s ease;
+    transition: width var(--duration-normal) ease;
   }
 </style>

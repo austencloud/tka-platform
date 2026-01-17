@@ -33,7 +33,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    animation: slideIn 0.3s ease;
+    animation: slideIn var(--duration-emphasis) ease;
   }
 
   @keyframes slideIn {

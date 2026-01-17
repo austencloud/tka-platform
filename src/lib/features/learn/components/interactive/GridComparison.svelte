@@ -207,7 +207,7 @@ Shows both grids simultaneously for comparison
     font-size: 1.125rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     min-height: var(--min-touch-target);
   }
 
@@ -305,7 +305,7 @@ Shows both grids simultaneously for comparison
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--min-touch-target);
   }
 

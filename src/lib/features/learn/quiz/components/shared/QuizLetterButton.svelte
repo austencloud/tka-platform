@@ -45,7 +45,7 @@ QuizLetterButton - Answer button for quiz
     border: 1.5px solid rgba(255, 255, 255, 0.12);
     border-radius: 14px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .answer-btn:hover:not(:disabled) {
@@ -99,7 +99,7 @@ QuizLetterButton - Answer button for quiz
   .answer-btn.incorrect {
     background: rgba(239, 68, 68, 0.2);
     border-color: rgba(239, 68, 68, 0.6);
-    animation: incorrectShake 0.4s ease-out;
+    animation: incorrectShake var(--duration-dramatic) ease-out;
   }
 
   @keyframes incorrectShake {
@@ -132,7 +132,7 @@ QuizLetterButton - Answer button for quiz
     right: 6px;
     font-size: 0.9rem;
     font-weight: bold;
-    animation: iconPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: iconPop var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @keyframes iconPop {

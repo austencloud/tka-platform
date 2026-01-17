@@ -208,7 +208,7 @@
     font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .email-toggle:hover {
@@ -275,7 +275,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button:hover {

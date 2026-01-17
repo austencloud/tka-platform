@@ -191,7 +191,7 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
@@ -238,7 +238,7 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     border: 1px solid var(--border-color, var(--theme-stroke));
     border-radius: var(--border-radius-md, 8px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     font-size: var(--font-size-base);
     color: var(--foreground, #ffffff);
   }
@@ -270,7 +270,7 @@ Settings dialog for camera configuration including mirror toggle and camera sour
     border-radius: var(--border-radius-md, 8px);
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .camera-selector:hover {

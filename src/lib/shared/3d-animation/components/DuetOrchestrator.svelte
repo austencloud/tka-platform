@@ -209,7 +209,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-browser-btn:hover {
@@ -243,7 +243,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .view-mode-btn:hover {

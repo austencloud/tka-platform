@@ -503,7 +503,7 @@ Matches the desktop version exactly:
     /* Clip content to prevent spilling */
     overflow: hidden;
     /* FLIP-inspired smooth layout transitions */
-    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: transform var(--duration-emphasis) cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   /* Horizontal layout: side-by-side with aesthetic spacing */

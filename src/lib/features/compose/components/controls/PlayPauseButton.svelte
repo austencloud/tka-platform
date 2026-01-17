@@ -51,7 +51,7 @@
     color: rgba(255, 255, 255, 0.95);
     font-size: 1.2rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
   }

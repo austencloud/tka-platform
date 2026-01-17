@@ -68,7 +68,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-size: var(--font-size-sm, 14px);
   }
 
@@ -117,7 +117,7 @@
     border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
     cursor: pointer;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     font-size: var(--font-size-sm, 14px);
   }
 

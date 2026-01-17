@@ -279,7 +279,7 @@
     border-radius: 50%;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .close-button:hover {

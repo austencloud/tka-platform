@@ -399,7 +399,7 @@
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .suggestion-row:hover {
@@ -427,7 +427,7 @@
   .suggestion-arrow {
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .suggestion-row:hover .suggestion-arrow {

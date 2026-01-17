@@ -49,7 +49,7 @@
     border: 1px solid transparent;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     text-align: left;
   }
 
@@ -112,7 +112,7 @@
     );
     font-size: var(--font-size-compact);
     flex-shrink: 0;
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal);
   }
 
   .feedback-item:hover .item-arrow {

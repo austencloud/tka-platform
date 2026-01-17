@@ -106,7 +106,7 @@
     font-weight: 600;
     color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
     z-index: 1;
     white-space: nowrap;
     min-width: 100px;
@@ -163,7 +163,7 @@
     height: calc(100% - 8px);
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     border-radius: 8px;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 0;
     box-shadow:
       0 2px 8px rgba(99, 102, 241, 0.3),

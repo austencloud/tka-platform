@@ -422,7 +422,7 @@ Controls moved below the grid for better UX
   /* Active/pressed state */
   .control-button:active {
     transform: translateY(0) scale(0.98);
-    transition: transform 0.1s ease;
+    transition: transform var(--duration-instant) ease;
   }
 
   /* Focus state */

@@ -49,7 +49,7 @@
     border-radius: 10px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     font-size: 1.1rem;
     flex-shrink: 0;
   }

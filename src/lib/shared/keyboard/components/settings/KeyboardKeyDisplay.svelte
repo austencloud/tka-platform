@@ -143,7 +143,7 @@
       0 1px 3px var(--theme-shadow),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   /* Modifier keys - theme accent tint */

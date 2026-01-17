@@ -94,7 +94,7 @@ Shows pre-render progress and perfect playback badge.
   .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #4ade80, var(--semantic-success));
-    transition: width 0.3s ease;
+    transition: width var(--duration-emphasis) ease;
   }
 
   .perfect-mode-badge {

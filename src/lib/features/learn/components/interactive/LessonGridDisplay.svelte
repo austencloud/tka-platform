@@ -122,7 +122,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
   /* Background respects light/dark mode - matches PictographRenderer */
   .grid-background {
     fill: #ffffff;
-    transition: fill 150ms ease-out;
+    transition: fill var(--duration-fast) ease-out;
   }
 
   :global(:root.dark) .grid-background {
@@ -183,7 +183,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
 
   /* Staggered entrance: Center first, then N, E, S, W */
   .animate-entrance :global(#center_point) {
-    animation: pointPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+    animation: pointPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) var(--duration-normal) forwards;
   }
 
   .animate-entrance :global(#n_diamond_outer_point) {
@@ -204,7 +204,7 @@ Uses the actual GridSvg component for consistency with the rest of the app.
 
   /* Hand points appear after outer points */
   .animate-entrance :global(.normal-hand-point) {
-    animation: pointPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s forwards;
+    animation: pointPopIn var(--duration-dramatic) cubic-bezier(0.34, 1.56, 0.64, 1) 1.4s forwards;
   }
 
   /* Lines fade in last */

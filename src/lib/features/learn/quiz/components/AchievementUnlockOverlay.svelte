@@ -123,7 +123,7 @@ Features:
 		background: rgba(0, 0, 0, 0);
 		z-index: 9999;
 		pointer-events: none;
-		transition: background 0.3s ease;
+		transition: background var(--duration-emphasis) ease;
 	}
 
 	.overlay-backdrop.visible {
@@ -239,7 +239,7 @@ Features:
 		color: var(--theme-text-dim, #6b7280);
 		cursor: pointer;
 		opacity: 0.7;
-		transition: opacity 0.2s ease;
+		transition: opacity var(--duration-normal) ease;
 	}
 
 	.dismiss-hint:hover {

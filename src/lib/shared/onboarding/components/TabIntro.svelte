@@ -248,7 +248,7 @@
     );
 
     /* Smooth transition when sidebar collapses/expands */
-    transition: left 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: left var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .backdrop-dismiss {
@@ -384,7 +384,7 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .dot:hover {
@@ -409,7 +409,7 @@
     font-size: 1.0625rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow:
       0 4px 20px color-mix(in srgb, var(--accent-color) 40%, transparent),
       0 0 0 1px rgba(255, 255, 255, 0.1) inset;
@@ -428,7 +428,7 @@
 
   .intro-action i {
     font-size: 0.9375rem;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   .intro-action:hover i {

@@ -85,7 +85,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     overflow: hidden;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .version-group.expanded {
@@ -103,7 +103,7 @@
     border: none;
     color: var(--theme-text, var(--theme-text));
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background var(--duration-normal);
   }
 
   .version-header:hover {
@@ -163,7 +163,7 @@
   .expand-icon {
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal);
   }
 
   .version-items {

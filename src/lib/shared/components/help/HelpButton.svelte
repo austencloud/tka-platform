@@ -43,7 +43,7 @@
     border-radius: 50%;
     cursor: pointer;
     font-size: 1.1rem;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border: 1px solid var(--semantic-info-border, rgba(59, 130, 246, 0.3));
     background: linear-gradient(
       135deg,

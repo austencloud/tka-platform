@@ -154,7 +154,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideInUp {
@@ -347,7 +347,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .nav-button:hover:not(:disabled) {
@@ -395,7 +395,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
     font-size: 1.125rem;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .letter-chip:hover {
@@ -504,7 +504,7 @@ Eliminates ~1000 lines of duplicated code across the three letter type pages
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: var(--min-touch-target);
   }
 

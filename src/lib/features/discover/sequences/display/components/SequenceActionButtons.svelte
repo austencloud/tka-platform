@@ -216,7 +216,7 @@ Displays:
     font-size: clamp(12px, 3cqi, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     min-height: var(--touch-target-min);
     min-width: var(--touch-target-min);
   }

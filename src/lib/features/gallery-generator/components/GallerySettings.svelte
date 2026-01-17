@@ -108,7 +108,7 @@
     border-radius: 6px;
     color: #a1a1aa;
     cursor: pointer;
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .chip:hover:not(:disabled) {

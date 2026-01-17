@@ -238,7 +238,7 @@
     border: clamp(1px, 0.3cqi, 2px) solid var(--theme-stroke);
     border-radius: clamp(6px, 2cqi, 14px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .template-card:hover {

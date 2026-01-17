@@ -344,7 +344,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    animation: fadeSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeSlideIn var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes fadeSlideIn {
@@ -379,7 +379,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .motion-btn.blue.active {
@@ -423,7 +423,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .element-btn i {
@@ -461,7 +461,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .trail-btn.active {
@@ -482,7 +482,7 @@
   .ends-selector {
     display: flex;
     gap: 6px;
-    animation: fadeSlideIn 0.3s ease;
+    animation: fadeSlideIn var(--duration-emphasis) ease;
   }
 
   .ends-btn {
@@ -500,7 +500,7 @@
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .ends-btn.active {

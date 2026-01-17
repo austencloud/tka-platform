@@ -184,7 +184,7 @@
     overflow: visible;
     padding: 0; /* Removed padding - parent SequenceDisplay handles top spacing for word label */
     box-sizing: border-box;
-    transition: all 0.3s ease-out;
+    transition: all var(--duration-emphasis) ease-out;
   }
 
   .content-wrapper {
@@ -196,7 +196,7 @@
     height: 100%;
     flex: 1;
     min-height: 0;
-    transition: all 0.3s ease-out;
+    transition: all var(--duration-emphasis) ease-out;
   }
 
   .label-and-beatframe-unit {
@@ -208,7 +208,7 @@
     gap: 0;
     flex: 1 1 auto;
     min-height: 0;
-    transition: all 0.3s ease-out;
+    transition: all var(--duration-emphasis) ease-out;
   }
 
   /* Top bar with 3-column layout: Undo (left) | WordLabel (center) | Empty (right) */
@@ -275,7 +275,7 @@
     border-radius: 10px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .back-button:hover {

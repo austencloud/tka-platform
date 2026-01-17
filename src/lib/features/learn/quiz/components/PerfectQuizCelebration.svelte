@@ -97,7 +97,7 @@ Features:
 		background: rgba(0, 0, 0, 0);
 		z-index: 9999;
 		pointer-events: none;
-		transition: background 0.3s ease;
+		transition: background var(--duration-emphasis) ease;
 		overflow: hidden;
 	}
 
@@ -131,7 +131,7 @@ Features:
 		transform-origin: center center;
 		transform: rotate(calc(var(--ray-index) * 30deg));
 		animation: rayPulse 3s ease-in-out infinite;
-		animation-delay: calc(var(--ray-index) * 0.1s);
+		animation-delay: calc(var(--ray-index) * var(--duration-instant));
 	}
 
 	@keyframes rayPulse {

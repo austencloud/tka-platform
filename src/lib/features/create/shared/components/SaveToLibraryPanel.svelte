@@ -400,7 +400,7 @@
     background: var(--theme-card-bg);
     color: var(--theme-text);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -583,7 +583,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-base, 16px);
     font-family: inherit;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-sizing: border-box;
   }
 
@@ -623,7 +623,7 @@
     font-size: var(--font-size-lg, 18px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     display: flex;
     align-items: center;
     justify-content: center;

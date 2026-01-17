@@ -145,7 +145,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .disclosure-button:hover {
@@ -156,7 +156,7 @@
 
   .disclosure-button i {
     font-size: var(--font-size-compact);
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
     color: rgba(239, 68, 68, 0.7);
   }
 
@@ -249,7 +249,7 @@
     border-radius: 8px;
     color: var(--theme-text);
     outline: none;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .confirmation-input::placeholder {
@@ -280,7 +280,7 @@
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     border: none;
   }
 

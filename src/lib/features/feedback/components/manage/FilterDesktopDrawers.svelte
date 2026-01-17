@@ -184,7 +184,7 @@
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
     border-radius: 12px;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .drawer-close:hover {

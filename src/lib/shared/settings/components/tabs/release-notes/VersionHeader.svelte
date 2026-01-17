@@ -1,20 +1,19 @@
 <!-- VersionHeader - Badge and date display -->
 <script lang="ts">
   import { PRE_RELEASE_VERSION } from "$lib/features/feedback/domain/models/version-models";
+  import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
 
   let {
     version,
     releasedAt,
     onClose,
-    onCopy,
+    getCopyData,
   }: {
     version: string;
     releasedAt: Date;
     onClose: () => void;
-    onCopy?: () => void;
+    getCopyData?: () => string;
   } = $props();
-
-  let copied = $state(false);
 
   const isPreRelease = $derived(version === PRE_RELEASE_VERSION);
   const formattedDate = $derived(
@@ -24,25 +23,18 @@
       day: "numeric",
     })
   );
-
-  function handleCopy() {
-    onCopy?.();
-    copied = true;
-    setTimeout(() => (copied = false), 2000);
-  }
 </script>
 
 <header class="panel-header">
-  {#if onCopy}
-    <button
-      type="button"
+  {#if getCopyData}
+    <CopyForAIButton
+      getData={getCopyData}
+      ariaLabel="Copy release notes"
+      variant="icon-only"
+      size="md"
+      idleIcon="fa-copy"
       class="header-button copy-button"
-      onclick={handleCopy}
-      aria-label={copied ? "Copied!" : "Copy release notes"}
-      title={copied ? "Copied!" : "Copy release notes"}
-    >
-      <i class="fas {copied ? 'fa-check' : 'fa-copy'}" aria-hidden="true"></i>
-    </button>
+    />
   {/if}
 
   <button
@@ -86,7 +78,7 @@
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .header-button:hover {

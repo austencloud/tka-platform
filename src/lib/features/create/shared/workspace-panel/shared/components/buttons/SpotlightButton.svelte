@@ -55,7 +55,7 @@
     border-radius: 50%;
     color: var(--theme-text);
     cursor: pointer;
-    transition: all var(--transition-normal, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
     box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
   }
 
@@ -71,7 +71,7 @@
 
   .spotlight-button:active:not(.disabled) {
     transform: scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .spotlight-button:focus-visible {

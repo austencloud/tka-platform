@@ -226,7 +226,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     white-space: nowrap;
   }
 
@@ -283,7 +283,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     white-space: nowrap;
   }
 
@@ -325,7 +325,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     white-space: nowrap;
   }
 
@@ -356,7 +356,7 @@ Sequence Top Bar Controls - 2026 Modern Design (Compact)
     color: var(--theme-text-dim, var(--theme-text-dim));
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     flex-shrink: 0;
   }
 

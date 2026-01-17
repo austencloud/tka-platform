@@ -352,7 +352,7 @@ backgrounds are visible simultaneously during the transition.
     height: 100%;
     z-index: -1;
     opacity: 0;
-    transition: opacity 0.3s ease-in-out;
+    transition: opacity var(--duration-emphasis) ease-in-out;
   }
 
   .background-container.initialized {

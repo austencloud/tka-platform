@@ -57,7 +57,7 @@
     border: 1px solid var(--theme-stroke, var(--theme-stroke));
     border-radius: 10px;
     padding: 10px 12px;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     min-height: var(--min-touch-target); /* Touch target */
     box-sizing: border-box;
   }
@@ -112,7 +112,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
     border-radius: 6px;
     min-width: var(--min-touch-target);
     min-height: var(--min-touch-target);

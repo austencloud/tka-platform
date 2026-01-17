@@ -247,7 +247,7 @@ Matches the desktop Python app navigation pattern exactly.
     cursor: pointer;
     font-size: clamp(1.1rem, 2.5vw, 1.4rem);
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: center;
     min-height: clamp(48px, 8vw, 48px);
     display: flex;

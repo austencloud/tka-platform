@@ -676,7 +676,7 @@ Supports:
     color: white;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--duration-normal);
   }
 
   .direction-btn:hover {

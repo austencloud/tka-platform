@@ -105,7 +105,7 @@
 		font-style: italic;
 		min-height: 1.8em;
 		opacity: 0;
-		transition: opacity 300ms ease-out;
+		transition: opacity var(--duration-emphasis) ease-out;
 	}
 
 	.description.secondary.visible {

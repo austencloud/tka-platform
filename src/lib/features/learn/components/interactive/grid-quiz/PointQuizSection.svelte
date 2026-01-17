@@ -185,7 +185,7 @@ PointQuizSection - Click on the correct grid point
     flex-direction: column;
     align-items: center;
     gap: 1.25rem;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--duration-emphasis) ease;
   }
 
   @keyframes fadeIn {
@@ -244,7 +244,7 @@ PointQuizSection - Click on the correct grid point
 
   .point-group {
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .point-group:hover .main-point {
@@ -259,11 +259,11 @@ PointQuizSection - Click on the correct grid point
 
   .point-group.correct .main-point,
   .point-group.reveal .main-point {
-    animation: correctPop 0.4s ease;
+    animation: correctPop var(--duration-dramatic) ease;
   }
 
   .point-group.incorrect .main-point {
-    animation: shake 0.4s ease;
+    animation: shake var(--duration-dramatic) ease;
   }
 
   @keyframes correctPop {
@@ -292,7 +292,7 @@ PointQuizSection - Click on the correct grid point
   }
 
   .point-label {
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--duration-emphasis) ease;
   }
 
   .glow {
@@ -314,7 +314,7 @@ PointQuizSection - Click on the correct grid point
     border-radius: 10px;
     font-size: 0.9375rem;
     text-align: center;
-    animation: slideUp 0.3s ease;
+    animation: slideUp var(--duration-emphasis) ease;
   }
 
   @keyframes slideUp {

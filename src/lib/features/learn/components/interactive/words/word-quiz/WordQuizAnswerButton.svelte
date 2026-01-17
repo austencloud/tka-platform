@@ -54,7 +54,7 @@ WordQuizAnswerButton - Single answer option with letter prefix
     color: white;
     font-size: 0.9375rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     text-align: left;
     position: relative;
     width: 100%;
@@ -115,7 +115,7 @@ WordQuizAnswerButton - Single answer option with letter prefix
   .answer-btn.incorrect {
     background: rgba(255, 74, 74, 0.15);
     border-color: rgba(255, 74, 74, 0.5);
-    animation: shake 0.4s ease;
+    animation: shake var(--duration-dramatic) ease;
   }
 
   .answer-btn.incorrect .option-letter {

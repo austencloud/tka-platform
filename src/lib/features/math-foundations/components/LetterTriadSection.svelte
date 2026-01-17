@@ -132,7 +132,7 @@
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
     padding: 24px;
-    transition: all 0.25s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .letter-card:hover {

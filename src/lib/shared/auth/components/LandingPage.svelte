@@ -233,7 +233,7 @@
   }
 
   .landing-page {
-    --theme-transition: 300ms ease-in-out;
+    --theme-transition: var(--duration-emphasis) ease-in-out;
 
     position: fixed;
     inset: 0;
@@ -458,7 +458,7 @@
     font-weight: 600;
     color: var(--theme-accent-strong, #8b5cf6);
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color var(--duration-normal) ease;
   }
 
   .mode-link:hover {

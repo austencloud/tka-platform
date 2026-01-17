@@ -145,7 +145,7 @@
     background: rgba(59, 130, 246, 0.15);
     border: 1px solid rgba(59, 130, 246, 0.3);
     border-radius: clamp(4px, 0.8vw, 6px);
-    transition: all 0.25s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .modern-slider.dragging .slider-value {
@@ -207,7 +207,7 @@
       rgba(96, 165, 250, 0.9) 50%,
       rgba(59, 130, 246, 0.9) 100%
     );
-    transition: width 0.1s ease;
+    transition: width var(--duration-instant) ease;
     border-radius: clamp(3px, 0.6vw, 4px);
   }
 
@@ -223,7 +223,7 @@
       rgba(59, 130, 246, 0.4) 100%
     );
     filter: blur(4px);
-    transition: width 0.1s ease;
+    transition: width var(--duration-instant) ease;
     opacity: 0.6;
     pointer-events: none;
   }
@@ -254,7 +254,7 @@
     transform: translate(-50%, -50%);
     pointer-events: none;
     z-index: 5;
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .modern-slider.dragging .slider-thumb-visual {
@@ -279,7 +279,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .modern-slider.dragging .thumb-inner {

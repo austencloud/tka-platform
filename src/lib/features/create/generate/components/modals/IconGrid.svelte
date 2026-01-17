@@ -92,7 +92,7 @@ Provides a beautiful, consistent icon selection experience
     border: 2px solid var(--theme-stroke, var(--theme-stroke-strong));
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
     position: relative;
     overflow: hidden;
@@ -108,7 +108,7 @@ Provides a beautiful, consistent icon selection experience
       transparent 70%
     );
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--duration-emphasis) ease;
   }
 
   .icon-button:hover::before {

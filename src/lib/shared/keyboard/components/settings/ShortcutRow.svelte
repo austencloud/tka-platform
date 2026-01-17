@@ -91,7 +91,7 @@
     border-left: 3px solid transparent;
     cursor: pointer;
     text-align: left;
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -162,7 +162,7 @@
     font-size: var(--font-size-compact);
     cursor: pointer;
     opacity: 0;
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .shortcut-row:hover .reset-btn {
@@ -194,7 +194,7 @@
     font-size: var(--font-size-compact);
     color: var(--theme-text-dim);
     opacity: 0;
-    transition: opacity 0.1s ease;
+    transition: opacity var(--duration-instant) ease;
   }
 
   .shortcut-row:hover .edit-icon {

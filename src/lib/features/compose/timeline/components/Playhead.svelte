@@ -100,7 +100,7 @@
       drop-shadow(
         0 0 6px color-mix(in srgb, var(--semantic-error) 50%, transparent)
       );
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .playhead:hover .playhead-head,

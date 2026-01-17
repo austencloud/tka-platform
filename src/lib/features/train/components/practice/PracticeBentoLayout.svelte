@@ -285,7 +285,7 @@
     color: var(--theme-text, var(--theme-text));
     font-size: 0.85rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .sequence-info:hover {
@@ -354,7 +354,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .settings-toggle:hover {
@@ -369,7 +369,7 @@
 
   .toggle-icon {
     font-size: 0.7rem;
-    transition: transform 0.2s;
+    transition: transform var(--duration-normal);
   }
 
   .bento-grid-settings {

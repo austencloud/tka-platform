@@ -47,7 +47,7 @@
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all var(--transition-normal, 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
     font-size: var(--font-size-lg);
     color: var(--theme-text);
 
@@ -72,7 +72,7 @@
 
   .panel-button:active:not(:disabled) {
     transform: scale(0.95);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .panel-button:focus-visible {

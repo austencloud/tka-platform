@@ -153,7 +153,7 @@ Only shown when motion has turns > 0 and rotation direction is not NO_ROTATION.
     color: #666;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     white-space: nowrap;
     flex-shrink: 0;
   }

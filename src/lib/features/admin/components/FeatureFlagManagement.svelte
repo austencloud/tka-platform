@@ -90,7 +90,7 @@
     border-bottom: 1px solid rgba(239, 68, 68, 0.2);
     color: #fca5a5;
     font-size: var(--font-size-sm, 14px);
-    animation: slideDown 0.2s ease-out;
+    animation: slideDown var(--duration-normal) ease-out;
   }
 
   @keyframes slideDown {
@@ -125,7 +125,7 @@
     color: inherit;
     cursor: pointer;
     opacity: 0.7;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .error-banner button:hover {

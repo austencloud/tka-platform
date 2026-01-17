@@ -371,7 +371,7 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .action-btn:hover:not(:disabled) {

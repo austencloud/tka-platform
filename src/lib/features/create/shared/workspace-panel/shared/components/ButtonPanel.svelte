@@ -241,11 +241,11 @@
   .faded-out {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 200ms ease-out;
+    transition: opacity var(--duration-normal) ease-out;
   }
 
   .mobile-only:not(.faded-out) {
-    transition: opacity 200ms ease-in;
+    transition: opacity var(--duration-normal) ease-in;
   }
 
   /* Remove mobile tap highlight (blue selection box) */

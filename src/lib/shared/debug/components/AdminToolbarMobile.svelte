@@ -356,7 +356,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-lg);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 
@@ -402,7 +402,7 @@
     font-size: var(--font-size-compact);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .banner-action:active {
@@ -447,7 +447,7 @@
     color: var(--theme-text);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 
@@ -480,7 +480,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .mobile-chip-remove:active {
@@ -502,7 +502,7 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
   }
 
@@ -542,7 +542,7 @@
     font-size: var(--font-size-sm);
     text-align: center;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all var(--duration-fast);
   }
 
   .action-card:active:not(:disabled) {
@@ -590,7 +590,7 @@
     color: #86efac;
     font-size: var(--font-size-sm);
     font-weight: 500;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 
   @keyframes fadeIn {

@@ -172,7 +172,7 @@
       0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 
     padding: 14px 20px;
-    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideDown var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .banner-content {
@@ -261,7 +261,7 @@
     font-size: var(--font-size-compact);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
     box-shadow: 0 2px 8px
       color-mix(
@@ -314,7 +314,7 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .dismiss-btn:hover {

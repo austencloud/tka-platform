@@ -60,7 +60,7 @@
   border: 1px solid var(--theme-stroke);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--duration-normal) ease;
 }
 
 .surface-card-interactive:hover {

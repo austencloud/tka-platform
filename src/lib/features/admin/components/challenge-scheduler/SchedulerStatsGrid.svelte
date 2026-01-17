@@ -79,7 +79,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .stat-card:hover {

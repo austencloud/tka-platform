@@ -114,7 +114,7 @@ Features:
     border: none;
     color: var(--foreground-muted, var(--theme-text-dim));
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
     border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 500;
@@ -159,7 +159,7 @@ Features:
     width: calc(100% / 2);
     height: 2px;
     background: var(--accent, #4a9eff);
-    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform var(--duration-emphasis) cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1;
     border-radius: 2px 2px 0 0;
   }

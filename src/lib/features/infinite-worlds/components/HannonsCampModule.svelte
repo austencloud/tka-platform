@@ -1515,7 +1515,7 @@
     color: rgba(255, 255, 255, 0.5);
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .mode-btn:hover {
@@ -1613,7 +1613,7 @@
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .boundary-btn.close {
@@ -1658,7 +1658,7 @@
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .overhead-action:hover {
@@ -1709,7 +1709,7 @@
     color: rgba(255, 255, 255, 0.5);
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .copy-btn:hover {

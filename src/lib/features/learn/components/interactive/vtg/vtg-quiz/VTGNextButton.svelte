@@ -34,7 +34,7 @@ VTGNextButton - Next question/see results button
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .next-button:hover {

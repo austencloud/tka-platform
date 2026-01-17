@@ -121,7 +121,7 @@ Usage:
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     box-shadow: 0 2px 8px
       color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }

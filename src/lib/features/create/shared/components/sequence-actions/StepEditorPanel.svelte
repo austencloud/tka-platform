@@ -413,7 +413,7 @@
     border-radius: 50%;
     cursor: pointer;
     font-size: var(--font-size-base);
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     border: 1px solid var(--theme-stroke-strong);
   }
 

@@ -103,7 +103,7 @@ Integrates the "Generate New" button into the card grid layout so it scales with
     text-shadow: var(--card-text-shadow);
 
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -157,7 +157,7 @@ Integrates the "Generate New" button into the card grid layout so it scales with
 
   .generate-button-card:active:not(:disabled) {
     transform: scale(0.98);
-    transition: all 0.1s ease;
+    transition: all var(--duration-instant) ease;
   }
 
   .generate-button-card:disabled {

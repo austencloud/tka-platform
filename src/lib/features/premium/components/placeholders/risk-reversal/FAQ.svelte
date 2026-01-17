@@ -129,7 +129,7 @@
     font-weight: 600;
     text-align: left;
     cursor: pointer;
-    transition: background var(--transition-fast, 150ms ease);
+    transition: background var(--transition-fast, var(--duration-fast) ease);
   }
 
   .faq-question:hover {
@@ -139,7 +139,7 @@
   .faq-question i {
     flex-shrink: 0;
     color: var(--theme-accent, var(--theme-accent));
-    transition: transform var(--transition-fast, 150ms ease);
+    transition: transform var(--transition-fast, var(--duration-fast) ease);
   }
 
   .faq-answer {
@@ -147,7 +147,7 @@
     font-size: var(--font-size-min);
     color: var(--theme-text-dim);
     line-height: 1.6;
-    animation: slideDown 200ms ease;
+    animation: slideDown var(--duration-normal) ease;
   }
 
   @keyframes slideDown {

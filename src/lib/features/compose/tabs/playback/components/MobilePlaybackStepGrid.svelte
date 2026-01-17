@@ -104,7 +104,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
     overflow: hidden;
   }
 

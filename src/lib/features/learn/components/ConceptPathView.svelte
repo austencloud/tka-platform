@@ -216,7 +216,7 @@ Shows:
   .concept-path::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 3px;
-    transition: background 0.2s ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .concept-path::-webkit-scrollbar-thumb:hover {
@@ -291,7 +291,7 @@ Shows:
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
   }
 
   .review-button:hover {
@@ -313,7 +313,7 @@ Shows:
     font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--duration-normal) ease;
     max-width: 300px;
     margin: 0 auto;
     width: fit-content;
@@ -326,7 +326,7 @@ Shows:
 
   .view-all-toggle i {
     font-size: 0.75rem;
-    transition: transform 0.2s ease;
+    transition: transform var(--duration-normal) ease;
   }
 
   /* All concepts path */

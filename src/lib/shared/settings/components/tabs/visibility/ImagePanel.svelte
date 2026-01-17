@@ -194,7 +194,7 @@
     border-radius: clamp(6px, 2cqi, 8px);
     font-size: var(--font-size-sm);
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .panel-icon.image-icon {
@@ -297,7 +297,7 @@
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -442,7 +442,7 @@
     font-size: var(--font-size-compact);
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    transition: all 150ms ease;
+    transition: all var(--duration-fast) ease;
   }
 
   .notes-input::placeholder {

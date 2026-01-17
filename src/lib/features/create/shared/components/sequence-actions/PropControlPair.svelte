@@ -69,7 +69,7 @@
     padding: 14px;
     border-radius: 12px;
     border: 1px solid;
-    transition: all 0.15s ease;
+    transition: all var(--duration-fast) ease;
   }
 
   /* Blue - Indigo glass pane */

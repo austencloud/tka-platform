@@ -70,7 +70,7 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
     max-width: 700px;
     margin: 0 auto;
     width: 100%;
-    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInUp var(--duration-dramatic) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @keyframes slideInUp {
@@ -257,7 +257,7 @@ Page 1 of 5: Overview of Type 1 letters and motion patterns
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all var(--duration-emphasis);
     min-height: var(--min-touch-target);
     background: linear-gradient(
       135deg,

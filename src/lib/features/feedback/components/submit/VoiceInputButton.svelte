@@ -242,7 +242,7 @@
     border-radius: 50%;
     color: var(--theme-accent-strong);
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all var(--duration-normal) ease;
     flex-shrink: 0;
   }
 
