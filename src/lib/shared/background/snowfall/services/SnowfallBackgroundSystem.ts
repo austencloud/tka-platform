@@ -33,6 +33,8 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
 
   private quality: QualityLevel = "medium";
   private isInitialized: boolean = false;
+  // Track if we initialized with valid dimensions (to detect the 0x0 init bug)
+  private initializedWithValidDimensions = false;
 
   // Layer visibility
   private layers: SnowfallLayers = {
@@ -56,6 +58,8 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
 
     this.shootingStarState = this.shootingStarSystem.initialState;
     this.isInitialized = true;
+    // Track whether we got real dimensions (canvas may not be laid out yet)
+    this.initializedWithValidDimensions = dimensions.width > 0 && dimensions.height > 0;
 
     // Pre-populate: Simulate animation already running
     // Distribute snowflakes across the entire viewport height
@@ -69,9 +73,9 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
 
   public update(dimensions: Dimensions, frameMultiplier: number = 1.0): void {
     if (dimensions.width > 0 && dimensions.height > 0) {
-      // If not initialized, or if initialized but snowflakes are unexpectedly empty (e.g. after temporary invalid dimensions)
-      // and we have valid dimensions, (re-)initialize.
-      if (!this.isInitialized || this.snowflakes.length === 0) {
+      // Re-initialize if: not initialized, no snowflakes, OR we initially got 0x0 dimensions
+      // The 0x0 case happens when canvas isn't laid out yet - all particles spawn at (0,0)
+      if (!this.isInitialized || this.snowflakes.length === 0 || !this.initializedWithValidDimensions) {
         this.initialize(dimensions, this.quality);
       }
     }
@@ -143,7 +147,9 @@ export class SnowfallBackgroundSystem implements IBackgroundSystem {
   }
 
   public cleanup(): void {
-    // Clean up any resources if needed
+    this.snowflakes = [];
+    this.isInitialized = false;
+    this.initializedWithValidDimensions = false;
   }
 
   /**

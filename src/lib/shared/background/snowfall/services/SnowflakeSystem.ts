@@ -115,7 +115,13 @@ export const createSnowflakeSystem = () => {
     }
 
     const count = Math.floor(width * height * adjustedDensity);
-    return Array.from({ length: count }, () => createSnowflake(width, height));
+    const flakes = Array.from({ length: count }, () => createSnowflake(width, height));
+
+    // Pre-sort by depth at initialization (depth never changes)
+    // This avoids sorting every frame in draw()
+    flakes.sort((a, b) => a.depth - b.depth);
+
+    return flakes;
   };
 
   const update = (
@@ -154,10 +160,22 @@ export const createSnowflakeSystem = () => {
         };
       }
 
-      if (newX > width || newX < 0) {
+      // Allow flakes to drift off-screen before recycling (buffer zone)
+      const buffer = 50;
+      if (newX > width + buffer) {
+        // Drifted off right edge - reappear from left
         return {
           ...flake,
-          x: Math.random() * width,
+          x: -buffer + Math.random() * 10,
+          rotation: newRotation,
+          sparklePhase: newSparklePhase,
+        };
+      }
+      if (newX < -buffer) {
+        // Drifted off left edge - reappear from right
+        return {
+          ...flake,
+          x: width + buffer - Math.random() * 10,
           rotation: newRotation,
           sparklePhase: newSparklePhase,
         };
@@ -180,82 +198,21 @@ export const createSnowflakeSystem = () => {
   ): void => {
     if (!ctx) return;
 
-    // Sort flakes by depth for proper layering (back to front)
-    const sortedFlakes = [...flakes].sort((a, b) => a.depth - b.depth);
-
-    sortedFlakes.forEach((flake) => {
+    // Flakes are pre-sorted by depth at initialization (depth never changes)
+    // so we can iterate directly without sorting each frame
+    flakes.forEach((flake) => {
       ctx.save();
       ctx.translate(flake.x, flake.y);
       ctx.rotate(flake.rotation);
 
-      // Calculate sparkle intensity with smoother animation
-      const sparkleIntensity =
-        flake.sparkle > 0
-          ? flake.sparkle * (0.6 + 0.4 * Math.sin(flake.sparklePhase))
-          : 0;
-
-      // Enhanced depth-based effects
+      // Simple depth-based opacity (no sparkle - it caused visibility glitches)
       const depthFactor = 0.3 + flake.depth * 0.7;
-      const baseOpacity = flake.opacity * depthFactor;
-      const bloomRadius = flake.size * (1 + sparkleIntensity);
+      ctx.globalAlpha = flake.opacity * depthFactor;
 
-      // Multi-layer glow effect for magical appearance
-      if (sparkleIntensity > 0.05) {
-        // Outer soft glow
-        ctx.globalAlpha = sparkleIntensity * 0.15;
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = "#b3d9ff";
-        ctx.shadowBlur = bloomRadius * 3;
-        ctx.fill(flake.shape);
-
-        // Inner bright glow
-        ctx.globalAlpha = sparkleIntensity * 0.25;
-        ctx.shadowColor = "#ffffff";
-        ctx.shadowBlur = bloomRadius * 1.5;
-        ctx.fill(flake.shape);
-
-        ctx.shadowBlur = 0;
-      }
-
-      // Main snowflake with enhanced colors
-      ctx.globalAlpha = baseOpacity + sparkleIntensity * 0.3;
-      ctx.fillStyle = flake.color;
+      // Single stroke pass - no shadowBlur, no fills, no multi-pass rendering
       ctx.strokeStyle = flake.color;
-      ctx.lineWidth = 0.3 + depthFactor * 0.4;
-
-      // Enhanced rendering with both fill and stroke
-      ctx.fill(flake.shape);
+      ctx.lineWidth = 0.4 + depthFactor * 0.5;
       ctx.stroke(flake.shape);
-
-      // Crystalline sparkle highlights
-      if (sparkleIntensity > 0.3) {
-        ctx.globalAlpha = sparkleIntensity * 0.9;
-
-        // Central bright spot
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(0, 0, flake.size * 0.15, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Cross sparkle effect
-        const sparkleSize = flake.size * 0.4;
-        ctx.strokeStyle = "#f8faff";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(-sparkleSize, 0);
-        ctx.lineTo(sparkleSize, 0);
-        ctx.moveTo(0, -sparkleSize);
-        ctx.lineTo(0, sparkleSize);
-        ctx.stroke();
-      }
-
-      // Subtle edge glow for depth
-      if (flake.depth > 0.7) {
-        ctx.globalAlpha = 0.1;
-        ctx.strokeStyle = "#e6f3ff";
-        ctx.lineWidth = 2;
-        ctx.stroke(flake.shape);
-      }
 
       ctx.restore();
     });

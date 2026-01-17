@@ -57,6 +57,8 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
   private petals: SakuraPetal[] = [];
   private quality: QualityLevel = "medium";
   private isInitialized = false;
+  // Track if we initialized with valid dimensions (to detect the 0x0 init bug)
+  private initializedWithValidDimensions = false;
 
   // Time of day preset
   private currentPreset: TimeOfDayPreset = TWILIGHT_PRESET;
@@ -90,11 +92,15 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
     this.petals = this.sakuraSystem.initialize(dimensions, quality);
     this.windSystem.initialize();
     this.isInitialized = true;
+    // Track whether we got real dimensions (canvas may not be laid out yet)
+    this.initializedWithValidDimensions = dimensions.width > 0 && dimensions.height > 0;
   }
 
   public update(dimensions: Dimensions, frameMultiplier: number = 1.0): void {
     if (dimensions.width > 0 && dimensions.height > 0) {
-      if (!this.isInitialized || this.petals.length === 0) {
+      // Re-initialize if: not initialized, no petals, OR we initially got 0x0 dimensions
+      // The 0x0 case happens when canvas isn't laid out yet - all petals spawn at (0,0)
+      if (!this.isInitialized || this.petals.length === 0 || !this.initializedWithValidDimensions) {
         this.initialize(dimensions, this.quality);
       }
     }
@@ -230,6 +236,7 @@ export class SakuraDriftBackgroundSystem implements IBackgroundSystem {
   public cleanup(): void {
     this.petals = [];
     this.isInitialized = false;
+    this.initializedWithValidDimensions = false;
   }
 
   /**

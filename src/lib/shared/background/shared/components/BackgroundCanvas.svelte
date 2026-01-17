@@ -11,7 +11,7 @@ backgrounds are visible simultaneously during the transition.
     BackgroundSystem,
     PerformanceMetrics,
   } from "../domain/models/background-models";
-  import type { BackgroundType } from "../domain/enums/background-enums";
+  import { BackgroundType } from "../domain/enums/background-enums";
   import type { QualityLevel } from "../domain/types/background-types";
   import { BackgroundFactory } from "../services/implementations/BackgroundFactory";
 
@@ -55,6 +55,10 @@ backgrounds are visible simultaneously during the transition.
   // Track background types
   let currentBackgroundType: BackgroundType | null = null;
   let targetBackgroundType: BackgroundType | null = null;
+
+  // Firefly Forest uses fixed positioning (trees look awkward when stretched)
+  // All other backgrounds scroll with content (looks better for gradients, particles)
+  let isFixedPosition = $derived(backgroundType === BackgroundType.FIREFLY_FOREST);
 
   // Create background system when props change
   $effect(() => {
@@ -328,7 +332,7 @@ backgrounds are visible simultaneously during the transition.
   }
 </script>
 
-<div class="background-container" class:initialized={isInitialized}>
+<div class="background-container" class:initialized={isInitialized} class:fixed={isFixedPosition}>
   <canvas
     bind:this={canvasA}
     class="background-canvas canvas-a"
@@ -357,6 +361,11 @@ backgrounds are visible simultaneously during the transition.
 
   .background-container.initialized {
     opacity: 1;
+  }
+
+  /* Fixed positioning for backgrounds that don't look good stretched (e.g., Firefly Forest) */
+  .background-container.fixed {
+    position: fixed;
   }
 
   .background-canvas {
