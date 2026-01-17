@@ -137,6 +137,8 @@ Usage:
   const isExpanded = $derived(widthMultiplier > 1);
   // Offset to center the core 950x950 content in the expanded viewBox
   const coreContentOffset = $derived((expandedWidth - BASE_SIZE) / 2);
+  // X offset for right-aligned glyphs (VTG, Elemental) to stay at right edge
+  const rightGlyphOffset = $derived(expandedWidth - BASE_SIZE);
 
   // Derived beat context
   const isStartPosition = $derived(stepNumber === 0);
@@ -392,6 +394,7 @@ Usage:
         visible={showElemental}
         {previewMode}
         onToggle={onToggleElemental}
+        xOffset={rightGlyphOffset}
       />
 
       <!-- VTG glyph -->
@@ -402,6 +405,7 @@ Usage:
         visible={showVTG}
         {previewMode}
         onToggle={onToggleVTG}
+        xOffset={rightGlyphOffset}
       />
 
       <!-- Position glyph -->
@@ -413,6 +417,7 @@ Usage:
         visible={showPositions}
         {previewMode}
         onToggle={onTogglePositions}
+        centerX={expandedWidth / 2}
       />
   </svg>
 </div>
