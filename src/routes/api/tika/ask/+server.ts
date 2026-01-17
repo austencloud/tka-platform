@@ -1,12 +1,13 @@
 /**
- * TIKA Ask API Endpoint (Tool-Use Architecture)
+ * TIKA Ask API Endpoint (AI SDK Streaming)
  *
- * Server-side endpoint for the TIKA AI assistant.
- * Uses Anthropic's tool-use API so Haiku can call educational tools
- * to retrieve authoritative information before responding.
+ * Server-side endpoint for the TIKA AI assistant using Vercel AI SDK.
+ * Streams responses word-by-word for modern chat UX.
  */
 
-import { json, type RequestHandler } from '@sveltejs/kit'
+import type { RequestHandler } from '@sveltejs/kit'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { streamText, tool, convertToCoreMessages, type UIMessage, jsonSchema } from 'ai'
 import { ANTHROPIC_API_KEY } from '$env/static/private'
 import fs from 'fs'
 import path from 'path'
@@ -14,76 +15,7 @@ import { buildSystemPrompt } from '$lib/features/learn/ai/system-prompts'
 import { deriveUserOverlay } from '$lib/features/learn/ai/knowledge-graph'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Types
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface AssistantRequest {
-	question: string
-	userId: string
-	completedConcepts: string[]
-	language?: string
-}
-
-interface ToolCall {
-	name: string
-	input: Record<string, unknown>
-	result: unknown
-}
-
-interface ContextData {
-	type: 'letter' | 'term' | 'comparison' | 'list' | 'position' | null
-	letter?: {
-		letter: string
-		type: number
-		typeName: string
-		startPosition: string
-		endPosition: string
-		blueMotion: {
-			motionType: string
-			startLocation: string
-			endLocation: string
-			rotationDirection: string
-		}
-		redMotion: {
-			motionType: string
-			startLocation: string
-			endLocation: string
-			rotationDirection: string
-		}
-	}
-	term?: {
-		term: string
-		definition: string
-		examples: string[]
-		relatedTerms: string[]
-	}
-	comparison?: {
-		letter1: string
-		letter2: string
-		type1: string
-		type2: string
-	}
-	position?: {
-		name: string
-		angleDegrees: string
-		description: string
-	}
-}
-
-interface AssistantResponse {
-	explanation: string
-	showPictograph: boolean
-	pictographLetter?: string
-	pictographVariation?: number
-	source: 'tool-use'
-	provider: 'haiku'
-	latencyMs: number
-	toolsCalled: ToolCall[]
-	contextData?: ContextData
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Knowledge Base & Data Loading
+// Types & Data Loading
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface MotionData {
@@ -127,7 +59,6 @@ let allPictographs: PictographData[] = []
 let glossary: Record<string, GlossaryEntry> = {}
 let letterTypes: Record<string, LetterTypeInfo> = {}
 
-// Letter to type lookup
 const TKA_LETTER_TYPES: Record<string, { letters: string[]; name: string }> = {
 	'1': { name: 'Dual-Shift', letters: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V'] },
 	'2': { name: 'Shift', letters: ['W', 'X', 'Y', 'Z', 'Σ', 'Δ', 'Θ', 'Ω'] },
@@ -223,84 +154,15 @@ function ensureDataLoaded() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Tool Definitions (matches MCP server tools)
+// Tool Execute Functions
 // ═══════════════════════════════════════════════════════════════════════════
 
-const TIKA_TOOLS = [
-	{
-		name: 'get_letter_explanation',
-		description: 'Get a comprehensive explanation of a TKA letter including its type, motion characteristics, and variations. Use this when asked about a specific letter.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				letter: { type: 'string', description: 'The letter to explain (A-Z or Greek)' },
-				variation: { type: 'number', description: 'Variation index (0-based, optional)' }
-			},
-			required: ['letter']
-		}
-	},
-	{
-		name: 'get_term_definition',
-		description: 'Get the definition of a TKA domain term like alpha, pro, shift, static, beta, gamma, etc. Use this when asked what a term means.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				term: { type: 'string', description: 'The term to define' }
-			},
-			required: ['term']
-		}
-	},
-	{
-		name: 'compare_letters',
-		description: 'Compare two TKA letters side by side, explaining their differences. Use this when asked to compare or contrast letters.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				letter1: { type: 'string', description: 'First letter to compare' },
-				letter2: { type: 'string', description: 'Second letter to compare' }
-			},
-			required: ['letter1', 'letter2']
-		}
-	},
-	{
-		name: 'list_letters_by_type',
-		description: 'List all letters of a specific type (1-6). Use this when asked about letter types or which letters are in a type.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				type: { type: 'number', description: 'Letter type 1-6: 1=Dual-Shift, 2=Shift, 3=Cross-Shift, 4=Dash, 5=Dual-Dash, 6=Static' }
-			},
-			required: ['type']
-		}
-	},
-	{
-		name: 'get_position_info',
-		description: 'Get information about a TKA position (alpha, beta, gamma, zeta, eta). Use this when asked about positions or hand placements.',
-		input_schema: {
-			type: 'object' as const,
-			properties: {
-				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta)' }
-			},
-			required: ['position']
-		}
-	}
-]
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Tool Execution (replicates MCP server logic)
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface ToolResult {
-	text: string
-	contextData?: ContextData
-}
-
-function executeGetLetterExplanation(letter: string, variation: number = 0): ToolResult {
+function executeGetLetterExplanation(letter: string, variation: number = 0): string {
 	ensureDataLoaded()
 
 	const variations = allPictographs.filter((p) => p.letter === letter)
 	if (variations.length === 0) {
-		return { text: `Letter "${letter}" not found in the TKA alphabet.` }
+		return `Letter "${letter}" not found in the TKA alphabet.`
 	}
 
 	const typeInfo = LETTER_TO_TYPE[letter]
@@ -308,7 +170,11 @@ function executeGetLetterExplanation(letter: string, variation: number = 0): Too
 	const fullTypeInfo = letterTypes[typeNum]
 	const varData = variations[Math.min(variation, variations.length - 1)]
 
-	const text = `# Letter: ${letter}
+	if (!varData) {
+		return `Letter "${letter}" variation data not available.`
+	}
+
+	return `# Letter: ${letter}
 
 ## Type Information
 **Type ${typeNum}: ${fullTypeInfo?.name || typeInfo?.name || 'Unknown'}**
@@ -329,35 +195,9 @@ ${fullTypeInfo?.characteristics ? '**Characteristics:**\n' + fullTypeInfo.charac
 
 ## All Variations (${variations.length} total)
 ${variations.slice(0, 5).map((v, i) => `[${i}] ${v.startPosition} → ${v.endPosition}`).join('\n')}${variations.length > 5 ? `\n... and ${variations.length - 5} more` : ''}`
-
-	return {
-		text,
-		contextData: {
-			type: 'letter',
-			letter: {
-				letter,
-				type: parseInt(typeNum) || 0,
-				typeName: fullTypeInfo?.name || typeInfo?.name || 'Unknown',
-				startPosition: varData.startPosition,
-				endPosition: varData.endPosition,
-				blueMotion: {
-					motionType: varData.blueMotion.motionType,
-					startLocation: varData.blueMotion.startLocation,
-					endLocation: varData.blueMotion.endLocation,
-					rotationDirection: varData.blueMotion.rotationDirection
-				},
-				redMotion: {
-					motionType: varData.redMotion.motionType,
-					startLocation: varData.redMotion.startLocation,
-					endLocation: varData.redMotion.endLocation,
-					rotationDirection: varData.redMotion.rotationDirection
-				}
-			}
-		}
-	}
 }
 
-function executeGetTermDefinition(term: string): ToolResult {
+function executeGetTermDefinition(term: string): string {
 	ensureDataLoaded()
 
 	const normalizedTerm = term.toLowerCase().trim()
@@ -368,12 +208,10 @@ function executeGetTermDefinition(term: string): ToolResult {
 			.filter(key => key.includes(normalizedTerm) || normalizedTerm.includes(key))
 			.slice(0, 5)
 
-		return {
-			text: `Term "${term}" not found.${possibleMatches.length > 0 ? ` Did you mean: ${possibleMatches.join(', ')}?` : ''}`
-		}
+		return `Term "${term}" not found.${possibleMatches.length > 0 ? ` Did you mean: ${possibleMatches.join(', ')}?` : ''}`
 	}
 
-	const text = `# ${term.charAt(0).toUpperCase() + term.slice(1)}
+	return `# ${term.charAt(0).toUpperCase() + term.slice(1)}
 
 **Definition:** ${entry.definition}
 
@@ -383,29 +221,16 @@ ${entry.examples.map(e => `- ${e}`).join('\n')}
 **Related terms:** ${entry.relatedTerms.join(', ')}
 
 **Category:** ${entry.category}`
-
-	return {
-		text,
-		contextData: {
-			type: 'term',
-			term: {
-				term,
-				definition: entry.definition,
-				examples: entry.examples,
-				relatedTerms: entry.relatedTerms
-			}
-		}
-	}
 }
 
-function executeCompareLetters(letter1: string, letter2: string): ToolResult {
+function executeCompareLetters(letter1: string, letter2: string): string {
 	ensureDataLoaded()
 
 	const var1 = allPictographs.filter((p) => p.letter === letter1)
 	const var2 = allPictographs.filter((p) => p.letter === letter2)
 
-	if (var1.length === 0) return { text: `Letter "${letter1}" not found.` }
-	if (var2.length === 0) return { text: `Letter "${letter2}" not found.` }
+	if (var1.length === 0) return `Letter "${letter1}" not found.`
+	if (var2.length === 0) return `Letter "${letter2}" not found.`
 
 	const type1 = LETTER_TO_TYPE[letter1]
 	const type2 = LETTER_TO_TYPE[letter2]
@@ -414,7 +239,11 @@ function executeCompareLetters(letter1: string, letter2: string): ToolResult {
 	const rep1 = var1[0]
 	const rep2 = var2[0]
 
-	const text = `# Comparison: ${letter1} vs ${letter2}
+	if (!rep1 || !rep2) {
+		return `Cannot compare - missing variation data for one or both letters.`
+	}
+
+	return `# Comparison: ${letter1} vs ${letter2}
 
 ## At a Glance
 | Property | ${letter1} | ${letter2} |
@@ -427,29 +256,16 @@ function executeCompareLetters(letter1: string, letter2: string): ToolResult {
 ## Type Descriptions
 - **${letter1}:** ${letterTypes[typeNum1]?.description || 'Type ' + typeNum1}
 - **${letter2}:** ${letterTypes[typeNum2]?.description || 'Type ' + typeNum2}`
-
-	return {
-		text,
-		contextData: {
-			type: 'comparison',
-			comparison: {
-				letter1,
-				letter2,
-				type1: letterTypes[typeNum1]?.name || typeNum1,
-				type2: letterTypes[typeNum2]?.name || typeNum2
-			}
-		}
-	}
 }
 
-function executeListLettersByType(type: number): ToolResult {
+function executeListLettersByType(type: number): string {
 	ensureDataLoaded()
 
 	const typeKey = type.toString()
 	const typeInfo = letterTypes[typeKey]
 
 	if (!typeInfo) {
-		return { text: `Invalid type ${type}. Valid types are 1-6.` }
+		return `Invalid type ${type}. Valid types are 1-6.`
 	}
 
 	const letterCounts = typeInfo.letters.map(letter => {
@@ -457,7 +273,7 @@ function executeListLettersByType(type: number): ToolResult {
 		return { letter, count }
 	})
 
-	const text = `# Type ${type}: ${typeInfo.name}
+	return `# Type ${type}: ${typeInfo.name}
 
 **Description:** ${typeInfo.description}
 
@@ -471,16 +287,9 @@ ${typeInfo.characteristics.map(c => `- ${c}`).join('\n')}
 
 **Letters (${typeInfo.letters.length} total):**
 ${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join('\n')}`
-
-	return {
-		text,
-		contextData: {
-			type: 'list'
-		}
-	}
 }
 
-function executeGetPositionInfo(position: string): ToolResult {
+function executeGetPositionInfo(position: string): string {
 	const normalizedPos = position.toLowerCase().trim()
 
 	const positions: Record<string, {
@@ -535,14 +344,14 @@ function executeGetPositionInfo(position: string): ToolResult {
 
 	const posInfo = positions[normalizedPos]
 	if (!posInfo) {
-		return { text: `Position "${position}" not recognized. Available: ${Object.keys(positions).join(', ')}` }
+		return `Position "${position}" not recognized. Available: ${Object.keys(positions).join(', ')}`
 	}
 
 	ensureDataLoaded()
 	const startCount = allPictographs.filter(p => p.startPosition.toLowerCase().startsWith(normalizedPos)).length
 	const endCount = allPictographs.filter(p => p.endPosition.toLowerCase().startsWith(normalizedPos)).length
 
-	const text = `# ${posInfo.name}
+	return `# ${posInfo.name}
 
 **Angle:** ${posInfo.angleDegrees} between hands
 
@@ -556,233 +365,156 @@ ${posInfo.examples.map(e => `- ${e}`).join('\n')}
 **Level:** ${posInfo.level}
 
 **Usage:** ${startCount} start positions, ${endCount} end positions`
-
-	return {
-		text,
-		contextData: {
-			type: 'position',
-			position: {
-				name: posInfo.name,
-				angleDegrees: posInfo.angleDegrees,
-				description: posInfo.description
-			}
-		}
-	}
-}
-
-function executeTool(name: string, input: Record<string, unknown>): ToolResult {
-	switch (name) {
-		case 'get_letter_explanation':
-			return executeGetLetterExplanation(
-				input.letter as string,
-				(input.variation as number) || 0
-			)
-		case 'get_term_definition':
-			return executeGetTermDefinition(input.term as string)
-		case 'compare_letters':
-			return executeCompareLetters(
-				input.letter1 as string,
-				input.letter2 as string
-			)
-		case 'list_letters_by_type':
-			return executeListLettersByType(input.type as number)
-		case 'get_position_info':
-			return executeGetPositionInfo(input.position as string)
-		default:
-			return { text: `Unknown tool: ${name}` }
-	}
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Anthropic Tool-Use API
+// AI SDK Tools Definition
 // ═══════════════════════════════════════════════════════════════════════════
 
-interface AnthropicMessage {
-	role: 'user' | 'assistant'
-	content: string | AnthropicContentBlock[]
-}
+// Define tools using JSON Schema to avoid Zod 3/4 compatibility issues
+const tikaTools = {
+	get_letter_explanation: tool({
+		description: 'Get a comprehensive explanation of a TKA letter including its type, motion characteristics, and variations. Use this when asked about a specific letter.',
+		parameters: jsonSchema<{ letter: string; variation?: number }>({
+			type: 'object',
+			properties: {
+				letter: { type: 'string', description: 'The letter to explain (A-Z or Greek)' },
+				variation: { type: 'number', description: 'Variation index (0-based)', default: 0 }
+			},
+			required: ['letter']
+		}),
+		execute: async ({ letter, variation = 0 }) => executeGetLetterExplanation(letter, variation)
+	}),
 
-interface AnthropicContentBlock {
-	type: 'text' | 'tool_use' | 'tool_result'
-	text?: string
-	id?: string
-	name?: string
-	input?: Record<string, unknown>
-	tool_use_id?: string
-	content?: string
-}
+	get_term_definition: tool({
+		description: 'Get the definition of a TKA domain term like alpha, pro, shift, static, beta, gamma, etc. Use this when asked what a term means.',
+		parameters: jsonSchema<{ term: string }>({
+			type: 'object',
+			properties: {
+				term: { type: 'string', description: 'The term to define' }
+			},
+			required: ['term']
+		}),
+		execute: async ({ term }) => executeGetTermDefinition(term)
+	}),
 
-interface AnthropicResponse {
-	content: AnthropicContentBlock[]
-	stop_reason: 'end_turn' | 'tool_use' | 'max_tokens'
-	usage?: {
-		input_tokens: number
-		output_tokens: number
-	}
-}
+	compare_letters: tool({
+		description: 'Compare two TKA letters side by side, explaining their differences. Use this when asked to compare or contrast letters.',
+		parameters: jsonSchema<{ letter1: string; letter2: string }>({
+			type: 'object',
+			properties: {
+				letter1: { type: 'string', description: 'First letter to compare' },
+				letter2: { type: 'string', description: 'Second letter to compare' }
+			},
+			required: ['letter1', 'letter2']
+		}),
+		execute: async ({ letter1, letter2 }) => executeCompareLetters(letter1, letter2)
+	}),
 
-async function callAnthropicWithTools(
-	messages: AnthropicMessage[],
-	systemPrompt: string
-): Promise<AnthropicResponse> {
-	const response = await fetch('https://api.anthropic.com/v1/messages', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'x-api-key': ANTHROPIC_API_KEY,
-			'anthropic-version': '2023-06-01'
-		},
-		body: JSON.stringify({
-			model: 'claude-3-5-haiku-20241022',
-			max_tokens: 1024,
-			system: systemPrompt,
-			tools: TIKA_TOOLS,
-			messages
-		})
+	list_letters_by_type: tool({
+		description: 'List all letters of a specific type (1-6). Use this when asked about letter types or which letters are in a type.',
+		parameters: jsonSchema<{ type: number }>({
+			type: 'object',
+			properties: {
+				type: { type: 'number', minimum: 1, maximum: 6, description: 'Letter type 1-6: 1=Dual-Shift, 2=Shift, 3=Cross-Shift, 4=Dash, 5=Dual-Dash, 6=Static' }
+			},
+			required: ['type']
+		}),
+		execute: async ({ type }) => executeListLettersByType(type)
+	}),
+
+	get_position_info: tool({
+		description: 'Get information about a TKA position (alpha, beta, gamma, zeta, eta). Use this when asked about positions or hand placements.',
+		parameters: jsonSchema<{ position: string }>({
+			type: 'object',
+			properties: {
+				position: { type: 'string', description: 'Position name (alpha, beta, gamma, zeta, eta)' }
+			},
+			required: ['position']
+		}),
+		execute: async ({ position }) => executeGetPositionInfo(position)
 	})
-
-	if (!response.ok) {
-		const error = await response.text()
-		throw new Error(`Anthropic API error: ${response.status} - ${error}`)
-	}
-
-	return response.json()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Main Endpoint
+// Request Handler
 // ═══════════════════════════════════════════════════════════════════════════
+
+interface TIKARequest {
+	messages?: UIMessage[]
+	// Legacy support for non-streaming clients
+	question?: string
+	userId?: string
+	completedConcepts?: string[]
+	language?: string
+}
 
 export const POST: RequestHandler = async ({ request }) => {
-	const startTime = performance.now()
-
 	try {
-		const { question, userId, completedConcepts, language = 'en' }: AssistantRequest = await request.json()
-
-		if (!question?.trim()) {
-			return json({ error: 'Missing question' }, { status: 400 })
-		}
-
-		if (!userId) {
-			return json({ error: 'Missing userId' }, { status: 400 })
-		}
+		const body: TIKARequest = await request.json()
 
 		if (!ANTHROPIC_API_KEY) {
-			return json({ error: 'API key not configured' }, { status: 500 })
+			return new Response(JSON.stringify({ error: 'API key not configured' }), {
+				status: 500,
+				headers: { 'Content-Type': 'application/json' }
+			})
 		}
 
-		// Build dynamic system prompt based on user's progress
-		const userOverlay = deriveUserOverlay(completedConcepts || [])
+		// Build system prompt based on user progress
+		const completedConcepts = body.completedConcepts || []
+		const language = body.language || 'en'
+		const userOverlay = deriveUserOverlay(completedConcepts)
 		const systemPrompt = buildSystemPrompt(userOverlay, language)
 
-		// Initialize conversation
-		const messages: AnthropicMessage[] = [
-			{ role: 'user', content: question }
-		]
+		// Create Anthropic client
+		const anthropic = createAnthropic({
+			apiKey: ANTHROPIC_API_KEY
+		})
 
-		const toolsCalled: ToolCall[] = []
-		let contextData: ContextData | undefined
-		let finalText = ''
+		// Handle both new streaming format (messages array) and legacy format (question string)
+		let messages: UIMessage[]
 
-		// Tool-use loop - allow Haiku to call tools multiple times
-		let iterations = 0
-		const MAX_ITERATIONS = 5
+		if (body.messages && Array.isArray(body.messages)) {
+			// New format: AI SDK messages array
+			messages = body.messages
+		} else if (body.question) {
+			// Legacy format: single question string - convert to messages format
+			messages = [{
+				id: crypto.randomUUID(),
+				role: 'user',
+				content: body.question,
+				parts: [{ type: 'text', text: body.question }],
+				createdAt: new Date()
+			}]
+		} else {
+			return new Response(JSON.stringify({ error: 'Missing messages or question' }), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' }
+			})
+		}
 
-		while (iterations < MAX_ITERATIONS) {
-			iterations++
-
-			const response = await callAnthropicWithTools(messages, systemPrompt)
-
-			// Check if we're done
-			if (response.stop_reason === 'end_turn' || response.stop_reason === 'max_tokens') {
-				// Extract final text
-				for (const block of response.content) {
-					if (block.type === 'text' && block.text) {
-						finalText += block.text
-					}
-				}
-				break
+		// Stream the response
+		const result = streamText({
+			model: anthropic('claude-3-5-haiku-20241022'),
+			system: systemPrompt,
+			messages: convertToCoreMessages(messages),
+			tools: tikaTools,
+			maxSteps: 5, // Allow up to 5 tool calls
+			experimental_telemetry: {
+				isEnabled: false
 			}
+		})
 
-			// Handle tool use
-			if (response.stop_reason === 'tool_use') {
-				// Collect all tool use blocks
-				const toolUseBlocks = response.content.filter(b => b.type === 'tool_use')
-				const toolResults: AnthropicContentBlock[] = []
+		// Return streaming response
+		return result.toDataStreamResponse()
 
-				for (const toolUse of toolUseBlocks) {
-					if (toolUse.name && toolUse.input && toolUse.id) {
-						// Execute the tool
-						const result = executeTool(toolUse.name, toolUse.input as Record<string, unknown>)
-
-						// Track the tool call
-						toolsCalled.push({
-							name: toolUse.name,
-							input: toolUse.input as Record<string, unknown>,
-							result: result.text
-						})
-
-						// Capture context data from the first relevant tool
-						if (result.contextData && !contextData) {
-							contextData = result.contextData
-						}
-
-						// Add tool result
-						toolResults.push({
-							type: 'tool_result',
-							tool_use_id: toolUse.id,
-							content: result.text
-						})
-					}
-				}
-
-				// Add assistant's response (including tool_use blocks) to messages
-				messages.push({
-					role: 'assistant',
-					content: response.content
-				})
-
-				// Add tool results
-				messages.push({
-					role: 'user',
-					content: toolResults
-				})
-			}
-		}
-
-		// Extract pictograph letter if context has one
-		let pictographLetter: string | undefined
-		if (contextData?.type === 'letter' && contextData.letter) {
-			pictographLetter = contextData.letter.letter
-		} else if (contextData?.type === 'comparison' && contextData.comparison) {
-			pictographLetter = contextData.comparison.letter1
-		}
-
-		const response: AssistantResponse = {
-			explanation: finalText || "I couldn't generate a response. Please try again.",
-			showPictograph: !!pictographLetter,
-			pictographLetter,
-			source: 'tool-use',
-			provider: 'haiku',
-			latencyMs: Math.round(performance.now() - startTime),
-			toolsCalled,
-			contextData
-		}
-
-		return json(response)
 	} catch (error) {
 		console.error('[TIKA API] Error:', error)
-		return json(
-			{
-				explanation: "I'm having trouble answering that right now. Please try again.",
-				showPictograph: false,
-				source: 'tool-use',
-				provider: 'haiku',
-				latencyMs: Math.round(performance.now() - startTime),
-				toolsCalled: [],
-				error: error instanceof Error ? error.message : 'Unknown error'
-			},
-			{ status: 200 } // Return 200 with error in body for graceful handling
-		)
+		return new Response(JSON.stringify({
+			error: error instanceof Error ? error.message : 'Unknown error'
+		}), {
+			status: 500,
+			headers: { 'Content-Type': 'application/json' }
+		})
 	}
 }
