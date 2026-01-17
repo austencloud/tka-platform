@@ -42,7 +42,10 @@
   const isEmpty = $derived(track.clips.length === 0);
 
   // Use track.height for both empty and non-empty tracks (respects vertical zoom)
-  const effectiveHeight = $derived(track.height);
+  const effectiveHeight = $derived.by(() => {
+    console.log('[TrackLane] track.height:', track.height);
+    return track.height;
+  });
 
   // Get project settings for beat grid
   let projectBpm = $state(120);

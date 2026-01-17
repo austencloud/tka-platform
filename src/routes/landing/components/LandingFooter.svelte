@@ -5,6 +5,7 @@
   const footerLinks = [
     { href: APP_DOMAIN, label: "App" },
     { href: "/about", label: "About" },
+    { href: "/roots", label: "Roots" },
     { href: "#features", label: "Features" },
     { href: "#notation", label: "Notation" },
     { href: "#loops", label: "LOOPs" },
@@ -34,12 +35,10 @@
   <div class="container">
     <h2>Open & Free</h2>
     <p>
-      <strong>TKA Scribe is free to use.</strong> No download required — it runs in
-      your browser.
+      No download required — runs in your browser.
     </p>
     <p class="small">
-      The underlying notation system is open. Create educational content, build
-      tools, expand the community.
+      The notation system is open. Create educational content, build tools, grow the community.
     </p>
 
     <a href={APP_DOMAIN} class="btn btn-primary btn-large">
@@ -54,7 +53,7 @@
     <div class="footer-content">
       <div class="footer-brand">
         <strong>The Kinetic Alphabet</strong>
-        <span>A Flow Arts Choreography Toolbox</span>
+        <span>A notation system for flow arts</span>
       </div>
       <div class="footer-links">
         {#each footerLinks as link}
@@ -64,9 +63,8 @@
     </div>
     <div class="footer-note">
       <p>
-        TKA draws inspiration from Vulcan Tech Gospel (VTG), Siteswap juggling
-        notation, and music theory. It extends beyond VTG by supporting
-        non-continuous patterns, static props, and complex multi-beat sequences.
+        TKA builds on <a href="/roots">ideas from Vulcan Tech Gospel (VTG), CAPs, and other community efforts</a>
+        to systematize flow arts knowledge.
       </p>
     </div>
     <div class="footer-legal">
@@ -205,6 +203,18 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.875rem;
     max-width: 700px;
+  }
+
+  .footer-note a {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    transition: color var(--duration-normal) ease, border-color var(--duration-normal) ease;
+  }
+
+  .footer-note a:hover {
+    color: var(--theme-text, #ffffff);
+    border-bottom-color: rgba(255, 255, 255, 0.5);
   }
 
   .footer-legal {

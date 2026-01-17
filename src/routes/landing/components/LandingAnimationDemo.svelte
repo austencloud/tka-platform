@@ -574,7 +574,7 @@
     width: 100%;
     container-type: inline-size;
     position: relative;
-    min-height: clamp(520px, 65cqw, 720px);
+    min-height: clamp(520px, 55cqw, 520px);
   }
 
   .demo-transition-wrapper {

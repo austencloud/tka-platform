@@ -101,14 +101,22 @@
     onSeek(time);
   }
 
+  // Store callback ref that can be updated
+  let verticalZoomCallback = $state<((delta: number) => void) | undefined>(undefined);
+
+  $effect(() => {
+    verticalZoomCallback = onVerticalZoom;
+  });
+
   // Svelte action to attach non-passive wheel listener for Alt+Wheel vertical zoom
   function wheelHandler(node: HTMLElement) {
     function handleWheel(e: WheelEvent) {
-      if (e.altKey) {
+      console.log('[wheelHandler] alt:', e.altKey, 'callback:', !!verticalZoomCallback);
+      if (e.altKey && verticalZoomCallback) {
         e.preventDefault();
         e.stopPropagation();
         const delta = e.deltaY > 0 ? -10 : 10;
-        onVerticalZoom?.(delta);
+        verticalZoomCallback(delta);
       }
     }
 

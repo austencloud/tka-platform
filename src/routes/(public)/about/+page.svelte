@@ -1,5 +1,10 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { APP_DOMAIN } from "../../../config/domains";
+  import BackgroundCanvas from "$lib/shared/background/shared/components/BackgroundCanvas.svelte";
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
+  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
 
   const sections = [
     {
@@ -61,6 +66,26 @@
       ],
     },
   ];
+
+  // Use shared animated backgrounds config
+  const backgrounds = ANIMATED_BACKGROUNDS;
+
+  let currentBgIndex = $state(0);
+  let currentBackground = $derived(backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY);
+  let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
+  let currentLabel = $derived(backgrounds[currentBgIndex]?.label ?? "Night Sky");
+
+  function cycleBackground() {
+    currentBgIndex = (currentBgIndex + 1) % backgrounds.length;
+    applyThemeForBackground(backgrounds[currentBgIndex]!.type);
+  }
+
+  onMount(() => {
+    applyThemeForBackground(currentBackground);
+  });
+
+  // In dev, back goes to /landing; in prod, back goes to /
+  const backHref = import.meta.env.DEV ? "/landing" : "/";
 </script>
 
 <svelte:head>
@@ -72,25 +97,20 @@
 </svelte:head>
 
 <div class="about-page">
-  <!-- Background effects -->
-  <div class="bg-effects">
-    <div class="glow glow-1"></div>
-    <div class="glow glow-2"></div>
-    <div class="glow glow-3"></div>
-    <div class="grid-lines"></div>
-  </div>
+  <!-- Animated Background -->
+  <BackgroundCanvas backgroundType={currentBackground} quality="medium" />
 
   <div class="about-container">
     <!-- Header -->
     <header class="about-header">
-      <a href="/" class="back-link">
+      <a href={backHref} class="back-link">
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         <span>Back</span>
       </a>
 
       <div class="header-content">
         <h1>The Story Behind TKA</h1>
-        <p class="tagline">A Flow Arts Choreography Toolbox</p>
+        <p class="tagline">A notation system for flow arts</p>
       </div>
     </header>
 
@@ -130,71 +150,24 @@
       </div>
     </footer>
   </div>
+
+  <!-- Theme Toggle Button -->
+  <button
+    class="theme-toggle"
+    onclick={cycleBackground}
+    title="Change theme: {currentLabel}"
+    aria-label="Change background theme"
+  >
+    <i class="fas {currentIcon}" aria-hidden="true"></i>
+  </button>
 </div>
 
 <style>
   .about-page {
-    --primary: #6366f1;
-    --primary-light: #818cf8;
-    --bg-dark: #0a0a0f;
-    --bg-card: rgba(255, 255, 255, 0.03);
-    --text: #ffffff;
-    --text-muted: rgba(255, 255, 255, 0.6);
-    --border: rgba(255, 255, 255, 0.1);
-
     position: relative;
     min-height: 100vh;
-    background: var(--bg-dark);
-    color: var(--text);
+    color: var(--theme-text, #ffffff);
     overflow-x: hidden;
-  }
-
-  /* Background effects */
-  .bg-effects {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .grid-lines {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 80px 80px;
-  }
-
-  .glow {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.3;
-  }
-
-  .glow-1 {
-    width: 600px;
-    height: 600px;
-    background: #6366f1;
-    top: -200px;
-    right: -100px;
-  }
-
-  .glow-2 {
-    width: 500px;
-    height: 500px;
-    background: #ec4899;
-    top: 40%;
-    left: -200px;
-  }
-
-  .glow-3 {
-    width: 400px;
-    height: 400px;
-    background: #06b6d4;
-    bottom: -100px;
-    right: 10%;
   }
 
   /* Container */
@@ -215,21 +188,21 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--text-muted);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     text-decoration: none;
     font-size: 0.875rem;
     padding: 0.5rem 1rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 100px;
     margin-bottom: 2rem;
-    transition: all var(--duration-normal) ease;
+    transition: all 0.2s ease;
   }
 
   .back-link:hover {
-    color: var(--text);
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .header-content {
@@ -249,9 +222,10 @@
 
   .tagline {
     font-size: 1.25rem;
-    color: var(--primary-light);
+    color: var(--theme-accent-strong, #818cf8);
     margin: 0;
     font-weight: 500;
+    transition: color 0.3s ease;
   }
 
   /* Hero quote */
@@ -260,18 +234,15 @@
     font-size: clamp(1.25rem, 3vw, 1.5rem);
     font-weight: 500;
     line-height: 1.5;
-    color: var(--text);
+    color: var(--theme-text, #ffffff);
     text-align: center;
     max-width: 700px;
     margin: 0 auto 4rem;
     padding: 2rem 2.5rem;
-    background: linear-gradient(
-      135deg,
-      rgba(99, 102, 241, 0.12) 0%,
-      rgba(236, 72, 153, 0.06) 100%
-    );
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    border-radius: 16px;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+    border-radius: 20px;
+    transition: background 0.3s ease, border-color 0.3s ease;
   }
 
   /* Sections grid */
@@ -281,11 +252,11 @@
   }
 
   .section-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 20px;
     padding: 2rem;
-    transition: all var(--duration-emphasis) ease;
+    transition: all 0.25s ease;
   }
 
   .section-card:hover {
@@ -319,12 +290,12 @@
     font-size: 1.375rem;
     font-weight: 600;
     margin: 0;
-    color: var(--text);
+    color: var(--theme-text, #ffffff);
   }
 
   .card-content p {
-    color: var(--text-muted);
-    line-height: 1.75;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    line-height: 1.7;
     margin: 0 0 1rem 0;
     font-size: 1rem;
   }
@@ -341,13 +312,10 @@
   .cta-card {
     text-align: center;
     padding: 3rem 2rem;
-    background: linear-gradient(
-      135deg,
-      rgba(99, 102, 241, 0.15) 0%,
-      rgba(99, 102, 241, 0.05) 100%
-    );
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
     border-radius: 24px;
+    transition: background 0.3s ease, border-color 0.3s ease;
   }
 
   .cta-card h3 {
@@ -357,7 +325,7 @@
   }
 
   .cta-card p {
-    color: var(--text-muted);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     margin: 0 0 1.5rem 0;
   }
 
@@ -365,32 +333,64 @@
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    background: var(--primary);
+    background: var(--theme-accent, #6366f1);
     color: #ffffff;
     text-decoration: none;
     padding: 1rem 2rem;
     border-radius: 12px;
     font-weight: 600;
     font-size: 1.125rem;
-    transition: all var(--duration-normal) ease;
+    transition: all 0.2s ease;
   }
 
   .cta-button:hover {
-    background: var(--primary-light);
+    background: var(--theme-accent-strong, #818cf8);
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 12px 32px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
   .cta-button i {
-    transition: transform var(--duration-normal) ease;
+    transition: transform 0.2s ease;
   }
 
   .cta-button:hover i {
     transform: translateX(4px);
   }
 
+  /* Theme Toggle Button */
+  .theme-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 15%, rgba(0, 0, 0, 0.5));
+    border: 1px solid color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
+    border-radius: 50%;
+    color: var(--theme-accent-strong, #818cf8);
+    font-size: 1.125rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .theme-toggle:hover {
+    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, rgba(0, 0, 0, 0.6));
+    border-color: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 40%, transparent);
+    transform: scale(1.05);
+  }
+
+  .theme-toggle:active {
+    transform: scale(0.95);
+  }
+
   /* Responsive */
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     .about-container {
       padding: 1.5rem 1rem 3rem;
     }
@@ -413,18 +413,30 @@
     .cta-card {
       padding: 2rem 1.5rem;
     }
+
+    .theme-toggle {
+      bottom: 16px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+    }
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .section-card,
     .cta-button,
-    .back-link {
+    .back-link,
+    .theme-toggle,
+    .tagline,
+    .hero-quote,
+    .cta-card {
       transition: none;
     }
 
     .section-card:hover,
-    .cta-button:hover {
+    .cta-button:hover,
+    .theme-toggle:hover {
       transform: none;
     }
 

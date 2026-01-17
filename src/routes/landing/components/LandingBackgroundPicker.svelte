@@ -1,5 +1,6 @@
 <script lang="ts">
   import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
 
   interface Props {
     currentBackground: BackgroundType;
@@ -8,17 +9,7 @@
 
   let { currentBackground, onSelect }: Props = $props();
 
-  // Animated backgrounds only (exclude solid/gradient for landing)
-  const backgrounds = [
-    { type: BackgroundType.NIGHT_SKY, icon: "fa-moon", label: "Night Sky" },
-    { type: BackgroundType.SNOWFALL, icon: "fa-snowflake", label: "Snowfall" },
-    { type: BackgroundType.DEEP_OCEAN, icon: "fa-water", label: "Deep Ocean" },
-    { type: BackgroundType.EMBER_GLOW, icon: "fa-fire", label: "Ember Glow" },
-    { type: BackgroundType.SAKURA_DRIFT, icon: "fa-spa", label: "Cherry Blossom" },
-    { type: BackgroundType.FIREFLY_FOREST, icon: "fa-tree", label: "Firefly Forest" },
-    { type: BackgroundType.AUTUMN_DRIFT, icon: "fa-leaf", label: "Autumn" },
-    { type: BackgroundType.PRIDE, icon: "fa-rainbow", label: "Pride" },
-  ];
+  const backgrounds = ANIMATED_BACKGROUNDS;
 
   const currentIndex = $derived(
     backgrounds.findIndex((bg) => bg.type === currentBackground)

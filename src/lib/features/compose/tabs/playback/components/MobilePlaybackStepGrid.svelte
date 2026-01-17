@@ -1,7 +1,7 @@
 <!--
   MobilePlaybackStepGrid.svelte
 
-  Lightweight beat grid for mobile playback panel.
+  Lightweight step grid for mobile playback panel.
   Shows sequence steps with playback sync highlighting (golden glow on current beat).
 -->
 <script lang="ts">
@@ -36,26 +36,26 @@
   });
 </script>
 
-<div class="mobile-beat-grid">
+<div class="mobile-step-grid">
   {#if steps().length === 0}
     <div class="empty-state">
       <i class="fas fa-layer-group" aria-hidden="true"></i>
       <span>{t("empty_no_sequence_loaded")}</span>
     </div>
   {:else}
-    <div class="beat-grid" style:--grid-cols={gridColumns()}>
+    <div class="step-grid" style:--grid-cols={gridColumns()}>
       {#each steps() as beat, index}
         {@const stepNumber = index + 1}
         {@const isCurrentBeat = isPlaying && currentStep === stepNumber}
         <div
-          class="beat-cell"
+          class="step-cell"
           class:current={isCurrentBeat}
           class:played={isPlaying && currentStep > stepNumber}
         >
-          <div class="beat-content">
+          <div class="step-content">
             <TKAGlyph pictographData={beat} letter={beat?.letter} />
           </div>
-          <span class="beat-number">{stepNumber}</span>
+          <span class="step-number">{stepNumber}</span>
         </div>
       {/each}
     </div>
@@ -63,7 +63,7 @@
 </div>
 
 <style>
-  .mobile-beat-grid {
+  .mobile-step-grid {
     width: 100%;
     height: 100%;
     display: flex;
@@ -87,7 +87,7 @@
     opacity: 0.6;
   }
 
-  .beat-grid {
+  .step-grid {
     display: grid;
     grid-template-columns: repeat(var(--grid-cols), 1fr);
     gap: 4px;
@@ -95,7 +95,7 @@
     max-width: 400px;
   }
 
-  .beat-cell {
+  .step-cell {
     position: relative;
     aspect-ratio: 1;
     background: rgba(255, 255, 255, 0.03);
@@ -108,7 +108,7 @@
     overflow: hidden;
   }
 
-  .beat-cell.current {
+  .step-cell.current {
     border-color: rgba(251, 191, 36, 0.8);
     box-shadow:
       0 0 12px rgba(251, 191, 36, 0.4),
@@ -117,11 +117,11 @@
     background: rgba(251, 191, 36, 0.08);
   }
 
-  .beat-cell.played {
+  .step-cell.played {
     opacity: 0.5;
   }
 
-  .beat-content {
+  .step-content {
     width: 100%;
     height: 100%;
     display: flex;
@@ -130,7 +130,7 @@
     padding: 4px;
   }
 
-  .beat-number {
+  .step-number {
     position: absolute;
     bottom: 2px;
     right: 4px;
@@ -140,7 +140,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .beat-cell.current .beat-number {
+  .step-cell.current .step-number {
     color: rgba(251, 191, 36, 0.9);
   }
 </style>

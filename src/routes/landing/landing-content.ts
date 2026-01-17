@@ -22,35 +22,35 @@ export const FEATURES: FeatureCard[] = [
     icon: "✏️",
     title: "Create",
     description:
-      "Build sequences three ways: Assemble for beginners, Construct for full control, or Generate with algorithmic LOOPs.",
+      "Build sequences by hand or let the app generate them for you.",
     color: "#6366f1",
   },
   {
     icon: "🎬",
     title: "Animate",
     description:
-      "Watch sequences come alive with real-time 2D visualization, motion trails, and video export.",
+      "See your sequences in motion with 2D visualization, trails, and video export.",
     color: "#ec4899",
   },
   {
     icon: "🔍",
     title: "Discover",
     description:
-      "Browse thousands of community sequences, follow creators, and share your work.",
+      "Browse community sequences, follow creators, and share your work.",
     color: "#14b8a6",
   },
   {
     icon: "📚",
     title: "Learn",
     description:
-      "28 structured concepts from grid basics to advanced LOOPs, with interactive quizzes.",
+      "Progressive lessons from basics to advanced, with interactive quizzes.",
     color: "#f59e0b",
   },
   {
     icon: "🎯",
     title: "Train",
     description:
-      "Practice with ML-powered scoring, daily challenges, and three training modes.",
+      "Practice with real-time feedback, daily challenges, and multiple training modes.",
     color: "#ef4444",
   },
   {

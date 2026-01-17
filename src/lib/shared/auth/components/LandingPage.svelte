@@ -121,7 +121,7 @@
         <i class="fas fa-infinity logo-icon" aria-hidden="true"></i>
       </div>
       <h1>TKA Scribe</h1>
-      <p class="tagline">The visual language for flow arts</p>
+      <p class="tagline">Notation for flow arts</p>
     </header>
 
     <!-- Auth Section -->

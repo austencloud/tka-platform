@@ -1,7 +1,7 @@
 <!--
   MobileToolViewToggle.svelte
 
-  Toggle button for switching between Beat Grid and Controls view
+  Toggle button for switching between Step Grid and Controls view
   on mobile animation panel. Shows icon for non-active view.
 -->
 <script lang="ts" module>
@@ -24,15 +24,15 @@
   class="tool-view-toggle"
   class:showing-grid={isShowingGrid}
   onclick={onToggle}
-  aria-label={isShowingGrid ? "Show animation controls" : "Show beat grid"}
-  title={isShowingGrid ? "Show Controls" : "Show Beat Grid"}
+  aria-label={isShowingGrid ? "Show animation controls" : "Show step grid"}
+  title={isShowingGrid ? "Show Controls" : "Show Step Grid"}
   type="button"
 >
   {#if isShowingGrid}
     <!-- Show sliders icon to indicate "switch to controls" -->
     <i class="fas fa-sliders-h" aria-hidden="true"></i>
   {:else}
-    <!-- Show grid icon to indicate "switch to beat grid" -->
+    <!-- Show grid icon to indicate "switch to step grid" -->
     <i class="fas fa-th" aria-hidden="true"></i>
   {/if}
 </button>

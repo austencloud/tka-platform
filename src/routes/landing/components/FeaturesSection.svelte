@@ -6,7 +6,7 @@
   <div class="container">
     <h2>Meet TKA Scribe</h2>
     <p class="section-intro">
-      The free web app that brings The Kinetic Alphabet to life.
+      The free web app for The Kinetic Alphabet.
     </p>
 
     <div class="features-grid">

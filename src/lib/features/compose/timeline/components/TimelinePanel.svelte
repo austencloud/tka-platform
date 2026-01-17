@@ -73,9 +73,11 @@
 
   // Handle vertical zoom (Alt+Wheel) - called from TimelineBody
   function handleVerticalZoom(delta: number) {
+    console.log('[handleVerticalZoom] delta:', delta);
     const state = getState();
     for (const track of state.project.tracks) {
       const newHeight = Math.max(40, Math.min(200, track.height + delta));
+      console.log('[handleVerticalZoom] track height:', track.height, '->', newHeight);
       state.updateTrack(track.id, { height: newHeight });
     }
   }

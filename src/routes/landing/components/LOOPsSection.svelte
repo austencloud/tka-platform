@@ -42,8 +42,8 @@
     </div>
 
     <p class="loop-cta">
-      This is where TKA becomes a <strong>generative tool</strong> — not just documenting
-      what you already know, but discovering patterns you've never tried.
+      This is where TKA starts <strong>creating patterns for you</strong> — not just
+      documenting what you know, but showing you patterns you've never tried.
     </p>
   </div>
 </section>

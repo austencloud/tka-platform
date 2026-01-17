@@ -5,7 +5,7 @@
 <section class="educators" id="educators">
   <div class="container">
     <h2>For Educators</h2>
-    <p class="section-intro">TKA transforms how flow arts can be taught.</p>
+    <p class="section-intro">TKA changes how you teach.</p>
 
     <div class="educator-grid">
       {#each EDUCATOR_CARDS as card}

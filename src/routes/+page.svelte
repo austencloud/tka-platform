@@ -25,16 +25,16 @@
 
 <svelte:head>
   {#if siteMode === "app"}
-    <title>TKA Scribe - A flow arts choreography Toolbox</title>
+    <title>TKA Scribe - Create and share flow arts choreography</title>
   {:else}
     <title
-      >TKA - The Kinetic Alphabet | A Flow Arts Notation System for Staff,
+      >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff,
       Clubs, Fans, Hoops & More</title
     >
   {/if}
   <meta
     name="description"
-    content="TKA is a flow arts notation system for documenting and sharing poi, staff, hoop, club, fan, and buugeng choreography. Create sequences, animate them, and share with flow artists worldwide."
+    content="TKA is a notation system for flow arts. Document and share poi, staff, hoop, club, fan, and buugeng choreography. Create sequences, animate them, share with other flow artists."
   />
 
   <!-- Keywords for search engines and AI systems -->
@@ -63,7 +63,7 @@
   <meta property="og:title" content="TKA | A Flow Arts Notation System" />
   <meta
     property="og:description"
-    content="A flow arts notation system for poi, staff, hoop, club, and fan choreography. Document, animate, and share sequences with flow artists worldwide."
+    content="A notation system for flow arts. Document, animate, and share poi, staff, hoop, club, and fan choreography."
   />
   <meta
     property="og:image"
@@ -84,7 +84,7 @@
   <meta name="twitter:title" content="TKA | A Flow Arts Notation System" />
   <meta
     name="twitter:description"
-    content="A flow arts notation system for poi, staff, hoop, club, and fan choreography. Document, animate, and share sequences with flow artists worldwide."
+    content="A notation system for flow arts. Document, animate, and share poi, staff, hoop, club, and fan choreography."
   />
   <meta
     name="twitter:image"
@@ -106,7 +106,7 @@
 		"name": "TKA - The Kinetic Alphabet",
 		"alternateName": ["The Kinetic Alphabet", "TKA Scribe", "Kinetic Alphabet", "TKA", "Flow Arts Notation"],
 		"url": "https://tkaflowarts.com/",
-		"description": "TKA is a flow arts notation system for documenting poi, staff, hoop, club, fan, and buugeng choreography. Create, animate, and share sequences with flow artists worldwide.",
+		"description": "TKA is a notation system for flow arts. Document and share poi, staff, hoop, club, fan, and buugeng choreography.",
 		"inLanguage": "en-US",
 		"potentialAction": {
 			"@type": "SearchAction",
@@ -128,7 +128,7 @@
 		"alternateName": ["The Kinetic Alphabet", "TKA", "Flow Arts Notation"],
 		"url": "https://tkaflowarts.com/",
 		"logo": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
-		"description": "TKA is a flow arts notation system for documenting and sharing poi, staff, hoop, club, fan, and buugeng choreography",
+		"description": "TKA is a notation system for flow arts. Document and share poi, staff, hoop, club, fan, and buugeng choreography.",
 		"foundingDate": "2024",
 		"sameAs": [
 			"https://instagram.com/tkaflowarts",
@@ -149,7 +149,7 @@
 		"@type": "SoftwareApplication",
 		"name": "TKA Scribe",
 		"alternateName": "The Kinetic Alphabet Scribe",
-		"description": "A Flow Arts Choreography Toolbox. Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences with the first universal notation system for prop manipulation.",
+		"description": "Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. A notation system for flow arts.",
 		"url": "https://tkascribe.com/",
 		"applicationCategory": ["EducationalApplication", "EntertainmentApplication", "DesignApplication"],
 		"operatingSystem": "Any (Web Browser)",
@@ -158,13 +158,13 @@
 		"releaseNotes": "https://tkascribe.com/changelog",
 		"screenshot": "https://tkaflowarts.com/branding/og-image.png",
 		"featureList": [
-			"Create sequences with 3 creation modes",
+			"Create sequences by hand or generate them automatically",
 			"Animate sequences in 2D with motion trails",
 			"Export to PNG, PDF, GIF, or video",
-			"Browse thousands of community sequences",
-			"Learn with 28 structured concepts",
-			"Train with ML-powered scoring",
-			"Support for 11+ prop types"
+			"Browse community sequences",
+			"Learn with progressive lessons",
+			"Practice with real-time feedback",
+			"Support for many prop types"
 		],
 		"offers": {
 			"@type": "Offer",
@@ -223,7 +223,7 @@
 				"name": "What is The Kinetic Alphabet?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "The Kinetic Alphabet (TKA) is a universal notation system for flow arts - like sheet music for dancers. It allows flow artists to document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using standardized pictographs and symbols."
+					"text": "The Kinetic Alphabet (TKA) is a notation system for flow arts - like sheet music for dancers. It lets flow artists document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using pictographs and symbols."
 				}
 			},
 			{
@@ -231,7 +231,7 @@
 				"name": "What props does TKA Scribe support?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA Scribe supports 20+ flow arts props including staff, contact staff, double staff, clubs, fans, triads, hoops, mini hoops, buugeng, swords, guitars, chickens, doublestars, eightrings, and quiads. Each prop is rendered accurately with proper rotations and hand positions."
+					"text": "TKA Scribe supports many flow props: staff, contact staff, double staff, clubs, fans, triads, hoops, mini hoops, buugeng, swords, and more. Each prop is rendered with proper rotations and hand positions."
 				}
 			},
 			{
@@ -247,7 +247,7 @@
 				"name": "How do I learn flow arts with TKA?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "TKA Scribe includes 28 structured learning concepts, from grid basics to advanced LOOPs. Interactive quizzes help reinforce understanding, and the Train module offers ML-powered scoring with daily challenges to track your progress."
+					"text": "TKA Scribe includes progressive lessons from grid basics to advanced LOOPs. Interactive quizzes help reinforce understanding, and the Train module offers daily challenges to track your progress."
 				}
 			},
 			{
@@ -255,7 +255,7 @@
 				"name": "Can I share my sequences with other flow artists?",
 				"acceptedAnswer": {
 					"@type": "Answer",
-					"text": "Absolutely. TKA Scribe lets you export sequences as PNG images, PDFs, animated GIFs, or videos. You can share links directly to Instagram, and your sequences can be published to the community Discover gallery for other artists to find and learn from."
+					"text": "Yes. Export sequences as PNG images, PDFs, animated GIFs, or videos. Share links directly to Instagram, or publish to the community gallery for other artists to find."
 				}
 			}
 		]
@@ -268,7 +268,7 @@
 		"@context": "https://schema.org",
 		"@type": "HowTo",
 		"name": "How to Create Flow Arts Choreography with TKA Scribe",
-		"description": "Learn to create, animate, and share staff, clubs, fans, and hoop sequences using The Kinetic Alphabet notation system.",
+		"description": "Learn to create, animate, and share staff, clubs, fans, and hoop sequences using TKA notation.",
 		"totalTime": "PT10M",
 		"tool": [
 			{
@@ -288,7 +288,7 @@
 				"@type": "HowToStep",
 				"position": 2,
 				"name": "Choose a creation mode",
-				"text": "Select Assemble (beginner-friendly), Construct (full control), or Generate (algorithmic LOOPs) to start building your sequence."
+				"text": "Choose how to build: by hand step-by-step, or let the app generate patterns for you."
 			},
 			{
 				"@type": "HowToStep",

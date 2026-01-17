@@ -1,4 +1,29 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import BackgroundCanvas from "$lib/shared/background/shared/components/BackgroundCanvas.svelte";
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
+  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
+
+  // Use shared animated backgrounds config
+  const backgrounds = ANIMATED_BACKGROUNDS;
+
+  let currentBgIndex = $state(0);
+  let currentBackground = $derived(backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY);
+  let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
+  let currentLabel = $derived(backgrounds[currentBgIndex]?.label ?? "Night Sky");
+
+  function cycleBackground() {
+    currentBgIndex = (currentBgIndex + 1) % backgrounds.length;
+    applyThemeForBackground(backgrounds[currentBgIndex]!.type);
+  }
+
+  onMount(() => {
+    applyThemeForBackground(currentBackground);
+  });
+
+  // In dev, back goes to /landing; in prod, back goes to /
+  const backHref = import.meta.env.DEV ? "/landing" : "/";
 </script>
 
 <svelte:head>
@@ -10,20 +35,26 @@
 </svelte:head>
 
 <div class="terms-page">
+  <!-- Animated Background -->
+  <BackgroundCanvas backgroundType={currentBackground} quality="medium" />
+
   <div class="terms-container">
     <header class="terms-header">
-      <a href="/" class="back-link">
+      <a href={backHref} class="back-link">
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        Back to App
+        <span>Back</span>
       </a>
-      <h1>Terms of Service</h1>
-      <p class="last-updated">
-        Last Updated: {new Date().toLocaleDateString()}
-      </p>
+
+      <div class="header-content">
+        <h1>Terms of Service</h1>
+        <p class="last-updated">
+          Last Updated: January 16, 2026
+        </p>
+      </div>
     </header>
 
     <div class="terms-content">
-      <section>
+      <section id="acceptance">
         <h2>1. Acceptance of Terms</h2>
         <p>
           By accessing and using The Kinetic Alphabet (TKA) application, you
@@ -32,7 +63,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="description">
         <h2>2. Description of Service</h2>
         <p>
           TKA Scribe is an educational platform that provides tools for
@@ -42,7 +73,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="accounts">
         <h2>3. User Accounts</h2>
         <p>
           You are responsible for maintaining the confidentiality of your
@@ -51,16 +82,17 @@
         </p>
       </section>
 
-      <section>
+      <section id="user-content">
         <h2>4. User Content</h2>
         <p>
           You retain ownership of any sequences, content, or materials you
-          create using TKA. By sharing content publicly, you grant TKA a license
-          to display and distribute that content within the application.
+          create using TKA Scribe. By sharing content publicly, you grant TKA Scribe a
+          non-exclusive license to display and distribute that content within
+          the application for the purpose of providing the service.
         </p>
       </section>
 
-      <section>
+      <section id="acceptable-use">
         <h2>5. Acceptable Use</h2>
         <p>You agree not to:</p>
         <ul>
@@ -72,67 +104,85 @@
         </ul>
       </section>
 
-      <section>
+      <section id="intellectual-property">
         <h2>6. Intellectual Property</h2>
         <p>
           The TKA Scribe application, including its design, features, and
-          underlying technology, is owned by TKA Scribe and protected by
-          intellectual property laws. The Kinetic Alphabet system and
-          methodology remain the intellectual property of their respective
-          creators.
+          underlying technology, is protected by applicable intellectual property
+          laws. The Kinetic Alphabet notation system is an original work
+          created to represent flow arts movements in written form.
         </p>
       </section>
 
-      <section>
+      <section id="disclaimers">
         <h2>7. Disclaimers</h2>
         <p>
-          TKA Scribe is provided "as is" without warranties of any kind. We do
-          not guarantee that the service will be uninterrupted, secure, or
-          error-free.
+          TKA Scribe is provided "as is" without warranties of any kind. There is
+          no guarantee that the service will be uninterrupted, secure, or
+          error-free. TKA Scribe is an independent project maintained outside of
+          regular business hours.
         </p>
       </section>
 
-      <section>
+      <section id="liability">
         <h2>8. Limitation of Liability</h2>
         <p>
-          TKA shall not be liable for any indirect, incidental, special, or
-          consequential damages arising from your use of the service.
+          TKA Scribe and its developer shall not be liable for any indirect,
+          incidental, special, or consequential damages arising from your use
+          of the service. To the maximum extent permitted by law, total liability
+          for any claims shall not exceed the amount you paid to use the service
+          (if any).
         </p>
       </section>
 
-      <section>
+      <section id="changes">
         <h2>9. Changes to Terms</h2>
         <p>
-          We reserve the right to modify these terms at any time. Continued use
-          of the service after changes constitutes acceptance of the modified
-          terms.
+          These terms may be modified at any time. Continued use of the service
+          after changes constitutes acceptance of the modified terms. Significant
+          changes will be communicated through the app or via email.
         </p>
       </section>
 
-      <section>
+      <section id="contact">
         <h2>10. Contact</h2>
         <p>
-          If you have questions about these Terms of Service, please contact us
-          through the application's support channels.
+          For questions about these Terms of Service, email
+          <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>.
         </p>
       </section>
     </div>
   </div>
+
+  <!-- Theme Toggle Button -->
+  <button
+    class="theme-toggle"
+    onclick={cycleBackground}
+    title="Change theme: {currentLabel}"
+    aria-label="Change background theme"
+  >
+    <i class="fas {currentIcon}" aria-hidden="true"></i>
+  </button>
 </div>
 
 <style>
   .terms-page {
+    position: relative;
     min-height: 100vh;
-    background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
-    color: #ffffff;
-    padding: 2rem 1rem;
+    color: var(--theme-text, #ffffff);
+    overflow-x: hidden;
   }
 
+  /* Container */
   .terms-container {
+    position: relative;
+    z-index: 1;
     max-width: 800px;
     margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
   }
 
+  /* Header */
   .terms-header {
     margin-bottom: 2rem;
   }
@@ -141,34 +191,57 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     text-decoration: none;
     font-size: 0.875rem;
-    margin-bottom: 1.5rem;
-    transition: color var(--duration-normal) ease;
+    padding: 0.5rem 1rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 100px;
+    margin-bottom: 2rem;
+    transition: all 0.2s ease;
   }
 
   .back-link:hover {
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .header-content {
+    text-align: center;
   }
 
   h1 {
     font-size: clamp(2rem, 5vw, 2.5rem);
     font-weight: 700;
     margin: 0 0 0.5rem 0;
+    background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
   }
 
   .last-updated {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.875rem;
     margin: 0;
   }
 
+  /* Content card */
   .terms-content {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
     padding: 2rem;
+    transition: all 0.25s ease;
+  }
+
+  .terms-content:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   }
 
   section {
@@ -180,20 +253,31 @@
   }
 
   h2 {
-    font-size: 1.25rem;
+    font-size: 1.375rem;
     font-weight: 600;
     margin: 0 0 0.75rem 0;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
   }
 
   p {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     line-height: 1.7;
     margin: 0 0 0.75rem 0;
   }
 
+  a {
+    color: var(--theme-accent-strong, #818cf8);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+  }
+
+  a:hover {
+    border-bottom-color: var(--theme-accent-strong, #818cf8);
+  }
+
   ul {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     line-height: 1.7;
     margin: 0;
     padding-left: 1.5rem;
@@ -203,13 +287,72 @@
     margin-bottom: 0.5rem;
   }
 
-  @media (max-width: 640px) {
+  /* Theme Toggle Button */
+  .theme-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 15%, rgba(0, 0, 0, 0.5));
+    border: 1px solid color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
+    border-radius: 50%;
+    color: var(--theme-accent-strong, #818cf8);
+    font-size: 1.125rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .theme-toggle:hover {
+    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, rgba(0, 0, 0, 0.6));
+    border-color: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 40%, transparent);
+    transform: scale(1.05);
+  }
+
+  .theme-toggle:active {
+    transform: scale(0.95);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .terms-container {
+      padding: 1.5rem 1rem 3rem;
+    }
+
     .terms-content {
       padding: 1.5rem;
     }
 
     h2 {
-      font-size: 1.125rem;
+      font-size: 1.25rem;
+    }
+
+    .theme-toggle {
+      bottom: 16px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .back-link,
+    .terms-content,
+    .theme-toggle,
+    a {
+      transition: none;
+    }
+
+    .terms-content:hover,
+    .theme-toggle:hover {
+      transform: none;
     }
   }
 </style>

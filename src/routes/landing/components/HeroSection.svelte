@@ -12,11 +12,8 @@
   <div class="hero-content">
     <div class="hero-text-panel">
       <h1>The Kinetic Alphabet</h1>
-      <p class="tagline">A Flow Arts Choreography Toolbox</p>
-      <p class="subtitle">
-        Create, animate, and share prop manipulation sequences with the first
-        universal notation system for flow arts.
-      </p>
+      <p class="tagline">Create and share flow arts choreography</p>
+
     </div>
 
     <HeroInstallFlow />
@@ -34,7 +31,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 80px 24px;
     overflow: hidden;
   }
 

@@ -1,4 +1,27 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import BackgroundCanvas from "$lib/shared/background/shared/components/BackgroundCanvas.svelte";
+  import { BackgroundType } from "$lib/shared/background/shared/domain/enums/background-enums";
+  import { ANIMATED_BACKGROUNDS } from "$lib/shared/background/shared/config/animated-backgrounds";
+  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
+
+  // Use shared animated backgrounds config
+  const backgrounds = ANIMATED_BACKGROUNDS;
+
+  let currentBgIndex = $state(0);
+  let currentBackground = $derived(backgrounds[currentBgIndex]?.type ?? BackgroundType.NIGHT_SKY);
+  let currentIcon = $derived(backgrounds[currentBgIndex]?.icon ?? "fa-moon");
+  let currentLabel = $derived(backgrounds[currentBgIndex]?.label ?? "Night Sky");
+
+  function cycleBackground() {
+    currentBgIndex = (currentBgIndex + 1) % backgrounds.length;
+    applyThemeForBackground(backgrounds[currentBgIndex]!.type);
+  }
+
+  onMount(() => {
+    applyThemeForBackground(currentBackground);
+  });
+
   const steps = [
     "Sign in to TKA Scribe",
     "Tap profile icon → Settings",
@@ -18,6 +41,9 @@
     "Choose: Anonymize or keep your name",
     "Protects community references",
   ];
+
+  // In dev, back goes to /landing; in prod, back goes to /
+  const backHref = import.meta.env.DEV ? "/landing" : "/";
 </script>
 
 <svelte:head>
@@ -29,16 +55,28 @@
 </svelte:head>
 
 <div class="page">
+  <!-- Animated Background -->
+  <BackgroundCanvas backgroundType={currentBackground} quality="medium" />
+
   <div class="container">
     <header>
-      <div class="logo">TKA</div>
-      <h1>Delete Your Account</h1>
-      <p class="subtitle">Account deletion for TKA Scribe</p>
+      <a href={backHref} class="back-link">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <span>Back</span>
+      </a>
+
+      <div class="header-content">
+        <div class="logo">TKA</div>
+        <h1>Delete Your Account</h1>
+        <p class="subtitle">Account deletion for TKA Scribe</p>
+      </div>
     </header>
 
     <div class="cards">
       <section class="card steps">
-        <div class="card-icon">📋</div>
+        <div class="card-icon">
+          <i class="fas fa-list-check" aria-hidden="true"></i>
+        </div>
         <h2>How to Delete</h2>
         <ol>
           {#each steps as step}
@@ -48,7 +86,9 @@
       </section>
 
       <section class="card deleted">
-        <div class="card-icon">🗑️</div>
+        <div class="card-icon">
+          <i class="fas fa-trash-can" aria-hidden="true"></i>
+        </div>
         <h2>What's Deleted</h2>
         <ul>
           {#each deletedData as item}
@@ -58,7 +98,9 @@
       </section>
 
       <section class="card sequences">
-        <div class="card-icon">✨</div>
+        <div class="card-icon">
+          <i class="fas fa-sparkles" aria-hidden="true"></i>
+        </div>
         <h2>Your Sequences</h2>
         <ul>
           {#each sequenceInfo as item}
@@ -69,55 +111,90 @@
     </div>
 
     <div class="warning-banner">
-      <span class="warning-icon">⚠️</span>
-      <span
-        ><strong>This action is permanent</strong> and cannot be undone. You'll be
-        signed out immediately.</span
-      >
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <span>
+        <strong>This action is permanent</strong> and cannot be undone. You'll be
+        signed out immediately.
+      </span>
     </div>
 
     <footer>
-      <a href="/" class="button">Open TKA Scribe</a>
+      <a href="/" class="cta-button">
+        <span>Open TKA Scribe</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
       <p class="help">
-        Need help? <a href="mailto:tkaflowarts@gmail.com"
-          >tkaflowarts@gmail.com</a
-        >
+        Need help? <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>
       </p>
     </footer>
   </div>
+
+  <!-- Theme Toggle Button -->
+  <button
+    class="theme-toggle"
+    onclick={cycleBackground}
+    title="Change theme: {currentLabel}"
+    aria-label="Change background theme"
+  >
+    <i class="fas {currentIcon}" aria-hidden="true"></i>
+  </button>
 </div>
 
 <style>
   .page {
+    position: relative;
     min-height: 100vh;
-    background: linear-gradient(135deg, #0a0a0f 0%, #12121f 50%, #0a0a0f 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    font-family:
-      system-ui,
-      -apple-system,
-      sans-serif;
-    color: #e5e5e5;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    overflow-x: hidden;
   }
 
   .container {
+    position: relative;
+    z-index: 1;
     max-width: 1000px;
     width: 100%;
   }
 
   header {
-    text-align: center;
     margin-bottom: 2.5rem;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-decoration: none;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 100px;
+    margin-bottom: 2rem;
+    transition: all 0.2s ease;
+  }
+
+  .back-link:hover {
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .header-content {
+    text-align: center;
   }
 
   .logo {
     display: inline-block;
     font-size: 1rem;
     font-weight: 700;
-    color: #6366f1;
-    background: rgba(99, 102, 241, 0.15);
+    color: var(--theme-accent, #6366f1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
     padding: 0.5rem 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
@@ -127,12 +204,16 @@
   h1 {
     font-size: 2.5rem;
     margin: 0 0 0.5rem;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-weight: 600;
+    background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .subtitle {
-    color: #666;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     margin: 0;
     font-size: 1rem;
   }
@@ -146,28 +227,28 @@
 
   .card {
     padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    transition:
-      transform 0.2s,
-      border-color 0.2s;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
+    transition: all 0.25s ease;
   }
 
   .card:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   }
 
   .card-icon {
     font-size: 1.5rem;
     margin-bottom: 0.75rem;
+    color: var(--theme-accent-strong, #818cf8);
   }
 
   h2 {
     font-size: 1rem;
     margin: 0 0 1rem;
-    color: #ffffff;
+    color: var(--theme-text, #ffffff);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -181,9 +262,9 @@
 
   li {
     margin-bottom: 0.5rem;
-    color: #a0a0a0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 0.9rem;
-    line-height: 1.5;
+    line-height: 1.7;
   }
 
   li:last-child {
@@ -191,7 +272,7 @@
   }
 
   .steps li::marker {
-    color: #6366f1;
+    color: var(--theme-accent, #6366f1);
     font-weight: 600;
   }
 
@@ -204,7 +285,15 @@
     border-color: rgba(239, 68, 68, 0.15);
   }
 
+  .deleted:hover {
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
   .deleted h2 {
+    color: #f87171;
+  }
+
+  .deleted .card-icon {
     color: #f87171;
   }
 
@@ -213,20 +302,24 @@
   }
 
   .sequences {
-    background: linear-gradient(
-      135deg,
-      rgba(99, 102, 241, 0.08) 0%,
-      rgba(99, 102, 241, 0.03) 100%
-    );
-    border-color: rgba(99, 102, 241, 0.15);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 8%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+  }
+
+  .sequences:hover {
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
   }
 
   .sequences h2 {
-    color: #a5b4fc;
+    color: var(--theme-accent-strong, #a5b4fc);
+  }
+
+  .sequences .card-icon {
+    color: var(--theme-accent-strong, #a5b4fc);
   }
 
   .sequences li::marker {
-    color: #6366f1;
+    color: var(--theme-accent, #6366f1);
   }
 
   .warning-banner {
@@ -243,7 +336,7 @@
     color: #fcd34d;
   }
 
-  .warning-icon {
+  .warning-banner i {
     font-size: 1.25rem;
   }
 
@@ -255,43 +348,85 @@
     text-align: center;
   }
 
-  .button {
-    display: inline-block;
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    color: white;
-    padding: 0.875rem 2.5rem;
-    border-radius: 10px;
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--theme-accent, #6366f1);
+    color: #ffffff;
     text-decoration: none;
-    font-weight: 500;
-    font-size: 1rem;
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1.125rem;
+    transition: all 0.2s ease;
   }
 
-  .button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  .cta-button:hover {
+    background: var(--theme-accent-strong, #818cf8);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
     color: white;
+  }
+
+  .cta-button i {
+    transition: transform 0.2s ease;
+  }
+
+  .cta-button:hover i {
+    transform: translateX(4px);
   }
 
   .help {
     margin-top: 1rem;
     font-size: 0.85rem;
-    color: #666;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
   .help a {
-    color: #818cf8;
+    color: var(--theme-accent-strong, #818cf8);
     text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
   }
 
   .help a:hover {
-    text-decoration: underline;
+    border-bottom-color: var(--theme-accent-strong, #818cf8);
   }
 
-  @media (max-width: 800px) {
+  /* Theme Toggle Button */
+  .theme-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 15%, rgba(0, 0, 0, 0.5));
+    border: 1px solid color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, transparent);
+    border-radius: 50%;
+    color: var(--theme-accent-strong, #818cf8);
+    font-size: 1.125rem;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .theme-toggle:hover {
+    background: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 25%, rgba(0, 0, 0, 0.6));
+    border-color: color-mix(in srgb, var(--theme-accent-strong, #818cf8) 40%, transparent);
+    transform: scale(1.05);
+  }
+
+  .theme-toggle:active {
+    transform: scale(0.95);
+  }
+
+  @media (max-width: 768px) {
     .cards {
       grid-template-columns: 1fr;
     }
@@ -303,6 +438,34 @@
     .page {
       padding: 1.5rem 1rem;
       align-items: flex-start;
+    }
+
+    .theme-toggle {
+      bottom: 16px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .back-link,
+    .card,
+    .cta-button,
+    .theme-toggle,
+    .help a {
+      transition: none;
+    }
+
+    .card:hover,
+    .cta-button:hover,
+    .theme-toggle:hover {
+      transform: none;
+    }
+
+    .cta-button:hover i {
+      transform: none;
     }
   }
 </style>
