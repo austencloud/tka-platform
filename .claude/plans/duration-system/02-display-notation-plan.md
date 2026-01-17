@@ -390,7 +390,7 @@ For users who want visual feedback on duration length:
 In timeline/compose view, pictograph cells could be wider for longer durations:
 
 ```css
-.beat-cell {
+.step-cell {
   /* Base width for duration=1 (single subdivision) */
   --base-width: 60px;
 

@@ -56,9 +56,12 @@ backgrounds are visible simultaneously during the transition.
   let currentBackgroundType: BackgroundType | null = null;
   let targetBackgroundType: BackgroundType | null = null;
 
-  // Firefly Forest uses fixed positioning (trees look awkward when stretched)
+  // Some backgrounds use fixed positioning (they look awkward when stretched)
   // All other backgrounds scroll with content (looks better for gradients, particles)
-  let isFixedPosition = $derived(backgroundType === BackgroundType.FIREFLY_FOREST);
+  let isFixedPosition = $derived(
+    backgroundType === BackgroundType.FIREFLY_FOREST ||
+    backgroundType === BackgroundType.PRIDE
+  );
 
   // Create background system when props change
   $effect(() => {

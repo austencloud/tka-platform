@@ -377,7 +377,7 @@ Store in localStorage to show only once.
 </script>
 
 <div
-  class="beat-cell"
+  class="step-cell"
   onpointerdown={handlePointerDown}
   onpointerup={handlePointerUp}
   onpointerleave={handlePointerUp}
