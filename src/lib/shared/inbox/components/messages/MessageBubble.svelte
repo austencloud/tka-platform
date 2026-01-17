@@ -16,6 +16,7 @@
   import EditHistorySheet from "./EditHistorySheet.svelte";
   import MessageActions from "./MessageActions.svelte";
   import { messagingService } from "$lib/shared/messaging/services/implementations/Messenger";
+  import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
 
   interface Props {
     message: Message;
@@ -102,15 +103,12 @@
     <!-- Group message sender info -->
     {#if showSender && senderInfo}
       <div class="sender-row">
-        <div class="sender-avatar">
-          {#if senderInfo.avatar}
-            <img src={senderInfo.avatar} alt="" />
-          {:else}
-            <span class="sender-initials">
-              {(senderInfo.displayName || "?").charAt(0).toUpperCase()}
-            </span>
-          {/if}
-        </div>
+        <RobustAvatar
+          src={senderInfo.avatar}
+          name={senderInfo.displayName}
+          alt=""
+          customSize={20}
+        />
         <span class="sender-name">{senderInfo.displayName}</span>
       </div>
     {/if}
@@ -261,35 +259,6 @@
     gap: 6px;
     margin-bottom: 4px;
     padding-left: 2px;
-  }
-
-  .sender-avatar {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: linear-gradient(
-      135deg,
-      var(--semantic-info) 0%,
-      var(--theme-accent-strong, var(--semantic-info)) 100%
-    );
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .sender-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .sender-initials {
-    font-size: 10px;
-    font-weight: 600;
-    color: white;
-    text-transform: uppercase;
   }
 
   .sender-name {

@@ -2,7 +2,8 @@
   /**
    * ConversationList
    *
-   * List of conversations with enhanced interactions and error handling
+   * List of conversations with enhanced interactions and error handling.
+   * Action buttons (new message, new group) are now in the parent header.
    */
 
   import { onMount } from "svelte";
@@ -19,12 +20,9 @@
     conversations: ConversationPreview[];
     isLoading: boolean;
     onSelect: (conversationId: string) => void;
-    onNewMessage: () => void;
-    onNewGroup?: () => void;
   }
 
-  let { conversations, isLoading, onSelect, onNewMessage, onNewGroup }: Props =
-    $props();
+  let { conversations, isLoading, onSelect }: Props = $props();
 
   let isMarkingRead = $state(false);
 
@@ -37,18 +35,6 @@
 
   // Check if there are any unread messages
   const hasUnread = $derived(conversations.some((c) => c.unreadCount > 0));
-
-  function handleNewMessageClick() {
-    hapticService?.trigger("selection");
-    onNewMessage();
-  }
-
-  function handleNewGroupClick() {
-    if (onNewGroup) {
-      hapticService?.trigger("selection");
-      onNewGroup();
-    }
-  }
 
   async function handleMarkAllRead() {
     if (isMarkingRead) return;
@@ -68,27 +54,9 @@
 </script>
 
 <div class="conversation-list" role="region" aria-label="Conversations">
-  <!-- Header with New Message, New Group, and Mark All Read -->
-  <div class="header-actions">
-    <button
-      class="new-message-btn"
-      onclick={handleNewMessageClick}
-      aria-label="Start new conversation"
-    >
-      <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-      <span>New</span>
-    </button>
-    {#if onNewGroup}
-      <button
-        class="new-group-btn"
-        onclick={handleNewGroupClick}
-        aria-label="Create new group"
-      >
-        <i class="fas fa-users" aria-hidden="true"></i>
-        <span>Group</span>
-      </button>
-    {/if}
-    {#if conversations.length > 0 && hasUnread}
+  <!-- Mark all read appears when there are unread messages -->
+  {#if conversations.length > 0 && hasUnread}
+    <div class="header-actions">
       <button
         class="mark-all-read"
         onclick={handleMarkAllRead}
@@ -102,8 +70,8 @@
         {/if}
         <span>Mark all read</span>
       </button>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   {#if isLoading}
     <ConversationSkeleton count={5} />
@@ -137,97 +105,20 @@
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px;
+    justify-content: flex-end;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--theme-stroke);
-  }
-
-  .new-message-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target);
-    padding: 12px 20px;
-    background: var(--theme-accent, var(--semantic-info));
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background 0.2s ease,
-      transform 0.15s ease,
-      box-shadow 0.2s ease;
-  }
-
-  .new-message-btn:hover {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, var(--semantic-info)) 85%,
-      white
-    );
-    box-shadow: 0 4px 12px
-      color-mix(in srgb, var(--theme-accent) 30%, transparent);
-  }
-
-  .new-message-btn:active {
-    transform: scale(0.97);
-  }
-
-  .new-message-btn:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 3px color-mix(in srgb, var(--theme-accent) 40%, transparent),
-      0 4px 12px rgba(0, 0, 0, 0.2);
-  }
-
-  .new-group-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target);
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
-    color: var(--theme-text);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background 0.2s ease,
-      border-color 0.2s ease,
-      transform 0.15s ease;
-  }
-
-  .new-group-btn:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-accent);
-    color: var(--theme-accent);
-  }
-
-  .new-group-btn:active {
-    transform: scale(0.97);
-  }
-
-  .new-group-btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
   .mark-all-read {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-left: auto;
     min-height: var(--min-touch-target);
-    padding: 12px 16px;
+    padding: 8px 12px;
     background: transparent;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     color: var(--theme-accent, var(--semantic-info));
     font-size: var(--font-size-sm);
     cursor: pointer;
@@ -274,8 +165,6 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .new-message-btn,
-    .new-group-btn,
     .mark-all-read,
     .conversation-wrapper {
       transition: none !important;

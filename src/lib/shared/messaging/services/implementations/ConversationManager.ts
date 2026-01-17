@@ -379,6 +379,83 @@ export class ConversationManager implements IConversationManager {
   }
 
   /**
+   * Get or create a group conversation with specific participants
+   * Checks if a group with the exact same participants exists first
+   */
+  async getOrCreateGroupConversation(
+    participantIds: string[],
+    groupName?: string
+  ): Promise<GetOrCreateConversationResult> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const currentUserId = this.getCurrentUserId();
+
+      // Build the full participant list including current user
+      const allParticipantIds = [
+        currentUserId,
+        ...participantIds.filter((id) => id !== currentUserId),
+      ].sort();
+
+      // Query for groups where current user is a participant
+      const conversationsRef = collection(firestore, CONVERSATIONS_COLLECTION);
+      const q = query(
+        conversationsRef,
+        where("type", "==", "group"),
+        where("participants", "array-contains", currentUserId)
+      );
+
+      const snapshot = await getDocs(q);
+
+      // Check if any existing group has the exact same participants
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data();
+        const existingParticipants = (data.participants as string[]).sort();
+
+        // Check for exact match
+        if (
+          existingParticipants.length === allParticipantIds.length &&
+          existingParticipants.every((id, i) => id === allParticipantIds[i])
+        ) {
+          // Found existing group with same participants
+          return {
+            conversation: this.mapDocToConversation(docSnap.id, data),
+            isNew: false,
+          };
+        }
+      }
+
+      // No existing group found, create a new one
+      // Generate default name from participant names if none provided
+      let finalGroupName = groupName?.trim();
+      if (!finalGroupName) {
+        const names: string[] = [];
+        for (const userId of participantIds) {
+          const userInfo = await this.fetchUserInfo(userId);
+          names.push(userInfo.displayName.split(" ")[0]);
+        }
+        finalGroupName = names.join(", ");
+      }
+
+      const result = await this.createGroup({
+        name: finalGroupName,
+        participantIds,
+      });
+
+      return {
+        conversation: result.conversation,
+        isNew: true,
+      };
+    } catch (error) {
+      console.error(
+        "[ConversationManager] Failed to get or create group:",
+        error
+      );
+      toast.error("Failed to start group conversation.");
+      throw error;
+    }
+  }
+
+  /**
    * Add a member to a group (admin only)
    */
   async addGroupMember(conversationId: string, userId: string): Promise<void> {

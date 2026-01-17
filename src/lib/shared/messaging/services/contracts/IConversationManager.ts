@@ -44,6 +44,16 @@ export interface IConversationManager {
   createGroup(input: CreateGroupInput): Promise<CreateGroupResult>;
 
   /**
+   * Get or create a group conversation with specific participants
+   * If a group with the exact same participants exists, returns that group
+   * Otherwise creates a new group
+   */
+  getOrCreateGroupConversation(
+    participantIds: string[],
+    groupName?: string
+  ): Promise<GetOrCreateConversationResult>;
+
+  /**
    * Add a member to a group (admin only)
    */
   addGroupMember(conversationId: string, userId: string): Promise<void>;

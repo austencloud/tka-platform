@@ -1,9 +1,10 @@
 <!--
   MessageActions.svelte
 
-  Facebook Messenger-style reaction bar.
+  Facebook Messenger-style reaction bar with modern action menu.
   - Long-press (mobile) or hover (desktop) shows floating emoji bar
-  - Small "more" button opens action menu (Reply, Edit, Delete)
+  - Small "more" button opens action menu (Reply, Copy, Copy for AI, Edit, Delete)
+  - Prevents native context menu for seamless experience
   - Pointer/tail connects bar to message bubble
 -->
 <script lang="ts">
@@ -73,6 +74,99 @@
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
+  }
+
+  // Prevent native context menu (right-click / long-press)
+  function handleContextMenu(event: MouseEvent) {
+    event.preventDefault();
+    hapticService?.trigger("selection");
+    showReactions = true;
+  }
+
+  // Copy message text to clipboard
+  async function handleCopyText() {
+    showReactions = false;
+    showMoreMenu = false;
+    hapticService?.trigger("selection");
+
+    try {
+      await navigator.clipboard.writeText(message.content);
+      toast.success("Message copied");
+    } catch (error) {
+      console.error("Failed to copy text:", error);
+      toast.error("Failed to copy message");
+    }
+  }
+
+  // Copy message with full metadata for AI analysis
+  async function handleCopyForAI() {
+    showReactions = false;
+    showMoreMenu = false;
+    hapticService?.trigger("selection");
+
+    try {
+      const formattedMessage = formatMessageForAI(message);
+      await navigator.clipboard.writeText(formattedMessage);
+      toast.success("Copied for AI");
+    } catch (error) {
+      console.error("Failed to copy for AI:", error);
+      toast.error("Failed to copy message");
+    }
+  }
+
+  // Format message with all metadata for debugging/AI
+  function formatMessageForAI(msg: Message): string {
+    const lines: string[] = [
+      "## Message Details",
+      "",
+      `**Message ID:** \`${msg.id}\``,
+      `**Conversation ID:** \`${msg.conversationId}\``,
+      `**Sender ID:** \`${msg.senderId}\``,
+      `**Sender Name:** ${msg.senderName || "Unknown"}`,
+      `**Sent:** ${msg.createdAt?.toLocaleString() || "Unknown"}`,
+    ];
+
+    if (msg.editedAt) {
+      lines.push(`**Edited:** ${msg.editedAt.toLocaleString()}`);
+    }
+
+    if (msg.isDeleted) {
+      lines.push(`**Status:** Deleted`);
+    }
+
+    lines.push("", "### Content", "", msg.content || "(empty)");
+
+    if (msg.replyTo) {
+      lines.push(
+        "",
+        "### Reply To",
+        `**Original Message ID:** \`${msg.replyTo.messageId}\``,
+        `**Original Sender:** ${msg.replyTo.senderName}`,
+        `**Preview:** ${msg.replyTo.content?.slice(0, 100) || "(empty)"}${(msg.replyTo.content?.length || 0) > 100 ? "..." : ""}`
+      );
+    }
+
+    if (msg.reactions && msg.reactions.length > 0) {
+      lines.push(
+        "",
+        "### Reactions",
+        ...msg.reactions.map(
+          (r) => `- ${r.emoji}: ${r.userIds.length} user(s)`
+        )
+      );
+    }
+
+    if (msg.attachments && msg.attachments.length > 0) {
+      lines.push(
+        "",
+        "### Attachments",
+        ...msg.attachments.map(
+          (a) => `- ${a.type}: ${a.name || a.url}`
+        )
+      );
+    }
+
+    return lines.join("\n");
   }
 
   // Close when clicking outside
@@ -169,6 +263,7 @@
   ontouchend={handleTouchEnd}
   ontouchmove={handleTouchMove}
   ontouchcancel={handleTouchEnd}
+  oncontextmenu={handleContextMenu}
 >
   <!-- The message bubble -->
   {@render children()}
@@ -210,6 +305,16 @@
             <i class="fa-solid fa-reply" aria-hidden="true"></i>
             Reply
           </button>
+          <button type="button" class="menu-item" onclick={handleCopyText}>
+            <i class="fa-solid fa-copy" aria-hidden="true"></i>
+            Copy
+          </button>
+          {#if authState.isAdmin}
+            <button type="button" class="menu-item" onclick={handleCopyForAI}>
+              <i class="fa-solid fa-robot" aria-hidden="true"></i>
+              Copy for AI
+            </button>
+          {/if}
           {#if canEdit}
             <button type="button" class="menu-item" onclick={handleEdit}>
               <i class="fa-solid fa-pen" aria-hidden="true"></i>
@@ -243,6 +348,9 @@
 <style>
   .message-wrapper {
     position: relative;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   /* Floating reaction bar */

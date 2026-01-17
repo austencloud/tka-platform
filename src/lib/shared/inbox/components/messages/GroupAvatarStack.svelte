@@ -4,9 +4,11 @@
   Stacked avatar display for group conversations.
   Shows overlapping avatars with a "+N" indicator for overflow.
   Can display a custom group avatar instead.
+  Uses RobustAvatar for reliable image loading with fallbacks.
 -->
 <script lang="ts">
   import type { ParticipantInfo } from "$lib/shared/messaging/domain/models/conversation-models";
+  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
 
   interface Props {
     participants: ParticipantInfo[];
@@ -36,7 +38,11 @@
 {#if customAvatar}
   <!-- Custom group avatar -->
   <div class="custom-avatar" style="width: {size}px; height: {size}px;">
-    <img src={customAvatar} alt="Group avatar" />
+    <RobustAvatar
+      src={customAvatar}
+      alt="Group avatar"
+      customSize={size}
+    />
     <span class="group-indicator">
       <i class="fas fa-users" aria-hidden="true"></i>
     </span>
@@ -49,7 +55,7 @@
   >
     {#each visibleParticipants as participant, i}
       <div
-        class="avatar"
+        class="avatar-wrapper"
         style="
           width: {avatarSize}px;
           height: {avatarSize}px;
@@ -58,19 +64,18 @@
         "
         title={participant.displayName}
       >
-        {#if participant.avatar}
-          <img src={participant.avatar} alt="" />
-        {:else}
-          <span class="initials">
-            {(participant.displayName || "?").charAt(0).toUpperCase()}
-          </span>
-        {/if}
+        <RobustAvatar
+          src={participant.avatar}
+          name={participant.displayName}
+          alt=""
+          customSize={avatarSize}
+        />
       </div>
     {/each}
 
     {#if hasOverflow}
       <div
-        class="avatar overflow"
+        class="avatar-wrapper overflow"
         style="
           width: {avatarSize}px;
           height: {avatarSize}px;
@@ -88,14 +93,8 @@
   .custom-avatar {
     position: relative;
     border-radius: 50%;
-    overflow: hidden;
+    overflow: visible;
     flex-shrink: 0;
-  }
-
-  .custom-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
   }
 
   .group-indicator {
@@ -112,6 +111,7 @@
     border-radius: 50%;
     color: white;
     font-size: 8px;
+    z-index: 1;
   }
 
   .avatar-stack {
@@ -121,35 +121,23 @@
     flex-shrink: 0;
   }
 
-  .avatar {
+  .avatar-wrapper {
     position: absolute;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: linear-gradient(
-      135deg,
-      var(--semantic-info) 0%,
-      var(--theme-accent-strong, var(--semantic-info)) 100%
-    );
     border: 2px solid var(--theme-panel-bg);
     overflow: hidden;
   }
 
-  .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  /* RobustAvatar inside wrapper needs to fill the space */
+  .avatar-wrapper :global(.robust-avatar) {
+    width: 100% !important;
+    height: 100% !important;
   }
 
-  .initials {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: white;
-    text-transform: uppercase;
-  }
-
-  .avatar.overflow {
+  .avatar-wrapper.overflow {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(4px);
   }

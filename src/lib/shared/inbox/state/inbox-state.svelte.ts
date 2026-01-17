@@ -19,7 +19,6 @@ export type InboxView =
   | "list"
   | "thread"
   | "compose"
-  | "new-group"
   | "group-settings";
 
 /**
@@ -177,14 +176,6 @@ class InboxState {
   cancelCompose() {
     this.composeRecipientId = null;
     this.composeRecipientName = null;
-    this.currentView = "list";
-  }
-
-  startNewGroup() {
-    this.currentView = "new-group";
-  }
-
-  cancelNewGroup() {
     this.currentView = "list";
   }
 

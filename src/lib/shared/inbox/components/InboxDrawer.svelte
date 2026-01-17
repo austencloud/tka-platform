@@ -14,11 +14,9 @@
   import { notificationService } from "$lib/features/feedback/services/implementations/Notifier";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { toast } from "../../toast/state/toast-state.svelte";
-  import InboxTabs from "./InboxTabs.svelte";
   import ConversationList from "./messages/ConversationList.svelte";
   import MessageThread from "./messages/MessageThread.svelte";
   import NewMessageSheet from "./messages/NewMessageSheet.svelte";
-  import NewGroupSheet from "./messages/NewGroupSheet.svelte";
   import GroupSettingsSheet from "./messages/GroupSettingsSheet.svelte";
   import NotificationList from "./notifications/NotificationList.svelte";
   import { conversationService } from "../../messaging/services/implementations/ConversationManager";
@@ -208,21 +206,6 @@
     inboxState.cancelCompose();
   }
 
-  function handleNewGroup() {
-    hapticService?.trigger("selection");
-    inboxState.startNewGroup();
-  }
-
-  function handleCancelNewGroup() {
-    hapticService?.trigger("selection");
-    inboxState.cancelNewGroup();
-  }
-
-  function handleGroupCreated(conversationId: string) {
-    hapticService?.trigger("success");
-    handleConversationSelect(conversationId);
-  }
-
   function handleOpenGroupSettings() {
     hapticService?.trigger("selection");
     inboxState.openGroupSettings();
@@ -248,8 +231,6 @@
         handleBack();
       } else if (inboxState.currentView === "compose") {
         inboxState.cancelCompose();
-      } else if (inboxState.currentView === "new-group") {
-        inboxState.cancelNewGroup();
       } else if (inboxState.currentView === "group-settings") {
         inboxState.closeGroupSettings();
       } else {
@@ -308,6 +289,66 @@
       await handleModuleChange("settings" as ModuleId);
     }
   }
+
+  // Copy entire conversation for AI analysis (admin only)
+  async function handleCopyConversationForAI() {
+    if (!inboxState.selectedConversation) return;
+    hapticService?.trigger("selection");
+
+    const conv = inboxState.selectedConversation;
+    const lines: string[] = [
+      "## Conversation Details",
+      "",
+      `**Conversation ID:** \`${conv.id}\``,
+      `**Type:** ${conv.type || "direct"}`,
+      `**Participants:** ${conv.participants.join(", ")}`,
+    ];
+
+    if (conv.type === "group" && conv.groupMetadata) {
+      lines.push(`**Group Name:** ${conv.groupMetadata.name || "(unnamed)"}`);
+      if (conv.groupMetadata.createdBy) {
+        lines.push(`**Created By:** ${conv.groupMetadata.createdBy}`);
+      }
+    }
+
+    // Add participant info
+    lines.push("", "### Participants");
+    for (const [uid, info] of Object.entries(conv.participantInfo || {})) {
+      lines.push(`- **${info.displayName}** (\`${uid}\`)`);
+    }
+
+    // Add messages
+    lines.push("", "### Messages", "");
+    for (const msg of inboxState.messages) {
+      const sender = conv.participantInfo[msg.senderId]?.displayName || msg.senderName || "Unknown";
+      const timestamp = msg.createdAt?.toLocaleString() || "Unknown";
+      const edited = msg.editedAt ? " (edited)" : "";
+      const deleted = msg.isDeleted ? " [DELETED]" : "";
+
+      lines.push(`**${sender}** - ${timestamp}${edited}${deleted}`);
+
+      if (msg.replyTo) {
+        lines.push(`> Reply to: ${msg.replyTo.senderName}: "${msg.replyTo.content?.slice(0, 50)}..."`);
+      }
+
+      lines.push(msg.content || "(empty)");
+
+      if (msg.reactions && msg.reactions.length > 0) {
+        const reactionStr = msg.reactions.map(r => `${r.emoji}×${r.userIds.length}`).join(" ");
+        lines.push(`Reactions: ${reactionStr}`);
+      }
+
+      lines.push("");
+    }
+
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast.success("Conversation copied for AI");
+    } catch (error) {
+      console.error("Failed to copy conversation:", error);
+      toast.error("Failed to copy conversation");
+    }
+  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -333,7 +374,38 @@
     <!-- Header -->
     <header class="inbox-header">
       {#if inboxState.currentView === "list"}
-        <h2 id="inbox-title">Inbox</h2>
+        <h2 id="inbox-title">
+          {inboxState.activeTab === "notifications" ? "Notifications" : "Messages"}
+        </h2>
+
+        <!-- New message button (unified flow for direct and group) -->
+        {#if inboxState.activeTab === "messages"}
+          <button
+            class="header-action-btn primary"
+            onclick={handleNewMessage}
+            aria-label="New message"
+            title="New message"
+          >
+            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+          </button>
+        {/if}
+
+        <!-- Notification toggle -->
+        <button
+          class="header-action-btn notification-toggle"
+          class:active={inboxState.activeTab === "notifications"}
+          onclick={() => inboxState.setTab(inboxState.activeTab === "notifications" ? "messages" : "notifications")}
+          aria-label={inboxState.activeTab === "notifications" ? "Back to messages" : "View notifications"}
+          title={inboxState.activeTab === "notifications" ? "Back to messages" : "Notifications"}
+        >
+          <i class="fas {inboxState.activeTab === 'notifications' ? 'fa-comments' : 'fa-bell'}" aria-hidden="true"></i>
+          {#if inboxState.activeTab !== "notifications" && inboxState.unreadNotificationCount > 0}
+            <span class="notification-badge" aria-label="{inboxState.unreadNotificationCount} unread">
+              {inboxState.unreadNotificationCount > 99 ? "99+" : inboxState.unreadNotificationCount}
+            </span>
+          {/if}
+        </button>
+
         <button
           class="close-button"
           onclick={handleClose}
@@ -359,6 +431,16 @@
             <i class="fas fa-cog" aria-hidden="true"></i>
           </button>
         {/if}
+        {#if authState.isAdmin}
+          <button
+            class="header-action-btn"
+            onclick={handleCopyConversationForAI}
+            aria-label="Copy conversation for AI"
+            title="Copy for AI"
+          >
+            <i class="fas fa-robot" aria-hidden="true"></i>
+          </button>
+        {/if}
         <button
           class="close-button"
           onclick={handleClose}
@@ -376,16 +458,6 @@
         </button>
         <h2 id="inbox-title">New Message</h2>
         <div class="spacer"></div>
-      {:else if inboxState.currentView === "new-group"}
-        <button
-          class="back-button"
-          onclick={handleCancelNewGroup}
-          aria-label="Cancel new group"
-        >
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        </button>
-        <h2 id="inbox-title">New Group</h2>
-        <div class="spacer"></div>
       {:else if inboxState.currentView === "group-settings"}
         <!-- GroupSettingsSheet has its own header, just show close -->
         <div class="spacer"></div>
@@ -399,11 +471,6 @@
       {/if}
     </header>
 
-    <!-- Tabs (only show in list view) -->
-    {#if inboxState.currentView === "list"}
-      <InboxTabs />
-    {/if}
-
     <!-- Content -->
     <section
       class="inbox-content"
@@ -416,8 +483,6 @@
             conversations={inboxState.conversations}
             isLoading={inboxState.isLoadingConversations}
             onSelect={handleConversationSelect}
-            onNewMessage={handleNewMessage}
-            onNewGroup={handleNewGroup}
           />
         {:else}
           <NotificationList
@@ -445,11 +510,6 @@
           recipientName={inboxState.composeRecipientName}
           onConversationCreated={handleConversationSelect}
           onCancel={handleCancelCompose}
-        />
-      {:else if inboxState.currentView === "new-group"}
-        <NewGroupSheet
-          onGroupCreated={handleGroupCreated}
-          onCancel={handleCancelNewGroup}
         />
       {:else if inboxState.currentView === "group-settings"}
         {#if inboxState.selectedConversation}
@@ -493,7 +553,8 @@
 
   .back-button,
   .close-button,
-  .settings-button {
+  .settings-button,
+  .header-action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -513,23 +574,67 @@
 
   .back-button:hover,
   .close-button:hover,
-  .settings-button:hover {
+  .settings-button:hover,
+  .header-action-btn:hover {
     background: var(--theme-card-bg);
     color: var(--theme-text);
   }
 
   .back-button:active,
   .close-button:active,
-  .settings-button:active {
+  .settings-button:active,
+  .header-action-btn:active {
     transform: scale(0.95);
   }
 
   .back-button:focus-visible,
   .close-button:focus-visible,
-  .settings-button:focus-visible {
+  .settings-button:focus-visible,
+  .header-action-btn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px
       color-mix(in srgb, var(--theme-accent) 50%, transparent);
+  }
+
+  /* Primary action button (new message) */
+  .header-action-btn.primary {
+    color: var(--theme-accent, var(--semantic-info));
+  }
+
+  .header-action-btn.primary:hover {
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    color: var(--theme-accent);
+  }
+
+  /* Notification toggle */
+  .notification-toggle {
+    position: relative;
+  }
+
+  .notification-toggle.active {
+    background: var(--theme-accent, var(--semantic-info));
+    color: white;
+  }
+
+  .notification-toggle.active:hover {
+    background: color-mix(in srgb, var(--theme-accent) 85%, white);
+    color: white;
+  }
+
+  .notification-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--semantic-error, #ef4444);
+    border-radius: 9px;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
   }
 
   .spacer {
