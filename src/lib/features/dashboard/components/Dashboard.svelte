@@ -33,8 +33,6 @@
   import AlertsWidget from "./widgets/AlertsWidget.svelte";
   import MyFeedbackDetail from "$lib/features/feedback/components/my-feedback/MyFeedbackDetail.svelte";
   import DashboardFloatingActions from "./mobile/DashboardFloatingActions.svelte";
-  import MessagesDrawer from "./drawers/MessagesDrawer.svelte";
-  import NotificationsDrawer from "./drawers/NotificationsDrawer.svelte";
   import { createDashboard } from "../state/dashboard-state.svelte";
   import type {
     FeedbackItem,
@@ -48,9 +46,6 @@
 
   // State
   const dashboardState = createDashboard();
-  let messagesDrawerOpen = $state(false);
-  let notificationsDrawerOpen = $state(false);
-  let pendingConversationId = $state("");
   let hasFollowing = $state(false);
 
   // Preview-aware derived values (directly in component for proper reactivity)
@@ -240,13 +235,7 @@
           easing: cubicOut,
         }}
       >
-        <MessagesWidget
-          onOpenMessages={() => (messagesDrawerOpen = true)}
-          onOpenConversation={(conversationId) => {
-            pendingConversationId = conversationId;
-            messagesDrawerOpen = true;
-          }}
-        />
+        <MessagesWidget />
       </section>
     {/if}
 
@@ -261,10 +250,7 @@
           easing: cubicOut,
         }}
       >
-        <AlertsWidget
-          {dashboardState}
-          onOpenNotifications={() => (notificationsDrawerOpen = true)}
-        />
+        <AlertsWidget {dashboardState} />
       </section>
     {/if}
   </div>
@@ -285,17 +271,8 @@
 
   <!-- Mobile-only floating action buttons -->
   {#if isMobile}
-    <DashboardFloatingActions
-      onMessagesClick={() => (messagesDrawerOpen = true)}
-      onNotificationsClick={() => (notificationsDrawerOpen = true)}
-    />
+    <DashboardFloatingActions />
   {/if}
-
-  <!-- Messages Drawer -->
-  <MessagesDrawer bind:isOpen={messagesDrawerOpen} bind:pendingConversationId />
-
-  <!-- Notifications Drawer -->
-  <NotificationsDrawer bind:isOpen={notificationsDrawerOpen} />
 </div>
 
 <style>

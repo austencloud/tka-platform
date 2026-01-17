@@ -3,20 +3,14 @@
    * DashboardFloatingActions
    *
    * Two floating action buttons in top corners (mobile only).
-   * Top-left: Messages → Opens MessagesDrawer
-   * Top-right: Notifications → Opens NotificationsDrawer
+   * Top-left: Messages → Opens InboxDrawer (messages tab)
+   * Top-right: Notifications → Opens InboxDrawer (notifications tab)
    */
 
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { onMount } from "svelte";
-
-  // Props
-  let { onMessagesClick, onNotificationsClick } = $props<{
-    onMessagesClick: () => void;
-    onNotificationsClick: () => void;
-  }>();
 
   // Haptic feedback service
   let hapticService: IHapticFeedback | undefined;
@@ -37,12 +31,12 @@
 
   function handleMessagesClick() {
     hapticService?.trigger("selection");
-    onMessagesClick();
+    inboxState.open("messages");
   }
 
   function handleNotificationsClick() {
     hapticService?.trigger("selection");
-    onNotificationsClick();
+    inboxState.open("notifications");
   }
 </script>
 
