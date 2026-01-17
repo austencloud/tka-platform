@@ -6,17 +6,6 @@
  */
 
 export {
-  getAllPropTypes,
   getPropTypeDisplayInfo,
-  findPropTypeByValue,
-  PROP_TYPE_DISPLAY_REGISTRY,
-  VARIANT_PROP_TYPES,
-  hasVariations,
-  getBasePropType,
-  getAllVariations,
-  getNextVariation,
-  getVariationLabel,
-  getVariationIndex,
-  getTriquetraVariation,
   type PropTypeDisplayInfo,
 } from "../../../../pictograph/prop/domain/PropTypeDisplayRegistry";

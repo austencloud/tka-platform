@@ -1,17 +1,14 @@
 <!--
   CompactPropDisplay.svelte - Compact prop display with inline controls
 
-  Single mode: One row showing prop icon, name, variation & flip controls
-  Cat Dog mode: Two rows (blue/red) each with prop icon, name, controls
+  Single mode: One row showing prop icon, name, and flip control (for buugengs)
+  Cat Dog mode: Two rows (blue/red) each with icon, name, controls
 
-  Tapping the prop opens the selection sheet
+  Tapping the prop opens the selection sheet where all variations are visible.
 -->
 <script lang="ts">
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import {
-    getPropTypeDisplayInfo,
-    hasVariations,
-  } from "./PropTypeRegistry";
+  import { getPropTypeDisplayInfo } from "./PropTypeRegistry";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Buugeng family - asymmetric props that can be flipped
@@ -28,7 +25,6 @@
     blueBuugengFlipped = false,
     redBuugengFlipped = false,
     onOpenSheet,
-    onToggleVariation,
     onToggleFlip,
   } = $props<{
     bluePropType: PropType;
@@ -37,15 +33,12 @@
     blueBuugengFlipped?: boolean;
     redBuugengFlipped?: boolean;
     onOpenSheet?: (hand: "blue" | "red") => void;
-    onToggleVariation?: (hand: "blue" | "red") => void;
     onToggleFlip?: (hand: "blue" | "red") => void;
   }>();
 
   // Display info
   const blueInfo = $derived(getPropTypeDisplayInfo(bluePropType));
   const redInfo = $derived(getPropTypeDisplayInfo(redPropType));
-  const blueHasVariations = $derived(hasVariations(bluePropType));
-  const redHasVariations = $derived(hasVariations(redPropType));
   const blueIsBuugeng = $derived(BUUGENG_FAMILY.has(bluePropType));
   const redIsBuugeng = $derived(BUUGENG_FAMILY.has(redPropType));
 </script>
@@ -78,20 +71,6 @@
     <span class="tap-hint">Tap to change</span>
 
     <span class="action-buttons">
-      {#if blueHasVariations}
-        <button
-          class="action-btn"
-          onclick={(e) => {
-            e.stopPropagation();
-            onToggleVariation?.("blue");
-          }}
-          aria-label="Toggle variation"
-          title="Switch prop variation"
-        >
-          <i class="fas fa-sync-alt" aria-hidden="true"></i>
-        </button>
-      {/if}
-
       {#if blueIsBuugeng}
         <button
           class="action-btn"
@@ -132,20 +111,6 @@
       <span class="tap-hint">Tap to change</span>
 
       <span class="action-buttons">
-        {#if redHasVariations}
-          <button
-            class="action-btn"
-            onclick={(e) => {
-              e.stopPropagation();
-              onToggleVariation?.("red");
-            }}
-            aria-label="Toggle variation"
-            title="Switch prop variation"
-          >
-            <i class="fas fa-sync-alt" aria-hidden="true"></i>
-          </button>
-        {/if}
-
         {#if redIsBuugeng}
           <button
             class="action-btn"
@@ -169,21 +134,36 @@
   .compact-prop-display {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  @media (min-width: 500px) {
+    .compact-prop-display {
+      gap: 10px;
+    }
   }
 
   .prop-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 10px 12px;
     background: var(--theme-card-bg);
     border: 1.5px solid var(--theme-stroke);
-    border-radius: 14px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.15s ease;
-    min-height: 56px;
+    min-height: 52px;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (min-width: 500px) {
+    .prop-row {
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      min-height: 56px;
+    }
   }
 
   .prop-row:hover {
@@ -240,13 +220,20 @@
     box-shadow: 0 0 6px color-mix(in srgb, var(--prop-red) 50%, transparent);
   }
 
-  /* Prop icon - fixed size */
+  /* Prop icon - responsive size */
   .prop-icon {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
     filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.3));
     flex-shrink: 0;
+  }
+
+  @media (min-width: 500px) {
+    .prop-icon {
+      width: 48px;
+      height: 48px;
+    }
   }
 
   .prop-icon.flipped {
@@ -260,10 +247,16 @@
 
   /* Prop name */
   .prop-name {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--theme-text);
     flex-shrink: 0;
+  }
+
+  @media (min-width: 500px) {
+    .prop-name {
+      font-size: 15px;
+    }
   }
 
   /* Tap hint */
@@ -286,23 +279,38 @@
   /* Action buttons */
   .action-buttons {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
   }
 
+  @media (min-width: 500px) {
+    .action-buttons {
+      gap: 6px;
+    }
+  }
+
   .action-btn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     transition: all 0.15s ease;
+  }
+
+  @media (min-width: 500px) {
+    .action-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
   }
 
   .action-btn:hover {

@@ -14,15 +14,12 @@
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import type { IDeviceDetector } from "../../../device/services/contracts/IDeviceDetector";
   import { onMount, onDestroy } from "svelte";
-  import {
-    hasVariations,
-    getNextVariation,
-  } from "./prop-type/PropTypeRegistry";
+  // PropTypeRegistry imports removed - variations now visible in Bento grid
   import CatDogToggle from "./prop-type/CatDogToggle.svelte";
   import PropSelectionSheet from "./prop-type/PropSelectionSheet.svelte";
   import PresetChipBar from "./prop-type/PresetChipBar.svelte";
   import CompactPropDisplay from "./prop-type/CompactPropDisplay.svelte";
-  import InlinePropGrid from "./prop-type/InlinePropGrid.svelte";
+  import BentoPropGrid from "./prop-type/BentoPropGrid.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   const PRESET_COUNT = 10;
@@ -276,31 +273,7 @@
     updateCurrentPreset();
   }
 
-  // Variation/flip
-  function handleToggleVariation(hand: "blue" | "red") {
-    hapticService?.trigger("selection");
-    const currentProp =
-      hand === "blue" ? selectedBluePropType : selectedRedPropType;
-
-    if (!hasVariations(currentProp)) return;
-
-    const newProp = getNextVariation(currentProp);
-    if (!newProp) return;
-
-    if (hand === "blue") {
-      selectedBluePropType = newProp;
-      onUpdate?.({ key: "bluePropType", value: newProp });
-      if (!catDogMode) {
-        selectedRedPropType = newProp;
-        onUpdate?.({ key: "redPropType", value: newProp });
-      }
-    } else {
-      selectedRedPropType = newProp;
-      onUpdate?.({ key: "redPropType", value: newProp });
-    }
-    updateCurrentPreset();
-  }
-
+  // Buugeng flip toggle
   function handleToggleFlip(hand: "blue" | "red") {
     hapticService?.trigger("selection");
 
@@ -362,23 +335,22 @@
         {blueBuugengFlipped}
         {redBuugengFlipped}
         onOpenSheet={handleOpenSheet}
-        onToggleVariation={handleToggleVariation}
         onToggleFlip={handleToggleFlip}
       />
     </div>
   </section>
 
-  <!-- Right: Inline Prop Grid (desktop only, via CSS) -->
+  <!-- Right: Bento Prop Grid (desktop only, via CSS) -->
   <section class="selection-panel">
     {#if catDogMode}
       <div class="dual-grids">
-        <InlinePropGrid
+        <BentoPropGrid
           selectedPropType={selectedBluePropType}
           color="blue"
           title={t("settings_select_left_prop")}
           onSelect={handleInlineSelect}
         />
-        <InlinePropGrid
+        <BentoPropGrid
           selectedPropType={selectedRedPropType}
           color="red"
           title={t("settings_select_right_prop")}
@@ -386,7 +358,7 @@
         />
       </div>
     {:else}
-      <InlinePropGrid
+      <BentoPropGrid
         selectedPropType={selectedBluePropType}
         color="blue"
         title="Select Prop"
@@ -413,8 +385,8 @@
   .prop-type-tab {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 16px;
+    gap: 12px;
+    padding: 12px;
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
@@ -425,33 +397,55 @@
     box-sizing: border-box;
   }
 
+  /* Tablet: More breathing room */
+  @media (min-width: 500px) {
+    .prop-type-tab {
+      gap: 16px;
+      padding: 16px;
+    }
+  }
+
   /* Desktop: side by side, stretch to fill height */
   @media (min-width: 900px) {
     .prop-type-tab {
       flex-direction: row;
       align-items: stretch;
       overflow: hidden;
+      gap: 20px;
     }
   }
 
-  /* Controls Panel - uses container queries for responsive sizing */
+  /* Controls Panel - mobile-first compact design */
   .controls-panel {
     display: flex;
     flex-direction: column;
-    gap: clamp(12px, 3cqi, 20px);
-    padding: clamp(12px, 3cqi, 20px);
+    gap: 14px;
+    padding: 14px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
-    border-radius: 16px;
+    border-radius: 12px;
     container-type: inline-size;
     container-name: controls-panel;
   }
 
+  /* Tablet: Slightly larger */
+  @media (min-width: 500px) {
+    .controls-panel {
+      gap: 16px;
+      padding: 16px;
+      border-radius: 14px;
+    }
+  }
+
+  /* Desktop: Full styling */
   @media (min-width: 900px) {
     .controls-panel {
-      flex: 0 0 clamp(360px, 25vw, 480px);
+      flex: 0 0 clamp(380px, 28vw, 520px);
       min-height: 0;
       overflow-y: auto;
+      padding: clamp(20px, 5cqi, 32px);
+      gap: clamp(16px, 4cqi, 28px);
+      border-radius: 16px;
     }
   }
 
@@ -471,29 +465,29 @@
 
   .dual-grids {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
+    flex-direction: row;
+    gap: 12px;
     width: 100%;
     height: 100%;
   }
 
+  .dual-grids > :global(*) {
+    flex: 1;
+    min-width: 0;
+  }
+
   @media (min-width: 1200px) {
     .dual-grids {
-      flex-direction: row;
-    }
-
-    .dual-grids > :global(*) {
-      flex: 1;
-      min-width: 0;
+      gap: 16px;
     }
   }
 
-  /* Header */
+  /* Header - compact on mobile */
   .panel-header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding-bottom: 16px;
+    gap: 10px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--theme-stroke);
   }
 
@@ -501,13 +495,40 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 15px;
     background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     border: 1px solid color-mix(in srgb, var(--theme-accent) 35%, transparent);
     color: var(--theme-accent);
+  }
+
+  @media (min-width: 500px) {
+    .panel-header {
+      gap: 12px;
+      padding-bottom: 14px;
+    }
+
+    .panel-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .panel-header {
+      gap: 14px;
+      padding-bottom: 16px;
+    }
+
+    .panel-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      font-size: 18px;
+    }
   }
 
   .panel-header-text {
@@ -515,58 +536,87 @@
   }
 
   .panel-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--theme-text);
     margin: 0;
   }
 
   .panel-subtitle {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--theme-text-dim);
-    margin: 4px 0 0 0;
+    margin: 2px 0 0 0;
   }
 
-  /* Section */
+  @media (min-width: 500px) {
+    .panel-title {
+      font-size: 16px;
+    }
+
+    .panel-subtitle {
+      font-size: 13px;
+      margin-top: 3px;
+    }
+  }
+
+  /* Section - tighter on mobile */
   .section {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-  }
-
-  /* Presets section grows to fill available space on desktop */
-  @media (min-width: 900px) {
-    .section {
-      flex: 1;
-      min-height: 0;
-    }
+    gap: 10px;
   }
 
   .section-label {
     margin: 0;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
+  @media (min-width: 500px) {
+    .section {
+      gap: 12px;
+    }
+
+    .section-label {
+      font-size: 12px;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .section {
+      gap: 16px;
+    }
+  }
+
   /* Mode Row */
   .mode-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .mode-hint {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--theme-text-dim);
     font-style: italic;
   }
 
-  /* Prop Display - at bottom on mobile, natural position on desktop */
+  @media (min-width: 500px) {
+    .mode-row {
+      gap: 12px;
+    }
+
+    .mode-hint {
+      font-size: 13px;
+    }
+  }
+
+  /* Prop Display - prominent on mobile */
   .prop-display {
-    margin-top: auto;
+    margin-top: 4px;
   }
 
   @media (min-width: 900px) {

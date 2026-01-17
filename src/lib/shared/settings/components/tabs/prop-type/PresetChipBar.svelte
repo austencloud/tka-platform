@@ -68,40 +68,40 @@
   .preset-bar {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    flex: 1;
-    min-height: 0;
+    gap: 10px;
+    container-type: inline-size;
+    container-name: preset-bar;
   }
 
-  /* 5x2 grid - square chips that fill available space */
+  /* Base: Always use grid, let it wrap naturally */
   .presets-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: clamp(6px, 2cqi, 12px);
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 8px;
     padding: 4px;
-    max-width: 100%;
-    flex: 1;
-    min-height: 0;
-    container-type: inline-size;
-    container-name: presets-grid;
   }
 
-  /* On narrow containers, use 4 columns (3 rows) for larger chips */
-  @container presets-grid (max-width: 300px) {
+  /* Slightly larger at 280px+ */
+  @container preset-bar (min-width: 280px) {
     .presets-grid {
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 10px;
     }
   }
 
-  /* Allow horizontal scroll on very narrow containers */
-  @media (max-width: 380px) {
+  /* Larger chips at 360px+ */
+  @container preset-bar (min-width: 360px) {
     .presets-grid {
-      overflow-x: auto;
-      overflow-y: hidden;
-      scrollbar-width: thin;
-      padding-bottom: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+      gap: 12px;
+    }
+  }
+
+  /* Desktop: Largest chips */
+  @container preset-bar (min-width: 450px) {
+    .presets-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 14px;
     }
   }
 

@@ -243,13 +243,14 @@
     transition: all 0.2s cubic-bezier(0.36, 0.66, 0.04, 1);
     color: var(--theme-text);
     position: relative;
-    padding: clamp(8px, 1.5cqi, 12px) clamp(6px, 1cqi, 8px)
-      clamp(6px, 1cqi, 10px);
-    gap: clamp(4px, 1cqi, 8px);
-    border-radius: 12px;
+    /* Percentage-based padding scales with button size */
+    padding: 8% 6% 6%;
+    gap: 4%;
+    border-radius: 10px;
     box-sizing: border-box;
-    aspect-ratio: 1 / 1.15; /* Slightly taller than square for label */
-    min-height: 0; /* Allow shrinking */
+    /* Taller than wide: width is 1, height is 1.2 */
+    aspect-ratio: 1 / 1.2;
+    width: 100%;
     overflow: hidden;
     box-shadow: var(--theme-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
   }
@@ -295,9 +296,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 1;
     width: 100%;
-    min-height: 0; /* Allow shrinking */
+    /* Flex-grow to fill available space above the label */
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     position: relative;
   }

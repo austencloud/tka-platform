@@ -136,18 +136,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Fill grid cell, with reasonable minimum size */
+    /* Square chip that fills column width */
     width: 100%;
-    height: 100%;
-    min-width: 48px;
-    min-height: 48px;
+    aspect-ratio: 1;
     padding: 6px;
     background: var(--theme-card-bg);
     border: 2px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.15s ease;
-    flex-shrink: 0;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
@@ -257,10 +254,12 @@
     color: var(--theme-accent);
   }
 
-  /* Mini prop icons - scale with container */
+  /* Mini prop icons - scale with chip size */
   .mini-prop {
-    width: 40px;
-    height: 40px;
+    width: 60%;
+    height: 60%;
+    max-width: 70px;
+    max-height: 70px;
     object-fit: contain;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
     -webkit-touch-callout: none;
@@ -270,22 +269,26 @@
   }
 
   .mini-prop.single {
-    width: 44px;
-    height: 44px;
+    width: 65%;
+    height: 65%;
+    max-width: 80px;
+    max-height: 80px;
   }
 
   .dual-props {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
     width: 100%;
     height: 100%;
   }
 
   .dual-props .mini-prop {
-    width: 28px;
-    height: 34px;
+    width: 40%;
+    height: 55%;
+    max-width: 50px;
+    max-height: 60px;
   }
 
   .dual-props .mini-prop.red {
