@@ -32,18 +32,22 @@ export class MapboxSatelliteLoader {
 
   /**
    * Load satellite imagery for bounds and return as a single stitched image
+   * @param bounds Geographic bounds to capture
+   * @param resolution Output resolution
+   * @param zoom Zoom level (default 15, max 18 for highest detail)
    */
   async loadSatelliteTexture(
     bounds: GeoBounds,
-    resolution: { width: number; height: number }
+    resolution: { width: number; height: number },
+    zoom: number = 17
   ): Promise<HTMLCanvasElement> {
     if (!this.isReady()) {
       throw new Error("MapboxSatelliteLoader: No access token configured");
     }
 
-    // Use zoom 15 for good detail
-    const zoom = 15;
-    const tiles = this.getTilesForBounds(bounds, zoom);
+    // Clamp zoom to valid range (0-18 for Mapbox satellite)
+    const clampedZoom = Math.max(0, Math.min(18, zoom));
+    const tiles = this.getTilesForBounds(bounds, clampedZoom);
 
     // Fetch all satellite tiles
     const tileImages = await Promise.all(
