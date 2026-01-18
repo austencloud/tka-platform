@@ -96,17 +96,10 @@ New "preferences-first" flow:
       <WordInput
         value={word}
         onInput={onWordChange}
-        onFocusChange={(focused) => {
-          showLetterPalette = focused && showGreekBar;
-        }}
       />
 
       {#if showGreekBar}
-        <QuickGreekBar onLetterClick={handleLetterClick} />
-      {/if}
-
-      {#if showLetterPalette}
-        <LetterPalette onLetterClick={handleLetterClick} />
+        <QuickGreekBar onSelect={handleLetterClick} />
       {/if}
     </section>
 
